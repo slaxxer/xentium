@@ -1,0 +1,26 @@
+{
+  "name": "nodevo",
+  "private": true,
+  "packageManager": "pnpm@10.30.2",
+  "engines": { "node": ">=22.12" },
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "infra:up": "docker compose -f docker/docker-compose.yml up -d",
+    "infra:down": "docker compose -f docker/docker-compose.yml down"
+  },
+  "devDependencies": {
+    "turbo": "^2",
+    "typescript": "catalog:",
+    "prettier": "^3",
+    "eslint": "^9",
+    "@eslint/js": "^9",
+    "typescript-eslint": "^8",
+    "@types/node": "^24"
+  }
+}
