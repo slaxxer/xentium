@@ -164,6 +164,9 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { homeFeedRegistry } = await import("../home-feed-registry/home-feed-registry.js");
   homeFeedRegistry.deregister(pluginId);
 
+  const { searchRegistry } = await import("../search-registry/search-registry.js");
+  searchRegistry.deregister(pluginId);
+
   // Deregister NEC codes
   const { necRegistry } = await import("../nec-registry/nec-registry.js");
   necRegistry.deregister(pluginId);
