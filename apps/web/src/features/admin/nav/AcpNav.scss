@@ -47,8 +47,12 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    overflow-x: auto;
     flex: 1;
+    // NB: must NOT be an overflow scroll container — overflow-x:auto forces
+    // overflow-y:auto, which clips the absolutely-positioned dropdowns. Wrap
+    // when space is tight instead so dropdowns can escape.
+    flex-wrap: wrap;
+    min-width: 0;
   }
 
   &__cell { position: relative; }
