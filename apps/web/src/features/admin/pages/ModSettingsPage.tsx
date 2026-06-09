@@ -1,0 +1,166 @@
+import { useState, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { api } from "../../../lib/api";
+import { swalToast, apiErrorMessage } from "../../../lib/swal";
+import { useAutosave } from "../../../hooks/useAutosave";
+import { AutosaveStatus } from "../../../components/AutosaveStatus";
+
+interface Setting { key: string; value: unknown }
+
+function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
+  return (
+    <div onClick={onToggle} style={{ width:40,height:22,background:on?"var(--c-accent)":"var(--c-border)",borderRadius:100,cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s" }}>
+      <div style={{ width:16,height:16,background:"#fff",borderRadius:"50%",position:"absolute",top:3,left:on?21:3,transition:"left 0.2s" }} />
+    </div>
+  );
+}
+
+// Map settings keys → local state
+function parse(settings: Setting[]): Record<string, unknown> {
+  const map: Record<string, unknown> = {};
+  for (const s of settings) map[s.key] = s.value;
+  return map;
+}
+
+export function ModSettingsPage() {
+  const qc = useQueryClient();
+
+  const { data: settings = [] } = useQuery<Setting[]>({
+    queryKey: ["acp-settings"],
+    queryFn: () => api.get("/admin/settings"),
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (entries: Array<[string, unknown]>) =>
+      Promise.all(entries.map(([key, value]) =>
+        api.put(`/admin/settings/${encodeURIComponent(key)}`, { value }))),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["acp-settings"] });
+      swalToast("Moderation policy saved!", "success");
+    },
+    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const raw = parse(settings);
+
+  // Local draft state
+  const [expiryEnabled,  setExpiryEnabled]  = useState(true);
+  const [expiryDays,     setExpiryDays]     = useState(90);
+  const [allowOverride,  setAllowOverride]  = useState(true);
+  const [appealEnabled,  setAppealEnabled]  = useState(false);
+  const [resetCount,     setResetCount]     = useState(false);
+  const [defaultBanDays, setDefaultBanDays] = useState(7);
+  const [minDays,        setMinDays]        = useState(1);
+  const [maxDays,        setMaxDays]        = useState(365);
+
+  // Seed from Settings API on first load
+  useEffect(() => {
+    if (!settings.length) return;
+    setExpiryEnabled( raw["moderation.warning_expiry_enabled"]  as boolean ?? true);
+    setExpiryDays(    raw["moderation.warning_expiry_days"]     as number  ?? 90);
+    setAllowOverride( raw["moderation.ban_allow_override"]      as boolean ?? true);
+    setAppealEnabled( raw["moderation.ban_appeals_enabled"]     as boolean ?? false);
+    setResetCount(    raw["moderation.reset_count_after_ban"]   as boolean ?? false);
+    setDefaultBanDays(raw["moderation.default_ban_days"]        as number  ?? 7);
+    setMinDays(       raw["moderation.min_ban_days"]            as number  ?? 1);
+    setMaxDays(       raw["moderation.max_ban_days"]            as number  ?? 365);
+  }, [settings.length]);
+
+  function entriesOf(s: {
+    expiryEnabled: boolean; expiryDays: number; allowOverride: boolean; appealEnabled: boolean;
+    resetCount: boolean; defaultBanDays: number; minDays: number; maxDays: number;
+  }): Array<[string, unknown]> {
+    return [
+      ["moderation.warning_expiry_enabled",  s.expiryEnabled],
+      ["moderation.warning_expiry_days",     s.expiryDays],
+      ["moderation.ban_allow_override",      s.allowOverride],
+      ["moderation.ban_appeals_enabled",     s.appealEnabled],
+      ["moderation.reset_count_after_ban",   s.resetCount],
+      ["moderation.default_ban_days",        s.defaultBanDays],
+      ["moderation.min_ban_days",            s.minDays],
+      ["moderation.max_ban_days",            s.maxDays],
+    ];
+  }
+
+  // Draft (current form) vs the server's persisted values, using identical
+  // defaults to the seeding above so a freshly-loaded form never auto-saves.
+  const draft = { expiryEnabled, expiryDays, allowOverride, appealEnabled, resetCount, defaultBanDays, minDays, maxDays };
+  const savedValue = settings.length ? {
+    expiryEnabled:  raw["moderation.warning_expiry_enabled"] as boolean ?? true,
+    expiryDays:     raw["moderation.warning_expiry_days"]    as number  ?? 90,
+    allowOverride:  raw["moderation.ban_allow_override"]     as boolean ?? true,
+    appealEnabled:  raw["moderation.ban_appeals_enabled"]    as boolean ?? false,
+    resetCount:     raw["moderation.reset_count_after_ban"]  as boolean ?? false,
+    defaultBanDays: raw["moderation.default_ban_days"]       as number  ?? 7,
+    minDays:        raw["moderation.min_ban_days"]           as number  ?? 1,
+    maxDays:        raw["moderation.max_ban_days"]           as number  ?? 365,
+  } : undefined;
+
+  useAutosave({ value: draft, savedValue, onSave: (d) => saveMutation.mutate(entriesOf(d)) });
+
+  return (
+    <div>
+      <div className="acp-page-header">
+        <div className="acp-page-header__left">
+          <div className="acp-page-sub">Moderation</div>
+          <h1 className="acp-page-title">Moderation Settings</h1>
+        </div>
+        <AutosaveStatus saving={saveMutation.isPending} />
+      </div>
+
+      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}>
+        {/* Warning policy */}
+        <div className="acp-card" style={{ padding:"24px" }}>
+          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:20 }}>Warning Policy</div>
+
+          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid var(--c-border)",marginBottom:16 }}>
+            <div>
+              <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>Warning expiry</div>
+              <div style={{ fontSize:12,color:"var(--c-fg-muted)" }}>Warnings become inactive after set days</div>
+            </div>
+            <Toggle on={expiryEnabled} onToggle={() => setExpiryEnabled(v => !v)} />
+          </div>
+
+          {expiryEnabled && (
+            <div className="acp-form-field">
+              <label className="acp-label">Expire after (days)</label>
+              <input type="number" className="acp-input" value={expiryDays} onChange={e => setExpiryDays(+e.target.value)} />
+            </div>
+          )}
+
+          <div style={{ fontSize:13,fontWeight:700,color:"var(--c-fg)",marginBottom:10,marginTop:16 }}>Warning Thresholds</div>
+          {[{ count:3,action:"Temp ban",days:"7" },{ count:5,action:"Perm ban",days:null }].map((th, i) => (
+            <div key={i} style={{ background:"var(--c-surface)",border:"1px solid var(--c-border)",borderRadius:"var(--radius-sm)",padding:"14px",marginBottom:10 }}>
+              <div style={{ display:"grid",gridTemplateColumns:th.days?"80px 1fr 80px":"80px 1fr",gap:8,marginBottom:8 }}>
+                <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>After # warns</div><input type="number" className="acp-input" defaultValue={th.count} /></div>
+                <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>Action</div><select className="acp-select" style={{ width:"100%" }}><option>Temp ban</option><option>Perm ban</option><option>Notify mods</option></select></div>
+                {th.days && <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>Days</div><input type="number" className="acp-input" defaultValue={th.days} /></div>}
+              </div>
+              <div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="checkbox" defaultChecked style={{ accentColor:"var(--c-accent)" }} /><span style={{ fontSize:12,color:"var(--c-fg-muted)" }}>Notify moderators</span></div>
+            </div>
+          ))}
+          <button type="button" className="btn-ghost btn-sm"><FontAwesomeIcon icon={faPlus} style={{ marginRight:5 }} /> Add Threshold</button>
+        </div>
+
+        {/* Ban policy */}
+        <div className="acp-card" style={{ padding:"24px" }}>
+          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:20 }}>Ban Policy</div>
+          {([["Default ban duration (days)", defaultBanDays, setDefaultBanDays],["Minimum duration (days)", minDays, setMinDays],["Maximum duration (days)", maxDays, setMaxDays]] as [string, number, (v: number) => void][]).map(([label, val, setter]) => (
+            <div key={label} className="acp-form-field">
+              <label className="acp-label">{label}</label>
+              <input type="number" className="acp-input" value={val} onChange={e => setter(+e.target.value)} />
+            </div>
+          ))}
+          {([["Allow moderator override", allowOverride, setAllowOverride],["Allow ban appeals", appealEnabled, setAppealEnabled],["Reset warning count after ban", resetCount, setResetCount]] as [string, boolean, (v: boolean) => void][]).map(([label, val, setter]) => (
+            <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderTop:"1px solid var(--c-border)" }}>
+              <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{label}</div>
+              <Toggle on={val} onToggle={() => setter(!val)} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
