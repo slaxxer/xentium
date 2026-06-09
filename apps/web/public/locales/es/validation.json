@@ -1,0 +1,8 @@
+{
+  "required": "Este campo es obligatorio.",
+  "tooShort": "Demasiado corto.",
+  "invalidEmail": "Introduce una dirección de correo válida.",
+  "passwordMismatch": "Las contraseñas no coinciden.",
+  "minLength": "Debe tener al menos {{n}} caracteres.",
+  "maxLength": "Debe tener como máximo {{n}} caracteres."
+}

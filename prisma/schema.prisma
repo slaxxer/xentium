@@ -1,8 +1,827 @@
 generator client {
   provider = "prisma-client"
+  output   = "../apps/api/src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Phase 0–3 (existing)
+// ============================================
+
+model MigrationRun {
+  id         String   @id @default(uuid())
+  command    String
+  durationMs Int
+  output     String   @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("migration_runs")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  username     String   @unique
+  passwordHash String
+  displayName  String?  @map("display_name")
+  bio          String?  @db.Text
+  avatar       String?
+  isActive     Boolean   @default(true)
+  bannedUntil  DateTime? @map("banned_until")
+
+  postCount          Int      @default(0) @map("post_count")
+  threadCount        Int      @default(0) @map("thread_count")
+  articleCount       Int      @default(0) @map("article_count")
+  likeCountReceived  Int      @default(0) @map("like_count_received")
+  followerCount      Int      @default(0) @map("follower_count")
+  followingCount     Int      @default(0) @map("following_count")
+  usernameChangedAt  DateTime? @map("username_changed_at")
+  emailVerifiedAt    DateTime? @map("email_verified_at")
+  loginPinEnabled    Boolean   @default(false) @map("login_pin_enabled")
+  loginPinHash       String?   @map("login_pin_hash")
+  dobDisplay         String    @default("age") @map("dob_display")  // 'hidden' | 'age' | 'date'
+  preferredLocale    String?   @map("preferred_locale")  // null = follow resolution chain (§60.4)
+  hiddenBadges       String[]  @default([]) @map("hidden_badges")  // Group IDs the user hides from their badge stack, systemwide
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  groups   UserGroup[]
+  sessions Session[]
+  emailChangeTokens EmailChangeToken[]
+  passwordResetTokens PasswordResetToken[]
+
+  profileComments         ProfileComment[] @relation("ProfileCommentOwner")
+  authoredProfileComments ProfileComment[] @relation("ProfileCommentAuthor")
+
+  following   UserFollow[] @relation("UserFollower")
+  followers   UserFollow[] @relation("UserFollowing")
+  blocking    UserBlock[]  @relation("UserBlocker")
+  blockedBy   UserBlock[]  @relation("UserBlocked")
+
+  articles            Article[]            @relation("ArticleAuthor")
+  articleRevisions    ArticleRevision[]    @relation("RevisionAuthor")
+  articleLikes        ArticleLike[]        @relation("ArticleLikedBy")
+  articleDislikes     ArticleDislike[]     @relation("ArticleDislikedBy")
+  articleComments          ArticleComment[]     @relation("ArticleCommentAuthor")
+  articleCommentsDeleted   ArticleComment[]     @relation("ArticleCommentDeletedBy")
+  articleCommentLikes      ArticleCommentLike[] @relation("ArticleCommentLikedBy")
+  profileCommentLikes          ProfileCommentLike[] @relation("ProfileCommentLikedBy")
+  profileCommentsDeleted       ProfileComment[]     @relation("ProfileCommentDeletedBy")
+
+  // Moderation (back-relations for Phase 6 models)
+  reportsFiled     ModerationReport[]  @relation("ReportFiled")
+  warningsReceived ModerationWarning[] @relation("WarningReceived")
+  warningsIssued   ModerationWarning[] @relation("WarningIssued")
+  bansReceived     ModerationBan[]     @relation("BanReceived")
+  bansIssued       ModerationBan[]     @relation("BanIssued")
+  styleHistories   StyleHistory[]
+  invitesCreated   InviteCode[]    @relation("InviteCreated")
+  invitesUsed      InviteCode[]    @relation("InviteUsed")
+  betaCodes           BetaCode[]  @relation("BetaCodeCreated")
+  betaCodeRegistered  BetaCode[]  @relation("BetaCodeRegistered")
+}
+
+model Group {
+  id           String   @id @default(uuid())
+  key          String   @unique
+  name         String
+  icon         String?
+  isSystem     Boolean  @default(false)
+  displayOrder Int      @default(100) @map("display_order")  // badge precedence; lower = higher priority
+  showInTeam   Boolean  @default(false) @map("show_in_team")  // surface this group as a section on the Team page
+  createdAt    DateTime @default(now())
+
+  users       UserGroup[]
+  permissions GroupPermission[]
+  progression GroupProgression?
+}
+
+// ── Phase 7 — Progression system (§38) ───────────────────────────────────────
+
+model GroupProgression {
+  groupId                  String   @id @map("group_id")
+  group                    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  isProgressionGroup       Boolean  @default(false) @map("is_progression_group")
+  ladderPosition           Int?     @map("ladder_position")
+  promoteFromGroupId       String?  @map("promote_from_group_id")
+
+  // Thresholds — all ANDed unless progression.threshold_logic = "or"
+  minPosts                 Int?     @map("min_posts")
+  minThreads               Int?     @map("min_threads")
+  minDaysMember            Int?     @map("min_days_member")
+  minLikesReceived         Int?     @map("min_likes_received")
+
+  // Content limits (enforced by Phase 7 middleware)
+  maxPostLength            Int?     @map("max_post_length")       // null = unlimited
+  maxDailyPosts            Int?     @map("max_daily_posts")
+  maxAttachments           Int?     @map("max_attachments")       // reserved for Phase 14+
+
+  // Profile image limits (§38)
+  maxProfileImageBytes     Int?     @map("max_profile_image_bytes")
+  allowedProfileImageTypes String[] @default([]) @map("allowed_profile_image_types")
+
+  // Badge
+  badgeLabel               String?  @map("badge_label")
+  badgeColor               String?  @map("badge_color")
+
+  createdAt                DateTime @default(now()) @map("created_at")
+  updatedAt                DateTime @updatedAt      @map("updated_at")
+
+  @@index([isProgressionGroup, ladderPosition])
+  @@map("group_progression")
+}
+
+model Permission {
+  id     String            @id @default(uuid())
+  key    String            @unique
+  label  String
+  groups GroupPermission[]
+}
+
+model UserGroup {
+  userId  String
+  groupId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@id([userId, groupId])
+}
+
+model GroupPermission {
+  groupId      String
+  permissionId String
+  group        Group      @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([groupId, permissionId])
+}
+
+model Session {
+  id               String    @id @default(uuid())
+  userId           String
+  refreshTokenHash String    @unique
+  ip               String?
+  userAgent        String?
+  deviceCookieId   String?
+  createdAt        DateTime  @default(now())
+  lastUsedAt       DateTime  @default(now())
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model LoginEvent {
+  id             String   @id @default(uuid())
+  userId         String?
+  emailAttempted String
+  success        Boolean
+  eventType      String   @default("login") @map("event_type")  // login | register | password_change
+  ip             String?
+  userAgent      String?
+  deviceCookieId String?
+  createdAt      DateTime @default(now())
+
+  @@index([userId])
+  @@index([ip])
+  @@index([deviceCookieId])
+  @@index([eventType, createdAt(sort: Desc)])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Install {
+  id          String    @id @default(uuid())
+  currentStep String    @default("WELCOME")
+  completedAt DateTime?
+  siteId      String?
+  version     String    @default("1")
+  createdAt   DateTime  @default(now())
+
+  @@map("installs")
+}
+
+// ============================================
+// Phase 4 – User social & profile features
+// ============================================
+
+model UsernameHistory {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  oldUsername  String   @map("old_username")
+  newUsername  String   @map("new_username")
+  changedAt    DateTime @default(now()) @map("changed_at")
+  changedById  String   @map("changed_by_id")
+
+  @@index([userId])
+  @@map("username_history")
+}
+
+model UserFollow {
+  id          String   @id @default(cuid())
+  followerId  String   @map("follower_id")
+  followingId String   @map("following_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  follower    User @relation("UserFollower",  fields: [followerId],  references: [id], onDelete: Cascade)
+  following   User @relation("UserFollowing", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+  @@map("user_follows")
+}
+
+model UserBlock {
+  id         String   @id @default(cuid())
+  blockerId  String   @map("blocker_id")
+  blockedId  String   @map("blocked_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  blocker    User @relation("UserBlocker",  fields: [blockerId],  references: [id], onDelete: Cascade)
+  blocked    User @relation("UserBlocked",  fields: [blockedId],  references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+  @@index([blockerId])
+  @@index([blockedId])
+  @@map("user_blocks")
+}
+
+model ProfileComment {
+  id             String    @id @default(cuid())
+  profileUserId  String    @map("profile_user_id")
+  authorId       String    @map("author_id")
+  body           String    @db.Text
+  likeCount      Int       @default(0) @map("like_count")
+  deletedAt      DateTime? @map("deleted_at")
+  deletedById    String?   @map("deleted_by_id")
+  deletedReason  String?   @map("deleted_reason")
+  editedAt       DateTime? @map("edited_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  profileUser    User  @relation("ProfileCommentOwner",    fields: [profileUserId], references: [id], onDelete: Cascade)
+  author         User  @relation("ProfileCommentAuthor",  fields: [authorId],      references: [id], onDelete: Cascade)
+  deletedBy      User? @relation("ProfileCommentDeletedBy", fields: [deletedById], references: [id])
+  likes          ProfileCommentLike[]
+
+  @@index([profileUserId, deletedAt, createdAt(sort: Desc)])
+  @@map("profile_comments")
+}
+
+model ProfileCommentLike {
+  id         String         @id @default(cuid())
+  commentId  String         @map("comment_id")
+  userId     String         @map("user_id")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  comment    ProfileComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user       User           @relation("ProfileCommentLikedBy", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("profile_comment_likes")
+}
+
+model UserProfileField {
+  id                      String   @id @default(cuid())
+  key                     String   @unique
+  label                   String
+  type                    String   // text, date, email, url
+  placeholder             String?
+  position                Int      @default(0)
+  showOnRegistration      Boolean  @default(false) @map("show_on_registration")
+  requiredOnRegistration  Boolean  @default(false) @map("required_on_registration")
+  showOnProfile           Boolean  @default(true)  @map("show_on_profile")
+  dobDisplayFormat        String?  @map("dob_display_format") // age, birthday, full
+  isSystem                Boolean  @default(false) @map("is_system")
+  createdAt               DateTime @default(now()) @map("created_at")
+
+  @@map("user_profile_fields")
+}
+
+model UserProfileFieldValue {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  fieldId   String   @map("field_id")
+  value     String   @db.Text
+  privacy   String   @default("public") // public, members, nobody
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, fieldId])
+  @@index([userId])
+  @@map("user_profile_field_values")
+}
+
+model UserPrivacySettings {
+  userId    String   @id @map("user_id")
+  settings  Json     @default("{}")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("user_privacy_settings")
+}
+
+// Phase 2 — basic NotificationService (DB writes only)
+// Email routing + in-app bell UI arrive in Phase 8.
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  type      String
+  title     String
+  body      String    @db.Text
+  link      String?
+  meta      Json?
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id            String   @id @default(cuid())
+  userId        String   @map("user_id")
+  typePattern   String   @map("type_pattern")
+  inAppEnabled  Boolean  @default(true) @map("in_app_enabled")
+  emailEnabled  Boolean  @default(false) @map("email_enabled")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, typePattern])
+  @@index([userId])
+  @@map("notification_preferences")
+}
+// ============================================
+// Phase 5 — Article CMS
+// ============================================
+
+model ArticleCategory {
+  id          String  @id @default(cuid())
+  parentId    String? @map("parent_id")
+  parent      ArticleCategory?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children    ArticleCategory[] @relation("CategoryTree")
+  name        String
+  slug        String  @unique
+  description String? @db.Text
+  position    Int     @default(0)
+
+  // Visibility (§39) — mirrors forum_nodes
+  visibility          String   @default("public")            // 'public' | 'members' | 'level' | 'groups'
+  visibilityGroups    String[] @default([]) @map("visibility_groups")
+  visibilityMinLevel  Int?     @map("visibility_min_level")
+  hideIfNoAccess      Boolean  @default(true) @map("hide_if_no_access")
+  effectiveVisibility String   @default("public") @map("effective_visibility") // precomputed cache
+
+  articles Article[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([parentId, position])
+  @@map("article_categories")
+}
+
+model Article {
+  id             String           @id @default(cuid())
+  authorId       String           @map("author_id")
+  author         User             @relation("ArticleAuthor", fields: [authorId], references: [id])
+  categoryId     String?          @map("category_id")
+  category       ArticleCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  title          String
+  slug           String           @unique
+  excerpt        String?          @db.Text
+  body           Json             // TipTap / ProseMirror JSON — never raw HTML (§17b)
+  bodyPlain      String?          @db.Text @map("body_plain") // plain text extracted for search vector
+  featuredImage  String?          @map("featured_image")      // storage path
+  status         String           @default("draft")           // 'draft' | 'review' | 'published'
+  visibility     String           @default("public")          // 'public' | 'members' | 'private'
+  seoTitle       String?          @map("seo_title")
+  seoDescription String?          @map("seo_description") @db.Text
+  publishedAt    DateTime?        @map("published_at")
+  deletedAt      DateTime?        @map("deleted_at")
+  deletedById    String?          @map("deleted_by_id")
+  likeCount      Int              @default(0) @map("like_count")
+  dislikeCount   Int              @default(0) @map("dislike_count")
+  commentCount   Int              @default(0) @map("comment_count")
+  viewCount      Int              @default(0) @map("view_count")
+
+  // search_vector tsvector column managed by raw SQL trigger — not declared here to prevent db push from dropping it
+
+  revisions ArticleRevision[]
+  tags      ArticleTag[]
+  likes     ArticleLike[]
+  dislikes  ArticleDislike[]
+  comments  ArticleComment[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@index([categoryId, status])
+  @@index([authorId, status])
+  @@map("articles")
+}
+
+model ArticleRevision {
+  id        String   @id @default(cuid())
+  articleId String   @map("article_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId  String   @map("author_id")
+  author    User     @relation("RevisionAuthor", fields: [authorId], references: [id])
+  title     String
+  body      Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([articleId, createdAt(sort: Desc)])
+  @@map("article_revisions")
+}
+
+model Tag {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+
+  articles ArticleTag[]
+
+  @@map("tags")
+}
+
+model ArticleTag {
+  articleId String  @map("article_id")
+  tagId     String  @map("tag_id")
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, tagId])
+  @@index([tagId])
+  @@map("article_tags")
+}
+
+model ArticleLike {
+  id        String   @id @default(cuid())
+  articleId String   @map("article_id")
+  userId    String   @map("user_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation("ArticleLikedBy", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([articleId, userId])
+  @@map("article_likes")
+}
+
+model ArticleDislike {
+  id        String   @id @default(cuid())
+  articleId String   @map("article_id")
+  userId    String   @map("user_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation("ArticleDislikedBy", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([articleId, userId])
+  @@map("article_dislikes")
+}
+
+model ArticleComment {
+  id            String          @id @default(cuid())
+  articleId     String          @map("article_id")
+  article       Article         @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  authorId      String          @map("author_id")
+  author        User            @relation("ArticleCommentAuthor", fields: [authorId], references: [id])
+  parentId      String?         @map("parent_id")
+  parent        ArticleComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies       ArticleComment[] @relation("CommentReplies")
+  body          String          @db.Text
+  status        String          @default("published") // 'published' | 'pending' | 'rejected'
+  deletedAt     DateTime?       @map("deleted_at")
+  deletedById   String?         @map("deleted_by_id")
+  deletedBy     User?           @relation("ArticleCommentDeletedBy", fields: [deletedById], references: [id])
+  deletedReason String?         @map("deleted_reason")
+  editedAt      DateTime?       @map("edited_at")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  likes ArticleCommentLike[]
+
+  @@index([articleId, deletedAt, createdAt(sort: Desc)])
+  @@index([parentId])
+  @@map("article_comments")
+}
+
+model ArticleCommentLike {
+  id        String         @id @default(cuid())
+  commentId String         @map("comment_id")
+  userId    String         @map("user_id")
+  comment   ArticleComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User           @relation("ArticleCommentLikedBy", fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@unique([commentId, userId])
+  @@map("article_comment_likes")
+}
+
+model EmailChangeToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  newEmail  String   @map("new_email")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("email_change_tokens")
+}
+
+// Password reset — DB-backed single-use token (§17b). A JWT would stay valid
+// after use / after the password changed; a DB token can be invalidated
+// immediately. Raw 32-byte token is emailed; only its SHA-256 hash is stored.
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")  // 15 minutes from creation
+  usedAt    DateTime? @map("used_at")     // set on use; subsequent uses rejected
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ============================================
+// Phase 6 additions — moderation, plugins, license, error log, style history
+// (spec'd for Phase 2 in §49, added here as part of Phase 6 admin work)
+// ============================================
+
+model ModerationReport {
+  id         String    @id @default(cuid())
+  targetType String    @map("target_type")  // article | article_comment | profile_comment | user | plugin-content
+  targetId   String    @map("target_id")
+  reporterId String    @map("reporter_id")
+  assignedTo String?   @map("assigned_to")
+  reason     String    @db.Text
+  notes      String?   @db.Text
+  status     String    @default("pending")  // pending | reviewed | resolved | dismissed
+  createdAt  DateTime  @default(now()) @map("created_at")
+  resolvedAt DateTime? @map("resolved_at")
+  resolvedBy String?   @map("resolved_by")
+
+  reporter User @relation("ReportFiled",    fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("moderation_reports")
+}
+
+model ModerationWarning {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  issuedById  String    @map("issued_by_id")
+  reason      String    @db.Text
+  status      String    @default("active")  // active | expired | pardoned
+  expiresAt   DateTime? @map("expires_at")
+  pardonedAt  DateTime? @map("pardoned_at")
+  pardonedBy  String?   @map("pardoned_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user     User @relation("WarningReceived", fields: [userId],     references: [id], onDelete: Cascade)
+  issuedBy User @relation("WarningIssued",   fields: [issuedById], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("moderation_warnings")
+}
+
+model ModerationBan {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  issuedById String    @map("issued_by_id")
+  type       String    // temporary | permanent
+  reason     String    @db.Text
+  status     String    @default("active")   // active | expired | lifted
+  expiresAt  DateTime? @map("expires_at")
+  liftedAt   DateTime? @map("lifted_at")
+  liftedBy   String?   @map("lifted_by")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user     User @relation("BanReceived", fields: [userId],     references: [id], onDelete: Cascade)
+  issuedBy User @relation("BanIssued",   fields: [issuedById], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("moderation_bans")
+}
+
+model ModerationCase {
+  id            String    @id @default(cuid())
+  type          String    // rapid_login_attempts | multi_account_suspicion | ban_evasion_suspicion | registration_burst
+  severity      String    // low | medium | high
+  status        String    @default("open")  // open | reviewed | dismissed
+  signals       Json      // array of signal strings
+  linkedUserIds String[]  @map("linked_user_ids")
+  notes         String?   @db.Text         // free-text mod note (reason for exception etc.)
+  reviewedBy    String?   @map("reviewed_by")
+  reviewedAt    DateTime? @map("reviewed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  @@index([status, createdAt(sort: Desc)])
+  @@map("moderation_cases")
+}
+
+model ModerationLog {
+  id         String   @id @default(cuid())
+  actorId    String?  @map("actor_id")    // null = SYSTEM
+  actorType  String   @map("actor_type")  // user | system
+  action     String
+  targetType String?  @map("target_type")
+  targetId   String?  @map("target_id")
+  reason     String?  @db.Text
+  meta       Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([action, createdAt(sort: Desc)])
+  @@map("moderation_log")
+}
+
+model InstalledPlugin {
+  id               String    @id  // plugin manifest id e.g. "nodevo-forum"
+  name             String
+  vendor           String
+  installedVersion String    @map("installed_version")
+  status           String    @default("installed")  // installed | enabled | disabled
+  licenseRequired  Boolean   @default(false) @map("license_required")
+  packagePath      String    @map("package_path")
+  manifest         Json
+  installedAt      DateTime  @default(now()) @map("installed_at")
+  enabledAt        DateTime? @map("enabled_at")
+  disabledAt       DateTime? @map("disabled_at")
+
+  @@map("installed_plugins")
+}
+
+model License {
+  id             String    @id @default(cuid())
+  licenseKey     String    @unique @map("license_key")
+  siteId         String    @map("site_id")
+  entitlementJwt String    @db.Text @map("entitlement_jwt")
+  status         String    @default("active")  // active | expired | deactivated
+  domain         String?                        // APP_URL host bound at activation (ADR 0001)
+  environment    String?                        // production | staging | development (ADR 0001)
+  activatedAt    DateTime  @default(now()) @map("activated_at")
+  expiresAt      DateTime? @map("expires_at")
+  refreshAfter   DateTime? @map("refresh_after")
+
+  @@map("licenses")
+}
+
+model ErrorLog {
+  id        String   @id @default(cuid())
+  code      String
+  message   String   @db.Text
+  context   Json?
+  severity  String   // info | warn | error | critical
+  requestId String?  @map("request_id")
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([severity, createdAt(sort: Desc)])
+  @@map("error_log")
+}
+
+model StyleHistory {
+  id        String   @id @default(cuid())
+  label     String
+  tokens    Json
+  savedById String   @map("saved_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  savedBy User @relation(fields: [savedById], references: [id], onDelete: Cascade)
+
+  @@map("style_history")
+}
+
+model InviteCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  note      String?                         // admin note (e.g. "for alice")
+  createdById String  @map("created_by_id")
+  usedById  String?   @map("used_by_id")
+  usedAt    DateTime? @map("used_at")
+  expiresAt DateTime? @map("expires_at")   // null = never expires
+  maxUses   Int       @default(1) @map("max_uses")
+  useCount  Int       @default(0) @map("use_count")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  createdBy User  @relation("InviteCreated", fields: [createdById], references: [id], onDelete: Cascade)
+  usedByUser User? @relation("InviteUsed",   fields: [usedById],   references: [id], onDelete: SetNull)
+
+  @@index([code])
+  @@map("invite_codes")
+}
+
+model BetaCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  note        String?
+  createdById String    @map("created_by_id")
+  redeemerIp  String?   @map("redeemer_ip")
+  redeemerUa  String?   @map("redeemer_ua")
+  redeemedAt  DateTime? @map("redeemed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  registeredUserId String? @map("registered_user_id")
+
+  createdBy      User  @relation("BetaCodeCreated",    fields: [createdById],      references: [id], onDelete: Cascade)
+  registeredUser User? @relation("BetaCodeRegistered", fields: [registeredUserId], references: [id], onDelete: SetNull)
+
+  @@index([code])
+  @@map("beta_codes")
+}
+
+model BetaAccessLog {
+  id        String   @id @default(cuid())
+  eventType String   @map("event_type")  // page_visit | login | failed_redeem
+  betaCode  String?  @map("beta_code")
+  userId    String?  @map("user_id")
+  username  String?
+  url       String?
+  ip        String?
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@map("beta_access_log")
+}
+
+model NavItem {
+  id               String   @id @default(cuid())
+  label            String
+  url              String
+  position         Int      @default(0)
+  parentId         String?  @map("parent_id")
+  isActive         Boolean  @default(true) @map("is_active")
+  isSystem         Boolean  @default(false) @map("is_system")
+  pluginId         String?  @map("plugin_id")   // set when registered by a plugin
+  openInNewTab     Boolean  @default(false) @map("open_in_new_tab")
+  visibility       String   @default("public")
+  visibilityGroups String[] @default([]) @map("visibility_groups")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@index([parentId, position])
+  @@map("nav_items")
+}
+
+// ── Phase 14: Plugin migrations ───────────────────────────────────────────────
+
+model NodevoPluginMigration {
+  id        String   @id                      // "{pluginId}_{ver}_{name}"
+  pluginId  String   @map("plugin_id")
+  pluginVer String   @map("plugin_ver")
+  name      String
+  appliedAt DateTime @default(now()) @map("applied_at")
+  checksum  String                            // SHA-256 of migration SQL
+  direction String                            // 'up' | 'down'
+
+  @@index([pluginId])
+  @@map("nodevo_plugin_migrations")
+}
+
+// ── Phase 12: Style packs ──────────────────────────────────────────────────────
+
+model InstalledStylePack {
+  id          String   @id @default(uuid())
+  name        String
+  vendor      String   @default("community")
+  version     String   @default("1.0.0")
+  isActive    Boolean  @default(false) @map("is_active")
+  lightCss    String   @map("light_css") @db.Text
+  darkCss     String   @map("dark_css")  @db.Text
+  installedAt DateTime @default(now()) @map("installed_at")
+  installedBy String   @map("installed_by")
+
+  @@map("installed_style_packs")
+}
+
+// Reviewed security signals — device cookies / IPs that a mod has cleared.
+// The security analysis job skips case creation for these but still logs every match.
+model ReviewedSecuritySignal {
+  id              String   @id @default(cuid())
+  signalType      String   @map("signal_type")        // 'device_cookie' | 'ip'
+  signalValue     String   @map("signal_value")
+  caseId          String   @map("case_id")
+  reviewedBy      String   @map("reviewed_by")
+  reviewedAt      DateTime @default(now()) @map("reviewed_at")
+  clearedUserIds  String[] @default([]) @map("cleared_user_ids")
+
+  @@unique([signalType, signalValue])
+  @@index([signalType, signalValue])
+  @@map("reviewed_security_signals")
 }

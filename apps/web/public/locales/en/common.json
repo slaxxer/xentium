@@ -1,0 +1,39 @@
+{
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "loading": "Loading…",
+    "search": "Search"
+  },
+  "nav": {
+    "home": "Home",
+    "articles": "Articles",
+    "signIn": "Sign in",
+    "register": "Register",
+    "myProfile": "My Profile",
+    "accountSettings": "Account Settings",
+    "signOut": "Sign out",
+    "members": "Members",
+    "forum": "Forum",
+    "openProfileMenu": "Open profile menu",
+    "search": "Search",
+    "toggleTheme": "Toggle theme",
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode",
+    "adminPanel": "Admin panel"
+  },
+  "search": {
+    "short": "Search",
+    "full": "Search articles, people…"
+  },
+  "language": {
+    "title": "Language",
+    "updated": "Language updated."
+  }
+}

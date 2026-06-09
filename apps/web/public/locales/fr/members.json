@@ -1,0 +1,84 @@
+{
+  "eyebrow": "Communauté",
+  "title": "Membres",
+  "tabs": {
+    "directory": "Annuaire",
+    "team": "Équipe",
+    "hallOfFame": "Temple de la renommée"
+  },
+  "search": "Rechercher des membres…",
+  "filterHeading": "Filtrer",
+  "sortHeading": "Trier",
+  "filters": {
+    "all": "Tous les membres",
+    "online": "En ligne",
+    "staff": "Équipe"
+  },
+  "sorts": {
+    "active": "Les plus actifs",
+    "followers": "Plus d’abonnés",
+    "newest": "Plus récents",
+    "az": "A–Z"
+  },
+  "memberCount_one": "{{count}} membre",
+  "memberCount_other": "{{count}} membres",
+  "onlineCount": "{{n}} en ligne",
+  "loading": "Chargement…",
+  "emptyQuery": "Aucun membre ne correspond à « {{query}} ».",
+  "emptyFilter": "Aucun membre pour ce filtre.",
+  "pagination": {
+    "prev": "← Préc.",
+    "next": "Suiv. →",
+    "page": "Page {{page}} sur {{total}}"
+  },
+  "joined": "inscrit il y a {{ago}}",
+  "tenure": {
+    "years": "{{n}} a",
+    "months": "{{n}} mois",
+    "days": "{{n}} j",
+    "today": "aujourd’hui"
+  },
+  "follow": "+ Suivre",
+  "following": "Abonné",
+  "metrics": {
+    "likes": "j’aime",
+    "posts": "publications",
+    "threads": "sujets",
+    "followers": "abonnés"
+  },
+  "team": {
+    "note": "Les personnes qui font vivre cette communauté — regroupées par rôle.",
+    "empty": "Aucun membre de l’équipe pour le moment."
+  },
+  "stats": {
+    "members": "membres",
+    "onlineNow": "en ligne",
+    "newThisWeek": "nouveaux cette semaine",
+    "totalPosts": "publications au total"
+  },
+  "hof": {
+    "title": "Temple de la renommée",
+    "subtitle": "Classé par {{metric}} reçus · configurable dans l’ACP",
+    "empty": "Aucun membre pour le moment.",
+    "stat": "{{value}} {{metric}}"
+  },
+  "howTo": {
+    "title": "Comment grimper dans le classement",
+    "intro": "Le Temple de la renommée met à l’honneur les membres qui apportent le plus de {{metric}}.",
+    "tips": {
+      "post": "Publiez des articles et des réponses utiles aux autres.",
+      "threads": "Lancez des discussions qui animent la communauté.",
+      "likes": "Gagnez des j’aime — les bonnes contributions sont récompensées.",
+      "active": "Restez actif — la régularité compte plus que les pics."
+    },
+    "levelUp": "Atteignez les seuils d’activité et vous serez promu automatiquement — chaque niveau débloque plus d’accès et un nouveau badge."
+  },
+  "groups": {
+    "admin": "Administrateur",
+    "supermod": "Super modérateur",
+    "moderator": "Modérateur",
+    "member": "Membre"
+  },
+  "banned": "Banni",
+  "permanentlyBanned": "Banni définitivement"
+}

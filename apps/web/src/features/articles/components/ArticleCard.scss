@@ -1,0 +1,47 @@
+.article-card {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    border-color: var(--c-accent);
+  }
+
+  .article-category {
+    font-size: 0.75rem;
+    color: var(--c-accent);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+
+  .article-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    a {
+      color: var(--c-fg);
+      text-decoration: none;
+      &:hover { color: var(--c-accent); }
+    }
+  }
+
+  .article-meta {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.75rem;
+    color: var(--c-fg-muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .article-excerpt {
+    color: var(--c-fg-muted);
+    font-size: 0.85rem;
+    line-height: 1.4;
+    margin: 0;
+  }
+}

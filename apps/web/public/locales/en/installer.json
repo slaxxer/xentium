@@ -1,0 +1,112 @@
+{
+  "welcome": {
+    "title": "Welcome to Nodevo",
+    "subtitle": "A modern, blazing-fast forum platform. This wizard will guide you through installation in a couple of minutes.",
+    "features": {
+      "discussions": {
+        "title": "Real-time discussions",
+        "desc": "WebSocket-powered threads with instant updates."
+      },
+      "search": {
+        "title": "Full-text search",
+        "desc": "Powered by Postgres tsvector for fast queries."
+      },
+      "responsive": {
+        "title": "Responsive & PWA",
+        "desc": "Works on every device. Installable as an app."
+      },
+      "security": {
+        "title": "Built-in security",
+        "desc": "Rate limiting, Redis sessions, RBAC."
+      }
+    }
+  },
+  "environment": {
+    "title": "Environment check",
+    "subtitle": "Verifying your server meets the requirements for Nodevo to run.",
+    "rows": {
+      "node": "Node.js",
+      "postgres": "PostgreSQL",
+      "redis": "Redis",
+      "storage": "Storage",
+      "database_url": "Database URL",
+      "data_dir": "Installation directory"
+    },
+    "status": {
+      "checking": "Checking...",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "retry": "Re-check all"
+  },
+  "database": {
+    "title": "Database connection",
+    "subtitle": "Nodevo connects using the <code>DATABASE_URL</code> configured on your server. Verify it is reachable before continuing.",
+    "postgres": "PostgreSQL",
+    "not_tested": "Not tested yet",
+    "test_button": "Test connection",
+    "testing": "Connecting..."
+  },
+  "site": {
+    "title": "Site configuration",
+    "subtitle": "Basic settings for your forum. You can change these later in the admin panel.",
+    "site_name": "Site name",
+    "site_url": "Site URL",
+    "url_hint": "The full URL where your forum will be accessible.",
+    "language": "Default language",
+    "timezone": "Timezone",
+    "timezone_hint": "Used for displaying dates and times across the platform."
+  },
+  "admin": {
+    "title": "Create admin user",
+    "subtitle": "This account gets full administrative privileges. Choose a strong password.",
+    "display_name": "Display name",
+    "email": "Email address",
+    "username": "Username",
+    "password": "Password",
+    "password_hint": "Minimum 12 characters, include numbers and symbols.",
+    "password_weak": "Add numbers and symbols",
+    "password_strong": "Strong password",
+    "confirm": "Confirm password",
+    "match": "Passwords match",
+    "mismatch": "Passwords do not match"
+  },
+  "finalize": {
+    "title": "Finalize installation",
+    "subtitle": "Review your settings. Installation will run migrations, seed data, and create your admin account.",
+    "site_section": "Site",
+    "admin_section": "Admin",
+    "progress": {
+      "migrations": "Creating schema and running migrations",
+      "seeding": "Seeding roles and permissions",
+      "site": "Saving site configuration",
+      "admin": "Creating admin account",
+      "keys": "Generating keys and finalizing",
+      "complete": "Installation complete!"
+    }
+  },
+  "done": {
+    "title": "Installation complete!",
+    "subtitle": "Your community is ready. You are already logged in as administrator.",
+    "login": "Log in",
+    "visit": "Visit forum",
+    "goto": "Go to your site"
+  },
+  "buttons": {
+    "back": "Back",
+    "next": "Next",
+    "install": "Install Nodevo",
+    "installing": "Installing...",
+    "retry": "Re-check all"
+  },
+  "toast": {
+    "env_fail": "All environment checks must pass.",
+    "db_fail": "Test the database connection first.",
+    "admin_invalid_display": "Please enter a display name.",
+    "admin_invalid_email": "Please enter a valid email address.",
+    "admin_invalid_username": "Username must be at least 3 characters.",
+    "admin_invalid_password": "Password must be at least 12 characters.",
+    "admin_password_mismatch": "Passwords do not match.",
+    "install_failed": "Installation failed."
+  }
+}

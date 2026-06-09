@@ -1,0 +1,39 @@
+{
+  "actions": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "loading": "Chargement…",
+    "search": "Rechercher"
+  },
+  "nav": {
+    "home": "Accueil",
+    "articles": "Articles",
+    "signIn": "Se connecter",
+    "register": "S’inscrire",
+    "myProfile": "Mon profil",
+    "accountSettings": "Paramètres du compte",
+    "signOut": "Se déconnecter",
+    "members": "Membres",
+    "forum": "Forum",
+    "openProfileMenu": "Ouvrir le menu du profil",
+    "search": "Rechercher",
+    "toggleTheme": "Changer de thème",
+    "switchToLight": "Passer au thème clair",
+    "switchToDark": "Passer au thème sombre",
+    "adminPanel": "Panneau dʼadministration"
+  },
+  "search": {
+    "short": "Rechercher",
+    "full": "Rechercher des articles, des personnes…"
+  },
+  "language": {
+    "title": "Langue",
+    "updated": "Langue mise à jour."
+  }
+}

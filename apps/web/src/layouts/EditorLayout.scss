@@ -1,0 +1,13 @@
+.editor-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+
+  /* The PubNav is sticky in the regular AppLayout; here we want it pinned
+     as a fixed-height flex item so the editor child can take the remainder. */
+  .pub-nav {
+    position: relative;
+    flex-shrink: 0;
+  }
+}

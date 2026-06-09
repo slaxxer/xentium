@@ -1,0 +1,132 @@
+/* ============================================================================
+   HEARTH — Nodevo design tokens (three-tier: primitive → semantic → component).
+   Names kept as --c-* (the codebase convention); values are the Hearth palette.
+   Style Editor controls SEMANTIC tokens only. Components never use a raw colour.
+   ============================================================================ */
+
+/* Tier 1 — primitives (never referenced directly by components) */
+:root {
+  --primitive-violet-600: #6d56e6;  /* light accent */
+  --primitive-violet-500: #8b78ff;  /* dark accent  */
+  --primitive-violet-300: #b6a8ff;
+  --primitive-coral-500:  #ff7a59;  /* light secondary */
+  --primitive-coral-400:  #ff8a6a;  /* dark secondary  */
+  --primitive-green-500:  #1fab74;  /* light success / presence */
+  --primitive-green-400:  #34d399;  /* dark success / presence  */
+  --primitive-amber-500:  #f4a259;
+  --primitive-sky-400:    #38bdf8;
+  --primitive-red-400:    #f87171;
+  --primitive-cream-50:   #f7f2ee;  /* light app bg (warm) */
+  --primitive-white:      #ffffff;
+  --primitive-ink-900:    #2b2535;  /* light text */
+  --primitive-ink-600:    #6f6878;
+  --primitive-ink-400:    #a39caf;
+  --primitive-plum-950:   #14101c;  /* dark app bg */
+  --primitive-plum-900:   #1d1730;  /* dark surface */
+  --primitive-plum-850:   #211a36;  /* dark card */
+  --primitive-plum-50:    #f0ecf7;  /* dark text */
+}
+
+/* Tier 2 — semantic. LIGHT is the default; dark overrides. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --c-bg:            var(--primitive-cream-50);
+  --c-bg-hover:      #f0eae3;
+  --c-surface:       var(--primitive-white);
+  --c-card:          var(--primitive-white);
+  --c-accent:        var(--primitive-violet-600);
+  --c-accent2:       var(--primitive-coral-500);
+  --c-accent-soft:   #ece8fc;
+  --c-accent2-soft:  #ffe9e2;
+  --c-accent-glow:   rgba(109, 92, 240, 0.22);
+  --c-on-accent:     #ffffff;
+  --c-fg:            var(--primitive-ink-900);
+  --c-fg-muted:      var(--primitive-ink-600);
+  --c-fg-subtle:     var(--primitive-ink-400);
+  --c-border:        #efe9e3;
+  --c-border-hi:     #e3dcd4;
+  --c-rowline:       #f2ede7;
+  --input-bg:        var(--c-bg);
+  --c-success:       var(--primitive-green-500);
+  --c-success-soft:  rgba(31, 171, 116, 0.10);
+  --c-warn:          var(--primitive-amber-500);
+  --c-danger:        #ef4444;
+  --c-danger-soft:   rgba(239, 68, 68, 0.10);
+  --c-info:          var(--primitive-sky-400);
+
+  --shadow-card:  0 6px 24px rgba(60, 40, 90, 0.07);
+  --shadow-pop:   0 12px 40px rgba(60, 40, 90, 0.12);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg:            var(--primitive-plum-950);
+  --c-bg-hover:      #251d3d;
+  --c-surface:       var(--primitive-plum-900);
+  --c-card:          var(--primitive-plum-850);
+  --c-accent:        var(--primitive-violet-500);
+  --c-accent2:       var(--primitive-coral-400);
+  --c-accent-soft:   rgba(139, 120, 255, 0.15);
+  --c-accent2-soft:  rgba(255, 138, 106, 0.15);
+  --c-accent-glow:   rgba(139, 120, 255, 0.28);
+  --c-on-accent:     #ffffff;
+  --c-fg:            var(--primitive-plum-50);
+  --c-fg-muted:      #aaa1bd;
+  --c-fg-subtle:     #736b85;
+  --c-border:        rgba(255, 255, 255, 0.08);
+  --c-border-hi:     rgba(255, 255, 255, 0.13);
+  --c-rowline:       rgba(255, 255, 255, 0.055);
+  --input-bg:        rgba(255, 255, 255, 0.045);
+  --c-success:       var(--primitive-green-400);
+  --c-success-soft:  rgba(52, 211, 153, 0.14);
+  --c-warn:          var(--primitive-amber-500);
+  --c-danger:        var(--primitive-red-400);
+  --c-danger-soft:   rgba(248, 113, 113, 0.14);
+  --c-info:          var(--primitive-sky-400);
+
+  --shadow-card:  0 8px 30px rgba(0, 0, 0, 0.30);
+  --shadow-pop:   0 16px 48px rgba(0, 0, 0, 0.45);
+}
+
+/* Tier 3 — component tokens */
+:root {
+  /* radii — Hearth scale */
+  --radius-sm:   10px;   /* chips, small buttons */
+  --radius-md:   14px;   /* inputs, icon buttons */
+  --radius-lg:   18px;   /* standard cards, side nav */
+  --radius-xl:   22px;   /* hero "me" card, feed post cards */
+  --radius-pill: 999px;
+  --card-radius:  var(--radius-lg);
+  --btn-radius:   var(--radius-sm);
+  --input-radius: var(--radius-md);
+
+  --avatar-presence: var(--c-success);
+
+  /* Typography — Poppins (display) + Nunito (body, used at 600–800).
+     --ff-sans is the body font and is user-overridable via the font picker;
+     it defaults to Nunito. --font-display stays Poppins for structure. */
+  --font-display: "Poppins", system-ui, sans-serif;
+  --font-body:    "Nunito", system-ui, sans-serif;
+  --ff-sans:      var(--font-body);
+  --ff-mono: "JetBrains Mono", "Cascadia Code", "Fira Mono", monospace;
+  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem;
+  --fs-lg: 1.125rem; --fs-xl: 1.25rem; --fs-2xl: 1.5rem; --fs-3xl: 1.875rem;
+
+  /* Spacing */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.25rem; --sp-6: 1.5rem; --sp-8: 2rem; --sp-10: 2.5rem; --sp-12: 3rem; --sp-16: 4rem;
+
+  /* Layout */
+  --nav-height: 68px;
+  --sidebar-width: 248px;
+  --content-max: 1240px;
+  --content-narrow: 760px;
+
+  /* Shadows — soft + warm. Legacy --shadow-sm/md/lg alias the card shadow so
+     existing components pick up Hearth elevation; --shadow-card is canonical. */
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-card);
+  --shadow-lg: var(--shadow-pop);
+  --shadow-inset-knob: 0 1px 3px rgba(0, 0, 0, 0.18);
+}

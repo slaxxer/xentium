@@ -1,0 +1,112 @@
+{
+  "welcome": {
+    "title": "Bienvenido a Nodevo",
+    "subtitle": "Una plataforma de foro moderna y ultrarrápida. Este asistente te guiará a través de la instalación en unos minutos.",
+    "features": {
+      "discussions": {
+        "title": "Discusiones en tiempo real",
+        "desc": "Hilos con tecnología WebSocket y actualizaciones instantáneas."
+      },
+      "search": {
+        "title": "Búsqueda de texto completo",
+        "desc": "Impulsada por tsvector de Postgres para consultas rápidas."
+      },
+      "responsive": {
+        "title": "Responsive y PWA",
+        "desc": "Funciona en cualquier dispositivo. Instalable como una app."
+      },
+      "security": {
+        "title": "Seguridad integrada",
+        "desc": "Límites de tasa, sesiones con Redis, RBAC."
+      }
+    }
+  },
+  "environment": {
+    "title": "Verificación del entorno",
+    "subtitle": "Comprobando que tu servidor cumple los requisitos para ejecutar Nodevo.",
+    "rows": {
+      "node": "Node.js",
+      "postgres": "PostgreSQL",
+      "redis": "Redis",
+      "storage": "Almacenamiento",
+      "database_url": "URL de la base de datos",
+      "data_dir": "Directorio de instalación"
+    },
+    "status": {
+      "checking": "Comprobando...",
+      "passed": "Correcto",
+      "failed": "Falló"
+    },
+    "retry": "Volver a comprobar todo"
+  },
+  "database": {
+    "title": "Conexión a la base de datos",
+    "subtitle": "Nodevo se conecta usando la <code>DATABASE_URL</code> configurada en tu servidor. Verifica que sea accesible antes de continuar.",
+    "postgres": "PostgreSQL",
+    "not_tested": "No probado aún",
+    "test_button": "Probar conexión",
+    "testing": "Conectando..."
+  },
+  "site": {
+    "title": "Configuración del sitio",
+    "subtitle": "Ajustes básicos de tu foro. Puedes cambiarlos más tarde en el panel de administración.",
+    "site_name": "Nombre del sitio",
+    "site_url": "URL del sitio",
+    "url_hint": "La URL completa donde estará accesible tu foro.",
+    "language": "Idioma predeterminado",
+    "timezone": "Zona horaria",
+    "timezone_hint": "Se usa para mostrar fechas y horas en la plataforma."
+  },
+  "admin": {
+    "title": "Crear usuario administrador",
+    "subtitle": "Esta cuenta tendrá todos los privilegios administrativos. Elige una contraseña segura.",
+    "display_name": "Nombre para mostrar",
+    "email": "Correo electrónico",
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "password_hint": "Mínimo 12 caracteres, incluye números y símbolos.",
+    "password_weak": "Agrega números y símbolos",
+    "password_strong": "Contraseña segura",
+    "confirm": "Confirmar contraseña",
+    "match": "Las contraseñas coinciden",
+    "mismatch": "Las contraseñas no coinciden"
+  },
+  "finalize": {
+    "title": "Finalizar instalación",
+    "subtitle": "Revisa tu configuración. La instalación ejecutará migraciones, cargará datos semilla y creará tu cuenta de administrador.",
+    "site_section": "Sitio",
+    "admin_section": "Administrador",
+    "progress": {
+      "migrations": "Creando esquema y ejecutando migraciones",
+      "seeding": "Sembrando roles y permisos",
+      "site": "Guardando configuración del sitio",
+      "admin": "Creando cuenta de administrador",
+      "keys": "Generando claves y finalizando",
+      "complete": "¡Instalación completa!"
+    }
+  },
+  "done": {
+    "title": "¡Instalación completada!",
+    "subtitle": "Tu comunidad está lista. Ya has iniciado sesión como administrador.",
+    "login": "Iniciar sesión",
+    "visit": "Visitar el foro",
+    "goto": "Ir al sitio"
+  },
+  "buttons": {
+    "back": "Atrás",
+    "next": "Siguiente",
+    "install": "Instalar Nodevo",
+    "installing": "Instalando...",
+    "retry": "Volver a comprobar todo"
+  },
+  "toast": {
+    "env_fail": "Todas las comprobaciones del entorno deben pasar.",
+    "db_fail": "Prueba primero la conexión a la base de datos.",
+    "admin_invalid_display": "Introduce un nombre para mostrar.",
+    "admin_invalid_email": "Introduce una dirección de correo válida.",
+    "admin_invalid_username": "El nombre de usuario debe tener al menos 3 caracteres.",
+    "admin_invalid_password": "La contraseña debe tener al menos 12 caracteres.",
+    "admin_password_mismatch": "Las contraseñas no coinciden.",
+    "install_failed": "La instalación falló."
+  }
+}
