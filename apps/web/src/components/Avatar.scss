@@ -1,0 +1,50 @@
+.hearth-ava-wrap {
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 0;
+}
+
+.hearth-ava {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 800;
+  line-height: 1;
+  user-select: none;
+}
+
+.hearth-ava--img {
+  object-fit: cover;
+}
+
+.hearth-ava__pres {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2.5px var(--c-card);
+
+  &.is-online  { background: var(--c-success); }
+  &.is-offline { background: var(--c-danger); }
+}
+
+/* Pulsing ring for online presence — mirrors the footer ONLINE indicator. */
+.hearth-ava__pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--c-success);
+  opacity: 0.45;
+  animation: hearth-ava-pulse 2s ease-in-out infinite;
+}
+
+@keyframes hearth-ava-pulse {
+  0%, 100% { transform: scale(1);   opacity: 0.45; }
+  50%      { transform: scale(2.2); opacity: 0;    }
+}
