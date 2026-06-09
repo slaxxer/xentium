@@ -426,5 +426,20 @@
     "agoH": "{{n}}h ago",
     "agoD": "{{n}}d ago",
     "agoMo": "{{n}}mo ago"
+  },
+  "tweaks": {
+    "title": "Tweaks",
+    "navigation": "Navigation",
+    "layout": "Layout",
+    "horizontal": "Horizontal",
+    "sidebar": "Sidebar",
+    "rail": "Rail",
+    "display": "Display",
+    "density": "Density",
+    "comfortable": "Comfortable",
+    "compact": "Compact",
+    "theme": "Theme",
+    "accent": "Accent",
+    "accentDefault": "Theme default"
   }
 }
