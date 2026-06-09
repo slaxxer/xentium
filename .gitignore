@@ -7,3 +7,16 @@ dist/
 *.log
 coverage/
 playwright-report/
+dev.sh
+**/src/generated/
+CLAUDE.md
+/PLUGINS
+
+# IDE
+.idea/
+
+# Local design/prototype workspace — not part of the shipped repo
+nodevo-redesign/
+
+# Runtime upload storage (user content — never commit; recreated on demand)
+**/var/uploads/
