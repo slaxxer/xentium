@@ -1,0 +1,325 @@
+import crypto from "node:crypto";
+import { prisma } from "../../infrastructure/db.js";
+import { redis, rkey } from "../../infrastructure/redis.js";
+import { verifyPassword, hashPassword } from "./auth.password.js";
+import { createSession } from "./auth.tokens.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { sendEmail, verificationCodeEmail, passwordResetEmail } from "../../infrastructure/email/email.service.js";
+import { notificationService } from "../notifications/notification.service.js";
+import { getSetting } from "../../shared/utils/settings.js";
+
+type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
+
+const DUMMY_HASH = process.env.DUMMY_ARGON2_HASH!;
+
+const REG_CODE_TTL = 600; // 10 minutes
+const RESET_TOKEN_TTL_MS = 15 * 60_000; // 15 minutes (§17b)
+
+function generateCode(): string {
+  return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+// Same hashing as refresh tokens (auth.tokens.ts): the raw value is a 32-byte
+// random token, so plain SHA-256 is sufficient — brute force is infeasible.
+const hashToken = (raw: string) => crypto.createHash("sha256").update(raw).digest("hex");
+
+export async function login(email: string, password: string, pin: string | undefined, meta: Meta) {
+  const user = await prisma.user.findUnique({ where: { email } });
+  const ok = await verifyPassword(user?.passwordHash ?? DUMMY_HASH, password).catch(() => false);
+  const authed = !!user && user.isActive && ok;
+
+  await prisma.loginEvent.create({
+    data: {
+      userId: user?.id ?? null,
+      emailAttempted: email,
+      success: authed,
+      ip: meta.ip,
+      userAgent: meta.userAgent,
+      deviceCookieId: meta.deviceCookieId,
+    },
+  });
+
+  if (!authed) return null;
+
+  // Ban check — runs after password verification to prevent user enumeration
+  if (user.bannedUntil) {
+    const isPermanent = user.bannedUntil.getFullYear() >= 9999;
+    if (isPermanent || user.bannedUntil > new Date()) {
+      const activeBan = await prisma.moderationBan.findFirst({
+        where:   { userId: user.id, status: "active" },
+        orderBy: { createdAt: "desc" },
+        select:  { reason: true },
+      });
+      return {
+        banned:    true,
+        reason:    activeBan?.reason ?? "Account suspended",
+        expiresAt: isPermanent ? null : user.bannedUntil.toISOString(),
+      } as const;
+    }
+  }
+
+  // PIN check: if user has PIN enabled, validate it
+  if (user.loginPinEnabled && user.loginPinHash) {
+    if (!pin) {
+      return { requiresPin: true } as const;
+    }
+    const pinOk = await verifyPassword(user.loginPinHash, pin).catch(() => false);
+    if (!pinOk) return null;
+  }
+
+  const tokens = await createSession(user.id, meta);
+  return {
+    user: { id: user.id, email: user.email },
+    ...tokens,
+  };
+}
+
+export async function sendRegistrationCode(email: string): Promise<void> {
+  // Check email not already taken
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    throw new NodevoError({ code: "NEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+  }
+
+  const code = generateCode();
+  await redis.setex(rkey("regcode", email), REG_CODE_TTL, code);
+
+  const sent = await sendEmail(
+    email,
+    "Your Nodevo verification code",
+    verificationCodeEmail(code),
+  );
+
+  if (!sent) {
+    // pino-pretty's transport worker captures stdout and discards non-JSON lines.
+    // Write to stderr directly so the code is always visible in dev.
+    process.stderr.write(
+      `\n\x1b[33m┌─────────────────────────────────────────┐\x1b[0m\n` +
+      `\x1b[33m│  [DEV] Email verification code          │\x1b[0m\n` +
+      `\x1b[33m│  To: ${email.padEnd(35)}│\x1b[0m\n` +
+      `\x1b[33m│  Code: \x1b[1m${code}\x1b[0m\x1b[33m                            │\x1b[0m\n` +
+      `\x1b[33m└─────────────────────────────────────────┘\x1b[0m\n\n`,
+    );
+  }
+}
+
+export async function register(
+  email: string,
+  username: string,
+  password: string,
+  emailCode: string,
+  loginPinEnabled: boolean,
+  loginPin: string | undefined,
+  fields: Array<{ fieldId: string; value: string; privacy: string }>,
+  meta: Meta,
+  inviteCode?: string,
+  betaCookieCode?: string,
+) {
+  const { betaService } = await import("../beta/beta.service.js");
+  const betaEnabled = await betaService.isEnabled();
+
+  if (betaEnabled) {
+    // Beta mode: beta cookie is the registration credential — no separate invite code
+    if (!betaCookieCode) {
+      throw new NodevoError({ code: "NEC-AUTH-1030", httpStatus: 403, message: "Beta access required to register" });
+    }
+    const check = await betaService.checkAccess(betaCookieCode, meta.ip ?? "");
+    if (!check.hasAccess) {
+      throw new NodevoError({ code: check.necCode ?? "NEC-AUTH-1030", httpStatus: 403, message: check.message ?? "Beta access denied" });
+    }
+  } else {
+    // Normal mode: check registration_mode setting
+    const mode = await getSetting("auth.registration_mode", "open");
+    if (mode === "closed") {
+      throw new NodevoError({ code: "NEC-AUTH-2010", httpStatus: 403, message: "Registration is currently disabled" });
+    }
+    if (mode === "invite") {
+      if (!inviteCode) {
+        throw new NodevoError({ code: "NEC-AUTH-1020", httpStatus: 403, message: "An invite code is required to register" });
+      }
+      const invite = await prisma.inviteCode.findUnique({ where: { code: inviteCode.toUpperCase().trim() } });
+      if (!invite || (invite.expiresAt && invite.expiresAt < new Date()) || invite.useCount >= invite.maxUses) {
+        throw new NodevoError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invalid or expired invite code" });
+      }
+    }
+  }
+  // Validate email verification code from Redis
+  // In non-production, the magic code "000000" bypasses verification
+  const isDev = process.env.NODE_ENV !== "production";
+  if (!(isDev && emailCode === "000000")) {
+    const stored = await redis.get(rkey("regcode", email));
+    if (!stored || stored !== emailCode) {
+      throw new NodevoError({ code: "NEC-AUTH-2003", httpStatus: 400, message: "Invalid or expired verification code" });
+    }
+  }
+
+  // Check uniqueness
+  const [existingEmail, existingUsername] = await Promise.all([
+    prisma.user.findUnique({ where: { email } }),
+    prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } } }),
+  ]);
+  if (existingEmail) {
+    throw new NodevoError({ code: "NEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+  }
+  if (existingUsername) {
+    throw new NodevoError({ code: "NEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
+  }
+
+  // Use the admin-configured default group (falls back to "member" if not set)
+  const defaultGroupKey = await getSetting("auth.default_group", "member");
+  const [memberGroup, hash, pinHash] = await Promise.all([
+    prisma.group.findFirst({ where: { key: String(defaultGroupKey) } }),
+    hashPassword(password),
+    loginPinEnabled && loginPin ? hashPassword(loginPin) : Promise.resolve(undefined),
+  ]);
+
+  const user = await prisma.$transaction(async (tx) => {
+    const u = await tx.user.create({
+      data: {
+        email,
+        username,
+        passwordHash: hash,
+        isActive: true,
+        emailVerifiedAt: new Date(),
+        loginPinEnabled: loginPinEnabled && !!pinHash,
+        loginPinHash: pinHash ?? null,
+      },
+    });
+    if (memberGroup) {
+      await tx.userGroup.create({ data: { userId: u.id, groupId: memberGroup.id } });
+    }
+    if (fields.length > 0) {
+      await tx.userProfileFieldValue.createMany({
+        data: fields
+          .filter((f) => f.value.trim() !== "")
+          .map((f) => ({ userId: u.id, fieldId: f.fieldId, value: f.value, privacy: f.privacy })),
+        skipDuplicates: true,
+      });
+    }
+    return u;
+  });
+
+  // Invalidate the email verification code
+  await redis.del(rkey("regcode", email));
+
+  if (betaEnabled && betaCookieCode) {
+    // Link the beta code to the newly registered user
+    await betaService.markRegistered(betaCookieCode, user.id).catch(() => {
+      console.warn("[beta] Failed to mark beta code as registered:", betaCookieCode);
+    });
+  } else if (inviteCode) {
+    // Consume the invite code (normal invite mode)
+    const { inviteService } = await import("../invite/invite.service.js");
+    await inviteService.consume(inviteCode, user.id).catch(() => {
+      console.warn("[invite] Failed to consume invite code after registration:", inviteCode);
+    });
+  }
+
+  // Log registration event for security analysis (§15)
+  await prisma.loginEvent.create({
+    data: {
+      userId:         user.id,
+      emailAttempted: email,
+      success:        true,
+      eventType:      "register",
+      ip:             meta.ip,
+      userAgent:      meta.userAgent,
+      deviceCookieId: meta.deviceCookieId,
+    },
+  }).catch(() => null);
+
+  const tokens = await createSession(user.id, meta);
+  return { user: { id: user.id, email: user.email }, ...tokens };
+}
+
+/**
+ * Request a password reset. Always resolves the same way regardless of whether
+ * the email exists (§43 — account enumeration prevention). When the account is
+ * found and active, a single-use DB-backed token is created and emailed.
+ */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user || !user.isActive) return; // silent no-op — never leak existence
+
+  const raw = crypto.randomBytes(32).toString("base64url");
+  await prisma.passwordResetToken.create({
+    data: {
+      userId:    user.id,
+      tokenHash: hashToken(raw),
+      expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+    },
+  });
+
+  const appUrl = process.env.APP_URL ?? "http://localhost:5173";
+  const link = `${appUrl.replace(/\/$/, "")}/reset-password?token=${raw}`;
+
+  const sent = await sendEmail(email, "Reset your Nodevo password", passwordResetEmail(link));
+  if (!sent) {
+    // Dev fallback — see sendRegistrationCode for why this writes to stderr.
+    process.stderr.write(
+      `\n\x1b[33m[DEV] Password reset link for ${email}:\x1b[0m\n  ${link}\n\n`,
+    );
+  }
+}
+
+/**
+ * Complete a password reset using a raw token from the email link. Validates
+ * the token is unused and unexpired, sets the new password, marks the token
+ * used, and revokes ALL of the user's sessions (§17b — credential change ends
+ * every active session). Other outstanding reset tokens are invalidated too.
+ */
+export async function confirmPasswordReset(
+  token: string,
+  newPassword: string,
+  meta: Meta,
+): Promise<void> {
+  const row = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash: hashToken(token) },
+  });
+  if (!row || row.usedAt || row.expiresAt < new Date()) {
+    throw new NodevoError({
+      code: "NEC-AUTH-1007",
+      httpStatus: 400,
+      message: "This password reset link is invalid or has expired",
+    });
+  }
+
+  const hash = await hashPassword(newPassword);
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: row.userId }, data: { passwordHash: hash } }),
+    prisma.passwordResetToken.update({ where: { id: row.id }, data: { usedAt: now } }),
+    // Invalidate any other outstanding reset tokens for this user
+    prisma.passwordResetToken.updateMany({
+      where: { userId: row.userId, usedAt: null, id: { not: row.id } },
+      data:  { usedAt: now },
+    }),
+    // Revoke all active sessions — the password just changed
+    prisma.session.updateMany({
+      where: { userId: row.userId, revokedAt: null },
+      data:  { revokedAt: now },
+    }),
+  ]);
+
+  // Security event (§43) — fire-and-forget, must not break the reset flow
+  prisma.loginEvent.create({
+    data: {
+      userId:         row.userId,
+      emailAttempted: "",
+      success:        true,
+      eventType:      "password_change",
+      ip:             meta.ip,
+      userAgent:      meta.userAgent,
+      deviceCookieId: meta.deviceCookieId,
+    },
+  }).catch(() => null);
+
+  // Notify the user their password changed (§29 auth.password_changed)
+  notificationService.dispatch({
+    userId:   row.userId,
+    type:     "auth.password_changed",
+    title:    "Your password was changed",
+    body:     "Your account password was just reset. If this wasn't you, contact an administrator immediately.",
+    channels: ["in_app", "email"],
+  }).catch(() => null);
+}
