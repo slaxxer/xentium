@@ -6,7 +6,8 @@ export const searchRouter: Router = Router();
 
 const querySchema = z.object({
   q:     z.string().min(1).max(200),
-  type:  z.enum(["all", "articles", "users", "forum"]).default("all"),
+  // "all" | "articles" | "users" | any registered plugin source id (e.g. "forum")
+  type:  z.string().max(40).default("all"),
   page:  z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(50).default(20),
 });

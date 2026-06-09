@@ -58,13 +58,33 @@ export interface AcpPageDeclaration {
   icon?:   string;
 }
 
-export interface SearchContentDeclaration {
-  type:        string;             // e.g. "forum_thread"
-  table:       string;
-  vectorCol:   string;
-  labelCol:    string;
-  linkPattern: string;             // e.g. "/forum/thread/{id}"
+/** A normalized search hit (source-agnostic). Mirrors HomeFeedItem — core never
+ *  builds this from plugin tables; the source produces it. */
+export interface SearchResultItem {
+  id:             string;
+  title:          string;
+  link:           string;                  // e.g. "/forum/thread/{slug}"
+  excerpt?:       string | null;
+  categoryLabel?: string | null;
+  author?:        { username: string; avatar: string | null } | null;
+  metric?:        number;                   // primary count (e.g. replies)
+  metricLabel?:   string;                   // e.g. "replies"
+  tags?:          string[];
+  createdAt:      string;                   // ISO timestamp
+  rank?:          number;                   // relevance score, for merge ordering
+}
+
+/** A search content source a plugin contributes. Core asks the source to run the
+ *  search — it never queries the plugin's tables or knows its schema. The source
+ *  `id` doubles as the GET /api/search ?type= value and the web slotRegistry tab id. */
+export interface SearchSource {
+  id:          string;             // e.g. "forum"
+  label:       string;             // tab label
   permission?: string | null;      // null = public
+  search(
+    query: string,
+    opts: { isLoggedIn: boolean; page: number; limit: number },
+  ): Promise<{ data: SearchResultItem[]; total: number }>;
 }
 
 /** A normalized item for the home / guest feed (source-agnostic). */
@@ -172,8 +192,9 @@ export interface PluginContext {
   /** Register notification type strings for user preference UI. */
   registerNotificationTypes(types: string[]): void;
 
-  /** Register a searchable content type with the search registry. */
-  registerSearchContent(content: SearchContentDeclaration): void;
+  /** Register a search content source (e.g. forum threads). Core asks it to run
+   *  the search and merges results — it never queries the plugin's tables. */
+  registerSearchSource(source: SearchSource): void;
 
   /** Register a home/guest feed content source (e.g. forum threads). */
   registerHomeFeedSource(source: HomeFeedSource): void;

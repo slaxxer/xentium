@@ -1,30 +1,33 @@
 /**
- * Phase 9 stub — plugin-extensible search content type registry.
- * Phase 16 (Forum plugin) will register additional content types here.
+ * Plugin-extensible search content sources. Core asks registered sources to run
+ * the search and merges normalized results — it never queries plugin tables or
+ * knows their schema. Mirrors home-feed-registry. A plugin registers via
+ * `ctx.registerSearchSource(...)` in its onEnable, and is removed on disable.
  */
+import type { SearchSource } from "@nodevo/plugin-sdk";
 
-export interface SearchableContentType {
-  type:        string;   // e.g. "forum_thread"
-  table:       string;
-  vectorCol:   string;
-  labelCol:    string;
-  linkPattern: string;   // e.g. "/forum/thread/{id}"
-  permission:  string | null; // null = public
-}
+export type { SearchResultItem, SearchSource } from "@nodevo/plugin-sdk";
+
+interface Entry { pluginId: string; source: SearchSource }
 
 class SearchRegistry {
-  private types = new Map<string, SearchableContentType>();
+  private entries = new Map<string, Entry>(); // keyed by source id
 
-  register(def: SearchableContentType): void {
-    this.types.set(def.type, def);
+  register(pluginId: string, source: SearchSource): void {
+    this.entries.set(source.id, { pluginId, source });
   }
 
-  deregister(type: string): void {
-    this.types.delete(type);
+  /** Remove every source contributed by a plugin (called on disable/uninstall). */
+  deregister(pluginId: string): void {
+    for (const [id, e] of this.entries) if (e.pluginId === pluginId) this.entries.delete(id);
   }
 
-  getAll(): SearchableContentType[] {
-    return [...this.types.values()];
+  get(id: string): SearchSource | undefined {
+    return this.entries.get(id)?.source;
+  }
+
+  getAll(): SearchSource[] {
+    return [...this.entries.values()].map((e) => e.source);
   }
 }
 

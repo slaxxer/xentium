@@ -24,6 +24,14 @@ interface UserResult {
   badgeColor: string | null; badgeLabel: string | null; roleKey: string | null;
 }
 
+/** Normalized hit from a plugin search source (matches SDK SearchResultItem). */
+interface PluginSearchItem {
+  id: string; title: string; link: string;
+  excerpt?: string | null; categoryLabel?: string | null;
+  author?: { username: string; avatar: string | null } | null;
+  metric?: number; metricLabel?: string; tags?: string[]; createdAt: string;
+}
+
 interface SearchResponse {
   query: string;
   articles: { data: ArticleResult[]; total: number };
@@ -176,7 +184,7 @@ export function SearchPage() {
 
           {/* Plugin search sections (e.g. Forum) — rendered dynamically from slotRegistry */}
           {pluginSearchTabs.map((pt) => {
-            const items: any[] = (data as any)?.[pt.id]?.data ?? [];
+            const items: PluginSearchItem[] = (data as any)?.[pt.id]?.data ?? [];
             const ptTotal: number = pluginTotals[pt.id] ?? 0;
             if ((type !== "all" && type !== pt.id) || items.length === 0) return null;
             return (
@@ -192,21 +200,23 @@ export function SearchPage() {
                   </h2>
                 )}
                 <div className="search-results-list">
-                  {items.map((item: any) => (
-                    <Link key={item.id} to={pt.linkFn ? pt.linkFn(item as Record<string,unknown>) : "#"} className="sr-article">
+                  {items.map((item) => (
+                    <Link key={item.id} to={item.link || (pt.linkFn ? pt.linkFn(item as unknown as Record<string,unknown>) : "#")} className="sr-article">
                       <div className="sr-article__body">
-                        {item.tags?.length > 0 && (
+                        {item.categoryLabel && <span className="sr-article__cat">{item.categoryLabel}</span>}
+                        {item.tags && item.tags.length > 0 && (
                           <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
-                            {item.tags.map((tag: string) => (
+                            {item.tags.map((tag) => (
                               <span key={tag} style={{ fontSize: 11, color: "var(--c-accent)", background: "var(--c-accent-soft)", padding: "2px 7px", borderRadius: 100, fontWeight: 600 }}>#{tag}</span>
                             ))}
                           </div>
                         )}
                         <h3 className="sr-article__title">{item.title}</h3>
+                        {item.excerpt && <p className="sr-article__excerpt">{item.excerpt}</p>}
                         <div className="sr-article__meta">
-                          {item.authorUsername && <><span>{t("search.by")} <strong>{item.authorUsername}</strong></span><span className="sr-dot">·</span></>}
+                          {item.author?.username && <><span>{t("search.by")} <strong>{item.author.username}</strong></span><span className="sr-dot">·</span></>}
                           {item.createdAt && <span>{timeAgo(item.createdAt, t)}</span>}
-                          {item.replyCount != null && <><span className="sr-dot">·</span><span>💬 {item.replyCount}</span></>}
+                          {item.metric != null && <><span className="sr-dot">·</span><span>💬 {item.metric}{item.metricLabel ? ` ${item.metricLabel}` : ""}</span></>}
                         </div>
                       </div>
                     </Link>

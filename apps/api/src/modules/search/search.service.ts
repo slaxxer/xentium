@@ -1,5 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
+import { searchRegistry } from "../../core/search-registry/search-registry.js";
 
 function avatarUrl(path: string | null): string | null {
   return path ? `${env.APP_URL}/uploads/${path}` : null;
@@ -17,18 +18,6 @@ export interface ArticleResult {
   categoryName: string | null;
   categorySlug: string | null;
   author: { id: string; username: string; avatar: string | null; badgeColor: string | null; roleKey: string | null };
-  rank: number;
-}
-
-export interface ForumThreadResult {
-  id: string;
-  title: string;
-  slug: string;
-  replyCount: number;
-  viewCount: number;
-  createdAt: Date;
-  tags: string[];
-  authorUsername: string;
   rank: number;
 }
 
@@ -196,72 +185,43 @@ export const searchService = {
     };
   },
 
-  async searchForumThreads(opts: {
-    query: string; page: number; limit: number;
-  }): Promise<{ data: ForumThreadResult[]; total: number }> {
-    const { query, page, limit } = opts;
-    const offset = (page - 1) * limit;
-
-    const [rows, countRows] = await Promise.all([
-      prisma.$queryRawUnsafe<any[]>(`
-        SELECT t.id, t.title, t.slug, t.reply_count, t.view_count, t.created_at, t.tags,
-               u.username AS author_username,
-               ts_rank(t.search_vector, plainto_tsquery('english', $1)) AS rank
-        FROM forum_threads t
-        JOIN "User" u ON u.id = t.author_id
-        WHERE t.search_vector @@ plainto_tsquery('english', $1)
-          AND t.deleted_at IS NULL
-        ORDER BY rank DESC
-        LIMIT $2 OFFSET $3
-      `, query, limit, offset),
-      prisma.$queryRawUnsafe<[{ count: bigint }]>(`
-        SELECT COUNT(*) AS count FROM forum_threads
-        WHERE search_vector @@ plainto_tsquery('english', $1) AND deleted_at IS NULL
-      `, query),
-    ]);
-
-    return {
-      data: rows.map((r) => ({
-        id:              r.id,
-        title:           r.title,
-        slug:            r.slug,
-        replyCount:      Number(r.reply_count),
-        viewCount:       Number(r.view_count),
-        createdAt:       r.created_at,
-        tags:            r.tags ?? [],
-        authorUsername:  r.author_username,
-        rank:            Number(r.rank),
-      })),
-      total: Number(countRows[0]?.count ?? 0),
-    };
-  },
-
+  /**
+   * Aggregate search. Built-in core types are "articles" and "users"; everything
+   * else (e.g. "forum") comes from plugin-registered sources in the searchRegistry.
+   * Core never queries a plugin's tables — it asks each source to run the search.
+   * `type` is "all" | "articles" | "users" | <registered source id>.
+   */
   async search(opts: {
     query:      string;
-    type:       "all" | "articles" | "users" | "forum";
+    type:       string;
     isLoggedIn: boolean;
     page:       number;
     limit:      number;
   }) {
     const { query, type, isLoggedIn, page, limit } = opts;
 
-    const [articles, users, forum] = await Promise.all([
-      type !== "users" && type !== "forum"
-        ? searchService.searchArticles({ query, isLoggedIn, page, limit })
-        : { data: [], total: 0 },
-      type !== "articles" && type !== "forum"
-        ? searchService.searchUsers({ query, page, limit })
-        : { data: [], total: 0 },
-      type !== "articles" && type !== "users"
-        ? searchService.searchForumThreads({ query, page, limit })
-        : { data: [], total: 0 },
+    const wantArticles = type === "all" || type === "articles";
+    const wantUsers    = type === "all" || type === "users";
+    const wantedSources = searchRegistry.getAll().filter((s) => type === "all" || type === s.id);
+
+    const [articles, users, sourceResults] = await Promise.all([
+      wantArticles ? searchService.searchArticles({ query, isLoggedIn, page, limit }) : { data: [], total: 0 },
+      wantUsers    ? searchService.searchUsers({ query, page, limit })                : { data: [], total: 0 },
+      Promise.all(wantedSources.map(async (s) => {
+        try {
+          return [s.id, await s.search(query, { isLoggedIn, page, limit })] as const;
+        } catch {
+          return [s.id, { data: [], total: 0 }] as const;
+        }
+      })),
     ]);
 
-    return {
+    const response: Record<string, unknown> = {
       query,
       articles: { data: articles.data, total: articles.total },
       users:    { data: users.data,    total: users.total },
-      forum:    { data: (forum as any).data, total: (forum as any).total },
     };
+    for (const [id, res] of sourceResults) response[id] = res;
+    return response;
   },
 };

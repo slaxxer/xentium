@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchContentDeclaration, HomeFeedSource, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
@@ -101,9 +101,9 @@ export class PluginContextImpl implements PluginContext {
     logger.debug({ pluginId: this.pluginId, types }, "Plugin notification types registered");
   }
 
-  registerSearchContent(content: SearchContentDeclaration): void {
-    searchRegistry.register(content as any);
-    logger.info({ pluginId: this.pluginId, type: content.type }, "Plugin search content type registered");
+  registerSearchSource(source: SearchSource): void {
+    searchRegistry.register(this.pluginId, source);
+    logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin search source registered");
   }
 
   registerHomeFeedSource(source: HomeFeedSource): void {
