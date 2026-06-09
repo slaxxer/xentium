@@ -33,12 +33,13 @@ interface NavItem {
   visibility: string; // "public" | "members" | "groups"
 }
 
-/** Known core/plugin routes get a localized label; custom links keep their DB label. */
+/** Core system routes get a localized label; everything else (custom links and
+ *  plugin-registered nav items) uses its DB label. Core does not localize plugin
+ *  routes — plugins ship their own label via registerNavItem / their translations. */
 const SYSTEM_NAV_I18N: Record<string, string> = {
   "/":         "nav.home",
   "/articles": "nav.articles",
   "/members":  "nav.members",
-  "/forum":    "nav.forum",
 };
 
 function useNavItems(isAuthenticated: boolean) {
