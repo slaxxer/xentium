@@ -78,31 +78,100 @@
     "tabBeta": "Beta",
     "onThisPage": "On this page",
     "sections": {
-      "general": { "title": "General", "desc": "Identity and locale for your community." },
-      "registration": { "title": "Registration", "desc": "Control how new members join." },
-      "content": { "title": "Content", "desc": "Defaults for articles and comments." },
-      "homefeed": { "title": "Home feed", "desc": "What signed-in members see first." },
-      "members": { "title": "Members", "desc": "Directory and recognition settings." },
-      "email": { "title": "Email", "desc": "Outgoing mail (SMTP) configuration." }
+      "general": {
+        "title": "General",
+        "desc": "Identity and locale for your community."
+      },
+      "registration": {
+        "title": "Registration",
+        "desc": "Control how new members join."
+      },
+      "content": {
+        "title": "Content",
+        "desc": "Defaults for articles and comments."
+      },
+      "homefeed": {
+        "title": "Home feed",
+        "desc": "What signed-in members see first."
+      },
+      "members": {
+        "title": "Members",
+        "desc": "Directory and recognition settings."
+      },
+      "email": {
+        "title": "Email",
+        "desc": "Outgoing mail (SMTP) configuration."
+      }
     },
     "fields": {
-      "siteName": { "label": "Site name", "desc": "Shown in the header, page titles, and emails." },
-      "siteUrl": { "label": "Site URL", "desc": "The canonical address members reach you at." },
-      "siteDescription": { "label": "Site description", "desc": "A short tagline used for SEO and social cards." },
-      "defaultLanguage": { "label": "Default language", "desc": "Used for new members and anonymous visitors." },
-      "timezone": { "label": "Timezone", "desc": "Server timezone for timestamps and scheduling." },
-      "registrationMode": { "label": "Registration mode", "desc": "Who is allowed to create an account." },
-      "emailVerification": { "label": "Email verification", "desc": "Require members to confirm their email before posting." },
-      "defaultGroup": { "label": "Default user group", "desc": "Group assigned to every new member." },
-      "allowComments": { "label": "Allow article comments", "desc": "Let members comment on published articles." },
-      "approveComments": { "label": "Require comment approval", "desc": "Hold new comments in a queue for a moderator." },
-      "perPage": { "label": "Articles per page", "desc": "How many articles to show in listings." },
-      "showHot": { "label": "Show 'Hot threads'", "desc": "Surface trending forum threads in the right rail." },
-      "hotRank": { "label": "Hot threads ranking", "desc": "How trending threads are ordered." },
-      "hofRank": { "label": "Hall of Fame ranking", "desc": "The metric the leaderboard is sorted by." },
-      "smtpHost": { "label": "SMTP host", "desc": "The mail server used to send notifications." },
-      "smtpPort": { "label": "SMTP port", "desc": "Usually 587 (TLS) or 465 (SSL)." },
-      "fromAddress": { "label": "From address", "desc": "The sender shown on outgoing mail." }
+      "siteName": {
+        "label": "Site name",
+        "desc": "Shown in the header, page titles, and emails."
+      },
+      "siteUrl": {
+        "label": "Site URL",
+        "desc": "The canonical address members reach you at."
+      },
+      "siteDescription": {
+        "label": "Site description",
+        "desc": "A short tagline used for SEO and social cards."
+      },
+      "defaultLanguage": {
+        "label": "Default language",
+        "desc": "Used for new members and anonymous visitors."
+      },
+      "timezone": {
+        "label": "Timezone",
+        "desc": "Server timezone for timestamps and scheduling."
+      },
+      "registrationMode": {
+        "label": "Registration mode",
+        "desc": "Who is allowed to create an account."
+      },
+      "emailVerification": {
+        "label": "Email verification",
+        "desc": "Require members to confirm their email before posting."
+      },
+      "defaultGroup": {
+        "label": "Default user group",
+        "desc": "Group assigned to every new member."
+      },
+      "allowComments": {
+        "label": "Allow article comments",
+        "desc": "Let members comment on published articles."
+      },
+      "approveComments": {
+        "label": "Require comment approval",
+        "desc": "Hold new comments in a queue for a moderator."
+      },
+      "perPage": {
+        "label": "Articles per page",
+        "desc": "How many articles to show in listings."
+      },
+      "showHot": {
+        "label": "Show 'Hot threads'",
+        "desc": "Surface trending forum threads in the right rail."
+      },
+      "hotRank": {
+        "label": "Hot threads ranking",
+        "desc": "How trending threads are ordered."
+      },
+      "hofRank": {
+        "label": "Hall of Fame ranking",
+        "desc": "The metric the leaderboard is sorted by."
+      },
+      "smtpHost": {
+        "label": "SMTP host",
+        "desc": "The mail server used to send notifications."
+      },
+      "smtpPort": {
+        "label": "SMTP port",
+        "desc": "Usually 587 (TLS) or 465 (SSL)."
+      },
+      "fromAddress": {
+        "label": "From address",
+        "desc": "The sender shown on outgoing mail."
+      }
     },
     "placeholders": {
       "siteName": "My Nodevo Site",
@@ -223,10 +292,22 @@
     "throughput": "Request throughput",
     "reqPerSec": "{{count}} req/s",
     "resourceLinks": {
-      "docs": { "label": "Documentation", "sub": "Guides & API reference" },
-      "github": { "label": "GitHub", "sub": "Source & issues" },
-      "changelog": { "label": "Changelog", "sub": "What's new in v1" },
-      "marketplace": { "label": "Plugin Marketplace", "sub": "Extend your install" }
+      "docs": {
+        "label": "Documentation",
+        "sub": "Guides & API reference"
+      },
+      "github": {
+        "label": "GitHub",
+        "sub": "Source & issues"
+      },
+      "changelog": {
+        "label": "Changelog",
+        "sub": "What's new in v1"
+      },
+      "marketplace": {
+        "label": "Plugin Marketplace",
+        "sub": "Extend your install"
+      }
     }
   },
   "migrations": {
@@ -426,20 +507,5 @@
     "agoH": "{{n}}h ago",
     "agoD": "{{n}}d ago",
     "agoMo": "{{n}}mo ago"
-  },
-  "tweaks": {
-    "title": "Tweaks",
-    "navigation": "Navigation",
-    "layout": "Layout",
-    "horizontal": "Horizontal",
-    "sidebar": "Sidebar",
-    "rail": "Rail",
-    "display": "Display",
-    "density": "Density",
-    "comfortable": "Comfortable",
-    "compact": "Compact",
-    "theme": "Theme",
-    "accent": "Accent",
-    "accentDefault": "Theme default"
   }
 }
