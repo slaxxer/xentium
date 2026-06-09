@@ -1,0 +1,35 @@
+{
+  "home": {
+    "heroBadge": "Open source CMS platform",
+    "heroTitle": "The platform for builders & writers.",
+    "heroSub": "A modular, open-source community platform. Publish articles, build communities, extend with plugins — all in one place.",
+    "startFree": "Start for free",
+    "viewDocs": "View docs",
+    "welcomeBack": "Welcome back,",
+    "newArticle": "New Article",
+    "minRead": "{{n}} min read",
+    "min": "{{n}} min",
+    "featured": "Featured",
+    "latest": "Latest Articles",
+    "viewAll": "View all",
+    "emptyText": "No articles yet. Be the first to publish!",
+    "writeArticle": "Write an article"
+  },
+  "search": {
+    "title": "Search",
+    "resultsFor": "Results for",
+    "resultsCount": "{{n}} results",
+    "all": "All",
+    "articles": "Articles",
+    "people": "People",
+    "minChars": "Enter at least 2 characters to search.",
+    "searching": "Searching…",
+    "noResults": "No results found for",
+    "noResultsHint": "Try different keywords or check spelling.",
+    "seeAll": "See all {{n}}",
+    "by": "by",
+    "today": "Today",
+    "daysAgo": "{{d}}d ago",
+    "weeksAgo": "{{w}}w ago"
+  }
+}

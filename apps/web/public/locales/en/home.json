@@ -1,0 +1,50 @@
+{
+  "nav": {
+    "following": "Following",
+    "myThreads": "My threads",
+    "liked": "Liked"
+  },
+  "spaces": { "title": "Your spaces" },
+  "composer": {
+    "placeholder": "Share something with the community…",
+    "article": "Article",
+    "image": "Image",
+    "poll": "Poll"
+  },
+  "post": {
+    "more": "More",
+    "posted": "posted an article",
+    "postedIn": "posted an article in",
+    "readTime": "{{n}} min read",
+    "untitled": "(untitled)",
+    "share": "Share",
+    "save": "Save",
+    "saved": "Saved"
+  },
+  "feed": {
+    "latest": "Latest",
+    "following": "Following",
+    "top": "Top this week",
+    "loading": "Loading…",
+    "empty": "No articles yet. Be the first to publish!"
+  },
+  "progression": {
+    "topReached": "Top level reached",
+    "topBody": "You’re at the top of the ladder — nice work.",
+    "almostThere": "Almost there!",
+    "remaining": "{{n}} more {{label}} to reach",
+    "keepGoing": "Keep participating to reach"
+  },
+  "online": { "title": "Online now" },
+  "suggested": {
+    "title": "Suggested people",
+    "follow": "+ Follow",
+    "following": "Following"
+  },
+  "hotThreads": {
+    "title": "Hot threads",
+    "replies_one": "{{count}} reply",
+    "replies_other": "{{count}} replies"
+  },
+  "tags": { "title": "Popular tags" }
+}

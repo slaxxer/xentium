@@ -11,12 +11,16 @@ dev.sh
 **/src/generated/
 CLAUDE.md
 /PLUGINS
-
+/UPDATES
+/CHANGELOG.md
 # IDE
 .idea/
 
 # Local design/prototype workspace — not part of the shipped repo
 nodevo-redesign/
+
+# Official plugins live in their own repos — not committed to core
+plugins/official/
 
 # Runtime upload storage (user content — never commit; recreated on demand)
 **/var/uploads/

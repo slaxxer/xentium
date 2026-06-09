@@ -1,0 +1,8 @@
+{
+  "required": "Dieses Feld ist erforderlich.",
+  "tooShort": "Zu kurz.",
+  "invalidEmail": "Gib eine gültige E-Mail-Adresse ein.",
+  "passwordMismatch": "Die Passwörter stimmen nicht überein.",
+  "minLength": "Muss mindestens {{n}} Zeichen lang sein.",
+  "maxLength": "Darf höchstens {{n}} Zeichen lang sein."
+}

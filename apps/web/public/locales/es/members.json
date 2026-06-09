@@ -1,0 +1,84 @@
+{
+  "eyebrow": "Comunidad",
+  "title": "Miembros",
+  "tabs": {
+    "directory": "Directorio",
+    "team": "Equipo",
+    "hallOfFame": "Salón de la fama"
+  },
+  "search": "Buscar miembros…",
+  "filterHeading": "Filtrar",
+  "sortHeading": "Ordenar",
+  "filters": {
+    "all": "Todos los miembros",
+    "online": "En línea ahora",
+    "staff": "Equipo"
+  },
+  "sorts": {
+    "active": "Más activos",
+    "followers": "Más seguidores",
+    "newest": "Más recientes",
+    "az": "A–Z"
+  },
+  "memberCount_one": "{{count}} miembro",
+  "memberCount_other": "{{count}} miembros",
+  "onlineCount": "{{n}} en línea",
+  "loading": "Cargando…",
+  "emptyQuery": "Ningún miembro coincide con «{{query}}».",
+  "emptyFilter": "Ningún miembro para este filtro.",
+  "pagination": {
+    "prev": "← Anterior",
+    "next": "Siguiente →",
+    "page": "Página {{page}} de {{total}}"
+  },
+  "joined": "se unió hace {{ago}}",
+  "tenure": {
+    "years": "{{n}} a",
+    "months": "{{n}} mes",
+    "days": "{{n}} d",
+    "today": "hoy"
+  },
+  "follow": "+ Seguir",
+  "following": "Siguiendo",
+  "metrics": {
+    "likes": "me gusta",
+    "posts": "publicaciones",
+    "threads": "temas",
+    "followers": "seguidores"
+  },
+  "team": {
+    "note": "Las personas que mantienen viva esta comunidad — agrupadas por rol.",
+    "empty": "Aún no hay miembros del equipo."
+  },
+  "stats": {
+    "members": "miembros",
+    "onlineNow": "en línea ahora",
+    "newThisWeek": "nuevos esta semana",
+    "totalPosts": "publicaciones totales"
+  },
+  "hof": {
+    "title": "Salón de la fama",
+    "subtitle": "Clasificado por {{metric}} recibidos · configurable en el ACP",
+    "empty": "Aún no hay miembros.",
+    "stat": "{{value}} {{metric}}"
+  },
+  "howTo": {
+    "title": "Cómo subir de nivel",
+    "intro": "El Salón de la fama celebra a los miembros que más {{metric}} aportan.",
+    "tips": {
+      "post": "Publica artículos y respuestas que resulten útiles.",
+      "threads": "Inicia debates que animen a la comunidad.",
+      "likes": "Gana me gusta — las buenas aportaciones se recompensan.",
+      "active": "Mantente activo — la constancia cuenta más que los arrebatos."
+    },
+    "levelUp": "Alcanza los umbrales de actividad y ascenderás automáticamente — cada nivel desbloquea más acceso y una nueva insignia."
+  },
+  "groups": {
+    "admin": "Administrador",
+    "supermod": "Súper moderador",
+    "moderator": "Moderador",
+    "member": "Miembro"
+  },
+  "banned": "Bloqueado",
+  "permanentlyBanned": "Bloqueado permanentemente"
+}

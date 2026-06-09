@@ -1,0 +1,35 @@
+{
+  "home": {
+    "heroBadge": "Plataforma CMS de código aberto",
+    "heroTitle": "A plataforma para criadores e escritores.",
+    "heroSub": "Uma plataforma comunitária modular e de código aberto. Publique artigos, crie comunidades e amplie com plugins — tudo num só lugar.",
+    "startFree": "Começar gratuitamente",
+    "viewDocs": "Ver documentação",
+    "welcomeBack": "Bem-vindo de volta,",
+    "newArticle": "Novo artigo",
+    "minRead": "{{n}} min de leitura",
+    "min": "{{n}} min",
+    "featured": "Em destaque",
+    "latest": "Artigos recentes",
+    "viewAll": "Ver tudo",
+    "emptyText": "Ainda não há artigos. Seja o primeiro a publicar!",
+    "writeArticle": "Escrever um artigo"
+  },
+  "search": {
+    "title": "Pesquisa",
+    "resultsFor": "Resultados para",
+    "resultsCount": "{{n}} resultados",
+    "all": "Todos",
+    "articles": "Artigos",
+    "people": "Pessoas",
+    "minChars": "Introduza pelo menos 2 caracteres para pesquisar.",
+    "searching": "A pesquisar…",
+    "noResults": "Nenhum resultado encontrado para",
+    "noResultsHint": "Tente outras palavras-chave ou verifique a ortografia.",
+    "seeAll": "Ver os {{n}}",
+    "by": "por",
+    "today": "Hoje",
+    "daysAgo": "há {{d}} d",
+    "weeksAgo": "há {{w}} sem"
+  }
+}

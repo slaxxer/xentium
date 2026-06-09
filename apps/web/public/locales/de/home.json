@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "following": "Folge ich",
+    "myThreads": "Meine Themen",
+    "liked": "Gefällt mir"
+  },
+  "spaces": {
+    "title": "Deine Bereiche"
+  },
+  "composer": {
+    "placeholder": "Teile etwas mit der Community…",
+    "article": "Artikel",
+    "image": "Bild",
+    "poll": "Umfrage"
+  },
+  "post": {
+    "more": "Mehr",
+    "posted": "hat einen Artikel veröffentlicht",
+    "postedIn": "hat einen Artikel veröffentlicht in",
+    "readTime": "{{n}} Min. Lesezeit",
+    "untitled": "(ohne Titel)",
+    "share": "Teilen",
+    "save": "Speichern",
+    "saved": "Gespeichert"
+  },
+  "feed": {
+    "latest": "Neueste",
+    "following": "Folge ich",
+    "top": "Top diese Woche",
+    "loading": "Wird geladen…",
+    "empty": "Noch keine Artikel. Sei der Erste, der etwas veröffentlicht!"
+  },
+  "progression": {
+    "topReached": "Höchste Stufe erreicht",
+    "topBody": "Du bist ganz oben auf der Leiter — gut gemacht.",
+    "almostThere": "Fast geschafft!",
+    "remaining": "Noch {{n}} {{label}} bis",
+    "keepGoing": "Bleib aktiv, um zu erreichen"
+  },
+  "online": {
+    "title": "Jetzt online"
+  },
+  "suggested": {
+    "title": "Vorgeschlagene Personen",
+    "follow": "+ Folgen",
+    "following": "Folge ich"
+  },
+  "hotThreads": {
+    "title": "Heiße Themen",
+    "replies_one": "{{count}} Antwort",
+    "replies_other": "{{count}} Antworten"
+  },
+  "tags": {
+    "title": "Beliebte Tags"
+  }
+}
