@@ -11,10 +11,14 @@
     "lint": "eslint src"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "@nodevo/config": "workspace:*"
+    "@nodevo/config": "workspace:*",
+    "@types/react": "^19.2.15",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "catalog:"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*"
+    "@nodevo/contracts": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }
