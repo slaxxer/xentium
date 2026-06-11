@@ -1,0 +1,268 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
+import AdmZip from "adm-zip";
+import { prisma } from "../../infrastructure/db.js";
+import { env } from "../../config/env.js";
+import { validateManifest, type PluginManifest } from "./manifest-validator.js";
+import { validateMigrationPairs, runUpMigrations, runDownMigrations } from "./migration-runner.js";
+import { pluginRegistry } from "./plugin-registry.js";
+import { logger } from "../../infrastructure/logging/logger.js";
+import { isPluginEntitled } from "../license-engine/license-engine.js";
+import { PluginContextImpl } from "./plugin-context.js";
+import { acpPageRegistry } from "./acp-page-registry.js";
+import { pluginRouter } from "./plugin-router.js";
+
+const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
+
+async function ensurePluginDir(): Promise<void> {
+  await fs.mkdir(PLUGIN_STORE, { recursive: true });
+}
+
+function packagePath(pluginId: string, version: string): string {
+  return path.join(PLUGIN_STORE, `${pluginId}-${version}.nvplugin`);
+}
+
+/** Directory a plugin's package is extracted to (server bundle + web assets). */
+export function extractedDir(pluginId: string): string {
+  return path.join(PLUGIN_STORE, pluginId);
+}
+
+/** Validate a .nvplugin ZIP buffer. Returns the parsed manifest. */
+export async function validatePackage(buffer: Buffer): Promise<{ manifest: PluginManifest; zip: AdmZip }> {
+  let zip: AdmZip;
+  try {
+    zip = new AdmZip(buffer);
+  } catch {
+    throw new Error("Package is not a valid ZIP archive.");
+  }
+
+  // Zip-slip: reject any entry with a path traversal
+  for (const entry of zip.getEntries()) {
+    if (entry.entryName.includes("..")) {
+      throw new Error(`Unsafe path in package: ${entry.entryName}`);
+    }
+  }
+
+  const manifestEntry = zip.getEntry("manifest.json");
+  if (!manifestEntry) throw new Error("Missing manifest.json in plugin package.");
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(manifestEntry.getData().toString("utf8"));
+  } catch {
+    throw new Error("manifest.json is not valid JSON.");
+  }
+
+  let manifest: PluginManifest;
+  try {
+    manifest = validateManifest(raw);
+  } catch (err: any) {
+    throw new Error(`Invalid manifest.json: ${err.message ?? err}`);
+  }
+
+  // Validate migration pairs before touching anything
+  validateMigrationPairs(zip, manifest);
+
+  return { manifest, zip };
+}
+
+/** Install a plugin from a buffer. Stores the package and creates the DB record. */
+export async function installPlugin(buffer: Buffer, _installedById: string): Promise<PluginManifest> {
+  const { manifest, zip } = await validatePackage(buffer);
+
+  // Check if already installed
+  const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
+  if (existing) {
+    throw new Error(`Plugin "${manifest.name}" (${manifest.id}) is already installed.`);
+  }
+
+  await ensurePluginDir();
+  const pkgPath = packagePath(manifest.id, manifest.version);
+
+  // Save package file (retained for down-migrations on uninstall)
+  await fs.writeFile(pkgPath, buffer);
+
+  // Extract the package so the compiled server bundle can be imported and the
+  // web bundle served at runtime. Clean any prior extraction first.
+  const extractDir = extractedDir(manifest.id);
+  await fs.rm(extractDir, { recursive: true, force: true });
+  await fs.mkdir(extractDir, { recursive: true });
+  zip.extractAllTo(extractDir, /* overwrite */ true);
+
+  // Run up migrations
+  await runUpMigrations(zip, manifest);
+
+  // Create DB record
+  await prisma.installedPlugin.create({
+    data: {
+      id:               manifest.id,
+      name:             manifest.name,
+      vendor:           manifest.vendor,
+      installedVersion: manifest.version,
+      status:           "installed",
+      licenseRequired:  manifest.licenseRequired,
+      packagePath:      pkgPath,
+      manifest:         manifest as unknown as object,
+    },
+  });
+
+  pluginRegistry.register(manifest, "installed");
+  logger.info({ pluginId: manifest.id }, "Plugin installed");
+
+  return manifest;
+}
+
+/** Enable an installed plugin. */
+export async function enablePlugin(pluginId: string): Promise<void> {
+  const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
+  if (record.status === "enabled") return;
+
+  // License check — licenseRequired plugins need a valid entitlement
+  if (record.licenseRequired) {
+    const entitled = await isPluginEntitled(pluginId);
+    if (!entitled) {
+      throw new Error(
+        `Plugin "${record.name}" requires an active license entitlement. Activate a license in ACP → Extensions → License.`,
+      );
+    }
+  }
+
+  await prisma.installedPlugin.update({
+    where: { id: pluginId },
+    data:  { status: "enabled", enabledAt: new Date() },
+  });
+
+  pluginRegistry.setStatus(pluginId, "enabled");
+
+  // Re-activate plugin-owned nav items
+  await prisma.navItem.updateMany({
+    where: { pluginId },
+    data:  { isActive: true },
+  });
+
+  // Call plugin's onEnable hook if it has a server entry
+  await callPluginHook(record, "onEnable");
+
+  logger.info({ pluginId }, "Plugin enabled");
+}
+
+/** Disable an enabled plugin. */
+export async function disablePlugin(pluginId: string): Promise<void> {
+  const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
+  if (record.status === "disabled" || record.status === "installed") return;
+
+  await prisma.installedPlugin.update({
+    where: { id: pluginId },
+    data:  { status: "disabled", disabledAt: new Date() },
+  });
+
+  // Clean up plugin registrations
+  acpPageRegistry.deregister(pluginId);
+  pluginRouter.deregister(pluginId);
+
+  const { homeFeedRegistry } = await import("../home-feed-registry/home-feed-registry.js");
+  homeFeedRegistry.deregister(pluginId);
+
+  const { searchRegistry } = await import("../search-registry/search-registry.js");
+  searchRegistry.deregister(pluginId);
+
+  // Deregister NEC codes
+  const { necRegistry } = await import("../nec-registry/nec-registry.js");
+  necRegistry.deregister(pluginId);
+
+  // Deactivate plugin-owned nav items
+  await prisma.navItem.updateMany({
+    where: { pluginId },
+    data:  { isActive: false },
+  });
+
+  // Call plugin's onDisable hook so it can clean up workers/listeners/connections
+  await callPluginHook(record, "onDisable");
+
+  pluginRegistry.setStatus(pluginId, "disabled");
+  logger.info({ pluginId }, "Plugin disabled");
+}
+
+/** Uninstall a plugin — run down migrations and delete everything. */
+export async function uninstallPlugin(pluginId: string, removeData: boolean): Promise<void> {
+  const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
+
+  if (record.status === "enabled") {
+    await disablePlugin(pluginId);
+  }
+
+  if (removeData) {
+    const pkgBuffer = await fs.readFile(record.packagePath).catch(() => null);
+    if (pkgBuffer) {
+      try {
+        const zip      = new AdmZip(pkgBuffer);
+        const manifest = validateManifest(record.manifest) as PluginManifest;
+        await runDownMigrations(zip, manifest);
+      } catch (err) {
+        logger.warn({ pluginId, err }, "Down migration failed during uninstall — continuing");
+      }
+    }
+  }
+
+  // Delete package file + extracted dir
+  await fs.unlink(record.packagePath).catch(() => null);
+  await fs.rm(extractedDir(pluginId), { recursive: true, force: true }).catch(() => null);
+
+  // Delete DB record
+  await prisma.installedPlugin.delete({ where: { id: pluginId } });
+
+  pluginRegistry.deregister(pluginId);
+  logger.info({ pluginId, removeData }, "Plugin uninstalled");
+}
+
+/** Dynamically import a plugin's server entry and call a lifecycle hook. */
+async function callPluginHook(
+  record: { id: string; manifest: unknown; packagePath: string },
+  hook:   "onEnable" | "onDisable",
+): Promise<void> {
+  const manifest = validateManifest(record.manifest) as PluginManifest;
+  const serverEntry = manifest.entrypoints?.server;
+  if (!serverEntry) return;
+
+  // Absolute path → first-party plugin loaded from source (dev bootstrap).
+  // Otherwise → package-relative path inside the extracted plugin dir.
+  const entryPath = path.isAbsolute(serverEntry)
+    ? serverEntry
+    : path.join(extractedDir(record.id), serverEntry);
+
+  try {
+    const mod = await import(pathToFileURL(entryPath).href);
+    const def = mod.default as { id: string; onEnable?: (ctx: unknown) => Promise<void>; onDisable?: (ctx: unknown) => Promise<void> };
+    const ctx = new PluginContextImpl(record.id);
+    if (hook === "onEnable" && typeof def.onEnable === "function") {
+      await def.onEnable(ctx);
+    } else if (hook === "onDisable" && typeof def.onDisable === "function") {
+      await def.onDisable(ctx);
+    }
+  } catch (err) {
+    logger.warn({ pluginId: record.id, hook, err }, "Plugin hook failed");
+  }
+}
+
+/** Called once at server startup — re-registers all enabled plugins in the registry. */
+export async function initializeEnabledPlugins(): Promise<void> {
+  const records = await prisma.installedPlugin.findMany({
+    where: { status: { in: ["enabled", "installed", "disabled"] } },
+  });
+
+  for (const record of records) {
+    try {
+      const manifest = validateManifest(record.manifest) as PluginManifest;
+      pluginRegistry.register(manifest, record.status as "enabled" | "disabled" | "installed");
+      logger.info({ pluginId: record.id, status: record.status }, "Plugin loaded into registry");
+
+      // Call onEnable for enabled plugins to restore routes/permissions/etc.
+      if (record.status === "enabled") {
+        await callPluginHook(record, "onEnable");
+      }
+    } catch (err) {
+      logger.warn({ pluginId: record.id, err }, "Failed to initialize plugin on startup");
+    }
+  }
+}

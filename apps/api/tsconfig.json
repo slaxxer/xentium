@@ -1,13 +1,12 @@
 {
   "extends": "@nodevo/config/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "types": [
-      "node"
-    ]
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "verbatimModuleSyntax": true,
+    "types": ["node", "vitest/globals"],
+    "declaration": false,
+    "noEmit": true
   },
-  "include": [
-    "src"
-  ]
+  "include": ["src"]
 }
