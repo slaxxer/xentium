@@ -1,0 +1,87 @@
+name: nodevo-prod
+
+# Production stack: db, redis, one-shot migrate, api, worker, web.
+# Build context is the repo root; run from the repo root, e.g.:
+#   docker compose -f docker/docker-compose.prod.yml --env-file .env up -d --build
+# Requires a populated .env (DATABASE_URL must point at the `postgres` service host).
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-nodevo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodevo}
+      POSTGRES_DB: ${POSTGRES_DB:-nodevo}
+    volumes: ["nodevo_pg:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nodevo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes: ["nodevo_redis:/data"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # One-shot: applies pending Prisma migrations, then exits.
+  migrate:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: migrate
+    env_file: ../.env
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: runner
+    command: ["node", "dist/server.js"]
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      migrate:  { condition: service_completed_successfully }
+    volumes: ["nodevo_uploads:/app/var/uploads"]
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+      target: runner
+    command: ["node", "dist/worker.js"]
+    env_file: ../.env
+    environment:
+      NODE_ENV: production
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+      migrate:  { condition: service_completed_successfully }
+    volumes: ["nodevo_uploads:/app/var/uploads"]
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    depends_on: [api]
+    ports: ["8080:80"]
+    restart: unless-stopped
+
+volumes:
+  nodevo_pg:
+  nodevo_redis:
+  nodevo_uploads:

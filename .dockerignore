@@ -1,0 +1,21 @@
+# Reinstalled / rebuilt inside the image
+**/node_modules
+**/dist
+**/.turbo
+
+# VCS + local
+.git
+.github
+.idea
+*.log
+
+# Runtime data / build output (not needed in images)
+var
+apps/*/var
+apps/*/src/generated
+dist
+UPDATES
+
+# Env files are injected via compose env_file — don't bake secrets into images
+.env
+.env.*

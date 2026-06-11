@@ -1,8 +1,11 @@
 {
   "name": "nodevo",
+  "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@10.30.2",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "type": "module",
   "scripts": {
     "build": "turbo run build",
@@ -11,16 +14,39 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "infra:up": "docker compose -f docker/docker-compose.yml up -d",
-    "infra:down": "docker compose -f docker/docker-compose.yml down"
+    "backbone:up": "docker compose --env-file .env -f docker/docker-compose.yml up -d",
+    "backbone:down": "docker compose --env-file .env -f docker/docker-compose.yml down",
+    "backbone:check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
+    "dev:apps": "concurrently -k -n api,worker,web -c green,yellow,cyan \"pnpm --filter @nodevo/api dev\" \"pnpm --filter @nodevo/api dev:worker\" \"pnpm --filter @nodevo/web dev\"",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:reset": "prisma migrate reset --force",
+    "db:studio": "prisma studio",
+    "plugin:package": "node scripts/package-plugin.mjs",
+    "e2e:reset": "prisma migrate reset --force",
+    "e2e": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e",
+    "e2e:ui": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e:ui"
   },
   "devDependencies": {
+    "@eslint/js": "^9",
+    "@types/node": "^24",
+    "concurrently": "^9.2.1",
+    "eslint": "^9",
+    "prettier": "^3",
+    "prisma": "catalog:",
     "turbo": "^2",
     "typescript": "catalog:",
-    "prettier": "^3",
-    "eslint": "^9",
-    "@eslint/js": "^9",
-    "typescript-eslint": "^8",
-    "@types/node": "^24"
+    "typescript-eslint": "^8"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "@prisma/engines",
+      "prisma",
+      "msgpackr-extract"
+    ]
   }
 }
