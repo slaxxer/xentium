@@ -1,0 +1,183 @@
+/* ============================================================================
+   ACP — About page (Hearth redesign)
+   Ported from nodevo-redesign/acp-redesign/acp-settings-about-redesign.
+   Design's --color-* tokens mapped onto the codebase's --c-* semantic tokens.
+   Shared chrome (.pg-head etc.) lives in acpSystem.scss.
+   ============================================================================ */
+
+.ab { display: flex; flex-direction: column; gap: 22px; }
+
+.ab-hero {
+  position: relative;
+  overflow: hidden;
+  background: var(--c-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 26px 28px;
+}
+.ab-hero__glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.9;
+  background: radial-gradient(540px 220px at 88% -40%, var(--c-accent-soft), transparent 70%);
+}
+.ab-hero__mark {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  flex: none;
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(109, 86, 230, 0.4);
+}
+.ab-hero__id { position: relative; z-index: 1; min-width: 0; }
+.ab-hero__id h2 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 26px;
+  margin: 0;
+  letter-spacing: -0.02em;
+  color: var(--c-fg);
+}
+.ab-hero__meta { font-size: 13.5px; font-weight: 700; color: var(--c-fg-muted); margin: 5px 0 0; }
+.ab-hero__meta b { color: var(--c-fg); }
+.ab-pill {
+  position: relative;
+  z-index: 1;
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 12.5px;
+  color: var(--c-success);
+  background: var(--c-success-soft);
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+}
+.ab-pill--idle { color: var(--c-fg-muted); background: var(--c-bg); }
+.ab-pill__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success); position: relative; }
+.ab-pill__dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--c-success);
+  animation: ab-dotpulse 1.8s ease-out infinite;
+}
+@keyframes ab-dotpulse {
+  0%   { box-shadow: 0 0 0 0 rgba(31, 171, 116, 0.5); }
+  70%, 100% { box-shadow: 0 0 0 8px rgba(31, 171, 116, 0); }
+}
+
+.ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+
+.ab-card {
+  background: var(--c-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 22px 24px;
+}
+.ab-card__head { display: flex; align-items: center; gap: 11px; margin: 0 0 4px; }
+.ab-card__head .ic { color: var(--c-accent); }
+.ab-card__head h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 16px;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: var(--c-fg);
+}
+.ab-card__aside { margin-left: auto; font-family: var(--font-body); font-weight: 700; font-size: 12px; color: var(--c-fg-subtle); }
+
+.ab-dl { display: flex; flex-direction: column; }
+.ab-dl__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 0;
+  border-top: 1px solid var(--c-rowline);
+}
+.ab-dl__row:first-of-type { border-top: none; padding-top: 10px; }
+.ab-dl__k { font-family: var(--font-body); font-weight: 700; font-size: 13.5px; color: var(--c-fg-muted); }
+.ab-dl__v { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--c-fg); text-align: right; }
+.ab-dl__v.is-ok  { color: var(--c-success); }
+.ab-dl__v.is-dev { color: var(--c-warn); }
+
+/* health */
+.ab-health__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 6px; }
+.ab-gauge { display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.ab-gauge__ring { position: relative; width: 108px; height: 108px; }
+.ab-gauge__num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.ab-gauge__num b { font-family: var(--font-display); font-weight: 700; font-size: 23px; letter-spacing: -0.02em; line-height: 1; }
+.ab-gauge__num span { font-size: 10.5px; font-weight: 800; color: var(--c-fg-subtle); margin-top: 2px; }
+.ab-gauge__sub { font-family: var(--font-body); font-weight: 700; font-size: 11.5px; color: var(--c-fg-subtle); }
+
+.ab-spark { width: 100%; height: 46px; margin-top: 14px; display: block; }
+.ab-meterline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-rowline);
+}
+.ab-meterline b { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--c-fg); }
+.ab-meterline span { font-family: var(--font-body); font-weight: 700; font-size: 12.5px; color: var(--c-fg-subtle); }
+
+/* resources */
+.ab-res { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
+.ab-reslink {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex: 1 1 220px;
+  min-width: 200px;
+  background: var(--input-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--c-fg);
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, background 0.15s;
+}
+.ab-reslink:hover { border-color: transparent; transform: translateY(-2px); box-shadow: var(--shadow-pop); background: var(--c-card); }
+.ab-reslink__ic {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  flex: none;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ab-reslink:hover .ab-reslink__ic { background: var(--c-accent); color: #fff; }
+.ab-reslink__t { min-width: 0; }
+.ab-reslink__t b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+.ab-reslink__t span { font-size: 12px; font-weight: 600; color: var(--c-fg-subtle); }
+.ab-reslink__ext { margin-left: auto; color: var(--c-fg-subtle); flex: none; }
+.ab-reslink:hover .ab-reslink__ext { color: var(--c-accent); }
+
+@media (max-width: 1080px) {
+  .ab-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 680px) {
+  .ab-health__grid { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ab-pill__dot::after { animation: none; }
+}
