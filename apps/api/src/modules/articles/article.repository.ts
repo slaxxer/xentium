@@ -1,0 +1,144 @@
+import { Prisma } from "../../generated/prisma/client.js";
+import { prisma } from "../../infrastructure/db.js";
+
+export const articleInclude = {
+  author: {
+    select: {
+      id: true, username: true, avatar: true, hiddenBadges: true,
+      groups: {
+        include: {
+          group: {
+            select: {
+              id: true, name: true, key: true, icon: true, displayOrder: true,
+              progression: { select: { badgeColor: true, badgeLabel: true } },
+            },
+          },
+        },
+      },
+    },
+  },
+  category: { select: { id: true, name: true, slug: true } },
+  tags: { include: { tag: true } },
+} satisfies Prisma.ArticleInclude;
+
+export type ArticleWithIncludes = Prisma.ArticleGetPayload<{
+  include: typeof articleInclude;
+}>;
+
+export const articleRepository = {
+  /** Tags ranked by how many articles use them. */
+  async popularTags(limit: number) {
+    const rows = await prisma.tag.findMany({
+      orderBy: { articles: { _count: "desc" } },
+      take: limit,
+      select: { name: true, slug: true, _count: { select: { articles: true } } },
+    });
+    return rows
+      .filter((r) => r._count.articles > 0)
+      .map((r) => ({ name: r.name, slug: r.slug, count: r._count.articles }));
+  },
+
+  async slugExists(slug: string): Promise<boolean> {
+    const found = await prisma.article.findUnique({ where: { slug }, select: { id: true } });
+    return found !== null;
+  },
+
+  async findById(id: string) {
+    return prisma.article.findUnique({ where: { id }, include: articleInclude });
+  },
+
+  async findBySlug(slug: string) {
+    return prisma.article.findUnique({ where: { slug }, include: articleInclude });
+  },
+
+  async listPublished(opts: {
+    page: number;
+    limit: number;
+    categoryId?: string;
+    authorId?: string;
+    viewerId?: string;
+    feed?: "latest" | "following" | "top";
+  }) {
+    // Visibility filter:
+    //  - guests see only public
+    //  - authed users see public + members, plus any of their OWN private articles
+    const visibilityFilter: Prisma.ArticleWhereInput = opts.viewerId
+      ? {
+          OR: [
+            { visibility: { in: ["public", "members"] } },
+            { authorId: opts.viewerId },
+          ],
+        }
+      : { visibility: "public" };
+
+    // Feed mode (home chips). "following" needs the viewer's followed authors;
+    // "top" ranks by likes within the last 7 days. Default = latest (chronological).
+    let feedWhere: Prisma.ArticleWhereInput = {};
+    let orderBy: Prisma.ArticleOrderByWithRelationInput = { publishedAt: "desc" };
+
+    if (opts.feed === "following") {
+      if (!opts.viewerId) return { data: [], total: 0 };
+      const follows = await prisma.userFollow.findMany({
+        where: { followerId: opts.viewerId },
+        select: { followingId: true },
+      });
+      feedWhere = { authorId: { in: follows.map((f) => f.followingId) } };
+    } else if (opts.feed === "top") {
+      const weekAgo = new Date(Date.now() - 7 * 86_400_000);
+      feedWhere = { publishedAt: { gte: weekAgo } };
+      orderBy = { likeCount: "desc" };
+    }
+
+    const where: Prisma.ArticleWhereInput = {
+      status: "published",
+      deletedAt: null,
+      ...(opts.categoryId ? { categoryId: opts.categoryId } : {}),
+      ...(opts.authorId ? { authorId: opts.authorId } : {}),
+      ...feedWhere,
+      ...visibilityFilter,
+    };
+    const [data, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: articleInclude,
+        orderBy,
+        skip: (opts.page - 1) * opts.limit,
+        take: opts.limit,
+      }),
+      prisma.article.count({ where }),
+    ]);
+    return { data, total };
+  },
+
+  async listForAuthor(opts: {
+    authorId: string;
+    page: number;
+    limit: number;
+    status?: string;
+  }) {
+    const where: Prisma.ArticleWhereInput = {
+      authorId: opts.authorId,
+      deletedAt: null,
+      ...(opts.status ? { status: opts.status } : {}),
+    };
+    const [data, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        include: articleInclude,
+        orderBy: { updatedAt: "desc" },
+        skip: (opts.page - 1) * opts.limit,
+        take: opts.limit,
+      }),
+      prisma.article.count({ where }),
+    ]);
+    return { data, total };
+  },
+
+  async listRevisions(articleId: string) {
+    return prisma.articleRevision.findMany({
+      where: { articleId },
+      orderBy: { createdAt: "desc" },
+      include: { author: { select: { id: true, username: true } } },
+    });
+  },
+};
