@@ -1,0 +1,56 @@
+{
+  "nav": {
+    "following": "Abonnements",
+    "myThreads": "Mes sujets",
+    "liked": "Jʼaime"
+  },
+  "spaces": {
+    "title": "Vos espaces"
+  },
+  "composer": {
+    "placeholder": "Partagez quelque chose avec la communauté…",
+    "article": "Article",
+    "image": "Image",
+    "poll": "Sondage"
+  },
+  "post": {
+    "more": "Plus",
+    "posted": "a publié un article",
+    "postedIn": "a publié un article dans",
+    "readTime": "{{n}} min de lecture",
+    "untitled": "(sans titre)",
+    "share": "Partager",
+    "save": "Enregistrer",
+    "saved": "Enregistré"
+  },
+  "feed": {
+    "latest": "Récents",
+    "following": "Abonnements",
+    "top": "Top de la semaine",
+    "loading": "Chargement…",
+    "empty": "Aucun article pour lʼinstant. Soyez le premier à publier !"
+  },
+  "progression": {
+    "topReached": "Niveau maximum atteint",
+    "topBody": "Vous êtes au sommet de lʼéchelle — beau travail.",
+    "almostThere": "Presque !",
+    "remaining": "Encore {{n}} {{label}} pour atteindre",
+    "keepGoing": "Continuez à participer pour atteindre"
+  },
+  "online": {
+    "title": "En ligne"
+  },
+  "suggested": {
+    "title": "Personnes suggérées",
+    "follow": "+ Suivre",
+    "following": "Abonné"
+  },
+  "hotThreads": {
+    "title": "Sujets populaires",
+    "replies_one": "{{count}} réponse",
+    "replies_other": "{{count}} réponses"
+  },
+  "tags": {
+    "title": "Tags populaires"
+  }
+}

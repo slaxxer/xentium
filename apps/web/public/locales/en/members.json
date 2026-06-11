@@ -1,0 +1,84 @@
+{
+  "eyebrow": "Community",
+  "title": "Members",
+  "tabs": {
+    "directory": "Directory",
+    "team": "Team",
+    "hallOfFame": "Hall of Fame"
+  },
+  "search": "Search members…",
+  "filterHeading": "Filter",
+  "sortHeading": "Sort",
+  "filters": {
+    "all": "All members",
+    "online": "Online now",
+    "staff": "Staff"
+  },
+  "sorts": {
+    "active": "Most active",
+    "followers": "Most followers",
+    "newest": "Newest",
+    "az": "A–Z"
+  },
+  "memberCount_one": "{{count}} member",
+  "memberCount_other": "{{count}} members",
+  "onlineCount": "{{n}} online",
+  "loading": "Loading…",
+  "emptyQuery": "No members match “{{query}}”.",
+  "emptyFilter": "No members match this filter.",
+  "pagination": {
+    "prev": "← Prev",
+    "next": "Next →",
+    "page": "Page {{page}} of {{total}}"
+  },
+  "joined": "joined {{ago}}",
+  "tenure": {
+    "years": "{{n}}y",
+    "months": "{{n}}mo",
+    "days": "{{n}}d",
+    "today": "today"
+  },
+  "follow": "+ Follow",
+  "following": "Following",
+  "metrics": {
+    "likes": "likes",
+    "posts": "posts",
+    "threads": "threads",
+    "followers": "followers"
+  },
+  "team": {
+    "note": "The people who keep this community running — grouped by role.",
+    "empty": "No team members yet."
+  },
+  "stats": {
+    "members": "members",
+    "onlineNow": "online now",
+    "newThisWeek": "new this week",
+    "totalPosts": "total posts"
+  },
+  "hof": {
+    "title": "Hall of Fame",
+    "subtitle": "Ranked by {{metric}} received · configurable in the ACP",
+    "empty": "No members yet.",
+    "stat": "{{value}} {{metric}}"
+  },
+  "howTo": {
+    "title": "How to climb the ranks",
+    "intro": "The Hall of Fame celebrates the members who contribute the most {{metric}}.",
+    "tips": {
+      "post": "Publish articles and replies that people find useful.",
+      "threads": "Start discussions that get the community talking.",
+      "likes": "Earn likes — quality contributions get rewarded.",
+      "active": "Stay active — consistency counts more than bursts."
+    },
+    "levelUp": "Reach the activity thresholds and you’re promoted automatically — every level unlocks more access and a new badge."
+  },
+  "groups": {
+    "admin": "Administrator",
+    "supermod": "Super Moderator",
+    "moderator": "Moderator",
+    "member": "Member"
+  },
+  "banned": "Banned",
+  "permanentlyBanned": "Permanently banned"
+}

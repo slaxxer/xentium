@@ -1,0 +1,38 @@
+{
+  "actions": {
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Fechar",
+    "confirm": "Confirmar",
+    "back": "Voltar",
+    "next": "Seguinte",
+    "loading": "A carregar…",
+    "search": "Pesquisar"
+  },
+  "nav": {
+    "home": "Início",
+    "articles": "Artigos",
+    "signIn": "Iniciar sessão",
+    "register": "Registar",
+    "myProfile": "O meu perfil",
+    "accountSettings": "Definições da conta",
+    "signOut": "Terminar sessão",
+    "members": "Membros",
+    "openProfileMenu": "Abrir menu do perfil",
+    "search": "Buscar",
+    "toggleTheme": "Alternar tema",
+    "switchToLight": "Mudar para o modo claro",
+    "switchToDark": "Mudar para o modo escuro",
+    "adminPanel": "Painel de administração"
+  },
+  "search": {
+    "short": "Pesquisar",
+    "full": "Pesquisar artigos, pessoas…"
+  },
+  "language": {
+    "title": "Idioma",
+    "updated": "Idioma atualizado."
+  }
+}

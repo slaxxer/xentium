@@ -1,0 +1,8 @@
+{
+  "required": "Ce champ est requis.",
+  "tooShort": "Trop court.",
+  "invalidEmail": "Saisissez une adresse e-mail valide.",
+  "passwordMismatch": "Les mots de passe ne correspondent pas.",
+  "minLength": "Doit comporter au moins {{n}} caractères.",
+  "maxLength": "Doit comporter au plus {{n}} caractères."
+}
