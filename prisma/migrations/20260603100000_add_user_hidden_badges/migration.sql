@@ -1,0 +1,1 @@
+ALTER TABLE "User" ADD COLUMN "hidden_badges" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
