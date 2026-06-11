@@ -1,40 +1,36 @@
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "plugins/official/*"
-  - "plugins/community-examples/*"
-  - "themes/*"
+  - apps/*
+  - packages/*
+  - plugins/official/*
+  - plugins/community-examples/*
+  - themes/*
+  - e2e
 
 catalog:
-  # backend
+  '@hookform/resolvers': ^5
+  '@prisma/client': ^7
+  '@tanstack/react-query': ^5
+  '@vitejs/plugin-react': ^5
+  argon2: ^0.41
+  bullmq: ^5
+  cookie-parser: ^1
+  cors: ^2
   express: ^5
-  zod: ^4
+  express-rate-limit: ^8
+  helmet: ^8
+  ioredis: ^5
+  jose: ^6
+  multer: ^2
   pino: ^9
   pino-http: ^10
-  helmet: ^8
-  cors: ^2
-  cookie-parser: ^1
-  argon2: ^0.41
-  jose: ^6
-  express-rate-limit: ^8
-  multer: ^2
-  ioredis: ^5
-  bullmq: ^5
-  "@prisma/client": ^7
-  # frontend
-  react: ^19
-  react-dom: ^19
-  react-router: ^7
-  "@tanstack/react-query": ^5
+  prisma: ^7.8.0
+  react: ^19.2.6
+  react-dom: ^19.2.6
   react-hook-form: ^7
-  "@hookform/resolvers": ^5
-  # build / shared
-  typescript: ^6
-  vite: ^8
-  "@vitejs/plugin-react": ^5
-  tailwindcss: ^4
-  "@tailwindcss/vite": ^4
-  vitest: ^3
+  react-router: ^7
   supertest: ^7
   tsx: ^4
-  prisma: ^7
+  typescript: ^6
+  vite: ^8
+  vitest: ^3
+  zod: ^4.4.3
