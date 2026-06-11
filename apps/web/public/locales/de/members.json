@@ -1,0 +1,84 @@
+{
+  "eyebrow": "Community",
+  "title": "Mitglieder",
+  "tabs": {
+    "directory": "Verzeichnis",
+    "team": "Team",
+    "hallOfFame": "Ruhmeshalle"
+  },
+  "search": "Mitglieder suchen…",
+  "filterHeading": "Filter",
+  "sortHeading": "Sortieren",
+  "filters": {
+    "all": "Alle Mitglieder",
+    "online": "Jetzt online",
+    "staff": "Team"
+  },
+  "sorts": {
+    "active": "Aktivste",
+    "followers": "Meiste Follower",
+    "newest": "Neueste",
+    "az": "A–Z"
+  },
+  "memberCount_one": "{{count}} Mitglied",
+  "memberCount_other": "{{count}} Mitglieder",
+  "onlineCount": "{{n}} online",
+  "loading": "Wird geladen…",
+  "emptyQuery": "Keine Mitglieder gefunden für „{{query}}“.",
+  "emptyFilter": "Keine Mitglieder für diesen Filter.",
+  "pagination": {
+    "prev": "← Zurück",
+    "next": "Weiter →",
+    "page": "Seite {{page}} von {{total}}"
+  },
+  "joined": "beigetreten vor {{ago}}",
+  "tenure": {
+    "years": "{{n}} J.",
+    "months": "{{n}} Mon.",
+    "days": "{{n}} T.",
+    "today": "heute"
+  },
+  "follow": "+ Folgen",
+  "following": "Folge ich",
+  "metrics": {
+    "likes": "Likes",
+    "posts": "Beiträge",
+    "threads": "Themen",
+    "followers": "Follower"
+  },
+  "team": {
+    "note": "Die Menschen, die diese Community am Laufen halten — nach Rolle gruppiert.",
+    "empty": "Noch keine Teammitglieder."
+  },
+  "stats": {
+    "members": "Mitglieder",
+    "onlineNow": "jetzt online",
+    "newThisWeek": "neu diese Woche",
+    "totalPosts": "Beiträge gesamt"
+  },
+  "hof": {
+    "title": "Ruhmeshalle",
+    "subtitle": "Nach erhaltenen {{metric}} sortiert · im ACP konfigurierbar",
+    "empty": "Noch keine Mitglieder.",
+    "stat": "{{value}} {{metric}}"
+  },
+  "howTo": {
+    "title": "So steigst du auf",
+    "intro": "Die Ruhmeshalle würdigt die Mitglieder, die am meisten {{metric}} beitragen.",
+    "tips": {
+      "post": "Veröffentliche Artikel und Antworten, die anderen weiterhelfen.",
+      "threads": "Starte Diskussionen, die die Community beschäftigen.",
+      "likes": "Sammle Likes — gute Beiträge werden belohnt.",
+      "active": "Bleib aktiv — Beständigkeit zählt mehr als Strohfeuer."
+    },
+    "levelUp": "Erreiche die Aktivitätsschwellen und du wirst automatisch befördert — jede Stufe schaltet mehr Zugriff und ein neues Abzeichen frei."
+  },
+  "groups": {
+    "admin": "Administrator",
+    "supermod": "Super-Moderator",
+    "moderator": "Moderator",
+    "member": "Mitglied"
+  },
+  "banned": "Gesperrt",
+  "permanentlyBanned": "Dauerhaft gesperrt"
+}

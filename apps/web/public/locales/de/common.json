@@ -1,0 +1,38 @@
+{
+  "actions": {
+    "save": "Speichern",
+    "cancel": "Abbrechen",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "confirm": "Bestätigen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "loading": "Wird geladen…",
+    "search": "Suchen"
+  },
+  "nav": {
+    "home": "Startseite",
+    "articles": "Artikel",
+    "signIn": "Anmelden",
+    "register": "Registrieren",
+    "myProfile": "Mein Profil",
+    "accountSettings": "Kontoeinstellungen",
+    "signOut": "Abmelden",
+    "members": "Mitglieder",
+    "openProfileMenu": "Profilmenü öffnen",
+    "search": "Suchen",
+    "toggleTheme": "Design umschalten",
+    "switchToLight": "Zum hellen Design wechseln",
+    "switchToDark": "Zum dunklen Design wechseln",
+    "adminPanel": "Admin-Bereich"
+  },
+  "search": {
+    "short": "Suchen",
+    "full": "Artikel, Personen suchen…"
+  },
+  "language": {
+    "title": "Sprache",
+    "updated": "Sprache aktualisiert."
+  }
+}

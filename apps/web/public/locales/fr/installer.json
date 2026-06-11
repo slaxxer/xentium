@@ -1,0 +1,112 @@
+{
+  "welcome": {
+    "title": "Bienvenue sur Nodevo",
+    "subtitle": "Une plateforme de forum moderne et ultra-rapide. Cet assistant vous guidera tout au long de l'installation en quelques minutes.",
+    "features": {
+      "discussions": {
+        "title": "Discussions en temps réel",
+        "desc": "Fils de discussion alimentés par WebSocket avec mises à jour instantanées."
+      },
+      "search": {
+        "title": "Recherche plein texte",
+        "desc": "Alimentée par tsvector de Postgres pour des requêtes rapides."
+      },
+      "responsive": {
+        "title": "Responsive et PWA",
+        "desc": "Fonctionne sur tous les appareils. Installable comme une application."
+      },
+      "security": {
+        "title": "Sécurité intégrée",
+        "desc": "Limitation de débit, sessions Redis, RBAC."
+      }
+    }
+  },
+  "environment": {
+    "title": "Vérification de l'environnement",
+    "subtitle": "Vérification que votre serveur remplit les conditions requises pour exécuter Nodevo.",
+    "rows": {
+      "node": "Node.js",
+      "postgres": "PostgreSQL",
+      "redis": "Redis",
+      "storage": "Stockage",
+      "database_url": "URL de la base de données",
+      "data_dir": "Répertoire d'installation"
+    },
+    "status": {
+      "checking": "Vérification...",
+      "passed": "Réussi",
+      "failed": "Échoué"
+    },
+    "retry": "Revérifier tout"
+  },
+  "database": {
+    "title": "Connexion à la base de données",
+    "subtitle": "Nodevo se connecte en utilisant la <code>DATABASE_URL</code> configurée sur votre serveur. Vérifiez qu'elle est accessible avant de continuer.",
+    "postgres": "PostgreSQL",
+    "not_tested": "Pas encore testé",
+    "test_button": "Tester la connexion",
+    "testing": "Connexion..."
+  },
+  "site": {
+    "title": "Configuration du site",
+    "subtitle": "Paramètres de base de votre forum. Vous pourrez les modifier plus tard dans le panneau d'administration.",
+    "site_name": "Nom du site",
+    "site_url": "URL du site",
+    "url_hint": "L'URL complète où votre forum sera accessible.",
+    "language": "Langue par défaut",
+    "timezone": "Fuseau horaire",
+    "timezone_hint": "Utilisé pour afficher les dates et heures sur la plateforme."
+  },
+  "admin": {
+    "title": "Créer l'utilisateur administrateur",
+    "subtitle": "Ce compte dispose de tous les privilèges d'administration. Choisissez un mot de passe fort.",
+    "display_name": "Nom d'affichage",
+    "email": "Adresse e-mail",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "password_hint": "Minimum 12 caractères, incluant chiffres et symboles.",
+    "password_weak": "Ajoutez des chiffres et des symboles",
+    "password_strong": "Mot de passe fort",
+    "confirm": "Confirmer le mot de passe",
+    "match": "Les mots de passe correspondent",
+    "mismatch": "Les mots de passe ne correspondent pas"
+  },
+  "finalize": {
+    "title": "Finaliser l'installation",
+    "subtitle": "Vérifiez vos paramètres. L'installation exécutera les migrations, chargera les données de référence et créera votre compte administrateur.",
+    "site_section": "Site",
+    "admin_section": "Administrateur",
+    "progress": {
+      "migrations": "Création du schéma et exécution des migrations",
+      "seeding": "Initialisation des rôles et permissions",
+      "site": "Enregistrement de la configuration du site",
+      "admin": "Création du compte administrateur",
+      "keys": "Génération des clés et finalisation",
+      "complete": "Installation terminée !"
+    }
+  },
+  "done": {
+    "title": "Installation terminée !",
+    "subtitle": "Votre communauté est prête. Vous êtes déjà connecté en tant qu'administrateur.",
+    "login": "Se connecter",
+    "visit": "Visiter le forum",
+    "goto": "Aller sur le site"
+  },
+  "buttons": {
+    "back": "Retour",
+    "next": "Suivant",
+    "install": "Installer Nodevo",
+    "installing": "Installation...",
+    "retry": "Revérifier tout"
+  },
+  "toast": {
+    "env_fail": "Toutes les vérifications de l'environnement doivent réussir.",
+    "db_fail": "Testez d'abord la connexion à la base de données.",
+    "admin_invalid_display": "Veuillez saisir un nom d'affichage.",
+    "admin_invalid_email": "Veuillez saisir une adresse e-mail valide.",
+    "admin_invalid_username": "Le nom d'utilisateur doit comporter au moins 3 caractères.",
+    "admin_invalid_password": "Le mot de passe doit comporter au moins 12 caractères.",
+    "admin_password_mismatch": "Les mots de passe ne correspondent pas.",
+    "install_failed": "L'installation a échoué."
+  }
+}
