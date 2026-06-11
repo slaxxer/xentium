@@ -1,0 +1,146 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPuzzlePiece, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { api } from "../../../lib/api";
+import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+
+interface InstalledPlugin {
+  id:               string;
+  name:             string;
+  vendor:           string;
+  installedVersion: string;
+  status:           string;
+  licenseRequired:  boolean;
+  installedAt:      string;
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  enabled:   "var(--c-success)",
+  disabled:  "var(--c-fg-muted)",
+  installed: "var(--c-accent)",
+};
+
+function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: string }) {
+  return (
+    <span style={{ display:"inline-flex", alignItems:"center", padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:`${color}20`, color }}>
+      {label}
+    </span>
+  );
+}
+
+export function InstalledPage() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const { data: plugins = [], isLoading } = useQuery<InstalledPlugin[]>({
+    queryKey: ["acp-installed-plugins"],
+    queryFn:  () => api.get("/plugins"),
+  });
+
+  const enableMut = useMutation({
+    mutationFn: (id: string) => api.post(`/plugins/${id}/enable`, {}),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin enabled.", "success"); },
+    onError:    (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const disableMut = useMutation({
+    mutationFn: (id: string) => api.post(`/plugins/${id}/disable`, {}),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin disabled.", "success"); },
+    onError:    (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: ({ id, removeData }: { id: string; removeData: boolean }) =>
+      api.delete(`/plugins/${id}?removeData=${removeData}`),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin removed.", "success"); },
+    onError:   (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const handleRemove = async (p: InstalledPlugin) => {
+    const ok = await swalConfirm(
+      `Remove "${p.name}"?`,
+      "The plugin will be uninstalled. You can choose whether to also remove its database tables.",
+      "Remove",
+    );
+    if (!ok) return;
+
+    const removeData = await swalConfirm(
+      "Remove plugin data?",
+      "This will also drop the plugin's database tables and delete all its data. This cannot be undone.",
+      "Yes, remove data",
+    );
+    removeMut.mutate({ id: p.id, removeData });
+  };
+
+  return (
+    <div>
+      <div className="acp-page-header">
+        <div className="acp-page-header__left">
+          <div className="acp-page-sub">Extensions</div>
+          <h1 className="acp-page-title">Installed Plugins</h1>
+        </div>
+        <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/upload")}>
+          <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> Upload Plugin
+        </button>
+      </div>
+
+      {isLoading ? (
+        <div className="acp-card acp-empty">Loading…</div>
+      ) : plugins.length === 0 ? (
+        <div className="acp-card" style={{ padding:40, textAlign:"center" }}>
+          <FontAwesomeIcon icon={faPuzzlePiece} style={{ fontSize:32, color:"var(--c-fg-muted)", marginBottom:12 }} />
+          <div style={{ fontSize:15, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>No plugins installed</div>
+          <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
+            Upload a .nvplugin package to get started.
+          </div>
+          <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>
+            Upload Plugin
+          </button>
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          {plugins.map((p) => {
+            const busy = enableMut.isPending || disableMut.isPending || removeMut.isPending;
+            return (
+              <div key={p.id} className="acp-card" style={{ padding:"20px 24px", display:"flex", alignItems:"center", gap:16 }}>
+                <div style={{ width:44, height:44, flexShrink:0, background:"var(--c-accent-soft)", border:"1px solid var(--c-accent-glow)", borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:"var(--c-accent)" }}>
+                  <FontAwesomeIcon icon={faPuzzlePiece} />
+                </div>
+
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
+                    <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
+                    <span style={{ fontSize:12, color:"var(--c-fg-muted)" }}>v{p.installedVersion}</span>
+                    {p.licenseRequired && <Badge label="Licensed" color="var(--c-warn)" />}
+                  </div>
+                  <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>
+                    {p.id} · by {p.vendor} · installed {new Date(p.installedAt).toLocaleDateString()}
+                  </div>
+                </div>
+
+                <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                  <Badge label={p.status} color={STATUS_COLOR[p.status] ?? "var(--c-fg-muted)"} />
+
+                  {p.status === "enabled" ? (
+                    <button type="button" className="btn-ghost btn-sm" onClick={() => disableMut.mutate(p.id)} disabled={busy}>
+                      Disable
+                    </button>
+                  ) : (
+                    <button type="button" className="btn-ghost btn-sm" style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }} onClick={() => enableMut.mutate(p.id)} disabled={busy}>
+                      Enable
+                    </button>
+                  )}
+
+                  <button type="button" className="btn-danger btn-sm" onClick={() => handleRemove(p)} disabled={busy}>
+                    Remove
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

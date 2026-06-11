@@ -1,0 +1,153 @@
+// ACP horizontal navbar. Ported from nodevo-redesign/acp-redesign/
+// acp_navbar-redesign, mapped onto the real Hearth tokens. The default ACP uses
+// the horizontal layout; a runtime layout/density/accent switcher was prototyped
+// but deferred to a future update.
+
+.acp-logomark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  flex: 0 0 auto;
+}
+
+/* thin scrollbar utility used by the nav strips */
+.acp-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-border-hi) transparent;
+  &::-webkit-scrollbar { width: 8px; height: 8px; }
+  &::-webkit-scrollbar-thumb { background: var(--c-border-hi); border-radius: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+}
+
+/* Horizontal layout — full-width content column, no left chrome */
+.acp-layout[data-layout="horizontal"] {
+  display: block;
+
+  .acp-main { width: 100%; }
+}
+
+/* tier 1 — primary menu */
+.hnav {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+
+  &__brand { display: flex; align-items: center; gap: var(--sp-2); }
+  &__name { font-weight: 800; font-size: var(--fs-base); color: var(--c-fg); line-height: 1.1; }
+  &__tag { font-size: var(--fs-xs); color: var(--c-fg-muted); }
+  &__div { width: 1px; align-self: stretch; background: var(--c-border); margin: 4px var(--sp-1); }
+
+  &__menu {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    // NB: must NOT be an overflow scroll container — overflow-x:auto forces
+    // overflow-y:auto, which clips the absolutely-positioned dropdowns. Wrap
+    // when space is tight instead so dropdowns can escape.
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  &__cell { position: relative; }
+
+  &__item {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 8px 12px;
+    border: 0;
+    background: transparent;
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color .12s, background .12s;
+
+    &:hover { color: var(--c-fg); background: var(--c-card); }
+    &.is-section { color: var(--c-accent); background: var(--c-accent-soft); }
+  }
+  &__ic { display: inline-flex; opacity: .9; }
+  &__chev { opacity: .6; }
+  &__cell.is-open &__chev { transform: rotate(180deg); }
+
+  &__drop {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 60;
+    min-width: 220px;
+    padding: 6px;
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, .22);
+  }
+  &__droplabel {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--c-fg-muted);
+    padding: 6px 8px 4px;
+  }
+  &__dropitem {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: 8px;
+    border: 0;
+    background: transparent;
+    color: var(--c-fg);
+    font: inherit;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    text-decoration: none;
+
+    b { font-weight: 600; flex: 1; text-align: left; }
+    &:hover { background: var(--c-surface); }
+    &.is-active { color: var(--c-accent); background: var(--c-accent-soft); }
+  }
+  &__dropic { display: inline-flex; opacity: .7; }
+  &__dropmark { color: var(--c-accent); }
+}
+
+/* tier 2 — context strip */
+.hctx {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 var(--sp-4);
+  height: 44px;
+  background: var(--c-bg);
+  border-bottom: 1px solid var(--c-border);
+
+  &__id { display: inline-flex; align-items: center; gap: var(--sp-2); color: var(--c-fg); font-weight: 700; }
+  &__icon { display: inline-flex; color: var(--c-accent); }
+  &__div { width: 1px; height: 18px; background: var(--c-border); }
+  &__tabs { display: flex; align-items: center; gap: 2px; overflow-x: auto; flex: 1; }
+  &__tab {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg-muted);
+    font-weight: 600;
+    font-size: var(--fs-sm);
+    white-space: nowrap;
+    text-decoration: none;
+    transition: color .12s, background .12s;
+
+    &:hover { color: var(--c-fg); background: var(--c-card); }
+    &.is-active { color: var(--c-accent); background: var(--c-accent-soft); }
+  }
+}
