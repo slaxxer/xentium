@@ -6,6 +6,7 @@ import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 
 const commentInclude = {
   author: {
@@ -193,7 +194,7 @@ export const commentService = {
 
     const result = await prisma.$transaction(async (tx) => {
       const created = await tx.articleComment.create({
-        data: { articleId, authorId, body, parentId: parentId ?? null, status: commentStatus },
+        data: { articleId, authorId, body: sanitizeRichText(body), parentId: parentId ?? null, status: commentStatus },
         include: commentInclude,
       });
       // Only increment commentCount for published comments
@@ -248,7 +249,7 @@ export const commentService = {
 
     const updated = await prisma.articleComment.update({
       where: { id: commentId },
-      data: { body, editedAt: new Date() },
+      data: { body: sanitizeRichText(body), editedAt: new Date() },
       include: commentInclude,
     });
     return shapeRow(updated);

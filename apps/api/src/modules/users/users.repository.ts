@@ -1,6 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { withResolvedAvatar, withResolvedAvatarList, resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getOnlineUserIds } from "../../shared/utils/presence.js";
+import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 
 /* ── Members directory shaping ──────────────────────────────────────────── */
 const MEMBER_SELECT = {
@@ -117,7 +118,7 @@ export const userRepository = {
 
   // Profile comments
   async createProfileComment(data: { profileUserId: string; authorId: string; body: string }) {
-    return prisma.profileComment.create({ data });
+    return prisma.profileComment.create({ data: { ...data, body: sanitizeRichText(data.body) } });
   },
 
   async getProfileComments(profileUserId: string, page: number, limit: number) {
@@ -160,7 +161,7 @@ export const userRepository = {
   async updateProfileComment(id: string, body: string, userId: string) {
     return prisma.profileComment.update({
       where: { id, authorId: userId },
-      data: { body, editedAt: new Date() },
+      data: { body: sanitizeRichText(body), editedAt: new Date() },
     });
   },
 

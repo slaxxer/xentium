@@ -1,6 +1,19 @@
 import nodemailer from "nodemailer";
 import { prisma } from "../db.js";
 
+// Escape user-controlled values before interpolating them into email HTML.
+// Notification titles/bodies carry user content (e.g. forum thread titles), so
+// without this a thread named `<a href=...>` injects markup into a trusted
+// "Nodevo" email — a phishing vector.
+function escapeHtml(s: string): string {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface SmtpConfig {
   host: string;
   port: number;
@@ -65,17 +78,21 @@ export function notificationEmail(opts: {
   link?: string;
   siteName?: string;
 }): string {
-  const site = opts.siteName ?? "Nodevo";
-  const linkBtn = opts.link
-    ? `<a href="${opts.link}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px;margin-top:8px">View →</a>`
+  const site = escapeHtml(opts.siteName ?? "Nodevo");
+  // Allow only absolute http(s) URLs or same-site relative paths ("/..."), never
+  // protocol-relative ("//evil") or javascript:/data: URIs.
+  const linkOk = !!opts.link && (/^https?:\/\//i.test(opts.link) || /^\/(?!\/)/.test(opts.link));
+  const safeLink = linkOk ? escapeHtml(opts.link!) : "";
+  const linkBtn = safeLink
+    ? `<a href="${safeLink}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px;margin-top:8px">View →</a>`
     : "";
   return `
     <div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
       <div style="margin-bottom:24px">
         <span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">${site}</span>
       </div>
-      <h2 style="font-size:20px;font-weight:700;margin:0 0 10px;color:#0d0d22">${opts.title}</h2>
-      <p style="color:#4a4a7a;margin:0 0 20px;line-height:1.6;font-size:15px">${opts.body}</p>
+      <h2 style="font-size:20px;font-weight:700;margin:0 0 10px;color:#0d0d22">${escapeHtml(opts.title)}</h2>
+      <p style="color:#4a4a7a;margin:0 0 20px;line-height:1.6;font-size:15px">${escapeHtml(opts.body)}</p>
       ${linkBtn}
       <hr style="border:none;border-top:1px solid #e7e7f1;margin:28px 0 16px">
       <p style="color:#9ca3af;font-size:12px;margin:0">
