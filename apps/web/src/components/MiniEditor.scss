@@ -1,0 +1,248 @@
+.mini-editor {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-bg);
+  overflow: hidden;
+  transition: border-color 0.15s;
+
+  &:focus-within {
+    border-color: var(--c-accent);
+  }
+
+  &--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* ── Toolbar ────────────────────────────────────────────────── */
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    padding: 7px 10px;
+    background: var(--c-card);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  &__btn {
+    min-width: 30px;
+    height: 28px;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+    font-family: inherit;
+    transition: all 0.12s;
+    flex-shrink: 0;
+    white-space: nowrap;
+
+    &:hover:not(:disabled) {
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+    }
+    &.is-active {
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+      border-color: var(--c-accent-glow);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  &__hint {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--c-fg-subtle);
+    white-space: nowrap;
+    opacity: 0.7;
+  }
+
+  /* ── Content area ───────────────────────────────────────────── */
+  &__body {
+    position: relative;
+    min-height: 80px;
+    padding: 10px 12px;
+  }
+
+  &__placeholder {
+    position: absolute;
+    top: 10px;
+    left: 12px;
+    right: 12px;
+    font-size: 14px;
+    color: var(--c-fg-subtle);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  &__content {
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--c-fg);
+    min-height: 60px;
+    outline: none;
+
+    &:focus { outline: none; }
+
+    p { margin: 0 0 0.5em; &:last-child { margin: 0; } }
+    ul, ol { padding-left: 1.4em; margin: 0 0 0.5em; }
+    li { margin: 0; }
+    code {
+      font-family: var(--ff-mono, monospace);
+      font-size: 0.875em;
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: 3px;
+      padding: 1px 4px;
+    }
+
+    blockquote {
+      border-left: 3px solid var(--c-accent);
+      background: var(--c-accent-soft);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin: 6px 0;
+      padding: 6px 12px;
+      color: var(--c-fg-muted);
+      font-style: italic;
+
+      p { margin: 0; color: inherit; }
+      strong { font-style: normal; color: var(--c-fg); }
+    }
+    pre {
+      background: var(--c-card);
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      margin: 4px 0;
+      overflow: auto;
+      code { background: none; border: none; padding: 0; }
+    }
+
+    // Text alignment
+    [style*="text-align: center"]  { text-align: center; }
+    [style*="text-align: right"]   { text-align: right; }
+    [style*="text-align: justify"] { text-align: justify; }
+
+    // Highlight
+    mark { background: color-mix(in srgb, var(--c-warn) 35%, transparent); border-radius: 2px; padding: 0 2px; }
+
+    sub { vertical-align: sub;   font-size: 0.75em; }
+    sup { vertical-align: super; font-size: 0.75em; }
+
+    // Links
+    a { color: var(--c-accent); text-decoration: underline; cursor: pointer; }
+
+    // Horizontal rule
+    hr { border: none; border-top: 1px solid var(--c-border); margin: 8px 0; }
+
+    // Task list
+    ul[data-type="taskList"] {
+      list-style: none;
+      padding: 0;
+      li {
+        display: flex;
+        align-items: flex-start;
+        gap: 6px;
+        > label { flex-shrink: 0; margin-top: 2px; input[type="checkbox"] { accent-color: var(--c-accent); cursor: pointer; } }
+        > div { flex: 1; }
+        &[data-checked="true"] > div { text-decoration: line-through; opacity: 0.6; }
+      }
+    }
+
+    // Headings
+    h1 { font-size: 1.4em; font-weight: 800; color: var(--c-fg); margin: 0.4em 0 0.2em; }
+    h2 { font-size: 1.2em; font-weight: 700; color: var(--c-fg); margin: 0.3em 0 0.2em; }
+    h3 { font-size: 1.05em; font-weight: 700; color: var(--c-fg); margin: 0.2em 0 0.15em; }
+
+    .mini-editor__mention-link {
+      color: var(--c-accent);
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      &:hover { text-decoration: underline; }
+    }
+
+    /* Cursor placeholder for ProseMirror */
+    .ProseMirror-focused { outline: none; }
+  }
+}
+
+/* ── Mention autocomplete portal ────────────────────────────────────────── */
+.mini-editor__mention-portal {
+  position: absolute;
+  z-index: 1000;
+}
+
+.mini-editor__mention-list {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  min-width: 180px;
+  max-width: 280px;
+  overflow: hidden;
+}
+
+.mini-editor__mention-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+
+  &:hover,
+  &.is-active {
+    background: var(--c-accent-soft);
+  }
+}
+
+.mini-editor__mention-av {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent));
+  color: var(--c-on-accent);
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.mini-editor__mention-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+/* ── Inline mention rendered in comment bodies ──────────────────────────── */
+.mini-editor__mention-link,
+a[data-type="mention"] {
+  color: var(--c-accent);
+  font-weight: 600;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}

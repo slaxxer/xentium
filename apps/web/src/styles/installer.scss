@@ -1,0 +1,768 @@
+.nv-installer-page {
+    // ---- local tokens mapped from the design system ----
+    --bg: var(--c-bg);
+    --surface: var(--c-surface);
+    --surface-2: var(--c-card);
+    --border: var(--c-border);
+    --text: var(--c-fg);
+    --text-secondary: var(--c-fg-muted);
+    --text-muted: var(--c-fg-subtle);
+    --accent: var(--c-accent);
+    --accent-hover: var(--c-accent2);
+    --accent-glow: var(--c-accent-glow);
+    --success: var(--c-success);
+    --success-bg: var(--c-success-soft);
+    --warning: var(--c-warn);
+    --warning-bg: rgba(245, 158, 11, 0.12);
+    --error: var(--c-danger);
+    --error-bg: var(--c-danger-soft);
+    --info: var(--c-info);
+    --info-bg: rgba(59, 130, 246, 0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+    --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    --font: ui-sans-serif, system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg);
+    background-image:
+            radial-gradient(ellipse at 30% 20%, var(--accent-glow) 0%, transparent 55%),
+            radial-gradient(ellipse at 70% 75%, var(--accent-glow) 0%, transparent 55%);
+
+    * {
+        box-sizing: border-box;
+    }
+
+    // ========== WIZARD CONTAINER ==========
+    .wizard-container {
+        width: 100%;
+        max-width: 680px;
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font);
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+        overflow: hidden;
+        position: relative;
+
+        // Header
+        .wizard-header {
+            padding: 28px 32px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            .wizard-logo {
+                display: inline-flex;
+                align-items: center;
+                gap: 10px;
+
+                .icon {
+                    width: 38px;
+                    height: 38px;
+                    background: var(--accent);
+                    border-radius: var(--radius-sm);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: #fff;
+                    box-shadow: 0 8px 20px var(--accent-glow);
+                }
+
+                span {
+                    font-size: 18px;
+                    font-weight: 700;
+                    letter-spacing: -0.3px;
+                }
+            }
+
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .language-switcher {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                padding: 0 10px;
+                height: 36px;
+
+                select {
+                    background: var(--surface-2);
+                    color: var(--text);
+                    border: none;
+                    border-radius: var(--radius-sm);
+                    padding: 8px 24px 8px 12px; // room for custom arrow
+                    appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238080b0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 8px center;
+                    cursor: pointer;
+
+                    // Dark mode arrow color (override the stroke in the SVG)
+                    @media (prefers-color-scheme: dark) {
+                        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23a0a0d0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                    }
+
+                    &:focus {
+                        outline: none;
+                    }
+                }
+
+                // Style dropdown options (works in Chrome, Edge, Safari)
+                select option {
+                    background: var(--surface-2);
+                    color: var(--text);
+                }
+
+                // For Firefox, we can set a darker background for the dropdown list
+                @-moz-document url-prefix() {
+                    select {
+                        background-color: var(--surface-2);
+                        color: var(--text);
+                    }
+                }
+
+                svg {
+                    color: var(--text-secondary);
+                }
+            }
+
+            .theme-toggle {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 0 10px;
+                height: 36px;
+                font-size: 12px;
+                font-weight: 600;
+                color: var(--text-secondary);
+                cursor: pointer;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                transition: var(--transition);
+
+                &:hover {
+                    color: var(--text);
+                    border-color: var(--accent);
+                }
+            }
+        }
+
+        // Step indicator (dots & lines)
+        .step-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 22px 32px 16px;
+            flex-wrap: wrap;
+
+            .step-dot {
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 13px;
+                font-weight: 600;
+                transition: var(--transition);
+                border: 2px solid var(--border);
+                color: var(--text-muted);
+                background: var(--surface-2);
+                flex-shrink: 0;
+                cursor: pointer;
+
+                &.completed {
+                    background: var(--success);
+                    border-color: var(--success);
+                    color: #fff;
+                }
+                &.active {
+                    background: var(--accent);
+                    border-color: var(--accent);
+                    color: #fff;
+                    box-shadow: 0 0 20px var(--accent-glow);
+                    animation: pulse-dot 2s ease-in-out infinite;
+                }
+                &.error-step {
+                    background: var(--error);
+                    border-color: var(--error);
+                    color: #fff;
+                }
+            }
+
+            .step-line {
+                width: 28px;
+                height: 2px;
+                background: var(--border);
+                border-radius: 1px;
+                transition: var(--transition);
+                flex-shrink: 0;
+
+                &.completed {
+                    background: var(--success);
+                }
+            }
+        }
+
+        // Keyframes for pulse
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 20px var(--accent-glow);
+            }
+            50% {
+                box-shadow: 0 0 35px var(--accent-glow);
+            }
+        }
+
+        // Content area
+        .wizard-content {
+            padding: 24px 32px 28px;
+            min-height: 340px;
+
+            .step-panel {
+                animation: fadeSlideIn 0.35s ease;
+
+                @keyframes fadeSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(12px);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            }
+
+            .step-title {
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: -0.4px;
+                margin: 0 0 6px;
+                color: var(--text);
+            }
+
+            .step-subtitle {
+                font-size: 14px;
+                color: var(--text-secondary);
+                margin: 0 0 20px;
+                line-height: 1.5;
+            }
+
+            // Welcome features
+            .welcome-features {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+                margin-top: 20px;
+
+                .welcome-feature {
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius-sm);
+                    padding: 16px;
+                    display: flex;
+                    gap: 12px;
+                    align-items: flex-start;
+                    transition: var(--transition);
+
+                    &:hover {
+                        border-color: var(--accent);
+                    }
+
+                    .feat-icon {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: var(--radius-sm);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+
+                        &.purple {
+                            background: var(--accent-glow);
+                            color: var(--accent);
+                        }
+                        &.blue {
+                            background: var(--info-bg);
+                            color: var(--info);
+                        }
+                        &.green {
+                            background: var(--success-bg);
+                            color: var(--success);
+                        }
+                        &.amber {
+                            background: var(--warning-bg);
+                            color: var(--warning);
+                        }
+                    }
+
+                    h4 {
+                        font-size: 13px;
+                        font-weight: 600;
+                        margin: 0 0 3px;
+                    }
+
+                    p {
+                        font-size: 12px;
+                        color: var(--text-secondary);
+                        line-height: 1.4;
+                        margin: 0;
+                    }
+                }
+            }
+
+            // Environment list
+            .env-list {
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+
+                .env-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 14px;
+                    padding: 14px 16px;
+                    background: var(--surface-2);
+                    border-radius: var(--radius-sm);
+                    border: 1px solid var(--border);
+
+                    .env-icon {
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        flex-shrink: 0;
+                        font-weight: 700;
+
+                        &.checking {
+                            background: var(--info-bg);
+                            color: var(--info);
+                            animation: spin-check 1.2s ease-in-out infinite;
+                        }
+                        &.pass {
+                            background: var(--success-bg);
+                            color: var(--success);
+                        }
+                        &.fail {
+                            background: var(--error-bg);
+                            color: var(--error);
+                        }
+                    }
+
+                    @keyframes spin-check {
+                        0%,
+                        100% {
+                            transform: rotate(0);
+                        }
+                        50% {
+                            transform: rotate(180deg);
+                        }
+                    }
+
+                    .env-info {
+                        flex: 1;
+                        min-width: 0;
+
+                        .env-name {
+                            font-weight: 600;
+                            font-size: 14px;
+                        }
+                        .env-detail {
+                            font-size: 12px;
+                            color: var(--text-secondary);
+                            font-family: var(--mono);
+                            margin-top: 2px;
+                        }
+                    }
+
+                    .env-status {
+                        font-size: 12px;
+                        font-weight: 600;
+                        padding: 5px 10px;
+                        border-radius: 20px;
+                        flex-shrink: 0;
+
+                        &.pass {
+                            background: var(--success-bg);
+                            color: var(--success);
+                        }
+                        &.fail {
+                            background: var(--error-bg);
+                            color: var(--error);
+                        }
+                        &.checking {
+                            background: var(--info-bg);
+                            color: var(--info);
+                        }
+                    }
+                }
+            }
+
+            // Forms
+            .form-group {
+                margin-bottom: 16px;
+
+                label {
+                    display: block;
+                    font-size: 13px;
+                    font-weight: 600;
+                    margin-bottom: 6px;
+                    color: var(--text);
+
+                    .required {
+                        color: var(--error);
+                        margin-left: 2px;
+                    }
+                }
+
+                input,
+                select {
+                    width: 100%;
+                    padding: 11px 14px;
+                    background: var(--surface-2);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius-sm);
+                    color: var(--text);
+                    font-size: 14px;
+                    font-family: var(--font);
+                    transition: var(--transition);
+                    outline: none;
+
+                    &:focus {
+                        border-color: var(--accent);
+                        box-shadow: 0 0 0 3px var(--accent-glow);
+                    }
+
+                    &::placeholder {
+                        color: var(--text-muted);
+                    }
+                }
+
+                .hint {
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    margin-top: 4px;
+                    display: block;
+                }
+            }
+
+            .form-row {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 12px;
+            }
+
+            // Summary (finalize step)
+            .summary-section {
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius-sm);
+                padding: 16px;
+                margin-bottom: 12px;
+
+                h4 {
+                    font-size: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.8px;
+                    color: var(--text-muted);
+                    margin: 0 0 10px;
+                }
+
+                .summary-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 6px 0;
+                    font-size: 13px;
+                    border-bottom: 1px solid var(--border);
+
+                    &:last-child {
+                        border-bottom: none;
+                    }
+
+                    .key {
+                        color: var(--text-secondary);
+                    }
+                    .val {
+                        font-weight: 500;
+                        font-family: var(--mono);
+                        font-size: 12px;
+                        text-align: right;
+                        max-width: 55%;
+                        word-break: break-all;
+                    }
+                }
+            }
+
+            // Done step
+            .done-icon {
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                background: var(--success-bg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0 auto 20px;
+                font-size: 40px;
+                color: var(--success);
+                animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            }
+
+            @keyframes popIn {
+                from {
+                    transform: scale(0);
+                    opacity: 0;
+                }
+                to {
+                    transform: scale(1);
+                    opacity: 1;
+                }
+            }
+
+            .done-links {
+                display: flex;
+                gap: 10px;
+                justify-content: center;
+                flex-wrap: wrap;
+                margin-top: 16px;
+            }
+
+            .done-link {
+                padding: 10px 18px;
+                border-radius: 20px;
+                text-decoration: none;
+                font-size: 13px;
+                font-weight: 600;
+                transition: var(--transition);
+                border: 1px solid var(--border);
+                color: var(--text);
+                background: var(--surface-2);
+                cursor: pointer;
+
+                &:hover {
+                    border-color: var(--accent);
+                }
+
+                &.primary-link {
+                    background: var(--accent);
+                    border-color: var(--accent);
+                    color: #fff;
+
+                    &:hover {
+                        background: var(--accent-hover);
+                    }
+                }
+            }
+
+            // Installation progress bar
+            .install-progress {
+                margin-top: 20px;
+
+                .progress-bar-track {
+                    height: 6px;
+                    background: var(--surface);
+                    border-radius: 3px;
+                    overflow: hidden;
+                }
+
+                .progress-bar-fill {
+                    height: 100%;
+                    background: var(--accent);
+                    border-radius: 3px;
+                    transition: width 0.4s ease;
+                }
+
+                .progress-text {
+                    font-size: 12px;
+                    color: var(--text-secondary);
+                    margin-top: 6px;
+                    text-align: center;
+                }
+            }
+        }
+
+        // Footer buttons
+        .wizard-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 32px;
+            border-top: 1px solid var(--border);
+            background: var(--surface-2);
+            gap: 12px;
+        }
+    }
+
+    // Global button styles (outside wizard-container but inside nv-installer-page)
+    .btn {
+        padding: 10px 22px;
+        border-radius: 22px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: var(--transition);
+        font-family: var(--font);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+
+        &.btn-back {
+            background: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+
+            &:hover {
+                background: var(--surface);
+                color: var(--text);
+            }
+        }
+
+        &.btn-next {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 4px 14px var(--accent-glow);
+
+            &:hover {
+                background: var(--accent-hover);
+            }
+
+            &:disabled {
+                opacity: 0.45;
+                cursor: not-allowed;
+                box-shadow: none;
+            }
+        }
+
+        &.btn-install {
+            background: var(--success);
+            color: #fff;
+            box-shadow: 0 4px 14px var(--success-bg);
+
+            &:hover {
+                filter: brightness(1.08);
+            }
+
+            &:disabled {
+                opacity: 0.55;
+                cursor: not-allowed;
+            }
+        }
+
+        &.btn-retry {
+            background: var(--warning);
+            color: #000;
+        }
+
+        &.btn-soft {
+            background: var(--surface-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+    }
+
+    // Toast notification
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 14px 20px;
+        z-index: 999;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        animation: slideInRight 0.3s ease;
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(120%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    }
+
+    // Confetti pieces (injected by JS)
+    .confetti-piece {
+        position: fixed;
+        pointer-events: none;
+        z-index: 1000;
+        animation: confettiFall 3s ease-out forwards;
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-120px) rotate(0) scale(1);
+                opacity: 1;
+            }
+            80% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(105vh) rotate(720deg) scale(0.3);
+                opacity: 0;
+            }
+        }
+    }
+
+    // ---- Responsive ----
+    @media (max-width: 600px) {
+        .wizard-content {
+            padding: 18px 16px 22px;
+        }
+        .wizard-header {
+            padding: 20px 16px 0;
+
+            .theme-toggle {
+                right: 16px;
+                top: 20px;
+            }
+        }
+        .wizard-footer {
+            padding: 14px 16px;
+            flex-wrap: wrap;
+        }
+        .step-indicator {
+            .step-dot {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+            .step-line {
+                width: 16px;
+            }
+        }
+        .welcome-features,
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+        .step-title {
+            font-size: 18px;
+        }
+    }
+}

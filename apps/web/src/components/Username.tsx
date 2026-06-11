@@ -1,0 +1,35 @@
+import { roleColor } from "../lib/groupBadge";
+
+interface UsernameProps {
+  username:   string;
+  badgeColor?: string | null;
+  /** Group key — enables the staff colour fallback when badgeColor is absent. */
+  roleKey?:   string | null;
+  href?:      string;
+  className?: string;
+  style?:     React.CSSProperties;
+}
+
+/**
+ * Renders a username styled with the user's group badge colour. Falls back to
+ * the system-staff palette (admin → coral, mod → violet) via roleKey when the
+ * group has no explicit badge colour.
+ * Renders as <a> when href is provided, otherwise <span>.
+ */
+export function Username({ username, badgeColor, roleKey, href, className, style }: UsernameProps) {
+  const color = roleColor(badgeColor, roleKey);
+  const colorStyle: React.CSSProperties = color ? { color, ...style } : { ...style };
+
+  if (href) {
+    return (
+      <a href={href} className={className} style={colorStyle}>
+        {username}
+      </a>
+    );
+  }
+  return (
+    <span className={className} style={colorStyle}>
+      {username}
+    </span>
+  );
+}

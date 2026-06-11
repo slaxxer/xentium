@@ -1,12 +1,22 @@
 {
   "extends": "@nodevo/config/tsconfig.base.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "jsx": "react-jsx",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
     "noEmit": true,
-    "allowImportingTsExtensions": true
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
+    "paths": {
+      "@web/lib/*":        ["./src/lib/*"],
+      "@web/hooks/*":      ["./src/hooks/*"],
+      "@web/plugins/*":    ["./src/plugins/*"],
+      "@web/components/*": ["./src/components/*"],
+      "@tiptap/react":     ["./node_modules/@tiptap/react"],
+      "@tiptap/starter-kit": ["./node_modules/@tiptap/starter-kit"]
+    }
   },
-  "include": ["src", "vite.config.ts"]
+  "include": ["src"]
 }
