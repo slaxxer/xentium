@@ -10,8 +10,14 @@
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src"
   },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "devDependencies": {
-    "typescript": "catalog:",
-    "@nodevo/config": "workspace:*"
+    "@nodevo/config": "workspace:*",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   }
 }
