@@ -1,0 +1,1018 @@
+import fs from "node:fs/promises";
+import path from "node:path";
+import { prisma } from "../../infrastructure/db.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { redis, bullConnection } from "../../infrastructure/redis.js";
+import { env } from "../../config/env.js";
+import { permissionCache } from "../permissions/permission.cache.js";
+import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
+import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
+
+// Minimal group select reused wherever a username needs its badge color
+const badgeColorSelect = {
+  groups: {
+    include: {
+      group: { select: { progression: { select: { badgeColor: true } } } },
+    },
+  },
+} as const;
+
+function extractBadgeColor(groups: Array<{ group: { progression: { badgeColor: string | null } | null } }>): string | null {
+  return groups[0]?.group.progression?.badgeColor ?? null;
+}
+
+/** Guard for sensitive account actions in the ACP. Blocks acting on your own
+ *  account, and on any Administrator-group account — admins cannot be touched
+ *  via the admin panel (no force-logout, no password reset). Returns the user. */
+async function assertActionableUser(userId: string, actorId: string) {
+  const user = await prisma.user.findUnique({
+    where:  { id: userId },
+    select: { id: true, email: true, groups: { select: { group: { select: { key: true } } } } },
+  });
+  if (!user) throw NodevoError.notFound("User not found");
+  if (actorId === userId) {
+    throw NodevoError.forbidden("You cannot perform this action on your own account");
+  }
+  if (user.groups.some((ug) => ug.group.key === "admin")) {
+    throw NodevoError.forbidden("Administrator accounts cannot be managed via the admin panel");
+  }
+  return user;
+}
+
+export const adminService = {
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+
+  async getDashboardStats() {
+    const [userCount, articleCount, commentCount, groupCount, pendingReportCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.article.count({ where: { deletedAt: null } }),
+      prisma.articleComment.count({ where: { deletedAt: null } }),
+      prisma.group.count(),
+      prisma.moderationReport.count({ where: { status: "pending" } }),
+    ]);
+    const recentUsers = await prisma.user.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: { id: true, username: true, avatar: true, createdAt: true, ...badgeColorSelect },
+    });
+    const recentArticles = await prisma.article.findMany({
+      where: { deletedAt: null, status: "published" },
+      orderBy: { publishedAt: "desc" },
+      take: 5,
+      select: { id: true, title: true, slug: true, publishedAt: true,
+        author: { select: { username: true, ...badgeColorSelect } } },
+    });
+    const recentBans = await prisma.moderationBan.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+      select: {
+        id: true, type: true, reason: true, createdAt: true,
+        user:     { select: { username: true, ...badgeColorSelect } },
+        issuedBy: { select: { username: true, ...badgeColorSelect } },
+      },
+    });
+    const recentLiftedBans = await prisma.moderationBan.findMany({
+      where:   { status: "lifted", liftedAt: { not: null } },
+      orderBy: { liftedAt: "desc" },
+      take:    3,
+      include: { user: { select: { username: true, ...badgeColorSelect } } },
+    });
+    return {
+      userCount, articleCount, commentCount, groupCount, pendingReportCount,
+      recentUsers: recentUsers.map((u) => ({
+        id: u.id, username: u.username, createdAt: u.createdAt,
+        badgeColor: extractBadgeColor(u.groups),
+      })),
+      recentArticles: recentArticles.map((a) => ({
+        id: a.id, title: a.title, slug: a.slug, publishedAt: a.publishedAt,
+        author: { username: a.author.username, badgeColor: extractBadgeColor(a.author.groups) },
+      })),
+      recentBans: recentBans.map((b) => ({
+        id: b.id, type: b.type, reason: b.reason, createdAt: b.createdAt,
+        user:     { username: b.user.username,     badgeColor: extractBadgeColor(b.user.groups) },
+        issuedBy: { username: b.issuedBy.username, badgeColor: extractBadgeColor(b.issuedBy.groups) },
+      })),
+      recentLiftedBans: recentLiftedBans.map((b) => ({
+        id: b.id, liftedAt: b.liftedAt!.toISOString(),
+        user: { username: b.user.username, badgeColor: extractBadgeColor(b.user.groups) },
+      })),
+    };
+  },
+
+  // ── Users ─────────────────────────────────────────────────────────────────
+
+  async listUsers(opts: { page: number; limit: number; search?: string; groupId?: string }) {
+    const { page, limit, search, groupId } = opts;
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { username: { contains: search, mode: "insensitive" } },
+        { email: { contains: search, mode: "insensitive" } },
+      ];
+    }
+    if (groupId) where.groups = { some: { groupId } };
+
+    const [data, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          avatar: true,
+          isActive: true,
+          bannedUntil: true,
+          createdAt: true,
+          articleCount: true,
+          groups: {
+            include: {
+              group: {
+                include: {
+                  progression: { select: { badgeColor: true, badgeLabel: true } },
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.user.count({ where }),
+    ]);
+    return {
+      data: data.map((u) => ({
+        ...u,
+        groups: u.groups.map((ug) => ({
+          id:       ug.group.id,
+          name:     ug.group.name,
+          key:      ug.group.key,
+          icon:     ug.group.icon ?? null,
+          isSystem: ug.group.isSystem,
+          progression: ug.group.progression
+            ? { badgeColor: ug.group.progression.badgeColor, badgeLabel: ug.group.progression.badgeLabel }
+            : null,
+        })),
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  },
+
+  async getUserDetail(id: string) {
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: {
+        groups: {
+          include: {
+            group: {
+              include: { progression: { select: { badgeColor: true, badgeLabel: true } } },
+            },
+          },
+        },
+        _count: { select: { articles: true, articleComments: true, sessions: true } },
+      },
+    });
+    if (!user) throw NodevoError.notFound("User not found");
+
+    const [fields, values, loginEvents] = await Promise.all([
+      prisma.userProfileField.findMany({ orderBy: { position: "asc" } }),
+      prisma.userProfileFieldValue.findMany({ where: { userId: id } }),
+      prisma.loginEvent.findMany({
+        where:   { userId: id },
+        orderBy: { createdAt: "desc" },
+        take:    20,
+        select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
+      }),
+    ]);
+    const valueMap = Object.fromEntries(values.map((v) => [v.fieldId, v.value]));
+
+    return {
+      ...user,
+      groups: user.groups.map((ug) => ({
+        id:       ug.group.id,
+        name:     ug.group.name,
+        key:      ug.group.key,
+        icon:     ug.group.icon ?? null,
+        isSystem: ug.group.isSystem,
+        progression: ug.group.progression
+          ? { badgeColor: ug.group.progression.badgeColor, badgeLabel: ug.group.progression.badgeLabel }
+          : null,
+      })),
+      profileFields: fields.map((f) => ({ field: f, value: valueMap[f.id] ?? "" })),
+      loginEvents,
+    };
+  },
+
+  /** Paginated security/login activity for a user (newest first). */
+  async listUserLoginEvents(userId: string, page: number, limit: number) {
+    const [data, total] = await Promise.all([
+      prisma.loginEvent.findMany({
+        where:   { userId },
+        orderBy: { createdAt: "desc" },
+        skip:    (page - 1) * limit,
+        take:    limit,
+        select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
+      }),
+      prisma.loginEvent.count({ where: { userId } }),
+    ]);
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  },
+
+  async setUserGroups(userId: string, groupIds: string[]) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw NodevoError.notFound("User not found");
+    await prisma.$transaction(async (tx) => {
+      await tx.userGroup.deleteMany({ where: { userId } });
+      if (groupIds.length > 0) {
+        await tx.userGroup.createMany({
+          data: groupIds.map((groupId) => ({ userId, groupId })),
+        });
+      }
+    });
+    // Effective permissions changed — invalidate the user's cache
+    await permissionCache.invalidate(userId);
+  },
+
+  async setUserActive(userId: string, isActive: boolean, requestingUserId?: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw NodevoError.notFound("User not found");
+    if (requestingUserId && requestingUserId === userId) {
+      throw NodevoError.forbidden("You cannot deactivate your own account");
+    }
+    return prisma.user.update({ where: { id: userId }, data: { isActive } });
+  },
+
+  async banUser(opts: {
+    userId: string;
+    issuedById: string;
+    type: "temporary" | "permanent";
+    reason: string;
+    expiresAt?: Date | null;
+  }) {
+    const user = await prisma.user.findUnique({
+      where: { id: opts.userId },
+      include: { groups: { include: { group: { select: { key: true } } } } },
+    });
+    if (!user) throw NodevoError.notFound("User not found");
+    if (opts.issuedById === opts.userId) {
+      throw NodevoError.forbidden("You cannot ban yourself");
+    }
+    const isAdmin = user.groups.some((ug) => ug.group.key === "admin");
+    if (isAdmin) {
+      throw NodevoError.forbidden("Administrator accounts cannot be banned");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.moderationBan.create({
+        data: {
+          userId:      opts.userId,
+          issuedById:  opts.issuedById,
+          type:        opts.type,
+          reason:      opts.reason,
+          status:      "active",
+          expiresAt:   opts.expiresAt ?? null,
+        },
+      });
+      const bannedUntil = opts.type === "permanent"
+        ? new Date("9999-12-31")
+        : (opts.expiresAt ?? null);
+      await tx.user.update({ where: { id: opts.userId }, data: { bannedUntil } });
+      await tx.moderationLog.create({
+        data: {
+          actorId:    opts.issuedById,
+          actorType:  "user",
+          action:     "ban.issued",
+          targetType: "user",
+          targetId:   opts.userId,
+          reason:     opts.reason,
+        },
+      });
+    });
+
+    const { notificationService } = await import("../notifications/notification.service.js");
+    await notificationService.dispatch({
+      userId:   opts.userId,
+      type:     "moderation.ban_issued",
+      title:    opts.type === "permanent" ? "Your account has been permanently suspended" : "Your account has been temporarily suspended",
+      body:     opts.reason,
+      channels: ["in_app", "email"],
+    });
+  },
+
+  async liftBan(userId: string, liftedById: string) {
+    const activeBan = await prisma.moderationBan.findFirst({
+      where: { userId, status: "active" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!activeBan) throw NodevoError.notFound("No active ban found for this user");
+
+    await prisma.$transaction(async (tx) => {
+      await tx.moderationBan.update({
+        where: { id: activeBan.id },
+        data: { status: "lifted", liftedAt: new Date(), liftedBy: liftedById },
+      });
+      await tx.user.update({ where: { id: userId }, data: { bannedUntil: null } });
+      await tx.moderationLog.create({
+        data: {
+          actorId:    liftedById,
+          actorType:  "user",
+          action:     "ban.lifted",
+          targetType: "user",
+          targetId:   userId,
+          reason:     `Ban lifted (was: ${activeBan.reason})`,
+        },
+      });
+    });
+
+    const { notificationService } = await import("../notifications/notification.service.js");
+    await notificationService.dispatch({
+      userId,
+      type:     "moderation.ban_lifted",
+      title:    "Your account suspension has been lifted",
+      body:     "Your suspension has been removed. You can now log in.",
+      channels: ["in_app"],
+    });
+  },
+
+  // ── Admin account actions (§17b) ──────────────────────────────────────────
+
+  /** Force-logout a user: revoke ALL their active sessions. Their next refresh
+   *  fails, so they are signed out everywhere within the 15-min access-token TTL
+   *  (§43). Equivalent to "delete all refresh tokens for user" (§17b). */
+  async forceLogoutUser(userId: string, actorId: string) {
+    await assertActionableUser(userId, actorId);
+
+    const { count } = await prisma.session.updateMany({
+      where: { userId, revokedAt: null },
+      data:  { revokedAt: new Date() },
+    });
+
+    await prisma.moderationLog.create({
+      data: {
+        actorId,
+        actorType:  "user",
+        action:     "user.force_logout",
+        targetType: "user",
+        targetId:   userId,
+        reason:     `Revoked ${count} active session(s)`,
+      },
+    });
+
+    return { revokedSessions: count };
+  },
+
+  /** Send a password-reset email to a user's registered address on the admin's
+   *  behalf. Reuses the same single-use DB-backed token flow as the public
+   *  endpoint (§17b). No-op silently if the account has no email / is inactive. */
+  async sendPasswordResetForUser(userId: string, actorId: string) {
+    const user = await assertActionableUser(userId, actorId);
+
+    const { requestPasswordReset } = await import("../auth/auth.service.js");
+    await requestPasswordReset(user.email);
+
+    await prisma.moderationLog.create({
+      data: {
+        actorId,
+        actorType:  "user",
+        action:     "user.password_reset_sent",
+        targetType: "user",
+        targetId:   userId,
+        reason:     `Password reset email sent to ${user.email}`,
+      },
+    });
+
+    return { ok: true };
+  },
+
+  // ── Profile Fields ────────────────────────────────────────────────────────
+
+  async listProfileFields() {
+    return prisma.userProfileField.findMany({ orderBy: { position: "asc" } });
+  },
+
+  async createProfileField(data: {
+    key: string;
+    label: string;
+    type: string;
+    placeholder?: string;
+    showOnRegistration: boolean;
+    requiredOnRegistration: boolean;
+    showOnProfile: boolean;
+  }) {
+    const exists = await prisma.userProfileField.findUnique({ where: { key: data.key } });
+    if (exists) throw NodevoError.conflict("A field with that key already exists");
+    const max = await prisma.userProfileField.aggregate({ _max: { position: true } });
+    return prisma.userProfileField.create({
+      data: { ...data, position: (max._max.position ?? 0) + 1 },
+    });
+  },
+
+  async updateProfileField(id: string, data: {
+    label?: string;
+    placeholder?: string;
+    showOnRegistration?: boolean;
+    requiredOnRegistration?: boolean;
+    showOnProfile?: boolean;
+    dobDisplayFormat?: string;
+  }) {
+    const field = await prisma.userProfileField.findUnique({ where: { id } });
+    if (!field) throw NodevoError.notFound("Profile field not found");
+    return prisma.userProfileField.update({ where: { id }, data });
+  },
+
+  async deleteProfileField(id: string) {
+    const field = await prisma.userProfileField.findUnique({ where: { id } });
+    if (!field) throw NodevoError.notFound("Profile field not found");
+    if (field.isSystem) throw NodevoError.forbidden("Cannot delete a system profile field");
+    await prisma.userProfileField.delete({ where: { id } });
+  },
+
+  async reorderProfileFields(items: Array<{ id: string; position: number }>) {
+    await prisma.$transaction(
+      items.map((item) =>
+        prisma.userProfileField.update({
+          where: { id: item.id },
+          data: { position: item.position },
+        }),
+      ),
+    );
+  },
+
+  // ── Settings ──────────────────────────────────────────────────────────────
+
+  // Default values for structured admin settings (§60, §26, CLAUDE.md)
+  SETTING_DEFAULTS: {
+    "site.name":                           "My Nodevo Site",
+    "site.url":                            "",
+    "site.description":                    "",
+    "site.locale":                         "en",
+    "site.timezone":                       "UTC",
+    "beta.enabled":                        false,
+    "beta.admin_key":                      "",
+    "beta.max_codes":                      50,
+    "beta.allow_revocation":               false,
+    "auth.registration_mode":              "open",
+    "auth.allow_registration":             true,
+    "auth.require_email_verification":     true,
+    "auth.default_group":                  "member",
+    "articles.allow_comments":             true,
+    "articles.require_comment_approval":   false,
+    "articles.per_page":                   10,
+    "email.smtp_host":                     "",
+    "email.smtp_port":                     587,
+    "email.from_address":                  "",
+  } as Record<string, unknown>,
+
+  async getSettings() {
+    const stored = await prisma.setting.findMany({ orderBy: { key: "asc" } });
+    const map = new Map(stored.map(s => [s.key, s]));
+
+    // Merge defaults so structured settings always appear
+    const defaults = adminService.SETTING_DEFAULTS;
+    const merged = [...stored];
+    for (const [key, value] of Object.entries(defaults)) {
+      if (!map.has(key)) {
+        merged.push({ key, value: value as any, updatedAt: new Date() });
+      }
+    }
+    return merged.sort((a, b) => a.key.localeCompare(b.key));
+  },
+
+  async setSetting(key: string, value: unknown) {
+    if (key === "beta.enabled" && value === false) {
+      await prisma.betaAccessLog.deleteMany({});
+    }
+    return prisma.setting.upsert({
+      where: { key },
+      update: { value: value as any },
+      create: { key, value: value as any },
+    });
+  },
+
+  // ── Articles (admin) ──────────────────────────────────────────────────────
+
+  async listArticles(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where: any = { deletedAt: null };
+    if (status) where.status = status;
+    const [data, total] = await Promise.all([
+      prisma.article.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          status: true,
+          viewCount: true,
+          likeCount: true,
+          commentCount: true,
+          createdAt: true,
+          publishedAt: true,
+          author: { select: { id: true, username: true, ...badgeColorSelect } },
+          category: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.article.count({ where }),
+    ]);
+    return {
+      data: data.map((a) => ({
+        ...a,
+        author: { id: a.author.id, username: a.author.username, badgeColor: extractBadgeColor(a.author.groups) },
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  },
+
+  // ── Health ────────────────────────────────────────────────────────────────
+
+  async getHealth() {
+    const t0db = Date.now();
+    let dbStatus: "ok" | "error" = "ok";
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+    } catch {
+      dbStatus = "error";
+    }
+    const dbLatency = Date.now() - t0db;
+
+    const t0redis = Date.now();
+    let redisStatus: "ok" | "error" = "ok";
+    try {
+      await redis.ping();
+    } catch {
+      redisStatus = "error";
+    }
+    const redisLatency = Date.now() - t0redis;
+
+    let queueStatus: "ok" | "error" = "ok";
+    try {
+      await bullConnection.ping();
+    } catch {
+      queueStatus = "error";
+    }
+
+    let storageStatus: "ok" | "error" = "ok";
+    let storageWriteable = false;
+    try {
+      const probe = path.join(env.UPLOAD_DIR, ".health");
+      await fs.writeFile(probe, "ok");
+      await fs.unlink(probe);
+      storageWriteable = true;
+    } catch {
+      storageStatus = "error";
+    }
+
+    const overall =
+      dbStatus === "error" || queueStatus === "error"
+        ? "critical"
+        : redisStatus === "error" || storageStatus === "error"
+          ? "degraded"
+          : "healthy";
+
+    return {
+      db:      { status: dbStatus,      latencyMs: dbLatency },
+      redis:   { status: redisStatus,   latencyMs: redisLatency },
+      queue:   { status: queueStatus,   workerCount: 0 },
+      storage: { status: storageStatus, writeable: storageWriteable },
+      email:   { status: await isEmailConfigured() ? "configured" as const : "unconfigured" as const },
+      overall,
+    };
+  },
+
+  async softDeleteArticle(id: string) {
+    const article = await prisma.article.findUnique({ where: { id } });
+    if (!article) throw NodevoError.notFound("Article not found");
+    await prisma.article.update({ where: { id }, data: { deletedAt: new Date() } });
+  },
+
+  // ── Moderation ────────────────────────────────────────────────────────────
+
+  async listReports(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where: any = status ? { status } : {};
+    const [reports, total] = await Promise.all([
+      prisma.moderationReport.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: { reporter: { select: { id: true, username: true, ...badgeColorSelect } } },
+      }),
+      prisma.moderationReport.count({ where }),
+    ]);
+
+    // Resolve target info for each report so the frontend can show a proper link
+    const resolvedTargets = await Promise.all(
+      reports.map(async (r) => {
+        try {
+          if (r.targetType === "article") {
+            const a = await prisma.article.findUnique({ where: { id: r.targetId }, select: { slug: true, title: true } });
+            return { href: a ? `/articles/${a.slug}` : null, label: a?.title ?? r.targetId };
+          }
+          if (r.targetType === "user") {
+            const u = await prisma.user.findUnique({ where: { id: r.targetId }, select: { username: true } });
+            return { href: u ? `/u/${u.username}` : null, label: u?.username ?? r.targetId };
+          }
+          if (r.targetType === "article_comment") {
+            const c = await prisma.articleComment.findUnique({ where: { id: r.targetId }, include: { article: { select: { slug: true } } } });
+            return { href: c ? `/articles/${c.article.slug}` : null, label: `Comment on "${c?.article.slug ?? r.targetId}"` };
+          }
+          if (r.targetType === "profile_comment") {
+            const c = await prisma.profileComment.findUnique({ where: { id: r.targetId }, include: { profileUser: { select: { username: true } } } });
+            return { href: c ? `/u/${c.profileUser.username}` : null, label: `Comment on ${c?.profileUser.username ?? r.targetId}'s profile` };
+          }
+        } catch {
+          // target may have been deleted — fall through
+        }
+        return { href: null, label: r.targetId };
+      }),
+    );
+
+    const pending   = await prisma.moderationReport.count({ where: { status: "pending" } });
+    const highToday = await prisma.moderationReport.count({
+      where: { status: "pending", createdAt: { gte: new Date(Date.now() - 86400000) } },
+    });
+    const resolvedToday = await prisma.moderationReport.count({
+      where: { status: "resolved", resolvedAt: { gte: new Date(Date.now() - 86400000) } },
+    });
+
+    return {
+      data: reports.map((r, i) => ({
+        ...r,
+        reporter:     { id: r.reporter.id, username: r.reporter.username, badgeColor: extractBadgeColor(r.reporter.groups) },
+        targetHref:   resolvedTargets[i]?.href ?? null,
+        targetLabel:  resolvedTargets[i]?.label ?? r.targetId,
+      })),
+      meta:  { page, limit, total, totalPages: Math.ceil(total / limit) },
+      stats: { pending, highToday, resolvedToday },
+    };
+  },
+
+  async listWarnings(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where: any = status ? { status } : {};
+    const [data, total] = await Promise.all([
+      prisma.moderationWarning.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user:     { select: { id: true, username: true, ...badgeColorSelect } },
+          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
+        },
+      }),
+      prisma.moderationWarning.count({ where }),
+    ]);
+    return {
+      data: data.map((w) => ({
+        ...w,
+        user:     { id: w.user.id,     username: w.user.username,     badgeColor: extractBadgeColor(w.user.groups) },
+        issuedBy: { id: w.issuedBy.id, username: w.issuedBy.username, badgeColor: extractBadgeColor(w.issuedBy.groups) },
+      })),
+      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    };
+  },
+
+  async listBans(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where: any = status ? { status } : {};
+    const [data, total] = await Promise.all([
+      prisma.moderationBan.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user:     { select: { id: true, username: true, ...badgeColorSelect } },
+          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
+        },
+      }),
+      prisma.moderationBan.count({ where }),
+    ]);
+    const active    = await prisma.moderationBan.count({ where: { status: "active" } });
+    const temporary = await prisma.moderationBan.count({ where: { status: "active", type: "temporary" } });
+    const permanent = await prisma.moderationBan.count({ where: { status: "active", type: "permanent" } });
+    return {
+      data: data.map((b) => ({
+        ...b,
+        user:     { id: b.user.id,     username: b.user.username,     badgeColor: extractBadgeColor(b.user.groups) },
+        issuedBy: { id: b.issuedBy.id, username: b.issuedBy.username, badgeColor: extractBadgeColor(b.issuedBy.groups) },
+      })),
+      meta:  { page, limit, total, totalPages: Math.ceil(total / limit) },
+      stats: { active, temporary, permanent },
+    };
+  },
+
+  async listCases(opts: { page: number; limit: number; status?: string; type?: string }) {
+    const { page, limit, status, type } = opts;
+    const where: any = {
+      ...(status ? { status } : {}),
+      ...(type   ? { type   } : {}),
+    };
+    const SEV_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
+    const [rows, total] = await Promise.all([
+      prisma.moderationCase.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" } }),
+      prisma.moderationCase.count({ where }),
+    ]);
+    rows.sort((a, b) => (SEV_RANK[a.severity] ?? 9) - (SEV_RANK[b.severity] ?? 9));
+
+    // Resolve linkedUserIds to { id, username, badgeColor }
+    const allIds = [...new Set(rows.flatMap((r) => r.linkedUserIds))];
+    const users  = allIds.length > 0
+      ? await prisma.user.findMany({
+          where:  { id: { in: allIds } },
+          select: { id: true, username: true, groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } } },
+        })
+      : [];
+    const userMap = new Map(users.map((u) => [
+      u.id,
+      { id: u.id, username: u.username, badgeColor: u.groups[0]?.group.progression?.badgeColor ?? null },
+    ]));
+    // Also fetch distinct IPs for linked users so the UI can display them in signals
+    const ipRows = allIds.length > 0
+      ? await prisma.loginEvent.findMany({
+          where:    { userId: { in: allIds }, ip: { not: null }, success: true },
+          select:   { ip: true },
+          distinct: ["ip"],
+        })
+      : [];
+    const ipAddresses = [...new Set(ipRows.map((r) => r.ip).filter(Boolean) as string[])];
+
+    const data = rows.map((r) => ({
+      ...r,
+      linkedUsers:  r.linkedUserIds.map((id) => userMap.get(id) ?? { id, username: id, badgeColor: null }),
+      ipAddresses,
+    }));
+
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  },
+
+  async revokeException(caseId: string, actorId: string) {
+    const existing = await prisma.moderationCase.findUnique({ where: { id: caseId } });
+    if (!existing) throw NodevoError.notFound("Case not found");
+
+    // Remove all whitelist entries for this case
+    const deleted = await prisma.reviewedSecuritySignal.deleteMany({ where: { caseId } });
+
+    // Revert case status to open so it appears in the queue again
+    const updated = await prisma.moderationCase.update({
+      where: { id: caseId },
+      data:  { status: "open", reviewedBy: null, reviewedAt: null },
+    });
+
+    await prisma.moderationLog.create({
+      data: {
+        actorId,
+        actorType:  "user",
+        action:     "security.exception_revoked",
+        targetType: "moderation_case",
+        targetId:   caseId,
+        reason:     `Exception revoked — ${deleted.count} signal(s) removed from whitelist. Case re-opened for investigation.`,
+      },
+    });
+
+    return updated;
+  },
+
+  async listModLog(opts: { page: number; limit: number; action?: string; actionPrefix?: string; actorType?: string }) {
+    const { page, limit, action, actionPrefix, actorType } = opts;
+    const where: any = {};
+    if (action)       where.action    = action;
+    if (actionPrefix) where.action    = { startsWith: actionPrefix + "." };
+    if (actorType)    where.actorType = actorType;
+    const [rows, total] = await Promise.all([
+      prisma.moderationLog.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.moderationLog.count({ where }),
+    ]);
+
+    // Batch-resolve actor + user-target usernames
+    const userIds = new Set<string>();
+    for (const r of rows) {
+      if (r.actorId)                             userIds.add(r.actorId);
+      if (r.targetId && r.targetType === "user") userIds.add(r.targetId);
+    }
+
+    // Also resolve case-target → linked user IDs so we can show real names
+    const caseTargetIds = rows
+      .filter((r) => r.targetType === "moderation_case" && r.targetId)
+      .map((r) => r.targetId as string);
+    const cases = caseTargetIds.length > 0
+      ? await prisma.moderationCase.findMany({
+          where:  { id: { in: caseTargetIds } },
+          select: { id: true, type: true, linkedUserIds: true },
+        })
+      : [];
+    const caseMap     = new Map(cases.map((c) => [c.id, c]));
+    cases.forEach((c) => c.linkedUserIds.forEach((uid) => userIds.add(uid)));
+
+    const users = userIds.size > 0
+      ? await prisma.user.findMany({
+          where:  { id: { in: [...userIds] } },
+          select: { id: true, username: true, ...badgeColorSelect },
+        })
+      : [];
+    const userMap  = new Map(users.map((u) => [u.id, u.username]));
+    const colorMap = new Map(users.map((u) => [u.id, extractBadgeColor(u.groups)]));
+
+    const data = rows.map((r) => {
+      let targetUsername: string | null = null;
+      let targetBadgeColor: string | null = null;
+      let targetDetail: string | null = null;
+
+      if (r.targetId && r.targetType === "user") {
+        targetUsername    = userMap.get(r.targetId) ?? r.targetId;
+        targetBadgeColor  = colorMap.get(r.targetId) ?? null;
+      } else if (r.targetId && r.targetType === "moderation_case") {
+        // Subject = the case TYPE (e.g. "Multiaccounting"); detail = who shares what.
+        const c           = caseMap.get(r.targetId);
+        const linkedIds   = c?.linkedUserIds ?? [];
+        const names       = linkedIds.map((uid) => userMap.get(uid) ?? uid).filter(Boolean);
+        targetUsername    = c ? humanizeCaseType(c.type) : "Case";
+        targetDetail      = c ? describeCaseSignal(c.type, names) : null;
+      } else if (r.targetType === "device_cookie") {
+        // Show a short, readable form — the full UUID is noise to a mod
+        targetUsername    = r.targetId ? `Cookie ${r.targetId.slice(0, 8)}…` : "Device Cookie";
+      } else if (r.targetType === "ip") {
+        // The IP itself IS useful — show it directly
+        targetUsername    = r.targetId ?? "IP";
+      }
+
+      return {
+        ...r,
+        actorUsername:    r.actorId ? (userMap.get(r.actorId)  ?? r.actorId)  : null,
+        actorBadgeColor:  r.actorId ? (colorMap.get(r.actorId) ?? null)       : null,
+        targetUsername,
+        targetBadgeColor,
+        targetDetail,
+      };
+    });
+
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  },
+
+  // ── Moderation write ops (delegates to moderationService) ────────────────
+
+  async updateReport(id: string, actorId: string, data: {
+    status?: string; notes?: string; assignedTo?: string | null;
+  }) {
+    const { moderationService } = await import("../moderation/moderation.service.js");
+    return moderationService.updateReport(id, actorId, data);
+  },
+
+  async issueWarning(data: {
+    userId: string; issuedById: string; reason: string; expiresAt?: Date | null;
+  }) {
+    const { moderationService } = await import("../moderation/moderation.service.js");
+    return moderationService.issueWarning(data);
+  },
+
+  async pardonWarning(id: string, adminId: string) {
+    const { moderationService } = await import("../moderation/moderation.service.js");
+    return moderationService.pardonWarning(id, adminId);
+  },
+
+  async updateCaseNotes(id: string, notes: string) {
+    await prisma.moderationCase.update({ where: { id }, data: { notes: notes || null } });
+  },
+
+  async updateCase(id: string, actorId: string, status: "reviewed" | "dismissed") {
+    const { moderationService } = await import("../moderation/moderation.service.js");
+    return moderationService.updateCase(id, actorId, status);
+  },
+
+  async moderatorDeleteComment(type: "article" | "profile", id: string, actorId: string, reason: string) {
+    const { moderationService } = await import("../moderation/moderation.service.js");
+    if (type === "article") return moderationService.moderatorDeleteArticleComment(id, actorId, reason);
+    return moderationService.moderatorDeleteProfileComment(id, actorId, reason);
+  },
+
+  // ── Plugins ───────────────────────────────────────────────────────────────
+
+  async listInstalledPlugins() {
+    return prisma.installedPlugin.findMany({ orderBy: { installedAt: "desc" } });
+  },
+
+  // ── License ───────────────────────────────────────────────────────────────
+
+  async getActiveLicense() {
+    return prisma.license.findFirst({
+      where: { status: "active" },
+      orderBy: { activatedAt: "desc" },
+    });
+  },
+
+  // ── Error log ─────────────────────────────────────────────────────────────
+
+  async listErrorLog(opts: { page: number; limit: number; severity?: string; domain?: string }) {
+    const { page, limit, severity, domain } = opts;
+    const where: any = {};
+    if (severity) where.severity = severity;
+    if (domain)   where.code = { startsWith: `NEC-${domain.toUpperCase()}-` };
+    const [data, total] = await Promise.all([
+      prisma.errorLog.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.errorLog.count({ where }),
+    ]);
+    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  },
+
+  async clearErrorLog(severity?: string) {
+    const where: any = severity ? { severity } : {};
+    await prisma.errorLog.deleteMany({ where });
+  },
+
+  async listMigrationHistory() {
+    return prisma.migrationRun.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+  },
+
+  // ── Style history ─────────────────────────────────────────────────────────
+
+  async listStyleHistory() {
+    const rows = await prisma.styleHistory.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+      include: { savedBy: { select: { id: true, username: true, ...badgeColorSelect } } },
+    });
+    return rows.map((r) => ({
+      ...r,
+      savedBy: { id: r.savedBy.id, username: r.savedBy.username, badgeColor: extractBadgeColor(r.savedBy.groups) },
+    }));
+  },
+
+  // ── Nav items ─────────────────────────────────────────────────────────────
+
+  async listNavItems() {
+    return prisma.navItem.findMany({ orderBy: { position: "asc" } });
+  },
+
+  async createNavItem(data: {
+    label: string; url: string; openInNewTab: boolean; visibility: string;
+  }) {
+    const max = await prisma.navItem.aggregate({ _max: { position: true } });
+    return prisma.navItem.create({
+      data: { ...data, position: (max._max.position ?? 0) + 1 },
+    });
+  },
+
+  async updateNavItem(id: string, data: Partial<{
+    label: string; url: string; isActive: boolean; openInNewTab: boolean; visibility: string;
+  }>) {
+    const item = await prisma.navItem.findUnique({ where: { id } });
+    if (!item) throw NodevoError.notFound("Nav item not found");
+    return prisma.navItem.update({ where: { id }, data });
+  },
+
+  async reorderNavItems(items: Array<{ id: string; position: number }>) {
+    await prisma.$transaction(
+      items.map(({ id, position }) =>
+        prisma.navItem.update({ where: { id }, data: { position } }),
+      ),
+    );
+  },
+
+  async deleteNavItem(id: string) {
+    const item = await prisma.navItem.findUnique({ where: { id } });
+    if (!item) return;
+    if (item.isSystem) throw new Error("Cannot delete a system nav item");
+    await prisma.navItem.delete({ where: { id } });
+  },
+
+  async seedDefaultNavItems() {
+    const count = await prisma.navItem.count();
+    if (count > 0) return;
+    await prisma.navItem.createMany({
+      data: [
+        { label: "Home",     url: "/",         position: 1, isSystem: true },
+        { label: "Articles", url: "/articles", position: 2, isSystem: true },
+        { label: "Members",  url: "/members",  position: 3, isSystem: true },
+      ],
+    });
+  },
+
+  /** Idempotently ensure the core "Members" nav item exists (added after initial
+      installs that only seeded Home + Articles). Safe to call on every boot. */
+  async ensureMembersNavItem() {
+    const existing = await prisma.navItem.findFirst({ where: { url: "/members" } });
+    if (existing) return;
+    const max = await prisma.navItem.aggregate({ _max: { position: true } });
+    await prisma.navItem.create({
+      data: { label: "Members", url: "/members", position: (max._max.position ?? 0) + 1, isSystem: true },
+    });
+  },
+};
