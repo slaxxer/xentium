@@ -15,6 +15,7 @@ import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { enforcePostLength } from "../../shared/middleware/contentLimits.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
+import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 
 /** Host services injected into every plugin's onEnable/onDisable context. */
 const host: PluginHost = {
@@ -24,7 +25,7 @@ const host: PluginHost = {
   logger,
   errors:     { NodevoError, NEC },
   middleware: { requireAuth, optionalAuth, enforcePostLength },
-  utils:      { resolveAvatar },
+  utils:      { resolveAvatar, sanitizeRichText },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
     dispatch: async (opts: any) => {
