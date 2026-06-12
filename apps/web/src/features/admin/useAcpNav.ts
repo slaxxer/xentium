@@ -98,6 +98,25 @@ export function useAcpNav(): NavItem[] {
     return acc;
   }, {});
 
+  // A plugin page whose `section` matches an existing core section key (e.g.
+  // "Users") nests INTO that core group rather than getting its own top-level
+  // section. Everything else becomes a standalone plugin section.
+  const coreKeys = new Set(ACP_NAV.map((n) => n.key).filter(Boolean) as string[]);
+  const mergeIntoCore: Record<string, NavChild[]> = {};
+  const standaloneMap: Record<string, NavChild[]> = {};
+  for (const [section, children] of Object.entries(pluginSectionMap)) {
+    const key = section.toLowerCase();
+    if (coreKeys.has(key)) (mergeIntoCore[key] ??= []).push(...children);
+    else standaloneMap[section] = children;
+  }
+
+  // Core nav with any merged plugin children appended to the matching section.
+  const baseNav: NavItem[] = ACP_NAV.map((item) =>
+    item.key && mergeIntoCore[item.key]
+      ? { ...item, children: [...(item.children ?? []), ...mergeIntoCore[item.key]!] }
+      : item,
+  );
+
   const toNavItem = (section: string, children: NavChild[]): NavItem => {
     const meta = slotRegistry.getPluginMetaBySectionName(section);
     return {
@@ -110,20 +129,20 @@ export function useAcpNav(): NavItem[] {
     };
   };
 
-  const contentAreaSections = Object.entries(pluginSectionMap)
+  const contentAreaSections = Object.entries(standaloneMap)
     .filter(([s]) => slotRegistry.getPluginMetaBySectionName(s)?.acpSectionPosition === "after-content")
     .map(([s, ch]) => toNavItem(s, ch));
-  const otherPluginSections = Object.entries(pluginSectionMap)
+  const otherPluginSections = Object.entries(standaloneMap)
     .filter(([s]) => slotRegistry.getPluginMetaBySectionName(s)?.acpSectionPosition !== "after-content")
     .map(([s, ch]) => toNavItem(s, ch));
 
-  const contentIdx = ACP_NAV.findIndex((n) => n.key === "content");
-  const moderationIdx = ACP_NAV.findIndex((n) => n.key === "moderation");
+  const contentIdx = baseNav.findIndex((n) => n.key === "content");
+  const moderationIdx = baseNav.findIndex((n) => n.key === "moderation");
   return [
-    ...ACP_NAV.slice(0, contentIdx + 1),
+    ...baseNav.slice(0, contentIdx + 1),
     ...contentAreaSections,
-    ...ACP_NAV.slice(contentIdx + 1, moderationIdx + 1),
+    ...baseNav.slice(contentIdx + 1, moderationIdx + 1),
     ...otherPluginSections,
-    ...ACP_NAV.slice(moderationIdx + 1),
+    ...baseNav.slice(moderationIdx + 1),
   ];
 }

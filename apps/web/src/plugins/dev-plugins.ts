@@ -8,6 +8,11 @@
 // add its web entry here (this file edit stays local — see .gitignore).
 const ENTRIES: Record<string, () => Promise<unknown>> = {};
 
+/** Plugin ids provided here as build-time (HMR) entries. main.tsx runtime-loads
+ *  any OTHER enabled plugin from its compiled bundle, so uploaded plugins work
+ *  in dev too without per-plugin wiring. */
+export const DEV_PLUGIN_IDS = Object.keys(ENTRIES);
+
 export async function loadDevPlugins(enabledIds: string[]): Promise<void> {
   await Promise.all(
     Object.entries(ENTRIES)

@@ -147,6 +147,9 @@ export interface PluginHost {
     requireAuth: any;
     optionalAuth: any;
     enforcePostLength: any;
+    /** Factory: `requirePermission(key)` → middleware gating on a permission
+     *  key (e.g. "admin.access"). Use for plugin ACP / privileged routes. */
+    requirePermission: (key: string) => any;
   };
   /** Shared helper utilities. */
   utils: {
