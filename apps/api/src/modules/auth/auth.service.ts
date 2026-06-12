@@ -2,6 +2,7 @@ import crypto from "node:crypto";
 import { prisma } from "../../infrastructure/db.js";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { verifyPassword, hashPassword } from "./auth.password.js";
+import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { sendEmail, verificationCodeEmail, passwordResetEmail } from "../../infrastructure/email/email.service.js";
@@ -28,7 +29,24 @@ const hashToken = (raw: string) => crypto.createHmac("sha256", TOKEN_HMAC_KEY).u
 
 export async function login(email: string, password: string, pin: string | undefined, meta: Meta) {
   const user = await prisma.user.findUnique({ where: { email } });
-  const ok = await verifyPassword(user?.passwordHash ?? DUMMY_HASH, password).catch(() => false);
+
+  let ok: boolean;
+  if (user && isLegacyScheme(user.passwordScheme)) {
+    // Migrated account (§34): verify with the source platform's algorithm,
+    // then transparently upgrade to argon2 so the legacy path runs once.
+    ok = await verifyLegacyPassword(user.passwordScheme, user.passwordHash, password).catch(() => false);
+    // Keep the timing profile >= an argon2 verify so legacy accounts are not
+    // distinguishable from native ones (account-enumeration hardening, §43).
+    await verifyPassword(DUMMY_HASH, password).catch(() => false);
+    if (ok) {
+      await prisma.user.update({
+        where: { id: user.id },
+        data:  { passwordHash: await hashPassword(password), passwordScheme: "argon2" },
+      }).catch(() => { /* upgrade retried on next login */ });
+    }
+  } else {
+    ok = await verifyPassword(user?.passwordHash ?? DUMMY_HASH, password).catch(() => false);
+  }
   const authed = !!user && user.isActive && ok;
 
   await prisma.loginEvent.create({
