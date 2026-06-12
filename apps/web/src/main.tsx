@@ -55,6 +55,12 @@ function loadPluginBundle(id: string): Promise<void> {
 
 // ── Bootstrap: check enabled plugins, then render ─────────────────────────────
 async function bootstrap() {
+  // Site default language for visitors with no explicit choice (§60.3) —
+  // makes the admin's chosen language take effect on every device, not just
+  // the one that ran the installer (which has the wizard's nv_locale cookie).
+  const { applySiteDefaultLocale } = await import("./lib/i18n");
+  await applySiteDefaultLocale();
+
   // Fetch enabled plugin IDs from the public meta endpoint.
   // Falls back to empty array (all plugins disabled) on error.
   let enabledIds: string[] = [];

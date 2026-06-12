@@ -35,12 +35,17 @@ i18n
     load: "languageOnly",
     // §60.3 resolution chain (client mirror): an authenticated user's
     // preferred_locale is applied imperatively after login (see useAuth);
-    // before that, cookie → browser → site default win in this order.
+    // an explicit device choice lives in the nv_locale cookie; with neither,
+    // the SITE DEFAULT applies (fetched in main.tsx bootstrap from
+    // /api/meta/site-locale — it outranks the browser language so an admin's
+    // chosen language genuinely takes effect site-wide for new visitors).
     detection: {
       order: ["cookie", "navigator", "htmlTag"],
       lookupCookie: LOCALE_COOKIE,
-      caches: ["cookie"],
-      cookieMinutes: 365 * 24 * 60,
+      // No auto-caching: only an explicit choice (setLocale) writes the
+      // cookie. Otherwise every visitor would get pinned to their first
+      // detected language and never follow a changed site default.
+      caches: [],
     },
     backend: {
       loadPath: "/locales/{{lng}}/{{ns}}.json",
@@ -57,6 +62,31 @@ i18n
 export function setLocale(code: LocaleCode) {
   i18n.changeLanguage(code);
   document.cookie = `${LOCALE_COOKIE}=${code}; path=/; max-age=${365 * 24 * 60 * 60}; samesite=lax`;
+}
+
+/** Whether this device has an explicit language choice (nv_locale cookie). */
+export function hasExplicitLocale(): boolean {
+  return document.cookie.split("; ").some((c) => c.startsWith(`${LOCALE_COOKIE}=`));
+}
+
+/**
+ * Apply the site default language (§60.3, last step of the chain) for
+ * visitors with no explicit choice. Called once during bootstrap; never
+ * writes the cookie, so these visitors keep following the admin-configured
+ * default if it changes later.
+ */
+export async function applySiteDefaultLocale(): Promise<void> {
+  if (hasExplicitLocale()) return;
+  try {
+    const res = await fetch("/api/meta/site-locale");
+    if (!res.ok) return;
+    const { locale } = (await res.json()) as { locale: string | null };
+    if (locale && (LOCALE_CODES as string[]).includes(locale)) {
+      await i18n.changeLanguage(locale);
+    }
+  } catch {
+    /* pre-install or offline — the detector result stands */
+  }
 }
 
 /**
