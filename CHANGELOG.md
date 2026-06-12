@@ -76,6 +76,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
   (`common`: nav/actions/search; `account`: Preferences + tabs) and wired into the header (PubNav),
   Account page, and Preferences tab — switching language now visibly updates them. (Remaining UI
   externalization — auth, articles, profiles, errors, ACP, backend emails — is an ongoing track.)
+- **ACP translation coverage** — 25 of 32 ACP pages are now fully externalized into the `acp`
+  namespace across all 5 locales (689 keys/locale, parity-checked). Latest batch: the Extensions
+  quartet (Installed, Upload wizard, Marketplace, License) plus Permissions and Articles.
+  Remaining: Groups, UserDetail, Progression, StyleEditor, Categories, Navigation, GuestHome.
 - **Configurable scheduled tasks** — ACP → System → Scheduled Tasks lets admins set when each
   recurring (cron) job runs: the 4 timer jobs (`security-analysis`, `ban-expiry`,
   `warning-expiry`, `license-refresh`) get friendly presets (every 15/30/60 min, daily at
