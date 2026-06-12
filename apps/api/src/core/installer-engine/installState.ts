@@ -19,7 +19,14 @@ export async function advanceTo(step: InstallStep) {
 }
 
 export async function assertNotComplete() {
-  const row = await prisma.install.findFirst();
+  let row;
+  try {
+    row = await prisma.install.findFirst();
+  } catch {
+    // Fresh database: the installs table doesn't exist until the DATABASE
+    // step runs `migrate deploy`. No table = definitely not complete.
+    return;
+  }
   if (row?.completedAt) {
     const err = new Error("already_installed");
     (err as any).status = 410;

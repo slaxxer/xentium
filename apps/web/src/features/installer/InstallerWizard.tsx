@@ -29,8 +29,14 @@ import { useTheme } from "../../hooks/useTheme.js";
 import "../../styles/installer.scss";
 
 const STEPS_KEYS = ["welcome", "environment", "database", "site", "admin", "finalize", "done"];
-const ENV_ROW_KEYS = ["node", "postgres", "redis", "storage", "database_url", "data_dir"];
 const TOTAL = STEPS_KEYS.length;
+
+type EnvCheck = { key: string; name: string; ok: boolean; detail: string };
+
+// How long the wizard waits for the setup-mode hot swap (POST /install/setup
+// → .env written → setup server closes → full app boots on the same port).
+const SWAP_TIMEOUT_MS = 30_000;
+const SWAP_POLL_MS = 1_000;
 
 // Common timezones list
 const TIMEZONES = [
@@ -69,22 +75,35 @@ export function InstallerWizard() {
     let mounted = true;
     installerApi.status().then((s) => {
       if (!mounted) return;
+      setSetupMode(!!s.setupMode);
       const idx = STEP_INDEX[s.currentStep] ?? 0;
       if (idx > 0 && idx < 6) setStep(idx);
     }).catch(() => {/* API not yet reachable — stay at 0 */});
     return () => { mounted = false; };
   }, []);
 
-  const [envResult, setEnvResult] = useState<Record<
-    string,
-    { ok: boolean; detail: string }
-  > | null>(null);
+  // Setup mode: no usable .env yet — the API is the minimal setup server and
+  // the DATABASE step collects credentials instead of testing a preconfigured
+  // connection.
+  const [setupMode, setSetupMode] = useState(false);
+
+  const [envChecks, setEnvChecks] = useState<EnvCheck[] | null>(null);
   const [revealed, setRevealed] = useState(0);
   const envPassed =
-    !!envResult && revealed >= ENV_ROW_KEYS.length && ENV_ROW_KEYS.every((k) => envResult[k]?.ok);
+    !!envChecks && revealed >= envChecks.length && envChecks.every((c) => c.ok);
 
   const [dbTesting, setDbTesting] = useState(false);
+  const [dbSwapping, setDbSwapping] = useState(false);
   const [dbResult, setDbResult] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [dbForm, setDbForm] = useState({
+    host: "localhost",
+    port: "5432",
+    database: "nodevo",
+    user: "",
+    password: "",
+    redisUrl: "",
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [site, setSite] = useState({
     siteName: "My Forum",
@@ -119,39 +138,35 @@ export function InstallerWizard() {
   }, [toast]);
 
   async function runEnvCheck() {
-    setEnvResult(null);
+    setEnvChecks(null);
     setRevealed(0);
     try {
+      // The server decides which rows apply: full 6 checks normally, lite
+      // checks (node / .env writable / data dir) in setup mode.
       const data = await installerApi.environment();
-      const map: Record<string, { ok: boolean; detail: string }> = {};
-      data.checks.forEach((c: any) => {
-        map[c.key] = { ok: c.ok, detail: c.detail };
-      });
-      setEnvResult(map);
+      setEnvChecks(data.checks);
     } catch {
-      const map: Record<string, { ok: boolean; detail: string }> = {};
-      ENV_ROW_KEYS.forEach((k) => {
-        map[k] = { ok: false, detail: "Could not reach the server" };
-      });
-      setEnvResult(map);
+      setEnvChecks([
+        { key: "server", name: "API server", ok: false, detail: "Could not reach the server" },
+      ]);
     }
   }
 
   useEffect(() => {
-    if (step === 1 && envResult === null) void runEnvCheck();
+    if (step === 1 && envChecks === null) void runEnvCheck();
   }, [step]);
 
   useEffect(() => {
-    if (!envResult) return;
+    if (!envChecks) return;
     setRevealed(0);
     let i = 0;
     const id = setInterval(() => {
       i += 1;
       setRevealed(i);
-      if (i >= ENV_ROW_KEYS.length) clearInterval(id);
+      if (i >= envChecks.length) clearInterval(id);
     }, 550);
     return () => clearInterval(id);
-  }, [envResult]);
+  }, [envChecks]);
 
   async function testDb() {
     setDbTesting(true);
@@ -166,6 +181,47 @@ export function InstallerWizard() {
       });
     } finally {
       setDbTesting(false);
+    }
+  }
+
+  /** Setup mode: post credentials, then poll until the hot-swapped full API
+   *  answers the status probe without the setupMode flag. */
+  async function connectAndSave() {
+    setDbTesting(true);
+    setDbResult(null);
+    try {
+      await installerApi.setup({
+        host: dbForm.host.trim(),
+        port: Number(dbForm.port) || 5432,
+        database: dbForm.database.trim(),
+        user: dbForm.user.trim(),
+        password: dbForm.password,
+        redisUrl: dbForm.redisUrl.trim() || undefined,
+      });
+
+      setDbSwapping(true);
+      const deadline = Date.now() + SWAP_TIMEOUT_MS;
+      let swapped = false;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, SWAP_POLL_MS));
+        try {
+          const s = await installerApi.status();
+          if (!s.setupMode) { swapped = true; break; }
+        } catch { /* listener is mid-swap — keep polling */ }
+      }
+      if (!swapped) throw new Error(t("database.setup_failed"));
+
+      setSetupMode(false);
+      setDbResult({ ok: true, msg: t("database.connected") });
+      setStep(STEP_INDEX.SITE_CONFIG!);
+    } catch (e: unknown) {
+      setDbResult({
+        ok: false,
+        msg: e instanceof Error ? e.message : t("database.connection_failed"),
+      });
+    } finally {
+      setDbTesting(false);
+      setDbSwapping(false);
     }
   }
 
@@ -251,7 +307,7 @@ export function InstallerWizard() {
   }
 
   const dotState = (idx: number) =>
-    idx === 1 && envResult && !envPassed && step > 1
+    idx === 1 && envChecks && !envPassed && step > 1
       ? "error-step"
       : idx < step
         ? "completed"
@@ -413,32 +469,38 @@ export function InstallerWizard() {
             <h2 className="step-title">{t("environment.title")}</h2>
             <p className="step-subtitle">{t("environment.subtitle")}</p>
             <div className="env-list">
-              {ENV_ROW_KEYS.map((key, i) => {
-                const res = envResult && i < revealed ? envResult[key] : null;
-                const cls = !res ? "checking" : res.ok ? "pass" : "fail";
-                return (
-                  <div className="env-item" key={key}>
-                    <div className={`env-icon ${cls}`}>
-                      <FontAwesomeIcon icon={envIcon(cls)} />
-                    </div>
-                    <div className="env-info">
-                      <div className="env-name">{t(`environment.rows.${key}`)}</div>
-                      <div className="env-detail">
-                        {res ? res.detail : t("environment.status.checking")}
+              {(envChecks ?? [{ key: "loading", name: "", ok: false, detail: "" }]).map(
+                (check, i) => {
+                  const res = envChecks && i < revealed ? check : null;
+                  const cls = !res ? "checking" : res.ok ? "pass" : "fail";
+                  return (
+                    <div className="env-item" key={check.key}>
+                      <div className={`env-icon ${cls}`}>
+                        <FontAwesomeIcon icon={envIcon(cls)} />
                       </div>
+                      <div className="env-info">
+                        <div className="env-name">
+                          {envChecks
+                            ? t(`environment.rows.${check.key}`, { defaultValue: check.name })
+                            : t("environment.status.checking")}
+                        </div>
+                        <div className="env-detail">
+                          {res ? res.detail : t("environment.status.checking")}
+                        </div>
+                      </div>
+                      <span className={`env-status ${cls}`}>
+                        {!res
+                          ? t("environment.status.checking")
+                          : res.ok
+                            ? t("environment.status.passed")
+                            : t("environment.status.failed")}
+                      </span>
                     </div>
-                    <span className={`env-status ${cls}`}>
-                      {!res
-                        ? t("environment.status.checking")
-                        : res.ok
-                          ? t("environment.status.passed")
-                          : t("environment.status.failed")}
-                    </span>
-                  </div>
-                );
-              })}
+                  );
+                },
+              )}
             </div>
-            {envResult && revealed >= ENV_ROW_KEYS.length && !envPassed && (
+            {envChecks && revealed >= envChecks.length && !envPassed && (
               <div style={{ marginTop: 14, textAlign: "center" }}>
                 <button className="btn btn-retry" onClick={runEnvCheck}>
                   <FontAwesomeIcon icon={faArrowsRotate} /> {t("environment.retry")}
@@ -449,6 +511,116 @@ export function InstallerWizard() {
         );
       case 2: {
         const cls = dbTesting ? "checking" : dbResult ? (dbResult.ok ? "pass" : "fail") : "";
+
+        if (setupMode) {
+          // No .env yet — collect credentials; the server verifies them,
+          // writes the config (secrets included) and hot-swaps to full mode.
+          return (
+            <>
+              <h2 className="step-title">{t("database.title")}</h2>
+              <p className="step-subtitle">{t("database.setup_subtitle")}</p>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>
+                    {t("database.host")} <span className="required">*</span>
+                  </label>
+                  <input
+                    value={dbForm.host}
+                    onChange={(e) => setDbForm({ ...dbForm, host: e.target.value })}
+                    placeholder="localhost"
+                    disabled={dbTesting}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t("database.port")}</label>
+                  <input
+                    value={dbForm.port}
+                    onChange={(e) => setDbForm({ ...dbForm, port: e.target.value })}
+                    placeholder="5432"
+                    disabled={dbTesting}
+                  />
+                </div>
+              </div>
+              <div className="form-group">
+                <label>
+                  {t("database.db_name")} <span className="required">*</span>
+                </label>
+                <input
+                  value={dbForm.database}
+                  onChange={(e) => setDbForm({ ...dbForm, database: e.target.value })}
+                  placeholder="nodevo"
+                  disabled={dbTesting}
+                />
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>
+                    {t("database.user")} <span className="required">*</span>
+                  </label>
+                  <input
+                    value={dbForm.user}
+                    onChange={(e) => setDbForm({ ...dbForm, user: e.target.value })}
+                    disabled={dbTesting}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{t("database.password")}</label>
+                  <input
+                    type="password"
+                    value={dbForm.password}
+                    onChange={(e) => setDbForm({ ...dbForm, password: e.target.value })}
+                    disabled={dbTesting}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                className="btn btn-soft"
+                style={{ marginBottom: 10 }}
+                onClick={() => setShowAdvanced((v) => !v)}
+              >
+                {t("database.advanced")} {showAdvanced ? "▴" : "▾"}
+              </button>
+              {showAdvanced && (
+                <div className="form-group">
+                  <label>{t("database.redis_url")}</label>
+                  <input
+                    value={dbForm.redisUrl}
+                    onChange={(e) => setDbForm({ ...dbForm, redisUrl: e.target.value })}
+                    placeholder="redis://localhost:6379"
+                    disabled={dbTesting}
+                  />
+                  <span className="hint">{t("database.redis_hint")}</span>
+                </div>
+              )}
+              <button
+                className="btn btn-next"
+                style={{ marginTop: 8 }}
+                onClick={connectAndSave}
+                disabled={dbTesting || !dbForm.host.trim() || !dbForm.database.trim() || !dbForm.user.trim()}
+              >
+                <FontAwesomeIcon icon={dbTesting ? faArrowsRotate : faPlug} />{" "}
+                {dbSwapping
+                  ? t("database.swap_wait")
+                  : dbTesting
+                    ? t("database.connecting")
+                    : t("database.connect")}
+              </button>
+              {dbResult && (
+                <p
+                  className="hint"
+                  style={{
+                    marginTop: 10,
+                    color: dbResult.ok ? "var(--success)" : "var(--error)",
+                  }}
+                >
+                  <FontAwesomeIcon icon={dbResult.ok ? faCheck : faXmark} /> {dbResult.msg}
+                </p>
+              )}
+            </>
+          );
+        }
+
         return (
           <>
             <h2 className="step-title">{t("database.title")}</h2>
