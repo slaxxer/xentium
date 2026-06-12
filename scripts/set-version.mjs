@@ -37,6 +37,7 @@ const manifests = [
   "packages/migrate-core/package.json",
   "packages/migrate-wp/package.json",
   "packages/migrate-phpbb/package.json",
+  "packages/migrate-xenforo/package.json",
   "e2e/package.json",
 ];
 
