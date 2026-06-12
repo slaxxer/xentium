@@ -121,11 +121,12 @@ export const userRepository = {
     return prisma.profileComment.create({ data: { ...data, body: sanitizeRichText(data.body) } });
   },
 
-  async getProfileComments(profileUserId: string, page: number, limit: number) {
+  async getProfileComments(profileUserId: string, page: number, limit: number, hiddenAuthorIds: string[] = []) {
     const skip = (page - 1) * limit;
+    const authorFilter = hiddenAuthorIds.length ? { authorId: { notIn: hiddenAuthorIds } } : {};
     const [comments, total] = await Promise.all([
       prisma.profileComment.findMany({
-        where:   { profileUserId },
+        where:   { profileUserId, ...authorFilter },
         include: {
           author: {
             select: {
@@ -143,7 +144,7 @@ export const userRepository = {
         skip,
         take: limit,
       }),
-      prisma.profileComment.count({ where: { profileUserId, deletedAt: null } }),
+      prisma.profileComment.count({ where: { profileUserId, deletedAt: null, ...authorFilter } }),
     ]);
     return {
       comments: comments.map((c) => ({
