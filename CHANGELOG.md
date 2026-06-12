@@ -90,6 +90,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
   points operators to the log entry's message/context), the `NEC-LICENSE-9xxx` family, and
   `NEC-AUTH-1007`; new Queue + License domains are browsable.
 
+### Changed
+- **Strict core table naming**: every core table is now `ncf_<snake_case>` (nodevo community
+  framework) — one rename migration covers all 49 tables, including the legacy PascalCase ones
+  (`"User"` → `ncf_users`, …), so raw SQL no longer needs quoted identifiers. The `ncf_`
+  namespace is reserved for core; plugin tables keep their `<pluginid>_` prefix (e.g. `forum_*`).
+
 ### Fixed
 - **Site default language is genuinely site-wide**: the installer-chosen language now applies to
   every visitor without an explicit choice (new public `GET /api/meta/site-locale`; chain:

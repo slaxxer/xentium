@@ -80,16 +80,16 @@ export const searchService = {
         gp.badge_color     AS "authorBadgeColor",
         ug.group_key       AS "authorRoleKey",
         ts_rank(a.search_vector, plainto_tsquery('english', $1)) AS rank
-      FROM articles a
-      JOIN "User" u ON u.id = a.author_id
+      FROM ncf_articles a
+      JOIN ncf_users u ON u.id = a.author_id
       LEFT JOIN (
         SELECT DISTINCT ON (ug."userId") ug."userId", ug."groupId", g.key AS group_key
-        FROM "UserGroup" ug
-        JOIN "Group" g ON g.id = ug."groupId"
+        FROM ncf_user_groups ug
+        JOIN ncf_groups g ON g.id = ug."groupId"
         ORDER BY ug."userId", g.display_order ASC
       ) ug ON ug."userId" = u.id
       LEFT JOIN group_progression gp ON gp.group_id = ug."groupId"
-      LEFT JOIN article_categories c ON c.id = a.category_id
+      LEFT JOIN ncf_article_categories c ON c.id = a.category_id
       WHERE a.search_vector @@ plainto_tsquery('english', $1)
         AND a.status = 'published'
         AND a.deleted_at IS NULL
@@ -101,8 +101,8 @@ export const searchService = {
 
     const countRows = await prisma.$queryRawUnsafe<[{ count: bigint }]>(`
       SELECT COUNT(*) AS count
-      FROM articles a
-      LEFT JOIN article_categories c ON c.id = a.category_id
+      FROM ncf_articles a
+      LEFT JOIN ncf_article_categories c ON c.id = a.category_id
       WHERE a.search_vector @@ plainto_tsquery('english', $1)
         AND a.status = 'published'
         AND a.deleted_at IS NULL
@@ -150,11 +150,11 @@ export const searchService = {
         COALESCE(gp.badge_label, ug.group_name) AS "badgeLabel",
         ug.group_key    AS "roleKey",
         ts_rank(u.search_vector, plainto_tsquery('english', $1)) AS rank
-      FROM "User" u
+      FROM ncf_users u
       LEFT JOIN (
         SELECT DISTINCT ON (ug."userId") ug."userId", ug."groupId", g.key AS group_key, g.name AS group_name
-        FROM "UserGroup" ug
-        JOIN "Group" g ON g.id = ug."groupId"
+        FROM ncf_user_groups ug
+        JOIN ncf_groups g ON g.id = ug."groupId"
         ORDER BY ug."userId", g.display_order ASC
       ) ug ON ug."userId" = u.id
       LEFT JOIN group_progression gp ON gp.group_id = ug."groupId"
@@ -165,7 +165,7 @@ export const searchService = {
     `, query, limit, offset);
 
     const countRows = await prisma.$queryRawUnsafe<[{ count: bigint }]>(`
-      SELECT COUNT(*) AS count FROM "User"
+      SELECT COUNT(*) AS count FROM ncf_users
       WHERE search_vector @@ plainto_tsquery('english', $1) AND "isActive" = true
     `, query);
 
