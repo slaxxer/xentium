@@ -800,5 +800,36 @@
     "manualDesc": "Fallback for air-gapped installs — connecting your account above is the recommended path. Purchase a license at nodevo.io, then enter the key below.",
     "activateBtn": "Activate",
     "activating": "Activating…"
+  },
+  "permissions": {
+    "loading": "Loading…",
+    "manageGroups": "Manage Groups",
+    "editingFor": "Editing permissions for:",
+    "grantedCount": "{{granted}} of {{total}} permissions granted",
+    "domainGranted": "{{granted}}/{{total}} granted",
+    "empty": "No permissions registered",
+    "toastSaved": "Permissions saved"
+  },
+  "articles": {
+    "loading": "Loading…",
+    "statusAll": "All statuses",
+    "status": {
+      "draft": "Draft",
+      "review": "In Review",
+      "published": "Published"
+    },
+    "colTitle": "Title",
+    "colAuthor": "Author",
+    "colCategory": "Category",
+    "colStatus": "Status",
+    "colViews": "Views",
+    "colPublished": "Published",
+    "uncategorised": "Uncategorised",
+    "empty": "No articles found",
+    "pagination": "Page {{page}} of {{totalPages}} — {{total}} articles",
+    "deleteTitle": "Delete article?",
+    "deleteText": "“{{title}}” will be soft-deleted and removed from public listings.",
+    "delete": "Delete",
+    "toastDeleted": "Article deleted"
   }
 }
