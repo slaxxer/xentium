@@ -425,7 +425,8 @@ pnpm --filter @nodevo/migrate-wp migrate -- \
 # 2. The real run (interactive confirmation; --yes to skip)
 pnpm --filter @nodevo/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
 
-# phpBB: point at the board's MySQL database instead of a file
+# Forum platforms: point at the board's MySQL database instead of a file
+# (same flags for @nodevo/migrate-xenforo; --prefix overrides the table prefix)
 pnpm --filter @nodevo/migrate-phpbb migrate -- \
   --source-db "mysql://user:pass@host:3306/phpbb" \
   --db "postgresql://…" --dry-run
@@ -435,9 +436,10 @@ The target must be an **installed** Nodevo instance (run the wizard first). Migr
 
 ### What carries over
 
-- **Users** — accounts, display names, join dates. Where the source provides password hashes (database-based adapters), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Nodevo's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
-- **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level).
-- **Not migrated** — themes/styling (Nodevo has its own appearance system), source-platform plugins, guest comments (Nodevo comments require an account), and in this version media files (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
+- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Nodevo's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
+- **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level). Forum platforms: the full node tree, threads (locked/pinned/view counts) and posts with their BBCode converted.
+- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Nodevo's rules, and all like/follower counters are recomputed.
+- **Not migrated** — themes/styling (Nodevo has its own appearance system), source-platform plugins, private messages, guest comments (Nodevo comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
 
 ---
 
