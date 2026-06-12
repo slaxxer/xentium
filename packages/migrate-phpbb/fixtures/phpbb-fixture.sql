@@ -104,3 +104,12 @@ INSERT INTO phpbb_posts VALUES
   (104, 11, 4, 1700110000, 0, '<t>me too (pending approval)</t>', '', 0),
   -- post in the unapproved topic → fails at load (thread not imported), reported
   (105, 12, 4, 1700200000, 0, '<t>spam spam</t>', '', 1);
+
+CREATE TABLE phpbb_zebra (
+  user_id  INT NOT NULL,
+  zebra_id INT NOT NULL,
+  friend   TINYINT NOT NULL DEFAULT 0,
+  foe      TINYINT NOT NULL DEFAULT 0
+);
+-- bob foes olduser (→ block); alice friends bob (NOT mapped)
+INSERT INTO phpbb_zebra VALUES (3, 4, 0, 1), (2, 3, 1, 0);

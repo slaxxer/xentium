@@ -43,6 +43,7 @@ export const phpbbAdapter: MigrateAdapter = {
         "phpBB's per-forum permission overrides cannot be represented in Nodevo's flat RBAC — founders map to Administrator, global moderators to Moderator, everyone else to Member (§34, lossy by design).",
         "Users keep their passwords: phpBB bcrypt/phpass hashes are verified on first login and upgraded to argon2.",
         "Attachments, private messages and per-forum moderators are not migrated in this version.",
+        "phpBB has no post likes or follows. Zebra foes become blocks; the friend flag is a private buddy list and is deliberately not converted into public follows.",
       ];
       const missing: string[] = [];
       if (/^[0-2]\./.test(version) && !version.startsWith("3.")) {
