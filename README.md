@@ -76,11 +76,8 @@ cd nodevo
 corepack enable          # ensures the pinned pnpm version
 pnpm install
 
-# 2. Generate the Prisma client
-pnpm db:generate
-
-# 3. Launch everything (Postgres + Redis containers, then api + worker + web)
-./dev.sh
+# 2. Launch everything (Postgres + Redis containers, Prisma client, api + worker + web)
+./nodevo.sh
 ```
 
 Then open **http://localhost:5173** — you'll be redirected to the **install wizard**, which handles everything else in the browser: it collects your database credentials, **generates all secrets and writes the `.env` file itself**, applies the schema and creates your admin account. No hand-edited config, no restart.
@@ -89,7 +86,7 @@ Then open **http://localhost:5173** — you'll be redirected to the **install wi
 
 > Already have a `.env` (an existing install, CI, or a restored config)? The wizard detects it and the database step becomes a plain connection test — nothing is overwritten.
 
-> `./dev.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./dev.sh down` to stop them.
+> `./nodevo.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./nodevo.sh down` to stop them.
 
 **Default ports:** API → `http://localhost:4000`, web → `http://localhost:5173`, Postgres → `5432`, Redis → `6379`.
 
@@ -175,8 +172,8 @@ Once complete, the installer **locks itself out** — the guard lifts and the wi
 
 ```bash
 # Dev
-./dev.sh                 # infra (Postgres+Redis) + api + worker + web
-./dev.sh down            # stop infra containers
+./nodevo.sh                 # infra (Postgres+Redis) + api + worker + web
+./nodevo.sh down            # stop infra containers
 pnpm dev:apps            # api + worker + web only (infra already up)
 pnpm backbone:up         # start just the infra containers
 pnpm backbone:down       # stop them
@@ -379,7 +376,7 @@ The host has **no knowledge of your tables, ids, or routes**. Want your content 
 
 1. Put your plugin under `plugins/community-examples/<name>/` (or `plugins/official/<name>/`) — both are pnpm workspace members.
 2. For HMR on the web side during `vite dev`, add your web entry to the dev registry in `apps/web/src/plugins/dev-plugins.ts` (this edit stays local).
-3. Start the stack with `./dev.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
+3. Start the stack with `./nodevo.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
 
 ### Packaging & distribution
 

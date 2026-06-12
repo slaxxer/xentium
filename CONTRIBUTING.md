@@ -12,7 +12,7 @@ See **[README → Quick start](./README.md#quick-start)**. In short:
 corepack enable && pnpm install
 cp .env.example .env        # fill in the secrets (README → Environment configuration)
 pnpm db:generate
-./dev.sh                    # infra + api + worker + web → http://localhost:5173
+./nodevo.sh                    # infra + api + worker + web → http://localhost:5173
 ```
 
 ## Workflow
