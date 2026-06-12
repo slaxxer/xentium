@@ -62,7 +62,8 @@ Nodevo is a **production-shaped, open-source community platform** you can run ou
 - **Node.js 24** (see `.nvmrc` — `nvm use` picks it up)
 - **pnpm 10** (`corepack enable` provisions the version pinned in `package.json`)
 - **Docker** + Docker Compose (for PostgreSQL + Redis), or your own Postgres 17 / Redis 7 instances
-- **OpenSSL** (to generate secrets; standard on macOS/Linux)
+
+That's it — no config files to write. The install wizard collects your database credentials, generates all secrets and writes `.env` for you.
 
 ---
 
@@ -75,18 +76,18 @@ cd nodevo
 corepack enable          # ensures the pinned pnpm version
 pnpm install
 
-# 2. Create your environment file (repo root). See the next section for values.
-cp .env.example .env
-#    …then fill in the required secrets (COOKIE_SECRET, JWT_SECRET, DUMMY_ARGON2_HASH)
-
-# 3. Generate the Prisma client
+# 2. Generate the Prisma client
 pnpm db:generate
 
-# 4. Launch everything (Postgres + Redis containers, then api + worker + web)
+# 3. Launch everything (Postgres + Redis containers, then api + worker + web)
 ./dev.sh
 ```
 
-Then open **http://localhost:5173** — you'll be redirected to the **installer** to finish setup.
+Then open **http://localhost:5173** — you'll be redirected to the **install wizard**, which handles everything else in the browser: it collects your database credentials, **generates all secrets and writes the `.env` file itself**, applies the schema and creates your admin account. No hand-edited config, no restart.
+
+> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `nodevo`, user `nodevo`, password `nodevo`.
+
+> Already have a `.env` (an existing install, CI, or a restored config)? The wizard detects it and the database step becomes a plain connection test — nothing is overwritten.
 
 > `./dev.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./dev.sh down` to stop them.
 
@@ -96,7 +97,9 @@ Then open **http://localhost:5173** — you'll be redirected to the **installer*
 
 ## Environment configuration
 
-Nodevo reads a single **`.env` at the repo root**. It's validated by Zod at startup (`apps/api/src/config/env.ts`) — the app refuses to boot with an invalid config.
+Nodevo reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
+
+**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Nodevo boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
 
 ### Required
 
@@ -116,11 +119,14 @@ Nodevo reads a single **`.env` at the repo root**. It's validated by Zod at star
 | `APP_URL` | `http://localhost:5173` |
 | `REDIS_URL` | `redis://localhost:6379` |
 | `REDIS_KEY_PREFIX` | `nodevo:` |
+| `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` when unset (the wizard generates a dedicated one) |
 | `UPLOAD_DIR` | `./var/uploads` (resolved from the API process CWD) |
 | `BOOTSTRAP_OFFICIAL_PLUGINS` | `false` — when `true`, auto-installs first-party plugins from `plugins/official/` at startup; otherwise install them on demand in the ACP |
 | `LICENSE_SERVER_URL`, `LICENSE_*_KEY` | only needed for marketplace/licensing flows |
 
-### Generate the secrets
+### Manual setup (optional)
+
+If you'd rather skip the wizard's setup step, copy `.env.example` to `.env` and generate the secrets yourself:
 
 ```bash
 # COOKIE_SECRET (>=16) and JWT_SECRET (>=32)
@@ -147,17 +153,19 @@ DUMMY_ARGON2_HASH="<argon2 hash from the command above>"
 
 ## First run — the installer
 
-On first launch the database has no site config, so an **install guard** blocks every route except the installer and the web app redirects you to `/install`. The wizard runs server-side steps in order:
+On first launch an **install guard** blocks every route except the installer and the web app redirects you to `/install`. The wizard runs server-side steps in order:
 
 1. **Welcome**
-2. **Environment check** — Node / PostgreSQL / Redis / disk / permissions
-3. **Database** — connection test against your `DATABASE_URL`
+2. **Environment check** — on a fresh clone: Node version, `.env` writability, data directory. With a preconfigured `.env`: Node / PostgreSQL / Redis / disk / config.
+3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Nodevo verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
 4. **Site config** — site name, URL, default language, timezone
 5. **Admin account** — create the first administrator
 6. **Finalize** — `prisma migrate deploy` applies the schema, core groups/permissions/system profile fields are seeded, and a `site.id` is written to settings
 7. **Complete** — links to the ACP and the public site
 
 Once complete, the installer **locks itself out** — the guard lifts and the wizard disappears from navigation. Log in with your admin account and head to the **ACP** (Admin Control Panel) at `/admin`.
+
+> Entered wrong credentials? Nothing is written until the connection check passes — fix the values and hit *Connect & save* again. An existing `.env` is never clobbered: the wizard only fills in missing keys and preserves everything else in the file.
 
 > Migrations are applied by the installer. If you prefer to run them yourself during development, use `pnpm db:migrate`.
 
