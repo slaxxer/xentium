@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import pg from "pg";
-import { NodevoLoader } from "./loader.js";
+import { NodevoLoader, missingPlugins } from "./loader.js";
 import type { AdapterSource, MigrateAdapter, MigrationReporter, MigrationSummary } from "./types.js";
 
 export interface RunOptions {
@@ -25,17 +25,31 @@ export async function runMigration(
   const pool = new pg.Pool({ connectionString: options.targetDb, max: 5 });
 
   try {
+    // Fail fast, before extraction: a forum-platform import without the forum
+    // plugin would strand users with no content — refuse outright (§34).
+    const missing = await missingPlugins(pool, adapter.requiredPlugins ?? []);
+    if (missing.length) {
+      throw new Error(
+        `Required plugin(s) not enabled on the target: ${missing.join(", ")}. ` +
+        `Install + enable them in ACP → Extensions first — nothing was touched.`,
+      );
+    }
+
     const extract = await adapter.extract(source, reporter);
 
     if (options.dryRun) {
       reporter.info("Dry run — nothing was written. Counts below reflect what a real run would import.");
+      const counts: Record<string, number> = {
+        users: extract.users.length,
+        categories: extract.categories.length,
+        articles: extract.articles.length,
+        comments: extract.comments.length,
+      };
+      if (extract.forumNodes) counts.forumNodes = extract.forumNodes.length;
+      if (extract.threads) counts.threads = extract.threads.length;
+      if (extract.posts) counts.posts = extract.posts.length;
       return {
-        counts: {
-          users: extract.users.length,
-          categories: extract.categories.length,
-          articles: extract.articles.length,
-          comments: extract.comments.length,
-        },
+        counts,
         errors: extract.skipped,
         durationMs: Date.now() - startedAt.getTime(),
       };
@@ -50,7 +64,7 @@ export async function runMigration(
 
     const loader = new NodevoLoader(pool, adapter.name, runId, reporter);
     try {
-      await loader.loadAll(extract);
+      await loader.loadAll(extract, adapter.requiredPlugins ?? []);
     } catch (err) {
       // Hard failure (lost DB, bad target, …): the log row must not stay
       // "running" forever — mark it failed before rethrowing.

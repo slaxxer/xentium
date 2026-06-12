@@ -59,6 +59,43 @@ export interface ImportedComment {
   createdAt?: Date;
 }
 
+// ── Forum entities (loaded only when the nodevo-forum plugin is enabled on
+//    the target — adapters that produce these must declare it in
+//    `requiredPlugins`; the run aborts cleanly otherwise) ───────────────────
+
+export interface ImportedForumNode {
+  sourceId: string;
+  parentSourceId?: string;
+  /** §39 node tree: categories hold no threads, forums do. */
+  type: "category" | "forum";
+  name: string;
+  description?: string;
+  /** Sort order within the parent (source display order). */
+  position?: number;
+}
+
+export interface ImportedThread {
+  sourceId: string;
+  nodeSourceId: string;
+  authorSourceId: string;
+  title: string;
+  status?: "open" | "locked";
+  isPinned?: boolean;
+  viewCount?: number;
+  createdAt?: Date;
+}
+
+export interface ImportedPost {
+  sourceId: string;
+  threadSourceId: string;
+  authorSourceId: string;
+  /** Safe HTML (forum posts store sanitized HTML). Adapters convert their
+   *  source markup (BBCode, s9e XML, …) and must escape all text content. */
+  bodyHtml: string;
+  createdAt?: Date;
+  editedAt?: Date;
+}
+
 export interface ExtractResult {
   /** Human-readable source description, e.g. "WordPress (WXR 1.2)". */
   sourceInfo: string;
@@ -66,6 +103,9 @@ export interface ExtractResult {
   categories: ImportedCategory[];
   articles: ImportedArticle[];
   comments: ImportedComment[];
+  forumNodes?: ImportedForumNode[];
+  threads?: ImportedThread[];
+  posts?: ImportedPost[];
   /** Extractor-level skips (pages, attachments, guest comments, …). */
   skipped: ImportError[];
 }
@@ -77,6 +117,8 @@ export interface AdapterSource {
   file?: string;
   /** Connection string for direct-DB sources (e.g. mysql://… for phpBB). */
   db?: string;
+  /** Source table prefix for DB sources (e.g. "phpbb_"). */
+  tablePrefix?: string;
 }
 
 export interface MigrationInspection {
@@ -90,6 +132,11 @@ export interface MigrateAdapter {
   /** Adapter id — also the import_map `platform` key. e.g. "wordpress". */
   name: string;
   version: string;
+  /** Plugins that must be installed AND enabled on the target Nodevo instance
+   *  (§34 preconditions) — e.g. ["nodevo-forum"] for forum-platform adapters.
+   *  The run aborts before touching any data when one is missing: importing a
+   *  forum board without the forum plugin would strand users with no content. */
+  requiredPlugins?: string[];
   inspect(source: AdapterSource): Promise<MigrationInspection>;
   extract(source: AdapterSource, reporter: MigrationReporter): Promise<ExtractResult>;
 }
