@@ -83,12 +83,16 @@ export class PluginContextImpl implements PluginContext {
     });
 
     if (!existing) {
+      // Plugin links always append BELOW everything already in the nav —
+      // core links (Home, Articles, Members) stay first and earlier-installed
+      // plugins keep their spot (newest last). The declared `item.position`
+      // is deliberately not an absolute index; admins reorder in the ACP.
       const maxPos = await prisma.navItem.aggregate({ _max: { position: true } });
       await prisma.navItem.create({
         data: {
           label:       item.label,
           url:         item.url,
-          position:    item.position ?? (maxPos._max.position ?? 0) + 1,
+          position:    (maxPos._max.position ?? 0) + 1,
           visibility:  item.visibility ?? "public",
           isActive:    true,
           isSystem:    false,
