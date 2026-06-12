@@ -15,6 +15,7 @@ import {
   faCircleNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { NotificationBell } from "../components/NotificationBell";
+import { slotRegistry } from "../plugins/slotRegistry";
 import { Username } from "../components/Username";
 import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
@@ -287,6 +288,11 @@ export function PubNav() {
 
           {isAuthenticated && user ? (
             <>
+              {/* Plugin header widgets (e.g. messaging) — rendered left of the bell */}
+              {slotRegistry.getHeaderWidgets().map((w) => (
+                <w.component key={w.id} />
+              ))}
+
               {/* Notification bell */}
               <NotificationBell />
 

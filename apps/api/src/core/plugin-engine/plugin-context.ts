@@ -14,6 +14,7 @@ import { NEC } from "../../shared/errors/nec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { enforcePostLength } from "../../shared/middleware/contentLimits.js";
+import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 
@@ -24,7 +25,13 @@ const host: PluginHost = {
   env,
   logger,
   errors:     { NodevoError, NEC },
-  middleware: { requireAuth, optionalAuth, enforcePostLength },
+  middleware: {
+    requireAuth,
+    optionalAuth,
+    enforcePostLength,
+    // Wrap so plugins can pass any permission-key string (core type is a strict union).
+    requirePermission: (key: string) => requirePermission(key as never),
+  },
   utils:      { resolveAvatar, sanitizeRichText },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.

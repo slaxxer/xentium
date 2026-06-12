@@ -27,6 +27,16 @@ export interface PluginRoute {
   layout: "public" | "acp";
 }
 
+// ── Header widget (registered by plugins, rendered in the top-nav action cluster) ─
+// Rendered for authenticated users only, immediately left of the notification bell
+// in both the public nav and the ACP topbar. The component owns its own button +
+// dropdown (mirror NotificationBell). Lower `order` renders further left.
+export interface HeaderWidgetSlot {
+  id: string;
+  component: ComponentType;
+  order?: number;
+}
+
 // ── Plugin-level metadata (icon, color, ACP position, notification prefixes) ──
 export interface PluginMeta {
   pluginId: string;
@@ -61,6 +71,16 @@ export interface ProfileStatSlot {
   tabId?: string;
 }
 
+// ── Profile action (registered by plugins, shown in /u/:username card action row) ─
+// Rendered in the profile card's top-right action cluster, beside the core
+// Follow / Block buttons. The component owns its own button (and any dialog).
+export interface ProfileActionSlot {
+  id: string;
+  component: ComponentType<{ profileId: string; profileUsername: string; isOwn: boolean }>;
+  /** Lower renders further left. */
+  order?: number;
+}
+
 // ── ModCanvas section (registered by plugins, adds tabs to the mod panel) ─────
 export interface ModCanvasSectionSlot {
   id: string;
@@ -83,6 +103,8 @@ class SlotRegistry {
   private searchTabs:        SearchTabSlot[]         = [];
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
   private profileStats:      ProfileStatSlot[]        = [];
+  private profileActions:    ProfileActionSlot[]      = [];
+  private headerWidgets:     HeaderWidgetSlot[]       = [];
 
   // Core notification prefixes that always show the system (gear) icon
   private readonly coreSystemPrefixes = ["progression.", "license.", "system."];
@@ -103,6 +125,8 @@ class SlotRegistry {
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
   registerProfileStat(stat: ProfileStatSlot)                { this._own(stat.id);     this.profileStats.push(stat); }
+  registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
+  registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
@@ -110,6 +134,8 @@ class SlotRegistry {
   getSearchTabs()        { return [...this.searchTabs]; }
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getProfileStats()      { return [...this.profileStats]; }
+  getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
 
   getRoutes(layout?: PluginRoute["layout"]): PluginRoute[] {
     if (!layout) return [...this.routes];
@@ -143,6 +169,8 @@ class SlotRegistry {
     this.searchTabs        = this.searchTabs.filter((t) => !this._ownedBy(t.id, pluginId));
     this.modCanvasSections = this.modCanvasSections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileStats      = this.profileStats.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });
   }
 }
