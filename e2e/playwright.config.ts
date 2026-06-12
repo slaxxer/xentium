@@ -44,7 +44,7 @@ export default defineConfig({
 
   // Start api + worker + web. The DB is reset by the npm script first, so these
   // boot against a clean, uninstalled database. `reuseExistingServer` lets a
-  // developer keep `./dev.sh` running locally (the reset still applies).
+  // developer keep `./nodevo.sh` running locally (the reset still applies).
   webServer: {
     command: "pnpm dev:apps",
     cwd: repoRoot,
