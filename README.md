@@ -410,7 +410,7 @@ Nodevo ships **free, open-source migration tooling** as a standalone CLI — del
 |---|---|---|
 | `@nodevo/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
 | `@nodevo/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `nodevo-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
-| XenForo | Direct database connection | Planned (Wave 1) |
+| `@nodevo/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `nodevo-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
 | vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
 
 ### Running a migration

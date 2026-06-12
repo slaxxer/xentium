@@ -1,0 +1,26 @@
+{
+  "name": "@nodevo/migrate-xenforo",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "XenForo 2.x → Nodevo migration adapter (§34, Wave 1). Connects directly to the XenForo MySQL database. Requires the nodevo-forum plugin on the target.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "migrate": "tsx src/run.ts"
+  },
+  "dependencies": {
+    "@nodevo/migrate-core": "workspace:*",
+    "mysql2": "^3.16.0"
+  },
+  "devDependencies": {
+    "@nodevo/config": "workspace:*",
+    "tsx": "^4.22.3",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

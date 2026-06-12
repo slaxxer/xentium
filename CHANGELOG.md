@@ -16,6 +16,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
     posts in both phpBB text formats: legacy `bbcode_uid` and 3.2+ s9e XML), founders → admin,
     global moderators → moderator. **Requires the `nodevo-forum` plugin enabled on the target** —
     checked before anything runs; refuses outright otherwise.
+  - `@nodevo/migrate-xenforo`: XenForo 2.x via direct MySQL — node tree (categories/forums; pages
+    and link forums skipped), threads (locked/pinned/views), XenForo-flavored BBCode → safe HTML
+    (quotes with author metadata, mentions, media embeds become links), bcrypt hashes extracted
+    from XenForo's PHP-serialized auth blobs so users keep their passwords. Same hard
+    `nodevo-forum` precondition. Completes the §34 Wave 1 adapter set.
   - **Migrated users keep their passwords**: `users.password_scheme` + legacy verification
     (bcrypt incl. `$2y$`, phpass) on first login, then transparent argon2 rehash. No forced resets.
   - ACP → System → Migration History upgraded: Core/Import badges, status, summary counts,
