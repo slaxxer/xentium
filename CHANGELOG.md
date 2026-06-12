@@ -6,6 +6,35 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
 ## [Unreleased]
 
 ### Added
+- **Migration tooling (§34, Wave 1)** — free, open-source platform migration as a standalone CLI:
+  - `@nodevo/migrate-core`: two-stage adapter architecture (adapters extract a platform-neutral
+    model; the shared loader owns all Nodevo knowledge), `import_map`-backed **resumable** imports
+    (re-runs skip what's done; same-email accounts map to existing users), HTML → TipTap
+    conversion, per-row failure reporting, `--dry-run` mode, `migration_runs` logging.
+  - `@nodevo/migrate-wp`: WordPress via a **WXR export file** — no WP install or DB needed.
+  - `@nodevo/migrate-phpbb`: phpBB 3.1+ via direct MySQL — full forum import (node tree, threads,
+    posts in both phpBB text formats: legacy `bbcode_uid` and 3.2+ s9e XML), founders → admin,
+    global moderators → moderator. **Requires the `nodevo-forum` plugin enabled on the target** —
+    checked before anything runs; refuses outright otherwise.
+  - **Migrated users keep their passwords**: `users.password_scheme` + legacy verification
+    (bcrypt incl. `$2y$`, phpass) on first login, then transparent argon2 rehash. No forced resets.
+  - ACP → System → Migration History upgraded: Core/Import badges, status, summary counts,
+    expandable error lists (×5 locales).
+- **Setup-mode first run** — a fresh clone now installs entirely through the browser: with no
+  usable `.env` the API boots a minimal setup server; the wizard collects DB credentials,
+  verifies them, **generates all secrets and writes `.env` itself**, then hot-swaps to the full
+  application in-process (no restart). The worker waits instead of crash-looping. Preconfigured
+  `.env` setups behave exactly as before. Launcher committed as `./nodevo.sh` (runs
+  `prisma generate` itself); quick start is now clone → `pnpm install` → `./nodevo.sh`.
+- **SemVer adoption** — platform version `1.0.0-alpha.0`, lockstep across all workspace packages
+  (`scripts/set-version.mjs`); prerelease bumps mark **cuts**, not commits. Version surfaced in
+  `GET /api/health` + ACP → About; plugin manifest `min/maxNodevoVersion` is now actually
+  enforced (`NEC-PLUGIN-2030`).
+- **Block/mute from profiles** — action cluster on the profile card with server-side block
+  enforcement across users/articles/comments (blocking now always hides content; the redundant
+  privacy toggle was removed). New plugin slots: profile-action and header-widget (public nav +
+  ACP topbar); plugin ACP pages can merge into core nav sections; plugin host gains
+  `requirePermission`.
 - **Standalone plugin runtime** — official plugins are now genuinely self-contained `.nvplugin`
   packages loaded at runtime (no plugin code in the core build):
   - Server bundle (tsup) loaded after the engine extracts the package; host services injected via
@@ -52,6 +81,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
   `NEC-AUTH-1007`; new Queue + License domains are browsable.
 
 ### Fixed
+- **Site default language is genuinely site-wide**: the installer-chosen language now applies to
+  every visitor without an explicit choice (new public `GET /api/meta/site-locale`; chain:
+  account preference → explicit cookie → site default → English). The language detector no longer
+  auto-pins a cookie, so default-following visitors track later changes to the site default.
+- Install wizard no longer "refreshes" away: the completion screen stays mounted (a background
+  status refetch used to yank the user to `/`), and the beta gate no longer polls pre-install
+  (console 503 spam) or renders over the wizard.
+- Fresh-clone bootstrap: `prisma generate` works without a `.env` (placeholder datasource URL),
+  `esbuild`/`@parcel/watcher` build scripts allowlisted, launcher script was gitignored and
+  missing from the repo.
+- Core nav links (Home, Articles, Members) are seeded during install, deletion-protected
+  (deactivate-only, proper NEC error instead of a 500) and badged "Core" in the ACP; plugin nav
+  links always append **below** existing links instead of inserting before core ones.
+- Installer steps no longer crash on a truly fresh database (`installs` table missing).
 - Forum thread page crash (`tsvector` deserialize) — `getThread` no longer selects `search_vector`.
 - `BOOTSTRAP_OFFICIAL_PLUGINS` defaults off → fresh cores install plugins on demand.
 - **`security-analysis` job crash** (`NEC-QUEUE-5000` / Postgres `42703`): two raw queries used
@@ -62,10 +105,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: 
   refresh cookie, access token in memory only, and hidden-category 404 behavior. See
   `UPDATES/UPDATE Phase 17 Security + Rate-Limit Audit ...md`.
 
-## [1.0.0] — 2026-05-31
+## Pre-alpha baseline — 2026-05-31
 
-Initial Nodevo v1 — extensible CMS/community platform (TypeScript, Express 5, React 19, PostgreSQL 17,
-Prisma 7, Redis/BullMQ). Highlights:
+The state of the platform when this changelog started (no release was cut or tagged — the first
+tagged release will be `1.0.0-alpha.1`). Extensible CMS/community platform (TypeScript, Express 5,
+React 19, PostgreSQL 17, Prisma 7, Redis/BullMQ). Highlights:
 
 ### Added
 - Installer wizard; auth (RS256/refresh rotation, sessions); RBAC groups + permissions with Redis

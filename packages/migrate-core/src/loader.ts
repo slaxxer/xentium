@@ -3,8 +3,8 @@ import pg from "pg";
 import { uniqueSlug } from "@nodevo/sdk";
 import { htmlToTipTap, htmlToText } from "./htmlToTipTap.js";
 import type {
-  ExtractResult, ImportedArticle, ImportedCategory, ImportedComment, ImportedUser,
-  ImportError, MigrationReporter,
+  ExtractResult, ImportedArticle, ImportedCategory, ImportedComment, ImportedForumNode,
+  ImportedPost, ImportedThread, ImportedUser, ImportError, MigrationReporter,
 } from "./types.js";
 
 /**
@@ -64,7 +64,7 @@ export class NodevoLoader {
   // ── preconditions ──────────────────────────────────────────────────────────
 
   /** The target must be an installed Nodevo database. */
-  async assertTargetReady(): Promise<void> {
+  async assertTargetReady(requiredPlugins: string[] = []): Promise<void> {
     const install = await this.pool
       .query(`SELECT "completedAt" FROM installs LIMIT 1`)
       .catch(() => null);
@@ -75,6 +75,13 @@ export class NodevoLoader {
     for (const row of groups.rows) this.groupIdByKey.set(row.key, row.id);
     if (!this.groupIdByKey.has("member")) {
       throw new Error('Target database has no "member" group — seeding incomplete?');
+    }
+    const missing = await missingPlugins(this.pool, requiredPlugins);
+    if (missing.length) {
+      throw new Error(
+        `Required plugin(s) not enabled on the target: ${missing.join(", ")}. ` +
+        `Install + enable them in ACP → Extensions first — nothing was touched.`,
+      );
     }
   }
 
@@ -321,6 +328,159 @@ export class NodevoLoader {
     this.bump("comments");
   }
 
+  // ── forum (nodevo-forum plugin tables — gated by assertTargetReady) ───────
+
+  async loadForumNodes(nodes: ImportedForumNode[]): Promise<void> {
+    const pending = [...nodes];
+    let progressed = true;
+    while (pending.length && progressed) {
+      progressed = false;
+      for (let i = pending.length - 1; i >= 0; i--) {
+        const node = pending[i]!;
+        const parentReady =
+          !node.parentSourceId || (await this.mapped("forum_node", node.parentSourceId)) !== null;
+        if (!parentReady) continue;
+        try {
+          await this.loadForumNode(node);
+        } catch (err) {
+          this.fail("forum_node", node.sourceId, (err as Error).message);
+        }
+        pending.splice(i, 1);
+        progressed = true;
+      }
+    }
+    for (const node of pending) {
+      this.fail("forum_node", node.sourceId, `parent "${node.parentSourceId}" was never imported`);
+    }
+  }
+
+  private async loadForumNode(node: ImportedForumNode): Promise<void> {
+    if (await this.mapped("forum_node", node.sourceId)) return;
+
+    const parentId = node.parentSourceId ? await this.mapped("forum_node", node.parentSourceId) : null;
+    const slug = await uniqueSlug(node.name, async (s) => {
+      const r = await this.pool.query(`SELECT 1 FROM forum_nodes WHERE slug = $1`, [s]);
+      return !!r.rows[0];
+    });
+    const id = crypto.randomUUID();
+    await this.pool.query(
+      `INSERT INTO forum_nodes (id, parent_id, type, name, slug, description, position, allow_threads)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, parentId, node.type, node.name, slug, node.description ?? null, node.position ?? 0, node.type === "forum"],
+    );
+    await this.remember("forum_node", node.sourceId, id);
+    this.bump("forumNodes");
+  }
+
+  async loadThreads(threads: ImportedThread[]): Promise<void> {
+    let done = 0;
+    for (const thread of threads) {
+      try {
+        await this.loadThread(thread);
+      } catch (err) {
+        this.fail("thread", thread.sourceId, (err as Error).message);
+      }
+      this.reporter.progress("threads", ++done, threads.length);
+    }
+  }
+
+  private async loadThread(thread: ImportedThread): Promise<void> {
+    if (await this.mapped("thread", thread.sourceId)) return;
+
+    const nodeId = await this.mapped("forum_node", thread.nodeSourceId);
+    if (!nodeId) throw new Error(`forum node "${thread.nodeSourceId}" was not imported`);
+    const authorId = await this.mapped("user", thread.authorSourceId);
+    if (!authorId) throw new Error(`author "${thread.authorSourceId}" was not imported`);
+
+    const slug = await uniqueSlug(thread.title, async (s) => {
+      const r = await this.pool.query(`SELECT 1 FROM forum_threads WHERE slug = $1`, [s]);
+      return !!r.rows[0];
+    });
+    const id = crypto.randomUUID();
+    await this.pool.query(
+      `INSERT INTO forum_threads (id, node_id, author_id, title, slug, status, is_pinned, view_count, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
+      [id, nodeId, authorId, thread.title, slug, thread.status ?? "open",
+       thread.isPinned ?? false, thread.viewCount ?? 0, thread.createdAt ?? new Date()],
+    );
+    await this.remember("thread", thread.sourceId, id);
+    this.bump("threads");
+  }
+
+  async loadPosts(posts: ImportedPost[]): Promise<void> {
+    let done = 0;
+    for (const post of posts) {
+      try {
+        await this.loadPost(post);
+      } catch (err) {
+        this.fail("post", post.sourceId, (err as Error).message);
+      }
+      this.reporter.progress("posts", ++done, posts.length);
+    }
+  }
+
+  private async loadPost(post: ImportedPost): Promise<void> {
+    if (await this.mapped("post", post.sourceId)) return;
+
+    const threadId = await this.mapped("thread", post.threadSourceId);
+    if (!threadId) throw new Error(`thread "${post.threadSourceId}" was not imported`);
+    const authorId = await this.mapped("user", post.authorSourceId);
+    if (!authorId) throw new Error(`author "${post.authorSourceId}" was not imported`);
+
+    const id = crypto.randomUUID();
+    await this.pool.query(
+      `INSERT INTO forum_posts (id, thread_id, author_id, body, edited_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+      [id, threadId, authorId, post.bodyHtml, post.editedAt ?? null, post.createdAt ?? new Date()],
+    );
+    await this.remember("post", post.sourceId, id);
+    this.bump("posts");
+  }
+
+  private async recomputeForumCounters(): Promise<void> {
+    // Threads: reply_count (posts beyond the first), last post info.
+    await this.pool.query(`
+      UPDATE forum_threads t SET
+        reply_count    = GREATEST(sub.n - 1, 0),
+        last_post_at   = sub.last_at,
+        last_poster_id = sub.last_author
+      FROM (
+        SELECT thread_id, COUNT(*)::int AS n, MAX(created_at) AS last_at,
+               (ARRAY_AGG(author_id ORDER BY created_at DESC))[1] AS last_author
+        FROM forum_posts WHERE deleted_at IS NULL GROUP BY thread_id
+      ) sub WHERE t.id = sub.thread_id`);
+    // Nodes: thread/post counts + last activity (direct children only — the
+    // forum frontend aggregates the tree itself).
+    await this.pool.query(`
+      UPDATE forum_nodes n SET
+        thread_count   = sub.threads,
+        post_count     = sub.posts,
+        last_post_at   = sub.last_at,
+        last_thread_id = sub.last_thread
+      FROM (
+        SELECT t.node_id,
+               COUNT(DISTINCT t.id)::int AS threads,
+               COUNT(p.id)::int AS posts,
+               MAX(p.created_at) AS last_at,
+               (ARRAY_AGG(t.id ORDER BY p.created_at DESC))[1] AS last_thread
+        FROM forum_threads t
+        LEFT JOIN forum_posts p ON p.thread_id = t.id AND p.deleted_at IS NULL
+        WHERE t.deleted_at IS NULL
+        GROUP BY t.node_id
+      ) sub WHERE n.id = sub.node_id`);
+    // Users: forum activity counters (§38).
+    await this.pool.query(`
+      UPDATE "User" u SET post_count = sub.n
+      FROM (SELECT author_id, COUNT(*)::int AS n FROM forum_posts
+            WHERE deleted_at IS NULL GROUP BY author_id) sub
+      WHERE u.id = sub.author_id`);
+    await this.pool.query(`
+      UPDATE "User" u SET thread_count = sub.n
+      FROM (SELECT author_id, COUNT(*)::int AS n FROM forum_threads
+            WHERE deleted_at IS NULL GROUP BY author_id) sub
+      WHERE u.id = sub.author_id`);
+  }
+
   // ── denormalized counters (§38/§46) ───────────────────────────────────────
 
   async recomputeCounters(): Promise<void> {
@@ -338,8 +498,8 @@ export class NodevoLoader {
   }
 
   /** Run everything in dependency order. */
-  async loadAll(extract: ExtractResult): Promise<void> {
-    await this.assertTargetReady();
+  async loadAll(extract: ExtractResult, requiredPlugins: string[] = []): Promise<void> {
+    await this.assertTargetReady(requiredPlugins);
     this.reporter.info(`Importing ${extract.users.length} users…`);
     await this.loadUsers(extract.users);
     this.reporter.info(`Importing ${extract.categories.length} categories…`);
@@ -348,7 +508,27 @@ export class NodevoLoader {
     await this.loadArticles(extract.articles);
     this.reporter.info(`Importing ${extract.comments.length} comments…`);
     await this.loadComments(extract.comments);
+    if (extract.forumNodes?.length || extract.threads?.length || extract.posts?.length) {
+      this.reporter.info(`Importing ${extract.forumNodes?.length ?? 0} forum nodes…`);
+      await this.loadForumNodes(extract.forumNodes ?? []);
+      this.reporter.info(`Importing ${extract.threads?.length ?? 0} threads…`);
+      await this.loadThreads(extract.threads ?? []);
+      this.reporter.info(`Importing ${extract.posts?.length ?? 0} posts…`);
+      await this.loadPosts(extract.posts ?? []);
+      this.reporter.info("Recomputing forum counters…");
+      await this.recomputeForumCounters();
+    }
     this.reporter.info("Recomputing denormalized counters…");
     await this.recomputeCounters();
   }
+}
+
+/** Which of `required` plugin ids are NOT enabled on the target. */
+export async function missingPlugins(pool: pg.Pool, required: string[]): Promise<string[]> {
+  if (!required.length) return [];
+  const res = await pool
+    .query(`SELECT id FROM installed_plugins WHERE status = 'enabled' AND id = ANY($1)`, [required])
+    .catch(() => ({ rows: [] as Array<{ id: string }> }));
+  const enabled = new Set(res.rows.map((r) => r.id));
+  return required.filter((id) => !enabled.has(id));
 }
