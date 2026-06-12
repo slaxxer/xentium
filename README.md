@@ -24,6 +24,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 - [Project structure](#project-structure)
 - [Architecture in a nutshell](#architecture-in-a-nutshell)
 - [Plugin development guide](#plugin-development-guide)
+- [Migrating from another platform](#migrating-from-another-platform)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -396,6 +397,41 @@ upload → validate manifest → compatibility/trust check → install (stored, 
        → enable (onEnable: routes + registries active)
        → disable (behavior stops, data kept) → uninstall (migrations reversed, package removed)
 ```
+
+---
+
+## Migrating from another platform
+
+Nodevo ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Nodevo database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
+
+### Available adapters
+
+| Adapter | Source | Status |
+|---|---|---|
+| `@nodevo/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
+| phpBB, XenForo | Direct database connection | Planned (Wave 1) |
+| vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
+
+### Running a migration
+
+```bash
+# 1. Always start with a dry run — inspects, extracts and reports, writes NOTHING
+pnpm --filter @nodevo/migrate-wp migrate -- \
+  --file my-export.xml \
+  --db "postgresql://user:pass@localhost:5432/nodevo" \
+  --dry-run
+
+# 2. The real run (interactive confirmation; --yes to skip)
+pnpm --filter @nodevo/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
+```
+
+The target must be an **installed** Nodevo instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
+
+### What carries over
+
+- **Users** — accounts, display names, join dates. Where the source provides password hashes (database-based adapters), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Nodevo's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
+- **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level).
+- **Not migrated** — themes/styling (Nodevo has its own appearance system), source-platform plugins, guest comments (Nodevo comments require an account), and in this version media files (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
 
 ---
 
