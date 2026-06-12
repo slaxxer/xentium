@@ -8,6 +8,7 @@ import "./AboutPage.scss";
 
 interface HealthData {
   status: string;
+  version?: string;
   uptime: number;
   env: string;
 }
@@ -164,7 +165,7 @@ export function AboutPage() {
           <div className="ab-hero__id">
             <h2>Nodevo</h2>
             <p className="ab-hero__meta">
-              <b>v1.0.0</b> · {t("about.tagline")}
+              <b>v{health?.version ?? "…"}</b> · {t("about.tagline")}
             </p>
           </div>
           <span className={`ab-pill${online ? "" : " ab-pill--idle"}`}>

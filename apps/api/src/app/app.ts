@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import path from 'node:path';
 import { env, isProd } from '../config/env.js';
+import { NODEVO_VERSION } from '../config/version.js';
 import { errorMiddleware } from '../shared/errors/errorMiddleware.js';
 import { NodevoError } from '../shared/errors/NodevoError.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
@@ -94,7 +95,7 @@ export function createApp(): Express {
 
   // 4. Install guard + routes
   app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', uptime: process.uptime(), env: env.NODE_ENV });
+    res.json({ status: 'ok', version: NODEVO_VERSION, uptime: process.uptime(), env: env.NODE_ENV });
   });
 
   // Public — frontend uses this to decide which plugin JS bundles to activate
