@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
+import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
 
 export const manifestSchema = z.object({
   id:                 z.string().regex(/^[a-z0-9-]+$/, "id must be kebab-case"),
@@ -19,5 +22,30 @@ export const manifestSchema = z.object({
 export type PluginManifest = z.infer<typeof manifestSchema>;
 
 export function validateManifest(raw: unknown): PluginManifest {
-  return manifestSchema.parse(raw);
+  const manifest = manifestSchema.parse(raw);
+  assertCompatible(manifest);
+  return manifest;
+}
+
+/**
+ * Compatibility check (§10 lifecycle step 4): the plugin's declared
+ * min/maxNodevoVersion window must contain the running platform version.
+ * Base versions only — a 1.0.0-alpha build accepts plugins targeting 1.0,
+ * and prerelease identifiers never affect the comparison.
+ */
+function assertCompatible(manifest: PluginManifest): void {
+  if (compareBaseVersions(NODEVO_VERSION, manifest.minNodevoVersion) < 0) {
+    throw new NodevoError({
+      code: NEC.PLUGIN_INCOMPATIBLE,
+      httpStatus: 422,
+      message: `Plugin "${manifest.id}" requires Nodevo ${manifest.minNodevoVersion}+ (this is ${NODEVO_VERSION})`,
+    });
+  }
+  if (manifest.maxNodevoVersion && compareBaseVersions(NODEVO_VERSION, manifest.maxNodevoVersion) > 0) {
+    throw new NodevoError({
+      code: NEC.PLUGIN_INCOMPATIBLE,
+      httpStatus: 422,
+      message: `Plugin "${manifest.id}" supports Nodevo up to ${manifest.maxNodevoVersion} (this is ${NODEVO_VERSION})`,
+    });
+  }
 }
