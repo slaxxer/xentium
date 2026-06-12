@@ -314,12 +314,22 @@
     "title": "Historique des migrations",
     "loading": "Chargement…",
     "emptyTitle": "Aucune migration n'a été exécutée",
-    "emptyHint": "L'historique des migrations est enregistré lorsque l'installateur applique des migrations de base de données.",
+    "emptyHint": "Enregistré lorsque l'installateur applique des migrations de base de données ou que la CLI @nodevo/migrate importe une communauté depuis une autre plateforme.",
     "success": "Réussite",
     "failed": "Échec",
     "hide": "▲ Masquer",
     "output": "▼ Sortie",
-    "noOutput": "(aucune sortie)"
+    "noOutput": "(aucune sortie)",
+    "status": {
+      "completed": "Terminée",
+      "failed": "Échouée",
+      "partial": "Partielle",
+      "running": "En cours"
+    },
+    "coreBadge": "Core",
+    "importBadge": "Import",
+    "errors": "Erreurs",
+    "report": "Rapport complet"
   },
   "errorLog": {
     "title": "Journal des erreurs",

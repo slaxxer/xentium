@@ -314,12 +314,22 @@
     "title": "Migrationsverlauf",
     "loading": "Wird geladen…",
     "emptyTitle": "Es wurden noch keine Migrationen ausgeführt",
-    "emptyHint": "Der Migrationsverlauf wird aufgezeichnet, wenn der Installer Datenbankmigrationen anwendet.",
+    "emptyHint": "Wird aufgezeichnet, wenn der Installer Datenbankmigrationen anwendet oder die @nodevo/migrate-CLI eine Community von einer anderen Plattform importiert.",
     "success": "Erfolgreich",
     "failed": "Fehlgeschlagen",
     "hide": "▲ Verbergen",
     "output": "▼ Ausgabe",
-    "noOutput": "(keine Ausgabe)"
+    "noOutput": "(keine Ausgabe)",
+    "status": {
+      "completed": "Abgeschlossen",
+      "failed": "Fehlgeschlagen",
+      "partial": "Teilweise",
+      "running": "Läuft"
+    },
+    "coreBadge": "Core",
+    "importBadge": "Import",
+    "errors": "Fehler",
+    "report": "Vollständiger Bericht"
   },
   "errorLog": {
     "title": "Fehlerprotokoll",
