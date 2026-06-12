@@ -35,7 +35,7 @@ const parsed = schema.safeParse(process.env);
 if (!parsed.success) {
 
   console.error(
-    '\u274c Invalid environment:\n',
+    'Invalid environment:\n',
     JSON.stringify(parsed.error.format(), null, 2),
   );
   process.exit(1);
