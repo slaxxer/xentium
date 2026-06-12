@@ -91,3 +91,34 @@ INSERT INTO xf_post VALUES
   (102, 11, 3, 1700100000, 0, 'My issue [CODE]rm -rf /[/CODE] please help', 'visible'),
   (103, 11, 1, 1700110000, 0, 'Deleted reply', 'deleted'),
   (104, 12, 4, 1700200000, 0, 'spam in moderated thread', 'visible');
+
+CREATE TABLE xf_reaction_content (
+  reaction_content_id INT PRIMARY KEY,
+  content_type     VARCHAR(25) NOT NULL,
+  content_id       INT NOT NULL,
+  reaction_id      INT NOT NULL DEFAULT 1,
+  reaction_user_id INT NOT NULL,
+  reaction_date    INT NOT NULL
+);
+-- bob likes post 100, root "loves" post 100 (collapses to like), alice likes post 102;
+-- a reaction on a non-post is ignored
+INSERT INTO xf_reaction_content VALUES
+  (1, 'post', 100, 1, 3, 1700001000),
+  (2, 'post', 100, 2, 1, 1700002000),
+  (3, 'post', 102, 1, 2, 1700101000),
+  (4, 'profile_post', 7, 1, 2, 1700101000);
+
+CREATE TABLE xf_user_follow (
+  user_id        INT NOT NULL,
+  follow_user_id INT NOT NULL,
+  follow_date    INT NOT NULL
+);
+-- bob follows alice; alice follows root; legacy follows bob — but bob ignores
+-- legacy below, so that follow must be suppressed (§36)
+INSERT INTO xf_user_follow VALUES (3, 2, 1700000100), (2, 1, 1700000200), (4, 3, 1700000300);
+
+CREATE TABLE xf_user_ignored (
+  user_id         INT NOT NULL,
+  ignored_user_id INT NOT NULL
+);
+INSERT INTO xf_user_ignored VALUES (3, 4);

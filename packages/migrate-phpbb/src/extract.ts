@@ -111,6 +111,17 @@ export async function extractPhpbb(
       posts.push(mapPost(row));
     }
 
+    // ── zebra foes → blocks. phpBB has no likes and no follows; the zebra
+    //    "friend" flag is a private buddy list, semantically NOT a public
+    //    follow — deliberately not mapped (declared in inspect warnings).
+    const blocks: Array<{ blockerSourceId: string; blockedSourceId: string }> = [];
+    try {
+      const [rows] = await conn.query(`SELECT user_id, zebra_id FROM ${p}zebra WHERE foe = 1`);
+      for (const r of rows as Array<{ user_id: number; zebra_id: number }>) {
+        blocks.push({ blockerSourceId: String(r.user_id), blockedSourceId: String(r.zebra_id) });
+      }
+    } catch { reporter.warn("No zebra table found — skipping foe → block mapping."); }
+
     return {
       sourceInfo: `phpBB ${version}`,
       users,
@@ -120,6 +131,7 @@ export async function extractPhpbb(
       forumNodes,
       threads,
       posts,
+      blocks,
       skipped,
     };
   } finally {

@@ -94,6 +94,60 @@ export async function extractXenforo(
       posts.push(mapPost(row));
     }
 
+    // ── social graph: reactions → likes, follows, ignores → blocks ─────────
+    // XF 2.1+ stores reactions in xf_reaction_content (all reaction types
+    // collapse to a Nodevo like — lossy, declared in inspect warnings);
+    // XF 2.0 used xf_liked_content. Missing tables are skipped gracefully.
+    const postLikes: Array<{ postSourceId: string; userSourceId: string; createdAt?: Date }> = [];
+    try {
+      const [rows] = await conn.query(
+        `SELECT content_id, reaction_user_id, reaction_date
+         FROM ${p}reaction_content WHERE content_type = 'post'`,
+      );
+      for (const r of rows as Array<{ content_id: number; reaction_user_id: number; reaction_date: number }>) {
+        postLikes.push({
+          postSourceId: String(r.content_id),
+          userSourceId: String(r.reaction_user_id),
+          createdAt: new Date(r.reaction_date * 1000),
+        });
+      }
+    } catch {
+      try {
+        const [rows] = await conn.query(
+          `SELECT content_id, like_user_id, like_date FROM ${p}liked_content WHERE content_type = 'post'`,
+        );
+        for (const r of rows as Array<{ content_id: number; like_user_id: number; like_date: number }>) {
+          postLikes.push({
+            postSourceId: String(r.content_id),
+            userSourceId: String(r.like_user_id),
+            createdAt: new Date(r.like_date * 1000),
+          });
+        }
+      } catch { reporter.warn("No reaction/like tables found — skipping post likes."); }
+    }
+
+    const follows: Array<{ followerSourceId: string; followingSourceId: string; createdAt?: Date }> = [];
+    try {
+      const [rows] = await conn.query(
+        `SELECT user_id, follow_user_id, follow_date FROM ${p}user_follow`,
+      );
+      for (const r of rows as Array<{ user_id: number; follow_user_id: number; follow_date: number }>) {
+        follows.push({
+          followerSourceId: String(r.user_id),
+          followingSourceId: String(r.follow_user_id),
+          createdAt: new Date(r.follow_date * 1000),
+        });
+      }
+    } catch { reporter.warn("No xf_user_follow table found — skipping follows."); }
+
+    const blocks: Array<{ blockerSourceId: string; blockedSourceId: string }> = [];
+    try {
+      const [rows] = await conn.query(`SELECT user_id, ignored_user_id FROM ${p}user_ignored`);
+      for (const r of rows as Array<{ user_id: number; ignored_user_id: number }>) {
+        blocks.push({ blockerSourceId: String(r.user_id), blockedSourceId: String(r.ignored_user_id) });
+      }
+    } catch { reporter.warn("No xf_user_ignored table found — skipping ignores."); }
+
     return {
       sourceInfo: `XenForo ${version}`,
       users,
@@ -103,6 +157,9 @@ export async function extractXenforo(
       forumNodes,
       threads,
       posts,
+      postLikes,
+      follows,
+      blocks,
       skipped,
     };
   } finally {

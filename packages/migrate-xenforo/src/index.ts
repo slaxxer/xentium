@@ -41,7 +41,8 @@ export const xenforoAdapter: MigrateAdapter = {
       const warnings = [
         "XenForo's per-node permission overrides cannot be represented in Nodevo's flat RBAC — admins map to Administrator, moderators to Moderator, everyone else to Member (§34, lossy by design).",
         "Users with XenForo's native bcrypt hashes keep their passwords (verified on first login, upgraded to argon2). Accounts on legacy import schemes reset once.",
-        "Attachments, private conversations, reactions and media embeds are not migrated in this version (embeds become plain links).",
+        "Attachments, private conversations and media embeds are not migrated in this version (embeds become plain links).",
+        "Reactions migrate as likes: every reaction type (love, haha, …) collapses to a Nodevo like. Follows and ignores (→ blocks) migrate 1:1.",
       ];
       const missing: string[] = [];
       if (version !== "unknown" && !version.startsWith("2.")) {

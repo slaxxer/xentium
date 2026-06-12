@@ -3,8 +3,9 @@ import pg from "pg";
 import { uniqueSlug } from "@nodevo/sdk";
 import { htmlToTipTap, htmlToText } from "./htmlToTipTap.js";
 import type {
-  ExtractResult, ImportedArticle, ImportedCategory, ImportedComment, ImportedForumNode,
-  ImportedPost, ImportedThread, ImportedUser, ImportError, MigrationReporter,
+  ExtractResult, ImportedArticle, ImportedBlock, ImportedCategory, ImportedComment,
+  ImportedFollow, ImportedForumNode, ImportedPost, ImportedPostLike, ImportedThread,
+  ImportedUser, ImportError, MigrationReporter,
 } from "./types.js";
 
 /**
@@ -481,6 +482,96 @@ export class NodevoLoader {
       WHERE u.id = sub.author_id`);
   }
 
+  // ── social graph (blocks → follows → likes; §36 rules) ────────────────────
+
+  /** Blocks load FIRST: §36 — a block suppresses follows in both directions. */
+  async loadBlocks(blocks: ImportedBlock[]): Promise<void> {
+    for (const block of blocks) {
+      try {
+        const blockerId = await this.mapped("user", block.blockerSourceId);
+        const blockedId = await this.mapped("user", block.blockedSourceId);
+        if (!blockerId || !blockedId) throw new Error("user not imported");
+        if (blockerId === blockedId) continue;
+        const res = await this.pool.query(
+          `INSERT INTO user_blocks (id, blocker_id, blocked_id, created_at)
+           VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [crypto.randomUUID(), blockerId, blockedId, block.createdAt ?? new Date()],
+        );
+        if (res.rowCount) this.bump("blocks");
+      } catch (err) {
+        this.fail("block", `${block.blockerSourceId}->${block.blockedSourceId}`, (err as Error).message);
+      }
+    }
+  }
+
+  async loadFollows(follows: ImportedFollow[]): Promise<void> {
+    for (const follow of follows) {
+      try {
+        const followerId = await this.mapped("user", follow.followerSourceId);
+        const followingId = await this.mapped("user", follow.followingSourceId);
+        if (!followerId || !followingId) throw new Error("user not imported");
+        if (followerId === followingId) continue;
+        // §36: a block in either direction kills the follow relationship.
+        const blocked = await this.pool.query(
+          `SELECT 1 FROM user_blocks
+           WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)`,
+          [followerId, followingId],
+        );
+        if (blocked.rows[0]) continue;
+        const res = await this.pool.query(
+          `INSERT INTO user_follows (id, follower_id, following_id, created_at)
+           VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [crypto.randomUUID(), followerId, followingId, follow.createdAt ?? new Date()],
+        );
+        if (res.rowCount) this.bump("follows");
+      } catch (err) {
+        this.fail("follow", `${follow.followerSourceId}->${follow.followingSourceId}`, (err as Error).message);
+      }
+    }
+  }
+
+  async loadPostLikes(likes: ImportedPostLike[]): Promise<void> {
+    let done = 0;
+    for (const like of likes) {
+      try {
+        const postId = await this.mapped("post", like.postSourceId);
+        const userId = await this.mapped("user", like.userSourceId);
+        if (!postId || !userId) throw new Error("post or user not imported");
+        const res = await this.pool.query(
+          `INSERT INTO forum_post_likes (id, post_id, user_id, created_at)
+           VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
+          [crypto.randomUUID(), postId, userId, like.createdAt ?? new Date()],
+        );
+        if (res.rowCount) this.bump("postLikes");
+      } catch (err) {
+        this.fail("post_like", `${like.postSourceId}<-${like.userSourceId}`, (err as Error).message);
+      }
+      this.reporter.progress("post likes", ++done, likes.length);
+    }
+  }
+
+  private async recomputeSocialCounters(): Promise<void> {
+    await this.pool.query(`
+      UPDATE forum_posts p SET like_count = sub.n
+      FROM (SELECT post_id, COUNT(*)::int AS n FROM forum_post_likes GROUP BY post_id) sub
+      WHERE p.id = sub.post_id`);
+    // Likes received on the user's posts (§38/§45).
+    await this.pool.query(`
+      UPDATE "User" u SET like_count_received = sub.n
+      FROM (SELECT p.author_id, COUNT(*)::int AS n
+            FROM forum_post_likes l JOIN forum_posts p ON p.id = l.post_id
+            WHERE p.deleted_at IS NULL GROUP BY p.author_id) sub
+      WHERE u.id = sub.author_id`);
+    await this.pool.query(`
+      UPDATE "User" u SET follower_count = COALESCE(sub.n, 0)
+      FROM (SELECT following_id, COUNT(*)::int AS n FROM user_follows GROUP BY following_id) sub
+      WHERE u.id = sub.following_id`);
+    await this.pool.query(`
+      UPDATE "User" u SET following_count = COALESCE(sub.n, 0)
+      FROM (SELECT follower_id, COUNT(*)::int AS n FROM user_follows GROUP BY follower_id) sub
+      WHERE u.id = sub.follower_id`);
+  }
+
   // ── denormalized counters (§38/§46) ───────────────────────────────────────
 
   async recomputeCounters(): Promise<void> {
@@ -517,6 +608,14 @@ export class NodevoLoader {
       await this.loadPosts(extract.posts ?? []);
       this.reporter.info("Recomputing forum counters…");
       await this.recomputeForumCounters();
+    }
+    if (extract.blocks?.length || extract.follows?.length || extract.postLikes?.length) {
+      this.reporter.info(`Importing social graph (${extract.blocks?.length ?? 0} blocks, ${extract.follows?.length ?? 0} follows, ${extract.postLikes?.length ?? 0} post likes)…`);
+      await this.loadBlocks(extract.blocks ?? []);
+      await this.loadFollows(extract.follows ?? []);
+      await this.loadPostLikes(extract.postLikes ?? []);
+      this.reporter.info("Recomputing social counters…");
+      await this.recomputeSocialCounters();
     }
     this.reporter.info("Recomputing denormalized counters…");
     await this.recomputeCounters();
