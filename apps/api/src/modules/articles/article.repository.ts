@@ -58,6 +58,7 @@ export const articleRepository = {
     authorId?: string;
     viewerId?: string;
     feed?: "latest" | "following" | "top";
+    hiddenAuthorIds?: string[];
   }) {
     // Visibility filter:
     //  - guests see only public
@@ -89,11 +90,17 @@ export const articleRepository = {
       orderBy = { likeCount: "desc" };
     }
 
+    // Author scoping: an explicit authorId filter and the blocked-author exclusion
+    // both constrain authorId, so they must be ANDed rather than overwrite each other.
+    const authorConds: Prisma.ArticleWhereInput[] = [];
+    if (opts.authorId) authorConds.push({ authorId: opts.authorId });
+    if (opts.hiddenAuthorIds?.length) authorConds.push({ authorId: { notIn: opts.hiddenAuthorIds } });
+
     const where: Prisma.ArticleWhereInput = {
       status: "published",
       deletedAt: null,
       ...(opts.categoryId ? { categoryId: opts.categoryId } : {}),
-      ...(opts.authorId ? { authorId: opts.authorId } : {}),
+      ...(authorConds.length ? { AND: authorConds } : {}),
       ...feedWhere,
       ...visibilityFilter,
     };

@@ -12,6 +12,7 @@ import type { ArticleDetail, ArticleListItem } from "./article.types.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { enforcePostLength, enforceDailyPostLimit } from "../../shared/middleware/contentLimits.js";
+import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 
 const WORDS_PER_MINUTE = 200;
 
@@ -367,6 +368,7 @@ export const articleService = {
     viewerId: string | undefined,
   ): Promise<PaginatedResponse<ArticleListItem>> {
     const { page, limit, categoryId, authorId, feed } = query;
+    const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
     const { data, total } = await articleRepository.listPublished({
       page,
       limit,
@@ -374,6 +376,7 @@ export const articleService = {
       authorId,
       viewerId,
       feed,
+      hiddenAuthorIds,
     });
     return {
       data: data.map(shapeListItem),

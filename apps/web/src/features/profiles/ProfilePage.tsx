@@ -3,10 +3,10 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHeart, faGlobe, faCodeBranch, faHashtag, faLock } from "@fortawesome/free-solid-svg-icons";
+import { faHeart, faGlobe, faCodeBranch, faHashtag, faLock, faUserSlash, faUserCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
-import { swalToast, apiErrorMessage } from "../../lib/swal";
+import { swalToast, swalConfirm, apiErrorMessage } from "../../lib/swal";
 import {
   articlesApi,
   type ArticleListItem,
@@ -32,6 +32,7 @@ interface PublicProfile {
   dobDisplayFormat: string | null;
   isOwn: boolean;
   viewerIsFollowing: boolean;
+  viewerHasBlocked: boolean;
   isBanned: boolean;
   isPermanentBan: boolean;
 }
@@ -455,7 +456,7 @@ function ProfileWall({ profile }: { profile: PublicProfile }) {
 }
 
 export function ProfilePage() {
-  const { t } = useTranslation("profiles");
+  const { t } = useTranslation(["profiles", "common"]);
   const { username } = useParams();
   const [searchParams] = useSearchParams();
   const pluginTabsInit = slotRegistry.getProfileTabs();
@@ -525,6 +526,35 @@ export function ProfilePage() {
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["profile", username] }),
   });
+
+  const blockMutation = useMutation({
+    mutationFn: (blocked: boolean) =>
+      blocked
+        ? api.delete(`/users/${profile!.id}/block`)
+        : api.post(`/users/${profile!.id}/block`),
+    onSuccess: () => {
+      // Blocking severs follows and hides content everywhere — refetch broadly.
+      queryClient.invalidateQueries({ queryKey: ["profile", username] });
+      queryClient.invalidateQueries({ queryKey: ["articles-by-author", profile!.id] });
+      queryClient.invalidateQueries({ queryKey: ["profile-comments", profile!.id] });
+    },
+    onError: (e) => swalToast(apiErrorMessage(e, t("blockError"))),
+  });
+
+  async function handleBlockToggle() {
+    if (!profile) return;
+    if (profile.viewerHasBlocked) {
+      blockMutation.mutate(true); // unblock — no confirm needed
+      return;
+    }
+    const ok = await swalConfirm(
+      t("blockConfirmTitle", { username: profile.username }),
+      t("blockConfirmText"),
+      t("block"),
+      t("actions.cancel", { ns: "common" }),
+    );
+    if (ok) blockMutation.mutate(false);
+  }
 
   if (isLoading) return <div className="profile-state">{t("loadingProfile")}</div>;
   if (error)
@@ -619,13 +649,39 @@ export function ProfilePage() {
               </div>
 
               {!profile.isOwn && isAuthenticated && (
-                <button
-                  className={`profile-follow-btn${profile.viewerIsFollowing ? " profile-follow-btn--following" : ""}`}
-                  onClick={() => followMutation.mutate(profile.viewerIsFollowing)}
-                  disabled={followMutation.isPending}
-                >
-                  {profile.viewerIsFollowing ? t("following") : t("follow")}
-                </button>
+                <div className="profile-actions">
+                  {!profile.viewerHasBlocked && (
+                    <button
+                      className={`profile-follow-btn${profile.viewerIsFollowing ? " profile-follow-btn--following" : ""}`}
+                      onClick={() => followMutation.mutate(profile.viewerIsFollowing)}
+                      disabled={followMutation.isPending}
+                    >
+                      {profile.viewerIsFollowing ? t("following") : t("follow")}
+                    </button>
+                  )}
+
+                  {/* Plugin-contributed actions (e.g. messaging PM button) */}
+                  {!profile.viewerHasBlocked &&
+                    slotRegistry.getProfileActions().map((a) => (
+                      <a.component
+                        key={a.id}
+                        profileId={profile.id}
+                        profileUsername={profile.username}
+                        isOwn={profile.isOwn}
+                      />
+                    ))}
+
+                  {/* Block / Unblock — core */}
+                  <button
+                    className={`profile-icon-btn${profile.viewerHasBlocked ? " profile-icon-btn--active" : ""}`}
+                    onClick={handleBlockToggle}
+                    disabled={blockMutation.isPending}
+                    title={profile.viewerHasBlocked ? t("unblock") : t("block")}
+                    aria-label={profile.viewerHasBlocked ? t("unblock") : t("block")}
+                  >
+                    <FontAwesomeIcon icon={profile.viewerHasBlocked ? faUserCheck : faUserSlash} />
+                  </button>
+                </div>
               )}
             </div>
 

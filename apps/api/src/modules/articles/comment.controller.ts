@@ -45,7 +45,8 @@ export const commentsController = {
   list: wrap(async (req, res) => {
     const { id: articleId } = articleIdParamSchema.parse(req.params);
     const { page, limit } = listCommentsQuerySchema.parse(req.query);
-    const result = await commentService.list(articleId, page, limit);
+    const viewerId = reqUserId(req);
+    const result = await commentService.list(articleId, page, limit, viewerId);
     res.json(result);
   }),
 
