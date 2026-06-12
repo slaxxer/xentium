@@ -110,6 +110,19 @@ export function createApp(): Express {
     }
   });
 
+  // Public — the site default language (§60.3 resolution chain). Visitors with
+  // no explicit language choice (no nv_locale cookie, no account preference)
+  // render the UI in this locale. Pre-install / unset → null and clients keep
+  // their local detection.
+  app.get('/api/meta/site-locale', async (_req, res) => {
+    try {
+      const row = await prisma.setting.findUnique({ where: { key: 'site.locale' } });
+      res.json({ locale: typeof row?.value === 'string' ? row.value : null });
+    } catch {
+      res.json({ locale: null });
+    }
+  });
+
   // Public — serves an enabled plugin's compiled web bundle (runtime UI loading).
   // The host loads this via <script> after setting window.__NODEVO_HOST__.
   app.get('/api/meta/plugin-web/:pluginId', async (req, res) => {
