@@ -800,5 +800,36 @@
     "manualDesc": "Alternativa para instalações sem internet — conectar sua conta acima é o caminho recomendado. Compre uma licença em nodevo.io e insira a chave abaixo.",
     "activateBtn": "Ativar",
     "activating": "Ativando…"
+  },
+  "permissions": {
+    "loading": "Carregando…",
+    "manageGroups": "Gerenciar grupos",
+    "editingFor": "Editando permissões de:",
+    "grantedCount": "{{granted}} de {{total}} permissões concedidas",
+    "domainGranted": "{{granted}}/{{total}} concedidas",
+    "empty": "Nenhuma permissão registrada",
+    "toastSaved": "Permissões salvas"
+  },
+  "articles": {
+    "loading": "Carregando…",
+    "statusAll": "Todos os status",
+    "status": {
+      "draft": "Rascunho",
+      "review": "Em revisão",
+      "published": "Publicado"
+    },
+    "colTitle": "Título",
+    "colAuthor": "Autor",
+    "colCategory": "Categoria",
+    "colStatus": "Status",
+    "colViews": "Visualizações",
+    "colPublished": "Publicado",
+    "uncategorised": "Sem categoria",
+    "empty": "Nenhum artigo encontrado",
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} artigos",
+    "deleteTitle": "Excluir artigo?",
+    "deleteText": "“{{title}}” será excluído (exclusão suave) e removido das listagens públicas.",
+    "delete": "Excluir",
+    "toastDeleted": "Artigo excluído"
   }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faChevronLeft, faChevronRight, faArrowUpRightFromSquare, faTrash,
@@ -46,6 +47,7 @@ function getAuthorInitials(username: string) {
 const COLS = "1fr 150px 130px 90px 70px 110px 80px";
 
 export function ArticlesPage() {
+  const { t } = useTranslation("acp");
   const queryClient = useQueryClient();
   const [page, setPage]     = useState(1);
   const [status, setStatus] = useState("");
@@ -63,16 +65,16 @@ export function ArticlesPage() {
     mutationFn: (id: string) => api.delete(`/admin/articles/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acp-articles"] });
-      swalToast("Article deleted", "success");
+      swalToast(t("articles.toastDeleted"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
   async function handleDelete(a: Article) {
     const r = await swalConfirm(
-      "Delete article?",
-      `"${a.title}" will be soft-deleted and removed from public listings.`,
-      "Delete", "Cancel",
+      t("articles.deleteTitle"),
+      t("articles.deleteText", { title: a.title }),
+      t("articles.delete"), t("common:actions.cancel"),
     );
     if (r) deleteMutation.mutate(a.id);
   }
@@ -83,8 +85,8 @@ export function ArticlesPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Content</div>
-          <h1 className="acp-page-title">Articles</h1>
+          <div className="acp-page-sub">{t("nav.content")}</div>
+          <h1 className="acp-page-title">{t("nav.articles")}</h1>
         </div>
         <select
           className="acp-select"
@@ -92,28 +94,28 @@ export function ArticlesPage() {
           onChange={(e) => { setStatus(e.target.value); setPage(1); }}
           style={{ width: "auto" }}
         >
-          <option value="">All statuses</option>
-          <option value="draft">Draft</option>
-          <option value="review">In Review</option>
-          <option value="published">Published</option>
+          <option value="">{t("articles.statusAll")}</option>
+          <option value="draft">{t("articles.status.draft")}</option>
+          <option value="review">{t("articles.status.review")}</option>
+          <option value="published">{t("articles.status.published")}</option>
         </select>
       </div>
 
       <div className="acp-card" style={{ padding: 0, overflow: "hidden" }}>
         {/* Column header */}
         <div className="acp-list-head" style={{ gridTemplateColumns: COLS }}>
-          <div>Title</div>
-          <div>Author</div>
-          <div>Category</div>
-          <div>Status</div>
-          <div style={{ textAlign: "center" }}>Views</div>
-          <div>Published</div>
+          <div>{t("articles.colTitle")}</div>
+          <div>{t("articles.colAuthor")}</div>
+          <div>{t("articles.colCategory")}</div>
+          <div>{t("articles.colStatus")}</div>
+          <div style={{ textAlign: "center" }}>{t("articles.colViews")}</div>
+          <div>{t("articles.colPublished")}</div>
           <div />
         </div>
 
         {isLoading ? (
           <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
-            Loading…
+            {t("articles.loading")}
           </div>
         ) : (
           <div>
@@ -149,14 +151,14 @@ export function ArticlesPage() {
                         {a.category.name}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 12, color: "var(--c-fg-muted)", opacity: 0.5 }}>Uncategorised</span>
+                      <span style={{ fontSize: 12, color: "var(--c-fg-muted)", opacity: 0.5 }}>{t("articles.uncategorised")}</span>
                     )}
                   </div>
 
                   {/* Status */}
                   <div style={{ display: "flex", alignItems: "center" }}>
                     <span style={{ background: bg, color, borderRadius: 100, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
-                      {a.status}
+                      {t(`articles.status.${a.status}`, { defaultValue: a.status })}
                     </span>
                   </div>
 
@@ -208,7 +210,7 @@ export function ArticlesPage() {
             })}
             {data?.data.length === 0 && (
               <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
-                No articles found
+                {t("articles.empty")}
               </div>
             )}
           </div>
@@ -217,7 +219,7 @@ export function ArticlesPage() {
         {meta && meta.totalPages > 1 && (
           <div className="acp-pagination" style={{ padding: "12px 20px", borderTop: "1px solid var(--c-border)", marginTop: 0 }}>
             <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}><FontAwesomeIcon icon={faChevronLeft} /></button>
-            <span>Page {meta.page} of {meta.totalPages} — {meta.total} articles</span>
+            <span>{t("articles.pagination", { page: meta.page, totalPages: meta.totalPages, total: meta.total })}</span>
             <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p + 1)} disabled={page >= meta.totalPages}><FontAwesomeIcon icon={faChevronRight} /></button>
           </div>
         )}

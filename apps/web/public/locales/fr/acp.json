@@ -800,5 +800,36 @@
     "manualDesc": "Solution de repli pour les installations isolées — connecter votre compte ci-dessus est la voie recommandée. Achetez une licence sur nodevo.io puis saisissez la clé ci-dessous.",
     "activateBtn": "Activer",
     "activating": "Activation…"
+  },
+  "permissions": {
+    "loading": "Chargement…",
+    "manageGroups": "Gérer les groupes",
+    "editingFor": "Modification des permissions de :",
+    "grantedCount": "{{granted}} sur {{total}} permissions accordées",
+    "domainGranted": "{{granted}}/{{total}} accordées",
+    "empty": "Aucune permission enregistrée",
+    "toastSaved": "Permissions enregistrées"
+  },
+  "articles": {
+    "loading": "Chargement…",
+    "statusAll": "Tous les statuts",
+    "status": {
+      "draft": "Brouillon",
+      "review": "En relecture",
+      "published": "Publié"
+    },
+    "colTitle": "Titre",
+    "colAuthor": "Auteur",
+    "colCategory": "Catégorie",
+    "colStatus": "Statut",
+    "colViews": "Vues",
+    "colPublished": "Publié",
+    "uncategorised": "Sans catégorie",
+    "empty": "Aucun article trouvé",
+    "pagination": "Page {{page}} sur {{totalPages}} — {{total}} articles",
+    "deleteTitle": "Supprimer l'article ?",
+    "deleteText": "« {{title}} » sera supprimé (suppression douce) et retiré des listes publiques.",
+    "delete": "Supprimer",
+    "toastDeleted": "Article supprimé"
   }
 }

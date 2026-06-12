@@ -800,5 +800,36 @@
     "manualDesc": "Fallback für Installationen ohne Internetzugang — die Kontoverbindung oben ist der empfohlene Weg. Kaufe eine Lizenz auf nodevo.io und gib den Schlüssel unten ein.",
     "activateBtn": "Aktivieren",
     "activating": "Aktiviere…"
+  },
+  "permissions": {
+    "loading": "Lädt…",
+    "manageGroups": "Gruppen verwalten",
+    "editingFor": "Berechtigungen bearbeiten für:",
+    "grantedCount": "{{granted}} von {{total}} Berechtigungen erteilt",
+    "domainGranted": "{{granted}}/{{total}} erteilt",
+    "empty": "Keine Berechtigungen registriert",
+    "toastSaved": "Berechtigungen gespeichert"
+  },
+  "articles": {
+    "loading": "Lädt…",
+    "statusAll": "Alle Status",
+    "status": {
+      "draft": "Entwurf",
+      "review": "In Prüfung",
+      "published": "Veröffentlicht"
+    },
+    "colTitle": "Titel",
+    "colAuthor": "Autor",
+    "colCategory": "Kategorie",
+    "colStatus": "Status",
+    "colViews": "Aufrufe",
+    "colPublished": "Veröffentlicht",
+    "uncategorised": "Ohne Kategorie",
+    "empty": "Keine Artikel gefunden",
+    "pagination": "Seite {{page}} von {{totalPages}} — {{total}} Artikel",
+    "deleteTitle": "Artikel löschen?",
+    "deleteText": "„{{title}}“ wird soft-gelöscht und aus öffentlichen Listen entfernt.",
+    "delete": "Löschen",
+    "toastDeleted": "Artikel gelöscht"
   }
 }
