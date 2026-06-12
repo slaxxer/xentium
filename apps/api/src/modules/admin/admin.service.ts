@@ -6,6 +6,7 @@ import { redis, bullConnection } from "../../infrastructure/redis.js";
 import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
+import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 
 // Minimal group select reused wherever a username needs its badge color
@@ -1010,30 +1011,13 @@ export const adminService = {
   async deleteNavItem(id: string) {
     const item = await prisma.navItem.findUnique({ where: { id } });
     if (!item) return;
-    if (item.isSystem) throw new Error("Cannot delete a system nav item");
+    if (item.isSystem) throw NodevoError.forbidden("Core nav links cannot be deleted — deactivate them instead");
     await prisma.navItem.delete({ where: { id } });
   },
 
+  /** ACP "reset to defaults": re-create any missing core links (Home,
+      Articles, Members). Shared with the installer seed + boot. */
   async seedDefaultNavItems() {
-    const count = await prisma.navItem.count();
-    if (count > 0) return;
-    await prisma.navItem.createMany({
-      data: [
-        { label: "Home",     url: "/",         position: 1, isSystem: true },
-        { label: "Articles", url: "/articles", position: 2, isSystem: true },
-        { label: "Members",  url: "/members",  position: 3, isSystem: true },
-      ],
-    });
-  },
-
-  /** Idempotently ensure the core "Members" nav item exists (added after initial
-      installs that only seeded Home + Articles). Safe to call on every boot. */
-  async ensureMembersNavItem() {
-    const existing = await prisma.navItem.findFirst({ where: { url: "/members" } });
-    if (existing) return;
-    const max = await prisma.navItem.aggregate({ _max: { position: true } });
-    await prisma.navItem.create({
-      data: { label: "Members", url: "/members", position: (max._max.position ?? 0) + 1, isSystem: true },
-    });
+    await seedDefaultNavItems();
   },
 };

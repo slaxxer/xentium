@@ -295,7 +295,7 @@ export function NavigationPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>{item.label}</span>
                   {item.isSystem && (
-                    <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>System</span>
+                    <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>Core</span>
                   )}
                   {item.openInNewTab && (
                     <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: 10, color: "var(--c-fg-muted)" }} />
@@ -338,7 +338,7 @@ export function NavigationPage() {
                     <FontAwesomeIcon icon={faPencil} />
                   </button>
                   {item.isSystem ? (
-                    <button type="button" className="btn-ghost btn-sm" disabled title="System links cannot be deleted">
+                    <button type="button" className="btn-ghost btn-sm" disabled title="Core links cannot be deleted — deactivate them instead">
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   ) : (
