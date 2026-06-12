@@ -22,6 +22,7 @@
     "@prisma/client": "catalog:",
     "adm-zip": "^0.5.17",
     "argon2": "catalog:",
+    "bcryptjs": "^3.0.3",
     "bullmq": "catalog:",
     "cookie-parser": "catalog:",
     "cors": "catalog:",

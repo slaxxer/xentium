@@ -34,6 +34,8 @@ const manifests = [
   "packages/plugin-sdk/package.json",
   "packages/ui/package.json",
   "packages/config/package.json",
+  "packages/migrate-core/package.json",
+  "packages/migrate-wp/package.json",
   "e2e/package.json",
 ];
 

@@ -11,14 +11,43 @@ datasource db {
 // Phase 0–3 (existing)
 // ============================================
 
+// One row per migration run (§34): core schema deploys (adapter = "core",
+// written by the installer/runMigrations) AND platform-migration CLI runs
+// (adapter = "wordpress" | "xenforo" | …, written by @nodevo/migrate).
 model MigrationRun {
-  id         String   @id @default(uuid())
-  command    String
-  durationMs Int
-  output     String   @db.Text
-  createdAt  DateTime @default(now())
+  id          String    @id @default(uuid())
+  adapter     String    @default("core")
+  adapterVer  String?   @map("adapter_ver")
+  sourceInfo  String?   @map("source_info") // e.g. "XenForo 2.2.14"
+  status      String    @default("completed") // running | completed | partial | failed
+  command     String?
+  durationMs  Int?
+  output      String?   @db.Text
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  summary     Json?     // { users: 1240, threads: 8904, posts: 44320, ... }
+  errors      Json?     // [{ entity, sourceId, reason }, ...]
+  reportPath  String?   @map("report_path")
+  createdAt   DateTime  @default(now())
 
   @@map("migration_runs")
+}
+
+// Source-entity → Nodevo-entity mapping written during platform migrations.
+// Makes re-runs resumable/idempotent (skip already-imported source ids) and
+// lets adapters resolve cross-references (post → author) mid-run.
+model ImportMapEntry {
+  id        String   @id @default(uuid())
+  runId     String?  @map("run_id")
+  platform  String // "wordpress" | "xenforo" | "phpbb" | ...
+  entity    String // "user" | "article" | "comment" | "category" | "thread" | "post" | "attachment"
+  sourceId  String   @map("source_id")
+  nodevoId  String   @map("nodevo_id")
+  createdAt DateTime @default(now())
+
+  @@unique([platform, entity, sourceId])
+  @@index([nodevoId])
+  @@map("import_map")
 }
 
 model User {
@@ -26,6 +55,11 @@ model User {
   email        String   @unique
   username     String   @unique
   passwordHash String
+  // "argon2" (native) or a legacy scheme set by migration adapters
+  // ("bcrypt", "phpass"). Non-argon2 hashes are verified with the legacy
+  // algorithm on login, then transparently rehashed to argon2 (§17b intent:
+  // migrated users keep their password, no forced reset).
+  passwordScheme String @default("argon2") @map("password_scheme")
   displayName  String?  @map("display_name")
   bio          String?  @db.Text
   avatar       String?
