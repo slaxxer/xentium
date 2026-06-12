@@ -1,4 +1,6 @@
 import readline from "node:readline/promises";
+import pg from "pg";
+import { missingPlugins } from "./loader.js";
 import { runMigration } from "./runner.js";
 import type { AdapterSource, MigrateAdapter, MigrationReporter } from "./types.js";
 
@@ -13,11 +15,15 @@ import type { AdapterSource, MigrateAdapter, MigrationReporter } from "./types.j
 export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Promise<void> {
   const args = parseArgs(argv);
   const str = (v: string | true | undefined) => (typeof v === "string" ? v : undefined);
-  const source: AdapterSource = { file: str(args.file), db: str(args["source-db"]) };
+  const source: AdapterSource = {
+    file: str(args.file),
+    db: str(args["source-db"]),
+    tablePrefix: str(args.prefix),
+  };
   const targetDb = str(args.db) ?? process.env.DATABASE_URL;
 
   if ((!source.file && !source.db) || !targetDb) {
-    console.log(`Usage: nodevo-migrate-${adapter.name} --file <export> [--source-db <url>] --db <nodevo postgres url> [--dry-run] [--yes]`);
+    console.log(`Usage: nodevo-migrate-${adapter.name} [--file <export>] [--source-db <url>] [--prefix <table prefix>] --db <nodevo postgres url> [--dry-run] [--yes]`);
     process.exitCode = 1;
     return;
   }
@@ -34,9 +40,24 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
     console.log(`\n  Warnings:`);
     for (const w of inspection.warnings) console.log(`    ! ${w}`);
   }
-  if (inspection.preconditions.missing.length) {
+  // Target-side preconditions (§34): required plugins must be enabled.
+  const targetMissing: string[] = [];
+  if (adapter.requiredPlugins?.length) {
+    const pool = new pg.Pool({ connectionString: targetDb, max: 1 });
+    try {
+      const missing = await missingPlugins(pool, adapter.requiredPlugins);
+      for (const id of adapter.requiredPlugins) {
+        if (missing.includes(id)) targetMissing.push(`Plugin "${id}" installed and enabled on the target (ACP → Extensions)`);
+        else console.log(`    + Plugin "${id}" installed and enabled`);
+      }
+    } finally {
+      await pool.end();
+    }
+  }
+
+  if (inspection.preconditions.missing.length || targetMissing.length) {
     console.log(`\n  Missing preconditions:`);
-    for (const p of inspection.preconditions.missing) console.log(`    x ${p}`);
+    for (const p of [...inspection.preconditions.missing, ...targetMissing]) console.log(`    x ${p}`);
     console.log(`\nAborting — nothing was touched.`);
     process.exitCode = 1;
     return;
