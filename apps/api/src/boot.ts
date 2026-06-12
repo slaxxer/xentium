@@ -1,9 +1,9 @@
 import { createApp } from './app/app.js';
 import { prisma } from './infrastructure/db.js';
 import { registerCorePermissions } from './bootstrap/registerCorePermissions.js';
+import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
-import { adminService } from './modules/admin/admin.service.js';
 import { env } from './config/env.js';
 
 /**
@@ -27,7 +27,8 @@ async function isInstalled(): Promise<boolean> {
 export async function boot() {
   if (await isInstalled()) {
     await registerCorePermissions();
-    await adminService.ensureMembersNavItem().catch(() => { /* install not finished yet */ });
+    // Legacy installs may predate newer core nav links — idempotent re-seed.
+    await seedDefaultNavItems().catch(() => { /* table not migrated yet */ });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();
   } else {
