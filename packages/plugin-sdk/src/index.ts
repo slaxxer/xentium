@@ -147,10 +147,16 @@ export interface PluginHost {
     requireAuth: any;
     optionalAuth: any;
     enforcePostLength: any;
+    /** Factory: `requirePermission(key)` → middleware gating on a permission
+     *  key (e.g. "admin.access"). Use for plugin ACP / privileged routes. */
+    requirePermission: (key: string) => any;
   };
   /** Shared helper utilities. */
   utils: {
     resolveAvatar: (...args: any[]) => any;
+    /** Sanitize user-authored rich-text HTML (allowlist) before storage.
+     *  Plugins that accept HTML bodies MUST run them through this on write. */
+    sanitizeRichText: (html: string) => string;
   };
   /** Core notification service — dispatch passes through all fields incl. meta. */
   notificationService: {

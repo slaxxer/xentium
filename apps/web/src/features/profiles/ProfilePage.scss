@@ -109,6 +109,48 @@
   font-weight: 600;
 }
 
+/* ── Action cluster (follow / message / block) ──────── */
+.profile-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+/* Square icon button used by core Block and plugin actions (e.g. message) */
+.profile-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--btn-radius);
+  background: var(--c-surface);
+  color: var(--c-fg-muted);
+  border: 1px solid var(--c-border);
+  font-size: var(--fs-sm);
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+
+  &:hover {
+    border-color: var(--c-danger);
+    color: var(--c-danger);
+    background: var(--c-danger-soft);
+  }
+
+  &--active {
+    border-color: var(--c-danger);
+    color: var(--c-danger);
+    background: var(--c-danger-soft);
+
+    &:hover {
+      border-color: var(--c-border);
+      color: var(--c-fg-muted);
+      background: var(--c-surface);
+    }
+  }
+}
+
 /* ── Follow button ──────────────────────────────────── */
 .profile-follow-btn {
   padding: var(--sp-2) var(--sp-4);

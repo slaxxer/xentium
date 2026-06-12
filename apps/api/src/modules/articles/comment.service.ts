@@ -6,6 +6,8 @@ import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { sanitizeRichText } from "../../shared/sanitize/richText.js";
+import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 
 const commentInclude = {
   author: {
@@ -81,14 +83,19 @@ export const commentService = {
     articleId: string,
     page: number,
     limit: number,
+    viewerId?: string,
   ): Promise<PaginatedResponse<CommentNode>> {
     // Show published comments publicly — pending ones await moderation. Deleted
     // comments ARE returned: shapeRow() hides their body and the reader renders
     // a tombstone in their place (§33), mirroring profile-wall behaviour.
+    // Blocked users' comments are hidden entirely from the viewer (block always hides).
+    const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
+    const authorFilter = hiddenAuthorIds.length ? { authorId: { notIn: hiddenAuthorIds } } : {};
     const where: Prisma.ArticleCommentWhereInput = {
       articleId,
       parentId: null,
       status: "published",
+      ...authorFilter,
     };
 
     const [topLevel, total] = await Promise.all([
@@ -107,7 +114,7 @@ export const commentService = {
       parentIds.length === 0
         ? []
         : await prisma.articleComment.findMany({
-            where: { parentId: { in: parentIds }, status: "published" },
+            where: { parentId: { in: parentIds }, status: "published", ...authorFilter },
             include: commentInclude,
             orderBy: { createdAt: "asc" },
           });
@@ -193,7 +200,7 @@ export const commentService = {
 
     const result = await prisma.$transaction(async (tx) => {
       const created = await tx.articleComment.create({
-        data: { articleId, authorId, body, parentId: parentId ?? null, status: commentStatus },
+        data: { articleId, authorId, body: sanitizeRichText(body), parentId: parentId ?? null, status: commentStatus },
         include: commentInclude,
       });
       // Only increment commentCount for published comments
@@ -248,7 +255,7 @@ export const commentService = {
 
     const updated = await prisma.articleComment.update({
       where: { id: commentId },
-      data: { body, editedAt: new Date() },
+      data: { body: sanitizeRichText(body), editedAt: new Date() },
       include: commentInclude,
     });
     return shapeRow(updated);

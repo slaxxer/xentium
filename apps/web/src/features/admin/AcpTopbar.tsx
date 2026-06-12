@@ -6,6 +6,7 @@ import { useAuth, applyLogout } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import { Avatar } from "../../components/Avatar";
 import { NotificationBell } from "../../components/NotificationBell";
+import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
 import "./AcpTopbar.scss";
 
@@ -334,6 +335,9 @@ export function AcpTopbar() {
         >
           <AcpIcon name={theme === "dark" ? "sun" : "moon"} size={18} />
         </button>
+        {slotRegistry.getHeaderWidgets().map((w) => (
+          <w.component key={w.id} />
+        ))}
         <NotificationBell />
         <span className="nbdiv" />
         <UserMenu />

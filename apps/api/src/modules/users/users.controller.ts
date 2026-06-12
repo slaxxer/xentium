@@ -49,10 +49,10 @@ export const usersController = {
     const { id: profileUserId } = followParamsSchema.parse(req.params);
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
-    const result = await userService.getProfileComments(profileUserId, page, limit);
+    const viewerId = (req as any).userId as string | undefined;
+    const result = await userService.getProfileComments(profileUserId, page, limit, viewerId);
 
     // Also return which comment IDs the authenticated viewer has liked
-    const viewerId = (req as any).userId as string | undefined;
     let viewerLikedIds: string[] = [];
     if (viewerId && result.comments.length > 0) {
       const commentIds = result.comments.map((c: any) => c.id);

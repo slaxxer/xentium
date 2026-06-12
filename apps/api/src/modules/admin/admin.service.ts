@@ -239,7 +239,20 @@ export const adminService = {
     if (requestingUserId && requestingUserId === userId) {
       throw NodevoError.forbidden("You cannot deactivate your own account");
     }
-    return prisma.user.update({ where: { id: userId }, data: { isActive } });
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.user.update({ where: { id: userId }, data: { isActive } });
+      // Deactivation must revoke all sessions immediately (§49/§17b): the next
+      // /auth/refresh fails (rotateSession rechecks isActive), so the account is
+      // signed out everywhere within the access-token TTL instead of continuing
+      // to mint fresh tokens for the full 30-day refresh window.
+      if (!isActive) {
+        await tx.session.updateMany({
+          where: { userId, revokedAt: null },
+          data:  { revokedAt: new Date() },
+        });
+      }
+      return updated;
+    });
   },
 
   async banUser(opts: {
@@ -277,6 +290,14 @@ export const adminService = {
         ? new Date("9999-12-31")
         : (opts.expiresAt ?? null);
       await tx.user.update({ where: { id: opts.userId }, data: { bannedUntil } });
+      // Revoke all sessions in the same transaction so the ban takes effect
+      // immediately (§43): without this, an already-logged-in user keeps
+      // refreshing a fresh access token every 15 min for the whole refresh
+      // window, never re-hitting the login-time ban check.
+      await tx.session.updateMany({
+        where: { userId: opts.userId, revokedAt: null },
+        data:  { revokedAt: new Date() },
+      });
       await tx.moderationLog.create({
         data: {
           actorId:    opts.issuedById,

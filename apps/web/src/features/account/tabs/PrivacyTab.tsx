@@ -252,12 +252,9 @@ export function PrivacyTab() {
               checked={settings.showFollowingPublic}
               onChange={(v) => patch({ showFollowingPublic: v })}
             />
-            <Toggle
-              label={t("privacy.hideBlocked")}
-              desc={t("privacy.hideBlockedDesc")}
-              checked={settings.hideBlockedContent}
-              onChange={(v) => patch({ hideBlockedContent: v })}
-            />
+            {/* "Hide blocked users' content" removed: blocking now always hides
+                content everywhere, so the toggle is redundant. The hideBlockedContent
+                setting key is retained server-side for backwards compatibility. */}
             {slotRegistry.getPrivacySections().map((s) => (
               <s.component key={s.id} />
             ))}

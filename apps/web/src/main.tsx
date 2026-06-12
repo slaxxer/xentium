@@ -76,8 +76,13 @@ async function bootstrap() {
   // Activate enabled plugins' web entries.
   // Dev: build-time imports (full HMR). Prod: runtime-load compiled bundles.
   if (import.meta.env.DEV) {
-    const { loadDevPlugins } = await import("./plugins/dev-plugins");
+    const { loadDevPlugins, DEV_PLUGIN_IDS } = await import("./plugins/dev-plugins");
     await loadDevPlugins(enabledIds);
+    // Any enabled plugin without a build-time HMR entry (e.g. an uploaded
+    // .nvplugin) is runtime-loaded from its compiled bundle, exactly like prod.
+    for (const id of enabledIds) {
+      if (!DEV_PLUGIN_IDS.includes(id)) await loadPluginBundle(id);
+    }
   } else {
     for (const id of enabledIds) {
       await loadPluginBundle(id);

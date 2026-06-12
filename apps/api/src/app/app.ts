@@ -65,16 +65,32 @@ export function createApp(): Express {
   // Coarse per-IP API limiter (§26). Prod-only; installer/health/meta exempt.
   app.use(globalApiLimiter);
 
-  // 3. Static uploads — allowlisted subdirs only
-  app.use('/uploads/:dir', (req, res, next) => {
-    const first = req.params.dir;
-    if (!ALLOWED_UPLOAD_DIRS.some((d) => d.split(path.sep)[0] === first)) {
-      return next(NodevoError.notFound());
-    }
+  // 3. Static uploads — allowlisted subdirs only. Match the FULL relative prefix
+  //    (not just the first path segment) so `themes/logo` does not also expose
+  //    other `themes/*` dirs (e.g. private `themes/packs`).
+  app.use('/uploads', (req, res, next) => {
+    const rel = path.normalize(req.path).replace(/^[/\\]+/, '');
+    if (rel.includes('..')) return next(NodevoError.notFound());
+    const ok = ALLOWED_UPLOAD_DIRS.some(
+      (d) => rel === d || rel.startsWith(d + '/') || rel.startsWith(d + path.sep),
+    );
+    if (!ok) return next(NodevoError.notFound());
     next();
   });
 
-  app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR)));
+  app.use('/uploads', express.static(path.resolve(env.UPLOAD_DIR), {
+    setHeaders: (res, filePath) => {
+      // Forum attachments are uploadable by any authenticated member and the
+      // stored MIME/extension is not magic-byte-verified, so they must never be
+      // rendered inline as active content. Force download + block sniffing so a
+      // .html/.svg attachment can't execute as same-origin HTML (stored XSS).
+      if (filePath.split(path.sep).join('/').includes('/forum-attachments/')) {
+        res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      }
+    },
+  }));
 
   // 4. Install guard + routes
   app.get('/api/health', (_req, res) => {

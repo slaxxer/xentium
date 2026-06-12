@@ -16,12 +16,15 @@ const REG_CODE_TTL = 600; // 10 minutes
 const RESET_TOKEN_TTL_MS = 15 * 60_000; // 15 minutes (§17b)
 
 function generateCode(): string {
-  return String(Math.floor(100000 + Math.random() * 900000));
+  // Cryptographically-secure 6-digit code (not Math.random, which is predictable).
+  return String(crypto.randomInt(100000, 1000000));
 }
 
-// Same hashing as refresh tokens (auth.tokens.ts): the raw value is a 32-byte
-// random token, so plain SHA-256 is sufficient — brute force is infeasible.
-const hashToken = (raw: string) => crypto.createHash("sha256").update(raw).digest("hex");
+// Same keyed (HMAC) hashing as refresh tokens (auth.tokens.ts) per §43/§17b: the
+// raw value is a 32-byte random token, and the server-side secret means a
+// DB-read attacker without it cannot confirm or derive reset/verify tokens.
+const TOKEN_HMAC_KEY = process.env.REFRESH_TOKEN_HMAC_SECRET || process.env.JWT_SECRET || "";
+const hashToken = (raw: string) => crypto.createHmac("sha256", TOKEN_HMAC_KEY).update(raw).digest("hex");
 
 export async function login(email: string, password: string, pin: string | undefined, meta: Meta) {
   const user = await prisma.user.findUnique({ where: { email } });

@@ -23,5 +23,8 @@ nodevo-redesign/
 # Official plugins live in their own repos — not committed to core
 plugins/official/
 
+# Packaged .nvplugin archives (build output for marketplace upload) — not committed
+plugins/packaged/
+
 # Runtime upload storage (user content — never commit; recreated on demand)
 **/var/uploads/

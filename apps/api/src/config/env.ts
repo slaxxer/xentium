@@ -13,6 +13,9 @@ const schema = z.object({
   REDIS_KEY_PREFIX: z.string().default("nodevo:"),
   COOKIE_SECRET: z.string().min(16),
   JWT_SECRET: z.string().min(32),
+  // HMAC key for refresh / password-reset / email-verify token hashing (§43).
+  // Optional: falls back to JWT_SECRET when unset so existing installs still boot.
+  REFRESH_TOKEN_HMAC_SECRET: z.string().min(32).optional(),
   DUMMY_ARGON2_HASH: z.string().min(1),
   UPLOAD_DIR: z.string().default("./var/uploads"),
   DATA_DIR: z.string().default("./data"),
