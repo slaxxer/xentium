@@ -1,0 +1,54 @@
+-- Strict core table naming: every core table is ncf_<snake_case>
+-- (nodevo community framework). The ncf_ namespace is reserved for core;
+-- plugin tables keep their <pluginid>_ prefix (e.g. forum_*).
+-- Indexes, constraints and triggers follow their tables on RENAME.
+
+ALTER TABLE "Group" RENAME TO ncf_groups;
+ALTER TABLE "GroupPermission" RENAME TO ncf_group_permissions;
+ALTER TABLE "LoginEvent" RENAME TO ncf_login_events;
+ALTER TABLE "Permission" RENAME TO ncf_permissions;
+ALTER TABLE "Session" RENAME TO ncf_sessions;
+ALTER TABLE "Setting" RENAME TO ncf_settings;
+ALTER TABLE "User" RENAME TO ncf_users;
+ALTER TABLE "UserGroup" RENAME TO ncf_user_groups;
+ALTER TABLE "article_categories" RENAME TO ncf_article_categories;
+ALTER TABLE "article_comment_likes" RENAME TO ncf_article_comment_likes;
+ALTER TABLE "article_comments" RENAME TO ncf_article_comments;
+ALTER TABLE "article_dislikes" RENAME TO ncf_article_dislikes;
+ALTER TABLE "article_likes" RENAME TO ncf_article_likes;
+ALTER TABLE "article_revisions" RENAME TO ncf_article_revisions;
+ALTER TABLE "article_tags" RENAME TO ncf_article_tags;
+ALTER TABLE "articles" RENAME TO ncf_articles;
+ALTER TABLE "beta_access_log" RENAME TO ncf_beta_access_log;
+ALTER TABLE "beta_codes" RENAME TO ncf_beta_codes;
+ALTER TABLE "email_change_tokens" RENAME TO ncf_email_change_tokens;
+ALTER TABLE "error_log" RENAME TO ncf_error_log;
+ALTER TABLE "group_progression" RENAME TO ncf_group_progression;
+ALTER TABLE "import_map" RENAME TO ncf_import_map;
+ALTER TABLE "installed_plugins" RENAME TO ncf_installed_plugins;
+ALTER TABLE "installed_style_packs" RENAME TO ncf_installed_style_packs;
+ALTER TABLE "installs" RENAME TO ncf_installs;
+ALTER TABLE "invite_codes" RENAME TO ncf_invite_codes;
+ALTER TABLE "licenses" RENAME TO ncf_licenses;
+ALTER TABLE "migration_runs" RENAME TO ncf_migration_runs;
+ALTER TABLE "moderation_bans" RENAME TO ncf_moderation_bans;
+ALTER TABLE "moderation_cases" RENAME TO ncf_moderation_cases;
+ALTER TABLE "moderation_log" RENAME TO ncf_moderation_log;
+ALTER TABLE "moderation_reports" RENAME TO ncf_moderation_reports;
+ALTER TABLE "moderation_warnings" RENAME TO ncf_moderation_warnings;
+ALTER TABLE "nav_items" RENAME TO ncf_nav_items;
+ALTER TABLE "nodevo_plugin_migrations" RENAME TO ncf_plugin_migrations;
+ALTER TABLE "notification_preferences" RENAME TO ncf_notification_preferences;
+ALTER TABLE "notifications" RENAME TO ncf_notifications;
+ALTER TABLE "password_reset_tokens" RENAME TO ncf_password_reset_tokens;
+ALTER TABLE "profile_comment_likes" RENAME TO ncf_profile_comment_likes;
+ALTER TABLE "profile_comments" RENAME TO ncf_profile_comments;
+ALTER TABLE "reviewed_security_signals" RENAME TO ncf_reviewed_security_signals;
+ALTER TABLE "style_history" RENAME TO ncf_style_history;
+ALTER TABLE "tags" RENAME TO ncf_tags;
+ALTER TABLE "user_blocks" RENAME TO ncf_user_blocks;
+ALTER TABLE "user_follows" RENAME TO ncf_user_follows;
+ALTER TABLE "user_privacy_settings" RENAME TO ncf_user_privacy_settings;
+ALTER TABLE "user_profile_field_values" RENAME TO ncf_user_profile_field_values;
+ALTER TABLE "user_profile_fields" RENAME TO ncf_user_profile_fields;
+ALTER TABLE "username_history" RENAME TO ncf_username_history;

@@ -30,7 +30,7 @@ model MigrationRun {
   reportPath  String?   @map("report_path")
   createdAt   DateTime  @default(now())
 
-  @@map("migration_runs")
+  @@map("ncf_migration_runs")
 }
 
 // Source-entity → Nodevo-entity mapping written during platform migrations.
@@ -47,7 +47,7 @@ model ImportMapEntry {
 
   @@unique([platform, entity, sourceId])
   @@index([nodevoId])
-  @@map("import_map")
+  @@map("ncf_import_map")
 }
 
 model User {
@@ -117,6 +117,8 @@ model User {
   invitesUsed      InviteCode[]    @relation("InviteUsed")
   betaCodes           BetaCode[]  @relation("BetaCodeCreated")
   betaCodeRegistered  BetaCode[]  @relation("BetaCodeRegistered")
+
+  @@map("ncf_users")
 }
 
 model Group {
@@ -132,6 +134,8 @@ model Group {
   users       UserGroup[]
   permissions GroupPermission[]
   progression GroupProgression?
+
+  @@map("ncf_groups")
 }
 
 // ── Phase 7 — Progression system (§38) ───────────────────────────────────────
@@ -167,7 +171,7 @@ model GroupProgression {
   updatedAt                DateTime @updatedAt      @map("updated_at")
 
   @@index([isProgressionGroup, ladderPosition])
-  @@map("group_progression")
+  @@map("ncf_group_progression")
 }
 
 model Permission {
@@ -175,6 +179,8 @@ model Permission {
   key    String            @unique
   label  String
   groups GroupPermission[]
+
+  @@map("ncf_permissions")
 }
 
 model UserGroup {
@@ -184,6 +190,8 @@ model UserGroup {
   group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
   @@id([userId, groupId])
+
+  @@map("ncf_user_groups")
 }
 
 model GroupPermission {
@@ -193,6 +201,8 @@ model GroupPermission {
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([groupId, permissionId])
+
+  @@map("ncf_group_permissions")
 }
 
 model Session {
@@ -209,6 +219,8 @@ model Session {
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+
+  @@map("ncf_sessions")
 }
 
 model LoginEvent {
@@ -226,12 +238,16 @@ model LoginEvent {
   @@index([ip])
   @@index([deviceCookieId])
   @@index([eventType, createdAt(sort: Desc)])
+
+  @@map("ncf_login_events")
 }
 
 model Setting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+
+  @@map("ncf_settings")
 }
 
 model Install {
@@ -242,7 +258,7 @@ model Install {
   version     String    @default("1")
   createdAt   DateTime  @default(now())
 
-  @@map("installs")
+  @@map("ncf_installs")
 }
 
 // ============================================
@@ -258,7 +274,7 @@ model UsernameHistory {
   changedById  String   @map("changed_by_id")
 
   @@index([userId])
-  @@map("username_history")
+  @@map("ncf_username_history")
 }
 
 model UserFollow {
@@ -273,7 +289,7 @@ model UserFollow {
   @@unique([followerId, followingId])
   @@index([followerId])
   @@index([followingId])
-  @@map("user_follows")
+  @@map("ncf_user_follows")
 }
 
 model UserBlock {
@@ -288,7 +304,7 @@ model UserBlock {
   @@unique([blockerId, blockedId])
   @@index([blockerId])
   @@index([blockedId])
-  @@map("user_blocks")
+  @@map("ncf_user_blocks")
 }
 
 model ProfileComment {
@@ -309,7 +325,7 @@ model ProfileComment {
   likes          ProfileCommentLike[]
 
   @@index([profileUserId, deletedAt, createdAt(sort: Desc)])
-  @@map("profile_comments")
+  @@map("ncf_profile_comments")
 }
 
 model ProfileCommentLike {
@@ -322,7 +338,7 @@ model ProfileCommentLike {
   user       User           @relation("ProfileCommentLikedBy", fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([commentId, userId])
-  @@map("profile_comment_likes")
+  @@map("ncf_profile_comment_likes")
 }
 
 model UserProfileField {
@@ -339,7 +355,7 @@ model UserProfileField {
   isSystem                Boolean  @default(false) @map("is_system")
   createdAt               DateTime @default(now()) @map("created_at")
 
-  @@map("user_profile_fields")
+  @@map("ncf_user_profile_fields")
 }
 
 model UserProfileFieldValue {
@@ -353,7 +369,7 @@ model UserProfileFieldValue {
 
   @@unique([userId, fieldId])
   @@index([userId])
-  @@map("user_profile_field_values")
+  @@map("ncf_user_profile_field_values")
 }
 
 model UserPrivacySettings {
@@ -361,7 +377,7 @@ model UserPrivacySettings {
   settings  Json     @default("{}")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  @@map("user_privacy_settings")
+  @@map("ncf_user_privacy_settings")
 }
 
 // Phase 2 — basic NotificationService (DB writes only)
@@ -379,7 +395,7 @@ model Notification {
   createdAt DateTime  @default(now()) @map("created_at")
 
   @@index([userId, readAt, createdAt(sort: Desc)])
-  @@map("notifications")
+  @@map("ncf_notifications")
 }
 
 model NotificationPreference {
@@ -392,7 +408,7 @@ model NotificationPreference {
 
   @@unique([userId, typePattern])
   @@index([userId])
-  @@map("notification_preferences")
+  @@map("ncf_notification_preferences")
 }
 // ============================================
 // Phase 5 — Article CMS
@@ -421,7 +437,7 @@ model ArticleCategory {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([parentId, position])
-  @@map("article_categories")
+  @@map("ncf_article_categories")
 }
 
 model Article {
@@ -462,7 +478,7 @@ model Article {
   @@index([status, publishedAt(sort: Desc)])
   @@index([categoryId, status])
   @@index([authorId, status])
-  @@map("articles")
+  @@map("ncf_articles")
 }
 
 model ArticleRevision {
@@ -476,7 +492,7 @@ model ArticleRevision {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([articleId, createdAt(sort: Desc)])
-  @@map("article_revisions")
+  @@map("ncf_article_revisions")
 }
 
 model Tag {
@@ -486,7 +502,7 @@ model Tag {
 
   articles ArticleTag[]
 
-  @@map("tags")
+  @@map("ncf_tags")
 }
 
 model ArticleTag {
@@ -497,7 +513,7 @@ model ArticleTag {
 
   @@id([articleId, tagId])
   @@index([tagId])
-  @@map("article_tags")
+  @@map("ncf_article_tags")
 }
 
 model ArticleLike {
@@ -509,7 +525,7 @@ model ArticleLike {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([articleId, userId])
-  @@map("article_likes")
+  @@map("ncf_article_likes")
 }
 
 model ArticleDislike {
@@ -521,7 +537,7 @@ model ArticleDislike {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([articleId, userId])
-  @@map("article_dislikes")
+  @@map("ncf_article_dislikes")
 }
 
 model ArticleComment {
@@ -547,7 +563,7 @@ model ArticleComment {
 
   @@index([articleId, deletedAt, createdAt(sort: Desc)])
   @@index([parentId])
-  @@map("article_comments")
+  @@map("ncf_article_comments")
 }
 
 model ArticleCommentLike {
@@ -559,7 +575,7 @@ model ArticleCommentLike {
   createdAt DateTime       @default(now()) @map("created_at")
 
   @@unique([commentId, userId])
-  @@map("article_comment_likes")
+  @@map("ncf_article_comment_likes")
 }
 
 model EmailChangeToken {
@@ -573,7 +589,7 @@ model EmailChangeToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId])
-  @@map("email_change_tokens")
+  @@map("ncf_email_change_tokens")
 }
 
 // Password reset — DB-backed single-use token (§17b). A JWT would stay valid
@@ -589,7 +605,7 @@ model PasswordResetToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([userId])
-  @@map("password_reset_tokens")
+  @@map("ncf_password_reset_tokens")
 }
 
 // ============================================
@@ -613,7 +629,7 @@ model ModerationReport {
   reporter User @relation("ReportFiled",    fields: [reporterId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt(sort: Desc)])
-  @@map("moderation_reports")
+  @@map("ncf_moderation_reports")
 }
 
 model ModerationWarning {
@@ -631,7 +647,7 @@ model ModerationWarning {
   issuedBy User @relation("WarningIssued",   fields: [issuedById], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
-  @@map("moderation_warnings")
+  @@map("ncf_moderation_warnings")
 }
 
 model ModerationBan {
@@ -650,7 +666,7 @@ model ModerationBan {
   issuedBy User @relation("BanIssued",   fields: [issuedById], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
-  @@map("moderation_bans")
+  @@map("ncf_moderation_bans")
 }
 
 model ModerationCase {
@@ -666,7 +682,7 @@ model ModerationCase {
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@index([status, createdAt(sort: Desc)])
-  @@map("moderation_cases")
+  @@map("ncf_moderation_cases")
 }
 
 model ModerationLog {
@@ -681,7 +697,7 @@ model ModerationLog {
   createdAt  DateTime @default(now()) @map("created_at")
 
   @@index([action, createdAt(sort: Desc)])
-  @@map("moderation_log")
+  @@map("ncf_moderation_log")
 }
 
 model InstalledPlugin {
@@ -697,7 +713,7 @@ model InstalledPlugin {
   enabledAt        DateTime? @map("enabled_at")
   disabledAt       DateTime? @map("disabled_at")
 
-  @@map("installed_plugins")
+  @@map("ncf_installed_plugins")
 }
 
 model License {
@@ -712,7 +728,7 @@ model License {
   expiresAt      DateTime? @map("expires_at")
   refreshAfter   DateTime? @map("refresh_after")
 
-  @@map("licenses")
+  @@map("ncf_licenses")
 }
 
 model ErrorLog {
@@ -726,7 +742,7 @@ model ErrorLog {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([severity, createdAt(sort: Desc)])
-  @@map("error_log")
+  @@map("ncf_error_log")
 }
 
 model StyleHistory {
@@ -738,7 +754,7 @@ model StyleHistory {
 
   savedBy User @relation(fields: [savedById], references: [id], onDelete: Cascade)
 
-  @@map("style_history")
+  @@map("ncf_style_history")
 }
 
 model InviteCode {
@@ -757,7 +773,7 @@ model InviteCode {
   usedByUser User? @relation("InviteUsed",   fields: [usedById],   references: [id], onDelete: SetNull)
 
   @@index([code])
-  @@map("invite_codes")
+  @@map("ncf_invite_codes")
 }
 
 model BetaCode {
@@ -776,7 +792,7 @@ model BetaCode {
   registeredUser User? @relation("BetaCodeRegistered", fields: [registeredUserId], references: [id], onDelete: SetNull)
 
   @@index([code])
-  @@map("beta_codes")
+  @@map("ncf_beta_codes")
 }
 
 model BetaAccessLog {
@@ -791,7 +807,7 @@ model BetaAccessLog {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@index([createdAt(sort: Desc)])
-  @@map("beta_access_log")
+  @@map("ncf_beta_access_log")
 }
 
 model NavItem {
@@ -810,7 +826,7 @@ model NavItem {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([parentId, position])
-  @@map("nav_items")
+  @@map("ncf_nav_items")
 }
 
 // ── Phase 14: Plugin migrations ───────────────────────────────────────────────
@@ -825,7 +841,7 @@ model NodevoPluginMigration {
   direction String                            // 'up' | 'down'
 
   @@index([pluginId])
-  @@map("nodevo_plugin_migrations")
+  @@map("ncf_plugin_migrations")
 }
 
 // ── Phase 12: Style packs ──────────────────────────────────────────────────────
@@ -841,7 +857,7 @@ model InstalledStylePack {
   installedAt DateTime @default(now()) @map("installed_at")
   installedBy String   @map("installed_by")
 
-  @@map("installed_style_packs")
+  @@map("ncf_installed_style_packs")
 }
 
 // Reviewed security signals — device cookies / IPs that a mod has cleared.
@@ -857,5 +873,5 @@ model ReviewedSecuritySignal {
 
   @@unique([signalType, signalValue])
   @@index([signalType, signalValue])
-  @@map("reviewed_security_signals")
+  @@map("ncf_reviewed_security_signals")
 }
