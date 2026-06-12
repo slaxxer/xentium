@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey, faCheck, faRotate, faTrash, faCircleExclamation, faPlug, faLinkSlash, faGlobe } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
@@ -37,6 +38,7 @@ function StatusDot({ color }: { color: string }) {
 }
 
 export function LicensePage() {
+  const { t } = useTranslation("acp");
   const qc       = useQueryClient();
   const [key,   setKey]   = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -55,48 +57,48 @@ export function LicensePage() {
 
   const connectMut = useMutation({
     mutationFn: () => api.post("/admin/marketplace/connection", { authCode: authCode.trim() }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); setAuthCode(""); setConnectError(null); swalToast("Marketplace account connected.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); setAuthCode(""); setConnectError(null); swalToast(t("license.toastConnected"), "success"); },
     onError:    (e: any) => setConnectError(e?.data?.message ?? apiErrorMessage(e)),
   });
 
   const disconnectMut = useMutation({
     mutationFn: () => api.delete("/admin/marketplace/connection"),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); swalToast("Marketplace account disconnected.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); swalToast(t("license.toastDisconnected"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const handleDisconnect = async () => {
     const ok = await swalConfirm(
-      "Disconnect marketplace account?",
-      "Installed plugins keep running. You'll need to reconnect to install or update licensed plugins.",
-      "Disconnect",
+      t("license.disconnectTitle"),
+      t("license.disconnectText"),
+      t("license.disconnect"),
     );
     if (ok) disconnectMut.mutate();
   };
 
   const activateMut = useMutation({
     mutationFn: () => api.post("/admin/license/activate", { licenseKey: key.trim() }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); setKey(""); setError(null); swalToast("License activated.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); setKey(""); setError(null); swalToast(t("license.toastActivated"), "success"); },
     onError:    (e: any) => setError(e?.data?.message ?? apiErrorMessage(e)),
   });
 
   const refreshMut = useMutation({
     mutationFn: () => api.post("/admin/license/refresh", {}),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast("Entitlements refreshed.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast(t("license.toastRefreshed"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const deactivateMut = useMutation({
     mutationFn: () => api.delete("/admin/license"),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast("License deactivated.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast(t("license.toastDeactivated"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const handleDeactivate = async () => {
     const ok = await swalConfirm(
-      "Deactivate license?",
-      "Licensed plugins will continue running but cannot be re-enabled after disabling.",
-      "Deactivate",
+      t("license.deactivateTitle"),
+      t("license.deactivateText"),
+      t("license.deactivate"),
     );
     if (ok) deactivateMut.mutate();
   };
@@ -107,8 +109,8 @@ export function LicensePage() {
     <div style={{ maxWidth: 640 }}>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Extensions</div>
-          <h1 className="acp-page-title">License</h1>
+          <div className="acp-page-sub">{t("nav.extensions")}</div>
+          <h1 className="acp-page-title">{t("nav.license")}</h1>
         </div>
       </div>
 
@@ -116,32 +118,31 @@ export function LicensePage() {
       <div className="acp-card" style={{ padding:"24px", marginBottom:20 }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
           <FontAwesomeIcon icon={faPlug} style={{ color:"var(--c-accent)" }} />
-          <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>Marketplace Account</div>
+          <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{t("license.accountTitle")}</div>
           <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, padding:"2px 9px", borderRadius:100,
             background: conn?.connected ? "color-mix(in srgb, var(--c-success) 15%, transparent)" : "var(--c-surface)",
             color: conn?.connected ? "var(--c-success)" : "var(--c-fg-muted)", border:"1px solid var(--c-border)" }}>
-            {conn?.connected ? "Connected" : "Not connected"}
+            {conn?.connected ? t("license.connectedBadge") : t("license.notConnectedBadge")}
           </span>
         </div>
         <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>
-          Connect your nodevo.io account to install and update licensed plugins. Purchases are bound to this
-          site's domain — installs are authorized at download.
+          {t("license.accountDesc")}
         </div>
 
         {conn?.connected ? (
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>Account</div>
+                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{t("license.fieldAccount")}</div>
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)", fontFamily:"monospace", wordBreak:"break-all" }}>{conn.accountRef ?? "—"}</div>
               </div>
               <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>Connected</div>
+                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{t("license.fieldConnected")}</div>
                 <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)" }}>{conn.connectedAt ? new Date(conn.connectedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : "—"}</div>
               </div>
             </div>
             <button type="button" className="btn-danger btn-sm" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
-              <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight:5 }} /> Disconnect
+              <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight:5 }} /> {t("license.disconnect")}
             </button>
           </div>
         ) : (
@@ -151,13 +152,13 @@ export function LicensePage() {
                 className="acp-input"
                 value={authCode}
                 onChange={(e) => { setAuthCode(e.target.value); setConnectError(null); }}
-                placeholder="Paste your authorization code"
+                placeholder={t("license.authPlaceholder")}
                 style={{ flex:1 }}
                 onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
               />
               <button type="button" className="btn-primary btn-sm" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
                 <FontAwesomeIcon icon={faPlug} style={{ marginRight:5 }} />
-                {connectMut.isPending ? "Connecting…" : "Connect"}
+                {connectMut.isPending ? t("license.connecting") : t("license.connect")}
               </button>
             </div>
             {connectError && (
@@ -171,26 +172,26 @@ export function LicensePage() {
       </div>
 
       {isLoading ? (
-        <div className="acp-card acp-empty">Loading…</div>
+        <div className="acp-card acp-empty">{t("license.loading")}</div>
       ) : license ? (
         <div className="acp-card" style={{ padding:"24px", marginBottom:20 }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>Active License</div>
+          <div style={{ fontSize:16, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("license.activeTitle")}</div>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
             <StatusDot color={license.status === "active" ? "var(--c-success)" : "var(--c-warn)"} />
             <span style={{ fontSize:14, color: license.status === "active" ? "var(--c-success)" : "var(--c-warn)", fontWeight:600 }}>
-              {license.status === "active" ? "Active" : license.status}
-              {license.expiresAt ? ` · Expires ${new Date(license.expiresAt).toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" })}` : ""}
+              {license.status === "active" ? t("license.statusActive") : license.status}
+              {license.expiresAt ? ` ${t("license.expires", { date: new Date(license.expiresAt).toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" }) })}` : ""}
             </span>
           </div>
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
             {([
-              ["License key", license.licenseKey],
-              ["Site ID",     license.siteId],
-              ["Domain",      license.domain ?? "—"],
-              ["Environment", license.environment ?? "—"],
-              ["Activated",   new Date(license.activatedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })],
-              ["Refresh after", license.refreshAfter ? new Date(license.refreshAfter).toLocaleDateString() : "—"],
+              [t("license.fieldKey"),         license.licenseKey],
+              [t("license.fieldSiteId"),      license.siteId],
+              [t("license.fieldDomain"),      license.domain ?? "—"],
+              [t("license.fieldEnvironment"), license.environment ?? "—"],
+              [t("license.fieldActivated"),   new Date(license.activatedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })],
+              [t("license.fieldRefreshAfter"), license.refreshAfter ? new Date(license.refreshAfter).toLocaleDateString() : "—"],
             ] as [string, string][]).map(([l, v]) => (
               <div key={l} style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
                 <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{l}</div>
@@ -201,7 +202,7 @@ export function LicensePage() {
 
           {entitlements.length > 0 && (
             <div style={{ marginBottom:20 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"var(--c-fg-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Entitlements</div>
+              <div style={{ fontSize:11, fontWeight:700, color:"var(--c-fg-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>{t("license.entitlements")}</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {entitlements.map((e) => (
                   <span key={e} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
@@ -215,18 +216,18 @@ export function LicensePage() {
           <div style={{ display:"flex", gap:8 }}>
             <button type="button" className="btn-ghost btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
               <FontAwesomeIcon icon={faRotate} style={{ marginRight:5 }} />
-              {refreshMut.isPending ? "Refreshing…" : "Refresh entitlements"}
+              {refreshMut.isPending ? t("license.refreshing") : t("license.refresh")}
             </button>
             <button type="button" className="btn-danger btn-sm" onClick={handleDeactivate} disabled={deactivateMut.isPending}>
-              <FontAwesomeIcon icon={faTrash} style={{ marginRight:5 }} /> Deactivate
+              <FontAwesomeIcon icon={faTrash} style={{ marginRight:5 }} /> {t("license.deactivate")}
             </button>
           </div>
         </div>
       ) : (
         <div className="acp-card" style={{ padding:"24px", marginBottom:20, textAlign:"center" }}>
           <FontAwesomeIcon icon={faKey} style={{ fontSize:28, color:"var(--c-fg-muted)", marginBottom:8 }} />
-          <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)", marginBottom:4 }}>No active license</div>
-          <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>Enter a license key below to activate.</div>
+          <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)", marginBottom:4 }}>{t("license.noLicenseTitle")}</div>
+          <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{t("license.noLicenseHint")}</div>
         </div>
       )}
 
@@ -235,12 +236,11 @@ export function LicensePage() {
         <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
           <FontAwesomeIcon icon={faGlobe} style={{ color:"var(--c-fg-muted)", fontSize:13 }} />
           <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>
-            {license ? "Add / Replace License Key" : "Offline activation (license key)"}
+            {license ? t("license.manualTitleAdd") : t("license.manualTitleOffline")}
           </div>
         </div>
         <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>
-          Fallback for air-gapped installs — connecting your account above is the recommended path.
-          Purchase a license at nodevo.io, then enter the key below.
+          {t("license.manualDesc")}
         </div>
         <div style={{ display:"flex", gap:10, marginBottom: error ? 10 : 0 }}>
           <input
@@ -253,7 +253,7 @@ export function LicensePage() {
           />
           <button type="button" className="btn-primary btn-sm" disabled={!key.trim() || activateMut.isPending} onClick={() => activateMut.mutate()}>
             <FontAwesomeIcon icon={faKey} style={{ marginRight:5 }} />
-            {activateMut.isPending ? "Activating…" : "Activate"}
+            {activateMut.isPending ? t("license.activating") : t("license.activateBtn")}
           </button>
         </div>
         {error && (
