@@ -60,7 +60,7 @@ export async function processSecurityAnalysis(): Promise<void> {
   // 1. Rapid login attempts: 3+ failures from same IP in 10 min
   const failedByIp = await prisma.$queryRaw<{ ip: string; count: bigint }[]>`
     SELECT ip, COUNT(*) as count
-    FROM "LoginEvent"
+    FROM ncf_login_events
     WHERE success = false
       AND "createdAt" >= ${since10m}
       AND ip IS NOT NULL
@@ -86,7 +86,7 @@ export async function processSecurityAnalysis(): Promise<void> {
   // 2. Multi-account suspicion: same device cookie linked to 2+ users
   const sharedCookies = await prisma.$queryRaw<{ deviceCookieId: string; count: bigint }[]>`
     SELECT "deviceCookieId", COUNT(DISTINCT "userId") as count
-    FROM "LoginEvent"
+    FROM ncf_login_events
     WHERE "deviceCookieId" IS NOT NULL
       AND "userId" IS NOT NULL
       AND success = true
@@ -141,7 +141,7 @@ export async function processSecurityAnalysis(): Promise<void> {
   // 3. Registration burst: 5+ accounts from same IP in 24h
   const regBurst = await prisma.$queryRaw<{ ip: string; count: bigint }[]>`
     SELECT ip, COUNT(*) as count
-    FROM "LoginEvent"
+    FROM ncf_login_events
     WHERE "event_type" = 'register'
       AND "createdAt" >= ${since24h}
       AND ip IS NOT NULL
@@ -189,12 +189,12 @@ export async function processSecurityAnalysis(): Promise<void> {
 
     const evasionIps = await prisma.$queryRaw<{ ip: string; userId: string }[]>`
       SELECT DISTINCT ip, "userId"
-      FROM "LoginEvent"
+      FROM ncf_login_events
       WHERE "event_type" = 'register'
         AND "createdAt" BETWEEN ${ban.createdAt} AND ${banTimeEnd}
         AND "userId" != ${ban.userId}
         AND ip IN (
-          SELECT DISTINCT ip FROM "LoginEvent"
+          SELECT DISTINCT ip FROM ncf_login_events
           WHERE "userId" = ${ban.userId} AND ip IS NOT NULL
         )
     `;
