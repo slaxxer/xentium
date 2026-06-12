@@ -1,12 +1,13 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faBox, faFolderOpen, faCheck, faCircleExclamation, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 
-const STEPS = ["Upload", "Validate", "Install"];
+const STEP_KEYS = ["upload", "validate", "install"] as const;
 
 interface ValidationResult {
   id:               string;
@@ -33,6 +34,7 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok: boo
 }
 
 export function UploadPage() {
+  const { t } = useTranslation("acp");
   const navigate  = useNavigate();
   const qc        = useQueryClient();
   const fileRef   = useRef<HTMLInputElement>(null);
@@ -70,7 +72,7 @@ export function UploadPage() {
     },
     onError: (e: any) => {
       setError(e?.data?.message ?? apiErrorMessage(e));
-      swalToast(e?.data?.message ?? "Installation failed.", "error");
+      swalToast(e?.data?.message ?? t("upload.installFailed"), "error");
     },
   });
 
@@ -84,20 +86,20 @@ export function UploadPage() {
     <div style={{ maxWidth: 600 }}>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Extensions</div>
-          <h1 className="acp-page-title">Upload Plugin</h1>
+          <div className="acp-page-sub">{t("nav.extensions")}</div>
+          <h1 className="acp-page-title">{t("upload.title")}</h1>
         </div>
       </div>
 
       <div className="acp-card" style={{ padding: 32 }}>
         {/* Step indicators */}
         <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
-          {STEPS.map((s, i) => (
-            <div key={i} style={{ display:"flex", alignItems:"center", flex: i < STEPS.length - 1 ? 1 : undefined }}>
+          {STEP_KEYS.map((_s, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", flex: i < STEP_KEYS.length - 1 ? 1 : undefined }}>
               <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "#fff" : "var(--c-fg-muted)" }}>
                 {i < step ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
               </div>
-              {i < STEPS.length - 1 && (
+              {i < STEP_KEYS.length - 1 && (
                 <div style={{ flex:1, height:2, background: i < step ? "var(--c-success)" : "var(--c-border)", margin:"0 6px" }} />
               )}
             </div>
@@ -116,22 +118,22 @@ export function UploadPage() {
             >
               <FontAwesomeIcon icon={faBox} style={{ fontSize:36, color:"var(--c-fg-muted)", marginBottom:12, display:"block" }} />
               <div style={{ fontSize:16, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>
-                {file ? file.name : "Drop your .nvplugin file here"}
+                {file ? file.name : t("upload.drop")}
               </div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>or click to browse</div>
+              <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>{t("upload.orClick")}</div>
               <button type="button" className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
-                <FontAwesomeIcon icon={faFolderOpen} style={{ marginRight:5 }} /> Browse file
+                <FontAwesomeIcon icon={faFolderOpen} style={{ marginRight:5 }} /> {t("upload.browse")}
               </button>
             </div>
 
             <input ref={fileRef} type="file" accept=".nvplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
             <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"14px 16px", fontSize:13, color:"var(--c-fg-muted)", marginBottom: file ? 14 : 0 }}>
-              <div style={{ fontWeight:700, color:"var(--c-fg-muted)", marginBottom:6 }}>Requirements</div>
-              <div>• File must be a valid .nvplugin package (ZIP)</div>
-              <div>• Must include a manifest.json with id, name, version, vendor</div>
-              <div>• Migration files must use DDL statements only</div>
-              <div>• Every .up.sql must have a matching .down.sql</div>
+              <div style={{ fontWeight:700, color:"var(--c-fg-muted)", marginBottom:6 }}>{t("upload.reqTitle")}</div>
+              <div>• {t("upload.req1")}</div>
+              <div>• {t("upload.req2")}</div>
+              <div>• {t("upload.req3")}</div>
+              <div>• {t("upload.req4")}</div>
             </div>
 
             {error && (
@@ -144,7 +146,7 @@ export function UploadPage() {
             {file && (
               <div style={{ marginTop:14 }}>
                 <button type="button" className="btn-primary btn-sm" onClick={() => validateMut.mutate(file)} disabled={validateMut.isPending}>
-                  {validateMut.isPending ? "Validating…" : "Validate Plugin →"}
+                  {validateMut.isPending ? t("upload.validating") : t("upload.validateBtn")}
                 </button>
               </div>
             )}
@@ -154,26 +156,26 @@ export function UploadPage() {
         {/* Step 1 — Validation results */}
         {step === 1 && result && (
           <div>
-            <div style={{ fontWeight:700, color:"var(--c-fg)", marginBottom:16 }}>Validation Results</div>
-            <StatusRow label="Plugin ID"          value={result.id}                                  ok={true} />
-            <StatusRow label="Name"               value={`${result.name} v${result.version}`}        ok={true} />
-            <StatusRow label="Vendor"             value={result.vendor}                              ok={true} />
-            <StatusRow label="License required"   value={result.licenseRequired ? "Yes" : "No"}      ok={!result.licenseRequired} />
-            <StatusRow label="Permissions"        value={result.permissions.length ? result.permissions.join(", ") : "None"} ok={true} />
-            <StatusRow label="Migrations"         value={result.migrations.length ? `${result.migrations.length} migration(s)` : "None"} ok={true} />
-            <StatusRow label="Already installed"  value={result.alreadyInstalled ? "Yes — update" : "No"} ok={!result.alreadyInstalled} />
+            <div style={{ fontWeight:700, color:"var(--c-fg)", marginBottom:16 }}>{t("upload.resultsTitle")}</div>
+            <StatusRow label={t("upload.rowId")}          value={result.id}                                  ok={true} />
+            <StatusRow label={t("upload.rowName")}        value={`${result.name} v${result.version}`}        ok={true} />
+            <StatusRow label={t("upload.rowVendor")}      value={result.vendor}                              ok={true} />
+            <StatusRow label={t("upload.rowLicense")}     value={result.licenseRequired ? t("upload.yes") : t("upload.no")} ok={!result.licenseRequired} />
+            <StatusRow label={t("upload.rowPermissions")} value={result.permissions.length ? result.permissions.join(", ") : t("upload.none")} ok={true} />
+            <StatusRow label={t("upload.rowMigrations")}  value={result.migrations.length ? t("upload.migrationsCount", { count: result.migrations.length }) : t("upload.none")} ok={true} />
+            <StatusRow label={t("upload.rowInstalled")}   value={result.alreadyInstalled ? t("upload.yesUpdate") : t("upload.no")} ok={!result.alreadyInstalled} />
 
             {result.alreadyInstalled && (
               <div style={{ marginTop:12, padding:"10px 14px", background:"color-mix(in srgb, var(--c-warn) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-warn)" }}>
-                This plugin is already installed. Installing will be rejected — uninstall it first.
+                {t("upload.alreadyWarning")}
               </div>
             )}
 
             <div style={{ marginTop:20, display:"flex", gap:8 }}>
               <button type="button" className="btn-primary btn-sm" onClick={() => installMut.mutate()} disabled={installMut.isPending || result.alreadyInstalled}>
-                {installMut.isPending ? "Installing…" : "Install Plugin"}
+                {installMut.isPending ? t("upload.installing") : t("upload.installBtn")}
               </button>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => { setStep(0); setError(null); }}>Back</button>
+              <button type="button" className="btn-ghost btn-sm" onClick={() => { setStep(0); setError(null); }}>{t("upload.back")}</button>
             </div>
           </div>
         )}
@@ -182,12 +184,12 @@ export function UploadPage() {
         {step === 2 && (
           <div style={{ textAlign:"center", padding:"20px 0" }}>
             <FontAwesomeIcon icon={faCheck} style={{ fontSize:48, color:"var(--c-success)", marginBottom:16 }} />
-            <div style={{ fontSize:18, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>Plugin Installed</div>
+            <div style={{ fontSize:18, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("upload.doneTitle")}</div>
             <p style={{ fontSize:14, color:"var(--c-fg-muted)", marginBottom:24 }}>
-              The plugin is installed and ready to enable.
+              {t("upload.doneText")}
             </p>
             <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/installed")}>
-              Go to Installed
+              {t("upload.goInstalled")}
             </button>
           </div>
         )}
