@@ -80,8 +80,15 @@ const LOADING = (
 
 function InstallRoute() {
   const { data, isLoading, error } = useInstallStatus();
+  // Latch: once the wizard is shown, keep it mounted no matter what later
+  // status refetches say. The install flips `installed` to true mid-session
+  // (finalize step) — without the latch a background refetch would yank the
+  // user off the completion screen onto "/". Leaving is the user's click.
+  const lockedOpen = useRef(false);
+  if (lockedOpen.current) return <InstallPage />;
   if (isLoading) return LOADING;
   if (data?.installed || (error as any)?.status === 410) return <Navigate to="/" replace />;
+  lockedOpen.current = true;
   return <InstallPage />;
 }
 
@@ -121,12 +128,19 @@ function BetaGate({ children }: { children: React.ReactNode }) {
   const qc             = useQueryClient();
   const prevAccess     = useRef<boolean | null>(null);
 
+  // The gate is inert until the app is installed: pre-install the endpoint is
+  // 503-blocked by the install guard (polling it just spams the console), and
+  // the gate must never hijack the install wizard mid-flow.
+  const { data: install, error: installError } = useInstallStatus();
+  const installed = !!install?.installed || (installError as any)?.status === 410;
+
   const { data, isLoading } = useQuery<{ enabled: boolean; hasAccess: boolean }>({
     queryKey:        ["beta-status"],
     queryFn:         () => api.get("/beta/status"),
     staleTime:       0,           // always fresh on refetch
     refetchInterval: 12_000,      // poll every 12 s
     retry:           false,
+    enabled:         installed,
   });
 
   useEffect(() => {
@@ -154,6 +168,9 @@ function BetaGate({ children }: { children: React.ReactNode }) {
 
     prevAccess.current = current;
   }, [data?.hasAccess, data?.enabled]);
+
+  // Not installed yet (or on the install wizard): pass through untouched.
+  if (!installed || INSTALL_PATHS.has(window.location.pathname)) return <>{children}</>;
 
   if (isLoading) return LOADING;
   if (data?.enabled && !data.hasAccess) {
