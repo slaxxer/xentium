@@ -96,6 +96,26 @@ export interface ImportedPost {
   editedAt?: Date;
 }
 
+// ── Social graph (likes / follows / blocks — §36/§45) ───────────────────────
+
+export interface ImportedPostLike {
+  postSourceId: string;
+  userSourceId: string;
+  createdAt?: Date;
+}
+
+export interface ImportedFollow {
+  followerSourceId: string;
+  followingSourceId: string;
+  createdAt?: Date;
+}
+
+export interface ImportedBlock {
+  blockerSourceId: string;
+  blockedSourceId: string;
+  createdAt?: Date;
+}
+
 export interface ExtractResult {
   /** Human-readable source description, e.g. "WordPress (WXR 1.2)". */
   sourceInfo: string;
@@ -106,6 +126,10 @@ export interface ExtractResult {
   forumNodes?: ImportedForumNode[];
   threads?: ImportedThread[];
   posts?: ImportedPost[];
+  /** Post likes/reactions (multi-type reactions collapse to a like — lossy). */
+  postLikes?: ImportedPostLike[];
+  follows?: ImportedFollow[];
+  blocks?: ImportedBlock[];
   /** Extractor-level skips (pages, attachments, guest comments, …). */
   skipped: ImportError[];
 }
