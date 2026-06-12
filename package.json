@@ -46,7 +46,9 @@
       "argon2",
       "@prisma/engines",
       "prisma",
-      "msgpackr-extract"
+      "msgpackr-extract",
+      "esbuild",
+      "@parcel/watcher"
     ]
   }
 }
