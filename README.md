@@ -409,7 +409,8 @@ Nodevo ships **free, open-source migration tooling** as a standalone CLI — del
 | Adapter | Source | Status |
 |---|---|---|
 | `@nodevo/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
-| phpBB, XenForo | Direct database connection | Planned (Wave 1) |
+| `@nodevo/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `nodevo-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
+| XenForo | Direct database connection | Planned (Wave 1) |
 | vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
 
 ### Running a migration
@@ -423,6 +424,11 @@ pnpm --filter @nodevo/migrate-wp migrate -- \
 
 # 2. The real run (interactive confirmation; --yes to skip)
 pnpm --filter @nodevo/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
+
+# phpBB: point at the board's MySQL database instead of a file
+pnpm --filter @nodevo/migrate-phpbb migrate -- \
+  --source-db "mysql://user:pass@host:3306/phpbb" \
+  --db "postgresql://…" --dry-run
 ```
 
 The target must be an **installed** Nodevo instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
