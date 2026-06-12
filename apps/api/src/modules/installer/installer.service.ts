@@ -20,6 +20,9 @@ export const installerService = {
       installed: !!row?.completedAt,
       currentStep: (row?.currentStep as InstallStep) ?? InstallStep.WELCOME,
       siteId: row?.siteId ?? null,
+      // The full app is running, so the pre-env setup server is gone. The
+      // wizard polls this flag after POST /install/setup to detect the swap.
+      setupMode: false,
     };
   },
 

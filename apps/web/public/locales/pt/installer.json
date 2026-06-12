@@ -30,7 +30,9 @@
       "redis": "Redis",
       "storage": "Armazenamento",
       "database_url": "URL do banco de dados",
-      "data_dir": "Diretório de instalação"
+      "data_dir": "Diretório de instalação",
+      "env_file": "Arquivo de configuração",
+      "server": "Servidor API"
     },
     "status": {
       "checking": "Verificando...",
@@ -45,7 +47,22 @@
     "postgres": "PostgreSQL",
     "not_tested": "Não testado ainda",
     "test_button": "Testar conexão",
-    "testing": "Conectando..."
+    "testing": "Conectando...",
+    "setup_subtitle": "Informe os dados de conexão do seu banco de dados PostgreSQL. O Nodevo os verifica, gera todos os segredos e grava a configuração para você.",
+    "host": "Host",
+    "port": "Porta",
+    "db_name": "Nome do banco de dados",
+    "user": "Usuário",
+    "password": "Senha",
+    "advanced": "Avançado",
+    "redis_url": "URL do Redis",
+    "redis_hint": "Opcional — deixe em branco para usar redis://localhost:6379.",
+    "connect": "Conectar e salvar",
+    "connecting": "Conectando...",
+    "swap_wait": "Configurando... iniciando o servidor",
+    "setup_failed": "O servidor não voltou a tempo. Verifique os logs do servidor e tente novamente.",
+    "connected": "Conexão bem-sucedida",
+    "connection_failed": "Falha na conexão"
   },
   "site": {
     "title": "Configuração do site",
@@ -69,7 +86,8 @@
     "password_strong": "Senha forte",
     "confirm": "Confirmar senha",
     "match": "As senhas coincidem",
-    "mismatch": "As senhas não coincidem"
+    "mismatch": "As senhas não coincidem",
+    "password_too_short": "Muito curta ({{length}}/5 caracteres)"
   },
   "finalize": {
     "title": "Finalizar instalação",
