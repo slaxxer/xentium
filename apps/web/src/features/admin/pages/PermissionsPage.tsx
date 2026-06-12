@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
@@ -17,6 +18,7 @@ interface Group {
 }
 
 export function PermissionsPage() {
+  const { t } = useTranslation("acp");
   const queryClient = useQueryClient();
   const [selectedId, setSelectedId] = useState("");
   const [allowed, setAllowed] = useState<Set<string>>(new Set());
@@ -75,7 +77,7 @@ export function PermissionsPage() {
         ...toRevoke.map((k) => api.delete(`/admin/groups/${selectedId}/permissions/${k}`)),
       ]);
       queryClient.invalidateQueries({ queryKey: ["acp-groups-list"] });
-      swalToast("Permissions saved", "success");
+      swalToast(t("permissions.toastSaved"), "success");
     } catch (e) {
       swalToast(apiErrorMessage(e));
     } finally {
@@ -95,18 +97,18 @@ export function PermissionsPage() {
   const isLoading = groupsLoading || permsLoading;
 
   if (isLoading) {
-    return <div style={{ padding: "2rem", color: "var(--c-fg-muted)" }}>Loading…</div>;
+    return <div style={{ padding: "2rem", color: "var(--c-fg-muted)" }}>{t("permissions.loading")}</div>;
   }
 
   return (
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Access Control</div>
-          <h1 className="acp-page-title">Permissions</h1>
+          <div className="acp-page-sub">{t("nav.accessControl")}</div>
+          <h1 className="acp-page-title">{t("nav.permissions")}</h1>
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <Link to="/admin/groups" className="btn-ghost btn-sm">Manage Groups</Link>
+          <Link to="/admin/groups" className="btn-ghost btn-sm">{t("permissions.manageGroups")}</Link>
           <AutosaveStatus saving={saving} />
         </div>
       </div>
@@ -115,7 +117,7 @@ export function PermissionsPage() {
       <div className="acp-card" style={{ padding: "14px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg-muted)" }}>
-            Editing permissions for:
+            {t("permissions.editingFor")}
           </span>
           <select
             className="acp-select"
@@ -129,7 +131,7 @@ export function PermissionsPage() {
           </select>
           {selected && (
             <span style={{ fontSize: 13, color: "var(--c-fg-muted)", marginLeft: "auto" }}>
-              {allowed.size} of {(allPermissions as Permission[]).length} permissions granted
+              {t("permissions.grantedCount", { granted: allowed.size, total: (allPermissions as Permission[]).length })}
             </span>
           )}
         </div>
@@ -150,7 +152,7 @@ export function PermissionsPage() {
                   {domain}
                 </div>
                 <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
-                  {domainGranted}/{perms.length} granted
+                  {t("permissions.domainGranted", { granted: domainGranted, total: perms.length })}
                 </div>
               </div>
               <div>
@@ -201,7 +203,7 @@ export function PermissionsPage() {
 
       {(allPermissions as Permission[]).length === 0 && (
         <div className="acp-card" style={{ textAlign: "center", padding: "3rem", color: "var(--c-fg-muted)" }}>
-          No permissions registered
+          {t("permissions.empty")}
         </div>
       )}
     </div>

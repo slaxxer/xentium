@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPuzzlePiece, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
@@ -30,6 +31,7 @@ function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: st
 }
 
 export function InstalledPage() {
+  const { t } = useTranslation("acp");
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -40,35 +42,35 @@ export function InstalledPage() {
 
   const enableMut = useMutation({
     mutationFn: (id: string) => api.post(`/plugins/${id}/enable`, {}),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin enabled.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast(t("installed.toastEnabled"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const disableMut = useMutation({
     mutationFn: (id: string) => api.post(`/plugins/${id}/disable`, {}),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin disabled.", "success"); },
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast(t("installed.toastDisabled"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const removeMut = useMutation({
     mutationFn: ({ id, removeData }: { id: string; removeData: boolean }) =>
       api.delete(`/plugins/${id}?removeData=${removeData}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast("Plugin removed.", "success"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] }); swalToast(t("installed.toastRemoved"), "success"); },
     onError:   (e) => swalToast(apiErrorMessage(e)),
   });
 
   const handleRemove = async (p: InstalledPlugin) => {
     const ok = await swalConfirm(
-      `Remove "${p.name}"?`,
-      "The plugin will be uninstalled. You can choose whether to also remove its database tables.",
-      "Remove",
+      t("installed.removeTitle", { name: p.name }),
+      t("installed.removeText"),
+      t("installed.remove"),
     );
     if (!ok) return;
 
     const removeData = await swalConfirm(
-      "Remove plugin data?",
-      "This will also drop the plugin's database tables and delete all its data. This cannot be undone.",
-      "Yes, remove data",
+      t("installed.removeDataTitle"),
+      t("installed.removeDataText"),
+      t("installed.removeDataConfirm"),
     );
     removeMut.mutate({ id: p.id, removeData });
   };
@@ -77,25 +79,25 @@ export function InstalledPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Extensions</div>
-          <h1 className="acp-page-title">Installed Plugins</h1>
+          <div className="acp-page-sub">{t("nav.extensions")}</div>
+          <h1 className="acp-page-title">{t("installed.title")}</h1>
         </div>
         <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/upload")}>
-          <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> Upload Plugin
+          <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("installed.uploadBtn")}
         </button>
       </div>
 
       {isLoading ? (
-        <div className="acp-card acp-empty">Loading…</div>
+        <div className="acp-card acp-empty">{t("installed.loading")}</div>
       ) : plugins.length === 0 ? (
         <div className="acp-card" style={{ padding:40, textAlign:"center" }}>
           <FontAwesomeIcon icon={faPuzzlePiece} style={{ fontSize:32, color:"var(--c-fg-muted)", marginBottom:12 }} />
-          <div style={{ fontSize:15, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>No plugins installed</div>
+          <div style={{ fontSize:15, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>{t("installed.emptyTitle")}</div>
           <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
-            Upload a .nvplugin package to get started.
+            {t("installed.emptyHint")}
           </div>
           <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>
-            Upload Plugin
+            {t("installed.uploadBtn")}
           </button>
         </div>
       ) : (
@@ -112,28 +114,28 @@ export function InstalledPage() {
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
                     <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
                     <span style={{ fontSize:12, color:"var(--c-fg-muted)" }}>v{p.installedVersion}</span>
-                    {p.licenseRequired && <Badge label="Licensed" color="var(--c-warn)" />}
+                    {p.licenseRequired && <Badge label={t("installed.licensed")} color="var(--c-warn)" />}
                   </div>
                   <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>
-                    {p.id} · by {p.vendor} · installed {new Date(p.installedAt).toLocaleDateString()}
+                    {t("installed.meta", { id: p.id, vendor: p.vendor, date: new Date(p.installedAt).toLocaleDateString() })}
                   </div>
                 </div>
 
                 <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                  <Badge label={p.status} color={STATUS_COLOR[p.status] ?? "var(--c-fg-muted)"} />
+                  <Badge label={t(`installed.status.${p.status}`, { defaultValue: p.status })} color={STATUS_COLOR[p.status] ?? "var(--c-fg-muted)"} />
 
                   {p.status === "enabled" ? (
                     <button type="button" className="btn-ghost btn-sm" onClick={() => disableMut.mutate(p.id)} disabled={busy}>
-                      Disable
+                      {t("installed.disable")}
                     </button>
                   ) : (
                     <button type="button" className="btn-ghost btn-sm" style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }} onClick={() => enableMut.mutate(p.id)} disabled={busy}>
-                      Enable
+                      {t("installed.enable")}
                     </button>
                   )}
 
                   <button type="button" className="btn-danger btn-sm" onClick={() => handleRemove(p)} disabled={busy}>
-                    Remove
+                    {t("installed.remove")}
                   </button>
                 </div>
               </div>

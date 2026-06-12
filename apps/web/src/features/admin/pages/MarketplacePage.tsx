@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { useTranslation, Trans } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEnvelope, faMagnifyingGlass,
@@ -75,6 +76,7 @@ function parseEntitlements(jwt: string): string[] {
 }
 
 export function MarketplacePage() {
+  const { t } = useTranslation("acp");
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
 
@@ -94,8 +96,8 @@ export function MarketplacePage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Extensions</div>
-          <h1 className="acp-page-title">Marketplace</h1>
+          <div className="acp-page-sub">{t("nav.extensions")}</div>
+          <h1 className="acp-page-title">{t("nav.marketplace")}</h1>
         </div>
       </div>
 
@@ -103,7 +105,11 @@ export function MarketplacePage() {
       {!conn?.connected && (
         <div style={{ background:"color-mix(in srgb, var(--c-warn) 12%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-md)", padding:"12px 18px", marginBottom:20, display:"flex", alignItems:"center", gap:10, fontSize:13, color:"var(--c-warn)" }}>
           <FontAwesomeIcon icon={faFlask} />
-          <span>No marketplace account connected. Connect on the <button type="button" onClick={() => navigate("/admin/license")} style={{ background:"none", border:"none", padding:0, color:"inherit", fontWeight:700, textDecoration:"underline", cursor:"pointer" }}>License</button> page to install licensed plugins.</span>
+          <span>
+            <Trans ns="acp" i18nKey="marketplace.notConnected" components={[
+              <button key="0" type="button" onClick={() => navigate("/admin/license")} style={{ background:"none", border:"none", padding:0, color:"inherit", fontWeight:700, textDecoration:"underline", cursor:"pointer" }} />,
+            ]} />
+          </span>
         </div>
       )}
 
@@ -113,27 +119,27 @@ export function MarketplacePage() {
         <div style={{ flex:1 }}>
           {license ? (
             <>
-              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>License Active</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.licenseActive")}</div>
               <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>
-                {entitlements.length ? `Entitlements: ${entitlements.map((e) => e.replace("plugin.", "")).join(", ")}` : "No entitlements"}
+                {entitlements.length ? t("marketplace.entitlementsList", { list: entitlements.map((e) => e.replace("plugin.", "")).join(", ") }) : t("marketplace.noEntitlements")}
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>No active license</div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>Activate a license to unlock official plugins.</div>
+              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.noLicense")}</div>
+              <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{t("marketplace.activateHint")}</div>
             </>
           )}
         </div>
         <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>
-          {license ? "Manage License" : "Activate License"}
+          {license ? t("marketplace.manage") : t("marketplace.activate")}
         </button>
       </div>
 
       <div style={{ display:"flex", gap:10, marginBottom:20 }}>
         <input
           className="acp-input"
-          placeholder="Search plugins…"
+          placeholder={t("marketplace.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ width:280 }}
@@ -160,8 +166,8 @@ export function MarketplacePage() {
                   <FontAwesomeIcon icon={icon} />
                 </div>
                 <div style={{ fontSize:18, fontWeight:800, color:"var(--c-fg)", textAlign:"right" }}>
-                  {p.priceCents === 0 ? "Free" : `$${(p.priceCents / 100).toFixed(0)}`}
-                  {p.priceCents > 0 && <span style={{ fontSize:12, fontWeight:400, color:"var(--c-fg-muted)" }}>/yr</span>}
+                  {p.priceCents === 0 ? t("marketplace.free") : `$${(p.priceCents / 100).toFixed(0)}`}
+                  {p.priceCents > 0 && <span style={{ fontSize:12, fontWeight:400, color:"var(--c-fg-muted)" }}>{t("marketplace.perYear")}</span>}
                 </div>
               </div>
 
@@ -171,23 +177,23 @@ export function MarketplacePage() {
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {instStatus === "enabled" ? (
                   <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
-                    <FontAwesomeIcon icon={faCheck} /> Enabled
+                    <FontAwesomeIcon icon={faCheck} /> {t("marketplace.enabled")}
                   </span>
                 ) : instStatus ? (
                   <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/installed")}>
-                    Installed — Go to manage
+                    {t("marketplace.goManage")}
                   </button>
                 ) : entitled ? (
                   <button type="button" className="btn-ghost btn-sm" style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }} onClick={() => navigate("/admin/upload")}>
-                    Install
+                    {t("marketplace.install")}
                   </button>
                 ) : locked ? (
                   <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>
-                    Activate license to install
+                    {t("marketplace.activateToInstall")}
                   </button>
                 ) : (
                   <button type="button" className="btn-ghost btn-sm">
-                    Buy → nodevo.io
+                    {t("marketplace.buy")}
                   </button>
                 )}
               </div>
