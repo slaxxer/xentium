@@ -94,16 +94,27 @@ export function splitSqlStatements(sql: string): string[] {
   return statements;
 }
 
-export function validateMigrationSql(sql: string, filename: string): void {
-  // Strip comments first.
-  const stripped = sql
-    .replace(/--[^\n]*/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
+// Strip leading comments/whitespace from a single statement so the
+// ALLOWED/DISALLOWED checks see the real leading keyword. This is applied
+// PER STATEMENT after the quote-aware split — never to the whole file — so a
+// `--` inside a string literal can't delete the rest of a statement.
+function leadingKeyword(stmt: string): string {
+  return stmt
+    .replace(/^(?:\s|--[^\n]*\n?|\/\*[\s\S]*?\*\/)+/, "")
     .trim();
+}
 
-  if (!stripped) return;
+export function validateMigrationSql(sql: string, filename: string): void {
+  if (!sql.trim()) return;
 
-  for (const stmt of splitSqlStatements(stripped)) {
+  // IMPORTANT: split with the SAME quote-/dollar-/comment-aware tokenizer the
+  // runner uses (migration-runner.ts), so the validator and executor can never
+  // disagree on statement boundaries. The previous regex comment-strip ran
+  // BEFORE the split and treated `--` inside a 'string literal' as a comment,
+  // letting a smuggled trailing DML statement bypass this DDL-only allowlist.
+  for (const rawStmt of splitSqlStatements(sql)) {
+    const stmt = leadingKeyword(rawStmt);
+    if (!stmt) continue; // comment-only / empty
     if (DISALLOWED.test(stmt)) {
       throw new Error(
         `${filename} contains a disallowed statement: "${stmt.slice(0, 60)}…". Only DDL (CREATE/ALTER/DROP TABLE/INDEX/FUNCTION/TRIGGER) is permitted in plugin migrations.`,

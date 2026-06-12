@@ -7,8 +7,12 @@ const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const ACCESS_TTL = "15m";
 const REFRESH_TTL_DAYS = 30;
 
+// Keyed (HMAC) hash for refresh tokens (§43/§17b) — a DB-read attacker without
+// the secret cannot confirm or derive tokens. Falls back to JWT_SECRET when the
+// dedicated secret isn't provisioned so existing installs don't break startup.
+const TOKEN_HMAC_KEY = process.env.REFRESH_TOKEN_HMAC_SECRET || process.env.JWT_SECRET || "";
 const hashToken = (raw: string) =>
-  crypto.createHash("sha256").update(raw).digest("hex");
+  crypto.createHmac("sha256", TOKEN_HMAC_KEY).update(raw).digest("hex");
 
 /**
  * Enqueue an immediate security analysis run.
@@ -66,6 +70,19 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
   });
   if (!current || current.revokedAt || current.expiresAt < new Date()) {
     return null; // invalid / reused / expired → caller forces re-login
+  }
+  // Defense-in-depth: even if a ban/deactivation somehow didn't revoke this
+  // session, refuse to mint a new token for a banned or deactivated user and
+  // revoke the session now. This bounds a mid-session ban to the access-token
+  // TTL (§43) regardless of which admin path triggered it.
+  const owner = await prisma.user.findUnique({
+    where:  { id: current.userId },
+    select: { bannedUntil: true, isActive: true },
+  });
+  const isBanned = !!owner?.bannedUntil && owner.bannedUntil > new Date();
+  if (!owner || !owner.isActive || isBanned) {
+    await prisma.session.update({ where: { id: current.id }, data: { revokedAt: new Date() } });
+    return null; // caller clears the cookie and forces re-login
   }
   const raw = crypto.randomBytes(32).toString("base64url");
   const [, next] = await prisma.$transaction([

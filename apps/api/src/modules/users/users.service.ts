@@ -4,6 +4,7 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
+import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 import { buildPaginationMeta } from "@nodevo/contracts";
 
 function formatDobValue(value: string, format: string | null): string {
@@ -90,8 +91,10 @@ export const userService = {
 
     const isOwnProfile = viewerId === user.id;
     let isFollowing = false;
+    let viewerHasBlocked = false;
     if (viewerId && !isOwnProfile) {
       isFollowing = await userRepository.isFollowing(viewerId, user.id);
+      viewerHasBlocked = await userRepository.isBlocking(viewerId, user.id);
     }
 
     const dobLabel = await getDobLabelForUser(user.id, user.dobDisplay);
@@ -128,6 +131,7 @@ export const userService = {
       dobDisplayFormat,
       isOwn: isOwnProfile,
       viewerIsFollowing: isFollowing,
+      viewerHasBlocked,
       isBanned,
       isPermanentBan,
     };
@@ -225,8 +229,9 @@ export const userService = {
     return comment;
   },
 
-  async getProfileComments(profileUserId: string, page: number, limit: number) {
-    return userRepository.getProfileComments(profileUserId, page, limit);
+  async getProfileComments(profileUserId: string, page: number, limit: number, viewerId?: string) {
+    const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
+    return userRepository.getProfileComments(profileUserId, page, limit, hiddenAuthorIds);
   },
 
   async updateProfileComment(commentId: string, body: string, userId: string) {

@@ -52,8 +52,8 @@ articlesRouter.post(
   articlesController.uploadFeaturedImage,
 );
 
-// Comments nested under articles
-articlesRouter.get("/:id/comments", commentsController.list);
+// Comments nested under articles — optionalAuth so blocked authors can be hidden per viewer
+articlesRouter.get("/:id/comments", optionalAuth, commentsController.list);
 articlesRouter.post(
   "/:id/comments",
   requirePermission(CorePermissions.ARTICLE_COMMENT_CREATE),
