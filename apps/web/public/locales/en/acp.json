@@ -314,12 +314,22 @@
     "title": "Migration History",
     "loading": "Loading…",
     "emptyTitle": "No migrations have been run",
-    "emptyHint": "Migration history is recorded when the installer applies database migrations.",
+    "emptyHint": "Recorded when the installer applies database migrations or the @nodevo/migrate CLI imports a community from another platform.",
     "success": "Success",
     "failed": "Failed",
     "hide": "▲ Hide",
     "output": "▼ Output",
-    "noOutput": "(no output)"
+    "noOutput": "(no output)",
+    "status": {
+      "completed": "Completed",
+      "failed": "Failed",
+      "partial": "Partial",
+      "running": "Running"
+    },
+    "coreBadge": "Core",
+    "importBadge": "Import",
+    "errors": "Errors",
+    "report": "Full report"
   },
   "errorLog": {
     "title": "Error Log",

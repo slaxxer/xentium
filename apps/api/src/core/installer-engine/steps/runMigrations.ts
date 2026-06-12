@@ -43,9 +43,12 @@ export async function runMigrations(): Promise<void> {
   // Pool reconnects automatically on first use — no explicit $connect needed.
   await prisma.migrationRun.create({
     data: {
-      command:    "migrate deploy",
-      durationMs: Date.now() - started,
-      output:     `${stdout}\n${stderr}`.slice(0, 8000),
+      adapter:     "core",
+      command:     "migrate deploy",
+      durationMs:  Date.now() - started,
+      output:      `${stdout}\n${stderr}`.slice(0, 8000),
+      startedAt:   new Date(started),
+      completedAt: new Date(),
     },
   });
 }

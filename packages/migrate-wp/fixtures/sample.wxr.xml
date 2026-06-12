@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<rss version="2.0"
+  xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:wp="http://wordpress.org/export/1.2/">
+<channel>
+  <title>Fixture Blog</title>
+  <wp:wxr_version>1.2</wp:wxr_version>
+
+  <wp:author>
+    <wp:author_id>1</wp:author_id>
+    <wp:author_login><![CDATA[alice]]></wp:author_login>
+    <wp:author_email><![CDATA[alice@fixture.test]]></wp:author_email>
+    <wp:author_display_name><![CDATA[Alice Müller]]></wp:author_display_name>
+  </wp:author>
+  <wp:author>
+    <wp:author_id>2</wp:author_id>
+    <wp:author_login><![CDATA[bob]]></wp:author_login>
+    <wp:author_email><![CDATA[bob@fixture.test]]></wp:author_email>
+    <wp:author_display_name><![CDATA[Bob]]></wp:author_display_name>
+  </wp:author>
+  <wp:author>
+    <wp:author_id>3</wp:author_id>
+    <wp:author_login><![CDATA[broken]]></wp:author_login>
+    <wp:author_email></wp:author_email>
+    <wp:author_display_name><![CDATA[No Email]]></wp:author_display_name>
+  </wp:author>
+
+  <wp:category>
+    <wp:term_id>10</wp:term_id>
+    <wp:category_nicename><![CDATA[news]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[]]></wp:category_parent>
+    <wp:cat_name><![CDATA[News]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>11</wp:term_id>
+    <wp:category_nicename><![CDATA[releases]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[news]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Releases]]></wp:cat_name>
+  </wp:category>
+  <wp:category>
+    <wp:term_id>12</wp:term_id>
+    <wp:category_nicename><![CDATA[guides]]></wp:category_nicename>
+    <wp:category_parent><![CDATA[]]></wp:category_parent>
+    <wp:cat_name><![CDATA[Guides & How-tos]]></wp:cat_name>
+  </wp:category>
+
+  <item>
+    <title><![CDATA[Hello World 🎉 — with “smart quotes”]]></title>
+    <dc:creator><![CDATA[alice]]></dc:creator>
+    <content:encoded><![CDATA[<h2>Welcome</h2><p>This post has <strong>bold</strong>, <em>italic</em> and a <a href="https://nodevo.io">link</a>.</p><ul><li>First</li><li>Second</li></ul><blockquote><p>Quoted wisdom.</p></blockquote><pre>console.log("hi");</pre><figure><img src="https://fixture.test/img.png" alt="A picture" /></figure>]]></content:encoded>
+    <excerpt:encoded><![CDATA[A rich-content post.]]></excerpt:encoded>
+    <wp:post_id>100</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-03-01 10:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="releases"><![CDATA[Releases]]></category>
+    <category domain="post_tag" nicename="announcement"><![CDATA[Announcement]]></category>
+    <category domain="post_tag" nicename="v1"><![CDATA[v1]]></category>
+    <wp:comment>
+      <wp:comment_id>500</wp:comment_id>
+      <wp:comment_author><![CDATA[Bob]]></wp:comment_author>
+      <wp:comment_author_email><![CDATA[bob@fixture.test]]></wp:comment_author_email>
+      <wp:comment_date_gmt><![CDATA[2024-03-01 11:00:00]]></wp:comment_date_gmt>
+      <wp:comment_content><![CDATA[Top-level comment]]></wp:comment_content>
+      <wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+      <wp:comment_parent>0</wp:comment_parent>
+      <wp:comment_user_id>2</wp:comment_user_id>
+    </wp:comment>
+    <wp:comment>
+      <wp:comment_id>501</wp:comment_id>
+      <wp:comment_author><![CDATA[Alice Müller]]></wp:comment_author>
+      <wp:comment_date_gmt><![CDATA[2024-03-01 12:00:00]]></wp:comment_date_gmt>
+      <wp:comment_content><![CDATA[Reply to Bob]]></wp:comment_content>
+      <wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+      <wp:comment_parent>500</wp:comment_parent>
+      <wp:comment_user_id>1</wp:comment_user_id>
+    </wp:comment>
+    <wp:comment>
+      <wp:comment_id>502</wp:comment_id>
+      <wp:comment_author><![CDATA[Bob]]></wp:comment_author>
+      <wp:comment_date_gmt><![CDATA[2024-03-01 13:00:00]]></wp:comment_date_gmt>
+      <wp:comment_content><![CDATA[Reply to the reply (depth 2 — must flatten)]]></wp:comment_content>
+      <wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+      <wp:comment_parent>501</wp:comment_parent>
+      <wp:comment_user_id>2</wp:comment_user_id>
+    </wp:comment>
+    <wp:comment>
+      <wp:comment_id>503</wp:comment_id>
+      <wp:comment_author><![CDATA[Random Guest]]></wp:comment_author>
+      <wp:comment_author_email><![CDATA[guest@elsewhere.test]]></wp:comment_author_email>
+      <wp:comment_date_gmt><![CDATA[2024-03-02 09:00:00]]></wp:comment_date_gmt>
+      <wp:comment_content><![CDATA[Guest comment — cannot be imported]]></wp:comment_content>
+      <wp:comment_approved><![CDATA[1]]></wp:comment_approved>
+      <wp:comment_parent>0</wp:comment_parent>
+      <wp:comment_user_id>0</wp:comment_user_id>
+    </wp:comment>
+    <wp:comment>
+      <wp:comment_id>504</wp:comment_id>
+      <wp:comment_author><![CDATA[Spammer]]></wp:comment_author>
+      <wp:comment_date_gmt><![CDATA[2024-03-02 10:00:00]]></wp:comment_date_gmt>
+      <wp:comment_content><![CDATA[BUY CHEAP THINGS]]></wp:comment_content>
+      <wp:comment_approved><![CDATA[spam]]></wp:comment_approved>
+      <wp:comment_parent>0</wp:comment_parent>
+      <wp:comment_user_id>0</wp:comment_user_id>
+    </wp:comment>
+  </item>
+
+  <item>
+    <title><![CDATA[Plain wpautop post]]></title>
+    <dc:creator><![CDATA[bob]]></dc:creator>
+    <content:encoded><![CDATA[First paragraph stored the WordPress way.
+
+Second paragraph after a blank line.
+With a soft line break.]]></content:encoded>
+    <excerpt:encoded><![CDATA[]]></excerpt:encoded>
+    <wp:post_id>101</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-04-15 08:30:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+    <category domain="category" nicename="news"><![CDATA[News]]></category>
+  </item>
+
+  <item>
+    <title><![CDATA[Unfinished draft]]></title>
+    <dc:creator><![CDATA[alice]]></dc:creator>
+    <content:encoded><![CDATA[Work in progress.]]></content:encoded>
+    <wp:post_id>102</wp:post_id>
+    <wp:post_date_gmt><![CDATA[0000-00-00 00:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[draft]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[Post by a deleted author]]></title>
+    <dc:creator><![CDATA[ghost]]></dc:creator>
+    <content:encoded><![CDATA[Author no longer exists in the export.]]></content:encoded>
+    <wp:post_id>103</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-05-01 12:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[About us]]></title>
+    <dc:creator><![CDATA[alice]]></dc:creator>
+    <content:encoded><![CDATA[<p>A page, not a post.</p>]]></content:encoded>
+    <wp:post_id>104</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-01-01 00:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[publish]]></wp:status>
+    <wp:post_type><![CDATA[page]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[img.png]]></title>
+    <dc:creator><![CDATA[alice]]></dc:creator>
+    <content:encoded><![CDATA[]]></content:encoded>
+    <wp:post_id>105</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-01-01 00:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[inherit]]></wp:status>
+    <wp:post_type><![CDATA[attachment]]></wp:post_type>
+  </item>
+
+  <item>
+    <title><![CDATA[Trashed post]]></title>
+    <dc:creator><![CDATA[alice]]></dc:creator>
+    <content:encoded><![CDATA[Deleted content.]]></content:encoded>
+    <wp:post_id>106</wp:post_id>
+    <wp:post_date_gmt><![CDATA[2024-02-01 00:00:00]]></wp:post_date_gmt>
+    <wp:status><![CDATA[trash]]></wp:status>
+    <wp:post_type><![CDATA[post]]></wp:post_type>
+  </item>
+</channel>
+</rss>

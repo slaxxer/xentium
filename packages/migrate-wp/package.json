@@ -1,0 +1,26 @@
+{
+  "name": "@nodevo/migrate-wp",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "description": "WordPress → Nodevo migration adapter (§34, Wave 1). Consumes a WXR export file — no WordPress installation or database access needed.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "migrate": "tsx src/run.ts"
+  },
+  "dependencies": {
+    "@nodevo/migrate-core": "workspace:*",
+    "fast-xml-parser": "^5.3.1"
+  },
+  "devDependencies": {
+    "@nodevo/config": "workspace:*",
+    "tsx": "^4.22.3",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
