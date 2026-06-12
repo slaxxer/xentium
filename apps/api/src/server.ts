@@ -1,39 +1,36 @@
-import { createApp } from './app/app.js';
-import { registerCorePermissions } from './bootstrap/registerCorePermissions.js';
-import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
-import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
-import { adminService } from './modules/admin/admin.service.js';
-import { env } from './config/env.js';
+import { missingRequiredEnv } from './config/envProbe.js';
 
+/**
+ * Boot gate (WordPress-style first run):
+ *
+ * Every hard crash on a fresh clone is module-load-time — env.ts exits on
+ * missing required vars, prisma/redis/auth-secrets instantiate on import. So
+ * nothing from the main app is imported statically here. If env is incomplete
+ * we start a tiny setup server instead; the install wizard collects DB creds,
+ * writes .env (with generated secrets) into process.env + disk, and then this
+ * process dynamically imports boot.js — the whole app evaluates for the first
+ * time with complete env. No restart needed.
+ */
 async function main() {
-  console.log('🔧 Running bootstrap...');
-  await registerCorePermissions();
-  console.log('✅ Core permissions registered');
+  const missing = missingRequiredEnv();
 
-  await adminService.ensureMembersNavItem().catch(() => { /* install not finished yet */ });
-
-  await bootstrapOfficialPlugins();
-  console.log('✅ Official plugins bootstrapped');
-
-  await initializeEnabledPlugins();
-  console.log('✅ Plugin registry initialized');
-
-  const app = createApp();
-
-  const server = app.listen(env.PORT, () => {
-    console.log(`🚀 API running on :${env.PORT} (${env.NODE_ENV})`);
-  });
-
-  // Graceful shutdown
-  const shutdown = () => {
-    console.log('\n⏹️  Shutting down...');
-    server.close(() => process.exit(0));
-  };
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+  if (missing.length > 0) {
+    console.log(`Setup mode — missing env: ${missing.join(', ')}`);
+    console.log('Open the site in a browser to run the install wizard.');
+    const { startSetupServer } = await import('./setup/setupServer.js');
+    await startSetupServer({
+      onComplete: async () => {
+        const { boot } = await import('./boot.js');
+        await boot();
+      },
+    });
+  } else {
+    const { boot } = await import('./boot.js');
+    await boot();
+  }
 }
 
 main().catch((err) => {
-  console.error('💥 Startup failed:', err);
+  console.error('Startup failed:', err);
   process.exit(1);
 });

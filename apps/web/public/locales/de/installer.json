@@ -30,7 +30,9 @@
       "redis": "Redis",
       "storage": "Speicher",
       "database_url": "Datenbank-URL",
-      "data_dir": "Installationsverzeichnis"
+      "data_dir": "Installationsverzeichnis",
+      "env_file": "Konfigurationsdatei",
+      "server": "API-Server"
     },
     "status": {
       "checking": "Prüfe...",
@@ -45,7 +47,22 @@
     "postgres": "PostgreSQL",
     "not_tested": "Noch nicht getestet",
     "test_button": "Verbindung testen",
-    "testing": "Verbinde..."
+    "testing": "Verbinde...",
+    "setup_subtitle": "Gib die Verbindungsdaten deiner PostgreSQL-Datenbank ein. Nodevo prüft sie, erzeugt alle Geheimschlüssel und schreibt die Konfiguration für dich.",
+    "host": "Host",
+    "port": "Port",
+    "db_name": "Datenbankname",
+    "user": "Benutzername",
+    "password": "Passwort",
+    "advanced": "Erweitert",
+    "redis_url": "Redis-URL",
+    "redis_hint": "Optional — leer lassen für redis://localhost:6379.",
+    "connect": "Verbinden & speichern",
+    "connecting": "Verbinde...",
+    "swap_wait": "Konfiguriere... Server startet",
+    "setup_failed": "Der Server kam nicht rechtzeitig zurück. Prüfe die Server-Logs und versuche es erneut.",
+    "connected": "Verbindung erfolgreich",
+    "connection_failed": "Verbindung fehlgeschlagen"
   },
   "site": {
     "title": "Site-Konfiguration",
@@ -69,7 +86,8 @@
     "password_strong": "Sicheres Passwort",
     "confirm": "Passwort bestätigen",
     "match": "Passwörter stimmen überein",
-    "mismatch": "Passwörter stimmen nicht überein"
+    "mismatch": "Passwörter stimmen nicht überein",
+    "password_too_short": "Zu kurz ({{length}}/5 Zeichen)"
   },
   "finalize": {
     "title": "Installation abschließen",

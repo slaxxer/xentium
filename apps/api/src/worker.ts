@@ -1,48 +1,29 @@
-import './config/env.js';
-import { bullConnection } from './infrastructure/queue.js';
-import { startArticleRevisionCleanupWorker } from './jobs/articleRevisionCleanup.js';
-import { startCheckPromotionWorker }          from './jobs/checkPromotion.js';
-import { startEmailNotificationWorker }       from './jobs/emailNotification.js';
-import { startBanExpiryWorker }               from './jobs/banExpiry.js';
-import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
-import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
-import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
-import { attachFailureHandler }               from './jobs/jobFailure.js';
-import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
+import { missingRequiredEnv, loadEnvFileIntoProcess } from './config/envProbe.js';
 
-// Each worker gets failure logging + dead-letter (error_log) + admin-notify
-// reliability handlers (§55). Retry/backoff come from defaultJobOptions.
-const workers = [
-  attachFailureHandler(startArticleRevisionCleanupWorker(), 'article-revision-cleanup'),
-  attachFailureHandler(startCheckPromotionWorker(),         'check-promotion'),
-  attachFailureHandler(startEmailNotificationWorker(),      'email-notification'),
-  attachFailureHandler(startBanExpiryWorker(),              'ban-expiry'),
-  attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
-  attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
-  attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
-];
+/**
+ * Worker boot gate — mirrors server.ts. The worker has no setup UI of its
+ * own: while the install wizard hasn't written .env yet it just waits,
+ * polling the env probe, so `pnpm dev:apps` doesn't crash-loop on a fresh
+ * clone. Once env is complete the actual worker (workerBoot.js) is imported
+ * and evaluates with full env — same hot-swap idea, no restart needed.
+ */
+const POLL_MS = 2000;
 
-// Schedule repeating jobs from the registry, honoring admin config in `settings`
-// (ACP → System → Scheduled Tasks). A disabled job is removed from the scheduler.
-// A bad saved config never crashes boot — it's logged and that job is skipped.
-async function scheduleJobs() {
-  for (const def of SCHEDULED_JOBS) {
-    try {
-      await applyJobSchedule(def, await getJobConfig(def));
-    } catch (err) {
-      console.error(`[worker] failed to schedule "${def.key}":`, (err as Error)?.message ?? err);
+async function main() {
+  if (missingRequiredEnv().length > 0) {
+    console.log('[worker] waiting for installer setup to write .env…');
+    while (missingRequiredEnv().length > 0) {
+      await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     }
+    // The probe reads the file; the values still need to land in process.env
+    // before the worker's module graph (env.ts, redis, queues) evaluates.
+    loadEnvFileIntoProcess();
+    console.log('[worker] setup complete — booting');
   }
+  await import('./workerBoot.js');
 }
 
-scheduleJobs().then(() => {
-  console.log(`[worker] up, ${workers.length} worker(s) running, scheduled jobs registered`);
+main().catch((err) => {
+  console.error('[worker] startup failed:', err);
+  process.exit(1);
 });
-
-const shutdown = async () => {
-  await Promise.all(workers.map((w) => w.close()));
-  await bullConnection.quit();
-  process.exit(0);
-};
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
