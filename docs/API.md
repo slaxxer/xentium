@@ -243,13 +243,39 @@ Each route is gated by its specific `moderation.*` permission.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/css` | Public | Compiled custom-token CSS (injected on page load). |
-| GET / PUT | `/tokens` | Admin | Read / save semantic style tokens. |
+| GET | `/css` | Public | Compiled token CSS (injected on page load), emitted **scope-keyed** — see below. |
+| GET / PUT | `/tokens` | Admin | Read / save style tokens (scope-keyed map per theme; legacy flat = `global`). |
+| GET | `/version` | Public | Style version + poll interval for live theme sync. |
 | GET | `/style-packs` · POST (`multipart`) · POST `/:id/activate` · DELETE `/:id` | Admin | `.nvstyle` lifecycle. |
 | POST | `/history/:id/restore` | Admin | Restore a style-history snapshot. |
 | GET | `/branding` | Public | Resolved logo URLs + site name. |
 | POST | `/branding/:variant` (`multipart`) · DELETE `/branding/:variant` | Admin | Logo upload / reset (`variant` = `navbar` \| `icon`). |
 | PUT | `/branding/text` | Admin | Toggle site-name text in nav. |
+
+### Theming tokens & scoped CSS
+
+All visual values are CSS custom properties resolved at runtime — three tiers, defined in
+`apps/web/src/styles/tokens.scss`, with the contract in `@nodevo/contracts` → `TOKEN_REGISTRY`:
+
+| Tier | Prefix | Examples |
+|---|---|---|
+| Semantic (palette) | `--c-*` | `--c-bg`, `--c-accent`, `--c-fg`, `--c-card` |
+| Region | `--<region>-*` | `--nav-bg`, `--footer-bg`, `--content-bg`, `--aside-bg` |
+| Component | `--<component>-*` | `--btn-bg`, `--card-bg`, `--input-bg`, `--menu-bg` |
+
+- **Inheritance:** region/component tokens default to a semantic token
+  (`--nav-bg: var(--c-surface)`), so editing the palette cascades; a token is overridden only when
+  that surface must differ. Tokens cover every facet (fill, border + per-side, radius, shadow).
+- **Per-region scoping:** `GET /css` emits overrides scope-keyed — `global` tokens on the theme
+  root (`:root, [data-theme="light"]`), region scopes under that region's selector
+  (`:root .pub-nav, [data-theme="light"] .pub-nav { … }`). Because custom properties inherit down
+  the DOM, a region re-scopes a component token (e.g. `.pub-nav { --btn-bg }` themes only navbar
+  buttons) — no per-region token names.
+- **Storage:** `PUT /tokens` takes a scope-keyed map per theme (`{ global: {…}, navbar: {…} }`);
+  legacy flat maps load as the `global` scope (back-compat). Saved keys are validated against the
+  registry.
+- **Contributors:** add a `TokenDef` to `TOKEN_REGISTRY` + define it in `tokens.scss` (defaulting
+  to its semantic base); never hardcode a literal. See **[CONTRIBUTING → Theming tokens](../CONTRIBUTING.md#theming-tokens)**.
 
 ## Public nav
 
