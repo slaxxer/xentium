@@ -1,10 +1,27 @@
 import { prisma } from "../../infrastructure/db.js";
 import AdmZip from "adm-zip";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, NEC, type TokenMap, type TokenSet } from "@nodevo/contracts";
+import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 
 export type ThemeName = "light" | "dark";
+
+// Region-scoped overrides: each theme maps a scope id → token map.
+// `global` is emitted on the theme root; region scopes are emitted under that
+// region's DOM selector so component tokens can be re-scoped per region.
+export type ScopedTokens   = Record<string, TokenMap>;
+export type ScopedTokenSet = { light: ScopedTokens; dark: ScopedTokens };
+
+// Back-compat shim: legacy storage is a flat TokenMap (string values); the new
+// shape is scope→map (object values). Normalise either into the scoped shape.
+function normalizeScoped(value: unknown): ScopedTokens {
+  if (!value || typeof value !== "object") return {};
+  const obj  = value as Record<string, unknown>;
+  const vals = Object.values(obj);
+  if (vals.length === 0) return {};
+  const isScoped = vals.every((v) => v !== null && typeof v === "object");
+  return isScoped ? (obj as ScopedTokens) : { global: obj as TokenMap };
+}
 
 // Each theme's custom CSS is scoped under the matching root attribute. This both
 // (a) targets only the chosen theme and (b) raises every rule's specificity above
@@ -207,22 +224,25 @@ export const appearanceService = {
   // Editor display: saved values, or the built-in defaults so the pickers have
   // something to show.
   async getTokens(): Promise<TokenSet> {
-    const [light, dark] = await Promise.all([
-      readSetting("appearance.tokens.light", DEFAULT_TOKENS.light as TokenMap),
-      readSetting("appearance.tokens.dark",  DEFAULT_TOKENS.dark  as TokenMap),
-    ]);
-    return { light, dark };
+    // Editor display: the GLOBAL bucket (flat), or the built-in defaults so the
+    // pickers have something to show. (Region/component scopes land in Phase 3.)
+    const { light, dark } = await this.getTokenOverrides();
+    const pick = (g: TokenMap, d: TokenMap) => (Object.keys(g).length ? g : d);
+    return {
+      light: pick(light.global ?? {}, DEFAULT_TOKENS.light as TokenMap),
+      dark:  pick(dark.global  ?? {}, DEFAULT_TOKENS.dark  as TokenMap),
+    };
   },
 
-  // Served stylesheet: ONLY admin-saved overrides (no default fallback). When an
-  // admin resets, these are deleted and the app inherits tokens.scss directly —
-  // the true "core design" — instead of having a defaults snapshot painted on top.
-  async getTokenOverrides(): Promise<TokenSet> {
+  // Served stylesheet: ONLY admin-saved overrides (no default fallback), normalised
+  // to the scope-keyed shape. When an admin resets, these are deleted and the app
+  // inherits tokens.scss directly — the true "core design".
+  async getTokenOverrides(): Promise<ScopedTokenSet> {
     const [light, dark] = await Promise.all([
-      readSetting<TokenMap | null>("appearance.tokens.light", null),
-      readSetting<TokenMap | null>("appearance.tokens.dark",  null),
+      readSetting<unknown>("appearance.tokens.light", null),
+      readSetting<unknown>("appearance.tokens.dark",  null),
     ]);
-    return { light: light ?? {}, dark: dark ?? {} };
+    return { light: normalizeScoped(light), dark: normalizeScoped(dark) };
   },
 
   // Wipe every appearance override so the app falls back to the bundled core
@@ -280,7 +300,7 @@ export const appearanceService = {
     return tokens;
   },
 
-  async buildCSS(tokens: TokenSet): Promise<string> {
+  async buildCSS(tokens: ScopedTokenSet): Promise<string> {
     const [family, weight, size, customCss] = await Promise.all([
       readSetting("appearance.font.family", ""),
       readSetting("appearance.font.weight", ""),
@@ -288,23 +308,43 @@ export const appearanceService = {
       this.buildCustomCss(),
     ]);
 
-    const vars = (map: TokenMap) =>
+    const decls = (map: TokenMap) =>
       Object.entries(map).map(([k, v]) => `  ${k}: ${v};`).join("\n");
 
-    const rootExtras: string[] = [];
-    if (family && FONT_STACKS[family]) rootExtras.push(`  --ff-sans: ${FONT_STACKS[family]};`);
-    if (weight) rootExtras.push(`  --fw-body: ${weight};`);
-    if (size)   rootExtras.push(`  --fs-base: ${size}px;`);
+    // Theme prefixes: light also covers the pre-hydration default (:root).
+    const prefixesFor = (theme: ThemeName) =>
+      theme === "light" ? [":root", '[data-theme="light"]'] : ['[data-theme="dark"]'];
 
-    const lightTokenVars = vars(tokens.light);
-    const lightVars = [lightTokenVars, rootExtras.join("\n")].filter(Boolean).join("\n");
-    const darkVars = vars(tokens.dark);
+    // global → the theme root; a region scope → that region's selector under the
+    // theme root, so a re-scoped component token only cascades inside the region.
+    const selectorFor = (theme: ThemeName, scope: string): string => {
+      const prefixes = prefixesFor(theme);
+      const desc = scope === "global" ? "" : (SCOPE_SELECTOR[scope as ThemeScope] ?? "");
+      if (!desc || desc === ":root") return prefixes.join(", ");
+      const parts = desc.split(",").map((s) => s.trim()).filter(Boolean);
+      return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
+    };
+
+    const fontExtras: string[] = [];
+    if (family && FONT_STACKS[family]) fontExtras.push(`  --ff-sans: ${FONT_STACKS[family]};`);
+    if (weight) fontExtras.push(`  --fw-body: ${weight};`);
+    if (size)   fontExtras.push(`  --fs-base: ${size}px;`);
 
     const parts: string[] = [];
-    // Emit a theme block only when there's something to override — otherwise the
-    // app inherits the bundled core tokens (tokens.scss) for that theme.
-    if (lightVars.trim()) parts.push(`:root, [data-theme="light"] {\n${lightVars}\n}`);
-    if (darkVars.trim())  parts.push(`[data-theme="dark"] {\n${darkVars}\n}`);
+    // Emit a block only when it has content — otherwise the app inherits the bundled
+    // core tokens. global first (so region scopes can override), light before dark.
+    for (const theme of ["light", "dark"] as ThemeName[]) {
+      const buckets = tokens[theme];
+      const scopes  = ["global", ...Object.keys(buckets).filter((s) => s !== "global")];
+      for (const scope of scopes) {
+        let body = buckets[scope] ? decls(buckets[scope]!) : "";
+        // Font overrides ride on the light/global block (on :root → both themes).
+        if (theme === "light" && scope === "global" && fontExtras.length) {
+          body = [body, fontExtras.join("\n")].filter(Boolean).join("\n");
+        }
+        if (body.trim()) parts.push(`${selectorFor(theme, scope)} {\n${body}\n}`);
+      }
+    }
 
     if (family || weight || size) {
       const bodyRules: string[] = [];
