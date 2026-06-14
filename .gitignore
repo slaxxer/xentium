@@ -12,6 +12,7 @@ playwright-report/
 CLAUDE.md
 /PLUGINS
 /UPDATES
+/docs/adr/
 # IDE
 .idea/
 

@@ -43,49 +43,18 @@ These are enforced in review (and most are in the PR template):
 
 ## Theming tokens
 
-All visual values are **CSS custom properties** — never hardcode a colour, radius,
-or shadow in a component. The token system has three tiers, all defined in
-`apps/web/src/styles/tokens.scss`:
+All visual values are **CSS custom properties** — **never hardcode a colour, radius,
+or shadow**; always reference a token. Three tiers (defined in
+`apps/web/src/styles/tokens.scss`, contract in `@nodevo/contracts` → `TOKEN_REGISTRY`):
+semantic `--c-*` → region `--nav-*`/`--footer-*`/… → component `--btn-*`/`--card-*`/…,
+each defaulting to its semantic base so palette edits cascade.
 
-| Tier | Prefix | Example | Edit when |
-|---|---|---|---|
-| **Semantic** (the palette) | `--c-*` | `--c-accent`, `--c-bg`, `--c-fg`, `--c-card` | adding a base colour role |
-| **Region** | `--<region>-*` | `--nav-bg`, `--footer-bg`, `--content-bg`, `--aside-bg` | a page area needs its own surface |
-| **Component** | `--<component>-*` | `--btn-bg`, `--card-bg`, `--input-bg`, `--menu-bg` | an element type needs its own value |
+**To add a token:** add a `TokenDef` to `packages/contracts/src/tokens.ts`, define it in
+`tokens.scss` defaulting to its semantic base (`--my-token: var(--c-…)`), then reference
+`var(--my-token)` in the SCSS.
 
-**Tokens aren't colour-only** — each surface exposes its full set of facets: fill,
-border (`--card-border-color`, width/style, per-side long-hands), radius
-(`--card-radius`), and shadow (`--card-shadow`).
-
-### Inheritance — the one rule that keeps it consistent
-
-Region and component tokens **default to a semantic token**, e.g.:
-
-```scss
---nav-bg:  var(--c-surface);   /* navbar follows the surface colour … */
---btn-bg:  var(--c-accent);    /* buttons follow the accent … */
-```
-
-So changing a semantic token cascades everywhere automatically. Only set a
-region/component token explicitly when that surface genuinely needs to differ.
-
-### Per-region scoping (no token explosion)
-
-Because CSS custom properties inherit down the DOM, a region can re-scope a
-**component** token on its own root element — no new token names needed:
-
-```scss
-.btn-primary { background: var(--btn-bg); }  /* component reads the token */
-.pub-nav     { --btn-bg: #fff; }              /* navbar re-scopes it → only buttons in the nav */
-```
-
-### Adding a token
-
-1. Add the `TokenDef` to the registry: `packages/contracts/src/tokens.ts` (the
-   single source of truth — `kind`, `group`, `inheritsFrom`, etc.).
-2. Define it in `apps/web/src/styles/tokens.scss`, defaulting to its semantic base
-   (`--my-token: var(--c-…)`).
-3. Reference `var(--my-token)` in the component SCSS — never a literal value.
+Full contract — tiers, naming, inheritance, per-region scoping, and the `GET /css` output
+shape — is in **[docs/API.md → Theming tokens & scoped CSS](./docs/API.md#theming-tokens--scoped-css)**.
 
 ## Contributing a plugin
 
