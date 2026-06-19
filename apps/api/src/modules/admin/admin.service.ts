@@ -100,6 +100,115 @@ export const adminService = {
     };
   },
 
+  /** Time-series analytics for the dashboard charts. All series are derived from
+   *  real rows (no synthetic data). `range` is the visible window in days; we
+   *  fetch a doubled window so each series carries a previous-period comparison
+   *  and so deltas are current-window vs the window before it. Page-views /
+   *  unique-visitors are not tracked in core, so the "traffic" series uses real
+   *  successful-login events as the engagement proxy. */
+  async getDashboardAnalytics(range: number) {
+    const r = [7, 30, 90].includes(range) ? range : 30;
+    const span = r * 2;
+
+    // Local-midnight day buckets; the last bucket is today.
+    const windowStart = new Date();
+    windowStart.setHours(0, 0, 0, 0);
+    windowStart.setDate(windowStart.getDate() - (span - 1));
+    const startMs = windowStart.getTime();
+    const idxOf = (d: Date) => {
+      const m = new Date(d).setHours(0, 0, 0, 0);
+      return Math.floor((m - startMs) / 86_400_000);
+    };
+    const empty = () => new Array<number>(span).fill(0);
+    const bucket = (rows: Array<{ d: Date | null }>) => {
+      const out = empty();
+      for (const row of rows) {
+        if (!row.d) continue;
+        const i = idxOf(row.d);
+        if (i >= 0 && i < span) out[i] = (out[i] ?? 0) + 1;
+      }
+      return out;
+    };
+
+    const [
+      regRows, comRows, artRows, logRows, repRows,
+      pendingReports, totalUsers, publishedTotal, baseMembers, topRows,
+    ] = await Promise.all([
+      prisma.user.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
+      prisma.articleComment.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
+      prisma.article.findMany({ where: { status: "published", publishedAt: { gte: windowStart } }, select: { publishedAt: true } }),
+      prisma.loginEvent.findMany({ where: { eventType: "login", success: true, createdAt: { gte: windowStart } }, select: { createdAt: true } }),
+      prisma.moderationReport.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
+      prisma.moderationReport.count({ where: { status: "pending" } }),
+      prisma.user.count(),
+      prisma.article.count({ where: { status: "published", deletedAt: null } }),
+      prisma.user.count({ where: { createdAt: { lt: windowStart } } }),
+      prisma.article.findMany({
+        where:   { status: "published", deletedAt: null },
+        orderBy: { viewCount: "desc" },
+        take:    5,
+        select:  { id: true, title: true, slug: true, viewCount: true, category: { select: { name: true } } },
+      }),
+    ]);
+
+    const regB = bucket(regRows.map((x) => ({ d: x.createdAt })));
+    const comB = bucket(comRows.map((x) => ({ d: x.createdAt })));
+    const artB = bucket(artRows.map((x) => ({ d: x.publishedAt })));
+    const logB = bucket(logRows.map((x) => ({ d: x.createdAt })));
+    const repB = bucket(repRows.map((x) => ({ d: x.createdAt })));
+
+    // Cumulative member count across the whole span.
+    const memB = empty();
+    let running = baseMembers;
+    for (let i = 0; i < span; i++) { running += regB[i]!; memB[i] = running; }
+
+    const cur  = (a: number[]) => a.slice(span - r);
+    const prev = (a: number[]) => a.slice(0, r);
+    const sum  = (a: number[]) => a.reduce((x, y) => x + y, 0);
+    const round1 = (n: number) => Math.round(n * 10) / 10;
+    const pct  = (c: number, p: number) => (p ? round1(((c - p) / p) * 100) : (c > 0 ? 100 : 0));
+    const totalsFor = (a: number[]) => { const c = sum(cur(a)), p = sum(prev(a)); return { cur: c, prev: p, pct: pct(c, p) }; };
+    const spark = (a: number[]) => a.slice(Math.max(0, span - 21));
+
+    const labels: string[] = [];
+    for (let i = span - r; i < span; i++) {
+      const d = new Date(windowStart);
+      d.setDate(windowStart.getDate() + i);
+      labels.push(d.toLocaleDateString("en-US", { month: "short", day: "numeric" }));
+    }
+
+    const regTot = totalsFor(regB), comTot = totalsFor(comB), artTot = totalsFor(artB), repTot = totalsFor(repB);
+    const memNow = memB[span - 1] ?? totalUsers;
+    const memPrev = memB[span - r - 1] ?? baseMembers;
+
+    return {
+      range: r,
+      labels,
+      series: {
+        logins:        { values: cur(logB), compare: prev(logB) },
+        registrations: { values: cur(regB), compare: prev(regB) },
+        comments:      { values: cur(comB), compare: prev(comB) },
+        articles:      { values: cur(artB), compare: prev(artB) },
+      },
+      totals: {
+        logins:        totalsFor(logB),
+        registrations: regTot,
+        comments:      comTot,
+        articles:      artTot,
+        members:       { cur: memNow, prev: memPrev, pct: pct(memNow, memPrev) },
+      },
+      kpis: [
+        { id: "members",  value: totalUsers,     delta: regTot.pct, deltaCount: regTot.cur, spark: spark(memB) },
+        { id: "articles", value: publishedTotal, delta: artTot.pct, deltaCount: artTot.cur, spark: spark(artB) },
+        { id: "comments", value: comTot.cur,     delta: comTot.pct, deltaCount: comTot.cur, spark: spark(comB) },
+        { id: "reports",  value: pendingReports, delta: repTot.cur - repTot.prev, deltaCount: repTot.cur, spark: spark(repB), deltaInvert: true },
+      ],
+      topContent: topRows.map((a) => ({
+        id: a.id, title: a.title, slug: a.slug, views: a.viewCount, category: a.category?.name ?? null,
+      })),
+    };
+  },
+
   // ── Users ─────────────────────────────────────────────────────────────────
 
   async listUsers(opts: { page: number; limit: number; search?: string; groupId?: string }) {

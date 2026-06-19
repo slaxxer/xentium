@@ -1,9 +1,9 @@
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "../lib/api";
 import { Outlet } from "react-router-dom";
+import { api } from "../lib/api";
 import { PubNav } from "./PubNav";
-import { OnlineCounter } from "../components/OnlineCounter";
+import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
 import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
 import "./AppLayout.scss";
@@ -48,10 +48,7 @@ export function AppLayout() {
       <main className="app-main">
         <Outlet />
       </main>
-      <footer className="app-footer">
-        <span>Nodevo v1</span>
-        <OnlineCounter />
-      </footer>
+      <SiteFooter />
       <ModCanvas />
     </div>
   );

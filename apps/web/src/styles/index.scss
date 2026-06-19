@@ -1,4 +1,5 @@
 @use "tokens" as *;
+@use "buttons";
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -55,7 +56,7 @@ pre { overflow-x: auto; }
 /* UserAvatar initials fallback */
 .ua-initials {
   background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-  color: #fff;
+  color: var(--c-on-accent);
   display: flex;
   align-items: center;
   justify-content: center;

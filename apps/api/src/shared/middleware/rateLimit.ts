@@ -55,10 +55,12 @@ export const globalApiLimiter = rateLimit({
     req.path.startsWith('/api/install') ||
     req.path.startsWith('/api/health') ||
     req.path.startsWith('/api/meta') ||
-    // Live style sync: every client (incl. guests) polls /version every 2–60s
-    // and refetches /css on version bumps — without this exemption the poll
-    // alone burns 12–30 of the 60/min unauth budget per tab, and a few tabs
-    // behind one NAT would 429 the whole API. Both endpoints are cheap reads.
+    // Live style sync: every client (incl. guests) holds an SSE connection to
+    // /stream and fetches /css on theme changes. /stream is a long-lived stream
+    // (one request that never "completes"); /css is a cheap cached read. /version
+    // is the legacy poll endpoint, kept for one-shot checks. None should count
+    // against the per-IP budget or a few tabs behind one NAT would 429 the API.
+    req.path === '/api/appearance/stream' ||
     req.path === '/api/appearance/version' ||
     req.path === '/api/appearance/css',
   store: new RedisStore({

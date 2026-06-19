@@ -71,7 +71,7 @@
     height: 28px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-    color: #fff;
+    color: var(--c-on-accent);
     font-weight: 700;
     font-size: 11px;
     display: inline-flex;
@@ -140,7 +140,7 @@
   }
   &__status-btn {
     flex: 1;
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     color: var(--c-fg-muted);
     padding: 6px 4px;
@@ -178,8 +178,8 @@
     &:hover:not(:disabled) { opacity: 0.87; }
 
     &--primary {
-      background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-      color: var(--c-on-accent);
+      background: var(--btn-bg);
+      color: var(--btn-fg);
     }
     &--ghost {
       background: transparent;
@@ -197,16 +197,16 @@
   &__select,
   &__input {
     width: 100%;
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--radius-sm); // intentionally tighter than --input-radius; revisit if field-radius knob lands
     padding: 9px 14px;
     font-size: 13px;
-    color: var(--c-fg);
+    color: var(--input-fg);
     outline: none;
     font-family: inherit;
     box-sizing: border-box;
-    &:focus { border-color: var(--c-accent); }
+    &:focus { border-color: var(--input-border-focus); }
     &--mt { margin-top: 8px; }
   }
   textarea.aep__input { resize: vertical; line-height: 1.5; }
@@ -232,7 +232,7 @@
 
   &__dropzone {
     position: relative;
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 2px dashed var(--c-border);
     border-radius: var(--radius-sm);
     padding: 20px;
@@ -281,7 +281,7 @@
   &__radio-icon { font-size: 13px; }
 
   &__seo {
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-sm);
     padding: 10px;

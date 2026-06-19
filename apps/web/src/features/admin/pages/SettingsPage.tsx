@@ -6,7 +6,15 @@ import { faPlus, faTrash, faCopy } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
+import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
+
+// Core landing values → i18n label keys; plugin destinations use their own label.
+const CORE_LANDING_I18N: Record<string, string> = {
+  home: "settings.landing.home",
+  "/articles": "settings.landing.articles",
+  "/members": "settings.landing.members",
+};
 import "./acpSystem.scss";
 
 // ── i18n locales bundled in v1 (§60.6) ───────────────────────────────────────
@@ -167,7 +175,7 @@ function SaveChip({ saving }: { saving: boolean }) {
 interface SectionField {
   i18nKey: string;
   key: string;
-  type: "text" | "number" | "toggle" | "select" | "language" | "timezone";
+  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "datetime";
   placeholderKey?: string;
   optionsKey?: string;
   values?: string[];
@@ -187,6 +195,27 @@ const SECTIONS: Section[] = [
       { i18nKey: "siteDescription", key: "site.description", type: "text",     placeholderKey: "siteDescription" },
       { i18nKey: "defaultLanguage", key: "site.locale",      type: "language" },
       { i18nKey: "timezone",        key: "site.timezone",    type: "timezone" },
+    ],
+  },
+  {
+    id: "features", icon: "layers",
+    fields: [
+      { i18nKey: "featuresArticles", key: "features.articles.enabled", type: "toggle" },
+      { i18nKey: "featuresHome",     key: "features.home.enabled",     type: "toggle" },
+      { i18nKey: "featuresMembers",  key: "features.members.enabled",  type: "toggle" },
+      { i18nKey: "landing",          key: "site.landing",              type: "landing" },
+    ],
+  },
+  {
+    id: "maintenance", icon: "cog",
+    fields: [
+      { i18nKey: "maintenanceEnabled",        key: "maintenance.enabled",          type: "toggle" },
+      { i18nKey: "maintenanceAllowedGroup",   key: "maintenance.allowed_group",    type: "group" },
+      { i18nKey: "maintenanceTitle",          key: "maintenance.title",            type: "text", placeholderKey: "maintenanceTitle" },
+      { i18nKey: "maintenanceMessage",        key: "maintenance.message",          type: "text", placeholderKey: "maintenanceMessage" },
+      { i18nKey: "maintenanceProgressLabel",  key: "maintenance.progress_label",   type: "text", placeholderKey: "maintenanceProgressLabel" },
+      { i18nKey: "maintenanceProgressPercent",key: "maintenance.progress_percent", type: "number", min: 0, max: 100, step: 5 },
+      { i18nKey: "maintenanceEta",            key: "maintenance.eta",              type: "datetime" },
     ],
   },
   {
@@ -237,6 +266,17 @@ const DEFAULTS: Record<string, unknown> = {
   "site.description":                   "",
   "site.locale":                        "en",
   "site.timezone":                      "UTC",
+  "features.articles.enabled":          true,
+  "features.home.enabled":              true,
+  "features.members.enabled":           true,
+  "site.landing":                       "home",
+  "maintenance.enabled":                false,
+  "maintenance.allowed_group":          "admin",
+  "maintenance.title":                  "Down for a quick tune-up.",
+  "maintenance.message":                "We're making the community better. We'll be back shortly.",
+  "maintenance.progress_label":         "In progress",
+  "maintenance.progress_percent":       0,
+  "maintenance.eta":                    "",
   "auth.registration_mode":             "open",
   "auth.allow_registration":            true,
   "auth.require_email_verification":    true,
@@ -262,6 +302,17 @@ export function SettingsPage() {
     queryFn: () => api.get("/admin/settings"),
   });
 
+  // Drives the landing dropdown — only destinations that currently exist
+  // (enabled core sections + active plugin nav items, e.g. Forum).
+  const { data: siteConfig } = useSiteConfig();
+
+  // All user groups — drives the maintenance "allowed group" select.
+  const { data: allGroups = [] } = useQuery<{ name: string; key: string }[]>({
+    queryKey: ["legend-groups"],
+    queryFn: () => api.get("/members/groups"),
+    staleTime: 300_000,
+  });
+
   // Local draft state seeded from API
   const [draft, setDraft] = useState<Record<string, unknown>>(DEFAULTS);
 
@@ -283,6 +334,10 @@ export function SettingsPage() {
         api.put(`/admin/settings/${encodeURIComponent(key)}`, { value }))),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-settings"] });
+      // Feature flags / landing affect the public site + nav immediately.
+      qc.invalidateQueries({ queryKey: ["site-config"] });
+      qc.invalidateQueries({ queryKey: ["pub-nav-items"] });
+      qc.invalidateQueries({ queryKey: ["maintenance"] });
       swalToast(t("settings.toastSaved"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -328,6 +383,44 @@ export function SettingsPage() {
             options={(f.values ?? []).map((v) => ({ value: v, label: t(`settings.options.${f.optionsKey}.${v}`) }))}
           />
         );
+      case "landing":
+        return (
+          <Select
+            value={String(val ?? "home")}
+            onChange={(v) => set(f.key, v)}
+            options={(siteConfig?.availableLandings ?? []).map((l) => {
+              const labelKey = CORE_LANDING_I18N[l.value];
+              return { value: l.value, label: labelKey ? t(labelKey) : l.label };
+            })}
+          />
+        );
+      case "group":
+        return (
+          <Select
+            value={String(val ?? "admin")}
+            onChange={(v) => set(f.key, v)}
+            options={allGroups.map((g) => ({ value: g.key, label: g.name }))}
+          />
+        );
+      case "datetime": {
+        // Store ISO; the datetime-local input wants "YYYY-MM-DDTHH:mm" in local time.
+        const iso = String(val ?? "");
+        const local = (() => {
+          if (!iso) return "";
+          const d = new Date(iso);
+          if (Number.isNaN(d.getTime())) return "";
+          const pad = (n: number) => String(n).padStart(2, "0");
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        })();
+        return (
+          <input
+            type="datetime-local"
+            className="inp"
+            value={local}
+            onChange={(e) => set(f.key, e.target.value ? new Date(e.target.value).toISOString() : "")}
+          />
+        );
+      }
       default:
         return <TextField value={String(val ?? "")} onChange={(v) => set(f.key, v)} placeholder={f.placeholderKey ? t(`settings.placeholders.${f.placeholderKey}`) : undefined} />;
     }

@@ -18,11 +18,18 @@ import { ArticleEditorPage } from "../features/articles/ArticleEditorPage";
 import { InstallPage } from "../pages/InstallPage";
 import { HomePage }   from "../pages/HomePage";
 import { SearchPage } from "../pages/SearchPage";
+import { PageReaderPage } from "../features/pages/PageReaderPage";
+import { NotFoundPage } from "../features/pages/NotFoundPage";
+import { ThemePreview } from "../pages/ThemePreview";
 import { useInstallStatus } from "../features/installer/hooks/useInstallState";
+import { useSiteConfig, type FeatureKey } from "../hooks/useSiteConfig";
+import { useMaintenance } from "../features/maintenance/useMaintenance";
+import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { api } from "../lib/api";
 import { authStore } from "../lib/authStore";
-import { applyLogout } from "../hooks/useAuth";
+import { applyLogout, useAuth } from "../hooks/useAuth";
 import { useBetaActivityLogger } from "../hooks/useBetaActivityLogger";
+import { useActivityLogger } from "../hooks/useActivityLogger";
 import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
 import { slotRegistry } from "../plugins/slotRegistry";
 // ACP shell
@@ -37,6 +44,8 @@ import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
 import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
 import { ArticlesPage }      from "../features/admin/pages/ArticlesPage";
 import { CategoriesPage }    from "../features/admin/pages/CategoriesPage";
+import { PagesPage }         from "../features/admin/pages/PagesPage";
+import { PageEditorPage }    from "../features/admin/pages/PageEditorPage";
 import { SettingsPage }      from "../features/admin/pages/SettingsPage";
 import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
@@ -58,6 +67,7 @@ import { LicensePage }     from "../features/admin/pages/LicensePage";
 import { ErrorReferencePage }    from "../features/admin/pages/ErrorReferencePage";
 import { ErrorLogPage }          from "../features/admin/pages/ErrorLogPage";
 import { MigrationHistoryPage }  from "../features/admin/pages/MigrationHistoryPage";
+import { ActivityLogPage }       from "../features/admin/pages/ActivityLogPage";
 import { ScheduledJobsPage }     from "../features/admin/pages/ScheduledJobsPage";
 
 const queryClient = new QueryClient({
@@ -110,6 +120,7 @@ function AppGuard() {
   const { pathname } = useLocation();
   const { data, isLoading, error } = useInstallStatus();
   useBetaActivityLogger();
+  useActivityLogger();
   useCustomTokens(!!(data?.installed || (error as any)?.status === 410));
 
   // Pathless layout routes in React Router render for EVERY URL.
@@ -122,7 +133,26 @@ function AppGuard() {
   return <Navigate to="/install" replace />;
 }
 
-function NotFound() { return <h1>404 – Page not found</h1>; }
+function NotFound() { return <NotFoundPage />; }
+
+/** Site root: renders the Home feed or redirects to the configured landing
+ *  (e.g. /forum on a forum-only install). */
+function RootRoute() {
+  const { data, isLoading } = useSiteConfig();
+  if (isLoading) return LOADING;
+  const landing = data?.landing ?? "home";
+  if (landing === "home") return <HomePage />;
+  return <Navigate to={landing} replace />;
+}
+
+/** Hard-gates a section route behind a feature flag — renders the 404 when off
+ *  (the backend also 404s the API). */
+function FeatureGate({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
+  const { data, isLoading } = useSiteConfig();
+  if (isLoading) return LOADING;
+  if (data && !data.features[feature]) return <NotFoundPage />;
+  return <>{children}</>;
+}
 
 function BetaGate({ children }: { children: React.ReactNode }) {
   const qc             = useQueryClient();
@@ -193,6 +223,10 @@ function buildRouter() {
   return createBrowserRouter([
   { path: "/install",   element: <InstallRoute /> },
   { path: "/installer", element: <InstallRoute /> },
+  // ADR-0003 Phase 2 — Style Editor specimen iframe. Top-level (no AppGuard) so it
+  // renders independent of the install/maintenance/auth gates; the editor loads it
+  // in an iframe as a spatial token selector.
+  { path: "/__theme-preview", element: <ThemePreview /> },
   {
     element: <AppGuard />,
     children: [
@@ -203,8 +237,10 @@ function buildRouter() {
       {
         element: <EditorLayout />,
         children: [
-          { path: "/articles/new",       element: <ArticleEditorPage /> },
-          { path: "/articles/:slug/edit",element: <ArticleEditorPage /> },
+          { path: "/articles/new",       element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
+          { path: "/articles/:slug/edit",element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
+          { path: "/pages/new",          element: <PageEditorPage /> },
+          { path: "/pages/:id/edit",     element: <PageEditorPage /> },
         ],
       },
       // ── ACP ──────────────────────────────────────────────────────────────
@@ -222,6 +258,7 @@ function buildRouter() {
           { path: "progression",      element: <ProgressionPage /> },
           { path: "articles",         element: <ArticlesPage /> },
           { path: "categories",       element: <CategoriesPage /> },
+          { path: "pages",            element: <PagesPage /> },
           { path: "settings",         element: <SettingsPage /> },
           { path: "about",            element: <AboutPage /> },
           // Moderation
@@ -248,6 +285,7 @@ function buildRouter() {
           { path: "error-ref",           element: <ErrorReferencePage /> },
           { path: "error-log",           element: <ErrorLogPage /> },
           { path: "migration-history",   element: <MigrationHistoryPage /> },
+          { path: "activity-log",        element: <ActivityLogPage /> },
           { path: "scheduled-tasks",     element: <ScheduledJobsPage /> },
         ],
       },
@@ -255,13 +293,14 @@ function buildRouter() {
       {
         element: <AppLayout />,
         children: [
-          { path: "/",                element: <HomePage /> },
+          { path: "/",                element: <RootRoute /> },
           { path: "/search",          element: <SearchPage /> },
           { path: "/u/:username",     element: <ProfilePage /> },
-          { path: "/members",         element: <MembersPage /> },
+          { path: "/members",         element: <FeatureGate feature="members"><MembersPage /></FeatureGate> },
           { path: "/account",         element: <AccountPage /> },
-          { path: "/articles",                element: <ArticlesListPage /> },
-          { path: "/articles/:slug",          element: <ArticleReaderPage /> },
+          { path: "/articles",                element: <FeatureGate feature="articles"><ArticlesListPage /></FeatureGate> },
+          { path: "/articles/:slug",          element: <FeatureGate feature="articles"><ArticleReaderPage /></FeatureGate> },
+          { path: "/p/:slug",                 element: <PageReaderPage /> },
           // Plugin public routes (registered by plugins via slotRegistry)
           ...slotRegistry.getRoutes("public").map((r) => ({
             path: r.path,
@@ -276,15 +315,42 @@ function buildRouter() {
 ]);
 }
 
+/** Blocks the whole site behind the maintenance screen unless the viewer is in
+ *  the allowed group (or an admin). Staff sign in via the page's login panel. */
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const qc = useQueryClient();
+  const { data: install, error: installError } = useInstallStatus();
+  const installed = !!install?.installed || (installError as any)?.status === 410;
+  const { data: m } = useMaintenance(installed);
+  const { user, isLoading } = useAuth();
+
+  if (INSTALL_PATHS.has(window.location.pathname)) return <>{children}</>;
+  if (!m?.enabled) return <>{children}</>;
+
+  const allowed = !!user && user.groups.some((g) => g.key === m.allowedGroup || g.key === "admin");
+  if (allowed) return <>{children}</>;
+  if (isLoading) return LOADING;
+
+  return (
+    <MaintenancePage
+      status={m}
+      blocked={!!user}
+      onSignedIn={() => qc.invalidateQueries({ queryKey: ["maintenance"] })}
+    />
+  );
+}
+
 export default function App() {
   // useState initializer runs at first render — AFTER bootstrap() has
   // imported enabled plugin web entries and registered their routes.
   const [router] = useState(buildRouter);
   return (
     <QueryClientProvider client={queryClient}>
-      <BetaGate>
-        <RouterProvider router={router} />
-      </BetaGate>
+      <MaintenanceGate>
+        <BetaGate>
+          <RouterProvider router={router} />
+        </BetaGate>
+      </MaintenanceGate>
     </QueryClientProvider>
   );
 }

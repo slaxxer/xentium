@@ -1,5 +1,5 @@
 .article-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   padding: 1.25rem;
@@ -7,7 +7,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    box-shadow: var(--shadow-card);
     border-color: var(--c-accent);
   }
 

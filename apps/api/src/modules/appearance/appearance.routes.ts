@@ -4,6 +4,7 @@ import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions } from "@nodevo/contracts";
 import { appearanceService } from "./appearance.service.js";
+import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { prisma } from "../../infrastructure/db.js";
 
@@ -35,6 +36,21 @@ appearanceRouter.get("/version", async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Public — live style sync (push). Each client holds one SSE connection; the
+// server pushes a `version` event only when the active theme actually changes.
+// Replaces polling /version. Exempt from the global rate limiter (see rateLimit.ts).
+appearanceRouter.get("/stream", async (_req, res, next) => {
+  try {
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no"); // disable nginx response buffering for this stream
+    res.flushHeaders?.();
+    const version = await appearanceService.getStyleVersion();
+    addSseClient(res, version); // keeps the connection open until the client disconnects
+  } catch (err) { next(err); }
+});
+
 // Admin — read current tokens
 appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
   try {
@@ -45,14 +61,16 @@ appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
 // Admin — save tokens
 appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
   try {
+    // Scope-keyed shape (ADR-0003): { light: { global: {..}, navbar: {..} }, dark: {..} }.
+    const scoped = z.record(z.string(), z.record(z.string(), z.string()));
     const body = z.object({
-      light: z.record(z.string(), z.string()),
-      dark:  z.record(z.string(), z.string()),
+      light: scoped,
+      dark:  scoped,
       label: z.string().optional(),
     }).parse(req.body);
 
     await appearanceService.saveTokens(
-      { light: body.light as Record<string, string>, dark: body.dark as Record<string, string> },
+      { light: body.light, dark: body.dark },
       (req as any).userId,
       body.label,
     );

@@ -1,16 +1,32 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useTranslation, Trans } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
-  faUsers, faNewspaper, faComments, faFlag,
-  faUser,
-  faUsersGear, faBan, faPuzzlePiece, faUnlock,
+  faUsers, faNewspaper, faComments, faFlag, faUserPlus, faBan, faUnlock,
+  faDatabase, faBolt, faServer, faHardDrive, faEnvelope,
+  faUsersGear, faPlus, faPuzzlePiece, faArrowRight, faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import type { TFunction } from "i18next";
 import { api } from "../../../lib/api";
-import { Username } from "../../../components/Username";
+import { avatarGradient } from "../../../components/Avatar";
+import { Sparkline, AreaChart, BarChart, fmtK, fmtFull } from "../components/DashCharts";
+import "./DashboardPage.scss";
+
+// ── API shapes ────────────────────────────────────────────────────────────────
+type MetricId = "logins" | "registrations" | "comments" | "articles";
+type Window = { cur: number; prev: number; pct: number };
+
+interface Analytics {
+  range: number;
+  labels: string[];
+  series: Record<MetricId, { values: number[]; compare: number[] }>;
+  totals: Record<MetricId, Window> & { members: Window };
+  kpis: { id: string; value: number; delta: number; deltaCount: number; spark: number[]; deltaInvert?: boolean }[];
+  topContent: { id: string; title: string; slug: string; views: number; category: string | null }[];
+}
 
 interface HealthCheck {
   db:      { status: "ok" | "error"; latencyMs: number };
@@ -22,30 +38,37 @@ interface HealthCheck {
 }
 
 interface DashboardStats {
-  userCount: number;
-  articleCount: number;
-  commentCount: number;
-  groupCount: number;
-  pendingReportCount: number;
-  recentUsers: { id: string; username: string; createdAt: string; badgeColor: string | null }[];
-  recentArticles: {
-    id: string; title: string; slug: string; publishedAt: string | null;
-    author: { username: string; badgeColor: string | null };
-  }[];
-  recentBans: {
-    id: string; type: string; reason: string; createdAt: string;
-    user: { username: string; badgeColor: string | null };
-    issuedBy: { username: string; badgeColor: string | null };
-  }[];
-  recentLiftedBans: {
-    id: string; liftedAt: string;
-    user: { username: string; badgeColor: string | null };
-  }[];
+  recentUsers:    { id: string; username: string; createdAt: string }[];
+  recentArticles: { id: string; title: string; slug: string; publishedAt: string | null; author: { username: string } }[];
+  recentBans:     { id: string; type: string; createdAt: string; user: { username: string }; issuedBy: { username: string } }[];
+  recentLiftedBans:{ id: string; liftedAt: string; user: { username: string } }[];
 }
 
-function timeAgo(dateStr: string, t: TFunction) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
+// ── Presentational metadata (colours/icons/labels stay client-side) ──────────
+const SERIES: Record<MetricId, { color: string; unit: string }> = {
+  logins:        { color: "var(--c-accent)",  unit: "logins" },
+  registrations: { color: "var(--c-accent2)", unit: "sign-ups" },
+  comments:      { color: "var(--c-success)", unit: "comments" },
+  articles:      { color: "var(--c-warn)",    unit: "articles" },
+};
+const ORDER: MetricId[] = ["logins", "registrations", "comments", "articles"];
+
+const KPI_META: Record<string, { tone: string; icon: IconDefinition; color: string }> = {
+  members:  { tone: "accent",  icon: faUsers,     color: "var(--c-accent)" },
+  articles: { tone: "accent2", icon: faNewspaper, color: "var(--c-accent2)" },
+  comments: { tone: "success", icon: faComments,  color: "var(--c-success)" },
+  reports:  { tone: "danger",  icon: faFlag,      color: "var(--c-danger)" },
+};
+
+const RANGES = [7, 30, 90];
+
+function initials(username: string): string {
+  const parts = username.replace(/[^a-zA-Z0-9]+/g, " ").trim().split(" ");
+  return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? parts[0]?.[1] ?? "")).toUpperCase();
+}
+
+function timeAgo(dateStr: string, t: TFunction): string {
+  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
   if (mins < 60) return t("dashboard.agoM", { n: mins });
   const hours = Math.floor(mins / 60);
   if (hours < 24) return t("dashboard.agoH", { n: hours });
@@ -54,305 +77,287 @@ function timeAgo(dateStr: string, t: TFunction) {
   return t("dashboard.agoMo", { n: Math.floor(days / 30) });
 }
 
-function StatCard({ label, value, sub, color, icon }: {
-  label: string; value: string | number; sub: string; color: string; icon: IconDefinition;
+function KpiCard({ k, label, sub }: {
+  k: Analytics["kpis"][number]; label: string; sub: string;
 }) {
+  const meta = KPI_META[k.id] ?? KPI_META.members!;
+  const isPct = !k.deltaInvert && k.id !== "reports";
+  const up = k.delta >= 0;
+  const good = k.deltaInvert ? !up : up;
+  const sign = up ? "+" : "";
   return (
-    <div className="acp-card" style={{ padding: "20px 22px" }}>
-      <div style={{ marginBottom: 12 }}>
-        <div style={{
-          width: 40, height: 40,
-          background: `${color}15`,
-          border: `1px solid ${color}30`,
-          borderRadius: "var(--radius-sm)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 18, color,
-        }}>
-          <FontAwesomeIcon icon={icon} />
-        </div>
+    <div className={`kpi kpi--${meta.tone}`}>
+      <div className="kpi__top">
+        <span className="kpi__ic"><FontAwesomeIcon icon={meta.icon} /></span>
+        <span className="kpi__label">{label}</span>
+        <span className={"kpi__delta " + (good ? "is-up" : "is-down")}>
+          <FontAwesomeIcon icon={faArrowRight} style={{ transform: up ? "rotate(-45deg)" : "rotate(45deg)", fontSize: 11 }} />
+          {sign + k.delta + (isPct ? "%" : "")}
+        </span>
       </div>
-      <div style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: "-0.03em" }}>{value}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg-muted)", marginTop: 4 }}>{label}</div>
-      <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2 }}>{sub}</div>
+      <div className="kpi__val">{fmtFull(k.value)}</div>
+      <div className="kpi__sub">{sub}</div>
+      <div className="kpi__spark"><Sparkline data={k.spark.length ? k.spark : [0, 0]} color={meta.color} height={40} /></div>
     </div>
-  );
-}
-
-function StatusDot({ color }: { color: string }) {
-  return (
-    <span style={{
-      width: 8, height: 8, borderRadius: "50%",
-      background: color, display: "inline-block", flexShrink: 0,
-    }} />
   );
 }
 
 export function DashboardPage() {
   const { t } = useTranslation("acp");
-  const { data, isLoading } = useQuery<DashboardStats>({
+  const [range, setRange] = useState(30);
+  const [metric, setMetric] = useState<MetricId>("logins");
+
+  const { data: a, isLoading } = useQuery<Analytics>({
+    queryKey: ["acp-dash-analytics", range],
+    queryFn: () => api.get(`/admin/dashboard/analytics?range=${range}`),
+  });
+  const { data: stats } = useQuery<DashboardStats>({
     queryKey: ["acp-dashboard"],
     queryFn: () => api.get("/admin/dashboard"),
   });
-
-  const { data: health, isLoading: healthLoading, isError: healthError } = useQuery<HealthCheck>({
+  const { data: health, isError: healthError } = useQuery<HealthCheck>({
     queryKey: ["acp-health"],
     queryFn: () => api.get("/admin/health"),
     refetchInterval: 30_000,
   });
 
-  const activityFeed = [
-    ...( data?.recentUsers.map(u => ({
-      icon:      faUser,
-      text:      <Trans ns="acp" i18nKey="dashboard.userRegistered" components={[<Username username={u.username} badgeColor={u.badgeColor} />]} />,
-      sub:       timeAgo(u.createdAt, t),
-      color:     "var(--c-accent)",
-      timestamp: u.createdAt,
-    })) ?? []),
-    ...( data?.recentArticles.map(a => ({
-      icon:      faNewspaper,
-      text:      <Trans ns="acp" i18nKey="dashboard.articlePublishedBy" components={[<Username username={a.author.username} badgeColor={a.author.badgeColor} />]} />,
-      sub:       `"${a.title}"`,
-      color:     "var(--c-success)",
-      timestamp: a.publishedAt,
-    })) ?? []),
-    ...( data?.recentBans.map(b => ({
-      icon:      faBan,
-      text:      <Trans ns="acp" i18nKey="dashboard.userBanned" components={[<Username username={b.user.username} badgeColor={b.user.badgeColor} />]} />,
-      sub:       <>{b.type === "permanent" ? t("dashboard.permanently") : t("dashboard.temporarily")} · <Trans ns="acp" i18nKey="dashboard.byUser" components={[<Username username={b.issuedBy.username} badgeColor={b.issuedBy.badgeColor} />]} /></>,
-      color:     "var(--c-danger)",
-      timestamp: b.createdAt,
-    })) ?? []),
-    ...( data?.recentLiftedBans.map(b => ({
-      icon:      faUnlock,
-      text:      <Trans ns="acp" i18nKey="dashboard.banLifted" components={[<Username username={b.user.username} badgeColor={b.user.badgeColor} />]} />,
-      sub:       timeAgo(b.liftedAt, t),
-      color:     "var(--c-success)",
-      timestamp: b.liftedAt,
-    })) ?? []),
-  ]
-    .filter(item => !!item.timestamp)
-    .sort((a, b) => new Date(a.timestamp!).getTime() - new Date(b.timestamp!).getTime())
-    .slice(-6);
+  const labels = a?.labels ?? [];
+  const ser = a?.series[metric];
+  const values = ser?.values ?? [];
+  const compare = ser?.compare ?? null;
+  const tot = a?.totals[metric] ?? { cur: 0, prev: 0, pct: 0 };
+  const totUp = tot.pct >= 0;
 
-  const MUTED = "var(--c-fg-muted)";
-  const OK    = "var(--c-success)";
-  const WARN  = "var(--c-warn)";
-  const ERR   = "var(--c-danger)";
+  // registrations bar — daily for ≤30d, weekly buckets for 90d
+  const regValuesRaw = a?.series.registrations.values ?? [];
+  let regLabels: string[] = labels, regValues: number[] = regValuesRaw;
+  if (range > 30) {
+    regLabels = []; regValues = [];
+    for (let i = 0; i < regValuesRaw.length; i += 7) {
+      regValues.push(regValuesRaw.slice(i, i + 7).reduce((x, y) => x + y, 0));
+      regLabels.push(labels[i] ?? "");
+    }
+  }
+  const regTotal = regValues.reduce((x, y) => x + y, 0);
 
-  const healthRows: Array<[string, string, string]> = health
-    ? [
-        [
-          t("dashboard.hDatabase"),
-          health.db.status === "ok"
-            ? t("dashboard.hConnected", { ms: health.db.latencyMs })
-            : t("dashboard.hConnError"),
-          health.db.status === "ok" ? OK : ERR,
-        ],
-        [
-          t("dashboard.hRedis"),
-          health.redis.status === "ok"
-            ? t("dashboard.hConnected", { ms: health.redis.latencyMs })
-            : t("dashboard.hConnError"),
-          health.redis.status === "ok" ? OK : ERR,
-        ],
-        [
-          t("dashboard.hQueue"),
-          health.queue.status === "ok" ? t("dashboard.hRunning") : t("dashboard.hUnavailable"),
-          health.queue.status === "ok" ? OK : ERR,
-        ],
-        [
-          t("dashboard.hStorage"),
-          health.storage.status === "ok"
-            ? health.storage.writeable ? t("dashboard.hWritable") : t("dashboard.hReadOnly")
-            : t("dashboard.hError"),
-          health.storage.status === "ok"
-            ? health.storage.writeable ? OK : WARN
-            : ERR,
-        ],
-        [
-          t("dashboard.hEmail"),
-          health.email.status === "configured"   ? t("dashboard.hConfigured")
-            : health.email.status === "unconfigured" ? t("dashboard.hNotConfigured")
-            : t("dashboard.hError"),
-          health.email.status === "configured" ? OK
-            : health.email.status === "unconfigured" ? WARN
-            : ERR,
-        ],
-      ]
-    : [
-        [t("dashboard.hDatabase"), "—", MUTED],
-        [t("dashboard.hRedis"),    "—", MUTED],
-        [t("dashboard.hQueue"),    "—", MUTED],
-        [t("dashboard.hStorage"),  "—", MUTED],
-        [t("dashboard.hEmail"),    "—", MUTED],
-      ];
+  // ── Activity feed (real, from /admin/dashboard) ────────────────────────────
+  type Feed = { who: string; text: string; time: string; tone: string; icon: IconDefinition; ts: number };
+  const feed: Feed[] = [
+    ...(stats?.recentUsers ?? []).map((u) => ({
+      who: u.username, text: t("dashboard.userRegisteredPlain"), time: timeAgo(u.createdAt, t),
+      tone: "accent", icon: faUserPlus, ts: new Date(u.createdAt).getTime(),
+    })),
+    ...(stats?.recentArticles ?? []).filter((x) => x.publishedAt).map((x) => ({
+      who: x.author.username, text: t("dashboard.articlePublishedPlain", { title: x.title }),
+      time: timeAgo(x.publishedAt!, t), tone: "accent2", icon: faNewspaper, ts: new Date(x.publishedAt!).getTime(),
+    })),
+    ...(stats?.recentBans ?? []).map((b) => ({
+      who: b.issuedBy.username, text: t("dashboard.bannedPlain", { user: b.user.username }),
+      time: timeAgo(b.createdAt, t), tone: "danger", icon: faBan, ts: new Date(b.createdAt).getTime(),
+    })),
+    ...(stats?.recentLiftedBans ?? []).map((b) => ({
+      who: b.user.username, text: t("dashboard.banLiftedPlain"), time: timeAgo(b.liftedAt, t),
+      tone: "success", icon: faUnlock, ts: new Date(b.liftedAt).getTime(),
+    })),
+  ].sort((x, y) => y.ts - x.ts).slice(0, 6);
 
-  const overallColor =
-    healthError                          ? ERR  :
-    health?.overall === "healthy"        ? OK   :
-    health?.overall === "degraded"       ? WARN :
-    health?.overall === "critical"       ? ERR  :
-    MUTED;
-
-  const overallLabel =
-    healthError          ? t("dashboard.overallUnreachable") :
-    healthLoading        ? t("dashboard.overallChecking")    :
-    health?.overall === "healthy"  ? t("dashboard.overallHealthy")  :
-    health?.overall === "degraded" ? t("dashboard.overallDegraded") :
-    health?.overall === "critical" ? t("dashboard.overallCritical") :
-    t("dashboard.overallUnknown");
-
-  const quickActions: Array<[IconDefinition, string, string]> = [
-    [faUsersGear,  t("dashboard.qaManageUsers"),  "/admin/users"],
-    [faNewspaper,  t("dashboard.qaViewArticles"), "/admin/articles"],
-    [faFlag,       t("dashboard.qaReportQueue"),  "/admin/reports"],
-    [faPuzzlePiece,t("dashboard.qaMarketplace"),   "/admin/marketplace"],
+  // ── System health rows ─────────────────────────────────────────────────────
+  type Svc = { label: string; note: string; status: "ok" | "warn" | "error" | "muted"; icon: IconDefinition };
+  const svc: Svc[] = health ? [
+    { label: t("dashboard.hDatabase"), icon: faDatabase,
+      status: health.db.status === "ok" ? "ok" : "error",
+      note: health.db.status === "ok" ? t("dashboard.hConnected", { ms: health.db.latencyMs }) : t("dashboard.hConnError") },
+    { label: t("dashboard.hRedis"), icon: faBolt,
+      status: health.redis.status === "ok" ? "ok" : "error",
+      note: health.redis.status === "ok" ? t("dashboard.hConnected", { ms: health.redis.latencyMs }) : t("dashboard.hConnError") },
+    { label: t("dashboard.hQueue"), icon: faServer,
+      status: health.queue.status === "ok" ? "ok" : "error",
+      note: health.queue.status === "ok" ? t("dashboard.hRunning") : t("dashboard.hUnavailable") },
+    { label: t("dashboard.hStorage"), icon: faHardDrive,
+      status: health.storage.status === "ok" ? (health.storage.writeable ? "ok" : "warn") : "error",
+      note: health.storage.status === "ok" ? (health.storage.writeable ? t("dashboard.hWritable") : t("dashboard.hReadOnly")) : t("dashboard.hError") },
+    { label: t("dashboard.hEmail"), icon: faEnvelope,
+      status: health.email.status === "configured" ? "ok" : health.email.status === "unconfigured" ? "warn" : "error",
+      note: health.email.status === "configured" ? t("dashboard.hConfigured") : health.email.status === "unconfigured" ? t("dashboard.hNotConfigured") : t("dashboard.hError") },
+  ] : [
+    { label: t("dashboard.hDatabase"), note: "—", status: "muted", icon: faDatabase },
+    { label: t("dashboard.hRedis"), note: "—", status: "muted", icon: faBolt },
+    { label: t("dashboard.hQueue"), note: "—", status: "muted", icon: faServer },
+    { label: t("dashboard.hStorage"), note: "—", status: "muted", icon: faHardDrive },
+    { label: t("dashboard.hEmail"), note: "—", status: "muted", icon: faEnvelope },
   ];
 
+  const overall = healthError ? "critical" : (health?.overall ?? "healthy");
+  const overallLabel = healthError ? t("dashboard.overallUnreachable")
+    : overall === "healthy" ? t("dashboard.overallHealthy")
+    : overall === "degraded" ? t("dashboard.overallDegraded")
+    : t("dashboard.overallCritical");
+
+  const quickActions: { icon: IconDefinition; label: string; to: string; tone: string; badge?: string }[] = [
+    { icon: faUsersGear, label: t("dashboard.qaManageUsers"),  to: "/admin/users",       tone: "accent" },
+    { icon: faPlus,      label: t("dashboard.qaNewArticle"),   to: "/admin/articles",    tone: "accent2" },
+    { icon: faFlag,      label: t("dashboard.qaReportQueue"),  to: "/admin/reports",     tone: "danger",
+      badge: a && a.kpis.find((k) => k.id === "reports")?.value ? String(a.kpis.find((k) => k.id === "reports")!.value) : undefined },
+    { icon: faPuzzlePiece, label: t("dashboard.qaMarketplace"), to: "/admin/marketplace", tone: "success" },
+  ];
+
+  const kpiText: Record<string, { label: string; sub: (k: Analytics["kpis"][number]) => string }> = {
+    members:  { label: t("dashboard.kMembers"),  sub: (k) => t("dashboard.kMembersSub", { n: k.deltaCount }) },
+    articles: { label: t("dashboard.kArticles"), sub: (k) => t("dashboard.kArticlesSub", { n: k.deltaCount }) },
+    comments: { label: t("dashboard.kComments"), sub: () => t("dashboard.kCommentsSub", { n: range }) },
+    reports:  { label: t("dashboard.kReports"),  sub: () => t("dashboard.kReportsSub") },
+  };
+
   return (
-    <div>
-      {/* Page header */}
+    <div className="dash">
+      {/* header */}
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.overview")}</div>
           <h1 className="acp-page-title">{t("nav.dashboard")}</h1>
+          <p className="acp-page-subtitle">{t("dashboard.intro")}</p>
         </div>
-      </div>
-
-      {/* Stat cards — matches mockup: Users / Articles / Forum Posts / Pending Reports */}
-      <div className="acp-stat-grid">
-        <StatCard
-          label={t("dashboard.statUsers")} value={isLoading ? "—" : (data?.userCount ?? 0).toLocaleString()}
-          sub={t("dashboard.statUsersSub")} color="var(--c-accent)" icon={faUsers}
-        />
-        <StatCard
-          label={t("dashboard.statArticles")} value={isLoading ? "—" : (data?.articleCount ?? 0).toLocaleString()}
-          sub={t("dashboard.statArticlesSub")} color="var(--c-success)" icon={faNewspaper}
-        />
-        <StatCard
-          label={t("dashboard.statComments")} value={isLoading ? "—" : (data?.commentCount ?? 0).toLocaleString()}
-          sub={t("dashboard.statCommentsSub")} color="var(--c-info, #38bdf8)" icon={faComments}
-        />
-        <StatCard
-          label={t("dashboard.statReports")} value={isLoading ? "—" : (data?.pendingReportCount ?? 0).toLocaleString()}
-          sub={t("dashboard.statReportsSub")} color="var(--c-danger)" icon={faFlag}
-        />
-      </div>
-
-      {/* Main content */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 20, marginBottom: 20 }}>
-        {/* Activity feed */}
-        <div className="acp-card" style={{ padding: "22px" }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 18 }}>
-            {t("dashboard.recentActivity")}
+        <div className="dash-head__tools">
+          <div className="seg">
+            {RANGES.map((r) => (
+              <button key={r} type="button" className={"seg__btn " + (range === r ? "is-on" : "")} onClick={() => setRange(r)}>
+                {r}d
+              </button>
+            ))}
           </div>
-          {isLoading ? (
-            <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("dashboard.loading")}</div>
-          ) : (
-            <div>
-              {activityFeed.map((a, i) => (
-                <div
-                  key={i}
-                  style={{
-                    display: "flex", gap: 10, padding: "10px 0",
-                    borderBottom: i < activityFeed.length - 1 ? "1px solid var(--c-border)" : "none",
-                  }}
-                >
-                  <div style={{
-                    width: 32, height: 32,
-                    background: `${a.color}15`,
-                    border: `1px solid ${a.color}30`,
-                    borderRadius: "var(--radius-sm)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 13, color: a.color, flexShrink: 0,
-                  }}>
-                    <FontAwesomeIcon icon={a.icon} />
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg)" }}>{a.text}</div>
-                    <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{a.sub}</div>
-                  </div>
-                </div>
-              ))}
-              {activityFeed.length === 0 && (
-                <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("dashboard.noActivity")}</div>
-              )}
-            </div>
-          )}
+          <Link className="nbghost" to="/"><FontAwesomeIcon icon={faArrowUpRightFromSquare} />{t("dashboard.viewSite")}</Link>
         </div>
+      </div>
 
-        {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* System Health */}
-          <div className="acp-card" style={{ padding: "22px" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)" }}>{t("dashboard.systemHealth")}</div>
-              <span style={{
-                fontSize: 11, fontWeight: 700, padding: "2px 8px",
-                borderRadius: 20,
-                background: `${overallColor}18`,
-                color: overallColor,
-                border: `1px solid ${overallColor}35`,
-              }}>
-                {overallLabel}
-              </span>
+      {/* KPI row */}
+      <div className="dash-kpis">
+        {(a?.kpis ?? []).map((k) => (
+          <KpiCard key={k.id} k={k} label={kpiText[k.id]?.label ?? k.id} sub={kpiText[k.id]?.sub(k) ?? ""} />
+        ))}
+        {!a && [0, 1, 2, 3].map((i) => (
+          <div key={i} className="kpi"><div className="kpi__val">—</div></div>
+        ))}
+      </div>
+
+      {/* main grid */}
+      <div className="dash-grid">
+        {/* traffic */}
+        <section className="card dash-traffic">
+          <div className="card__head">
+            <div>
+              <h3 className="card__title">{t("dashboard.trafficTitle")}</h3>
+              <p className="card__sub">
+                <b>{fmtFull(tot.cur)}</b> {t(`dashboard.s_${metric}`).toLowerCase()} · {t("dashboard.lastNDays", { n: range })}
+                <span className={"card__delta " + (totUp ? "is-up" : "is-down")}>
+                  {(totUp ? "▲ " : "▼ ") + Math.abs(tot.pct) + "%"}
+                </span>
+              </p>
             </div>
-            {healthRows.map(([label, value, color], i) => (
-              <div
-                key={label}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between",
-                  padding: "8px 0",
-                  borderBottom: i < healthRows.length - 1 ? "1px solid var(--c-border)" : "none",
-                  opacity: healthLoading ? 0.45 : 1,
-                  transition: "opacity .3s",
-                }}
-              >
-                <span style={{ fontSize: 13, color: "var(--c-fg-muted)" }}>{label}</span>
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <StatusDot color={color} />
-                  <span style={{ fontSize: 12, color, fontWeight: 600 }}>{value}</span>
-                </div>
+            <div className="seg seg--metrics">
+              {ORDER.map((m) => (
+                <button key={m} type="button" className={"seg__btn " + (metric === m ? "is-on" : "")} onClick={() => setMetric(m)}>
+                  <i className="seg__dot" style={{ background: SERIES[m].color }} />{t(`dashboard.s_${m}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <AreaChart labels={labels} values={values} compare={compare} color={SERIES[metric].color} height={286} unit={SERIES[metric].unit} />
+          <div className="chart-legend">
+            <span><i style={{ background: SERIES[metric].color }} />{t("dashboard.thisPeriod")}</span>
+            {compare && <span className="is-cmp"><i />{t("dashboard.prevPeriod")}</span>}
+          </div>
+        </section>
+
+        {/* system health */}
+        <section className="card dash-health">
+          <div className="card__head">
+            <div>
+              <h3 className="card__title">{t("dashboard.systemHealth")}</h3>
+              <p className="card__sub">{t("dashboard.allCoreServices")}</p>
+            </div>
+            <span className={"health-pill" + (overall === "degraded" ? " health-pill--degraded" : overall === "critical" ? " health-pill--critical" : "")}>
+              <span className="health-pill__dot" />{overallLabel}
+            </span>
+          </div>
+          <div className="svc">
+            {svc.map((s) => (
+              <div key={s.label} className="svc__row">
+                <span className="svc__ic"><FontAwesomeIcon icon={s.icon} /></span>
+                <span className="svc__label">{s.label}</span>
+                <span className={"svc__note svc__note--" + s.status}>
+                  <i className={"svc__dot svc__dot--" + s.status} />{s.note}
+                </span>
               </div>
             ))}
           </div>
+        </section>
 
-          {/* Quick Actions */}
-          <div className="acp-card" style={{ padding: "22px" }}>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 16 }}>
-              {t("dashboard.quickActions")}
+        {/* registrations */}
+        <section className="card dash-reg">
+          <div className="card__head">
+            <div>
+              <h3 className="card__title">{t("dashboard.newRegistrations")}</h3>
+              <p className="card__sub">
+                <b>{fmtFull(regTotal)}</b> {t("dashboard.newMembers")} · {range <= 30 ? t("dashboard.perDay") : t("dashboard.perWeek")}
+              </p>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {quickActions.map(([, label, to]) => (
-                <Link
-                  key={to}
-                  to={to}
-                  style={{
-                    background: "var(--c-surface)",
-                    border: "1px solid var(--c-border)",
-                    color: "var(--c-fg-muted)",
-                    padding: "9px 14px",
-                    borderRadius: "var(--radius-sm)",
-                    fontSize: 13, fontWeight: 600,
-                    textDecoration: "none",
-                    display: "flex", alignItems: "center",
-                    transition: "border-color 0.15s, color 0.15s",
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.borderColor = "var(--c-accent-glow)";
-                    e.currentTarget.style.color = "var(--c-fg)";
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.borderColor = "var(--c-border)";
-                    e.currentTarget.style.color = "var(--c-fg-muted)";
-                  }}
-                >
-                  {label}
-                </Link>
-              ))}
-            </div>
+            <span className="card__chip"><FontAwesomeIcon icon={faUserPlus} /></span>
           </div>
-        </div>
+          <BarChart labels={regLabels} values={regValues} color="var(--c-success)" height={196} />
+        </section>
+
+        {/* recent activity */}
+        <section className="card dash-act">
+          <div className="card__head">
+            <h3 className="card__title">{t("dashboard.recentActivity")}</h3>
+            <Link className="card__link" to="/admin/activity-log">{t("dashboard.viewAll")}</Link>
+          </div>
+          <div className="feed">
+            {feed.map((f, i) => (
+              <div key={i} className="feed__row">
+                <span className="feed__ava" style={{ background: `linear-gradient(140deg, ${avatarGradient(f.who)[0]}, ${avatarGradient(f.who)[1]})` }}>
+                  {initials(f.who)}
+                  <span className={"feed__badge feed__badge--" + f.tone}><FontAwesomeIcon icon={f.icon} style={{ fontSize: 9 }} /></span>
+                </span>
+                <div className="feed__body">
+                  <p><b>{f.who}</b> {f.text}</p>
+                  <span>{f.time}</span>
+                </div>
+              </div>
+            ))}
+            {feed.length === 0 && <div className="dash-empty">{isLoading ? t("dashboard.loading") : t("dashboard.noActivity")}</div>}
+          </div>
+        </section>
+
+        {/* quick actions + top content */}
+        <section className="card dash-side">
+          <div className="card__head"><h3 className="card__title">{t("dashboard.quickActions")}</h3></div>
+          <div className="qa">
+            {quickActions.map((q) => (
+              <Link key={q.to} to={q.to} className={"qa__btn qa__btn--" + q.tone}>
+                <span className="qa__ic"><FontAwesomeIcon icon={q.icon} /></span>
+                <span className="qa__lbl">{q.label}</span>
+                {q.badge
+                  ? <span className="qa__badge">{q.badge}</span>
+                  : <FontAwesomeIcon icon={faArrowRight} className="qa__arrow" />}
+              </Link>
+            ))}
+          </div>
+          <div className="card__divlabel">{t("dashboard.topContent")}</div>
+          <div className="topc">
+            {(a?.topContent ?? []).map((c, i) => (
+              <Link key={c.id} to={`/articles/${c.slug}`} className="topc__row">
+                <span className="topc__rank">{i + 1}</span>
+                <div className="topc__body">
+                  <p>{c.title}</p>
+                  <span>{c.category ?? t("dashboard.uncategorized")}</span>
+                </div>
+                <span className="topc__views">{fmtK(c.views)}</span>
+              </Link>
+            ))}
+            {a && a.topContent.length === 0 && <div className="dash-empty">{t("dashboard.noContent")}</div>}
+          </div>
+        </section>
       </div>
     </div>
   );

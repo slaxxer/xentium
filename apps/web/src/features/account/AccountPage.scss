@@ -100,7 +100,7 @@
 
 /* ── Card ───────────────────────────────────────────── */
 .account-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
   padding: var(--sp-6);
@@ -148,15 +148,15 @@
 .account-input {
   width: 100%;
   padding: var(--sp-3) var(--sp-3);
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: var(--input-radius);
-  color: var(--c-fg);
+  color: var(--input-fg);
   font-size: var(--fs-sm);
   font-family: inherit;
   transition: border-color 0.15s;
 
-  &:focus { outline: none; border-color: var(--c-accent); }
+  &:focus { outline: none; border-color: var(--input-border-focus); }
 
   &[readonly] {
     background: var(--c-bg);
@@ -175,16 +175,16 @@
   appearance: none;
   width: 100%;
   padding: var(--sp-2) var(--sp-3);
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: var(--input-radius);
-  color: var(--c-fg);
+  color: var(--input-fg);
   font-size: var(--fs-sm);
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.15s;
 
-  &:focus { outline: none; border-color: var(--c-accent); }
+  &:focus { outline: none; border-color: var(--input-border-focus); }
 }
 
 .account-hint {
@@ -351,7 +351,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: #fff;
+    background: var(--c-on-accent);
     transition: transform 0.2s;
 
     .account-toggle__btn--on & { transform: translateX(18px); }
@@ -398,49 +398,7 @@
 }
 
 /* ── Shared btn helpers (also used by profile/wall) ─── */
-.btn-primary {
-  background: var(--c-accent);
-  color: var(--c-on-accent);
-  border: none;
-  border-radius: var(--btn-radius);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  padding: var(--sp-2) var(--sp-5);
-
-  &:hover:not(:disabled) { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-}
-
-.btn-danger {
-  background: var(--c-danger);
-  color: #fff;
-  border: none;
-  border-radius: var(--btn-radius);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  padding: var(--sp-2) var(--sp-5);
-
-  &:hover:not(:disabled) { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--c-fg-muted);
-  border: 1px solid var(--c-border);
-  border-radius: var(--btn-radius);
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-
-  &:hover:not(:disabled) {
-    border-color: var(--c-accent-glow);
-    color: var(--c-accent);
-  }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
-}
+// .btn-primary / .btn-danger / .btn-ghost → styles/buttons.scss (shared, token-driven).
 
 .btn-sm { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
 
@@ -464,7 +422,7 @@
   justify-content: center;
   font-size: 22px;
   font-weight: 700;
-  color: #fff;
+  color: var(--c-on-accent);
   flex-shrink: 0;
 }
 
@@ -501,7 +459,7 @@
 }
 
 .security-accordion {
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
   overflow: hidden;

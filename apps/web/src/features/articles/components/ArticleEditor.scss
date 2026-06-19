@@ -6,7 +6,7 @@
   flex-wrap: wrap;
   gap: 0;
   padding: 7px 14px;
-  background: var(--c-card);
+  background: var(--card-bg);
   border-bottom: 1px solid var(--c-border);
   flex-shrink: 0;
 
@@ -81,6 +81,14 @@
   h2 { font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; }
   h3 { font-size: 1.2rem; font-weight: 700; }
   ul, ol { padding-left: 1.5em; }
+
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: var(--radius-sm, 8px);
+  }
+  mark { background: var(--c-warn, #fbbf24); color: inherit; padding: 0 2px; border-radius: 2px; }
+  a { color: var(--c-accent); text-decoration: underline; }
   blockquote {
     border-left: 3px solid var(--c-accent);
     padding-left: 1em;
@@ -88,7 +96,7 @@
     font-style: italic;
   }
   pre {
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-sm);
     padding: 12px;

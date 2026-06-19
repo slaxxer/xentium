@@ -10,8 +10,8 @@
   top: 0;
   z-index: 100;
   height: var(--nav-height);
-  background: color-mix(in srgb, var(--c-surface) 88%, transparent);
-  border-bottom: 1px solid var(--c-border);
+  background: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border-color);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 
@@ -42,7 +42,7 @@
     height: 34px;
     border-radius: var(--radius-md);
     background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-    color: #fff;
+    color: var(--c-on-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -56,7 +56,7 @@
     font-weight: 700;
     font-size: 22px;
     letter-spacing: -0.02em;
-    color: var(--c-fg);
+    color: var(--nav-fg);
   }
 
   /* Nav links — Hearth pills */
@@ -78,12 +78,12 @@
       font-family: var(--font-display);
       font-size: 14px;
       font-weight: 500;
-      color: var(--c-fg-muted);
+      color: var(--nav-fg-muted);
       text-decoration: none;
       transition: color 0.15s, background 0.15s;
 
-      &:hover { color: var(--c-fg); background: var(--c-accent-soft); }
-      &.active { color: var(--c-accent); font-weight: 600; background: var(--c-accent-soft); }
+      &:hover { color: var(--nav-fg); background: var(--nav-active-bg); }
+      &.active { color: var(--nav-active); font-weight: 600; background: var(--nav-active-bg); }
     }
   }
 
@@ -98,8 +98,11 @@
   gap: 7px;
   height: 34px;
   padding: 0 12px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
+  // The search box is a form field — drive it from the Field component tokens so
+  // the Style Editor's Field section (scoped to the navbar) actually styles it.
+  // Radius stays a pill by design; the field colour tokens are what's editable.
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: 99px;
   transition: width .2s ease, border-color .15s, background .15s;
   width: 130px;
@@ -108,8 +111,8 @@
 
   &--open {
     width: 260px;
-    border-color: var(--c-accent-glow);
-    background: var(--c-card);
+    border-color: var(--input-border-focus);
+    background: var(--input-bg);
   }
 
   &__icon {
@@ -124,7 +127,7 @@
     border: none;
     outline: none;
     font-size: var(--fs-sm);
-    color: var(--c-fg);
+    color: var(--input-fg);
     font-family: inherit;
     min-width: 0;
 
@@ -171,15 +174,15 @@
     width: 40px;
     height: 40px;
     border-radius: var(--radius-md);
-    background: var(--input-bg);
-    color: var(--c-fg-muted);
+    background: var(--nav-icon-btn-bg); // navbar chrome — its own tokens, NOT the Field token
+    color: var(--nav-fg-muted);
     font-size: 15px;
     transition: color 0.15s, background 0.15s;
     flex-shrink: 0;
 
-    &:hover { color: var(--c-fg); background: var(--c-accent-soft); }
+    &:hover { color: var(--nav-fg); background: var(--nav-icon-btn-hover-bg); }
 
-    &.active { color: var(--c-accent); }
+    &.active { color: var(--nav-active); }
 
     /* Bell — will show badge when notifications land */
     &--bell {
@@ -222,8 +225,8 @@
 
   &__login-btn {
     padding: 7px 16px;
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-    color: #fff;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
     border-radius: var(--btn-radius);
     font-size: var(--fs-sm);
     font-weight: 700;
@@ -270,12 +273,12 @@
     position: absolute;
     top: calc(100% + 10px);
     right: 0;
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
+    background: var(--menu-bg);
+    border: 1px solid var(--menu-border-color);
+    border-radius: var(--menu-radius);
     overflow: hidden;
     min-width: 220px;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-pop);
     z-index: 200;
     animation: dropdownIn 0.12s ease;
   }
@@ -353,6 +356,7 @@
 .app-main {
   flex: 1;
   width: 100%;
+  background: var(--content-bg);   // content region scope root (ADR 0003); = --c-bg by default
 }
 
 /* ── Footer ─────────────────────────────────────────── */
@@ -368,6 +372,19 @@
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
+
+  &__links {
+    display: flex;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+  }
+
+  &__link {
+    color: var(--c-fg-muted);
+    text-decoration: none;
+
+    &:hover { color: var(--c-fg); }
+  }
 }
 
 @keyframes online-pulse {
