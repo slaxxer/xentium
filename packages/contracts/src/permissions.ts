@@ -45,6 +45,10 @@ export const CorePermissions = {
   PROFILE_COMMENT_DELETE_WALL: "profile.comment.delete.wall",
   PROFILE_COMMENT_DELETE_ANY:  "profile.comment.delete.any",
 
+  // Pages (§page-system — custom static pages: TOS, privacy, imprint, …)
+  PAGE_MANAGE:  "page.manage",
+  PAGE_PUBLISH: "page.publish",
+
   // Plugins
   PLUGIN_INSTALL: "plugin.install",
   PLUGIN_ENABLE: "plugin.enable",

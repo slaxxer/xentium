@@ -71,8 +71,8 @@
   }
 
   &__new {
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-    color: var(--c-on-accent);
+    background: var(--btn-bg);
+    color: var(--btn-fg);
     padding: 7px 16px;
     border-radius: var(--radius-sm);
     font-size: 13px;
@@ -90,7 +90,7 @@
   }
 
   &__pill {
-    background: var(--c-card);
+    background: var(--card-bg);
     color: var(--c-fg-muted);
     border: 1px solid var(--c-border);
     padding: 6px 16px;
@@ -109,7 +109,7 @@
     &--draft.is-active {
       background: var(--c-warn);
       border-color: var(--c-warn);
-      color: #fff;
+      color: var(--c-on-accent);
     }
   }
 
@@ -142,7 +142,7 @@
     gap: 1rem;
     color: var(--c-fg-muted);
     button {
-      background: var(--c-card);
+      background: var(--card-bg);
       border: 1px solid var(--c-border);
       color: var(--c-fg);
       padding: 7px 14px;
@@ -159,7 +159,7 @@
 .ac {
   display: flex;
   flex-direction: column;
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -169,7 +169,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-card);
     border-color: var(--c-accent);
   }
 
@@ -223,7 +223,7 @@
 .ar {
   display: grid;
   grid-template-columns: 120px 1fr;
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -233,7 +233,7 @@
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-card);
     border-color: var(--c-accent);
   }
 

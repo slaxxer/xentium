@@ -4,6 +4,7 @@ import { registerCorePermissions } from './bootstrap/registerCorePermissions.js'
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
+import { initAppearanceSse, closeAppearanceSse } from './modules/appearance/appearance.sse.js';
 import { env } from './config/env.js';
 
 /**
@@ -40,15 +41,22 @@ export async function boot() {
 
   const app = createApp();
 
+  // Live style sync: subscribe to the cross-process appearance channel so theme
+  // changes made on any instance push to this instance's SSE clients.
+  initAppearanceSse();
+
   const server = app.listen(env.PORT, () => {
     console.log(`API running on :${env.PORT} (${env.NODE_ENV})`);
   });
 
   // Graceful shutdown
-  const shutdown = () => {
+  const shutdown = async () => {
     console.log('Shutting down...');
+    // End open SSE streams first — otherwise their long-lived connections keep
+    // server.close() from ever completing.
+    await closeAppearanceSse();
     server.close(() => process.exit(0));
   };
-  process.on('SIGTERM', shutdown);
-  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', () => void shutdown());
+  process.on('SIGINT', () => void shutdown());
 }

@@ -33,7 +33,7 @@
 /* ---- HERO ---- */
 .up-hero {
   position: relative;
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   overflow: hidden;
@@ -101,8 +101,8 @@
   &--primary { background: var(--c-accent); color: var(--c-on-accent); box-shadow: 0 6px 16px var(--c-accent-glow); }
   &--primary:hover { filter: brightness(1.07); }
   &--warn   { background: color-mix(in srgb, var(--c-warn) 16%, transparent); color: var(--c-warn); }
-  &--warn:hover { background: var(--c-warn); color: #fff; }
-  &--danger { background: var(--c-danger); color: #fff; box-shadow: 0 6px 16px var(--c-danger-soft); }
+  &--warn:hover { background: var(--c-warn); color: var(--c-on-accent); }
+  &--danger { background: var(--c-danger); color: var(--c-on-accent); box-shadow: 0 6px 16px var(--c-danger-soft); }
   &--danger:hover { filter: brightness(1.06); }
   &:disabled { opacity: 0.42; cursor: not-allowed; box-shadow: none; filter: none; }
 }
@@ -114,14 +114,14 @@
   border-radius: var(--radius-lg); padding: 14px 18px;
   font-size: 13.5px; font-weight: 700; color: var(--c-fg);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-warn) 30%, transparent);
-  .ic { width: 30px; height: 30px; border-radius: var(--radius-sm); background: var(--c-warn); color: #fff; display: flex; align-items: center; justify-content: center; flex: none; }
+  .ic { width: 30px; height: 30px; border-radius: var(--radius-sm); background: var(--c-warn); color: var(--c-on-accent); display: flex; align-items: center; justify-content: center; flex: none; }
   span { color: var(--c-fg-muted); font-weight: 600; }
 }
 
 /* ---- STAT STRIP ---- */
 .up-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
 .up-stat {
-  background: var(--c-card); border-radius: var(--radius-lg); padding: 18px 20px;
+  background: var(--card-bg); border-radius: var(--radius-lg); padding: 18px 20px;
   box-shadow: var(--shadow-card); display: flex; align-items: center; gap: 14px;
   &__ic {
     width: 44px; height: 44px; border-radius: var(--radius-md); flex: none;
@@ -138,7 +138,7 @@
 /* ---- CARDS ---- */
 .up-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 .up-card {
-  background: var(--c-card); border-radius: var(--radius-xl);
+  background: var(--card-bg); border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card); overflow: hidden;
   &__head {
     display: flex; align-items: center; gap: 11px; padding: 20px 24px 14px;
@@ -167,7 +167,7 @@
   span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 .up-copy {
-  border: none; background: var(--c-card); color: var(--c-fg-subtle);
+  border: none; background: var(--card-bg); color: var(--c-fg-subtle);
   width: 24px; height: 24px; border-radius: 7px; cursor: pointer; font-size: 12px;
   display: flex; align-items: center; justify-content: center; flex: none; transition: color 0.13s, background 0.13s;
   &:hover { color: var(--c-accent); background: var(--c-accent-soft); }
@@ -185,9 +185,9 @@
   &__name { flex: 1; font-family: var(--font-display); font-size: 14.5px; font-weight: 600; color: var(--c-fg); }
 }
 .up-check {
-  width: 22px; height: 22px; border-radius: 8px; flex: none; background: var(--c-card);
+  width: 22px; height: 22px; border-radius: 8px; flex: none; background: var(--card-bg);
   box-shadow: inset 0 0 0 1.5px var(--c-border-hi); display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 13px; transition: box-shadow 0.13s, background 0.13s;
+  color: var(--c-on-accent); font-size: 13px; transition: box-shadow 0.13s, background 0.13s;
   .up-grow.on & { background: var(--c-accent); box-shadow: none; }
 }
 .up-gdot { width: 11px; height: 11px; border-radius: 50%; flex: none; }

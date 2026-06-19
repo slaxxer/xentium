@@ -1,0 +1,109 @@
+/* Maintenance split screen — adapted from the redesign reference to the app's
+   --c-* tokens. Left: branded status + progress. Right: staff sign-in. */
+.mt {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  min-height: 100svh;
+
+  &-left {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(36px, 5vw, 56px);
+    color: var(--c-on-accent);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(150deg, var(--c-accent), color-mix(in srgb, var(--c-accent2) 75%, var(--c-accent)));
+
+    &::after {
+      content: "";
+      position: absolute;
+      width: 440px;
+      height: 440px;
+      right: -12%;
+      top: -18%;
+      border-radius: 50%;
+      background: radial-gradient(closest-side, rgba(255, 255, 255, 0.16), transparent 70%);
+    }
+  }
+
+  &-brand { position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 11px; align-self: flex-start; }
+  &-logomark {
+    width: 36px; height: 36px; border-radius: 11px; flex: none; background: rgba(255, 255, 255, 0.16);
+    display: flex; align-items: center; justify-content: center;
+  }
+  &-wordmark { font-family: var(--font-display); font-weight: 700; font-size: 19px; letter-spacing: -0.02em; }
+
+  &-status {
+    position: relative; z-index: 2; display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+    margin: 34px 0 18px; height: 30px; padding: 0 14px; border-radius: var(--radius-pill);
+    background: rgba(255, 255, 255, 0.18); font-weight: 800; font-size: 12.5px; white-space: nowrap;
+
+    i { width: 8px; height: 8px; border-radius: 50%; background: var(--c-on-accent); flex: none; animation: mt-pulse 2.2s ease-out infinite; }
+  }
+
+  &-h1 { position: relative; z-index: 2; font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 3.4vw, 40px); letter-spacing: -0.025em; line-height: 1.06; margin: 0 0 14px; }
+  &-lead { position: relative; z-index: 2; font-weight: 600; font-size: 15.5px; line-height: 1.55; opacity: 0.92; max-width: 40ch; margin: 0 0 32px; }
+
+  &-meta { position: relative; z-index: 2; display: flex; gap: 34px; }
+  &-meta__n { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; }
+  &-meta__l { font-weight: 700; font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+  &-progwrap { position: relative; z-index: 2; margin-top: 26px; max-width: 340px; }
+  &-prog { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.22); overflow: hidden; }
+  &-prog__fill { height: 100%; border-radius: 99px; background: var(--c-on-accent); transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+  &-progwrap span { display: block; margin-top: 9px; font-weight: 700; font-size: 12px; opacity: 0.85; }
+
+  &-right { display: flex; align-items: center; justify-content: center; padding: clamp(28px, 4vw, 40px); background: var(--c-bg); }
+  &-login { width: min(360px, 100%); }
+  &-login__head { text-align: center; margin-bottom: 20px; }
+  &-login__logo {
+    width: 48px; height: 48px; border-radius: 14px; margin: 0 auto 13px; color: var(--c-on-accent);
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2)); box-shadow: var(--shadow-pop);
+  }
+  &-login__head h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin: 0; color: var(--c-fg); }
+  &-login__head p { font-size: 13px; font-weight: 600; color: var(--c-fg-muted); margin: 7px 0 0; line-height: 1.5; }
+
+  &-notice {
+    background: var(--c-warn-soft, rgba(251, 191, 36, 0.14)); color: var(--c-fg); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: 10px 13px; font-size: 13px; font-weight: 700; margin-bottom: 14px;
+    &--error { background: var(--c-danger-soft); }
+  }
+
+  &-field { margin-bottom: 12px; }
+  &-field label { display: block; font-family: var(--font-display); font-weight: 600; font-size: 12.5px; margin-bottom: 6px; color: var(--c-fg); }
+  &-inputwrap { position: relative; display: flex; align-items: center; }
+  &-inputwrap .ic { position: absolute; left: 13px; color: var(--c-fg-muted); pointer-events: none; }
+  &-field input {
+    width: 100%; height: 46px; padding: 0 14px 0 40px; border-radius: var(--input-radius); border: 1px solid var(--input-border-color);
+    background: var(--input-bg); color: var(--input-fg); font-family: var(--font-body); font-weight: 700; font-size: 14px; outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  &-field input::placeholder { color: var(--c-fg-muted); font-weight: 600; }
+  &-field input:focus { border-color: var(--input-border-focus); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+
+  &-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: none; cursor: pointer;
+    font-family: var(--font-display); font-weight: 600; font-size: 15.5px; height: 50px; border-radius: var(--radius-pill);
+    background: var(--c-accent); color: var(--c-on-accent, #fff); box-shadow: var(--shadow-pop);
+    transition: transform 0.12s, filter 0.15s; margin-top: 4px;
+    &:hover { filter: brightness(1.06); }
+    &:active { transform: translateY(1px); }
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+  &-login__foot { text-align: center; font-size: 12.5px; font-weight: 700; color: var(--c-fg-muted); margin-top: 16px; }
+}
+
+@keyframes mt-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.5); }
+  70%, 100% { box-shadow: 0 0 0 7px transparent; }
+}
+
+@media (max-width: 760px) {
+  .mt { grid-template-columns: 1fr; }
+  .mt-left { min-height: auto; padding-bottom: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mt-status i { animation: none; }
+}

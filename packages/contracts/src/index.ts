@@ -6,6 +6,7 @@ export * from './entitlement.js';
 export * from './marketplace.js';
 export * from './appearance.js';
 export * from './tokens.js';
+export * from './pages.js';
 
 export type ThemeMode = 'light' | 'dark';
 

@@ -15,6 +15,14 @@ import { accountRouter } from '../modules/account/account.routes.js';
 import { installerRouter } from "../modules/installer/installer.routes.js";
 import { articlesRouter, articleCommentsRouter } from "../modules/articles/article.routes.js";
 import { articleCategoriesRouter } from "../modules/article-categories/article-category.routes.js";
+import { pagesRouter, pagesAdminRouter } from "../modules/pages/page.routes.js";
+import { siteRouter } from "../modules/site/site.routes.js";
+import { siteService, type FeatureKey } from "../modules/site/site.service.js";
+import { requireFeature } from "../shared/middleware/requireFeature.js";
+import { maintenanceRouter } from "../modules/maintenance/maintenance.routes.js";
+import { maintenanceGuard } from "../shared/middleware/maintenanceGuard.js";
+import { activityRouter, activityAdminRouter } from "../modules/activity/activity.routes.js";
+import { acpActivityLogger } from "../shared/middleware/acpActivityLogger.js";
 import { adminRouter } from "../modules/admin/admin.routes.js";
 import { notificationRouter } from "../modules/notifications/notification.routes.js";
 import { onlineRouter }       from "../modules/online/online.routes.js";
@@ -32,7 +40,7 @@ import { extractedDir } from "../core/plugin-engine/plugin-engine.js";
 import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 
-const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'groups', 'forum-attachments', path.join('themes', 'logo')];
+const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', path.join('themes', 'logo')];
 
 export function createApp(): Express {
   const app = express();
@@ -149,19 +157,28 @@ export function createApp(): Express {
   });
 
   app.use(installGuard);
+  app.use(maintenanceGuard);
 
   app.use("/api/install", installerRouter);
 
   app.use("/api/auth", authRouter);
+  app.use("/api/maintenance", maintenanceRouter);
 
   app.use("/api/users/", usersRouter);
   app.use("/api/account", accountRouter);
-  app.use("/api/articles", articlesRouter);
-  app.use("/api/article-comments", articleCommentsRouter);
-  app.use("/api/article-categories", articleCategoriesRouter);
+  app.use("/api/articles", requireFeature("articles"), articlesRouter);
+  app.use("/api/article-comments", requireFeature("articles"), articleCommentsRouter);
+  app.use("/api/article-categories", requireFeature("articles"), articleCategoriesRouter);
+  app.use("/api/pages", pagesRouter);
+  // ACP action logging wraps every /api/admin/* router below it.
+  app.use("/api/admin", acpActivityLogger);
   app.use("/api/admin", adminRouter);
+  app.use("/api/admin/activity", activityAdminRouter);
+  app.use("/api/admin/pages", pagesAdminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);
+  app.use("/api/activity",      activityRouter);
+  app.use("/api/site",          siteRouter);
   app.use("/api/members",       membersRouter);
   app.use("/api/home",          homeRouter);
   app.use("/api/search", optionalAuth, searchRouter);
@@ -186,9 +203,19 @@ export function createApp(): Express {
         select: {
           id: true, label: true, url: true, position: true,
           isActive: true, isSystem: true, openInNewTab: true, visibility: true,
+          placement: true,
         },
       });
-      res.json(items);
+      // Hide core section links whose feature flag is off (Home/Articles/Members).
+      const config = await siteService.getConfig();
+      const urlFeature: Record<string, FeatureKey> = {
+        "/": "home", "/articles": "articles", "/members": "members",
+      };
+      const visible = items.filter((i) => {
+        const feature = urlFeature[i.url];
+        return !feature || config.features[feature];
+      });
+      res.json(visible);
     } catch (err) {
       next(err);
     }

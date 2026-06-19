@@ -96,7 +96,7 @@ export function UploadPage() {
         <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
           {STEP_KEYS.map((_s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", flex: i < STEP_KEYS.length - 1 ? 1 : undefined }}>
-              <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "#fff" : "var(--c-fg-muted)" }}>
+              <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "var(--c-on-accent)" : "var(--c-fg-muted)" }}>
                 {i < step ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
               </div>
               {i < STEP_KEYS.length - 1 && (

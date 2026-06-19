@@ -21,7 +21,7 @@
     align-items: center;
     gap: 2px;
     padding: 7px 10px;
-    background: var(--c-card);
+    background: var(--card-bg);
     border-bottom: 1px solid var(--c-border);
   }
 
@@ -100,7 +100,7 @@
     code {
       font-family: var(--ff-mono, monospace);
       font-size: 0.875em;
-      background: var(--c-card);
+      background: var(--card-bg);
       border: 1px solid var(--c-border);
       border-radius: 3px;
       padding: 1px 4px;
@@ -119,7 +119,7 @@
       strong { font-style: normal; color: var(--c-fg); }
     }
     pre {
-      background: var(--c-card);
+      background: var(--card-bg);
       border: 1px solid var(--c-border);
       border-radius: var(--radius-sm);
       padding: 8px 12px;
@@ -184,10 +184,10 @@
 }
 
 .mini-editor__mention-list {
-  background: var(--c-card);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border-color);
+  border-radius: var(--menu-radius);
+  box-shadow: var(--shadow-pop);
   list-style: none;
   margin: 0;
   padding: 4px;

@@ -72,7 +72,7 @@
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    color: #fff;
+                    color: var(--c-on-accent);
                     box-shadow: 0 8px 20px var(--accent-glow);
                 }
 
@@ -189,19 +189,19 @@
                 &.completed {
                     background: var(--success);
                     border-color: var(--success);
-                    color: #fff;
+                    color: var(--c-on-accent);
                 }
                 &.active {
                     background: var(--accent);
                     border-color: var(--accent);
-                    color: #fff;
+                    color: var(--c-on-accent);
                     box-shadow: 0 0 20px var(--accent-glow);
                     animation: pulse-dot 2s ease-in-out infinite;
                 }
                 &.error-step {
                     background: var(--error);
                     border-color: var(--error);
-                    color: #fff;
+                    color: var(--c-on-accent);
                 }
             }
 
@@ -565,7 +565,7 @@
                 &.primary-link {
                     background: var(--accent);
                     border-color: var(--accent);
-                    color: #fff;
+                    color: var(--c-on-accent);
 
                     &:hover {
                         background: var(--accent-hover);
@@ -639,7 +639,7 @@
 
         &.btn-next {
             background: var(--accent);
-            color: #fff;
+            color: var(--c-on-accent);
             box-shadow: 0 4px 14px var(--accent-glow);
 
             &:hover {
@@ -655,7 +655,7 @@
 
         &.btn-install {
             background: var(--success);
-            color: #fff;
+            color: var(--c-on-accent);
             box-shadow: 0 4px 14px var(--success-bg);
 
             &:hover {

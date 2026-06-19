@@ -5,7 +5,7 @@ import { NodevoError } from '../../shared/errors/NodevoError';
 import { NEC } from '../../shared/errors/nec';
 import type { StorageProvider } from './StorageProvider';
 
-const ALLOWED = ['avatars', 'articles', 'groups', path.join('themes', 'logo')];
+const ALLOWED = ['avatars', 'articles', 'pages', 'groups', path.join('themes', 'logo')];
 const BASE = path.resolve(env.UPLOAD_DIR);
 
 function resolveSafe(subdir: string, filename = ''): string {

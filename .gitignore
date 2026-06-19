@@ -2,6 +2,7 @@ node_modules/
 dist/
 .turbo/
 .vite/
+*.tsbuildinfo
 .env
 .env.*
 !*.example

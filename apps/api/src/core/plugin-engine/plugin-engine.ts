@@ -5,7 +5,7 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { validateManifest, type PluginManifest } from "./manifest-validator.js";
-import { validateMigrationPairs, runUpMigrations, runDownMigrations } from "./migration-runner.js";
+import { validateMigrationPairs, runUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { isPluginEntitled } from "../license-engine/license-engine.js";
@@ -89,6 +89,18 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   await fs.rm(extractDir, { recursive: true, force: true });
   await fs.mkdir(extractDir, { recursive: true });
   zip.extractAllTo(extractDir, /* overwrite */ true);
+
+  // Self-heal orphaned schema: if this plugin has NO migration tracking yet a
+  // prior messy install/uninstall left its tables behind, the up migrations would
+  // collide ("relation already exists"). With zero tracked migrations the engine
+  // owns no live data for this plugin, so it's safe to clear any leftovers first.
+  // On a clean DB this is a harmless no-op (down migrations use DROP ... IF EXISTS).
+  if (manifest.migrations.length) {
+    const tracked = await prisma.nodevoPluginMigration.count({ where: { pluginId: manifest.id } });
+    if (tracked === 0) {
+      await forceCleanupSchema(zip, manifest);
+    }
+  }
 
   // Run up migrations
   await runUpMigrations(zip, manifest);
@@ -199,10 +211,16 @@ export async function uninstallPlugin(pluginId: string, removeData: boolean): Pr
         const zip      = new AdmZip(pkgBuffer);
         const manifest = validateManifest(record.manifest) as PluginManifest;
         await runDownMigrations(zip, manifest);
+        // Belt-and-suspenders: best-effort drop anything a partial/failed down
+        // migration may have left behind, so no orphaned schema survives.
+        await forceCleanupSchema(zip, manifest);
       } catch (err) {
         logger.warn({ pluginId, err }, "Down migration failed during uninstall — continuing");
       }
     }
+    // Always purge residual migration tracking so a future reinstall starts clean
+    // even if a down migration above failed mid-way.
+    await prisma.nodevoPluginMigration.deleteMany({ where: { pluginId } });
   }
 
   // Delete package file + extracted dir

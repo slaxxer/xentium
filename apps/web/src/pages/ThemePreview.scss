@@ -1,0 +1,99 @@
+// ── /__theme-preview specimen (ADR-0003 Phase 2) ────────────────────────────────
+// Deterministic specimen surface for the Style Editor's iframe spatial selector.
+// Every block consumes a region/component token so editing a token visibly moves
+// the matching specimen. Layout only — no new colour decisions live here.
+
+.tp-main {
+  // Region root for the `content` scope is `.app-main`; we add it alongside so
+  // scoped content overrides from buildCSS resolve here too.
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-8) var(--sp-6);
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--sp-6);
+  align-items: start;
+}
+
+.tp-rail {
+  background: var(--aside-bg);
+  border: 1px solid var(--aside-border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  position: sticky;
+  top: var(--sp-6);
+}
+.tp-rail__h { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); color: var(--c-fg); }
+.tp-rail__row { font-size: var(--fs-sm); color: var(--c-fg-muted); }
+
+.tp-content { display: flex; flex-direction: column; gap: var(--sp-8); min-width: 0; }
+
+.tp-sec__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--fs-lg);
+  color: var(--c-fg);
+  margin-bottom: var(--sp-3);
+}
+.tp-row { display: flex; flex-wrap: wrap; gap: var(--sp-4); align-items: flex-start; }
+
+// Card specimen — consumes the full card facet set.
+.tp-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--sp-5);
+  min-width: 220px;
+  flex: 1;
+}
+.tp-card__h { font-family: var(--font-display); font-weight: 700; color: var(--c-fg); margin-bottom: var(--sp-2); }
+.tp-card__p { font-size: var(--fs-sm); color: var(--c-fg-muted); line-height: 1.6; }
+
+// Field specimen — consumes the input facet set.
+.tp-fields { display: flex; flex-direction: column; gap: var(--sp-3); max-width: 360px; }
+.tp-field {
+  width: 100%;
+  padding: var(--sp-3);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
+  border-radius: var(--input-radius);
+  color: var(--input-fg);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  outline: none;
+  &:focus { border-color: var(--input-border-focus); }
+}
+textarea.tp-field { resize: vertical; min-height: 72px; }
+
+// Menu specimen — rendered statically open so the menu tokens are always visible.
+.tp-menu {
+  background: var(--menu-bg);
+  border: 1px solid var(--menu-border-color);
+  border-radius: var(--menu-radius);
+  box-shadow: var(--shadow-pop);
+  padding: 6px;
+  min-width: 200px;
+}
+.tp-menu__item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: var(--radius-md);
+  color: var(--c-fg);
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: var(--fs-sm);
+  background: none;
+  text-align: left;
+  &:hover { background: var(--menu-item-hover-bg); }
+}
+
+@media (max-width: 860px) {
+  .tp-main { grid-template-columns: 1fr; }
+  .tp-rail { position: static; }
+}

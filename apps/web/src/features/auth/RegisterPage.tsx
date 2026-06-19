@@ -203,6 +203,10 @@ export function RegisterPage() {
   const [pinEnabled, setPinEnabled] = useState(false);
   const [pin, setPin] = useState("");
 
+  // Terms agreement — the page assigned to the `terms` slot, if any (§page-system).
+  const [termsPage, setTermsPage] = useState<{ slug: string; title: string } | null>(null);
+  const [agreedTerms, setAgreedTerms] = useState(false);
+
   // Step 3
   const [emailCode, setEmailCode] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
@@ -215,6 +219,13 @@ export function RegisterPage() {
     api
       .get<ProfileFieldDef[]>("/users/profile-fields")
       .then((fields) => setProfileFields(fields.filter((f) => f.showOnRegistration)))
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    api
+      .get<{ terms: { slug: string; title: string } | null }>("/pages/slots")
+      .then((slots) => setTermsPage(slots.terms))
       .catch(() => {});
   }, []);
 
@@ -322,6 +333,7 @@ export function RegisterPage() {
     if (password.length < 8) e.password = t("register.pwMin");
     if (password !== confirm) e.confirm = t("register.pwMismatch");
     if (pinEnabled && pin.length !== 4) e.pin = t("register.pinIncomplete");
+    if (termsPage && !agreedTerms) e.terms = t("register.termsRequired");
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -632,6 +644,26 @@ export function RegisterPage() {
                         {t("register.pinHint")}
                       </p>
                     </>
+                  )}
+
+                  {termsPage && (
+                    <div className="rw-field" style={{ marginTop: 16 }}>
+                      <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "var(--c-fg)", cursor: "pointer" }}>
+                        <input
+                          type="checkbox"
+                          checked={agreedTerms}
+                          onChange={(e) => setAgreedTerms(e.target.checked)}
+                          style={{ marginTop: 2 }}
+                        />
+                        <span>
+                          {t("register.termsAgree")}{" "}
+                          <Link to={`/p/${termsPage.slug}`} target="_blank" rel="noreferrer">
+                            {termsPage.title}
+                          </Link>
+                        </span>
+                      </label>
+                      {errors.terms && <p className="rw-error">{errors.terms}</p>}
+                    </div>
                   )}
                 </>
               )}

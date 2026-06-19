@@ -88,6 +88,47 @@ export async function runDownMigrations(
   }
 }
 
+/**
+ * Best-effort cleanup of any schema a plugin's migrations create, by running
+ * EVERY .down.sql in reverse order regardless of tracking, swallowing per-statement
+ * errors (objects may legitimately not exist).
+ *
+ * Used to recover from orphaned state — schema left behind by a prior messy
+ * install/uninstall with no migration tracking — so a fresh install's up
+ * migrations apply cleanly. Does NOT touch the tracking table; the caller is
+ * responsible for ensuring no tracking rows exist (i.e. this is genuinely orphaned).
+ * Because the shipped down migrations use `DROP ... IF EXISTS`, running this on a
+ * clean database is a harmless no-op.
+ */
+export async function forceCleanupSchema(
+  zip:      AdmZip,
+  manifest: PluginManifest,
+): Promise<void> {
+  const { migrations } = manifest;
+  if (!migrations.length) return;
+
+  for (const name of [...migrations].reverse()) {
+    const entry = zip.getEntry(`migrations/${name}.down.sql`);
+    if (!entry) continue;
+
+    const sql = entry.getData().toString("utf8");
+    try {
+      validateMigrationSql(sql, `migrations/${name}.down.sql`);
+    } catch {
+      continue; // skip anything that isn't valid DDL — never run untrusted SQL
+    }
+
+    // Run each statement on its own so one failure doesn't abort the rest.
+    for (const stmt of splitSqlStatements(sql)) {
+      try {
+        await prisma.$executeRawUnsafe(stmt);
+      } catch {
+        // Expected when the object doesn't exist — this is best-effort cleanup.
+      }
+    }
+  }
+}
+
 /** Validate that every .up.sql listed in migrations has a matching .down.sql. */
 export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): void {
   for (const name of manifest.migrations) {

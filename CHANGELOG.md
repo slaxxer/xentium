@@ -139,3 +139,34 @@ React 19, PostgreSQL 17, Prisma 7, Redis/BullMQ). Highlights:
   ModCanvas; appearance/style editor + style packs + nav manager + branding.
 - Plugin engine + license engine + marketplace; official **Forum** plugin.
 - NEC error system, audit log, security-event telemetry, i18n.
+
+FINALIZED:
+
+Backend + contracts (scoped token foundation)
+- ScopedTokens/ScopedTokenSet in @nodevo/contracts; getTokens() returns sparse scope-keyed overrides, saveTokens()/restoreHistory() are scope-aware, PUT /tokens validates the nested shape; .nvstyle packs land in global.
+  No migration; legacy flat data and old history normalize to global.
+
+3a — registry-driven editor
+- Full StyleEditorPage rewrite: sparse scoped state, sidebar grouped Palette/Text/Feedback · Navbar/Content/Footer/Aside · Button/Card/Field/Menu · Branding/Custom CSS.
+- Region + component panels generated from TOKEN_REGISTRY; inherit↔override per row (sparse — edit writes to the bucket, "Reset" reverts, "Inherited" tag otherwise); scope picker for component tokens                    
+  (All/Navbar/Content/Footer/Aside → per-region overrides); structured controls (colour, radius slider, shadow presets).
+- Live preview points at /__theme-preview and injects scoped CSS (:root + per-region selectors).
+- All prior features preserved (mode, fonts, branding, custom-CSS console, live-sync, reset, autosave, history).
+
+3b — preview click-to-select + state preview
+- Capture-phase click listener on the iframe document (fires before ThemePreview's suppressor → reads the surface, navigation stays inert). Click a surface → opens its panel; clicking a component inside a region        
+  preselects that region's scope.
+- Section select → outlines + scrolls to the representative [data-group].
+- Preview-state toggle (Base/Hover/Focus) forces the state-only tokens (menu hover bg, field focus border) onto the specimen so they're editable.
+
+Verification: contracts build ✓, API typecheck ✓, web typecheck ✓, web build ✓, editor lint 0-errors. /__theme-preview confirmed rendering earlier.
+
+One caveat, stated plainly: the editor itself I could not exercise visually — it needs the full stack (API + migrated/seeded DB + ACP admin login), which isn't up. The cross-iframe click/scope logic is reasoned-through
+and compiles, but hasn't run against a live ACP. The /__theme-preview half was visually verified.
+
+Pre-existing, not mine: the 3 working-tree lint errors in DashCharts.tsx / DashboardPage.tsx / ProfileTab.tsx (prior session) still block a clean backbone:check.
+
+Note: the web dev server I spun up earlier is still detached on :5173 (serving /__theme-preview; the editor needs the API). Stop it with pkill -f vite when done.
+
+Want me to (a) bring up the full stack and verify the editor live, (b) fix those 3 pre-existing lint errors so backbone:check is clean, or (c) stop here? I haven't committed anything — say the word (with push/commit    
+permission) if you want this branched and committed.   
