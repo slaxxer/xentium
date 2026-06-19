@@ -25,7 +25,7 @@
 
 /* shared rail card */
 .hf-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 16px;
@@ -45,7 +45,7 @@
 
 /* ── me card ──────────────────────────────────────────── */
 .hf-mecard {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   padding-bottom: 18px;
@@ -107,7 +107,7 @@
 
 /* ── section nav ──────────────────────────────────────── */
 .hf-sidenav {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 10px;
@@ -141,7 +141,7 @@
 
 /* ── spaces ───────────────────────────────────────────── */
 .hf-spaces {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 16px 14px;
@@ -164,7 +164,7 @@
 .hf-feed { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
 
 .hf-composer {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 14px 16px;
@@ -202,7 +202,7 @@
   display: flex;
   gap: 8px;
   button {
-    background: var(--c-card);
+    background: var(--card-bg);
     box-shadow: var(--shadow-card);
     border-radius: var(--radius-pill);
     padding: 8px 16px;
@@ -217,7 +217,7 @@
 
 /* ── activity post ────────────────────────────────────── */
 .hf-post {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   padding: 18px;
@@ -253,7 +253,7 @@
 .hf-artcard {
   display: flex;
   gap: 14px;
-  background: var(--input-bg);
+  background: var(--card-bg); // it's a card — owned by the Card component, not the Field token
   border-radius: var(--radius-md);
   padding: 14px;
   margin-top: 14px;
@@ -288,7 +288,7 @@
   position: absolute;
   left: 8px; bottom: 8px;
   background: rgba(0, 0, 0, 0.32);
-  color: #fff;
+  color: var(--c-on-accent);
   font-weight: 700;
   font-size: 11px;
   padding: 3px 8px;
@@ -324,7 +324,7 @@
 }
 
 .hf-feed__empty {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 40px;
@@ -350,7 +350,7 @@
 /* ── right rail: online now ───────────────────────────── */
 .hf-onlinen {
   background: var(--c-success);
-  color: #fff;
+  color: var(--c-on-accent);
   font-weight: 800;
   font-size: 11px;
   padding: 2px 9px;
@@ -405,7 +405,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--input-bg);
+  background: var(--c-bg-hover); // neutral chip surface — decoupled from the Field token
   color: var(--c-fg);
   font-weight: 700;
   font-size: 12.5px;

@@ -14,8 +14,9 @@ const isDev = process.env.NODE_ENV !== "production";
 const licenseActivateLimiter = makeRateLimiter("license-activate", 60 * 60_000, isDev ? 1000 : 5); // §26: 5/hr
 
 // Dashboard + health
-adminRouter.get("/dashboard", adminGuard, adminController.dashboard);
-adminRouter.get("/health",    adminGuard, adminController.health);
+adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
+adminRouter.get("/dashboard/analytics", adminGuard, adminController.dashboardAnalytics);
+adminRouter.get("/health",              adminGuard, adminController.health);
 
 // Users
 adminRouter.get("/users", adminGuard, adminController.listUsers);

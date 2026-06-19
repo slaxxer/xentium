@@ -16,6 +16,8 @@
     "progression": "Progression",
     "articles": "Articles",
     "categories": "Categories",
+    "pages": "Pages",
+    "activityLog": "Activity Log",
     "reviewCases": "Review Cases",
     "modLog": "Mod Log",
     "modSettings": "Mod Settings",
@@ -82,6 +84,14 @@
         "title": "General",
         "desc": "Identity and locale for your community."
       },
+      "features": {
+        "title": "Site & features",
+        "desc": "Turn core sections on or off and choose what the homepage shows. Disabling a section hides it everywhere and returns 404 — your data is kept and restored when you re-enable it."
+      },
+      "maintenance": {
+        "title": "Maintenance mode",
+        "desc": "Take the site offline for everyone except a chosen group. Staff sign in on the maintenance screen to keep working."
+      },
       "registration": {
         "title": "Registration",
         "desc": "Control how new members join."
@@ -107,6 +117,50 @@
       "siteName": {
         "label": "Site name",
         "desc": "Shown in the header, page titles, and emails."
+      },
+      "featuresArticles": {
+        "label": "Articles",
+        "desc": "The CMS / blog section. When off, /articles and its API return 404."
+      },
+      "featuresHome": {
+        "label": "Home feed",
+        "desc": "The signed-in home feed at the site root. When off, the root redirects to your landing page."
+      },
+      "featuresMembers": {
+        "label": "Members directory",
+        "desc": "The public members list. When off, /members returns 404 (profiles stay reachable)."
+      },
+      "landing": {
+        "label": "Landing page",
+        "desc": "Where the site root (/) sends visitors. Only enabled sections and installed plugins appear here."
+      },
+      "maintenanceEnabled": {
+        "label": "Maintenance mode",
+        "desc": "When on, the site shows the maintenance screen to everyone outside the allowed group."
+      },
+      "maintenanceAllowedGroup": {
+        "label": "Allowed group",
+        "desc": "Members of this group (and administrators) can sign in and use the site during maintenance."
+      },
+      "maintenanceTitle": {
+        "label": "Headline",
+        "desc": "The large heading shown on the maintenance screen."
+      },
+      "maintenanceMessage": {
+        "label": "Reason",
+        "desc": "A short explanation of why the site is down."
+      },
+      "maintenanceProgressLabel": {
+        "label": "Progress label",
+        "desc": "Text shown next to the progress bar (e.g. \"Migrating database\")."
+      },
+      "maintenanceProgressPercent": {
+        "label": "Progress %",
+        "desc": "Progress bar fill (0–100). Set to 0 to hide the bar."
+      },
+      "maintenanceEta": {
+        "label": "Back online (ETA)",
+        "desc": "Expected return time. Drives the countdown and the \"back online\" time. Leave empty to hide."
       },
       "siteUrl": {
         "label": "Site URL",
@@ -173,7 +227,15 @@
         "desc": "The sender shown on outgoing mail."
       }
     },
+    "landing": {
+      "home": "Home feed",
+      "articles": "Articles",
+      "members": "Members"
+    },
     "placeholders": {
+      "maintenanceTitle": "Down for a quick tune-up.",
+      "maintenanceMessage": "We're rolling out an update. We'll be back shortly.",
+      "maintenanceProgressLabel": "Migrating database",
       "siteName": "My Nodevo Site",
       "siteUrl": "https://mysite.com",
       "siteDescription": "A Nodevo-powered platform",
@@ -516,7 +578,39 @@
     "agoM": "{{n}}m ago",
     "agoH": "{{n}}h ago",
     "agoD": "{{n}}d ago",
-    "agoMo": "{{n}}mo ago"
+    "agoMo": "{{n}}mo ago",
+    "intro": "A live pulse of your community — traffic, growth, and what needs your attention.",
+    "viewSite": "View site",
+    "viewAll": "View all",
+    "trafficTitle": "Traffic & engagement",
+    "lastNDays": "last {{n}} days",
+    "thisPeriod": "This period",
+    "prevPeriod": "Previous period",
+    "allCoreServices": "All core services",
+    "newRegistrations": "New registrations",
+    "newMembers": "new members",
+    "perDay": "per day",
+    "perWeek": "per week",
+    "topContent": "Top content this week",
+    "uncategorized": "Uncategorised",
+    "noContent": "No published content yet.",
+    "s_logins": "Logins",
+    "s_registrations": "Registrations",
+    "s_comments": "Comments",
+    "s_articles": "Articles",
+    "kMembers": "Members",
+    "kMembersSub": "+{{n}} this period",
+    "kArticles": "Published articles",
+    "kArticlesSub": "{{n}} this period",
+    "kComments": "Comments",
+    "kCommentsSub": "last {{n}} days",
+    "kReports": "Open reports",
+    "kReportsSub": "Needs review",
+    "qaNewArticle": "New article",
+    "userRegisteredPlain": "registered a new account",
+    "articlePublishedPlain": "published “{{title}}”",
+    "bannedPlain": "banned {{user}}",
+    "banLiftedPlain": "had their suspension lifted"
   },
   "modSettings": {
     "sub": "Moderation",
@@ -831,5 +925,84 @@
     "deleteText": "“{{title}}” will be soft-deleted and removed from public listings.",
     "delete": "Delete",
     "toastDeleted": "Article deleted"
+  },
+  "pages": {
+    "loading": "Loading…",
+    "empty": "No pages yet",
+    "newPage": "New page",
+    "editPage": "Edit page",
+    "headerImageAlt": "Header image",
+    "backToList": "Back to pages",
+    "statusAll": "All statuses",
+    "status": {
+      "draft": "Draft",
+      "published": "Published"
+    },
+    "visibility": {
+      "public": "Public",
+      "members": "Members only"
+    },
+    "colTitle": "Title",
+    "colSlug": "URL",
+    "colStatus": "Status",
+    "colVisibility": "Visibility",
+    "colInNav": "In nav",
+    "inNavYes": "Yes",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "pagination": "Page {{page}} of {{totalPages}} — {{total}} pages",
+    "deleteTitle": "Delete page?",
+    "deleteText": "“{{title}}” will be permanently deleted, along with any nav links pointing to it.",
+    "actions": "Actions",
+    "wordsN": "{{n}} words",
+    "headerImage": "Header image",
+    "dropImage": "Click or drop an image",
+    "replaceImage": "Click to replace",
+    "uploading": "Uploading…",
+    "save": "Save",
+    "saving": "Saving…",
+    "publish": "Publish",
+    "unpublish": "Unpublish",
+    "settings": "Settings",
+    "titlePlaceholder": "Page title",
+    "bodyPlaceholder": "Write your page content…",
+    "seoDescription": "SEO description",
+    "seoPlaceholder": "Short description for search engines (optional)",
+    "urlLabel": "URL",
+    "navigation": "Navigation",
+    "navHint": "Choose where this page links from. Fine-tune order and labels under Appearance → Navigation.",
+    "navNone": "Not linked",
+    "navNavbar": "Navbar",
+    "navFooter": "Footer",
+    "slot": "Page slot",
+    "slotHint": "Assign this page to a well-known slot. Slotted pages appear in the footer and power features like the registration terms link.",
+    "slotNone": "No slot",
+    "slots": {
+      "terms": "Terms of Service",
+      "privacy": "Privacy Policy",
+      "imprint": "Imprint",
+      "guidelines": "Guidelines"
+    },
+    "toastDeleted": "Page deleted",
+    "toastSaved": "Page saved",
+    "toastPublished": "Page published",
+    "toastUnpublished": "Page unpublished",
+    "toastNavSaved": "Navigation updated",
+    "toastSlotSaved": "Slot updated"
+  },
+  "activity": {
+    "all": "All activity",
+    "movements": "Movements",
+    "acpActions": "ACP actions",
+    "colTime": "Time",
+    "colUser": "User",
+    "colCategory": "Type",
+    "colPath": "Path",
+    "colStatus": "Status",
+    "colIp": "IP",
+    "loading": "Loading…",
+    "empty": "No activity recorded yet",
+    "pagination": "Page {{page}} of {{totalPages}} — {{total}} entries"
   }
 }

@@ -41,6 +41,7 @@ export const ACP_NAV: NavItem[] = [
     children: [
       { label: "nav.articles", to: "/admin/articles" },
       { label: "nav.categories", to: "/admin/categories" },
+      { label: "nav.pages", to: "/admin/pages" },
     ],
   },
   {
@@ -77,6 +78,7 @@ export const ACP_NAV: NavItem[] = [
       { label: "nav.scheduledTasks", to: "/admin/scheduled-tasks" },
       { label: "nav.errorReference", to: "/admin/error-ref" },
       { label: "nav.errorLog", to: "/admin/error-log" },
+      { label: "nav.activityLog", to: "/admin/activity-log" },
       { label: "nav.migrationHistory", to: "/admin/migration-history" },
       { label: "nav.about", to: "/admin/about" },
     ],

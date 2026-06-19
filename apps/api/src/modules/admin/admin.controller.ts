@@ -113,6 +113,11 @@ export const adminController = {
     res.json(await adminService.getDashboardStats());
   }) as RequestHandler,
 
+  dashboardAnalytics: (async (req, res) => {
+    const range = Number(req.query.range) || 30;
+    res.json(await adminService.getDashboardAnalytics(range));
+  }) as RequestHandler,
+
   // Users
   listUsers: (async (req, res) => {
     const q = listUsersSchema.parse(req.query);

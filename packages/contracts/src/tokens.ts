@@ -57,6 +57,8 @@ const REGION_TOKENS: TokenDef[] = [
   { var: "--nav-border-color",  label: "Navbar border",     type: "color", kind: "region", group: "navbar", control: "border", inheritsFrom: "--c-border", editable: true },
   { var: "--nav-active",        label: "Active link",       type: "color", kind: "region", group: "navbar", inheritsFrom: "--c-accent", editable: true },
   { var: "--nav-active-bg",     label: "Active link bg",    type: "color", kind: "region", group: "navbar", inheritsFrom: "--c-accent-soft", editable: true },
+  { var: "--nav-icon-btn-bg",       label: "Action button bg",    type: "color", kind: "region", group: "navbar", inheritsFrom: "--c-bg", editable: true },
+  { var: "--nav-icon-btn-hover-bg", label: "Action button hover", type: "color", kind: "region", group: "navbar", inheritsFrom: "--c-accent-soft", state: "hover", editable: true },
   // Content
   { var: "--content-bg",           label: "Content background", type: "color", kind: "region", group: "content", inheritsFrom: "--c-bg", editable: true },
   { var: "--content-border-color", label: "Content border",     type: "color", kind: "region", group: "content", control: "border", inheritsFrom: "--c-border", editable: true },

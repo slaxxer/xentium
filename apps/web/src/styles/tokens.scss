@@ -1,92 +1,95 @@
 /* ============================================================================
-   HEARTH — Nodevo design tokens (three-tier: primitive → semantic → component).
-   Names kept as --c-* (the codebase convention); values are the Hearth palette.
-   Style Editor controls SEMANTIC tokens only. Components never use a raw colour.
+   NEBULA — Nodevo design tokens (three-tier: primitive → semantic → component).
+   Blurple + electric cyan over cool neutrals (Discord-grade). Names kept as
+   --c-* (the codebase convention). Style Editor controls SEMANTIC tokens only;
+   components never use a raw colour.
    ============================================================================ */
 
 /* Tier 1 — primitives (never referenced directly by components) */
 :root {
-  --primitive-violet-600: #6d56e6;  /* light accent */
-  --primitive-violet-500: #8b78ff;  /* dark accent  */
-  --primitive-violet-300: #b6a8ff;
-  --primitive-coral-500:  #ff7a59;  /* light secondary */
-  --primitive-coral-400:  #ff8a6a;  /* dark secondary  */
-  --primitive-green-500:  #1fab74;  /* light success / presence */
-  --primitive-green-400:  #34d399;  /* dark success / presence  */
+  --primitive-blurple-600: #5865f2;  /* light accent */
+  --primitive-blurple-400: #7c84ff;  /* dark accent  */
+  --primitive-blurple-300: #b6bbff;
+  --primitive-cyan-500:   #00b1cf;  /* light secondary (electric cyan) */
+  --primitive-cyan-400:   #2bd4ee;  /* dark secondary  */
+  --primitive-green-500:  #23a55a;  /* light success / presence */
+  --primitive-green-400:  #3ba55d;  /* dark success / presence  */
   --primitive-amber-500:  #f4a259;
   --primitive-sky-400:    #38bdf8;
   --primitive-red-400:    #f87171;
-  --primitive-cream-50:   #f7f2ee;  /* light app bg (warm) */
+  --primitive-mist-50:    #f3f4fb;  /* light app bg (cool) */
   --primitive-white:      #ffffff;
-  --primitive-ink-900:    #2b2535;  /* light text */
-  --primitive-ink-600:    #6f6878;
-  --primitive-ink-400:    #a39caf;
-  --primitive-plum-950:   #14101c;  /* dark app bg */
-  --primitive-plum-900:   #1d1730;  /* dark surface */
-  --primitive-plum-850:   #211a36;  /* dark card */
-  --primitive-plum-50:    #f0ecf7;  /* dark text */
+  --primitive-ink-900:    #1a1c2e;  /* light text */
+  --primitive-ink-600:    #5b5e74;
+  --primitive-ink-400:    #9499ae;
+  --primitive-night-950:  #0c0d18;  /* dark app bg */
+  --primitive-night-900:  #14162a;  /* dark surface */
+  --primitive-night-850:  #1b1e36;  /* dark card */
+  --primitive-night-50:   #e9ebff;  /* dark text */
 }
 
 /* Tier 2 — semantic. LIGHT is the default; dark overrides. */
 :root,
 [data-theme="light"] {
   color-scheme: light;
-  --c-bg:            var(--primitive-cream-50);
-  --c-bg-hover:      #f0eae3;
+  --c-bg:            var(--primitive-mist-50);
+  --c-bg-hover:      #ebedf7;
   --c-surface:       var(--primitive-white);
   --c-card:          var(--primitive-white);
-  --c-accent:        var(--primitive-violet-600);
-  --c-accent2:       var(--primitive-coral-500);
-  --c-accent-soft:   #ece8fc;
-  --c-accent2-soft:  #ffe9e2;
-  --c-accent-glow:   rgba(109, 92, 240, 0.22);
+  --c-accent:        var(--primitive-blurple-600);
+  --c-accent2:       var(--primitive-cyan-500);
+  --c-accent-soft:   #e7e9fd;
+  --c-accent2-soft:  #d6f3f8;
+  --c-accent-glow:   rgba(88, 101, 242, 0.22);
   --c-on-accent:     #ffffff;
   --c-fg:            var(--primitive-ink-900);
   --c-fg-muted:      var(--primitive-ink-600);
   --c-fg-subtle:     var(--primitive-ink-400);
-  --c-border:        #efe9e3;
-  --c-border-hi:     #e3dcd4;
-  --c-rowline:       #f2ede7;
+  --c-border:        #e6e7f1;
+  --c-border-hi:     #d8dae8;
+  --c-rowline:       #eef0f7;
   --input-bg:        var(--c-bg);
+  --nav-icon-btn-bg: var(--c-bg);   /* navbar action buttons — chrome, NOT a form field (decoupled from --input-bg) */
   --c-success:       var(--primitive-green-500);
-  --c-success-soft:  rgba(31, 171, 116, 0.10);
+  --c-success-soft:  rgba(35, 165, 90, 0.10);
   --c-warn:          var(--primitive-amber-500);
   --c-danger:        #ef4444;
   --c-danger-soft:   rgba(239, 68, 68, 0.10);
   --c-info:          var(--primitive-sky-400);
 
-  --shadow-card:  0 6px 24px rgba(60, 40, 90, 0.07);
-  --shadow-pop:   0 12px 40px rgba(60, 40, 90, 0.12);
+  --shadow-card:  0 6px 24px rgba(30, 40, 90, 0.08);
+  --shadow-pop:   0 12px 40px rgba(30, 40, 90, 0.13);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --c-bg:            var(--primitive-plum-950);
-  --c-bg-hover:      #251d3d;
-  --c-surface:       var(--primitive-plum-900);
-  --c-card:          var(--primitive-plum-850);
-  --c-accent:        var(--primitive-violet-500);
-  --c-accent2:       var(--primitive-coral-400);
-  --c-accent-soft:   rgba(139, 120, 255, 0.15);
-  --c-accent2-soft:  rgba(255, 138, 106, 0.15);
-  --c-accent-glow:   rgba(139, 120, 255, 0.28);
+  --c-bg:            var(--primitive-night-950);
+  --c-bg-hover:      #232645;
+  --c-surface:       var(--primitive-night-900);
+  --c-card:          var(--primitive-night-850);
+  --c-accent:        var(--primitive-blurple-400);
+  --c-accent2:       var(--primitive-cyan-400);
+  --c-accent-soft:   rgba(124, 132, 255, 0.15);
+  --c-accent2-soft:  rgba(43, 212, 238, 0.15);
+  --c-accent-glow:   rgba(124, 132, 255, 0.28);
   --c-on-accent:     #ffffff;
-  --c-fg:            var(--primitive-plum-50);
-  --c-fg-muted:      #aaa1bd;
-  --c-fg-subtle:     #736b85;
+  --c-fg:            var(--primitive-night-50);
+  --c-fg-muted:      #9da2c4;
+  --c-fg-subtle:     #6a6f90;
   --c-border:        rgba(255, 255, 255, 0.08);
   --c-border-hi:     rgba(255, 255, 255, 0.13);
   --c-rowline:       rgba(255, 255, 255, 0.055);
   --input-bg:        rgba(255, 255, 255, 0.045);
+  --nav-icon-btn-bg: rgba(255, 255, 255, 0.045);   /* navbar action buttons — chrome, NOT a form field (decoupled from --input-bg) */
   --c-success:       var(--primitive-green-400);
-  --c-success-soft:  rgba(52, 211, 153, 0.14);
+  --c-success-soft:  rgba(59, 165, 93, 0.16);
   --c-warn:          var(--primitive-amber-500);
   --c-danger:        var(--primitive-red-400);
   --c-danger-soft:   rgba(248, 113, 113, 0.14);
   --c-info:          var(--primitive-sky-400);
 
-  --shadow-card:  0 8px 30px rgba(0, 0, 0, 0.30);
-  --shadow-pop:   0 16px 48px rgba(0, 0, 0, 0.45);
+  --shadow-card:  0 8px 30px rgba(0, 0, 0, 0.34);
+  --shadow-pop:   0 16px 48px rgba(0, 0, 0, 0.48);
 }
 
 /* Tier 3 — component tokens */
@@ -100,6 +103,55 @@
   --card-radius:  var(--radius-lg);
   --btn-radius:   var(--radius-sm);
   --input-radius: var(--radius-md);
+
+  /* Buttons — every button surface references these (NO gradients on controls).
+     --btn-bg is a single solid colour; it defaults to the accent but is its own
+     editable token (Style Editor → Buttons), so buttons can be recoloured /
+     re-rounded independently. --btn-danger-bg tracks the editable Danger colour. */
+  --btn-bg:        var(--c-accent);
+  --btn-fg:        var(--c-on-accent);
+  --btn-danger-bg: var(--c-danger);
+
+  /* ── Region tokens — each DEFAULTS to a semantic token, so the
+     global palette still cascades until a region is explicitly overridden.
+     Region surfaces (nav/footer/content/aside) consume these. ── */
+  --nav-bg:            color-mix(in srgb, var(--c-surface) 88%, transparent);
+  --nav-fg:            var(--c-fg);
+  --nav-fg-muted:      var(--c-fg-muted);
+  --nav-border-color:  var(--c-border);
+  --nav-active:        var(--c-accent);
+  --nav-active-bg:     var(--c-accent-soft);
+  /* navbar action buttons (theme toggle / bell / gear / avatar) — own tokens, NOT
+     the Field input tokens. --nav-icon-btn-bg is set per-theme above (light/dark). */
+  --nav-icon-btn-hover-bg: var(--c-accent-soft);
+
+  --content-bg:            var(--c-bg);
+  --content-border-color:  var(--c-border);
+
+  --footer-bg:            var(--c-surface);
+  --footer-fg:            var(--c-fg-muted);
+  --footer-fg-subtle:     var(--c-fg-subtle);
+  --footer-border-color:  var(--c-border);
+  --footer-accent:        var(--c-accent);
+
+  --aside-bg:            var(--c-card);
+  --aside-border-color:  var(--c-border);
+
+  /* ── Component tokens — scopeable per region via CSS var
+     inheritance. --card-radius / --input-radius / --input-bg / --btn-* already
+     defined above; these add the rest. ── */
+  --card-bg:           var(--c-card);
+  --card-border-color: var(--c-border);
+  --card-shadow:       var(--shadow-card);
+
+  --input-border-color: var(--c-border);
+  --input-fg:           var(--c-fg);
+  --input-border-focus: var(--c-accent);
+
+  --menu-bg:            var(--c-card);
+  --menu-border-color:  var(--c-border);
+  --menu-item-hover-bg: var(--c-bg-hover);
+  --menu-radius:        var(--radius-md);
 
   --avatar-presence: var(--c-success);
 
@@ -129,4 +181,6 @@
   --shadow-md: var(--shadow-card);
   --shadow-lg: var(--shadow-pop);
   --shadow-inset-knob: 0 1px 3px rgba(0, 0, 0, 0.18);
+  /* Branded accent glow (logomarks, CTAs) — theme-aware via --c-accent-glow. */
+  --shadow-glow: 0 8px 24px var(--c-accent-glow);
 }

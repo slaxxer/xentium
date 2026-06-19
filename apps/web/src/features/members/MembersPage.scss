@@ -35,7 +35,7 @@
 }
 .mp-segtabs {
   display: flex;
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-md);
   padding: 5px;
   box-shadow: var(--shadow-card);
@@ -105,7 +105,7 @@
 .mp-dir { display: grid; grid-template-columns: 236px 1fr; gap: 24px; align-items: start; }
 
 .mp-rail {
-  background: var(--c-card);
+  background: var(--aside-bg);
   border-radius: var(--radius-lg);
   padding: 16px;
   box-shadow: var(--shadow-card);
@@ -119,7 +119,7 @@
   height: 42px;
   padding: 0 14px;
   border-radius: var(--radius-md);
-  background: var(--c-bg);
+  background: var(--input-bg);
   margin-bottom: 18px;
 }
 .mp-rail__search span { font-size: 16px; color: var(--c-fg-muted); }
@@ -156,7 +156,7 @@
 }
 .mp-sortbox button.is-on { background: var(--c-fg); color: var(--c-bg); }
 
-.mp-main { background: var(--c-card); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
+.mp-main { background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
 .mp-main--full { margin-top: 0; }
 .mp-listhead {
   display: flex; justify-content: space-between;
@@ -219,12 +219,12 @@
 
 /* ── Leaderboard (Hall of Fame) ────────────────────────────────────────── */
 .mp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
-.mp-stat { background: var(--c-card); border-radius: var(--radius-md); padding: 20px 22px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 3px; }
+.mp-stat { background: var(--card-bg); border-radius: var(--radius-md); padding: 20px 22px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 3px; }
 .mp-stat b { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--c-fg); line-height: 1; }
 .mp-stat span { font-size: 13px; font-weight: 700; color: var(--c-fg-muted); }
 
 .mp-podium-wrap {
-  background: var(--c-card); border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
+  background: var(--card-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
   padding: 26px 30px 34px; margin-bottom: 34px; position: relative; overflow: hidden;
 }
 .mp-podium-wrap::before {
@@ -246,7 +246,7 @@
 
 /* how-to-climb context (replaces the all-members cover grid) */
 .mp-howto {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   padding: 26px 30px;

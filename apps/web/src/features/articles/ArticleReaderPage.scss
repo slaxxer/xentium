@@ -5,7 +5,7 @@
   justify-content: center;
   border-radius: 50%;
   font-weight: 700;
-  color: #fff;
+  color: var(--c-on-accent);
   background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
   flex-shrink: 0;
 }
@@ -228,7 +228,7 @@
     padding: 24px;
   }
   &__modal {
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
     padding: 28px;
@@ -248,16 +248,16 @@
   }
   &__modal-textarea {
     width: 100%;
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
-    color: var(--c-fg);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border-color);
+    border-radius: var(--radius-sm); // tighter than --input-radius by design
+    color: var(--input-fg);
     font-family: inherit;
     font-size: 14px;
     padding: 10px 12px;
     resize: vertical;
     box-sizing: border-box;
-    &:focus { outline: none; border-color: var(--c-accent); }
+    &:focus { outline: none; border-color: var(--input-border-focus); }
   }
   &__modal-actions {
     display: flex;
@@ -309,7 +309,7 @@
     display: flex;
     gap: 16px;
     align-items: flex-start;
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
     padding: 24px;
@@ -341,7 +341,7 @@
     display: flex;
     gap: 12px;
     align-items: flex-start;
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
     padding: 18px;
@@ -359,7 +359,7 @@
 
   &__signin {
     text-align: center;
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
     padding: 18px;

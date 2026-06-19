@@ -22,7 +22,7 @@
 .reg-wizard {
   display: flex;
   min-height: 100dvh;
-  background-image: linear-gradient(to right top, #30363d, #293237, #242e30, #212a29, #1f2522);
+  background-image: linear-gradient(150deg, var(--c-accent), color-mix(in srgb, var(--c-accent2) 70%, var(--c-accent)));
 
   // ── Left: aurora stepper ───────────────────────────────────────────────────
   &__left {
@@ -42,7 +42,9 @@
     inset: 0;
     z-index: 0;
     opacity: 0.82;
-    background-image: linear-gradient(to bottom, #202327, #23272a, #272b2c, #2c2f2f, #313332);
+    background-image:
+      radial-gradient(90% 90% at 12% 12%, color-mix(in srgb, var(--c-accent2) 55%, transparent), transparent 55%),
+      radial-gradient(90% 90% at 88% 92%, color-mix(in srgb, var(--c-accent) 60%, transparent), transparent 55%);
   }
 
 
@@ -59,21 +61,21 @@
     width: 36px;
     height: 36px;
     border-radius: 11px;
-    background: linear-gradient(135deg, #fff, #e0dcff);
+    background: linear-gradient(135deg, var(--c-on-accent), color-mix(in srgb, var(--c-accent) 12%, var(--c-on-accent)));
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 19px;
     font-weight: 900;
-    color: #2A3037;
-    box-shadow: 0 8px 30px #B0B1B2;
+    color: var(--c-accent);
+    box-shadow: var(--shadow-pop);
     flex-shrink: 0;
   }
 
   &__wordmark {
     font-size: 21px;
     font-weight: 800;
-    color: #fff;
+    color: var(--c-on-accent);
     letter-spacing: -0.02em;
   }
 
@@ -87,7 +89,7 @@
   &__stepper-title {
     font-size: 30px;
     font-weight: 600;
-    color: #fff;
+    color: var(--c-on-accent);
     letter-spacing: -0.02em;
     margin-bottom: 32px;
     line-height: 1.1;
@@ -121,20 +123,20 @@
     font-size: 14px;
     font-weight: 800;
     transition: all 0.3s;
-    color: #fff;
+    color: var(--c-on-accent);
 
     &--done {
-      background: #fff;
+      background: var(--c-on-accent);
       color: var(--c-accent);
       border: 2px solid transparent;
     }
     &--active {
-      background: rgba(255, 255, 255, 0.18);
-      border: 2px solid #fff;
-      box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12);
+      background: color-mix(in srgb, var(--c-on-accent) 18%, transparent);
+      border: 2px solid var(--c-on-accent);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-on-accent) 12%, transparent);
     }
     &--pending {
-      background: rgba(255, 255, 255, 0.06);
+      background: color-mix(in srgb, var(--c-on-accent) 6%, transparent);
       border: 2px solid transparent;
     }
   }
@@ -146,8 +148,8 @@
     margin-top: 4px;
     transition: background 0.3s;
 
-    &--done { background: rgba(255, 255, 255, 0.5); }
-    &--pending { background: rgba(255, 255, 255, 0.12); }
+    &--done { background: color-mix(in srgb, var(--c-on-accent) 50%, transparent); }
+    &--pending { background: color-mix(in srgb, var(--c-on-accent) 12%, transparent); }
   }
 
   &__step-info {
@@ -162,12 +164,12 @@
   &__step-label {
     font-size: 14.5px;
     font-weight: 700;
-    color: #fff;
+    color: var(--c-on-accent);
   }
 
   &__step-sub {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    color: color-mix(in srgb, var(--c-on-accent) 60%, transparent);
     margin-top: 2px;
   }
 
@@ -175,10 +177,10 @@
     position: relative;
     z-index: 2;
     font-size: 12.5px;
-    color: rgba(255, 255, 255, 0.45);
+    color: color-mix(in srgb, var(--c-on-accent) 45%, transparent);
 
     a {
-      color: #fff;
+      color: var(--c-on-accent);
       font-weight: 700;
     }
   }
@@ -259,10 +261,10 @@
     font-size: var(--fs-base);
     font-weight: 700;
     font-family: inherit;
-    color: var(--c-on-accent);
+    color: var(--btn-fg);
     cursor: pointer;
     transition: opacity 0.15s;
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+    background: var(--btn-bg);
 
     &:hover:not(:disabled) { opacity: 0.87; }
     &:disabled {
@@ -295,19 +297,19 @@
 
 .rw-input {
   width: 100%;
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: var(--input-radius);
   padding: var(--sp-3);
   font-size: var(--fs-base);
-  color: var(--c-fg);
+  color: var(--input-fg);
   font-family: inherit;
   transition: border-color 0.15s;
   box-sizing: border-box;
 
   &:focus {
     outline: none;
-    border-color: var(--c-accent);
+    border-color: var(--input-border-focus);
   }
 
   &--error {

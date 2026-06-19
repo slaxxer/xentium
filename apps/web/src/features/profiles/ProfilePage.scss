@@ -10,7 +10,7 @@
 
 /* ── Card ───────────────────────────────────────────── */
 .profile-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
   padding: var(--sp-8);
@@ -348,7 +348,7 @@
   gap: var(--sp-3);
   align-items: center;
   padding: var(--sp-4);
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   transition: border-color 0.15s;
@@ -411,7 +411,7 @@
 /* ── Profile Wall ───────────────────────────────────── */
 .profile-wall {
   margin-top: var(--sp-8);
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
   padding: var(--sp-6);
@@ -557,34 +557,7 @@
 }
 
 /* ── Shared button helpers ──────────────────────────── */
-.btn-primary {
-  background: var(--c-accent);
-  color: var(--c-on-accent);
-  border: none;
-  border-radius: var(--btn-radius);
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.15s;
-
-  &:hover:not(:disabled) { opacity: 0.85; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--c-fg-muted);
-  border: 1px solid var(--c-border);
-  border-radius: var(--btn-radius);
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-
-  &:hover:not(:disabled) {
-    border-color: var(--c-accent-glow);
-    color: var(--c-accent);
-  }
-  &:disabled { opacity: 0.4; cursor: not-allowed; }
-}
+// .btn-primary / .btn-ghost → styles/buttons.scss (shared, token-driven).
 
 .btn-sm {
   padding: var(--sp-2) var(--sp-3);
@@ -602,8 +575,8 @@
   &__new {
     display: inline-flex;
     align-items: center;
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-    color: var(--c-on-accent);
+    background: var(--btn-bg);
+    color: var(--btn-fg);
     padding: 7px 14px;
     border-radius: var(--radius-sm);
     font-size: 13px;
@@ -634,7 +607,7 @@
   &__count {
     font-size: 11px;
     color: var(--c-fg-subtle);
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     padding: 2px 8px;
     border-radius: 100px;
@@ -651,7 +624,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-4);
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
     padding: 18px 22px;
@@ -661,7 +634,7 @@
 
     &:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+      box-shadow: var(--shadow-card);
       border-color: var(--c-accent);
     }
   }
@@ -703,7 +676,7 @@
 
 /* ── Information tab (mockup "About" layout) ─────────────────────── */
 .profile-info-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   padding: 24px;
@@ -777,7 +750,7 @@
   color: var(--c-fg-muted);
 
   button {
-    background: var(--c-card);
+    background: var(--card-bg);
     border: 1px solid var(--c-border);
     color: var(--c-fg);
     padding: 6px 14px;

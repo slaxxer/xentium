@@ -1,4 +1,39 @@
 {
+  "pageNotFound": "Page not found",
+  "notFound": {
+    "eyebrow": "Page not found",
+    "title": "Nothing lives at this address.",
+    "lead": "The link you followed may be broken, or the page has packed up and moved. Let's get you somewhere real.",
+    "home": "Take me home",
+    "back": "Go back",
+    "footLabel": "Error 404 · Nodevo"
+  },
+  "maintenance": {
+    "badge": "Maintenance in progress",
+    "remaining": "Remaining",
+    "backOnline": "Back online",
+    "teamAccess": "Team access",
+    "signInToBypass": "Maintenance mode is active. Sign in to bypass.",
+    "notAuthorized": "Your account isn't allowed to bypass maintenance.",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "pin": "Login PIN",
+    "signIn": "Sign in",
+    "signingIn": "Signing in…",
+    "signInError": "Sign-in failed. Check your credentials.",
+    "authorizedOnly": "Authorized personnel only"
+  },
+  "footer": {
+    "whosOnline": "Who's online",
+    "onlineSentence": "There are {{count}} members online right now, based on activity over the past few minutes.",
+    "andMore": "+{{count}} more",
+    "legend": "Legend",
+    "totalArticles": "Articles",
+    "members": "Members",
+    "onlineNow": "Online now",
+    "newestMember": "Newest member"
+  },
   "actions": {
     "save": "Save",
     "cancel": "Cancel",

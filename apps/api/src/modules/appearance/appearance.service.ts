@@ -1,16 +1,15 @@
 import { prisma } from "../../infrastructure/db.js";
 import AdmZip from "adm-zip";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope } from "@nodevo/contracts";
+import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { publishStyleVersion } from "./appearance.sse.js";
 
 export type ThemeName = "light" | "dark";
 
-// Region-scoped overrides: each theme maps a scope id → token map.
-// `global` is emitted on the theme root; region scopes are emitted under that
-// region's DOM selector so component tokens can be re-scoped per region.
-export type ScopedTokens   = Record<string, TokenMap>;
-export type ScopedTokenSet = { light: ScopedTokens; dark: ScopedTokens };
+// ScopedTokens / ScopedTokenSet now live in @nodevo/contracts (shared with the
+// Style Editor). Re-exported below for existing importers of this module.
+export type { ScopedTokens, ScopedTokenSet };
 
 // Back-compat shim: legacy storage is a flat TokenMap (string values); the new
 // shape is scope→map (object values). Normalise either into the scoped shape.
@@ -141,11 +140,14 @@ export const appearanceService = {
   // Monotonic-ish marker bumped on every change that affects the served CSS.
   // Clients poll getStyleVersion() and refetch the CSS only when it changes.
   async bumpStyleVersion(): Promise<void> {
+    const version = Date.now();
     await prisma.setting.upsert({
       where:  { key: "appearance.style_version" },
-      update: { value: Date.now() },
-      create: { key: "appearance.style_version", value: Date.now() },
+      update: { value: version },
+      create: { key: "appearance.style_version", value: version },
     });
+    // Push the change to every connected client across all processes (SSE fan-out).
+    await publishStyleVersion(version);
   },
 
   async getStyleVersion(): Promise<number> {
@@ -221,17 +223,14 @@ export const appearanceService = {
     return scopeCustomCss(css, theme);
   },
 
-  // Editor display: saved values, or the built-in defaults so the pickers have
-  // something to show.
-  async getTokens(): Promise<TokenSet> {
-    // Editor display: the GLOBAL bucket (flat), or the built-in defaults so the
-    // pickers have something to show. (Region/component scopes land in Phase 3.)
-    const { light, dark } = await this.getTokenOverrides();
-    const pick = (g: TokenMap, d: TokenMap) => (Object.keys(g).length ? g : d);
-    return {
-      light: pick(light.global ?? {}, DEFAULT_TOKENS.light as TokenMap),
-      dark:  pick(dark.global  ?? {}, DEFAULT_TOKENS.dark  as TokenMap),
-    };
+  // Editor display: the SPARSE scope-keyed overrides exactly as saved (ADR-0003).
+  // The editor renders inherit↔override from this: a token present in a bucket is
+  // an explicit override; one that is absent is inherited (resolves via tokens.scss
+  // `var(--base)`), and the editor sources its display fallback from the registry /
+  // HEARTH_DEFAULT_TOKENS. Returning the raw sparse map (not merged with defaults)
+  // is what lets the editor distinguish the two states.
+  async getTokens(): Promise<ScopedTokenSet> {
+    return this.getTokenOverrides();
   },
 
   // Served stylesheet: ONLY admin-saved overrides (no default fallback), normalised
@@ -259,7 +258,7 @@ export const appearanceService = {
     await this.bumpStyleVersion();
   },
 
-  async saveTokens(tokens: TokenSet, savedById: string, label?: string): Promise<void> {
+  async saveTokens(tokens: ScopedTokenSet, savedById: string, label?: string): Promise<void> {
     await prisma.$transaction([
       prisma.setting.upsert({
         where:  { key: "appearance.tokens.light" },
@@ -293,9 +292,12 @@ export const appearanceService = {
     await this.bumpStyleVersion();
   },
 
-  async restoreHistory(historyId: string, savedById: string): Promise<TokenSet> {
-    const entry  = await prisma.styleHistory.findUniqueOrThrow({ where: { id: historyId } });
-    const tokens = entry.tokens as unknown as TokenSet;
+  async restoreHistory(historyId: string, savedById: string): Promise<ScopedTokenSet> {
+    const entry = await prisma.styleHistory.findUniqueOrThrow({ where: { id: historyId } });
+    // History entries may predate scoped storage (flat TokenSet) — normalise each
+    // theme so an old snapshot restores as its `global` bucket.
+    const raw    = entry.tokens as { light?: unknown; dark?: unknown };
+    const tokens: ScopedTokenSet = { light: normalizeScoped(raw.light), dark: normalizeScoped(raw.dark) };
     await this.saveTokens(tokens, savedById, `Restored: ${entry.label}`);
     return tokens;
   },
@@ -421,9 +423,10 @@ export const appearanceService = {
       return map;
     };
 
-    const tokens: TokenSet = {
-      light: parseTokens(pack.lightCss),
-      dark:  parseTokens(pack.darkCss),
+    // Style packs are `:root`-only (validateStylePackCss) → their tokens are global.
+    const tokens: ScopedTokenSet = {
+      light: { global: parseTokens(pack.lightCss) },
+      dark:  { global: parseTokens(pack.darkCss) },
     };
 
     await this.saveTokens(tokens, userId, `Pack: ${pack.name}`);

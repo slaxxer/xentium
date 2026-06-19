@@ -20,16 +20,16 @@
 
 .login-input {
   padding: var(--sp-3);
-  background: var(--c-bg);
-  border: 1px solid var(--c-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color);
   border-radius: var(--input-radius);
-  color: var(--c-fg);
+  color: var(--input-fg);
   font-size: var(--fs-base);
   font-family: inherit;
   transition: border-color 0.15s;
   width: 100%;
 
-  &:focus { outline: none; border-color: var(--c-accent); }
+  &:focus { outline: none; border-color: var(--input-border-focus); }
 }
 
 .login-error {
@@ -45,8 +45,8 @@
 .login-submit {
   width: 100%;
   padding: var(--sp-3) var(--sp-4);
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-  color: var(--c-on-accent);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
   border: none;
   border-radius: var(--btn-radius);
   font-size: var(--fs-base);
@@ -83,16 +83,16 @@
     font-size: 22px;
     font-weight: 700;
     letter-spacing: 0.1em;
-    background: var(--c-bg);
-    border: 1px solid var(--c-border);
+    background: var(--input-bg);
+    border: 1px solid var(--input-border-color);
     border-radius: var(--input-radius);
-    color: var(--c-fg);
+    color: var(--input-fg);
     font-family: inherit;
     transition: border-color 0.15s, box-shadow 0.15s;
 
     &:focus {
       outline: none;
-      border-color: var(--c-accent);
+      border-color: var(--input-border-focus);
       box-shadow: 0 0 0 3px var(--c-accent-soft);
     }
   }

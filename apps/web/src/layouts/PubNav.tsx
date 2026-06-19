@@ -32,6 +32,7 @@ interface NavItem {
   isSystem: boolean;
   openInNewTab: boolean;
   visibility: string; // "public" | "members" | "groups"
+  placement?: string; // "navbar" | "footer"
 }
 
 /** Core system routes get a localized label; everything else (custom links and
@@ -50,8 +51,9 @@ function useNavItems(isAuthenticated: boolean) {
     staleTime: 60_000,
   });
   return data.filter(item =>
-    item.visibility === "public" ||
-    (item.visibility === "members" && isAuthenticated),
+    item.placement !== "footer" &&
+    (item.visibility === "public" ||
+      (item.visibility === "members" && isAuthenticated)),
   );
 }
 

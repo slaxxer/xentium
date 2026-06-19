@@ -97,6 +97,7 @@ model User {
   blockedBy   UserBlock[]  @relation("UserBlocked")
 
   articles            Article[]            @relation("ArticleAuthor")
+  pages               Page[]               @relation("PageCreatedBy")
   articleRevisions    ArticleRevision[]    @relation("RevisionAuthor")
   articleLikes        ArticleLike[]        @relation("ArticleLikedBy")
   articleDislikes     ArticleDislike[]     @relation("ArticleDislikedBy")
@@ -819,6 +820,13 @@ model NavItem {
   isActive         Boolean  @default(true) @map("is_active")
   isSystem         Boolean  @default(false) @map("is_system")
   pluginId         String?  @map("plugin_id")   // set when registered by a plugin
+  // Where the link renders: 'navbar' (top nav) or 'footer'. Default navbar so
+  // existing items are unaffected.
+  placement        String   @default("navbar")
+  // Set when this item links to a custom Page (§page-system). URL derives from the
+  // page slug; the item auto-deactivates when the page is unpublished or deleted.
+  pageId           String?  @map("page_id")
+  page             Page?    @relation(fields: [pageId], references: [id], onDelete: Cascade)
   openInNewTab     Boolean  @default(false) @map("open_in_new_tab")
   visibility       String   @default("public")
   visibilityGroups String[] @default([]) @map("visibility_groups")
@@ -826,7 +834,52 @@ model NavItem {
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   @@index([parentId, position])
+  @@index([pageId])
   @@map("ncf_nav_items")
+}
+
+// Custom static page (TOS, privacy, imprint, about, …). A page is strictly a
+// title + TipTap body rendered inside the normal AppLayout at /p/:slug — NOT
+// layout/template work. Kept as its own entity (not articles.type='page') so it
+// never pollutes article queries/feeds/comments.
+model Page {
+  id             String    @id @default(cuid())
+  title          String
+  slug           String    @unique
+  body           Json      // TipTap / ProseMirror JSON — never raw HTML (§17b)
+  featuredImage  String?   @map("featured_image") // header image storage path
+  status         String    @default("draft")   // 'draft' | 'published'
+  visibility     String    @default("public")  // 'public' | 'members'
+  seoDescription String?   @map("seo_description") @db.Text
+  createdById    String?   @map("created_by_id")
+  createdBy      User?     @relation("PageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  publishedAt    DateTime? @map("published_at")
+  navItems       NavItem[]
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@map("ncf_pages")
+}
+
+// Unified activity log: public page movements (category 'page_visit') AND ACP
+// usage/actions (category 'acp_action'). Viewed in ACP → System → Activity Log.
+model ActivityLog {
+  id        String   @id @default(cuid())
+  category  String   // 'page_visit' | 'acp_action'
+  userId    String?  @map("user_id")
+  username  String?
+  method    String?  // HTTP method (acp_action)
+  path      String   // visited URL or admin API path
+  status    Int?     // response status (acp_action)
+  ip        String?
+  userAgent String?  @map("user_agent")
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([category, createdAt(sort: Desc)])
+  @@index([userId])
+  @@map("ncf_activity_log")
 }
 
 // ── Phase 14: Plugin migrations ───────────────────────────────────────────────

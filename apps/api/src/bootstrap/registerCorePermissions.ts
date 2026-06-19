@@ -34,6 +34,8 @@ const MOD_PERMS = [
   CorePermissions.PROFILE_COMMENT_DELETE_OWN,
   CorePermissions.PROFILE_COMMENT_DELETE_WALL,
   CorePermissions.PROFILE_COMMENT_DELETE_ANY,
+  CorePermissions.PAGE_MANAGE,
+  CorePermissions.PAGE_PUBLISH,
 ];
 
 const GRANTS: Record<string, string[]> = {
