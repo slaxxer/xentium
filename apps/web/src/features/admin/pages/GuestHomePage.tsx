@@ -24,7 +24,7 @@ const DEFAULTS: Record<string, unknown> = {
 function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
     <div onClick={onToggle} style={{ width: 40, height: 22, flexShrink: 0, background: on ? "var(--c-accent)" : "var(--c-border)", borderRadius: 100, cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
-      <div style={{ width: 16, height: 16, background: "#fff", borderRadius: "50%", position: "absolute", top: 3, left: on ? 21 : 3, transition: "left 0.2s" }} />
+      <div style={{ width: 16, height: 16, background: "var(--c-on-accent)", borderRadius: "50%", position: "absolute", top: 3, left: on ? 21 : 3, transition: "left 0.2s" }} />
     </div>
   );
 }

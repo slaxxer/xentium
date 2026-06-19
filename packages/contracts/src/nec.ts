@@ -33,6 +33,10 @@ export const NEC = {
   ARTICLE_NOT_PUBLISHED: "NEC-ARTICLE-3002",
   ARTICLE_SLUG_TAKEN: "NEC-ARTICLE-3003",
 
+  // Pages (§page-system)
+  PAGE_NOT_FOUND: "NEC-PAGE-3501",
+  PAGE_SLUG_TAKEN: "NEC-PAGE-3502",
+
   // Storage / Uploads
   STORE_FILE_TOO_LARGE: "NEC-STORE-7001",
   STORE_TYPE_NOT_PERMITTED: "NEC-STORE-7002",
@@ -70,6 +74,7 @@ export const NEC = {
 
   // Core
   CORE_THEME_NOT_FOUND: "NEC-CORE-8001",
+  CORE_MAINTENANCE: "NEC-CORE-8010",   // site in maintenance mode, requester not allowed
 
   // Queue / background jobs
   QUEUE_JOB_FAILED: "NEC-QUEUE-5000",

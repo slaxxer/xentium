@@ -1,0 +1,52 @@
+/* ============================================================================
+   Buttons — the single source of truth for the core button classes.
+   Every button surface is ONE solid colour driven by a component token
+   (--btn-bg / --btn-danger-bg) — never a gradient. Radius + colour are editable
+   from the Style Editor → Buttons section. Feature stylesheets must NOT redefine
+   .btn-primary / .btn-danger / .btn-ghost; extend with their own modifier instead.
+   ============================================================================ */
+
+.btn-primary {
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  padding: var(--sp-2) var(--sp-5);
+  font-size: var(--fs-sm);
+
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-danger {
+  background: var(--btn-danger-bg);
+  color: var(--c-on-accent);
+  border: none;
+  border-radius: var(--btn-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  padding: var(--sp-2) var(--sp-5);
+  font-size: var(--fs-sm);
+
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-fg-muted);
+  border: 1px solid var(--c-border);
+  border-radius: var(--btn-radius);
+  font-weight: 500;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  transition: border-color 0.15s, color 0.15s;
+  padding: var(--sp-2) var(--sp-4);
+
+  &:hover:not(:disabled) { border-color: var(--c-accent-glow); color: var(--c-accent); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+}

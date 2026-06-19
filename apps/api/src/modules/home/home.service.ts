@@ -70,15 +70,20 @@ export const homeService = {
     }
   },
 
-  /** Public headline counts for the guest landing hero. */
+  /** Public headline counts for the guest landing hero + site footer. */
   async getStats() {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    const [members, articles, today] = await Promise.all([
+    const [members, articles, today, newest] = await Promise.all([
       prisma.user.count({ where: { isActive: true } }),
       prisma.article.count({ where: { status: "published", deletedAt: null } }),
       prisma.article.count({ where: { status: "published", deletedAt: null, publishedAt: { gte: dayAgo } } }),
+      prisma.user.findFirst({
+        where: { isActive: true },
+        orderBy: { createdAt: "desc" },
+        select: { username: true },
+      }),
     ]);
-    return { members, articles, today };
+    return { members, articles, today, newestMember: newest?.username ?? null };
   },
 
   /**

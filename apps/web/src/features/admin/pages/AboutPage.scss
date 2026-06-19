@@ -10,7 +10,7 @@
 .ab-hero {
   position: relative;
   overflow: hidden;
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
   display: flex;
@@ -36,8 +36,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  box-shadow: 0 10px 28px rgba(109, 86, 230, 0.4);
+  color: var(--c-on-accent);
+  box-shadow: var(--shadow-glow);
 }
 .ab-hero__id { position: relative; z-index: 1; min-width: 0; }
 .ab-hero__id h2 {
@@ -84,7 +84,7 @@
 .ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
 
 .ab-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   padding: 22px 24px;
@@ -153,7 +153,7 @@
   color: var(--c-fg);
   transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, background 0.15s;
 }
-.ab-reslink:hover { border-color: transparent; transform: translateY(-2px); box-shadow: var(--shadow-pop); background: var(--c-card); }
+.ab-reslink:hover { border-color: transparent; transform: translateY(-2px); box-shadow: var(--shadow-pop); background: var(--card-bg); }
 .ab-reslink__ic {
   width: 38px;
   height: 38px;
@@ -165,7 +165,7 @@
   align-items: center;
   justify-content: center;
 }
-.ab-reslink:hover .ab-reslink__ic { background: var(--c-accent); color: #fff; }
+.ab-reslink:hover .ab-reslink__ic { background: var(--c-accent); color: var(--c-on-accent); }
 .ab-reslink__t { min-width: 0; }
 .ab-reslink__t b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
 .ab-reslink__t span { font-size: 12px; font-weight: 600; color: var(--c-fg-subtle); }

@@ -44,7 +44,7 @@
   height: 38px;
   padding: 0 15px 0 13px;
   border-radius: var(--radius-pill);
-  background: var(--c-card);
+  background: var(--card-bg);
   box-shadow: var(--shadow-card);
   font-family: var(--font-body);
   font-weight: 700;
@@ -108,7 +108,7 @@
 .set-content { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 
 .set-card {
-  background: var(--c-card);
+  background: var(--card-bg);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   /* overflow intentionally visible so custom <Select> menus can escape the card */
@@ -216,11 +216,11 @@
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: var(--c-card);
-  border-radius: var(--radius-md);
+  background: var(--menu-bg);
+  border-radius: var(--menu-radius);
   padding: 6px;
   box-shadow: var(--shadow-pop);
-  border: 1px solid var(--c-border);
+  border: 1px solid var(--menu-border-color);
   max-height: 260px;
   overflow-y: auto;
   animation: sel-pop 0.14s ease-out;
@@ -268,7 +268,7 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--c-on-accent);
   box-shadow: var(--shadow-inset-knob);
   transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }

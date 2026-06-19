@@ -1,14 +1,14 @@
 import "./Avatar.scss";
 
-/** Identity gradient stop-pairs (Hearth reference set). Picked deterministically by id. */
+/** Identity gradient stop-pairs (Nebula reference set). Picked deterministically by id. */
 const GRADIENTS: [string, string][] = [
-  ["#7c6af7", "#a78bfa"],
-  ["#f0758b", "#f4a259"],
-  ["#4cc4c0", "#5b8def"],
-  ["#f4a259", "#e8c468"],
-  ["#5b8def", "#7c6af7"],
-  ["#34d399", "#4cc4c0"],
-  ["#a78bfa", "#f0758b"],
+  ["#5865f2", "#7c84ff"],
+  ["#00b1cf", "#2bd4ee"],
+  ["#2bd4ee", "#5865f2"],
+  ["#23a55a", "#00b1cf"],
+  ["#5b8def", "#7c84ff"],
+  ["#34d399", "#2bd4ee"],
+  ["#7c84ff", "#5865f2"],
 ];
 
 function hashStr(s: string): number {

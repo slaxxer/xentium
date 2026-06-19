@@ -32,10 +32,10 @@ function timeAgo(iso: string | null): string {
 
 /** Deterministic placeholder media gradient for articles with no featured image. */
 const MEDIA_GRADIENTS = [
-  "linear-gradient(135deg,#ff9a6c,#ff6f9c 55%,#6d56e6)",
-  "linear-gradient(135deg,#6bd4ff,#6d8bff 55%,#8b5cf6)",
-  "linear-gradient(135deg,#ffce6b,#ff8a6a 55%,#e0568f)",
-  "linear-gradient(135deg,#5fe3c0,#4f9bff 60%,#6d56e6)",
+  "linear-gradient(135deg,#7c84ff,#5865f2 55%,#2bd4ee)",
+  "linear-gradient(135deg,#2bd4ee,#5865f2 55%,#7c84ff)",
+  "linear-gradient(135deg,#5fe3c0,#23a55a 55%,#00b1cf)",
+  "linear-gradient(135deg,#6bd4ff,#5865f2 60%,#8b8fff)",
 ];
 function mediaGradient(key: string): string {
   let h = 0;
@@ -43,7 +43,7 @@ function mediaGradient(key: string): string {
   return MEDIA_GRADIENTS[Math.abs(h) % MEDIA_GRADIENTS.length]!;
 }
 
-const SPACE_COLORS = ["#6d56e6", "#ff7a59", "#34d399", "#f4a259", "#5b8def", "#4cc4c0"];
+const SPACE_COLORS = ["#5865f2", "#00b1cf", "#23a55a", "#f4a259", "#5b8def", "#7c84ff"];
 
 type FeedFilter = "latest" | "following" | "top";
 
@@ -310,38 +310,6 @@ function ProgressionCard() {
   );
 }
 
-interface OnlineData {
-  total: number;
-  users: { username: string; avatar: string | null }[];
-}
-
-function OnlineNow() {
-  const { t } = useTranslation("home");
-  const { data } = useQuery<OnlineData>({
-    queryKey: ["online-count"],
-    queryFn: () => api.get("/online"),
-    refetchInterval: 60_000,
-    placeholderData: { total: 0, users: [] },
-  });
-  const users = data?.users ?? [];
-  if (users.length === 0) return null;
-  const shown = users.slice(0, 7);
-  const extra = (data?.total ?? users.length) - shown.length;
-  return (
-    <section className="hf-card">
-      <h4 className="hf-railhead hf-railhead--row">
-        {t("online.title")} <em className="hf-onlinen">{data?.total ?? users.length}</em>
-      </h4>
-      <div className="hf-onlinerow">
-        {shown.map((u) => (
-          <Avatar key={u.username} user={{ username: u.username, avatar: u.avatar }} size={36} online />
-        ))}
-        {extra > 0 && <div className="hf-onlinemore">+{extra}</div>}
-      </div>
-    </section>
-  );
-}
-
 interface SuggestedUser {
   id: string;
   username: string;
@@ -473,7 +441,6 @@ export function HomePage() {
 
       <aside className="hf-right">
         <ProgressionCard />
-        <OnlineNow />
         <HotThreads />
         <PopularTags />
         <SuggestedPeople />

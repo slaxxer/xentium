@@ -7,7 +7,7 @@
    ============================================================================ */
 
 .guest-home {
-  --shadow-cta: 0 8px 22px rgba(109, 86, 230, 0.28);
+  --shadow-cta: var(--shadow-glow);
   --gh-maxw: 1200px;
 
   max-width: var(--gh-maxw);
@@ -28,7 +28,7 @@
   .btn--ghost:hover { background: var(--c-accent-soft); color: var(--c-accent); }
   .btn--outline { border: 1px solid var(--c-border-hi); color: var(--c-fg); }
   .btn--outline:hover { border-color: var(--c-accent); color: var(--c-accent); }
-  .btn--primary { background: var(--c-accent); color: #fff; box-shadow: var(--shadow-cta); }
+  .btn--primary { background: var(--btn-bg); color: var(--btn-fg); box-shadow: var(--shadow-cta); }
   .btn--primary:hover { filter: brightness(1.06); }
   .btn--lg { height: 50px; padding: 0 26px; font-size: 15.5px; }
   .btn--block { width: 100%; }
@@ -66,7 +66,7 @@
 
   .ghero__side { display: flex; align-items: center; justify-content: center; }
   .gpresence {
-    width: 100%; background: var(--c-card); border: 1px solid var(--c-border);
+    width: 100%; background: var(--card-bg); border: 1px solid var(--c-border);
     border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 18px;
   }
   .gpresence__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -81,7 +81,7 @@
   .gpresence__dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c-success); flex: none; border: 2px solid var(--c-card); box-shadow: 0 0 0 1.5px var(--c-success); }
 
   /* avatars */
-  .gava { border-radius: 50%; flex: none; color: #fff; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; }
+  .gava { border-radius: 50%; flex: none; color: var(--c-on-accent); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 800; }
   .gava--xs { width: 24px; height: 24px; font-size: 9.5px; }
   .gava--sm { width: 30px; height: 30px; font-size: 11px; }
   .gava--md { width: 38px; height: 38px; font-size: 13px; }
@@ -105,7 +105,7 @@
     padding: 7px 15px; border: none; background: none; cursor: pointer; border-radius: var(--radius-pill); transition: background 0.15s, color 0.15s;
   }
   .gtab:hover { color: var(--c-fg); }
-  .gtab.is-active { background: var(--c-accent); color: #fff; }
+  .gtab.is-active { background: var(--c-accent); color: var(--c-on-accent); }
   .gfeed__count { font-size: 13px; font-weight: 700; color: var(--c-fg-subtle); }
   .gfeed__new { margin-left: auto; }
 
@@ -180,11 +180,11 @@
   .gcard__pad { padding: 18px; }
   .gcard__title { font-family: var(--font-display); font-weight: 600; font-size: 13px; letter-spacing: 0.02em; text-transform: uppercase; color: var(--c-fg-subtle); margin: 0 0 14px; }
 
-  .gjoin { background: linear-gradient(150deg, var(--c-accent), color-mix(in srgb, var(--c-accent) 60%, var(--c-accent2))); color: #fff; border: none; }
+  .gjoin { background: linear-gradient(150deg, var(--c-accent), color-mix(in srgb, var(--c-accent) 60%, var(--c-accent2))); color: var(--c-on-accent); border: none; }
   .gjoin h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; margin: 0; }
   .gjoin p { font-size: 13.5px; line-height: 1.5; opacity: 0.92; margin: 8px 0 16px; font-weight: 600; }
-  .gjoin .btn--primary { background: #fff; color: var(--c-accent); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18); }
-  .gjoin .btn--primary:hover { filter: none; background: #fff; transform: translateY(-1px); }
+  .gjoin .btn--primary { background: var(--c-on-accent); color: var(--c-accent); box-shadow: var(--shadow-card); }
+  .gjoin .btn--primary:hover { filter: none; background: var(--c-on-accent); transform: translateY(-1px); }
   .gjoin__alt { margin-top: 11px; text-align: center; font-size: 12.5px; font-weight: 700; opacity: 0.9; }
   .gjoin__alt a { text-decoration: underline; font-weight: 800; cursor: pointer; }
 
@@ -214,7 +214,7 @@
   }
   .gtoast.is-show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
   .gtoast b { font-family: var(--font-display); font-weight: 600; font-size: 14px; }
-  .gtoast button { background: var(--c-accent); color: #fff; border: none; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 13px; padding: 7px 15px; border-radius: var(--radius-pill); }
+  .gtoast button { background: var(--c-accent); color: var(--c-on-accent); border: none; cursor: pointer; font-family: var(--font-display); font-weight: 600; font-size: 13px; padding: 7px 15px; border-radius: var(--radius-pill); }
 
   @media (max-width: 1080px) {
     .ghero { grid-template-columns: 1fr; }

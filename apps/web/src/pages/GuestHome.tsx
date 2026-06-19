@@ -35,7 +35,7 @@ function Icon({ name, size = 18, stroke = 2 }: { name: string; size?: number; st
   );
 }
 
-const CAT_COLORS = ["#6d56e6", "#1fab74", "#ff7a59", "#f4a259", "#8b78ff", "#2a6fdb", "#0ea5a5", "#e0518a"];
+const CAT_COLORS = ["#5865f2", "#23a55a", "#00b1cf", "#f4a259", "#7c84ff", "#2a6fdb", "#0ea5a5", "#e0518a"];
 const CAT_ICONS = ["changelog", "life", "sparkles", "puzzle", "zap", "forum"];
 function hashIndex(key: string, mod: number) {
   let h = 0;
