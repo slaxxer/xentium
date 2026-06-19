@@ -70,8 +70,8 @@ export function ProfileTab() {
   });
 
   const bioMutation = useMutation({
-    mutationFn: (data: { bio: string }) => api.patch("/account/profile", data),
-    onSuccess: (updated: any) => {
+    mutationFn: (data: { bio: string }) => api.patch<{ bio: string }>("/account/profile", data),
+    onSuccess: (updated) => {
       authStore.set(authStore.token!, { ...authStore.user!, bio: updated.bio });
       queryClient.invalidateQueries({ queryKey: ["profile", user?.username] });
       swalToast(t("profile.bioSaved"), "success");
