@@ -12,6 +12,7 @@ import { swalToast, apiErrorMessage, swalConfirm } from "../../lib/swal";
 import { Username } from "../../components/Username";
 import { UserAvatar } from "../../components/UserAvatar";
 import { UserSearch } from "./UserSearch";
+import { slotRegistry } from "../../plugins/slotRegistry";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -50,19 +51,6 @@ function timeAgo(d: string | null) {
 
 function Tag({ children, crit }: { children: React.ReactNode; crit?: boolean }) {
   return <span className={`mc-tag${crit ? " mc-tag--crit" : ""}`}>{children}</span>;
-}
-
-function Panel({ icon, title, count, children }: { icon: typeof faBan; title: string; count?: number; children: React.ReactNode }) {
-  return (
-    <div className="mc-uprofile__panel">
-      <div className="mc-uprofile__panelhead">
-        <FontAwesomeIcon icon={icon} />
-        <b>{title}</b>
-        {count != null && <span className="mc-uprofile__panelcount">{count}</span>}
-      </div>
-      {children}
-    </div>
-  );
 }
 
 // ── Inline warn / ban forms ─────────────────────────────────────────────────────
@@ -214,8 +202,11 @@ export function UsersSection({ contextUsername }: { contextUsername: string }) {
 
 // ── Warnings / Bans tabs (each loads its own request on demand) ──────────────────
 
-function UserModTabs({ userId, username, canLogout, onChanged }: { userId: string; username: string; canLogout: boolean; onChanged: () => void }) {
-  const [tab, setTab] = useState<"warnings" | "bans">("warnings");
+function UserModTabs({ userId, username, canLogout, onChanged, network, sessions }: {
+  userId: string; username: string; canLogout: boolean; onChanged: () => void;
+  network: ModUserProfile["network"]; sessions: ModUserProfile["sessions"];
+}) {
+  const [tab, setTab] = useState<"warnings" | "bans" | "ips" | "cookies" | "sessions">("warnings");
 
   const warningsQ = useQuery<Warning[]>({
     queryKey: ["mc-user-warnings", userId],
@@ -253,7 +244,7 @@ function UserModTabs({ userId, username, canLogout, onChanged }: { userId: strin
     if (ok) revokeMut.mutate();
   };
 
-  const TabBtn = ({ id, icon, label, count }: { id: "warnings" | "bans"; icon: typeof faBan; label: string; count?: number }) => (
+  const TabBtn = ({ id, icon, label, count }: { id: typeof tab; icon: typeof faBan; label: string; count?: number }) => (
     <button type="button" className={`mc-uptabs__tab${tab === id ? " is-on" : ""}`} onClick={() => setTab(id)}>
       <FontAwesomeIcon icon={icon} /> {label}
       {count != null && <span className="mc-uptabs__count">{count}</span>}
@@ -266,6 +257,9 @@ function UserModTabs({ userId, username, canLogout, onChanged }: { userId: strin
         <div className="mc-uptabs__tabs">
           <TabBtn id="warnings" icon={faTriangleExclamation} label="Warnings" count={warningsQ.data?.length} />
           <TabBtn id="bans"     icon={faBan}                 label="Bans"     count={bansQ.data?.length} />
+          <TabBtn id="ips"      icon={faNetworkWired}        label="IPs"      count={network.ips.length} />
+          <TabBtn id="cookies"  icon={faFingerprint}         label="Cookies"  count={network.cookies.length} />
+          <TabBtn id="sessions" icon={faDesktop}             label="Sessions" count={sessions.length} />
         </div>
         {canLogout && (
           <button type="button" className="mc-btn mc-btn--danger mc-btn--sm" onClick={handleLogoutAll} disabled={revokeMut.isPending}>
@@ -330,6 +324,46 @@ function UserModTabs({ userId, username, canLogout, onChanged }: { userId: strin
                     </div>
                   )}
                 </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "ips" && (
+          network.ips.length === 0 ? <p className="mc-uprofile__none">No recorded IPs.</p> : (
+            <div className="mc-list">
+              {network.ips.map((r) => (
+                <div key={r.ip} className="mc-row"><div className="mc-row__main">
+                  <p className="mc-row__title" style={{ fontFamily: "var(--ff-mono)" }}>{r.ip}</p>
+                  <span className="mc-row__meta">{r.count} event(s) · last {timeAgo(r.lastSeen)}</span>
+                  {slotRegistry.getIpEnrichments().map((e) => <e.component key={e.id} ip={r.ip} />)}
+                </div></div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "cookies" && (
+          network.cookies.length === 0 ? <p className="mc-uprofile__none">No device cookies.</p> : (
+            <div className="mc-list">
+              {network.cookies.map((r) => (
+                <div key={r.deviceCookieId} className="mc-row"><div className="mc-row__main">
+                  <p className="mc-row__title" style={{ fontFamily: "var(--ff-mono)" }}>{r.deviceCookieId.slice(0, 18)}…</p>
+                  <span className="mc-row__meta">{r.count} event(s) · last {timeAgo(r.lastSeen)}</span>
+                </div></div>
+              ))}
+            </div>
+          )
+        )}
+
+        {tab === "sessions" && (
+          sessions.length === 0 ? <p className="mc-uprofile__none">No active sessions.</p> : (
+            <div className="mc-list">
+              {sessions.map((s) => (
+                <div key={s.id} className="mc-row"><div className="mc-row__main">
+                  <p className="mc-row__title">{s.userAgent ? s.userAgent.slice(0, 60) : "Unknown device"}</p>
+                  <span className="mc-row__meta" style={{ fontFamily: "var(--ff-mono)" }}>{s.ip ?? "no ip"} · active {timeAgo(s.lastUsedAt)}</span>
+                </div></div>
               ))}
             </div>
           )
@@ -437,58 +471,8 @@ function UserProfileView({
         <ActionBar userId={user.id} username={user.username} banned={isBanned} onDone={onChanged} />
       )}
 
-      {/* Warnings + Bans — tabbed, each loads on demand */}
-      <UserModTabs userId={user.id} username={user.username} canLogout={canLogout} onChanged={onChanged} />
-
-      {/* Network — IPs */}
-      <Panel icon={faNetworkWired} title="IP addresses" count={network.ips.length}>
-        {network.ips.length === 0 ? <p className="mc-uprofile__none">No recorded IPs.</p> : (
-          <div className="mc-list">
-            {network.ips.map((r) => (
-              <div key={r.ip} className="mc-row">
-                <div className="mc-row__main">
-                  <p className="mc-row__title" style={{ fontFamily: "var(--ff-mono)" }}>{r.ip}</p>
-                  <span className="mc-row__meta">{r.count} event(s) · last {timeAgo(r.lastSeen)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      {/* Network — device cookies */}
-      <Panel icon={faFingerprint} title="Device cookies" count={network.cookies.length}>
-        {network.cookies.length === 0 ? <p className="mc-uprofile__none">No device cookies.</p> : (
-          <div className="mc-list">
-            {network.cookies.map((r) => (
-              <div key={r.deviceCookieId} className="mc-row">
-                <div className="mc-row__main">
-                  <p className="mc-row__title" style={{ fontFamily: "var(--ff-mono)" }}>{r.deviceCookieId.slice(0, 18)}…</p>
-                  <span className="mc-row__meta">{r.count} event(s) · last {timeAgo(r.lastSeen)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
-
-      {/* Active sessions */}
-      <Panel icon={faDesktop} title="Active sessions" count={sessions.length}>
-        {sessions.length === 0 ? <p className="mc-uprofile__none">No active sessions.</p> : (
-          <div className="mc-list">
-            {sessions.map((s) => (
-              <div key={s.id} className="mc-row">
-                <div className="mc-row__main">
-                  <p className="mc-row__title">{s.userAgent ? s.userAgent.slice(0, 60) : "Unknown device"}</p>
-                  <span className="mc-row__meta" style={{ fontFamily: "var(--ff-mono)" }}>
-                    {s.ip ?? "no ip"} · active {timeAgo(s.lastUsedAt)}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </Panel>
+      {/* Warnings · Bans · IPs · Device cookies · Sessions — all tabbed */}
+      <UserModTabs userId={user.id} username={user.username} canLogout={canLogout} onChanged={onChanged} network={network} sessions={sessions} />
 
     </div>
   );

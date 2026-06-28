@@ -19,14 +19,19 @@ export interface ScheduledJobDef {
   description:    string;
   defaultCron:    string;
   minIntervalSec: number;   // guardrail: reject schedules that fire more often than this
+  defaultEnabled?: boolean; // default true; set false for opt-in jobs (e.g. appearance publish)
 }
 
 export const SCHEDULED_JOBS: ScheduledJobDef[] = [
   {
+    // Generic cadence that fires every plugin-registered security scan. Core ships
+    // NO detection of its own — with no plugin registered this run is a no-op. It
+    // lives in core (not in a plugin) so it's foundation: any plugin's
+    // `registerSecurityScan` runs on this schedule without owning a cron itself.
     key: "security-analysis", schedulerId: "security-analysis-repeat",
     queue: queues.securityAnalysis, jobName: "security-analysis",
-    label: "Security analysis",
-    description: "Scans recent security events for suspicious patterns and opens moderation cases.",
+    label: "Security scans",
+    description: "Runs plugin-registered security scans (e.g. abuse detection). No-op when no plugin provides detection.",
     defaultCron: "*/30 * * * *", minIntervalSec: 5 * 60,
   },
   {
@@ -50,6 +55,14 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     description: "Refreshes plugin license entitlements from the marketplace (30-day grace applies).",
     defaultCron: "0 2 * * *", minIntervalSec: 60 * 60,
   },
+  {
+    key: "appearance-publish", schedulerId: "appearance-publish-repeat",
+    queue: queues.appearancePublish, jobName: "appearance-publish",
+    label: "Publish appearance changes",
+    description: "Applies staged (draft) Style Editor changes to the live site at the scheduled time. Disabled by default — use 'Run now' to publish immediately, or enable a schedule to auto-publish pending drafts.",
+    defaultCron: "0 3 * * *", minIntervalSec: 5 * 60,
+    defaultEnabled: false,
+  },
 ];
 
 export type ScheduleMode = "interval" | "daily" | "cron";
@@ -71,11 +84,12 @@ const settingKey = (key: string) => `jobs.${key}`;
 
 /** Derive a friendly default config from a job's default cron. */
 export function defaultConfig(def: ScheduledJobDef): JobScheduleConfig {
+  const enabled = def.defaultEnabled ?? true;
   const interval = def.defaultCron.match(/^\*\/(\d+) \* \* \* \*$/);
-  if (interval) return { enabled: true, mode: "interval", intervalMin: Number(interval[1]), tz: "UTC" };
+  if (interval) return { enabled, mode: "interval", intervalMin: Number(interval[1]), tz: "UTC" };
   const daily = def.defaultCron.match(/^(\d+) (\d+) \* \* \*$/);
-  if (daily) return { enabled: true, mode: "daily", dailyTime: `${daily[2]!.padStart(2, "0")}:${daily[1]!.padStart(2, "0")}`, tz: "UTC" };
-  return { enabled: true, mode: "cron", cron: def.defaultCron, tz: "UTC" };
+  if (daily) return { enabled, mode: "daily", dailyTime: `${daily[2]!.padStart(2, "0")}:${daily[1]!.padStart(2, "0")}`, tz: "UTC" };
+  return { enabled, mode: "cron", cron: def.defaultCron, tz: "UTC" };
 }
 
 /** Turn a stored config into a concrete cron pattern. */

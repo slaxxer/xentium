@@ -1,5 +1,6 @@
 import { authStore, type AuthUser } from "./authStore";
 import { applyServerLocale } from "./i18n";
+import { fatalErrorStore } from "./fatalError";
 
 // The /auth/me endpoint returns groups as the UserGroup join table:
 // [{ group: { id, name, key } }]. Flatten to [{ id, name, key }].
@@ -92,9 +93,25 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   if (!res.ok) {
     let detail: unknown;
     try { detail = await res.json(); } catch { detail = await res.text(); }
-    const err = new Error((detail as any)?.error ?? `http_${res.status}`);
+    const errObj = (detail as any)?.error;
+    const err = new Error(errObj?.message ?? errObj ?? `http_${res.status}`);
     (err as any).status = res.status;
     (err as any).detail = detail;
+
+    // Server-class failure → trip the global fatal-halt overlay (WoltLab style).
+    // 4xx (validation, not-found, forbidden, rate-limit) intentionally do NOT halt;
+    // they keep surfacing as inline toasts via the normal throw path.
+    // Maintenance mode also returns 503 but is an intentional state — let the
+    // MaintenanceGate render its own screen instead of the fatal overlay.
+    const isMaintenance = errObj?.code === "NEC-CORE-8010" || (detail as any)?.maintenance === true;
+    if (res.status >= 500 && !isMaintenance) {
+      fatalErrorStore.trigger({
+        code:     errObj?.code ?? `NEC-API-${res.status}`,
+        message:  errObj?.message ?? "An unexpected server error occurred.",
+        severity: errObj?.severity ?? "critical",
+        status:   res.status,
+      });
+    }
     throw err;
   }
 

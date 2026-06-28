@@ -87,9 +87,30 @@ export interface ModCanvasSectionSlot {
   label: string;
   /** FontAwesome IconDefinition */
   icon: unknown;
-  component: ComponentType<{ onNav: (id: string) => void }>;
+  /** `contextUsername` is the profile the mod is currently viewing (`/u/:username`),
+   *  or "" when not on a profile — lets sections render user-scoped tools inline. */
+  component: ComponentType<{ onNav: (id: string) => void; contextUsername?: string }>;
   /** Called to get the badge count for this section's tab */
   badgeCountFn?: () => Promise<number>;
+}
+
+// ── ACP User Detail panel (registered by plugins, rendered on /admin/users/:id) ─
+// Appended below the core panels on the User Detail page. The component owns its
+// own card chrome and gates its own data (the backing endpoint enforces perms).
+export interface UserDetailPanelSlot {
+  id: string;
+  component: ComponentType<{ userId: string; username: string }>;
+  /** Lower renders higher up the page. */
+  order?: number;
+}
+
+// ── Per-IP enrichment (rendered inline next to an IP wherever core lists IPs) ──
+// e.g. advanced-moderation renders geo / VPN / proxy / risk for the given IP.
+// Core passes the IP; the component fetches its own data and renders nothing if
+// the plugin can't enrich it (no data / not permitted).
+export interface IpEnrichmentSlot {
+  id: string;
+  component: ComponentType<{ ip: string }>;
 }
 
 // ── Registry ──────────────────────────────────────────────────────────────────
@@ -102,6 +123,8 @@ class SlotRegistry {
   private pluginMetas:       PluginMeta[]            = [];
   private searchTabs:        SearchTabSlot[]         = [];
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
+  private userDetailPanels:  UserDetailPanelSlot[]    = [];
+  private ipEnrichments:     IpEnrichmentSlot[]       = [];
   private profileStats:      ProfileStatSlot[]        = [];
   private profileActions:    ProfileActionSlot[]      = [];
   private headerWidgets:     HeaderWidgetSlot[]       = [];
@@ -124,6 +147,8 @@ class SlotRegistry {
   registerRoute(route: PluginRoute)                         { this._own(route.path);  this.routes.push(route); }
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
+  registerUserDetailPanel(panel: UserDetailPanelSlot)       { this._own(panel.id);    this.userDetailPanels.push(panel); }
+  registerIpEnrichment(slot: IpEnrichmentSlot)              { this._own(slot.id);     this.ipEnrichments.push(slot); }
   registerProfileStat(stat: ProfileStatSlot)                { this._own(stat.id);     this.profileStats.push(stat); }
   registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
   registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
@@ -133,6 +158,8 @@ class SlotRegistry {
   getPrivacySections()   { return [...this.privacySections]; }
   getSearchTabs()        { return [...this.searchTabs]; }
   getModCanvasSections() { return [...this.modCanvasSections]; }
+  getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getIpEnrichments()     { return [...this.ipEnrichments]; }
   getProfileStats()      { return [...this.profileStats]; }
   getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
@@ -168,6 +195,8 @@ class SlotRegistry {
     this.pluginMetas       = this.pluginMetas.filter((m) => m.pluginId !== pluginId);
     this.searchTabs        = this.searchTabs.filter((t) => !this._ownedBy(t.id, pluginId));
     this.modCanvasSections = this.modCanvasSections.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.userDetailPanels  = this.userDetailPanels.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.ipEnrichments     = this.ipEnrichments.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileStats      = this.profileStats.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
     this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));

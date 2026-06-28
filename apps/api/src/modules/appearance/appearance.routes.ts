@@ -11,13 +11,16 @@ import { prisma } from "../../infrastructure/db.js";
 export const appearanceRouter: Router = Router();
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
 
-// Public — serves the active token overrides as CSS for injection in the frontend
-appearanceRouter.get("/css", async (_req, res, next) => {
+// Public — serves the active token overrides as CSS for injection in the frontend.
+// `?source=draft` renders the unpublished draft instead (used by the Style Editor's
+// own preview so an admin can see staged changes); it is never cached.
+appearanceRouter.get("/css", async (req, res, next) => {
   try {
-    const tokens = await appearanceService.getTokenOverrides();
+    const draft  = req.query.source === "draft";
+    const tokens = draft ? await appearanceService.getDraftTokens() : await appearanceService.getTokenOverrides();
     const css    = await appearanceService.buildCSS(tokens);
     res.setHeader("Content-Type", "text/css; charset=utf-8");
-    res.setHeader("Cache-Control", "public, max-age=60");
+    res.setHeader("Cache-Control", draft ? "no-store" : "public, max-age=60");
     res.send(css);
   } catch (err) { next(err); }
 });
@@ -69,10 +72,12 @@ appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
       label: z.string().optional(),
     }).parse(req.body);
 
-    await appearanceService.saveTokens(
+    // Edits land in the DRAFT — they go live only on publish (Run now or the
+    // scheduled appearance-publish job). No version bump here, so other clients
+    // keep seeing the published theme until publish.
+    await appearanceService.saveDraftTokens(
       { light: body.light, dark: body.dark },
       (req as any).userId,
-      body.label,
     );
     res.json({ ok: true });
   } catch (err) { next(err); }
@@ -105,6 +110,21 @@ appearanceRouter.post("/custom-css/preview", adminGuard, async (req, res, next) 
       theme: z.enum(["light", "dark"]),
     }).parse(req.body);
     res.json({ css: appearanceService.scopeCss(css, theme) });
+  } catch (err) { next(err); }
+});
+
+// Admin — is there a staged (draft) change waiting to be published?
+appearanceRouter.get("/draft-status", adminGuard, async (_req, res, next) => {
+  try {
+    res.json(await appearanceService.getDraftStatus());
+  } catch (err) { next(err); }
+});
+
+// Admin — publish the draft now (Run now). Promotes draft → live + SSE push.
+appearanceRouter.post("/publish", adminGuard, async (req, res, next) => {
+  try {
+    const published = await appearanceService.publishDraft((req as any).userId);
+    res.json({ ok: true, published });
   } catch (err) { next(err); }
 });
 

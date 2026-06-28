@@ -5,14 +5,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import {
   faShield, faXmark, faFlag, faTriangleExclamation,
-  faBan, faFolderOpen, faClipboardList, faBolt,
-  faGear, faCheck, faMinus, faRotateRight, faUserCheck,
+  faBan, faClipboardList, faBolt,
+  faGear, faCheck, faMinus, faRotateRight,
   faMoon, faSun, faMagnifyingGlass, faCheckDouble, faUser,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
-import { swalToast, apiErrorMessage, swalConfirm } from "../../lib/swal";
+import { swalToast, apiErrorMessage } from "../../lib/swal";
 import { Username } from "../../components/Username";
 import { UserAvatar } from "../../components/UserAvatar";
 import "./ModCanvas.scss";
@@ -24,7 +24,6 @@ import { UsersSection } from "./UsersSection";
 interface Summary  { pendingReports: number; openCases: number; activeWarnings: number; activeBans: number }
 interface UserRef  { id: string; username: string; badgeColor: string | null }
 interface Report   { id: string; targetType: string; targetId: string; reason: string; status: string; createdAt: string; reporter: UserRef }
-interface Case     { id: string; type: string; severity: string; status: string; signals: string[]; linkedUserIds: string[]; linkedUsers: { id: string; username: string; badgeColor: string | null }[]; ipAddresses: string[]; createdAt: string }
 interface LogEntry {
   id: string; actorId: string | null; actorType: string; action: string;
   targetType: string | null; targetId: string | null; reason: string | null; createdAt: string;
@@ -67,16 +66,6 @@ const ACTION_LABELS: Record<string, string> = {
 };
 function humanizeAction(a: string) {
   return ACTION_LABELS[a] ?? a.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-function humanizeSignal(s: string): string {
-  const l = s.toLowerCase();
-  if (l.includes("device cookie") || l.includes("shared by"))               return "Shared Device Cookie";
-  if (l.includes("failed login"))                                            return "Rapid Failed Logins, Same IP";
-  if ((l.includes("within") && l.includes("ban")) || l.includes("evasion")) return "Possible Ban Evasion";
-  if (l.includes("registration") || l.includes("registrations"))            return "Registration Burst — Same IP";
-  if (l.includes("same ip") || l.includes("from ip"))                       return "Same IP Address";
-  return s;
 }
 
 // ── Shared pieces ───────────────────────────────────────────────────────────────
@@ -128,7 +117,6 @@ function ActorName({ entry }: { entry: LogEntry }) {
 function DashboardSection({ summary, onNav }: { summary: Summary | undefined; onNav: (s: Section) => void }) {
   const tiles: { label: string; value: number; icon: typeof faFlag; tab: Section }[] = [
     { label:"Open reports", value: summary?.pendingReports ?? 0, icon: faFlag,                tab:"reports" },
-    { label:"Active cases", value: summary?.openCases ?? 0,      icon: faFolderOpen,          tab:"cases"   },
     { label:"Warnings",     value: summary?.activeWarnings ?? 0, icon: faTriangleExclamation, tab:"users"   },
     { label:"Active bans",  value: summary?.activeBans ?? 0,     icon: faBan,                 tab:"users"   },
   ];
@@ -141,7 +129,6 @@ function DashboardSection({ summary, onNav }: { summary: Summary | undefined; on
   const quick: { label: string; icon: typeof faFlag; tab: Section }[] = [
     { label:"Review reports", icon: faFlag,       tab:"reports" },
     { label:"Look up user",   icon: faUser,       tab:"users"   },
-    { label:"View cases",     icon: faFolderOpen, tab:"cases"   },
   ];
 
   return (
@@ -238,115 +225,6 @@ function ReportsSection() {
               </div>
             </div>
           ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Cases ─────────────────────────────────────────────────────────────────────
-
-function CasesSection() {
-  const qc = useQueryClient();
-  const { data, isLoading } = useQuery<Paged<Case>>({
-    queryKey: ["canvas-cases"],
-    queryFn:  () => api.get("/moderation/cases?limit=10"),
-  });
-
-  const updateMut = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.patch(`/moderation/cases/${id}`, { status }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["canvas-cases"] });
-      qc.invalidateQueries({ queryKey: ["mod-summary"] });
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  const banAllMut = useMutation({
-    mutationFn: (caseId: string) => api.post<{ userId: string; skipped: boolean }[]>(`/moderation/cases/${caseId}/ban-all`, {}),
-    onSuccess: (results) => {
-      qc.invalidateQueries({ queryKey: ["canvas-cases"] });
-      qc.invalidateQueries({ queryKey: ["mod-summary"] });
-      const banned  = results.filter((r) => !r.skipped).length;
-      const skipped = results.filter((r) =>  r.skipped).length;
-      swalToast(`Banned ${banned}${skipped ? `, ${skipped} skipped` : ""}.`, "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  const handleBanAll = async (c: Case) => {
-    const names = (c.linkedUsers ?? []).map((u) => u.username).join(", ");
-    const ok = await swalConfirm(
-      "Ban all linked accounts?",
-      `${names || c.linkedUserIds.join(", ")} — reason: "Multi-account policy violation"`,
-      "Ban All",
-    );
-    if (ok) banAllMut.mutate(c.id);
-  };
-
-  const total = data?.meta.total ?? 0;
-
-  return (
-    <div className="mc-pane">
-      <SectionHead title="Cases" sub={`${total} open ${total === 1 ? "investigation" : "investigations"}`} />
-
-      {isLoading ? (
-        <div className="mc-empty">Loading…</div>
-      ) : !data?.data.length ? (
-        <EmptyState>No open cases.</EmptyState>
-      ) : (
-        <div className="mc-cases">
-          {data.data.map((c) => {
-            const signals = Array.isArray(c.signals) ? c.signals as string[] : [];
-            const users   = c.linkedUsers ?? [];
-            const ips     = c.ipAddresses ?? [];
-            const busy    = updateMut.isPending || banAllMut.isPending;
-            return (
-              <div key={c.id} className="mc-case">
-                <div className="mc-case__top">
-                  <span className="mc-case__id">{c.type.replace(/_/g, " ")}</span>
-                  <Tag crit={c.severity === "high"}>{c.severity}</Tag>
-                  <Tag crit={c.status === "open"}>{c.status}</Tag>
-                </div>
-
-                <div className="mc-case__cols">
-                  <div>
-                    <div className="mc-case__coltitle">Users</div>
-                    {users.length === 0 ? <span className="mc-case__user">—</span> : users.map((u) => (
-                      <div key={u.id} className="mc-case__user">{u.username}</div>
-                    ))}
-                  </div>
-                  <div>
-                    <div className="mc-case__coltitle">Signals</div>
-                    {signals.map((s, i) => (
-                      <div key={i} className="mc-case__signal">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="mc-case__sigic" />
-                        <span>{humanizeSignal(s)}</span>
-                      </div>
-                    ))}
-                    {ips.map((ip) => (
-                      <div key={ip} className="mc-case__signal">
-                        <FontAwesomeIcon icon={faTriangleExclamation} className="mc-case__sigic" />
-                        <span style={{ fontFamily: "var(--ff-mono)" }}>IP: {ip}</span>
-                      </div>
-                    ))}
-                    {signals.length === 0 && ips.length === 0 && <span className="mc-case__user">—</span>}
-                  </div>
-                </div>
-
-                <div className="mc-case__foot">
-                  <span className={`mc-case__sev${c.severity === "high" ? " is-crit" : ""}`}>{c.severity} severity · {timeAgo(c.createdAt)}</span>
-                  <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" onClick={() => updateMut.mutate({ id: c.id, status: "reviewed" })} disabled={busy}>
-                    <FontAwesomeIcon icon={faUserCheck} /> Allow
-                  </button>
-                  <button type="button" className="mc-btn mc-btn--danger mc-btn--sm" onClick={() => handleBanAll(c)} disabled={busy}>
-                    <FontAwesomeIcon icon={faBan} /> Ban all
-                  </button>
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
@@ -514,7 +392,8 @@ export function ModCanvas() {
   }, [isMod, open]);
 
   const pluginBadgeTotal = Object.values(pluginBadgeCounts).reduce((a, b) => a + b, 0);
-  const badge = (summary?.pendingReports ?? 0) + (summary?.openCases ?? 0) + pluginBadgeTotal;
+  // Open-case count is contributed by the detection plugin's Cases section badge.
+  const badge = (summary?.pendingReports ?? 0) + pluginBadgeTotal;
 
   // Nav rail items. Counts (always rendered as red badges) come from the summary
   // and plugin badge functions; dashboard + audit log carry no count.
@@ -522,7 +401,6 @@ export function ModCanvas() {
     { id:"dashboard", label:"Dashboard", icon:faBolt                                              },
     { id:"users",     label:"Users",     icon:faUser                                              },
     { id:"reports",   label:"Reports",   icon:faFlag,                count: summary?.pendingReports },
-    { id:"cases",     label:"Cases",     icon:faFolderOpen,          count: summary?.openCases      },
     ...pluginSections.map((s) => ({ id: s.id, label: s.label, icon: s.icon as IconProp, count: pluginBadgeCounts[s.id] })),
     { id:"log",       label:"Audit log", icon:faClipboardList                                       },
   ];
@@ -583,9 +461,8 @@ export function ModCanvas() {
                 {section === "dashboard" && <DashboardSection summary={summary} onNav={setSection} />}
                 {section === "users"     && <UsersSection contextUsername={contextUsername} />}
                 {section === "reports"   && <ReportsSection />}
-                {section === "cases"     && <CasesSection />}
                 {section === "log"       && <LogSection />}
-                {pluginSections.map((s) => section === s.id && <s.component key={s.id} onNav={setSection} />)}
+                {pluginSections.map((s) => section === s.id && <s.component key={s.id} onNav={setSection} contextUsername={contextUsername} />)}
               </section>
             </div>
 

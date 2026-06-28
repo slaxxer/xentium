@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { prisma } from "../../infrastructure/db.js";
 import { activityService } from "../../modules/activity/activity.service.js";
+import { normalizeIp } from "../http/requestMeta.js";
 
 const MUTATING = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
@@ -26,7 +27,7 @@ export const acpActivityLogger: RequestHandler = (req, res, next) => {
           method: req.method,
           path: startPath,
           status: res.statusCode,
-          ip: req.ip ?? undefined,
+          ip: normalizeIp(req.ip),
           userAgent: Array.isArray(uaRaw) ? uaRaw[0] : uaRaw,
         }),
       )

@@ -1,4 +1,13 @@
 {
+  "steps": {
+    "welcome": "Welcome",
+    "environment": "Environment",
+    "database": "Database",
+    "site": "Site",
+    "admin": "Admin",
+    "finalize": "Finalize",
+    "done": "Done"
+  },
   "welcome": {
     "title": "Welcome to Nodevo",
     "subtitle": "A modern, blazing-fast forum platform. This wizard will guide you through installation in a couple of minutes.",
@@ -87,7 +96,21 @@
     "confirm": "Confirm password",
     "match": "Passwords match",
     "mismatch": "Passwords do not match",
-    "password_too_short": "Too short ({{length}}/5 characters)"
+    "password_too_short": "Too short ({{length}}/5 characters)",
+    "pw_rules": {
+      "length": "12+ characters",
+      "upper": "Uppercase letter",
+      "lower": "Lowercase letter",
+      "number": "A number",
+      "symbol": "A symbol"
+    },
+    "pw_strength": {
+      "empty": "Empty",
+      "weak": "Weak",
+      "fair": "Fair",
+      "good": "Good",
+      "strong": "Strong"
+    }
   },
   "finalize": {
     "title": "Finalize installation",

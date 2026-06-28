@@ -162,6 +162,15 @@ export interface PluginHost {
   notificationService: {
     dispatch: (opts: any) => Promise<void>;
   };
+  /** Core moderation primitives for plugin security scans. */
+  security: {
+    /** Open a review case (dedup + notify case managers), identical to core
+     *  security-analysis cases. `type` is a free string (e.g. "impossible_travel"). */
+    createCase: (opts: { type: string; severity: "low" | "medium" | "high"; signals: string[]; userIds: string[] }) => Promise<void>;
+    /** Permanently ban all non-staff, not-already-banned accounts in the set
+     *  (system-attributed). Returns the banned usernames. Used by paid auto-ban. */
+    autoBanMultiaccounts: (userIds: string[], reason: string) => Promise<string[]>;
+  };
 }
 
 // ── Plugin context (injected into onEnable / onDisable) ───────────────────────
@@ -207,6 +216,11 @@ export interface PluginContext {
 
   /** Register NEC error codes for the Error Reference ACP page. */
   registerNecCodes(codes: NecCodeDeclaration[]): void;
+
+  /** Register a periodic security scan. Invoked by the core security-analysis
+   *  job (every 30 min) after its built-in patterns. Use host.security.createCase
+   *  to open review cases. Deregistered automatically on plugin disable. */
+  registerSecurityScan(fn: () => Promise<void>): void;
 
   /** Dispatch a notification through the core notification service. */
   notify(opts: NotifyOptions): Promise<void>;

@@ -7,7 +7,7 @@ export interface MaintenanceStatus {
   message: string;
   progress: { label: string; percent: number };
   eta: string | null;
-  allowedGroup: string;
+  allowedGroups: string[];
 }
 
 /** Public maintenance status. Polled so the gate reacts when an admin toggles

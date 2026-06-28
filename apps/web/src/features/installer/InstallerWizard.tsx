@@ -23,6 +23,8 @@ import {
   faCircleCheck,
   faTriangleExclamation,
   faLanguage,
+  faAngleUp,
+  faAngleDown
 } from "@fortawesome/free-solid-svg-icons";
 import { installerApi } from "./installer.api.js";
 import { useTheme } from "../../hooks/useTheme.js";
@@ -62,6 +64,25 @@ const STEP_INDEX: Record<string, number> = {
   SITE_CONFIG: 3, ADMIN: 4, FINALIZE: 5, COMPLETE: 6,
 };
 
+// Advisory password-strength rules for the admin step meter. These drive the
+// meter/checklist UI only — the install gate validation stays in validateAdmin().
+const PW_RULES: { id: string; test: (v: string) => boolean }[] = [
+  { id: "length", test: (v) => v.length >= 12 },
+  { id: "upper",  test: (v) => /[A-Z]/.test(v) },
+  { id: "lower",  test: (v) => /[a-z]/.test(v) },
+  { id: "number", test: (v) => /[0-9]/.test(v) },
+  { id: "symbol", test: (v) => /[^A-Za-z0-9]/.test(v) },
+];
+
+function passwordStrength(pw: string) {
+  const passed = PW_RULES.filter((r) => r.test(pw)).length;
+  const level =
+    pw.length === 0 ? "empty" : passed <= 1 ? "weak" : passed <= 3 ? "fair" : passed === 4 ? "good" : "strong";
+  const color =
+    passed <= 1 ? "var(--error)" : passed <= 3 ? "var(--warning)" : passed === 4 ? "var(--accent)" : "var(--success)";
+  return { passed, level, color };
+}
+
 export function InstallerWizard() {
   const { t } = useTranslation("installer");
   const { theme, toggle } = useTheme();
@@ -83,7 +104,7 @@ export function InstallerWizard() {
   }, []);
 
   // Setup mode: no usable .env yet — the API is the minimal setup server and
-  // the DATABASE step collects credentials instead of testing a preconfigured
+  // the step collects credentials instead of testing a preconfigured
   // connection.
   const [setupMode, setSetupMode] = useState(false);
 
@@ -98,7 +119,7 @@ export function InstallerWizard() {
   const [dbForm, setDbForm] = useState({
     host: "localhost",
     port: "5432",
-    database: "nodevo",
+    database: "",
     user: "",
     password: "",
     redisUrl: "",
@@ -106,14 +127,14 @@ export function InstallerWizard() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [site, setSite] = useState({
-    siteName: "My Forum",
-    siteUrl: "https://forum.example.com",
+    siteName: "Nodevo",
+    siteUrl: "https://localhost",
     locale: "en",
     timezone: "UTC",
   });
   const [admin, setAdmin] = useState({
     email: "",
-    username: "admin",
+    username: "",
     password: "",
     confirm: "",
   });
@@ -292,7 +313,6 @@ export function InstallerWizard() {
       setProgressText(t("finalize.progress.complete"));
       await new Promise((r) => setTimeout(r, 500));
       setStep(TOTAL - 1);
-      spawnConfetti();
     } catch (e: unknown) {
       const raw = e instanceof Error ? e.message : String(e);
       // Map internal server error codes to readable messages
@@ -381,23 +401,35 @@ export function InstallerWizard() {
             </div>
             <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme">
               <FontAwesomeIcon icon={theme === "light" ? faMoon : faSun} />
-              {theme === "light" ? "Dark" : "Light"}
             </button>
           </div>
         </header>
 
-        <div className="step-indicator">
-          {STEPS_KEYS.map((_, i) => (
-            <span key={i} style={{ display: "inline-flex", alignItems: "center" }}>
-              <span
-                className={`step-dot ${dotState(i)}`}
-                onClick={() => !installing && i <= step && setStep(i)}
-              >
-                {i < step ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
-              </span>
-              {i < TOTAL - 1 && <span className={`step-line ${i < step ? "completed" : ""}`} />}
-            </span>
-          ))}
+        <div className="wiz-progress">
+          <div className="wiz-progress__inner">
+            <div className="wiz-progress__line-base" />
+            <div className="wiz-progress__line-fill" style={{ width: `${(step / TOTAL) * 100}%` }} />
+            <div className="wiz-progress__row">
+              {STEPS_KEYS.map((key, i) => {
+                const state = dotState(i);
+                const status = state === "error-step" ? "error" : i < step ? "done" : i === step ? "active" : "todo";
+                const clickable = !installing && i <= step;
+                return (
+                  <div
+                    key={key}
+                    className={`circ-item ${status === "active" ? "is-active" : ""}`}
+                    style={{ cursor: clickable ? "pointer" : "default" }}
+                    onClick={() => clickable && setStep(i)}
+                  >
+                    <div className={`circ ${status}`}>
+                      {status === "done" ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
+                    </div>
+                    <span className="circ-label">{t(`steps.${key}`)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="wizard-content">
@@ -579,7 +611,7 @@ export function InstallerWizard() {
                 style={{ marginBottom: 10 }}
                 onClick={() => setShowAdvanced((v) => !v)}
               >
-                {t("database.advanced")} {showAdvanced ? "▴" : "▾"}
+                {t("database.advanced")} {showAdvanced ? (<FontAwesomeIcon icon={faAngleDown} />) : (<FontAwesomeIcon icon={faAngleUp} />)}
               </button>
               {showAdvanced && (
                 <div className="form-group">
@@ -712,7 +744,7 @@ export function InstallerWizard() {
         );
       case 4: {
         const p = admin.password;
-        const strong = p.length >= 5 && /[0-9]/.test(p) && /[^a-zA-Z0-9]/.test(p);
+        const pw = passwordStrength(p);
         return (
           <>
             <h2 className="step-title">{t("admin.title")}</h2>
@@ -734,6 +766,7 @@ export function InstallerWizard() {
                   {t("admin.username")} <span className="required">*</span>
                 </label>
                 <input
+                  placeholder={"Administrator"}
                   value={admin.username}
                   onChange={(e) => setAdmin({ ...admin, username: e.target.value })}
                 />
@@ -748,33 +781,6 @@ export function InstallerWizard() {
                   onChange={(e) => setAdmin({ ...admin, password: e.target.value })}
                   placeholder={t("admin.password_hint")}
                 />
-                <span
-                  className="hint"
-                  style={{
-                    color: !p
-                      ? undefined
-                      : p.length < 5 || !strong
-                        ? "var(--warning)"
-                        : "var(--success)",
-                  }}
-                >
-                  {!p ? (
-                    t("admin.password_hint")
-                  ) : p.length < 5 ? (
-                    <>
-                      <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
-                      {t("admin.password_too_short", { length: p.length })}
-                    </>
-                  ) : strong ? (
-                    <>
-                      <FontAwesomeIcon icon={faCheck} /> {t("admin.password_strong")}
-                    </>
-                  ) : (
-                    <>
-                      <FontAwesomeIcon icon={faTriangleExclamation} /> {t("admin.password_weak")}
-                    </>
-                  )}
-                </span>
               </div>
             </div>
             <div className="form-group">
@@ -805,6 +811,39 @@ export function InstallerWizard() {
                   )}
                 </span>
               )}
+            </div>
+            {/* Password strength meter + rule checklist (advisory) */}
+            <div className="pw-box">
+              <div className="pw-meter">
+                <div className="pw-track">
+                  <div
+                    className="pw-fill"
+                    style={{
+                      width: `${(pw.passed / PW_RULES.length) * 100}%`,
+                      background: pw.color,
+                    }}
+                  />
+                </div>
+                <span
+                  className="pw-label"
+                  style={{ color: p.length === 0 ? "var(--text-muted)" : pw.color }}
+                >
+                  {t(`admin.pw_strength.${pw.level}`)}
+                </span>
+              </div>
+              <div className="pw-grid">
+                {PW_RULES.map((r) => {
+                  const ok = r.test(p);
+                  return (
+                    <div className={`pw-item ${ok ? "ok" : ""}`} key={r.id}>
+                      <span className="pw-ic">
+                        <FontAwesomeIcon icon={ok ? faCheck : faXmark} />
+                      </span>
+                      <span className="pw-text">{t(`admin.pw_rules.${r.id}`)}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </>
         );
@@ -878,7 +917,7 @@ export function InstallerWizard() {
             <div className="done-links">
               <a
                 className="done-link primary-link"
-                onClick={() => (window.location.href = "/")}
+                onClick={() => (window.location.href = "/admin")}
               >
                 <FontAwesomeIcon icon={faHouse} /> {t("done.goto")}
               </a>
@@ -886,23 +925,5 @@ export function InstallerWizard() {
           </>
         );
     }
-  }
-}
-
-function spawnConfetti() {
-  const colors = ["#7c6af7", "#a78bfa", "#34d399", "#fbbf24", "#f87171", "#38bdf8", "#ec4899"];
-  for (let i = 0; i < 80; i++) {
-    const p = document.createElement("div");
-    p.className = "confetti-piece";
-    p.style.left = Math.random() * 100 + "%";
-    p.style.top = -(Math.random() * 80 + 10) + "px";
-    p.style.width = Math.random() * 8 + 4 + "px";
-    p.style.height = Math.random() * 14 + 6 + "px";
-    p.style.background = colors[Math.floor(Math.random() * colors.length)]!;
-    p.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
-    p.style.animationDuration = Math.random() * 2 + 2.5 + "s";
-    p.style.animationDelay = Math.random() * 1.2 + "s";
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 4000);
   }
 }

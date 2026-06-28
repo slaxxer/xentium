@@ -23,7 +23,6 @@ const NAV_INDEX: NavEntry[] = [
   { labelKey: "nav.progression",      subKey: "nav.accessControl", icon: "layers",    to: "/admin/progression" },
   { labelKey: "nav.articles",         subKey: "nav.content",       icon: "file",      to: "/admin/articles" },
   { labelKey: "nav.categories",       subKey: "nav.content",       icon: "file",      to: "/admin/categories" },
-  { labelKey: "nav.reviewCases",      subKey: "nav.moderation",    icon: "shield",    to: "/admin/cases" },
   { labelKey: "nav.modLog",           subKey: "nav.moderation",    icon: "shield",    to: "/admin/modlog" },
   { labelKey: "nav.modSettings",      subKey: "nav.moderation",    icon: "shield",    to: "/admin/modsettings" },
   { labelKey: "nav.styleEditor",      subKey: "nav.appearance",    icon: "palette",   to: "/admin/style-editor" },

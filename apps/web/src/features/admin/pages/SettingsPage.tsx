@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPlus, faTrash, faCopy } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTrash, faCopy, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
@@ -175,7 +175,7 @@ function SaveChip({ saving }: { saving: boolean }) {
 interface SectionField {
   i18nKey: string;
   key: string;
-  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "datetime";
+  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime";
   placeholderKey?: string;
   optionsKey?: string;
   values?: string[];
@@ -210,7 +210,7 @@ const SECTIONS: Section[] = [
     id: "maintenance", icon: "cog",
     fields: [
       { i18nKey: "maintenanceEnabled",        key: "maintenance.enabled",          type: "toggle" },
-      { i18nKey: "maintenanceAllowedGroup",   key: "maintenance.allowed_group",    type: "group" },
+      { i18nKey: "maintenanceAllowedGroup",   key: "maintenance.allowed_groups",   type: "groups" },
       { i18nKey: "maintenanceTitle",          key: "maintenance.title",            type: "text", placeholderKey: "maintenanceTitle" },
       { i18nKey: "maintenanceMessage",        key: "maintenance.message",          type: "text", placeholderKey: "maintenanceMessage" },
       { i18nKey: "maintenanceProgressLabel",  key: "maintenance.progress_label",   type: "text", placeholderKey: "maintenanceProgressLabel" },
@@ -271,7 +271,7 @@ const DEFAULTS: Record<string, unknown> = {
   "features.members.enabled":           true,
   "site.landing":                       "home",
   "maintenance.enabled":                false,
-  "maintenance.allowed_group":          "admin",
+  "maintenance.allowed_groups":         ["admin"],
   "maintenance.title":                  "Down for a quick tune-up.",
   "maintenance.message":                "We're making the community better. We'll be back shortly.",
   "maintenance.progress_label":         "In progress",
@@ -402,6 +402,41 @@ export function SettingsPage() {
             options={allGroups.map((g) => ({ value: g.key, label: g.name }))}
           />
         );
+      case "groups": {
+        const selected: string[] = Array.isArray(val) ? (val as string[]) : val ? [String(val)] : ["admin"];
+        const toggle = (key: string) => {
+          const next = selected.includes(key) ? selected.filter((k) => k !== key) : [...selected, key];
+          set(f.key, next);
+        };
+        return (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {allGroups.map((g) => {
+              const on = selected.includes(g.key);
+              const isAdmin = g.key === "admin"; // admins always bypass — locked on
+              return (
+                <button
+                  key={g.key}
+                  type="button"
+                  onClick={() => !isAdmin && toggle(g.key)}
+                  disabled={isAdmin}
+                  title={isAdmin ? "Administrators always have access during maintenance" : undefined}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 12px",
+                    borderRadius: 8, cursor: isAdmin ? "default" : "pointer", fontSize: 13, fontWeight: 600,
+                    border: `1px solid ${on || isAdmin ? "var(--c-accent)" : "var(--c-border)"}`,
+                    background: on || isAdmin ? "var(--c-accent-soft)" : "var(--c-surface)",
+                    color: on || isAdmin ? "var(--c-accent)" : "var(--c-fg-muted)",
+                    opacity: isAdmin ? 0.85 : 1,
+                  }}
+                >
+                  {(on || isAdmin) && <FontAwesomeIcon icon={faSquareCheck} />}
+                  {g.name}
+                </button>
+              );
+            })}
+          </div>
+        );
+      }
       case "datetime": {
         // Store ISO; the datetime-local input wants "YYYY-MM-DDTHH:mm" in local time.
         const iso = String(val ?? "");
