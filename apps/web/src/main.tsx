@@ -42,10 +42,12 @@ config.autoAddCss = false;
 // ── Runtime loader: fetch + execute an enabled plugin's compiled UMD bundle ───
 // Used in production. The bundle reads shared deps from window.__NODEVO_HOST__
 // and registers into slotRegistry as a side effect.
-function loadPluginBundle(id: string): Promise<void> {
+function loadPluginBundle(id: string, version?: string): Promise<void> {
   return new Promise((resolve) => {
     const s = document.createElement("script");
-    s.src = `/api/meta/plugin-web/${id}`;
+    // Cache-bust by installed version so a plugin update always loads the new
+    // bundle (dynamically-injected scripts otherwise hit the HTTP cache).
+    s.src = `/api/meta/plugin-web/${id}${version ? `?v=${encodeURIComponent(version)}` : ""}`;
     s.async = false; // preserve registration order
     s.onload = () => resolve();
     s.onerror = () => { console.error(`Failed to load plugin web bundle: ${id}`); resolve(); };
@@ -63,11 +65,15 @@ async function bootstrap() {
 
   // Fetch enabled plugin IDs from the public meta endpoint.
   // Falls back to empty array (all plugins disabled) on error.
+  let enabled: { id: string; version?: string }[] = [];
   let enabledIds: string[] = [];
   let pluginLoadFailed = false;
   try {
     const res = await fetch("/api/meta/enabled-plugins", { credentials: "include" });
-    if (res.ok) enabledIds = await res.json();
+    if (res.ok) {
+      enabled = await res.json();
+      enabledIds = enabled.map((p) => p.id);
+    }
   } catch {
     // API unreachable (e.g. installer hasn't run yet, or transient outage) — no plugins active.
     // Set a flag so the app can warn the user if needed.
@@ -86,12 +92,12 @@ async function bootstrap() {
     await loadDevPlugins(enabledIds);
     // Any enabled plugin without a build-time HMR entry (e.g. an uploaded
     // .nvplugin) is runtime-loaded from its compiled bundle, exactly like prod.
-    for (const id of enabledIds) {
-      if (!DEV_PLUGIN_IDS.includes(id)) await loadPluginBundle(id);
+    for (const p of enabled) {
+      if (!DEV_PLUGIN_IDS.includes(p.id)) await loadPluginBundle(p.id, p.version);
     }
   } else {
-    for (const id of enabledIds) {
-      await loadPluginBundle(id);
+    for (const p of enabled) {
+      await loadPluginBundle(p.id, p.version);
     }
   }
 

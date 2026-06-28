@@ -125,7 +125,7 @@ async function signDevJwt(
   return new jose.SignJWT({
     siteId,
     licenseKey,
-    entitlements: ["plugin.nodevo-forum", "plugin.nodevo-messaging", "plugin.nodevo-seo-tools"],  // dev grants
+    entitlements: ["plugin.nodevo-forum", "plugin.nodevo-messaging", "plugin.nodevo-advanced-moderation", "plugin.nodevo-seo-tools"],  // dev grants
     domain,
     environment,
     issuedAt:     now,

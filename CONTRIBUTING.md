@@ -64,6 +64,33 @@ workspace member), wire HMR via `apps/web/src/plugins/dev-plugins.ts`, and insta
 them from **ACP → Extensions → Upload**. Package for distribution with
 `pnpm plugin:package` (produces a `.nvplugin`).
 
+### Plugin foundation (extension points)
+
+Plugins never patch core — they **register** into it. Authoring contracts live in
+`@nodevo/plugin-sdk`; the web host bridges shared singletons through
+`window.__NODEVO_HOST__` so a plugin's UMD bundle reuses the host's React, router,
+and i18next rather than shipping its own.
+
+- **Translated UI strings** — bundle `web/locales/<lng>/<ns>.json` (en, de, es, fr,
+  pt) and register them with `registerPluginTranslations` (externalized as
+  `@web/plugins/pluginI18n`); then `useTranslation("<ns>")` as usual. Translations
+  travel inside the web bundle — no HTTP fetch, no server packaging. Full recipe:
+  **[docs/plugin-i18n.md](./docs/plugin-i18n.md)**.
+- **Web slots** (`apps/web/src/plugins/slotRegistry.ts`) — contribute UI via
+  `registerRoute`, `registerAcpPage`, `registerModCanvasSection`,
+  `registerUserDetailPanel`, `registerIpEnrichment`, etc. Core iterates whatever's
+  registered; slots are auto-deregistered when the plugin disables.
+- **Server hooks** (`@nodevo/plugin-sdk` → `PluginContext` / `PluginHost`) —
+  `ctx.registerRoutes` / `registerPermissions` / `registerNecCodes`, and
+  `ctx.registerSecurityScan(fn)` for periodic detection run by the core
+  security-analysis job. Core moderation primitives are exposed on
+  `host.security` (`createCase`, `autoBanMultiaccounts`) so a plugin can open
+  review cases or enforce without reaching into core internals.
+
+The rule still holds: **core stores and exposes; the plugin treats.** Core keeps the
+telemetry, case tables, and cadence; detection logic and review UI belong in the
+plugin.
+
 ## Reporting issues
 
 Open a GitHub issue with steps to reproduce, expected vs actual behavior, and the

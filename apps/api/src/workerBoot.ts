@@ -7,8 +7,10 @@ import { startBanExpiryWorker }               from './jobs/banExpiry.js';
 import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
+import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
+import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-engine.js';
 
 // Each worker gets failure logging + dead-letter (error_log) + admin-notify
 // reliability handlers (§55). Retry/backoff come from defaultJobOptions.
@@ -20,6 +22,7 @@ const workers = [
   attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
   attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
   attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
+  attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
 ];
 
 // Schedule repeating jobs from the registry, honoring admin config in `settings`
@@ -35,9 +38,22 @@ async function scheduleJobs() {
   }
 }
 
-scheduleJobs().then(() => {
-  console.log(`[worker] up, ${workers.length} worker(s) running, scheduled jobs registered`);
-});
+async function boot() {
+  // Load enabled plugins in THIS process so their security scans (multi-account
+  // detection, impossible travel, …) register before any scan job runs. The
+  // security-analysis job executes here in the worker; without this its scan
+  // registry is empty and plugin detection never fires. Plugins also (re)schedule
+  // their own recurring jobs from onEnable (e.g. the detection sweep).
+  try {
+    await initializeEnabledPlugins();
+  } catch (err) {
+    console.error('[worker] plugin init failed:', (err as Error)?.message ?? err);
+  }
+  await scheduleJobs();
+  console.log(`[worker] up, ${workers.length} worker(s) running, plugins loaded, scheduled jobs registered`);
+}
+
+boot();
 
 const shutdown = async () => {
   await Promise.all(workers.map((w) => w.close()));

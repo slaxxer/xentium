@@ -4,7 +4,7 @@ export type WarningStatus    = "active" | "expired" | "pardoned";
 export type BanType          = "temporary" | "permanent";
 export type BanStatus        = "active" | "expired" | "lifted";
 export type CaseStatus       = "open" | "reviewed" | "dismissed";
-export type CaseType         = "rapid_login_attempts" | "multi_account_suspicion" | "ban_evasion_suspicion" | "registration_burst";
+export type CaseType         = "rapid_login_attempts" | "multi_account_suspicion" | "ban_evasion_suspicion" | "registration_burst" | "impossible_travel";
 
 export interface ThresholdRule {
   warningCount: number;
@@ -24,6 +24,7 @@ export function humanizeCaseType(type: string): string {
     case "rapid_login_attempts":    return "Rapid Login";
     case "ban_evasion_suspicion":   return "Ban Evasion";
     case "registration_burst":      return "Registration Burst";
+    case "impossible_travel":       return "Impossible Travel";
     default:                        return "Case";
   }
 }
@@ -37,6 +38,7 @@ export function describeCaseSignal(type: string, usernames: string[]): string {
     case "rapid_login_attempts":    return `repeated failed logins from the same IP (${who})`;
     case "ban_evasion_suspicion":   return `${who} — new account near a ban from the same IP`;
     case "registration_burst":      return `${who} registered from the same IP`;
+    case "impossible_travel":       return `${who} — logins too far apart in time to be the same person`;
     default:                        return who;
   }
 }

@@ -47,7 +47,6 @@ export const ACP_NAV: NavItem[] = [
   {
     label: "nav.moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), key: "moderation",
     children: [
-      { label: "nav.reviewCases", to: "/admin/cases" },
       { label: "nav.modLog", to: "/admin/modlog" },
       { label: "nav.modSettings", to: "/admin/modsettings" },
     ],

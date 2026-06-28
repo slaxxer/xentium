@@ -183,6 +183,10 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { necRegistry } = await import("../nec-registry/nec-registry.js");
   necRegistry.deregister(pluginId);
 
+  // Deregister any plugin security scans
+  const { securityScanRegistry } = await import("../security/security-scan-registry.js");
+  securityScanRegistry.deregister(pluginId);
+
   // Deactivate plugin-owned nav items
   await prisma.navItem.updateMany({
     where: { pluginId },
@@ -250,7 +254,13 @@ async function callPluginHook(
     : path.join(extractedDir(record.id), serverEntry);
 
   try {
-    const mod = await import(pathToFileURL(entryPath).href);
+    // Cache-bust the import URL: Node's ESM loader keys modules by URL and the
+    // extract path is fixed per plugin id (no version), so re-uploading/updating
+    // a plugin to a running process would otherwise re-run the stale cached
+    // module — its onEnable would register old routes/ACP pages. A per-call query
+    // string forces a fresh module load. Enable/disable is infrequent, so the
+    // extra module instances are not a concern.
+    const mod = await import(pathToFileURL(entryPath).href + `?v=${Date.now()}`);
     const def = mod.default as { id: string; onEnable?: (ctx: unknown) => Promise<void>; onDisable?: (ctx: unknown) => Promise<void> };
     const ctx = new PluginContextImpl(record.id);
     if (hook === "onEnable" && typeof def.onEnable === "function") {
@@ -258,8 +268,20 @@ async function callPluginHook(
     } else if (hook === "onDisable" && typeof def.onDisable === "function") {
       await def.onDisable(ctx);
     }
+    // onEnable completed cleanly → clear any prior load failure.
+    if (hook === "onEnable") pluginRegistry.clearLoadError(record.id);
   } catch (err) {
     logger.warn({ pluginId: record.id, hook, err }, "Plugin hook failed");
+    // Surface enable failures: the DB still says "enabled" but nothing registered.
+    // The ACP Installed list reads this so the admin sees "Failed to load" + reason
+    // instead of a silently broken plugin.
+    if (hook === "onEnable") {
+      pluginRegistry.setLoadError(record.id, {
+        hook,
+        message: err instanceof Error ? err.message : String(err),
+        at:      new Date().toISOString(),
+      });
+    }
   }
 }
 

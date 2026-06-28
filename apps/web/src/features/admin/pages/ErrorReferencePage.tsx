@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -53,6 +54,10 @@ const CATALOG: Record<string, NecEntry> = {
   "NEC-PLUGIN-2030": { msg:"Plugin Incompatible",      sev:"Error",   domain:"Plugin Engine", desc:"The plugin's supported Nodevo version range does not include this platform version.", cause:"The manifest's minNodevoVersion is newer than this installation, or maxNodevoVersion is older.", fix:"Update Nodevo, or install a plugin version built for this platform version." },
   // Core
   "NEC-CORE-8001":  { msg:"Theme Not Found",           sev:"Error",   domain:"Core", desc:"The requested theme is not registered in the ThemeRegistry.",                   cause:"Theme ID does not match any registered theme.",                                                      fix:"Re-enable the theme or upload its package again." },
+  "NEC-CORE-8010":  { msg:"Site Under Maintenance",    sev:"Info",    domain:"Core", desc:"The site is in maintenance mode and the requester is not in the allowed bypass group. This is an intentional state, not a fault — every blocked request returns this code, so it is NOT written to the Error Log (that would flood it). Enabling/disabling maintenance is recorded in the Activity Log.", cause:"An admin turned on maintenance mode (ACP → System → Settings → Maintenance). Only the configured allowed group and admins can bypass it.", fix:"To restore the site, disable maintenance mode in ACP → System → Settings. Staff can sign in on the maintenance screen to bypass it." },
+  // Pages
+  "NEC-PAGE-3501":  { msg:"Page Not Found",            sev:"Info",    domain:"Page", desc:"The requested custom page does not exist.",                                      cause:"The page slug is wrong, or the page was deleted/unpublished.",                                        fix:"Check the slug in ACP → Content → Pages, or create the page." },
+  "NEC-PAGE-3502":  { msg:"Page Slug Taken",           sev:"Warning", domain:"Page", desc:"Another page already uses this slug.",                                           cause:"Slugs must be unique; the chosen slug collides with an existing page.",                               fix:"Choose a different slug for the page in ACP → Content → Pages." },
   // Queue / background jobs
   "NEC-QUEUE-5000": { msg:"Background Job Failed",     sev:"Error",   domain:"Queue", desc:"A background (BullMQ) job threw an error and failed after exhausting all retries. This is a wrapper code — it tells you a job died, not why.", cause:"The real cause is in THIS Error Log entry's own fields: read the message (e.g. a Prisma/SQL error, a network failure, or a job bug) and the context (queue, jobName, jobId). The NEC code is only the category.", fix:"Open the matching Error Log entry, read its message + context, and fix the underlying cause. Restart the worker process so it picks up the fix; the job re-runs on its next schedule. If the message points to an application bug, report it to the maintainer verbatim." },
   "NEC-QUEUE-5001": { msg:"Invalid Job Schedule",      sev:"Warning", domain:"Queue", desc:"A schedule submitted in ACP → System → Scheduled Tasks was rejected.", cause:"The cron expression was malformed, or the schedule would fire more often than the job's minimum interval.", fix:"Use a valid 5-field cron expression, or choose a less frequent interval. The rejected schedule is not saved." },
@@ -66,7 +71,7 @@ const CATALOG: Record<string, NecEntry> = {
   "NEC-LICENSE-9007": { msg:"Marketplace Unreachable",   sev:"Warning", domain:"License", desc:"The marketplace / license server could not be reached.",                         cause:"Network failure or the license server is down. The 30-day grace period applies.",                    fix:"Check connectivity. Running plugins are unaffected during the grace window; retry later." },
 };
 
-const CORE_DOMAINS = ["API", "Auth", "Permissions", "Articles", "Storage", "Plugin Engine", "Core", "Queue", "License"];
+const CORE_DOMAINS = ["API", "Auth", "Permissions", "Articles", "Page", "Storage", "Plugin Engine", "Core", "Queue", "License"];
 
 const SEV_COLOR: Record<string, string> = {
   Critical: "var(--c-danger)",
@@ -111,6 +116,17 @@ export function ErrorReferencePage() {
     const r   = fullCatalog[key];
     setResult(r ? { ...r, code: key } : { notfound: true, code: key });
   }
+
+  // Deep-link support: the fatal-error overlay sends the admin here with ?code=NEC-...
+  // Auto-fill + auto-lookup once the (plugin-augmented) catalog is ready.
+  const [searchParams] = useSearchParams();
+  const paramCode = searchParams.get("code");
+  useEffect(() => {
+    if (!paramCode) return;
+    const key = paramCode.toUpperCase().trim();
+    setCode(key);
+    setResult(fullCatalog[key] ? { ...fullCatalog[key], code: key } : { notfound: true, code: key });
+  }, [paramCode, rawPluginCodes]);
 
   const filtered = Object.entries(fullCatalog).filter(([k, v]) => {
     const q = filter.toLowerCase();

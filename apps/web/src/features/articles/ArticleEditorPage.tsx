@@ -17,6 +17,7 @@ import {
   ArticleEditorBody,
 } from "./components/ArticleEditor";
 import { authStore } from "../../lib/authStore";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Username } from "../../components/Username";
 import { swalError, swalToast, swalConfirm, apiErrorMessage } from "../../lib/swal";
@@ -99,6 +100,11 @@ export function ArticleEditorPage() {
   const isEdit = !!slug;
   const navigate = useNavigate();
   const qc = useQueryClient();
+
+  // SEO preview host comes from the configured site URL, not a hardcoded domain.
+  const { data: siteCfg } = useSiteConfig();
+  let seoHost = "yoursite.com";
+  try { if (siteCfg?.siteUrl) seoHost = new URL(siteCfg.siteUrl).host; } catch { /* keep fallback */ }
 
   const existingQuery = useQuery({
     queryKey: ["article", slug],
@@ -577,7 +583,7 @@ export function ArticleEditorPage() {
         <div className="aep__section">
           <div className="aep__label">{t("editor.seoPreview")}</div>
           <div className="aep__seo">
-            <div className="aep__seo-host">nodevo.io › articles</div>
+            <div className="aep__seo-host">{seoHost} › articles</div>
             <div className="aep__seo-title">{form.seoTitle.trim() || form.title || t("editor.seoTitleFallback")}</div>
             <div className="aep__seo-desc">
               {form.seoDescription.trim() || form.excerpt.trim() || t("editor.seoDescFallback")}

@@ -6,6 +6,7 @@ import {
   uninstallPlugin,
   validatePackage,
 } from "../../core/plugin-engine/plugin-engine.js";
+import { pluginRegistry } from "../../core/plugin-engine/plugin-registry.js";
 
 export const pluginService = {
   /** Validate a package buffer and return manifest info without installing. */
@@ -41,6 +42,9 @@ export const pluginService = {
   },
 
   async list() {
-    return prisma.installedPlugin.findMany({ orderBy: { installedAt: "desc" } });
+    const rows = await prisma.installedPlugin.findMany({ orderBy: { installedAt: "desc" } });
+    // Attach the in-memory load error (if the plugin's onEnable/import failed) so the
+    // ACP can show "enabled in DB but failed to load" instead of a silent failure.
+    return rows.map((r) => ({ ...r, loadError: pluginRegistry.getLoadError(r.id) ?? null }));
   },
 };

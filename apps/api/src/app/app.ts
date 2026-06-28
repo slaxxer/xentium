@@ -111,9 +111,12 @@ export function createApp(): Express {
     try {
       const plugins = await prisma.installedPlugin.findMany({
         where:  { status: 'enabled' },
-        select: { id: true },
+        select: { id: true, installedVersion: true },
       });
-      res.json(plugins.map((p) => p.id));
+      // { id, version } — the frontend cache-busts the web bundle URL by version
+      // so a plugin update is always fetched fresh (injected <script> requests
+      // otherwise hit the browser HTTP cache, serving the previous bundle).
+      res.json(plugins.map((p) => ({ id: p.id, version: p.installedVersion })));
     } catch {
       res.json([]);
     }
@@ -150,7 +153,11 @@ export function createApp(): Express {
       if (resolved !== base && !resolved.startsWith(base + path.sep)) return res.status(400).end();
 
       res.type('application/javascript');
-      res.sendFile(resolved, (err) => { if (err && !res.headersSent) res.status(404).end(); });
+      // Always revalidate: the URL is cache-busted by ?v=<version>, but even for
+      // the same version we never want a hard-cached stale bundle. ETag/304 keeps
+      // revalidation cheap when unchanged.
+      res.set('Cache-Control', 'no-cache');
+      res.sendFile(resolved, { cacheControl: false }, (err) => { if (err && !res.headersSent) res.status(404).end(); });
     } catch {
       if (!res.headersSent) res.status(404).end();
     }
