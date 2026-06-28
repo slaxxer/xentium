@@ -3,6 +3,7 @@ import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclarati
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
+import { securityScanRegistry } from "../security/security-scan-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
 import { necRegistry } from "../nec-registry/nec-registry.js";
@@ -38,6 +39,16 @@ const host: PluginHost = {
     dispatch: async (opts: any) => {
       const { notificationService } = await import("../../modules/notifications/notification.service.js");
       await notificationService.dispatch(opts);
+    },
+  },
+  security: {
+    createCase: async (opts: any) => {
+      const { createModerationCase } = await import("../../modules/moderation/moderationCase.service.js");
+      await createModerationCase(opts);
+    },
+    autoBanMultiaccounts: async (userIds: string[], reason: string) => {
+      const { moderationService } = await import("../../modules/moderation/moderation.service.js");
+      return moderationService.autoBanMultiaccounts(userIds, reason);
     },
   },
 };
@@ -126,6 +137,11 @@ export class PluginContextImpl implements PluginContext {
   registerNecCodes(codes: NecCodeDeclaration[]): void {
     necRegistry.register(this.pluginId, codes);
     logger.info({ pluginId: this.pluginId, count: codes.length }, "Plugin NEC codes registered");
+  }
+
+  registerSecurityScan(fn: () => Promise<void>): void {
+    securityScanRegistry.register(this.pluginId, fn);
+    logger.info({ pluginId: this.pluginId }, "Plugin security scan registered");
   }
 
   async notify(opts: NotifyOptions): Promise<void> {

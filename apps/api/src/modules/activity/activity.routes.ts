@@ -5,6 +5,7 @@ import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions } from "@nodevo/contracts";
+import { normalizeIp } from "../../shared/http/requestMeta.js";
 import { activityService } from "./activity.service.js";
 
 function ua(req: { headers: Record<string, unknown> }): string | undefined {
@@ -25,7 +26,7 @@ activityRouter.post("/visit", optionalAuth, async (req, res, next) => {
       userId,
       username: user?.username,
       path: url,
-      ip: req.ip ?? undefined,
+      ip: normalizeIp(req.ip),
       userAgent: ua(req),
     });
     res.status(204).end();

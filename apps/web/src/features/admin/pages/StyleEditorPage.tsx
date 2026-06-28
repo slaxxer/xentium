@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUpload, faXmark, faRotateLeft, faRotateRight } from "@fortawesome/free-solid-svg-icons";
+import { faUpload, faXmark, faRotateLeft, faRotateRight, faTriangleExclamation, faCloudArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
@@ -161,16 +161,6 @@ function extractRootVars(css: string): Record<string, string> {
   return out;
 }
 
-function reloadTokenStyle() {
-  fetch(`/api/appearance/css?t=${Date.now()}`, { cache: "no-store" })
-    .then((r) => (r.ok ? r.text() : ""))
-    .then((css) => {
-      let el = document.getElementById("nodevo-custom-tokens") as HTMLStyleElement | null;
-      if (!el) { el = document.createElement("style"); el.id = "nodevo-custom-tokens"; document.head.appendChild(el); }
-      el.textContent = css;
-    }).catch(() => {});
-}
-
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function StyleEditorPage() {
@@ -298,9 +288,31 @@ export function StyleEditorPage() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-style-history"] });
-      reloadTokenStyle();
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+      // No global injection here: the draft is previewed only in the scoped preview
+      // iframe (previewCss). Injecting into the ACP's own <head> would restyle the
+      // ACP you're working in with unpublished changes. The ACP keeps showing the
+      // published theme until Publish (which calls refreshTokenCss).
       setSavedSnap(draftRef.current);
-      swalToast("Styles saved and applied.", "success");
+      swalToast("Draft saved — publish to apply it live.", "success");
+    },
+    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  // Staged-publish: edits above are saved as a draft. Publishing (here or via the
+  // scheduled "Publish appearance changes" job) promotes the draft to the live site.
+  const { data: draftStatus } = useQuery<{ pending: boolean }>({
+    queryKey: ["acp-draft-status"],
+    queryFn:  () => api.get("/appearance/draft-status"),
+    refetchInterval: 15_000,
+  });
+  const publishMut = useMutation({
+    mutationFn: () => api.post("/appearance/publish", {}),
+    onSuccess: async () => {
+      await refreshTokenCss();
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+      qc.invalidateQueries({ queryKey: ["acp-style-history"] });
+      swalToast("Published — your changes are now live for everyone.", "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -420,10 +432,25 @@ export function StyleEditorPage() {
           <h1 className="acp-page-title">Style Editor</h1>
         </div>
         <div style={{ display:"flex", gap:12, alignItems:"center" }}>
+          {draftStatus?.pending && (
+            <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"3px 10px", borderRadius:100, fontSize:12, fontWeight:700, background:"var(--c-warn-soft, rgba(245,158,11,.14))", color:"var(--c-warn)" }}>
+              <FontAwesomeIcon icon={faTriangleExclamation} /> Unpublished changes
+            </span>
+          )}
           <button type="button" className="btn-ghost btn-sm" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
             <FontAwesomeIcon icon={faRotateLeft} style={{ marginRight:5 }} /> Reset
           </button>
           <AutosaveStatus saving={saveMut.isPending} />
+          <button
+            type="button"
+            className="btn-primary btn-sm"
+            disabled={publishMut.isPending || !draftStatus?.pending}
+            onClick={() => publishMut.mutate()}
+            title="Apply staged changes to the live site now"
+          >
+            <FontAwesomeIcon icon={faCloudArrowUp} style={{ marginRight:5 }} />
+            {publishMut.isPending ? "Publishing…" : "Publish now"}
+          </button>
         </div>
       </div>
 

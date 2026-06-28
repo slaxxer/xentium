@@ -85,6 +85,18 @@ export function ErrorLogPage() {
 
   const sevLabel = (s: string) => SEV_LABEL_KEY[s] ? t(SEV_LABEL_KEY[s]!) : s;
 
+  // Dev-only: trigger a real backend error to verify error_log persistence and
+  // the fatal-halt overlay. 5xx types trip the full-screen halt; "notfound" (4xx)
+  // stays a toast — the deliberate contrast. Mirrors GET /admin/_debug/throw (dev-only).
+  const simulate = async (type: "critical" | "nodevo500" | "notfound") => {
+    try {
+      await api.get(`/admin/_debug/throw?type=${type}`);
+    } catch (e) {
+      if (type === "notfound") swalToast(apiErrorMessage(e));
+      // 5xx cases already tripped the fatal overlay in api.ts — nothing more to do.
+    }
+  };
+
   const handleClear = async () => {
     const title = severity
       ? t("errorLog.confirmSeverity", { severity: sevLabel(severity) })
@@ -100,9 +112,19 @@ export function ErrorLogPage() {
           <div className="acp-page-sub">{t("nav.system")}</div>
           <h1 className="acp-page-title">{t("errorLog.title")}</h1>
         </div>
-        <button type="button" className="btn-ghost btn-sm" onClick={() => refetch()}>
-          <FontAwesomeIcon icon={faRotateRight} />
-        </button>
+        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+          {import.meta.env.DEV && (
+            <div style={{ display:"flex", gap:6, alignItems:"center", marginRight:6 }}>
+              <span style={{ fontSize:11, color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
+              <button type="button" className="btn-ghost btn-sm" title="Throw an unhandled 500 (critical) — trips the fatal halt" onClick={() => simulate("critical")}>500</button>
+              <button type="button" className="btn-ghost btn-sm" title="Throw a NodevoError 500 — trips the fatal halt" onClick={() => simulate("nodevo500")}>NEC 500</button>
+              <button type="button" className="btn-ghost btn-sm" title="Throw a 404 — toast only, no halt" onClick={() => simulate("notfound")}>404</button>
+            </div>
+          )}
+          <button type="button" className="btn-ghost btn-sm" onClick={() => refetch()}>
+            <FontAwesomeIcon icon={faRotateRight} />
+          </button>
+        </div>
       </div>
 
       <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>

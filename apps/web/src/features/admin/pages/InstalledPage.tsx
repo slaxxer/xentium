@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPuzzlePiece, faUpload } from "@fortawesome/free-solid-svg-icons";
+import { faPuzzlePiece, faUpload, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 
@@ -14,6 +14,7 @@ interface InstalledPlugin {
   status:           string;
   licenseRequired:  boolean;
   installedAt:      string;
+  loadError:        { hook: string; message: string; at: string } | null;
 }
 
 const STATUS_COLOR: Record<string, string> = {
@@ -104,10 +105,12 @@ export function InstalledPage() {
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           {plugins.map((p) => {
             const busy = enableMut.isPending || disableMut.isPending || removeMut.isPending;
+            // Enabled in the DB but its onEnable/import threw → registered nothing.
+            const failed = p.status === "enabled" && !!p.loadError;
             return (
-              <div key={p.id} className="acp-card" style={{ padding:"20px 24px", display:"flex", alignItems:"center", gap:16 }}>
-                <div style={{ width:44, height:44, flexShrink:0, background:"var(--c-accent-soft)", border:"1px solid var(--c-accent-glow)", borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color:"var(--c-accent)" }}>
-                  <FontAwesomeIcon icon={faPuzzlePiece} />
+              <div key={p.id} className="acp-card" style={{ padding:"20px 24px", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap", border: failed ? "1px solid var(--c-danger)" : undefined }}>
+                <div style={{ width:44, height:44, flexShrink:0, background: failed ? "var(--c-danger-soft, rgba(248,113,113,.14))" : "var(--c-accent-soft)", border: failed ? "1px solid var(--c-danger)" : "1px solid var(--c-accent-glow)", borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color: failed ? "var(--c-danger)" : "var(--c-accent)" }}>
+                  <FontAwesomeIcon icon={failed ? faTriangleExclamation : faPuzzlePiece} />
                 </div>
 
                 <div style={{ flex:1, minWidth:0 }}>
@@ -122,6 +125,7 @@ export function InstalledPage() {
                 </div>
 
                 <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                  {failed && <Badge label={t("installed.loadFailed", { defaultValue: "Failed to load" })} color="var(--c-danger)" />}
                   <Badge label={t(`installed.status.${p.status}`, { defaultValue: p.status })} color={STATUS_COLOR[p.status] ?? "var(--c-fg-muted)"} />
 
                   {p.status === "enabled" ? (
@@ -138,6 +142,21 @@ export function InstalledPage() {
                     {t("installed.remove")}
                   </button>
                 </div>
+
+                {failed && (
+                  <div style={{ flexBasis:"100%", marginTop:4, padding:"10px 12px", borderRadius:"var(--radius-md)", background:"var(--c-danger-soft, rgba(248,113,113,.10))", border:"1px solid var(--c-danger)" }}>
+                    <div style={{ fontSize:12.5, fontWeight:700, color:"var(--c-danger)", marginBottom:3 }}>
+                      <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight:6 }} />
+                      {t("installed.loadFailedTitle", { defaultValue: "This plugin is enabled but failed to load — its routes and pages are not active." })}
+                    </div>
+                    <div style={{ fontSize:12, color:"var(--c-fg-muted)", fontFamily:"var(--ff-mono, monospace)", wordBreak:"break-word" }}>
+                      {p.loadError!.message}
+                    </div>
+                    <div style={{ fontSize:11.5, color:"var(--c-fg-subtle)", marginTop:4 }}>
+                      {t("installed.loadFailedHint", { defaultValue: "Disable then re-enable to retry, or re-upload a fixed build." })}
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}

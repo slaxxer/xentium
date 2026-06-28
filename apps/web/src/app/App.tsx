@@ -49,7 +49,6 @@ import { PageEditorPage }    from "../features/admin/pages/PageEditorPage";
 import { SettingsPage }      from "../features/admin/pages/SettingsPage";
 import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
-import { ModCasesPage }    from "../features/admin/pages/ModCasesPage";
 import { ModLogPage }      from "../features/admin/pages/ModLogPage";
 import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
 // ACP pages — appearance
@@ -69,6 +68,8 @@ import { ErrorLogPage }          from "../features/admin/pages/ErrorLogPage";
 import { MigrationHistoryPage }  from "../features/admin/pages/MigrationHistoryPage";
 import { ActivityLogPage }       from "../features/admin/pages/ActivityLogPage";
 import { ScheduledJobsPage }     from "../features/admin/pages/ScheduledJobsPage";
+import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
+import { CanonicalManager }      from "../components/CanonicalManager";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -129,7 +130,7 @@ function AppGuard() {
   if (INSTALL_PATHS.has(pathname)) return null;
 
   if (isLoading) return LOADING;
-  if ((error as any)?.status === 410 || data?.installed) return <Outlet />;
+  if ((error as any)?.status === 410 || data?.installed) return <><CanonicalManager /><Outlet /></>;
   return <Navigate to="/install" replace />;
 }
 
@@ -262,7 +263,6 @@ function buildRouter() {
           { path: "settings",         element: <SettingsPage /> },
           { path: "about",            element: <AboutPage /> },
           // Moderation
-          { path: "cases",            element: <ModCasesPage /> },
           { path: "modlog",           element: <ModLogPage /> },
           { path: "modsettings",      element: <ModSettingsPage /> },
           // Appearance
@@ -327,7 +327,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   if (INSTALL_PATHS.has(window.location.pathname)) return <>{children}</>;
   if (!m?.enabled) return <>{children}</>;
 
-  const allowed = !!user && user.groups.some((g) => g.key === m.allowedGroup || g.key === "admin");
+  const allowed = !!user && user.groups.some((g) => m.allowedGroups.includes(g.key) || g.key === "admin");
   if (allowed) return <>{children}</>;
   if (isLoading) return LOADING;
 
@@ -351,6 +351,8 @@ export default function App() {
           <RouterProvider router={router} />
         </BetaGate>
       </MaintenanceGate>
+      {/* WoltLab-style fatal halt — overlays everything when the API returns 5xx */}
+      <FatalErrorOverlay />
     </QueryClientProvider>
   );
 }

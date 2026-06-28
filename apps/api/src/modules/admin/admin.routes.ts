@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions, NEC } from "@nodevo/contracts";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
@@ -73,6 +74,26 @@ adminRouter.delete("/license",         adminGuard, adminController.deactivateLic
 // Error log
 adminRouter.get("/error-log",    adminGuard, adminController.listErrorLog);
 adminRouter.delete("/error-log", adminGuard, adminController.clearErrorLog);
+
+// Dev-only error simulator — lets an admin trigger a real backend error to verify
+// error_log persistence + the frontend fatal-halt UI. Never mounted in production.
+if (isDev) {
+  adminRouter.get("/_debug/throw", adminGuard, (req, _res) => {
+    const type = String(req.query.type ?? "critical");
+    switch (type) {
+      case "nodevo500":
+        // A deliberate NodevoError with a 5xx status → severity 'error', halts.
+        throw new NodevoError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "Simulated NodevoError (500)" });
+      case "notfound":
+        // 4xx → toast only, does NOT halt the site (contrast case).
+        throw NodevoError.notFound("Simulated 404 (should NOT halt the site)");
+      case "critical":
+      default:
+        // Unhandled throw → caught by the catch-all → NEC-API-5000, severity 'critical'.
+        throw new Error("Simulated critical backend error (unhandled throw)");
+    }
+  });
+}
 
 // Migration history
 adminRouter.get("/migration-history", adminGuard, adminController.listMigrationHistory);

@@ -39,6 +39,13 @@ export const siteService = {
     const stored = await getSetting<string>("site.landing", "home");
     const landing = landings.some((l) => l.value === stored) ? stored : (landings[0]?.value ?? "home");
 
-    return { features, landing, availableLandings: landings };
+    // Site identity (set during install) — the canonical base URL + display name
+    // the SPA uses for canonical/og:url tags and SEO previews.
+    const [siteName, siteUrl] = await Promise.all([
+      getSetting<string>("site.name", "Nodevo"),
+      getSetting<string>("site.url", ""),
+    ]);
+
+    return { features, landing, availableLandings: landings, siteName, siteUrl };
   },
 };
