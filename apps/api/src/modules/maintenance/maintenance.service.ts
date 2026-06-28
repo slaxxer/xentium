@@ -10,7 +10,7 @@ export interface MaintenanceStatus {
   message: string;
   progress: { label: string; percent: number };
   eta: string | null; // ISO timestamp the site is expected back, or null
-  allowedGroup: string; // group key allowed to sign in / bypass
+  allowedGroups: string[]; // group keys allowed to sign in / bypass (admin always allowed)
 }
 
 const DEFAULTS = {
@@ -20,19 +20,28 @@ const DEFAULTS = {
   progressLabel: "In progress",
   progressPercent: 0,
   eta: "",
-  allowedGroup: "admin",
+  allowedGroups: ["admin"],
 };
+
+/** Resolve the configured allow-list, falling back to the legacy single-group
+ *  setting (maintenance.allowed_group) so existing installs keep working. */
+async function getAllowedGroups(): Promise<string[]> {
+  const arr = await getSetting<string[] | null>("maintenance.allowed_groups", null);
+  if (Array.isArray(arr)) return arr.length ? arr : ["admin"];
+  const legacy = await getSetting<string>("maintenance.allowed_group", "admin");
+  return legacy ? [legacy] : ["admin"];
+}
 
 export const maintenanceService = {
   async getStatus(): Promise<MaintenanceStatus> {
-    const [enabled, title, message, progressLabel, progressPercent, eta, allowedGroup] = await Promise.all([
+    const [enabled, title, message, progressLabel, progressPercent, eta, allowedGroups] = await Promise.all([
       getSetting<boolean>("maintenance.enabled", DEFAULTS.enabled),
       getSetting<string>("maintenance.title", DEFAULTS.title),
       getSetting<string>("maintenance.message", DEFAULTS.message),
       getSetting<string>("maintenance.progress_label", DEFAULTS.progressLabel),
       getSetting<number>("maintenance.progress_percent", DEFAULTS.progressPercent),
       getSetting<string>("maintenance.eta", DEFAULTS.eta),
-      getSetting<string>("maintenance.allowed_group", DEFAULTS.allowedGroup),
+      getAllowedGroups(),
     ]);
 
     return {
@@ -44,7 +53,7 @@ export const maintenanceService = {
         percent: Math.max(0, Math.min(100, Number(progressPercent) || 0)),
       },
       eta: eta && eta.trim() ? eta : null,
-      allowedGroup,
+      allowedGroups,
     };
   },
 
@@ -52,14 +61,14 @@ export const maintenanceService = {
     return getSetting<boolean>("maintenance.enabled", false);
   },
 
-  /** True when this user may use the site during maintenance (in the allowed
+  /** True when this user may use the site during maintenance (in any allowed
    *  group, or an administrator). */
   async userMayBypass(userId: string): Promise<boolean> {
-    const allowedGroup = await getSetting<string>("maintenance.allowed_group", DEFAULTS.allowedGroup);
+    const allowed = new Set(await getAllowedGroups());
     const memberships = await prisma.userGroup.findMany({
       where: { userId },
       select: { group: { select: { key: true } } },
     });
-    return memberships.some((m) => m.group.key === allowedGroup || ALWAYS_ALLOWED.has(m.group.key));
+    return memberships.some((m) => allowed.has(m.group.key) || ALWAYS_ALLOWED.has(m.group.key));
   },
 };

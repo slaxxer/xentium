@@ -12,6 +12,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { Username } from "../../../components/Username";
 import { UserAvatar } from "../../../components/UserAvatar";
+import { slotRegistry } from "../../../plugins/slotRegistry";
 import "./UserDetailPage.scss";
 
 // ── Copyable mono ID chip ─────────────────────────────────────────────────────
@@ -572,6 +573,11 @@ export function UserDetailPage() {
 
       {/* SECURITY ACTIVITY */}
       <SecurityActivity userId={user.id} />
+
+      {/* PLUGIN PANELS — e.g. advanced-moderation "Suspicious Multiaccounts". */}
+      {slotRegistry.getUserDetailPanels().map((p) => (
+        <p.component key={p.id} userId={user.id} username={user.username} />
+      ))}
 
       {showBanModal && (
         <BanModal

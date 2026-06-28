@@ -22,6 +22,7 @@ export const queues = {
   warningExpiry:          new Queue('warning-expiry',           queueOpts),
   securityAnalysis:       new Queue('security-analysis',        queueOpts),
   licenseRefresh:         new Queue('license-refresh',           queueOpts),
+  appearancePublish:      new Queue('appearance-publish',        queueOpts),
 } as const;
 
 export { bullConnection, prefix as bullPrefix, defaultJobOptions as _opts };

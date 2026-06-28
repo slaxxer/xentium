@@ -10,13 +10,16 @@ import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactRouterDom from "react-router-dom";
 import * as ReactQuery from "@tanstack/react-query";
 import * as FaReact from "@fortawesome/react-fontawesome";
+import * as ReactI18next from "react-i18next";
 
 import * as webApi from "@web/lib/api";
 import * as webSwal from "@web/lib/swal";
 import * as webUseAuth from "@web/hooks/useAuth";
 import * as webSlotRegistry from "@web/plugins/slotRegistry";
+import * as webPluginI18n from "@web/plugins/pluginI18n";
 import * as webAuthStore from "@web/lib/authStore";
 import * as webUserAvatar from "@web/components/UserAvatar";
+import * as webUsername from "@web/components/Username";
 import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
 import * as webUseAutosave from "@web/hooks/useAutosave";
@@ -28,12 +31,15 @@ const HOST = {
   ReactRouterDom,
   ReactQuery,
   FaReact,
+  ReactI18next,
   webApi,
   webSwal,
   webUseAuth,
   webSlotRegistry,
+  webPluginI18n,
   webAuthStore,
   webUserAvatar,
+  webUsername,
   webMiniEditor,
   webForumEditor,
   webUseAutosave,

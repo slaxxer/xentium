@@ -89,6 +89,13 @@ function assertParsableCss(css: string, theme: ThemeName): void {
 // client on each style-version bump) never runs a postcss parse per request.
 const CUSTOM_CSS_COMPILED_KEY = "appearance.custom_css_compiled";
 
+// Staged (draft) token overrides — the Style Editor writes here; they go live only
+// on publish (Run now or the scheduled appearance-publish job). Live tokens stay in
+// appearance.tokens.{light,dark}; /css serves live, never the draft.
+const DRAFT_LIGHT_KEY = "appearance.tokens.draft.light";
+const DRAFT_DARK_KEY  = "appearance.tokens.draft.dark";
+const DRAFT_BY_KEY    = "appearance.tokens.draft.by"; // user id who last edited the draft
+
 function compileCustomCss(light: string, dark: string): string {
   return [scopeCustomCss(light, "light"), scopeCustomCss(dark, "dark")]
     .filter(Boolean)
@@ -229,8 +236,85 @@ export const appearanceService = {
   // `var(--base)`), and the editor sources its display fallback from the registry /
   // HEARTH_DEFAULT_TOKENS. Returning the raw sparse map (not merged with defaults)
   // is what lets the editor distinguish the two states.
+  // The Style Editor edits the DRAFT. Returns draft overrides, falling back to the
+  // live overrides when no draft has been started yet (so opening the editor shows
+  // the current live theme as the starting point).
   async getTokens(): Promise<ScopedTokenSet> {
-    return this.getTokenOverrides();
+    return this.getDraftTokens();
+  },
+
+  async getDraftTokens(): Promise<ScopedTokenSet> {
+    const [light, dark] = await Promise.all([
+      readSetting<unknown>(DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(DRAFT_DARK_KEY,  null),
+    ]);
+    if (light === null && dark === null) return this.getTokenOverrides(); // no draft → live
+    return { light: normalizeScoped(light), dark: normalizeScoped(dark) };
+  },
+
+  // Save editor changes to the draft only — no version bump, no SSE push, no
+  // history entry. Nothing reaches the public site until publishDraft(). Records
+  // the editing admin so a scheduled (SYSTEM) publish can attribute the history entry.
+  async saveDraftTokens(tokens: ScopedTokenSet, savedById: string): Promise<void> {
+    await prisma.$transaction([
+      prisma.setting.upsert({
+        where:  { key: DRAFT_LIGHT_KEY },
+        update: { value: tokens.light as unknown as object },
+        create: { key: DRAFT_LIGHT_KEY, value: tokens.light as unknown as object },
+      }),
+      prisma.setting.upsert({
+        where:  { key: DRAFT_DARK_KEY },
+        update: { value: tokens.dark as unknown as object },
+        create: { key: DRAFT_DARK_KEY, value: tokens.dark as unknown as object },
+      }),
+      prisma.setting.upsert({
+        where:  { key: DRAFT_BY_KEY },
+        update: { value: savedById },
+        create: { key: DRAFT_BY_KEY, value: savedById },
+      }),
+    ]);
+  },
+
+  // Is there a draft that differs from what's currently live?
+  async getDraftStatus(): Promise<{ pending: boolean }> {
+    const [dl, dd] = await Promise.all([
+      readSetting<unknown>(DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(DRAFT_DARK_KEY,  null),
+    ]);
+    if (dl === null && dd === null) return { pending: false };
+    const draft = { light: normalizeScoped(dl), dark: normalizeScoped(dd) };
+    const live  = await this.getTokenOverrides();
+    return { pending: JSON.stringify(draft) !== JSON.stringify(live) };
+  },
+
+  // Promote the draft to live: writes the live tokens (+ history + version bump →
+  // SSE push to every client), then clears the draft so it mirrors live again.
+  // Returns false when there was nothing pending to publish.
+  // savedById defaults to the admin who last edited the draft — used by the
+  // scheduled (SYSTEM-triggered) appearance-publish job.
+  async publishDraft(savedById?: string, label?: string): Promise<boolean> {
+    const { pending } = await this.getDraftStatus();
+    if (!pending) return false;
+
+    let author = savedById ?? (await readSetting<string | null>(DRAFT_BY_KEY, null)) ?? undefined;
+    if (author) {
+      const exists = await prisma.user.findUnique({ where: { id: author }, select: { id: true } });
+      if (!exists) author = undefined;
+    }
+    if (!author) {
+      // Fall back to any administrator so the history entry has a valid author.
+      const admin = await prisma.user.findFirst({
+        where: { groups: { some: { group: { key: "admin" } } } },
+        select: { id: true },
+      });
+      author = admin?.id;
+    }
+    if (!author) return false; // no valid author to attribute — refuse rather than FK-crash
+
+    const draft = await this.getDraftTokens();
+    await this.saveTokens(draft, author, label ?? "Published appearance changes");
+    await prisma.setting.deleteMany({ where: { key: { in: [DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY] } } });
+    return true;
   },
 
   // Served stylesheet: ONLY admin-saved overrides (no default fallback), normalised
@@ -250,6 +334,7 @@ export const appearanceService = {
     await prisma.setting.deleteMany({
       where: { key: { in: [
         "appearance.tokens.light", "appearance.tokens.dark",
+        DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY,
         "appearance.font.family",  "appearance.font.weight", "appearance.font.size",
         "appearance.custom_css_light", "appearance.custom_css_dark", "appearance.custom_css",
         CUSTOM_CSS_COMPILED_KEY,

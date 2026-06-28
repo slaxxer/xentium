@@ -4,6 +4,7 @@ import { NodevoError } from './NodevoError.js';
 import { NEC } from './nec.js';
 import { isProd } from '../../config/env.js';
 import { prisma } from '../../infrastructure/db.js';
+import { logger } from '../../infrastructure/logging/logger.js';
 
 function persistErrorLog(opts: {
   code: string;
@@ -13,7 +14,9 @@ function persistErrorLog(opts: {
   requestId?: string;
   userId?: string;
 }) {
-  // Fire-and-forget — never block the response
+  // Fire-and-forget — never block the response, but DO surface a failed write to
+  // the logs. A silent `.catch(() => {})` here previously meant a broken error_log
+  // write (e.g. a non-serializable `context`) vanished without a trace.
   prisma.errorLog.create({
     data: {
       code:      opts.code,
@@ -23,11 +26,17 @@ function persistErrorLog(opts: {
       requestId: opts.requestId ?? null,
       userId:    opts.userId ?? null,
     },
-  }).catch(() => { /* swallow — logging must never crash the server */ });
+  }).catch((e) => {
+    logger.error({ err: e, code: opts.code }, 'error_log_persist_failed');
+  });
 }
 
 export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
-  const requestId = (req as any).id ?? undefined;
+  // req.id is set by the request-id middleware as a NUMBER; the error_log.requestId
+  // column is String?. Coerce, or every insert fails Prisma validation (the bug that
+  // kept the Error Log permanently empty).
+  const rawId     = (req as any).id;
+  const requestId = rawId != null ? String(rawId) : undefined;
   const userId    = (req as any).userId ?? undefined;
 
   if (err instanceof NodevoError) {
@@ -49,7 +58,7 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
     });
 
     return res.status(err.httpStatus).json({
-      error: { code: err.code, message: err.message, details: err.details },
+      error: { code: err.code, message: err.message, details: err.details, severity },
     });
   }
 
@@ -66,7 +75,7 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
     });
 
     return res.status(422).json({
-      error: { code: NEC.API_VALIDATION, message: 'Validation failed', details: err.format() },
+      error: { code: NEC.API_VALIDATION, message: 'Validation failed', details: err.format(), severity: 'warn' },
     });
   }
 
@@ -83,8 +92,9 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
 
   return res.status(500).json({
     error: {
-      code:    NEC.API_INTERNAL,
-      message: isProd ? 'Internal server error' : String((err as Error)?.message ?? err),
+      code:     NEC.API_INTERNAL,
+      message:  isProd ? 'Internal server error' : String((err as Error)?.message ?? err),
+      severity: 'critical',
     },
   });
 };

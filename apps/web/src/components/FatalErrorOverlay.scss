@@ -1,0 +1,127 @@
+// WoltLab-style fatal halt overlay. Token-driven, but every visual value carries a
+// safe literal fallback so the screen still renders if the theme itself is the casualty.
+.fatal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000; // above everything (modals, toasts, ModCanvas)
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--c-bg, #080812);
+  background: color-mix(in srgb, var(--c-bg, #080812) 92%, #000);
+  overflow: auto;
+
+  &__card {
+    width: 100%;
+    max-width: 540px;
+    background: var(--c-card, #13132a);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-lg, 20px);
+    padding: 2.25rem 2rem;
+    text-align: center;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.5);
+  }
+
+  &__icon {
+    font-size: 2.5rem;
+    color: var(--c-danger, #f87171);
+    margin-bottom: 1rem;
+  }
+
+  &__title {
+    margin: 0 0 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--c-fg, #eeeef8);
+  }
+
+  &__lead {
+    margin: 0 auto 1.5rem;
+    max-width: 42ch;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--c-fg-muted, #8080b0);
+  }
+
+  &__code-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+
+  &__code {
+    flex: 0 1 auto;
+    padding: 0.7rem 1rem;
+    font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+    font-size: 1.05rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--c-danger, #f87171);
+    background: var(--c-danger-soft, rgba(248, 113, 113, 0.12));
+    border: 1px solid var(--c-danger, #f87171);
+    border-radius: var(--radius-sm, 8px);
+    user-select: all;
+  }
+
+  &__copy {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    color: var(--c-fg, #eeeef8);
+    background: var(--c-surface, #0f0f1e);
+    border: 1px solid var(--c-border, rgba(255, 255, 255, 0.08));
+    border-radius: var(--radius-sm, 8px);
+
+    &:hover { background: var(--c-bg-hover, rgba(255, 255, 255, 0.04)); }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-bottom: 1.25rem;
+  }
+
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.25rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid transparent;
+
+    &--primary {
+      color: var(--c-on-accent, #fff);
+      background: var(--c-accent, #7c6af7);
+      &:hover { filter: brightness(1.08); }
+    }
+
+    &--ghost {
+      color: var(--c-fg, #eeeef8);
+      background: transparent;
+      border-color: var(--c-border, rgba(255, 255, 255, 0.08));
+      &:hover { background: var(--c-bg-hover, rgba(255, 255, 255, 0.04)); }
+    }
+  }
+
+  &__hint {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: var(--c-fg-subtle, #50507a);
+
+    strong { color: var(--c-fg-muted, #8080b0); font-weight: 600; }
+  }
+}

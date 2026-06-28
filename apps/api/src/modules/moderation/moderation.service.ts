@@ -11,6 +11,42 @@ const issuerSelect = {
 const mapIssuer = (i: { id: string; username: string; groups: { group: { progression: { badgeColor: string | null } | null } }[] }) =>
   ({ id: i.id, username: i.username, badgeColor: i.groups[0]?.group.progression?.badgeColor ?? null });
 
+// Find the most recent unresolved case linking a user (used to decide whether a
+// ban should alert the mod team). Open + reviewed count; resolved/dismissed don't.
+async function findActiveCaseForUser(userId: string) {
+  return prisma.moderationCase.findFirst({
+    where:   { linkedUserIds: { has: userId }, status: { in: ["open", "reviewed"] } },
+    orderBy: { createdAt: "desc" },
+    select:  { id: true, type: true },
+  });
+}
+
+// Alert everyone with `moderation.cases.manage` that a flagged (case-linked)
+// account was banned. In-app only (security-alert channel decision). The actor
+// who issued the ban is excluded from their own alert.
+async function notifyCaseManagersOfBan(username: string, caseType: string | null, excludeUserId: string) {
+  const perm = await prisma.permission.findUnique({ where: { key: "moderation.cases.manage" }, select: { id: true } });
+  if (!perm) return;
+  const holders = await prisma.userGroup.findMany({
+    where:    { group: { permissions: { some: { permissionId: perm.id } } } },
+    select:   { userId: true },
+    distinct: ["userId"],
+  });
+  const label = caseType ? humanizeCaseType(caseType) : "a review case";
+  await Promise.all(
+    holders
+      .filter((h) => h.userId !== excludeUserId)
+      .map((h) => notificationService.dispatch({
+        userId:   h.userId,
+        type:     "mod.case_user_banned",
+        title:    "Flagged account banned",
+        body:     `${username} (${label}) was banned.`,
+        link:     "/admin/cases",
+        channels: ["in_app"],
+      })),
+  );
+}
+
 // Resolve linkedUserIds on case rows to { id, username, badgeColor } objects
 async function resolveCaseUsers<T extends { linkedUserIds: string[] }>(rows: T[]) {
   const allIds = [...new Set(rows.flatMap((r) => r.linkedUserIds))];
@@ -409,7 +445,61 @@ export const moderationService = {
         : `No users banned (all skipped)`,
     });
 
+    // Alert the mod team that flagged accounts from this case were banned.
+    if (bannedNames.length > 0) {
+      await notifyCaseManagersOfBan(bannedNames.join(", "), existing.type, actorId);
+    }
+
     return results;
+  },
+
+  /** Auto-ban accounts the security scan judged to be the same person
+   *  (multi-accounting). System action: `issued_by` is a required FK and there
+   *  is no system user, so it's attributed to the oldest admin while the mod log
+   *  records SYSTEM. Bans every non-staff, not-already-banned account permanently
+   *  and alerts the mod team. Returns the banned usernames. Opt-in (§15 override)
+   *  — the caller checks `moderation.auto_ban_multiaccounts` before invoking. */
+  async autoBanMultiaccounts(userIds: string[], reason: string): Promise<string[]> {
+    const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
+    const admin = await prisma.user.findFirst({
+      where:   { groups: { some: { group: { key: "admin" } } } },
+      orderBy: { createdAt: "asc" },
+      select:  { id: true },
+    });
+    if (!admin) return [];   // no admin to attribute the ban to — skip
+
+    const users = await prisma.user.findMany({
+      where:   { id: { in: userIds } },
+      include: { groups: { include: { group: { select: { key: true } } } } },
+    });
+
+    const banned: string[] = [];
+    for (const user of users) {
+      if (user.groups.some((ug) => STAFF_KEYS.has(ug.group.key))) continue;
+      const already = await prisma.moderationBan.findFirst({ where: { userId: user.id, status: "active" } });
+      if (already) continue;
+
+      await prisma.$transaction(async (tx) => {
+        await tx.moderationBan.create({
+          data: { userId: user.id, issuedById: admin.id, type: "permanent", reason, status: "active", expiresAt: null },
+        });
+        await tx.user.update({ where: { id: user.id }, data: { bannedUntil: new Date("9999-12-31") } });
+        await tx.moderationLog.create({
+          data: { actorId: null, actorType: "system", action: "ban.auto_issued", targetType: "user", targetId: user.id, reason },
+        });
+      });
+      await notificationService.dispatch({
+        userId:   user.id,
+        type:     "moderation.ban_issued",
+        title:    "Your account has been permanently suspended",
+        body:     reason,
+        channels: ["in_app"],
+      });
+      banned.push(user.username);
+    }
+
+    if (banned.length > 0) await notifyCaseManagersOfBan(banned.join(", "), "multi_account_suspicion", admin.id);
+    return banned;
   },
 
   async moderatorDeleteArticleComment(commentId: string, actorId: string, reason: string) {
@@ -699,6 +789,11 @@ export const moderationService = {
       body:     data.reason,
       channels: ["in_app", "email"],
     });
+
+    // If this user is flagged in an open review case (multi-account, impossible
+    // travel, evasion…), alert the mod team that a flagged account was banned.
+    const linkedCase = await findActiveCaseForUser(data.userId);
+    if (linkedCase) await notifyCaseManagersOfBan(user.username, linkedCase.type, data.issuedById);
   },
 
   // ── User lookup (mini-profile for the Users section) ───────────────────────
