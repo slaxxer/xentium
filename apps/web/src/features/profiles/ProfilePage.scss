@@ -92,6 +92,20 @@
   line-height: 1.2;
 }
 
+.profile-handle {
+  font-size: var(--fs-sm);
+  color: var(--c-fg-muted);
+  font-weight: 600;
+  margin-top: 1px;
+}
+
+.profile-formerly {
+  font-size: var(--fs-xs);
+  color: var(--c-fg-subtle);
+  font-style: italic;
+  margin-top: 3px;
+}
+
 .profile-badges {
   display: flex;
   gap: var(--sp-2);

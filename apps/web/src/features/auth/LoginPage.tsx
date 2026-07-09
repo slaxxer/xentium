@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams, Link } from "react-router-dom";
 import Swal from "sweetalert2";
 import { useAuth, applyLogin } from "../../hooks/useAuth";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { api } from "../../lib/api";
 import { swalToast } from "../../lib/swal";
 import "./LoginPage.scss";
@@ -56,6 +57,8 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const returnTo = safeReturnTo(params.get("returnTo"));
+  const { data: siteConfig } = useSiteConfig();
+  const loginMethod = siteConfig?.auth?.loginMethod ?? "email";
   const [email, setEmail]         = useState("");
   const [password, setPassword]   = useState("");
   const [pin, setPin]             = useState("");
@@ -68,7 +71,7 @@ export function LoginPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const body: Record<string, unknown> = { email, password };
+      const body: Record<string, unknown> = { identifier: email, password };
       if (requiresPin) body.loginPin = pin;
 
       const res = await api.post<{ accessToken?: string; requiresPin?: boolean }>("/auth/login", body);
@@ -82,7 +85,10 @@ export function LoginPage() {
       await applyLogin(res.accessToken!);
       navigate(returnTo);
     } catch (err: any) {
-      const code = err?.detail?.error;
+      // Inline handlers return a flat `{ error: "NEC-…" }`; thrown NodevoErrors
+      // come back nested as `{ error: { code, message } }` via errorMiddleware.
+      const errObj = err?.detail?.error;
+      const code = typeof errObj === "string" ? errObj : errObj?.code;
 
       if (code === "account_banned") {
         const reason    = (err.detail.reason    as string) ?? "Account suspended";
@@ -112,6 +118,9 @@ export function LoginPage() {
         });
       } else if (code === "NEC-AUTH-1030") {
         swalToast(t("login.betaRequired"), "warning");
+      } else if (code === "NEC-AUTH-1040") {
+        // Failed-login lockout — surface the server message (carries the retry window).
+        swalToast(errObj?.message ?? err?.message ?? t("login.lockedOut"), "warning");
       } else {
         swalToast(
           code === "invalid_credentials" ? t("login.invalidCredentials")
@@ -161,16 +170,20 @@ export function LoginPage() {
               </div>
               <form className="login-form" onSubmit={handleSubmit}>
                 <div className="login-field">
-                  <label className="login-label" htmlFor="login-email">{t("login.email")}</label>
+                  <label className="login-label" htmlFor="login-email">
+                    {loginMethod === "username" ? t("login.username")
+                      : loginMethod === "either" ? t("login.identifier")
+                      : t("login.email")}
+                  </label>
                   <input
                     id="login-email"
                     className="login-input"
-                    type="email"
+                    type={loginMethod === "email" ? "email" : "text"}
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoFocus
-                    autoComplete="email"
+                    autoComplete={loginMethod === "email" ? "email" : "username"}
                   />
                 </div>
                 <div className="login-field">

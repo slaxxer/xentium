@@ -23,7 +23,14 @@ import { UsersSection } from "./UsersSection";
 
 interface Summary  { pendingReports: number; openCases: number; activeWarnings: number; activeBans: number }
 interface UserRef  { id: string; username: string; badgeColor: string | null }
-interface Report   { id: string; targetType: string; targetId: string; reason: string; status: string; createdAt: string; reporter: UserRef }
+interface Report   {
+  id: string; targetType: string; targetId: string; reason: string; status: string; createdAt: string;
+  reporter: UserRef;
+  /** Author of the reported content, when the filer resolved it (enables Warn/Ban quick actions). */
+  targetUser: UserRef | null;
+  /** Content text captured at filing time — survives deletion/pruning of the original. */
+  contentSnapshot: string | null;
+}
 interface LogEntry {
   id: string; actorId: string | null; actorType: string; action: string;
   targetType: string | null; targetId: string | null; reason: string | null; createdAt: string;
@@ -171,20 +178,80 @@ function DashboardSection({ summary, onNav }: { summary: Summary | undefined; on
 
 // ── Reports ───────────────────────────────────────────────────────────────────
 
+/** Inline Warn/Ban form under a report row targeting the reported content's
+ *  author. Reuses the core /moderation/warnings + /moderation/bans endpoints
+ *  (staff protection + threshold policy enforced server-side); a successful
+ *  action also resolves the report. */
+function ReportQuickAction({ report, mode, onDone, onCancel }: {
+  report: Report; mode: "warn" | "ban"; onDone: () => void; onCancel: () => void;
+}) {
+  const excerpt = report.contentSnapshot ? ` — "${report.contentSnapshot.slice(0, 120)}"` : "";
+  const [reason, setReason]   = useState(`Reported ${report.targetType.replace(/[_-]/g, " ")}${excerpt}`);
+  const [banType, setBanType] = useState<"temporary" | "permanent">("temporary");
+  const [expiry, setExpiry]   = useState("");
+
+  const actMut = useMutation({
+    mutationFn: async () => {
+      if (mode === "warn") {
+        await api.post("/moderation/warnings", { userId: report.targetUser!.id, reason, expiresAt: null });
+      } else {
+        await api.post("/moderation/bans", {
+          userId: report.targetUser!.id, type: banType, reason,
+          expiresAt: banType === "temporary" && expiry ? new Date(expiry).toISOString() : null,
+        });
+      }
+      await api.patch(`/moderation/reports/${report.id}`, { status: "resolved" });
+    },
+    onSuccess: () => { swalToast(mode === "warn" ? "Warning issued." : "Ban issued.", "success"); onDone(); },
+    onError:   (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const canSubmit = reason.trim().length >= 3 && (mode === "warn" || banType === "permanent" || !!expiry);
+
+  return (
+    <div className="mc-row__quickact">
+      <input
+        type="text" value={reason} onChange={(e) => setReason(e.target.value)}
+        placeholder="Reason" className="mc-inp"
+        style={{ flex: 1, minWidth: 180, width: "auto", marginBottom: 0 }}
+      />
+      {mode === "ban" && (
+        <>
+          <select value={banType} onChange={(e) => setBanType(e.target.value as "temporary" | "permanent")} className="mc-inp" style={{ width: "auto", marginBottom: 0 }}>
+            <option value="temporary">Temporary</option>
+            <option value="permanent">Permanent</option>
+          </select>
+          {banType === "temporary" && (
+            <input type="datetime-local" value={expiry} onChange={(e) => setExpiry(e.target.value)} className="mc-inp" style={{ width: "auto", marginBottom: 0 }} />
+          )}
+        </>
+      )}
+      <button type="button" className="mc-btn mc-btn--primary mc-btn--sm" disabled={!canSubmit || actMut.isPending}
+        onClick={() => actMut.mutate()}>
+        {actMut.isPending ? "Working…" : mode === "warn" ? "Issue warning" : "Issue ban"}
+      </button>
+      <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" onClick={onCancel}>Cancel</button>
+    </div>
+  );
+}
+
 function ReportsSection() {
   const qc = useQueryClient();
+  const [quickAction, setQuickAction] = useState<{ id: string; mode: "warn" | "ban" } | null>(null);
   const { data, isLoading, refetch } = useQuery<Paged<Report>>({
     queryKey: ["canvas-reports"],
     queryFn:  () => api.get("/moderation/reports?limit=15"),
   });
 
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ["canvas-reports"] });
+    qc.invalidateQueries({ queryKey: ["mod-summary"] });
+  };
+
   const updateMut = useMutation({
     mutationFn: ({ id, status }: { id: string; status: string }) =>
       api.patch(`/moderation/reports/${id}`, { status }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["canvas-reports"] });
-      qc.invalidateQueries({ queryKey: ["mod-summary"] });
-    },
+    onSuccess: invalidate,
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
@@ -203,26 +270,53 @@ function ReportsSection() {
       ) : (
         <div className="mc-list">
           {data.data.map((r) => (
-            <div key={r.id} className="mc-row">
-              <div className="mc-row__main">
-                <p className="mc-row__title">
-                  <Tag crit={r.reason?.length > 100}>{r.targetType.replace("_", " ")}</Tag>
-                  {r.reason}
-                </p>
-                <span className="mc-row__meta">
-                  {r.targetId.slice(0, 14)}… · reported by <Username username={r.reporter.username} badgeColor={r.reporter.badgeColor} /> · {timeAgo(r.createdAt)}
-                </span>
+            <div key={r.id} className="mc-row mc-row--report">
+              <div className="mc-row__body">
+                <div className="mc-row__main">
+                  <p className="mc-row__title">
+                    <Tag crit={r.reason?.length > 100}>{r.targetType.replace(/[_-]/g, " ")}</Tag>
+                    {r.reason}
+                  </p>
+                  {r.contentSnapshot && (
+                    <blockquote className="mc-quote">{r.contentSnapshot}</blockquote>
+                  )}
+                  <span className="mc-row__meta">
+                    {r.targetUser
+                      ? <>by <Username username={r.targetUser.username} badgeColor={r.targetUser.badgeColor} /> · </>
+                      : <>{r.targetId.slice(0, 14)}… · </>}
+                    reported by <Username username={r.reporter.username} badgeColor={r.reporter.badgeColor} /> · {timeAgo(r.createdAt)}
+                  </span>
+                </div>
+                <div className="mc-row__act">
+                  {r.targetUser && (
+                    <>
+                      <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" disabled={updateMut.isPending}
+                        onClick={() => setQuickAction((q) => q?.id === r.id && q.mode === "warn" ? null : { id: r.id, mode: "warn" })}>
+                        <FontAwesomeIcon icon={faTriangleExclamation} /> Warn
+                      </button>
+                      <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" disabled={updateMut.isPending}
+                        onClick={() => setQuickAction((q) => q?.id === r.id && q.mode === "ban" ? null : { id: r.id, mode: "ban" })}>
+                        <FontAwesomeIcon icon={faBan} /> Ban
+                      </button>
+                    </>
+                  )}
+                  <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" disabled={updateMut.isPending}
+                    onClick={() => updateMut.mutate({ id: r.id, status: "dismissed" })}>
+                    <FontAwesomeIcon icon={faMinus} /> Dismiss
+                  </button>
+                  <button type="button" className="mc-btn mc-btn--primary mc-btn--sm" disabled={updateMut.isPending}
+                    onClick={() => updateMut.mutate({ id: r.id, status: "resolved" })}>
+                    <FontAwesomeIcon icon={faCheck} /> Resolve
+                  </button>
+                </div>
               </div>
-              <div className="mc-row__act">
-                <button type="button" className="mc-btn mc-btn--ghost mc-btn--sm" disabled={updateMut.isPending}
-                  onClick={() => updateMut.mutate({ id: r.id, status: "dismissed" })}>
-                  <FontAwesomeIcon icon={faMinus} /> Dismiss
-                </button>
-                <button type="button" className="mc-btn mc-btn--primary mc-btn--sm" disabled={updateMut.isPending}
-                  onClick={() => updateMut.mutate({ id: r.id, status: "resolved" })}>
-                  <FontAwesomeIcon icon={faCheck} /> Resolve
-                </button>
-              </div>
+              {quickAction?.id === r.id && r.targetUser && (
+                <ReportQuickAction
+                  report={r} mode={quickAction.mode}
+                  onDone={() => { setQuickAction(null); invalidate(); }}
+                  onCancel={() => setQuickAction(null)}
+                />
+              )}
             </div>
           ))}
         </div>
@@ -450,7 +544,7 @@ export function ModCanvas() {
                   <div className="mc-nav__me">
                     <UserAvatar user={{ username: user.username, avatar: user.avatar }} size={30} />
                     <div>
-                      <b>{user.username}</b>
+                      <b><Username username={user.username} badgeColor={staffGroup?.badgeColor} roleKey={staffGroup?.key} /></b>
                       <span>{roleLabel}</span>
                     </div>
                   </div>

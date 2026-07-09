@@ -32,7 +32,15 @@
     "totalArticles": "Articles",
     "members": "Members",
     "onlineNow": "Online now",
-    "newestMember": "Newest member"
+    "newestMember": "Newest member",
+    "uptime": "Uptime",
+    "uptimeHint": "Time the server has been running since its last restart",
+    "latency": "Latency",
+    "latencyHint": "Round-trip time to reach the server",
+    "stat": {
+      "threads": "Threads",
+      "posts": "Posts"
+    }
   },
   "actions": {
     "save": "Save",

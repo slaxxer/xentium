@@ -1,4 +1,5 @@
 import { roleColor } from "../lib/groupBadge";
+import { useBadgeShadows } from "../lib/badgeShadow";
 
 interface UsernameProps {
   username:   string;
@@ -18,7 +19,15 @@ interface UsernameProps {
  */
 export function Username({ username, badgeColor, roleKey, href, className, style }: UsernameProps) {
   const color = roleColor(badgeColor, roleKey);
-  const colorStyle: React.CSSProperties = color ? { color, ...style } : { ...style };
+  // Groups with the ACP badge "glow" enabled add a text-shadow (admin-configured
+  // colour + offsets) so those names stand out everywhere the component renders.
+  const shadows = useBadgeShadows();
+  const textShadow = color ? shadows.get(color.toLowerCase()) : undefined;
+  const colorStyle: React.CSSProperties = {
+    ...(color ? { color } : {}),
+    ...(textShadow ? { textShadow } : {}),
+    ...style,
+  };
 
   if (href) {
     return (

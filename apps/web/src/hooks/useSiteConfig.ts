@@ -11,6 +11,12 @@ export interface SiteConfig {
   siteName: string;
   /** Canonical base URL set during install (e.g. "https://forum.example.com"); "" if unset. */
   siteUrl: string;
+  /** Public auth-form config (login identifier + registration name collection). */
+  auth: {
+    loginMethod: "email" | "username" | "either";
+    collectName: boolean;
+    nameRequired: boolean;
+  };
 }
 
 /** Public site config — feature flags + landing route. Cached; consumed by the

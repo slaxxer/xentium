@@ -1,6 +1,7 @@
 export interface AuthUser {
   id: string;
   username: string;
+  displayName: string | null;
   email: string;
   avatar: string | null;
   bio: string | null;

@@ -19,6 +19,9 @@ import "./ProfilePage.scss";
 interface PublicProfile {
   id: string;
   username: string;
+  displayName: string | null;
+  namePreference: "username" | "fullName";
+  previousUsernames: Array<{ username: string; changedAt: string }>;
   avatar: string | null;
   bio: string | null;
   joinedDate: string;
@@ -42,6 +45,8 @@ interface ProfileUser {
   username: string;
   avatar: string | null;
   bio: string | null;
+  badgeColor: string | null;
+  roleKey: string | null;
 }
 
 interface ProfileComment {
@@ -84,9 +89,7 @@ function UserCard({ user }: { user: ProfileUser }) {
     <div className="profile-user-card">
       <Avatar user={user} size={44} />
       <div className="profile-user-card__info">
-        <a href={`/u/${user.username}`} className="profile-user-card__name">
-          {user.username}
-        </a>
+        <Username href={`/u/${user.username}`} className="profile-user-card__name" username={user.username} badgeColor={user.badgeColor} roleKey={user.roleKey} />
         {user.bio && <p className="profile-user-card__bio">{user.bio}</p>}
       </div>
     </div>
@@ -596,8 +599,19 @@ export function ProfilePage() {
             <div className="profile-title-row">
               <div className="profile-identity">
                 <h1 className="profile-name">
-                  <Username username={profile.username} badgeColor={profile.groups[0]?.badgeColor} />
+                  <Username
+                    username={profile.namePreference === "fullName" && profile.displayName ? profile.displayName : profile.username}
+                    badgeColor={profile.groups[0]?.badgeColor}
+                  />
                 </h1>
+                {profile.namePreference === "fullName" && profile.displayName && (
+                  <p className="profile-handle">@{profile.username}</p>
+                )}
+                {profile.previousUsernames.length > 0 && (
+                  <p className="profile-formerly">
+                    {t("formerlyKnownAs", { names: profile.previousUsernames.map((p) => p.username).join(", ") })}
+                  </p>
+                )}
                 <p className="profile-joined">
                   {t("memberSince", { date: new Date(profile.joinedDate).toLocaleDateString(undefined, { year: "numeric", month: "long" }) })}
                 </p>

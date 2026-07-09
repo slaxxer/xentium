@@ -32,6 +32,9 @@ export const privacySettingsSchema = z.object({
   hideBlockedContent: z.boolean().optional(),
   profileVisibility: z.enum(["everyone", "members"]).optional(),
   postHistoryVisibility: z.enum(["everyone", "members", "nobody"]).optional(),
+  // Whether the profile shows the full name (displayName) or the username as the
+  // prominent name. Only takes effect when a display name is set.
+  displayNamePreference: z.enum(["username", "fullName"]).optional(),
   emailNotifications: z
     .object({
       forumActivity: z.boolean().optional(),

@@ -26,6 +26,7 @@ import { useSiteConfig, type FeatureKey } from "../hooks/useSiteConfig";
 import { useMaintenance } from "../features/maintenance/useMaintenance";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { api } from "../lib/api";
+import { setBadgeShadows, type GroupShadowConfig } from "../lib/badgeShadow";
 import { authStore } from "../lib/authStore";
 import { applyLogout, useAuth } from "../hooks/useAuth";
 import { useBetaActivityLogger } from "../hooks/useBetaActivityLogger";
@@ -340,12 +341,28 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Populates the app-wide badge-glow colour set (ACP → Progression badge shadow),
+ *  so Username renders the glow consistently everywhere. Shares the footer's
+ *  legend-groups query (deduped by key). */
+function BadgeShadowSync() {
+  const { data } = useQuery<GroupShadowConfig[]>({
+    queryKey: ["legend-groups"],
+    queryFn:  () => api.get("/members/groups"),
+    staleTime: 300_000,
+  });
+  useEffect(() => {
+    if (data) setBadgeShadows(data);
+  }, [data]);
+  return null;
+}
+
 export default function App() {
   // useState initializer runs at first render — AFTER bootstrap() has
   // imported enabled plugin web entries and registered their routes.
   const [router] = useState(buildRouter);
   return (
     <QueryClientProvider client={queryClient}>
+      <BadgeShadowSync />
       <MaintenanceGate>
         <BetaGate>
           <RouterProvider router={router} />

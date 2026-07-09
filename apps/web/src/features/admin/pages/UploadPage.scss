@@ -1,0 +1,116 @@
+// Plugin upload / install page — wider two-column layout + live processing animation.
+
+.acp-upload {
+  max-width: 1040px;
+
+  &__grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 20px;
+    align-items: start;
+
+    @media (max-width: 860px) { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  &__side {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: sticky;
+    top: calc(var(--nav-height) + var(--sp-4, 16px));
+
+    @media (max-width: 860px) { position: static; }
+  }
+}
+
+// ── Sidebar info boxes ─────────────────────────────────────────────────────────
+.acp-sidebox {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--card-radius, 12px);
+  padding: 18px;
+
+  &__title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 800; color: var(--c-fg);
+    margin-bottom: 14px;
+    svg { color: var(--c-accent); }
+  }
+
+  &__step {
+    display: flex; gap: 10px; align-items: flex-start;
+    & + & { margin-top: 12px; }
+
+    span {
+      flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%;
+      background: var(--c-accent-soft); color: var(--c-accent);
+      font-size: 11px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    div { font-size: 12.5px; color: var(--c-fg-muted); line-height: 1.5; }
+    b { color: var(--c-fg); font-weight: 700; }
+  }
+
+  &__line { font-size: 12.5px; color: var(--c-fg-muted); line-height: 1.55; margin-bottom: 6px; }
+
+  &__link {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 6px;
+    font-size: 12.5px; font-weight: 700; color: var(--c-accent);
+    background: none; border: none; cursor: pointer; padding: 0;
+    &:hover { text-decoration: underline; }
+  }
+}
+
+// ── Live processing indicator (indeterminate — no server-side % available) ──────
+.plugin-processing {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px;
+  margin-bottom: 22px;
+  border: 1px solid color-mix(in srgb, var(--c-accent) 25%, transparent);
+  background: var(--c-accent-soft);
+  border-radius: var(--radius-md, 10px);
+
+  &__body  { flex: 1; min-width: 0; }
+  &__label { font-size: 13px; font-weight: 700; color: var(--c-fg); margin-bottom: 9px; }
+}
+
+.plugin-progress {
+  position: relative;
+  height: 6px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--c-accent) 18%, transparent);
+  overflow: hidden;
+
+  &__bar {
+    position: absolute;
+    top: 0; height: 100%;
+    width: 40%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--c-accent), var(--c-accent2, var(--c-accent)));
+    animation: plugin-slide 1.15s ease-in-out infinite;
+  }
+}
+@keyframes plugin-slide {
+  0%   { left: -40%; }
+  100% { left: 100%; }
+}
+
+.plugin-spinner {
+  flex-shrink: 0;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+  border-top-color: currentColor;
+  animation: plugin-spin 0.7s linear infinite;
+  display: inline-block;
+
+  &--sm { width: 13px; height: 13px; vertical-align: -2px; margin-right: 7px; }
+}
+@keyframes plugin-spin { to { transform: rotate(360deg); } }
+
+// Active step circle pulses while a step is running.
+.plugin-step--busy { animation: plugin-pulse 1.15s ease-in-out infinite; }
+@keyframes plugin-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-accent) 50%, transparent); }
+  70%      { box-shadow: 0 0 0 7px color-mix(in srgb, var(--c-accent) 0%, transparent); }
+}

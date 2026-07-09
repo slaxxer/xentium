@@ -111,6 +111,10 @@
       "email": {
         "title": "Email",
         "desc": "Outgoing mail (SMTP) configuration."
+      },
+      "login": {
+        "title": "Login",
+        "desc": "How members sign in, and failed-attempt protection."
       }
     },
     "fields": {
@@ -225,6 +229,38 @@
       "fromAddress": {
         "label": "From address",
         "desc": "The sender shown on outgoing mail."
+      },
+      "loginMethod": {
+        "label": "Login identifier",
+        "desc": "Whether members sign in with their email, username, or either."
+      },
+      "lockoutEnabled": {
+        "label": "Lock out after failed attempts",
+        "desc": "Temporarily block sign-in after too many failed attempts from repeated tries."
+      },
+      "lockoutMaxAttempts": {
+        "label": "Max failed attempts",
+        "desc": "Failed attempts allowed before the account is temporarily locked."
+      },
+      "lockoutDuration": {
+        "label": "Lockout duration (minutes)",
+        "desc": "How long sign-in stays blocked once the limit is hit."
+      },
+      "collectName": {
+        "label": "Collect a name at registration",
+        "desc": "Ask new members for a display name (e.g. their full name) shown on their profile."
+      },
+      "nameRequired": {
+        "label": "Require the name",
+        "desc": "Make the name mandatory during registration (only when collecting a name)."
+      },
+      "showPreviousUsernames": {
+        "label": "Show former usernames",
+        "desc": "Display a member’s recent previous usernames on their profile. Members cannot hide this."
+      },
+      "previousUsernameDays": {
+        "label": "Former-username window (days)",
+        "desc": "How long a former username stays visible after a change. 0 = show all history."
       }
     },
     "landing": {
@@ -261,6 +297,11 @@
         "posts": "Most posts",
         "threads": "Most threads",
         "followers": "Most followers"
+      },
+      "loginMethod": {
+        "email": "Email address",
+        "username": "Username",
+        "either": "Email or username"
       }
     },
     "toastSaved": "Settings saved!"
@@ -829,11 +870,22 @@
     "alreadyWarning": "This plugin is already installed. Installing will be rejected — uninstall it first.",
     "installBtn": "Install Plugin",
     "installing": "Installing…",
+    "processingValidate": "Uploading & validating package…",
+    "processingInstall": "Installing plugin & running migrations…",
     "back": "Back",
     "doneTitle": "Plugin Installed",
     "doneText": "The plugin is installed and ready to enable.",
     "goInstalled": "Go to Installed",
-    "installFailed": "Installation failed."
+    "installFailed": "Installation failed.",
+    "sideHowTitle": "How it works",
+    "sideStep1": "Drop or pick a .nvplugin package.",
+    "sideStep2": "We check the manifest, permissions and migrations.",
+    "sideStep3": "Files are unpacked and the plugin is ready to enable.",
+    "sideSafetyTitle": "Before you install",
+    "sideSafety": "Only install plugins from sources you trust — they run with server access and can add database tables.",
+    "sideMarketTitle": "Looking for plugins?",
+    "sideMarketText": "Browse and install official plugins with an active license.",
+    "sideMarketLink": "Open the Marketplace"
   },
   "marketplace": {
     "notConnected": "No marketplace account connected. Connect on the <0>License</0> page to install licensed plugins.",
