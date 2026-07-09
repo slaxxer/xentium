@@ -120,7 +120,10 @@
     "saving": "Saving…",
     "save": "Save Privacy Settings",
     "saved": "Privacy settings saved!",
-    "saveError": "Could not save. Try again."
+    "saveError": "Could not save. Try again.",
+    "displayNameLabel": "Name shown on your profile",
+    "displayNameUsername": "Username",
+    "displayNameFull": "Full name"
   },
   "security": {
     "title": "Security",

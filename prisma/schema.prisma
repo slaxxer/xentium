@@ -109,6 +109,7 @@ model User {
 
   // Moderation (back-relations for Phase 6 models)
   reportsFiled     ModerationReport[]  @relation("ReportFiled")
+  reportsAgainst   ModerationReport[]  @relation("ReportAgainst")
   warningsReceived ModerationWarning[] @relation("WarningReceived")
   warningsIssued   ModerationWarning[] @relation("WarningIssued")
   bansReceived     ModerationBan[]     @relation("BanReceived")
@@ -167,6 +168,15 @@ model GroupProgression {
   // Badge
   badgeLabel               String?  @map("badge_label")
   badgeColor               String?  @map("badge_color")
+  // When true, usernames in this group render with a text-shadow "glow" everywhere
+  // the name shows — makes staff/special members stand out. Admin-controlled.
+  // The glow's colour and offsets are fully configurable (ACP → Progression → Badge):
+  // badgeShadowColor null falls back to the badge colour; X/Y/blur are px.
+  badgeTextShadow          Boolean  @default(false) @map("badge_text_shadow")
+  badgeShadowColor         String?  @map("badge_shadow_color")
+  badgeShadowX             Int      @default(1)  @map("badge_shadow_x")
+  badgeShadowY             Int      @default(1)  @map("badge_shadow_y")
+  badgeShadowBlur          Int      @default(20) @map("badge_shadow_blur")
 
   createdAt                DateTime @default(now()) @map("created_at")
   updatedAt                DateTime @updatedAt      @map("updated_at")
@@ -616,18 +626,25 @@ model PasswordResetToken {
 
 model ModerationReport {
   id         String    @id @default(cuid())
-  targetType String    @map("target_type")  // article | article_comment | profile_comment | user | plugin-content
+  targetType String    @map("target_type")  // article | article_comment | profile_comment | user | plugin-content | <plugin-specific e.g. shoutbox_shout>
   targetId   String    @map("target_id")
+  // Author of the reported content, when known — enables Warn/Ban quick actions
+  // on the ModCanvas report row without resolving targetId per content type.
+  targetUserId String? @map("target_user_id")
   reporterId String    @map("reporter_id")
   assignedTo String?   @map("assigned_to")
   reason     String    @db.Text
+  // Text of the reported content captured at filing time, so the report stays
+  // reviewable after the content is deleted or pruned (e.g. shoutbox retention).
+  contentSnapshot String? @db.Text @map("content_snapshot")
   notes      String?   @db.Text
   status     String    @default("pending")  // pending | reviewed | resolved | dismissed
   createdAt  DateTime  @default(now()) @map("created_at")
   resolvedAt DateTime? @map("resolved_at")
   resolvedBy String?   @map("resolved_by")
 
-  reporter User @relation("ReportFiled",    fields: [reporterId], references: [id], onDelete: Cascade)
+  reporter   User  @relation("ReportFiled",   fields: [reporterId],   references: [id], onDelete: Cascade)
+  targetUser User? @relation("ReportAgainst", fields: [targetUserId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt(sort: Desc)])
   @@map("ncf_moderation_reports")

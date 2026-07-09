@@ -11,3 +11,12 @@ siteRouter.get("/config", async (_req, res, next) => {
     next(err);
   }
 });
+
+// Footer meta — site name, server uptime, plugin-contributed counters.
+siteRouter.get("/footer", async (_req, res, next) => {
+  try {
+    res.json(await siteService.getFooter());
+  } catch (err) {
+    next(err);
+  }
+});

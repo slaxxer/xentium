@@ -3,11 +3,23 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBox, faFolderOpen, faCheck, faCircleExclamation, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import {
+  faBox, faFolderOpen, faCheck, faCircleExclamation, faTriangleExclamation,
+  faListCheck, faStore, faShieldHalved,
+} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
+import "./UploadPage.scss";
 
 const STEP_KEYS = ["upload", "validate", "install"] as const;
+
+// Local installs finish almost instantly, so the progress animation would only
+// flash. Keep the "processing" state up for at least this long so it's visible.
+const MIN_PROCESSING_MS = 1000;
+async function withMinDelay<T>(work: Promise<T>): Promise<T> {
+  const [result] = await Promise.all([work, new Promise((r) => setTimeout(r, MIN_PROCESSING_MS))]);
+  return result;
+}
 
 interface ValidationResult {
   id:               string;
@@ -48,7 +60,7 @@ export function UploadPage() {
     mutationFn: (f: File) => {
       const fd = new FormData();
       fd.append("file", f);
-      return api.post<ValidationResult>("/plugins/validate", fd);
+      return withMinDelay(api.post<ValidationResult>("/plugins/validate", fd));
     },
     onSuccess: (data) => {
       setResult(data);
@@ -64,7 +76,7 @@ export function UploadPage() {
     mutationFn: () => {
       const fd = new FormData();
       fd.append("file", file!);
-      return api.post("/plugins/upload", fd);
+      return withMinDelay(api.post("/plugins/upload", fd));
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
@@ -82,8 +94,13 @@ export function UploadPage() {
     setError(null);
   };
 
+  const busy = validateMut.isPending || installMut.isPending;
+  const processingLabel = validateMut.isPending
+    ? t("upload.processingValidate")
+    : t("upload.processingInstall");
+
   return (
-    <div style={{ maxWidth: 600 }}>
+    <div className="acp-upload">
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.extensions")}</div>
@@ -91,12 +108,13 @@ export function UploadPage() {
         </div>
       </div>
 
+      <div className="acp-upload__grid">
       <div className="acp-card" style={{ padding: 32 }}>
         {/* Step indicators */}
         <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
           {STEP_KEYS.map((_s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", flex: i < STEP_KEYS.length - 1 ? 1 : undefined }}>
-              <div style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "var(--c-on-accent)" : "var(--c-fg-muted)" }}>
+              <div className={busy && i === step ? "plugin-step--busy" : undefined} style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "var(--c-on-accent)" : "var(--c-fg-muted)" }}>
                 {i < step ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
               </div>
               {i < STEP_KEYS.length - 1 && (
@@ -105,6 +123,17 @@ export function UploadPage() {
             </div>
           ))}
         </div>
+
+        {/* Live processing indicator — animated while validating / installing */}
+        {busy && (
+          <div className="plugin-processing">
+            <span className="plugin-spinner" />
+            <div className="plugin-processing__body">
+              <div className="plugin-processing__label">{processingLabel}</div>
+              <div className="plugin-progress"><div className="plugin-progress__bar" /></div>
+            </div>
+          </div>
+        )}
 
         {/* Step 0 — Upload */}
         {step === 0 && (
@@ -128,14 +157,6 @@ export function UploadPage() {
 
             <input ref={fileRef} type="file" accept=".nvplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
-            <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"14px 16px", fontSize:13, color:"var(--c-fg-muted)", marginBottom: file ? 14 : 0 }}>
-              <div style={{ fontWeight:700, color:"var(--c-fg-muted)", marginBottom:6 }}>{t("upload.reqTitle")}</div>
-              <div>• {t("upload.req1")}</div>
-              <div>• {t("upload.req2")}</div>
-              <div>• {t("upload.req3")}</div>
-              <div>• {t("upload.req4")}</div>
-            </div>
-
             {error && (
               <div style={{ marginTop:12, padding:"12px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>
                 <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginTop:2, flexShrink:0 }} />
@@ -146,7 +167,9 @@ export function UploadPage() {
             {file && (
               <div style={{ marginTop:14 }}>
                 <button type="button" className="btn-primary btn-sm" onClick={() => validateMut.mutate(file)} disabled={validateMut.isPending}>
-                  {validateMut.isPending ? t("upload.validating") : t("upload.validateBtn")}
+                  {validateMut.isPending
+                    ? <><span className="plugin-spinner plugin-spinner--sm" />{t("upload.validating")}</>
+                    : t("upload.validateBtn")}
                 </button>
               </div>
             )}
@@ -173,7 +196,9 @@ export function UploadPage() {
 
             <div style={{ marginTop:20, display:"flex", gap:8 }}>
               <button type="button" className="btn-primary btn-sm" onClick={() => installMut.mutate()} disabled={installMut.isPending || result.alreadyInstalled}>
-                {installMut.isPending ? t("upload.installing") : t("upload.installBtn")}
+                {installMut.isPending
+                  ? <><span className="plugin-spinner plugin-spinner--sm" />{t("upload.installing")}</>
+                  : t("upload.installBtn")}
               </button>
               <button type="button" className="btn-ghost btn-sm" onClick={() => { setStep(0); setError(null); }}>{t("upload.back")}</button>
             </div>
@@ -193,6 +218,36 @@ export function UploadPage() {
             </button>
           </div>
         )}
+      </div>
+
+      {/* Sidebar — how it works, requirements, safety, marketplace */}
+      <aside className="acp-upload__side">
+        <div className="acp-sidebox">
+          <div className="acp-sidebox__title"><FontAwesomeIcon icon={faListCheck} /> {t("upload.sideHowTitle")}</div>
+          <div className="acp-sidebox__step"><span>1</span><div><b>{t("upload.steps.upload")}</b> — {t("upload.sideStep1")}</div></div>
+          <div className="acp-sidebox__step"><span>2</span><div><b>{t("upload.steps.validate")}</b> — {t("upload.sideStep2")}</div></div>
+          <div className="acp-sidebox__step"><span>3</span><div><b>{t("upload.steps.install")}</b> — {t("upload.sideStep3")}</div></div>
+        </div>
+
+        <div className="acp-sidebox">
+          <div className="acp-sidebox__title"><FontAwesomeIcon icon={faBox} /> {t("upload.reqTitle")}</div>
+          <div className="acp-sidebox__line">• {t("upload.req1")}</div>
+          <div className="acp-sidebox__line">• {t("upload.req2")}</div>
+          <div className="acp-sidebox__line">• {t("upload.req3")}</div>
+          <div className="acp-sidebox__line">• {t("upload.req4")}</div>
+        </div>
+
+        <div className="acp-sidebox">
+          <div className="acp-sidebox__title"><FontAwesomeIcon icon={faShieldHalved} /> {t("upload.sideSafetyTitle")}</div>
+          <div className="acp-sidebox__line">{t("upload.sideSafety")}</div>
+        </div>
+
+        <div className="acp-sidebox">
+          <div className="acp-sidebox__title"><FontAwesomeIcon icon={faStore} /> {t("upload.sideMarketTitle")}</div>
+          <div className="acp-sidebox__line">{t("upload.sideMarketText")}</div>
+          <button type="button" className="acp-sidebox__link" onClick={() => navigate("/admin/marketplace")}>{t("upload.sideMarketLink")} →</button>
+        </div>
+      </aside>
       </div>
     </div>
   );

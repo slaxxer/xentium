@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { PubNav } from "./PubNav";
 import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
+import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
 import "./AppLayout.scss";
 
@@ -46,6 +47,7 @@ export function AppLayout() {
     <div className="app-layout">
       <PubNav />
       <main className="app-main">
+        <LayoutWidgetOutlet outlet="top" />
         <Outlet />
       </main>
       <SiteFooter />

@@ -17,7 +17,12 @@ membersRouter.get("/groups", async (_req, res, next) => {
       select: {
         name: true,
         key: true,
-        progression: { select: { badgeColor: true, badgeLabel: true } },
+        progression: {
+          select: {
+            badgeColor: true, badgeLabel: true, badgeTextShadow: true,
+            badgeShadowColor: true, badgeShadowX: true, badgeShadowY: true, badgeShadowBlur: true,
+          },
+        },
       },
     });
     res.json(
@@ -26,6 +31,11 @@ membersRouter.get("/groups", async (_req, res, next) => {
         key: g.key,
         badgeColor: g.progression?.badgeColor ?? null,
         badgeLabel: g.progression?.badgeLabel ?? null,
+        badgeTextShadow: g.progression?.badgeTextShadow ?? false,
+        badgeShadowColor: g.progression?.badgeShadowColor ?? null,
+        badgeShadowX: g.progression?.badgeShadowX ?? 1,
+        badgeShadowY: g.progression?.badgeShadowY ?? 1,
+        badgeShadowBlur: g.progression?.badgeShadowBlur ?? 20,
       })),
     );
   } catch (err) {

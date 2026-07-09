@@ -1,11 +1,12 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
+import { statRegistry } from "../stat-registry/stat-registry.js";
 import { necRegistry } from "../nec-registry/nec-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { queues } from "../../infrastructure/queue.js";
@@ -132,6 +133,11 @@ export class PluginContextImpl implements PluginContext {
   registerHomeFeedSource(source: HomeFeedSource): void {
     homeFeedRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin home feed source registered");
+  }
+
+  registerStatSource(source: StatSource): void {
+    statRegistry.register(this.pluginId, source);
+    logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin stat source registered");
   }
 
   registerNecCodes(codes: NecCodeDeclaration[]): void {

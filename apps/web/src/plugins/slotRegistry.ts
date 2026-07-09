@@ -113,6 +113,31 @@ export interface IpEnrichmentSlot {
   component: ComponentType<{ ip: string }>;
 }
 
+// ── ModCanvas user panel (rendered inline in the ModCanvas user mod-profile) ──
+// e.g. the shoutbox shows a "user is muted in the shoutbox" alert + Unmute button.
+// Core passes the selected user; the component fetches its own data and renders
+// nothing when there is nothing to show (not muted / not permitted).
+export interface ModCanvasUserPanelSlot {
+  id: string;
+  component: ComponentType<{ userId: string; username: string }>;
+  /** Lower renders higher up. */
+  order?: number;
+}
+
+// ── Layout widget (registered by plugins, rendered inside the page layout flow) ─
+// Rendered by <LayoutWidgetOutlet outlet="…"> mount points placed in the layout
+// and rail-owning pages: "top" (inside .app-main, above the routed page, clamped
+// to --content-max), "aside" (a card slot in a page's rail), "forum-top" (forum
+// index, above the categories). The component receives the outlet id and decides
+// itself whether to render there — placement is the plugin's own configuration,
+// the outlet stays dumb and reusable.
+export interface LayoutWidgetSlot {
+  id: string;
+  component: ComponentType<{ outlet: string }>;
+  /** Lower renders first within an outlet. */
+  order?: number;
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 class SlotRegistry {
@@ -125,9 +150,11 @@ class SlotRegistry {
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
   private userDetailPanels:  UserDetailPanelSlot[]    = [];
   private ipEnrichments:     IpEnrichmentSlot[]       = [];
+  private modCanvasUserPanels: ModCanvasUserPanelSlot[] = [];
   private profileStats:      ProfileStatSlot[]        = [];
   private profileActions:    ProfileActionSlot[]      = [];
   private headerWidgets:     HeaderWidgetSlot[]       = [];
+  private layoutWidgets:     LayoutWidgetSlot[]       = [];
 
   // Core notification prefixes that always show the system (gear) icon
   private readonly coreSystemPrefixes = ["progression.", "license.", "system."];
@@ -149,9 +176,11 @@ class SlotRegistry {
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
   registerUserDetailPanel(panel: UserDetailPanelSlot)       { this._own(panel.id);    this.userDetailPanels.push(panel); }
   registerIpEnrichment(slot: IpEnrichmentSlot)              { this._own(slot.id);     this.ipEnrichments.push(slot); }
+  registerModCanvasUserPanel(slot: ModCanvasUserPanelSlot)  { this._own(slot.id);     this.modCanvasUserPanels.push(slot); }
   registerProfileStat(stat: ProfileStatSlot)                { this._own(stat.id);     this.profileStats.push(stat); }
   registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
   registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
+  registerLayoutWidget(slot: LayoutWidgetSlot)              { this._own(slot.id);     this.layoutWidgets.push(slot); }
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
@@ -160,9 +189,11 @@ class SlotRegistry {
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getIpEnrichments()     { return [...this.ipEnrichments]; }
+  getModCanvasUserPanels() { return [...this.modCanvasUserPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getProfileStats()      { return [...this.profileStats]; }
   getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getLayoutWidgets()     { return [...this.layoutWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
 
   getRoutes(layout?: PluginRoute["layout"]): PluginRoute[] {
     if (!layout) return [...this.routes];
@@ -197,9 +228,11 @@ class SlotRegistry {
     this.modCanvasSections = this.modCanvasSections.filter((s) => !this._ownedBy(s.id, pluginId));
     this.userDetailPanels  = this.userDetailPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.ipEnrichments     = this.ipEnrichments.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.modCanvasUserPanels = this.modCanvasUserPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileStats      = this.profileStats.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
     this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.layoutWidgets     = this.layoutWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });
   }
 }

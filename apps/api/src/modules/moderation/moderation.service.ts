@@ -588,7 +588,10 @@ export const moderationService = {
         skip:  (page - 1) * limit,
         take:  limit,
         orderBy: { createdAt: "desc" },
-        include: { reporter: { select: { id: true, username: true, ...badgeColorSelect } } },
+        include: {
+          reporter:   { select: { id: true, username: true, ...badgeColorSelect } },
+          targetUser: { select: { id: true, username: true, ...badgeColorSelect } },
+        },
       }),
       prisma.moderationReport.count({ where: { status: "pending" } }),
     ]);
@@ -600,6 +603,11 @@ export const moderationService = {
           username:   r.reporter.username,
           badgeColor: r.reporter.groups[0]?.group.progression?.badgeColor ?? null,
         },
+        targetUser: r.targetUser ? {
+          id:         r.targetUser.id,
+          username:   r.targetUser.username,
+          badgeColor: r.targetUser.groups[0]?.group.progression?.badgeColor ?? null,
+        } : null,
       })),
       meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };

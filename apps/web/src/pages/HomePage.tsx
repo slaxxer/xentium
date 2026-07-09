@@ -13,6 +13,7 @@ import { useAuth } from "../hooks/useAuth";
 import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
 import { GuestHome } from "./GuestHome";
+import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import "./HomePage.scss";
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
@@ -440,6 +441,7 @@ export function HomePage() {
       <Feed />
 
       <aside className="hf-right">
+        <LayoutWidgetOutlet outlet="aside" />
         <ProgressionCard />
         <HotThreads />
         <PopularTags />

@@ -17,6 +17,7 @@ import * as webSwal from "@web/lib/swal";
 import * as webUseAuth from "@web/hooks/useAuth";
 import * as webSlotRegistry from "@web/plugins/slotRegistry";
 import * as webPluginI18n from "@web/plugins/pluginI18n";
+import * as webLayoutWidgetOutlet from "@web/plugins/LayoutWidgetOutlet";
 import * as webAuthStore from "@web/lib/authStore";
 import * as webUserAvatar from "@web/components/UserAvatar";
 import * as webUsername from "@web/components/Username";
@@ -37,6 +38,7 @@ const HOST = {
   webUseAuth,
   webSlotRegistry,
   webPluginI18n,
+  webLayoutWidgetOutlet,
   webAuthStore,
   webUserAvatar,
   webUsername,

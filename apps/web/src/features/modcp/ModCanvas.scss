@@ -371,6 +371,20 @@
 .mc-row__act { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .mc-row__act--col { flex-direction: column; align-items: stretch; }
 
+// Report rows stack: main row (content + actions) with an optional inline
+// warn/ban quick-action form expanding beneath it.
+.mc-row--report { flex-direction: column; align-items: stretch; gap: 0; }
+.mc-row__body   { display: flex; align-items: center; gap: 15px; }
+.mc-row__quickact {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--c-border);
+}
+
 .mc-quote {
   margin: 6px 0;
   font-family: var(--font-body);

@@ -17,7 +17,96 @@ interface Group {
   showInTeam: boolean;
   _count: { users: number; permissions: number };
   permissions: { permission: Permission }[];
-  progression: { badgeColor: string | null; badgeLabel: string | null } | null;
+  progression: {
+    badgeColor: string | null;
+    badgeLabel: string | null;
+    badgeTextShadow?: boolean;
+    badgeShadowColor?: string | null;
+    badgeShadowX?: number;
+    badgeShadowY?: number;
+    badgeShadowBlur?: number;
+  } | null;
+}
+
+// ── Shared badge "glow" (username text-shadow) editor ───────────────────────
+// Used by both the create and edit group modals so the controls stay identical.
+
+interface GlowValue {
+  badgeTextShadow: boolean;
+  badgeShadowColor: string | null;
+  badgeShadowX: number;
+  badgeShadowY: number;
+  badgeShadowBlur: number;
+}
+
+const GLOW_DEFAULTS: GlowValue = {
+  badgeTextShadow: false, badgeShadowColor: null, badgeShadowX: 1, badgeShadowY: 1, badgeShadowBlur: 20,
+};
+
+function GlowFields({ value, badgeColor, previewLabel, onChange }: {
+  value: GlowValue;
+  badgeColor: string;
+  previewLabel: string;
+  onChange: (patch: Partial<GlowValue>) => void;
+}) {
+  return (
+    <div className="acp-form-field">
+      <label className="acp-check" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+        <input
+          type="checkbox"
+          checked={value.badgeTextShadow}
+          onChange={(e) => onChange({ badgeTextShadow: e.target.checked })}
+          style={{ flexShrink: 0 }}
+        />
+        <span style={{ flex: 1 }}>
+          <span style={{ fontWeight: 700 }}>Glow on usernames</span>
+          <span className="acp-hint" style={{ display: "block", marginTop: 2 }}>
+            Adds a text-shadow to this group's usernames everywhere on the site.
+          </span>
+        </span>
+        <span style={{
+          fontWeight: 800, fontSize: 15,
+          color: badgeColor,
+          textShadow: value.badgeTextShadow
+            ? `${value.badgeShadowX}px ${value.badgeShadowY}px ${value.badgeShadowBlur}px ${value.badgeShadowColor || badgeColor}`
+            : undefined,
+        }}>
+          {previewLabel || "Preview"}
+        </span>
+      </label>
+
+      {value.badgeTextShadow && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 64px 64px 64px", gap: 10, marginTop: 12 }}>
+          <div>
+            <label className="acp-label">Glow color</label>
+            <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+              <input
+                type="color"
+                value={value.badgeShadowColor ?? badgeColor}
+                onChange={(e) => onChange({ badgeShadowColor: e.target.value })}
+                style={{ width: 40, height: 38, border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", cursor: "pointer", flexShrink: 0 }}
+              />
+              {value.badgeShadowColor != null
+                ? <button type="button" className="btn-ghost btn-sm" onClick={() => onChange({ badgeShadowColor: null })} title="Use the badge colour">↺ badge</button>
+                : <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>= badge</span>}
+            </div>
+          </div>
+          <div>
+            <label className="acp-label">X</label>
+            <input className="acp-input" type="number" min={-20} max={20} value={value.badgeShadowX} onChange={(e) => onChange({ badgeShadowX: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label className="acp-label">Y</label>
+            <input className="acp-input" type="number" min={-20} max={20} value={value.badgeShadowY} onChange={(e) => onChange({ badgeShadowY: Number(e.target.value) })} />
+          </div>
+          <div>
+            <label className="acp-label">Blur</label>
+            <input className="acp-input" type="number" min={0} max={60} value={value.badgeShadowBlur} onChange={(e) => onChange({ badgeShadowBlur: Number(e.target.value) })} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Collapsible domain permission list ─────────────────────────────────────
@@ -150,6 +239,8 @@ function CreateGroupModal({
   const [name,        setName]        = useState("");
   const [key,         setKey]         = useState("");
   const [color,       setColor]       = useState(DEFAULT_COLOR);
+  const [badgeLabel,  setBadgeLabel]  = useState("");
+  const [glow,        setGlow]        = useState<GlowValue>(GLOW_DEFAULTS);
   const [iconFile,    setIconFile]    = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(null);
   const [selected,    setSelected]    = useState<Set<string>>(new Set());
@@ -177,7 +268,15 @@ function CreateGroupModal({
       const group = await api.post("/admin/groups", { name, key, showInTeam }) as { id: string };
 
       const followUps: Promise<unknown>[] = [
-        api.patch(`/admin/progression/${group.id}`, { badgeColor: color }),
+        api.patch(`/admin/progression/${group.id}`, {
+          badgeColor: color,
+          badgeLabel: badgeLabel.trim() || null,
+          badgeTextShadow:  glow.badgeTextShadow,
+          badgeShadowColor: glow.badgeShadowColor,
+          badgeShadowX:     glow.badgeShadowX,
+          badgeShadowY:     glow.badgeShadowY,
+          badgeShadowBlur:  glow.badgeShadowBlur,
+        }),
       ];
       if (iconFile) {
         const fd = new FormData();
@@ -274,6 +373,13 @@ function CreateGroupModal({
         </div>
 
         <div className="acp-form-field">
+          <label className="acp-label">Badge label</label>
+          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder="Optional — defaults to the group name" />
+        </div>
+
+        <GlowFields value={glow} badgeColor={color} previewLabel={badgeLabel || name} onChange={(patch) => setGlow((p) => ({ ...p, ...patch }))} />
+
+        <div className="acp-form-field">
           <label className="acp-label">Group icon</label>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
@@ -363,6 +469,14 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
   const qc = useQueryClient();
   const [name,       setName]       = useState(group.name);
   const [color,      setColor]      = useState(group.progression?.badgeColor ?? "#7c6af7");
+  const [badgeLabel, setBadgeLabel] = useState(group.progression?.badgeLabel ?? "");
+  const [glow,       setGlow]       = useState<GlowValue>({
+    badgeTextShadow:  group.progression?.badgeTextShadow  ?? false,
+    badgeShadowColor: group.progression?.badgeShadowColor ?? null,
+    badgeShadowX:     group.progression?.badgeShadowX     ?? 1,
+    badgeShadowY:     group.progression?.badgeShadowY     ?? 1,
+    badgeShadowBlur:  group.progression?.badgeShadowBlur  ?? 20,
+  });
   const [iconFile,   setIconFile]   = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string | null>(
     group.icon ? `/uploads/${group.icon}` : null,
@@ -379,8 +493,16 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
-  const colorMutation = useMutation({
-    mutationFn: () => api.patch(`/admin/progression/${group.id}`, { badgeColor: color }),
+  const badgeMutation = useMutation({
+    mutationFn: () => api.patch(`/admin/progression/${group.id}`, {
+      badgeColor: color,
+      badgeLabel: badgeLabel.trim() || null,
+      badgeTextShadow:  glow.badgeTextShadow,
+      badgeShadowColor: glow.badgeShadowColor,
+      badgeShadowX:     glow.badgeShadowX,
+      badgeShadowY:     glow.badgeShadowY,
+      badgeShadowBlur:  glow.badgeShadowBlur,
+    }),
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
@@ -401,14 +523,22 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
   }
 
   async function handleSave() {
+    const p = group.progression;
     const nameChanged  = name.trim() !== group.name;
-    const colorChanged = color !== (group.progression?.badgeColor ?? "#7c6af7");
+    const badgeChanged =
+      color !== (p?.badgeColor ?? "#7c6af7") ||
+      (badgeLabel.trim() || null) !== (p?.badgeLabel ?? null) ||
+      glow.badgeTextShadow !== (p?.badgeTextShadow ?? false) ||
+      (glow.badgeShadowColor ?? null) !== (p?.badgeShadowColor ?? null) ||
+      glow.badgeShadowX !== (p?.badgeShadowX ?? 1) ||
+      glow.badgeShadowY !== (p?.badgeShadowY ?? 1) ||
+      glow.badgeShadowBlur !== (p?.badgeShadowBlur ?? 20);
     const iconChanged  = !!iconFile;
     const teamChanged  = showInTeam !== group.showInTeam;
 
     const tasks: Promise<unknown>[] = [];
     if (nameChanged)  tasks.push(nameMutation.mutateAsync());
-    if (colorChanged) tasks.push(colorMutation.mutateAsync());
+    if (badgeChanged) tasks.push(badgeMutation.mutateAsync());
     if (iconChanged)  tasks.push(iconMutation.mutateAsync());
     if (teamChanged)  tasks.push(teamMutation.mutateAsync());
 
@@ -423,7 +553,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
     });
   }
 
-  const isPending = nameMutation.isPending || colorMutation.isPending || iconMutation.isPending || teamMutation.isPending;
+  const isPending = nameMutation.isPending || badgeMutation.isPending || iconMutation.isPending || teamMutation.isPending;
 
   return (
     <div className="acp-modal-overlay" onClick={onClose}>
@@ -454,7 +584,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
                 background: `${color}20`, color, border: `1px solid ${color}40`,
               }}>
                 {iconPreview && <img src={iconPreview} alt="" style={{ width: 11, height: 11, borderRadius: 2, objectFit: "cover" }} />}
-                {group.progression?.badgeLabel || group.name}
+                {badgeLabel || name}
               </span>
             </div>
             {group.isSystem && (
@@ -512,6 +642,15 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
           </div>
           <div className="acp-hint">Used for the group badge and card accent color.</div>
         </div>
+
+        {/* Badge label */}
+        <div className="acp-form-field">
+          <label className="acp-label">Badge label</label>
+          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder="Optional — defaults to the group name" />
+        </div>
+
+        {/* Username glow */}
+        <GlowFields value={glow} badgeColor={color} previewLabel={badgeLabel || name} onChange={(patch) => setGlow((prev) => ({ ...prev, ...patch }))} />
 
         {/* Icon upload */}
         <div className="acp-form-field">
@@ -653,8 +792,6 @@ interface ProgressionData {
   minLikesReceived: number | null;
   maxPostLength: number | null;
   maxDailyPosts: number | null;
-  badgeLabel: string | null;
-  badgeColor: string | null;
 }
 
 function ProgressionModal({ group, onClose }: { group: Group; onClose: () => void }) {
@@ -679,8 +816,6 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
       minLikesReceived:   form.minLikesReceived,
       maxPostLength:      form.maxPostLength,
       maxDailyPosts:      form.maxDailyPosts,
-      badgeLabel:         form.badgeLabel,
-      badgeColor:         form.badgeColor,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
@@ -709,7 +844,7 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
           <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Progression — {group.name}</h2>
         </div>
         <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 20 }}>
-          Configure ladder placement, promotion thresholds, content limits and badge.
+          Configure ladder placement, promotion thresholds and content limits.
         </p>
 
         {isLoading ? (
@@ -767,21 +902,6 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
               <div>
                 <label className="acp-label">Max daily posts</label>
                 <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder="Unlimited" />
-              </div>
-            </div>
-
-            {/* Badge */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-              Badge
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px", gap: 10, marginBottom: 20 }}>
-              <div>
-                <label className="acp-label">Badge label</label>
-                <input className="acp-input" value={form.badgeLabel ?? ""} onChange={e => setForm(p => ({ ...p, badgeLabel: e.target.value || null }))} placeholder="e.g. New Member" />
-              </div>
-              <div>
-                <label className="acp-label">Color</label>
-                <input type="color" value={form.badgeColor ?? "#7c6af7"} onChange={e => setForm(p => ({ ...p, badgeColor: e.target.value }))} style={{ width: "100%", height: 38, border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", cursor: "pointer" }} />
               </div>
             </div>
 
