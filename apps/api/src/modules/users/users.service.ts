@@ -5,6 +5,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@nodevo/contracts";
 
 function formatDobValue(value: string, format: string | null): string {
@@ -100,6 +101,34 @@ export const userService = {
     const dobLabel = await getDobLabelForUser(user.id, user.dobDisplay);
     const dobDisplayFormat = user.dobDisplay === "hidden" ? null : user.dobDisplay;
 
+    // Former usernames ("previously known as …"). Admin-controlled and NOT a
+    // privacy setting — users cannot hide it; shown for a rolling window (days).
+    const previousUsernames: { username: string; changedAt: Date }[] = [];
+    if ((await getSetting("profile.show_previous_usernames", true)) === true) {
+      const days = Number(await getSetting("profile.previous_username_days", 90)) || 0;
+      const rows = await prisma.usernameHistory.findMany({
+        where: {
+          userId: user.id,
+          ...(days > 0 ? { changedAt: { gte: new Date(Date.now() - days * 86_400_000) } } : {}),
+        },
+        orderBy: { changedAt: "desc" },
+        select: { oldUsername: true, changedAt: true },
+      });
+      // Collapse repeat changes to the same handle; keep the most recent per name.
+      const seen = new Set<string>();
+      for (const r of rows) {
+        const key = r.oldUsername.toLowerCase();
+        if (key === user.username.toLowerCase() || seen.has(key)) continue;
+        seen.add(key);
+        previousUsernames.push({ username: r.oldUsername, changedAt: r.changedAt });
+      }
+    }
+
+    // Display-name preference (§37 privacy). Full name comes from displayName; the
+    // username always remains the @handle. Falls back to username when unset/empty.
+    const privacy = ((await prisma.userPrivacySettings.findUnique({ where: { userId: user.id } }))?.settings ?? {}) as Record<string, unknown>;
+    const namePreference = privacy.displayNamePreference === "fullName" && user.displayName ? "fullName" : "username";
+
     // Ban state for the public profile badge. Permanent bans use the 9999-12-31 sentinel.
     const isBanned = !!user.bannedUntil && user.bannedUntil.getTime() > Date.now();
     const isPermanentBan = isBanned && user.bannedUntil!.getUTCFullYear() >= 9999;
@@ -107,6 +136,9 @@ export const userService = {
     return {
       id: user.id,
       username: user.username,
+      displayName: user.displayName ?? null,
+      namePreference,
+      previousUsernames,
       avatar: resolveAvatar(user.avatar),
       bio: user.bio,
       joinedDate: user.createdAt,

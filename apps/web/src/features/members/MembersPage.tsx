@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faLock } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { Avatar } from "../../components/Avatar";
+import { Username } from "../../components/Username";
 import { useAuth } from "../../hooks/useAuth";
 import { swalToast, apiErrorMessage } from "../../lib/swal";
 import "./MembersPage.scss";
@@ -85,10 +86,6 @@ function RolePill({ m, sm }: { m: Member; sm?: boolean }) {
   return <span className={`${cls} mp-role--${variant}`}>{label}</span>;
 }
 
-/** Group-badge name highlighting — colour the member's name with their group's badge colour. */
-function nameStyle(m: Member): React.CSSProperties | undefined {
-  return m.badgeColor ? { color: m.badgeColor } : undefined;
-}
 
 /** Optimistic follow button (§36). Hidden for the current user / when logged out. */
 function FollowButton({ m, variant }: { m: Member; variant: "soft" | "primary" }) {
@@ -149,7 +146,7 @@ function DirRow({ m }: { m: Member }) {
       onKeyDown={(e) => { if (e.key === "Enter") go(); }}>
       <Avatar user={{ username: m.username, avatar: m.avatar }} size={46} online={m.online} />
       <div className="mp-row__id">
-        <div className="mp-row__top"><b style={nameStyle(m)}>{m.displayName ?? m.username}</b><BanLock m={m} /><RolePill m={m} sm /></div>
+        <div className="mp-row__top"><b><Username username={m.displayName ?? m.username} badgeColor={m.badgeColor} roleKey={m.roleKey} /></b><BanLock m={m} /><RolePill m={m} sm /></div>
         <span className="mp-row__handle">@{m.username} · {t("joined", { ago: tenure(m.joinedAt, t) })}</span>
       </div>
       <p className="mp-row__bio">{m.bio ?? ""}</p>
@@ -173,7 +170,7 @@ function PodiumSpot({ m, place, metric }: { m: Member; place: 1 | 2 | 3; metric:
       <div className="mp-spot__ava" style={{ boxShadow: `0 0 0 4px var(--c-card), 0 0 0 8px ${ring}` }}>
         <Avatar user={{ username: m.username, avatar: m.avatar }} size={place === 1 ? 92 : 74} online={m.online} />
       </div>
-      <b className="mp-spot__name" style={nameStyle(m)}>{m.displayName ?? m.username}<BanLock m={m} /></b>
+      <b className="mp-spot__name"><Username username={m.displayName ?? m.username} badgeColor={m.badgeColor} roleKey={m.roleKey} /><BanLock m={m} /></b>
       <RolePill m={m} sm />
       <div className="mp-spot__likes">
         {metric === "likes" && <span>♥</span>} {fmt(metricValue(m, metric))} {t(`metrics.${metric}`)}

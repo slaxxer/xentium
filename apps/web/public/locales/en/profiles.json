@@ -60,5 +60,6 @@
   "tombstoneBy": " by {{mod}}",
   "tombstoneReason": " · Reason: {{reason}}",
   "banned": "Banned",
-  "permanentlyBanned": "Permanently banned"
+  "permanentlyBanned": "Permanently banned",
+  "formerlyKnownAs": "Previously known as {{names}}"
 }

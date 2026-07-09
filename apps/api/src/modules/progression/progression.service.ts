@@ -160,6 +160,11 @@ export const progressionService = {
       ladderPosition:           prog?.ladderPosition            ?? null,
       badgeLabel:               prog?.badgeLabel                ?? null,
       badgeColor:               prog?.badgeColor                ?? null,
+      badgeTextShadow:          prog?.badgeTextShadow           ?? false,
+      badgeShadowColor:         prog?.badgeShadowColor          ?? null,
+      badgeShadowX:             prog?.badgeShadowX              ?? 1,
+      badgeShadowY:             prog?.badgeShadowY              ?? 1,
+      badgeShadowBlur:          prog?.badgeShadowBlur           ?? 20,
     };
   },
 

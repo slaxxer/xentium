@@ -58,6 +58,29 @@ function shapeMember(u: any) {
   };
 }
 
+/** Lightweight shape for follower/following lists — enough for <Username> to
+    render the group badge colour + glow (roleKey drives the staff-colour fallback). */
+function shapeConnection(u: any) {
+  const g = pickPrimaryGroup(u);
+  return {
+    id: u.id,
+    username: u.username,
+    avatar: u.avatar,
+    bio: u.bio ?? null,
+    badgeColor: g?.progression?.badgeColor ?? null,
+    roleKey: g?.key ?? null,
+  };
+}
+
+const CONNECTION_USER_SELECT = {
+  id: true, username: true, avatar: true, bio: true,
+  groups: {
+    include: {
+      group: { select: { key: true, displayOrder: true, progression: { select: { badgeColor: true } } } },
+    },
+  },
+} as const;
+
 const STAFF_KEY_LIST = ["admin", "supermod", "moderator"] as const;
 
 export const userRepository = {
@@ -183,14 +206,14 @@ export const userRepository = {
     const [rows, total] = await Promise.all([
       prisma.userFollow.findMany({
         where: { followingId: userId },
-        include: { follower: { select: { id: true, username: true, avatar: true, bio: true } } },
+        include: { follower: { select: CONNECTION_USER_SELECT } },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
       prisma.userFollow.count({ where: { followingId: userId } }),
     ]);
-    return { items: withResolvedAvatarList(rows.map((r) => r.follower)), total };
+    return { items: withResolvedAvatarList(rows.map((r) => r.follower)).map(shapeConnection), total };
   },
 
   async getFollowing(userId: string, page: number, limit: number) {
@@ -198,14 +221,14 @@ export const userRepository = {
     const [rows, total] = await Promise.all([
       prisma.userFollow.findMany({
         where: { followerId: userId },
-        include: { following: { select: { id: true, username: true, avatar: true, bio: true } } },
+        include: { following: { select: CONNECTION_USER_SELECT } },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
       prisma.userFollow.count({ where: { followerId: userId } }),
     ]);
-    return { items: withResolvedAvatarList(rows.map((r) => r.following)), total };
+    return { items: withResolvedAvatarList(rows.map((r) => r.following)).map(shapeConnection), total };
   },
 
   // Blocks

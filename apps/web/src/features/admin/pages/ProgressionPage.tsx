@@ -23,6 +23,11 @@ interface LadderEntry {
   maxDailyPosts: number | null;
   badgeLabel: string | null;
   badgeColor: string | null;
+  badgeTextShadow: boolean;
+  badgeShadowColor: string | null;
+  badgeShadowX: number;
+  badgeShadowY: number;
+  badgeShadowBlur: number;
   userCount: number;
   group: { id: string; key: string; name: string };
 }
@@ -78,8 +83,6 @@ function GroupProgressionModal({
       minLikesReceived:   form.minLikesReceived,
       maxPostLength:      form.maxPostLength,
       maxDailyPosts:      form.maxDailyPosts,
-      badgeLabel:         form.badgeLabel,
-      badgeColor:         form.badgeColor,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
@@ -123,7 +126,7 @@ function GroupProgressionModal({
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Progression — {groupName}</h2>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Configure thresholds, limits and badge</div>
+                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Configure thresholds and limits</div>
               </div>
             </div>
 
@@ -178,26 +181,6 @@ function GroupProgressionModal({
               <div>
                 <label className="acp-label">Max daily posts</label>
                 <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder="Unlimited" />
-              </div>
-            </div>
-
-            {/* Badge */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-              Badge
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 80px", gap: 12, marginBottom: 20 }}>
-              <div>
-                <label className="acp-label">Badge label</label>
-                <input className="acp-input" value={form.badgeLabel ?? ""} onChange={e => setForm(p => ({ ...p, badgeLabel: e.target.value || null }))} placeholder="e.g. New Member" />
-              </div>
-              <div>
-                <label className="acp-label">Color</label>
-                <input
-                  type="color"
-                  value={form.badgeColor ?? "#7c6af7"}
-                  onChange={e => setForm(p => ({ ...p, badgeColor: e.target.value }))}
-                  style={{ width: "100%", height: 38, border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", cursor: "pointer" }}
-                />
               </div>
             </div>
 
