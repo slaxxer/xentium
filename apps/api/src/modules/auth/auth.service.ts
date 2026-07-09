@@ -27,8 +27,68 @@ function generateCode(): string {
 const TOKEN_HMAC_KEY = process.env.REFRESH_TOKEN_HMAC_SECRET || process.env.JWT_SECRET || "";
 const hashToken = (raw: string) => crypto.createHmac("sha256", TOKEN_HMAC_KEY).update(raw).digest("hex");
 
-export async function login(email: string, password: string, pin: string | undefined, meta: Meta) {
-  const user = await prisma.user.findUnique({ where: { email } });
+/** Resolve the account for a login identifier per the admin auth.login_method:
+ *  email → email only; username → username only; either → either field. */
+async function resolveLoginUser(identifier: string) {
+  const method = String(await getSetting("auth.login_method", "email"));
+  const id = identifier.trim();
+  if (method === "username") {
+    return prisma.user.findFirst({ where: { username: { equals: id, mode: "insensitive" } } });
+  }
+  if (method === "either") {
+    return prisma.user.findFirst({
+      where: { OR: [{ email: id.toLowerCase() }, { username: { equals: id, mode: "insensitive" } }] },
+    });
+  }
+  return prisma.user.findUnique({ where: { email: id.toLowerCase() } });
+}
+
+// Failed-login lockout (§43). Rolling Redis counter keyed by identifier: after
+// `max` failures it stays set for `duration` minutes, blocking further attempts
+// (the DB audit log in ncf_login_events is written separately, on every try).
+const lockKey = (identifier: string) => rkey("authfail", identifier.trim().toLowerCase());
+
+async function getLockout(): Promise<{ enabled: boolean; max: number; durationSec: number }> {
+  const [enabled, max, minutes] = await Promise.all([
+    getSetting("auth.lockout_enabled", true),
+    getSetting("auth.lockout_max_attempts", 5),
+    getSetting("auth.lockout_duration_minutes", 10),
+  ]);
+  return { enabled: enabled !== false, max: Math.max(1, Number(max) || 5), durationSec: Math.max(1, Number(minutes) || 10) * 60 };
+}
+
+/** Throw NEC-AUTH-1040 if the identifier is currently locked out. Includes the
+ *  attempted account + source IP as error details so the error log records who
+ *  was being targeted and from where. */
+async function assertNotLockedOut(identifier: string, cfg: { enabled: boolean; max: number; durationSec: number }, ip?: string) {
+  if (!cfg.enabled) return;
+  const key = lockKey(identifier);
+  const count = Number(await redis.get(key)) || 0;
+  if (count >= cfg.max) {
+    const ttl = await redis.ttl(key);
+    const minutes = Math.max(1, Math.ceil((ttl > 0 ? ttl : cfg.durationSec) / 60));
+    throw new NodevoError({
+      code: "NEC-AUTH-1040",
+      httpStatus: 429,
+      message: `Too many failed login attempts. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
+      details: { username: identifier, ip: ip ?? null, failedAttempts: count },
+    });
+  }
+}
+
+/** Record a failed attempt against the rolling lockout counter. */
+async function recordLoginFailure(identifier: string, cfg: { enabled: boolean; durationSec: number }) {
+  if (!cfg.enabled) return;
+  const key = lockKey(identifier);
+  const n = await redis.incr(key);
+  if (n === 1) await redis.expire(key, cfg.durationSec); // start the window on the first failure
+}
+
+export async function login(identifier: string, password: string, pin: string | undefined, meta: Meta) {
+  const lockCfg = await getLockout();
+  await assertNotLockedOut(identifier, lockCfg, meta.ip);
+
+  const user = await resolveLoginUser(identifier);
 
   let ok: boolean;
   if (user && isLegacyScheme(user.passwordScheme)) {
@@ -49,10 +109,11 @@ export async function login(email: string, password: string, pin: string | undef
   }
   const authed = !!user && user.isActive && ok;
 
+  // Audit log — every attempt (success or failure) with the identifier + IP + time.
   await prisma.loginEvent.create({
     data: {
       userId: user?.id ?? null,
-      emailAttempted: email,
+      emailAttempted: identifier,
       success: authed,
       ip: meta.ip,
       userAgent: meta.userAgent,
@@ -60,7 +121,12 @@ export async function login(email: string, password: string, pin: string | undef
     },
   });
 
-  if (!authed) return null;
+  if (!authed) {
+    await recordLoginFailure(identifier, lockCfg);
+    return null;
+  }
+  // Success clears the lockout counter for this identifier.
+  await redis.del(lockKey(identifier)).catch(() => { /* best-effort */ });
 
   // Ban check — runs after password verification to prevent user enumeration
   if (user.bannedUntil) {
@@ -135,6 +201,7 @@ export async function register(
   meta: Meta,
   inviteCode?: string,
   betaCookieCode?: string,
+  name?: string,
 ) {
   const { betaService } = await import("../beta/beta.service.js");
   const betaEnabled = await betaService.isEnabled();
@@ -186,6 +253,14 @@ export async function register(
     throw new NodevoError({ code: "NEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
   }
 
+  // Optional display / full name (registration.collect_name). Only stored when
+  // collection is on; required only when the admin marked it required.
+  const collectName = (await getSetting("registration.collect_name", false)) === true;
+  const cleanName   = collectName ? (name ?? "").trim().slice(0, 80) : "";
+  if (collectName && (await getSetting("registration.name_required", false)) === true && !cleanName) {
+    throw new NodevoError({ code: "NEC-AUTH-2004", httpStatus: 400, message: "Your name is required to register" });
+  }
+
   // Use the admin-configured default group (falls back to "member" if not set)
   const defaultGroupKey = await getSetting("auth.default_group", "member");
   const [memberGroup, hash, pinHash] = await Promise.all([
@@ -199,6 +274,7 @@ export async function register(
       data: {
         email,
         username,
+        displayName: cleanName || null,
         passwordHash: hash,
         isActive: true,
         emailVerifiedAt: new Date(),

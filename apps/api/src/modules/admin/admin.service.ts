@@ -586,6 +586,18 @@ export const adminService = {
     "auth.allow_registration":             true,
     "auth.require_email_verification":     true,
     "auth.default_group":                  "member",
+    // Login (§43) — which identifier members sign in with, and failed-attempt lockout.
+    "auth.login_method":                   "email",   // email | username | either
+    "auth.lockout_enabled":                true,
+    "auth.lockout_max_attempts":           5,
+    "auth.lockout_duration_minutes":       10,
+    // Registration — optionally collect a display name (full name) alongside username.
+    "registration.collect_name":           false,
+    "registration.name_required":          false,
+    // Profile — show a user's recent former usernames ("previously known as …").
+    // Admin-controlled; users cannot hide it. Window in days (0 = show all history).
+    "profile.show_previous_usernames":     true,
+    "profile.previous_username_days":      90,
     "articles.allow_comments":             true,
     "articles.require_comment_approval":   false,
     "articles.per_page":                   10,

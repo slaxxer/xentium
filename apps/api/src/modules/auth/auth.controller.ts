@@ -70,10 +70,10 @@ export async function registerHandler(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
 
-  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode } = parsed.data;
+  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed.data;
   const meta           = getRequestMeta(req, res);
   const betaCookieCode = (req.signedCookies?.[BETA_COOKIE] as string | undefined) || undefined;
-  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, betaCookieCode);
+  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, betaCookieCode, name);
   setRefreshCookie(res, result.refreshToken);
   res.status(201).json({ accessToken: result.accessToken, user: result.user });
 }
@@ -83,7 +83,8 @@ export async function loginHandler(req: Request, res: Response) {
   if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
 
   const meta = getRequestMeta(req, res);
-  const result = await login(parsed.data.email, parsed.data.password, parsed.data.loginPin, meta);
+  const identifier = parsed.data.identifier ?? parsed.data.email ?? "";
+  const result = await login(identifier, parsed.data.password, parsed.data.loginPin, meta);
   if (!result) return res.status(401).json({ error: "invalid_credentials" });
   if ("banned" in result) return res.status(401).json({ error: "account_banned", reason: result.reason, expiresAt: result.expiresAt });
   if ("requiresPin" in result) return res.status(200).json({ requiresPin: true });
@@ -173,6 +174,7 @@ export async function meHandler(req: Request, res: Response) {
       id: true,
       email: true,
       username: true,
+      displayName: true,
       avatar: true,
       bio: true,
       postCount: true,

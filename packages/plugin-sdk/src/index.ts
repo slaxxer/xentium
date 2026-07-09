@@ -111,6 +111,22 @@ export interface HomeFeedSource {
   hot?(limit: number): Promise<HomeFeedItem[]>; // optional — powers the "Hot threads" home rail
 }
 
+/** A site-wide counter a plugin contributes to the footer (e.g. forum thread /
+ *  post totals). `id` is a machine key the client localizes (falling back to
+ *  `label`); `label` is the English fallback. */
+export interface FooterStat {
+  id:    string;
+  label: string;
+  value: number;
+}
+
+/** A stats source a plugin contributes. Core aggregates registered sources for
+ *  the footer — it never queries the plugin's tables or knows its schema. */
+export interface StatSource {
+  id: string;                        // e.g. "forum"
+  collect(): Promise<FooterStat[]>;
+}
+
 export interface NotifyOptions {
   userId:   string;
   type:     string;
@@ -213,6 +229,11 @@ export interface PluginContext {
 
   /** Register a home/guest feed content source (e.g. forum threads). */
   registerHomeFeedSource(source: HomeFeedSource): void;
+
+  /** Register a site-stats source (e.g. forum thread/post totals) shown in the
+   *  footer. Core aggregates registered sources — it never queries plugin tables.
+   *  Deregistered automatically on plugin disable. */
+  registerStatSource(source: StatSource): void;
 
   /** Register NEC error codes for the Error Reference ACP page. */
   registerNecCodes(codes: NecCodeDeclaration[]): void;

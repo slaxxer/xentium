@@ -4,6 +4,14 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 
+// Badge appearance (colour + label + configurable username glow) is edited on the
+// group itself (ACP → Groups), so the group list/detail expose the full set.
+const BADGE_PROGRESSION_SELECT = {
+  badgeColor: true, badgeLabel: true,
+  badgeTextShadow: true, badgeShadowColor: true,
+  badgeShadowX: true, badgeShadowY: true, badgeShadowBlur: true,
+} as const;
+
 export const groupsService = {
   async list() {
     return prisma.group.findMany({
@@ -11,7 +19,7 @@ export const groupsService = {
       include: {
         _count:      { select: { users: true, permissions: true } },
         permissions: { include: { permission: true } },
-        progression: { select: { badgeColor: true, badgeLabel: true } },
+        progression: { select: BADGE_PROGRESSION_SELECT },
       },
     });
   },
@@ -31,7 +39,7 @@ export const groupsService = {
       include: {
         _count:      { select: { users: true } },
         permissions: { include: { permission: true } },
-        progression: { select: { badgeColor: true, badgeLabel: true } },
+        progression: { select: BADGE_PROGRESSION_SELECT },
       },
     });
     if (!group) throw NodevoError.notFound("Group not found");

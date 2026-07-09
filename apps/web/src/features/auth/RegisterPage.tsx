@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Navigate, Link } from "react-router-dom";
 import { useAuth, applyLogin } from "../../hooks/useAuth";
 import { useRegistrationStatus } from "../../hooks/useRegistrationStatus";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { api } from "../../lib/api";
 import { swalToast } from "../../lib/swal";
 import "./RegisterPage.scss";
@@ -185,6 +186,9 @@ export function RegisterPage() {
   const { t } = useTranslation("auth");
   const { isAuthenticated } = useAuth();
   const { open: registrationOpen, inviteRequired, betaMode } = useRegistrationStatus();
+  const { data: siteConfig } = useSiteConfig();
+  const collectName  = siteConfig?.auth?.collectName ?? false;
+  const nameRequired = siteConfig?.auth?.nameRequired ?? false;
 
   const [step, setStep] = useState<Step>(1);
   const [inviteCode, setInviteCode] = useState("");
@@ -193,6 +197,7 @@ export function RegisterPage() {
   // Step 1 fields
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
+  const [name, setName] = useState("");
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [profileFields, setProfileFields] = useState<ProfileFieldDef[]>([]);
 
@@ -321,6 +326,7 @@ export function RegisterPage() {
     const e: Record<string, string> = {};
     if (!isValidEmail(email)) e.email = t("register.invalidEmail");
     if (!isValidUsername(username)) e.username = t("register.invalidUsername");
+    if (collectName && nameRequired && !name.trim()) e.name = t("register.nameRequiredErr");
     for (const f of requiredFields) {
       if (!(fieldValues[f.id] ?? "").trim()) e[`field_${f.id}`] = t("register.required", { label: f.label });
     }
@@ -389,6 +395,7 @@ export function RegisterPage() {
       const res = await api.post<{ accessToken: string }>("/auth/register", {
         email,
         username,
+        name: collectName && name.trim() ? name.trim() : undefined,
         password,
         emailCode,
         loginPinEnabled: pinEnabled && pin.length === 4,
@@ -440,6 +447,7 @@ export function RegisterPage() {
   const canAdvance =
     step === 1
       ? isValidEmail(email) && isValidUsername(username)
+        && (!collectName || !nameRequired || !!name.trim())
         && requiredFields.every((f) => (fieldValues[f.id] ?? "").trim())
       : step === 2
         ? strength >= 2 && passwordsMatch && (!pinEnabled || pin.length === 4)
@@ -530,6 +538,23 @@ export function RegisterPage() {
                     {errors.username && <p className="rw-error">{errors.username}</p>}
                   </div>
 
+                  {collectName && (
+                    <div className="rw-field">
+                      <label className="rw-label">
+                        {t("register.name")} {nameRequired && <span className="rw-label__required">*</span>}
+                      </label>
+                      <input
+                        className={`rw-input${errors.name ? " rw-input--error" : ""}`}
+                        type="text"
+                        placeholder={t("register.namePlaceholder")}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        autoComplete="name"
+                        maxLength={80}
+                      />
+                      {errors.name && <p className="rw-error">{errors.name}</p>}
+                    </div>
+                  )}
 
                   {/* Required custom fields */}
                   {requiredFields.map((f) => fieldInput(f, `field_${f.id}`))}

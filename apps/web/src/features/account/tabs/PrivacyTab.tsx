@@ -19,6 +19,7 @@ interface PrivacySettings {
   hideBlockedContent?: boolean;
   profileVisibility?: "everyone" | "members";
   postHistoryVisibility?: "everyone" | "members" | "nobody";
+  displayNamePreference?: "username" | "fullName";
 }
 
 const DEFAULTS: Required<PrivacySettings> = {
@@ -30,6 +31,7 @@ const DEFAULTS: Required<PrivacySettings> = {
   hideBlockedContent: false,
   profileVisibility: "everyone",
   postHistoryVisibility: "everyone",
+  displayNamePreference: "username",
 };
 
 function Toggle({ label, desc, checked, onChange }: { label: string; desc?: string; checked: boolean; onChange: (v: boolean) => void }) {
@@ -263,6 +265,17 @@ export function PrivacyTab() {
 
         <AccordionSection title={t("privacy.profileVis")}>
           <div className="security-accordion__content">
+            {user?.displayName && (
+              <Select
+                label={t("privacy.displayNameLabel")}
+                value={settings.displayNamePreference}
+                options={[
+                  { value: "username", label: t("privacy.displayNameUsername") },
+                  { value: "fullName", label: t("privacy.displayNameFull") },
+                ]}
+                onChange={(v) => patch({ displayNamePreference: v })}
+              />
+            )}
             <Select
               label={t("privacy.profileWhoLabel")}
               value={settings.profileVisibility}

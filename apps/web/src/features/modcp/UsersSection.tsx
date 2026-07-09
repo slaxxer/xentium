@@ -456,6 +456,12 @@ function UserProfileView({
         </div>
       )}
 
+      {/* Plugin user panels (e.g. shoutbox mute alert). Each self-gates — renders
+          nothing when it has nothing to show for this user. */}
+      {slotRegistry.getModCanvasUserPanels().map((p) => (
+        <p.component key={p.id} userId={user.id} username={user.username} />
+      ))}
+
       {/* Counters — link to the user's public profile */}
       <div className="mc-uprofile__stats">
         {stats.map((s) => (

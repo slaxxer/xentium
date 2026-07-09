@@ -739,7 +739,18 @@
     "doneTitle": "Plugin installiert",
     "doneText": "Das Plugin ist installiert und bereit zur Aktivierung.",
     "goInstalled": "Zu den installierten Plugins",
-    "installFailed": "Installation fehlgeschlagen."
+    "installFailed": "Installation fehlgeschlagen.",
+    "processingValidate": "Paket wird hochgeladen & geprüft…",
+    "processingInstall": "Plugin wird installiert & Migrationen laufen…",
+    "sideHowTitle": "So funktioniert's",
+    "sideStep1": "Eine .nvplugin-Datei ablegen oder auswählen.",
+    "sideStep2": "Manifest, Berechtigungen und Migrationen werden geprüft.",
+    "sideStep3": "Dateien werden entpackt, das Plugin ist bereit zum Aktivieren.",
+    "sideSafetyTitle": "Vor der Installation",
+    "sideSafety": "Installiere nur Plugins aus vertrauenswürdigen Quellen — sie laufen mit Serverzugriff und können Datenbanktabellen anlegen.",
+    "sideMarketTitle": "Plugins gesucht?",
+    "sideMarketText": "Offizielle Plugins mit aktiver Lizenz durchsuchen und installieren.",
+    "sideMarketLink": "Marktplatz öffnen"
   },
   "marketplace": {
     "notConnected": "Kein Marketplace-Konto verbunden. Verbinde es auf der Seite <0>Lizenz</0>, um lizenzierte Plugins zu installieren.",
