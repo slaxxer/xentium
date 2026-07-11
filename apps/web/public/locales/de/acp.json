@@ -541,7 +541,17 @@
     "maxDuration": "Höchstdauer (Tage)",
     "allowOverride": "Moderator-Übersteuerung erlauben",
     "allowAppeals": "Einsprüche gegen Sperren erlauben",
-    "resetAfterBan": "Verwarnungszähler nach Sperre zurücksetzen"
+    "resetAfterBan": "Verwarnungszähler nach Sperre zurücksetzen",
+    "detectionPatterns": "Erkennungsmuster",
+    "detectionPatternsDesc": "Basis-Scans für verdächtige Muster (alle 30 Minuten). Fälle sind rein informativ — es erfolgt keine automatische Maßnahme.",
+    "patRapidLogin": "Schnelle Login-Versuche",
+    "patRapidLoginDesc": "3+ fehlgeschlagene Logins von derselben IP innerhalb von 10 Minuten",
+    "patMulti": "Multi-Account-Verdacht",
+    "patMultiDesc": "2+ Konten mit demselben Geräte-Cookie",
+    "patRegBurst": "Registrierungswelle",
+    "patRegBurstDesc": "5+ Registrierungen von derselben IP innerhalb von 24 Stunden",
+    "patBanEvasion": "Sperrumgehung",
+    "patBanEvasionDesc": "Neues Konto innerhalb von 10 Minuten nach einer Sperre, von der IP des gesperrten Nutzers"
   },
   "modCases": {
     "sub": "Moderation",

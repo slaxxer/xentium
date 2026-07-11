@@ -1,3 +1,4 @@
+import { buildPaginationMeta } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 
 export const notificationRepository = {
@@ -47,7 +48,7 @@ export const notificationRepository = {
       }),
       prisma.notification.count({ where: prefixFilter }),
     ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   async countUnread(userId: string): Promise<number> {

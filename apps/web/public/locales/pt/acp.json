@@ -541,7 +541,17 @@
     "maxDuration": "Duração máxima (dias)",
     "allowOverride": "Permitir substituição do moderador",
     "allowAppeals": "Permitir recursos de banimento",
-    "resetAfterBan": "Redefinir contador de avisos após banimento"
+    "resetAfterBan": "Redefinir contador de avisos após banimento",
+    "detectionPatterns": "Padrões de detecção",
+    "detectionPatternsDesc": "Verificações básicas de padrões suspeitos (a cada 30 minutos). Os casos são informativos — nenhuma ação automática é tomada.",
+    "patRapidLogin": "Tentativas rápidas de login",
+    "patRapidLoginDesc": "3+ logins falhados do mesmo IP em 10 minutos",
+    "patMulti": "Suspeita de multicontas",
+    "patMultiDesc": "2+ contas compartilhando o mesmo cookie de dispositivo",
+    "patRegBurst": "Surto de registros",
+    "patRegBurstDesc": "5+ registros do mesmo IP em 24 horas",
+    "patBanEvasion": "Evasão de banimento",
+    "patBanEvasionDesc": "Nova conta registrada em até 10 minutos após um banimento, do IP do usuário banido"
   },
   "modCases": {
     "sub": "Moderação",

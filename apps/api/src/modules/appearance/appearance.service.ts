@@ -3,6 +3,9 @@ import AdmZip from "adm-zip";
 import postcss from "postcss";
 import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+// Appearance reads bypass the settings TTL cache on purpose: a client refetching
+// /css right after a cross-process style publish must never get stale tokens.
+import { getFreshSetting as readSetting } from "../../shared/utils/settings.js";
 import { publishStyleVersion } from "./appearance.sse.js";
 
 export type ThemeName = "light" | "dark";
@@ -117,12 +120,6 @@ const FONT_STACKS: Record<string, string> = {
   "Roboto":     "Roboto, sans-serif",
 };
 
-async function readSetting<T>(key: string, fallback: T): Promise<T> {
-  const row = await prisma.setting.findUnique({ where: { key } });
-  if (!row) return fallback;
-  return row.value as unknown as T;
-}
-
 // Validates that CSS only contains :root { --custom-property: value } blocks.
 function validateStylePackCss(css: string): boolean {
   const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "").trim();
@@ -143,6 +140,9 @@ const LIVE_REFRESH_DEFAULT_SECONDS = 5;
 const LIVE_REFRESH_MIN_SECONDS     = 2;
 const LIVE_REFRESH_MAX_SECONDS     = 60;
 
+// Latest built live CSS, keyed by style version (per process; see getLiveCss).
+let liveCssMemo: { version: number; css: string } | null = null;
+
 export const appearanceService = {
   // Monotonic-ish marker bumped on every change that affects the served CSS.
   // Clients poll getStyleVersion() and refetch the CSS only when it changes.
@@ -159,6 +159,17 @@ export const appearanceService = {
 
   async getStyleVersion(): Promise<number> {
     return readSetting<number>("appearance.style_version", 0);
+  },
+
+  /** The served live stylesheet, memoized on the style version: every change
+   *  that affects output bumps the version (bumpStyleVersion), so one cheap
+   *  version read replaces the full token-load + build on repeat requests. */
+  async getLiveCss(): Promise<string> {
+    const version = await this.getStyleVersion();
+    if (liveCssMemo && liveCssMemo.version === version) return liveCssMemo.css;
+    const css = await this.buildCSS(await this.getTokenOverrides());
+    liveCssMemo = { version, css };
+    return css;
   },
 
   async getLiveRefreshSeconds(): Promise<number> {

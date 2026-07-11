@@ -32,7 +32,7 @@ inviteRouter.get("/", async (req, res, next) => {
 inviteRouter.post("/", async (req, res, next) => {
   try {
     const { note, expiresAt, maxUses } = createSchema.parse(req.body);
-    const createdById = (req as any).userId as string;
+    const createdById = req.userId!;
     const code = await inviteService.create(
       createdById,
       note,

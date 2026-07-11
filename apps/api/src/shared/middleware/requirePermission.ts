@@ -46,7 +46,7 @@ export function requirePermission(key: PermissionKey): RequestHandler {
         return res.status(403).json({ error: "forbidden" });
       }
 
-      (req as any).userId = userId;
+      req.userId = userId;
       next();
     } catch {
       res.status(401).json({ error: "invalid_token" });
@@ -68,7 +68,7 @@ export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
         return res.status(403).json({ error: "forbidden" });
       }
 
-      (req as any).userId = userId;
+      req.userId = userId;
       next();
     } catch {
       res.status(401).json({ error: "invalid_token" });

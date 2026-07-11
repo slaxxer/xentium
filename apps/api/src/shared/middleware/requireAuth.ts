@@ -9,8 +9,8 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
     const token = req.headers.authorization?.replace("Bearer ", "");
     if (!token) return res.status(401).json({ error: "unauthenticated" });
     const { userId, sessionId } = await verifyAccess(token);
-    (req as any).userId = userId;
-    (req as any).sessionId = sessionId;
+    req.userId = userId;
+    req.sessionId = sessionId;
 
     // Fire-and-forget: update online presence sorted set (score = timestamp)
     redis.zadd(rkey("online:users"), Date.now(), userId).catch(() => {});

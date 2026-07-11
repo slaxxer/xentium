@@ -169,7 +169,7 @@ export async function logoutHandler(req: Request, res: Response) {
 
 export async function meHandler(req: Request, res: Response) {
   const user = await prisma.user.findUnique({
-    where: { id: (req as any).userId },
+    where: { id: req.userId! },
     select: {
       id: true,
       email: true,

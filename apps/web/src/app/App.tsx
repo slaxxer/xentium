@@ -52,6 +52,7 @@ import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
 import { ModLogPage }      from "../features/admin/pages/ModLogPage";
 import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
+import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
 import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
 import { StylesPage }       from "../features/admin/pages/StylesPage";
@@ -264,6 +265,7 @@ function buildRouter() {
           { path: "settings",         element: <SettingsPage /> },
           { path: "about",            element: <AboutPage /> },
           // Moderation
+          { path: "cases",            element: <ReviewCasesPage /> },
           { path: "modlog",           element: <ModLogPage /> },
           { path: "modsettings",      element: <ModSettingsPage /> },
           // Appearance
@@ -345,10 +347,15 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
  *  so Username renders the glow consistently everywhere. Shares the footer's
  *  legend-groups query (deduped by key). */
 function BadgeShadowSync() {
+  // Inert until installed: pre-install /members/groups is 503-blocked by the
+  // install guard, and firing it just spams the console (same as BetaGate).
+  const { data: install, error: installError } = useInstallStatus();
+  const installed = !!install?.installed || (installError as any)?.status === 410;
   const { data } = useQuery<GroupShadowConfig[]>({
     queryKey: ["legend-groups"],
     queryFn:  () => api.get("/members/groups"),
     staleTime: 300_000,
+    enabled:   installed,
   });
   useEffect(() => {
     if (data) setBadgeShadows(data);

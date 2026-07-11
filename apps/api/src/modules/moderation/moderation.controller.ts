@@ -69,7 +69,7 @@ export const moderationController = {
 
   revokeAllSessions: (async (req, res) => {
     const { id } = idParam.parse(req.params);
-    res.json(await moderationService.revokeAllSessions(id, (req as any).userId));
+    res.json(await moderationService.revokeAllSessions(id, req.userId!));
   }) as RequestHandler,
 
   listReports: (async (req, res) => {
@@ -101,27 +101,27 @@ export const moderationController = {
 
   fileReport: (async (req, res) => {
     const body = fileReportSchema.parse(req.body);
-    res.status(201).json(await moderationService.fileReport({ ...body, reporterId: (req as any).userId }));
+    res.status(201).json(await moderationService.fileReport({ ...body, reporterId: req.userId! }));
   }) as RequestHandler,
 
   updateReport: (async (req, res) => {
     const { id } = idParam.parse(req.params);
     const body   = updateReportSchema.parse(req.body);
-    res.json(await moderationService.updateReport(id, (req as any).userId, body));
+    res.json(await moderationService.updateReport(id, req.userId!, body));
   }) as RequestHandler,
 
   issueWarning: (async (req, res) => {
     const body = issueWarningSchema.parse(req.body);
     res.status(201).json(await moderationService.issueWarning({
       ...body,
-      issuedById: (req as any).userId,
+      issuedById: req.userId!,
       expiresAt:  body.expiresAt ? new Date(body.expiresAt) : null,
     }));
   }) as RequestHandler,
 
   pardonWarning: (async (req, res) => {
     const { id } = idParam.parse(req.params);
-    await moderationService.pardonWarning(id, (req as any).userId);
+    await moderationService.pardonWarning(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 
@@ -129,7 +129,7 @@ export const moderationController = {
     const body = issueBanSchema.parse(req.body);
     await moderationService.issueBan({
       ...body,
-      issuedById: (req as any).userId,
+      issuedById: req.userId!,
       expiresAt:  body.expiresAt ? new Date(body.expiresAt) : null,
     });
     res.status(204).end();
@@ -137,33 +137,33 @@ export const moderationController = {
 
   liftBan: (async (req, res) => {
     const { id } = idParam.parse(req.params);
-    await moderationService.liftBanById(id, (req as any).userId);
+    await moderationService.liftBanById(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 
   updateCase: (async (req, res) => {
     const { id } = idParam.parse(req.params);
     const { status } = z.object({ status: z.enum(["reviewed", "dismissed"]) }).parse(req.body);
-    res.json(await moderationService.updateCase(id, (req as any).userId, status));
+    res.json(await moderationService.updateCase(id, req.userId!, status));
   }) as RequestHandler,
 
   banCaseUsers: (async (req, res) => {
     const { id } = idParam.parse(req.params);
-    const results = await moderationService.banCaseUsers(id, (req as any).userId);
+    const results = await moderationService.banCaseUsers(id, req.userId!);
     res.json(results);
   }) as RequestHandler,
 
   deleteArticleComment: (async (req, res) => {
     const { id }    = idParam.parse(req.params);
     const { reason } = deleteCommentSchema.parse(req.body);
-    await moderationService.moderatorDeleteArticleComment(id, (req as any).userId, reason);
+    await moderationService.moderatorDeleteArticleComment(id, req.userId!, reason);
     res.status(204).end();
   }) as RequestHandler,
 
   deleteProfileComment: (async (req, res) => {
     const { id }    = idParam.parse(req.params);
     const { reason } = deleteCommentSchema.parse(req.body);
-    await moderationService.moderatorDeleteProfileComment(id, (req as any).userId, reason);
+    await moderationService.moderatorDeleteProfileComment(id, req.userId!, reason);
     res.status(204).end();
   }) as RequestHandler,
 };

@@ -7,6 +7,7 @@ export * from './marketplace.js';
 export * from './appearance.js';
 export * from './tokens.js';
 export * from './pages.js';
+export * from './users.js';
 
 export type ThemeMode = 'light' | 'dark';
 

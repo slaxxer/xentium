@@ -224,6 +224,11 @@ All **Auth**.
 
 Each route is gated by its specific `moderation.*` permission.
 
+Review cases (`/cases*`) are produced by the core `security-analysis` job — four built-in
+baseline abuse patterns (rapid logins, multi-account, registration burst, ban evasion),
+informational only, with per-pattern `security.pattern.*` settings toggles. Plugins can add
+scans or replace baselines via the SDK. Full pipeline: [security-detection.md](security-detection.md).
+
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/reports` | Auth | File a report (any target type). |

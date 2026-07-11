@@ -19,7 +19,7 @@ searchRouter.get("/", async (req, res, next) => {
       return res.status(400).json({ error: "invalid_query" });
     }
     const { q, type, page, limit } = parsed.data;
-    const isLoggedIn = !!(req as any).userId;
+    const isLoggedIn = !!req.userId;
 
     const results = await searchService.search({ query: q, type, isLoggedIn, page, limit });
     res.json(results);

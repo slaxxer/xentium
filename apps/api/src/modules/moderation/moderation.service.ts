@@ -1,15 +1,11 @@
+import { buildPaginationMeta } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
+import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
 import { DEFAULT_MODERATION_POLICY, humanizeCaseType, describeCaseSignal, type ModerationPolicy, type ReportTargetType } from "./moderation.types.js";
 
-// Shared issuer projection: include the issuer's username + their badge colour.
-const issuerSelect = {
-  groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-};
-const mapIssuer = (i: { id: string; username: string; groups: { group: { progression: { badgeColor: string | null } | null } }[] }) =>
-  ({ id: i.id, username: i.username, badgeColor: i.groups[0]?.group.progression?.badgeColor ?? null });
 
 // Find the most recent unresolved case linking a user (used to decide whether a
 // ban should alert the mod team). Open + reviewed count; resolved/dismissed don't.
@@ -54,14 +50,11 @@ async function resolveCaseUsers<T extends { linkedUserIds: string[] }>(rows: T[]
 
   const users = await prisma.user.findMany({
     where:  { id: { in: allIds } },
-    select: {
-      id: true, username: true,
-      groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-    },
+    select: USER_REF_SELECT,
   });
   const map = new Map(users.map((u) => [
     u.id,
-    { id: u.id, username: u.username, badgeColor: u.groups[0]?.group.progression?.badgeColor ?? null },
+    toUserRef(u),
   ]));
 
   return rows.map((r) => ({
@@ -552,18 +545,10 @@ export const moderationService = {
       },
       take: limit,
       orderBy: { username: "asc" },
-      select: {
-        id: true,
-        username: true,
-        groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-      },
+      select: USER_REF_SELECT,
     });
     return {
-      data: data.map((u) => ({
-        id:         u.id,
-        username:   u.username,
-        badgeColor: u.groups[0]?.group.progression?.badgeColor ?? null,
-      })),
+      data: data.map(toUserRef),
     };
   },
 
@@ -579,9 +564,6 @@ export const moderationService = {
 
   async listReportsCanvas(opts: { page: number; limit: number }) {
     const { page, limit } = opts;
-    const badgeColorSelect = {
-      groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-    };
     const [data, total] = await Promise.all([
       prisma.moderationReport.findMany({
         where: { status: "pending" },
@@ -598,26 +580,15 @@ export const moderationService = {
     return {
       data: data.map((r) => ({
         ...r,
-        reporter: {
-          id:         r.reporter.id,
-          username:   r.reporter.username,
-          badgeColor: r.reporter.groups[0]?.group.progression?.badgeColor ?? null,
-        },
-        targetUser: r.targetUser ? {
-          id:         r.targetUser.id,
-          username:   r.targetUser.username,
-          badgeColor: r.targetUser.groups[0]?.group.progression?.badgeColor ?? null,
-        } : null,
+        reporter: toUserRef(r.reporter),
+        targetUser: r.targetUser ? toUserRef(r.targetUser) : null,
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
   async listWarningsCanvas(opts: { page: number; limit: number }) {
     const { page, limit } = opts;
-    const badgeColorSelect = {
-      groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-    };
     const [data, total] = await Promise.all([
       prisma.moderationWarning.findMany({
         where: { status: "active" },
@@ -634,18 +605,15 @@ export const moderationService = {
     return {
       data: data.map((w) => ({
         ...w,
-        user:     { id: w.user.id,     username: w.user.username,     badgeColor: w.user.groups[0]?.group.progression?.badgeColor ?? null },
-        issuedBy: { id: w.issuedBy.id, username: w.issuedBy.username, badgeColor: w.issuedBy.groups[0]?.group.progression?.badgeColor ?? null },
+        user:     toUserRef(w.user),
+        issuedBy: toUserRef(w.issuedBy),
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
   async listBansCanvas(opts: { page: number; limit: number }) {
     const { page, limit } = opts;
-    const badgeColorSelect = {
-      groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } },
-    };
     const [data, total] = await Promise.all([
       prisma.moderationBan.findMany({
         where: { status: "active" },
@@ -662,10 +630,10 @@ export const moderationService = {
     return {
       data: data.map((b) => ({
         ...b,
-        user:     { id: b.user.id,     username: b.user.username,     badgeColor: b.user.groups[0]?.group.progression?.badgeColor ?? null },
-        issuedBy: { id: b.issuedBy.id, username: b.issuedBy.username, badgeColor: b.issuedBy.groups[0]?.group.progression?.badgeColor ?? null },
+        user:     toUserRef(b.user),
+        issuedBy: toUserRef(b.issuedBy),
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
@@ -694,7 +662,7 @@ export const moderationService = {
     const ipAddresses = [...new Set(ipRows.map((r) => r.ip).filter(Boolean) as string[])];
 
     const data = resolved.map((r) => ({ ...r, ipAddresses }));
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   async listLogCanvas(opts: { page: number; limit: number }) {
@@ -753,7 +721,7 @@ export const moderationService = {
       };
     });
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   // ── Ban / lift ban (canvas) ────────────────────────────────────────────────
@@ -905,11 +873,11 @@ export const moderationService = {
       where:   { userId },
       take:    50,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      include: { issuedBy: { select: { id: true, username: true, ...issuerSelect } } },
+      include: { issuedBy: { select: { id: true, username: true, ...badgeColorSelect } } },
     });
     return warnings.map((w) => ({
       id: w.id, reason: w.reason, status: w.status,
-      expiresAt: w.expiresAt, createdAt: w.createdAt, issuedBy: mapIssuer(w.issuedBy),
+      expiresAt: w.expiresAt, createdAt: w.createdAt, issuedBy: toUserRef(w.issuedBy),
     }));
   },
 
@@ -920,11 +888,11 @@ export const moderationService = {
       where:   { userId },
       take:    50,
       orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-      include: { issuedBy: { select: { id: true, username: true, ...issuerSelect } } },
+      include: { issuedBy: { select: { id: true, username: true, ...badgeColorSelect } } },
     });
     return bans.map((b) => ({
       id: b.id, type: b.type, reason: b.reason, status: b.status,
-      expiresAt: b.expiresAt, createdAt: b.createdAt, issuedBy: mapIssuer(b.issuedBy),
+      expiresAt: b.expiresAt, createdAt: b.createdAt, issuedBy: toUserRef(b.issuedBy),
     }));
   },
 

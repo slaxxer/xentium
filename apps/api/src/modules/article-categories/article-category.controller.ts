@@ -10,10 +10,6 @@ import {
 import { prisma } from "../../infrastructure/db.js";
 import type { ViewerContext } from "@nodevo/sdk";
 
-interface AuthedReq {
-  userId?: string;
-}
-
 async function resolveViewer(userId: string | undefined): Promise<ViewerContext | null> {
   if (!userId) return { userId: undefined, groupIds: [] };
   const groupRows = await prisma.userGroup.findMany({
@@ -30,45 +26,35 @@ const removeQuerySchema = z.object({
     .transform((v) => v === "true"),
 });
 
-const wrap =
-  (fn: RequestHandler): RequestHandler =>
-  async (req, res, next) => {
-    try {
-      await fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-
 export const articleCategoryController = {
-  tree: wrap(async (req, res) => {
-    const userId = (req as AuthedReq).userId;
+  tree: (async (req, res) => {
+    const userId = req.userId;
     const viewer = await resolveViewer(userId);
     const result = await articleCategoryService.tree(viewer);
     res.json(result);
   }),
 
-  create: wrap(async (req, res) => {
+  create: (async (req, res) => {
     const input = createCategorySchema.parse(req.body);
     const created = await articleCategoryService.create(input);
     res.status(201).json(created);
   }),
 
-  update: wrap(async (req, res) => {
+  update: (async (req, res) => {
     const { id } = categoryIdParamSchema.parse(req.params);
     const input = updateCategorySchema.parse(req.body);
     const updated = await articleCategoryService.update(id, input);
     res.json(updated);
   }),
 
-  remove: wrap(async (req, res) => {
+  remove: (async (req, res) => {
     const { id } = categoryIdParamSchema.parse(req.params);
     const { reparentChildren } = removeQuerySchema.parse(req.query);
     await articleCategoryService.remove(id, { reparentChildren });
     res.status(204).send();
   }),
 
-  reorder: wrap(async (req, res) => {
+  reorder: (async (req, res) => {
     const input = reorderSchema.parse(req.body);
     await articleCategoryService.reorder(input);
     res.status(204).send();

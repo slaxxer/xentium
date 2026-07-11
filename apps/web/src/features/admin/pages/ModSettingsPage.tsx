@@ -56,6 +56,10 @@ export function ModSettingsPage() {
   const [defaultBanDays, setDefaultBanDays] = useState(7);
   const [minDays,        setMinDays]        = useState(1);
   const [maxDays,        setMaxDays]        = useState(365);
+  const [patRapid,       setPatRapid]       = useState(true);
+  const [patMulti,       setPatMulti]       = useState(true);
+  const [patRegBurst,    setPatRegBurst]    = useState(true);
+  const [patBanEvasion,  setPatBanEvasion]  = useState(true);
 
   // Seed from Settings API on first load
   useEffect(() => {
@@ -68,11 +72,16 @@ export function ModSettingsPage() {
     setDefaultBanDays(raw["moderation.default_ban_days"]        as number  ?? 7);
     setMinDays(       raw["moderation.min_ban_days"]            as number  ?? 1);
     setMaxDays(       raw["moderation.max_ban_days"]            as number  ?? 365);
+    setPatRapid(      raw["security.pattern.rapid_login_attempts"]    as boolean ?? true);
+    setPatMulti(      raw["security.pattern.multi_account_suspicion"] as boolean ?? true);
+    setPatRegBurst(   raw["security.pattern.registration_burst"]      as boolean ?? true);
+    setPatBanEvasion( raw["security.pattern.ban_evasion_suspicion"]   as boolean ?? true);
   }, [settings.length]);
 
   function entriesOf(s: {
     expiryEnabled: boolean; expiryDays: number; allowOverride: boolean; appealEnabled: boolean;
     resetCount: boolean; defaultBanDays: number; minDays: number; maxDays: number;
+    patRapid: boolean; patMulti: boolean; patRegBurst: boolean; patBanEvasion: boolean;
   }): Array<[string, unknown]> {
     return [
       ["moderation.warning_expiry_enabled",  s.expiryEnabled],
@@ -83,12 +92,16 @@ export function ModSettingsPage() {
       ["moderation.default_ban_days",        s.defaultBanDays],
       ["moderation.min_ban_days",            s.minDays],
       ["moderation.max_ban_days",            s.maxDays],
+      ["security.pattern.rapid_login_attempts",    s.patRapid],
+      ["security.pattern.multi_account_suspicion", s.patMulti],
+      ["security.pattern.registration_burst",      s.patRegBurst],
+      ["security.pattern.ban_evasion_suspicion",   s.patBanEvasion],
     ];
   }
 
   // Draft (current form) vs the server's persisted values, using identical
   // defaults to the seeding above so a freshly-loaded form never auto-saves.
-  const draft = { expiryEnabled, expiryDays, allowOverride, appealEnabled, resetCount, defaultBanDays, minDays, maxDays };
+  const draft = { expiryEnabled, expiryDays, allowOverride, appealEnabled, resetCount, defaultBanDays, minDays, maxDays, patRapid, patMulti, patRegBurst, patBanEvasion };
   const savedValue = settings.length ? {
     expiryEnabled:  raw["moderation.warning_expiry_enabled"] as boolean ?? true,
     expiryDays:     raw["moderation.warning_expiry_days"]    as number  ?? 90,
@@ -98,6 +111,10 @@ export function ModSettingsPage() {
     defaultBanDays: raw["moderation.default_ban_days"]       as number  ?? 7,
     minDays:        raw["moderation.min_ban_days"]           as number  ?? 1,
     maxDays:        raw["moderation.max_ban_days"]           as number  ?? 365,
+    patRapid:       raw["security.pattern.rapid_login_attempts"]    as boolean ?? true,
+    patMulti:       raw["security.pattern.multi_account_suspicion"] as boolean ?? true,
+    patRegBurst:    raw["security.pattern.registration_burst"]      as boolean ?? true,
+    patBanEvasion:  raw["security.pattern.ban_evasion_suspicion"]   as boolean ?? true,
   } : undefined;
 
   useAutosave({ value: draft, savedValue, onSave: (d) => saveMutation.mutate(entriesOf(d)) });
@@ -158,6 +175,26 @@ export function ModSettingsPage() {
           {([[t("modSettings.allowOverride"), allowOverride, setAllowOverride],[t("modSettings.allowAppeals"), appealEnabled, setAppealEnabled],[t("modSettings.resetAfterBan"), resetCount, setResetCount]] as [string, boolean, (v: boolean) => void][]).map(([label, val, setter]) => (
             <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderTop:"1px solid var(--c-border)" }}>
               <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{label}</div>
+              <Toggle on={val} onToggle={() => setter(!val)} />
+            </div>
+          ))}
+        </div>
+
+        {/* §15 baseline detection patterns */}
+        <div className="acp-card" style={{ padding:"24px", gridColumn:"1 / -1" }}>
+          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:4 }}>{t("modSettings.detectionPatterns")}</div>
+          <div style={{ fontSize:12,color:"var(--c-fg-muted)",marginBottom:12 }}>{t("modSettings.detectionPatternsDesc")}</div>
+          {([
+            [t("modSettings.patRapidLogin"),  t("modSettings.patRapidLoginDesc"),  patRapid,      setPatRapid],
+            [t("modSettings.patMulti"),       t("modSettings.patMultiDesc"),       patMulti,      setPatMulti],
+            [t("modSettings.patRegBurst"),    t("modSettings.patRegBurstDesc"),    patRegBurst,   setPatRegBurst],
+            [t("modSettings.patBanEvasion"),  t("modSettings.patBanEvasionDesc"),  patBanEvasion, setPatBanEvasion],
+          ] as [string, string, boolean, (v: boolean) => void][]).map(([label, desc, val, setter]) => (
+            <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderTop:"1px solid var(--c-border)" }}>
+              <div>
+                <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{label}</div>
+                <div style={{ fontSize:12,color:"var(--c-fg-muted)" }}>{desc}</div>
+              </div>
               <Toggle on={val} onToggle={() => setter(!val)} />
             </div>
           ))}
