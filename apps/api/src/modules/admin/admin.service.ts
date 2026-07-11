@@ -2,25 +2,17 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
+import { paginate } from "../../shared/utils/paginate.js";
+import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/utils/userRef.js";
 import { redis, bullConnection } from "../../infrastructure/redis.js";
 import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
-
-// Minimal group select reused wherever a username needs its badge color
-const badgeColorSelect = {
-  groups: {
-    include: {
-      group: { select: { progression: { select: { badgeColor: true } } } },
-    },
-  },
-} as const;
-
-function extractBadgeColor(groups: Array<{ group: { progression: { badgeColor: string | null } | null } }>): string | null {
-  return groups[0]?.group.progression?.badgeColor ?? null;
-}
+import { appearanceService } from "../appearance/appearance.service.js";
+import { buildPaginationMeta } from "@nodevo/contracts";
 
 /** Guard for sensitive account actions in the ACP. Blocks acting on your own
  *  account, and on any Administrator-group account — admins cannot be touched
@@ -264,7 +256,7 @@ export const adminService = {
             : null,
         })),
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
@@ -315,17 +307,15 @@ export const adminService = {
 
   /** Paginated security/login activity for a user (newest first). */
   async listUserLoginEvents(userId: string, page: number, limit: number) {
-    const [data, total] = await Promise.all([
-      prisma.loginEvent.findMany({
+    return paginate(page, limit,
+      (skip, take) => prisma.loginEvent.findMany({
         where:   { userId },
         orderBy: { createdAt: "desc" },
-        skip:    (page - 1) * limit,
-        take:    limit,
         select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
+        skip, take,
       }),
-      prisma.loginEvent.count({ where: { userId } }),
-    ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+      () => prisma.loginEvent.count({ where: { userId } }),
+    );
   },
 
   async setUserGroups(userId: string, groupIds: string[]) {
@@ -625,11 +615,19 @@ export const adminService = {
     if (key === "beta.enabled" && value === false) {
       await prisma.betaAccessLog.deleteMany({});
     }
-    return prisma.setting.upsert({
+    const row = await prisma.setting.upsert({
       where: { key },
       update: { value: value as any },
       create: { key, value: value as any },
     });
+    bustSettingsCache(key);
+    // Appearance keys written through the generic endpoint (e.g. the Style
+    // Editor's font settings) feed the served stylesheet: bump the style
+    // version so the CSS memo invalidates and clients re-pull via SSE.
+    if (key.startsWith("appearance.")) {
+      await appearanceService.bumpStyleVersion();
+    }
+    return row;
   },
 
   // ── Articles (admin) ──────────────────────────────────────────────────────
@@ -663,9 +661,9 @@ export const adminService = {
     return {
       data: data.map((a) => ({
         ...a,
-        author: { id: a.author.id, username: a.author.username, badgeColor: extractBadgeColor(a.author.groups) },
+        author: toUserRef(a.author),
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
@@ -785,11 +783,11 @@ export const adminService = {
     return {
       data: reports.map((r, i) => ({
         ...r,
-        reporter:     { id: r.reporter.id, username: r.reporter.username, badgeColor: extractBadgeColor(r.reporter.groups) },
+        reporter:     toUserRef(r.reporter),
         targetHref:   resolvedTargets[i]?.href ?? null,
         targetLabel:  resolvedTargets[i]?.label ?? r.targetId,
       })),
-      meta:  { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta:  buildPaginationMeta({ page, limit, total }),
       stats: { pending, highToday, resolvedToday },
     };
   },
@@ -813,10 +811,10 @@ export const adminService = {
     return {
       data: data.map((w) => ({
         ...w,
-        user:     { id: w.user.id,     username: w.user.username,     badgeColor: extractBadgeColor(w.user.groups) },
-        issuedBy: { id: w.issuedBy.id, username: w.issuedBy.username, badgeColor: extractBadgeColor(w.issuedBy.groups) },
+        user:     toUserRef(w.user),
+        issuedBy: toUserRef(w.issuedBy),
       })),
-      meta: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta: buildPaginationMeta({ page, limit, total }),
     };
   },
 
@@ -842,10 +840,10 @@ export const adminService = {
     return {
       data: data.map((b) => ({
         ...b,
-        user:     { id: b.user.id,     username: b.user.username,     badgeColor: extractBadgeColor(b.user.groups) },
-        issuedBy: { id: b.issuedBy.id, username: b.issuedBy.username, badgeColor: extractBadgeColor(b.issuedBy.groups) },
+        user:     toUserRef(b.user),
+        issuedBy: toUserRef(b.issuedBy),
       })),
-      meta:  { page, limit, total, totalPages: Math.ceil(total / limit) },
+      meta:  buildPaginationMeta({ page, limit, total }),
       stats: { active, temporary, permanent },
     };
   },
@@ -891,7 +889,7 @@ export const adminService = {
       ipAddresses,
     }));
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   async revokeException(caseId: string, actorId: string) {
@@ -999,7 +997,7 @@ export const adminService = {
       };
     });
 
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   // ── Moderation write ops (delegates to moderationService) ────────────────
@@ -1060,16 +1058,10 @@ export const adminService = {
     const where: any = {};
     if (severity) where.severity = severity;
     if (domain)   where.code = { startsWith: `NEC-${domain.toUpperCase()}-` };
-    const [data, total] = await Promise.all([
-      prisma.errorLog.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.errorLog.count({ where }),
-    ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return paginate(page, limit,
+      (skip, take) => prisma.errorLog.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
+      () => prisma.errorLog.count({ where }),
+    );
   },
 
   async clearErrorLog(severity?: string) {
@@ -1094,7 +1086,7 @@ export const adminService = {
     });
     return rows.map((r) => ({
       ...r,
-      savedBy: { id: r.savedBy.id, username: r.savedBy.username, badgeColor: extractBadgeColor(r.savedBy.groups) },
+      savedBy: toUserRef(r.savedBy),
     }));
   },
 

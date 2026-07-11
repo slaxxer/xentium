@@ -25,7 +25,7 @@ betaPublicRouter.get("/status", optionalAuth, async (req, res, next) => {
     if (!enabled) return res.json({ enabled: false, hasAccess: true });
 
     // Authenticated staff members always have access regardless of cookies
-    const userId = (req as any).userId as string | undefined;
+    const userId = req.userId;
     if (userId) {
       const groups = await prisma.userGroup.findMany({
         where:  { userId },
@@ -75,7 +75,7 @@ betaPublicRouter.post("/log-visit", optionalAuth, async (req, res, next) => {
     if (!cookieCode) return res.status(204).end();
 
     // Skip logging for staff accounts
-    const userId = (req as any).userId as string | undefined;
+    const userId = req.userId;
     if (userId) {
       const groups = await prisma.userGroup.findMany({
         where:  { userId },
@@ -134,7 +134,7 @@ betaAdminRouter.get("/log", ...adminGuard, async (req, res, next) => {
 betaAdminRouter.post("/", ...adminGuard, async (req, res, next) => {
   try {
     const { note } = z.object({ note: z.string().max(120).optional() }).parse(req.body);
-    const createdById = (req as any).userId as string;
+    const createdById = req.userId!;
     res.status(201).json(await betaService.create(createdById, note));
   } catch (e) { next(e); }
 });

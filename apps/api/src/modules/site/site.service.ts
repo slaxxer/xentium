@@ -1,6 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
-import { getSetting } from "../../shared/utils/settings.js";
-import { statRegistry, type FooterStat } from "../../core/stat-registry/stat-registry.js";
+import { getSetting, getSettings } from "../../shared/utils/settings.js";
+import { memoTtl } from "../../shared/utils/memoTtl.js";
+import { statRegistry } from "../../core/stat-registry/stat-registry.js";
 
 export type FeatureKey = "articles" | "home" | "members";
 
@@ -18,8 +19,21 @@ export const siteService = {
    *  landing destinations that actually exist right now (enabled core sections +
    *  active plugin nav items — so e.g. Forum only appears when its plugin is on). */
   async getConfig() {
-    const flags = await Promise.all(FEATURE_KEYS.map((f) => isFeatureEnabled(f)));
-    const features = Object.fromEntries(FEATURE_KEYS.map((f, i) => [f, flags[i]])) as Record<FeatureKey, boolean>;
+    // One batched settings read for everything the SPA needs at boot.
+    const s = await getSettings({
+      "features.articles.enabled":  true,
+      "features.home.enabled":      true,
+      "features.members.enabled":   true,
+      "site.landing":               "home",
+      "site.name":                  "Nodevo",
+      "site.url":                   "",
+      "auth.login_method":          "email",
+      "registration.collect_name":  false,
+      "registration.name_required": false,
+    });
+    const features = Object.fromEntries(
+      FEATURE_KEYS.map((f) => [f, !!s[`features.${f}.enabled`]]),
+    ) as Record<FeatureKey, boolean>;
 
     const landings: LandingOption[] = [];
     if (features.home) landings.push({ value: "home", label: "Home" });
@@ -37,18 +51,16 @@ export const siteService = {
       if (!landings.some((l) => l.value === n.url)) landings.push({ value: n.url, label: n.label });
     }
 
-    const stored = await getSetting<string>("site.landing", "home");
+    const stored = s["site.landing"];
     const landing = landings.some((l) => l.value === stored) ? stored : (landings[0]?.value ?? "home");
 
     // Site identity (set during install) — the canonical base URL + display name
     // the SPA uses for canonical/og:url tags and SEO previews.
-    const [siteName, siteUrl, loginMethod, collectName, nameRequired] = await Promise.all([
-      getSetting<string>("site.name", "Nodevo"),
-      getSetting<string>("site.url", ""),
-      getSetting<string>("auth.login_method", "email"),
-      getSetting<boolean>("registration.collect_name", false),
-      getSetting<boolean>("registration.name_required", false),
-    ]);
+    const siteName     = s["site.name"];
+    const siteUrl      = s["site.url"];
+    const loginMethod  = s["auth.login_method"];
+    const collectName  = s["registration.collect_name"];
+    const nameRequired = s["registration.name_required"];
 
     return {
       features, landing, availableLandings: landings, siteName, siteUrl,
@@ -76,14 +88,4 @@ export const siteService = {
   },
 };
 
-let footerStatsCache: { at: number; stats: FooterStat[] } | null = null;
-const FOOTER_STATS_TTL = 30_000;
-
-async function getCachedFooterStats(): Promise<FooterStat[]> {
-  if (footerStatsCache && Date.now() - footerStatsCache.at < FOOTER_STATS_TTL) {
-    return footerStatsCache.stats;
-  }
-  const stats = await statRegistry.collect();
-  footerStatsCache = { at: Date.now(), stats };
-  return stats;
-}
+const getCachedFooterStats = memoTtl(() => statRegistry.collect(), 30_000);

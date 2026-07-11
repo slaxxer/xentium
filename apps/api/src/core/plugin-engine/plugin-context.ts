@@ -150,6 +150,11 @@ export class PluginContextImpl implements PluginContext {
     logger.info({ pluginId: this.pluginId }, "Plugin security scan registered");
   }
 
+  claimSecurityPatterns(patterns: string[]): void {
+    securityScanRegistry.claimPatterns(this.pluginId, patterns);
+    logger.info({ pluginId: this.pluginId, patterns }, "Plugin claimed core security patterns");
+  }
+
   async notify(opts: NotifyOptions): Promise<void> {
     const { notificationService } = await import("../../modules/notifications/notification.service.js");
     await notificationService.dispatch({

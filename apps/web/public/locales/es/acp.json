@@ -541,7 +541,17 @@
     "maxDuration": "Duración máxima (días)",
     "allowOverride": "Permitir anulación del moderador",
     "allowAppeals": "Permitir apelaciones de baneo",
-    "resetAfterBan": "Reiniciar el contador de advertencias tras el baneo"
+    "resetAfterBan": "Reiniciar el contador de advertencias tras el baneo",
+    "detectionPatterns": "Patrones de detección",
+    "detectionPatternsDesc": "Escaneos básicos de patrones sospechosos (cada 30 minutos). Los casos son informativos — no se toma ninguna acción automática.",
+    "patRapidLogin": "Intentos de acceso rápidos",
+    "patRapidLoginDesc": "3+ accesos fallidos desde la misma IP en 10 minutos",
+    "patMulti": "Sospecha de multicuenta",
+    "patMultiDesc": "2+ cuentas que comparten la misma cookie de dispositivo",
+    "patRegBurst": "Ráfaga de registros",
+    "patRegBurstDesc": "5+ registros desde la misma IP en 24 horas",
+    "patBanEvasion": "Evasión de expulsión",
+    "patBanEvasionDesc": "Cuenta nueva registrada en los 10 minutos posteriores a una expulsión, desde la IP del usuario expulsado"
   },
   "modCases": {
     "sub": "Moderación",

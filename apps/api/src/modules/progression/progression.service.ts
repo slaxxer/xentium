@@ -1,5 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 import type {
   UpdateGroupProgressionInput,
   GlobalProgressionSettingsInput,
@@ -109,6 +110,7 @@ export const progressionService = {
         }),
       ),
     );
+    for (const [key] of entries) bustSettingsCache(key);
 
     return loadGlobalSettings();
   },
