@@ -676,7 +676,17 @@
     "maxDuration": "Maximum duration (days)",
     "allowOverride": "Allow moderator override",
     "allowAppeals": "Allow ban appeals",
-    "resetAfterBan": "Reset warning count after ban"
+    "resetAfterBan": "Reset warning count after ban",
+    "detectionPatterns": "Detection Patterns",
+    "detectionPatternsDesc": "Baseline suspicious-pattern scans (every 30 minutes). Cases are informational — no automatic action is taken.",
+    "patRapidLogin": "Rapid login attempts",
+    "patRapidLoginDesc": "3+ failed logins from the same IP within 10 minutes",
+    "patMulti": "Multi-account suspicion",
+    "patMultiDesc": "2+ accounts sharing the same device cookie",
+    "patRegBurst": "Registration burst",
+    "patRegBurstDesc": "5+ registrations from the same IP within 24 hours",
+    "patBanEvasion": "Ban evasion",
+    "patBanEvasionDesc": "New account registered within 10 minutes of a ban, from the banned user's IP"
   },
   "modCases": {
     "sub": "Moderation",

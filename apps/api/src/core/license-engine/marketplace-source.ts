@@ -20,6 +20,7 @@ import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { provisionEntitlement } from "./license-engine.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 
 const SOURCE_ID = "nodevo.io";
 
@@ -47,9 +48,10 @@ async function readSetting(key: string): Promise<string | null> {
 async function writeSetting(key: string, value: string | null): Promise<void> {
   if (value === null) {
     await prisma.setting.deleteMany({ where: { key } });
-    return;
+  } else {
+    await prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
   }
-  await prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
+  bustSettingsCache(key);
 }
 
 class NodevoMarketplaceSource implements MarketplaceSource {

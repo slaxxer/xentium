@@ -14,14 +14,6 @@ import {
   updateArticleSchema,
 } from "./article.validation.js";
 
-interface AuthedRequest {
-  userId?: string;
-}
-
-function reqUserId(req: unknown): string | undefined {
-  return (req as AuthedRequest).userId;
-}
-
 async function viewerPerms(userId: string | undefined): Promise<Set<string>> {
   if (!userId) return new Set();
   const rows = await prisma.groupPermission.findMany({
@@ -31,116 +23,106 @@ async function viewerPerms(userId: string | undefined): Promise<Set<string>> {
   return new Set(rows.map((r) => r.permission.key));
 }
 
-const wrap =
-  (fn: RequestHandler): RequestHandler =>
-  async (req, res, next) => {
-    try {
-      await fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-
 export const articlesController = {
-  list: wrap(async (req, res) => {
+  list: (async (req, res) => {
     // Use admin's articles.per_page setting as default when client doesn't specify limit
     const perPage = await getSetting("articles.per_page", 20);
     const query = listArticlesQuerySchema.parse({
       ...req.query,
       limit: req.query.limit ?? perPage,
     });
-    const viewerId = reqUserId(req);
+    const viewerId = req.userId;
     const result = await articleService.list(query, viewerId);
     res.json(result);
   }),
 
-  listMine: wrap(async (req, res) => {
-    const viewerId = reqUserId(req)!;
+  listMine: (async (req, res) => {
+    const viewerId = req.userId!;
     const { page, limit, status } = listArticlesQuerySchema.parse(req.query);
     const result = await articleService.listMine(viewerId, { page, limit, status });
     res.json(result);
   }),
 
-  popularTags: wrap(async (_req, res) => {
+  popularTags: (async (_req, res) => {
     res.json(await articleService.popularTags(12));
   }),
 
-  getBySlug: wrap(async (req, res) => {
+  getBySlug: (async (req, res) => {
     const { slug } = articleSlugParamSchema.parse(req.params);
-    const viewerId = reqUserId(req);
+    const viewerId = req.userId;
     const perms = await viewerPerms(viewerId);
     const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
     const article = await articleService.getBySlug(slug, viewerId, canEditAny);
     res.json(article);
   }),
 
-  create: wrap(async (req, res) => {
+  create: (async (req, res) => {
     const input = createArticleSchema.parse(req.body);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const article = await articleService.create(viewerId, input);
     res.status(201).json(article);
   }),
 
-  update: wrap(async (req, res) => {
+  update: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
     const input = updateArticleSchema.parse(req.body);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
     const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
     const article = await articleService.update(id, viewerId, canEditAny, input);
     res.json(article);
   }),
 
-  publish: wrap(async (req, res) => {
+  publish: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     // requirePermission(ARTICLE_PUBLISH) gates this route — no inline check needed
     const article = await articleService.publish(id, viewerId);
     res.json(article);
   }),
 
-  unpublish: wrap(async (req, res) => {
+  unpublish: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
     const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
     const article = await articleService.unpublish(id, canEditAny);
     res.json(article);
   }),
 
-  remove: wrap(async (req, res) => {
+  remove: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
     const canDeleteAny = perms.has(CorePermissions.ARTICLE_DELETE_ANY);
     await articleService.softDelete(id, viewerId, canDeleteAny);
     res.status(204).send();
   }),
 
-  listRevisions: wrap(async (req, res) => {
+  listRevisions: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
     const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
     const revisions = await articleService.listRevisions(id, viewerId, canEditAny);
     res.json(revisions);
   }),
 
-  registerView: wrap(async (req, res) => {
+  registerView: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
     const counted = await trackArticleView(id, req.ip);
     res.json({ counted });
   }),
 
-  uploadFeaturedImage: wrap(async (req, res) => {
+  uploadFeaturedImage: (async (req, res) => {
     const { id } = articleIdParamSchema.parse(req.params);
-    const viewerId = reqUserId(req)!;
+    const viewerId = req.userId!;
     const perms = await viewerPerms(viewerId);
     const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
 
     // upload middleware already validated size + magic-byte MIME
     const file = req.file!;
-    const ext = (file as { detectedExt?: string }).detectedExt ?? "bin";
+    const ext = file.detectedExt ?? "bin";
     const filename = `featured.${ext}`;
     const relPath = await storage.save(path.join("articles", id), filename, file.buffer);
 

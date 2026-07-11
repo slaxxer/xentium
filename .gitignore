@@ -26,8 +26,5 @@ plugins/official/
 # Packaged .nvplugin archives (build output for marketplace upload) — not committed
 plugins/packaged/
 
-# Runtime upload storage (user content — never commit; recreated on demand)
-**/var/uploads/
-
-# MaxMind GeoIP databases (large licensed binaries — downloaded at runtime, never commit)
-**/var/geoip/
+# Runtime state (uploads, geoip, plugin extraction, …) — never commit; recreated on demand
+**/var/

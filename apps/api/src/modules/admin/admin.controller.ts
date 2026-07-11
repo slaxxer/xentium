@@ -144,7 +144,7 @@ export const adminController = {
   setUserActive: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { isActive } = setActiveSchema.parse(req.body);
-    res.json(await adminService.setUserActive(id, isActive, (req as any).userId));
+    res.json(await adminService.setUserActive(id, isActive, req.userId!));
   }) as RequestHandler,
 
   banUser: (async (req, res) => {
@@ -156,7 +156,7 @@ export const adminController = {
     }).parse(req.body);
     await adminService.banUser({
       userId:      id,
-      issuedById:  (req as any).userId,
+      issuedById:  req.userId!,
       type:        body.type,
       reason:      body.reason,
       expiresAt:   body.expiresAt ? new Date(body.expiresAt) : null,
@@ -166,18 +166,18 @@ export const adminController = {
 
   liftBan: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    await adminService.liftBan(id, (req as any).userId);
+    await adminService.liftBan(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 
   forceLogoutUser: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    res.json(await adminService.forceLogoutUser(id, (req as any).userId));
+    res.json(await adminService.forceLogoutUser(id, req.userId!));
   }) as RequestHandler,
 
   sendPasswordReset: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    res.json(await adminService.sendPasswordResetForUser(id, (req as any).userId));
+    res.json(await adminService.sendPasswordResetForUser(id, req.userId!));
   }) as RequestHandler,
 
   // Profile fields
@@ -251,7 +251,7 @@ export const adminController = {
       notes:      z.string().max(5000).optional(),
       assignedTo: z.string().nullable().optional(),
     }).parse(req.body);
-    res.json(await adminService.updateReport(id, (req as any).userId, body));
+    res.json(await adminService.updateReport(id, req.userId!, body));
   }) as RequestHandler,
 
   listWarnings: (async (req, res) => {
@@ -267,7 +267,7 @@ export const adminController = {
     }).parse(req.body);
     const warning = await adminService.issueWarning({
       ...body,
-      issuedById: (req as any).userId,
+      issuedById: req.userId!,
       expiresAt:  body.expiresAt ? new Date(body.expiresAt) : null,
     });
     res.status(201).json(warning);
@@ -275,7 +275,7 @@ export const adminController = {
 
   pardonWarning: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    await adminService.pardonWarning(id, (req as any).userId);
+    await adminService.pardonWarning(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 
@@ -292,7 +292,7 @@ export const adminController = {
   updateCase: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { status } = z.object({ status: z.enum(["reviewed", "dismissed"]) }).parse(req.body);
-    res.json(await adminService.updateCase(id, (req as any).userId, status));
+    res.json(await adminService.updateCase(id, req.userId!, status));
   }) as RequestHandler,
 
   updateCaseNotes: (async (req, res) => {
@@ -305,12 +305,12 @@ export const adminController = {
   banCaseUsers: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { moderationService } = await import("../moderation/moderation.service.js");
-    res.json(await moderationService.banCaseUsers(id, (req as any).userId));
+    res.json(await moderationService.banCaseUsers(id, req.userId!));
   }) as RequestHandler,
 
   revokeException: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    res.json(await adminService.revokeException(id, (req as any).userId));
+    res.json(await adminService.revokeException(id, req.userId!));
   }) as RequestHandler,
 
   listModLog: (async (req, res) => {
@@ -321,14 +321,14 @@ export const adminController = {
   deleteArticleComment: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { reason } = z.object({ reason: z.string().min(3).max(2000) }).parse(req.body);
-    await adminService.moderatorDeleteComment("article", id, (req as any).userId, reason);
+    await adminService.moderatorDeleteComment("article", id, req.userId!, reason);
     res.status(204).end();
   }) as RequestHandler,
 
   deleteProfileComment: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     const { reason } = z.object({ reason: z.string().min(3).max(2000) }).parse(req.body);
-    await adminService.moderatorDeleteComment("profile", id, (req as any).userId, reason);
+    await adminService.moderatorDeleteComment("profile", id, req.userId!, reason);
     res.status(204).end();
   }) as RequestHandler,
 

@@ -37,7 +37,7 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
   // kept the Error Log permanently empty).
   const rawId     = (req as any).id;
   const requestId = rawId != null ? String(rawId) : undefined;
-  const userId    = (req as any).userId ?? undefined;
+  const userId    = req.userId ?? undefined;
 
   if (err instanceof NodevoError) {
     const severity = err.httpStatus >= 500 ? 'error' : err.httpStatus >= 400 ? 'warn' : 'info';

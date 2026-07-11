@@ -1,6 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { NEC } from "@nodevo/contracts";
 import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
 import { uniqueSlug } from "@nodevo/sdk";
@@ -257,6 +258,7 @@ export const pageService = {
       update: { value },
       create: { key, value },
     });
+    bustSettingsCache(key);
   },
 
   /** Public view: slot → { slug, title } for the assigned page, but only when

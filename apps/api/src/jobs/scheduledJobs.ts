@@ -9,6 +9,7 @@ import { NEC } from "@nodevo/contracts";
 import { queues } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
 import { NodevoError } from "../shared/errors/NodevoError.js";
+import { bustSettingsCache } from "../shared/utils/settings.js";
 
 export interface ScheduledJobDef {
   key:            string;   // stable id, also the settings sub-key
@@ -24,14 +25,14 @@ export interface ScheduledJobDef {
 
 export const SCHEDULED_JOBS: ScheduledJobDef[] = [
   {
-    // Generic cadence that fires every plugin-registered security scan. Core ships
-    // NO detection of its own — with no plugin registered this run is a no-op. It
-    // lives in core (not in a plugin) so it's foundation: any plugin's
+    // §15 cadence: runs the four core baseline detection patterns, then every
+    // plugin-registered security scan. Plugins may replace individual baseline
+    // patterns via `claimSecurityPatterns` (enhanced variants); any plugin's
     // `registerSecurityScan` runs on this schedule without owning a cron itself.
     key: "security-analysis", schedulerId: "security-analysis-repeat",
     queue: queues.securityAnalysis, jobName: "security-analysis",
     label: "Security scans",
-    description: "Runs plugin-registered security scans (e.g. abuse detection). No-op when no plugin provides detection.",
+    description: "Runs the core baseline abuse-detection patterns (§15) plus any plugin-registered security scans.",
     defaultCron: "*/30 * * * *", minIntervalSec: 5 * 60,
   },
   {
@@ -163,4 +164,5 @@ export async function saveJobConfig(def: ScheduledJobDef, cfg: JobScheduleConfig
     create: { key: settingKey(def.key), value },
     update: { value },
   });
+  bustSettingsCache(settingKey(def.key));
 }
