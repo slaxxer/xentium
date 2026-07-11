@@ -51,12 +51,12 @@ export const progressionController = {
   // ── User limits ────────────────────────────────────────────────────────────
 
   getMyLimits: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     res.json(await progressionService.getUserLimits(userId));
   }) as RequestHandler,
 
   getMyProgression: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     res.json(await progressionService.getUserProgression(userId));
   }) as RequestHandler,
 };

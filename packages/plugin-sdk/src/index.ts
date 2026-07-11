@@ -243,6 +243,13 @@ export interface PluginContext {
    *  to open review cases. Deregistered automatically on plugin disable. */
   registerSecurityScan(fn: () => Promise<void>): void;
 
+  /** Declare that this plugin REPLACES the named core baseline detection
+   *  patterns (§15 case types, e.g. "multi_account_suspicion"): core skips its
+   *  built-in version while the plugin is enabled — the plugin's registered
+   *  scan is expected to cover the pattern (usually an enhanced variant).
+   *  Claims are released automatically on disable, restoring the baseline. */
+  claimSecurityPatterns(patterns: string[]): void;
+
   /** Dispatch a notification through the core notification service. */
   notify(opts: NotifyOptions): Promise<void>;
 }

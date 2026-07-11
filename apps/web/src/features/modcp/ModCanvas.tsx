@@ -7,7 +7,7 @@ import {
   faShield, faXmark, faFlag, faTriangleExclamation,
   faBan, faClipboardList, faBolt,
   faGear, faCheck, faMinus, faRotateRight,
-  faMoon, faSun, faMagnifyingGlass, faCheckDouble, faUser,
+  faMoon, faSun, faMagnifyingGlass, faCheckDouble, faUser, faFolderOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -18,6 +18,7 @@ import { UserAvatar } from "../../components/UserAvatar";
 import "./ModCanvas.scss";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { UsersSection } from "./UsersSection";
+import { CasesSection } from "./CasesSection";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -486,8 +487,7 @@ export function ModCanvas() {
   }, [isMod, open]);
 
   const pluginBadgeTotal = Object.values(pluginBadgeCounts).reduce((a, b) => a + b, 0);
-  // Open-case count is contributed by the detection plugin's Cases section badge.
-  const badge = (summary?.pendingReports ?? 0) + pluginBadgeTotal;
+  const badge = (summary?.pendingReports ?? 0) + (summary?.openCases ?? 0) + pluginBadgeTotal;
 
   // Nav rail items. Counts (always rendered as red badges) come from the summary
   // and plugin badge functions; dashboard + audit log carry no count.
@@ -495,6 +495,7 @@ export function ModCanvas() {
     { id:"dashboard", label:"Dashboard", icon:faBolt                                              },
     { id:"users",     label:"Users",     icon:faUser                                              },
     { id:"reports",   label:"Reports",   icon:faFlag,                count: summary?.pendingReports },
+    { id:"cases",     label:"Cases",     icon:faFolderOpen,          count: summary?.openCases      },
     ...pluginSections.map((s) => ({ id: s.id, label: s.label, icon: s.icon as IconProp, count: pluginBadgeCounts[s.id] })),
     { id:"log",       label:"Audit log", icon:faClipboardList                                       },
   ];
@@ -555,6 +556,7 @@ export function ModCanvas() {
                 {section === "dashboard" && <DashboardSection summary={summary} onNav={setSection} />}
                 {section === "users"     && <UsersSection contextUsername={contextUsername} />}
                 {section === "reports"   && <ReportsSection />}
+                {section === "cases"     && <CasesSection />}
                 {section === "log"       && <LogSection />}
                 {pluginSections.map((s) => section === s.id && <s.component key={s.id} onNav={setSection} contextUsername={contextUsername} />)}
               </section>

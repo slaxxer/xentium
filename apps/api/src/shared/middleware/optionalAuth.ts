@@ -12,8 +12,8 @@ export const optionalAuth: RequestHandler = async (req, _res, next) => {
   if (!token) return next();
   try {
     const { userId, sessionId } = await verifyAccess(token);
-    (req as any).userId = userId;
-    (req as any).sessionId = sessionId;
+    req.userId = userId;
+    req.sessionId = sessionId;
   } catch {
     // ignore invalid tokens — treat as anonymous
   }

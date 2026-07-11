@@ -74,7 +74,7 @@ export function uploadSingle(limitKey: UploadLimitKey, fieldName: string): Reque
     // Replace the user-sent mimetype with the trusted, magic-byte-derived one
     req.file.mimetype = detected.mime;
     // Stash the detected extension so the route handler can name the file
-    (req.file as { detectedExt?: string }).detectedExt = detected.ext;
+    req.file.detectedExt = detected.ext;
     next();
   };
 

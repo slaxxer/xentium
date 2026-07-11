@@ -1,6 +1,7 @@
 import { generateKeyPairSync, randomUUID } from "node:crypto";
 import { prisma } from "../../../infrastructure/db.js";
 import { markInstalled } from "../../../shared/middleware/installGuard.js";
+import { bustSettingsCache } from "../../../shared/utils/settings.js";
 
 async function ensureKeyPair() {
   const existing = await prisma.setting.findUnique({ where: { key: "auth.jwtPrivateKey" } });
@@ -30,5 +31,6 @@ export async function finalize(): Promise<{ siteId: string }> {
   });
 
   markInstalled(); // flip the guard cache; no restart needed
+  bustSettingsCache(); // installer just seeded settings — drop any cached misses
   return { siteId };
 }

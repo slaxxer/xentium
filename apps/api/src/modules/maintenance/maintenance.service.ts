@@ -1,5 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
-import { getSetting } from "../../shared/utils/settings.js";
+import { getSetting, getSettings } from "../../shared/utils/settings.js";
 
 // Admins always bypass maintenance regardless of the configured allowed group.
 const ALWAYS_ALLOWED = new Set(["admin"]);
@@ -34,15 +34,21 @@ async function getAllowedGroups(): Promise<string[]> {
 
 export const maintenanceService = {
   async getStatus(): Promise<MaintenanceStatus> {
-    const [enabled, title, message, progressLabel, progressPercent, eta, allowedGroups] = await Promise.all([
-      getSetting<boolean>("maintenance.enabled", DEFAULTS.enabled),
-      getSetting<string>("maintenance.title", DEFAULTS.title),
-      getSetting<string>("maintenance.message", DEFAULTS.message),
-      getSetting<string>("maintenance.progress_label", DEFAULTS.progressLabel),
-      getSetting<number>("maintenance.progress_percent", DEFAULTS.progressPercent),
-      getSetting<string>("maintenance.eta", DEFAULTS.eta),
+    const [s, allowedGroups] = await Promise.all([
+      getSettings({
+        "maintenance.enabled":          DEFAULTS.enabled,
+        "maintenance.title":            DEFAULTS.title,
+        "maintenance.message":          DEFAULTS.message,
+        "maintenance.progress_label":   DEFAULTS.progressLabel,
+        "maintenance.progress_percent": DEFAULTS.progressPercent,
+        "maintenance.eta":              DEFAULTS.eta,
+      }),
       getAllowedGroups(),
     ]);
+    const { "maintenance.enabled": enabled, "maintenance.title": title, "maintenance.message": message } = s;
+    const progressLabel   = s["maintenance.progress_label"];
+    const progressPercent = s["maintenance.progress_percent"];
+    const eta             = s["maintenance.eta"];
 
     return {
       enabled: !!enabled,

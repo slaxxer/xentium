@@ -1,3 +1,4 @@
+import { buildPaginationMeta } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { getSetting } from "../../shared/utils/settings.js";
@@ -139,7 +140,7 @@ export const betaService = {
       }),
       prisma.betaAccessLog.count(),
     ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   // ── Admin CRUD ──────────────────────────────────────────────────────────────
@@ -158,7 +159,7 @@ export const betaService = {
       }),
       prisma.betaCode.count(),
     ]);
-    return { data, meta: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   async create(createdById: string, note?: string) {

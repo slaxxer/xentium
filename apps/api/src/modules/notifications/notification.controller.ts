@@ -10,26 +10,26 @@ const idParamSchema = z.object({ id: z.string() });
 
 export const notificationController = {
   list: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     const { page, limit } = paginatedSchema.parse(req.query);
     res.json(await notificationService.listForUser(userId, { page, limit }));
   }) as RequestHandler,
 
   unreadCount: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     const count = await notificationService.getUnreadCount(userId);
     res.json({ count });
   }) as RequestHandler,
 
   markRead: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     const { id } = idParamSchema.parse(req.params);
     await notificationService.markRead(id, userId);
     res.status(204).end();
   }) as RequestHandler,
 
   markAllRead: (async (req, res) => {
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     await notificationService.markAllRead(userId);
     res.status(204).end();
   }) as RequestHandler,

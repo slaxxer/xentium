@@ -19,6 +19,10 @@ const schema = z.object({
   DUMMY_ARGON2_HASH: z.string().min(1),
   UPLOAD_DIR: z.string().default("./var/uploads"),
   DATA_DIR: z.string().default("./data"),
+  // Built SPA directory the API serves in production (with per-request SEO meta
+  // injection). Unset → resolves to <REPO_ROOT>/apps/web/dist. When no build
+  // exists (dev), the API skips web serving and Vite owns the frontend.
+  WEB_DIST: z.string().optional(),
   LICENSE_SERVER_URL:      z.string().url().optional(),
   LICENSE_DEV_PRIVATE_KEY: z.string().optional(),  // dev only — signs license JWTs locally
   LICENSE_PUBLIC_KEY:      z.string().optional(),  // overrides the bundled key for verification (dev pair; prod uses the bundled nodevo.io key)

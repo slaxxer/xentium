@@ -16,9 +16,10 @@ const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
 // own preview so an admin can see staged changes); it is never cached.
 appearanceRouter.get("/css", async (req, res, next) => {
   try {
-    const draft  = req.query.source === "draft";
-    const tokens = draft ? await appearanceService.getDraftTokens() : await appearanceService.getTokenOverrides();
-    const css    = await appearanceService.buildCSS(tokens);
+    const draft = req.query.source === "draft";
+    const css   = draft
+      ? await appearanceService.buildCSS(await appearanceService.getDraftTokens())
+      : await appearanceService.getLiveCss();
     res.setHeader("Content-Type", "text/css; charset=utf-8");
     res.setHeader("Cache-Control", draft ? "no-store" : "public, max-age=60");
     res.send(css);
@@ -77,7 +78,7 @@ appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
     // keep seeing the published theme until publish.
     await appearanceService.saveDraftTokens(
       { light: body.light, dark: body.dark },
-      (req as any).userId,
+      req.userId!,
     );
     res.json({ ok: true });
   } catch (err) { next(err); }
@@ -123,7 +124,7 @@ appearanceRouter.get("/draft-status", adminGuard, async (_req, res, next) => {
 // Admin — publish the draft now (Run now). Promotes draft → live + SSE push.
 appearanceRouter.post("/publish", adminGuard, async (req, res, next) => {
   try {
-    const published = await appearanceService.publishDraft((req as any).userId);
+    const published = await appearanceService.publishDraft(req.userId!);
     res.json({ ok: true, published });
   } catch (err) { next(err); }
 });
@@ -140,7 +141,7 @@ appearanceRouter.post("/reset", adminGuard, async (_req, res, next) => {
 appearanceRouter.post("/history/:id/restore", adminGuard, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
-    const tokens = await appearanceService.restoreHistory(id, (req as any).userId);
+    const tokens = await appearanceService.restoreHistory(id, req.userId!);
     res.json(tokens);
   } catch (err) { next(err); }
 });
@@ -161,7 +162,7 @@ appearanceRouter.get("/style-packs", adminGuard, async (_req, res, next) => {
 appearanceRouter.post("/style-packs", adminGuard, packUpload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    const pack = await appearanceService.installStylePack(req.file.buffer, (req as any).userId);
+    const pack = await appearanceService.installStylePack(req.file.buffer, req.userId!);
     res.status(201).json(pack);
   } catch (err: any) {
     if (err?.message) return res.status(400).json({ message: err.message });
@@ -172,7 +173,7 @@ appearanceRouter.post("/style-packs", adminGuard, packUpload.single("file"), asy
 appearanceRouter.post("/style-packs/:id/activate", adminGuard, async (req, res, next) => {
   try {
     const { id } = z.object({ id: z.string() }).parse(req.params);
-    const tokens = await appearanceService.activateStylePack(id, (req as any).userId);
+    const tokens = await appearanceService.activateStylePack(id, req.userId!);
     res.json(tokens);
   } catch (err) { next(err); }
 });

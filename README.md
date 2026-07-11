@@ -23,6 +23,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 - [Everyday commands](#everyday-commands)
 - [Project structure](#project-structure)
 - [Architecture in a nutshell](#architecture-in-a-nutshell)
+- [Working on core](#working-on-core)
 - [Plugin development guide](#plugin-development-guide)
 - [Migrating from another platform](#migrating-from-another-platform)
 - [Contributing](#contributing)
@@ -39,7 +40,7 @@ Nodevo is a **production-shaped, open-source community platform** you can run ou
 - 🔐 **Auth & RBAC** — email/password, rotating refresh sessions, flat permission groups, Redis-cached permission resolution.
 - 📝 **Articles / CMS** — TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
 - 👤 **Users & social** — profiles, custom profile fields, follow/block, profile walls, a group-based progression ("levels are groups") engine.
-- 🛡️ **Moderation** — reports, warnings, bans, review cases, immutable log, threshold engine, and a floating ModCanvas tool.
+- 🛡️ **Moderation** — reports, warnings, bans, review cases fed by **built-in abuse-pattern detection** (rapid logins, multi-account, registration bursts, ban evasion — informational, never auto-acting), immutable log, threshold engine, and a floating ModCanvas tool.
 - 🎨 **Appearance** — three-tier CSS token system, live style editor, `.nvstyle` packs, font system, dynamic nav manager.
 - 🔔 **Notifications** — core service every module dispatches through (in-app + queued email).
 - 🧩 **Plugin engine** — install/enable/disable lifecycle, sandboxed migrations, dynamic routes/permissions/ACP pages, and registry-based extension points.
@@ -253,13 +254,76 @@ nodevo/
 
 - **Modular monolith, not microservices.** Two processes in production: `server.ts` (HTTP) and `worker.ts` (BullMQ).
 - **REST-first**, Zod-validated on every endpoint. Errors use typed **NEC codes** (`NEC-AUTH-1001`, …) via a central handler.
-- **Auth** — HS256 access token (15-min, `Authorization: Bearer`, held in memory) + rotating refresh token (httpOnly, `SameSite=Strict` cookie).
+- **Auth** — RS256 access JWT (15-min, `Authorization: Bearer`, held in memory) + rotating refresh token (httpOnly, `SameSite=Strict` cookie).
 - **The core never knows a plugin exists.** Plugins contribute through **registries** — core iterates whatever's registered and never hardcodes plugin tables, ids, or routes. Search and the home feed both follow this exact pattern.
 
 ```
 Plugin (onEnable)  ──registers──▶  core registry  ──core iterates──▶  merged result
    e.g. registerSearchSource(...)      searchRegistry      GET /api/search
 ```
+
+---
+
+## Working on core
+
+The conventions below are load-bearing — new core code is expected to follow them, and PRs
+that hand-roll what a shared utility already does will be asked to switch.
+
+### Module shape
+
+`modules/<name>/<name>.routes → .controller → .service` (+ `.validation` / `.types` /
+`.test`). Services may use Prisma directly; extract a `.repository` **only** when a query is
+shared between services or genuinely complex — it is not a required layer.
+
+### Controllers are plain async handlers
+
+Express 5 forwards rejected promises to the error middleware — there is **no `wrap()`
+helper** and there are **no request casts**. `req.userId`, `req.sessionId`, and
+`req.file.detectedExt` are ambiently typed via `apps/api/src/types/express.d.ts`; if you
+find yourself writing `(req as any)` or a local `AuthedRequest`, stop — the typing already
+exists.
+
+```ts
+// A complete controller. Throws (incl. NodevoError) reach errorMiddleware on their own.
+export async function getThing(req: Request, res: Response) {
+  const { id } = paramsSchema.parse(req.params);       // Zod on EVERY input
+  res.json(await thingService.get(id, req.userId));
+}
+```
+
+### The shared utilities (use these, don't reimplement)
+
+| Utility (`apps/api/src/shared/utils/`) | Use it for | Rules |
+|---|---|---|
+| `settings.ts` — `getSetting` / `getSettings` / `getFreshSetting` / `bustSettingsCache` | every settings read | Reads are TTL-cached (15 s); batch multiple keys with `getSettings({key: default})`. **Every writer in the same process must call `bustSettingsCache(key)`.** Use `getFreshSetting` only where staleness is unacceptable (e.g. appearance tokens). |
+| `paginate.ts` — `paginate()` (meta via `buildPaginationMeta` from `@nodevo/contracts`) | every list endpoint | `buildPaginationMeta` is the **only** producer of `{page, limit, total, totalPages, hasPrev, hasNext}` — never hand-roll the meta object. |
+| `userRef.ts` — `USER_REF_SELECT` / `toUserRef` | naming a user in any response | The one way responses reference a user (`id`, `username`, badge color). The `UserRef` type lives in `@nodevo/contracts`. |
+| `memoTtl.ts` — `memoTtl` / `TtlCache` | in-process caching of anything hot | Backs the settings cache and the `/appearance/css` memo; reach for it before inventing a cache. |
+
+### Errors, validation, data
+
+- Every endpoint validates **body, params, and query** with Zod before any logic;
+  `ZodError` → `NEC-API-4001` centrally. Errors are `NodevoError` with `NEC-<DOMAIN>-<CODE>`;
+  stack traces never reach clients.
+- Core tables are `ncf_<snake_case>`; soft delete via `deletedAt` (queries default to
+  excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
+- The API is locale-agnostic (machine keys + NEC codes only); only emails/notifications are
+  server-localized.
+
+### Security detection
+
+Abuse detection (§15) is core: four baseline patterns run on the `security-analysis` job
+every 30 minutes and open informational review cases (ACP → Moderation → Review Cases,
+ModCanvas → Cases). Detection **never auto-acts**. Plugins extend via `registerSecurityScan`
+or replace baselines via `claimSecurityPatterns`. Full pipeline, thresholds, and operational
+notes: [`docs/security-detection.md`](docs/security-detection.md).
+
+### Two processes, one codebase
+
+The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes that both
+load plugins and read the same registries. If you touch job code or anything a plugin
+registers into, remember the **worker** needs a restart to pick it up — in dev,
+`./nodevo.sh` runs both.
 
 ---
 
@@ -349,6 +413,15 @@ const plugin: PluginDefinition = {
       label: "Things",
       recent: (limit) => /* … */,        // → HomeFeedItem[]
     });
+
+    // A SECURITY SCAN — runs on the core security-analysis cadence (every 30 min);
+    // open review cases via ctx.host.security.createCase(...).
+    ctx.registerSecurityScan(async () => { /* … */ });
+
+    // Optionally CLAIM core baseline detection patterns your scan replaces with an
+    // enhanced variant — core skips its built-in while you're enabled, and the
+    // baseline resumes automatically when you're disabled.
+    ctx.claimSecurityPatterns(["multi_account_suspicion"]);
   },
 };
 
@@ -398,6 +471,15 @@ upload → validate manifest → compatibility/trust check → install (stored, 
        → disable (behavior stops, data kept) → uninstall (migrations reversed, package removed)
 ```
 
+> **Registrations are in-memory.** Everything `onEnable` registers (routes, ACP pages,
+> content sources, security scans/claims, NEC codes) lives in the host process's registries
+> and is rebuilt at startup from the `ncf_installed_plugins` table. The lifecycle endpoints
+> keep memory and DB in sync — but if plugin state is changed **underneath a running
+> process** (manual row deletion, a DB reset in dev), the process keeps serving stale
+> registrations (e.g. a ghost ACP menu entry for a plugin that no longer exists) until it is
+> restarted. Restarting the API + worker always resyncs. The worker loads plugins too — after
+> replacing a plugin package, restart it so scheduled scans use the new code.
+
 ---
 
 ## Migrating from another platform
@@ -446,7 +528,7 @@ The target must be an **installed** Nodevo instance (run the wizard first). Migr
 ## Contributing
 
 1. Branch off `development`.
-2. Make your change; keep modules in their `routes → controller → service → repository` shape and put shared types in `@nodevo/contracts`.
+2. Make your change; keep modules in their `routes → controller → service` shape (a `.repository` only when a query is shared or complex — see [Working on core](#working-on-core)) and put shared types in `@nodevo/contracts`.
 3. **`pnpm backbone:check`** must be green (typecheck + lint + test + build).
 4. Validate all input with Zod; enforce permission/license checks on the backend.
 5. Ship Prisma schema changes with a migration in the same PR.

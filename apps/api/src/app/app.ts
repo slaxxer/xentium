@@ -39,6 +39,7 @@ import { pluginRouter }            from "../core/plugin-engine/plugin-router.js"
 import { extractedDir } from "../core/plugin-engine/plugin-engine.js";
 import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
+import { mountWebApp } from "./serveWeb.js";
 
 const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', path.join('themes', 'logo')];
 
@@ -162,6 +163,11 @@ export function createApp(): Express {
       if (!res.headersSent) res.status(404).end();
     }
   });
+
+  // Serve the built SPA (prod) BEFORE installGuard so the installer page + its
+  // assets load on a fresh instance. Injects per-request SEO meta from settings;
+  // self-skips in dev (no build → Vite owns the frontend). Skips /api + /uploads.
+  mountWebApp(app);
 
   app.use(installGuard);
   app.use(maintenanceGuard);

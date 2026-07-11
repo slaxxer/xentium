@@ -13,43 +13,33 @@ import {
   searchQuerySchema,
 } from "./users.validation.js";
 
-const wrap =
-  (fn: RequestHandler): RequestHandler =>
-  async (req, res, next) => {
-    try {
-      await fn(req, res, next);
-    } catch (err) {
-      next(err);
-    }
-  };
-
 export const usersController = {
-  getPublicProfile: wrap(async (req, res) => {
+  getPublicProfile: (async (req, res) => {
     const { username } = getProfileParamsSchema.parse(req.params);
-    const viewerId = (req as any).userId as string | undefined;
+    const viewerId = req.userId;
     const profile = await userService.getPublicProfile(username, viewerId);
     res.json(profile);
   }),
 
-  follow: wrap(async (req, res) => {
+  follow: (async (req, res) => {
     const { id: followingId } = followParamsSchema.parse(req.params);
-    const followerId = (req as any).userId as string;
+    const followerId = req.userId!;
     await userService.followUser(followerId, followingId);
     res.status(204).send();
   }),
 
-  unfollow: wrap(async (req, res) => {
+  unfollow: (async (req, res) => {
     const { id: followingId } = followParamsSchema.parse(req.params);
-    const followerId = (req as any).userId as string;
+    const followerId = req.userId!;
     await userService.unfollowUser(followerId, followingId);
     res.status(204).send();
   }),
 
-  getProfileComments: wrap(async (req, res) => {
+  getProfileComments: (async (req, res) => {
     const { id: profileUserId } = followParamsSchema.parse(req.params);
     const page = parseInt(req.query.page as string) || 1;
     const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
-    const viewerId = (req as any).userId as string | undefined;
+    const viewerId = req.userId;
     const result = await userService.getProfileComments(profileUserId, page, limit, viewerId);
 
     // Also return which comment IDs the authenticated viewer has liked
@@ -66,101 +56,101 @@ export const usersController = {
     res.json({ ...result, viewerLikedIds });
   }),
 
-  createProfileComment: wrap(async (req, res) => {
+  createProfileComment: (async (req, res) => {
     const { id: profileUserId } = followParamsSchema.parse(req.params);
     const { body } = createCommentSchema.parse(req.body);
-    const authorId = (req as any).userId as string;
+    const authorId = req.userId!;
     const comment = await userService.createProfileComment(profileUserId, authorId, body);
     res.status(201).json(comment);
   }),
 
-  updateProfileComment: wrap(async (req, res) => {
+  updateProfileComment: (async (req, res) => {
     const { commentId } = updateCommentSchema.parse(req.params);
     const { body } = createCommentSchema.parse(req.body);
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     const updated = await userService.updateProfileComment(commentId, body, userId);
     res.json(updated);
   }),
 
-  deleteProfileComment: wrap(async (req, res) => {
+  deleteProfileComment: (async (req, res) => {
     const { commentId } = deleteCommentParamsSchema.parse(req.params);
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     const isModerator = !!(req as any).isModerator;
     await userService.deleteProfileComment(commentId, userId, isModerator);
     res.status(204).send();
   }),
 
-  getFollowers: wrap(async (req, res) => {
+  getFollowers: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
     const { page, limit } = paginationSchema.parse(req.query);
-    const viewerId = (req as any).userId as string | undefined;
+    const viewerId = req.userId;
     const result = await userService.getFollowers(id, page, limit, viewerId);
     res.json(result);
   }),
 
-  getFollowing: wrap(async (req, res) => {
+  getFollowing: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
     const { page, limit } = paginationSchema.parse(req.query);
-    const viewerId = (req as any).userId as string | undefined;
+    const viewerId = req.userId;
     const result = await userService.getFollowing(id, page, limit, viewerId);
     res.json(result);
   }),
 
-  block: wrap(async (req, res) => {
+  block: (async (req, res) => {
     const { id: blockedId } = followParamsSchema.parse(req.params);
-    const blockerId = (req as any).userId as string;
+    const blockerId = req.userId!;
     await userService.blockUser(blockerId, blockedId);
     res.status(204).send();
   }),
 
-  unblock: wrap(async (req, res) => {
+  unblock: (async (req, res) => {
     const { id: blockedId } = followParamsSchema.parse(req.params);
-    const blockerId = (req as any).userId as string;
+    const blockerId = req.userId!;
     await userService.unblockUser(blockerId, blockedId);
     res.status(204).send();
   }),
 
-  getMyBlocks: wrap(async (req, res) => {
-    const userId = (req as any).userId as string;
+  getMyBlocks: (async (req, res) => {
+    const userId = req.userId!;
     const { page, limit } = paginationSchema.parse(req.query);
     const result = await userService.getMyBlocks(userId, page, limit);
     res.json(result);
   }),
 
-  searchUsers: wrap(async (req, res) => {
+  searchUsers: (async (req, res) => {
     const { q, limit } = searchQuerySchema.parse(req.query);
-    const excludeId = (req as any).userId as string | undefined;
+    const excludeId = req.userId;
     const results = await userService.searchUsers(q, limit, excludeId);
     res.json(results);
   }),
 
-  getSuggested: wrap(async (req, res) => {
-    const userId = (req as any).userId as string;
+  getSuggested: (async (req, res) => {
+    const userId = req.userId!;
     res.json(await userService.getSuggested(userId, 5));
   }),
 
-  likeProfileComment: wrap(async (req, res) => {
+  likeProfileComment: (async (req, res) => {
     const { commentId } = deleteCommentParamsSchema.parse(req.params);
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     await userService.likeProfileComment(commentId, userId);
     res.status(204).send();
   }),
 
-  unlikeProfileComment: wrap(async (req, res) => {
+  unlikeProfileComment: (async (req, res) => {
     const { commentId } = deleteCommentParamsSchema.parse(req.params);
-    const userId = (req as any).userId as string;
+    const userId = req.userId!;
     await userService.unlikeProfileComment(commentId, userId);
     res.status(204).send();
   }),
 
-  getProfileFieldDefinitions: wrap(async (_req, res) => {
+  getProfileFieldDefinitions: (async (_req, res) => {
     const fields = await userService.getProfileFieldDefinitions();
     res.json(fields);
   }),
 
-  getUserProfileFields: wrap(async (req, res) => {
+  getUserProfileFields: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
-    const isAuthenticated = !!(req as any).userId;
+    const isAuthenticated = !!req.userId;
     const fields = await userService.getUserPublicProfileFields(id, isAuthenticated);
     res.json(fields);
   }),

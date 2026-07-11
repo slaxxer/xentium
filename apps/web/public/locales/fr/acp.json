@@ -541,7 +541,17 @@
     "maxDuration": "Durée maximale (jours)",
     "allowOverride": "Autoriser la dérogation du modérateur",
     "allowAppeals": "Autoriser les recours contre les bannissements",
-    "resetAfterBan": "Réinitialiser le compteur d'avertissements après un bannissement"
+    "resetAfterBan": "Réinitialiser le compteur d'avertissements après un bannissement",
+    "detectionPatterns": "Motifs de détection",
+    "detectionPatternsDesc": "Analyses de base des schémas suspects (toutes les 30 minutes). Les dossiers sont informatifs — aucune action automatique n'est prise.",
+    "patRapidLogin": "Tentatives de connexion rapides",
+    "patRapidLoginDesc": "3+ connexions échouées depuis la même IP en 10 minutes",
+    "patMulti": "Suspicion de multicompte",
+    "patMultiDesc": "2+ comptes partageant le même cookie d'appareil",
+    "patRegBurst": "Rafale d'inscriptions",
+    "patRegBurstDesc": "5+ inscriptions depuis la même IP en 24 heures",
+    "patBanEvasion": "Contournement de bannissement",
+    "patBanEvasionDesc": "Nouveau compte créé dans les 10 minutes suivant un bannissement, depuis l'IP de l'utilisateur banni"
   },
   "modCases": {
     "sub": "Modération",
