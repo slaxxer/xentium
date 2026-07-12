@@ -1,8 +1,10 @@
-// The download gate (ADR 0001). Core talks to a `MarketplaceSource`; it never
-// hardcodes nodevo.io. The nodevo.io source authenticates with a server-side
-// account token (stored in `settings`, NOT the browser) and binds every download
-// to this site's domain. A community / self-hosted source can implement the same
-// interface and return free, no-op entitlements.
+// The download gate (ADR 0001). Core talks to a `MarketplaceSource`, never
+// hardcoding a marketplace host — the URL comes from env.LICENSE_SERVER_URL,
+// which defaults to the hosted marketplace (licenseserver.ich.codes). This source
+// authenticates with a server-side account token (stored in `settings`, NOT
+// the browser) and binds every download to this site's domain. A community /
+// self-hosted source can implement the same interface and return free, no-op
+// entitlements.
 
 import { buildPaginationMeta } from "@nodevo/contracts";
 import type {
@@ -29,7 +31,12 @@ const K_TOKEN = `marketplace.${SOURCE_ID}.token`;
 const K_REF   = `marketplace.${SOURCE_ID}.accountRef`;
 const K_AT    = `marketplace.${SOURCE_ID}.connectedAt`;
 
-// Dev catalogue mirror — used when no LICENSE_SERVER_URL is configured.
+// Local licensing (core development): with a dev signing key present we serve
+// the dev catalogue and mint entitlements locally instead of calling the hosted
+// marketplace. Every real install has no dev key, so it uses the server.
+const useDevLicensing = !!env.LICENSE_DEV_PRIVATE_KEY;
+
+// Dev catalogue mirror — used in local dev (LICENSE_DEV_PRIVATE_KEY set).
 const DEV_CATALOG: MarketplaceListing[] = [
   { id: "nodevo-forum",        name: "Forum",               description: "Full-featured forum with categories, threads, and moderation.", vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 2900, currency: "USD", licenseRequired: true  },
   { id: "nodevo-messaging",    name: "Private Messaging",   description: "Direct messaging with conversations and read receipts.",        vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 1900, currency: "USD", licenseRequired: true  },
@@ -67,7 +74,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     let accountRef = "connected-account";
 
     // Prod: exchange the auth code for a durable account token + label.
-    if (env.LICENSE_SERVER_URL) {
+    if (!useDevLicensing) {
       const res = await fetch(`${env.LICENSE_SERVER_URL}/account/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,7 +119,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   async listPlugins(opts: PaginatedRequest): Promise<PaginatedResponse<MarketplaceListing>> {
     let all = DEV_CATALOG;
 
-    if (env.LICENSE_SERVER_URL) {
+    if (!useDevLicensing) {
       const token = await readSetting(K_TOKEN);
       const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/plugins`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -136,7 +143,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
 
     // Prod: the server is the chokepoint — it checks account ownership + the
     // per-domain activation cap before issuing a domain-bound entitlement.
-    if (env.LICENSE_SERVER_URL) {
+    if (!useDevLicensing) {
       if (!token) {
         throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "Connect your marketplace account first." });
       }
