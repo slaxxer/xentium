@@ -54,7 +54,9 @@ export function resolveEnvironment(): DeployEnvironment {
 async function getPublicKey() {
   // LICENSE_PUBLIC_KEY (env) overrides the bundled key. In dev it holds the
   // public half of the dev signing pair, so the real RS256 verify path runs
-  // locally. In prod it is unset and the bundled nodevo.io key is used.
+  // locally. In prod it is unset and the bundled marketplace key is used
+  // (packages/sdk/src/license-public-key.pem — must be licenseserver.ich.codes's
+  // public half; see DEPLOY note in the marketplace repo).
   const pem = env.LICENSE_PUBLIC_KEY
     ? env.LICENSE_PUBLIC_KEY.replace(/\\n/g, "\n")
     : await readFile(PUBLIC_KEY_PATH, "utf8");
@@ -83,13 +85,10 @@ async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<
   const domain      = getSiteDomain();
   const environment = resolveEnvironment();
 
-  // Dev mode: sign locally with the dev private key
-  if (env.LICENSE_DEV_PRIVATE_KEY && !env.LICENSE_SERVER_URL) {
+  // Dev mode: sign locally with the dev private key. Its presence is the dev
+  // signal now that LICENSE_SERVER_URL is always defaulted to the marketplace.
+  if (env.LICENSE_DEV_PRIVATE_KEY) {
     return signDevJwt(licenseKey, siteId, domain, environment);
-  }
-
-  if (!env.LICENSE_SERVER_URL) {
-    throw new Error("License server is not configured. Set LICENSE_SERVER_URL in your environment.");
   }
 
   const res = await fetch(`${env.LICENSE_SERVER_URL}/activate`, {
