@@ -23,9 +23,13 @@ const schema = z.object({
   // injection). Unset → resolves to <REPO_ROOT>/apps/web/dist. When no build
   // exists (dev), the API skips web serving and Vite owns the frontend.
   WEB_DIST: z.string().optional(),
-  LICENSE_SERVER_URL:      z.string().url().optional(),
-  LICENSE_DEV_PRIVATE_KEY: z.string().optional(),  // dev only — signs license JWTs locally
-  LICENSE_PUBLIC_KEY:      z.string().optional(),  // overrides the bundled key for verification (dev pair; prod uses the bundled nodevo.io key)
+  // The Nodevo marketplace / license server every install talks to. Defaults to
+  // the hosted marketplace (licenseserver.ich.codes) so a fresh install works out of the
+  // box; override per deployment to point at a different marketplace. The base
+  // already includes the API prefix (`/api`).
+  LICENSE_SERVER_URL:      z.string().url().default("https://licenseserver.ich.codes/api"),
+  LICENSE_DEV_PRIVATE_KEY: z.string().optional(),  // dev only — its presence switches licensing to local (dev catalogue + local signing)
+  LICENSE_PUBLIC_KEY:      z.string().optional(),  // overrides the bundled key for verification (dev pair; prod uses the bundled marketplace key)
   REPO_ROOT: z.string().default(path.resolve(process.cwd(), "../..")),
   PRISMA_SCHEMA_PATH: z.string().default(path.resolve(process.cwd(), "prisma/schema.prisma")),
   // When true, auto-installs + enables first-party plugins from plugins/official/
