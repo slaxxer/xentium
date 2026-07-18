@@ -66,6 +66,7 @@ const FEEDBACK_ROWS: ColorRow[] = [
   { l: "Warning", cssVar: "--c-warn" },
   { l: "Danger",  cssVar: "--c-danger" },
   { l: "Info",    cssVar: "--c-info" },
+  { l: "Update",  cssVar: "--c-update" },
 ];
 
 // ── Section list (the ADR-0003 "backbone") ──────────────────────────────────────
@@ -621,6 +622,7 @@ export function StyleEditorPage() {
                     toast.info("Info — a background job has started.");
                     toast.warning("Warning — this action affects 3 users.");
                     toast.error("Error — the server rejected the request.");
+                    toast.update("Update — forum 1.0.4 is available.");
                   }}>
                     Preview toasts
                   </button>

@@ -784,7 +784,10 @@
     "installFailed": "Installation fehlgeschlagen: {{message}}",
     "updatesAvailable": "Plugin-Updates verfügbar:",
     "updateCritical": "kritisch",
-    "updatesRenewal": "Deine Lizenzlaufzeit ist abgelaufen — verlängere sie im Marketplace, um kostenpflichtige Updates zu laden."
+    "updatesRenewal": "Deine Lizenzlaufzeit ist abgelaufen — verlängere sie im Marketplace, um kostenpflichtige Updates zu laden.",
+    "updatesToast_one": "Plugin-Update verfügbar: {{name}} {{version}}",
+    "updatesToast_other": "{{count}} Plugin-Updates verfügbar",
+    "updatesToastView": "Ansehen"
   },
   "license": {
     "loading": "Lädt…",

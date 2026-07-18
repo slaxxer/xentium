@@ -56,6 +56,7 @@
   --c-danger:        #ef4444;
   --c-danger-soft:   rgba(239, 68, 68, 0.10);
   --c-info:          var(--primitive-sky-400);
+  --c-update:        #414144;   // neutral "plugin update available" toast accent
 
   --shadow-card:  0 6px 24px rgba(30, 40, 90, 0.08);
   --shadow-pop:   0 12px 40px rgba(30, 40, 90, 0.13);
@@ -87,6 +88,7 @@
   --c-danger:        var(--primitive-red-400);
   --c-danger-soft:   rgba(248, 113, 113, 0.14);
   --c-info:          var(--primitive-sky-400);
+  --c-update:        #8f8f94;   // lighter neutral — #414144 vanishes on dark cards
 
   --shadow-card:  0 8px 30px rgba(0, 0, 0, 0.34);
   --shadow-pop:   0 16px 48px rgba(0, 0, 0, 0.48);
