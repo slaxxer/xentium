@@ -300,6 +300,12 @@ export async function getThing(req: Request, res: Response) {
 | `userRef.ts` — `USER_REF_SELECT` / `toUserRef` | naming a user in any response | The one way responses reference a user (`id`, `username`, badge color). The `UserRef` type lives in `@nodevo/contracts`. |
 | `memoTtl.ts` — `memoTtl` / `TtlCache` | in-process caching of anything hot | Backs the settings cache and the `/appearance/css` memo; reach for it before inventing a cache. |
 
+On the web side the equivalent load-bearing primitives are `lib/toast.ts`
+(`toast.success/info/warning/error` — Nodevo's own toast system: stacking, dedup ×N,
+per-category durations, hover-pause; themed by the Style Editor's Feedback colours) and
+`lib/dialog.ts` (`openDialog` — promise-based confirm/alert). `lib/swal.ts` is a legacy-named
+facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` directly.
+
 ### Errors, validation, data
 
 - Every endpoint validates **body, params, and query** with Zod before any logic;
@@ -389,7 +395,10 @@ const plugin: PluginDefinition = {
     // A frontend nav item (auto-hidden when the plugin is disabled)
     await ctx.registerNavItem({ label: "Things", url: "/things", position: 5 });
 
-    // An ACP sidebar page (returned by GET /api/admin/registered-pages)
+    // An ACP sidebar page (returned by GET /api/admin/registered-pages).
+    // Convention: plugin ACP settings pages AUTOSAVE on change (useAutosave +
+    // AutosaveStatus from the host globals) — no Save buttons, matching core
+    // config pages. Secrets (API keys) are the exception: explicit Set/Remove.
     ctx.registerAcpPage({ section: "My Plugin", label: "Things", path: "/admin/things" });
 
     // Notification types (for the preference UI) + NEC error codes (for the Error Reference)

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "../../lib/api";
 import { swalToast } from "../../lib/swal";
+import { openDialog } from "../../lib/dialog";
 import { applyLogin } from "../../hooks/useAuth";
-import Swal from "sweetalert2";
 
 interface BetaGatePageProps {
   onSuccess: (isNew: boolean) => void;
@@ -35,20 +35,17 @@ export function BetaGatePage({ onSuccess }: BetaGatePageProps) {
         const details   = err?.detail?.details as { redeemerIp?: string; registeredUser?: string | null } | undefined;
         const who       = details?.registeredUser ? `@${details.registeredUser}` : null;
         const ip        = details?.redeemerIp ?? "unknown";
-        const bodyLines = [
-          who
-            ? `This code was already used by <strong>${who}</strong> to register an account.`
-            : `This code was already redeemed but registration has not been completed yet.`,
-          `<span style="font-size:12px;color:var(--c-fg-muted)">Locked to IP: ${ip}</span>`,
-        ].join("<br><br>");
-        Swal.fire({
-          background:        "var(--c-card)",
-          color:             "var(--c-fg)",
-          icon:              "error",
-          title:             "Code already in use",
-          html:              bodyLines,
-          confirmButtonText: "OK",
-          confirmButtonColor: "var(--c-accent)",
+        openDialog({
+          kind: "alert", icon: "error", title: "Code already in use",
+          bodyNode: (
+            <>
+              {who
+                ? <>This code was already used by <strong>{who}</strong> to register an account.</>
+                : <>This code was already redeemed but registration has not been completed yet.</>}
+              <br /><br />
+              <span style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Locked to IP: {ip}</span>
+            </>
+          ),
         });
       } else {
         swalToast("Could not redeem code. Please try again.");
