@@ -100,7 +100,7 @@ export function MarketplacePage() {
   const { data: installed } = useQuery<InstalledPlugin[]>({ queryKey: ["acp-installed-plugins"], queryFn: () => api.get("/plugins") });
   const { data: license }   = useQuery<License | null>({ queryKey: ["acp-license"], queryFn: () => api.get("/admin/license") });
   const { data: conn }      = useQuery<MarketplaceConnection>({ queryKey: ["acp-marketplace-connection"], queryFn: () => api.get("/admin/marketplace/connection") });
-  const { data: updates }   = useQuery<{ checkedAt: string | null; updates: { pluginId: string; latestVersion: string; critical: boolean; renewalRequired: boolean }[] }>({
+  const { data: updates }   = useQuery<{ checkedAt: string | null; updates: { pluginId: string; name?: string; installedVersion?: string | null; latestVersion: string; critical: boolean; renewalRequired: boolean }[] }>({
     queryKey: ["acp-marketplace-updates"], queryFn: () => api.get("/admin/marketplace/updates"),
   });
 
@@ -139,7 +139,7 @@ export function MarketplacePage() {
           {updates!.updates.map((u, i) => (
             <span key={u.pluginId}>
               {i > 0 && ", "}
-              {u.pluginId} → {u.latestVersion}
+              {u.name ?? u.pluginId} {u.installedVersion ? `${u.installedVersion} ` : ""}→ {u.latestVersion}
               {u.critical && <span style={{ marginLeft:4, padding:"1px 6px", borderRadius:99, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-danger) 15%, transparent)", color:"var(--c-danger)" }}>{t("marketplace.updateCritical")}</span>}
             </span>
           ))}
