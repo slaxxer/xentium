@@ -1,5 +1,28 @@
 # Last Codebase Update — 2026-07-18
 
+## Plugin-update toast + Style Editor "Update" slot — UNCOMMITTED
+
+User request: informational (never forcing) toast when an installed plugin has an update,
+shown on ACP entry, bg #414144, themable.
+
+- `lib/toast.ts`: `update` is a 5th CORE category (7s) + `toast.update()` helper.
+- `ToastHost.tsx/.scss`: faCircleUp icon; `nv-toast--update` → `--toast-update` →
+  `--c-update` fallback chain (same pattern as the other categories).
+- `styles/tokens.scss`: `--c-update` — #414144 light (user-specified), #8f8f94 dark
+  (#414144 is invisible on dark cards). No hardcoded hex in JS — token rule respected.
+- `StyleEditorPage.tsx`: Feedback section + "Update" color row; preview button fires an
+  update sample.
+- `AcpLayout.tsx`: `useUpdateToast()` in AcpShell — reads GET /admin/marketplace/updates
+  (5-min staleTime; cache written by the daily update-check job), fires ONCE per update
+  set (localStorage `nv-acp-updates-seen` = sorted pluginId@version hash), "View" action →
+  /admin/marketplace; any critical update upgrades the toast to warning category.
+- Locales ×5: marketplace.updatesToast_one/_other/updatesToastView (explicit keys, no
+  i18next plural magic). CLAUDE.md toast convention line updated.
+- ⚠ Toast only fires where the cache exists → needs the worker's update-check job (test
+  instance runs no worker; seed `marketplace.updates` setting to demo).
+
+Verified: web typecheck clean, 7 toast tests green, lint 0 errors.
+
 ## License page: account-mandatory, manual key removed — UNCOMMITTED
 
 User decision (supersedes §53's "manual key = offline fallback"): the ACP requires a linked
