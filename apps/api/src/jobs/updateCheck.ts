@@ -23,7 +23,7 @@ export async function processUpdateCheck(): Promise<void> {
   if (!token) return; // no connected account — nothing to check against
 
   const plugins = await prisma.installedPlugin.findMany({
-    select: { id: true, installedVersion: true },
+    select: { id: true, name: true, installedVersion: true },
   });
 
   const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/updates`, {
@@ -40,8 +40,16 @@ export async function processUpdateCheck(): Promise<void> {
     return;
   }
 
-  const body = await res.json() as { updates: unknown[] };
-  const value = JSON.stringify({ checkedAt: new Date().toISOString(), updates: body.updates ?? [] });
+  const body = await res.json() as { updates: { pluginId: string }[] };
+  // Enrich with what only this instance knows: the display name and the
+  // version currently installed — the ACP renders "Forum 1.0.3 → 1.0.4".
+  const byId = new Map(plugins.map((p) => [p.id, p]));
+  const updates = (body.updates ?? []).map((u) => ({
+    ...u,
+    name:             byId.get(u.pluginId)?.name ?? u.pluginId,
+    installedVersion: byId.get(u.pluginId)?.installedVersion ?? null,
+  }));
+  const value = JSON.stringify({ checkedAt: new Date().toISOString(), updates });
   await prisma.setting.upsert({
     where:  { key: UPDATES_SETTING },
     update: { value },

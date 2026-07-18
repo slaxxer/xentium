@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
-import { toast } from "../../lib/toast";
+import { openPanelDialog } from "../../lib/dialog";
 import "./AcpLayout.scss";
 import "./nav/AcpNav.scss";
 import { AcpTopbar } from "./AcpTopbar";
@@ -42,17 +42,28 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * One informational toast when plugin updates are waiting (cache written by the
- * daily update-check job). Never forcing: fires once per UPDATE SET — the seen
- * set is remembered in localStorage, so ignoring it stays silent until a NEW
- * update appears. Critical updates upgrade the toast to the warning category.
+ * One announcement dialog (openPanelDialog — the app-wide alert surface) when
+ * plugin updates are waiting (cache written by the daily update-check job).
+ * Never forcing: fires once per UPDATE SET — the seen set is remembered in
+ * localStorage, so dismissing stays silent until a NEW update appears.
+ * Critical updates get the danger badge and per-row markers.
  */
 const UPDATES_SEEN_KEY = "nv-acp-updates-seen";
+const MAX_DIALOG_ROWS = 5;
 
-function useUpdateToast() {
+interface PluginUpdate {
+  pluginId:          string;
+  name?:             string;
+  installedVersion?: string | null;
+  latestVersion:     string;
+  critical:          boolean;
+  renewalRequired:   boolean;
+}
+
+function useUpdateAlert() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
-  const { data } = useQuery<{ checkedAt: string | null; updates: { pluginId: string; latestVersion: string; critical: boolean }[] }>({
+  const { data } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[] }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -65,19 +76,32 @@ function useUpdateToast() {
     if (localStorage.getItem(UPDATES_SEEN_KEY) === setHash) return;
     localStorage.setItem(UPDATES_SEEN_KEY, setHash);
 
-    const critical = updates.some((u) => u.critical);
-    const message = updates.length === 1
-      ? t("marketplace.updatesToast_one", { name: updates[0]!.pluginId, version: updates[0]!.latestVersion })
-      : t("marketplace.updatesToast_other", { count: updates.length });
-    toast.emit(critical ? "warning" : "update", message, {
-      action: { label: t("marketplace.updatesToastView"), onClick: () => navigate("/admin/marketplace") },
-    });
+    // Critical rows first, then cap the list for the dialog.
+    const ordered = [...updates].sort((a, b) => Number(b.critical) - Number(a.critical));
+    const rows = ordered.slice(0, MAX_DIALOG_ROWS).map((u) => ({
+      label:  u.name ?? u.pluginId,
+      value:  `${u.installedVersion ?? "?"} → ${u.latestVersion}`,
+      marker: u.critical ? t("marketplace.updatesDialogCritical") : undefined,
+    }));
+    if (ordered.length > MAX_DIALOG_ROWS) {
+      rows.push({ label: t("marketplace.updatesDialogMore", { count: ordered.length - MAX_DIALOG_ROWS }), value: "", marker: undefined });
+    }
+
+    void openPanelDialog({
+      icon:        "update",
+      title:       t("marketplace.updatesDialogTitle", { count: updates.length }),
+      badge:       updates.some((u) => u.critical) ? t("marketplace.updatesDialogBadge") : undefined,
+      rows,
+      note:        updates.some((u) => u.renewalRequired) ? t("marketplace.updatesRenewal") : undefined,
+      confirmText: t("marketplace.updatesDialogView"),
+      cancelText:  t("marketplace.updatesDialogLater"),
+    }).then((view) => { if (view) navigate("/admin/marketplace"); });
   }, [data, t, navigate]);
 }
 
 function AcpShell() {
   const nav = useAcpNav();
-  useUpdateToast();
+  useUpdateAlert();
 
   return (
     <div className="acp-layout" data-layout="horizontal">
