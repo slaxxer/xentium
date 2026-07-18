@@ -18,6 +18,7 @@ import type {
 } from "@nodevo/contracts";
 import { NEC } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
+import { DEV_CATALOG } from "./dev-catalog.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
@@ -36,16 +37,7 @@ const K_AT    = `marketplace.${SOURCE_ID}.connectedAt`;
 // marketplace. Every real install has no dev key, so it uses the server.
 const useDevLicensing = !!env.LICENSE_DEV_PRIVATE_KEY;
 
-// Dev catalogue mirror — used in local dev (LICENSE_DEV_PRIVATE_KEY set).
-const DEV_CATALOG: MarketplaceListing[] = [
-  { id: "nodevo-forum",        name: "Forum",               description: "Full-featured forum with categories, threads, and moderation.", vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 2900, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-messaging",    name: "Private Messaging",   description: "Direct messaging with conversations and read receipts.",        vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 1900, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-shoutbox",     name: "Shoutbox",            description: "Live shoutbox with rooms, level-gated capabilities, and inline moderation.", vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 1400, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-seo-tools",    name: "SEO Tools",           description: "Meta tags, sitemaps, structured data, and search optimization.", vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 2400, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-analytics",    name: "Analytics",           description: "Built-in analytics dashboard with no third-party scripts.",     vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 3400, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-advanced-mod", name: "Advanced Moderation", description: "Multi-account detection, scoring, and automation tools.",       vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 4900, currency: "USD", licenseRequired: true  },
-  { id: "nodevo-2fa",          name: "Two-Factor Auth",     description: "TOTP 2FA for all users. Admins can require it for staff.",      vendor: "Nodevo", latestVersion: "1.0.0", priceCents: 0,    currency: "USD", licenseRequired: false },
-];
+// Dev catalogue lives in dev-catalog.ts — shared with signDevJwt's grants.
 
 async function readSetting(key: string): Promise<string | null> {
   const row = await prisma.setting.findUnique({ where: { key } });
