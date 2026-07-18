@@ -785,9 +785,12 @@
     "updatesAvailable": "Mises à jour de plugins disponibles :",
     "updateCritical": "critique",
     "updatesRenewal": "La période de votre licence est terminée — renouvelez-la sur le marketplace pour télécharger les mises à jour payantes.",
-    "updatesToast_one": "Mise à jour de plugin disponible : {{name}} {{version}}",
-    "updatesToast_other": "{{count}} mises à jour de plugins disponibles",
-    "updatesToastView": "Voir"
+    "updatesDialogTitle": "Mises à jour de plugins disponibles",
+    "updatesDialogBadge": "Mise à jour critique",
+    "updatesDialogCritical": "critique",
+    "updatesDialogMore": "+{{count}} autres mises à jour",
+    "updatesDialogView": "Voir les mises à jour",
+    "updatesDialogLater": "Plus tard"
   },
   "license": {
     "loading": "Chargement…",

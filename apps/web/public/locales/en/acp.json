@@ -920,9 +920,12 @@
     "updatesAvailable": "Plugin updates available:",
     "updateCritical": "critical",
     "updatesRenewal": "Your license term has ended — renew it in the marketplace to download paid updates.",
-    "updatesToast_one": "Plugin update available: {{name}} {{version}}",
-    "updatesToast_other": "{{count}} plugin updates are available",
-    "updatesToastView": "View"
+    "updatesDialogTitle": "Plugin updates available",
+    "updatesDialogBadge": "Critical update",
+    "updatesDialogCritical": "critical",
+    "updatesDialogMore": "+{{count}} more updates",
+    "updatesDialogView": "View updates",
+    "updatesDialogLater": "Later"
   },
   "license": {
     "loading": "Loading…",
