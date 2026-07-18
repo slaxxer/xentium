@@ -1,12 +1,17 @@
 # Changelog
 
-## Fix: global API rate limiter no longer starves guests behind a shared IP
+## Core: announcement panel dialog — plugin updates now use it
 
-- The global limiter kept **one counter per IP** while allowing 200/min with a Bearer
-  header and 60/min without — so an authenticated ACP session's traffic pushed the shared
-  count past 60 and every unauthenticated request from the same IP (guest tabs, and
-  `auth/refresh` itself, which carries no Bearer) started answering `NEC-API-4290`.
-  Localhost testing and any NAT'd audience hit this constantly.
-- Now: **authenticated requests count per session** (hashed token key, own 200/min
-  budget), unauthenticated requests count per IP with the ceiling raised to **120/min**
-  (§26 adjusted — the SPA's polling widgets made 60 unrealistically tight).
+- **New reusable alert surface: `openPanelDialog`** (`@web/lib/dialog`, host global for
+  plugins too) — the app-wide "something needs your attention" popup, same family as the
+  uninstall confirm: wide left-aligned layout, icon, optional danger badge, structured
+  detail rows (label / marker / value), warn-toned footer note, primary + dismiss actions,
+  Escape/Enter, one-at-a-time.
+- **The plugin-update notice is its first user**, replacing the toast: entering the ACP
+  with updates waiting opens the panel once per update set — per-plugin rows show
+  "Forum 1.0.3 → 1.0.4" (the update-check job now caches display names and installed
+  versions), critical updates get the badge + per-row markers and sort first, a renewal
+  note appears when downloads need a renewed term, and "View updates" jumps to the
+  Marketplace. Dismissing stays silent until a genuinely new update appears.
+- The `update` accent (dialog + toast category) themes via the Style Editor's Update slot.
+  Marketplace banner shows the same enriched names/versions. All five locales updated.
