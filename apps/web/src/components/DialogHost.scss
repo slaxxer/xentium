@@ -1,0 +1,97 @@
+/* Confirm/alert dialog (lib/dialog.ts) — Hearth-styled swal replacement. */
+
+.nv-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9990;   /* below toasts (10000) so confirmations can still toast */
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in srgb, var(--c-bg) 62%, transparent);
+  backdrop-filter: blur(3px);
+  animation: nv-dialog-fade 0.15s ease-out;
+}
+
+.nv-dialog {
+  --_dlg-c: var(--c-info);
+  width: min(420px, 100%);
+  padding: 26px 26px 22px;
+  text-align: center;
+  background: var(--c-card);
+  color: var(--c-fg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  animation: nv-dialog-in 0.18s ease-out;
+
+  &--question { --_dlg-c: var(--c-accent); }
+  &--success  { --_dlg-c: var(--c-success); }
+  &--info     { --_dlg-c: var(--c-info); }
+  &--warning  { --_dlg-c: var(--c-warn); }
+  &--error    { --_dlg-c: var(--c-danger); }
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    font-size: 24px;
+    color: var(--_dlg-c);
+    background: color-mix(in srgb, var(--_dlg-c) 12%, transparent);
+    border-radius: 50%;
+  }
+  &__title {
+    margin: 0 0 8px;
+    font-size: 18px;
+    font-weight: 800;
+  }
+  &__body {
+    font-size: 13.5px;
+    line-height: 1.55;
+    color: var(--c-fg-muted);
+    overflow-wrap: break-word;
+  }
+  &__actions {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px;
+  }
+  &__btn {
+    padding: 8px 20px;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: filter 0.15s;
+
+    &--primary {
+      color: var(--c-on-accent, #fff);
+      background: var(--c-accent);
+      border: 1px solid transparent;
+      &:hover { filter: brightness(1.08); }
+      &.is-danger { background: var(--c-danger); }
+    }
+    &--ghost {
+      color: var(--c-fg-muted);
+      background: transparent;
+      border: 1px solid var(--c-border);
+      &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
+    }
+  }
+}
+
+@keyframes nv-dialog-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes nv-dialog-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-dialog-overlay, .nv-dialog { animation: none; }
+}

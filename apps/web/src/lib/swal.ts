@@ -1,11 +1,12 @@
-import Swal from "sweetalert2";
+// Legacy-named facade over Nodevo's own feedback primitives (sweetalert2 is
+// GONE): toasts → lib/toast.ts (<ToastHost/>), dialogs → lib/dialog.ts
+// (<DialogHost/>). The swal* names are kept so ~100 core call sites and every
+// plugin (which externalize this module to the host global) work unchanged.
+// New code should import `toast` from lib/toast and `openDialog` from
+// lib/dialog directly.
 import i18n from "./i18n";
-
-const base = {
-  background: "var(--c-card)",
-  color: "var(--c-fg)",
-  confirmButtonColor: "var(--c-accent)",
-};
+import { toast } from "./toast";
+import { openDialog } from "./dialog";
 
 /**
  * Resolve a user-facing message from an API error. Prefers a localized message
@@ -34,7 +35,7 @@ export function apiErrorMessage(
 }
 
 export function swalError(text: string, title = "Error") {
-  return Swal.fire({ ...base, icon: "error", title, text });
+  return openDialog({ kind: "alert", icon: "error", title, body: text });
 }
 
 export async function swalConfirm(
@@ -43,30 +44,12 @@ export async function swalConfirm(
   confirmText = "Yes",
   cancelText = "Cancel",
 ): Promise<boolean> {
-  const result = await Swal.fire({
-    ...base,
-    icon: "question",
-    title,
-    text,
-    showCancelButton: true,
-    confirmButtonText: confirmText,
-    cancelButtonText: cancelText,
-  });
-  return result.isConfirmed;
+  return openDialog({ kind: "confirm", icon: "question", title, body: text, confirmText, cancelText });
 }
 
 export function swalToast(
   text: string,
   icon: "success" | "error" | "warning" | "info" = "error",
 ) {
-  return Swal.fire({
-    ...base,
-    toast: true,
-    position: "top-end",
-    icon,
-    text,
-    timer: 3500,
-    timerProgressBar: true,
-    showConfirmButton: false,
-  });
+  return toast.emit(icon, text);
 }

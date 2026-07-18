@@ -1,0 +1,8 @@
+OBSERVED BUGS;
+
+1. in Account Settings > Preferences > Badges, currently when i unpin ADMINISTRATOR, it not just removes the ADM badge from my user profile (profile, forum, articles, sidebar etc.) it also removes me from the USER GROUP. IT ONLY SHOULD HIDE THE BADGE, NOT REMOVE ME FROM THE USER GROUP.
+2. actually if i choose a dropdown menu in our frontend, with the DARK style active, the dropdown background itself is WHITE so the FONT is also WHITE which results in a unseeable MENU, in our ACP > Appaerance > Style Editor, the DROPDOWN MENU for each Style (Light and Dark) should also be configurable
+3. in /members, the sort (mp-sortbox) buttons (background, hover -color ) should also be a configurable section via ACP > Appaerance > Style editor
+4. if user is banned and have a active session, the session should revoke at least when the servers status reloggs, like we do with the beta code, if a code gets revoked the user loses his access immediately - same when we logout a user via ACP > userlist username > edit user > logout user, same when deactivating a user.
+5. acp > userlist > username > edit user > security activity needs to be rethought since it loggs every movement /refresh and at the end of the date it gets redundant / logs too much junk
+6. (found 2026-07-11 during architecture cleanup) users.controller.ts deleteProfileComment reads `req.isModerator`, but NOTHING ever sets it — it is always false. Moderators can currently only delete profile comments they own or that sit on their own profile; the intended moderator override is dead code. Fix: check the `moderation.comment.delete`-style permission in the service (like comment.controller's hasPermission) instead of the phantom req flag.

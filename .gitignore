@@ -16,6 +16,7 @@ CLAUDE.md
 /docs/adr/
 # IDE
 .idea/
+d0cs
 
 # Local design/prototype workspace — not part of the shipped repo
 nodevo-redesign/
