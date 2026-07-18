@@ -1,37 +1,29 @@
 # Changelog
 
-## License: domain-bound coupling enforced end-to-end
+## Hardening: production is the default environment
 
-The license model is now enforced the way it is sold: **1 license = 1 instance**, bound to
-the domain the plugins were purchased for.
+- **An instance that never sets `NODE_ENV` now runs as `production`** — strict rate
+  limits, hidden error details, no dev auth backdoor, and real licensing domain rules.
+  Development is an explicit opt-in: `./nodevo.sh` exports it for the dev workflow, or set
+  `NODE_ENV=development` in `.env`. Deployments need no configuration to be hardened.
 
-- **Connecting your marketplace account from the wrong domain now fails with a clear
-  error** (`NEC-LICENSE-9003`) naming the domain the license is bound to. The license only
-  moves to another domain through marketplace support — self-service moving (and with it,
-  key resale) is deliberately impossible. Dev/staging instances are unaffected: they never
-  consume the production domain slot.
-- **The domain used for licensing is the canonical site URL** (ACP → `site.url`) — the same
-  URL served in canonical/OG meta — no longer the deploy-environment `APP_URL`.
-- **Disconnecting the marketplace account now deactivates account-activated licenses**
-  (they could never refresh again anyway — the raw key never reaches the instance) and
-  revokes the instance token server-side. Manually entered keys are untouched: they remain
-  the offline fallback. A license Refresh on an instance that disconnected earlier converges
-  it to the same state instead of letting a 30-day grace zombie linger.
+## Errors: explicit NEC codes for every known failure
 
-## UX: own toast + dialog system (sweetalert2 removed)
+Known, user-actionable failures no longer surface as the generic `NEC-API-5000` fatal
+screen — they return their own code, a 4xx status, and the real message (which the ACP
+shows inline and the Error Log records at the correct severity):
 
-- **`lib/toast.ts` + `<ToastHost/>`** — Nodevo's own toast stack (top-right): categories
-  success / info / warning / error with per-category durations (errors persist 10 s with an
-  explicit dismiss), stacking (max 4 + queue), duplicate collapsing with a ×N counter,
-  hover-pause, optional action button, `aria-live` semantics, and `prefers-reduced-motion`
-  support. Colours are tokens (`--toast-*` → semantic feedback palette), so the **Style
-  Editor → Feedback** section themes toasts live — it gained the missing **Info** colour row
-  and a "Preview toasts" button that fires live samples.
-- **`lib/dialog.ts` + `<DialogHost/>`** — promise-based confirm/alert dialogs (Escape
-  cancels, Enter confirms), Hearth-styled on tokens.
-- **Plugin extension points**: `registerToastCategory({id, color, icon, duration})` for
-  custom categories and `onToast(listener)` to observe the stream; exposed as host globals
-  (`webToast`, `webDialog`).
-- `lib/swal.ts` stays as a compatibility facade (`swalToast`/`swalConfirm`/`swalError`), so
-  every existing call site and plugin works unchanged — but **sweetalert2 is removed** from
-  the dependency tree. 7 unit tests on the toast store.
+- **Plugin engine**: `NEC-PLUGIN-2002` invalid package (bad ZIP / unsafe path / broken
+  manifest.json), `NEC-PLUGIN-2003` already installed, `NEC-PLUGIN-2011` missing
+  up/down migration file, `NEC-PLUGIN-2012` migration checksum mismatch; DDL-only
+  violations keep `NEC-PLUGIN-2010`; manifest schema failures keep `NEC-PLUGIN-2001`
+  (and are no longer flattened into uncoded errors). Enabling an unlicensed plugin now
+  answers `402 NEC-LICENSE-9001` with the "activate a license" message instead of a 500.
+- **License engine**: `NEC-LICENSE-9008` a license is already active,
+  `NEC-LICENSE-9009` the license server refused (message carries the exact reason);
+  network failures map to `NEC-LICENSE-9007` (unreachable) instead of a 500.
+- **Appearance**: invalid `.nvstyle` uploads answer `NEC-CORE-8002` naming the file/rule.
+- `NEC-API-4009` (Conflict) added to the catalog — it was already emitted but documented
+  nowhere.
+- **Error Reference** (ACP → System → Error Reference) documents every new code with
+  cause and fix.
