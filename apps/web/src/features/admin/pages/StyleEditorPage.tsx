@@ -116,7 +116,7 @@ const SCOPE_OPTIONS: { id: ThemeScope; label: string }[] = [
   { id: "aside",   label: "Aside" },
 ];
 
-const FONTS = ["Raleway", "Montserrat", "Poppins", "Open Sans", "Ubuntu", "Roboto"] as const;
+const FONTS = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
 const FONT_WEIGHTS = ["300", "400", "500", "600", "700", "800"] as const;
 
 const FONT_SETTING_KEY    = "appearance.font.family";
@@ -409,8 +409,13 @@ export function StyleEditorPage() {
       ...Object.entries(globalVars).map(([k, v]) => `  ${k}: ${v} !important;`),
       `  --ff-sans: "${fontFamily}", system-ui, sans-serif !important;`,
       `  --font-body: "${fontFamily}", system-ui, sans-serif !important;`,
+      `  --font-display: "${fontFamily}", system-ui, sans-serif !important;`,
     ].join("\n");
     blocks.push(`:root {\n${gDecls}\n}`);
+    // The ACP pins fonts to Poppins on <body> (body.nv-acp), which sits closer
+    // in the var cascade than :root — re-override there so the font preview
+    // stays visible inside the editor. Site-wide = body AND headings.
+    blocks.push(`body.nv-acp {\n  --ff-sans: "${fontFamily}", system-ui, sans-serif !important;\n  --font-display: "${fontFamily}", system-ui, sans-serif !important;\n}`);
     for (const [s, map] of Object.entries(scoped)) {
       if (s === "global" || !map) continue;
       const sel = SCOPE_SELECTOR[s as ThemeScope];
@@ -622,7 +627,6 @@ export function StyleEditorPage() {
                     toast.info("Info — a background job has started.");
                     toast.warning("Warning — this action affects 3 users.");
                     toast.error("Error — the server rejected the request.");
-                    toast.update("Update — forum 1.0.4 is available.");
                   }}>
                     Preview toasts
                   </button>

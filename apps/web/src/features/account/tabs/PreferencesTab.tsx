@@ -225,6 +225,14 @@ export function PreferencesTab() {
         <AccordionSection title={t("preferences.font")}>
           <div className="security-accordion__content">
             <div className="account-font-grid">
+              <button
+                type="button"
+                className={`account-font-btn${font === "default" ? " account-font-btn--active" : ""}`}
+                onClick={() => setFont("default")}
+              >
+                <span className="account-font-btn__name">{t("preferences.fontDefault")}</span>
+                <span className="account-font-btn__desc" style={{ fontFamily: "inherit" }}>{t("preferences.fontDefaultDesc")}</span>
+              </button>
               {FONTS.map((f) => (
                 <button
                   key={f.value}

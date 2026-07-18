@@ -21,8 +21,9 @@ body {
   color: var(--c-fg);
   font-family: var(--ff-sans);
   font-size: var(--fs-base);
-  /* Nunito reads thin at 400 — Hearth body sits at 600+. */
-  font-weight: 600;
+  /* Default weight for the Poppins base font — admin-tunable in the Style
+     Editor (appearance.font.weight -> --fw-body). */
+  font-weight: 500;
   line-height: 1.6;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;

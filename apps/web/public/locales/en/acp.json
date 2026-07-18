@@ -917,8 +917,6 @@
     "installing": "Installing…",
     "installSuccess": "{{name}} installed — enable it when ready.",
     "installFailed": "Install failed: {{message}}",
-    "updatesAvailable": "Plugin updates available:",
-    "updateCritical": "critical",
     "updatesRenewal": "Your license term has ended — renew it in the marketplace to download paid updates.",
     "updatesDialogTitle": "Plugin updates available",
     "updatesDialogBadge": "Critical update",

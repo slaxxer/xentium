@@ -782,8 +782,6 @@
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — actívalo cuando quieras.",
     "installFailed": "Error al instalar: {{message}}",
-    "updatesAvailable": "Actualizaciones de plugins disponibles:",
-    "updateCritical": "crítica",
     "updatesRenewal": "El período de tu licencia ha terminado — renuévala en el marketplace para descargar actualizaciones de pago.",
     "updatesDialogTitle": "Actualizaciones de plugins disponibles",
     "updatesDialogBadge": "Actualización crítica",

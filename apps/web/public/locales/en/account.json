@@ -25,7 +25,9 @@
     "autoPlayMediaDesc": "Automatically play videos and GIFs",
     "saved": "Saved!",
     "saveError": "Could not save preferences. Try again.",
-    "languageSaveError": "Could not save your language. Try again."
+    "languageSaveError": "Could not save your language. Try again.",
+    "fontDefault": "Site default",
+    "fontDefaultDesc": "Use the font this site's admin chose"
   },
   "profile": {
     "title": "Profile",

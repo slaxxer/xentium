@@ -117,6 +117,14 @@ function AcpShell() {
 }
 
 export function AcpLayout() {
+  // The ACP is ALWAYS Poppins — site/user font choices style the public site
+  // only. Body-level class so app-root overlays (dialogs, toasts) follow while
+  // an ACP route is mounted (rule in AcpLayout.scss).
+  useEffect(() => {
+    document.body.classList.add("nv-acp");
+    return () => document.body.classList.remove("nv-acp");
+  }, []);
+
   return (
     <AcpAuthGate>
       <AcpShell />
