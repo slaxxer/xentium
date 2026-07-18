@@ -132,6 +132,7 @@ adminRouter.get("/nec-codes", adminGuard, async (_req, res, next) => {
 // Marketplace (ADR 0001) — catalogue mirror + server-side account connection.
 adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listMarketplacePlugins);
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
+adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.

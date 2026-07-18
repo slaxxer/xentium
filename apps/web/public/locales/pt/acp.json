@@ -781,7 +781,10 @@
     "buy": "Comprar → nodevo.io",
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — ative quando quiser.",
-    "installFailed": "Falha na instalação: {{message}}"
+    "installFailed": "Falha na instalação: {{message}}",
+    "updatesAvailable": "Atualizações de plugins disponíveis:",
+    "updateCritical": "crítica",
+    "updatesRenewal": "O período da sua licença terminou — renove-a no marketplace para baixar atualizações pagas."
   },
   "license": {
     "loading": "Carregando…",
