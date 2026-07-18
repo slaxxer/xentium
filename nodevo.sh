@@ -38,6 +38,11 @@ pnpm -C "$ROOT" db:generate
 echo "Infrastructure healthy. Starting api + worker + web (Ctrl+C to stop)…"
 echo
 
+# This launcher IS the developer entry point: opt into development mode unless
+# the caller already chose an environment. Deployments that start the API
+# directly default to production (config/env.ts).
+export NODE_ENV="${NODE_ENV:-development}"
+
 # concurrently runs all three, prefixes/colors their logs, and kills the rest
 # if any one exits. exec hands the terminal directly to it for clean signals.
 exec pnpm -C "$ROOT" dev:apps
