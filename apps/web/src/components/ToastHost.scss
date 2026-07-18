@@ -1,0 +1,114 @@
+/* Toast stack — top-right, above everything (incl. ModCanvas). All colors are
+ * tokens: --toast-<cat> falls back to the semantic feedback palette, so the
+ * Style Editor Feedback section (and Custom CSS `--toast-*` overrides) theme
+ * toasts live. */
+
+.nv-toasts {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: min(360px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.nv-toast {
+  --_toast-c: var(--toast-info, var(--c-info));
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  /* Category-tinted surface: soft wash of the category colour over the card
+   * bg (adapts to light/dark), full border in the category colour. */
+  background: color-mix(in srgb, var(--_toast-c) 12%, var(--toast-bg, var(--c-card)));
+  color: var(--toast-fg, var(--c-fg));
+  border: 1px solid color-mix(in srgb, var(--_toast-c) 55%, transparent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+  overflow: hidden;
+  pointer-events: auto;
+  animation: nv-toast-in 0.22s ease-out;
+
+  &--success { --_toast-c: var(--toast-success, var(--c-success)); }
+  &--warning { --_toast-c: var(--toast-warning, var(--c-warn)); }
+  &--error   { --_toast-c: var(--toast-error,   var(--c-danger)); }
+  &--info    { --_toast-c: var(--toast-info,    var(--c-info)); }
+
+  &__icon {
+    color: var(--_toast-c);
+    font-size: 15px;
+    line-height: 1.4;
+    flex-shrink: 0;
+  }
+  &__body  { flex: 1; min-width: 0; }
+  &__title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
+  &__msg   { font-size: 13px; line-height: 1.45; overflow-wrap: break-word; }
+  &__action {
+    margin-top: 8px;
+    padding: 3px 10px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--_toast-c);
+    background: transparent;
+    border: 1px solid color-mix(in srgb, var(--_toast-c) 45%, transparent);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    &:hover { background: color-mix(in srgb, var(--_toast-c) 12%, transparent); }
+  }
+  &__count {
+    flex-shrink: 0;
+    align-self: center;
+    padding: 1px 7px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--_toast-c);
+    background: color-mix(in srgb, var(--_toast-c) 14%, transparent);
+  }
+  &__close {
+    flex-shrink: 0;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    color: var(--c-fg-subtle);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    &:hover { color: var(--c-fg); background: color-mix(in srgb, var(--_toast-c) 18%, transparent); }
+  }
+  &__progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--_toast-c);
+    opacity: 0.55;
+    transform-origin: left;
+    animation-name: nv-toast-progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+  &.is-paused &__progress { animation-play-state: paused; }
+}
+
+@keyframes nv-toast-in {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes nv-toast-progress {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nv-toast { animation: none; }
+}

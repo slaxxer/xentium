@@ -25,6 +25,8 @@ import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
 import * as webUseAutosave from "@web/hooks/useAutosave";
 import * as webAutosaveStatus from "@web/components/AutosaveStatus";
+import * as webToast from "@web/lib/toast";
+import * as webDialog from "@web/lib/dialog";
 
 const HOST = {
   React,
@@ -46,6 +48,8 @@ const HOST = {
   webForumEditor,
   webUseAutosave,
   webAutosaveStatus,
+  webToast,
+  webDialog,
 };
 
 declare global {

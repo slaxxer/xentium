@@ -1,7 +1,9 @@
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
-import Swal from "sweetalert2";
+import { openDialog } from "../lib/dialog";
+import { ToastHost } from "../components/ToastHost";
+import { DialogHost } from "../components/DialogHost";
 import { AppLayout } from "../layouts/AppLayout";
 import { EditorLayout } from "../layouts/EditorLayout";
 import { ProfilePage } from "../features/profiles/ProfilePage";
@@ -187,14 +189,10 @@ function BetaGate({ children }: { children: React.ReactNode }) {
           try { await api.post("/auth/logout"); } catch { /* ignore */ }
           applyLogout();
         }
-        Swal.fire({
-          background:         "var(--c-card)",
-          color:              "var(--c-fg)",
-          icon:               "warning",
-          title:              "Beta access revoked",
-          text:               "Your beta access has been revoked by an administrator. You have been signed out.",
-          confirmButtonColor: "var(--c-accent)",
-          confirmButtonText:  "OK",
+        openDialog({
+          kind: "alert", icon: "warning",
+          title: "Beta access revoked",
+          body:  "Your beta access has been revoked by an administrator. You have been signed out.",
         }).then(() => qc.invalidateQueries({ queryKey: ["beta-status"] }));
       })();
     }
@@ -375,6 +373,9 @@ export default function App() {
           <RouterProvider router={router} />
         </BetaGate>
       </MaintenanceGate>
+      {/* Own feedback primitives: toast stack + confirm/alert dialogs (no swal) */}
+      <ToastHost />
+      <DialogHost />
       {/* WoltLab-style fatal halt — overlays everything when the API returns 5xx */}
       <FatalErrorOverlay />
     </QueryClientProvider>
