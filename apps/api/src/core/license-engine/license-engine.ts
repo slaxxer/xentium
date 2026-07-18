@@ -153,17 +153,21 @@ export async function activateLicense(licenseKey: string): Promise<void> {
   const jwt    = await fetchEntitlementJwt(licenseKey, siteId);
   const claims = await verifyEntitlementJwt(jwt);
 
-  await prisma.license.create({
-    data: {
-      licenseKey,
-      siteId,
-      entitlementJwt: jwt,
-      status:         "active",
-      domain:         claims.domain ?? getSiteDomain(),
-      environment:    claims.environment ?? resolveEnvironment(),
-      expiresAt:      new Date(claims.expiresAt * 1000),
-      refreshAfter:   new Date(claims.refreshAfter * 1000),
-    },
+  // Upsert: re-activating a previously deactivated key must revive its row
+  // (licenseKey is unique — a create would crash on the old record).
+  const data = {
+    siteId,
+    entitlementJwt: jwt,
+    status:         "active",
+    domain:         claims.domain ?? getSiteDomain(),
+    environment:    claims.environment ?? resolveEnvironment(),
+    expiresAt:      new Date(claims.expiresAt * 1000),
+    refreshAfter:   new Date(claims.refreshAfter * 1000),
+  };
+  await prisma.license.upsert({
+    where:  { licenseKey },
+    create: { licenseKey, ...data },
+    update: data,
   });
 
   logger.info(
