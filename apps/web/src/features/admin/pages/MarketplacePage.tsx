@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
+import { apiErrorMessage, swalToast } from "../../../lib/swal";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 
 interface MarketplacePlugin {
@@ -78,7 +79,22 @@ function parseEntitlements(jwt: string): string[] {
 export function MarketplacePage() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+
+  // Direct install (§16.2): the server authorizes at the chokepoint, fetches +
+  // sha256-verifies the artifact, and runs the normal intake. Lands disabled.
+  const installMutation = useMutation({
+    mutationFn: (p: MarketplacePlugin) =>
+      api.post("/admin/marketplace/install", { pluginId: p.id, version: p.latestVersion }),
+    onSuccess: (_data, p) => {
+      void swalToast(t("marketplace.installSuccess", { name: p.name }), "success");
+      void queryClient.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+    },
+    onError: (err: unknown) => {
+      void swalToast(t("marketplace.installFailed", { message: apiErrorMessage(err) }), "error");
+    },
+  });
 
   const { data: market }    = useQuery<MarketplaceResponse>({ queryKey: ["acp-marketplace"], queryFn: () => api.get("/admin/marketplace/plugins") });
   const { data: installed } = useQuery<InstalledPlugin[]>({ queryKey: ["acp-installed-plugins"], queryFn: () => api.get("/plugins") });
@@ -184,8 +200,16 @@ export function MarketplacePage() {
                     {t("marketplace.goManage")}
                   </button>
                 ) : entitled ? (
-                  <button type="button" className="btn-ghost btn-sm" style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }} onClick={() => navigate("/admin/upload")}>
-                    {t("marketplace.install")}
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm"
+                    style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }}
+                    disabled={installMutation.isPending}
+                    onClick={() => installMutation.mutate(p)}
+                  >
+                    {installMutation.isPending && installMutation.variables?.id === p.id
+                      ? t("marketplace.installing")
+                      : t("marketplace.install")}
                   </button>
                 ) : locked ? (
                   <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>

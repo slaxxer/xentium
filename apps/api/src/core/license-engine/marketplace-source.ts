@@ -163,7 +163,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     // Dev: no server. Mint a domain-bound entitlement locally so the full gate
     // flow is exercisable end-to-end. Artifact bytes come from manual upload.
     const { jwt, expiresAt } = await provisionEntitlement();
-    return { pluginId: req.pluginId, version: req.version, entitlementJwt: jwt, expiresAt, downloadUrl: null };
+    return { pluginId: req.pluginId, version: req.version, entitlementJwt: jwt, expiresAt, downloadUrl: null, sha256: null };
   }
 }
 

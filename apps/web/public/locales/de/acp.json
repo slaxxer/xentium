@@ -778,7 +778,10 @@
     "goManage": "Installiert — verwalten",
     "install": "Installieren",
     "activateToInstall": "Zum Installieren Lizenz aktivieren",
-    "buy": "Kaufen → nodevo.io"
+    "buy": "Kaufen → nodevo.io",
+    "installing": "Installiere…",
+    "installSuccess": "{{name}} installiert — aktiviere es, wenn du bereit bist.",
+    "installFailed": "Installation fehlgeschlagen: {{message}}"
   },
   "license": {
     "loading": "Lädt…",

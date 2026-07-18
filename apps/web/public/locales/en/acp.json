@@ -913,7 +913,10 @@
     "goManage": "Installed — Go to manage",
     "install": "Install",
     "activateToInstall": "Activate license to install",
-    "buy": "Buy → nodevo.io"
+    "buy": "Buy → nodevo.io",
+    "installing": "Installing…",
+    "installSuccess": "{{name}} installed — enable it when ready.",
+    "installFailed": "Install failed: {{message}}"
   },
   "license": {
     "loading": "Loading…",
