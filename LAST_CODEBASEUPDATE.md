@@ -1,5 +1,28 @@
 # Last Codebase Update — 2026-07-18
 
+## Panel dialog (app-wide alert component) replaces the update toast — UNCOMMITTED
+
+User pivot: not a toast — a popup like the uninstall confirm, reusable app-wide.
+
+- `lib/dialog.ts`: DialogIcon += "update" (faCloudArrowDown); DialogOptions += badge /
+  rows (PanelRow {label,value,marker}) / note / wide; new `openPanelDialog()` (wide
+  announcement variant, promise like openDialog). Plugins get it via the webDialog
+  namespace host global automatically.
+- `DialogHost.tsx/.scss`: wide layout (540px, left-aligned header icon+title+badge),
+  rows list (label | danger marker pill | mono value), warn footer note; `--update`
+  accent = var(--c-update) → Style Editor Update slot themes it.
+- `jobs/updateCheck.ts`: cache rows enriched with `name` + `installedVersion` (instance-
+  side knowledge) → UI renders "Forum 1.0.3 → 1.0.4".
+- `AcpLayout.tsx`: useUpdateToast → useUpdateAlert (openPanelDialog once per update set,
+  critical rows sorted first + badge, max 5 rows + "+n more", renewal note, View →
+  /admin/marketplace, Later dismisses). Toast category `update` KEPT (plugins/preview).
+- `MarketplacePage.tsx` banner uses enriched name/installedVersion.
+- Locales ×5: -updatesToast_one/_other/updatesToastView, +updatesDialogTitle/Badge/
+  Critical/More/View/Later. CLAUDE.md dialog convention line updated.
+
+Verified: web+api typecheck clean, 7 toast tests green, lint 0 errors. Demo seed on the
+test instance must bump latestVersion (hash!) + include name/installedVersion/critical.
+
 ## Global rate limiter: shared-IP counter bug — UNCOMMITTED (hot-patched on test instance)
 
 User hit NEC-API-4290 storms ("bandwidth freaks out") after the production-default flip.
