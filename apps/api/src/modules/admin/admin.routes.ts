@@ -67,7 +67,8 @@ adminRouter.get("/installed-plugins", adminGuard, adminController.listInstalledP
 
 // License
 adminRouter.get("/license",            adminGuard, adminController.getActiveLicense);
-adminRouter.post("/license/activate",  adminGuard, licenseActivateLimiter, adminController.activateLicense);
+// Manual key activation removed 2026-07-18: the ACP requires a linked
+// marketplace account — activation happens from the account (connect/refresh).
 adminRouter.post("/license/refresh",   adminGuard, adminController.refreshLicense);
 adminRouter.delete("/license",         adminGuard, adminController.deactivateLicense);
 

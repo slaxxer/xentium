@@ -101,7 +101,8 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
   return payload as unknown as EntitlementPayload;
 }
 
-/** Call the license server to get an entitlement JWT for a key, bound to this domain. */
+/** Entitlement JWT for a raw key — used only to REFRESH legacy manual-key
+ *  licenses and by provisionEntitlement; new activations are account-only. */
 async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<string> {
   const domain      = await getSiteDomain();
   const environment = await resolveEnvironment();
@@ -192,7 +193,7 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
   const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
   const token = (row?.value as string | null) ?? null;
   if (!token) {
-    throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one, or activate a license key manually." });
+    throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one in ACP \u2192 Extensions \u2192 License." });
   }
 
   const res = await fetch(`${env.LICENSE_SERVER_URL}/account/activate`, {
@@ -213,8 +214,10 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
 
 /**
  * Activate from the connected marketplace account — no key entry. Returns true
- * when a license was activated, false when one was already active. Manual
- * `activateLicense` stays as the offline / no-account fallback.
+ * when a license was activated, false when one was already active. This is THE
+ * activation path: manual key entry was removed from the ACP 2026-07-18 — a
+ * linked marketplace account is required. (Legacy `activatedVia: "key"` rows
+ * from before that still refresh via /activate.)
  */
 export async function activateFromAccount(): Promise<boolean> {
   const existing = await prisma.license.findFirst({ where: { status: "active" } });
@@ -248,39 +251,6 @@ export async function activateFromAccount(): Promise<boolean> {
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
-
-export async function activateLicense(licenseKey: string): Promise<void> {
-  const existing = await prisma.license.findFirst({ where: { status: "active" } });
-  if (existing) {
-    throw new NodevoError({ code: NEC.LICENSE_ALREADY_ACTIVE, httpStatus: 409, message: "A license is already active. Deactivate it before activating a new one." });
-  }
-
-  const siteId = await getSiteId();
-  const jwt    = await fetchEntitlementJwt(licenseKey, siteId);
-  const claims = await verifyEntitlementJwt(jwt);
-
-  // Upsert: re-activating a previously deactivated key must revive its row
-  // (licenseKey is unique — a create would crash on the old record).
-  const data = {
-    siteId,
-    entitlementJwt: jwt,
-    status:         "active",
-    domain:         claims.domain ?? await getSiteDomain(),
-    environment:    claims.environment ?? await resolveEnvironment(),
-    expiresAt:      new Date(claims.expiresAt * 1000),
-    refreshAfter:   new Date(claims.refreshAfter * 1000),
-  };
-  await prisma.license.upsert({
-    where:  { licenseKey },
-    create: { licenseKey, ...data },
-    update: data,
-  });
-
-  logger.info(
-    { licenseKey: licenseKey.slice(0, 8) + "…", entitlements: claims.entitlements, domain: claims.domain ?? await getSiteDomain() },
-    "License activated",
-  );
-}
 
 /**
  * Deactivate every license that was activated via the connected account (§53).
