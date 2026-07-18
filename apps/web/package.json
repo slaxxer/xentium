@@ -57,7 +57,6 @@
     "react-i18next": "^17.0.8",
     "react-router": "catalog:",
     "react-router-dom": "^7.15.1",
-    "sweetalert2": "^11.26.25",
     "zod": "catalog:"
   },
   "devDependencies": {

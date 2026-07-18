@@ -4,6 +4,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUpload, faXmark, faRotateLeft, faRotateRight, faTriangleExclamation, faCloudArrowUp } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
 import { refreshTokenCss } from "../../../lib/liveStyle";
@@ -64,6 +65,7 @@ const FEEDBACK_ROWS: ColorRow[] = [
   { l: "Success", cssVar: "--c-success" },
   { l: "Warning", cssVar: "--c-warn" },
   { l: "Danger",  cssVar: "--c-danger" },
+  { l: "Info",    cssVar: "--c-info" },
 ];
 
 // ── Section list (the ADR-0003 "backbone") ──────────────────────────────────────
@@ -610,6 +612,23 @@ export function StyleEditorPage() {
                   return <ColorControl key={row.cssVar} label={row.l} value={d.value} overridden={d.overridden}
                     onChange={(v) => setOverride("global", row.cssVar, v)} onReset={() => clearOverride("global", row.cssVar)} />;
                 })}
+
+              {/* Feedback colors drive the toast system — fire live samples to preview */}
+              {section.kind === "feedback" && (
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
+                  <button type="button" className="btn-ghost btn-sm" onClick={() => {
+                    toast.success("Success — settings saved.");
+                    toast.info("Info — a background job has started.");
+                    toast.warning("Warning — this action affects 3 users.");
+                    toast.error("Error — the server rejected the request.");
+                  }}>
+                    Preview toasts
+                  </button>
+                  <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 6 }}>
+                    Toasts use these feedback colours — edits above preview live on the fired samples.
+                  </div>
+                </div>
+              )}
 
               {/* Registry-driven region / component rows */}
               {registryRows.map((t) => {

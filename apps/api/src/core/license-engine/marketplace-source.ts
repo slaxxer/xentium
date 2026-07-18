@@ -22,7 +22,12 @@ import { DEV_CATALOG } from "./dev-catalog.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { provisionEntitlement } from "./license-engine.js";
+import {
+  deactivateAccountLicenses,
+  getSiteDomain,
+  provisionEntitlement,
+  resolveEnvironment,
+} from "./license-engine.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 
 const SOURCE_ID = "nodevo.io";
@@ -70,12 +75,34 @@ class NodevoMarketplaceSource implements MarketplaceSource {
       const res = await fetch(`${env.LICENSE_SERVER_URL}/account/connect`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ authCode, domain: new URL(env.APP_URL).host }),
+        // Domain = the CANONICAL site URL (site.url), the host this license is
+        // bound to. environment lets the server bind dev/staging domains
+        // without eating the production domain slot (ADR 0001 §5).
+        body: JSON.stringify({
+          authCode,
+          domain:      await getSiteDomain(),
+          environment: await resolveEnvironment(),
+        }),
         signal: AbortSignal.timeout(10_000),
       }).catch(() => null);
 
-      if (!res || !res.ok) {
+      if (!res) {
         throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "Could not reach the marketplace to verify your account." });
+      }
+      if (res.status === 409) {
+        // The account's license is bound to a different domain (1 license =
+        // 1 instance) — the coupling is refused, with the server naming the
+        // bound domain. Only a marketplace admin can move the binding.
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new NodevoError({ code: NEC.LICENSE_DOMAIN_MISMATCH, httpStatus: 409, message: body.message ?? "This account's license is bound to a different domain." });
+      }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new NodevoError({
+          code:       res.status >= 500 ? NEC.LICENSE_SOURCE_UNREACHABLE : NEC.LICENSE_ACCOUNT_REQUIRED,
+          httpStatus: res.status >= 500 ? 503 : res.status,
+          message:    body.message ?? "Could not connect your marketplace account.",
+        });
       }
       const body = await res.json() as { token: string; accountRef?: string };
       token = body.token;
@@ -92,10 +119,34 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   }
 
   async disconnect(): Promise<void> {
+    const token = await readSetting(K_TOKEN);
+
+    // Tell the marketplace BEFORE dropping the token so it can revoke the
+    // token server-side (kills the abandoned credential + the portal's ghost
+    // "connected site" row). The domain binding itself survives on the server:
+    // a license is bound to the domain it was bought for, and only a
+    // marketplace admin can release it — best-effort: an unreachable
+    // marketplace must never block a disconnect.
+    if (token && !useDevLicensing) {
+      const siteId = (await readSetting("site.id")) ?? "dev-site";
+      await fetch(`${env.LICENSE_SERVER_URL}/account/deactivate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ siteId, domain: await getSiteDomain(), environment: await resolveEnvironment() }),
+        signal: AbortSignal.timeout(10_000),
+      }).catch(() => null);
+    }
+
     await writeSetting(K_TOKEN, null);
     await writeSetting(K_REF, null);
     await writeSetting(K_AT, null);
-    logger.info({ source: this.id }, "Marketplace account disconnected");
+
+    // Account-derived licenses die with the account coupling (§53): the raw key
+    // was never here, so they could never refresh again anyway. Manual-key
+    // licenses survive — they are the offline fallback.
+    const deactivated = await deactivateAccountLicenses();
+
+    logger.info({ source: this.id, deactivated }, "Marketplace account disconnected");
   }
 
   async getConnection(): Promise<MarketplaceConnection> {

@@ -1,11 +1,12 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useNavigate, useSearchParams, Link } from "react-router-dom";
-import Swal from "sweetalert2";
 import { useAuth, applyLogin } from "../../hooks/useAuth";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { api } from "../../lib/api";
 import { swalToast } from "../../lib/swal";
+import { toast } from "../../lib/toast";
+import { openDialog } from "../../lib/dialog";
 import "./LoginPage.scss";
 
 /** Only allow returning to in-app relative paths to prevent open-redirect. */
@@ -96,25 +97,15 @@ export function LoginPage() {
         const expiry    = expiresAt
           ? new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
           : null;
-        Swal.fire({
-          background:        "var(--c-card)",
-          color:             "var(--c-fg)",
-          toast:             true,
-          position:          "top-end",
-          icon:              "error",
-          title:             expiry ? t("login.bannedUntil", { date: expiry }) : t("login.bannedPermanent"),
-          html:              `<span style="font-size:13px;color:var(--c-fg-muted)">${t("login.banReason")}: <b style="color:var(--c-fg)">${reason}</b></span>`,
-          timer:             7000,
-          timerProgressBar:  true,
-          showConfirmButton: false,
+        toast.error(`${t("login.banReason")}: ${reason}`, {
+          title:    expiry ? t("login.bannedUntil", { date: expiry }) : t("login.bannedPermanent"),
+          duration: 7000,
         });
       } else if (code === "NEC-AUTH-1032") {
-        Swal.fire({
-          background: "var(--c-card)",
-          color:      "var(--c-fg)",
-          icon:       "error",
-          title:      t("login.accessDenied"),
-          text:       t("login.betaIpLocked"),
+        openDialog({
+          kind:  "alert", icon: "error",
+          title: t("login.accessDenied"),
+          body:  t("login.betaIpLocked"),
         });
       } else if (code === "NEC-AUTH-1030") {
         swalToast(t("login.betaRequired"), "warning");

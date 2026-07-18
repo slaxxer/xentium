@@ -6,6 +6,7 @@ import type { DeployEnvironment, EntitlementStatus } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
+import { getSetting } from "../../shared/utils/settings.js";
 import { devEntitlements } from "./dev-catalog.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -20,10 +21,16 @@ const GRACE_PERIOD_DAYS = 30;
 
 // ── Domain binding (ADR 0001) ────────────────────────────────────────────────
 
-/** The host this instance is bound to, derived from APP_URL. */
-export function getSiteDomain(): string {
+/**
+ * The host this instance is bound to. The admin-configured canonical URL
+ * (`site.url`, the same one served in canonical/OG meta) is the source of
+ * truth — APP_URL is only the pre-install / unset fallback. Domain-bound
+ * licensing must follow what the site claims to be publicly, not a deploy env.
+ */
+export async function getSiteDomain(): Promise<string> {
+  const canonical = await getSetting<string>("site.url", "");
   try {
-    return new URL(env.APP_URL).host;
+    return new URL(canonical || env.APP_URL).host;
   } catch {
     return "localhost";
   }
@@ -47,9 +54,9 @@ function isLocalHost(host: string): boolean {
  * `development` / `staging` are uncapped and never domain-locked (ADR 0001 §5),
  * which keeps local dev, CI, and staging painless.
  */
-export function resolveEnvironment(): DeployEnvironment {
+export async function resolveEnvironment(): Promise<DeployEnvironment> {
   if (!isProd) return "development";
-  return isLocalHost(getSiteDomain()) ? "staging" : "production";
+  return isLocalHost(await getSiteDomain()) ? "staging" : "production";
 }
 
 async function getPublicKey() {
@@ -83,8 +90,8 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
 
 /** Call the license server to get an entitlement JWT for a key, bound to this domain. */
 async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<string> {
-  const domain      = getSiteDomain();
-  const environment = resolveEnvironment();
+  const domain      = await getSiteDomain();
+  const environment = await resolveEnvironment();
 
   // Dev mode: sign locally with the dev private key. Its presence is the dev
   // signal now that LICENSE_SERVER_URL is always defaulted to the marketplace.
@@ -153,8 +160,8 @@ async function getSiteId(): Promise<string> {
 const MARKETPLACE_TOKEN_KEY = "marketplace.nodevo.io.token";
 
 async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string; keyRef: string }> {
-  const domain      = getSiteDomain();
-  const environment = resolveEnvironment();
+  const domain      = await getSiteDomain();
+  const environment = await resolveEnvironment();
 
   // Dev mode: local signing, same as the manual-key path.
   if (env.LICENSE_DEV_PRIVATE_KEY) {
@@ -202,8 +209,8 @@ export async function activateFromAccount(): Promise<boolean> {
     entitlementJwt: jwt,
     status:         "active",
     activatedVia:   "account",
-    domain:         claims.domain ?? getSiteDomain(),
-    environment:    claims.environment ?? resolveEnvironment(),
+    domain:         claims.domain ?? await getSiteDomain(),
+    environment:    claims.environment ?? await resolveEnvironment(),
     expiresAt:      new Date(claims.expiresAt * 1000),
     refreshAfter:   new Date(claims.refreshAfter * 1000),
   };
@@ -214,7 +221,7 @@ export async function activateFromAccount(): Promise<boolean> {
   });
 
   logger.info(
-    { keyRef, entitlements: claims.entitlements, domain: claims.domain ?? getSiteDomain() },
+    { keyRef, entitlements: claims.entitlements, domain: claims.domain ?? await getSiteDomain() },
     "License activated from connected marketplace account",
   );
   return true;
@@ -236,8 +243,8 @@ export async function activateLicense(licenseKey: string): Promise<void> {
     siteId,
     entitlementJwt: jwt,
     status:         "active",
-    domain:         claims.domain ?? getSiteDomain(),
-    environment:    claims.environment ?? resolveEnvironment(),
+    domain:         claims.domain ?? await getSiteDomain(),
+    environment:    claims.environment ?? await resolveEnvironment(),
     expiresAt:      new Date(claims.expiresAt * 1000),
     refreshAfter:   new Date(claims.refreshAfter * 1000),
   };
@@ -248,9 +255,26 @@ export async function activateLicense(licenseKey: string): Promise<void> {
   });
 
   logger.info(
-    { licenseKey: licenseKey.slice(0, 8) + "…", entitlements: claims.entitlements, domain: claims.domain ?? getSiteDomain() },
+    { licenseKey: licenseKey.slice(0, 8) + "…", entitlements: claims.entitlements, domain: claims.domain ?? await getSiteDomain() },
     "License activated",
   );
+}
+
+/**
+ * Deactivate every license that was activated via the connected account (§53).
+ * Called on marketplace disconnect: those rows only ever held the masked keyRef,
+ * so without the account token they can never refresh again — keeping them
+ * "active" would just be a 30-day zombie. Manual-key licenses (`activatedVia:
+ * "key"`) are untouched: they are the offline fallback and outlive the account.
+ * Rows are kept as `deactivated` so a reconnect revives them via upsert.
+ */
+export async function deactivateAccountLicenses(): Promise<number> {
+  const { count } = await prisma.license.updateMany({
+    where: { status: "active", activatedVia: "account" },
+    data:  { status: "deactivated" },
+  });
+  if (count > 0) logger.info({ count }, "Account-activated licenses deactivated");
+  return count;
 }
 
 export async function refreshLicense(): Promise<void> {
@@ -269,6 +293,19 @@ export async function refreshLicense(): Promise<void> {
     return;
   }
 
+  // An account-activated license with no connected account is a deliberate
+  // state (the admin disconnected), not an outage — deactivate instead of
+  // letting the grace window keep a zombie alive. Also converges instances
+  // that disconnected before disconnect() learned to do this itself.
+  if (license.activatedVia === "account" && !env.LICENSE_DEV_PRIVATE_KEY) {
+    const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
+    if (!row?.value) {
+      await prisma.license.update({ where: { id: license.id }, data: { status: "deactivated" } });
+      logger.info({ licenseId: license.id }, "Account-activated license deactivated — no marketplace account connected");
+      return;
+    }
+  }
+
   try {
     // Account-activated licenses refresh through the account token (the raw
     // key was never known here); manual keys refresh through /activate.
@@ -281,8 +318,8 @@ export async function refreshLicense(): Promise<void> {
       where: { id: license.id },
       data: {
         entitlementJwt: jwt,
-        domain:         claims.domain ?? license.domain ?? getSiteDomain(),
-        environment:    claims.environment ?? license.environment ?? resolveEnvironment(),
+        domain:         claims.domain ?? license.domain ?? await getSiteDomain(),
+        environment:    claims.environment ?? license.environment ?? await resolveEnvironment(),
         expiresAt:      new Date(claims.expiresAt * 1000),
         refreshAfter:   new Date(claims.refreshAfter * 1000),
         status:         "active",
@@ -339,7 +376,7 @@ export async function deactivateLicense(): Promise<void> {
  * `staging` the domain claim is informational and never blocks.
  */
 export async function getEntitlementStatus(pluginId: string): Promise<EntitlementStatus> {
-  const environment = resolveEnvironment();
+  const environment = await resolveEnvironment();
   const license = await prisma.license.findFirst({ where: { status: "active" } });
 
   const base = {
@@ -360,7 +397,7 @@ export async function getEntitlementStatus(pluginId: string): Promise<Entitlemen
       return { ...base, state: "missing" };
     }
     // Production-only domain enforcement (ADR 0001 §5).
-    if (environment === "production" && claims.domain && claims.domain !== getSiteDomain()) {
+    if (environment === "production" && claims.domain && claims.domain !== (await getSiteDomain())) {
       return { ...base, domain: claims.domain, state: "domain_mismatch" };
     }
     return { ...base, domain: claims.domain ?? base.domain, state: "valid" };
