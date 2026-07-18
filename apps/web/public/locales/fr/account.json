@@ -25,7 +25,9 @@
     "autoPlayMediaDesc": "Lire automatiquement les vidéos et les GIF",
     "saved": "Enregistré !",
     "saveError": "Impossible d’enregistrer les préférences. Réessayez.",
-    "languageSaveError": "Impossible d’enregistrer votre langue. Réessayez."
+    "languageSaveError": "Impossible d’enregistrer votre langue. Réessayez.",
+    "fontDefault": "Défaut du site",
+    "fontDefaultDesc": "Utiliser la police choisie par l'administrateur du site"
   },
   "profile": {
     "title": "Profil",

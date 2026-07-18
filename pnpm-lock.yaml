@@ -277,18 +277,9 @@ importers:
       '@fontsource/open-sans':
         specifier: ^5.2.7
         version: 5.2.7
-      '@fontsource/playfair-display':
-        specifier: ^5.2.8
-        version: 5.2.8
       '@fontsource/poppins':
         specifier: ^5.2.7
         version: 5.2.7
-      '@fontsource/raleway':
-        specifier: ^5.2.8
-        version: 5.2.8
-      '@fontsource/roboto':
-        specifier: ^5.2.10
-        version: 5.2.10
       '@fontsource/ubuntu':
         specifier: ^5.2.8
         version: 5.2.8
@@ -1355,17 +1346,8 @@ packages:
   '@fontsource/open-sans@5.2.7':
     resolution: {integrity: sha512-8yfgDYjE5O0vmTPdrcjV35y4yMnctsokmi9gN49Gcsr0sjzkMkR97AnKDe6OqZh2SFkYlR28fxOvi21bYEgMSw==}
 
-  '@fontsource/playfair-display@5.2.8':
-    resolution: {integrity: sha512-fUEhib70SszNhQVsGbUMSsWJhr7Je0rdeuZdtGpDNu0GKF1xJM8QhpI/y0pckU25GcChXm9TLOmeZupkvvZo2g==}
-
   '@fontsource/poppins@5.2.7':
     resolution: {integrity: sha512-6uQyPmseo4FgI97WIhA4yWRlNaoLk4vSDK/PyRwdqqZb5zAEuc+Kunt8JTMcsHYUEGYBtN15SNkMajMdqUSUmg==}
-
-  '@fontsource/raleway@5.2.8':
-    resolution: {integrity: sha512-OATNM+J4XniKQRlI1e67v3euOnCUiXwpqgMofomKc5JNYOq0JPE6E5uTXMnFaZejKN1Z7s05JrHpmYB7/tg1Fw==}
-
-  '@fontsource/roboto@5.2.10':
-    resolution: {integrity: sha512-8HlA5FtSfz//oFSr2eL7GFXAiE7eIkcGOtx7tjsLKq+as702x9+GU7K95iDeWFapHC4M2hv9RrpXKRTGGBI8Zg==}
 
   '@fontsource/ubuntu@5.2.8':
     resolution: {integrity: sha512-esSJCpgigwWOm4Ug9f7AMozUyBq5Iobea5C9QYsl2OlCb62wZABBUbXahHLdFv5Ru4lJCD9tUX6xEAeLwUTNBg==}
@@ -4836,13 +4818,7 @@ snapshots:
 
   '@fontsource/open-sans@5.2.7': {}
 
-  '@fontsource/playfair-display@5.2.8': {}
-
   '@fontsource/poppins@5.2.7': {}
-
-  '@fontsource/raleway@5.2.8': {}
-
-  '@fontsource/roboto@5.2.10': {}
 
   '@fontsource/ubuntu@5.2.8': {}
 
