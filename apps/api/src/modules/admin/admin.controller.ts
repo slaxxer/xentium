@@ -421,8 +421,8 @@ export const adminController = {
       pluginId,
       version,
       siteId,
-      domain:      getSiteDomain(),
-      environment: resolveEnvironment(),
+      domain:      await getSiteDomain(),
+      environment: await resolveEnvironment(),
     });
     res.json(authorized);
   }) as RequestHandler,
@@ -450,8 +450,8 @@ export const adminController = {
       pluginId,
       version,
       siteId,
-      domain:      getSiteDomain(),
-      environment: resolveEnvironment(),
+      domain:      await getSiteDomain(),
+      environment: await resolveEnvironment(),
     });
     if (!authorized.downloadUrl) {
       // Dev catalogue / community sources have no hosted artifact — manual upload path.

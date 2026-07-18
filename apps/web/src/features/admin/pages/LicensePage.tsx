@@ -63,7 +63,12 @@ export function LicensePage() {
 
   const disconnectMut = useMutation({
     mutationFn: () => api.delete("/admin/marketplace/connection"),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); swalToast(t("license.toastDisconnected"), "success"); },
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] });
+      // Disconnecting deactivates account-activated licenses server-side.
+      qc.invalidateQueries({ queryKey: ["acp-license"] });
+      swalToast(t("license.toastDisconnected"), "success");
+    },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
