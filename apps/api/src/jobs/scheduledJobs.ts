@@ -57,6 +57,13 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     defaultCron: "0 2 * * *", minIntervalSec: 60 * 60,
   },
   {
+    key: "update-check", schedulerId: "update-check-daily",
+    queue: queues.updateCheck, jobName: "update-check",
+    label: "Marketplace update check",
+    description: "Reports the installed plugin inventory to the marketplace and caches available updates, critical flags, and renewal warnings for the ACP.",
+    defaultCron: "30 2 * * *", minIntervalSec: 60 * 60,
+  },
+  {
     key: "appearance-publish", schedulerId: "appearance-publish-repeat",
     queue: queues.appearancePublish, jobName: "appearance-publish",
     label: "Publish appearance changes",

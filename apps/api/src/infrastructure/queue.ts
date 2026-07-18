@@ -22,6 +22,7 @@ export const queues = {
   warningExpiry:          new Queue('warning-expiry',           queueOpts),
   securityAnalysis:       new Queue('security-analysis',        queueOpts),
   licenseRefresh:         new Queue('license-refresh',           queueOpts),
+  updateCheck:            new Queue('update-check',              queueOpts),
   appearancePublish:      new Queue('appearance-publish',        queueOpts),
 } as const;
 
