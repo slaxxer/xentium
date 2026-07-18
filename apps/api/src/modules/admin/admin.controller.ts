@@ -427,6 +427,75 @@ export const adminController = {
     res.json(authorized);
   }) as RequestHandler,
 
+  // Direct install (§16.2): authorize at the chokepoint, fetch the artifact
+  // server-side (the account token never reaches the browser), verify its
+  // sha256, then run the SAME intake as a manual upload. Lands installed but
+  // DISABLED — enabling stays an explicit admin action.
+  installFromMarketplace: (async (req, res) => {
+    const { pluginId, version } = z.object({
+      pluginId: z.string().min(1),
+      version:  z.string().min(1),
+    }).parse(req.body);
+
+    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
+    const { getSiteDomain, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
+    const { prisma } = await import("../../infrastructure/db.js");
+    const { pluginService } = await import("../plugins/plugin.service.js");
+    const { createHash } = await import("node:crypto");
+
+    const siteRow = await prisma.setting.findUnique({ where: { key: "site.id" } });
+    const siteId  = (siteRow?.value as string | null) ?? "dev-site";
+
+    const authorized = await marketplaceSource.authorizeDownload({
+      pluginId,
+      version,
+      siteId,
+      domain:      getSiteDomain(),
+      environment: resolveEnvironment(),
+    });
+    if (!authorized.downloadUrl) {
+      // Dev catalogue / community sources have no hosted artifact — manual upload path.
+      res.status(400).json({ message: "This source has no downloadable artifact. Upload the package manually." });
+      return;
+    }
+
+    const dl = await fetch(authorized.downloadUrl, { signal: AbortSignal.timeout(120_000) }).catch(() => null);
+    if (!dl?.ok) {
+      res.status(502).json({ message: `Artifact download failed (${dl?.status ?? "unreachable"}). Try again.` });
+      return;
+    }
+    const buffer = Buffer.from(await dl.arrayBuffer());
+    if (buffer.length > 50 * 1024 * 1024) {
+      res.status(502).json({ message: "Artifact exceeds the 50 MB package limit." });
+      return;
+    }
+    if (authorized.sha256) {
+      const digest = createHash("sha256").update(buffer).digest("hex");
+      if (digest !== authorized.sha256) {
+        res.status(502).json({ message: "Artifact integrity check failed (sha256 mismatch). Nothing was installed." });
+        return;
+      }
+    }
+
+    try {
+      // Same gate as /plugins/upload — validate first so a mismatched package
+      // (manifest id ≠ requested plugin) is rejected before any install step.
+      const info = await pluginService.validateOnly(buffer);
+      if (info.id !== pluginId) {
+        res.status(502).json({ message: `Package manifest id "${info.id}" does not match the requested plugin.` });
+        return;
+      }
+      const manifest = await pluginService.install(buffer, req.userId!);
+      res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
+    } catch (err: any) {
+      if (err?.message) {
+        res.status(400).json({ message: err.message });
+        return;
+      }
+      throw err;
+    }
+  }) as RequestHandler,
+
   // Error log
   listErrorLog: (async (req, res) => {
     const q = errorLogSchema.parse(req.query);
