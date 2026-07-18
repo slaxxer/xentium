@@ -5,7 +5,11 @@ import path from 'node:path';
 config({ path: path.resolve(process.cwd(), '../../.env') });
 
 const schema = z.object({
-  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  // Safe-by-default: an instance that never sets NODE_ENV runs as production
+  // (strict rate limits, hidden error details, no dev auth backdoor, licensing
+  // domain rules). Development is an explicit opt-in — ./nodevo.sh exports it
+  // and the dev checkout's .env carries NODE_ENV=development.
+  NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   PORT: z.coerce.number().int().positive().default(4000),
   APP_URL: z.string().url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1),

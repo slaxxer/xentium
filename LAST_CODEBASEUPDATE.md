@@ -1,5 +1,46 @@
 # Last Codebase Update — 2026-07-18
 
+## Explicit NEC codes for every known failure — UNCOMMITTED, with NODE_ENV flip
+
+User-reported: enabling an unlicensed plugin surfaced as generic NEC-API-5000 + the fatal
+full-screen overlay, because core engines threw plain `Error`s that fell through
+errorMiddleware's unknown-error branch. Swept all 28 plain throws in apps/api:
+
+- contracts nec.ts: +API_CONFLICT 4009 (was emitted by NodevoError.conflict but uncataloged),
+  +PLUGIN_PACKAGE_INVALID 2002, +PLUGIN_ALREADY_INSTALLED 2003, +PLUGIN_MIGRATION_MISSING 2011,
+  +PLUGIN_MIGRATION_CHECKSUM 2012, +LICENSE_ALREADY_ACTIVE 9008, +LICENSE_SERVER_REJECTED 9009,
+  +CORE_STYLEPACK_INVALID 8002.
+- plugin-engine.ts: package validation → 2002 (422), already-installed → 2003 (409), unlicensed
+  enable → LICENSE_NOT_FOUND 9001 (402, the reported bug); validateManifest NodevoErrors pass
+  through instead of being flattened. migration-runner.ts → 2011/2012; sql-validator.ts → 2010.
+- license-engine.ts: already-active → 9008 (409), no account → 9005 (400), server 4xx → 9009
+  (mirrors status + server message), server 5xx/network → 9007 (503) via licenseServerError().
+- appearance.service.ts: 7 style-pack throws → CORE_STYLEPACK_INVALID 8002 (422) via
+  stylePackError() helper.
+- Left as plain Error deliberately: installer-engine (own pre-middleware error contract) and
+  admin.routes' simulated-error dev endpoint (exists to test the 5000 path).
+- Web: ErrorReferencePage catalog +9 entries (all new codes incl. 4009); 9003 cause text
+  updated to canonical site.url.
+
+Verified: backbone:check 19/19 green; e2e on patched test instance — enablePlugin('nodevo-forum')
+(installed, unlicensed) now throws NodevoError {code NEC-LICENSE-9001, httpStatus 402} with the
+actionable message → middleware renders it as warn-severity JSON, no fatal overlay, correct
+Error Log severity.
+
+## NODE_ENV defaults to production (safe-by-default) — UNCOMMITTED, post-PR#39
+
+User decision: every instance runs hardened unless a developer explicitly opts into
+development. `config/env.ts` NODE_ENV default `development` → `production` (an unset
+NODE_ENV previously meant lax rate limits, the 000000 dev email-code backdoor, verbose
+errors, and cap-exempt/never-domain-locked licensing). Dev opt-in paths: `./nodevo.sh`
+now exports `NODE_ENV="${NODE_ENV:-development}"`; the dev checkout's `.env` already
+carries NODE_ENV=development; `.env.example` + CLAUDE.md note the new default. The
+installer still writes no NODE_ENV — production is the absence of configuration.
+Verified: typecheck + 21/21 tests green (vitest sets NODE_ENV=test itself); test
+instance (no NODE_ENV in .env) now reports env=production and serves normally
+(web/css/config all 200; localhost still classifies as `staging` for licensing, so
+domain caps don't bite local test installs).
+
 Branch `development`. (Note: the toast/dialog WIP from 2026-07-11 — toast.ts/dialog.ts/hosts,
 swal facade — is still uncommitted in the working tree alongside this change.)
 

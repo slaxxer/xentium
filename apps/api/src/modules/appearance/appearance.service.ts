@@ -143,6 +143,10 @@ const LIVE_REFRESH_MAX_SECONDS     = 60;
 // Latest built live CSS, keyed by style version (per process; see getLiveCss).
 let liveCssMemo: { version: number; css: string } | null = null;
 
+function stylePackError(message: string): NodevoError {
+  return new NodevoError({ code: NEC.CORE_STYLEPACK_INVALID, httpStatus: 422, message });
+}
+
 export const appearanceService = {
   // Monotonic-ish marker bumped on every change that affects the served CSS.
   // Clients poll getStyleVersion() and refetch the CSS only when it changes.
@@ -466,26 +470,26 @@ export const appearanceService = {
     const zip = new AdmZip(fileBuffer);
 
     const manifestEntry = zip.getEntry("manifest.json");
-    if (!manifestEntry) throw new Error("Missing manifest.json");
+    if (!manifestEntry) throw stylePackError("Missing manifest.json");
 
     let manifest: { name?: string; vendor?: string; version?: string };
     try {
       manifest = JSON.parse(manifestEntry.getData().toString("utf8"));
     } catch {
-      throw new Error("manifest.json is not valid JSON");
+      throw stylePackError("manifest.json is not valid JSON");
     }
-    if (!manifest.name) throw new Error("manifest.json missing required field: name");
+    if (!manifest.name) throw stylePackError("manifest.json missing required field: name");
 
     const lightEntry = zip.getEntry("styles/light.css");
     const darkEntry  = zip.getEntry("styles/dark.css");
-    if (!lightEntry) throw new Error("Missing styles/light.css");
-    if (!darkEntry)  throw new Error("Missing styles/dark.css");
+    if (!lightEntry) throw stylePackError("Missing styles/light.css");
+    if (!darkEntry)  throw stylePackError("Missing styles/dark.css");
 
     const lightCss = lightEntry.getData().toString("utf8");
     const darkCss  = darkEntry.getData().toString("utf8");
 
-    if (!validateStylePackCss(lightCss)) throw new Error("styles/light.css contains non-custom-property CSS rules");
-    if (!validateStylePackCss(darkCss))  throw new Error("styles/dark.css contains non-custom-property CSS rules");
+    if (!validateStylePackCss(lightCss)) throw stylePackError("styles/light.css contains non-custom-property CSS rules");
+    if (!validateStylePackCss(darkCss))  throw stylePackError("styles/dark.css contains non-custom-property CSS rules");
 
     return prisma.installedStylePack.create({
       data: {
