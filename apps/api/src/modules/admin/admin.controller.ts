@@ -343,13 +343,6 @@ export const adminController = {
     res.json(license ?? null);
   }) as RequestHandler,
 
-  activateLicense: (async (req, res) => {
-    const { licenseKey } = z.object({ licenseKey: z.string().min(1) }).parse(req.body);
-    const { activateLicense } = await import("../../core/license-engine/license-engine.js");
-    await activateLicense(licenseKey);
-    res.json({ ok: true });
-  }) as RequestHandler,
-
   refreshLicense: (async (_req, res) => {
     const { refreshLicense } = await import("../../core/license-engine/license-engine.js");
     await refreshLicense();
