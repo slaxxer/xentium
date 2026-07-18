@@ -379,7 +379,21 @@ export const adminController = {
   connectMarketplace: (async (req, res) => {
     const { authCode } = z.object({ authCode: z.string().min(1) }).parse(req.body);
     const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    res.json(await marketplaceSource.connect(authCode));
+    const connection = await marketplaceSource.connect(authCode);
+
+    // §53: a connected account activates its license itself — manual key entry
+    // is the offline fallback. Best-effort: an account without a usable license
+    // (nothing bought yet) connects fine and activates later via refresh/retry.
+    let licenseActivated = false;
+    try {
+      const { activateFromAccount } = await import("../../core/license-engine/license-engine.js");
+      licenseActivated = await activateFromAccount();
+    } catch (err) {
+      const { logger } = await import("../../infrastructure/logging/logger.js");
+      logger.info({ err }, "Marketplace connected; no license auto-activated");
+    }
+
+    res.json({ ...connection, licenseActivated });
   }) as RequestHandler,
 
   disconnectMarketplace: (async (_req, res) => {

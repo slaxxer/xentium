@@ -740,6 +740,7 @@ model License {
   siteId         String    @map("site_id")
   entitlementJwt String    @db.Text @map("entitlement_jwt")
   status         String    @default("active")  // active | expired | deactivated
+  activatedVia   String    @default("key") @map("activated_via") // key (manual/offline) | account (connected marketplace account)
   domain         String?                        // APP_URL host bound at activation (ADR 0001)
   environment    String?                        // production | staging | development (ADR 0001)
   activatedAt    DateTime  @default(now()) @map("activated_at")
