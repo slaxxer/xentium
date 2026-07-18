@@ -919,7 +919,10 @@
     "installFailed": "Install failed: {{message}}",
     "updatesAvailable": "Plugin updates available:",
     "updateCritical": "critical",
-    "updatesRenewal": "Your license term has ended — renew it in the marketplace to download paid updates."
+    "updatesRenewal": "Your license term has ended — renew it in the marketplace to download paid updates.",
+    "updatesToast_one": "Plugin update available: {{name}} {{version}}",
+    "updatesToast_other": "{{count}} plugin updates are available",
+    "updatesToastView": "View"
   },
   "license": {
     "loading": "Loading…",

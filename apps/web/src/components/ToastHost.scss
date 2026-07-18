@@ -37,6 +37,7 @@
   &--warning { --_toast-c: var(--toast-warning, var(--c-warn)); }
   &--error   { --_toast-c: var(--toast-error,   var(--c-danger)); }
   &--info    { --_toast-c: var(--toast-info,    var(--c-info)); }
+  &--update  { --_toast-c: var(--toast-update,  var(--c-update)); }
 
   &__icon {
     color: var(--_toast-c);
