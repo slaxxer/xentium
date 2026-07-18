@@ -143,6 +143,83 @@ async function getSiteId(): Promise<string> {
   return (row?.value as string | null) ?? "dev-site";
 }
 
+/**
+ * Account-token activation (§53): the marketplace holds license keys hashed and
+ * activates directly off the connected account — the raw key never travels.
+ * Setting key mirrors marketplace-source's `marketplace.<SOURCE_ID>.token`
+ * (not imported from there: that module imports us, and a cycle at load time
+ * would break the plugin loader's dynamic imports).
+ */
+const MARKETPLACE_TOKEN_KEY = "marketplace.nodevo.io.token";
+
+async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string; keyRef: string }> {
+  const domain      = getSiteDomain();
+  const environment = resolveEnvironment();
+
+  // Dev mode: local signing, same as the manual-key path.
+  if (env.LICENSE_DEV_PRIVATE_KEY) {
+    const keyRef = "NVL-****-****-DEV";
+    return { jwt: await signDevJwt(keyRef, siteId, domain, environment), keyRef };
+  }
+
+  const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
+  const token = (row?.value as string | null) ?? null;
+  if (!token) {
+    throw new Error("No marketplace account is connected. Connect one, or activate a license key manually.");
+  }
+
+  const res = await fetch(`${env.LICENSE_SERVER_URL}/account/activate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ siteId, domain, environment }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error((body as any).message ?? `License server returned ${res.status}`);
+  }
+
+  const body = await res.json() as { entitlementJwt: string; license?: { keyRef?: string } };
+  return { jwt: body.entitlementJwt, keyRef: body.license?.keyRef ?? "NVL-account" };
+}
+
+/**
+ * Activate from the connected marketplace account — no key entry. Returns true
+ * when a license was activated, false when one was already active. Manual
+ * `activateLicense` stays as the offline / no-account fallback.
+ */
+export async function activateFromAccount(): Promise<boolean> {
+  const existing = await prisma.license.findFirst({ where: { status: "active" } });
+  if (existing) return false;
+
+  const siteId = await getSiteId();
+  const { jwt, keyRef } = await fetchAccountEntitlementJwt(siteId);
+  const claims = await verifyEntitlementJwt(jwt);
+
+  const data = {
+    siteId,
+    entitlementJwt: jwt,
+    status:         "active",
+    activatedVia:   "account",
+    domain:         claims.domain ?? getSiteDomain(),
+    environment:    claims.environment ?? resolveEnvironment(),
+    expiresAt:      new Date(claims.expiresAt * 1000),
+    refreshAfter:   new Date(claims.refreshAfter * 1000),
+  };
+  await prisma.license.upsert({
+    where:  { licenseKey: keyRef },
+    create: { licenseKey: keyRef, ...data },
+    update: data,
+  });
+
+  logger.info(
+    { keyRef, entitlements: claims.entitlements, domain: claims.domain ?? getSiteDomain() },
+    "License activated from connected marketplace account",
+  );
+  return true;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────────
 
 export async function activateLicense(licenseKey: string): Promise<void> {
@@ -178,10 +255,26 @@ export async function activateLicense(licenseKey: string): Promise<void> {
 
 export async function refreshLicense(): Promise<void> {
   const license = await prisma.license.findFirst({ where: { status: "active" } });
-  if (!license) return;
+  if (!license) {
+    // Connected account but nothing activated yet (connected before buying, or
+    // pre-§53 instances): self-heal from the account instead of doing nothing.
+    // Dev mode stays manual — a refresh click must not conjure a dev license.
+    if (!env.LICENSE_DEV_PRIVATE_KEY) {
+      try {
+        await activateFromAccount();
+      } catch {
+        // No connected account / no usable license — nothing to refresh.
+      }
+    }
+    return;
+  }
 
   try {
-    const jwt    = await fetchEntitlementJwt(license.licenseKey, license.siteId);
+    // Account-activated licenses refresh through the account token (the raw
+    // key was never known here); manual keys refresh through /activate.
+    const jwt = license.activatedVia === "account"
+      ? (await fetchAccountEntitlementJwt(license.siteId)).jwt
+      : await fetchEntitlementJwt(license.licenseKey, license.siteId);
     const claims = await verifyEntitlementJwt(jwt);
 
     await prisma.license.update({
