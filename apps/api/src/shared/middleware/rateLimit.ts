@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import rateLimit, { ipKeyGenerator, type Options } from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { redis, rkey } from '../../infrastructure/redis';
@@ -37,18 +38,27 @@ export const byUserId: Options['keyGenerator'] = (req) =>
   (req as { userId?: string }).userId ?? ipKeyGenerator(req.ip ?? '');
 
 /**
- * Coarse per-IP limiter for all /api traffic (§26: 200/min authenticated,
- * 60/min unauthenticated — "authenticated" detected by a Bearer header).
- * Mounted globally (`app.use`). Skipped outside production and for the
- * installer / health / meta paths (the installer must not depend on Redis,
- * and health/meta are polled). Per-route limiters still apply on top.
+ * Coarse limiter for all /api traffic (§26, adjusted 2026-07-18: 200/min per
+ * authenticated SESSION, 120/min per unauthenticated IP — the SPA's polling
+ * widgets make 60 too tight). Mounted globally (`app.use`). Skipped outside
+ * production and for the installer / health / meta paths (the installer must
+ * not depend on Redis, and health/meta are polled). Per-route limiters still
+ * apply on top.
+ *
+ * Keying: authenticated requests count per TOKEN (hashed), not per IP — with
+ * one shared per-IP counter, an authed tab's traffic pushed the count past the
+ * guest ceiling and 429'd every guest request from the same IP/NAT (the limit
+ * callback varies per request but the counter did not).
  */
 export const globalApiLimiter = rateLimit({
   windowMs: 60_000,
-  limit: (req) => (req.headers.authorization ? 200 : 60),
+  limit: (req) => (req.headers.authorization ? 200 : 120),
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  keyGenerator: (req) => ipKeyGenerator(req.ip ?? ''),
+  keyGenerator: (req) =>
+    req.headers.authorization
+      ? 'tok:' + createHash('sha256').update(req.headers.authorization).digest('hex').slice(0, 32)
+      : 'ip:' + ipKeyGenerator(req.ip ?? ''),
   skip: (req) =>
     !isProd ||
     !req.path.startsWith('/api/') ||
