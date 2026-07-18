@@ -6,6 +6,7 @@ import type { DeployEnvironment, EntitlementStatus } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
+import { devEntitlements } from "./dev-catalog.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -124,7 +125,7 @@ async function signDevJwt(
   return new jose.SignJWT({
     siteId,
     licenseKey,
-    entitlements: ["plugin.nodevo-forum", "plugin.nodevo-messaging", "plugin.nodevo-advanced-moderation", "plugin.nodevo-shoutbox", "plugin.nodevo-seo-tools"],  // dev grants
+    entitlements: devEntitlements(),
     domain,
     environment,
     issuedAt:     now,
