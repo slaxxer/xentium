@@ -3,7 +3,14 @@
 // a second openDialog() while one is open resolves the first as cancelled.
 import type { ReactNode } from "react";
 
-export type DialogIcon = "question" | "success" | "info" | "warning" | "error";
+export type DialogIcon = "question" | "success" | "info" | "warning" | "error" | "update";
+
+/** One line in a panel dialog's detail list (label left, value right). */
+export interface PanelRow {
+  label:   string;   // e.g. a plugin's display name
+  value?:  string;   // e.g. "1.0.3 → 1.0.4"
+  marker?: string;   // short danger-styled tag on the row, e.g. "critical"
+}
 
 export interface DialogOptions {
   kind:         "confirm" | "alert";
@@ -16,6 +23,15 @@ export interface DialogOptions {
   cancelText?:  string;
   /** Style the confirm button as destructive (danger). */
   danger?:      boolean;
+  // ── Panel extras (announcement-style dialogs; see openPanelDialog) ────────
+  /** Danger-styled pill next to the title, e.g. "Critical update". */
+  badge?:       string;
+  /** Structured detail rows rendered as a list. */
+  rows?:        PanelRow[];
+  /** Warn-colored footer note, e.g. "License renewal required". */
+  note?:        string;
+  /** Wider, left-aligned announcement layout. */
+  wide?:        boolean;
 }
 
 export interface ActiveDialog extends DialogOptions { id: number }
@@ -36,6 +52,17 @@ export function openDialog(opts: DialogOptions): Promise<boolean> {
     resolver = resolve;
     notify();
   });
+}
+
+/**
+ * Announcement-style panel dialog — the app-wide "something needs your
+ * attention" surface (plugin updates, critical notices, …). Wide, left-aligned,
+ * with an optional badge, structured detail rows, and a footer note. Same
+ * store/host as confirm/alert (one at a time, Escape dismisses, Enter
+ * confirms). Resolves true on the primary action.
+ */
+export function openPanelDialog(opts: Omit<DialogOptions, "kind" | "wide"> & { kind?: "confirm" | "alert" }): Promise<boolean> {
+  return openDialog({ kind: opts.kind ?? "confirm", ...opts, wide: true });
 }
 
 export function resolveDialog(ok: boolean): void {
