@@ -7,6 +7,7 @@ export const NEC = {
   API_VALIDATION: "NEC-API-4001",
   API_FORBIDDEN: "NEC-API-4003",
   API_NOT_FOUND: "NEC-API-4004",
+  API_CONFLICT: "NEC-API-4009",
   API_RATE_LIMIT: "NEC-API-4290",
   API_INTERNAL: "NEC-API-5000",
 
@@ -45,7 +46,11 @@ export const NEC = {
 
   // Plugin
   PLUGIN_INVALID_MANIFEST: "NEC-PLUGIN-2001",
+  PLUGIN_PACKAGE_INVALID: "NEC-PLUGIN-2002",   // not a ZIP / zip-slip / missing or malformed manifest.json
+  PLUGIN_ALREADY_INSTALLED: "NEC-PLUGIN-2003",
   PLUGIN_INVALID_MIGRATION: "NEC-PLUGIN-2010",
+  PLUGIN_MIGRATION_MISSING: "NEC-PLUGIN-2011", // up/down migration file absent from the package
+  PLUGIN_MIGRATION_CHECKSUM: "NEC-PLUGIN-2012",// applied migration modified since install
   PLUGIN_DISABLED: "NEC-PLUGIN-2020",
   PLUGIN_INCOMPATIBLE: "NEC-PLUGIN-2030",
 
@@ -71,9 +76,12 @@ export const NEC = {
   LICENSE_ACCOUNT_REQUIRED:  "NEC-LICENSE-9005",  // no connected marketplace account
   LICENSE_TOKEN_INVALID:     "NEC-LICENSE-9006",  // RS256 verify failed (tampered / wrong key)
   LICENSE_SOURCE_UNREACHABLE:"NEC-LICENSE-9007",  // marketplace unreachable — grace applies
+  LICENSE_ALREADY_ACTIVE:    "NEC-LICENSE-9008",  // activate refused: a license is already active
+  LICENSE_SERVER_REJECTED:   "NEC-LICENSE-9009",  // license server refused (4xx) — message carries the reason
 
   // Core
   CORE_THEME_NOT_FOUND: "NEC-CORE-8001",
+  CORE_STYLEPACK_INVALID: "NEC-CORE-8002", // uploaded .nvstyle failed validation — message names the file/rule
   CORE_MAINTENANCE: "NEC-CORE-8010",   // site in maintenance mode, requester not allowed
 
   // Queue / background jobs

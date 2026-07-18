@@ -7,7 +7,20 @@ import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 import { devEntitlements } from "./dev-catalog.js";
+
+/** Map a license-server error response to a coded NodevoError: 5xx = server
+ *  trouble (unreachable-class, grace applies), 4xx = an explicit refusal whose
+ *  message names the reason (unknown key, term ended, no free slot, …). */
+async function licenseServerError(res: Response): Promise<NodevoError> {
+  const body = await res.json().catch(() => ({}));
+  const message = (body as any).message ?? `License server returned ${res.status}`;
+  return res.status >= 500
+    ? new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message })
+    : new NodevoError({ code: NEC.LICENSE_SERVER_REJECTED, httpStatus: res.status, message });
+}
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -106,12 +119,12 @@ async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<
     // and bind the issued entitlement to this host (ADR 0001).
     body: JSON.stringify({ licenseKey, siteId, domain, environment }),
     signal: AbortSignal.timeout(10_000),
-  });
+  }).catch(() => null);
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as any).message ?? `License server returned ${res.status}`);
+  if (!res) {
+    throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "License server unreachable." });
   }
+  if (!res.ok) throw await licenseServerError(res);
 
   const { entitlementJwt } = await res.json() as { entitlementJwt: string };
   return entitlementJwt;
@@ -172,7 +185,7 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
   const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
   const token = (row?.value as string | null) ?? null;
   if (!token) {
-    throw new Error("No marketplace account is connected. Connect one, or activate a license key manually.");
+    throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one, or activate a license key manually." });
   }
 
   const res = await fetch(`${env.LICENSE_SERVER_URL}/account/activate`, {
@@ -180,12 +193,12 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
     body: JSON.stringify({ siteId, domain, environment }),
     signal: AbortSignal.timeout(10_000),
-  });
+  }).catch(() => null);
 
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
-    throw new Error((body as any).message ?? `License server returned ${res.status}`);
+  if (!res) {
+    throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "License server unreachable." });
   }
+  if (!res.ok) throw await licenseServerError(res);
 
   const body = await res.json() as { entitlementJwt: string; license?: { keyRef?: string } };
   return { jwt: body.entitlementJwt, keyRef: body.license?.keyRef ?? "NVL-account" };
@@ -231,7 +244,9 @@ export async function activateFromAccount(): Promise<boolean> {
 
 export async function activateLicense(licenseKey: string): Promise<void> {
   const existing = await prisma.license.findFirst({ where: { status: "active" } });
-  if (existing) throw new Error("A license is already active. Deactivate it before activating a new one.");
+  if (existing) {
+    throw new NodevoError({ code: NEC.LICENSE_ALREADY_ACTIVE, httpStatus: 409, message: "A license is already active. Deactivate it before activating a new one." });
+  }
 
   const siteId = await getSiteId();
   const jwt    = await fetchEntitlementJwt(licenseKey, siteId);

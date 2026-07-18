@@ -1,3 +1,5 @@
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 // Validates that a plugin migration SQL file contains only DDL statements.
 // Rejects any DML (INSERT/UPDATE/DELETE/SELECT/TRUNCATE/COPY) or anything else.
 // Returns true if valid, throws with a descriptive message if not.
@@ -116,14 +118,18 @@ export function validateMigrationSql(sql: string, filename: string): void {
     const stmt = leadingKeyword(rawStmt);
     if (!stmt) continue; // comment-only / empty
     if (DISALLOWED.test(stmt)) {
-      throw new Error(
-        `${filename} contains a disallowed statement: "${stmt.slice(0, 60)}…". Only DDL (CREATE/ALTER/DROP TABLE/INDEX/FUNCTION/TRIGGER) is permitted in plugin migrations.`,
-      );
+      throw new NodevoError({
+        code:       NEC.PLUGIN_INVALID_MIGRATION,
+        httpStatus: 422,
+        message:    `${filename} contains a disallowed statement: "${stmt.slice(0, 60)}…". Only DDL (CREATE/ALTER/DROP TABLE/INDEX/FUNCTION/TRIGGER) is permitted in plugin migrations.`,
+      });
     }
     if (!ALLOWED_DDL.test(stmt)) {
-      throw new Error(
-        `${filename} contains an unrecognised statement: "${stmt.slice(0, 60)}…". Only DDL statements are permitted.`,
-      );
+      throw new NodevoError({
+        code:       NEC.PLUGIN_INVALID_MIGRATION,
+        httpStatus: 422,
+        message:    `${filename} contains an unrecognised statement: "${stmt.slice(0, 60)}…". Only DDL statements are permitted.`,
+      });
     }
   }
 }
