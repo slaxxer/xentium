@@ -7,6 +7,7 @@ import { startBanExpiryWorker }               from './jobs/banExpiry.js';
 import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
+import { startUpdateCheckWorker }             from './jobs/updateCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
@@ -22,6 +23,7 @@ const workers = [
   attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
   attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
   attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
+  attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
   attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
 ];
 

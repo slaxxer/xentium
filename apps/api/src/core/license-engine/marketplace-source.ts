@@ -25,6 +25,7 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import {
   deactivateAccountLicenses,
   getSiteDomain,
+  getSiteId,
   provisionEntitlement,
   resolveEnvironment,
 } from "./license-engine.js";
@@ -128,7 +129,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     // marketplace admin can release it — best-effort: an unreachable
     // marketplace must never block a disconnect.
     if (token && !useDevLicensing) {
-      const siteId = (await readSetting("site.id")) ?? "dev-site";
+      const siteId = await getSiteId();
       await fetch(`${env.LICENSE_SERVER_URL}/account/deactivate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
