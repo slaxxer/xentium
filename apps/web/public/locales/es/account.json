@@ -25,7 +25,9 @@
     "autoPlayMediaDesc": "Reproducir vídeos y GIF automáticamente",
     "saved": "¡Guardado!",
     "saveError": "No se pudieron guardar las preferencias. Inténtalo de nuevo.",
-    "languageSaveError": "No se pudo guardar tu idioma. Inténtalo de nuevo."
+    "languageSaveError": "No se pudo guardar tu idioma. Inténtalo de nuevo.",
+    "fontDefault": "Predeterminada del sitio",
+    "fontDefaultDesc": "Usar la fuente elegida por el administrador del sitio"
   },
   "profile": {
     "title": "Perfil",

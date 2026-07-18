@@ -100,9 +100,6 @@ export function MarketplacePage() {
   const { data: installed } = useQuery<InstalledPlugin[]>({ queryKey: ["acp-installed-plugins"], queryFn: () => api.get("/plugins") });
   const { data: license }   = useQuery<License | null>({ queryKey: ["acp-license"], queryFn: () => api.get("/admin/license") });
   const { data: conn }      = useQuery<MarketplaceConnection>({ queryKey: ["acp-marketplace-connection"], queryFn: () => api.get("/admin/marketplace/connection") });
-  const { data: updates }   = useQuery<{ checkedAt: string | null; updates: { pluginId: string; name?: string; installedVersion?: string | null; latestVersion: string; critical: boolean; renewalRequired: boolean }[] }>({
-    queryKey: ["acp-marketplace-updates"], queryFn: () => api.get("/admin/marketplace/updates"),
-  });
 
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
   const installedMap = Object.fromEntries((installed ?? []).map((p) => [p.id, p.status]));
@@ -129,23 +126,6 @@ export function MarketplacePage() {
               <button key="0" type="button" onClick={() => navigate("/admin/license")} style={{ background:"none", border:"none", padding:0, color:"inherit", fontWeight:700, textDecoration:"underline", cursor:"pointer" }} />,
             ]} />
           </span>
-        </div>
-      )}
-
-      {/* Update-check results (§16, written by the daily worker job) */}
-      {(updates?.updates.length ?? 0) > 0 && (
-        <div style={{ background:"color-mix(in srgb, var(--c-info) 12%, transparent)", border:"1px solid color-mix(in srgb, var(--c-info) 30%, transparent)", borderRadius:"var(--radius-md)", padding:"12px 18px", marginBottom:20, fontSize:13, color:"var(--c-fg)" }}>
-          <span style={{ fontWeight:700 }}>{t("marketplace.updatesAvailable")}</span>{" "}
-          {updates!.updates.map((u, i) => (
-            <span key={u.pluginId}>
-              {i > 0 && ", "}
-              {u.name ?? u.pluginId} {u.installedVersion ? `${u.installedVersion} ` : ""}→ {u.latestVersion}
-              {u.critical && <span style={{ marginLeft:4, padding:"1px 6px", borderRadius:99, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-danger) 15%, transparent)", color:"var(--c-danger)" }}>{t("marketplace.updateCritical")}</span>}
-            </span>
-          ))}
-          {updates!.updates.some((u) => u.renewalRequired) && (
-            <div style={{ marginTop:6, color:"var(--c-warn)" }}>{t("marketplace.updatesRenewal")}</div>
-          )}
         </div>
       )}
 

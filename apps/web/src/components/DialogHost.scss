@@ -17,6 +17,10 @@
   width: min(420px, 100%);
   padding: 26px 26px 22px;
   text-align: center;
+  // Follow the admin's Style Editor font choice. The title is an <h2>, which
+  // globally maps to --font-display; force the body font here so the whole
+  // notification reads in the chosen typeface.
+  font-family: var(--ff-sans);
   background: var(--c-card);
   color: var(--c-fg);
   border: 1px solid var(--c-border);
@@ -135,6 +139,7 @@
   }
   &__title {
     margin: 0 0 8px;
+    font-family: var(--ff-sans);   // override the global h1–h6 display font
     font-size: 18px;
     font-weight: 800;
   }
