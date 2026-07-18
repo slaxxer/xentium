@@ -112,12 +112,11 @@ export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 export type { TokenMap, TokenSet };
 
 const FONT_STACKS: Record<string, string> = {
-  "Raleway":    "Raleway, sans-serif",
-  "Montserrat": "Montserrat, sans-serif",
   "Poppins":    "Poppins, sans-serif",
+  "Nunito":     "Nunito, sans-serif",
+  "Montserrat": "Montserrat, sans-serif",
   "Open Sans":  '"Open Sans", sans-serif',
   "Ubuntu":     "Ubuntu, sans-serif",
-  "Roboto":     "Roboto, sans-serif",
 };
 
 // Validates that CSS only contains :root { --custom-property: value } blocks.
@@ -428,7 +427,13 @@ export const appearanceService = {
     };
 
     const fontExtras: string[] = [];
-    if (family && FONT_STACKS[family]) fontExtras.push(`  --ff-sans: ${FONT_STACKS[family]};`);
+    // The chosen family is SITE-WIDE: body (--ff-sans) AND headings
+    // (--font-display). The ACP re-pins both to Poppins client-side
+    // (body.nv-acp); a user's profile font overrides via inline :root vars.
+    if (family && FONT_STACKS[family]) {
+      fontExtras.push(`  --ff-sans: ${FONT_STACKS[family]};`);
+      fontExtras.push(`  --font-display: ${FONT_STACKS[family]};`);
+    }
     if (weight) fontExtras.push(`  --fw-body: ${weight};`);
     if (size)   fontExtras.push(`  --fs-base: ${size}px;`);
 

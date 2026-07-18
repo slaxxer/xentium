@@ -26,6 +26,7 @@
    * bg (adapts to light/dark), full border in the category colour. */
   background: color-mix(in srgb, var(--_toast-c) 12%, var(--toast-bg, var(--c-card)));
   color: var(--toast-fg, var(--c-fg));
+  font-family: var(--ff-sans);   // follow the Style Editor font choice
   border: 1px solid color-mix(in srgb, var(--_toast-c) 55%, transparent);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-pop);
@@ -37,7 +38,6 @@
   &--warning { --_toast-c: var(--toast-warning, var(--c-warn)); }
   &--error   { --_toast-c: var(--toast-error,   var(--c-danger)); }
   &--info    { --_toast-c: var(--toast-info,    var(--c-info)); }
-  &--update  { --_toast-c: var(--toast-update,  var(--c-update)); }
 
   &__icon {
     color: var(--_toast-c);

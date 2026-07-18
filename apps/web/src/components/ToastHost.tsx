@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faCircleUp, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { subscribeToasts, getToasts, getToastCategoryDef, toast, type ToastItem } from "../lib/toast";
 import "./ToastHost.scss";
 
@@ -15,7 +15,6 @@ const CORE_ICONS: Record<string, IconDefinition> = {
   info:    faCircleInfo,
   warning: faTriangleExclamation,
   error:   faCircleXmark,
-  update:  faCircleUp,
 };
 
 function categoryPresentation(t: ToastItem): { icon: IconDefinition; color?: string; core: boolean } {

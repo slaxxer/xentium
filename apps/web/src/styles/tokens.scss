@@ -157,11 +157,13 @@
 
   --avatar-presence: var(--c-success);
 
-  /* Typography — Poppins (display) + Nunito (body, used at 600–800).
-     --ff-sans is the body font and is user-overridable via the font picker;
-     it defaults to Nunito. --font-display stays Poppins for structure. */
-  --font-display: "Poppins", system-ui, sans-serif;
-  --font-body:    "Nunito", system-ui, sans-serif;
+  /* Typography. The admin's Style Editor font applies SITE-WIDE (body AND
+     headings: --ff-sans + --font-display both follow it via the served CSS);
+     a user's profile font choice overrides it for that user. The ACP always
+     re-pins both to Poppins (body.nv-acp in AcpLayout.scss). */
+  --font-poppins: "Poppins", system-ui, sans-serif;
+  --font-display: var(--font-poppins);
+  --font-body:    var(--font-poppins);   /* Poppins until the admin/user picks another */
   --ff-sans:      var(--font-body);
   --ff-mono: "JetBrains Mono", "Cascadia Code", "Fira Mono", monospace;
   --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem;

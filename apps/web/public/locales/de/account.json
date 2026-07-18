@@ -25,7 +25,9 @@
     "autoPlayMediaDesc": "Videos und GIFs automatisch abspielen",
     "saved": "Gespeichert!",
     "saveError": "Einstellungen konnten nicht gespeichert werden. Bitte erneut versuchen.",
-    "languageSaveError": "Sprache konnte nicht gespeichert werden. Bitte erneut versuchen."
+    "languageSaveError": "Sprache konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "fontDefault": "Seiten-Standard",
+    "fontDefaultDesc": "Die vom Admin der Seite gewählte Schrift verwenden"
   },
   "profile": {
     "title": "Profil",

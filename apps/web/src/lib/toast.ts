@@ -6,7 +6,7 @@
 // durations, hover-pause, optional action button. `swalToast` in lib/swal.ts is
 // the legacy shim — new code calls `toast.<category>()` directly.
 
-export type CoreToastCategory = "success" | "info" | "warning" | "error" | "update";
+export type CoreToastCategory = "success" | "info" | "warning" | "error";
 export type ToastCategory = CoreToastCategory | (string & {});
 
 export interface ToastAction { label: string; onClick: () => void }
@@ -42,7 +42,6 @@ const DEFAULT_DURATIONS: Record<CoreToastCategory, number> = {
   info:    5000,
   warning: 7000,
   error:   10000,
-  update:  7000,   // informational "a plugin update exists" — never forcing
 };
 const MAX_VISIBLE = 4;
 const DEDUP_STATES = true;   // identical (category+message) while visible → ×N
@@ -151,7 +150,6 @@ export const toast = {
   info:    (message: string, opts?: ToastOptions) => emit("info", message, opts),
   warning: (message: string, opts?: ToastOptions) => emit("warning", message, opts),
   error:   (message: string, opts?: ToastOptions) => emit("error", message, opts),
-  update:  (message: string, opts?: ToastOptions) => emit("update", message, opts),
   emit,
   dismiss,
   pause,

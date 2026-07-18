@@ -782,8 +782,6 @@
     "installing": "Installiere…",
     "installSuccess": "{{name}} installiert — aktiviere es, wenn du bereit bist.",
     "installFailed": "Installation fehlgeschlagen: {{message}}",
-    "updatesAvailable": "Plugin-Updates verfügbar:",
-    "updateCritical": "kritisch",
     "updatesRenewal": "Deine Lizenzlaufzeit ist abgelaufen — verlängere sie im Marketplace, um kostenpflichtige Updates zu laden.",
     "updatesDialogTitle": "Plugin-Updates verfügbar",
     "updatesDialogBadge": "Kritisches Update",

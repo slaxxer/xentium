@@ -1,5 +1,55 @@
 # Last Codebase Update — 2026-07-18
 
+## Font model: site-wide admin font / per-user override / ACP always Poppins — UNCOMMITTED
+
+User-defined model after spotting the gap: Style Editor font must apply EVERYWHERE in the
+frontend UI; ACP keeps ONLY Poppins; users may override in profile preferences.
+
+Root causes found: (a) `useFont` applied its own Nunito default as inline `--ff-sans` on
+<html> for EVERY visitor on module load — the admin's served font never reached anyone;
+(b) all h1–h6 map to `--font-display`, hardcoded Poppins, untouched by the Style Editor.
+
+- `tokens.scss`: `--font-poppins` primitive; `--font-display: var(--font-poppins)`.
+- `useFont.ts`: FontChoice = FontValue|"default"; "default" (nothing stored) now REMOVES
+  the inline vars so the served site font applies; a personal pick sets BOTH --ff-sans +
+  --font-display inline. localStorage only written on explicit choice.
+- `PreferencesTab`: new "Site default" option first in the font grid (+2 account.json keys
+  ×5 locales).
+- `appearance.service` buildCSS: family emits `--font-display` alongside `--ff-sans` —
+  headings follow the admin font on the frontend.
+- `AcpLayout.tsx/.scss`: body.nv-acp class while ACP mounted; rule pins --ff-sans +
+  --font-display to var(--font-poppins) — outranks both served CSS (:root) and user
+  inline vars for everything in the ACP INCLUDING app-root overlays (dialogs/toasts
+  render in body → context-correct fonts).
+- `StyleEditorPage` previewCss: +--font-display at :root AND a body.nv-acp !important
+  override block so the font preview punches through the ACP pin while editing.
+- Earlier this batch (same push): dialog/toast explicit `font-family: var(--ff-sans)`
+  (dialog title h2 no longer stuck on display font).
+
+Follow-up (same batch): base font Nunito → POPPINS (`--font-body: var(--font-poppins)`;
+body weight 600→500 — 600 was Nunito-compensation; admin-tunable via --fw-body); Style
+Editor FONTS list reordered Poppins-first (unsaved editor state + reset now reflect the
+real default); useFont Nunito entry desc de-defaulted (stays selectable).
+
+Font set trimmed to FIVE (user decision): Poppins/Nunito/Montserrat/Open Sans/Ubuntu —
+aligned across useFont.ts (user picker), StyleEditorPage FONTS (admin picker), API
+FONT_STACKS, styles/fonts.ts registry (DEFAULT_FONT=Poppins), main.tsx @fontsource
+imports; @fontsource raleway+roboto+playfair-display (unused) dropped from package.json
++ lockfile. Removed-font fallbacks are graceful: stored user pick not in FONTS → "default";
+saved admin family not in FONT_STACKS → no emit → Poppins base.
+
+Verified: web+api typecheck, web build, 7 tests green.
+
+## Update-surface cleanup — UNCOMMITTED
+
+User: the dialog is enough. Removed (a) the updates banner + its query from
+MarketplacePage, (b) the `update` toast category entirely (toast.ts type/duration/helper,
+ToastHost icon+scss rule, Style Editor preview sample) — core toasts are
+success/error/info/warning again. KEPT: the Style Editor Feedback "Update" row and the
+`--c-update` token — they theme the panel dialog's accent now (CLAUDE.md line updated).
+Locales ×5: -updatesAvailable/-updateCritical (updatesRenewal stays — dialog note).
+Verified: web typecheck, 7 toast tests, lint 0 errors.
+
 ## Panel dialog (app-wide alert component) replaces the update toast — UNCOMMITTED
 
 User pivot: not a toast — a popup like the uninstall confirm, reusable app-wide.
