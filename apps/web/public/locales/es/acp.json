@@ -784,7 +784,10 @@
     "installFailed": "Error al instalar: {{message}}",
     "updatesAvailable": "Actualizaciones de plugins disponibles:",
     "updateCritical": "crítica",
-    "updatesRenewal": "El período de tu licencia ha terminado — renuévala en el marketplace para descargar actualizaciones de pago."
+    "updatesRenewal": "El período de tu licencia ha terminado — renuévala en el marketplace para descargar actualizaciones de pago.",
+    "updatesToast_one": "Actualización de plugin disponible: {{name}} {{version}}",
+    "updatesToast_other": "{{count}} actualizaciones de plugins disponibles",
+    "updatesToastView": "Ver"
   },
   "license": {
     "loading": "Cargando…",

@@ -1,15 +1,15 @@
 # Changelog
 
-## License: the marketplace account is now the license — manual keys removed
+## ACP: plugin-update toast + "Update" color in the Style Editor
 
-- **ACP → Extensions → License is account-only.** The manual license-key input (and its
-  `POST /admin/license/activate` endpoint) is gone: connect your nodevo.io account and the
-  license from your purchase activates automatically for this site's domain. The page now
-  centers on the account connection; with an account connected but no license yet, an
-  "Activate from account" button triggers the activation on the spot.
-- The standalone Deactivate button is gone too — with account-driven licensing it was a
-  trap (the next refresh would immediately re-activate). Disconnecting the account is the
-  one lever, and it deactivates the license with it.
-- Licenses activated with a manual key before this change keep refreshing and working
-  unchanged; only NEW manual activations are impossible.
+- **Entering the ACP now shows one informational toast when plugin updates are waiting**
+  (fed by the daily marketplace update check). Deliberately non-nagging: it fires once per
+  update *set* — dismiss or ignore it and it stays silent until a *new* update appears.
+  A **View** action jumps to ACP → Marketplace, where the detail banner lives. Updates the
+  vendor flagged as critical upgrade the toast to warning styling; everything else uses
+  the new neutral **update** category.
+- **New toast category `update`** (`toast.update(...)`) with its own semantic token
+  `--c-update` (neutral `#414144` in light, a lighter neutral in dark) — and the **Style
+  Editor → Feedback section gained the matching "Update" color slot**, so it's themable
+  like every other feedback color. The "Preview toasts" button fires an update sample too.
 - All five locales updated.
