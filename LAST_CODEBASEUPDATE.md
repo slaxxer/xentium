@@ -1,5 +1,37 @@
 # Last Codebase Update — 2026-07-18
 
+## v1-audit batch (gaps 1–5) — UNCOMMITTED both repos
+
+User-commissioned after the licensing-workflow audit; HTTPS + payment gateways explicitly
+deferred (no root server/domain yet — recorded in memory as official-v1 blockers).
+
+**Core**
+1. **siteId fix**: installer's finalize() always minted `ncf_installs.siteId`, but
+   `getSiteId()` read the never-written settings key "site.id" → every instance reported
+   "dev-site". Now reads the install row, is exported, and replaces the inline copies in
+   admin.controller (authorize/install) + marketplace-source disconnect. refreshLicense()
+   re-reads it and writes it back to the license row (heals pre-fix "dev-site" rows).
+   E2E-verified on the test instance: getSiteId() = c81d21eb-73ee-49c7-86ad-63507400296e.
+2. **Instant entitlement after purchase**: installFromMarketplace runs a best-effort
+   refreshLicense() after install — Enable no longer 402s (NEC-LICENSE-9001) until the
+   daily job.
+5. **§16 update-check job**: new jobs/updateCheck.ts (worker) + `update-check` queue +
+   scheduled daily 02:30 + workerBoot registration. POSTs installed inventory to
+   /marketplace/updates (skips in dev licensing / when no account token), caches result in
+   setting `marketplace.updates`. New GET /admin/marketplace/updates (adminGuard). ACP
+   MarketplacePage shows an updates banner (critical badge + renewalRequired warning);
+   +3 i18n keys in all 5 locales.
+
+**Marketplace**
+3. **connect() orphan-token fix**: bind/409 check moved BEFORE instance-token creation —
+   a refused coupling no longer burns the auth code AND leaves a ghost portal row.
+4. **www == apex**: DomainClass::normalize drops a leading "www."; ensureActivation and
+   the updates() inventory-touch normalize before store/match. JWTs still carry the
+   instance's own domain (core domain check unaffected). Unit cases extended (www.co,
+   wwwx.com edge cases pass).
+
+Verified: backbone:check 19/19; php -l + classifier unit cases all pass.
+
 ## Explicit NEC codes for every known failure — UNCOMMITTED, with NODE_ENV flip
 
 User-reported: enabling an unlicensed plugin surfaced as generic NEC-API-5000 + the fatal

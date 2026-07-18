@@ -158,9 +158,16 @@ async function signDevJwt(
     .sign(privateKey);
 }
 
-async function getSiteId(): Promise<string> {
-  const row = await prisma.setting.findUnique({ where: { key: "site.id" } });
-  return (row?.value as string | null) ?? "dev-site";
+/**
+ * This install's UUID, minted by the installer's finalize step into
+ * ncf_installs.siteId. (A settings key "site.id" was read here historically,
+ * but nothing ever wrote it — every instance reported "dev-site" to the
+ * marketplace.) Exported: the single source for anything talking to the
+ * license server.
+ */
+export async function getSiteId(): Promise<string> {
+  const row = await prisma.install.findFirst({ select: { siteId: true } });
+  return row?.siteId ?? "dev-site";
 }
 
 /**
@@ -324,14 +331,18 @@ export async function refreshLicense(): Promise<void> {
   try {
     // Account-activated licenses refresh through the account token (the raw
     // key was never known here); manual keys refresh through /activate.
+    // siteId is re-read, not taken from the row: rows activated while getSiteId
+    // was broken carry "dev-site" — a refresh heals them to the install UUID.
+    const siteId = await getSiteId();
     const jwt = license.activatedVia === "account"
-      ? (await fetchAccountEntitlementJwt(license.siteId)).jwt
-      : await fetchEntitlementJwt(license.licenseKey, license.siteId);
+      ? (await fetchAccountEntitlementJwt(siteId)).jwt
+      : await fetchEntitlementJwt(license.licenseKey, siteId);
     const claims = await verifyEntitlementJwt(jwt);
 
     await prisma.license.update({
       where: { id: license.id },
       data: {
+        siteId,
         entitlementJwt: jwt,
         domain:         claims.domain ?? license.domain ?? await getSiteDomain(),
         environment:    claims.environment ?? license.environment ?? await resolveEnvironment(),

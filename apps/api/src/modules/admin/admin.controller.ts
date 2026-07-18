@@ -376,6 +376,22 @@ export const adminController = {
     res.json(await marketplaceSource.getConnection());
   }) as RequestHandler,
 
+  // Cache written by the daily update-check job (§16) — updates, critical
+  // flags, renewal warnings. Null checkedAt = the job has never completed.
+  getMarketplaceUpdates: (async (_req, res) => {
+    const { getSetting } = await import("../../shared/utils/settings.js");
+    const raw = await getSetting<string>("marketplace.updates", "");
+    if (!raw) {
+      res.json({ checkedAt: null, updates: [] });
+      return;
+    }
+    try {
+      res.json(JSON.parse(raw));
+    } catch {
+      res.json({ checkedAt: null, updates: [] });
+    }
+  }) as RequestHandler,
+
   connectMarketplace: (async (req, res) => {
     const { authCode } = z.object({ authCode: z.string().min(1) }).parse(req.body);
     const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
@@ -411,11 +427,9 @@ export const adminController = {
     }).parse(req.body);
 
     const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    const { getSiteDomain, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
-    const { prisma } = await import("../../infrastructure/db.js");
+    const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
 
-    const siteRow = await prisma.setting.findUnique({ where: { key: "site.id" } });
-    const siteId  = (siteRow?.value as string | null) ?? "dev-site";
+    const siteId = await getSiteId();
 
     const authorized = await marketplaceSource.authorizeDownload({
       pluginId,
@@ -438,13 +452,11 @@ export const adminController = {
     }).parse(req.body);
 
     const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    const { getSiteDomain, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
-    const { prisma } = await import("../../infrastructure/db.js");
+    const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
     const { pluginService } = await import("../plugins/plugin.service.js");
     const { createHash } = await import("node:crypto");
 
-    const siteRow = await prisma.setting.findUnique({ where: { key: "site.id" } });
-    const siteId  = (siteRow?.value as string | null) ?? "dev-site";
+    const siteId = await getSiteId();
 
     const authorized = await marketplaceSource.authorizeDownload({
       pluginId,
@@ -486,6 +498,11 @@ export const adminController = {
         return;
       }
       const manifest = await pluginService.install(buffer, req.userId!);
+      // A just-bought plugin isn't in the STORED entitlement JWT yet (it only
+      // refreshes monthly) — refresh now so Enable works immediately instead
+      // of failing NEC-LICENSE-9001 until the daily job. Best-effort.
+      const { refreshLicense } = await import("../../core/license-engine/license-engine.js");
+      await refreshLicense().catch(() => {});
       res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
     } catch (err: any) {
       if (err?.message) {
