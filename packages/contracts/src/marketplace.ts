@@ -47,6 +47,7 @@ export interface AuthorizedDownload {
   entitlementJwt: string;
   expiresAt:      string;        // ISO
   downloadUrl:    string | null;
+  sha256?:        string | null; // artifact integrity — instances verify the fetched bytes before install
 }
 
 export interface MarketplaceSource {

@@ -136,6 +136,8 @@ adminRouter.post("/marketplace/connection",    adminGuard, adminController.conne
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.
 adminRouter.post("/marketplace/authorize",     adminGuard, licenseActivateLimiter, adminController.authorizeMarketplaceDownload);
+// Direct install (§16.2): authorize → server-side fetch + sha256 verify → normal intake.
+adminRouter.post("/marketplace/install",       adminGuard, licenseActivateLimiter, adminController.installFromMarketplace);
 
 // Sub-routers
 adminRouter.use("/groups",       groupsRouter);
