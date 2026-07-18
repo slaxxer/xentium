@@ -10,6 +10,8 @@ import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { isPluginEntitled } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { pluginRouter } from "./plugin-router.js";
 
@@ -34,31 +36,36 @@ export async function validatePackage(buffer: Buffer): Promise<{ manifest: Plugi
   try {
     zip = new AdmZip(buffer);
   } catch {
-    throw new Error("Package is not a valid ZIP archive.");
+    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Package is not a valid ZIP archive." });
   }
 
   // Zip-slip: reject any entry with a path traversal
   for (const entry of zip.getEntries()) {
     if (entry.entryName.includes("..")) {
-      throw new Error(`Unsafe path in package: ${entry.entryName}`);
+      throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: `Unsafe path in package: ${entry.entryName}` });
     }
   }
 
   const manifestEntry = zip.getEntry("manifest.json");
-  if (!manifestEntry) throw new Error("Missing manifest.json in plugin package.");
+  if (!manifestEntry) {
+    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Missing manifest.json in plugin package." });
+  }
 
   let raw: unknown;
   try {
     raw = JSON.parse(manifestEntry.getData().toString("utf8"));
   } catch {
-    throw new Error("manifest.json is not valid JSON.");
+    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "manifest.json is not valid JSON." });
   }
 
   let manifest: PluginManifest;
   try {
     manifest = validateManifest(raw);
   } catch (err: any) {
-    throw new Error(`Invalid manifest.json: ${err.message ?? err}`);
+    // validateManifest throws coded NodevoErrors (2001/2030) — pass them through
+    // instead of flattening them into an uncoded 5000.
+    if (err instanceof NodevoError) throw err;
+    throw new NodevoError({ code: NEC.PLUGIN_INVALID_MANIFEST, httpStatus: 422, message: `Invalid manifest.json: ${err.message ?? err}` });
   }
 
   // Validate migration pairs before touching anything
@@ -74,7 +81,7 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   // Check if already installed
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (existing) {
-    throw new Error(`Plugin "${manifest.name}" (${manifest.id}) is already installed.`);
+    throw new NodevoError({ code: NEC.PLUGIN_ALREADY_INSTALLED, httpStatus: 409, message: `Plugin "${manifest.name}" (${manifest.id}) is already installed.` });
   }
 
   await ensurePluginDir();
@@ -134,9 +141,11 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   if (record.licenseRequired) {
     const entitled = await isPluginEntitled(pluginId);
     if (!entitled) {
-      throw new Error(
-        `Plugin "${record.name}" requires an active license entitlement. Activate a license in ACP → Extensions → License.`,
-      );
+      throw new NodevoError({
+        code:       NEC.LICENSE_NOT_FOUND,
+        httpStatus: 402,
+        message:    `Plugin "${record.name}" requires an active license entitlement. Activate a license in ACP → Extensions → License.`,
+      });
     }
   }
 

@@ -3,6 +3,8 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { validateMigrationSql, splitSqlStatements } from "./sql-validator.js";
 import type { PluginManifest } from "./manifest-validator.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 
 function checksum(sql: string): string {
   return crypto.createHash("sha256").update(sql).digest("hex");
@@ -23,7 +25,7 @@ export async function runUpMigrations(
   for (const name of migrations) {
     const entryPath = `migrations/${name}.up.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new Error(`Migration file not found in package: ${entryPath}`);
+    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql  = entry.getData().toString("utf8");
     const hash = checksum(sql);
@@ -33,7 +35,7 @@ export async function runUpMigrations(
     const existing = await prisma.nodevoPluginMigration.findUnique({ where: { id: mid } });
     if (existing) {
       if (existing.checksum !== hash) {
-        throw new Error(`Migration ${name} has been modified since it was applied (checksum mismatch).`);
+        throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_CHECKSUM, httpStatus: 409, message: `Migration ${name} has been modified since it was applied (checksum mismatch).` });
       }
       continue;
     }
@@ -73,7 +75,7 @@ export async function runDownMigrations(
 
     const entryPath = `migrations/${name}.down.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new Error(`Down migration not found: ${entryPath}`);
+    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
     validateMigrationSql(sql, entryPath);
@@ -133,10 +135,10 @@ export async function forceCleanupSchema(
 export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): void {
   for (const name of manifest.migrations) {
     if (!zip.getEntry(`migrations/${name}.up.sql`)) {
-      throw new Error(`Missing migration file: migrations/${name}.up.sql`);
+      throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
     }
     if (!zip.getEntry(`migrations/${name}.down.sql`)) {
-      throw new Error(`Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.`);
+      throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
     }
     // Pre-validate SQL
     validateMigrationSql(zip.getEntry(`migrations/${name}.up.sql`)!.getData().toString(), `${name}.up.sql`);
