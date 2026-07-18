@@ -1,5 +1,17 @@
 # Last Codebase Update — 2026-07-18
 
+## Global rate limiter: shared-IP counter bug — UNCOMMITTED (hot-patched on test instance)
+
+User hit NEC-API-4290 storms ("bandwidth freaks out") after the production-default flip.
+Root cause in `shared/middleware/rateLimit.ts` `globalApiLimiter`: ONE counter per IP but a
+per-request limit (Bearer→200, none→60) — authed ACP traffic pushed the shared counter past
+60 and every guest-class request from that IP 429'd (incl. POST /auth/refresh, which has no
+Bearer). Constant on localhost/NAT. Load context: beta-gate polls 12s/tab + bell/online/
+footer/maintenance 30-60s each. Fix: keyGenerator splits `tok:<sha256(auth) 32>` (per
+session, 200/min) vs `ip:<ip>` (guests, raised 60→120/min — §26 adjusted for SPA polling).
+QueryClient already never retries 4xx (no amplification). Verified: 80 guest requests in
+one window all 200 on the test instance; Redis shows tok:/ip: counters split.
+
 ## Plugin-update toast + Style Editor "Update" slot — UNCOMMITTED
 
 User request: informational (never forcing) toast when an installed plugin has an update,
