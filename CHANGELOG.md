@@ -1,18 +1,15 @@
 # Changelog
 
-## License: v1-audit fixes — site identity, instant entitlements, update visibility
+## License: the marketplace account is now the license — manual keys removed
 
-- **Instances now identify themselves correctly to the marketplace.** The installer has
-  always minted a site UUID (`ncf_installs.siteId`), but the license engine read an
-  unwritten settings key and reported `"dev-site"` for every install. `getSiteId()` now
-  reads the install row and is the single source everywhere (activation, download,
-  disconnect); a license refresh also heals rows that were activated with the wrong id.
-- **A just-bought plugin is usable immediately.** Direct marketplace install now refreshes
-  the entitlement right after the package lands — previously Enable failed with
-  `NEC-LICENSE-9001` until the daily refresh job, because the stored entitlement JWT
-  predated the purchase.
-- **Daily marketplace update check (§16).** New `update-check` worker job reports the
-  installed plugin inventory and caches what comes back: newer versions, critical flags,
-  and renewal warnings. ACP → Extensions → Marketplace shows the results (critical badge,
-  renewal notice); `GET /admin/marketplace/updates` serves the cache. Customers now see a
-  lapsed term before downloads start failing.
+- **ACP → Extensions → License is account-only.** The manual license-key input (and its
+  `POST /admin/license/activate` endpoint) is gone: connect your nodevo.io account and the
+  license from your purchase activates automatically for this site's domain. The page now
+  centers on the account connection; with an account connected but no license yet, an
+  "Activate from account" button triggers the activation on the spot.
+- The standalone Deactivate button is gone too — with account-driven licensing it was a
+  trap (the next refresh would immediately re-activate). Disconnecting the account is the
+  one lever, and it deactivates the license with it.
+- Licenses activated with a manual key before this change keep refreshing and working
+  unchanged; only NEW manual activations are impossible.
+- All five locales updated.

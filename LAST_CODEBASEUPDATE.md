@@ -1,5 +1,30 @@
 # Last Codebase Update — 2026-07-18
 
+## License page: account-mandatory, manual key removed — UNCOMMITTED
+
+User decision (supersedes §53's "manual key = offline fallback"): the ACP requires a linked
+marketplace account; there is no manual key entry anywhere.
+
+- `LicensePage.tsx`: manual-key card + activate mutation REMOVED; standalone Deactivate
+  button REMOVED (self-heal on refresh made it a trap — Disconnect is the one lever);
+  connected-but-no-license state gains an "Activate from account" button (calls
+  /admin/license/refresh → self-heal activates). Account card copy rewritten.
+- API: `POST /admin/license/activate` route + controller handler REMOVED (comment marks
+  why). `DELETE /admin/license` (deactivate) kept backend-only.
+- license-engine: `activateLicense()` deleted (dead); `fetchEntitlementJwt` kept — it
+  refreshes legacy `activatedVia:"key"` rows and backs provisionEntitlement; comments +
+  the no-account error message updated. NEC LICENSE_ALREADY_ACTIVE (9008) stays cataloged
+  (marketplace-side semantics + Error Reference).
+- Locales ×5: license.* keys pruned (manual*/activate*/deactivate*/toastActivated/
+  toastDeactivated), accountDesc/noLicenseHint rewritten, +activateFromAccount.
+- CLAUDE.md license line updated (account link MANDATORY).
+- ⚠ Consequence accepted by user: air-gapped/offline instances can install plugin FILES
+  (portal Downloads) but cannot license paid plugins without connecting the account.
+- Marketplace server keeps POST /api/activate (legacy-row refresh path) — untouched.
+
+Verified: web+api typecheck clean, 21 API + 7 web tests green. (No browser click-through —
+needs test-instance admin login.)
+
 ## v1-audit batch (gaps 1–5) — UNCOMMITTED both repos
 
 User-commissioned after the licensing-workflow audit; HTTPS + payment gateways explicitly

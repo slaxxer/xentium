@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faKey, faCheck, faRotate, faTrash, faCircleExclamation, faPlug, faLinkSlash, faGlobe } from "@fortawesome/free-solid-svg-icons";
+import { faKey, faCheck, faRotate, faCircleExclamation, faPlug, faLinkSlash } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 
@@ -40,8 +40,6 @@ function StatusDot({ color }: { color: string }) {
 export function LicensePage() {
   const { t } = useTranslation("acp");
   const qc       = useQueryClient();
-  const [key,   setKey]   = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [authCode, setAuthCode] = useState("");
   const [connectError, setConnectError] = useState<string | null>(null);
 
@@ -81,32 +79,11 @@ export function LicensePage() {
     if (ok) disconnectMut.mutate();
   };
 
-  const activateMut = useMutation({
-    mutationFn: () => api.post("/admin/license/activate", { licenseKey: key.trim() }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); setKey(""); setError(null); swalToast(t("license.toastActivated"), "success"); },
-    onError:    (e: any) => setError(e?.data?.message ?? apiErrorMessage(e)),
-  });
-
   const refreshMut = useMutation({
     mutationFn: () => api.post("/admin/license/refresh", {}),
     onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast(t("license.toastRefreshed"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
-
-  const deactivateMut = useMutation({
-    mutationFn: () => api.delete("/admin/license"),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast(t("license.toastDeactivated"), "success"); },
-    onError:    (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  const handleDeactivate = async () => {
-    const ok = await swalConfirm(
-      t("license.deactivateTitle"),
-      t("license.deactivateText"),
-      t("license.deactivate"),
-    );
-    if (ok) deactivateMut.mutate();
-  };
 
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
 
@@ -223,9 +200,6 @@ export function LicensePage() {
               <FontAwesomeIcon icon={faRotate} style={{ marginRight:5 }} />
               {refreshMut.isPending ? t("license.refreshing") : t("license.refresh")}
             </button>
-            <button type="button" className="btn-danger btn-sm" onClick={handleDeactivate} disabled={deactivateMut.isPending}>
-              <FontAwesomeIcon icon={faTrash} style={{ marginRight:5 }} /> {t("license.deactivate")}
-            </button>
           </div>
         </div>
       ) : (
@@ -233,41 +207,15 @@ export function LicensePage() {
           <FontAwesomeIcon icon={faKey} style={{ fontSize:28, color:"var(--c-fg-muted)", marginBottom:8 }} />
           <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)", marginBottom:4 }}>{t("license.noLicenseTitle")}</div>
           <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{t("license.noLicenseHint")}</div>
+          {conn?.connected && (
+            <button type="button" className="btn-primary btn-sm" style={{ marginTop:14 }} onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+              <FontAwesomeIcon icon={faRotate} style={{ marginRight:5 }} />
+              {refreshMut.isPending ? t("license.refreshing") : t("license.activateFromAccount")}
+            </button>
+          )}
         </div>
       )}
 
-      {/* Manual key — offline / fallback activation (ADR 0001) */}
-      <div className="acp-card" style={{ padding:"24px" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-          <FontAwesomeIcon icon={faGlobe} style={{ color:"var(--c-fg-muted)", fontSize:13 }} />
-          <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>
-            {license ? t("license.manualTitleAdd") : t("license.manualTitleOffline")}
-          </div>
-        </div>
-        <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>
-          {t("license.manualDesc")}
-        </div>
-        <div style={{ display:"flex", gap:10, marginBottom: error ? 10 : 0 }}>
-          <input
-            className="acp-input"
-            value={key}
-            onChange={(e) => { setKey(e.target.value); setError(null); }}
-            placeholder="NDV-XXXX-XXXX-XXXX"
-            style={{ fontFamily:"monospace", letterSpacing:"0.05em", flex:1 }}
-            onKeyDown={(e) => { if (e.key === "Enter" && key.trim()) activateMut.mutate(); }}
-          />
-          <button type="button" className="btn-primary btn-sm" disabled={!key.trim() || activateMut.isPending} onClick={() => activateMut.mutate()}>
-            <FontAwesomeIcon icon={faKey} style={{ marginRight:5 }} />
-            {activateMut.isPending ? t("license.activating") : t("license.activateBtn")}
-          </button>
-        </div>
-        {error && (
-          <div style={{ padding:"10px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>
-            <FontAwesomeIcon icon={faCircleExclamation} style={{ marginTop:2, flexShrink:0 }} />
-            {error}
-          </div>
-        )}
-      </div>
     </div>
   );
 }
