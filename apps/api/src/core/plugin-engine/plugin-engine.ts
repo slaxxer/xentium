@@ -149,7 +149,11 @@ function compareSemver(a: string, b: string): number {
  * its files swapped, only its NEW migrations run, then re-enabled against the new
  * bundle. Migrations are never rolled back — updates only add schema.
  */
-export async function updatePlugin(buffer: Buffer, _updatedById: string): Promise<PluginManifest> {
+export async function updatePlugin(
+  buffer: Buffer,
+  _updatedById: string,
+  onProgress?: (p: { phase: string; percent: number }) => void,
+): Promise<PluginManifest> {
   const { manifest, zip } = await validatePackage(buffer);
 
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
@@ -164,9 +168,11 @@ export async function updatePlugin(buffer: Buffer, _updatedById: string): Promis
   // Tear down the OLD bundle first — its onDisable runs against the still-in-place
   // extracted dir/manifest, deregistering old routes/ACP pages/registries.
   if (wasEnabled) {
+    onProgress?.({ phase: "disabling", percent: 80 });
     await disablePlugin(manifest.id);
   }
 
+  onProgress?.({ phase: "applying", percent: 85 });
   await ensurePluginDir();
   const pkgPath = packagePath(manifest.id, manifest.version);
   await fs.writeFile(pkgPath, buffer);
@@ -178,6 +184,7 @@ export async function updatePlugin(buffer: Buffer, _updatedById: string): Promis
   zip.extractAllTo(extractDir, /* overwrite */ true);
 
   // Run only migrations this plugin has never applied (by name, any version).
+  onProgress?.({ phase: "migrating", percent: 90 });
   await runNewUpMigrations(zip, manifest);
 
   // Update the DB record. Status stays "disabled" here; re-enabled below if it was.
@@ -201,6 +208,7 @@ export async function updatePlugin(buffer: Buffer, _updatedById: string): Promis
 
   // Restore the enabled state against the NEW bundle (re-runs onEnable, re-registers).
   if (wasEnabled) {
+    onProgress?.({ phase: "enabling", percent: 95 });
     await enablePlugin(manifest.id);
   }
 

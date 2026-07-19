@@ -12,10 +12,19 @@ export interface PanelRow {
   marker?: string;   // short danger-styled tag on the row, e.g. "critical"
 }
 
+/** Live state of a progress dialog (see openProgressDialog). */
+export interface DialogProgress {
+  percent: number;                              // 0..100
+  message: string;                              // current step label
+  status:  "running" | "success" | "error";
+}
+
 export interface DialogOptions {
-  kind:         "confirm" | "alert";
+  kind:         "confirm" | "alert" | "progress";
   icon:         DialogIcon;
   title:        string;
+  /** Present only for kind "progress". */
+  progress?:    DialogProgress;
   body?:        string;
   /** Rich body content (JSX) — used instead of `body` when provided. */
   bodyNode?:    ReactNode;
@@ -63,6 +72,45 @@ export function openDialog(opts: DialogOptions): Promise<boolean> {
  */
 export function openPanelDialog(opts: Omit<DialogOptions, "kind" | "wide"> & { kind?: "confirm" | "alert" }): Promise<boolean> {
   return openDialog({ kind: opts.kind ?? "confirm", ...opts, wide: true });
+}
+
+/** Imperative handle for a running progress dialog (openProgressDialog). */
+export interface ProgressHandle {
+  update(percent: number, message?: string): void;
+  succeed(message: string): void;
+  fail(message: string): void;
+  close(): void;
+}
+
+/**
+ * A non-dismissible progress dialog with a live bar, driven imperatively (e.g. by
+ * a streamed server operation). Not promise-based — returns a handle. While
+ * `running` it can't be closed by the user; on succeed/fail it shows a Close
+ * button. A newer dialog opening invalidates a stale handle (its calls no-op).
+ */
+export function openProgressDialog(opts: { title: string; icon?: DialogIcon; message?: string }): ProgressHandle {
+  resolver?.(false);   // pre-empt any open dialog
+  resolver = null;
+  const id = nextId++;
+  active = {
+    kind: "progress", icon: opts.icon ?? "update", title: opts.title, wide: true,
+    progress: { percent: 0, message: opts.message ?? "", status: "running" },
+    id,
+  };
+  notify();
+
+  const alive = () => active?.id === id;
+  const set = (progress: DialogProgress) => { if (alive()) { active = { ...active!, progress }; notify(); } };
+  return {
+    update: (percent, message) => set({
+      percent: Math.max(0, Math.min(100, Math.round(percent))),
+      message: message ?? active?.progress?.message ?? "",
+      status:  "running",
+    }),
+    succeed: (message) => set({ percent: 100, message, status: "success" }),
+    fail:    (message) => set({ percent: active?.progress?.percent ?? 0, message, status: "error" }),
+    close:   () => { if (alive()) { active = null; notify(); } },
+  };
 }
 
 export function resolveDialog(ok: boolean): void {

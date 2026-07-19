@@ -38,6 +38,10 @@ pluginManagementRouter.post("/upload", requireAuth, adminGuard, uploadLimiter, u
   try {
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
     const manifest = await pluginService.install(req.file.buffer, req.userId!);
+    // Refresh the update cache so an uploaded older build surfaces its available
+    // update right away (best-effort; the admin sees it on their next ACP entry).
+    const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
+    void processUpdateCheck().catch(() => {});
     res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
   } catch (err: any) {
     if (err?.message) return res.status(400).json({ message: err.message });

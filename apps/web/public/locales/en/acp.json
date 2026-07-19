@@ -941,8 +941,21 @@
     "renewalRequired": "Your license term has ended — renew it in the marketplace to download this update.",
     "update": "Update",
     "updating": "Updating…",
-    "toastUpdated": "{{name}} updated to {{version}}.",
-    "toastFailed": "Update failed: {{message}}"
+    "progressTitle": "Updating {{name}}",
+    "progressDone": "{{name}} updated to {{version}}",
+    "progressFailed": "Update failed",
+    "phase": {
+      "starting": "Starting…",
+      "working": "Working…",
+      "authorizing": "Authorizing download…",
+      "downloading": "Downloading…",
+      "verifying": "Verifying integrity…",
+      "validating": "Validating package…",
+      "disabling": "Disabling current version…",
+      "applying": "Installing files…",
+      "migrating": "Applying migrations…",
+      "enabling": "Enabling…"
+    }
   },
   "license": {
     "loading": "Loading…",
