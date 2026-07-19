@@ -40,7 +40,7 @@ export async function processUpdateCheck(): Promise<void> {
     return;
   }
 
-  const body = await res.json() as { updates: { pluginId: string }[] };
+  const body = await res.json() as { updates: { pluginId: string; latestVersion?: string }[] };
   // Enrich with what only this instance knows: the display name and the
   // version currently installed — the ACP renders "Forum 1.0.3 → 1.0.4".
   const byId = new Map(plugins.map((p) => [p.id, p]));
@@ -49,7 +49,25 @@ export async function processUpdateCheck(): Promise<void> {
     name:             byId.get(u.pluginId)?.name ?? u.pluginId,
     installedVersion: byId.get(u.pluginId)?.installedVersion ?? null,
   }));
-  const value = JSON.stringify({ checkedAt: new Date().toISOString(), updates });
+
+  // Stable anchor for "when this exact set of pending updates first appeared".
+  // The per-admin update dialog shows until the admin visits the Updates page
+  // AFTER this instant; carrying it forward across unchanged re-checks (unlike
+  // checkedAt, which moves every run) is what keeps an acknowledgement sticky.
+  const setHash = updates.map((u) => `${u.pluginId}@${u.latestVersion ?? "?"}`).sort().join(",");
+  const prevRaw = await prisma.setting.findUnique({ where: { key: UPDATES_SETTING } });
+  let setSince = new Date().toISOString();
+  try {
+    const prevVal = prevRaw?.value;
+    // The Json column holds a stringified payload (see the write below); tolerate
+    // an already-parsed object too.
+    const prev = (typeof prevVal === "string" ? JSON.parse(prevVal) : prevVal) as
+      { updates?: { pluginId: string; latestVersion?: string }[]; setSince?: string } | null;
+    const prevHash = (prev?.updates ?? []).map((u) => `${u.pluginId}@${u.latestVersion ?? "?"}`).sort().join(",");
+    if (prev?.setSince && prevHash === setHash) setSince = prev.setSince; // unchanged set → keep the original anchor
+  } catch { /* malformed prior cache → treat as a new set */ }
+
+  const value = JSON.stringify({ checkedAt: new Date().toISOString(), setSince, updates });
   await prisma.setting.upsert({
     where:  { key: UPDATES_SETTING },
     update: { value },
