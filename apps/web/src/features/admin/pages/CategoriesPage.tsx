@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
@@ -67,6 +68,7 @@ function CategoryModal({
   onClose: () => void;
   onSave: (data: CategoryInput) => void;
 }) {
+  const { t } = useTranslation("acp");
   const isNew = !category?.id;
   const [name, setName] = useState(category?.name ?? "");
   const [description, setDescription] = useState(category?.description ?? "");
@@ -89,32 +91,32 @@ function CategoryModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
-          {isNew ? (parentId ? "Add Subcategory" : "Add Category") : `Edit: ${category?.name}`}
+          {isNew ? (parentId ? t("categories.addSub") : t("categories.add")) : t("categories.editName", { name: category?.name })}
         </h2>
 
         <div className="acp-form-field">
-          <label className="acp-label">Name</label>
+          <label className="acp-label">{t("categories.name")}</label>
           <input
             className="acp-input"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Category name"
+            placeholder={t("categories.namePlaceholder")}
             autoFocus
           />
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Description (optional)</label>
+          <label className="acp-label">{t("categories.descLabel")}</label>
           <input
             className="acp-input"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Short description"
+            placeholder={t("categories.descPlaceholder")}
           />
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Access Control</label>
+          <label className="acp-label">{t("categories.access")}</label>
           <GroupAccessPicker
             value={access}
             onChange={setAccess}
@@ -124,7 +126,7 @@ function CategoryModal({
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: "1.5rem" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("categories.cancel")}</button>
           <button
             type="button"
             className="btn-primary btn-sm"
@@ -141,20 +143,13 @@ function CategoryModal({
               })
             }
           >
-            {isNew ? "Create" : "Save"}
+            {isNew ? t("categories.create") : t("categories.save")}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-const VISIBILITY_LABEL: Record<string, string> = {
-  public: "Public",
-  members: "Members",
-  level: "Level N+",
-  groups: "Groups",
-};
 
 const VISIBILITY_BADGE: Record<string, string> = {
   public: "acp-badge--success",
@@ -188,11 +183,12 @@ function TreeNode({
   onDrop?: (e: React.DragEvent, id: string) => void;
   onDragEnd?: () => void;
 }) {
+  const { t } = useTranslation("acp");
   const [expanded, setExpanded] = useState(true);
   const hasChildren = node.children.length > 0;
   const effectiveBadge = VISIBILITY_BADGE[node.effectiveVisibility] ?? "acp-badge--muted";
-  const ownLabel = VISIBILITY_LABEL[node.visibility] ?? node.visibility;
-  const effectiveLabel = VISIBILITY_LABEL[node.effectiveVisibility] ?? node.effectiveVisibility;
+  const ownLabel = t(`categories.vis.${node.visibility}`, { defaultValue: node.visibility });
+  const effectiveLabel = t(`categories.vis.${node.effectiveVisibility}`, { defaultValue: node.effectiveVisibility });
   const isInherited = node.effectiveVisibility !== node.visibility;
 
   const canDrag = depth === 0 && !!onDragStart;
@@ -222,7 +218,7 @@ function TreeNode({
               cursor: "grab", color: "var(--c-fg-muted)", fontSize: 13,
               marginRight: 4, flexShrink: 0,
             }}
-            title="Drag to reorder"
+            title={t("categories.dragTitle")}
           >
             <FontAwesomeIcon icon={faGripVertical} />
           </span>
@@ -242,12 +238,12 @@ function TreeNode({
         <span className="acp-tree-name">{node.name}</span>
 
         <span className={`acp-badge ${effectiveBadge}`} style={{ marginTop: 0, marginLeft: 6, fontSize: 10 }}>
-          {isInherited ? `${effectiveLabel} (inherited)` : ownLabel}
+          {isInherited ? t("categories.inherited", { label: effectiveLabel }) : ownLabel}
         </span>
 
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.4rem" }}>
           {depth === 0 && (
-            <button type="button" className="btn-ghost btn-sm" title="Add subcategory" onClick={() => onAddChild(node.id)}>
+            <button type="button" className="btn-ghost btn-sm" title={t("categories.addSubTitle")} onClick={() => onAddChild(node.id)}>
               <FontAwesomeIcon icon={faPlus} />
             </button>
           )}
@@ -279,6 +275,7 @@ function TreeNode({
 }
 
 export function CategoriesPage() {
+  const { t } = useTranslation("acp");
   const queryClient = useQueryClient();
   const [modal, setModal] = useState<{
     mode: "create" | "edit";
@@ -306,7 +303,7 @@ export function CategoriesPage() {
       api.post("/article-categories", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acp-categories"] });
-      swalToast("Category created!", "success");
+      swalToast(t("categories.toastCreated"), "success");
       setModal(null);
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -317,7 +314,7 @@ export function CategoriesPage() {
       api.patch(`/article-categories/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acp-categories"] });
-      swalToast("Category updated!", "success");
+      swalToast(t("categories.toastUpdated"), "success");
       setModal(null);
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -327,7 +324,7 @@ export function CategoriesPage() {
     mutationFn: (id: string) => api.delete(`/article-categories/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acp-categories"] });
-      swalToast("Category deleted!", "success");
+      swalToast(t("categories.toastDeleted"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -383,12 +380,12 @@ export function CategoriesPage() {
 
   async function handleDelete(node: CategoryNode) {
     const result = await swalConfirm(
-      "Delete category?",
+      t("categories.deleteTitle"),
       node.children.length > 0
-        ? `"${node.name}" has ${node.children.length} subcategory(ies). They will be moved up one level.`
-        : `"${node.name}" will be permanently deleted.`,
-      "Delete",
-      "Cancel",
+        ? t("categories.deleteTextChildren", { name: node.name, count: node.children.length })
+        : t("categories.deleteText", { name: node.name }),
+      t("categories.delete"),
+      t("categories.cancel"),
     );
     if (result) deleteMutation.mutate(node.id);
   }
@@ -425,24 +422,24 @@ export function CategoriesPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Content</div>
-          <h1 className="acp-page-title">Article Categories</h1>
+          <div className="acp-page-sub">{t("nav.content")}</div>
+          <h1 className="acp-page-title">{t("categories.title")}</h1>
         </div>
         <button
           type="button"
           className="btn-primary btn-sm"
           onClick={() => setModal({ mode: "create", parentId: null })}
         >
-          <FontAwesomeIcon icon={faPlus} /> Add Category
+          <FontAwesomeIcon icon={faPlus} /> {t("categories.add")}
         </button>
       </div>
 
       <div className="acp-card">
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>Loading…</div>
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("categories.loading")}</div>
         ) : (tree as CategoryNode[]).length === 0 ? (
           <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)" }}>
-            No categories yet. Create one to get started.
+            {t("categories.empty")}
           </div>
         ) : (
           <div className="acp-tree">

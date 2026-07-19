@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -60,6 +61,7 @@ function GroupProgressionModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ["group-progression", groupId],
@@ -86,7 +88,7 @@ function GroupProgressionModal({
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
-      swalToast("Progression config saved!", "success");
+      swalToast(t("progression.toastConfigSaved"), "success");
       onSaved();
       onClose();
     },
@@ -100,7 +102,7 @@ function GroupProgressionModal({
     setForm(p => ({ ...p, [key]: raw === "" ? null : Number(raw) }));
   }
 
-  const groupName = data?.group?.name ?? "Group";
+  const groupName = data?.group?.name ?? t("progression.groupFallback");
 
   return (
     <div className="acp-modal-overlay" onClick={onClose}>
@@ -110,7 +112,7 @@ function GroupProgressionModal({
         onClick={e => e.stopPropagation()}
       >
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>Loading…</div>
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("progression.loading")}</div>
         ) : (
           <>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
@@ -125,16 +127,16 @@ function GroupProgressionModal({
                 <FontAwesomeIcon icon={faUsers} style={{ color: form.badgeColor ?? "var(--c-accent)" }} />
               </div>
               <div>
-                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Progression — {groupName}</h2>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Configure thresholds and limits</div>
+                <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{t("progression.modalTitle", { name: groupName })}</h2>
+                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.modalSub")}</div>
               </div>
             </div>
 
             {/* On ladder toggle */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid var(--c-border)", marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>Part of progression ladder</div>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Enable auto-promotion for users in this group</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.onLadder")}</div>
+                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.onLadderDesc")}</div>
               </div>
               <button type="button" onClick={() => setForm(p => ({ ...p, isProgressionGroup: !p.isProgressionGroup }))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                 <FontAwesomeIcon
@@ -146,21 +148,21 @@ function GroupProgressionModal({
 
             {/* Ladder position */}
             <div className="acp-form-field">
-              <label className="acp-label">Ladder position</label>
-              <input className="acp-input" type="number" min={1} value={num(form.ladderPosition)} onChange={e => setNum("ladderPosition", e.target.value)} placeholder="e.g. 1 (entry level)" style={{ width: 140 }} />
-              <div className="acp-hint">1 = entry level. Drag to reorder on the ladder page.</div>
+              <label className="acp-label">{t("progression.ladderPos")}</label>
+              <input className="acp-input" type="number" min={1} value={num(form.ladderPosition)} onChange={e => setNum("ladderPosition", e.target.value)} placeholder={t("progression.ladderPosPlaceholder")} style={{ width: 140 }} />
+              <div className="acp-hint">{t("progression.ladderPosHint")}</div>
             </div>
 
             {/* Thresholds */}
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "16px 0 10px" }}>
-              Promotion Thresholds <span style={{ fontWeight: 400, textTransform: "none" }}>(leave blank = not required)</span>
+              {t("progression.thresholdsHeading")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("progression.thresholdsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               {([
-                ["min_posts",           "minPosts",         "Min posts"],
-                ["min_threads",         "minThreads",       "Min threads"],
-                ["min_days_member",     "minDaysMember",    "Min days as member"],
-                ["min_likes_received",  "minLikesReceived", "Min likes received"],
+                ["min_posts",           "minPosts",         t("progression.minPosts")],
+                ["min_threads",         "minThreads",       t("progression.minThreads")],
+                ["min_days_member",     "minDaysMember",    t("progression.minDays")],
+                ["min_likes_received",  "minLikesReceived", t("progression.minLikes")],
               ] as [string, keyof LadderEntry, string][]).map(([, key, label]) => (
                 <div key={key}>
                   <label className="acp-label">{label}</label>
@@ -171,23 +173,23 @@ function GroupProgressionModal({
 
             {/* Content limits */}
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-              Content Limits <span style={{ fontWeight: 400, textTransform: "none" }}>(leave blank = unlimited)</span>
+              {t("progression.limitsHeading")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("progression.limitsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               <div>
-                <label className="acp-label">Max post/article length (chars)</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder="Unlimited" />
+                <label className="acp-label">{t("progression.maxLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder={t("progression.unlimited")} />
               </div>
               <div>
-                <label className="acp-label">Max daily posts</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder="Unlimited" />
+                <label className="acp-label">{t("progression.maxDaily")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder={t("progression.unlimited")} />
               </div>
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-              <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+              <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("progression.cancel")}</button>
               <button type="button" className="btn-primary btn-sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
-                {saveMutation.isPending ? "Saving…" : "Save"}
+                {saveMutation.isPending ? t("progression.saving") : t("progression.save")}
               </button>
             </div>
           </>
@@ -213,6 +215,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export function ProgressionPage() {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [editGroupId,  setEditGroupId]  = useState<string | null>(null);
   const [dragOverId,   setDragOverId]   = useState<string | null>(null);
@@ -242,7 +245,7 @@ export function ProgressionPage() {
     mutationFn: (patch: Partial<GlobalSettings>) => api.patch("/admin/progression/settings", patch),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
-      swalToast("Progression settings saved.", "success");
+      swalToast(t("progression.toastSettingsSaved"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -267,7 +270,7 @@ export function ProgressionPage() {
     },
     onError: (_e, _p, ctx) => {
       if (ctx?.prev) qc.setQueryData(["acp-progression"], ctx.prev);
-      swalToast("Reorder failed — reverted.");
+      swalToast(t("progression.toastReorderFailed"));
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["acp-progression"] }),
   });
@@ -280,7 +283,7 @@ export function ProgressionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
       qc.invalidateQueries({ queryKey: ["acp-progression-all-groups"] });
-      swalToast("Group added to ladder!", "success");
+      swalToast(t("progression.toastAdded"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -327,18 +330,18 @@ export function ProgressionPage() {
 
   function thresholdSummary(e: LadderEntry): string {
     const parts: string[] = [];
-    if (e.minPosts)        parts.push(`${e.minPosts} posts`);
-    if (e.minThreads)      parts.push(`${e.minThreads} threads`);
-    if (e.minDaysMember)   parts.push(`${e.minDaysMember} days`);
-    if (e.minLikesReceived)parts.push(`${e.minLikesReceived} likes`);
-    return parts.length ? parts.join(" · ") : "No thresholds — entry level";
+    if (e.minPosts)        parts.push(t("progression.sumPosts", { count: e.minPosts }));
+    if (e.minThreads)      parts.push(t("progression.sumThreads", { count: e.minThreads }));
+    if (e.minDaysMember)   parts.push(t("progression.sumDays", { count: e.minDaysMember }));
+    if (e.minLikesReceived)parts.push(t("progression.sumLikes", { count: e.minLikesReceived }));
+    return parts.length ? parts.join(" · ") : t("progression.sumNone");
   }
 
   function limitSummary(e: LadderEntry): string {
-    if (!e.maxPostLength && !e.maxDailyPosts) return "Unlimited";
+    if (!e.maxPostLength && !e.maxDailyPosts) return t("progression.limUnlimited");
     const parts: string[] = [];
-    if (e.maxPostLength) parts.push(`${e.maxPostLength.toLocaleString()} chars`);
-    if (e.maxDailyPosts) parts.push(`${e.maxDailyPosts} posts/day`);
+    if (e.maxPostLength) parts.push(t("progression.limChars", { count: e.maxPostLength }));
+    if (e.maxDailyPosts) parts.push(t("progression.limPerDay", { count: e.maxDailyPosts }));
     return parts.join(" · ");
   }
 
@@ -348,8 +351,8 @@ export function ProgressionPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Access Control</div>
-          <h1 className="acp-page-title">Progression</h1>
+          <div className="acp-page-sub">{t("nav.accessControl")}</div>
+          <h1 className="acp-page-title">{t("nav.progression")}</h1>
         </div>
         <AutosaveStatus saving={settingsMutation.isPending} />
       </div>
@@ -357,12 +360,12 @@ export function ProgressionPage() {
       {/* Global settings */}
       <div className="acp-card" style={{ padding: "24px", marginBottom: 20 }}>
         <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 18 }}>
-          Global Settings
+          {t("progression.globalHeading")}
         </div>
         {[
-          { label: "Enable progression system",      desc: "Users are automatically promoted when thresholds are met", key: "enabled"         as const },
-          { label: "Notify user on promotion",       desc: "Send an in-app notification when a user is promoted",     key: "notifyOnPromote" as const },
-          { label: "Show progress bar on profiles",  desc: "Display progression progress on public user profiles",    key: "showProgressBar" as const },
+          { label: t("progression.gEnabled"),      desc: t("progression.gEnabledDesc"), key: "enabled"         as const },
+          { label: t("progression.gNotify"),       desc: t("progression.gNotifyDesc"),     key: "notifyOnPromote" as const },
+          { label: t("progression.gBar"),  desc: t("progression.gBarDesc"),    key: "showProgressBar" as const },
         ].map(({ label, desc, key }) => (
           <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid var(--c-border)" }}>
             <div>
@@ -377,8 +380,8 @@ export function ProgressionPage() {
         ))}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>Threshold logic</div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>How multiple thresholds are evaluated for promotion</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.thresholdLogic")}</div>
+            <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.thresholdLogicDesc")}</div>
           </div>
           <select
             className="acp-select"
@@ -386,8 +389,8 @@ export function ProgressionPage() {
             onChange={e => settingsMutation.mutate({ thresholdLogic: e.target.value as "and" | "or" })}
             style={{ width: "auto" }}
           >
-            <option value="and">AND — all must be met</option>
-            <option value="or">OR — any one is enough</option>
+            <option value="and">{t("progression.logicAnd")}</option>
+            <option value="or">{t("progression.logicOr")}</option>
           </select>
         </div>
       </div>
@@ -396,29 +399,29 @@ export function ProgressionPage() {
       <div className="acp-card" style={{ padding: 0, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)" }}>Progression Ladder</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)" }}>{t("progression.ladderHeading")}</div>
             <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2 }}>
-              Drag to reorder · Users are promoted in ascending position order
+              {t("progression.ladderHint")}
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span className="acp-badge acp-badge--neutral" style={{ marginTop: 0 }}>
-              {ladder.length} level{ladder.length !== 1 ? "s" : ""}
+              {t("progression.levels", { count: ladder.length })}
             </span>
           </div>
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>Loading…</div>
+          <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("progression.loading")}</div>
         ) : ladder.length === 0 ? (
           <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>
-            No groups on the progression ladder yet. Add groups below.
+            {t("progression.ladderEmpty")}
           </div>
         ) : (
           <>
             {/* Column headers */}
             <div style={{ display: "grid", gridTemplateColumns: "36px 40px 1fr 1fr 1fr 90px 80px", padding: "8px 18px", borderBottom: "1px solid var(--c-border)" }}>
-              {["", "Pos", "Group", "Thresholds", "Limits", "Users", ""].map((h, i) => (
+              {["", t("progression.colPos"), t("progression.colGroup"), t("progression.colThresholds"), t("progression.colLimits"), t("progression.colUsers"), ""].map((h, i) => (
                 <div key={i} style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
               ))}
             </div>
@@ -513,7 +516,7 @@ export function ProgressionPage() {
       {offLadder.length > 0 && (
         <div className="acp-card" style={{ padding: "20px 24px" }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-fg)", marginBottom: 12 }}>
-            Add group to ladder
+            {t("progression.addGroupHeading")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {offLadder.map(g => (
