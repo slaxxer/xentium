@@ -46,6 +46,18 @@ export const activityService = {
       .catch(() => { /* swallow — telemetry is best-effort */ });
   },
 
+  /** True if this user has a page_visit to `path` at or after `since`. Backs the
+   *  update dialog's "has the admin actually been to the Updates page?" check —
+   *  ACP movements are logged as page_visit, so a visit is a real, per-user,
+   *  device-independent acknowledgement (unlike a dismissed dialog). */
+  async hasVisitedSince(userId: string, path: string, since: Date): Promise<boolean> {
+    const row = await prisma.activityLog.findFirst({
+      where: { category: "page_visit", userId, path, createdAt: { gte: since } },
+      select: { id: true },
+    });
+    return !!row;
+  },
+
   async list(opts: { page: number; limit: number; category?: string }): Promise<PaginatedResponse<ActivityRow>> {
     const where: Prisma.ActivityLogWhereInput = opts.category ? { category: opts.category } : {};
     const [data, total] = await Promise.all([

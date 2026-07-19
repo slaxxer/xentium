@@ -7,7 +7,7 @@ import { startBanExpiryWorker }               from './jobs/banExpiry.js';
 import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
-import { startUpdateCheckWorker }             from './jobs/updateCheck.js';
+import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
@@ -53,6 +53,20 @@ async function boot() {
   }
   await scheduleJobs();
   console.log(`[worker] up, ${workers.length} worker(s) running, plugins loaded, scheduled jobs registered`);
+
+  // Run the marketplace update check once on boot so a critical plugin patch
+  // surfaces immediately instead of waiting up to ~24h for the next daily run —
+  // matters most right after a worker restart following an update deploy.
+  // Best-effort and non-blocking (processUpdateCheck self-guards dev/no-token and
+  // keeps the last cache when the marketplace is unreachable). Honors the admin's
+  // ACP → Scheduled Tasks toggle: if update-check is disabled, the boot check is
+  // skipped too, so turning it off silences update checking entirely.
+  const updateDef = SCHEDULED_JOBS.find((d) => d.key === "update-check");
+  if (updateDef) {
+    getJobConfig(updateDef)
+      .then((cfg) => { if (cfg.enabled) return processUpdateCheck(); })
+      .catch((err) => console.error('[worker] boot update-check failed:', (err as Error)?.message ?? err));
+  }
 }
 
 boot();
