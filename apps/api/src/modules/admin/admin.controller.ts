@@ -467,7 +467,7 @@ export const adminController = {
   // they're applied, plus the license when it's about to expire (or has). Kept
   // deliberately small + server-side so the badge stays a dumb consumer and new
   // signals (core update, stuck jobs, …) can be OR-ed in here later.
-  getStatusSummary: (async (_req, res) => {
+  getStatusSummary: (async (req, res) => {
     const EXPIRING_SOON_DAYS = 30;
     const { getSetting } = await import("../../shared/utils/settings.js");
 
@@ -487,19 +487,37 @@ export const adminController = {
     // License expiry.
     let licenseExpiringSoon = false;
     let licenseExpired = false;
+    let licenseDaysLeft: number | null = null;
     const license = await adminService.getActiveLicense();
     if (license?.expiresAt) {
       const daysLeft = (new Date(license.expiresAt).getTime() - Date.now()) / 86_400_000;
+      licenseDaysLeft = Math.ceil(daysLeft);
       if (daysLeft <= 0) licenseExpired = true;
       else if (daysLeft <= EXPIRING_SOON_DAYS) licenseExpiringSoon = true;
     }
-
     const licenseAttention = licenseExpiringSoon || licenseExpired;
+
+    // Per-admin acknowledgement for the license-expiry dialog: has THIS admin
+    // visited /admin/license since the license entered the warning window
+    // (expiresAt − 30d)? That anchor is stable for the term and moves forward on
+    // renewal, so the dialog re-nudges each cycle. Same visit-based model as the
+    // update dialog (a dismissal never counts; only looking does).
+    let licenseAcknowledged = true;
+    if (licenseAttention && req.userId && license?.expiresAt) {
+      const anchor = new Date(new Date(license.expiresAt).getTime() - EXPIRING_SOON_DAYS * 86_400_000);
+      const { activityService } = await import("../activity/activity.service.js");
+      licenseAcknowledged = await activityService.hasVisitedSince(req.userId, "/admin/license", anchor);
+    }
+
     res.json({
       pluginUpdates,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
+      licenseDaysLeft,
+      licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
+      licenseDomain:      license?.domain ?? null,
+      licenseAcknowledged,
       // Badge count: each pending update + the license (once) if it needs attention.
       total: pluginUpdates + (licenseAttention ? 1 : 0),
       // Red vs neutral badge.
