@@ -67,6 +67,7 @@ export const ACP_NAV: NavItem[] = [
     children: [
       { label: "nav.marketplace", to: "/admin/marketplace" },
       { label: "nav.installed", to: "/admin/installed" },
+      { label: "nav.updates", to: "/admin/updates" },
       { label: "nav.upload", to: "/admin/upload" },
       { label: "nav.license", to: "/admin/license" },
     ],

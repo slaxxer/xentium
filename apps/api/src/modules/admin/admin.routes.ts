@@ -140,6 +140,8 @@ adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disco
 adminRouter.post("/marketplace/authorize",     adminGuard, licenseActivateLimiter, adminController.authorizeMarketplaceDownload);
 // Direct install (§16.2): authorize → server-side fetch + sha256 verify → normal intake.
 adminRouter.post("/marketplace/install",       adminGuard, licenseActivateLimiter, adminController.installFromMarketplace);
+// Update-in-place (§16.2): same chokepoint, engine swaps the newer artifact in.
+adminRouter.post("/marketplace/update",        adminGuard, licenseActivateLimiter, adminController.updateFromMarketplace);
 
 // Sub-routers
 adminRouter.use("/groups",       groupsRouter);

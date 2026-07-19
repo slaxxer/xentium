@@ -64,6 +64,7 @@ import { GuestHomePage }   from "../features/admin/pages/GuestHomePage";
 // ACP pages — extensions
 import { MarketplacePage } from "../features/admin/pages/MarketplacePage";
 import { InstalledPage }   from "../features/admin/pages/InstalledPage";
+import { UpdatesPage }     from "../features/admin/pages/UpdatesPage";
 import { UploadPage }      from "../features/admin/pages/UploadPage";
 import { LicensePage }     from "../features/admin/pages/LicensePage";
 // ACP pages — system
@@ -275,6 +276,7 @@ function buildRouter() {
           // Extensions
           { path: "marketplace",      element: <MarketplacePage /> },
           { path: "installed",        element: <InstalledPage /> },
+          { path: "updates",          element: <UpdatesPage /> },
           { path: "upload",           element: <UploadPage /> },
           { path: "license",          element: <LicensePage /> },
           // Plugin ACP routes (registered by plugins via slotRegistry)

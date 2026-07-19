@@ -73,8 +73,11 @@ function useUpdateAlert() {
     const updates = data?.updates ?? [];
     if (!updates.length) return;
     const setHash = updates.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",");
+    // Only stays silent once the admin has ACTED on this exact update set. A bare
+    // reload must NOT count as acknowledgement — the dialog reappears on every ACP
+    // entry until the admin clicks View or Later (matches the Extensions banner,
+    // which also persists until the update is applied).
     if (localStorage.getItem(UPDATES_SEEN_KEY) === setHash) return;
-    localStorage.setItem(UPDATES_SEEN_KEY, setHash);
 
     // Critical rows first, then cap the list for the dialog.
     const ordered = [...updates].sort((a, b) => Number(b.critical) - Number(a.critical));
@@ -95,7 +98,14 @@ function useUpdateAlert() {
       note:        updates.some((u) => u.renewalRequired) ? t("marketplace.updatesRenewal") : undefined,
       confirmText: t("marketplace.updatesDialogView"),
       cancelText:  t("marketplace.updatesDialogLater"),
-    }).then((view) => { if (view) navigate("/admin/marketplace"); });
+    }).then((view) => {
+      // Acknowledged → remember this set so it stays quiet until a NEW update set
+      // appears. Until then it re-fires on every fresh ACP entry (this effect runs
+      // per AcpShell mount). The Extensions-section banner remains the persistent
+      // reminder that survives until the update is actually applied.
+      localStorage.setItem(UPDATES_SEEN_KEY, setHash);
+      if (view) navigate("/admin/updates");
+    });
   }, [data, t, navigate]);
 }
 

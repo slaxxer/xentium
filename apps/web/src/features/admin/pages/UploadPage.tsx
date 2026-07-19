@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
+import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import "./UploadPage.scss";
 
 const STEP_KEYS = ["upload", "validate", "install"] as const;
@@ -107,6 +108,8 @@ export function UploadPage() {
           <h1 className="acp-page-title">{t("upload.title")}</h1>
         </div>
       </div>
+
+      <ExtensionsUpdateBanner />
 
       <div className="acp-upload__grid">
       <div className="acp-card" style={{ padding: 32 }}>

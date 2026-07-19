@@ -48,6 +48,8 @@ export const NEC = {
   PLUGIN_INVALID_MANIFEST: "NEC-PLUGIN-2001",
   PLUGIN_PACKAGE_INVALID: "NEC-PLUGIN-2002",   // not a ZIP / zip-slip / missing or malformed manifest.json
   PLUGIN_ALREADY_INSTALLED: "NEC-PLUGIN-2003",
+  PLUGIN_NOT_FOUND: "NEC-PLUGIN-2004",         // update/manage a plugin that isn't installed
+  PLUGIN_VERSION_NOT_NEWER: "NEC-PLUGIN-2005", // update package version ≤ installed (forward-only)
   PLUGIN_INVALID_MIGRATION: "NEC-PLUGIN-2010",
   PLUGIN_MIGRATION_MISSING: "NEC-PLUGIN-2011", // up/down migration file absent from the package
   PLUGIN_MIGRATION_CHECKSUM: "NEC-PLUGIN-2012",// applied migration modified since install
