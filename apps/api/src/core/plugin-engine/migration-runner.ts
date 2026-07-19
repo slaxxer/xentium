@@ -57,6 +57,51 @@ export async function runUpMigrations(
   }
 }
 
+/**
+ * Run only migrations NOT yet applied for this plugin, matching by NAME across
+ * every version. Used by the update path: the tracking id embeds the version
+ * (`${pluginId}_${ver}_${name}`), so a plugin updated 1.0.0 → 1.0.1 whose manifest
+ * still lists the historical `001_init` would otherwise recompute a 1.0.1-keyed id,
+ * miss the 1.0.0-keyed tracking row, and RE-RUN the migration ("relation already
+ * exists"). Migration names are a one-time schema change per plugin lifetime, so a
+ * name already tracked (any version) is genuinely applied — skip it. New names run
+ * and are tracked under the manifest's current version.
+ */
+export async function runNewUpMigrations(
+  zip:      AdmZip,
+  manifest: PluginManifest,
+): Promise<void> {
+  const { id: pluginId, version: pluginVer, migrations } = manifest;
+  if (!migrations.length) return;
+
+  const applied = await prisma.nodevoPluginMigration.findMany({
+    where:  { pluginId },
+    select: { name: true },
+  });
+  const appliedNames = new Set(applied.map((m) => m.name));
+
+  for (const name of migrations) {
+    if (appliedNames.has(name)) continue; // applied in this or a prior version
+
+    const entryPath = `migrations/${name}.up.sql`;
+    const entry     = zip.getEntry(entryPath);
+    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
+
+    const sql = entry.getData().toString("utf8");
+    validateMigrationSql(sql, entryPath);
+
+    await prisma.$transaction(async (tx) => {
+      const stmts = splitSqlStatements(sql);
+      for (const stmt of stmts) {
+        await tx.$executeRawUnsafe(stmt);
+      }
+      await tx.nodevoPluginMigration.create({
+        data: { id: migrationId(pluginId, pluginVer, name), pluginId, pluginVer, name, checksum: checksum(sql), direction: "up" },
+      });
+    });
+  }
+}
+
 /** Reverse all applied .down.sql migrations for a plugin from a ZIP buffer. */
 export async function runDownMigrations(
   zip:      AdmZip,
