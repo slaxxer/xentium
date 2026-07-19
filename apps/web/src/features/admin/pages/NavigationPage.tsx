@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faPlus, faGripVertical, faPencil, faTrash,
@@ -28,6 +29,7 @@ function EditModal({
   onClose: () => void;
   onSave: (data: { label: string; url: string; openInNewTab: boolean; visibility: string }) => void;
 }) {
+  const { t } = useTranslation("acp");
   const [label,      setLabel]      = useState(item?.label       ?? "");
   const [url,        setUrl]        = useState(item?.url         ?? "");
   const [openNew,    setOpenNew]    = useState(item?.openInNewTab ?? false);
@@ -37,35 +39,35 @@ function EditModal({
     <div className="acp-modal-overlay" onClick={onClose}>
       <div className="acp-modal" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
-          {item ? "Edit Nav Link" : "Add Nav Link"}
+          {item ? t("navigation.editLink") : t("navigation.addLink")}
         </h2>
 
         <div className="acp-form-field">
-          <label className="acp-label">Label</label>
-          <input className="acp-input" value={label} onChange={e => setLabel(e.target.value)} placeholder="e.g. Forum" autoFocus />
+          <label className="acp-label">{t("navigation.fieldLabel")}</label>
+          <input className="acp-input" value={label} onChange={e => setLabel(e.target.value)} placeholder={t("navigation.labelPlaceholder")} autoFocus />
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">URL</label>
-          <input className="acp-input" value={url} onChange={e => setUrl(e.target.value)} placeholder="/forum or https://..." />
+          <label className="acp-label">{t("navigation.fieldUrl")}</label>
+          <input className="acp-input" value={url} onChange={e => setUrl(e.target.value)} placeholder={t("navigation.urlPlaceholder")} />
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Visibility</label>
+          <label className="acp-label">{t("navigation.fieldVisibility")}</label>
           <select className="acp-select" value={visibility} onChange={e => setVisibility(e.target.value)}>
-            <option value="public">Public — everyone</option>
-            <option value="members">Members only</option>
-            <option value="groups">Specific groups</option>
+            <option value="public">{t("navigation.visOptPublic")}</option>
+            <option value="members">{t("navigation.visOptMembers")}</option>
+            <option value="groups">{t("navigation.visOptGroups")}</option>
           </select>
         </div>
 
         <label className="acp-checkbox-row" style={{ marginBottom: "1.25rem" }}>
           <input type="checkbox" checked={openNew} onChange={e => setOpenNew(e.target.checked)} />
-          <span>Open in new tab</span>
+          <span>{t("navigation.openNewTab")}</span>
         </label>
 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("navigation.cancel")}</button>
           <button
             type="button"
             className="btn-primary btn-sm"
@@ -73,7 +75,7 @@ function EditModal({
             onClick={() => onSave({ label, url, openInNewTab: openNew, visibility })}
           >
             <FontAwesomeIcon icon={faSave} style={{ marginRight: 5 }} />
-            {item ? "Save" : "Add Link"}
+            {item ? t("navigation.save") : t("navigation.addLink")}
           </button>
         </div>
       </div>
@@ -82,6 +84,7 @@ function EditModal({
 }
 
 export function NavigationPage() {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
 
   // useRef for drag source — always synchronously current, no stale-closure risk
@@ -111,7 +114,7 @@ export function NavigationPage() {
       api.post("/admin/nav-items", data),
     onSuccess: () => {
       invalidateAll();
-      swalToast("Link added!", "success");
+      swalToast(t("navigation.toastAdded"), "success");
       setEditItem(undefined);
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -122,7 +125,7 @@ export function NavigationPage() {
       api.patch(`/admin/nav-items/${id}`, data),
     onSuccess: () => {
       invalidateAll();
-      swalToast("Link updated!", "success");
+      swalToast(t("navigation.toastUpdated"), "success");
       setEditItem(undefined);
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -147,7 +150,7 @@ export function NavigationPage() {
     },
     onError: (_e, _payload, ctx) => {
       if (ctx?.previous) qc.setQueryData(["acp-nav-items"], ctx.previous);
-      swalToast("Reorder failed — reverted.");
+      swalToast(t("navigation.toastReorderFailed"));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["acp-nav-items"] });
@@ -159,7 +162,7 @@ export function NavigationPage() {
     mutationFn: (id: string) => api.delete(`/admin/nav-items/${id}`),
     onSuccess: () => {
       invalidateAll();
-      swalToast("Link removed!", "success");
+      swalToast(t("navigation.toastRemoved"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -212,9 +215,9 @@ export function NavigationPage() {
 
   async function handleDelete(item: NavItem) {
     const result = await swalConfirm(
-      "Remove link?",
-      `"${item.label}" will be removed from the navigation.`,
-      "Remove", "Cancel",
+      t("navigation.removeTitle"),
+      t("navigation.removeText", { label: item.label }),
+      t("navigation.remove"), t("navigation.cancel"),
     );
     if (result) deleteMutation.mutate(item.id);
   }
@@ -225,11 +228,11 @@ export function NavigationPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Appearance</div>
-          <h1 className="acp-page-title">Navigation</h1>
+          <div className="acp-page-sub">{t("nav.appearance")}</div>
+          <h1 className="acp-page-title">{t("nav.navigation")}</h1>
         </div>
         <button type="button" className="btn-primary btn-sm" onClick={() => setEditItem(null)}>
-          <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> Add Link
+          <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("navigation.addLink")}
         </button>
       </div>
 
@@ -240,13 +243,13 @@ export function NavigationPage() {
         display: "flex", alignItems: "center", gap: 8,
       }}>
         <FontAwesomeIcon icon={faGripVertical} />
-        Drag the grip handle to reorder navigation links.
+        {t("navigation.reorderHint")}
       </div>
 
       {isLoading ? (
-        <div className="acp-card acp-empty">Loading…</div>
+        <div className="acp-card acp-empty">{t("navigation.loading")}</div>
       ) : sorted.length === 0 ? (
-        <div className="acp-card acp-empty">No nav links yet.</div>
+        <div className="acp-card acp-empty">{t("navigation.empty")}</div>
       ) : (
         <div className="acp-card" style={{ padding: 0, overflow: "hidden" }}>
           <div style={{
@@ -255,8 +258,8 @@ export function NavigationPage() {
             padding: "10px 18px",
             borderBottom: "1px solid var(--c-border)",
           }}>
-            {["", "Label", "URL", "Visibility", "Active", "Actions"].map(h => (
-              <div key={h} style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
+            {[["h_", ""], ["h_label", t("navigation.colLabel")], ["h_url", t("navigation.colUrl")], ["h_vis", t("navigation.colVisibility")], ["h_active", t("navigation.colActive")], ["h_actions", t("navigation.colActions")]].map(([k, h]) => (
+              <div key={k} style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
             ))}
           </div>
 
@@ -286,7 +289,7 @@ export function NavigationPage() {
                 {/* Grip handle */}
                 <div
                   style={{ cursor: "grab", color: "var(--c-fg-muted)", fontSize: 14, display: "flex", alignItems: "center" }}
-                  title="Drag to reorder"
+                  title={t("navigation.dragTitle")}
                 >
                   <FontAwesomeIcon icon={faGripVertical} />
                 </div>
@@ -295,7 +298,7 @@ export function NavigationPage() {
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>{item.label}</span>
                   {item.isSystem && (
-                    <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>Core</span>
+                    <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>{t("navigation.core")}</span>
                   )}
                   {item.openInNewTab && (
                     <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: 10, color: "var(--c-fg-muted)" }} />
@@ -313,7 +316,7 @@ export function NavigationPage() {
                     className={`acp-badge ${item.visibility === "public" ? "acp-badge--success" : "acp-badge--neutral"}`}
                     style={{ marginTop: 0 }}
                   >
-                    {item.visibility}
+                    {t(`navigation.visibility.${item.visibility}`, { defaultValue: item.visibility })}
                   </span>
                 </div>
 
@@ -323,7 +326,7 @@ export function NavigationPage() {
                     type="button"
                     onClick={() => updateMutation.mutate({ id: item.id, data: { isActive: !item.isActive } })}
                     style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                    title={item.isActive ? "Deactivate" : "Activate"}
+                    title={item.isActive ? t("navigation.deactivate") : t("navigation.activate")}
                   >
                     <FontAwesomeIcon
                       icon={item.isActive ? faToggleOn : faToggleOff}
@@ -338,7 +341,7 @@ export function NavigationPage() {
                     <FontAwesomeIcon icon={faPencil} />
                   </button>
                   {item.isSystem ? (
-                    <button type="button" className="btn-ghost btn-sm" disabled title="Core links cannot be deleted — deactivate them instead">
+                    <button type="button" className="btn-ghost btn-sm" disabled title={t("navigation.coreNoDelete")}>
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   ) : (

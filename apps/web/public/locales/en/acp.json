@@ -35,7 +35,8 @@
     "errorReference": "Error Reference",
     "errorLog": "Error Log",
     "migrationHistory": "Migration History",
-    "about": "About"
+    "about": "About",
+    "guestHome": "Guest Home"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -849,7 +850,10 @@
     "removeDataConfirm": "Yes, remove data",
     "allowUpload": "Allow manual uploads",
     "allowUploadHint": "Let admins install plugins by uploading a .nvplugin file, in addition to the marketplace. Off by default.",
-    "emptyBrowseMarketplace": "Browse the marketplace"
+    "emptyBrowseMarketplace": "Browse the marketplace",
+    "loadFailed": "Failed to load",
+    "loadFailedTitle": "This plugin is enabled but failed to load — its routes and pages are not active.",
+    "loadFailedHint": "Disable then re-enable to retry, or re-upload a fixed build."
   },
   "upload": {
     "title": "Upload Plugin",
@@ -1050,7 +1054,8 @@
     },
     "visibility": {
       "public": "Public",
-      "members": "Members only"
+      "members": "Members only",
+      "groups": "Groups"
     },
     "colTitle": "Title",
     "colSlug": "URL",
@@ -1114,5 +1119,71 @@
     "loading": "Loading…",
     "empty": "No activity recorded yet",
     "pagination": "Page {{page}} of {{totalPages}} — {{total}} entries"
+  },
+  "guestHome": {
+    "title": "Guest Home",
+    "intro": "The landing page logged-out visitors see. Edit the hero copy and choose which sections and data appear. Changes apply immediately.",
+    "heroHeading": "Hero",
+    "fieldTitle": "Title",
+    "fieldSubtitle": "Subtitle",
+    "subtitleHint": "Use {members} to insert the live member count.",
+    "badgeLabel": "Online badge text",
+    "badgeDesc": "Shown after the live online count, e.g. “318 builders online now”.",
+    "ctaPrimaryLabel": "Primary button",
+    "ctaSecondaryLabel": "Secondary button",
+    "feedHeading": "Feed sources",
+    "feedIntro": "What the guest feed shows. Pick one or several — multiple sources are merged newest-first.",
+    "feedIntroMore": "Install & enable a content plugin (e.g. Forum) to add more sources.",
+    "sectionsHeading": "Sections",
+    "statsLabel": "Hero stat strip",
+    "statsDesc": "Members · Posts · New today.",
+    "presenceLabel": "“Happening right now”",
+    "presenceDesc": "Recent activity card in the hero.",
+    "categoriesLabel": "Categories",
+    "categoriesDesc": "Category filter chips and the rail category list.",
+    "onlineLabel": "Online now",
+    "onlineDesc": "Avatars of currently online members.",
+    "tagsLabel": "Trending tags",
+    "tagsDesc": "Most-used article tags."
+  },
+  "navigation": {
+    "editLink": "Edit Nav Link",
+    "addLink": "Add Link",
+    "fieldLabel": "Label",
+    "labelPlaceholder": "e.g. Forum",
+    "fieldUrl": "URL",
+    "urlPlaceholder": "/forum or https://...",
+    "fieldVisibility": "Visibility",
+    "visOptPublic": "Public — everyone",
+    "visOptMembers": "Members only",
+    "visOptGroups": "Specific groups",
+    "openNewTab": "Open in new tab",
+    "cancel": "Cancel",
+    "save": "Save",
+    "reorderHint": "Drag the grip handle to reorder navigation links.",
+    "loading": "Loading…",
+    "empty": "No nav links yet.",
+    "colLabel": "Label",
+    "colUrl": "URL",
+    "colVisibility": "Visibility",
+    "colActive": "Active",
+    "colActions": "Actions",
+    "core": "Core",
+    "dragTitle": "Drag to reorder",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "coreNoDelete": "Core links cannot be deleted — deactivate them instead",
+    "removeTitle": "Remove link?",
+    "removeText": "“{{label}}” will be removed from the navigation.",
+    "remove": "Remove",
+    "toastAdded": "Link added!",
+    "toastUpdated": "Link updated!",
+    "toastRemoved": "Link removed!",
+    "toastReorderFailed": "Reorder failed — reverted.",
+    "visibility": {
+      "public": "public",
+      "members": "members",
+      "groups": "groups"
+    }
   }
 }

@@ -33,7 +33,8 @@
     "errorReference": "Référence des erreurs",
     "errorLog": "Journal des erreurs",
     "migrationHistory": "Historique des migrations",
-    "about": "À propos"
+    "about": "À propos",
+    "guestHome": "Accueil visiteurs"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",
@@ -714,7 +715,10 @@
     "removeDataConfirm": "Oui, supprimer les données",
     "allowUpload": "Autoriser les envois manuels",
     "allowUploadHint": "Permet aux admins d'installer des plugins en envoyant un fichier .nvplugin, en plus de la marketplace. Désactivé par défaut.",
-    "emptyBrowseMarketplace": "Parcourir la marketplace"
+    "emptyBrowseMarketplace": "Parcourir la marketplace",
+    "loadFailed": "Échec du chargement",
+    "loadFailedTitle": "Ce plugin est activé mais n'a pas pu se charger — ses routes et pages ne sont pas actives.",
+    "loadFailedHint": "Désactivez puis réactivez pour réessayer, ou renvoyez une version corrigée."
   },
   "upload": {
     "title": "Téléverser un plugin",
@@ -900,5 +904,76 @@
     "deleteText": "« {{title}} » sera supprimé (suppression douce) et retiré des listes publiques.",
     "delete": "Supprimer",
     "toastDeleted": "Article supprimé"
+  },
+  "pages": {
+    "visibility": {
+      "groups": "Groupes"
+    }
+  },
+  "guestHome": {
+    "title": "Accueil visiteurs",
+    "intro": "La page d'accueil que voient les visiteurs déconnectés. Modifiez le texte du hero et choisissez les sections et données affichées. Les changements s'appliquent immédiatement.",
+    "heroHeading": "Hero",
+    "fieldTitle": "Titre",
+    "fieldSubtitle": "Sous-titre",
+    "subtitleHint": "Utilisez {members} pour insérer le nombre de membres en direct.",
+    "badgeLabel": "Texte du badge en ligne",
+    "badgeDesc": "Affiché après le compteur en ligne, p. ex. « 318 créateurs en ligne ».",
+    "ctaPrimaryLabel": "Bouton principal",
+    "ctaSecondaryLabel": "Bouton secondaire",
+    "feedHeading": "Sources du flux",
+    "feedIntro": "Ce que montre le flux visiteurs. Choisissez une ou plusieurs — plusieurs sources sont fusionnées du plus récent au plus ancien.",
+    "feedIntroMore": "Installez et activez un plugin de contenu (p. ex. Forum) pour ajouter d'autres sources.",
+    "sectionsHeading": "Sections",
+    "statsLabel": "Bandeau de statistiques du hero",
+    "statsDesc": "Membres · Messages · Nouveaux aujourd'hui.",
+    "presenceLabel": "« En ce moment »",
+    "presenceDesc": "Carte d'activité récente dans le hero.",
+    "categoriesLabel": "Catégories",
+    "categoriesDesc": "Puces de filtre de catégories et liste des catégories du panneau.",
+    "onlineLabel": "En ligne",
+    "onlineDesc": "Avatars des membres actuellement en ligne.",
+    "tagsLabel": "Tags tendance",
+    "tagsDesc": "Tags d'articles les plus utilisés."
+  },
+  "navigation": {
+    "editLink": "Modifier le lien de navigation",
+    "addLink": "Ajouter un lien",
+    "fieldLabel": "Libellé",
+    "labelPlaceholder": "p. ex. Forum",
+    "fieldUrl": "URL",
+    "urlPlaceholder": "/forum ou https://...",
+    "fieldVisibility": "Visibilité",
+    "visOptPublic": "Public — tout le monde",
+    "visOptMembers": "Membres uniquement",
+    "visOptGroups": "Groupes spécifiques",
+    "openNewTab": "Ouvrir dans un nouvel onglet",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "reorderHint": "Faites glisser la poignée pour réordonner les liens de navigation.",
+    "loading": "Chargement…",
+    "empty": "Aucun lien de navigation pour le moment.",
+    "colLabel": "Libellé",
+    "colUrl": "URL",
+    "colVisibility": "Visibilité",
+    "colActive": "Actif",
+    "colActions": "Actions",
+    "core": "Cœur",
+    "dragTitle": "Glisser pour réordonner",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
+    "coreNoDelete": "Les liens du cœur ne peuvent pas être supprimés — désactivez-les à la place",
+    "removeTitle": "Supprimer le lien ?",
+    "removeText": "« {{label}} » sera retiré de la navigation.",
+    "remove": "Supprimer",
+    "toastAdded": "Lien ajouté !",
+    "toastUpdated": "Lien mis à jour !",
+    "toastRemoved": "Lien supprimé !",
+    "toastReorderFailed": "Échec du réordonnancement — annulé.",
+    "visibility": {
+      "public": "public",
+      "members": "membres",
+      "groups": "groupes"
+    }
   }
 }
