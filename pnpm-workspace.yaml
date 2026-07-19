@@ -31,6 +31,6 @@ catalog:
   supertest: ^7
   tsx: ^4
   typescript: ^6
-  vite: ^8
+  vite: ^7
   vitest: ^3
   zod: ^4.4.3
