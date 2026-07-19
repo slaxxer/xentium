@@ -846,7 +846,10 @@
     "removeText": "The plugin will be uninstalled. You can choose whether to also remove its database tables.",
     "removeDataTitle": "Remove plugin data?",
     "removeDataText": "This will also drop the plugin's database tables and delete all its data. This cannot be undone.",
-    "removeDataConfirm": "Yes, remove data"
+    "removeDataConfirm": "Yes, remove data",
+    "allowUpload": "Allow manual uploads",
+    "allowUploadHint": "Let admins install plugins by uploading a .nvplugin file, in addition to the marketplace. Off by default.",
+    "emptyBrowseMarketplace": "Browse the marketplace"
   },
   "upload": {
     "title": "Upload Plugin",
@@ -896,7 +899,10 @@
     "sideSafety": "Only install plugins from sources you trust — they run with server access and can add database tables.",
     "sideMarketTitle": "Looking for plugins?",
     "sideMarketText": "Browse and install official plugins with an active license.",
-    "sideMarketLink": "Open the Marketplace"
+    "sideMarketLink": "Open the Marketplace",
+    "disabledTitle": "Manual uploads are disabled",
+    "disabledHint": "Plugins install from the marketplace by default. An administrator can turn on manual .nvplugin uploads on the Installed page.",
+    "disabledGoMarketplace": "Browse the marketplace"
   },
   "marketplace": {
     "notConnected": "No marketplace account connected. Connect on the <0>License</0> page to install licensed plugins.",

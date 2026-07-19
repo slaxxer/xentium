@@ -8,7 +8,7 @@ import { validateManifest, type PluginManifest } from "./manifest-validator.js";
 import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
-import { isPluginEntitled } from "../license-engine/license-engine.js";
+import { isPluginEntitled, pluginRequiresLicense } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
@@ -221,8 +221,10 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
   if (record.status === "enabled") return;
 
-  // License check — licenseRequired plugins need a valid entitlement
-  if (record.licenseRequired) {
+  // License check — authoritative BY ID: a plugin needs an entitlement iff the
+  // marketplace sells THIS id as paid, regardless of what its (uploadable) manifest
+  // `licenseRequired` flag claims. Closes the "repackage a paid plugin as free" hole.
+  if (await pluginRequiresLicense(pluginId)) {
     const entitled = await isPluginEntitled(pluginId);
     if (!entitled) {
       throw new NodevoError({

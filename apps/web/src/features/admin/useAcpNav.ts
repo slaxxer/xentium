@@ -6,6 +6,7 @@ import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon } from "./pages/acpIcons";
+import { useUploadAllowed } from "./hooks/useUploadAllowed";
 
 export interface NavChild { label: string; to: string }
 export interface NavItem {
@@ -95,6 +96,7 @@ export function useAcpNav(): NavItem[] {
     queryFn: () => api.get("/admin/registered-pages"),
     staleTime: 60_000,
   });
+  const { data: uploadAllowed } = useUploadAllowed();
 
   const pluginSectionMap = pluginPages.reduce<Record<string, NavChild[]>>((acc, page) => {
     (acc[page.section] ??= []).push({ label: page.label, to: page.path });
@@ -114,11 +116,17 @@ export function useAcpNav(): NavItem[] {
   }
 
   // Core nav with any merged plugin children appended to the matching section.
-  const baseNav: NavItem[] = ACP_NAV.map((item) =>
-    item.key && mergeIntoCore[item.key]
-      ? { ...item, children: [...(item.children ?? []), ...mergeIntoCore[item.key]!] }
-      : item,
-  );
+  // The Upload item is hidden unless manual uploads are enabled (default off).
+  const baseNav: NavItem[] = ACP_NAV.map((item) => {
+    let children = item.children;
+    if (item.key === "extensions" && uploadAllowed !== true) {
+      children = children?.filter((c) => c.to !== "/admin/upload");
+    }
+    if (item.key && mergeIntoCore[item.key]) {
+      children = [...(children ?? []), ...mergeIntoCore[item.key]!];
+    }
+    return children === item.children ? item : { ...item, children };
+  });
 
   const toNavItem = (section: string, children: NavChild[]): NavItem => {
     const meta = slotRegistry.getPluginMetaBySectionName(section);

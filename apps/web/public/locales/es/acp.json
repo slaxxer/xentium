@@ -711,7 +711,10 @@
     "removeText": "El plugin se desinstalará. Podrás elegir si también se eliminan sus tablas de la base de datos.",
     "removeDataTitle": "¿Eliminar los datos del plugin?",
     "removeDataText": "Esto también eliminará las tablas del plugin y todos sus datos. No se puede deshacer.",
-    "removeDataConfirm": "Sí, eliminar datos"
+    "removeDataConfirm": "Sí, eliminar datos",
+    "allowUpload": "Permitir subidas manuales",
+    "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .nvplugin, además del marketplace. Desactivado por defecto.",
+    "emptyBrowseMarketplace": "Explorar el marketplace"
   },
   "upload": {
     "title": "Subir plugin",
@@ -761,7 +764,10 @@
     "sideSafety": "Instala solo plugins de fuentes de confianza — se ejecutan con acceso al servidor y pueden crear tablas en la base de datos.",
     "sideMarketTitle": "¿Buscas plugins?",
     "sideMarketText": "Explora e instala plugins oficiales con una licencia activa.",
-    "sideMarketLink": "Abrir el Marketplace"
+    "sideMarketLink": "Abrir el Marketplace",
+    "disabledTitle": "Las subidas manuales están desactivadas",
+    "disabledHint": "Los plugins se instalan desde el marketplace de forma predeterminada. Un administrador puede activar las subidas manuales de .nvplugin en la página Instalados.",
+    "disabledGoMarketplace": "Explorar el marketplace"
   },
   "marketplace": {
     "notConnected": "No hay cuenta del marketplace conectada. Conéctala en la página <0>Licencia</0> para instalar plugins con licencia.",

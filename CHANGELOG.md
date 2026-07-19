@@ -1,13 +1,14 @@
 # Changelog
 
-## Live progress dialog when updating a plugin
+## Plugins: marketplace-first installs, and paywall enforced by plugin identity
 
-- Updating a plugin from **Extensions → Updates** now shows a **real-time progress
-  dialog** instead of a toast. The server streams each step as it happens —
-  authorizing, downloading (with real byte progress), verifying, installing files,
-  running migrations, enabling — and the dialog's bar and label follow along, then
-  show success or the failure reason. The success toast has been removed; the
-  dialog is the whole feedback surface.
-- Installing or uploading a plugin now refreshes the update check immediately, so a
-  just-installed older build shows its available update on the next ACP entry
-  rather than waiting for the daily job.
+- **Manual plugin uploads are now off by default.** The marketplace is the sanctioned
+  install channel; an admin can re-enable manual `.nvplugin` uploads from ACP →
+  Extensions → Installed. When off, the Upload page is hidden and the upload endpoint
+  is blocked. Installing from the marketplace is never affected.
+- **Paid plugins are enforced by their identity, not a self-declared flag.** A plugin
+  now requires a license only if the marketplace actually sells that plugin id as paid —
+  regardless of what the uploaded package's manifest claims. This closes the "repackage a
+  paid plugin as free and sideload it" loophole. Genuine third-party plugins (ids the
+  marketplace doesn't sell) install and run freely, so the community ecosystem is
+  unaffected.
