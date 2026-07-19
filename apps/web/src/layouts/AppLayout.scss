@@ -188,6 +188,11 @@
     &--bell {
       position: relative;
     }
+
+    /* ACP gear — anchors the admin-attention status badge */
+    &--acp {
+      position: relative;
+    }
   }
 
   /* Write button */
