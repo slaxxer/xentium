@@ -155,7 +155,7 @@ export function InstalledPage() {
                 </div>
 
                 <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
-                  {failed && <Badge label={t("installed.loadFailed", { defaultValue: "Failed to load" })} color="var(--c-danger)" />}
+                  {failed && <Badge label={t("installed.loadFailed")} color="var(--c-danger)" />}
                   <Badge label={t(`installed.status.${p.status}`, { defaultValue: p.status })} color={STATUS_COLOR[p.status] ?? "var(--c-fg-muted)"} />
 
                   {p.status === "enabled" ? (
@@ -177,13 +177,13 @@ export function InstalledPage() {
                   <div style={{ flexBasis:"100%", marginTop:4, padding:"10px 12px", borderRadius:"var(--radius-md)", background:"var(--c-danger-soft, rgba(248,113,113,.10))", border:"1px solid var(--c-danger)" }}>
                     <div style={{ fontSize:12.5, fontWeight:700, color:"var(--c-danger)", marginBottom:3 }}>
                       <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight:6 }} />
-                      {t("installed.loadFailedTitle", { defaultValue: "This plugin is enabled but failed to load — its routes and pages are not active." })}
+                      {t("installed.loadFailedTitle")}
                     </div>
                     <div style={{ fontSize:12, color:"var(--c-fg-muted)", fontFamily:"var(--ff-mono, monospace)", wordBreak:"break-word" }}>
                       {p.loadError!.message}
                     </div>
                     <div style={{ fontSize:11.5, color:"var(--c-fg-subtle)", marginTop:4 }}>
-                      {t("installed.loadFailedHint", { defaultValue: "Disable then re-enable to retry, or re-upload a fixed build." })}
+                      {t("installed.loadFailedHint")}
                     </div>
                   </div>
                 )}

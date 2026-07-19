@@ -33,7 +33,8 @@
     "errorReference": "Fehlerreferenz",
     "errorLog": "Fehlerprotokoll",
     "migrationHistory": "Migrationsverlauf",
-    "about": "Über"
+    "about": "Über",
+    "guestHome": "Gäste-Startseite"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -714,7 +715,10 @@
     "removeDataConfirm": "Ja, Daten entfernen",
     "allowUpload": "Manuelle Uploads erlauben",
     "allowUploadHint": "Erlaubt Admins, Plugins zusätzlich zum Marktplatz per .nvplugin-Datei zu installieren. Standardmäßig aus.",
-    "emptyBrowseMarketplace": "Marktplatz durchsuchen"
+    "emptyBrowseMarketplace": "Marktplatz durchsuchen",
+    "loadFailed": "Laden fehlgeschlagen",
+    "loadFailedTitle": "Dieses Plugin ist aktiviert, konnte aber nicht geladen werden — seine Routen und Seiten sind inaktiv.",
+    "loadFailedHint": "Deaktivieren und wieder aktivieren, um es erneut zu versuchen, oder einen korrigierten Build hochladen."
   },
   "upload": {
     "title": "Plugin hochladen",
@@ -900,5 +904,76 @@
     "deleteText": "„{{title}}“ wird soft-gelöscht und aus öffentlichen Listen entfernt.",
     "delete": "Löschen",
     "toastDeleted": "Artikel gelöscht"
+  },
+  "pages": {
+    "visibility": {
+      "groups": "Gruppen"
+    }
+  },
+  "guestHome": {
+    "title": "Gäste-Startseite",
+    "intro": "Die Landingpage, die abgemeldete Besucher sehen. Bearbeite den Hero-Text und wähle, welche Bereiche und Daten erscheinen. Änderungen wirken sofort.",
+    "heroHeading": "Hero",
+    "fieldTitle": "Titel",
+    "fieldSubtitle": "Untertitel",
+    "subtitleHint": "Verwende {members}, um die aktuelle Mitgliederzahl einzufügen.",
+    "badgeLabel": "Text des Online-Badges",
+    "badgeDesc": "Wird nach der Live-Online-Zahl angezeigt, z. B. „318 Builder gerade online“.",
+    "ctaPrimaryLabel": "Primärer Button",
+    "ctaSecondaryLabel": "Sekundärer Button",
+    "feedHeading": "Feed-Quellen",
+    "feedIntro": "Was der Gäste-Feed zeigt. Wähle eine oder mehrere — mehrere Quellen werden neueste-zuerst zusammengeführt.",
+    "feedIntroMore": "Installiere & aktiviere ein Inhalts-Plugin (z. B. Forum), um weitere Quellen hinzuzufügen.",
+    "sectionsHeading": "Bereiche",
+    "statsLabel": "Hero-Statistikleiste",
+    "statsDesc": "Mitglieder · Beiträge · Heute neu.",
+    "presenceLabel": "„Gerade aktiv“",
+    "presenceDesc": "Karte mit jüngster Aktivität im Hero.",
+    "categoriesLabel": "Kategorien",
+    "categoriesDesc": "Kategorie-Filter-Chips und die Kategorieliste in der Seitenleiste.",
+    "onlineLabel": "Jetzt online",
+    "onlineDesc": "Avatare der aktuell online befindlichen Mitglieder.",
+    "tagsLabel": "Angesagte Tags",
+    "tagsDesc": "Meistgenutzte Artikel-Tags."
+  },
+  "navigation": {
+    "editLink": "Navigationslink bearbeiten",
+    "addLink": "Link hinzufügen",
+    "fieldLabel": "Bezeichnung",
+    "labelPlaceholder": "z. B. Forum",
+    "fieldUrl": "URL",
+    "urlPlaceholder": "/forum oder https://...",
+    "fieldVisibility": "Sichtbarkeit",
+    "visOptPublic": "Öffentlich — alle",
+    "visOptMembers": "Nur Mitglieder",
+    "visOptGroups": "Bestimmte Gruppen",
+    "openNewTab": "In neuem Tab öffnen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "reorderHint": "Ziehe den Griff, um Navigationslinks neu anzuordnen.",
+    "loading": "Wird geladen…",
+    "empty": "Noch keine Navigationslinks.",
+    "colLabel": "Bezeichnung",
+    "colUrl": "URL",
+    "colVisibility": "Sichtbarkeit",
+    "colActive": "Aktiv",
+    "colActions": "Aktionen",
+    "core": "Kern",
+    "dragTitle": "Zum Neuordnen ziehen",
+    "activate": "Aktivieren",
+    "deactivate": "Deaktivieren",
+    "coreNoDelete": "Kern-Links können nicht gelöscht werden — deaktiviere sie stattdessen",
+    "removeTitle": "Link entfernen?",
+    "removeText": "„{{label}}“ wird aus der Navigation entfernt.",
+    "remove": "Entfernen",
+    "toastAdded": "Link hinzugefügt!",
+    "toastUpdated": "Link aktualisiert!",
+    "toastRemoved": "Link entfernt!",
+    "toastReorderFailed": "Neuordnen fehlgeschlagen — zurückgesetzt.",
+    "visibility": {
+      "public": "öffentlich",
+      "members": "Mitglieder",
+      "groups": "Gruppen"
+    }
   }
 }

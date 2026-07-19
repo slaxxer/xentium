@@ -33,7 +33,8 @@
     "errorReference": "Referencia de errores",
     "errorLog": "Registro de errores",
     "migrationHistory": "Historial de migraciones",
-    "about": "Acerca de"
+    "about": "Acerca de",
+    "guestHome": "Inicio para invitados"
   },
   "sidebar": {
     "adminPanel": "Panel de administración",
@@ -714,7 +715,10 @@
     "removeDataConfirm": "Sí, eliminar datos",
     "allowUpload": "Permitir subidas manuales",
     "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .nvplugin, además del marketplace. Desactivado por defecto.",
-    "emptyBrowseMarketplace": "Explorar el marketplace"
+    "emptyBrowseMarketplace": "Explorar el marketplace",
+    "loadFailed": "Error al cargar",
+    "loadFailedTitle": "Este plugin está activado pero no se pudo cargar — sus rutas y páginas no están activas.",
+    "loadFailedHint": "Desactiva y vuelve a activar para reintentar, o vuelve a subir una versión corregida."
   },
   "upload": {
     "title": "Subir plugin",
@@ -900,5 +904,76 @@
     "deleteText": "«{{title}}» se eliminará (borrado suave) y desaparecerá de los listados públicos.",
     "delete": "Eliminar",
     "toastDeleted": "Artículo eliminado"
+  },
+  "pages": {
+    "visibility": {
+      "groups": "Grupos"
+    }
+  },
+  "guestHome": {
+    "title": "Inicio para invitados",
+    "intro": "La página de inicio que ven los visitantes no autenticados. Edita el texto del hero y elige qué secciones y datos aparecen. Los cambios se aplican de inmediato.",
+    "heroHeading": "Hero",
+    "fieldTitle": "Título",
+    "fieldSubtitle": "Subtítulo",
+    "subtitleHint": "Usa {members} para insertar el número de miembros en vivo.",
+    "badgeLabel": "Texto del distintivo en línea",
+    "badgeDesc": "Se muestra tras el conteo de usuarios en línea, p. ej. «318 creadores en línea ahora».",
+    "ctaPrimaryLabel": "Botón principal",
+    "ctaSecondaryLabel": "Botón secundario",
+    "feedHeading": "Fuentes del feed",
+    "feedIntro": "Lo que muestra el feed de invitados. Elige una o varias — varias fuentes se combinan de más reciente a más antigua.",
+    "feedIntroMore": "Instala y activa un plugin de contenido (p. ej. Foro) para añadir más fuentes.",
+    "sectionsHeading": "Secciones",
+    "statsLabel": "Franja de estadísticas del hero",
+    "statsDesc": "Miembros · Publicaciones · Nuevos hoy.",
+    "presenceLabel": "«Sucediendo ahora»",
+    "presenceDesc": "Tarjeta de actividad reciente en el hero.",
+    "categoriesLabel": "Categorías",
+    "categoriesDesc": "Fichas de filtro de categorías y la lista de categorías del panel.",
+    "onlineLabel": "En línea ahora",
+    "onlineDesc": "Avatares de los miembros actualmente en línea.",
+    "tagsLabel": "Etiquetas populares",
+    "tagsDesc": "Etiquetas de artículos más usadas."
+  },
+  "navigation": {
+    "editLink": "Editar enlace de navegación",
+    "addLink": "Añadir enlace",
+    "fieldLabel": "Etiqueta",
+    "labelPlaceholder": "p. ej. Foro",
+    "fieldUrl": "URL",
+    "urlPlaceholder": "/foro o https://...",
+    "fieldVisibility": "Visibilidad",
+    "visOptPublic": "Público — todos",
+    "visOptMembers": "Solo miembros",
+    "visOptGroups": "Grupos específicos",
+    "openNewTab": "Abrir en una pestaña nueva",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "reorderHint": "Arrastra el asa para reordenar los enlaces de navegación.",
+    "loading": "Cargando…",
+    "empty": "Aún no hay enlaces de navegación.",
+    "colLabel": "Etiqueta",
+    "colUrl": "URL",
+    "colVisibility": "Visibilidad",
+    "colActive": "Activo",
+    "colActions": "Acciones",
+    "core": "Núcleo",
+    "dragTitle": "Arrastra para reordenar",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "coreNoDelete": "Los enlaces del núcleo no se pueden eliminar — desactívalos en su lugar",
+    "removeTitle": "¿Eliminar el enlace?",
+    "removeText": "«{{label}}» se eliminará de la navegación.",
+    "remove": "Eliminar",
+    "toastAdded": "¡Enlace añadido!",
+    "toastUpdated": "¡Enlace actualizado!",
+    "toastRemoved": "¡Enlace eliminado!",
+    "toastReorderFailed": "Error al reordenar — revertido.",
+    "visibility": {
+      "public": "público",
+      "members": "miembros",
+      "groups": "grupos"
+    }
   }
 }
