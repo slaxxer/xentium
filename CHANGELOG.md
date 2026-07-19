@@ -1,14 +1,13 @@
 # Changelog
 
-## Plugins: marketplace-first installs, and paywall enforced by plugin identity
+## i18n: ACP translations, part 1
 
-- **Manual plugin uploads are now off by default.** The marketplace is the sanctioned
-  install channel; an admin can re-enable manual `.nvplugin` uploads from ACP →
-  Extensions → Installed. When off, the Upload page is hidden and the upload endpoint
-  is blocked. Installing from the marketplace is never affected.
-- **Paid plugins are enforced by their identity, not a self-declared flag.** A plugin
-  now requires a license only if the marketplace actually sells that plugin id as paid —
-  regardless of what the uploaded package's manifest claims. This closes the "repackage a
-  paid plugin as free and sideload it" loophole. Genuine third-party plugins (ids the
-  marketplace doesn't sell) install and run freely, so the community ecosystem is
-  unaffected.
+- The **Guest Home** and **Navigation** admin pages are now fully translated (they were
+  hardcoded English), across all five bundled locales (English, German, Spanish, French,
+  Portuguese) — labels, descriptions, table headers, the edit dialog, confirmations and
+  toasts.
+- Filled the remaining untranslated strings on the Installed page ("failed to load"
+  messages) and added the "Groups" page-visibility label.
+- Fixed the "Guest Home" sidebar entry, which was showing an untranslated literal.
+
+(First of several batches completing ACP internationalization.)
