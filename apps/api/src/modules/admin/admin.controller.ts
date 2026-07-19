@@ -107,6 +107,65 @@ const errorLogSchema = z.object({
   domain:   z.string().optional(),
 });
 
+/**
+ * Chokepoint fetch for a marketplace artifact, shared by install + update:
+ * authorize the download for this site, pull the package (120s/50MB cap),
+ * sha256-verify, and confirm the manifest id matches the requested plugin.
+ * On any failure it sends the error response and returns null; otherwise it
+ * returns the verified buffer for the caller to hand to the engine.
+ */
+async function fetchMarketplaceArtifact(
+  pluginId: string,
+  version:  string,
+  res:      import("express").Response,
+): Promise<Buffer | null> {
+  const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
+  const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
+  const { pluginService } = await import("../plugins/plugin.service.js");
+  const { createHash } = await import("node:crypto");
+
+  const authorized = await marketplaceSource.authorizeDownload({
+    pluginId,
+    version,
+    siteId:      await getSiteId(),
+    domain:      await getSiteDomain(),
+    environment: await resolveEnvironment(),
+  });
+  if (!authorized.downloadUrl) {
+    // Dev catalogue / community sources have no hosted artifact — manual upload path.
+    res.status(400).json({ message: "This source has no downloadable artifact. Upload the package manually." });
+    return null;
+  }
+
+  const dl = await fetch(authorized.downloadUrl, { signal: AbortSignal.timeout(120_000) }).catch(() => null);
+  if (!dl?.ok) {
+    res.status(502).json({ message: `Artifact download failed (${dl?.status ?? "unreachable"}). Try again.` });
+    return null;
+  }
+  const buffer = Buffer.from(await dl.arrayBuffer());
+  if (buffer.length > 50 * 1024 * 1024) {
+    res.status(502).json({ message: "Artifact exceeds the 50 MB package limit." });
+    return null;
+  }
+  if (authorized.sha256) {
+    const digest = createHash("sha256").update(buffer).digest("hex");
+    if (digest !== authorized.sha256) {
+      res.status(502).json({ message: "Artifact integrity check failed (sha256 mismatch). Nothing was installed." });
+      return null;
+    }
+  }
+
+  // Validate first so a mismatched package (manifest id ≠ requested plugin) is
+  // rejected before any install/update step touches the running instance.
+  const info = await pluginService.validateOnly(buffer);
+  if (info.id !== pluginId) {
+    res.status(502).json({ message: `Package manifest id "${info.id}" does not match the requested plugin.` });
+    return null;
+  }
+
+  return buffer;
+}
+
 export const adminController = {
   // Dashboard
   dashboard: (async (_req, res) => {
@@ -444,53 +503,12 @@ export const adminController = {
       version:  z.string().min(1),
     }).parse(req.body);
 
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
+    const fetched = await fetchMarketplaceArtifact(pluginId, version, res);
+    if (!fetched) return; // helper already sent the error response
+
     const { pluginService } = await import("../plugins/plugin.service.js");
-    const { createHash } = await import("node:crypto");
-
-    const siteId = await getSiteId();
-
-    const authorized = await marketplaceSource.authorizeDownload({
-      pluginId,
-      version,
-      siteId,
-      domain:      await getSiteDomain(),
-      environment: await resolveEnvironment(),
-    });
-    if (!authorized.downloadUrl) {
-      // Dev catalogue / community sources have no hosted artifact — manual upload path.
-      res.status(400).json({ message: "This source has no downloadable artifact. Upload the package manually." });
-      return;
-    }
-
-    const dl = await fetch(authorized.downloadUrl, { signal: AbortSignal.timeout(120_000) }).catch(() => null);
-    if (!dl?.ok) {
-      res.status(502).json({ message: `Artifact download failed (${dl?.status ?? "unreachable"}). Try again.` });
-      return;
-    }
-    const buffer = Buffer.from(await dl.arrayBuffer());
-    if (buffer.length > 50 * 1024 * 1024) {
-      res.status(502).json({ message: "Artifact exceeds the 50 MB package limit." });
-      return;
-    }
-    if (authorized.sha256) {
-      const digest = createHash("sha256").update(buffer).digest("hex");
-      if (digest !== authorized.sha256) {
-        res.status(502).json({ message: "Artifact integrity check failed (sha256 mismatch). Nothing was installed." });
-        return;
-      }
-    }
-
     try {
-      // Same gate as /plugins/upload — validate first so a mismatched package
-      // (manifest id ≠ requested plugin) is rejected before any install step.
-      const info = await pluginService.validateOnly(buffer);
-      if (info.id !== pluginId) {
-        res.status(502).json({ message: `Package manifest id "${info.id}" does not match the requested plugin.` });
-        return;
-      }
-      const manifest = await pluginService.install(buffer, req.userId!);
+      const manifest = await pluginService.install(fetched, req.userId!);
       // A just-bought plugin isn't in the STORED entitlement JWT yet (it only
       // refreshes monthly) — refresh now so Enable works immediately instead
       // of failing NEC-LICENSE-9001 until the daily job. Best-effort.
@@ -503,6 +521,30 @@ export const adminController = {
         return;
       }
       throw err;
+    }
+  }) as RequestHandler,
+
+  // §16.2 update-in-place: fetch the newer artifact at the chokepoint, verify it,
+  // and swap it in via the engine (preserves enabled state + data; forward-only).
+  updateFromMarketplace: (async (req, res) => {
+    const { pluginId, version } = z.object({
+      pluginId: z.string().min(1),
+      version:  z.string().min(1),
+    }).parse(req.body);
+
+    const fetched = await fetchMarketplaceArtifact(pluginId, version, res);
+    if (!fetched) return;
+
+    const { pluginService } = await import("../plugins/plugin.service.js");
+    try {
+      const manifest = await pluginService.update(fetched, req.userId!);
+      res.status(200).json({ id: manifest.id, name: manifest.name, version: manifest.version });
+    } catch (err: any) {
+      if (err?.message && !(err?.code)) {
+        res.status(400).json({ message: err.message });
+        return;
+      }
+      throw err; // coded NodevoError → errorMiddleware (correct NEC + status)
     }
   }) as RequestHandler,
 

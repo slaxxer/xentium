@@ -28,6 +28,7 @@
     "navigation": "Navigation",
     "marketplace": "Marketplace",
     "installed": "Installed",
+    "updates": "Updates",
     "upload": "Upload",
     "license": "License",
     "scheduledTasks": "Scheduled Tasks",
@@ -924,6 +925,24 @@
     "updatesDialogMore": "+{{count}} more updates",
     "updatesDialogView": "View updates",
     "updatesDialogLater": "Later"
+  },
+  "updates": {
+    "title": "Updates",
+    "loading": "Checking for updates…",
+    "banner_one": "{{count}} plugin update available",
+    "banner_other": "{{count}} plugin updates available",
+    "bannerCritical_one": "{{count}} critical plugin update available",
+    "bannerCritical_other": "{{count}} critical plugin updates available",
+    "bannerAction": "Review →",
+    "emptyTitle": "Everything's up to date",
+    "emptyHint": "Installed plugins will appear here when a newer version is published.",
+    "emptyCheckedAt": "Last checked {{date}}.",
+    "critical": "critical",
+    "renewalRequired": "Your license term has ended — renew it in the marketplace to download this update.",
+    "update": "Update",
+    "updating": "Updating…",
+    "toastUpdated": "{{name}} updated to {{version}}.",
+    "toastFailed": "Update failed: {{message}}"
   },
   "license": {
     "loading": "Loading…",

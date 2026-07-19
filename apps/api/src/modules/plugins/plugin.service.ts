@@ -1,6 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import {
   installPlugin,
+  updatePlugin,
   enablePlugin,
   disablePlugin,
   uninstallPlugin,
@@ -27,6 +28,10 @@ export const pluginService = {
 
   async install(buffer: Buffer, userId: string) {
     return installPlugin(buffer, userId);
+  },
+
+  async update(buffer: Buffer, userId: string) {
+    return updatePlugin(buffer, userId);
   },
 
   async enable(pluginId: string) {

@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey, faCheck, faRotate, faCircleExclamation, faPlug, faLinkSlash } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
 interface License {
   id:             string;
@@ -95,6 +96,8 @@ export function LicensePage() {
           <h1 className="acp-page-title">{t("nav.license")}</h1>
         </div>
       </div>
+
+      <ExtensionsUpdateBanner />
 
       {/* Marketplace account — the primary, recommended path (ADR 0001) */}
       <div className="acp-card" style={{ padding:"24px", marginBottom:20 }}>

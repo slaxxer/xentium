@@ -1,29 +1,22 @@
 # Changelog
 
-## Fonts: the Style Editor font is now truly site-wide — with a clear three-tier model
+## Plugin updates: a dedicated Updates page and one-click update-in-place
 
-- **The bug**: the per-user font hook applied its own default (Nunito) as an inline
-  override for every visitor on every load — the admin's Style Editor font never actually
-  reached anyone. And headings were hardcoded to Poppins app-wide.
-- **The model now**: the admin's Style Editor font applies to the whole frontend — body
-  AND headings. Users can override it personally in Profile → Preferences (new
-  "Site default" option = follow the admin's choice; a personal pick sets both fonts for
-  that user). **The ACP always stays Poppins**, regardless of site or user font — it's
-  pinned at body level so dialogs and toasts follow the context they appear in.
-- Style Editor live preview updated to preview headings and to punch through the ACP's
-  Poppins pin while editing.
-- **Poppins is now the base font everywhere** (was Nunito for body text): an untouched
-  install is uniformly Poppins until the admin picks a site font or a user picks a
-  personal one. Base body weight adjusted 600 → 500 (600 was Nunito-specific; both remain
-  admin-tunable in the Style Editor).
-- **Font set trimmed to five**: Poppins, Nunito, Montserrat, Open Sans, Ubuntu — in the
-  Style Editor, the user preferences picker, and the served-CSS stacks alike. Raleway,
-  Roboto (and the unused Playfair Display package) removed from the bundle; anyone who
-  had picked a removed font falls back gracefully to the site default.
-
-## Cleanup: update dialog is the single update surface
-
-- Removed the "Plugin updates available" banner from ACP → Marketplace and the `update`
-  toast category — toasts are back to success / info / warning / error. The Style
-  Editor's Feedback "Update" slot stays: `--c-update` themes the update panel dialog.
-- Notification surfaces (dialogs + toasts) explicitly follow the active font context.
+- **The bug**: the critical-update panel dialog marked itself "seen" the moment it
+  rendered — a bare page reload counted as acknowledgement, so a critical patch could
+  slip past an admin who never clicked anything. The "seen" set is now recorded only when
+  the admin acts on the dialog (View or Later), so it re-appears on every ACP entry until
+  they do.
+- **New Extensions → Updates page**: lists every pending plugin update (critical first)
+  with its changelog, the installed → latest versions, and a renewal warning where the
+  license term has lapsed. The update dialog's "View updates" now leads here.
+- **Persistent reminder banner** across the whole Extensions section (Marketplace,
+  Installed, Upload, License) — styled for urgency when any update is critical, and
+  visible for as long as updates are pending, so a dismissed dialog can't hide one.
+- **Update-in-place**: each update can be applied with one click. The server re-authorizes
+  the download at the marketplace chokepoint, fetches and sha256-verifies the new package,
+  then swaps it in — running only the migrations that plugin has never applied, and
+  preserving the plugin's enabled state and data. Updates are forward-only; nothing is
+  ever rolled back.
+- New error-reference entries for the two new conditions (plugin not installed; update
+  package not newer than what's installed).

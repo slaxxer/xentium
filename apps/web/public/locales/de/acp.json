@@ -26,6 +26,7 @@
     "navigation": "Navigation",
     "marketplace": "Marktplatz",
     "installed": "Installiert",
+    "updates": "Updates",
     "upload": "Hochladen",
     "license": "Lizenz",
     "scheduledTasks": "Geplante Aufgaben",
@@ -789,6 +790,24 @@
     "updatesDialogMore": "+{{count}} weitere Updates",
     "updatesDialogView": "Updates ansehen",
     "updatesDialogLater": "Später"
+  },
+  "updates": {
+    "title": "Updates",
+    "loading": "Suche nach Updates…",
+    "banner_one": "{{count}} Plugin-Update verfügbar",
+    "banner_other": "{{count}} Plugin-Updates verfügbar",
+    "bannerCritical_one": "{{count}} kritisches Plugin-Update verfügbar",
+    "bannerCritical_other": "{{count}} kritische Plugin-Updates verfügbar",
+    "bannerAction": "Ansehen →",
+    "emptyTitle": "Alles ist auf dem neuesten Stand",
+    "emptyHint": "Installierte Plugins erscheinen hier, sobald eine neuere Version veröffentlicht wird.",
+    "emptyCheckedAt": "Zuletzt geprüft: {{date}}.",
+    "critical": "kritisch",
+    "renewalRequired": "Deine Lizenzlaufzeit ist abgelaufen — erneuere sie im Marktplatz, um dieses Update herunterzuladen.",
+    "update": "Aktualisieren",
+    "updating": "Wird aktualisiert…",
+    "toastUpdated": "{{name}} auf {{version}} aktualisiert.",
+    "toastFailed": "Update fehlgeschlagen: {{message}}"
   },
   "license": {
     "loading": "Lädt…",
