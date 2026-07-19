@@ -1,9 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCloudArrowDown, faCircleCheck, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { api } from "../../../lib/api";
-import { apiErrorMessage, swalToast } from "../../../lib/swal";
+import { api, apiStream } from "../../../lib/api";
+import { openProgressDialog } from "../../../lib/dialog";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -15,9 +16,19 @@ interface PluginUpdate {
   changelog?:        string;
 }
 
+interface ProgressEvent {
+  phase?:   string;
+  percent?: number;
+  message?: string;
+  done?:    boolean;
+  ok?:      boolean;
+  version?: string;
+}
+
 export function UpdatesPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[] }>({
     queryKey:  ["acp-marketplace-updates"],
@@ -25,22 +36,57 @@ export function UpdatesPage() {
     staleTime: 5 * 60_000,
   });
 
-  // Update-in-place (§16.2): the server re-authorizes at the chokepoint, fetches +
-  // sha256-verifies the newer artifact, and swaps it in — preserving enabled state.
-  const updateMut = useMutation({
-    mutationFn: (u: PluginUpdate) =>
-      api.post("/admin/marketplace/update", { pluginId: u.pluginId, version: u.latestVersion }),
-    onSuccess: (_res, u) => {
-      void swalToast(t("updates.toastUpdated", { name: u.name ?? u.pluginId, version: u.latestVersion }), "success");
-      // Refresh both the update list (the applied one drops off) and the installed
-      // list (new version). The next daily check-in also reconciles the cache.
-      void qc.invalidateQueries({ queryKey: ["acp-marketplace-updates"] });
-      void qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
-    },
-    onError: (err: unknown) => {
-      void swalToast(t("updates.toastFailed", { message: apiErrorMessage(err) }), "error");
-    },
-  });
+  // Update-in-place (§16.2) with LIVE progress: the server streams ndjson step
+  // events (authorize → download → verify → swap → migrate → enable) which drive
+  // a progress dialog. The dialog is the whole feedback surface — no toast.
+  async function runUpdate(u: PluginUpdate) {
+    const name = u.name ?? u.pluginId;
+    const dlg = openProgressDialog({
+      icon:    u.critical ? "warning" : "update",
+      title:   t("updates.progressTitle", { name }),
+      message: t("updates.phase.starting"),
+    });
+    setUpdatingId(u.pluginId);
+    try {
+      const res = await apiStream("/admin/marketplace/update", { pluginId: u.pluginId, version: u.latestVersion });
+      if (!res.ok || !res.body) throw new Error(`http_${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = "";
+      let final: ProgressEvent | null = null;
+
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        let nl: number;
+        while ((nl = buf.indexOf("\n")) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          const evt = JSON.parse(line) as ProgressEvent;
+          if (evt.done) { final = evt; continue; }
+          let label = t(`updates.phase.${evt.phase}`, { defaultValue: t("updates.phase.working") });
+          if (evt.message) label = `${label} ${evt.message}`; // e.g. downloaded-so-far when size is unknown
+          dlg.update(evt.percent ?? 0, label);
+        }
+      }
+
+      if (final?.ok) {
+        dlg.succeed(t("updates.progressDone", { name, version: final.version ?? u.latestVersion }));
+        void qc.invalidateQueries({ queryKey: ["acp-marketplace-updates"] });
+        void qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+        void qc.invalidateQueries({ queryKey: ["acp-status-summary"] });
+      } else {
+        dlg.fail(final?.message ?? t("updates.progressFailed"));
+      }
+    } catch (err) {
+      dlg.fail(err instanceof Error ? err.message : t("updates.progressFailed"));
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   const updates = data?.updates ?? [];
 
@@ -69,7 +115,7 @@ export function UpdatesPage() {
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {[...updates].sort((a, b) => Number(b.critical) - Number(a.critical)).map((u) => {
-              const busy   = updateMut.isPending && updateMut.variables?.pluginId === u.pluginId;
+              const busy   = updatingId === u.pluginId;
               const accent = u.critical ? "var(--c-danger)" : "var(--c-update, var(--c-accent))";
               return (
                 <div key={u.pluginId} className="acp-card" style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap", border: u.critical ? `1px solid color-mix(in srgb, ${accent} 40%, transparent)` : undefined }}>
@@ -105,8 +151,8 @@ export function UpdatesPage() {
                       type="button"
                       className="btn-primary btn-sm"
                       style={u.critical ? { background: accent, borderColor: accent } : undefined}
-                      disabled={busy || u.renewalRequired}
-                      onClick={() => updateMut.mutate(u)}
+                      disabled={busy || updatingId !== null || u.renewalRequired}
+                      onClick={() => void runUpdate(u)}
                     >
                       {busy ? t("updates.updating") : t("updates.update")}
                     </button>

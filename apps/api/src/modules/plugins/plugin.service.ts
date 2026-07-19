@@ -30,8 +30,8 @@ export const pluginService = {
     return installPlugin(buffer, userId);
   },
 
-  async update(buffer: Buffer, userId: string) {
-    return updatePlugin(buffer, userId);
+  async update(buffer: Buffer, userId: string, onProgress?: (p: { phase: string; percent: number }) => void) {
+    return updatePlugin(buffer, userId, onProgress);
   },
 
   async enable(pluginId: string) {

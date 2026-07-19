@@ -806,8 +806,21 @@
     "renewalRequired": "Votre période de licence est terminée — renouvelez-la sur la marketplace pour télécharger cette mise à jour.",
     "update": "Mettre à jour",
     "updating": "Mise à jour…",
-    "toastUpdated": "{{name}} mis à jour vers {{version}}.",
-    "toastFailed": "Échec de la mise à jour : {{message}}"
+    "progressTitle": "Mise à jour de {{name}}",
+    "progressDone": "{{name}} mis à jour vers {{version}}",
+    "progressFailed": "Échec de la mise à jour",
+    "phase": {
+      "starting": "Démarrage…",
+      "working": "Traitement…",
+      "authorizing": "Autorisation du téléchargement…",
+      "downloading": "Téléchargement…",
+      "verifying": "Vérification de l'intégrité…",
+      "validating": "Validation du paquet…",
+      "disabling": "Désactivation de la version actuelle…",
+      "applying": "Installation des fichiers…",
+      "migrating": "Application des migrations…",
+      "enabling": "Activation…"
+    }
   },
   "license": {
     "loading": "Chargement…",

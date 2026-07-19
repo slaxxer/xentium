@@ -806,8 +806,21 @@
     "renewalRequired": "Deine Lizenzlaufzeit ist abgelaufen — erneuere sie im Marktplatz, um dieses Update herunterzuladen.",
     "update": "Aktualisieren",
     "updating": "Wird aktualisiert…",
-    "toastUpdated": "{{name}} auf {{version}} aktualisiert.",
-    "toastFailed": "Update fehlgeschlagen: {{message}}"
+    "progressTitle": "{{name}} wird aktualisiert",
+    "progressDone": "{{name}} auf {{version}} aktualisiert",
+    "progressFailed": "Update fehlgeschlagen",
+    "phase": {
+      "starting": "Wird gestartet…",
+      "working": "Wird bearbeitet…",
+      "authorizing": "Download wird autorisiert…",
+      "downloading": "Wird heruntergeladen…",
+      "verifying": "Integrität wird geprüft…",
+      "validating": "Paket wird validiert…",
+      "disabling": "Aktuelle Version wird deaktiviert…",
+      "applying": "Dateien werden installiert…",
+      "migrating": "Migrationen werden angewendet…",
+      "enabling": "Wird aktiviert…"
+    }
   },
   "license": {
     "loading": "Lädt…",
