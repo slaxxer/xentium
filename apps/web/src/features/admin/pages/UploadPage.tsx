@@ -10,6 +10,7 @@ import {
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
+import { useUploadAllowed } from "../hooks/useUploadAllowed";
 import "./UploadPage.scss";
 
 const STEP_KEYS = ["upload", "validate", "install"] as const;
@@ -49,6 +50,7 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok: boo
 export function UploadPage() {
   const { t } = useTranslation("acp");
   const navigate  = useNavigate();
+  const { data: uploadAllowed, isLoading: uploadAllowedLoading } = useUploadAllowed();
   const qc        = useQueryClient();
   const fileRef   = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -99,6 +101,31 @@ export function UploadPage() {
   const processingLabel = validateMut.isPending
     ? t("upload.processingValidate")
     : t("upload.processingInstall");
+
+  // Manual uploads are off by default; the nav hides this page, but it's still
+  // reachable by direct URL — so guard it (the API 403s regardless).
+  if (!uploadAllowedLoading && uploadAllowed !== true) {
+    return (
+      <div className="acp-upload">
+        <div className="acp-page-header">
+          <div className="acp-page-header__left">
+            <div className="acp-page-sub">{t("nav.extensions")}</div>
+            <h1 className="acp-page-title">{t("upload.title")}</h1>
+          </div>
+        </div>
+        <div className="acp-card" style={{ padding: 40, textAlign: "center" }}>
+          <FontAwesomeIcon icon={faShieldHalved} style={{ fontSize: 32, color: "var(--c-fg-muted)", marginBottom: 12 }} />
+          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("upload.disabledTitle")}</div>
+          <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 20, maxWidth: 460, marginInline: "auto", lineHeight: 1.6 }}>
+            {t("upload.disabledHint")}
+          </div>
+          <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/marketplace")}>
+            {t("upload.disabledGoMarketplace")}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="acp-upload">

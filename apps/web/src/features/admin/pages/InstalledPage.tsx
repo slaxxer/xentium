@@ -6,6 +6,7 @@ import { faPuzzlePiece, faUpload, faTriangleExclamation } from "@fortawesome/fre
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
+import { useUploadAllowed, UPLOAD_ALLOWED_KEY } from "../hooks/useUploadAllowed";
 
 interface InstalledPlugin {
   id:               string;
@@ -40,6 +41,13 @@ export function InstalledPage() {
   const { data: plugins = [], isLoading } = useQuery<InstalledPlugin[]>({
     queryKey: ["acp-installed-plugins"],
     queryFn:  () => api.get("/plugins"),
+  });
+
+  const { data: uploadAllowed } = useUploadAllowed();
+  const toggleUploadMut = useMutation({
+    mutationFn: (val: boolean) => api.put("/admin/settings/plugins.allow_upload", { value: val }),
+    onSuccess:  () => { qc.invalidateQueries({ queryKey: UPLOAD_ALLOWED_KEY }); },
+    onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
   const enableMut = useMutation({
@@ -84,9 +92,22 @@ export function InstalledPage() {
           <div className="acp-page-sub">{t("nav.extensions")}</div>
           <h1 className="acp-page-title">{t("installed.title")}</h1>
         </div>
-        <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/upload")}>
-          <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("installed.uploadBtn")}
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+          <label style={{ display:"flex", alignItems:"center", gap:7, fontSize:12.5, color:"var(--c-fg-muted)", cursor:"pointer" }} title={t("installed.allowUploadHint")}>
+            <input
+              type="checkbox"
+              checked={uploadAllowed === true}
+              onChange={(e) => toggleUploadMut.mutate(e.target.checked)}
+              disabled={toggleUploadMut.isPending}
+            />
+            {t("installed.allowUpload")}
+          </label>
+          {uploadAllowed === true && (
+            <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/upload")}>
+              <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("installed.uploadBtn")}
+            </button>
+          )}
+        </div>
       </div>
 
       <ExtensionsUpdateBanner />
@@ -100,9 +121,15 @@ export function InstalledPage() {
           <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
             {t("installed.emptyHint")}
           </div>
-          <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>
-            {t("installed.uploadBtn")}
-          </button>
+          {uploadAllowed === true ? (
+            <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>
+              {t("installed.uploadBtn")}
+            </button>
+          ) : (
+            <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/marketplace")}>
+              {t("installed.emptyBrowseMarketplace")}
+            </button>
+          )}
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>

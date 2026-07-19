@@ -50,6 +50,7 @@ export const NEC = {
   PLUGIN_ALREADY_INSTALLED: "NEC-PLUGIN-2003",
   PLUGIN_NOT_FOUND: "NEC-PLUGIN-2004",         // update/manage a plugin that isn't installed
   PLUGIN_VERSION_NOT_NEWER: "NEC-PLUGIN-2005", // update package version ≤ installed (forward-only)
+  PLUGIN_UPLOAD_DISABLED: "NEC-PLUGIN-2006",   // manual .nvplugin upload is switched off by the admin
   PLUGIN_INVALID_MIGRATION: "NEC-PLUGIN-2010",
   PLUGIN_MIGRATION_MISSING: "NEC-PLUGIN-2011", // up/down migration file absent from the package
   PLUGIN_MIGRATION_CHECKSUM: "NEC-PLUGIN-2012",// applied migration modified since install
