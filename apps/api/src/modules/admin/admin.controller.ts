@@ -107,63 +107,103 @@ const errorLogSchema = z.object({
   domain:   z.string().optional(),
 });
 
+/** One coarse step in the update-in-place progress stream (0..100 overall). */
+export interface UpdateProgress { phase: string; percent: number; message?: string }
+type ProgressFn = (p: UpdateProgress) => void;
+
+const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
+
+/** Download/verify failure carrying the HTTP status the install path should send. */
+class ArtifactError extends Error {
+  constructor(message: string, readonly status: number) { super(message); }
+}
+
 /**
- * Chokepoint fetch for a marketplace artifact, shared by install + update:
- * authorize the download for this site, pull the package (120s/50MB cap),
- * sha256-verify, and confirm the manifest id matches the requested plugin.
- * On any failure it sends the error response and returns null; otherwise it
- * returns the verified buffer for the caller to hand to the engine.
+ * Chokepoint: authorize the download for this site, stream the package (120s /
+ * 50 MB cap, reporting byte progress), sha256-verify, and confirm the manifest id
+ * matches the requested plugin. Reports coarse progress (authorizing → downloading
+ * → verifying → validating, ~5..75%). Throws ArtifactError(status) on failure;
+ * returns the verified buffer on success.
  */
-async function fetchMarketplaceArtifact(
-  pluginId: string,
-  version:  string,
-  res:      import("express").Response,
-): Promise<Buffer | null> {
+async function downloadAndVerifyArtifact(pluginId: string, version: string, onProgress?: ProgressFn): Promise<Buffer> {
   const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
   const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
   const { pluginService } = await import("../plugins/plugin.service.js");
   const { createHash } = await import("node:crypto");
 
+  onProgress?.({ phase: "authorizing", percent: 5 });
   const authorized = await marketplaceSource.authorizeDownload({
-    pluginId,
-    version,
+    pluginId, version,
     siteId:      await getSiteId(),
     domain:      await getSiteDomain(),
     environment: await resolveEnvironment(),
   });
   if (!authorized.downloadUrl) {
     // Dev catalogue / community sources have no hosted artifact — manual upload path.
-    res.status(400).json({ message: "This source has no downloadable artifact. Upload the package manually." });
-    return null;
+    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400);
   }
 
+  onProgress?.({ phase: "downloading", percent: 10 });
   const dl = await fetch(authorized.downloadUrl, { signal: AbortSignal.timeout(120_000) }).catch(() => null);
-  if (!dl?.ok) {
-    res.status(502).json({ message: `Artifact download failed (${dl?.status ?? "unreachable"}). Try again.` });
-    return null;
+  if (!dl?.ok || !dl.body) {
+    throw new ArtifactError(`Artifact download failed (${dl?.status ?? "unreachable"}). Try again.`, 502);
   }
-  const buffer = Buffer.from(await dl.arrayBuffer());
-  if (buffer.length > 50 * 1024 * 1024) {
-    res.status(502).json({ message: "Artifact exceeds the 50 MB package limit." });
-    return null;
+
+  // Stream the body so the bar reflects real bytes (10..65% of the overall bar).
+  const total  = Number(dl.headers.get("content-length") ?? 0);
+  const reader = dl.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let received = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    received += value.length;
+    if (received > MAX_ARTIFACT_BYTES) {
+      await reader.cancel().catch(() => {});
+      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502);
+    }
+    onProgress?.({
+      phase:   "downloading",
+      percent: total ? 10 + Math.round((received / total) * 55) : 15,
+      message: total ? undefined : `${Math.round(received / 1024)} KB`,
+    });
   }
+  const buffer = Buffer.concat(chunks);
+
+  onProgress?.({ phase: "verifying", percent: 70 });
   if (authorized.sha256) {
     const digest = createHash("sha256").update(buffer).digest("hex");
     if (digest !== authorized.sha256) {
-      res.status(502).json({ message: "Artifact integrity check failed (sha256 mismatch). Nothing was installed." });
-      return null;
+      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502);
     }
   }
 
+  onProgress?.({ phase: "validating", percent: 75 });
   // Validate first so a mismatched package (manifest id ≠ requested plugin) is
   // rejected before any install/update step touches the running instance.
   const info = await pluginService.validateOnly(buffer);
   if (info.id !== pluginId) {
-    res.status(502).json({ message: `Package manifest id "${info.id}" does not match the requested plugin.` });
-    return null;
+    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested plugin.`, 502);
   }
 
   return buffer;
+}
+
+/** Install-path wrapper: same download+verify, but translates failures into an
+ *  HTTP error response (returns null) to match the non-streaming install flow. */
+async function fetchMarketplaceArtifact(
+  pluginId: string,
+  version:  string,
+  res:      import("express").Response,
+): Promise<Buffer | null> {
+  try {
+    return await downloadAndVerifyArtifact(pluginId, version);
+  } catch (err) {
+    const status = err instanceof ArtifactError ? err.status : 502;
+    res.status(status).json({ message: err instanceof Error ? err.message : "Artifact download failed." });
+    return null;
+  }
 }
 
 /** Numeric-core semver compare: >0 if a>b, <0 if a<b, 0 if equal. */
@@ -634,6 +674,11 @@ export const adminController = {
       // of failing NEC-LICENSE-9001 until the daily job. Best-effort.
       const { refreshLicense } = await import("../../core/license-engine/license-engine.js");
       await refreshLicense().catch(() => {});
+      // Refresh the update cache so a newly-installed (older) build surfaces its
+      // available update right away, instead of waiting for the daily job.
+      // Fire-and-forget — the admin sees it on their next ACP entry.
+      const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
+      void processUpdateCheck().catch(() => {});
       res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
     } catch (err: any) {
       if (err?.message) {
@@ -644,27 +689,34 @@ export const adminController = {
     }
   }) as RequestHandler,
 
-  // §16.2 update-in-place: fetch the newer artifact at the chokepoint, verify it,
-  // and swap it in via the engine (preserves enabled state + data; forward-only).
+  // §16.2 update-in-place — STREAMS progress. The response is newline-delimited
+  // JSON: zero or more {phase,percent,message} events as the server authorizes →
+  // downloads (by bytes) → verifies → swaps → migrates → re-enables, then a final
+  // {done:true, ok, ...}. The ACP Updates page renders these in a progress dialog.
   updateFromMarketplace: (async (req, res) => {
     const { pluginId, version } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1),
     }).parse(req.body);
 
-    const fetched = await fetchMarketplaceArtifact(pluginId, version, res);
-    if (!fetched) return;
+    res.status(200);
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no"); // don't let a proxy buffer the stream
+    res.flushHeaders?.();
+    const emit = (evt: object) => { res.write(JSON.stringify(evt) + "\n"); };
 
-    const { pluginService } = await import("../plugins/plugin.service.js");
     try {
-      const manifest = await pluginService.update(fetched, req.userId!);
-      res.status(200).json({ id: manifest.id, name: manifest.name, version: manifest.version });
+      const buffer = await downloadAndVerifyArtifact(pluginId, version, (p) => emit(p));
+      const { pluginService } = await import("../plugins/plugin.service.js");
+      const manifest = await pluginService.update(buffer, req.userId!, (p) => emit(p));
+      emit({ done: true, ok: true, id: manifest.id, name: manifest.name, version: manifest.version });
     } catch (err: any) {
-      if (err?.message && !(err?.code)) {
-        res.status(400).json({ message: err.message });
-        return;
-      }
-      throw err; // coded NodevoError → errorMiddleware (correct NEC + status)
+      // Headers are already sent — surface the failure as a terminal stream event
+      // (with the coded message where we have one) rather than an HTTP error.
+      emit({ done: true, ok: false, code: err?.code, message: err?.message ?? "Update failed." });
+    } finally {
+      res.end();
     }
   }) as RequestHandler,
 
