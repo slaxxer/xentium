@@ -411,3 +411,18 @@ export async function isPluginEntitled(pluginId: string): Promise<boolean> {
   const { state } = await getEntitlementStatus(pluginId);
   return state === "valid" || state === "grace";
 }
+
+/**
+ * Whether a plugin needs a license to run — authoritative BY ID. A plugin only
+ * requires a license if the marketplace sells THAT id as paid (cached set in
+ * `marketplace.paid_plugin_ids`, refreshed from the catalogue). This deliberately
+ * ignores the package's own `licenseRequired` manifest flag, which an uploaded
+ * .nvplugin controls — so a paid plugin repackaged as "free" is still gated.
+ * Ids the marketplace doesn't sell (genuine third-party plugins) aren't gated:
+ * they aren't your product and couldn't be entitled through your account anyway.
+ */
+export async function pluginRequiresLicense(pluginId: string): Promise<boolean> {
+  const { getSetting } = await import("../../shared/utils/settings.js");
+  const paidIds = await getSetting<string[]>("marketplace.paid_plugin_ids", []);
+  return Array.isArray(paidIds) && paidIds.includes(pluginId);
+}

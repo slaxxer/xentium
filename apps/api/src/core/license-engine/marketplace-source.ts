@@ -37,6 +37,11 @@ const SOURCE_ID = "nodevo.io";
 const K_TOKEN = `marketplace.${SOURCE_ID}.token`;
 const K_REF   = `marketplace.${SOURCE_ID}.accountRef`;
 const K_AT    = `marketplace.${SOURCE_ID}.connectedAt`;
+// The set of plugin ids the marketplace sells as PAID. Cached from the catalogue
+// so the license gate can be authoritative by id (not by a plugin's self-declared
+// manifest `licenseRequired`, which an uploaded package controls). Read by
+// license-engine.pluginRequiresLicense.
+const K_PAID_IDS = "marketplace.paid_plugin_ids";
 
 // Local licensing (core development): with a dev signing key present we serve
 // the dev catalogue and mint entitlements locally instead of calling the hosted
@@ -161,25 +166,43 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   }
 
   async listPlugins(opts: PaginatedRequest): Promise<PaginatedResponse<MarketplaceListing>> {
-    let all = DEV_CATALOG;
-
-    if (!useDevLicensing) {
-      const token = await readSetting(K_TOKEN);
-      const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/plugins`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-        signal: AbortSignal.timeout(8_000),
-      }).catch(() => null);
-      if (res?.ok) {
-        const body = await res.json() as { plugins: MarketplaceListing[] };
-        all = body.plugins;
-      }
-    }
+    const all = (await this.fetchCatalog()) ?? DEV_CATALOG;
+    // Keep the authoritative paid-id set fresh whenever we have the catalogue.
+    void this.cachePaidIds(all).catch(() => {});
 
     const start = (opts.page - 1) * opts.limit;
     return {
       data: all.slice(start, start + opts.limit),
       meta: buildPaginationMeta({ page: opts.page, limit: opts.limit, total: all.length }),
     };
+  }
+
+  /** The full catalogue: the dev list in dev mode, else the live marketplace.
+   *  null when the marketplace couldn't be reached (so callers don't clobber a
+   *  cached paid-id set with a fallback). */
+  private async fetchCatalog(): Promise<MarketplaceListing[] | null> {
+    if (useDevLicensing) return DEV_CATALOG;
+    const token = await readSetting(K_TOKEN);
+    const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/plugins`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      signal: AbortSignal.timeout(8_000),
+    }).catch(() => null);
+    if (res?.ok) return (await res.json() as { plugins: MarketplaceListing[] }).plugins;
+    return null;
+  }
+
+  /** Persist the ids the marketplace sells as paid (licenseRequired = true). */
+  private async cachePaidIds(listings: MarketplaceListing[]): Promise<void> {
+    const ids = listings.filter((l) => l.licenseRequired).map((l) => l.id);
+    await prisma.setting.upsert({ where: { key: K_PAID_IDS }, update: { value: ids }, create: { key: K_PAID_IDS, value: ids } });
+    bustSettingsCache(K_PAID_IDS);
+  }
+
+  /** Best-effort refresh of the paid-id set from the live catalogue. No-op when
+   *  the marketplace is unreachable — the last cached set stays in force. */
+  async refreshPaidPluginIds(): Promise<void> {
+    const all = await this.fetchCatalog();
+    if (all) await this.cachePaidIds(all);
   }
 
   async authorizeDownload(req: DownloadRequest): Promise<AuthorizedDownload> {
@@ -219,4 +242,6 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   }
 }
 
-export const marketplaceSource: MarketplaceSource = new NodevoMarketplaceSource();
+// Concrete type (not the MarketplaceSource interface) so callers can reach the
+// nodevo.io-specific paid-id cache refresh, which isn't part of the generic source.
+export const marketplaceSource = new NodevoMarketplaceSource();

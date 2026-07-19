@@ -22,6 +22,10 @@ export async function processUpdateCheck(): Promise<void> {
   const token = (tokenRow?.value as string | null) ?? null;
   if (!token) return; // no connected account — nothing to check against
 
+  // Keep the authoritative paid-plugin-id set fresh (drives the license-by-id gate).
+  const { marketplaceSource } = await import("../core/license-engine/marketplace-source.js");
+  await marketplaceSource.refreshPaidPluginIds().catch(() => {});
+
   const plugins = await prisma.installedPlugin.findMany({
     select: { id: true, name: true, installedVersion: true },
   });
