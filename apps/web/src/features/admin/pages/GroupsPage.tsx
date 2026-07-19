@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
@@ -49,6 +50,7 @@ function GlowFields({ value, badgeColor, previewLabel, onChange }: {
   previewLabel: string;
   onChange: (patch: Partial<GlowValue>) => void;
 }) {
+  const { t } = useTranslation("acp");
   return (
     <div className="acp-form-field">
       <label className="acp-check" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
@@ -59,9 +61,9 @@ function GlowFields({ value, badgeColor, previewLabel, onChange }: {
           style={{ flexShrink: 0 }}
         />
         <span style={{ flex: 1 }}>
-          <span style={{ fontWeight: 700 }}>Glow on usernames</span>
+          <span style={{ fontWeight: 700 }}>{t("groups.glow")}</span>
           <span className="acp-hint" style={{ display: "block", marginTop: 2 }}>
-            Adds a text-shadow to this group's usernames everywhere on the site.
+            {t("groups.glowDesc")}
           </span>
         </span>
         <span style={{
@@ -71,14 +73,14 @@ function GlowFields({ value, badgeColor, previewLabel, onChange }: {
             ? `${value.badgeShadowX}px ${value.badgeShadowY}px ${value.badgeShadowBlur}px ${value.badgeShadowColor || badgeColor}`
             : undefined,
         }}>
-          {previewLabel || "Preview"}
+          {previewLabel || t("groups.preview")}
         </span>
       </label>
 
       {value.badgeTextShadow && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 64px 64px 64px", gap: 10, marginTop: 12 }}>
           <div>
-            <label className="acp-label">Glow color</label>
+            <label className="acp-label">{t("groups.glowColor")}</label>
             <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
               <input
                 type="color"
@@ -87,8 +89,8 @@ function GlowFields({ value, badgeColor, previewLabel, onChange }: {
                 style={{ width: 40, height: 38, border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", cursor: "pointer", flexShrink: 0 }}
               />
               {value.badgeShadowColor != null
-                ? <button type="button" className="btn-ghost btn-sm" onClick={() => onChange({ badgeShadowColor: null })} title="Use the badge colour">↺ badge</button>
-                : <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>= badge</span>}
+                ? <button type="button" className="btn-ghost btn-sm" onClick={() => onChange({ badgeShadowColor: null })} title={t("groups.useBadge")}>{t("groups.badgeReset")}</button>
+                : <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>{t("groups.eqBadge")}</span>}
             </div>
           </div>
           <div>
@@ -100,7 +102,7 @@ function GlowFields({ value, badgeColor, previewLabel, onChange }: {
             <input className="acp-input" type="number" min={-20} max={20} value={value.badgeShadowY} onChange={(e) => onChange({ badgeShadowY: Number(e.target.value) })} />
           </div>
           <div>
-            <label className="acp-label">Blur</label>
+            <label className="acp-label">{t("groups.blur")}</label>
             <input className="acp-input" type="number" min={0} max={60} value={value.badgeShadowBlur} onChange={(e) => onChange({ badgeShadowBlur: Number(e.target.value) })} />
           </div>
         </div>
@@ -120,6 +122,7 @@ function DomainList({
   selected: Set<string>;
   onToggle: (key: string) => void;
 }) {
+  const { t } = useTranslation("acp");
   const domains = groupByDomain(allPermissions);
   const [collapsed, setCollapsed] = useState<Set<string>>(
     () => new Set(domains.map(([d]) => d)),
@@ -134,7 +137,7 @@ function DomainList({
   }
 
   if (domains.length === 0) {
-    return <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>No permissions found.</div>;
+    return <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("groups.noPerms")}</div>;
   }
 
   return (
@@ -235,6 +238,7 @@ function CreateGroupModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
+  const { t } = useTranslation("acp");
   const DEFAULT_COLOR = "#7c6af7";
   const [name,        setName]        = useState("");
   const [key,         setKey]         = useState("");
@@ -294,7 +298,7 @@ function CreateGroupModal({
 
       onCreated();
       onClose();
-      swalToast("Group created!", "success");
+      swalToast(t("groups.toastCreated"), "success");
     } catch (e) {
       swalToast(apiErrorMessage(e));
     } finally {
@@ -325,35 +329,35 @@ function CreateGroupModal({
             }
           </div>
           <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Create Group</h2>
+            <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{t("groups.createTitle")}</h2>
             <span style={{
               display: "inline-flex", alignItems: "center", gap: 4,
               padding: "2px 9px", borderRadius: 20, fontSize: 11, fontWeight: 700,
               background: `${color}20`, color, border: `1px solid ${color}40`,
             }}>
               {iconPreview && <img src={iconPreview} alt="" style={{ width: 11, height: 11, borderRadius: 2, objectFit: "cover" }} />}
-              {name || "Group name"}
+              {name || t("groups.namePreview")}
             </span>
           </div>
         </div>
 
         {/* ── Identity ───────────────────────────────────────────────────── */}
         <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-          Identity
+          {t("groups.identity")}
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Name</label>
-          <input className="acp-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Editor" />
+          <label className="acp-label">{t("groups.name")}</label>
+          <input className="acp-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groups.namePlaceholderCreate")} />
         </div>
         <div className="acp-form-field">
-          <label className="acp-label">Key (slug)</label>
-          <input className="acp-input" value={key} onChange={(e) => setKey(e.target.value)} placeholder="e.g. editor" />
-          <div className="acp-hint">Unique identifier — cannot be changed after creation.</div>
+          <label className="acp-label">{t("groups.key")}</label>
+          <input className="acp-input" value={key} onChange={(e) => setKey(e.target.value)} placeholder={t("groups.keyPlaceholder")} />
+          <div className="acp-hint">{t("groups.keyHintCreate")}</div>
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Badge color</label>
+          <label className="acp-label">{t("groups.badgeColor")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <input
               type="color"
@@ -373,14 +377,14 @@ function CreateGroupModal({
         </div>
 
         <div className="acp-form-field">
-          <label className="acp-label">Badge label</label>
-          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder="Optional — defaults to the group name" />
+          <label className="acp-label">{t("groups.badgeLabel")}</label>
+          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder={t("groups.badgeLabelPlaceholder")} />
         </div>
 
         <GlowFields value={glow} badgeColor={color} previewLabel={badgeLabel || name} onChange={(patch) => setGlow((p) => ({ ...p, ...patch }))} />
 
         <div className="acp-form-field">
-          <label className="acp-label">Group icon</label>
+          <label className="acp-label">{t("groups.icon")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <div style={{
               width: 52, height: 52, flexShrink: 0,
@@ -397,7 +401,7 @@ function CreateGroupModal({
             </div>
             <div style={{ flex: 1 }}>
               <label htmlFor="create-group-icon" className="btn-ghost btn-sm" style={{ display: "inline-block", cursor: "pointer" }}>
-                {iconPreview ? "Change image" : "Upload image"}
+                {iconPreview ? t("groups.changeImage") : t("groups.uploadImage")}
               </label>
               <input
                 id="create-group-icon"
@@ -413,10 +417,10 @@ function CreateGroupModal({
                   style={{ marginLeft: 8, color: "var(--c-danger)" }}
                   onClick={() => { setIconFile(null); setIconPreview(null); }}
                 >
-                  Remove
+                  {t("groups.remove")}
                 </button>
               )}
-              <div className="acp-hint" style={{ marginTop: 4 }}>PNG, JPG, GIF, WebP · max 512 KB.</div>
+              <div className="acp-hint" style={{ marginTop: 4 }}>{t("groups.iconHintCreate")}</div>
             </div>
           </div>
         </div>
@@ -425,9 +429,9 @@ function CreateGroupModal({
           <label className="acp-check" style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
             <input type="checkbox" checked={showInTeam} onChange={(e) => setShowInTeam(e.target.checked)} style={{ marginTop: 3 }} />
             <span>
-              <span style={{ fontWeight: 700 }}>Show on the Team page</span>
+              <span style={{ fontWeight: 700 }}>{t("groups.showTeam")}</span>
               <span className="acp-hint" style={{ display: "block", marginTop: 2 }}>
-                Members of this group get their own section on the public Members → Team page (ordered by badge precedence).
+                {t("groups.showTeamDescCreate")}
               </span>
             </span>
           </label>
@@ -437,17 +441,17 @@ function CreateGroupModal({
         <div style={{ borderTop: "1px solid var(--c-border)", margin: "20px 0 14px", paddingTop: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
-              Permissions
+              {t("groups.permissions")}
             </div>
             <span style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
-              {selected.size} selected
+              {t("groups.selectedCount", { count: selected.size })}
             </span>
           </div>
           <DomainList allPermissions={allPermissions} selected={selected} onToggle={togglePerm} />
         </div>
 
         <ModalFooter>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("groups.cancel")}</button>
           <button
             type="button"
             className="btn-primary btn-sm"
@@ -455,7 +459,7 @@ function CreateGroupModal({
             onClick={handleCreate}
           >
             <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} />
-            {isPending ? "Creating…" : "Create Group"}
+            {isPending ? t("groups.creating") : t("groups.createTitle")}
           </button>
         </ModalFooter>
       </div>
@@ -466,6 +470,7 @@ function CreateGroupModal({
 // ── Edit group modal (name + badge color + icon — works for ALL groups) ──────
 
 function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: () => void; onSaved: () => void }) {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [name,       setName]       = useState(group.name);
   const [color,      setColor]      = useState(group.progression?.badgeColor ?? "#7c6af7");
@@ -547,7 +552,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
     await Promise.all(tasks).then(() => {
       qc.invalidateQueries({ queryKey: ["acp-groups-list"] });
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
-      swalToast("Group updated!", "success");
+      swalToast(t("groups.toastUpdated"), "success");
       onSaved();
       onClose();
     });
@@ -576,7 +581,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>Edit Group</h2>
+              <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{t("groups.editTitle")}</h2>
               {/* Live badge pill preview */}
               <span style={{
                 display: "inline-flex", alignItems: "center", gap: 4,
@@ -597,15 +602,15 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
 
         {/* Name */}
         <div className="acp-form-field">
-          <label className="acp-label">Name</label>
-          <input className="acp-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Group name" />
+          <label className="acp-label">{t("groups.name")}</label>
+          <input className="acp-input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t("groups.namePlaceholderEdit")} />
         </div>
 
         {/* Key */}
         <div className="acp-form-field">
-          <label className="acp-label">Key (slug)</label>
+          <label className="acp-label">{t("groups.key")}</label>
           <input className="acp-input" value={group.key} disabled style={{ opacity: 0.5, cursor: "not-allowed" }} />
-          <div className="acp-hint">Key is set at creation and cannot be changed.</div>
+          <div className="acp-hint">{t("groups.keyHintEdit")}</div>
         </div>
 
         {/* Team page */}
@@ -613,9 +618,9 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
           <label className="acp-check" style={{ display: "flex", alignItems: "flex-start", gap: 10, cursor: "pointer" }}>
             <input type="checkbox" checked={showInTeam} onChange={(e) => setShowInTeam(e.target.checked)} style={{ marginTop: 3 }} />
             <span>
-              <span style={{ fontWeight: 700 }}>Show on the Team page</span>
+              <span style={{ fontWeight: 700 }}>{t("groups.showTeam")}</span>
               <span className="acp-hint" style={{ display: "block", marginTop: 2 }}>
-                Members of this group get their own section on Members → Team (ordered by badge precedence).
+                {t("groups.showTeamDescEdit")}
               </span>
             </span>
           </label>
@@ -623,7 +628,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
 
         {/* Badge color */}
         <div className="acp-form-field">
-          <label className="acp-label">Badge color</label>
+          <label className="acp-label">{t("groups.badgeColor")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <input
               type="color"
@@ -640,13 +645,13 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
             />
             <div style={{ width: 28, height: 28, borderRadius: "50%", background: color, flexShrink: 0, border: "2px solid var(--c-border)" }} />
           </div>
-          <div className="acp-hint">Used for the group badge and card accent color.</div>
+          <div className="acp-hint">{t("groups.badgeColorHint")}</div>
         </div>
 
         {/* Badge label */}
         <div className="acp-form-field">
-          <label className="acp-label">Badge label</label>
-          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder="Optional — defaults to the group name" />
+          <label className="acp-label">{t("groups.badgeLabel")}</label>
+          <input className="acp-input" value={badgeLabel} onChange={(e) => setBadgeLabel(e.target.value)} placeholder={t("groups.badgeLabelPlaceholder")} />
         </div>
 
         {/* Username glow */}
@@ -654,7 +659,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
 
         {/* Icon upload */}
         <div className="acp-form-field">
-          <label className="acp-label">Group icon</label>
+          <label className="acp-label">{t("groups.icon")}</label>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {/* Preview */}
             <div style={{
@@ -676,7 +681,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
                 className="btn-ghost btn-sm"
                 style={{ display: "inline-block", cursor: "pointer" }}
               >
-                {iconPreview ? "Change image" : "Upload image"}
+                {iconPreview ? t("groups.changeImage") : t("groups.uploadImage")}
               </label>
               <input
                 id={`group-icon-${group.id}`}
@@ -692,18 +697,18 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
                   style={{ marginLeft: 8, color: "var(--c-danger)" }}
                   onClick={() => { setIconFile(null); setIconPreview(null); }}
                 >
-                  Remove
+                  {t("groups.remove")}
                 </button>
               )}
               <div className="acp-hint" style={{ marginTop: 4 }}>
-                PNG, JPG, GIF, WebP · max 512 KB. Shown on group cards and user profiles.
+                {t("groups.iconHintEdit")}
               </div>
             </div>
           </div>
         </div>
 
         <ModalFooter>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("groups.cancel")}</button>
           <button
             type="button"
             className="btn-primary btn-sm"
@@ -711,7 +716,7 @@ function EditGroupModal({ group, onClose, onSaved }: { group: Group; onClose: ()
             onClick={handleSave}
           >
             <FontAwesomeIcon icon={faSave} style={{ marginRight: 5 }} />
-            {isPending ? "Saving…" : "Save"}
+            {isPending ? t("groups.saving") : t("groups.save")}
           </button>
         </ModalFooter>
       </div>
@@ -729,6 +734,7 @@ function PermissionsModal({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation("acp");
   const [selected, setSelected] = useState<Set<string>>(
     new Set(group.permissions.map((gp) => gp.permission.key)),
   );
@@ -736,7 +742,7 @@ function PermissionsModal({
   const mutation = useMutation({
     mutationFn: () =>
       api.put(`/admin/groups/${group.id}/permissions`, { permissionKeys: Array.from(selected) }),
-    onSuccess: () => { onSaved(); onClose(); swalToast("Permissions saved!", "success"); },
+    onSuccess: () => { onSaved(); onClose(); swalToast(t("groups.toastPerms"), "success"); },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
@@ -756,23 +762,23 @@ function PermissionsModal({
         onClick={(e) => e.stopPropagation()}
       >
         <h2 style={{ marginBottom: "0.5rem", fontSize: "1.1rem" }}>
-          Permissions — {group.name}
+          {t("groups.permsTitle", { name: group.name })}
         </h2>
         <p style={{ color: "var(--c-fg-muted)", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-          {selected.size} permission{selected.size !== 1 ? "s" : ""} selected
+          {t("groups.permsSelected", { count: selected.size })}
         </p>
 
         <DomainList allPermissions={allPermissions} selected={selected} onToggle={toggle} />
 
         <ModalFooter>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("groups.cancel")}</button>
           <button
             type="button"
             className="btn-primary btn-sm"
             disabled={mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            <FontAwesomeIcon icon={faSave} /> Save Permissions
+            <FontAwesomeIcon icon={faSave} /> {t("groups.savePerms")}
           </button>
         </ModalFooter>
       </div>
@@ -795,6 +801,7 @@ interface ProgressionData {
 }
 
 function ProgressionModal({ group, onClose }: { group: Group; onClose: () => void }) {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
 
   const { data, isLoading } = useQuery<ProgressionData>({
@@ -821,7 +828,7 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
       qc.invalidateQueries({ queryKey: ["acp-groups-list"] });
       qc.invalidateQueries({ queryKey: ["group-progression", group.id] });
-      swalToast("Progression config saved!", "success");
+      swalToast(t("groups.toastProg"), "success");
       onClose();
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -841,21 +848,21 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
       >
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
           <FontAwesomeIcon icon={faDiagramProject} style={{ color: "var(--c-accent)", fontSize: 18 }} />
-          <h2 style={{ fontSize: "1.1rem", margin: 0 }}>Progression — {group.name}</h2>
+          <h2 style={{ fontSize: "1.1rem", margin: 0 }}>{t("groups.progTitle", { name: group.name })}</h2>
         </div>
         <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 20 }}>
-          Configure ladder placement, promotion thresholds and content limits.
+          {t("groups.progSub")}
         </p>
 
         {isLoading ? (
-          <div style={{ padding: "1rem", textAlign: "center", color: "var(--c-fg-muted)" }}>Loading…</div>
+          <div style={{ padding: "1rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("groups.loading")}</div>
         ) : (
           <>
             {/* On ladder */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 0", borderBottom: "1px solid var(--c-border)", marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>Part of progression ladder</div>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>Users in this group can be auto-promoted</div>
+                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("groups.onLadder")}</div>
+                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("groups.onLadderDesc")}</div>
               </div>
               <button type="button" onClick={() => setForm(p => ({ ...p, isProgressionGroup: !p.isProgressionGroup }))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                 <FontAwesomeIcon
@@ -867,21 +874,21 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
 
             {/* Ladder position */}
             <div className="acp-form-field">
-              <label className="acp-label">Ladder position</label>
-              <input className="acp-input" type="number" min={1} value={num(form.ladderPosition)} onChange={e => setNum("ladderPosition", e.target.value)} placeholder="e.g. 1 (entry level)" style={{ width: 160 }} />
-              <div className="acp-hint">Drag to reorder on the Progression page.</div>
+              <label className="acp-label">{t("groups.ladderPos")}</label>
+              <input className="acp-input" type="number" min={1} value={num(form.ladderPosition)} onChange={e => setNum("ladderPosition", e.target.value)} placeholder={t("groups.ladderPosPlaceholder")} style={{ width: 160 }} />
+              <div className="acp-hint">{t("groups.ladderPosHint")}</div>
             </div>
 
             {/* Thresholds */}
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "16px 0 10px" }}>
-              Promotion Thresholds <span style={{ fontWeight: 400, textTransform: "none" }}>(blank = not required)</span>
+              {t("groups.thresholds")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("groups.thresholdsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               {([
-                ["minPosts",         "Min posts"],
-                ["minThreads",       "Min threads"],
-                ["minDaysMember",    "Min days as member"],
-                ["minLikesReceived", "Min likes received"],
+                ["minPosts",         t("groups.minPosts")],
+                ["minThreads",       t("groups.minThreads")],
+                ["minDaysMember",    t("groups.minDays")],
+                ["minLikesReceived", t("groups.minLikes")],
               ] as [keyof ProgressionData, string][]).map(([key, label]) => (
                 <div key={key}>
                   <label className="acp-label">{label}</label>
@@ -892,24 +899,24 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
 
             {/* Content limits */}
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
-              Content Limits <span style={{ fontWeight: 400, textTransform: "none" }}>(blank = unlimited)</span>
+              {t("groups.limits")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("groups.limitsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <div>
-                <label className="acp-label">Max post length (chars)</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder="Unlimited" />
+                <label className="acp-label">{t("groups.maxLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder={t("groups.unlimited")} />
               </div>
               <div>
-                <label className="acp-label">Max daily posts</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder="Unlimited" />
+                <label className="acp-label">{t("groups.maxDaily")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder={t("groups.unlimited")} />
               </div>
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-              <button type="button" className="btn-ghost btn-sm" onClick={onClose}>Cancel</button>
+              <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("groups.cancel")}</button>
               <button type="button" className="btn-primary btn-sm" disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
                 <FontAwesomeIcon icon={faSave} style={{ marginRight: 5 }} />
-                {saveMutation.isPending ? "Saving…" : "Save"}
+                {saveMutation.isPending ? t("groups.saving") : t("groups.save")}
               </button>
             </div>
           </>
@@ -922,6 +929,7 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
 // ── Main page ───────────────────────────────────────────────────────────────
 
 export function GroupsPage() {
+  const { t } = useTranslation("acp");
   const queryClient = useQueryClient();
   const [showCreate,      setShowCreate]      = useState(false);
   const [editGroup,       setEditGroup]       = useState<Group | null>(null);
@@ -942,17 +950,17 @@ export function GroupsPage() {
     mutationFn: (id: string) => api.delete(`/admin/groups/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["acp-groups-list"] });
-      swalToast("Group deleted!", "success");
+      swalToast(t("groups.toastDeleted"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
   async function handleDelete(g: Group) {
     const result = await swalConfirm(
-      "Delete group?",
-      `Members of "${g.name}" will be moved to the Member group.`,
-      "Delete",
-      "Cancel",
+      t("groups.deleteTitle"),
+      t("groups.deleteText", { name: g.name }),
+      t("groups.delete"),
+      t("groups.cancel"),
     );
     if (result) deleteMutation.mutate(g.id);
   }
@@ -985,18 +993,18 @@ export function GroupsPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Access Control</div>
-          <h1 className="acp-page-title">Groups</h1>
+          <div className="acp-page-sub">{t("nav.accessControl")}</div>
+          <h1 className="acp-page-title">{t("nav.groups")}</h1>
         </div>
         <button type="button" className="btn-primary btn-sm" onClick={() => setShowCreate(true)}>
-          <FontAwesomeIcon icon={faPlus} /> Create Group
+          <FontAwesomeIcon icon={faPlus} /> {t("groups.createTitle")}
         </button>
       </div>
 
       {isLoading ? (
-        <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>Loading…</div>
+        <div style={{ padding: "2rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("groups.loading")}</div>
       ) : (groups as Group[]).length === 0 ? (
-        <div className="acp-card acp-empty">No groups found</div>
+        <div className="acp-card acp-empty">{t("groups.empty")}</div>
       ) : (
         <div className="acp-groups-grid">
           {(groups as Group[]).map((g, idx) => {
@@ -1023,7 +1031,7 @@ export function GroupsPage() {
                       }
                     </div>
                     <div
-                      title="Badge precedence — lower ranks higher. Use the arrows to reorder."
+                      title={t("groups.precedenceTitle")}
                       style={{
                         display: "inline-flex", alignItems: "center", justifyContent: "center",
                         minWidth: 22, height: 22, padding: "0 6px",
@@ -1037,13 +1045,13 @@ export function GroupsPage() {
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                     {g.isSystem && (
-                      <span className="acp-badge acp-badge--muted">Protected</span>
+                      <span className="acp-badge acp-badge--muted">{t("groups.protected")}</span>
                     )}
                     <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                       <button
                         type="button"
                         className="btn-ghost btn-xs"
-                        title="Move up (higher precedence)"
+                        title={t("groups.moveUp")}
                         disabled={idx === 0 || reorderMutation.isPending}
                         onClick={() => moveGroup(idx, -1)}
                         style={{ padding: "2px 6px", lineHeight: 1, opacity: idx === 0 ? 0.35 : 1 }}
@@ -1053,7 +1061,7 @@ export function GroupsPage() {
                       <button
                         type="button"
                         className="btn-ghost btn-xs"
-                        title="Move down (lower precedence)"
+                        title={t("groups.moveDown")}
                         disabled={idx === total - 1 || reorderMutation.isPending}
                         onClick={() => moveGroup(idx, 1)}
                         style={{ padding: "2px 6px", lineHeight: 1, opacity: idx === total - 1 ? 0.35 : 1 }}
@@ -1069,9 +1077,9 @@ export function GroupsPage() {
                 </div>
 
                 <div style={{ display: "flex", gap: 16, fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 4 }}>
-                  <span>{g._count.users} members</span>
+                  <span>{t("groups.members", { count: g._count.users })}</span>
                   <span>·</span>
-                  <span>{g._count.permissions} permissions</span>
+                  <span>{t("groups.permsCount", { count: g._count.permissions })}</span>
                 </div>
                 <code style={{ fontSize: "0.75rem", color: "var(--c-fg-muted)" }}>{g.key}</code>
 
@@ -1081,21 +1089,21 @@ export function GroupsPage() {
                     className="btn-ghost btn-sm"
                     onClick={() => setEditPerms(g)}
                   >
-                    <FontAwesomeIcon icon={faKey} /> Permissions
+                    <FontAwesomeIcon icon={faKey} /> {t("groups.permissions")}
                   </button>
                   <button
                     type="button"
                     className="btn-ghost btn-sm"
                     onClick={() => setEditProgression(g)}
                   >
-                    <FontAwesomeIcon icon={faDiagramProject} /> Progression
+                    <FontAwesomeIcon icon={faDiagramProject} /> {t("groups.progression")}
                   </button>
                   {/* Edit is available for ALL groups, including protected ones */}
                   <button
                     type="button"
                     className="btn-ghost btn-sm"
                     onClick={() => setEditGroup(g)}
-                    title="Edit name and badge color"
+                    title={t("groups.editTitleHint")}
                   >
                     <FontAwesomeIcon icon={faPencil} />
                   </button>
