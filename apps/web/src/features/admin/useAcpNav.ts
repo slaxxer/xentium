@@ -60,7 +60,7 @@ export const ACP_NAV: NavItem[] = [
       { label: "nav.styles", to: "/admin/styles" },
       { label: "nav.styleHistory", to: "/admin/style-history" },
       { label: "nav.navigation", to: "/admin/navigation" },
-      { label: "Guest Home", to: "/admin/guest-home" },
+      { label: "nav.guestHome", to: "/admin/guest-home" },
     ],
   },
   {

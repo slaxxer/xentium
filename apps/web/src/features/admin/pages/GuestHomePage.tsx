@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
@@ -42,6 +43,7 @@ function Row({ label, desc, children }: { label: string; desc?: string; children
 }
 
 export function GuestHomePage() {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
 
   const { data: settings = [] } = useQuery<Setting[]>({
@@ -109,45 +111,44 @@ export function GuestHomePage() {
     <div style={{ maxWidth: 860 }}>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Appearance</div>
-          <h1 className="acp-page-title">Guest Home</h1>
+          <div className="acp-page-sub">{t("nav.appearance")}</div>
+          <h1 className="acp-page-title">{t("guestHome.title")}</h1>
         </div>
         <AutosaveStatus saving={saveMutation.isPending} />
       </div>
 
       <p style={{ fontSize: 13, color: "var(--c-fg-muted)", margin: "0 0 20px", maxWidth: 620 }}>
-        The landing page logged-out visitors see. Edit the hero copy and choose which sections and
-        data appear. Changes apply immediately.
+        {t("guestHome.intro")}
       </p>
 
       {/* Hero */}
       <div className="acp-card" style={{ padding: 24, marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>Hero</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>{t("guestHome.heroHeading")}</div>
         <div className="acp-form-field" style={{ marginTop: 8 }}>
-          <label className="acp-label">Title</label>
+          <label className="acp-label">{t("guestHome.fieldTitle")}</label>
           <input className="acp-input" value={str("guesthome.hero_title")} onChange={(e) => set("guesthome.hero_title", e.target.value)} />
         </div>
         <div className="acp-form-field">
-          <label className="acp-label">Subtitle</label>
+          <label className="acp-label">{t("guestHome.fieldSubtitle")}</label>
           <textarea className="acp-input" rows={3} style={{ resize: "vertical", fontFamily: "inherit" }}
             value={str("guesthome.hero_subtitle")} onChange={(e) => set("guesthome.hero_subtitle", e.target.value)} />
           <div style={{ fontSize: 11.5, color: "var(--c-fg-muted)", marginTop: 4 }}>
-            Use <code>{"{members}"}</code> to insert the live member count.
+            {t("guestHome.subtitleHint")}
           </div>
         </div>
-        <Row label="Online badge text" desc="Shown after the live online count, e.g. “318 builders online now”.">
+        <Row label={t("guestHome.badgeLabel")} desc={t("guestHome.badgeDesc")}>
           {textInput("guesthome.hero_badge")}
         </Row>
-        <Row label="Primary button">{textInput("guesthome.cta_primary")}</Row>
-        <Row label="Secondary button">{textInput("guesthome.cta_secondary")}</Row>
+        <Row label={t("guestHome.ctaPrimaryLabel")}>{textInput("guesthome.cta_primary")}</Row>
+        <Row label={t("guestHome.ctaSecondaryLabel")}>{textInput("guesthome.cta_secondary")}</Row>
       </div>
 
       {/* Content */}
       <div className="acp-card" style={{ padding: 24, marginBottom: 16 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>Feed sources</div>
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>{t("guestHome.feedHeading")}</div>
         <p style={{ fontSize: 13, color: "var(--c-fg-muted)", margin: "0 0 8px" }}>
-          What the guest feed shows. Pick one or several — multiple sources are merged newest-first.
-          {availableSources.length <= 1 && " Install & enable a content plugin (e.g. Forum) to add more sources."}
+          {t("guestHome.feedIntro")}
+          {availableSources.length <= 1 && ` ${t("guestHome.feedIntroMore")}`}
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
           {availableSources.map((s) => (
@@ -161,20 +162,20 @@ export function GuestHomePage() {
 
       {/* Sections */}
       <div className="acp-card" style={{ padding: 24 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>Sections</div>
-        <Row label="Hero stat strip" desc="Members · Posts · New today.">
+        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 6 }}>{t("guestHome.sectionsHeading")}</div>
+        <Row label={t("guestHome.statsLabel")} desc={t("guestHome.statsDesc")}>
           <Toggle on={on("guesthome.show_stats")} onToggle={() => set("guesthome.show_stats", !on("guesthome.show_stats"))} />
         </Row>
-        <Row label="“Happening right now”" desc="Recent activity card in the hero.">
+        <Row label={t("guestHome.presenceLabel")} desc={t("guestHome.presenceDesc")}>
           <Toggle on={on("guesthome.show_presence")} onToggle={() => set("guesthome.show_presence", !on("guesthome.show_presence"))} />
         </Row>
-        <Row label="Categories" desc="Category filter chips and the rail category list.">
+        <Row label={t("guestHome.categoriesLabel")} desc={t("guestHome.categoriesDesc")}>
           <Toggle on={on("guesthome.show_categories")} onToggle={() => set("guesthome.show_categories", !on("guesthome.show_categories"))} />
         </Row>
-        <Row label="Online now" desc="Avatars of currently online members.">
+        <Row label={t("guestHome.onlineLabel")} desc={t("guestHome.onlineDesc")}>
           <Toggle on={on("guesthome.show_online")} onToggle={() => set("guesthome.show_online", !on("guesthome.show_online"))} />
         </Row>
-        <Row label="Trending tags" desc="Most-used article tags.">
+        <Row label={t("guestHome.tagsLabel")} desc={t("guestHome.tagsDesc")}>
           <Toggle on={on("guesthome.show_tags")} onToggle={() => set("guesthome.show_tags", !on("guesthome.show_tags"))} />
         </Row>
       </div>

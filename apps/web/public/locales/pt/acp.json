@@ -33,7 +33,8 @@
     "errorReference": "Referência de erros",
     "errorLog": "Registo de erros",
     "migrationHistory": "Histórico de migrações",
-    "about": "Sobre"
+    "about": "Sobre",
+    "guestHome": "Início para visitantes"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -714,7 +715,10 @@
     "removeDataConfirm": "Sim, remover dados",
     "allowUpload": "Permitir envios manuais",
     "allowUploadHint": "Permite que administradores instalem plugins enviando um arquivo .nvplugin, além do marketplace. Desativado por padrão.",
-    "emptyBrowseMarketplace": "Explorar o marketplace"
+    "emptyBrowseMarketplace": "Explorar o marketplace",
+    "loadFailed": "Falha ao carregar",
+    "loadFailedTitle": "Este plugin está ativado mas falhou ao carregar — suas rotas e páginas não estão ativas.",
+    "loadFailedHint": "Desative e reative para tentar novamente, ou reenvie uma versão corrigida."
   },
   "upload": {
     "title": "Enviar plugin",
@@ -900,5 +904,76 @@
     "deleteText": "“{{title}}” será excluído (exclusão suave) e removido das listagens públicas.",
     "delete": "Excluir",
     "toastDeleted": "Artigo excluído"
+  },
+  "pages": {
+    "visibility": {
+      "groups": "Grupos"
+    }
+  },
+  "guestHome": {
+    "title": "Início para visitantes",
+    "intro": "A página inicial que os visitantes não autenticados veem. Edite o texto do hero e escolha quais seções e dados aparecem. As alterações são aplicadas imediatamente.",
+    "heroHeading": "Hero",
+    "fieldTitle": "Título",
+    "fieldSubtitle": "Subtítulo",
+    "subtitleHint": "Use {members} para inserir a contagem de membros ao vivo.",
+    "badgeLabel": "Texto do selo de online",
+    "badgeDesc": "Mostrado após a contagem de online, p. ex. “318 criadores online agora”.",
+    "ctaPrimaryLabel": "Botão principal",
+    "ctaSecondaryLabel": "Botão secundário",
+    "feedHeading": "Fontes do feed",
+    "feedIntro": "O que o feed de visitantes mostra. Escolha uma ou várias — várias fontes são combinadas das mais recentes primeiro.",
+    "feedIntroMore": "Instale e ative um plugin de conteúdo (p. ex. Fórum) para adicionar mais fontes.",
+    "sectionsHeading": "Seções",
+    "statsLabel": "Faixa de estatísticas do hero",
+    "statsDesc": "Membros · Publicações · Novos hoje.",
+    "presenceLabel": "“Acontecendo agora”",
+    "presenceDesc": "Cartão de atividade recente no hero.",
+    "categoriesLabel": "Categorias",
+    "categoriesDesc": "Chips de filtro de categorias e a lista de categorias na barra.",
+    "onlineLabel": "Online agora",
+    "onlineDesc": "Avatares dos membros atualmente online.",
+    "tagsLabel": "Tags em alta",
+    "tagsDesc": "Tags de artigos mais usadas."
+  },
+  "navigation": {
+    "editLink": "Editar link de navegação",
+    "addLink": "Adicionar link",
+    "fieldLabel": "Rótulo",
+    "labelPlaceholder": "p. ex. Fórum",
+    "fieldUrl": "URL",
+    "urlPlaceholder": "/forum ou https://...",
+    "fieldVisibility": "Visibilidade",
+    "visOptPublic": "Público — todos",
+    "visOptMembers": "Apenas membros",
+    "visOptGroups": "Grupos específicos",
+    "openNewTab": "Abrir em nova aba",
+    "cancel": "Cancelar",
+    "save": "Salvar",
+    "reorderHint": "Arraste a alça para reordenar os links de navegação.",
+    "loading": "Carregando…",
+    "empty": "Ainda não há links de navegação.",
+    "colLabel": "Rótulo",
+    "colUrl": "URL",
+    "colVisibility": "Visibilidade",
+    "colActive": "Ativo",
+    "colActions": "Ações",
+    "core": "Núcleo",
+    "dragTitle": "Arraste para reordenar",
+    "activate": "Ativar",
+    "deactivate": "Desativar",
+    "coreNoDelete": "Links do núcleo não podem ser excluídos — desative-os em vez disso",
+    "removeTitle": "Remover link?",
+    "removeText": "“{{label}}” será removido da navegação.",
+    "remove": "Remover",
+    "toastAdded": "Link adicionado!",
+    "toastUpdated": "Link atualizado!",
+    "toastRemoved": "Link removido!",
+    "toastReorderFailed": "Falha ao reordenar — revertido.",
+    "visibility": {
+      "public": "público",
+      "members": "membros",
+      "groups": "grupos"
+    }
   }
 }
