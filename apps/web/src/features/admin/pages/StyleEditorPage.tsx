@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUpload, faXmark, faRotateLeft, faRotateRight, faTriangleExclamation, faCloudArrowUp } from "@fortawesome/free-solid-svg-icons";
@@ -48,51 +49,51 @@ const RADIUS_FALLBACK: Record<string, number> = {
 // ── Semantic sections (not in TOKEN_REGISTRY — they ARE the palette base) ────────
 interface ColorRow { l: string; cssVar: string }
 const PALETTE_ROWS: ColorRow[] = [
-  { l: "Background", cssVar: "--c-bg" },
-  { l: "Surface",    cssVar: "--c-surface" },
-  { l: "Card",       cssVar: "--c-card" },
-  { l: "Accent",     cssVar: "--c-accent" },
-  { l: "Accent 2",   cssVar: "--c-accent2" },
-  { l: "Border",     cssVar: "--c-border" },
+  { l: "styleEditor.rowBg", cssVar: "--c-bg" },
+  { l: "styleEditor.rowSurface", cssVar: "--c-surface" },
+  { l: "styleEditor.rowCard", cssVar: "--c-card" },
+  { l: "styleEditor.rowAccent", cssVar: "--c-accent" },
+  { l: "styleEditor.rowAccent2", cssVar: "--c-accent2" },
+  { l: "styleEditor.rowBorder", cssVar: "--c-border" },
 ];
 const TEXT_ROWS: ColorRow[] = [
-  { l: "Primary text",     cssVar: "--c-fg" },
-  { l: "Muted text",       cssVar: "--c-fg-muted" },
-  { l: "Subtle text",      cssVar: "--c-fg-subtle" },
-  { l: "Hover background", cssVar: "--c-bg-hover" },
+  { l: "styleEditor.rowFg", cssVar: "--c-fg" },
+  { l: "styleEditor.rowMuted", cssVar: "--c-fg-muted" },
+  { l: "styleEditor.rowSubtle", cssVar: "--c-fg-subtle" },
+  { l: "styleEditor.rowHoverBg", cssVar: "--c-bg-hover" },
 ];
 const FEEDBACK_ROWS: ColorRow[] = [
-  { l: "Success", cssVar: "--c-success" },
-  { l: "Warning", cssVar: "--c-warn" },
-  { l: "Danger",  cssVar: "--c-danger" },
-  { l: "Info",    cssVar: "--c-info" },
-  { l: "Update",  cssVar: "--c-update" },
+  { l: "styleEditor.rowSuccess", cssVar: "--c-success" },
+  { l: "styleEditor.rowWarn", cssVar: "--c-warn" },
+  { l: "styleEditor.rowDanger", cssVar: "--c-danger" },
+  { l: "styleEditor.rowInfo", cssVar: "--c-info" },
+  { l: "styleEditor.rowUpdate", cssVar: "--c-update" },
 ];
 
 // ── Section list (the ADR-0003 "backbone") ──────────────────────────────────────
 type SectionKind = "palette" | "text" | "feedback" | "region" | "component" | "branding" | "customcss";
 interface Section { id: string; label: string; kind: SectionKind; group?: TokenGroup }
 const SECTION_GROUPS: { heading: string; items: Section[] }[] = [
-  { heading: "Palette", items: [
-    { id: "palette",  label: "Colour Palette", kind: "palette" },
-    { id: "text",     label: "Text & Fonts",   kind: "text" },
-    { id: "feedback", label: "Feedback",        kind: "feedback" },
+  { heading: "styleEditor.grpPalette", items: [
+    { id: "palette",  label: "styleEditor.secPalette", kind: "palette" },
+    { id: "text",     label: "styleEditor.secText",   kind: "text" },
+    { id: "feedback", label: "styleEditor.secFeedback",        kind: "feedback" },
   ]},
-  { heading: "Regions", items: [
-    { id: "navbar",  label: "Navbar",  kind: "region", group: "navbar" },
-    { id: "content", label: "Content", kind: "region", group: "content" },
-    { id: "footer",  label: "Footer",  kind: "region", group: "footer" },
-    { id: "aside",   label: "Aside",   kind: "region", group: "aside" },
+  { heading: "styleEditor.grpRegions", items: [
+    { id: "navbar",  label: "styleEditor.secNavbar",  kind: "region", group: "navbar" },
+    { id: "content", label: "styleEditor.secContent", kind: "region", group: "content" },
+    { id: "footer",  label: "styleEditor.secFooter",  kind: "region", group: "footer" },
+    { id: "aside",   label: "styleEditor.secAside",   kind: "region", group: "aside" },
   ]},
-  { heading: "Components", items: [
-    { id: "button", label: "Button", kind: "component", group: "button" },
-    { id: "card",   label: "Card",   kind: "component", group: "card" },
-    { id: "field",  label: "Field",  kind: "component", group: "field" },
-    { id: "menu",   label: "Menu",   kind: "component", group: "menu" },
+  { heading: "styleEditor.grpComponents", items: [
+    { id: "button", label: "styleEditor.secButton", kind: "component", group: "button" },
+    { id: "card",   label: "styleEditor.secCard",   kind: "component", group: "card" },
+    { id: "field",  label: "styleEditor.secField",  kind: "component", group: "field" },
+    { id: "menu",   label: "styleEditor.secMenu",   kind: "component", group: "menu" },
   ]},
-  { heading: "Site", items: [
-    { id: "branding",  label: "Branding",   kind: "branding" },
-    { id: "customcss", label: "Custom CSS", kind: "customcss" },
+  { heading: "styleEditor.grpSite", items: [
+    { id: "branding",  label: "styleEditor.secBranding",   kind: "branding" },
+    { id: "customcss", label: "styleEditor.secCustomCss", kind: "customcss" },
   ]},
 ];
 const ALL_SECTIONS = SECTION_GROUPS.flatMap((g) => g.items);
@@ -102,18 +103,18 @@ const ALL_SECTIONS = SECTION_GROUPS.flatMap((g) => g.items);
 // that have registry tokens are offered.
 type PreviewState = "base" | "hover" | "focus";
 const PREVIEW_STATES: { id: PreviewState; label: string }[] = [
-  { id: "base",  label: "Base" },
-  { id: "hover", label: "Hover" },
-  { id: "focus", label: "Focus" },
+  { id: "base",  label: "styleEditor.stBase" },
+  { id: "hover", label: "styleEditor.stHover" },
+  { id: "focus", label: "styleEditor.stFocus" },
 ];
 
 // Scope picker options for component sections (region surface tokens are global-only).
 const SCOPE_OPTIONS: { id: ThemeScope; label: string }[] = [
-  { id: "global",  label: "All" },
-  { id: "navbar",  label: "Navbar" },
-  { id: "content", label: "Content" },
-  { id: "footer",  label: "Footer" },
-  { id: "aside",   label: "Aside" },
+  { id: "global",  label: "styleEditor.scopeAll" },
+  { id: "navbar",  label: "styleEditor.secNavbar" },
+  { id: "content", label: "styleEditor.secContent" },
+  { id: "footer",  label: "styleEditor.secFooter" },
+  { id: "aside",   label: "styleEditor.secAside" },
 ];
 
 const FONTS = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
@@ -124,9 +125,9 @@ const FSIZE_SETTING_KEY   = "appearance.font.size";
 const FWEIGHT_SETTING_KEY = "appearance.font.weight";
 
 const SHADOW_PRESETS: { id: string; label: string; value: string }[] = [
-  { id: "none",   label: "None",   value: "none" },
-  { id: "soft",   label: "Soft",   value: "var(--shadow-card)" },
-  { id: "strong", label: "Strong", value: "var(--shadow-pop)" },
+  { id: "none",   label: "styleEditor.shNone",   value: "none" },
+  { id: "soft",   label: "styleEditor.shSoft",   value: "var(--shadow-card)" },
+  { id: "strong", label: "styleEditor.shStrong", value: "var(--shadow-pop)" },
 ];
 
 function numVal(v: string | undefined, fallback: number): number {
@@ -167,6 +168,7 @@ function extractRootVars(css: string): Record<string, string> {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function StyleEditorPage() {
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [mode, setMode] = useState<Mode>(
     () => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light"),
@@ -211,7 +213,7 @@ export function StyleEditorPage() {
       setCustomCssSaved(customCss);
       await refreshTokenCss();
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
-      swalToast("Custom CSS applied site-wide.", "success");
+      swalToast(t("styleEditor.toastCss"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -233,7 +235,7 @@ export function StyleEditorPage() {
 
   const saveLogoTextMut = useMutation({
     mutationFn: () => api.put("/appearance/branding/text", { text: logoText }),
-    onSuccess:  () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast("Logo text saved.", "success"); },
+    onSuccess:  () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast(t("styleEditor.toastLogoText"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
   const uploadBrandingMut = useMutation({
@@ -241,12 +243,12 @@ export function StyleEditorPage() {
       const fd = new FormData(); fd.append("file", file);
       return api.post(`/appearance/branding/${variant}`, fd);
     },
-    onSuccess: () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast("Uploaded.", "success"); },
+    onSuccess: () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast(t("styleEditor.toastUploaded"), "success"); },
     onError:   (e) => swalToast(apiErrorMessage(e)),
   });
   const deleteBrandingMut = useMutation({
     mutationFn: (variant: "navbar" | "icon") => api.delete(`/appearance/branding/${variant}`),
-    onSuccess:  () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast("Removed.", "success"); },
+    onSuccess:  () => { refetchBranding(); qc.invalidateQueries({ queryKey: ["pub-branding"] }); swalToast(t("styleEditor.toastRemoved"), "success"); },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
@@ -297,7 +299,7 @@ export function StyleEditorPage() {
       // ACP you're working in with unpublished changes. The ACP keeps showing the
       // published theme until Publish (which calls refreshTokenCss).
       setSavedSnap(draftRef.current);
-      swalToast("Draft saved — publish to apply it live.", "success");
+      swalToast(t("styleEditor.toastDraft"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -315,7 +317,7 @@ export function StyleEditorPage() {
       await refreshTokenCss();
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
       qc.invalidateQueries({ queryKey: ["acp-style-history"] });
-      swalToast("Published — your changes are now live for everyone.", "success");
+      swalToast(t("styleEditor.toastPublished"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -330,22 +332,22 @@ export function StyleEditorPage() {
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
       await refreshTokenCss();
       setSavedSnap({ tokens: empty, fontFamily: FONTS[0], fontSize: "16", fontWeight: "400" });
-      swalToast("Appearance reset — inheriting the core design.", "success");
+      swalToast(t("styleEditor.toastReset"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
   const handleReset = async () => {
     const ok = await swalConfirm(
-      "Reset appearance to the core design?",
-      "Restores the default theme tokens and fonts, and clears your custom CSS for both light and dark. This cannot be undone.",
-      "Reset",
+      t("styleEditor.resetTitle"),
+      t("styleEditor.resetText"),
+      t("styleEditor.reset"),
     );
     if (ok) resetMut.mutate();
   };
 
   useAutosave({ value: draft, savedValue: savedSnap, onSave: () => saveMut.mutate(), delay: 1200 });
 
-  if (isLoading || !tokens) return <div className="acp-card acp-empty">Loading…</div>;
+  if (isLoading || !tokens) return <div className="acp-card acp-empty">{t("styleEditor.loading")}</div>;
 
   const section = ALL_SECTIONS.find((s) => s.id === sectionId) ?? ALL_SECTIONS[0]!;
   const globalBucket = tokens[mode].global ?? {};
@@ -436,17 +438,17 @@ export function StyleEditorPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">Appearance</div>
-          <h1 className="acp-page-title">Style Editor</h1>
+          <div className="acp-page-sub">{t("nav.appearance")}</div>
+          <h1 className="acp-page-title">{t("nav.styleEditor")}</h1>
         </div>
         <div style={{ display:"flex", gap:12, alignItems:"center" }}>
           {draftStatus?.pending && (
             <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"3px 10px", borderRadius:100, fontSize:12, fontWeight:700, background:"var(--c-warn-soft, rgba(245,158,11,.14))", color:"var(--c-warn)" }}>
-              <FontAwesomeIcon icon={faTriangleExclamation} /> Unpublished changes
+              <FontAwesomeIcon icon={faTriangleExclamation} /> {t("styleEditor.unpublished")}
             </span>
           )}
           <button type="button" className="btn-ghost btn-sm" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
-            <FontAwesomeIcon icon={faRotateLeft} style={{ marginRight:5 }} /> Reset
+            <FontAwesomeIcon icon={faRotateLeft} style={{ marginRight:5 }} /> {t("styleEditor.reset")}
           </button>
           <AutosaveStatus saving={saveMut.isPending} />
           <button
@@ -454,10 +456,10 @@ export function StyleEditorPage() {
             className="btn-primary btn-sm"
             disabled={publishMut.isPending || !draftStatus?.pending}
             onClick={() => publishMut.mutate()}
-            title="Apply staged changes to the live site now"
+            title={t("styleEditor.publishHint")}
           >
             <FontAwesomeIcon icon={faCloudArrowUp} style={{ marginRight:5 }} />
-            {publishMut.isPending ? "Publishing…" : "Publish now"}
+            {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
           </button>
         </div>
       </div>
@@ -468,7 +470,7 @@ export function StyleEditorPage() {
         <div className="acp-card" style={{ padding:16, alignSelf:"start" }}>
           {section.kind !== "customcss" && (
             <>
-              <div className="acp-label">Mode</div>
+              <div className="acp-label">{t("styleEditor.modeLabel")}</div>
               <div style={{ display:"flex", gap:6, marginBottom:20 }}>
                 {(["light","dark"] as const).map((m) => (
                   <button key={m} type="button" onClick={() => setMode(m)} style={{
@@ -478,7 +480,7 @@ export function StyleEditorPage() {
                     color:      mode===m ? "#fff"            : "var(--c-fg-muted)",
                     border:    `1px solid ${mode===m ? "var(--c-accent)" : "var(--c-border)"}`,
                   }}>
-                    {m === "light" ? "☀️ Light" : "🌙 Dark"}
+                    {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
                   </button>
                 ))}
               </div>
@@ -487,7 +489,7 @@ export function StyleEditorPage() {
 
           {SECTION_GROUPS.map((grp) => (
             <div key={grp.heading} style={{ marginBottom:10 }}>
-              <div className="acp-label" style={{ fontSize:10, letterSpacing:"0.06em", opacity:0.7 }}>{grp.heading}</div>
+              <div className="acp-label" style={{ fontSize:10, letterSpacing:"0.06em", opacity:0.7 }}>{t(grp.heading)}</div>
               {grp.items.map((s) => (
                 <button key={s.id} type="button" onClick={() => selectSection(s.id)} style={{
                   display:"block", width:"100%", textAlign:"left", padding:"8px 12px",
@@ -497,7 +499,7 @@ export function StyleEditorPage() {
                   color:      sectionId===s.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
                   border:     `1px solid ${sectionId===s.id ? "var(--c-accent-glow)" : "transparent"}`,
                 }}>
-                  {sectionId===s.id ? "▸ " : ""}{s.label}
+                  {sectionId===s.id ? "▸ " : ""}{t(s.label)}
                 </button>
               ))}
             </div>
@@ -510,24 +512,24 @@ export function StyleEditorPage() {
 
           {section.kind === "branding" ? (
             <div className="acp-card" style={{ padding:24 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>Branding</div>
+              <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>{t("styleEditor.secBranding")}</div>
               <p style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
-                Upload a logo image or use a text fallback. The site icon is used as the favicon.
+                {t("styleEditor.brandingIntro")}
               </p>
               <div style={{ marginBottom:20 }}>
-                <div className="acp-label">Logo Text (fallback when no image is set)</div>
+                <div className="acp-label">{t("styleEditor.logoText")}</div>
                 <div style={{ display:"flex", gap:8 }}>
-                  <input className="acp-input" value={logoText} onChange={(e) => setLogoText(e.target.value)} placeholder="nodevo" style={{ flex:1 }} />
-                  <button type="button" className="btn-primary btn-sm" onClick={() => saveLogoTextMut.mutate()} disabled={saveLogoTextMut.isPending}>Save</button>
+                  <input className="acp-input" value={logoText} onChange={(e) => setLogoText(e.target.value)} placeholder={t("styleEditor.logoPlaceholder")} style={{ flex:1 }} />
+                  <button type="button" className="btn-primary btn-sm" onClick={() => saveLogoTextMut.mutate()} disabled={saveLogoTextMut.isPending}>{t("styleEditor.save")}</button>
                 </div>
               </div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-                <BrandingSlot label="Navbar Logo" hint="PNG, SVG or WebP · max 2 MB · recommended 160×40 px"
+                <BrandingSlot label={t("styleEditor.navbarLogo")} hint={t("styleEditor.navbarLogoHint")}
                   currentUrl={branding?.navbarUrl ?? null} accept="image/png,image/svg+xml,image/webp"
                   onUpload={(f) => uploadBrandingMut.mutate({ variant:"navbar", file:f })}
                   onDelete={() => deleteBrandingMut.mutate("navbar")}
                   busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending} />
-                <BrandingSlot label="Favicon / Site Icon" hint="PNG, ICO or SVG · max 2 MB · recommended 64×64 px"
+                <BrandingSlot label={t("styleEditor.favicon")} hint={t("styleEditor.faviconHint")}
                   currentUrl={branding?.iconUrl ?? null} accept="image/png,image/x-icon,image/svg+xml"
                   onUpload={(f) => uploadBrandingMut.mutate({ variant:"icon", file:f })}
                   onDelete={() => deleteBrandingMut.mutate("icon")}
@@ -540,17 +542,15 @@ export function StyleEditorPage() {
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:4 }}>
                 <div>
                   <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>
-                    Custom CSS
-                    <span style={{ color:"var(--c-accent)", fontSize:13, fontWeight:700, marginLeft:8, textTransform:"capitalize" }}>· {viewedTheme} theme</span>
+                    {t("styleEditor.secCustomCss")}
+                    <span style={{ color:"var(--c-accent)", fontSize:13, fontWeight:700, marginLeft:8 }}>· {t("styleEditor.themeSuffix", { theme: t("styleEditor.mode_" + viewedTheme) })}</span>
                   </div>
                   <p style={{ fontSize:13, color:"var(--c-fg-muted)", margin:0, maxWidth:560 }}>
-                    Raw CSS for the <strong>{viewedTheme}</strong> theme — the one you're viewing — scoped &amp; applied
-                    after the tokens so it overrides any rule. Switch your theme with the top-bar toggle to edit the other one.
-                    Edits preview live; <strong>Apply &amp; Save</strong> stores both themes and pushes them to every visitor.
+                    {t("styleEditor.cssIntro")}
                   </p>
                 </div>
                 <button type="button" className="btn-primary btn-sm" onClick={() => saveCustomCssMut.mutate()} disabled={saveCustomCssMut.isPending || !customDirty}>
-                  {saveCustomCssMut.isPending ? "Saving…" : "Apply & Save"}
+                  {saveCustomCssMut.isPending ? t("styleEditor.saving") : t("styleEditor.applySave")}
                 </button>
               </div>
               <textarea value={activeCss} spellCheck={false}
@@ -572,22 +572,22 @@ export function StyleEditorPage() {
                   border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"14px 16px", resize:"vertical", outline:"none",
                 }} />
               <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, fontSize:11, color:"var(--c-fg-muted)" }}>
-                <span>{customDirty ? "Unsaved changes — previewing live" : "Saved"}</span>
-                <span>{activeCss.length.toLocaleString()} / 100,000 chars</span>
+                <span>{customDirty ? t("styleEditor.unsaved") : t("styleEditor.saved")}</span>
+                <span>{t("styleEditor.charCount", { count: activeCss.length.toLocaleString() })}</span>
               </div>
             </div>
 
           ) : (
             <div className="acp-card" style={{ padding:24 }}>
               <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>
-                {section.label}
-                <span style={{ color:"var(--c-fg-muted)", fontSize:13, fontWeight:400, marginLeft:8 }}>· {mode} mode</span>
+                {t(section.label)}
+                <span style={{ color:"var(--c-fg-muted)", fontSize:13, fontWeight:400, marginLeft:8 }}>· {t("styleEditor.modeMode", { mode: t("styleEditor.mode_" + mode) })}</span>
               </div>
 
               {/* Scope picker — component sections only (region surfaces are global). */}
               {section.kind === "component" && (
                 <div style={{ margin:"14px 0 18px" }}>
-                  <div className="acp-label">Apply to</div>
+                  <div className="acp-label">{t("styleEditor.applyTo")}</div>
                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                     {SCOPE_OPTIONS.map((o) => (
                       <button key={o.id} type="button" onClick={() => setScope(o.id)} style={{
@@ -596,13 +596,13 @@ export function StyleEditorPage() {
                         background: scope===o.id ? "var(--c-accent-soft)" : "var(--c-card)",
                         color:      scope===o.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
                         border:    `1px solid ${scope===o.id ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-                      }}>{o.label}</button>
+                      }}>{t(o.label)}</button>
                     ))}
                   </div>
                   <p style={{ fontSize:11, color:"var(--c-fg-muted)", marginTop:6, lineHeight:1.4 }}>
                     {scope === "global"
-                      ? "Editing every instance of this component."
-                      : `Editing only ${SCOPE_OPTIONS.find((o)=>o.id===scope)?.label} instances — overrides the global value inside that region.`}
+                      ? t("styleEditor.editEvery")
+                      : t("styleEditor.editOnly", { region: t(SCOPE_OPTIONS.find((o)=>o.id===scope)?.label ?? "") })}
                   </p>
                 </div>
               )}
@@ -615,7 +615,7 @@ export function StyleEditorPage() {
               {(section.kind === "palette" || section.kind === "text" || section.kind === "feedback") &&
                 (section.id === "palette" ? PALETTE_ROWS : section.id === "text" ? TEXT_ROWS : FEEDBACK_ROWS).map((row) => {
                   const d = display(row.cssVar);
-                  return <ColorControl key={row.cssVar} label={row.l} value={d.value} overridden={d.overridden}
+                  return <ColorControl key={row.cssVar} label={t(row.l)} value={d.value} overridden={d.overridden}
                     onChange={(v) => setOverride("global", row.cssVar, v)} onReset={() => clearOverride("global", row.cssVar)} />;
                 })}
 
@@ -623,29 +623,29 @@ export function StyleEditorPage() {
               {section.kind === "feedback" && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
                   <button type="button" className="btn-ghost btn-sm" onClick={() => {
-                    toast.success("Success — settings saved.");
-                    toast.info("Info — a background job has started.");
-                    toast.warning("Warning — this action affects 3 users.");
-                    toast.error("Error — the server rejected the request.");
+                    toast.success(t("styleEditor.sampleSuccess"));
+                    toast.info(t("styleEditor.sampleInfo"));
+                    toast.warning(t("styleEditor.sampleWarning"));
+                    toast.error(t("styleEditor.sampleError"));
                   }}>
-                    Preview toasts
+                    {t("styleEditor.previewToasts")}
                   </button>
                   <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 6 }}>
-                    Toasts use these feedback colours — edits above preview live on the fired samples.
+                    {t("styleEditor.toastsUse")}
                   </div>
                 </div>
               )}
 
               {/* Registry-driven region / component rows */}
-              {registryRows.map((t) => {
-                const d = display(t.var);
-                const onChange = (v: string) => setOverride(effScope, t.var, v);
-                const onReset  = () => clearOverride(effScope, t.var);
-                if (t.control === "radius")
-                  return <RadiusControl key={t.var} label={t.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
-                if (t.control === "shadow")
-                  return <ShadowControl key={t.var} label={t.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
-                return <ColorControl key={t.var} label={t.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
+              {registryRows.map((tok) => {
+                const d = display(tok.var);
+                const onChange = (v: string) => setOverride(effScope, tok.var, v);
+                const onReset  = () => clearOverride(effScope, tok.var);
+                if (tok.control === "radius")
+                  return <RadiusControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
+                if (tok.control === "shadow")
+                  return <ShadowControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
+                return <ColorControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
               })}
             </div>
           )}
@@ -658,10 +658,10 @@ export function StyleEditorPage() {
               css={previewCss}
               extraCss={cssPreview}
               activeGroup={section.group}
-              editingLabel={section.label}
+              editingLabel={t(section.label)}
               editingKind={section.kind}
               scopeLabel={section.kind === "component" && scope !== "global"
-                ? (SCOPE_OPTIONS.find((o) => o.id === scope)?.label ?? null)
+                ? t(SCOPE_OPTIONS.find((o) => o.id === scope)?.label ?? "")
                 : null}
               previewState={previewState}
               setPreviewState={setPreviewState}
@@ -677,16 +677,17 @@ export function StyleEditorPage() {
 // ── Row controls ────────────────────────────────────────────────────────────────
 
 function RowShell({ label, overridden, onReset, children }: { label: string; overridden: boolean; onReset: () => void; children: React.ReactNode }) {
+  const { t } = useTranslation("acp");
   return (
     <div style={{ marginBottom:18 }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
         <span className="acp-label" style={{ margin:0 }}>{label}</span>
         {overridden
-          ? <button type="button" onClick={onReset} title="Revert to inherited value"
+          ? <button type="button" onClick={onReset} title={t("styleEditor.revertTitle")}
               style={{ fontSize:11, fontWeight:700, color:"var(--c-accent)", background:"none", border:"none", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
-              <FontAwesomeIcon icon={faRotateRight} /> Reset
+              <FontAwesomeIcon icon={faRotateRight} /> {t("styleEditor.reset")}
             </button>
-          : <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.04em", textTransform:"uppercase", color:"var(--c-fg-subtle)" }}>Inherited</span>}
+          : <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.04em", textTransform:"uppercase", color:"var(--c-fg-subtle)" }}>{t("styleEditor.inherited")}</span>}
       </div>
       {children}
     </div>
@@ -718,6 +719,7 @@ function RadiusControl({ label, value, overridden, onChange, onReset }: { label:
 }
 
 function ShadowControl({ label, value, overridden, onChange, onReset }: { label: string; value: string; overridden: boolean; onChange: (v:string)=>void; onReset: ()=>void }) {
+  const { t } = useTranslation("acp");
   const preset = SHADOW_PRESETS.find((p) => p.value === value);
   const isCustom = overridden && !preset;
   return (
@@ -731,7 +733,7 @@ function ShadowControl({ label, value, overridden, onChange, onReset }: { label:
               background: on ? "var(--c-accent-soft)" : "var(--c-card)",
               color:      on ? "var(--c-accent)"       : "var(--c-fg-muted)",
               border:    `1px solid ${on ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-            }}>{p.label}</button>
+            }}>{t(p.label)}</button>
           );
         })}
       </div>
@@ -747,16 +749,17 @@ function ShadowControl({ label, value, overridden, onChange, onReset }: { label:
 function FontControls({ fontFamily, setFontFamily, fontWeight, setFontWeight, fontSize, setFontSize }: {
   fontFamily: string; setFontFamily: (v:string)=>void; fontWeight: string; setFontWeight: (v:string)=>void; fontSize: string; setFontSize: (v:string)=>void;
 }) {
+  const { t } = useTranslation("acp");
   return (
     <>
       <div style={{ marginBottom:20 }}>
-        <div className="acp-label">Font Family</div>
+        <div className="acp-label">{t("styleEditor.fontFamily")}</div>
         <select className="acp-select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} style={{ width:"100%" }}>
           {FONTS.map((f) => <option key={f} value={f} style={{ fontFamily:f }}>{f}</option>)}
         </select>
       </div>
       <div style={{ marginBottom:20 }}>
-        <div className="acp-label">Font Weight</div>
+        <div className="acp-label">{t("styleEditor.fontWeight")}</div>
         <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
           {FONT_WEIGHTS.map((w) => (
             <button key={w} type="button" onClick={() => setFontWeight(w)} style={{
@@ -770,7 +773,7 @@ function FontControls({ fontFamily, setFontFamily, fontWeight, setFontWeight, fo
         </div>
       </div>
       <div style={{ marginBottom:20 }}>
-        <div className="acp-label">Base Font Size</div>
+        <div className="acp-label">{t("styleEditor.fontSize")}</div>
         <div style={{ display:"flex", gap:10, alignItems:"center" }}>
           <input type="range" min={12} max={20} value={parseInt(fontSize)||16} onChange={(e) => setFontSize(e.target.value)} style={{ flex:1, accentColor:"var(--c-accent)" }} />
           <span style={{ fontSize:12, color:"var(--c-fg-muted)", minWidth:36 }}>{fontSize}px</span>
@@ -873,9 +876,10 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
     };
   }, []);
 
+  const { t } = useTranslation("acp");
   const kindLabel: Record<SectionKind, string> = {
-    palette: "Palette", text: "Palette", feedback: "Palette",
-    region: "Region", component: "Component", branding: "Branding", customcss: "Custom CSS",
+    palette: "styleEditor.kPalette", text: "styleEditor.kPalette", feedback: "styleEditor.kPalette",
+    region: "styleEditor.kRegion", component: "styleEditor.kComponent", branding: "styleEditor.secBranding", customcss: "styleEditor.secCustomCss",
   };
 
   return (
@@ -888,7 +892,7 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-fg-subtle)" }}>
-            Editing
+            {t("styleEditor.editing")}
           </span>
           {/* Active section chip */}
           <span style={{
@@ -900,37 +904,37 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
             {editingLabel}
           </span>
           <span style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            {kindLabel[editingKind]}
+            {t(kindLabel[editingKind])}
           </span>
           {/* Scope chip — only when a component is scoped to a specific region */}
           {scopeLabel && (
             <>
-              <span style={{ fontSize: 11, color: "var(--c-fg-subtle)" }}>in</span>
+              <span style={{ fontSize: 11, color: "var(--c-fg-subtle)" }}>{t("styleEditor.in")}</span>
               <span style={{
                 padding: "3px 10px", borderRadius: "var(--radius-pill)", background: "var(--c-card)",
                 border: "1px solid var(--c-border)", color: "var(--c-fg-muted)", fontSize: 12, fontWeight: 700,
               }}>{scopeLabel}</span>
             </>
           )}
-          <span style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginLeft: 2 }}>· {mode} mode</span>
+          <span style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginLeft: 2 }}>· {t("styleEditor.modeMode", { mode: t("styleEditor.mode_" + mode) })}</span>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
           {PREVIEW_STATES.map((s) => (
-            <button key={s.id} type="button" onClick={() => setPreviewState(s.id)} title="Force this state on the specimen" style={{
+            <button key={s.id} type="button" onClick={() => setPreviewState(s.id)} title={t("styleEditor.forceState")} style={{
               padding: "3px 9px", borderRadius: "var(--radius-sm)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
               background: previewState === s.id ? "var(--c-accent-soft)" : "transparent",
               color:      previewState === s.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
               border:    `1px solid ${previewState === s.id ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-            }}>{s.label}</button>
+            }}>{t(s.label)}</button>
           ))}
         </div>
       </div>
       <div style={{ borderRadius: "0 0 var(--radius-md) var(--radius-md)", overflow: "hidden", border: "1px solid var(--c-border)", boxShadow: "var(--shadow-card)", background: "var(--c-bg)" }}>
-        <iframe ref={ref} src="/__theme-preview" title="Live theme preview"
+        <iframe ref={ref} src="/__theme-preview" title={t("styleEditor.previewTitle")}
           style={{ width: "100%", height: 600, border: "none", display: "block" }} />
       </div>
       <p style={{ fontSize: 11, color: "var(--c-fg-muted)", marginTop: 8, lineHeight: 1.4 }}>
-        The specimen with your unsaved edits applied. Click a button, card, field, menu or region to jump to its panel — clicking inside a region preselects that region's scope.
+        {t("styleEditor.previewHint")}
       </p>
     </div>
   );
@@ -942,6 +946,7 @@ function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, bus
   label: string; hint: string; currentUrl: string | null; accept: string;
   onUpload: (f: File) => void; onDelete: () => void; busy: boolean; square?: boolean;
 }) {
+  const { t } = useTranslation("acp");
   const inputRef = useRef<HTMLInputElement>(null);
   const previewH = square ? 64 : 40;
   return (
@@ -951,11 +956,11 @@ function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, bus
         <div style={{ height:previewH+16, display:"flex", alignItems:"center", justifyContent:"center", background:"var(--c-bg)", borderRadius:"var(--radius-sm)", border:"1px solid var(--c-border)" }}>
           {currentUrl
             ? <img src={currentUrl} alt={label} style={{ maxHeight:previewH, maxWidth:"100%", objectFit:"contain" }} />
-            : <span style={{ fontSize:11, color:"var(--c-fg-muted)" }}>No image set</span>}
+            : <span style={{ fontSize:11, color:"var(--c-fg-muted)" }}>{t("styleEditor.noImage")}</span>}
         </div>
         <div style={{ display:"flex", gap:6 }}>
           <button type="button" className="btn-ghost btn-sm" style={{ flex:1 }} disabled={busy} onClick={() => inputRef.current?.click()}>
-            <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> Upload
+            <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("styleEditor.upload")}
           </button>
           {currentUrl && (
             <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={onDelete}
