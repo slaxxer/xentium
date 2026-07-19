@@ -1,272 +1,70 @@
-# Last Codebase Update — 2026-07-18
+# Last Codebase Update — 2026-07-19
 
-## Font model: site-wide admin font / per-user override / ACP always Poppins — UNCOMMITTED
+## Plugin updates: dedicated Updates page + §16.2 update-in-place — UNCOMMITTED
 
-User-defined model after spotting the gap: Style Editor font must apply EVERYWHERE in the
-frontend UI; ACP keeps ONLY Poppins; users may override in profile preferences.
+User reported the critical-update panel dialog was (a) marked "seen" on a bare page
+reload without the admin acting on it, and wanted the reminder to persist across the
+Extensions section until acted upon, plus a real place to apply updates. Decided:
+dedicated Updates page + real update-in-place action.
 
-Root causes found: (a) `useFont` applied its own Nunito default as inline `--ff-sans` on
-<html> for EVERY visitor on module load — the admin's served font never reached anyone;
-(b) all h1–h6 map to `--font-display`, hardcoded Poppins, untouched by the Style Editor.
+### Dialog seen-hash fix (the reported bug)
+- `features/admin/AcpLayout.tsx` `useUpdateAlert`: the `localStorage[nv-acp-updates-seen]`
+  write moved OUT of render and INTO the dialog's `.then()` — the set is only remembered
+  once the admin clicks View or Later. A bare reload no longer counts as acknowledgement,
+  so the dialog re-fires on every fresh ACP entry until acted upon. View now navigates to
+  `/admin/updates` (was `/admin/marketplace`).
 
-- `tokens.scss`: `--font-poppins` primitive; `--font-display: var(--font-poppins)`.
-- `useFont.ts`: FontChoice = FontValue|"default"; "default" (nothing stored) now REMOVES
-  the inline vars so the served site font applies; a personal pick sets BOTH --ff-sans +
-  --font-display inline. localStorage only written on explicit choice.
-- `PreferencesTab`: new "Site default" option first in the font grid (+2 account.json keys
-  ×5 locales).
-- `appearance.service` buildCSS: family emits `--font-display` alongside `--ff-sans` —
-  headings follow the admin font on the frontend.
-- `AcpLayout.tsx/.scss`: body.nv-acp class while ACP mounted; rule pins --ff-sans +
-  --font-display to var(--font-poppins) — outranks both served CSS (:root) and user
-  inline vars for everything in the ACP INCLUDING app-root overlays (dialogs/toasts
-  render in body → context-correct fonts).
-- `StyleEditorPage` previewCss: +--font-display at :root AND a body.nv-acp !important
-  override block so the font preview punches through the ACP pin while editing.
-- Earlier this batch (same push): dialog/toast explicit `font-family: var(--ff-sans)`
-  (dialog title h2 no longer stuck on display font).
+### Persistent Extensions banner
+- NEW `features/admin/components/ExtensionsUpdateBanner.tsx`: reads the shared
+  `acp-marketplace-updates` query, renders a banner (danger styling if any critical)
+  linking to `/admin/updates`, hides itself on the Updates page. Mounted on all four
+  Extensions pages: Marketplace, Installed, Upload, License. Unlike the one-shot dialog it
+  stays visible while updates are pending — a dismissed dialog can't hide a critical patch.
 
-Follow-up (same batch): base font Nunito → POPPINS (`--font-body: var(--font-poppins)`;
-body weight 600→500 — 600 was Nunito-compensation; admin-tunable via --fw-body); Style
-Editor FONTS list reordered Poppins-first (unsaved editor state + reset now reflect the
-real default); useFont Nunito entry desc de-defaulted (stays selectable).
+### Dedicated Updates page (Extensions → Updates)
+- NEW `features/admin/pages/UpdatesPage.tsx`: lists pending updates (critical first),
+  installed→latest, changelog, renewal warning; per-plugin Update button (disabled when
+  `renewalRequired`). Route in `app/App.tsx` (`/admin/updates`), nav entry in
+  `useAcpNav.ts` (Extensions, after Installed).
 
-Font set trimmed to FIVE (user decision): Poppins/Nunito/Montserrat/Open Sans/Ubuntu —
-aligned across useFont.ts (user picker), StyleEditorPage FONTS (admin picker), API
-FONT_STACKS, styles/fonts.ts registry (DEFAULT_FONT=Poppins), main.tsx @fontsource
-imports; @fontsource raleway+roboto+playfair-display (unused) dropped from package.json
-+ lockfile. Removed-font fallbacks are graceful: stored user pick not in FONTS → "default";
-saved admin family not in FONT_STACKS → no emit → Poppins base.
+### §16.2 update-in-place (API + plugin-engine)
+- `core/plugin-engine/migration-runner.ts`: NEW `runNewUpMigrations()` — runs only
+  migrations NOT yet applied, matching by NAME across every version. The tracking id embeds
+  the version (`${pluginId}_${ver}_${name}`), so naively re-running `runUpMigrations` on a
+  new version would re-run historical migrations ("relation already exists"). Names are a
+  one-time schema change per plugin lifetime → a name already tracked (any version) is
+  skipped; new names run and track under the new version.
+- `core/plugin-engine/plugin-engine.ts`: NEW `updatePlugin(buffer, userId)` +
+  `compareSemver()`. Forward-only (rejects ≤ installed). Preserves state + data: an enabled
+  plugin is disabled first (old bundle's onDisable + full deregistration against the still-
+  in-place extracted dir), files swapped, new migrations run, DB record updated, then
+  re-enabled against the NEW bundle. Old package file (version-named) deleted. Migrations are
+  never rolled back — updates only add schema.
+- `modules/plugins/plugin.service.ts`: `update()` → `updatePlugin`.
+- `modules/admin/admin.controller.ts`: extracted `fetchMarketplaceArtifact()` helper shared
+  by install + update (authorize at chokepoint → 120s/50MB fetch → sha256 verify → manifest-id
+  match); `installFromMarketplace` refactored onto it; NEW `updateFromMarketplace` (coded
+  NodevoErrors propagate to errorMiddleware for correct NEC/status).
+- `modules/admin/admin.routes.ts`: `POST /admin/marketplace/update` (adminGuard + license
+  limiter).
+- `packages/contracts/src/nec.ts`: +PLUGIN_NOT_FOUND 2004, +PLUGIN_VERSION_NOT_NEWER 2005.
+- `features/admin/pages/ErrorReferencePage.tsx`: +2 catalog entries (2004, 2005).
+- Locales ×5 (`public/locales/*/acp.json`): +nav.updates, +updates block (title, banner
+  singular/plural + critical variants, empty state, critical, renewalRequired, update/updating,
+  toasts).
 
-Verified: web+api typecheck, web build, 7 tests green.
-
-## Update-surface cleanup — UNCOMMITTED
-
-User: the dialog is enough. Removed (a) the updates banner + its query from
-MarketplacePage, (b) the `update` toast category entirely (toast.ts type/duration/helper,
-ToastHost icon+scss rule, Style Editor preview sample) — core toasts are
-success/error/info/warning again. KEPT: the Style Editor Feedback "Update" row and the
-`--c-update` token — they theme the panel dialog's accent now (CLAUDE.md line updated).
-Locales ×5: -updatesAvailable/-updateCritical (updatesRenewal stays — dialog note).
-Verified: web typecheck, 7 toast tests, lint 0 errors.
-
-## Panel dialog (app-wide alert component) replaces the update toast — UNCOMMITTED
-
-User pivot: not a toast — a popup like the uninstall confirm, reusable app-wide.
-
-- `lib/dialog.ts`: DialogIcon += "update" (faCloudArrowDown); DialogOptions += badge /
-  rows (PanelRow {label,value,marker}) / note / wide; new `openPanelDialog()` (wide
-  announcement variant, promise like openDialog). Plugins get it via the webDialog
-  namespace host global automatically.
-- `DialogHost.tsx/.scss`: wide layout (540px, left-aligned header icon+title+badge),
-  rows list (label | danger marker pill | mono value), warn footer note; `--update`
-  accent = var(--c-update) → Style Editor Update slot themes it.
-- `jobs/updateCheck.ts`: cache rows enriched with `name` + `installedVersion` (instance-
-  side knowledge) → UI renders "Forum 1.0.3 → 1.0.4".
-- `AcpLayout.tsx`: useUpdateToast → useUpdateAlert (openPanelDialog once per update set,
-  critical rows sorted first + badge, max 5 rows + "+n more", renewal note, View →
-  /admin/marketplace, Later dismisses). Toast category `update` KEPT (plugins/preview).
-- `MarketplacePage.tsx` banner uses enriched name/installedVersion.
-- Locales ×5: -updatesToast_one/_other/updatesToastView, +updatesDialogTitle/Badge/
-  Critical/More/View/Later. CLAUDE.md dialog convention line updated.
-
-Verified: web+api typecheck clean, 7 toast tests green, lint 0 errors. Demo seed on the
-test instance must bump latestVersion (hash!) + include name/installedVersion/critical.
-
-## Global rate limiter: shared-IP counter bug — UNCOMMITTED (hot-patched on test instance)
-
-User hit NEC-API-4290 storms ("bandwidth freaks out") after the production-default flip.
-Root cause in `shared/middleware/rateLimit.ts` `globalApiLimiter`: ONE counter per IP but a
-per-request limit (Bearer→200, none→60) — authed ACP traffic pushed the shared counter past
-60 and every guest-class request from that IP 429'd (incl. POST /auth/refresh, which has no
-Bearer). Constant on localhost/NAT. Load context: beta-gate polls 12s/tab + bell/online/
-footer/maintenance 30-60s each. Fix: keyGenerator splits `tok:<sha256(auth) 32>` (per
-session, 200/min) vs `ip:<ip>` (guests, raised 60→120/min — §26 adjusted for SPA polling).
-QueryClient already never retries 4xx (no amplification). Verified: 80 guest requests in
-one window all 200 on the test instance; Redis shows tok:/ip: counters split.
-
-## Plugin-update toast + Style Editor "Update" slot — UNCOMMITTED
-
-User request: informational (never forcing) toast when an installed plugin has an update,
-shown on ACP entry, bg #414144, themable.
-
-- `lib/toast.ts`: `update` is a 5th CORE category (7s) + `toast.update()` helper.
-- `ToastHost.tsx/.scss`: faCircleUp icon; `nv-toast--update` → `--toast-update` →
-  `--c-update` fallback chain (same pattern as the other categories).
-- `styles/tokens.scss`: `--c-update` — #414144 light (user-specified), #8f8f94 dark
-  (#414144 is invisible on dark cards). No hardcoded hex in JS — token rule respected.
-- `StyleEditorPage.tsx`: Feedback section + "Update" color row; preview button fires an
-  update sample.
-- `AcpLayout.tsx`: `useUpdateToast()` in AcpShell — reads GET /admin/marketplace/updates
-  (5-min staleTime; cache written by the daily update-check job), fires ONCE per update
-  set (localStorage `nv-acp-updates-seen` = sorted pluginId@version hash), "View" action →
-  /admin/marketplace; any critical update upgrades the toast to warning category.
-- Locales ×5: marketplace.updatesToast_one/_other/updatesToastView (explicit keys, no
-  i18next plural magic). CLAUDE.md toast convention line updated.
-- ⚠ Toast only fires where the cache exists → needs the worker's update-check job (test
-  instance runs no worker; seed `marketplace.updates` setting to demo).
-
-Verified: web typecheck clean, 7 toast tests green, lint 0 errors.
-
-## License page: account-mandatory, manual key removed — UNCOMMITTED
-
-User decision (supersedes §53's "manual key = offline fallback"): the ACP requires a linked
-marketplace account; there is no manual key entry anywhere.
-
-- `LicensePage.tsx`: manual-key card + activate mutation REMOVED; standalone Deactivate
-  button REMOVED (self-heal on refresh made it a trap — Disconnect is the one lever);
-  connected-but-no-license state gains an "Activate from account" button (calls
-  /admin/license/refresh → self-heal activates). Account card copy rewritten.
-- API: `POST /admin/license/activate` route + controller handler REMOVED (comment marks
-  why). `DELETE /admin/license` (deactivate) kept backend-only.
-- license-engine: `activateLicense()` deleted (dead); `fetchEntitlementJwt` kept — it
-  refreshes legacy `activatedVia:"key"` rows and backs provisionEntitlement; comments +
-  the no-account error message updated. NEC LICENSE_ALREADY_ACTIVE (9008) stays cataloged
-  (marketplace-side semantics + Error Reference).
-- Locales ×5: license.* keys pruned (manual*/activate*/deactivate*/toastActivated/
-  toastDeactivated), accountDesc/noLicenseHint rewritten, +activateFromAccount.
-- CLAUDE.md license line updated (account link MANDATORY).
-- ⚠ Consequence accepted by user: air-gapped/offline instances can install plugin FILES
-  (portal Downloads) but cannot license paid plugins without connecting the account.
-- Marketplace server keeps POST /api/activate (legacy-row refresh path) — untouched.
-
-Verified: web+api typecheck clean, 21 API + 7 web tests green. (No browser click-through —
-needs test-instance admin login.)
-
-## v1-audit batch (gaps 1–5) — UNCOMMITTED both repos
-
-User-commissioned after the licensing-workflow audit; HTTPS + payment gateways explicitly
-deferred (no root server/domain yet — recorded in memory as official-v1 blockers).
-
-**Core**
-1. **siteId fix**: installer's finalize() always minted `ncf_installs.siteId`, but
-   `getSiteId()` read the never-written settings key "site.id" → every instance reported
-   "dev-site". Now reads the install row, is exported, and replaces the inline copies in
-   admin.controller (authorize/install) + marketplace-source disconnect. refreshLicense()
-   re-reads it and writes it back to the license row (heals pre-fix "dev-site" rows).
-   E2E-verified on the test instance: getSiteId() = c81d21eb-73ee-49c7-86ad-63507400296e.
-2. **Instant entitlement after purchase**: installFromMarketplace runs a best-effort
-   refreshLicense() after install — Enable no longer 402s (NEC-LICENSE-9001) until the
-   daily job.
-5. **§16 update-check job**: new jobs/updateCheck.ts (worker) + `update-check` queue +
-   scheduled daily 02:30 + workerBoot registration. POSTs installed inventory to
-   /marketplace/updates (skips in dev licensing / when no account token), caches result in
-   setting `marketplace.updates`. New GET /admin/marketplace/updates (adminGuard). ACP
-   MarketplacePage shows an updates banner (critical badge + renewalRequired warning);
-   +3 i18n keys in all 5 locales.
-
-**Marketplace**
-3. **connect() orphan-token fix**: bind/409 check moved BEFORE instance-token creation —
-   a refused coupling no longer burns the auth code AND leaves a ghost portal row.
-4. **www == apex**: DomainClass::normalize drops a leading "www."; ensureActivation and
-   the updates() inventory-touch normalize before store/match. JWTs still carry the
-   instance's own domain (core domain check unaffected). Unit cases extended (www.co,
-   wwwx.com edge cases pass).
-
-Verified: backbone:check 19/19; php -l + classifier unit cases all pass.
-
-## Explicit NEC codes for every known failure — UNCOMMITTED, with NODE_ENV flip
-
-User-reported: enabling an unlicensed plugin surfaced as generic NEC-API-5000 + the fatal
-full-screen overlay, because core engines threw plain `Error`s that fell through
-errorMiddleware's unknown-error branch. Swept all 28 plain throws in apps/api:
-
-- contracts nec.ts: +API_CONFLICT 4009 (was emitted by NodevoError.conflict but uncataloged),
-  +PLUGIN_PACKAGE_INVALID 2002, +PLUGIN_ALREADY_INSTALLED 2003, +PLUGIN_MIGRATION_MISSING 2011,
-  +PLUGIN_MIGRATION_CHECKSUM 2012, +LICENSE_ALREADY_ACTIVE 9008, +LICENSE_SERVER_REJECTED 9009,
-  +CORE_STYLEPACK_INVALID 8002.
-- plugin-engine.ts: package validation → 2002 (422), already-installed → 2003 (409), unlicensed
-  enable → LICENSE_NOT_FOUND 9001 (402, the reported bug); validateManifest NodevoErrors pass
-  through instead of being flattened. migration-runner.ts → 2011/2012; sql-validator.ts → 2010.
-- license-engine.ts: already-active → 9008 (409), no account → 9005 (400), server 4xx → 9009
-  (mirrors status + server message), server 5xx/network → 9007 (503) via licenseServerError().
-- appearance.service.ts: 7 style-pack throws → CORE_STYLEPACK_INVALID 8002 (422) via
-  stylePackError() helper.
-- Left as plain Error deliberately: installer-engine (own pre-middleware error contract) and
-  admin.routes' simulated-error dev endpoint (exists to test the 5000 path).
-- Web: ErrorReferencePage catalog +9 entries (all new codes incl. 4009); 9003 cause text
-  updated to canonical site.url.
-
-Verified: backbone:check 19/19 green; e2e on patched test instance — enablePlugin('nodevo-forum')
-(installed, unlicensed) now throws NodevoError {code NEC-LICENSE-9001, httpStatus 402} with the
-actionable message → middleware renders it as warn-severity JSON, no fatal overlay, correct
-Error Log severity.
-
-## NODE_ENV defaults to production (safe-by-default) — UNCOMMITTED, post-PR#39
-
-User decision: every instance runs hardened unless a developer explicitly opts into
-development. `config/env.ts` NODE_ENV default `development` → `production` (an unset
-NODE_ENV previously meant lax rate limits, the 000000 dev email-code backdoor, verbose
-errors, and cap-exempt/never-domain-locked licensing). Dev opt-in paths: `./nodevo.sh`
-now exports `NODE_ENV="${NODE_ENV:-development}"`; the dev checkout's `.env` already
-carries NODE_ENV=development; `.env.example` + CLAUDE.md note the new default. The
-installer still writes no NODE_ENV — production is the absence of configuration.
-Verified: typecheck + 21/21 tests green (vitest sets NODE_ENV=test itself); test
-instance (no NODE_ENV in .env) now reports env=production and serves normally
-(web/css/config all 200; localhost still classifies as `staging` for licensing, so
-domain caps don't bite local test installs).
-
-Branch `development`. (Note: the toast/dialog WIP from 2026-07-11 — toast.ts/dialog.ts/hosts,
-swal facade — is still uncommitted in the working tree alongside this change.)
-
-## License ↔ account coupling on disconnect (both repos)
-
-User-reported: disconnecting the marketplace account left the account-activated license
-`active`; Refresh fell into the grace-period catch (missing token looked like an outage) and
-kept a 30-day zombie alive. Account-derived licenses can never refresh without the token (the
-raw key never reaches the instance — only the masked keyRef), so they now die with the coupling.
-Manual-key licenses (`activatedVia: "key"`) are untouched — they stay the offline fallback.
-
-**Core (API)**
-- `core/license-engine/license-engine.ts`:
-  - new `deactivateAccountLicenses()` — sets `active` + `activatedVia: "account"` rows to
-    `deactivated` (rows kept: reconnect revives via the existing upsert).
-  - `refreshLicense()`: account-activated license + no marketplace token (non-dev) →
-    deactivate immediately instead of entering grace. Converges instances that disconnected
-    before this fix.
-- `core/license-engine/marketplace-source.ts` `disconnect()`:
-  1. best-effort `POST /account/deactivate` (Bearer token) to the license server BEFORE
-     wiping the token — revokes the token server-side (domain binding survives, see below);
-     unreachable/missing endpoint never blocks the disconnect;
-  2. wipes the three connection settings (as before);
-  3. `deactivateAccountLicenses()`.
-  `connect()` now also sends `environment` so the server can bind dev/staging domains
-  without consuming the production slot.
-
-**Core (web)**
-- `features/admin/pages/LicensePage.tsx`: disconnect mutation now also invalidates
-  `acp-license` (the license panel empties immediately after disconnect).
-
-**Marketplace (~/Development/nodevo-marketplace — separate repo)**
-
-Business-model correction from the user mid-session: 1 license = 1 instance; the license is
-bound to the domain the plugins were bought for (free 1st year with purchase, ~100€/y renewal);
-owners must NOT be able to move it to a new domain themselves — releasing a domain binding is
-an ADMIN-ONLY support action (that friction is the anti-resale fence: a raw key can consume
-slots but never free them).
-
-- `Api/InstanceApiController.php` + `Core/App.php`: new `POST /api/account/deactivate`
-  (Bearer + rate limit 30/h). Per the correction it now ONLY revokes the instance token
-  (audit `instance.account_deactivate`) — the domain binding deliberately survives a
-  disconnect; `connect` now accepts optional `environment`.
-- `Service/MarketplaceApiService.php` `connect()`: **cap-bypass fixed** — it bound new
-  domains with `enforceCap: false`, and the activate/download gates accept any pre-existing
-  activation row without re-checking the cap, so connecting the account on a second install
-  silently gave a 1-domain license a second domain. Now binds best-effort with the cap
-  enforced (no free slot → connect still succeeds, gates 402 that domain). Also takes
-  `environment` (default `production` for old cores) so dev/staging installs stop eating the
-  production slot.
-- Admin domain release (the required escape hatch): `LicenseRepository::findActivationById/
-  deleteActivation`, `LicenseService::releaseActivation` (audit
-  `license.activation_released`), `Admin/LicensesController::releaseActivation`, route
-  `POST /acp/activations/{id}/release`, per-row Release button (confirm dialog) in the
-  activations table on `templates/admin/account-detail.php`.
-
-**Verified**: api+web typecheck clean, 21/21 API tests green, `php -l` clean on all 4 PHP
-files. E2E on the test instance (/var/www/test-instance, patched, against LIVE bplaced
-marketplace): (S1) the instance's real zombie state — active account license, no token —
-refreshLicense() → `deactivated` immediately; (S2) seeded token + active license →
-disconnect() → server call 404s (endpoint not deployed yet) and is swallowed, token wiped,
-license `deactivated`. ⚠ Marketplace endpoint NOT yet on live bplaced (FTPS blocked on FTP
-password) — until deployed, disconnects release nothing server-side (slot stays consumed,
-as before).
+### Verification
+- Web + API typecheck clean; web build clean; lint 0 errors (46 pre-existing `any` warnings).
+- API tests: 17 pass; the 4 installer failures are environmental (default dev DB on :5432 not
+  running — only the isolated test-instance DB on :5433 is up); unrelated to this change.
+- **E2E on the test instance vs LIVE bplaced marketplace** (tsx driving the real modules):
+  shoutbox 1.0.0 → 1.0.1 — authorizeDownload returned a real 89817-byte artifact, sha256 MATCH,
+  manifest-id match, `updatePlugin` disabled+swapped+re-enabled (routes/permissions/NEC codes
+  re-registered), DB → 1.0.1 still `enabled`, 5 existing migrations correctly skipped by name
+  (none re-run), old 1.0.0 package file removed. Negative test: re-updating the same version
+  threw NEC-PLUGIN-2005 (409). Update route mounted (401 adminGuard, not 404).
+- Test instance RESET to a clean demo state for the browser walkthrough: shoutbox rolled back
+  to 1.0.0 (artifact re-fetched, files + DB restored), `marketplace.updates` re-seeded with the
+  real 1.0.1 critical entry, API restarted fresh and verified (plugin enabled at 1.0.0, route
+  live). No worker on the test instance — the update cache was seeded via a manual
+  `processUpdateCheck()` run.

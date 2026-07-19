@@ -12,6 +12,7 @@ import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
 import { apiErrorMessage, swalToast } from "../../../lib/swal";
 import { slotRegistry } from "../../../plugins/slotRegistry";
+import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
 interface MarketplacePlugin {
   id:              string;
@@ -116,6 +117,8 @@ export function MarketplacePage() {
           <h1 className="acp-page-title">{t("nav.marketplace")}</h1>
         </div>
       </div>
+
+      <ExtensionsUpdateBanner />
 
       {/* Account connection notice (ADR 0001) */}
       {!conn?.connected && (

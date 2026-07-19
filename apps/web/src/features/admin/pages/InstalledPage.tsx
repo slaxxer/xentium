@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPuzzlePiece, faUpload, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
 interface InstalledPlugin {
   id:               string;
@@ -87,6 +88,8 @@ export function InstalledPage() {
           <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("installed.uploadBtn")}
         </button>
       </div>
+
+      <ExtensionsUpdateBanner />
 
       {isLoading ? (
         <div className="acp-card acp-empty">{t("installed.loading")}</div>

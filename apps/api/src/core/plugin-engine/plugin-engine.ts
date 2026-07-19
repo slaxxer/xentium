@@ -5,7 +5,7 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { validateManifest, type PluginManifest } from "./manifest-validator.js";
-import { validateMigrationPairs, runUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
+import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { isPluginEntitled } from "../license-engine/license-engine.js";
@@ -129,6 +129,82 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   pluginRegistry.register(manifest, "installed");
   logger.info({ pluginId: manifest.id }, "Plugin installed");
 
+  return manifest;
+}
+
+/** Compare two semver strings. Returns >0 if a>b, <0 if a<b, 0 if equal (numeric core only). */
+function compareSemver(a: string, b: string): number {
+  const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = b.split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  }
+  return 0;
+}
+
+/**
+ * Update an installed plugin in place from a new package buffer (§16.2).
+ * Forward-only. Preserves the enabled/disabled state and the plugin's data:
+ * an enabled plugin is disabled first (old bundle's onDisable + deregistration),
+ * its files swapped, only its NEW migrations run, then re-enabled against the new
+ * bundle. Migrations are never rolled back — updates only add schema.
+ */
+export async function updatePlugin(buffer: Buffer, _updatedById: string): Promise<PluginManifest> {
+  const { manifest, zip } = await validatePackage(buffer);
+
+  const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
+  if (!existing) {
+    throw new NodevoError({ code: NEC.PLUGIN_NOT_FOUND, httpStatus: 404, message: `Plugin "${manifest.id}" is not installed — nothing to update.` });
+  }
+  if (compareSemver(manifest.version, existing.installedVersion) <= 0) {
+    throw new NodevoError({ code: NEC.PLUGIN_VERSION_NOT_NEWER, httpStatus: 409, message: `Package version ${manifest.version} is not newer than the installed ${existing.installedVersion}. Updates are forward-only.` });
+  }
+
+  const wasEnabled = existing.status === "enabled";
+  // Tear down the OLD bundle first — its onDisable runs against the still-in-place
+  // extracted dir/manifest, deregistering old routes/ACP pages/registries.
+  if (wasEnabled) {
+    await disablePlugin(manifest.id);
+  }
+
+  await ensurePluginDir();
+  const pkgPath = packagePath(manifest.id, manifest.version);
+  await fs.writeFile(pkgPath, buffer);
+
+  // Swap the extracted dir to the new bundle.
+  const extractDir = extractedDir(manifest.id);
+  await fs.rm(extractDir, { recursive: true, force: true });
+  await fs.mkdir(extractDir, { recursive: true });
+  zip.extractAllTo(extractDir, /* overwrite */ true);
+
+  // Run only migrations this plugin has never applied (by name, any version).
+  await runNewUpMigrations(zip, manifest);
+
+  // Update the DB record. Status stays "disabled" here; re-enabled below if it was.
+  await prisma.installedPlugin.update({
+    where: { id: manifest.id },
+    data: {
+      name:             manifest.name,
+      vendor:           manifest.vendor,
+      installedVersion: manifest.version,
+      licenseRequired:  manifest.licenseRequired,
+      packagePath:      pkgPath,
+      manifest:         manifest as unknown as object,
+    },
+  });
+  pluginRegistry.register(manifest, "disabled");
+
+  // Remove the previous package file (its name embeds the old version).
+  if (existing.packagePath && existing.packagePath !== pkgPath) {
+    await fs.unlink(existing.packagePath).catch(() => null);
+  }
+
+  // Restore the enabled state against the NEW bundle (re-runs onEnable, re-registers).
+  if (wasEnabled) {
+    await enablePlugin(manifest.id);
+  }
+
+  logger.info({ pluginId: manifest.id, from: existing.installedVersion, to: manifest.version }, "Plugin updated");
   return manifest;
 }
 

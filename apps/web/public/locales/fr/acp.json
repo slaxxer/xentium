@@ -26,6 +26,7 @@
     "navigation": "Navigation",
     "marketplace": "Place de marché",
     "installed": "Installées",
+    "updates": "Mises à jour",
     "upload": "Téléverser",
     "license": "Licence",
     "scheduledTasks": "Tâches planifiées",
@@ -789,6 +790,24 @@
     "updatesDialogMore": "+{{count}} autres mises à jour",
     "updatesDialogView": "Voir les mises à jour",
     "updatesDialogLater": "Plus tard"
+  },
+  "updates": {
+    "title": "Mises à jour",
+    "loading": "Recherche de mises à jour…",
+    "banner_one": "{{count}} mise à jour de plugin disponible",
+    "banner_other": "{{count}} mises à jour de plugins disponibles",
+    "bannerCritical_one": "{{count}} mise à jour critique de plugin disponible",
+    "bannerCritical_other": "{{count}} mises à jour critiques de plugins disponibles",
+    "bannerAction": "Consulter →",
+    "emptyTitle": "Tout est à jour",
+    "emptyHint": "Les plugins installés apparaîtront ici lorsqu'une version plus récente sera publiée.",
+    "emptyCheckedAt": "Dernière vérification : {{date}}.",
+    "critical": "critique",
+    "renewalRequired": "Votre période de licence est terminée — renouvelez-la sur la marketplace pour télécharger cette mise à jour.",
+    "update": "Mettre à jour",
+    "updating": "Mise à jour…",
+    "toastUpdated": "{{name}} mis à jour vers {{version}}.",
+    "toastFailed": "Échec de la mise à jour : {{message}}"
   },
   "license": {
     "loading": "Chargement…",
