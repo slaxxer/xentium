@@ -42,13 +42,16 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * One announcement dialog (openPanelDialog — the app-wide alert surface) when
- * plugin updates are waiting (cache written by the update-check job). Never
- * forcing, but persistent PER ADMIN: it shows on every ACP entry until this
- * admin has actually VISITED the Updates page (server-tracked via the ACP
- * movement log — see getMarketplaceUpdates `acknowledged`). Dismissing the
- * dialog (Later/Escape) never counts; only going to look does. A new update set
- * resets the anchor and it fires again. Critical updates get the danger badge.
+ * ACP-entry announcement dialogs (openPanelDialog — the app-wide alert surface),
+ * shown PER ADMIN and persistent until this admin has actually LOOKED at the
+ * matching page (server-tracked via the ACP movement log — dismissing never
+ * counts, only visiting does):
+ *   - license about to expire / expired → until they visit /admin/license
+ *   - plugin updates waiting             → until they visit /admin/updates
+ * At most ONE fires per ACP entry (a second openPanelDialog would pre-empt the
+ * first); the license takes priority since it threatens service continuity, and
+ * the badge + banners carry whatever isn't shown. Both re-fire when their anchor
+ * moves (a renewed license / a new update set).
  */
 const MAX_DIALOG_ROWS = 5;
 
@@ -61,29 +64,70 @@ interface PluginUpdate {
   renewalRequired:   boolean;
 }
 
-function useUpdateAlert() {
+interface StatusSummary {
+  licenseExpiringSoon: boolean;
+  licenseExpired:      boolean;
+  licenseDaysLeft:     number | null;
+  licenseExpiresAt:    string | null;
+  licenseDomain:       string | null;
+  licenseAcknowledged: boolean;
+}
+
+function useAcpAlerts() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
   const shownFor = useRef<string | null>(null);
-  const { data } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean }>({
+
+  const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
   });
+  const { data: status } = useQuery<StatusSummary>({
+    queryKey:  ["acp-status-summary"],
+    queryFn:   () => api.get("/admin/status-summary"),
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
-    const updates = data?.updates ?? [];
-    if (!updates.length) return;
-    // Server says this admin has already been to the Updates page for this set.
-    if (data?.acknowledged) return;
-    // Guard against a re-render firing a second dialog for the same set within
-    // one ACP session (the effect can re-run when `data` refetches).
-    const setHash = updates.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",");
+    const licenseNeeds = !!status && (status.licenseExpiringSoon || status.licenseExpired) && !status.licenseAcknowledged;
+    const list = updates?.updates ?? [];
+    const updatesNeed = list.length > 0 && !updates?.acknowledged;
+
+    // License first (service continuity), one dialog per entry.
+    if (licenseNeeds) {
+      const key = `license:${status!.licenseExpiresAt}`;
+      if (shownFor.current === key) return;
+      shownFor.current = key;
+
+      const expired = status!.licenseExpired;
+      const rows = [] as { label: string; value: string; marker?: string }[];
+      if (status!.licenseDomain) rows.push({ label: t("license.expiryDialogDomain"), value: status!.licenseDomain });
+      rows.push({
+        label:  t("license.expiryDialogExpires"),
+        value:  status!.licenseExpiresAt ? new Date(status!.licenseExpiresAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—",
+        marker: expired ? t("license.expiryDialogExpiredMarker") : t("license.expiryDialogInDays", { count: Math.max(status!.licenseDaysLeft ?? 0, 0) }),
+      });
+
+      void openPanelDialog({
+        icon:        "warning",
+        title:       expired ? t("license.expiryDialogTitleExpired") : t("license.expiryDialogTitle"),
+        badge:       expired ? t("license.expiryDialogExpiredMarker") : undefined,
+        rows,
+        note:        t("license.expiryDialogNote"),
+        confirmText: t("license.expiryDialogView"),
+        cancelText:  t("marketplace.updatesDialogLater"),
+      }).then((view) => { if (view) navigate("/admin/license"); });
+      return;
+    }
+
+    if (!updatesNeed) return;
+    const setHash = `updates:${list.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",")}`;
     if (shownFor.current === setHash) return;
     shownFor.current = setHash;
 
     // Critical rows first, then cap the list for the dialog.
-    const ordered = [...updates].sort((a, b) => Number(b.critical) - Number(a.critical));
+    const ordered = [...list].sort((a, b) => Number(b.critical) - Number(a.critical));
     const rows = ordered.slice(0, MAX_DIALOG_ROWS).map((u) => ({
       label:  u.name ?? u.pluginId,
       value:  `${u.installedVersion ?? "?"} → ${u.latestVersion}`,
@@ -95,24 +139,23 @@ function useUpdateAlert() {
 
     void openPanelDialog({
       icon:        "update",
-      title:       t("marketplace.updatesDialogTitle", { count: updates.length }),
-      badge:       updates.some((u) => u.critical) ? t("marketplace.updatesDialogBadge") : undefined,
+      title:       t("marketplace.updatesDialogTitle", { count: list.length }),
+      badge:       ordered.some((u) => u.critical) ? t("marketplace.updatesDialogBadge") : undefined,
       rows,
-      note:        updates.some((u) => u.renewalRequired) ? t("marketplace.updatesRenewal") : undefined,
+      note:        ordered.some((u) => u.renewalRequired) ? t("marketplace.updatesRenewal") : undefined,
       confirmText: t("marketplace.updatesDialogView"),
       cancelText:  t("marketplace.updatesDialogLater"),
     }).then((view) => {
-      // Nothing is persisted here — acknowledgement is the Updates-page VISIT,
-      // recorded server-side. View navigates there (and logs the visit); Later /
-      // Escape just close, so the dialog returns on the next ACP entry.
+      // Acknowledgement is the Updates-page VISIT (server-tracked); Later/Escape
+      // don't count, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
-  }, [data, t, navigate]);
+  }, [status, updates, t, navigate]);
 }
 
 function AcpShell() {
   const nav = useAcpNav();
-  useUpdateAlert();
+  useAcpAlerts();
 
   return (
     <div className="acp-layout" data-layout="horizontal">

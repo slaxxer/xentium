@@ -166,6 +166,64 @@ async function fetchMarketplaceArtifact(
   return buffer;
 }
 
+/** Numeric-core semver compare: >0 if a>b, <0 if a<b, 0 if equal. */
+function semverCompare(a: string, b: string): number {
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
+  }
+  return 0;
+}
+
+interface CachedUpdate {
+  pluginId:          string;
+  name?:             string;
+  installedVersion?: string | null;
+  latestVersion:     string;
+  critical?:         boolean;
+  renewalRequired?:  boolean;
+  [k: string]:       unknown;
+}
+
+/**
+ * Read the `marketplace.updates` cache and RECONCILE it against what's actually
+ * installed right now. The cache is only refreshed by the update-check job, so a
+ * plugin uninstalled (or already updated) since the last run would otherwise leave
+ * a phantom "update available" alert on the ACP. An update survives only if its
+ * plugin is still installed AND its current installed version is older than the
+ * offered version; the installed version is refreshed for accurate display.
+ */
+async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setSince?: string; updates: CachedUpdate[] }> {
+  const { getSetting } = await import("../../shared/utils/settings.js");
+  const { prisma } = await import("../../infrastructure/db.js");
+
+  const raw = await getSetting<string>("marketplace.updates", "");
+  if (!raw) return { checkedAt: null, updates: [] };
+
+  let parsed: { checkedAt?: string | null; setSince?: string; updates?: CachedUpdate[] };
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return { checkedAt: null, updates: [] };
+  }
+
+  const cached = Array.isArray(parsed.updates) ? parsed.updates : [];
+  if (!cached.length) return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates: [] };
+
+  const installed = await prisma.installedPlugin.findMany({ select: { id: true, installedVersion: true } });
+  const byId = new Map(installed.map((p) => [p.id, p.installedVersion]));
+
+  const updates = cached
+    .filter((u) => {
+      const current = byId.get(u.pluginId);
+      return current !== undefined && semverCompare(u.latestVersion, current) > 0;
+    })
+    .map((u) => ({ ...u, installedVersion: byId.get(u.pluginId) ?? u.installedVersion }));
+
+  return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates };
+}
+
 export const adminController = {
   // Dashboard
   dashboard: (async (_req, res) => {
@@ -434,32 +492,21 @@ export const adminController = {
   // set of pending updates appeared (setSince). The ACP-entry dialog uses it to
   // stay visible per-admin until they actually engage — not just dismiss it.
   getMarketplaceUpdates: (async (req, res) => {
-    const { getSetting } = await import("../../shared/utils/settings.js");
-    const raw = await getSetting<string>("marketplace.updates", "");
-    if (!raw) {
-      res.json({ checkedAt: null, updates: [], acknowledged: true });
-      return;
-    }
-    let parsed: { checkedAt?: string | null; setSince?: string; updates?: unknown[] };
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      res.json({ checkedAt: null, updates: [], acknowledged: true });
-      return;
-    }
+    // Reconciled against currently-installed plugins, so an uninstalled/already-
+    // updated plugin never leaves a phantom alert from a stale cache.
+    const { checkedAt, setSince, updates } = await readReconciledUpdates();
 
     // No pending updates → nothing to acknowledge. A missing setSince (pre-anchor
     // cache) is treated as unacknowledged so the dialog still nudges until the next
     // update-check writes the anchor.
-    const hasUpdates = Array.isArray(parsed.updates) && parsed.updates.length > 0;
     let acknowledged = true;
-    if (hasUpdates && req.userId) {
+    if (updates.length && req.userId) {
       const { activityService } = await import("../activity/activity.service.js");
-      acknowledged = parsed.setSince
-        ? await activityService.hasVisitedSince(req.userId, "/admin/updates", new Date(parsed.setSince))
+      acknowledged = setSince
+        ? await activityService.hasVisitedSince(req.userId, "/admin/updates", new Date(setSince))
         : false;
     }
-    res.json({ ...parsed, acknowledged });
+    res.json({ checkedAt, setSince, updates, acknowledged });
   }) as RequestHandler,
 
   // Aggregated "admin attention" signals for the frontend navbar ACP badge.
@@ -467,39 +514,49 @@ export const adminController = {
   // they're applied, plus the license when it's about to expire (or has). Kept
   // deliberately small + server-side so the badge stays a dumb consumer and new
   // signals (core update, stuck jobs, …) can be OR-ed in here later.
-  getStatusSummary: (async (_req, res) => {
+  getStatusSummary: (async (req, res) => {
     const EXPIRING_SOON_DAYS = 30;
-    const { getSetting } = await import("../../shared/utils/settings.js");
 
-    // Pending plugin updates (from the update-check cache).
-    let pluginUpdates = 0;
-    let criticalUpdate = false;
-    const raw = await getSetting<string>("marketplace.updates", "");
-    if (raw) {
-      try {
-        const parsed = JSON.parse(raw) as { updates?: { critical?: boolean }[] };
-        const updates = parsed.updates ?? [];
-        pluginUpdates = updates.length;
-        criticalUpdate = updates.some((u) => u.critical);
-      } catch { /* malformed cache → treat as no updates */ }
-    }
+    // Pending plugin updates — reconciled against currently-installed plugins so an
+    // uninstalled/already-updated plugin never inflates the badge from a stale cache.
+    const { updates } = await readReconciledUpdates();
+    const pluginUpdates = updates.length;
+    const criticalUpdate = updates.some((u) => u.critical);
 
     // License expiry.
     let licenseExpiringSoon = false;
     let licenseExpired = false;
+    let licenseDaysLeft: number | null = null;
     const license = await adminService.getActiveLicense();
     if (license?.expiresAt) {
       const daysLeft = (new Date(license.expiresAt).getTime() - Date.now()) / 86_400_000;
+      licenseDaysLeft = Math.ceil(daysLeft);
       if (daysLeft <= 0) licenseExpired = true;
       else if (daysLeft <= EXPIRING_SOON_DAYS) licenseExpiringSoon = true;
     }
-
     const licenseAttention = licenseExpiringSoon || licenseExpired;
+
+    // Per-admin acknowledgement for the license-expiry dialog: has THIS admin
+    // visited /admin/license since the license entered the warning window
+    // (expiresAt − 30d)? That anchor is stable for the term and moves forward on
+    // renewal, so the dialog re-nudges each cycle. Same visit-based model as the
+    // update dialog (a dismissal never counts; only looking does).
+    let licenseAcknowledged = true;
+    if (licenseAttention && req.userId && license?.expiresAt) {
+      const anchor = new Date(new Date(license.expiresAt).getTime() - EXPIRING_SOON_DAYS * 86_400_000);
+      const { activityService } = await import("../activity/activity.service.js");
+      licenseAcknowledged = await activityService.hasVisitedSince(req.userId, "/admin/license", anchor);
+    }
+
     res.json({
       pluginUpdates,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
+      licenseDaysLeft,
+      licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
+      licenseDomain:      license?.domain ?? null,
+      licenseAcknowledged,
       // Badge count: each pending update + the license (once) if it needs attention.
       total: pluginUpdates + (licenseAttention ? 1 : 0),
       // Red vs neutral badge.
