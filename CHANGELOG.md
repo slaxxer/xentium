@@ -1,13 +1,12 @@
 # Changelog
 
-## i18n: ACP translations, part 1
+## i18n: ACP translations, part 2
 
-- The **Guest Home** and **Navigation** admin pages are now fully translated (they were
-  hardcoded English), across all five bundled locales (English, German, Spanish, French,
-  Portuguese) — labels, descriptions, table headers, the edit dialog, confirmations and
-  toasts.
-- Filled the remaining untranslated strings on the Installed page ("failed to load"
-  messages) and added the "Groups" page-visibility label.
-- Fixed the "Guest Home" sidebar entry, which was showing an untranslated literal.
+- Three more admin pages that were hardcoded English are now fully translated across all
+  five bundled locales (English, German, Spanish, French, Portuguese):
+  **Article Categories**, **Progression**, and the **User detail** page.
+- This covers their forms and dialogs (create/edit/ban modals), tables, column headers,
+  confirmations, toasts, status labels, and plural-aware counts (events, sessions, levels).
+- Dates on the user page now follow the active locale instead of always US formatting.
 
-(First of several batches completing ACP internationalization.)
+(Second of several batches completing ACP internationalization.)
