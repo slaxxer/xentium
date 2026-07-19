@@ -1,35 +1,40 @@
-# Last Codebase Update — 2026-07-19 (session 3)
+# Last Codebase Update — 2026-07-19 (session 4)
 
-## Frontend navbar ACP status badge — UNCOMMITTED
+Two changes, pushed together.
 
-User idea: a badge on the frontend navbar's ACP (gear) icon signalling that
-something needs attention in the admin panel. Semantics (user-chosen): persists
-until the update is applied, AND persists when the license is about to expire.
-Framed as extensible "status updates" — plugin updates are the first source.
+## 1. License-expiry dialog on ACP entry (commit: feat)
 
-- **Backend aggregation** — `apps/api/src/modules/admin/admin.controller.ts`
-  `getStatusSummary` + route `GET /admin/status-summary` (adminGuard). Reads the
-  update-check cache (pending plugin update count + any critical) and the active
-  license (`getActiveLicense().expiresAt`, threshold 30 days). Returns
-  `{ pluginUpdates, criticalUpdate, licenseExpiringSoon, licenseExpired, total, urgent }`
-  where `total` = pending updates + 1 if the license needs attention, and `urgent`
-  = any critical update or license issue. Deliberately small + server-side so new
-  signals (core update, stuck jobs, mod queue) OR in here — the badge stays dumb.
-- **Frontend badge** — new `apps/web/src/components/AcpStatusBadge.tsx`: queries
-  `/admin/status-summary`, renders the bell-style count badge (red `--c-danger`
-  when urgent, else `--c-accent2`), nothing when total 0. Wired into the gear
-  `NavLink` in `apps/web/src/layouts/PubNav.tsx` (only rendered for admins), which
-  gained `--acp` modifier; `apps/web/src/layouts/AppLayout.scss` adds
-  `&__icon-btn--acp { position: relative }` so the badge anchors (mirrors `--bell`).
-  Badge is `aria-hidden` (decorative); the gear keeps its "Admin panel" label — no
-  new i18n keys.
+- `admin.controller.ts` `getStatusSummary`: +licenseDaysLeft, licenseExpiresAt,
+  licenseDomain, and per-admin `licenseAcknowledged` (visited /admin/license since
+  the warning-window anchor `expiresAt − 30d`, via the ACP movement log).
+- `AcpLayout.tsx`: the alert hook (`useAcpAlerts`) now shows a warning panel dialog
+  for an expiring/expired license, prioritised above the plugin-update dialog (one
+  dialog per ACP entry — a second openPanelDialog would pre-empt the first).
+  Visit-based acknowledgement, re-warns each renewal cycle.
+- Locales ×5: `license.expiryDialog*` (title/expired, domain, expires, in-days
+  plural, expired marker, note, view).
+
+## 2. Fix: phantom update alerts for uninstalled / already-updated plugins (commit: fix)
+
+User-found: uninstalling a plugin via the ACP left the "update available" banner
+(and dialog + badge) showing, because the alerts read the `marketplace.updates`
+cache verbatim — that cache is only refreshed by the update-check job, so it lags
+the real installed set. Marketplace side is fine (its `updates()` only iterates the
+sent inventory); this was purely a core read-time gap.
+
+- `admin.controller.ts`: new module-level `readReconciledUpdates()` — reads the
+  cache and keeps an update only if its plugin is STILL installed AND its current
+  installed version is older than the offered version (semverCompare); refreshes the
+  installed version for display. `getMarketplaceUpdates` and `getStatusSummary` both
+  route through it, so the banner, dialog, Updates page, and navbar badge are all
+  reconciled. Cheap (one `findMany({ select: { id, installedVersion } })` per call).
 
 ### Verification
-- Both apps typecheck; lint 0 errors (pre-existing warnings only).
-- Exercised the real `getStatusSummary` controller against the live test DB across
-  three scenarios: 1 critical update → total 1 / urgent; +license expiring in 10
-  days → total 2 / expiringSoon; license expired → total 2 / expired (license
-  `expiresAt` restored after).
-- Route mounted on the running instance (401 adminGuard); single clean API+web
-  processes; web HMR picked up the component. Demo state (shoutbox 1.0.1 critical
-  pending) → a logged-in admin sees a red "1" on the gear.
+- API typecheck clean; backbone:check green.
+- E2E on the test instance in the bugged state (0 plugins installed, cache still
+  listing shoutbox 1.0.0→1.0.1): getMarketplaceUpdates → `updates: []`,
+  getStatusSummary → pluginUpdates 0 (phantom gone; the legitimately-expiring
+  license still counts, total 1). Positive case after reinstalling shoutbox 1.0.0:
+  the 1.0.1 update reappears (pluginUpdates 1, total 2, urgent).
+- License-dialog ack flow E2E (earlier this session): expiring detected, not-acked
+  before visiting /admin/license, acked after.

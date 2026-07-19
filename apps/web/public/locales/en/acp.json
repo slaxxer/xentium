@@ -975,7 +975,16 @@
     "refreshing": "Refreshing…",
     "noLicenseTitle": "No active license",
     "noLicenseHint": "Connect your marketplace account above — the license from your purchase activates automatically.",
-    "activateFromAccount": "Activate from account"
+    "activateFromAccount": "Activate from account",
+    "expiryDialogTitle": "License expiring soon",
+    "expiryDialogTitleExpired": "License expired",
+    "expiryDialogDomain": "Domain",
+    "expiryDialogExpires": "Expires",
+    "expiryDialogInDays_one": "in {{count}} day",
+    "expiryDialogInDays_other": "in {{count}} days",
+    "expiryDialogExpiredMarker": "expired",
+    "expiryDialogNote": "Renew your license in the marketplace to avoid an interruption to paid plugins.",
+    "expiryDialogView": "View license"
   },
   "permissions": {
     "loading": "Loading…",
