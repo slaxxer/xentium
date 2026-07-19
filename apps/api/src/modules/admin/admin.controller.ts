@@ -462,6 +462,51 @@ export const adminController = {
     res.json({ ...parsed, acknowledged });
   }) as RequestHandler,
 
+  // Aggregated "admin attention" signals for the frontend navbar ACP badge.
+  // Persists (count > 0) until the work is done: pending plugin updates until
+  // they're applied, plus the license when it's about to expire (or has). Kept
+  // deliberately small + server-side so the badge stays a dumb consumer and new
+  // signals (core update, stuck jobs, …) can be OR-ed in here later.
+  getStatusSummary: (async (_req, res) => {
+    const EXPIRING_SOON_DAYS = 30;
+    const { getSetting } = await import("../../shared/utils/settings.js");
+
+    // Pending plugin updates (from the update-check cache).
+    let pluginUpdates = 0;
+    let criticalUpdate = false;
+    const raw = await getSetting<string>("marketplace.updates", "");
+    if (raw) {
+      try {
+        const parsed = JSON.parse(raw) as { updates?: { critical?: boolean }[] };
+        const updates = parsed.updates ?? [];
+        pluginUpdates = updates.length;
+        criticalUpdate = updates.some((u) => u.critical);
+      } catch { /* malformed cache → treat as no updates */ }
+    }
+
+    // License expiry.
+    let licenseExpiringSoon = false;
+    let licenseExpired = false;
+    const license = await adminService.getActiveLicense();
+    if (license?.expiresAt) {
+      const daysLeft = (new Date(license.expiresAt).getTime() - Date.now()) / 86_400_000;
+      if (daysLeft <= 0) licenseExpired = true;
+      else if (daysLeft <= EXPIRING_SOON_DAYS) licenseExpiringSoon = true;
+    }
+
+    const licenseAttention = licenseExpiringSoon || licenseExpired;
+    res.json({
+      pluginUpdates,
+      criticalUpdate,
+      licenseExpiringSoon,
+      licenseExpired,
+      // Badge count: each pending update + the license (once) if it needs attention.
+      total: pluginUpdates + (licenseAttention ? 1 : 0),
+      // Red vs neutral badge.
+      urgent: criticalUpdate || licenseAttention,
+    });
+  }) as RequestHandler,
+
   connectMarketplace: (async (req, res) => {
     const { authCode } = z.object({ authCode: z.string().min(1) }).parse(req.body);
     const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");

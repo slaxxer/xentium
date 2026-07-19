@@ -15,6 +15,7 @@ import {
   faCircleNodes,
 } from "@fortawesome/free-solid-svg-icons";
 import { NotificationBell } from "../components/NotificationBell";
+import { AcpStatusBadge } from "../components/AcpStatusBadge";
 import { slotRegistry } from "../plugins/slotRegistry";
 import { Username } from "../components/Username";
 import { Avatar } from "../components/Avatar";
@@ -298,15 +299,17 @@ export function PubNav() {
               {/* Notification bell */}
               <NotificationBell />
 
-              {/* Admin panel — only visible to admins */}
+              {/* Admin panel — only visible to admins; badge flags pending
+                  plugin updates / an expiring license waiting in the ACP */}
               {canAdmin && (
                 <NavLink
                   to="/admin"
-                  className="pub-nav__icon-btn"
+                  className="pub-nav__icon-btn pub-nav__icon-btn--acp"
                   aria-label={t("nav.adminPanel")}
                   title={t("nav.adminPanel")}
                 >
                   <FontAwesomeIcon icon={faGear} />
+                  <AcpStatusBadge />
                 </NavLink>
               )}
 

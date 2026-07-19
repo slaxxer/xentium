@@ -134,6 +134,8 @@ adminRouter.get("/nec-codes", adminGuard, async (_req, res, next) => {
 adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listMarketplacePlugins);
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
 adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
+// Aggregated admin-attention signals for the frontend navbar ACP badge.
+adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.
