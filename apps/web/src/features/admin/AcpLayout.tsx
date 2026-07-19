@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -43,12 +43,13 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
 
 /**
  * One announcement dialog (openPanelDialog — the app-wide alert surface) when
- * plugin updates are waiting (cache written by the daily update-check job).
- * Never forcing: fires once per UPDATE SET — the seen set is remembered in
- * localStorage, so dismissing stays silent until a NEW update appears.
- * Critical updates get the danger badge and per-row markers.
+ * plugin updates are waiting (cache written by the update-check job). Never
+ * forcing, but persistent PER ADMIN: it shows on every ACP entry until this
+ * admin has actually VISITED the Updates page (server-tracked via the ACP
+ * movement log — see getMarketplaceUpdates `acknowledged`). Dismissing the
+ * dialog (Later/Escape) never counts; only going to look does. A new update set
+ * resets the anchor and it fires again. Critical updates get the danger badge.
  */
-const UPDATES_SEEN_KEY = "nv-acp-updates-seen";
 const MAX_DIALOG_ROWS = 5;
 
 interface PluginUpdate {
@@ -63,7 +64,8 @@ interface PluginUpdate {
 function useUpdateAlert() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
-  const { data } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[] }>({
+  const shownFor = useRef<string | null>(null);
+  const { data } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -72,12 +74,13 @@ function useUpdateAlert() {
   useEffect(() => {
     const updates = data?.updates ?? [];
     if (!updates.length) return;
+    // Server says this admin has already been to the Updates page for this set.
+    if (data?.acknowledged) return;
+    // Guard against a re-render firing a second dialog for the same set within
+    // one ACP session (the effect can re-run when `data` refetches).
     const setHash = updates.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",");
-    // Only stays silent once the admin has ACTED on this exact update set. A bare
-    // reload must NOT count as acknowledgement — the dialog reappears on every ACP
-    // entry until the admin clicks View or Later (matches the Extensions banner,
-    // which also persists until the update is applied).
-    if (localStorage.getItem(UPDATES_SEEN_KEY) === setHash) return;
+    if (shownFor.current === setHash) return;
+    shownFor.current = setHash;
 
     // Critical rows first, then cap the list for the dialog.
     const ordered = [...updates].sort((a, b) => Number(b.critical) - Number(a.critical));
@@ -99,11 +102,9 @@ function useUpdateAlert() {
       confirmText: t("marketplace.updatesDialogView"),
       cancelText:  t("marketplace.updatesDialogLater"),
     }).then((view) => {
-      // Acknowledged → remember this set so it stays quiet until a NEW update set
-      // appears. Until then it re-fires on every fresh ACP entry (this effect runs
-      // per AcpShell mount). The Extensions-section banner remains the persistent
-      // reminder that survives until the update is actually applied.
-      localStorage.setItem(UPDATES_SEEN_KEY, setHash);
+      // Nothing is persisted here — acknowledgement is the Updates-page VISIT,
+      // recorded server-side. View navigates there (and logs the visit); Later /
+      // Escape just close, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
   }, [data, t, navigate]);
