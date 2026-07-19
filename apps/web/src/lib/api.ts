@@ -119,6 +119,29 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   return res.json() as Promise<T>;
 }
 
+/**
+ * POST that returns the raw Response for reading a streamed body (e.g. ndjson
+ * progress). Attaches the Bearer token and retries once on a 401 after refresh.
+ * The caller owns res.body/res.ok — this does not parse or throw on !ok.
+ */
+export async function apiStream(path: string, body: unknown): Promise<Response> {
+  const build = (token: string | null): RequestInit => ({
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  let res = await fetch(`${BASE}${path}`, build(authStore.token));
+  if (res.status === 401 && authStore.token) {
+    const newToken = await tryRefresh();
+    if (newToken) res = await fetch(`${BASE}${path}`, build(newToken));
+  }
+  return res;
+}
+
 export const api = {
   get:    <T>(path: string)                 => request<T>("GET",    path),
   post:   <T>(path: string, body?: unknown) => request<T>("POST",   path, body),

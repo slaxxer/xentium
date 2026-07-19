@@ -806,8 +806,21 @@
     "renewalRequired": "Tu período de licencia ha terminado — renuévalo en el marketplace para descargar esta actualización.",
     "update": "Actualizar",
     "updating": "Actualizando…",
-    "toastUpdated": "{{name}} actualizado a {{version}}.",
-    "toastFailed": "Error al actualizar: {{message}}"
+    "progressTitle": "Actualizando {{name}}",
+    "progressDone": "{{name}} actualizado a {{version}}",
+    "progressFailed": "Error al actualizar",
+    "phase": {
+      "starting": "Iniciando…",
+      "working": "Procesando…",
+      "authorizing": "Autorizando la descarga…",
+      "downloading": "Descargando…",
+      "verifying": "Verificando integridad…",
+      "validating": "Validando el paquete…",
+      "disabling": "Desactivando la versión actual…",
+      "applying": "Instalando archivos…",
+      "migrating": "Aplicando migraciones…",
+      "enabling": "Activando…"
+    }
   },
   "license": {
     "loading": "Cargando…",

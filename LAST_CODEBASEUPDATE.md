@@ -1,40 +1,49 @@
-# Last Codebase Update — 2026-07-19 (session 4)
+# Last Codebase Update — 2026-07-19 (session 5)
 
-Two changes, pushed together.
+## Streamed update progress dialog + update-check on install — UNCOMMITTED
 
-## 1. License-expiry dialog on ACP entry (commit: feat)
+User: on the /updates page, hitting Update should show a real-time progress bar in
+a dialog (not a toast); remove the success toast. Plus a real gap fixed: install
+didn't refresh the update cache.
 
-- `admin.controller.ts` `getStatusSummary`: +licenseDaysLeft, licenseExpiresAt,
-  licenseDomain, and per-admin `licenseAcknowledged` (visited /admin/license since
-  the warning-window anchor `expiresAt − 30d`, via the ACP movement log).
-- `AcpLayout.tsx`: the alert hook (`useAcpAlerts`) now shows a warning panel dialog
-  for an expiring/expired license, prioritised above the plugin-update dialog (one
-  dialog per ACP entry — a second openPanelDialog would pre-empt the first).
-  Visit-based acknowledgement, re-warns each renewal cycle.
-- Locales ×5: `license.expiryDialog*` (title/expired, domain, expires, in-days
-  plural, expired marker, note, view).
+### Streamed progress (server)
+- `admin.controller.ts`: `updateFromMarketplace` now STREAMS newline-delimited JSON.
+  Split the old `fetchMarketplaceArtifact` into `downloadAndVerifyArtifact(pluginId,
+  version, onProgress?)` — throws `ArtifactError(status)`, STREAMS the download body
+  for real byte progress (10..65%), reports authorize/verify/validate. A thin
+  `fetchMarketplaceArtifact(res)` wrapper keeps the non-streaming install path
+  (translates throws → HTTP error). The stream controller emits each progress event
+  + a terminal `{done, ok, ...}`; on error (headers already sent) it emits a terminal
+  error event instead of an HTTP error.
+- `plugin-engine.ts` `updatePlugin` gains `onProgress?` — emits disabling(80)/
+  applying(85)/migrating(90)/enabling(95). `plugin.service.ts` threads it through.
 
-## 2. Fix: phantom update alerts for uninstalled / already-updated plugins (commit: fix)
+### Progress dialog (client)
+- `lib/dialog.ts`: `kind: "progress"` + `DialogProgress` + `openProgressDialog()`
+  returning an imperative `ProgressHandle` (update/succeed/fail/close). Non-promise,
+  non-dismissible while running; a newer dialog invalidates a stale handle.
+- `DialogHost.tsx` + `.scss`: renders the live bar (colored by `--_dlg-c`, green/red
+  on success/error), step label + percent; no actions while running, a Close button
+  when done; Escape/backdrop disabled while running. Icon reflects the outcome.
+- `lib/api.ts`: `apiStream(path, body)` — authed POST returning the raw Response for
+  reading `res.body` (Bearer + 401-refresh retry; does not parse/throw).
+- `UpdatesPage.tsx`: Update button → `openProgressDialog` + `apiStream`, reads the
+  ndjson stream and drives the bar per phase; success invalidates updates/installed/
+  status-summary queries. **Success toast removed** (updates.toastUpdated/toastFailed
+  deleted from locales); phase + progress labels added ×5 (`updates.phase.*`,
+  progressTitle/Done/Failed).
 
-User-found: uninstalling a plugin via the ACP left the "update available" banner
-(and dialog + badge) showing, because the alerts read the `marketplace.updates`
-cache verbatim — that cache is only refreshed by the update-check job, so it lags
-the real installed set. Marketplace side is fine (its `updates()` only iterates the
-sent inventory); this was purely a core read-time gap.
-
-- `admin.controller.ts`: new module-level `readReconciledUpdates()` — reads the
-  cache and keeps an update only if its plugin is STILL installed AND its current
-  installed version is older than the offered version (semverCompare); refreshes the
-  installed version for display. `getMarketplaceUpdates` and `getStatusSummary` both
-  route through it, so the banner, dialog, Updates page, and navbar badge are all
-  reconciled. Cheap (one `findMany({ select: { id, installedVersion } })` per call).
+### Update-check on install (fix)
+- `admin.controller.ts` `installFromMarketplace` + `plugin.routes.ts` upload route:
+  fire-and-forget `processUpdateCheck()` after install so a freshly-installed older
+  build surfaces its update on the next ACP entry (not up to a day later).
 
 ### Verification
-- API typecheck clean; backbone:check green.
-- E2E on the test instance in the bugged state (0 plugins installed, cache still
-  listing shoutbox 1.0.0→1.0.1): getMarketplaceUpdates → `updates: []`,
-  getStatusSummary → pluginUpdates 0 (phantom gone; the legitimately-expiring
-  license still counts, total 1). Positive case after reinstalling shoutbox 1.0.0:
-  the 1.0.1 update reappears (pluginUpdates 1, total 2, urgent).
-- License-dialog ack flow E2E (earlier this session): expiring detected, not-acked
-  before visiting /admin/license, acked after.
+- API + web typecheck; lint 0 errors.
+- E2E on the test instance vs live marketplace (mock res capturing the stream):
+  shoutbox 1.0.0→1.0.1 emitted `5 authorizing` → ~20 real byte events `10..65
+  downloading` → `70 verifying` → `75 validating` → `80 disabling` → `85 applying`
+  → `90 migrating` → `95 enabling` → `DONE ok=true → Shoutbox 1.0.1`; plugin updated.
+- Demo reset: shoutbox 1.0.0, license +10d, acks cleared → both ACP-entry dialogs
+  fire, badge total 2; stream endpoint mounted (401).
+- ⚠ No compression middleware + Vite proxy passes streams → streaming is safe here.

@@ -126,6 +126,40 @@
     border-radius: var(--radius-sm);
   }
 
+  /* Progress dialog (openProgressDialog): live bar + step label. */
+  &__progress {
+    margin-top: 16px;
+  }
+  &__bar {
+    height: 8px;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--c-fg-muted) 22%, transparent);
+    overflow: hidden;
+
+    &-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--_dlg-c, var(--c-accent));
+      transition: width 0.25s ease;
+    }
+    &--success &-fill { background: var(--c-success); }
+    &--error   &-fill { background: var(--c-danger); }
+  }
+  &__progress-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+    font-size: 12.5px;
+    color: var(--c-fg-muted);
+  }
+  &__progress-pct {
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+    color: var(--c-fg);
+  }
+
   &__icon {
     display: grid;
     place-items: center;
