@@ -1,22 +1,18 @@
 # Changelog
 
-## Plugin updates: a dedicated Updates page and one-click update-in-place
+## Plugin updates: per-admin dialog that persists until you've looked, and a check on worker boot
 
-- **The bug**: the critical-update panel dialog marked itself "seen" the moment it
-  rendered — a bare page reload counted as acknowledgement, so a critical patch could
-  slip past an admin who never clicked anything. The "seen" set is now recorded only when
-  the admin acts on the dialog (View or Later), so it re-appears on every ACP entry until
-  they do.
-- **New Extensions → Updates page**: lists every pending plugin update (critical first)
-  with its changelog, the installed → latest versions, and a renewal warning where the
-  license term has lapsed. The update dialog's "View updates" now leads here.
-- **Persistent reminder banner** across the whole Extensions section (Marketplace,
-  Installed, Upload, License) — styled for urgency when any update is critical, and
-  visible for as long as updates are pending, so a dismissed dialog can't hide one.
-- **Update-in-place**: each update can be applied with one click. The server re-authorizes
-  the download at the marketplace chokepoint, fetches and sha256-verifies the new package,
-  then swaps it in — running only the migrations that plugin has never applied, and
-  preserving the plugin's enabled state and data. Updates are forward-only; nothing is
-  ever rolled back.
-- New error-reference entries for the two new conditions (plugin not installed; update
-  package not newer than what's installed).
+- **The update dialog is now per-admin and sticky until acted on.** Instead of a
+  per-browser "seen" flag that a bare reload or a "Later" click could silence, the
+  dialog now shows on every ACP entry until *that admin* has actually visited the
+  Updates page. Acknowledgement is the visit itself — dismissing the dialog never
+  counts. It's tracked server-side, so it follows the admin across devices, and a
+  new plugin update makes it reappear.
+- **ACP movements are now recorded in the activity log.** Admin page navigations are
+  logged alongside public-site movements (previously only ACP *actions* — mutations —
+  were kept), giving a real admin movement trail. This is what the update dialog reads
+  to know whether you've been to the Updates page.
+- **The worker runs a marketplace update check on boot.** A critical plugin patch now
+  surfaces right after a worker restart instead of waiting up to ~24h for the next
+  daily run. Best-effort and non-blocking, and it honours the ACP → Scheduled Tasks
+  toggle — if update-checking is disabled, the boot check is skipped too.

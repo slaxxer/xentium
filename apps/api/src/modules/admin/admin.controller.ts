@@ -430,18 +430,36 @@ export const adminController = {
 
   // Cache written by the daily update-check job (§16) — updates, critical
   // flags, renewal warnings. Null checkedAt = the job has never completed.
-  getMarketplaceUpdates: (async (_req, res) => {
+  // `acknowledged` = has THIS admin visited /admin/updates since the current
+  // set of pending updates appeared (setSince). The ACP-entry dialog uses it to
+  // stay visible per-admin until they actually engage — not just dismiss it.
+  getMarketplaceUpdates: (async (req, res) => {
     const { getSetting } = await import("../../shared/utils/settings.js");
     const raw = await getSetting<string>("marketplace.updates", "");
     if (!raw) {
-      res.json({ checkedAt: null, updates: [] });
+      res.json({ checkedAt: null, updates: [], acknowledged: true });
       return;
     }
+    let parsed: { checkedAt?: string | null; setSince?: string; updates?: unknown[] };
     try {
-      res.json(JSON.parse(raw));
+      parsed = JSON.parse(raw);
     } catch {
-      res.json({ checkedAt: null, updates: [] });
+      res.json({ checkedAt: null, updates: [], acknowledged: true });
+      return;
     }
+
+    // No pending updates → nothing to acknowledge. A missing setSince (pre-anchor
+    // cache) is treated as unacknowledged so the dialog still nudges until the next
+    // update-check writes the anchor.
+    const hasUpdates = Array.isArray(parsed.updates) && parsed.updates.length > 0;
+    let acknowledged = true;
+    if (hasUpdates && req.userId) {
+      const { activityService } = await import("../activity/activity.service.js");
+      acknowledged = parsed.setSince
+        ? await activityService.hasVisitedSince(req.userId, "/admin/updates", new Date(parsed.setSince))
+        : false;
+    }
+    res.json({ ...parsed, acknowledged });
   }) as RequestHandler,
 
   connectMarketplace: (async (req, res) => {
