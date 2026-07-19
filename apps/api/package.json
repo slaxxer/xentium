@@ -35,7 +35,7 @@
     "ioredis": "catalog:",
     "jose": "catalog:",
     "multer": "catalog:",
-    "nodemailer": "^8.0.8",
+    "nodemailer": "^9.0.1",
     "pg": "^8.21.0",
     "pino": "catalog:",
     "pino-http": "catalog:",
