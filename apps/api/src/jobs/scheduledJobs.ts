@@ -71,6 +71,13 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     defaultCron: "0 3 * * *", minIntervalSec: 5 * 60,
     defaultEnabled: false,
   },
+  {
+    key: "log-retention", schedulerId: "log-retention-daily",
+    queue: queues.logRetention, jobName: "log-retention",
+    label: "Log retention",
+    description: "Prunes old rows from the activity log (page visits and ACP actions have separate windows), error log, and login events. Windows are the retention.* settings (days; 0 keeps a table forever). Dialog acknowledgments are stored separately and are never affected.",
+    defaultCron: "45 3 * * *", minIntervalSec: 60 * 60,
+  },
 ];
 
 export type ScheduleMode = "interval" | "daily" | "cron";

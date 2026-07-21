@@ -24,6 +24,7 @@ export const queues = {
   licenseRefresh:         new Queue('license-refresh',           queueOpts),
   updateCheck:            new Queue('update-check',              queueOpts),
   appearancePublish:      new Queue('appearance-publish',        queueOpts),
+  logRetention:           new Queue('log-retention',             queueOpts),
 } as const;
 
 export { bullConnection, prefix as bullPrefix, defaultJobOptions as _opts };

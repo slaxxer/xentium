@@ -29,6 +29,8 @@ activityRouter.post("/visit", optionalAuth, async (req, res, next) => {
       ip: normalizeIp(req.ip),
       userAgent: ua(req),
     });
+    // Durable last-visit mark (dialog acknowledgment) — survives log retention.
+    activityService.markVisit(userId, url);
     res.status(204).end();
   } catch (err) {
     next(err);
