@@ -1,18 +1,15 @@
 # Changelog
 
-## Architecture cleanup: semver dedup, cached single-setting reads, plugin lifecycle lock
+## Marketplace logic extracted into its own service
 
-- **Shared semver compare** — the numeric-core `compareSemver` now lives once in
-  `shared/utils/semver.ts`; the plugin engine and the admin update-reconciliation
-  path both import it instead of carrying their own copies.
-- **`GET /admin/settings/:key` no longer loads every setting** — it reads the one
-  key through the cached settings service, with the same defaults-merge behavior
-  as the full settings list.
-- **Plugin lifecycle operations are now serialized** — install, update, enable,
-  disable, and uninstall run through a per-process lock, so two admins can no
-  longer race e.g. an update's disable→swap→re-enable sequence into a corrupted
-  plugin directory. A raced duplicate update fails cleanly with NEC-PLUGIN-2005.
-- Removed a dead empty file (`permissions.repository.ts`).
-- Docs: 2026-07-21 architecture re-audit appended to `docs/architecture-review.md`
-  (addendum §A1–A6) covering the codebase after the marketplace/update-pipeline
-  and ACP-i18n waves.
+- All marketplace/update/license-status business logic moved out of the admin
+  controller into a new `marketplace.service.ts` (admin module): artifact
+  download + sha256 verification, update-cache reconciliation, the navbar
+  status-summary aggregation, account connect/disconnect, direct install, and
+  update-in-place orchestration. The controller now only parses input, maps
+  errors to HTTP responses, and owns the NDJSON progress-stream plumbing.
+- Every dynamic `await import(...)` in the admin controller (24 of them) is gone —
+  dependencies are now regular top-level imports, so import failures surface at
+  boot instead of at request time.
+- No behavior change: endpoints, response shapes, and error statuses are
+  identical; verified by the full check pipeline plus a live boot smoke test.

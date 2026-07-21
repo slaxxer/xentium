@@ -33,4 +33,28 @@ codebase post-PR #34–#59). Four independent, behavior-preserving cleanups.
   (full re-audit findings); A6 #10 marked done by this bundle.
 
 Verification: `pnpm backbone:check` fully green (typecheck, lint, 21/21 API tests, build)
-with docker infra up.
+with docker infra up. Committed `142c853`, pushed to origin/development.
+
+## Batch 2 — marketplace-service extraction (audit A1.1 / A6 #2) — same session
+
+- NEW `apps/api/src/modules/admin/marketplace.service.ts` (294 lines) — owns ALL
+  marketplace/update business logic formerly inline in admin.controller:
+  `downloadAndVerifyArtifact` (chokepoint: authorize → stream download w/ 50 MB cap +
+  byte progress → sha256 → manifest-id match), `readReconciledUpdates` (phantom-update
+  reconciliation), `getUpdates`/`getStatusSummary` (per-admin visit-based acknowledgment),
+  `connect` (+ best-effort license auto-activation), `authorizeDownload`,
+  `installFromMarketplace` (install + best-effort refreshLicense + fire-and-forget
+  processUpdateCheck), `updateFromMarketplace`. `ArtifactError` + `UpdateProgress`/
+  `ProgressFn` exported from the service now.
+- `admin.controller.ts` 817 → 543 lines; marketplace endpoints are thin: Zod parse +
+  error→HTTP mapping (ArtifactError.status / err.message→400 — behavior preserved
+  EXACTLY, incl. download-phase non-ArtifactErrors wrapped to 502 in the service) +
+  the NDJSON stream plumbing for updateFromMarketplace.
+- Dynamic `await import()` in admin.controller: 24 → 0. All converted to top-level
+  (verified NO cycles: license-engine/marketplace-source/updateCheck/moderation.service
+  import nothing from admin module; updateCheck has no import side effects — worker
+  only created via startUpdateCheckWorker()). Also: license refresh/deactivate,
+  paginatedRequestSchema, moderationService.banCaseUsers now top-level.
+- Verification: backbone:check fully green + live boot smoke on dev :4000 — health 200,
+  /admin/status-summary + /admin/marketplace/plugins both 401 (mounted + guarded, no
+  runtime ESM-cycle breakage). Dev server killed cleanly after (port 4000 clear).
