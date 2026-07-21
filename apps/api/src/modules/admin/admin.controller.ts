@@ -2,6 +2,8 @@ import type { RequestHandler } from "express";
 import { adminService } from "./admin.service.js";
 import { z } from "zod";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { compareSemver } from "../../shared/utils/semver.js";
+import { getSetting } from "../../shared/utils/settings.js";
 import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
@@ -206,16 +208,6 @@ async function fetchMarketplaceArtifact(
   }
 }
 
-/** Numeric-core semver compare: >0 if a>b, <0 if a<b, 0 if equal. */
-function semverCompare(a: string, b: string): number {
-  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
-  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  }
-  return 0;
-}
-
 interface CachedUpdate {
   pluginId:          string;
   name?:             string;
@@ -257,7 +249,7 @@ async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setS
   const updates = cached
     .filter((u) => {
       const current = byId.get(u.pluginId);
-      return current !== undefined && semverCompare(u.latestVersion, current) > 0;
+      return current !== undefined && compareSemver(u.latestVersion, current) > 0;
     })
     .map((u) => ({ ...u, installedVersion: byId.get(u.pluginId) ?? u.installedVersion }));
 
@@ -372,9 +364,9 @@ export const adminController = {
 
   getOneSetting: (async (req, res) => {
     const { key } = keyParamSchema.parse(req.params);
-    const all  = await adminService.getSettings();
-    const row  = (all as Array<{key:string;value:unknown}>).find((s) => s.key === key);
-    res.json({ key, value: row?.value ?? null });
+    // Same defaults-merge semantics as getSettings, without loading every row.
+    const fallback = (adminService.SETTING_DEFAULTS as Record<string, unknown>)[key] ?? null;
+    res.json({ key, value: await getSetting(key, fallback) });
   }) as RequestHandler,
 
   setSetting: (async (req, res) => {

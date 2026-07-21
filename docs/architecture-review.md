@@ -3,6 +3,9 @@
 > Snapshot: 2026-07-11, branch `development` (post-PR #32, Phase 17 Hardening).
 > Scope: core only (`apps/api`, `apps/web`, `packages`). Plugins not audited.
 > Each item: **evidence → suggestion**. Priorities at the bottom.
+>
+> **⚠ 2026-07-21 addendum at the end of this file** (post-PR #34–#59 re-audit:
+> what stayed fixed, what's still open, what's NEW). Read §A before starting work.
 
 ---
 
@@ -328,16 +331,207 @@ badge-glow editor).
 |---|---|---|---|---|
 | 1 | Cached/batched settings service (§2.1) — kills the per-request DB query | High | S | ✅ done 2026-07-11 |
 | 2 | Express type augmentation + delete `wrap()`s (§1.1/1.2) | Med | S | ✅ done 2026-07-11 |
-| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | open |
+| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | open → A5.1 (worsened) |
 | 4 | `paginate()` helper + `buildPaginationMeta` everywhere (§1.3) | Med | S | ✅ done 2026-07-11 |
 | 5 | `UserRef` select/mapper (§1.4) | Med | S | ✅ done 2026-07-11 |
-| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | open |
-| 7 | Web: `timeAgo` + `Badge` + `Pager` extraction (§3.1–3.3) | Med (+ fixes i18n gaps) | S | open |
+| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | open → A2 |
+| 7 | Web: `timeAgo` + `Badge` + `Pager` extraction (§3.1–3.3) | Med (+ fixes i18n gaps) | S | open → A2 (grew to 10 copies) |
 | 8 | `memoTtl` util + CSS memo (§2.3/2.6) | Low-Med | S | ✅ done 2026-07-11 |
 | 9 | Repository-layer decision + CLAUDE.md update (§1.8) | Med (clarity) | XS | ✅ done 2026-07-11 (dropped as requirement) |
-| 10 | Feature api modules / query-key registry (§3.4/3.5) | Med | ongoing rule, not a project | open |
+| 10 | Feature api modules / query-key registry (§3.4/3.5) | Med | ongoing rule, not a project | open → A5.4 |
 
 Items 1, 2, 4, 5, 8, 9 landed 2026-07-11 (see LAST_CODEBASEUPDATE.md); the
 installer's custom `wrap` was intentionally kept (it maps errors to flat JSON
 before errorMiddleware/DB exist). Items 3 and 6 change behavior/contracts and
 deserve their own PRs with runtime click-throughs.
+
+---
+---
+
+# Addendum — 2026-07-21 re-audit (post-PR #34–#59)
+
+> Snapshot: 2026-07-21, branch `development` at `a161268` (post marketplace epic,
+> plugin-update pipeline #47–#52, ACP i18n #53–#59). Verified the 2026-07-11 fixes
+> **stayed** fixed (settings cache, express typing, paginate, UserRef, memoTtl —
+> all still in place and used by the new code). Below: what's still open from the
+> original review, and what's NEW since. Evidence as `file:line` at audit time.
+
+## A1. Bad architecture decisions
+
+### A1.1 `admin.controller.ts` is becoming the next grab-bag — business logic in the controller layer (NEW)
+
+`admin.controller.ts` is 817 lines; ~250 of them are marketplace/update *services*
+living in a controller: `downloadAndVerifyArtifact` (:128), `fetchMarketplaceArtifact`
+(:195), `semverCompare` (:210), `readReconciledUpdates` (:237), and the status-summary
+assembly (:557–605). This is the exact `admin.service.ts` failure mode (§1.5)
+repeating one layer up — the "admin orchestrates, doesn't own" rule got violated by
+the newest code.
+
+**Suggestion:** extract a `marketplace.service.ts` (or extend the license-engine)
+owning download/verify, update reconciliation, and status aggregation. Controller
+keeps only Zod parsing + the NDJSON stream plumbing.
+
+### A1.2 Dialog acknowledgment state is stored in telemetry (NEW, subtle)
+
+The per-admin update/license dialogs use `activityService.hasVisitedSince()` over
+`ncf_activity_log` page-visit rows as their source of truth (admin.controller.ts:546,
+:588). Durable UX state is coupled to an unbounded log table that *needs* a retention
+job (A4.1). The moment retention lands, pruning silently un-acknowledges dialogs: an
+update pending longer than the retention window (`setSince` months old) re-nudges
+every admin forever.
+
+**Suggestion:** acknowledgment wants its own tiny table (or per-admin meta key), not
+log archaeology. **Design retention (A4.1) and acknowledgment storage together.**
+
+### A1.3 Schema says many groups, the system assumes one
+
+`UserGroup` is a full M2M (schema.prisma:197), `setUserGroups` accepts arrays, and
+permission resolution correctly unions all groups (requirePermission.ts:13–31) — but
+`userRef.ts` and 7 other sites read `groups[0]` **with no orderBy** to pick "the"
+badge colour. For a user in 2+ groups, which badge/progression they get is
+nondeterministic (Postgres row order). CLAUDE.md says "users belong to one group";
+docs, schema, and code disagree three ways.
+
+**Suggestion:** pick one — enforce single-group at the write path, or define a
+primary-group ordering (e.g. `position` on `ncf_user_groups`) and use it everywhere
+`groups[0]` appears today.
+
+### A1.4 Paid plugin source is unversioned (still the single biggest project risk)
+
+`plugins/official/` is git-ignored — revenue-critical source for 4 plugins exists
+only in the working tree. Noted since 2026-07-11; keeps not happening. Each plugin
+needs its own repo (or one private plugins monorepo) + backup.
+
+### A1.5 Settings table as a KV blob store for marketplace state
+
+`marketplace.updates`, `marketplace.paid_plugin_ids`, and the account token live as
+JSON strings in `ncf_settings` — the token in plaintext (encryption-at-rest already
+on the TODO). These are caches/credentials with different lifecycles than site
+settings; every consumer re-parses JSON with ad-hoc shape checks
+(`readReconciledUpdates` does its own defensive parse). Workable, but contain it:
+one typed accessor module per blob, and encrypt the token.
+
+## A2. Duplicated logic
+
+- **Admin ⇄ moderation services — still duplicated** (original §1.5/item 6,
+  unchanged): `admin.service.ts` (1,136 lines) still carries near-1:1 copies of
+  `listReports`/`listWarnings`/`issueWarning`/`pardonWarning`/`updateReport`/
+  `updateCase` alongside `moderation.service.ts` (953). Correctness-drift risk grows
+  with every one-sided patch.
+- **`semverCompare` exists twice** (NEW): admin.controller.ts:210 and
+  plugin-engine.ts:135 — same hand-rolled function. Belongs in `shared/utils` (or
+  `@nodevo/sdk` for plugin reuse).
+- **`timeAgo` grew from 9 to 10 copies** (item 7, *worsening*): the two pages added
+  since the audit (`ReviewCasesPage.tsx`, `CasesSection.tsx`) each grew their own
+  copy — the missing `lib/time.ts` actively breeds duplicates. Several still
+  hardcode English, undermining the just-finished ACP i18n pass.
+- **`Badge` still copy-pasted in 6 files; no shared `Pager`** (item 7): neither
+  landed in `components/`.
+- **Auth verification implemented twice**: `requirePermission` inlines its own
+  `verifyAccess` + Bearer parsing (requirePermission.ts:39–42) instead of composing
+  with `requireAuth`.
+- **`permissions.repository.ts` is an empty file** — dead artifact, delete it.
+
+## A3. Performance bottlenecks
+
+### A3.1 Dashboard analytics loads raw rows and buckets in JS
+
+`getDashboardAnalytics` (admin.service.ts:128–150): for a 90-day range it
+`findMany`s **every** user/comment/article/login-event/report row in a 180-day
+window (span = 2×range) per dashboard view, just to count per day. `loginEvent`
+alone reaches tens of thousands of rows on a modest site.
+
+**Suggestion:** one `GROUP BY date_trunc('day', …)` raw query per series —
+constant-size result regardless of traffic.
+
+### A3.2 Smaller hits
+
+- `getOneSetting` fetches ALL settings to return one (admin.controller.ts:373–378);
+  `getSetting(key)` is one import away.
+- `acpActivityLogger` fires an extra `user.findUnique` per logged mutation
+  (acpActivityLogger.ts:20) just to denormalize the username. Cache it, or resolve
+  username at read time.
+- `hasVisitedSince` has no matching index: filters
+  `{category, userId, path, createdAt ≥}` but `ActivityLog` only has
+  `[category, createdAt]` + `[userId]` (schema.prisma:898–899). Runs up to 2× per
+  status-summary call; degrades linearly with log growth (A4.1).
+- `appearance.routes.ts` still wraps every route in try/catch — harmless, but
+  inconsistent with the Express-5 `wrap()` cleanup done everywhere else.
+
+## A4. Scalability risks
+
+### A4.1 `ncf_activity_log` has NO retention job and now logs every ACP page view ⚠
+
+PR #48 deliberately widened logging to all ACP navigations. The scheduled-jobs
+registry has security/ban/warning/license/update/appearance jobs — **nothing prunes
+activity_log, error_log, or login_events**. Unbounded growth on three tables, one of
+which backs a hot ACP query and a UX feature. Must be designed together with A1.2.
+
+### A4.2 `permissionCache.invalidateForGroup` doesn't scale
+
+permission.cache.ts:21–29: editing the default members group's permissions on a site
+with 100k users = `findMany` of 100k userIds + a single `redis.del(...100k keys)`.
+
+**Suggestion:** a group-version stamp folded into the cache key (bump one key; old
+entries lapse via TTL) removes the fan-out entirely.
+
+### A4.3 Other
+
+- **Offset pagination everywhere** (`skip: (page-1)*limit`): fine for ACP lists;
+  public deep pages on large tables degrade. Worth a cursor option in `paginate()`
+  before plugins copy the pattern at forum scale.
+- **No concurrency guard on plugin update/install**: two admins clicking "update"
+  simultaneously race the disable→swap→re-enable sequence in plugin-engine (no
+  lock/in-progress flag). Low likelihood, filesystem-corrupting consequence — a
+  per-plugin in-process (or Redis) mutex closes it.
+- ✅ The in-process `TtlCache` story (settings 15s, memoTtl) is fine — documented TTL
+  convergence — and SSE style-sync correctly uses Redis pub/sub for cross-process
+  fan-out (appearance.sse.ts). Keep as reference patterns.
+
+## A5. Maintainability issues
+
+### A5.1 Error contract is now effectively THREE shapes (item 3, worsening)
+
+- `auth.controller.ts` still returns flat non-NEC strings (`invalid_input`,
+  `account_banned`, … lines 63–199).
+- `requirePermission` adds flat `unauthenticated`/`forbidden`/`invalid_token`.
+- NEW: the marketplace endpoints introduced a third shape — `ArtifactError` →
+  `{message}` with raw 400/502 (admin.controller.ts:204, :684), no NEC codes.
+
+Every new client surface must know all three. The original warning was "pre-alpha is
+the last cheap moment" — that moment is closing.
+
+### A5.2 62 `await import()` calls across the API, 24 in `admin.controller.ts` alone (NEW)
+
+Used as a circular-dependency dodge; hides the real module graph, moves import
+failures from boot time to request time, and makes refactors (like A1.1) harder
+because dependencies are invisible to tooling. Extracting the marketplace service
+kills half of them; the rest should become top-level imports unless a genuine cycle
+is documented at the call site.
+
+### A5.3 Monolithic web pages got bigger, not smaller
+
+GroupsPage 1,160 (grew during i18n part 4), SettingsPage 1,031, StyleEditorPage 978,
+InstallerWizard 928. The i18n passes touched all of them without decomposing — each
+future touch pays the same tax. Original §3.6 advice stands: extract per card/tab
+when next touched.
+
+### A5.4 Query keys / feature api modules still ad-hoc (item 10)
+
+e.g. `["acp-status-summary"]` is spelled in AcpStatusBadge.tsx:23 and
+AcpLayout.tsx:87 with independently-declared queryFns and differing options.
+
+## A6. Priorities (2026-07-21)
+
+| # | Item | Impact | Effort | Notes |
+|---|---|---|---|---|
+| 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | Must ship together |
+| 2 | Extract marketplace/update logic from admin.controller into a service (A1.1) | High | M | Kills semver dup + half the dynamic imports |
+| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | Cost rises every release |
+| 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |
+| 5 | Version-control `plugins/official/` (A1.4) | High | XS | One bad `rm -rf` from losing the revenue line |
+| 6 | Dashboard analytics → SQL GROUP BY (A3.1) | Med | S | |
+| 7 | Admin ⇄ moderation dedup (A2, original item 6) | High | M | Still the biggest drift risk |
+| 8 | `timeAgo`/`Badge`/`Pager` extraction (A2, original item 7) | Med | S | Also fixes i18n gaps; count grew to 10 |
+| 9 | `invalidateForGroup` version-stamp (A4.2) | Med | S | |
+| 10 | Quick wins: `getOneSetting`, empty repository file, semver dedup, plugin-update mutex | Low-Med | XS-S | ✅ done 2026-07-21 (shared/utils/semver.ts, lifecycle lock in plugin.service.ts) |
