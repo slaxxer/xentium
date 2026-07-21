@@ -2,6 +2,11 @@ import type { RequestHandler } from "express";
 import { adminService } from "./admin.service.js";
 import { z } from "zod";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { getSetting } from "../../shared/utils/settings.js";
+import { paginatedRequestSchema } from "@nodevo/contracts";
+import { marketplaceService, ArtifactError } from "./marketplace.service.js";
+import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
+import { moderationService } from "../moderation/moderation.service.js";
 import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
@@ -106,163 +111,6 @@ const errorLogSchema = z.object({
   severity: z.string().optional(),
   domain:   z.string().optional(),
 });
-
-/** One coarse step in the update-in-place progress stream (0..100 overall). */
-export interface UpdateProgress { phase: string; percent: number; message?: string }
-type ProgressFn = (p: UpdateProgress) => void;
-
-const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
-
-/** Download/verify failure carrying the HTTP status the install path should send. */
-class ArtifactError extends Error {
-  constructor(message: string, readonly status: number) { super(message); }
-}
-
-/**
- * Chokepoint: authorize the download for this site, stream the package (120s /
- * 50 MB cap, reporting byte progress), sha256-verify, and confirm the manifest id
- * matches the requested plugin. Reports coarse progress (authorizing → downloading
- * → verifying → validating, ~5..75%). Throws ArtifactError(status) on failure;
- * returns the verified buffer on success.
- */
-async function downloadAndVerifyArtifact(pluginId: string, version: string, onProgress?: ProgressFn): Promise<Buffer> {
-  const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-  const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
-  const { pluginService } = await import("../plugins/plugin.service.js");
-  const { createHash } = await import("node:crypto");
-
-  onProgress?.({ phase: "authorizing", percent: 5 });
-  const authorized = await marketplaceSource.authorizeDownload({
-    pluginId, version,
-    siteId:      await getSiteId(),
-    domain:      await getSiteDomain(),
-    environment: await resolveEnvironment(),
-  });
-  if (!authorized.downloadUrl) {
-    // Dev catalogue / community sources have no hosted artifact — manual upload path.
-    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400);
-  }
-
-  onProgress?.({ phase: "downloading", percent: 10 });
-  const dl = await fetch(authorized.downloadUrl, { signal: AbortSignal.timeout(120_000) }).catch(() => null);
-  if (!dl?.ok || !dl.body) {
-    throw new ArtifactError(`Artifact download failed (${dl?.status ?? "unreachable"}). Try again.`, 502);
-  }
-
-  // Stream the body so the bar reflects real bytes (10..65% of the overall bar).
-  const total  = Number(dl.headers.get("content-length") ?? 0);
-  const reader = dl.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let received = 0;
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    chunks.push(value);
-    received += value.length;
-    if (received > MAX_ARTIFACT_BYTES) {
-      await reader.cancel().catch(() => {});
-      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502);
-    }
-    onProgress?.({
-      phase:   "downloading",
-      percent: total ? 10 + Math.round((received / total) * 55) : 15,
-      message: total ? undefined : `${Math.round(received / 1024)} KB`,
-    });
-  }
-  const buffer = Buffer.concat(chunks);
-
-  onProgress?.({ phase: "verifying", percent: 70 });
-  if (authorized.sha256) {
-    const digest = createHash("sha256").update(buffer).digest("hex");
-    if (digest !== authorized.sha256) {
-      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502);
-    }
-  }
-
-  onProgress?.({ phase: "validating", percent: 75 });
-  // Validate first so a mismatched package (manifest id ≠ requested plugin) is
-  // rejected before any install/update step touches the running instance.
-  const info = await pluginService.validateOnly(buffer);
-  if (info.id !== pluginId) {
-    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested plugin.`, 502);
-  }
-
-  return buffer;
-}
-
-/** Install-path wrapper: same download+verify, but translates failures into an
- *  HTTP error response (returns null) to match the non-streaming install flow. */
-async function fetchMarketplaceArtifact(
-  pluginId: string,
-  version:  string,
-  res:      import("express").Response,
-): Promise<Buffer | null> {
-  try {
-    return await downloadAndVerifyArtifact(pluginId, version);
-  } catch (err) {
-    const status = err instanceof ArtifactError ? err.status : 502;
-    res.status(status).json({ message: err instanceof Error ? err.message : "Artifact download failed." });
-    return null;
-  }
-}
-
-/** Numeric-core semver compare: >0 if a>b, <0 if a<b, 0 if equal. */
-function semverCompare(a: string, b: string): number {
-  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
-  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  }
-  return 0;
-}
-
-interface CachedUpdate {
-  pluginId:          string;
-  name?:             string;
-  installedVersion?: string | null;
-  latestVersion:     string;
-  critical?:         boolean;
-  renewalRequired?:  boolean;
-  [k: string]:       unknown;
-}
-
-/**
- * Read the `marketplace.updates` cache and RECONCILE it against what's actually
- * installed right now. The cache is only refreshed by the update-check job, so a
- * plugin uninstalled (or already updated) since the last run would otherwise leave
- * a phantom "update available" alert on the ACP. An update survives only if its
- * plugin is still installed AND its current installed version is older than the
- * offered version; the installed version is refreshed for accurate display.
- */
-async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setSince?: string; updates: CachedUpdate[] }> {
-  const { getSetting } = await import("../../shared/utils/settings.js");
-  const { prisma } = await import("../../infrastructure/db.js");
-
-  const raw = await getSetting<string>("marketplace.updates", "");
-  if (!raw) return { checkedAt: null, updates: [] };
-
-  let parsed: { checkedAt?: string | null; setSince?: string; updates?: CachedUpdate[] };
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return { checkedAt: null, updates: [] };
-  }
-
-  const cached = Array.isArray(parsed.updates) ? parsed.updates : [];
-  if (!cached.length) return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates: [] };
-
-  const installed = await prisma.installedPlugin.findMany({ select: { id: true, installedVersion: true } });
-  const byId = new Map(installed.map((p) => [p.id, p.installedVersion]));
-
-  const updates = cached
-    .filter((u) => {
-      const current = byId.get(u.pluginId);
-      return current !== undefined && semverCompare(u.latestVersion, current) > 0;
-    })
-    .map((u) => ({ ...u, installedVersion: byId.get(u.pluginId) ?? u.installedVersion }));
-
-  return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates };
-}
 
 export const adminController = {
   // Dashboard
@@ -372,9 +220,9 @@ export const adminController = {
 
   getOneSetting: (async (req, res) => {
     const { key } = keyParamSchema.parse(req.params);
-    const all  = await adminService.getSettings();
-    const row  = (all as Array<{key:string;value:unknown}>).find((s) => s.key === key);
-    res.json({ key, value: row?.value ?? null });
+    // Same defaults-merge semantics as getSettings, without loading every row.
+    const fallback = (adminService.SETTING_DEFAULTS as Record<string, unknown>)[key] ?? null;
+    res.json({ key, value: await getSetting(key, fallback) });
   }) as RequestHandler,
 
   setSetting: (async (req, res) => {
@@ -461,7 +309,6 @@ export const adminController = {
 
   banCaseUsers: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    const { moderationService } = await import("../moderation/moderation.service.js");
     res.json(await moderationService.banCaseUsers(id, req.userId!));
   }) as RequestHandler,
 
@@ -501,186 +348,67 @@ export const adminController = {
   }) as RequestHandler,
 
   refreshLicense: (async (_req, res) => {
-    const { refreshLicense } = await import("../../core/license-engine/license-engine.js");
     await refreshLicense();
     res.json({ ok: true });
   }) as RequestHandler,
 
   deactivateLicense: (async (_req, res) => {
-    const { deactivateLicense } = await import("../../core/license-engine/license-engine.js");
     await deactivateLicense();
     res.json({ ok: true });
   }) as RequestHandler,
 
-  // ── Marketplace (ADR 0001) ──────────────────────────────────────────────────
+  // ── Marketplace (ADR 0001) — logic lives in marketplace.service.ts ─────────
 
   listMarketplacePlugins: (async (req, res) => {
-    const { paginatedRequestSchema } = await import("@nodevo/contracts");
     const opts = paginatedRequestSchema.parse(req.query);
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    res.json(await marketplaceSource.listPlugins(opts));
+    res.json(await marketplaceService.listPlugins(opts));
   }) as RequestHandler,
 
   getMarketplaceConnection: (async (_req, res) => {
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    res.json(await marketplaceSource.getConnection());
+    res.json(await marketplaceService.getConnection());
   }) as RequestHandler,
 
-  // Cache written by the daily update-check job (§16) — updates, critical
-  // flags, renewal warnings. Null checkedAt = the job has never completed.
-  // `acknowledged` = has THIS admin visited /admin/updates since the current
-  // set of pending updates appeared (setSince). The ACP-entry dialog uses it to
-  // stay visible per-admin until they actually engage — not just dismiss it.
   getMarketplaceUpdates: (async (req, res) => {
-    // Reconciled against currently-installed plugins, so an uninstalled/already-
-    // updated plugin never leaves a phantom alert from a stale cache.
-    const { checkedAt, setSince, updates } = await readReconciledUpdates();
-
-    // No pending updates → nothing to acknowledge. A missing setSince (pre-anchor
-    // cache) is treated as unacknowledged so the dialog still nudges until the next
-    // update-check writes the anchor.
-    let acknowledged = true;
-    if (updates.length && req.userId) {
-      const { activityService } = await import("../activity/activity.service.js");
-      acknowledged = setSince
-        ? await activityService.hasVisitedSince(req.userId, "/admin/updates", new Date(setSince))
-        : false;
-    }
-    res.json({ checkedAt, setSince, updates, acknowledged });
+    res.json(await marketplaceService.getUpdates(req.userId));
   }) as RequestHandler,
 
-  // Aggregated "admin attention" signals for the frontend navbar ACP badge.
-  // Persists (count > 0) until the work is done: pending plugin updates until
-  // they're applied, plus the license when it's about to expire (or has). Kept
-  // deliberately small + server-side so the badge stays a dumb consumer and new
-  // signals (core update, stuck jobs, …) can be OR-ed in here later.
   getStatusSummary: (async (req, res) => {
-    const EXPIRING_SOON_DAYS = 30;
-
-    // Pending plugin updates — reconciled against currently-installed plugins so an
-    // uninstalled/already-updated plugin never inflates the badge from a stale cache.
-    const { updates } = await readReconciledUpdates();
-    const pluginUpdates = updates.length;
-    const criticalUpdate = updates.some((u) => u.critical);
-
-    // License expiry.
-    let licenseExpiringSoon = false;
-    let licenseExpired = false;
-    let licenseDaysLeft: number | null = null;
-    const license = await adminService.getActiveLicense();
-    if (license?.expiresAt) {
-      const daysLeft = (new Date(license.expiresAt).getTime() - Date.now()) / 86_400_000;
-      licenseDaysLeft = Math.ceil(daysLeft);
-      if (daysLeft <= 0) licenseExpired = true;
-      else if (daysLeft <= EXPIRING_SOON_DAYS) licenseExpiringSoon = true;
-    }
-    const licenseAttention = licenseExpiringSoon || licenseExpired;
-
-    // Per-admin acknowledgement for the license-expiry dialog: has THIS admin
-    // visited /admin/license since the license entered the warning window
-    // (expiresAt − 30d)? That anchor is stable for the term and moves forward on
-    // renewal, so the dialog re-nudges each cycle. Same visit-based model as the
-    // update dialog (a dismissal never counts; only looking does).
-    let licenseAcknowledged = true;
-    if (licenseAttention && req.userId && license?.expiresAt) {
-      const anchor = new Date(new Date(license.expiresAt).getTime() - EXPIRING_SOON_DAYS * 86_400_000);
-      const { activityService } = await import("../activity/activity.service.js");
-      licenseAcknowledged = await activityService.hasVisitedSince(req.userId, "/admin/license", anchor);
-    }
-
-    res.json({
-      pluginUpdates,
-      criticalUpdate,
-      licenseExpiringSoon,
-      licenseExpired,
-      licenseDaysLeft,
-      licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
-      licenseDomain:      license?.domain ?? null,
-      licenseAcknowledged,
-      // Badge count: each pending update + the license (once) if it needs attention.
-      total: pluginUpdates + (licenseAttention ? 1 : 0),
-      // Red vs neutral badge.
-      urgent: criticalUpdate || licenseAttention,
-    });
+    res.json(await marketplaceService.getStatusSummary(req.userId));
   }) as RequestHandler,
 
   connectMarketplace: (async (req, res) => {
     const { authCode } = z.object({ authCode: z.string().min(1) }).parse(req.body);
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    const connection = await marketplaceSource.connect(authCode);
-
-    // §53: a connected account activates its license itself — manual key entry
-    // is the offline fallback. Best-effort: an account without a usable license
-    // (nothing bought yet) connects fine and activates later via refresh/retry.
-    let licenseActivated = false;
-    try {
-      const { activateFromAccount } = await import("../../core/license-engine/license-engine.js");
-      licenseActivated = await activateFromAccount();
-    } catch (err) {
-      const { logger } = await import("../../infrastructure/logging/logger.js");
-      logger.info({ err }, "Marketplace connected; no license auto-activated");
-    }
-
-    res.json({ ...connection, licenseActivated });
+    res.json(await marketplaceService.connect(authCode));
   }) as RequestHandler,
 
   disconnectMarketplace: (async (_req, res) => {
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    await marketplaceSource.disconnect();
+    await marketplaceService.disconnect();
     res.json({ ok: true });
   }) as RequestHandler,
 
-  // The authenticated download gate — verifies account + per-domain ownership and
-  // returns a fresh domain-bound entitlement for this site.
   authorizeMarketplaceDownload: (async (req, res) => {
     const { pluginId, version } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1).default("latest"),
     }).parse(req.body);
-
-    const { marketplaceSource } = await import("../../core/license-engine/marketplace-source.js");
-    const { getSiteDomain, getSiteId, resolveEnvironment } = await import("../../core/license-engine/license-engine.js");
-
-    const siteId = await getSiteId();
-
-    const authorized = await marketplaceSource.authorizeDownload({
-      pluginId,
-      version,
-      siteId,
-      domain:      await getSiteDomain(),
-      environment: await resolveEnvironment(),
-    });
-    res.json(authorized);
+    res.json(await marketplaceService.authorizeDownload(pluginId, version));
   }) as RequestHandler,
 
-  // Direct install (§16.2): authorize at the chokepoint, fetch the artifact
-  // server-side (the account token never reaches the browser), verify its
-  // sha256, then run the SAME intake as a manual upload. Lands installed but
-  // DISABLED — enabling stays an explicit admin action.
   installFromMarketplace: (async (req, res) => {
     const { pluginId, version } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1),
     }).parse(req.body);
 
-    const fetched = await fetchMarketplaceArtifact(pluginId, version, res);
-    if (!fetched) return; // helper already sent the error response
-
-    const { pluginService } = await import("../plugins/plugin.service.js");
     try {
-      const manifest = await pluginService.install(fetched, req.userId!);
-      // A just-bought plugin isn't in the STORED entitlement JWT yet (it only
-      // refreshes monthly) — refresh now so Enable works immediately instead
-      // of failing NEC-LICENSE-9001 until the daily job. Best-effort.
-      const { refreshLicense } = await import("../../core/license-engine/license-engine.js");
-      await refreshLicense().catch(() => {});
-      // Refresh the update cache so a newly-installed (older) build surfaces its
-      // available update right away, instead of waiting for the daily job.
-      // Fire-and-forget — the admin sees it on their next ACP entry.
-      const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
-      void processUpdateCheck().catch(() => {});
-      res.status(201).json({ id: manifest.id, name: manifest.name, version: manifest.version });
+      res.status(201).json(await marketplaceService.installFromMarketplace(pluginId, version, req.userId!));
     } catch (err: any) {
+      // Download-phase failures carry their HTTP status; install-intake failures
+      // (bad manifest, already installed, …) surface as 400 with the message.
+      if (err instanceof ArtifactError) {
+        res.status(err.status).json({ message: err.message });
+        return;
+      }
       if (err?.message) {
         res.status(400).json({ message: err.message });
         return;
@@ -707,10 +435,8 @@ export const adminController = {
     const emit = (evt: object) => { res.write(JSON.stringify(evt) + "\n"); };
 
     try {
-      const buffer = await downloadAndVerifyArtifact(pluginId, version, (p) => emit(p));
-      const { pluginService } = await import("../plugins/plugin.service.js");
-      const manifest = await pluginService.update(buffer, req.userId!, (p) => emit(p));
-      emit({ done: true, ok: true, id: manifest.id, name: manifest.name, version: manifest.version });
+      const result = await marketplaceService.updateFromMarketplace(pluginId, version, req.userId!, (p) => emit(p));
+      emit({ done: true, ok: true, ...result });
     } catch (err: any) {
       // Headers are already sent — surface the failure as a terminal stream event
       // (with the coded message where we have one) rather than an HTTP error.

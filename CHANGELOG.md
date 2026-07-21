@@ -1,13 +1,15 @@
 # Changelog
 
-## i18n: Groups ACP page translated (part 4)
+## Marketplace logic extracted into its own service
 
-- The **Groups** admin page — the last hardcoded ACP page — is now fully translated
-  across all five bundled locales. This covers every surface of the page: the create
-  and edit group modals (identity, badge, icon, team-page toggle), the username-glow
-  editor, the permissions picker, and the progression modal (ladder position, promotion
-  thresholds, content limits), plus the group list, reorder controls, member/permission
-  counts, and all confirmations and toasts.
-- With this, the entire ACP frontend is internationalized. The only remaining English
-  strings are the per-token labels from the shared `@nodevo/contracts` token registry,
-  which are a separate registry-level pass.
+- All marketplace/update/license-status business logic moved out of the admin
+  controller into a new `marketplace.service.ts` (admin module): artifact
+  download + sha256 verification, update-cache reconciliation, the navbar
+  status-summary aggregation, account connect/disconnect, direct install, and
+  update-in-place orchestration. The controller now only parses input, maps
+  errors to HTTP responses, and owns the NDJSON progress-stream plumbing.
+- Every dynamic `await import(...)` in the admin controller (24 of them) is gone —
+  dependencies are now regular top-level imports, so import failures surface at
+  boot instead of at request time.
+- No behavior change: endpoints, response shapes, and error statuses are
+  identical; verified by the full check pipeline plus a live boot smoke test.
