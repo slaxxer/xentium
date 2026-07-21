@@ -34,3 +34,8 @@ catalog:
   vite: ^8
   vitest: ^3
   zod: ^4.4.3
+
+# Security floors for transitive deps (dependabot alerts). Drop an entry once the
+# parent dep (e.g. vitest → vite 7) moves past the vulnerable range on its own.
+overrides:
+  'vite@<8': '>=7.3.5 <8'
