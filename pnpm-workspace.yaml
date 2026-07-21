@@ -31,10 +31,14 @@ catalog:
   supertest: ^7
   tsx: ^4
   typescript: ^6
-  vite: ^8
+  vite: ^8.1.5
   vitest: ^3.2.7
   zod: ^4.4.3
 
 overrides:
-  shell-quote@<1.9.0: '>=1.9.0'
   form-data@<4.0.6: '>=4.0.6'
+  shell-quote@<1.9.0: '>=1.9.0'
+  hono@>=4 <4.12.25: '>=4.12.25 <5'
+  brace-expansion@>=1 <1.1.16: '>=1.1.16 <2'
+  brace-expansion@>=5 <5.0.7: '>=5.0.7 <6'
+  js-yaml@>=4 <4.3.0: '>=4.3.0 <5'
