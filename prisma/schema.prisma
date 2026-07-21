@@ -900,6 +900,21 @@ model ActivityLog {
   @@map("ncf_activity_log")
 }
 
+// Last ACP page visit per user per path. DURABLE acknowledgment state for the
+// per-admin ACP-entry dialogs (updates / license expiry): "acknowledged" =
+// lastVisitAt >= the signal's anchor. Kept separate from ncf_activity_log on
+// purpose — the activity log is prunable telemetry (log-retention job), while
+// this table is bounded (users × paths) and must survive pruning, otherwise
+// retention would silently un-acknowledge dialogs.
+model AcpVisit {
+  userId      String   @map("user_id")
+  path        String
+  lastVisitAt DateTime @map("last_visit_at")
+
+  @@id([userId, path])
+  @@map("ncf_acp_visits")
+}
+
 // ── Phase 14: Plugin migrations ───────────────────────────────────────────────
 
 model NodevoPluginMigration {

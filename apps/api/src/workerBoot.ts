@@ -9,6 +9,7 @@ import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
+import { startLogRetentionWorker }            from './jobs/logRetention.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
 import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-engine.js';
@@ -25,6 +26,7 @@ const workers = [
   attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
   attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
   attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
+  attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
 ];
 
 // Schedule repeating jobs from the registry, honoring admin config in `settings`
