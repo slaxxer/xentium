@@ -12,6 +12,7 @@ import { isPluginEntitled, pluginRequiresLicense } from "../license-engine/licen
 import { PluginContextImpl } from "./plugin-context.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
+import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { pluginRouter } from "./plugin-router.js";
 
@@ -130,16 +131,6 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   logger.info({ pluginId: manifest.id }, "Plugin installed");
 
   return manifest;
-}
-
-/** Compare two semver strings. Returns >0 if a>b, <0 if a<b, 0 if equal (numeric core only). */
-function compareSemver(a: string, b: string): number {
-  const pa = a.split(".").map((n) => parseInt(n, 10) || 0);
-  const pb = b.split(".").map((n) => parseInt(n, 10) || 0);
-  for (let i = 0; i < 3; i++) {
-    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) - (pb[i] ?? 0);
-  }
-  return 0;
 }
 
 /**

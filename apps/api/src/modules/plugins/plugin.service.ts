@@ -9,6 +9,20 @@ import {
 } from "../../core/plugin-engine/plugin-engine.js";
 import { pluginRegistry } from "../../core/plugin-engine/plugin-registry.js";
 
+// Plugin lifecycle mutations (install/update/enable/disable/uninstall) touch the
+// filesystem, shared registries and the plugin router — two admins racing e.g. an
+// update's disable→swap→re-enable sequence would corrupt the extracted dir. All
+// mutations are serialized through one promise chain; the engine's internals stay
+// lock-free (updatePlugin calls disable/enable directly), so only these service
+// entry points take the lock. Losers of a race fail cleanly afterwards (e.g.
+// NEC-PLUGIN-2005 version-not-newer on a duplicate update).
+let lifecycleChain: Promise<unknown> = Promise.resolve();
+function withLifecycleLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = lifecycleChain.then(fn); // chain never rejects (see below)
+  lifecycleChain = run.catch(() => {});
+  return run;
+}
+
 export const pluginService = {
   /** Validate a package buffer and return manifest info without installing. */
   async validateOnly(buffer: Buffer) {
@@ -27,23 +41,23 @@ export const pluginService = {
   },
 
   async install(buffer: Buffer, userId: string) {
-    return installPlugin(buffer, userId);
+    return withLifecycleLock(() => installPlugin(buffer, userId));
   },
 
   async update(buffer: Buffer, userId: string, onProgress?: (p: { phase: string; percent: number }) => void) {
-    return updatePlugin(buffer, userId, onProgress);
+    return withLifecycleLock(() => updatePlugin(buffer, userId, onProgress));
   },
 
   async enable(pluginId: string) {
-    return enablePlugin(pluginId);
+    return withLifecycleLock(() => enablePlugin(pluginId));
   },
 
   async disable(pluginId: string) {
-    return disablePlugin(pluginId);
+    return withLifecycleLock(() => disablePlugin(pluginId));
   },
 
   async uninstall(pluginId: string, removeData: boolean) {
-    return uninstallPlugin(pluginId, removeData);
+    return withLifecycleLock(() => uninstallPlugin(pluginId, removeData));
   },
 
   async list() {
