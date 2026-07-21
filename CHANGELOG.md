@@ -1,14 +1,23 @@
 # Changelog
 
-## Security dependency updates, round 3 (clearing the remaining high alerts)
+## Log retention + durable dialog acknowledgments
 
-- **vite 8.0.14 → 8.1.5** — moves the app's own vite past the `server.fs.deny`
-  Windows bypass (fixed in 8.0.16).
-- **hono → 4.12.31** — transitive under `@hono/node-server` (pulled in by
-  Prisma's query tooling); fixes the CORS middleware reflecting any origin with
-  credentials when `origin` defaults to the wildcard.
-- **brace-expansion → 1.1.16 / 5.0.7** and **js-yaml → 4.3.0** — transitive
-  build/dev dependencies; exponential-expansion and quadratic-CPU DoS fixes.
-- The three stuck transitives are raised via bounded security-floor overrides in
-  `pnpm-workspace.yaml` (each capped below the next major, so a floor can never
-  silently jump a dependency across a breaking release).
+- **New scheduled job: Log retention** (ACP → System → Scheduled Tasks, daily by
+  default) — prunes the three previously unbounded log tables: activity log
+  (separate windows for page-visit telemetry vs. the ACP-action audit trail),
+  error log, and login events. Windows are the `retention.*` settings in days
+  (`activity_page_visit_days` 30, `activity_action_days` 180, `error_log_days`
+  90, `login_events_days` 180); `0` keeps a table forever. Login-event retention
+  stays far above the security scanners' correlation windows.
+- **Dialog acknowledgments moved out of the activity log** — the per-admin
+  ACP-entry dialogs (pending updates, license expiry) previously derived their
+  "has this admin actually visited the page?" state from `page_visit` telemetry
+  rows, which meant pruning the log would silently un-acknowledge dialogs. A new
+  bounded `ncf_acp_visits` table (one row per user+path, upserted on each ACP
+  navigation) now holds that state durably; `hasVisitedSince` is an O(1) primary
+  key lookup instead of a log scan. The migration backfills existing marks from
+  the activity log so already-earned acknowledgments survive the switch.
+- Verified end-to-end: visit marks acknowledge/reject anchors correctly, all
+  four retention windows prune exactly their cutoffs, the 0-window escape hatch
+  holds, and — the invariant that motivated the redesign — acknowledgments
+  survive page-visit pruning.
