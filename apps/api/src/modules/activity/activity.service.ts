@@ -46,16 +46,30 @@ export const activityService = {
       .catch(() => { /* swallow — telemetry is best-effort */ });
   },
 
-  /** True if this user has a page_visit to `path` at or after `since`. Backs the
-   *  update dialog's "has the admin actually been to the Updates page?" check —
-   *  ACP movements are logged as page_visit, so a visit is a real, per-user,
-   *  device-independent acknowledgement (unlike a dismissed dialog). */
+  /** Record "user X was on page P" durably (one row per user+path, upserted).
+   *  Fire-and-forget like log() — a failed mark never breaks navigation. */
+  markVisit(userId: string, path: string): void {
+    const p = path.slice(0, 500);
+    prisma.acpVisit
+      .upsert({
+        where:  { userId_path: { userId, path: p } },
+        update: { lastVisitAt: new Date() },
+        create: { userId, path: p, lastVisitAt: new Date() },
+      })
+      .catch(() => { /* best-effort */ });
+  },
+
+  /** True if this user has visited `path` at or after `since`. Backs the ACP
+   *  dialogs' "has the admin actually been to the page?" check — a visit is a
+   *  real, per-user, device-independent acknowledgement (unlike a dismissed
+   *  dialog). Reads ncf_acp_visits (durable, bounded), NOT the prunable
+   *  activity log — log retention must never un-acknowledge a dialog. */
   async hasVisitedSince(userId: string, path: string, since: Date): Promise<boolean> {
-    const row = await prisma.activityLog.findFirst({
-      where: { category: "page_visit", userId, path, createdAt: { gte: since } },
-      select: { id: true },
+    const row = await prisma.acpVisit.findUnique({
+      where:  { userId_path: { userId, path } },
+      select: { lastVisitAt: true },
     });
-    return !!row;
+    return !!row && row.lastVisitAt >= since;
   },
 
   async list(opts: { page: number; limit: number; category?: string }): Promise<PaginatedResponse<ActivityRow>> {

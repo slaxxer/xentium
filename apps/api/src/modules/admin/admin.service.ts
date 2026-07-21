@@ -594,6 +594,13 @@ export const adminService = {
     "email.smtp_host":                     "",
     "email.smtp_port":                     587,
     "email.from_address":                  "",
+    // Log retention windows in days, applied by the log-retention job (0 = keep
+    // forever). Page visits are high-volume telemetry; ACP actions are the audit
+    // trail and default to a longer window.
+    "retention.activity_page_visit_days":  30,
+    "retention.activity_action_days":      180,
+    "retention.error_log_days":            90,
+    "retention.login_events_days":         180,
   } as Record<string, unknown>,
 
   async getSettings() {

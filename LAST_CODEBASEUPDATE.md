@@ -58,3 +58,21 @@ with docker infra up. Committed `142c853`, pushed to origin/development.
 - Verification: backbone:check fully green + live boot smoke on dev :4000 — health 200,
   /admin/status-summary + /admin/marketplace/plugins both 401 (mounted + guarded, no
   runtime ESM-cycle breakage). Dev server killed cleanly after (port 4000 clear).
+
+## Batch 3 — log retention + durable dialog acks (audit A1.2 + A4.1 / A6 #1) — same session
+
+- NEW table `ncf_acp_visits` (model AcpVisit): (user_id, path) PK → last_visit_at.
+  Migration `20260721120000_acp_visits` creates + BACKFILLS from existing page_visit
+  rows (GROUP BY user,path MAX(created_at)) so earned acks survive. Applied to dev DB
+  via psql + `prisma migrate resolve --applied` (NEVER migrate dev — drift gotcha).
+- `activity.service.ts`: new `markVisit(userId,path)` fire-and-forget upsert (called
+  from POST /activity/visit alongside the telemetry log); `hasVisitedSince` now reads
+  AcpVisit by PK (O(1)) instead of scanning activity_log — retention can no longer
+  un-acknowledge dialogs. marketplace.service consumers unchanged (same signature).
+- NEW `jobs/logRetention.ts` + queue `log-retention` + SCHEDULED_JOBS entry (daily
+  03:45 UTC default, min interval 1h) + workerBoot registration. Prunes: activity_log
+  page_visit (30d) / acp_action (180d), error_log (90d), login_events (180d) — windows
+  from `retention.*` settings (added to SETTING_DEFAULTS), 0 = keep forever.
+- E2E (tsx script vs dev DB, 10/10 pass): mark/anchor semantics, one-row upsert, all
+  4 windows prune exact cutoffs, 0-window skip, and **acks survive page_visit pruning**
+  (the invariant motivating the split). backbone:check green (21/21 API tests).
