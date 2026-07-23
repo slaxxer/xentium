@@ -9,6 +9,8 @@ import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { betaService } from "../beta/beta.service.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 
 const BETA_COOKIE = "nv_beta";
 
@@ -59,18 +61,16 @@ export async function registrationStatusHandler(req: Request, res: Response) {
 }
 
 export async function sendCodeHandler(req: Request, res: Response) {
-  const parsed = sendCodeSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
+  const parsed = sendCodeSchema.parse(req.body);
 
-  await sendRegistrationCode(parsed.data.email);
+  await sendRegistrationCode(parsed.email);
   res.json({ sent: true });
 }
 
 export async function registerHandler(req: Request, res: Response) {
-  const parsed = registerSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
+  const parsed = registerSchema.parse(req.body);
 
-  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed.data;
+  const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed;
   const meta           = getRequestMeta(req, res);
   const betaCookieCode = (req.signedCookies?.[BETA_COOKIE] as string | undefined) || undefined;
   const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, betaCookieCode, name);
@@ -79,14 +79,25 @@ export async function registerHandler(req: Request, res: Response) {
 }
 
 export async function loginHandler(req: Request, res: Response) {
-  const parsed = loginSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
+  const parsed = loginSchema.parse(req.body);
 
   const meta = getRequestMeta(req, res);
-  const identifier = parsed.data.identifier ?? parsed.data.email ?? "";
-  const result = await login(identifier, parsed.data.password, parsed.data.loginPin, meta);
-  if (!result) return res.status(401).json({ error: "invalid_credentials" });
-  if ("banned" in result) return res.status(401).json({ error: "account_banned", reason: result.reason, expiresAt: result.expiresAt });
+  const identifier = parsed.identifier ?? parsed.email ?? "";
+  const result = await login(identifier, parsed.password, parsed.loginPin, meta);
+  // Failed logins are already tracked via login_events + lockout — persist:false
+  // keeps the error_log free of routine credential noise.
+  if (!result) {
+    throw new NodevoError({ code: NEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid credentials", persist: false });
+  }
+  if ("banned" in result) {
+    throw new NodevoError({
+      code: result.expiresAt ? NEC.AUTH_BANNED : NEC.AUTH_BANNED_PERMANENT,
+      httpStatus: 401,
+      message: "Account suspended",
+      details: { reason: result.reason, expiresAt: result.expiresAt },
+      persist: false,
+    });
+  }
   if ("requiresPin" in result) return res.status(200).json({ requiresPin: true });
 
   // Staff accounts (admin / supermod / moderator) are never gated by beta mode.
@@ -104,7 +115,11 @@ export async function loginHandler(req: Request, res: Response) {
       req.ip ?? "",
     );
     if (!betaCheck.hasAccess) {
-      return res.status(403).json({ error: betaCheck.necCode, message: betaCheck.message });
+      throw new NodevoError({
+        code:       betaCheck.necCode ?? NEC.AUTH_BETA_REQUIRED,
+        httpStatus: 403,
+        message:    betaCheck.message ?? "Beta access required",
+      });
     }
   }
 
@@ -130,12 +145,15 @@ export async function loginHandler(req: Request, res: Response) {
 }
 
 export async function refreshHandler(req: Request, res: Response) {
+  // Guest refresh attempts + expired sessions fire constantly — persist:false.
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
-  if (!raw) return res.status(401).json({ error: "no_session" });
+  if (!raw) {
+    throw new NodevoError({ code: NEC.AUTH_NO_SESSION, httpStatus: 401, message: "No active session", persist: false });
+  }
   const result = await rotateSession(raw, getRequestMeta(req, res));
   if (!result) {
     clearRefreshCookie(res);
-    return res.status(401).json({ error: "session_expired" });
+    throw new NodevoError({ code: NEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
   }
   setRefreshCookie(res, result.refreshToken);
   res.json({ accessToken: result.accessToken });
@@ -143,19 +161,17 @@ export async function refreshHandler(req: Request, res: Response) {
 
 /** Request a password reset link. Always returns 200 to prevent enumeration (§43). */
 export async function requestPasswordResetHandler(req: Request, res: Response) {
-  const parsed = requestPasswordResetSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input" });
+  const parsed = requestPasswordResetSchema.parse(req.body);
 
-  await requestPasswordReset(parsed.data.email);
+  await requestPasswordReset(parsed.email);
   res.json({ ok: true });
 }
 
 /** Complete a password reset using the emailed token. Throws NEC-AUTH-1007 on bad/expired token. */
 export async function confirmPasswordResetHandler(req: Request, res: Response) {
-  const parsed = confirmPasswordResetSchema.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "invalid_input", details: parsed.error.flatten() });
+  const parsed = confirmPasswordResetSchema.parse(req.body);
 
-  await confirmPasswordReset(parsed.data.token, parsed.data.password, getRequestMeta(req, res));
+  await confirmPasswordReset(parsed.token, parsed.password, getRequestMeta(req, res));
   res.json({ ok: true });
 }
 
@@ -196,7 +212,7 @@ export async function meHandler(req: Request, res: Response) {
       },
     },
   });
-  if (!user) return res.status(404).json({ error: "user_not_found" });
+  if (!user) throw NodevoError.notFound("User not found");
   // Respect the user's badge-visibility choices systemwide (incl. their own MeCard / nav).
   const groups = filterHiddenBadges(user.groups, user.hiddenBadges);
   res.json({ user: { ...user, groups, avatar: resolveAvatar(user.avatar) } });

@@ -14,11 +14,7 @@ const querySchema = z.object({
 
 searchRouter.get("/", async (req, res, next) => {
   try {
-    const parsed = querySchema.safeParse(req.query);
-    if (!parsed.success) {
-      return res.status(400).json({ error: "invalid_query" });
-    }
-    const { q, type, page, limit } = parsed.data;
+    const { q, type, page, limit } = querySchema.parse(req.query);
     const isLoggedIn = !!req.userId;
 
     const results = await searchService.search({ query: q, type, isLoggedIn, page, limit });

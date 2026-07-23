@@ -48,14 +48,16 @@ export const errorMiddleware: ErrorRequestHandler = (err, req, res, _next) => {
       req.log?.warn({ code: err.code, status: err.httpStatus, url: req.url }, 'request_rejected');
     }
 
-    persistErrorLog({
-      code:      err.code,
-      message:   err.message,
-      severity,
-      context:   err.details ? { details: err.details, url: req.url, method: req.method } : { url: req.url, method: req.method },
-      requestId,
-      userId,
-    });
+    if (err.persist) {
+      persistErrorLog({
+        code:      err.code,
+        message:   err.message,
+        severity,
+        context:   err.details ? { details: err.details, url: req.url, method: req.method } : { url: req.url, method: req.method },
+        requestId,
+        userId,
+      });
+    }
 
     return res.status(err.httpStatus).json({
       error: { code: err.code, message: err.message, details: err.details, severity },
