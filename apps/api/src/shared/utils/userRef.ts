@@ -4,9 +4,15 @@ import type { UserRef } from "@nodevo/contracts";
 // @nodevo/contracts). Spread badgeColorSelect into a user select (or use
 // USER_REF_SELECT outright), then map the row with toUserRef/extractBadgeColor.
 
+/** Deterministic "primary group first" ordering — lowest displayOrder wins.
+ *  Every query reading groups[0] MUST order this way, or which badge a
+ *  multi-group user gets is Postgres row-order roulette. */
+export const primaryGroupOrder = { group: { displayOrder: "asc" } } as const;
+
 /** Select fragment pulling the primary group's badge colour alongside a user. */
 export const badgeColorSelect = {
   groups: {
+    orderBy: primaryGroupOrder,
     include: {
       group: { select: { progression: { select: { badgeColor: true } } } },
     },

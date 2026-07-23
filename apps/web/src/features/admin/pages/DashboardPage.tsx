@@ -9,8 +9,8 @@ import {
   faDatabase, faBolt, faServer, faHardDrive, faEnvelope,
   faUsersGear, faPlus, faPuzzlePiece, faArrowRight, faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
-import type { TFunction } from "i18next";
 import { api } from "../../../lib/api";
+import { timeAgo } from "../../../lib/time";
 import { avatarGradient } from "../../../components/Avatar";
 import { Sparkline, AreaChart, BarChart, fmtK, fmtFull } from "../components/DashCharts";
 import "./DashboardPage.scss";
@@ -65,16 +65,6 @@ const RANGES = [7, 30, 90];
 function initials(username: string): string {
   const parts = username.replace(/[^a-zA-Z0-9]+/g, " ").trim().split(" ");
   return ((parts[0]?.[0] ?? "?") + (parts[1]?.[0] ?? parts[0]?.[1] ?? "")).toUpperCase();
-}
-
-function timeAgo(dateStr: string, t: TFunction): string {
-  const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-  if (mins < 60) return t("dashboard.agoM", { n: mins });
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return t("dashboard.agoH", { n: hours });
-  const days = Math.floor(hours / 24);
-  if (days < 30) return t("dashboard.agoD", { n: days });
-  return t("dashboard.agoMo", { n: Math.floor(days / 30) });
 }
 
 function KpiCard({ k, label, sub }: {
@@ -144,19 +134,19 @@ export function DashboardPage() {
   type Feed = { who: string; text: string; time: string; tone: string; icon: IconDefinition; ts: number };
   const feed: Feed[] = [
     ...(stats?.recentUsers ?? []).map((u) => ({
-      who: u.username, text: t("dashboard.userRegisteredPlain"), time: timeAgo(u.createdAt, t),
+      who: u.username, text: t("dashboard.userRegisteredPlain"), time: timeAgo(u.createdAt),
       tone: "accent", icon: faUserPlus, ts: new Date(u.createdAt).getTime(),
     })),
     ...(stats?.recentArticles ?? []).filter((x) => x.publishedAt).map((x) => ({
       who: x.author.username, text: t("dashboard.articlePublishedPlain", { title: x.title }),
-      time: timeAgo(x.publishedAt!, t), tone: "accent2", icon: faNewspaper, ts: new Date(x.publishedAt!).getTime(),
+      time: timeAgo(x.publishedAt!), tone: "accent2", icon: faNewspaper, ts: new Date(x.publishedAt!).getTime(),
     })),
     ...(stats?.recentBans ?? []).map((b) => ({
       who: b.issuedBy.username, text: t("dashboard.bannedPlain", { user: b.user.username }),
-      time: timeAgo(b.createdAt, t), tone: "danger", icon: faBan, ts: new Date(b.createdAt).getTime(),
+      time: timeAgo(b.createdAt), tone: "danger", icon: faBan, ts: new Date(b.createdAt).getTime(),
     })),
     ...(stats?.recentLiftedBans ?? []).map((b) => ({
-      who: b.user.username, text: t("dashboard.banLiftedPlain"), time: timeAgo(b.liftedAt, t),
+      who: b.user.username, text: t("dashboard.banLiftedPlain"), time: timeAgo(b.liftedAt),
       tone: "success", icon: faUnlock, ts: new Date(b.liftedAt).getTime(),
     })),
   ].sort((x, y) => y.ts - x.ts).slice(0, 6);

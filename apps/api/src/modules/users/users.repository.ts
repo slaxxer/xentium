@@ -2,6 +2,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { withResolvedAvatar, withResolvedAvatarList, resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getOnlineUserIds } from "../../shared/utils/presence.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
+import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 
 /* ── Members directory shaping ──────────────────────────────────────────── */
 const MEMBER_SELECT = {
@@ -155,6 +156,7 @@ export const userRepository = {
             select: {
               id: true, username: true, avatar: true,
               groups: {
+                orderBy: primaryGroupOrder,
                 include: {
                   group: { select: { progression: { select: { badgeColor: true } } } },
                 },
@@ -288,6 +290,7 @@ export const userRepository = {
       select: {
         id: true, username: true, avatar: true,
         groups: {
+          orderBy: primaryGroupOrder,
           include: { group: { select: { name: true, key: true, progression: { select: { badgeColor: true, badgeLabel: true } } } } },
         },
       },

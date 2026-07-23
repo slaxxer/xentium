@@ -4,13 +4,17 @@ export class NodevoError extends Error {
   readonly code: NecCode;
   readonly httpStatus: number;
   readonly details?: unknown;
+  /** Set false for expected high-frequency rejections (token expiry, guest
+   *  refresh) so errorMiddleware skips the error_log write. Default true. */
+  readonly persist: boolean;
 
-  constructor(opts: { code: NecCode; httpStatus: number; message: string; details?: unknown }) {
+  constructor(opts: { code: NecCode; httpStatus: number; message: string; details?: unknown; persist?: boolean }) {
     super(opts.message);
     this.name = 'NodevoError';
     this.code = opts.code;
     this.httpStatus = opts.httpStatus;
     this.details = opts.details;
+    this.persist = opts.persist ?? true;
   }
 
   static notFound(message = 'Not found') {

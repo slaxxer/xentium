@@ -3,6 +3,17 @@ import { prisma } from "../../infrastructure/db.js";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import type { PermissionKey } from "@nodevo/contracts";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
+import { NodevoError } from "../errors/NodevoError.js";
+import { NEC } from "../errors/nec.js";
+import { unauthenticatedError, invalidTokenError } from "./requireAuth.js";
+
+function permissionDeniedError(keys: PermissionKey[]) {
+  return new NodevoError({
+    code: NEC.PERM_DENIED, httpStatus: 403,
+    message: "You don't have permission to do that",
+    details: { required: keys },
+  });
+}
 
 // Load (cache-first) the set of effective permission keys for a user.
 async function loadEffective(userId: string): Promise<string[]> {
@@ -34,44 +45,42 @@ async function loadEffective(userId: string): Promise<string[]> {
 }
 
 export function requirePermission(key: PermissionKey): RequestHandler {
-  return async (req, res, next) => {
+  return async (req, _res, next) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) throw unauthenticatedError();
+
+    let userId: string;
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) return res.status(401).json({ error: "unauthenticated" });
-
-      const { userId } = await verifyAccess(token);
-      const effective = await loadEffective(userId);
-
-      if (!effective.includes(key)) {
-        return res.status(403).json({ error: "forbidden" });
-      }
-
-      req.userId = userId;
-      next();
+      ({ userId } = await verifyAccess(token));
     } catch {
-      res.status(401).json({ error: "invalid_token" });
+      throw invalidTokenError();
     }
+    const effective = await loadEffective(userId);
+
+    if (!effective.includes(key)) throw permissionDeniedError([key]);
+
+    req.userId = userId;
+    next();
   };
 }
 
 /** Grants access if the user holds ANY one of the given permission keys. */
 export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
-  return async (req, res, next) => {
+  return async (req, _res, next) => {
+    const token = req.headers.authorization?.replace("Bearer ", "");
+    if (!token) throw unauthenticatedError();
+
+    let userId: string;
     try {
-      const token = req.headers.authorization?.replace("Bearer ", "");
-      if (!token) return res.status(401).json({ error: "unauthenticated" });
-
-      const { userId } = await verifyAccess(token);
-      const effective = await loadEffective(userId);
-
-      if (!keys.some((k) => effective.includes(k))) {
-        return res.status(403).json({ error: "forbidden" });
-      }
-
-      req.userId = userId;
-      next();
+      ({ userId } = await verifyAccess(token));
     } catch {
-      res.status(401).json({ error: "invalid_token" });
+      throw invalidTokenError();
     }
+    const effective = await loadEffective(userId);
+
+    if (!keys.some((k) => effective.includes(k))) throw permissionDeniedError(keys);
+
+    req.userId = userId;
+    next();
   };
 }

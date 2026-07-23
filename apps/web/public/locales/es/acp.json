@@ -514,11 +514,7 @@
     "qaManageUsers": "👤 Gestionar usuarios",
     "qaViewArticles": "📝 Ver artículos",
     "qaReportQueue": "🚩 Cola de denuncias",
-    "qaMarketplace": "🧩 Mercado",
-    "agoM": "hace {{n}}m",
-    "agoH": "hace {{n}}h",
-    "agoD": "hace {{n}}d",
-    "agoMo": "hace {{n}}mes"
+    "qaMarketplace": "🧩 Mercado"
   },
   "modSettings": {
     "sub": "Moderación",

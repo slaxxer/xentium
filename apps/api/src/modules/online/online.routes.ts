@@ -3,6 +3,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { ONLINE_TTL_MS } from "../../shared/middleware/requireAuth.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
+import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 
 export const onlineRouter: Router = Router();
 
@@ -26,6 +27,7 @@ onlineRouter.get("/", async (_req, res) => {
         username: true,
         avatar:   true,
         groups: {
+          orderBy: primaryGroupOrder,
           include: {
             group: {
               select: {
