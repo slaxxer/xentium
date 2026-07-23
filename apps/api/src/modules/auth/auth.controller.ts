@@ -7,6 +7,7 @@ import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME, clearBetaCoo
 import { prisma } from "../../infrastructure/db.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
+import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { betaService } from "../beta/beta.service.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
@@ -204,6 +205,7 @@ export async function meHandler(req: Request, res: Response) {
       preferredLocale: true,
       hiddenBadges: true,
       groups: {
+        orderBy: primaryGroupOrder,
         include: {
           group: {
             include: { progression: { select: { badgeColor: true, badgeLabel: true } } },

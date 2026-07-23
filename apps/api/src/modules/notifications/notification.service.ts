@@ -4,6 +4,7 @@ import { queues } from "../../infrastructure/queue.js";
 import { notificationEmail } from "../../infrastructure/email/email.service.js";
 import { notificationRepository } from "./notification.repository.js";
 import type { DispatchOptions, NotificationPreferenceResolved } from "./notification.types.js";
+import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 
 type StoredPreference = {
   typePattern:  string;
@@ -47,6 +48,7 @@ export const notificationService = {
         select: {
           username: true, avatar: true,
           groups: {
+            orderBy: primaryGroupOrder,
             include: {
               group: { select: { progression: { select: { badgeColor: true } } } },
             },
