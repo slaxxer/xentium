@@ -9,6 +9,7 @@ import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/uti
 import { redis, bullConnection } from "../../infrastructure/redis.js";
 import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
+import { moderationService } from "../moderation/moderation.service.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
@@ -751,121 +752,18 @@ export const adminService = {
 
   // ── Moderation ────────────────────────────────────────────────────────────
 
+  // ── Moderation lists (one implementation in moderationService — §A2 dedup) ──
+
   async listReports(opts: { page: number; limit: number; status?: string }) {
-    const { page, limit, status } = opts;
-    const where: any = status ? { status } : {};
-    const [reports, total] = await Promise.all([
-      prisma.moderationReport.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: { reporter: { select: { id: true, username: true, ...badgeColorSelect } } },
-      }),
-      prisma.moderationReport.count({ where }),
-    ]);
-
-    // Resolve target info for each report so the frontend can show a proper link
-    const resolvedTargets = await Promise.all(
-      reports.map(async (r) => {
-        try {
-          if (r.targetType === "article") {
-            const a = await prisma.article.findUnique({ where: { id: r.targetId }, select: { slug: true, title: true } });
-            return { href: a ? `/articles/${a.slug}` : null, label: a?.title ?? r.targetId };
-          }
-          if (r.targetType === "user") {
-            const u = await prisma.user.findUnique({ where: { id: r.targetId }, select: { username: true } });
-            return { href: u ? `/u/${u.username}` : null, label: u?.username ?? r.targetId };
-          }
-          if (r.targetType === "article_comment") {
-            const c = await prisma.articleComment.findUnique({ where: { id: r.targetId }, include: { article: { select: { slug: true } } } });
-            return { href: c ? `/articles/${c.article.slug}` : null, label: `Comment on "${c?.article.slug ?? r.targetId}"` };
-          }
-          if (r.targetType === "profile_comment") {
-            const c = await prisma.profileComment.findUnique({ where: { id: r.targetId }, include: { profileUser: { select: { username: true } } } });
-            return { href: c ? `/u/${c.profileUser.username}` : null, label: `Comment on ${c?.profileUser.username ?? r.targetId}'s profile` };
-          }
-        } catch {
-          // target may have been deleted — fall through
-        }
-        return { href: null, label: r.targetId };
-      }),
-    );
-
-    const pending   = await prisma.moderationReport.count({ where: { status: "pending" } });
-    const highToday = await prisma.moderationReport.count({
-      where: { status: "pending", createdAt: { gte: new Date(Date.now() - 86400000) } },
-    });
-    const resolvedToday = await prisma.moderationReport.count({
-      where: { status: "resolved", resolvedAt: { gte: new Date(Date.now() - 86400000) } },
-    });
-
-    return {
-      data: reports.map((r, i) => ({
-        ...r,
-        reporter:     toUserRef(r.reporter),
-        targetHref:   resolvedTargets[i]?.href ?? null,
-        targetLabel:  resolvedTargets[i]?.label ?? r.targetId,
-      })),
-      meta:  buildPaginationMeta({ page, limit, total }),
-      stats: { pending, highToday, resolvedToday },
-    };
+    return moderationService.listReports(opts);
   },
 
   async listWarnings(opts: { page: number; limit: number; status?: string }) {
-    const { page, limit, status } = opts;
-    const where: any = status ? { status } : {};
-    const [data, total] = await Promise.all([
-      prisma.moderationWarning.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user:     { select: { id: true, username: true, ...badgeColorSelect } },
-          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
-        },
-      }),
-      prisma.moderationWarning.count({ where }),
-    ]);
-    return {
-      data: data.map((w) => ({
-        ...w,
-        user:     toUserRef(w.user),
-        issuedBy: toUserRef(w.issuedBy),
-      })),
-      meta: buildPaginationMeta({ page, limit, total }),
-    };
+    return moderationService.listWarnings(opts);
   },
 
   async listBans(opts: { page: number; limit: number; status?: string }) {
-    const { page, limit, status } = opts;
-    const where: any = status ? { status } : {};
-    const [data, total] = await Promise.all([
-      prisma.moderationBan.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user:     { select: { id: true, username: true, ...badgeColorSelect } },
-          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
-        },
-      }),
-      prisma.moderationBan.count({ where }),
-    ]);
-    const active    = await prisma.moderationBan.count({ where: { status: "active" } });
-    const temporary = await prisma.moderationBan.count({ where: { status: "active", type: "temporary" } });
-    const permanent = await prisma.moderationBan.count({ where: { status: "active", type: "permanent" } });
-    return {
-      data: data.map((b) => ({
-        ...b,
-        user:     toUserRef(b.user),
-        issuedBy: toUserRef(b.issuedBy),
-      })),
-      meta:  buildPaginationMeta({ page, limit, total }),
-      stats: { active, temporary, permanent },
-    };
+    return moderationService.listBans({ ...opts, withStats: true });
   },
 
   async listCases(opts: { page: number; limit: number; status?: string; type?: string }) {
@@ -1022,19 +920,16 @@ export const adminService = {
   async updateReport(id: string, actorId: string, data: {
     status?: string; notes?: string; assignedTo?: string | null;
   }) {
-    const { moderationService } = await import("../moderation/moderation.service.js");
     return moderationService.updateReport(id, actorId, data);
   },
 
   async issueWarning(data: {
     userId: string; issuedById: string; reason: string; expiresAt?: Date | null;
   }) {
-    const { moderationService } = await import("../moderation/moderation.service.js");
     return moderationService.issueWarning(data);
   },
 
   async pardonWarning(id: string, adminId: string) {
-    const { moderationService } = await import("../moderation/moderation.service.js");
     return moderationService.pardonWarning(id, adminId);
   },
 
@@ -1043,12 +938,10 @@ export const adminService = {
   },
 
   async updateCase(id: string, actorId: string, status: "reviewed" | "dismissed") {
-    const { moderationService } = await import("../moderation/moderation.service.js");
     return moderationService.updateCase(id, actorId, status);
   },
 
   async moderatorDeleteComment(type: "article" | "profile", id: string, actorId: string, reason: string) {
-    const { moderationService } = await import("../moderation/moderation.service.js");
     if (type === "article") return moderationService.moderatorDeleteArticleComment(id, actorId, reason);
     return moderationService.moderatorDeleteProfileComment(id, actorId, reason);
   },

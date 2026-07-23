@@ -334,7 +334,7 @@ badge-glow editor).
 | 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | ✅ done 2026-07-23 (see A5.1) |
 | 4 | `paginate()` helper + `buildPaginationMeta` everywhere (§1.3) | Med | S | ✅ done 2026-07-11 |
 | 5 | `UserRef` select/mapper (§1.4) | Med | S | ✅ done 2026-07-11 |
-| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | open → A2 |
+| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | ✅ done 2026-07-23 (see A6 #7) |
 | 7 | Web: `timeAgo` + `Badge` + `Pager` extraction (§3.1–3.3) | Med (+ fixes i18n gaps) | S | ✅ done 2026-07-23 — lib/time.ts (localized, common ns), components/Badge + Pager |
 | 8 | `memoTtl` util + CSS memo (§2.3/2.6) | Low-Med | S | ✅ done 2026-07-11 |
 | 9 | Repository-layer decision + CLAUDE.md update (§1.8) | Med (clarity) | XS | ✅ done 2026-07-11 (dropped as requirement) |
@@ -543,7 +543,7 @@ AcpLayout.tsx:87 with independently-declared queryFns and differing options.
 | 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |
 | 5 | Version-control `plugins/official/` (A1.4) | High | XS | One bad `rm -rf` from losing the revenue line |
 | 6 | Dashboard analytics → SQL GROUP BY (A3.1) | Med | S | |
-| 7 | Admin ⇄ moderation dedup (A2, original item 6) | High | M | Still the biggest drift risk |
+| 7 | Admin ⇄ moderation dedup (A2, original item 6) | High | M | ✅ done 2026-07-23 — listReports/listWarnings/listBans moved to moderationService (one impl; Canvas variants delegate w/ status:"active", admin delegates w/ withStats); write ops were already delegates, their `await import()`s converted to top-level (no cycle). Intentionally separate: admin listCases vs listCasesCanvas (different contracts) |
 | 8 | `timeAgo`/`Badge`/`Pager` extraction (A2, original item 7) | Med | S | ✅ done 2026-07-23 — 10 timeAgo copies → `lib/time.ts` (i18n `time.*` in common ns; SearchPage's day-granularity variant intentionally kept), 4 Badge copies → `components/Badge`, 4 pager blocks → `components/Pager` |
 | 9 | `invalidateForGroup` version-stamp (A4.2) | Med | S | |
 | 10 | Quick wins: `getOneSetting`, empty repository file, semver dedup, plugin-update mutex | Low-Med | XS-S | ✅ done 2026-07-21 (shared/utils/semver.ts, lifecycle lock in plugin.service.ts) |
