@@ -1,5 +1,22 @@
 # Changelog
 
+## Deterministic primary group, faster dashboard, web/service dedup
+
+- **Deterministic badge for multi-group users** — every query that picks "the"
+  group for a user (badge colour on comments, notifications, online list,
+  member suggestions, moderation views, `/auth/me`) now orders by the group's
+  `displayOrder` (lower = higher priority). Previously the pick was database
+  row-order and could flip between requests.
+- **Dashboard analytics now aggregate in SQL** — one `GROUP BY` day query per
+  series instead of loading every user/comment/article/login/report row in the
+  window. Also fixes a subtle DST bug where events after a spring-forward
+  crossing landed in the previous day's bucket.
+- **One moderation list implementation** — the ACP and ModCP reports/warnings/
+  bans lists now share a single implementation in the moderation service
+  (previously near-identical copies with drift risk).
+- **Shared web primitives** — `timeAgo` (10 per-page copies, several
+  English-only, now one localized helper), `Badge` and `Pager` components.
+
 ## Unified API error contract (NEC/NodevoError everywhere)
 
 - **One error shape** — every API error now returns the canonical
