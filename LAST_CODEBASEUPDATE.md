@@ -1,6 +1,48 @@
 # Last Codebase Update — 2026-07-23
 
-## Error-shape unification (audit A5.1 / A6 #3) — the 3 API error shapes → 1
+Four commits, one per audit item: `c6d26b2` error-shape unification (A6 #3),
+`deebc3a` primary-group determinism + dashboard GROUP BY (A6 #4 + #6),
+`e29f085` web timeAgo/Badge/Pager dedup (A6 #8), `eb02171` admin⇄moderation
+list dedup (A6 #7). Also: test instance reconciled + restarted (API 4100,
+web 5174, worker w/ log-retention job scheduled; acp_visits migration was
+already applied). Remaining audit item: #5 version-control plugins/official
+(needs a hosting decision).
+
+## Batch 4 — admin ⇄ moderation list dedup (audit A2 / A6 #7)
+
+- listReports/listWarnings/listBans moved to moderation.service as the ONE
+  implementation; listWarningsCanvas/listBansCanvas = delegates with
+  status:"active"; adminService delegates (bans with withStats:true for the
+  ACP header counts). listReportsCanvas + admin listCases intentionally stay
+  separate (genuinely different contracts). admin.service's four
+  `await import("../moderation/…")` write-op delegates → one top-level import
+  (verified no cycle). Runtime-verified: all 6 endpoints byte-identical shapes.
+
+## Batch 3 — web timeAgo/Badge/Pager extraction (audit A2 / A6 #8)
+
+- NEW `lib/time.ts` — localized timeAgo (full + compact styles, `time.*` keys
+  in the common namespace ×5 langs); replaced 10 per-page copies (several
+  hardcoded English). SearchPage's day-granularity variant intentionally kept.
+- NEW `components/Badge.tsx` (4 ACP copies removed), `components/Pager.tsx`
+  (4 inlined ACP pager blocks removed; label stays caller-localized).
+- acp.json `dashboard.ago*` keys removed ×5 langs (superseded by common
+  `time.*`).
+
+## Batch 2 — primary-group determinism + dashboard GROUP BY (A6 #4 + #6)
+
+- `userRef.ts` exports `primaryGroupOrder` ({group:{displayOrder:"asc"}});
+  badgeColorSelect + every ad-hoc `groups[0]` query now orders by it
+  (online.routes, users.repository ×2, comment.service, notification.service,
+  admin.service case links, auth meHandler).
+- `getDashboardAnalytics`: 5 findMany-all-rows series → one GROUP BY
+  local-day `$queryRaw` each (`to_char((col AT TIME ZONE 'UTC') AT TIME ZONE
+  <server tz>, 'YYYY-MM-DD')`). E2E old-vs-new comparison: ranges 7/30 exact
+  match; range 90 differs ONLY where the old code was wrong (DST spring-forward
+  crossing shifted buckets 1h → events near local midnight fell a day early).
+  ⚠ Dev-DB note: vitest's installer test re-seeds the dev DB admin — root's
+  user id changes after every `vitest run`.
+
+## Batch 1 — error-shape unification (audit A5.1 / A6 #3) — the 3 API error shapes → 1
 
 Everything now flows through NodevoError → errorMiddleware in the canonical
 `{error:{code,message,details,severity}}` envelope. Runtime-verified via curl
