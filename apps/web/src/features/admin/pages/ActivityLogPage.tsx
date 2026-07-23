@@ -1,9 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { Pager } from "../../../components/Pager";
 import type { PaginatedResponse } from "@nodevo/contracts";
 
 interface ActivityRow {
@@ -102,12 +101,9 @@ export function ActivityLogPage() {
           </div>
         )}
 
-        {meta && meta.totalPages > 1 && (
-          <div className="acp-pagination" style={{ padding: "12px 20px", borderTop: "1px solid var(--c-border)" }}>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}><FontAwesomeIcon icon={faChevronLeft} /></button>
-            <span>{t("activity.pagination", { page: meta.page, totalPages: meta.totalPages, total: meta.total })}</span>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p + 1)} disabled={page >= meta.totalPages}><FontAwesomeIcon icon={faChevronRight} /></button>
-          </div>
+        {meta && (
+          <Pager page={page} totalPages={meta.totalPages} onPage={setPage}
+            label={t("activity.pagination", { page: meta.page, totalPages: meta.totalPages, total: meta.total })} />
         )}
       </div>
     </div>

@@ -22,6 +22,17 @@ export const NEC = {
   AUTH_USERNAME_TAKEN: "NEC-AUTH-2002",
   AUTH_EMAIL_CODE_INVALID: "NEC-AUTH-2003",
   AUTH_RESET_TOKEN_INVALID: "NEC-AUTH-1007",
+  AUTH_UNAUTHENTICATED: "NEC-AUTH-1008",   // protected route hit without a Bearer token
+  AUTH_TOKEN_INVALID: "NEC-AUTH-1009",     // access token failed verification / expired
+  AUTH_NO_SESSION: "NEC-AUTH-1010",        // refresh attempted without a session cookie
+  AUTH_INVITE_REQUIRED: "NEC-AUTH-1020",
+  AUTH_INVITE_INVALID: "NEC-AUTH-1021",
+  AUTH_BETA_REQUIRED: "NEC-AUTH-1030",
+  AUTH_BETA_CODE_INVALID: "NEC-AUTH-1031",
+  AUTH_BETA_IP_LOCKED: "NEC-AUTH-1032",
+  AUTH_LOCKED_OUT: "NEC-AUTH-1040",        // failed-login lockout (429) — details carry username/ip
+  AUTH_NAME_REQUIRED: "NEC-AUTH-2004",
+  AUTH_REGISTRATION_CLOSED: "NEC-AUTH-2010",
 
   // Permissions / RBAC
   PERM_DENIED: "NEC-PERM-1001",
@@ -81,6 +92,11 @@ export const NEC = {
   LICENSE_SOURCE_UNREACHABLE:"NEC-LICENSE-9007",  // marketplace unreachable — grace applies
   LICENSE_ALREADY_ACTIVE:    "NEC-LICENSE-9008",  // activate refused: a license is already active
   LICENSE_SERVER_REJECTED:   "NEC-LICENSE-9009",  // license server refused (4xx) — message carries the reason
+
+  // Marketplace artifact intake (NEC-MARKETPLACE-91xx) — download-gate failures
+  MARKETPLACE_NO_ARTIFACT: "NEC-MARKETPLACE-9101",      // source has no downloadable artifact
+  MARKETPLACE_DOWNLOAD_FAILED: "NEC-MARKETPLACE-9102",  // download unreachable / non-200
+  MARKETPLACE_ARTIFACT_INVALID: "NEC-MARKETPLACE-9103", // size cap / sha256 / manifest-id mismatch
 
   // Core
   CORE_THEME_NOT_FOUND: "NEC-CORE-8001",

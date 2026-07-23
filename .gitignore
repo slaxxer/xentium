@@ -14,6 +14,7 @@ CLAUDE.md
 /PLUGINS
 /UPDATES
 /docs/adr/
+/docs/architecture-review.md
 # IDE
 .idea/
 d0cs

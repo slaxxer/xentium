@@ -331,11 +331,11 @@ badge-glow editor).
 |---|---|---|---|---|
 | 1 | Cached/batched settings service (§2.1) — kills the per-request DB query | High | S | ✅ done 2026-07-11 |
 | 2 | Express type augmentation + delete `wrap()`s (§1.1/1.2) | Med | S | ✅ done 2026-07-11 |
-| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | open → A5.1 (worsened) |
+| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | ✅ done 2026-07-23 (see A5.1) |
 | 4 | `paginate()` helper + `buildPaginationMeta` everywhere (§1.3) | Med | S | ✅ done 2026-07-11 |
 | 5 | `UserRef` select/mapper (§1.4) | Med | S | ✅ done 2026-07-11 |
-| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | open → A2 |
-| 7 | Web: `timeAgo` + `Badge` + `Pager` extraction (§3.1–3.3) | Med (+ fixes i18n gaps) | S | open → A2 (grew to 10 copies) |
+| 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | ✅ done 2026-07-23 (see A6 #7) |
+| 7 | Web: `timeAgo` + `Badge` + `Pager` extraction (§3.1–3.3) | Med (+ fixes i18n gaps) | S | ✅ done 2026-07-23 — lib/time.ts (localized, common ns), components/Badge + Pager |
 | 8 | `memoTtl` util + CSS memo (§2.3/2.6) | Low-Med | S | ✅ done 2026-07-11 |
 | 9 | Repository-layer decision + CLAUDE.md update (§1.8) | Med (clarity) | XS | ✅ done 2026-07-11 (dropped as requirement) |
 | 10 | Feature api modules / query-key registry (§3.4/3.5) | Med | ongoing rule, not a project | open → A5.4 |
@@ -501,6 +501,18 @@ entries lapse via TTL) removes the fan-out entirely.
 Every new client surface must know all three. The original warning was "pre-alpha is
 the last cheap moment" — that moment is closing.
 
+**✅ RESOLVED 2026-07-23** — everything now flows through NodevoError/errorMiddleware
+in the canonical `{error:{code,message,details,severity}}` shape: auth.controller
+throws coded NodevoErrors (banned payload in `details`, Zod `parse()` → 422
+NEC-API-4001), requireAuth/requirePermission throw NEC-AUTH-1008/1009 +
+NEC-PERM-1001, ArtifactError extends NodevoError with NEC-MARKETPLACE-91xx codes
+(the install endpoint's `{message}`-flattening catch removed — plugin-engine
+NodevoErrors keep their real statuses now). New `persist:false` flag keeps
+expected high-frequency 401s (token expiry, guest refresh, failed credentials)
+out of error_log. Web dual-shape readers deleted; latently-broken NEC comparisons
+in ResetPasswordPage/BetaGatePage/RegisterPage fixed. Intentionally excluded:
+installer/setup surface (pre-install lifecycle, self-removes — still flat).
+
 ### A5.2 62 `await import()` calls across the API, 24 in `admin.controller.ts` alone (NEW)
 
 Used as a circular-dependency dodge; hides the real module graph, moves import
@@ -527,11 +539,11 @@ AcpLayout.tsx:87 with independently-declared queryFns and differing options.
 |---|---|---|---|---|
 | 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `ncf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
 | 2 | Extract marketplace/update logic from admin.controller into a service (A1.1) | High | M | ✅ done 2026-07-21 — `modules/admin/marketplace.service.ts`; controller 817→543 lines, dynamic imports 24→0 |
-| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | Cost rises every release |
+| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | ✅ done 2026-07-23 — one NEC/NodevoError shape; installer surface excluded by design |
 | 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |
 | 5 | Version-control `plugins/official/` (A1.4) | High | XS | One bad `rm -rf` from losing the revenue line |
 | 6 | Dashboard analytics → SQL GROUP BY (A3.1) | Med | S | |
-| 7 | Admin ⇄ moderation dedup (A2, original item 6) | High | M | Still the biggest drift risk |
-| 8 | `timeAgo`/`Badge`/`Pager` extraction (A2, original item 7) | Med | S | Also fixes i18n gaps; count grew to 10 |
+| 7 | Admin ⇄ moderation dedup (A2, original item 6) | High | M | ✅ done 2026-07-23 — listReports/listWarnings/listBans moved to moderationService (one impl; Canvas variants delegate w/ status:"active", admin delegates w/ withStats); write ops were already delegates, their `await import()`s converted to top-level (no cycle). Intentionally separate: admin listCases vs listCasesCanvas (different contracts) |
+| 8 | `timeAgo`/`Badge`/`Pager` extraction (A2, original item 7) | Med | S | ✅ done 2026-07-23 — 10 timeAgo copies → `lib/time.ts` (i18n `time.*` in common ns; SearchPage's day-granularity variant intentionally kept), 4 Badge copies → `components/Badge`, 4 pager blocks → `components/Pager` |
 | 9 | `invalidateForGroup` version-stamp (A4.2) | Med | S | |
 | 10 | Quick wins: `getOneSetting`, empty repository file, semver dedup, plugin-update mutex | Low-Med | XS-S | ✅ done 2026-07-21 (shared/utils/semver.ts, lifecycle lock in plugin.service.ts) |

@@ -93,8 +93,10 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   if (!res.ok) {
     let detail: unknown;
     try { detail = await res.json(); } catch { detail = await res.text(); }
+    // Canonical shape: { error: { code, message, details, severity } }. The only
+    // flat-string `error` left is the pre-install installer/setup surface.
     const errObj = (detail as any)?.error;
-    const err = new Error(errObj?.message ?? errObj ?? `http_${res.status}`);
+    const err = new Error(errObj?.message ?? (typeof errObj === "string" ? errObj : `http_${res.status}`));
     (err as any).status = res.status;
     (err as any).detail = detail;
 

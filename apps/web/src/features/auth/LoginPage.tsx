@@ -86,14 +86,13 @@ export function LoginPage() {
       await applyLogin(res.accessToken!);
       navigate(returnTo);
     } catch (err: any) {
-      // Inline handlers return a flat `{ error: "NEC-…" }`; thrown NodevoErrors
-      // come back nested as `{ error: { code, message } }` via errorMiddleware.
+      // All API errors are the canonical `{ error: { code, message, details } }`.
       const errObj = err?.detail?.error;
-      const code = typeof errObj === "string" ? errObj : errObj?.code;
+      const code = errObj?.code;
 
-      if (code === "account_banned") {
-        const reason    = (err.detail.reason    as string) ?? "Account suspended";
-        const expiresAt = err.detail.expiresAt  as string | null;
+      if (code === "NEC-AUTH-1003" || code === "NEC-AUTH-1004") {
+        const reason    = (errObj?.details?.reason as string) ?? "Account suspended";
+        const expiresAt = errObj?.details?.expiresAt as string | null;
         const expiry    = expiresAt
           ? new Date(expiresAt).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
           : null;
@@ -114,7 +113,7 @@ export function LoginPage() {
         swalToast(errObj?.message ?? err?.message ?? t("login.lockedOut"), "warning");
       } else {
         swalToast(
-          code === "invalid_credentials" ? t("login.invalidCredentials")
+          code === "NEC-AUTH-1001" ? t("login.invalidCredentials")
           : requiresPin                  ? t("pin.wrong")
           : t("login.signInFailed"),
         );

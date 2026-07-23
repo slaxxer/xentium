@@ -406,24 +406,21 @@ export function RegisterPage() {
       setDone(true);
       await applyLogin(res.accessToken);
     } catch (err: any) {
-      const code = err?.detail?.error;
+      const code = err?.detail?.error?.code;
       if (code === "NEC-AUTH-1020") {
         swalToast(t("register.inviteRequiredErr"));
         setStep(1);
       } else if (code === "NEC-AUTH-1021") {
         swalToast(t("register.inviteInvalid"));
         setStep(1);
-      } else if (code === "NEC-AUTH-2003" || err?.status === 400) {
+      } else if (code === "NEC-AUTH-2003") {
         swalToast(t("register.codeWrong"));
-      } else if (err?.status === 409) {
-        const msg = err?.detail?.message ?? "";
-        if (msg.toLowerCase().includes("email")) {
-          swalToast(t("register.emailTakenShort"));
-          setStep(1);
-        } else {
-          swalToast(t("register.usernameTaken"));
-          setStep(1);
-        }
+      } else if (code === "NEC-AUTH-2001") {
+        swalToast(t("register.emailTakenShort"));
+        setStep(1);
+      } else if (code === "NEC-AUTH-2002") {
+        swalToast(t("register.usernameTaken"));
+        setStep(1);
       } else {
         swalToast(t("register.regFailed"));
       }

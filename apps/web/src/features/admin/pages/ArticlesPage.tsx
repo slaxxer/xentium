@@ -4,9 +4,10 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faChevronLeft, faChevronRight, faArrowUpRightFromSquare, faTrash,
+  faArrowUpRightFromSquare, faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { Pager } from "../../../components/Pager";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { Username } from "../../../components/Username";
 
@@ -217,11 +218,8 @@ export function ArticlesPage() {
         )}
 
         {meta && meta.totalPages > 1 && (
-          <div className="acp-pagination" style={{ padding: "12px 20px", borderTop: "1px solid var(--c-border)", marginTop: 0 }}>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}><FontAwesomeIcon icon={faChevronLeft} /></button>
-            <span>{t("articles.pagination", { page: meta.page, totalPages: meta.totalPages, total: meta.total })}</span>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p + 1)} disabled={page >= meta.totalPages}><FontAwesomeIcon icon={faChevronRight} /></button>
-          </div>
+          <Pager page={page} totalPages={meta.totalPages} onPage={setPage}
+            label={t("articles.pagination", { page: meta.page, totalPages: meta.totalPages, total: meta.total })} />
         )}
       </div>
     </div>

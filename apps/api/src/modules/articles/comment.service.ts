@@ -5,6 +5,7 @@ import { NEC } from "@nodevo/contracts";
 import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
+import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
@@ -14,6 +15,7 @@ const commentInclude = {
     select: {
       id: true, username: true, avatar: true,
       groups: {
+        orderBy: primaryGroupOrder,
         include: {
           group: { select: { progression: { select: { badgeColor: true } } } },
         },

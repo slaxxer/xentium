@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation, faBan, faUserCheck, faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
+import { timeAgo } from "../../lib/time";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../lib/swal";
 
 // ModCanvas → Cases section. Core surface for §15 review cases — baseline
@@ -15,14 +16,6 @@ interface Case {
   ipAddresses: string[]; createdAt: string;
 }
 interface Paged<T> { data: T[]; meta: { total: number } }
-
-function timeAgo(d: string) {
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (m < 1)  return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
 
 function Tag({ children, crit }: { children: React.ReactNode; crit?: boolean }) {
   return <span className={`mc-tag${crit ? " mc-tag--crit" : ""}`}>{children}</span>;

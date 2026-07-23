@@ -4,9 +4,10 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faChevronLeft, faChevronRight, faPenToSquare, faBan, faUnlock,
+  faPenToSquare, faBan, faUnlock,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { Pager } from "../../../components/Pager";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { Username } from "../../../components/Username";
@@ -392,16 +393,9 @@ export function UserListPage() {
           </div>
         )}
 
-        {meta && meta.totalPages > 1 && (
-          <div className="acp-pagination" style={{ padding: "12px 18px", borderTop: "1px solid var(--c-border)", marginTop: 0 }}>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p - 1)} disabled={page === 1}>
-              <FontAwesomeIcon icon={faChevronLeft} />
-            </button>
-            <span>{t("userList.paginationSummary", { page: meta.page, pages: meta.totalPages, count: meta.total })}</span>
-            <button className="btn-ghost btn-sm" onClick={() => setPage((p) => p + 1)} disabled={page >= meta.totalPages}>
-              <FontAwesomeIcon icon={faChevronRight} />
-            </button>
-          </div>
+        {meta && (
+          <Pager page={page} totalPages={meta.totalPages} onPage={setPage}
+            label={t("userList.paginationSummary", { page: meta.page, pages: meta.totalPages, count: meta.total })} />
         )}
       </div>
 

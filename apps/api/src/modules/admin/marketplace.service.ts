@@ -13,6 +13,8 @@ import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { pluginService } from "../plugins/plugin.service.js";
 import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC, type NecCode } from "../../shared/errors/nec.js";
 
 /** One coarse step in the install/update progress stream (0..100 overall). */
 export interface UpdateProgress { phase: string; percent: number; message?: string }
@@ -21,9 +23,13 @@ export type ProgressFn = (p: UpdateProgress) => void;
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 const EXPIRING_SOON_DAYS = 30;
 
-/** Download/verify failure carrying the HTTP status the caller should send. */
-export class ArtifactError extends Error {
-  constructor(message: string, readonly status: number) { super(message); }
+/** Download/verify failure — a coded NodevoError so it flows through
+ *  errorMiddleware in the canonical `{error:{code,…}}` shape. */
+export class ArtifactError extends NodevoError {
+  constructor(message: string, httpStatus: number, code: NecCode = NEC.MARKETPLACE_DOWNLOAD_FAILED) {
+    super({ code, httpStatus, message });
+    this.name = "ArtifactError";
+  }
 }
 
 /**
@@ -43,7 +49,7 @@ async function downloadAndVerifyArtifact(pluginId: string, version: string, onPr
   });
   if (!authorized.downloadUrl) {
     // Dev catalogue / community sources have no hosted artifact — manual upload path.
-    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400);
+    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400, NEC.MARKETPLACE_NO_ARTIFACT);
   }
 
   onProgress?.({ phase: "downloading", percent: 10 });
@@ -64,7 +70,7 @@ async function downloadAndVerifyArtifact(pluginId: string, version: string, onPr
     received += value.length;
     if (received > MAX_ARTIFACT_BYTES) {
       await reader.cancel().catch(() => {});
-      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502);
+      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
     }
     onProgress?.({
       phase:   "downloading",
@@ -78,7 +84,7 @@ async function downloadAndVerifyArtifact(pluginId: string, version: string, onPr
   if (authorized.sha256) {
     const digest = createHash("sha256").update(buffer).digest("hex");
     if (digest !== authorized.sha256) {
-      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502);
+      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
     }
   }
 
@@ -87,7 +93,7 @@ async function downloadAndVerifyArtifact(pluginId: string, version: string, onPr
   // rejected before any install/update step touches the running instance.
   const info = await pluginService.validateOnly(buffer);
   if (info.id !== pluginId) {
-    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested plugin.`, 502);
+    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested plugin.`, 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
   }
 
   return buffer;
@@ -258,15 +264,15 @@ export const marketplaceService = {
    * Direct install (§16.2): authorize at the chokepoint, fetch the artifact
    * server-side (the account token never reaches the browser), verify its sha256,
    * then run the SAME intake as a manual upload. Lands installed but DISABLED —
-   * enabling stays an explicit admin action. Download-phase failures throw
-   * ArtifactError (carrying the HTTP status); install-phase errors propagate.
+   * enabling stays an explicit admin action. All failures are coded NodevoErrors
+   * (ArtifactError for the download phase) — errorMiddleware shapes them.
    */
   async installFromMarketplace(pluginId: string, version: string, userId: string) {
     let buffer: Buffer;
     try {
       buffer = await downloadAndVerifyArtifact(pluginId, version);
     } catch (err) {
-      if (err instanceof ArtifactError) throw err;
+      if (err instanceof NodevoError) throw err;
       throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
     }
 

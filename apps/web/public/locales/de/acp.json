@@ -514,11 +514,7 @@
     "qaManageUsers": "👤 Benutzer verwalten",
     "qaViewArticles": "📝 Artikel ansehen",
     "qaReportQueue": "🚩 Meldungswarteschlange",
-    "qaMarketplace": "🧩 Marktplatz",
-    "agoM": "vor {{n}}m",
-    "agoH": "vor {{n}}h",
-    "agoD": "vor {{n}}d",
-    "agoMo": "vor {{n}}Mon."
+    "qaMarketplace": "🧩 Marktplatz"
   },
   "modSettings": {
     "sub": "Moderation",

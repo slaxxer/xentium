@@ -6,6 +6,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faShield, faGear } from "@fortawesome/free-solid-svg-icons";
 import { Username } from "../../../components/Username";
 import { api } from "../../../lib/api";
+import { timeAgo } from "../../../lib/time";
+import { Badge } from "../../../components/Badge";
 
 interface LogEntry {
   id: string;
@@ -46,21 +48,6 @@ function actionColor(action: string): string {
   if (action.startsWith("warn")) return "var(--c-warn)";
   if (action.includes("lifted") || action.includes("pardoned")) return "var(--c-success)";
   return "var(--c-accent)";
-}
-
-function timeAgo(d: string, t: TFunction) {
-  const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (mins < 60) return t("dashboard.agoM", { n: mins });
-  const h = Math.floor(mins / 60);
-  return h < 24 ? t("dashboard.agoH", { n: h }) : t("dashboard.agoD", { n: Math.floor(h / 24) });
-}
-
-function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: string }) {
-  return (
-    <span style={{ display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:100,fontSize:11,fontWeight:700,background:`${color}20`,color }}>
-      {label}
-    </span>
-  );
 }
 
 // ── Page ─────────────────────────────────────────────────────────────────────
@@ -177,7 +164,7 @@ export function ModLogPage() {
                 <Badge label={isSystem ? t("modLog.actorSystem") : t("modLog.actorHuman")} color={aColor} />
 
                 {/* Time */}
-                <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt, t)}</div>
+                <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
               </div>
             );
           })}
