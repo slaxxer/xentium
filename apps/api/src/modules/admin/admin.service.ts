@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
+import { Prisma } from "../../generated/prisma/client.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { paginate } from "../../shared/utils/paginate.js";
@@ -106,31 +107,43 @@ export const adminService = {
     const windowStart = new Date();
     windowStart.setHours(0, 0, 0, 0);
     windowStart.setDate(windowStart.getDate() - (span - 1));
-    const startMs = windowStart.getTime();
-    const idxOf = (d: Date) => {
-      const m = new Date(d).setHours(0, 0, 0, 0);
-      return Math.floor((m - startMs) / 86_400_000);
-    };
-    const empty = () => new Array<number>(span).fill(0);
-    const bucket = (rows: Array<{ d: Date | null }>) => {
-      const out = empty();
-      for (const row of rows) {
-        if (!row.d) continue;
-        const i = idxOf(row.d);
-        if (i >= 0 && i < span) out[i] = (out[i] ?? 0) + 1;
-      }
-      return out;
+
+    // One GROUP-BY-day query per series — constant-size results regardless of
+    // traffic (previously every row in the window was loaded and bucketed in
+    // JS; loginEvent alone reaches tens of thousands on a modest site).
+    // Columns are naive-UTC timestamps (Prisma default); shift into the
+    // server's local zone so SQL buckets match the local-midnight window.
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const dayCountsQuery = (table: string, col: string, extra?: Prisma.Sql) => Prisma.sql`
+      SELECT to_char((${Prisma.raw(`"${col}"`)} AT TIME ZONE 'UTC') AT TIME ZONE ${tz}, 'YYYY-MM-DD') AS day,
+             count(*)::int AS n
+      FROM ${Prisma.raw(`"${table}"`)}
+      WHERE ${Prisma.raw(`"${col}"`)} >= ${windowStart} ${extra ?? Prisma.empty}
+      GROUP BY 1`;
+    const dayCounts = async (sql: Prisma.Sql) => {
+      const rows = await prisma.$queryRaw<Array<{ day: string; n: number }>>(sql);
+      return new Map(rows.map((row) => [row.day, Number(row.n)]));
     };
 
+    // Local YYYY-MM-DD key for each bucket index (matches the to_char above).
+    const dayKeys: string[] = [];
+    for (let i = 0; i < span; i++) {
+      const d = new Date(windowStart);
+      d.setDate(windowStart.getDate() + i);
+      dayKeys.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    }
+    const empty = () => new Array<number>(span).fill(0);
+    const fromMap = (m: Map<string, number>) => dayKeys.map((k) => m.get(k) ?? 0);
+
     const [
-      regRows, comRows, artRows, logRows, repRows,
+      regMap, comMap, artMap, logMap, repMap,
       pendingReports, totalUsers, publishedTotal, baseMembers, topRows,
     ] = await Promise.all([
-      prisma.user.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
-      prisma.articleComment.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
-      prisma.article.findMany({ where: { status: "published", publishedAt: { gte: windowStart } }, select: { publishedAt: true } }),
-      prisma.loginEvent.findMany({ where: { eventType: "login", success: true, createdAt: { gte: windowStart } }, select: { createdAt: true } }),
-      prisma.moderationReport.findMany({ where: { createdAt: { gte: windowStart } }, select: { createdAt: true } }),
+      dayCounts(dayCountsQuery("ncf_users", "createdAt")),
+      dayCounts(dayCountsQuery("ncf_article_comments", "created_at")),
+      dayCounts(dayCountsQuery("ncf_articles", "published_at", Prisma.sql`AND "status" = 'published'`)),
+      dayCounts(dayCountsQuery("ncf_login_events", "createdAt", Prisma.sql`AND "event_type" = 'login' AND "success" = true`)),
+      dayCounts(dayCountsQuery("ncf_moderation_reports", "created_at")),
       prisma.moderationReport.count({ where: { status: "pending" } }),
       prisma.user.count(),
       prisma.article.count({ where: { status: "published", deletedAt: null } }),
@@ -143,11 +156,11 @@ export const adminService = {
       }),
     ]);
 
-    const regB = bucket(regRows.map((x) => ({ d: x.createdAt })));
-    const comB = bucket(comRows.map((x) => ({ d: x.createdAt })));
-    const artB = bucket(artRows.map((x) => ({ d: x.publishedAt })));
-    const logB = bucket(logRows.map((x) => ({ d: x.createdAt })));
-    const repB = bucket(repRows.map((x) => ({ d: x.createdAt })));
+    const regB = fromMap(regMap);
+    const comB = fromMap(comMap);
+    const artB = fromMap(artMap);
+    const logB = fromMap(logMap);
+    const repB = fromMap(repMap);
 
     // Cumulative member count across the whole span.
     const memB = empty();
@@ -873,13 +886,10 @@ export const adminService = {
     const users  = allIds.length > 0
       ? await prisma.user.findMany({
           where:  { id: { in: allIds } },
-          select: { id: true, username: true, groups: { include: { group: { select: { progression: { select: { badgeColor: true } } } } } } },
+          select: { id: true, username: true, ...badgeColorSelect },
         })
       : [];
-    const userMap = new Map(users.map((u) => [
-      u.id,
-      { id: u.id, username: u.username, badgeColor: u.groups[0]?.group.progression?.badgeColor ?? null },
-    ]));
+    const userMap = new Map(users.map((u) => [u.id, toUserRef(u)]));
     // Also fetch distinct IPs for linked users so the UI can display them in signals
     const ipRows = allIds.length > 0
       ? await prisma.loginEvent.findMany({
