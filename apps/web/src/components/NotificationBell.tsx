@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGear } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../lib/api";
+import { timeAgo } from "../lib/time";
 import { slotRegistry } from "../plugins/slotRegistry";
 import { UserAvatar } from "./UserAvatar";
 
@@ -16,15 +17,6 @@ interface Notification {
   readAt:    string | null;
   createdAt: string;
   meta?:     { senderUsername?: string; senderAvatar?: string | null; senderBadgeColor?: string | null } | null;
-}
-
-function timeAgo(d: string) {
-  const diff = Date.now() - new Date(d).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 60)   return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24)   return `${h}h ago`;
-  return `${Math.floor(h / 24)}d ago`;
 }
 
 export function NotificationBell() {

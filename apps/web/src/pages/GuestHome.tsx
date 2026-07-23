@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
+import { timeAgo } from "../lib/time";
 import { articlesApi, articleCategoriesApi, type ArticleListItem, type ArticleCategoryNode } from "../lib/articlesApi";
 import { Avatar } from "../components/Avatar";
 import "./GuestHome.scss";
@@ -46,18 +47,6 @@ const catColor = (key: string) => CAT_COLORS[hashIndex(key, CAT_COLORS.length)]!
 const catIcon = (id: string) => CAT_ICONS[hashIndex(id, CAT_ICONS.length)]!;
 const hexSoft = (hex: string) => `color-mix(in srgb, ${hex} 13%, transparent)`;
 const fmt = (n: number | undefined) => (n == null ? "—" : n.toLocaleString());
-
-function timeAgo(iso: string | null): string {
-  if (!iso) return "";
-  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.floor(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
 
 interface Stats { members: number; articles: number; today: number }
 interface OnlineData { total: number; users: { username: string; avatar: string | null }[] }

@@ -10,6 +10,7 @@ import {
   faMoon, faSun, faMagnifyingGlass, faCheckDouble, faUser, faFolderOpen,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
+import { timeAgo } from "../../lib/time";
 import { useAuth } from "../../hooks/useAuth";
 import { useTheme } from "../../hooks/useTheme";
 import { swalToast, apiErrorMessage } from "../../lib/swal";
@@ -42,14 +43,6 @@ interface Paged<T> { data: T[]; meta: { total: number } }
 type Section = "dashboard" | "reports" | "warnings" | "bans" | "cases" | "log" | string;
 
 const MOD_KEYS = new Set(["admin", "supermod", "moderator"]);
-
-function timeAgo(d: string) {
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (m < 1)  return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
 
 const ACTION_LABELS: Record<string, string> = {
   "ban.issued":                    "Issued ban",
