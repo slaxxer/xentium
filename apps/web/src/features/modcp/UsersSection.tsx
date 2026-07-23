@@ -7,6 +7,7 @@ import {
   faUnlock, faCheck,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
+import { timeAgo } from "../../lib/time";
 import { useAuth } from "../../hooks/useAuth";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../lib/swal";
 import { Username } from "../../components/Username";
@@ -39,15 +40,6 @@ interface ModUserProfile {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function timeAgo(d: string | null) {
-  if (!d) return "—";
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (m < 1)  return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
 
 function Tag({ children, crit }: { children: React.ReactNode; crit?: boolean }) {
   return <span className={`mc-tag${crit ? " mc-tag--crit" : ""}`}>{children}</span>;

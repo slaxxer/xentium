@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTriangleExclamation, faBan, faUserCheck, faRotateLeft, faShield, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { timeAgo } from "../../../lib/time";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { Username } from "../../../components/Username";
 
@@ -43,13 +44,6 @@ function Av({ name }: { name: string }) {
       {name.slice(0, 2).toUpperCase()}
     </div>
   );
-}
-
-function timeAgo(d: string, t: T) {
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (m < 60) return t("dashboard.agoM", { n: m });
-  const h = Math.floor(m / 60);
-  return h < 24 ? t("dashboard.agoH", { n: h }) : t("dashboard.agoD", { n: Math.floor(h / 24) });
 }
 
 function humanizeSignal(s: string, t: T): string {
@@ -193,7 +187,7 @@ export function ReviewCasesPage() {
                         {isException && <span style={{ marginLeft:4, opacity:0.7 }}>· {t("modCases.exception")}</span>}
                       </span>
                     </div>
-                    <span style={{ fontSize:10, color:"var(--c-fg-muted)", whiteSpace:"nowrap", marginTop:2 }}>{timeAgo(c.createdAt, t)}</span>
+                    <span style={{ fontSize:10, color:"var(--c-fg-muted)", whiteSpace:"nowrap", marginTop:2 }}>{timeAgo(c.createdAt)}</span>
                   </div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
                     {users.map((u) => (

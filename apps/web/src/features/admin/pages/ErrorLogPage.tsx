@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { timeAgo } from "../../../lib/time";
+import { Badge } from "../../../components/Badge";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 
 interface ErrorEntry {
@@ -29,22 +31,6 @@ const SEV_COLOR: Record<string, string> = {
   warn:     "var(--c-warn)",
   info:     "var(--c-accent)",
 };
-
-function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: string }) {
-  return (
-    <span style={{ display:"inline-flex",alignItems:"center",padding:"3px 10px",borderRadius:100,fontSize:11,fontWeight:700,background:`${color}20`,color }}>
-      {label}
-    </span>
-  );
-}
-
-function timeAgo(d: string) {
-  const mins = Math.floor((Date.now() - new Date(d).getTime()) / 60000);
-  if (mins < 1)  return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const h = Math.floor(mins / 60);
-  return h < 24 ? `${h}h ago` : `${Math.floor(h / 24)}d ago`;
-}
 
 const SEV_LABEL_KEY: Record<string, string> = {
   critical: "errorLog.sevCritical",

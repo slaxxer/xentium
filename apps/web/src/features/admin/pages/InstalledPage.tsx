@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPuzzlePiece, faUpload, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { Badge } from "../../../components/Badge";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { useUploadAllowed, UPLOAD_ALLOWED_KEY } from "../hooks/useUploadAllowed";
@@ -24,14 +25,6 @@ const STATUS_COLOR: Record<string, string> = {
   disabled:  "var(--c-fg-muted)",
   installed: "var(--c-accent)",
 };
-
-function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: string }) {
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:`${color}20`, color }}>
-      {label}
-    </span>
-  );
-}
 
 export function InstalledPage() {
   const { t } = useTranslation("acp");

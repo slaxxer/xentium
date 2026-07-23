@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { Badge } from "../../../components/Badge";
 
 interface NecEntry {
   msg:    string;
@@ -90,14 +91,6 @@ const SEV_COLOR: Record<string, string> = {
   Warning:  "var(--c-warn)",
   Info:     "var(--c-accent)",
 };
-
-function Badge({ label, color = "var(--c-accent)" }: { label: string; color?: string }) {
-  return (
-    <span style={{ display:"inline-flex", alignItems:"center", padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:`${color}20`, color }}>
-      {label}
-    </span>
-  );
-}
 
 export function ErrorReferencePage() {
   const { t } = useTranslation("acp");

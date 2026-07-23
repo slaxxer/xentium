@@ -34,5 +34,15 @@
   "language": {
     "title": "Langue",
     "updated": "Langue mise à jour."
+  },
+  "time": {
+    "now": "maintenant",
+    "m": "{{n}} min",
+    "h": "{{n}} h",
+    "d": "{{n}} j",
+    "justNow": "à l'instant",
+    "agoM": "il y a {{n}} min",
+    "agoH": "il y a {{n}} h",
+    "agoD": "il y a {{n}} j"
   }
 }
