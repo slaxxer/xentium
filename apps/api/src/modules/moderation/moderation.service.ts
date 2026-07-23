@@ -562,6 +562,131 @@ export const moderationService = {
     return { pendingReports, openCases, activeWarnings, activeBans };
   },
 
+  // ── ACP lists — the ONE implementation (admin.service delegates here; the
+  //    ModCanvas variants below reuse them with a fixed status filter). §A2 dedup.
+
+  /** ACP Reports list: optional status filter, resolved target links + queue stats. */
+  async listReports(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where = status ? { status } : {};
+    const [reports, total] = await Promise.all([
+      prisma.moderationReport.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: { reporter: { select: { id: true, username: true, ...badgeColorSelect } } },
+      }),
+      prisma.moderationReport.count({ where }),
+    ]);
+
+    // Resolve target info for each report so the frontend can show a proper link
+    const resolvedTargets = await Promise.all(
+      reports.map(async (r) => {
+        try {
+          if (r.targetType === "article") {
+            const a = await prisma.article.findUnique({ where: { id: r.targetId }, select: { slug: true, title: true } });
+            return { href: a ? `/articles/${a.slug}` : null, label: a?.title ?? r.targetId };
+          }
+          if (r.targetType === "user") {
+            const u = await prisma.user.findUnique({ where: { id: r.targetId }, select: { username: true } });
+            return { href: u ? `/u/${u.username}` : null, label: u?.username ?? r.targetId };
+          }
+          if (r.targetType === "article_comment") {
+            const c = await prisma.articleComment.findUnique({ where: { id: r.targetId }, include: { article: { select: { slug: true } } } });
+            return { href: c ? `/articles/${c.article.slug}` : null, label: `Comment on "${c?.article.slug ?? r.targetId}"` };
+          }
+          if (r.targetType === "profile_comment") {
+            const c = await prisma.profileComment.findUnique({ where: { id: r.targetId }, include: { profileUser: { select: { username: true } } } });
+            return { href: c ? `/u/${c.profileUser.username}` : null, label: `Comment on ${c?.profileUser.username ?? r.targetId}'s profile` };
+          }
+        } catch {
+          // target may have been deleted — fall through
+        }
+        return { href: null, label: r.targetId };
+      }),
+    );
+
+    const pending   = await prisma.moderationReport.count({ where: { status: "pending" } });
+    const highToday = await prisma.moderationReport.count({
+      where: { status: "pending", createdAt: { gte: new Date(Date.now() - 86400000) } },
+    });
+    const resolvedToday = await prisma.moderationReport.count({
+      where: { status: "resolved", resolvedAt: { gte: new Date(Date.now() - 86400000) } },
+    });
+
+    return {
+      data: reports.map((r, i) => ({
+        ...r,
+        reporter:     toUserRef(r.reporter),
+        targetHref:   resolvedTargets[i]?.href ?? null,
+        targetLabel:  resolvedTargets[i]?.label ?? r.targetId,
+      })),
+      meta:  buildPaginationMeta({ page, limit, total }),
+      stats: { pending, highToday, resolvedToday },
+    };
+  },
+
+  async listWarnings(opts: { page: number; limit: number; status?: string }) {
+    const { page, limit, status } = opts;
+    const where = status ? { status } : {};
+    const [data, total] = await Promise.all([
+      prisma.moderationWarning.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user:     { select: { id: true, username: true, ...badgeColorSelect } },
+          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
+        },
+      }),
+      prisma.moderationWarning.count({ where }),
+    ]);
+    return {
+      data: data.map((w) => ({
+        ...w,
+        user:     toUserRef(w.user),
+        issuedBy: toUserRef(w.issuedBy),
+      })),
+      meta: buildPaginationMeta({ page, limit, total }),
+    };
+  },
+
+  /** `withStats` adds the ACP header counts (active/temporary/permanent). */
+  async listBans(opts: { page: number; limit: number; status?: string; withStats?: boolean }) {
+    const { page, limit, status, withStats } = opts;
+    const where = status ? { status } : {};
+    const [data, total] = await Promise.all([
+      prisma.moderationBan.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user:     { select: { id: true, username: true, ...badgeColorSelect } },
+          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
+        },
+      }),
+      prisma.moderationBan.count({ where }),
+    ]);
+    const base = {
+      data: data.map((b) => ({
+        ...b,
+        user:     toUserRef(b.user),
+        issuedBy: toUserRef(b.issuedBy),
+      })),
+      meta: buildPaginationMeta({ page, limit, total }),
+    };
+    if (!withStats) return base;
+    const [active, temporary, permanent] = await Promise.all([
+      prisma.moderationBan.count({ where: { status: "active" } }),
+      prisma.moderationBan.count({ where: { status: "active", type: "temporary" } }),
+      prisma.moderationBan.count({ where: { status: "active", type: "permanent" } }),
+    ]);
+    return { ...base, stats: { active, temporary, permanent } };
+  },
+
   async listReportsCanvas(opts: { page: number; limit: number }) {
     const { page, limit } = opts;
     const [data, total] = await Promise.all([
@@ -588,53 +713,11 @@ export const moderationService = {
   },
 
   async listWarningsCanvas(opts: { page: number; limit: number }) {
-    const { page, limit } = opts;
-    const [data, total] = await Promise.all([
-      prisma.moderationWarning.findMany({
-        where: { status: "active" },
-        skip:  (page - 1) * limit,
-        take:  limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user:     { select: { id: true, username: true, ...badgeColorSelect } },
-          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
-        },
-      }),
-      prisma.moderationWarning.count({ where: { status: "active" } }),
-    ]);
-    return {
-      data: data.map((w) => ({
-        ...w,
-        user:     toUserRef(w.user),
-        issuedBy: toUserRef(w.issuedBy),
-      })),
-      meta: buildPaginationMeta({ page, limit, total }),
-    };
+    return moderationService.listWarnings({ ...opts, status: "active" });
   },
 
   async listBansCanvas(opts: { page: number; limit: number }) {
-    const { page, limit } = opts;
-    const [data, total] = await Promise.all([
-      prisma.moderationBan.findMany({
-        where: { status: "active" },
-        skip:  (page - 1) * limit,
-        take:  limit,
-        orderBy: { createdAt: "desc" },
-        include: {
-          user:     { select: { id: true, username: true, ...badgeColorSelect } },
-          issuedBy: { select: { id: true, username: true, ...badgeColorSelect } },
-        },
-      }),
-      prisma.moderationBan.count({ where: { status: "active" } }),
-    ]);
-    return {
-      data: data.map((b) => ({
-        ...b,
-        user:     toUserRef(b.user),
-        issuedBy: toUserRef(b.issuedBy),
-      })),
-      meta: buildPaginationMeta({ page, limit, total }),
-    };
+    return moderationService.listBans({ ...opts, status: "active" });
   },
 
   async listCasesCanvas(opts: { page: number; limit: number }) {
