@@ -28,11 +28,11 @@ export function BetaGatePage({ onSuccess }: BetaGatePageProps) {
       const res = await api.post<{ success: boolean; isNew: boolean }>("/beta/redeem", { code: code.trim() });
       onSuccess(res.isNew);
     } catch (err: any) {
-      const nec = err?.detail?.error as string | undefined;
+      const nec = err?.detail?.error?.code as string | undefined;
       if (nec === "NEC-AUTH-1031") {
         swalToast("Invalid beta code. Please check and try again.");
       } else if (nec === "NEC-AUTH-1032") {
-        const details   = err?.detail?.details as { redeemerIp?: string; registeredUser?: string | null } | undefined;
+        const details   = err?.detail?.error?.details as { redeemerIp?: string; registeredUser?: string | null } | undefined;
         const who       = details?.registeredUser ? `@${details.registeredUser}` : null;
         const ip        = details?.redeemerIp ?? "unknown";
         openDialog({
@@ -77,10 +77,10 @@ export function BetaGatePage({ onSuccess }: BetaGatePageProps) {
         setStaffLoading("success");
       }
     } catch (err: any) {
-      const code = err?.detail?.error as string | undefined;
-      if (code === "account_banned") {
+      const code = err?.detail?.error?.code as string | undefined;
+      if (code === "NEC-AUTH-1003" || code === "NEC-AUTH-1004") {
         swalToast("This account is suspended.", "error");
-      } else if (code === "invalid_credentials") {
+      } else if (code === "NEC-AUTH-1001") {
         swalToast("Incorrect email or password.");
       } else {
         swalToast(err instanceof Error ? err.message : "Login failed. Please try again.");

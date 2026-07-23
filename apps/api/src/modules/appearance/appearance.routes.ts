@@ -7,6 +7,8 @@ import { appearanceService } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { prisma } from "../../infrastructure/db.js";
+import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { NEC } from "../../shared/errors/nec.js";
 
 export const appearanceRouter: Router = Router();
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
@@ -232,11 +234,13 @@ appearanceRouter.post("/branding/:variant", adminGuard, upload.single("file"), a
   try {
     const { variant } = z.object({ variant: z.enum(BRANDING_VARIANTS) }).parse(req.params);
     const file = req.file;
-    if (!file) return res.status(400).json({ error: "No file uploaded" });
+    if (!file) {
+      throw new NodevoError({ code: NEC.API_VALIDATION, httpStatus: 400, message: "No file uploaded" });
+    }
 
     const mime = file.mimetype;
     if (!ALLOWED_MIME[variant].includes(mime)) {
-      return res.status(400).json({ error: `File type ${mime} not allowed for ${variant}` });
+      throw new NodevoError({ code: NEC.STORE_TYPE_NOT_PERMITTED, httpStatus: 400, message: `File type ${mime} not allowed for ${variant}` });
     }
 
     const ext      = EXT[mime] ?? "bin";

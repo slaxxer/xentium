@@ -4,7 +4,7 @@ import { z } from "zod";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { paginatedRequestSchema } from "@nodevo/contracts";
-import { marketplaceService, ArtifactError } from "./marketplace.service.js";
+import { marketplaceService } from "./marketplace.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import {
@@ -400,21 +400,9 @@ export const adminController = {
       version:  z.string().min(1),
     }).parse(req.body);
 
-    try {
-      res.status(201).json(await marketplaceService.installFromMarketplace(pluginId, version, req.userId!));
-    } catch (err: any) {
-      // Download-phase failures carry their HTTP status; install-intake failures
-      // (bad manifest, already installed, …) surface as 400 with the message.
-      if (err instanceof ArtifactError) {
-        res.status(err.status).json({ message: err.message });
-        return;
-      }
-      if (err?.message) {
-        res.status(400).json({ message: err.message });
-        return;
-      }
-      throw err;
-    }
+    // Failures (download-phase ArtifactError, install-intake NodevoError) are all
+    // coded NodevoErrors now — let errorMiddleware shape + persist them.
+    res.status(201).json(await marketplaceService.installFromMarketplace(pluginId, version, req.userId!));
   }) as RequestHandler,
 
   // §16.2 update-in-place — STREAMS progress. The response is newline-delimited

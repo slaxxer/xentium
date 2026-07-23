@@ -331,7 +331,7 @@ badge-glow editor).
 |---|---|---|---|---|
 | 1 | Cached/batched settings service (§2.1) — kills the per-request DB query | High | S | ✅ done 2026-07-11 |
 | 2 | Express type augmentation + delete `wrap()`s (§1.1/1.2) | Med | S | ✅ done 2026-07-11 |
-| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | open → A5.1 (worsened) |
+| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | ✅ done 2026-07-23 (see A5.1) |
 | 4 | `paginate()` helper + `buildPaginationMeta` everywhere (§1.3) | Med | S | ✅ done 2026-07-11 |
 | 5 | `UserRef` select/mapper (§1.4) | Med | S | ✅ done 2026-07-11 |
 | 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | open → A2 |
@@ -501,6 +501,18 @@ entries lapse via TTL) removes the fan-out entirely.
 Every new client surface must know all three. The original warning was "pre-alpha is
 the last cheap moment" — that moment is closing.
 
+**✅ RESOLVED 2026-07-23** — everything now flows through NodevoError/errorMiddleware
+in the canonical `{error:{code,message,details,severity}}` shape: auth.controller
+throws coded NodevoErrors (banned payload in `details`, Zod `parse()` → 422
+NEC-API-4001), requireAuth/requirePermission throw NEC-AUTH-1008/1009 +
+NEC-PERM-1001, ArtifactError extends NodevoError with NEC-MARKETPLACE-91xx codes
+(the install endpoint's `{message}`-flattening catch removed — plugin-engine
+NodevoErrors keep their real statuses now). New `persist:false` flag keeps
+expected high-frequency 401s (token expiry, guest refresh, failed credentials)
+out of error_log. Web dual-shape readers deleted; latently-broken NEC comparisons
+in ResetPasswordPage/BetaGatePage/RegisterPage fixed. Intentionally excluded:
+installer/setup surface (pre-install lifecycle, self-removes — still flat).
+
 ### A5.2 62 `await import()` calls across the API, 24 in `admin.controller.ts` alone (NEW)
 
 Used as a circular-dependency dodge; hides the real module graph, moves import
@@ -527,7 +539,7 @@ AcpLayout.tsx:87 with independently-declared queryFns and differing options.
 |---|---|---|---|---|
 | 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `ncf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
 | 2 | Extract marketplace/update logic from admin.controller into a service (A1.1) | High | M | ✅ done 2026-07-21 — `modules/admin/marketplace.service.ts`; controller 817→543 lines, dynamic imports 24→0 |
-| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | Cost rises every release |
+| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | ✅ done 2026-07-23 — one NEC/NodevoError shape; installer surface excluded by design |
 | 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |
 | 5 | Version-control `plugins/official/` (A1.4) | High | XS | One bad `rm -rf` from losing the revenue line |
 | 6 | Dashboard analytics → SQL GROUP BY (A3.1) | Med | S | |

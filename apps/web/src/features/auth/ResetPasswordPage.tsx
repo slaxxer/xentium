@@ -28,7 +28,7 @@ export function ResetPasswordPage() {
       swalToast(t("reset.success"), "success");
       setTimeout(() => navigate("/login"), 1500);
     } catch (err: any) {
-      const code = err?.detail?.error;
+      const code = err?.detail?.error?.code;
       swalToast(
         code === "NEC-AUTH-1007"
           ? t("reset.expired")

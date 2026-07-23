@@ -1,78 +1,67 @@
-# Last Codebase Update — 2026-07-21
+# Last Codebase Update — 2026-07-23
 
-## Architecture cleanup bundle (low-risk quick wins from the 2026-07-21 re-audit) — UNCOMMITTED
+## Error-shape unification (audit A5.1 / A6 #3) — the 3 API error shapes → 1
 
-Source: `docs/architecture-review.md` addendum §A6 item 10 (2026-07-21 re-audit of the
-codebase post-PR #34–#59). Four independent, behavior-preserving cleanups.
+Everything now flows through NodevoError → errorMiddleware in the canonical
+`{error:{code,message,details,severity}}` envelope. Runtime-verified via curl
+against dev :4000 (see Verification).
 
-### 1. Shared `compareSemver` (dedup)
-- NEW `apps/api/src/shared/utils/semver.ts` — the one numeric-core semver compare.
-- `core/plugin-engine/plugin-engine.ts` — local `compareSemver` deleted, imports shared.
-- `modules/admin/admin.controller.ts` — local `semverCompare` deleted, imports shared
-  (used by `readReconciledUpdates` reconciliation filter).
+### Contracts
+- `packages/contracts/src/nec.ts` — new codes: `AUTH_UNAUTHENTICATED` 1008,
+  `AUTH_TOKEN_INVALID` 1009, `AUTH_NO_SESSION` 1010; formalized the literals
+  already in use (1020/1021/1030/1031/1032/1040/2004/2010); new
+  `MARKETPLACE_NO_ARTIFACT/DOWNLOAD_FAILED/ARTIFACT_INVALID` 9101–9103.
 
-### 2. `getOneSetting` no longer loads every setting
-- `admin.controller.ts` `getOneSetting` now uses cached `getSetting(key, fallback)` with
-  the same defaults-merge semantics as before (`adminService.SETTING_DEFAULTS[key] ?? null`)
-  instead of `adminService.getSettings()` + find over all rows. Writers already bust the
-  settings cache (`adminService.setSetting`), so reads stay correct after ACP saves.
+### API
+- `NodevoError` — new optional `persist` flag (default true); errorMiddleware
+  skips the error_log write when false. Used for expected high-frequency 401s
+  (guest refresh, token expiry, failed credentials) so error_log stays signal.
+- `auth.controller.ts` — all flat strings gone. Zod `safeParse`+`invalid_input`
+  (400) → `parse()` → 422 NEC-API-4001; invalid credentials → 1001
+  (persist:false); banned → 1003/1004 with `details:{reason,expiresAt}`; beta
+  gate → thrown coded 403; refresh → 1010/1002 (persist:false); me → 4004.
+- `requireAuth.ts` / `requirePermission.ts` — throw NodevoErrors
+  (1008/1009 persist:false; forbidden → NEC-PERM-1001 with
+  `details:{required:[keys]}`, persisted). requireAuth exports
+  `unauthenticatedError()`/`invalidTokenError()` for reuse. Side effect: a DB
+  failure in loadEffective now 500s instead of masquerading as 401.
+- `marketplace.service.ts` — `ArtifactError extends NodevoError` (keeps
+  message + status, gains NEC code); the `err instanceof NodevoError` guard
+  passes through intake NodevoErrors unwrapped.
+- `admin.controller.ts` — installFromMarketplace's shape-mangling try/catch
+  DELETED (it flattened e.g. 409 PLUGIN_ALREADY_INSTALLED to 400 `{message}`);
+  errors propagate to errorMiddleware. NDJSON update stream unchanged
+  (terminal events now carry marketplace codes).
+- `search.routes.ts` — `invalid_query` → Zod parse (422 4001).
+  `appearance.routes.ts` branding upload — flat strings → NodevoError
+  (4001 / STORE_TYPE_NOT_PERMITTED).
+- NOT touched (by design): installer/setup surface (`setupServer.ts`,
+  `installGuard.ts`, `installer.controller.ts`) — pre-install lifecycle,
+  self-removes, InstallerWizard depends on its literal keys.
 
-### 3. Dead file removed
-- `modules/permissions/permissions.repository.ts` deleted — empty file, zero imports.
-
-### 4. Plugin lifecycle mutex
-- `modules/plugins/plugin.service.ts`: install/update/enable/disable/uninstall are now
-  serialized through one in-process promise chain (`withLifecycleLock`). Prevents two
-  admins racing e.g. an update's disable→swap→re-enable sequence (filesystem-corrupting).
-  Engine internals stay lock-free (updatePlugin calls disable/enable directly) — only the
-  service entry points take the lock. A raced duplicate update fails cleanly afterwards
-  with NEC-PLUGIN-2005 (version-not-newer). `validateOnly`/`list` (read-only) untouched.
+### Web
+- `lib/api.ts` — err.message extraction simplified to the canonical shape
+  (string fallback kept only for the installer surface).
+- `LoginPage.tsx` — banned branch reads 1003/1004 + `details`; 1001 for bad
+  credentials; dual-shape comment gone.
+- `BetaGatePage.tsx` / `ResetPasswordPage.tsx` / `RegisterPage.tsx` — read
+  `detail.error.code`; fixes LATENT bugs where NEC comparisons ran against the
+  nested object and always fell to generic messages (reset "expired" message,
+  beta 1031/1032 dialogs, email/username-taken now code-based not
+  message-sniffing; invalid-input status check 400 → code-based).
+- `public/locales/{en,de,es,fr,pt}/errors.json` — +1008/1009/1010/2010.
 
 ### Docs
-- `docs/architecture-review.md` (local-only): 2026-07-21 addendum §A1–A6 appended
-  (full re-audit findings); A6 #10 marked done by this bundle.
+- `docs/architecture-review.md` — §5 item 3 + A6 #3 marked done; A5.1 carries
+  the resolution note.
 
-Verification: `pnpm backbone:check` fully green (typecheck, lint, 21/21 API tests, build)
-with docker infra up. Committed `142c853`, pushed to origin/development.
-
-## Batch 2 — marketplace-service extraction (audit A1.1 / A6 #2) — same session
-
-- NEW `apps/api/src/modules/admin/marketplace.service.ts` (294 lines) — owns ALL
-  marketplace/update business logic formerly inline in admin.controller:
-  `downloadAndVerifyArtifact` (chokepoint: authorize → stream download w/ 50 MB cap +
-  byte progress → sha256 → manifest-id match), `readReconciledUpdates` (phantom-update
-  reconciliation), `getUpdates`/`getStatusSummary` (per-admin visit-based acknowledgment),
-  `connect` (+ best-effort license auto-activation), `authorizeDownload`,
-  `installFromMarketplace` (install + best-effort refreshLicense + fire-and-forget
-  processUpdateCheck), `updateFromMarketplace`. `ArtifactError` + `UpdateProgress`/
-  `ProgressFn` exported from the service now.
-- `admin.controller.ts` 817 → 543 lines; marketplace endpoints are thin: Zod parse +
-  error→HTTP mapping (ArtifactError.status / err.message→400 — behavior preserved
-  EXACTLY, incl. download-phase non-ArtifactErrors wrapped to 502 in the service) +
-  the NDJSON stream plumbing for updateFromMarketplace.
-- Dynamic `await import()` in admin.controller: 24 → 0. All converted to top-level
-  (verified NO cycles: license-engine/marketplace-source/updateCheck/moderation.service
-  import nothing from admin module; updateCheck has no import side effects — worker
-  only created via startUpdateCheckWorker()). Also: license refresh/deactivate,
-  paginatedRequestSchema, moderationService.banCaseUsers now top-level.
-- Verification: backbone:check fully green + live boot smoke on dev :4000 — health 200,
-  /admin/status-summary + /admin/marketplace/plugins both 401 (mounted + guarded, no
-  runtime ESM-cycle breakage). Dev server killed cleanly after (port 4000 clear).
-
-## Batch 3 — log retention + durable dialog acks (audit A1.2 + A4.1 / A6 #1) — same session
-
-- NEW table `ncf_acp_visits` (model AcpVisit): (user_id, path) PK → last_visit_at.
-  Migration `20260721120000_acp_visits` creates + BACKFILLS from existing page_visit
-  rows (GROUP BY user,path MAX(created_at)) so earned acks survive. Applied to dev DB
-  via psql + `prisma migrate resolve --applied` (NEVER migrate dev — drift gotcha).
-- `activity.service.ts`: new `markVisit(userId,path)` fire-and-forget upsert (called
-  from POST /activity/visit alongside the telemetry log); `hasVisitedSince` now reads
-  AcpVisit by PK (O(1)) instead of scanning activity_log — retention can no longer
-  un-acknowledge dialogs. marketplace.service consumers unchanged (same signature).
-- NEW `jobs/logRetention.ts` + queue `log-retention` + SCHEDULED_JOBS entry (daily
-  03:45 UTC default, min interval 1h) + workerBoot registration. Prunes: activity_log
-  page_visit (30d) / acp_action (180d), error_log (90d), login_events (180d) — windows
-  from `retention.*` settings (added to SETTING_DEFAULTS), 0 = keep forever.
-- E2E (tsx script vs dev DB, 10/10 pass): mark/anchor semantics, one-row upsert, all
-  4 windows prune exact cutoffs, 0-window skip, and **acks survive page_visit pruning**
-  (the invariant motivating the split). backbone:check green (21/21 API tests).
+### Verification
+- backbone equivalent green: typecheck 19/19, lint 10/10, API tests 21/21,
+  build 14/14.
+- Runtime (dev :4000, curl): wrong creds → 401 1001; bad body → 422 4001;
+  no token → 401 1008; garbage token → 401 1009; no refresh cookie → 401 1010;
+  group-less user on admin route → 403 PERM-1001 with `required:["admin.access"]`.
+  error_log after the run: ONLY the Zod 4001 rows + the PERM-1001 row —
+  persist:false confirmed for the 401 family. Test user + rows cleaned up.
+- Browser click-through still recommended: login failure/banned/lockout toasts,
+  a failed marketplace install, register duplicate-email path.
