@@ -9,7 +9,9 @@
     "back": "Retour",
     "next": "Suivant",
     "loading": "Chargement…",
-    "search": "Rechercher"
+    "search": "Rechercher",
+    "decrease": "Diminuer",
+    "increase": "Augmenter"
   },
   "nav": {
     "home": "Accueil",

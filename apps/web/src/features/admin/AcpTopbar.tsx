@@ -308,7 +308,7 @@ export function AcpTopbar() {
   return (
     <header className="acp-topbar acp-topbar--nav">
       <div className="nbtop__left">
-        <nav className="acp-crumbs" aria-label="Breadcrumb">
+        <nav className="acp-crumbs" aria-label={t("topbar.breadcrumb")}>
           {crumbKeys.map((key, i) => (
             <span key={key} style={{ display: "contents" }}>
               {i > 0 && <span className="sep">/</span>}
