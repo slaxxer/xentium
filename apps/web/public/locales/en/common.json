@@ -52,7 +52,9 @@
     "back": "Back",
     "next": "Next",
     "loading": "Loading…",
-    "search": "Search"
+    "search": "Search",
+    "decrease": "Decrease",
+    "increase": "Increase"
   },
   "nav": {
     "home": "Home",
