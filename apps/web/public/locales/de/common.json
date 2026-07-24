@@ -9,7 +9,9 @@
     "back": "Zurück",
     "next": "Weiter",
     "loading": "Wird geladen…",
-    "search": "Suchen"
+    "search": "Suchen",
+    "decrease": "Verringern",
+    "increase": "Erhöhen"
   },
   "nav": {
     "home": "Startseite",

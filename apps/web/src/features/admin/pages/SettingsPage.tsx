@@ -101,17 +101,18 @@ function NumberStepper({
 }: {
   value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number;
 }) {
+  const { t } = useTranslation("common");
   const set = (v: number) => onChange(Math.max(min, Math.min(max, v)));
   return (
     <div className="stepper">
-      <button type="button" aria-label="Decrease" onClick={() => set(value - step)}>−</button>
+      <button type="button" aria-label={t("actions.decrease")} onClick={() => set(value - step)}>−</button>
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(e.target.value === "" ? min : Number(e.target.value))}
         onBlur={(e) => set(Number(e.target.value) || min)}
       />
-      <button type="button" aria-label="Increase" onClick={() => set(value + step)}>+</button>
+      <button type="button" aria-label={t("actions.increase")} onClick={() => set(value + step)}>+</button>
     </div>
   );
 }
