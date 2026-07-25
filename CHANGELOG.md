@@ -1,21 +1,25 @@
 # Changelog
 
-## Per-group plugin config panels — `groupConfigPanel` slot + tabbed Group dialog
+## Registration — username & email availability checked at step 1
 
-Core support for plugins to contribute **per-group settings** into the ACP Groups
-editor, as tabs, so the dialog stays compact no matter how many plugins add config.
+The register wizard only tested uniqueness on the final `POST /auth/register`, so a
+taken username surfaced *after* the user had filled in password, PIN and terms and
+verified an email code — then bounced them back to step 1 with the rest of the form
+still to redo. Identity is now settled before step 1 is allowed to advance.
 
-- **New `groupConfigPanel` web slot** (`slotRegistry`): a plugin registers
-  `{ id, label, component }`; the component receives `{ groupId, groupName }` and
-  owns its own data (reads/writes via the plugin's own API) — core never learns
-  the plugin's schema. Auto-exposed to plugins via the existing host global;
-  deregistered on plugin disable.
-- **The Group settings dialog (ACP → Groups → Progression) is now tabbed** — a
-  core "Progression" tab plus one tab per registered plugin panel. Tabs only
-  appear when a plugin contributes one, so nothing changes on a site without such
-  plugins. `groups.tabProgression` localized across en/de/es/fr/pt.
-
-This is the core half of the shoutbox capabilities → progression integration: the
-shoutbox (plugin, 1.2.0) uses this slot to move its per-group numeric limits out of
-a standalone matrix and into the Groups dialog, next to the group's progression
-config. Boolean shoutbox caps already became core permissions in the plugin's 1.1.0.
+- **New public endpoint `POST /auth/register/check-availability`** — takes `email`
+  and/or `username` (same format rules as registration), returns which of them are
+  free. Behind its own `auth-avail` rate limiter (30/min in production), since the
+  wizard polls it as the user types. `checkAvailability()` mirrors the lookups
+  `register()` performs — email exact, username case-insensitive — so the probe's
+  answer matches the eventual outcome; `register()` remains authoritative.
+- **Register step 1 gives live feedback** — debounced (450 ms) probes for email and
+  username, inline *checking / available / taken* messages under each field, error
+  styling on the input, and **Continue disabled** while either reads taken.
+  `validateStep1()` re-checks authoritatively before advancing, so an in-flight or
+  skipped probe cannot let a taken value through. A failed probe (offline, rate
+  limited) does not block — the server still rejects.
+- A late `NEC-AUTH-2001` / `NEC-AUTH-2002` that bounces the wizard back to step 1
+  now marks the offending field instead of only firing a toast.
+- New strings (`checking`, `emailAvailable`, `usernameAvailable`) across
+  en/de/es/fr/pt; the new `.rw-avail` styles use existing tokens only.

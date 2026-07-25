@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
-import { loginSchema, registerSchema, sendCodeSchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
-import { login, register, sendRegistrationCode, requestPasswordReset, confirmPasswordReset } from "./auth.service.js";
+import { loginSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
+import { login, register, sendRegistrationCode, checkAvailability, requestPasswordReset, confirmPasswordReset } from "./auth.service.js";
 import { rotateSession, revokeSession } from "./auth.tokens.js";
 import { getRequestMeta } from "../../shared/http/requestMeta.js";
 import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME, clearBetaCookie } from "../../shared/http/cookies.js";
@@ -65,6 +65,13 @@ export async function sendCodeHandler(req: Request, res: Response) {
 
   await sendRegistrationCode(parsed.email);
   res.json({ sent: true });
+}
+
+/** Public — step-1 availability probe for the registration wizard. */
+export async function checkAvailabilityHandler(req: Request, res: Response) {
+  const parsed = checkAvailabilitySchema.parse(req.body);
+
+  res.json(await checkAvailability(parsed.email, parsed.username));
 }
 
 export async function registerHandler(req: Request, res: Response) {
