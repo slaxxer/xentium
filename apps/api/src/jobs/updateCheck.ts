@@ -16,9 +16,6 @@ import { logger } from "../infrastructure/logging/logger.js";
 const UPDATES_SETTING = "marketplace.updates";
 
 export async function processUpdateCheck(): Promise<void> {
-  // Dev licensing signs locally — there is no server to ask.
-  if (env.LICENSE_DEV_PRIVATE_KEY) return;
-
   const tokenRow = await prisma.setting.findUnique({ where: { key: "marketplace.nodevo.io.token" } });
   const storedToken = (tokenRow?.value as string | null) ?? null;
   const token = storedToken === null ? null : decryptSecret(storedToken); // encrypted at rest (A1.5)

@@ -18,7 +18,6 @@ import type {
 } from "@nodevo/contracts";
 import { NEC } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
-import { DEV_CATALOG } from "./dev-catalog.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
@@ -26,7 +25,6 @@ import {
   deactivateAccountLicenses,
   getSiteDomain,
   getSiteId,
-  provisionEntitlement,
   resolveEnvironment,
 } from "./license-engine.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
@@ -43,13 +41,6 @@ const K_AT    = `marketplace.${SOURCE_ID}.connectedAt`;
 // manifest `licenseRequired`, which an uploaded package controls). Read by
 // license-engine.pluginRequiresLicense.
 const K_PAID_IDS = "marketplace.paid_plugin_ids";
-
-// Local licensing (core development): with a dev signing key present we serve
-// the dev catalogue and mint entitlements locally instead of calling the hosted
-// marketplace. Every real install has no dev key, so it uses the server.
-const useDevLicensing = !!env.LICENSE_DEV_PRIVATE_KEY;
-
-// Dev catalogue lives in dev-catalog.ts — shared with signDevJwt's grants.
 
 async function readSetting(key: string): Promise<string | null> {
   const row = await prisma.setting.findUnique({ where: { key } });
@@ -80,47 +71,42 @@ class NodevoMarketplaceSource implements MarketplaceSource {
       throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "An authorization code is required." });
     }
 
-    let token = authCode.trim();
-    let accountRef = "connected-account";
+    // Exchange the auth code for a durable account token + label.
+    const res = await fetch(`${env.LICENSE_SERVER_URL}/account/connect`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Domain = the CANONICAL site URL (site.url), the host this license is
+      // bound to. environment lets the server bind dev/staging domains
+      // without eating the production domain slot (ADR 0001 §5).
+      body: JSON.stringify({
+        authCode,
+        domain:      await getSiteDomain(),
+        environment: await resolveEnvironment(),
+      }),
+      signal: AbortSignal.timeout(10_000),
+    }).catch(() => null);
 
-    // Prod: exchange the auth code for a durable account token + label.
-    if (!useDevLicensing) {
-      const res = await fetch(`${env.LICENSE_SERVER_URL}/account/connect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Domain = the CANONICAL site URL (site.url), the host this license is
-        // bound to. environment lets the server bind dev/staging domains
-        // without eating the production domain slot (ADR 0001 §5).
-        body: JSON.stringify({
-          authCode,
-          domain:      await getSiteDomain(),
-          environment: await resolveEnvironment(),
-        }),
-        signal: AbortSignal.timeout(10_000),
-      }).catch(() => null);
-
-      if (!res) {
-        throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "Could not reach the marketplace to verify your account." });
-      }
-      if (res.status === 409) {
-        // The account's license is bound to a different domain (1 license =
-        // 1 instance) — the coupling is refused, with the server naming the
-        // bound domain. Only a marketplace admin can move the binding.
-        const body = await res.json().catch(() => ({})) as { message?: string };
-        throw new NodevoError({ code: NEC.LICENSE_DOMAIN_MISMATCH, httpStatus: 409, message: body.message ?? "This account's license is bound to a different domain." });
-      }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { message?: string };
-        throw new NodevoError({
-          code:       res.status >= 500 ? NEC.LICENSE_SOURCE_UNREACHABLE : NEC.LICENSE_ACCOUNT_REQUIRED,
-          httpStatus: res.status >= 500 ? 503 : res.status,
-          message:    body.message ?? "Could not connect your marketplace account.",
-        });
-      }
-      const body = await res.json() as { token: string; accountRef?: string };
-      token = body.token;
-      accountRef = body.accountRef ?? accountRef;
+    if (!res) {
+      throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "Could not reach the marketplace to verify your account." });
     }
+    if (res.status === 409) {
+      // The account's license is bound to a different domain (1 license =
+      // 1 instance) — the coupling is refused, with the server naming the
+      // bound domain. Only a marketplace admin can move the binding.
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      throw new NodevoError({ code: NEC.LICENSE_DOMAIN_MISMATCH, httpStatus: 409, message: body.message ?? "This account's license is bound to a different domain." });
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      throw new NodevoError({
+        code:       res.status >= 500 ? NEC.LICENSE_SOURCE_UNREACHABLE : NEC.LICENSE_ACCOUNT_REQUIRED,
+        httpStatus: res.status >= 500 ? 503 : res.status,
+        message:    body.message ?? "Could not connect your marketplace account.",
+      });
+    }
+    const body = await res.json() as { token: string; accountRef?: string };
+    const token = body.token;
+    const accountRef = body.accountRef ?? "connected-account";
 
     const connectedAt = new Date().toISOString();
     await writeSetting(K_TOKEN, token);
@@ -140,7 +126,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     // a license is bound to the domain it was bought for, and only a
     // marketplace admin can release it — best-effort: an unreachable
     // marketplace must never block a disconnect.
-    if (token && !useDevLicensing) {
+    if (token) {
       const siteId = await getSiteId();
       await fetch(`${env.LICENSE_SERVER_URL}/account/deactivate`, {
         method: "POST",
@@ -173,7 +159,9 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   }
 
   async listPlugins(opts: PaginatedRequest): Promise<PaginatedResponse<MarketplaceListing>> {
-    const all = (await this.fetchCatalog()) ?? DEV_CATALOG;
+    // Empty when the marketplace is unreachable / no account connected — the ACP
+    // browse list is simply blank rather than a fabricated catalogue.
+    const all = (await this.fetchCatalog()) ?? [];
     // Keep the authoritative paid-id set fresh whenever we have the catalogue.
     void this.cachePaidIds(all).catch(() => {});
 
@@ -184,11 +172,9 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     };
   }
 
-  /** The full catalogue: the dev list in dev mode, else the live marketplace.
-   *  null when the marketplace couldn't be reached (so callers don't clobber a
-   *  cached paid-id set with a fallback). */
+  /** The live marketplace catalogue. null when the marketplace couldn't be
+   *  reached (so callers don't clobber a cached paid-id set with a fallback). */
   private async fetchCatalog(): Promise<MarketplaceListing[] | null> {
-    if (useDevLicensing) return DEV_CATALOG;
     const token = await readSetting(K_TOKEN);
     const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/plugins`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -215,37 +201,30 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   async authorizeDownload(req: DownloadRequest): Promise<AuthorizedDownload> {
     const token = await readSetting(K_TOKEN);
 
-    // Prod: the server is the chokepoint — it checks account ownership + the
-    // per-domain activation cap before issuing a domain-bound entitlement.
-    if (!useDevLicensing) {
-      if (!token) {
-        throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "Connect your marketplace account first." });
-      }
-      const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/download`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(req),
-        signal: AbortSignal.timeout(15_000),
-      }).catch(() => null);
-
-      if (!res) {
-        throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "Marketplace unreachable." });
-      }
-      if (res.status === 402 || res.status === 409) {
-        throw new NodevoError({ code: NEC.LICENSE_CAP_REACHED, httpStatus: 402, message: "No free activation slot for this domain. Add a domain to your purchase." });
-      }
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { message?: string };
-        throw new NodevoError({ code: NEC.LICENSE_NOT_FOUND, httpStatus: 404, message: body.message ?? `Marketplace returned ${res.status}` });
-      }
-      const body = await res.json() as Omit<AuthorizedDownload, "pluginId" | "version">;
-      return { pluginId: req.pluginId, version: req.version, ...body };
+    // The server is the chokepoint — it checks account ownership + the per-domain
+    // activation cap before issuing a domain-bound entitlement.
+    if (!token) {
+      throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "Connect your marketplace account first." });
     }
+    const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/download`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify(req),
+      signal: AbortSignal.timeout(15_000),
+    }).catch(() => null);
 
-    // Dev: no server. Mint a domain-bound entitlement locally so the full gate
-    // flow is exercisable end-to-end. Artifact bytes come from manual upload.
-    const { jwt, expiresAt } = await provisionEntitlement();
-    return { pluginId: req.pluginId, version: req.version, entitlementJwt: jwt, expiresAt, downloadUrl: null, sha256: null };
+    if (!res) {
+      throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "Marketplace unreachable." });
+    }
+    if (res.status === 402 || res.status === 409) {
+      throw new NodevoError({ code: NEC.LICENSE_CAP_REACHED, httpStatus: 402, message: "No free activation slot for this domain. Add a domain to your purchase." });
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({})) as { message?: string };
+      throw new NodevoError({ code: NEC.LICENSE_NOT_FOUND, httpStatus: 404, message: body.message ?? `Marketplace returned ${res.status}` });
+    }
+    const body = await res.json() as Omit<AuthorizedDownload, "pluginId" | "version">;
+    return { pluginId: req.pluginId, version: req.version, ...body };
   }
 }
 
