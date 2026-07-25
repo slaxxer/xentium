@@ -1661,6 +1661,7 @@
     "savePerms": "Salvar permissões",
     "toastProg": "Configuração de progressão salva!",
     "progTitle": "Progressão — {{name}}",
+    "tabProgression": "Progressão",
     "progSub": "Configure a posição na escada, os limiares de promoção e os limites de conteúdo.",
     "loading": "Carregando…",
     "onLadder": "Parte da escada de progressão",

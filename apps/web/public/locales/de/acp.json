@@ -1661,6 +1661,7 @@
     "savePerms": "Berechtigungen speichern",
     "toastProg": "Progressionskonfiguration gespeichert!",
     "progTitle": "Progression — {{name}}",
+    "tabProgression": "Progression",
     "progSub": "Leiterplatzierung, Beförderungsschwellen und Inhaltslimits konfigurieren.",
     "loading": "Wird geladen…",
     "onLadder": "Teil der Progressionsleiter",

@@ -5,6 +5,7 @@ import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { groupByDomain } from "../../../lib/permissions";
 import type { Permission } from "../../../lib/permissions";
+import { slotRegistry } from "../../../plugins/slotRegistry";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faSave, faTrash, faUsers, faKey, faDiagramProject, faPencil, faToggleOn, faToggleOff, faChevronDown, faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 
@@ -813,6 +814,12 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
   const initialized     = useRef(false);
   if (data && !initialized.current) { setForm(data); initialized.current = true; }
 
+  // Plugin-contributed per-group config panels — each renders as its own tab so
+  // the dialog stays compact no matter how many plugins add settings.
+  const panels    = slotRegistry.getGroupConfigPanels();
+  const [tab, setTab] = useState<string>("progression");
+  const activePanel = panels.find((p) => p.id === tab);
+
   const saveMutation = useMutation({
     mutationFn: () => api.patch(`/admin/progression/${group.id}`, {
       isProgressionGroup: form.isProgressionGroup,
@@ -854,7 +861,30 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
           {t("groups.progSub")}
         </p>
 
-        {isLoading ? (
+        {panels.length > 0 && (
+          <div style={{ display: "flex", gap: 4, marginBottom: 18, borderBottom: "1px solid var(--c-border)" }}>
+            {[{ id: "progression", label: t("groups.tabProgression") }, ...panels].map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setTab(p.id)}
+                style={{
+                  background: "none", border: "none", cursor: "pointer",
+                  padding: "8px 12px", fontSize: 13, fontWeight: 600,
+                  color: tab === p.id ? "var(--c-accent)" : "var(--c-fg-muted)",
+                  borderBottom: `2px solid ${tab === p.id ? "var(--c-accent)" : "transparent"}`,
+                  marginBottom: -1,
+                }}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {activePanel ? (
+          <activePanel.component groupId={group.id} groupName={group.name} />
+        ) : isLoading ? (
           <div style={{ padding: "1rem", textAlign: "center", color: "var(--c-fg-muted)" }}>{t("groups.loading")}</div>
         ) : (
           <>

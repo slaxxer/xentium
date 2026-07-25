@@ -1871,6 +1871,7 @@
     "savePerms": "Save Permissions",
     "toastProg": "Progression config saved!",
     "progTitle": "Progression — {{name}}",
+    "tabProgression": "Progression",
     "progSub": "Configure ladder placement, promotion thresholds and content limits.",
     "loading": "Loading…",
     "onLadder": "Part of progression ladder",
