@@ -109,6 +109,16 @@ export function ThemePreview() {
               <button type="button" className="tp-menu__item">Hover me</button>
             </div>
           </section>
+
+          {/* Sort / segment buttons */}
+          <section>
+            <h2 className="tp-sec__title">Sort buttons</h2>
+            <div className="tp-seg" data-component="segment" data-group="segment">
+              <button type="button" className="tp-seg__btn is-on">Active</button>
+              <button type="button" className="tp-seg__btn">Newest</button>
+              <button type="button" className="tp-seg__btn">A–Z</button>
+            </div>
+          </section>
         </div>
       </main>
 

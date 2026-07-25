@@ -1,7 +1,9 @@
 // apps/api/src/modules/users/users.controller.ts
 
 import type { RequestHandler } from "express";
+import { CorePermissions } from "@nodevo/contracts";
 import { userService } from "./users.service.js";
+import { permissionsService } from "../permissions/permissions.service.js";
 import { prisma } from "../../infrastructure/db.js";
 import {
   getProfileParamsSchema,
@@ -75,7 +77,10 @@ export const usersController = {
   deleteProfileComment: (async (req, res) => {
     const { commentId } = deleteCommentParamsSchema.parse(req.params);
     const userId = req.userId!;
-    const isModerator = !!(req as any).isModerator;
+    // Moderator override: previously read a phantom `req.isModerator` that nothing
+    // ever set (always false → override was dead code, BUGS.md #6). Resolve it from
+    // the actual permission instead.
+    const isModerator = await permissionsService.userHasPermission(userId, CorePermissions.PROFILE_COMMENT_DELETE_ANY);
     await userService.deleteProfileComment(commentId, userId, isModerator);
     res.status(204).send();
   }),

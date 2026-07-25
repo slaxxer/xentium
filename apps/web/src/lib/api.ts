@@ -16,20 +16,24 @@ export function normalizeUser(raw: Record<string, unknown>): AuthUser {
     badgeLabel?: string | null;
   };
   const groups = (raw.groups as RawGroup[] | undefined) ?? [];
+  const hiddenBadges = (raw.hiddenBadges as string[] | undefined) ?? [];
+  const mapped = groups.map((g) => {
+    const grp = g.group ?? g;
+    return {
+      id:           grp.id ?? "",
+      name:         grp.name ?? "",
+      key:          grp.key ?? "",
+      icon:         grp.icon ?? null,
+      displayOrder: (grp as any).displayOrder ?? 100,
+      badgeColor:   g.group?.progression?.badgeColor ?? (g as any).badgeColor ?? null,
+      badgeLabel:   g.group?.progression?.badgeLabel ?? (g as any).badgeLabel ?? null,
+    };
+  });
   return {
     ...(raw as unknown as AuthUser),
-    groups: groups.map((g) => {
-      const grp = g.group ?? g;
-      return {
-        id:           grp.id ?? "",
-        name:         grp.name ?? "",
-        key:          grp.key ?? "",
-        icon:         grp.icon ?? null,
-        displayOrder: (grp as any).displayOrder ?? 100,
-        badgeColor:   g.group?.progression?.badgeColor ?? (g as any).badgeColor ?? null,
-        badgeLabel:   g.group?.progression?.badgeLabel ?? (g as any).badgeLabel ?? null,
-      };
-    }),
+    groups: mapped,                                              // full membership (role gating)
+    hiddenBadges,
+    visibleGroups: mapped.filter((g) => !hiddenBadges.includes(g.id)), // self-badge display
   };
 }
 
