@@ -11,6 +11,14 @@ export const manifestSchema = z.object({
   minNodevoVersion:   z.string().regex(/^\d+\.\d+/, "minNodevoVersion must be semver"),
   maxNodevoVersion:   z.string().regex(/^\d+\./, "maxNodevoVersion must be semver").optional(),
   licenseRequired:    z.boolean().default(false),
+  // Reserved DB namespace for this plugin's tables. When declared, the migration
+  // runner enforces that every table/index/sequence/type/function/trigger the
+  // plugin's migrations create (and every object they alter/drop/index) begins
+  // with this prefix — keeping plugin schema namespaced and unable to collide
+  // with core (`ncf_`) or another plugin. Convention: short + snake, ending in
+  // `_` (e.g. `forum_`, `sb_`, `amod_`). Optional for back-compat; the reserved-
+  // namespace guard applies to every plugin regardless.
+  tablePrefix:        z.string().regex(/^[a-z][a-z0-9]*_$/, "tablePrefix must be lowercase snake_case ending in '_'").optional(),
   permissions:        z.array(z.string()).default([]),
   migrations:         z.array(z.string()).default([]),
   entrypoints: z.object({

@@ -705,6 +705,12 @@
         "cause": "The plugin package ships a modified version of a migration this site already ran.",
         "fix": "Do not edit applied migrations. The vendor must ship schema changes as a NEW migration in the next version."
       },
+      "NEC-PLUGIN-2013": {
+        "msg": "Reserved or Mis-Prefixed Table Name",
+        "desc": "A plugin migration tries to create, alter, or drop a database object that is either a reserved core object or does not match the plugin's declared table prefix.",
+        "cause": "The migration names an object beginning ncf_, nodevo_, _prisma, pg_, or information_schema, or (when the plugin declares a tablePrefix) an object that omits that prefix.",
+        "fix": "Namespace every table, index, sequence, type, function, and trigger with the plugin's own prefix, and never touch core-owned objects."
+      },
       "NEC-PLUGIN-2020": {
         "msg": "Plugin Not Available",
         "desc": "The requested plugin route is not available.",
