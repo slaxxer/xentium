@@ -53,3 +53,18 @@ license engine, update-check job). A version marker keeps legacy plaintext
 tokens readable until their next write — no migration needed.
 
 New unit tests: `session-revocation.test.ts` (6), `secretBox.test.ts` (5).
+
+## Remove the dev-licensing (local-signing) path
+
+Licensing now always goes through the connected account + license server; the
+legacy `LICENSE_DEV_PRIVATE_KEY` local-signing shortcut is removed. It predated
+the license-by-id enable gate and is no longer needed: a plugin under development
+has an id the marketplace doesn't sell as paid, so `pluginRequiresLicense(id)` is
+false and it enables with **no entitlement** — local plugin development needs no
+faked license. Removed: the `LICENSE_DEV_PRIVATE_KEY` env var, `useDevLicensing`
+branches in the marketplace source, `signDevJwt`, `provisionEntitlement`, the
+`dev-catalog.ts` module (`DEV_CATALOG`/`devEntitlements`), and the "dev stays
+manual" guards in the license engine. When the marketplace is unreachable or no
+account is connected, the ACP marketplace list is simply empty rather than a
+fabricated catalogue. `LICENSE_PUBLIC_KEY` remains as a general
+entitlement-verification-key override.

@@ -53,6 +53,21 @@ A1.5). Four fixes.
 - Applied at all token access points: `marketplace-source` readSetting/writeSetting
   (K_TOKEN only), `license-engine.fetchAccountEntitlementJwt`, `jobs/updateCheck`.
 
+## Dev-licensing removal (follow-up in the same PR)
+
+- Removed the legacy `LICENSE_DEV_PRIVATE_KEY` local-signing path — licensing is
+  always account/license-server via `connect()`. Deleted: env var (`config/env.ts`),
+  `useDevLicensing` + all its branches (`marketplace-source.ts`), `signDevJwt` +
+  `provisionEntitlement` + "dev stays manual" guards (`license-engine.ts`),
+  `dev-catalog.ts` (`DEV_CATALOG`/`devEntitlements`), and the `updateCheck` early-return.
+- Safe for plugin dev: the enable gate is by marketplace id
+  (`pluginRequiresLicense` = id ∈ `paid_plugin_ids`), so an in-development / unknown
+  id is ungated and enables with no entitlement. Disconnected instance →
+  `paid_plugin_ids` empty → nothing gated. `listPlugins` returns empty (not a
+  fabricated catalogue) when unreachable. `LICENSE_PUBLIC_KEY` kept as a verify-key override.
+- Runtime smoke (API booted with no dev key): clean boot; `listPlugins` returns a
+  valid empty response; unknown plugin id NOT gated; `getConnection` reports disconnected.
+
 ## Verification
 
 - `pnpm backbone:check` — typecheck / lint / test / build green (14/14 tasks).
