@@ -138,6 +138,20 @@ export interface LayoutWidgetSlot {
   order?: number;
 }
 
+// ── Per-group config panel (registered by plugins, rendered as a TAB in the core
+// Group settings dialog on ACP → Groups). Lets a plugin add per-group settings
+// (e.g. shoutbox rate/length limits) next to the core progression config WITHOUT
+// core knowing the plugin's schema — the component owns its data (reads/writes via
+// the plugin's own API) and each panel is a tab so the dialog stays compact.
+export interface GroupConfigPanelSlot {
+  id: string;
+  /** Tab label. */
+  label: string;
+  component: ComponentType<{ groupId: string; groupName: string }>;
+  /** Lower renders first (after the core Progression tab). */
+  order?: number;
+}
+
 // ── Registry ──────────────────────────────────────────────────────────────────
 
 class SlotRegistry {
@@ -155,6 +169,7 @@ class SlotRegistry {
   private profileActions:    ProfileActionSlot[]      = [];
   private headerWidgets:     HeaderWidgetSlot[]       = [];
   private layoutWidgets:     LayoutWidgetSlot[]       = [];
+  private groupConfigPanels: GroupConfigPanelSlot[]   = [];
 
   // Core notification prefixes that always show the system (gear) icon
   private readonly coreSystemPrefixes = ["progression.", "license.", "system."];
@@ -181,6 +196,7 @@ class SlotRegistry {
   registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
   registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
   registerLayoutWidget(slot: LayoutWidgetSlot)              { this._own(slot.id);     this.layoutWidgets.push(slot); }
+  registerGroupConfigPanel(slot: GroupConfigPanelSlot)      { this._own(slot.id);     this.groupConfigPanels.push(slot); }
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
@@ -194,6 +210,7 @@ class SlotRegistry {
   getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getLayoutWidgets()     { return [...this.layoutWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getGroupConfigPanels() { return [...this.groupConfigPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
 
   getRoutes(layout?: PluginRoute["layout"]): PluginRoute[] {
     if (!layout) return [...this.routes];
@@ -233,6 +250,7 @@ class SlotRegistry {
     this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
     this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this.layoutWidgets     = this.layoutWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.groupConfigPanels = this.groupConfigPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });
   }
 }
