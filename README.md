@@ -361,6 +361,7 @@ my-plugin/
   "vendor": "Acme",
   "minNodevoVersion": "1.0",
   "licenseRequired": false,
+  "tablePrefix": "myplugin_",
   "permissions": ["myplugin.thing.create"],
   "migrations": ["001_create_things"],
   "entrypoints": {
@@ -369,6 +370,14 @@ my-plugin/
   }
 }
 ```
+
+**Table naming.** Core tables use the `ncf_` prefix; a plugin's tables must live in
+its own namespace. Declare a `tablePrefix` (short, snake_case, ending in `_`) and the
+migration runner enforces that **every** table, index, sequence, type, function, and
+trigger your migrations create — or alter/drop/index — begins with it. Regardless of
+whether you declare one, no plugin migration may ever touch a reserved core object
+(names beginning `ncf_`, `nodevo_`, `_prisma`, `pg_`, or `information_schema`);
+violations are rejected with `NEC-PLUGIN-2013`.
 
 ### The server entry
 
