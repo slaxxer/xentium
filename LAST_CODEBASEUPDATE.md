@@ -53,6 +53,25 @@ A1.5). Four fixes.
 - Applied at all token access points: `marketplace-source` readSetting/writeSetting
   (K_TOKEN only), `license-engine.fetchAccountEntitlementJwt`, `jobs/updateCheck`.
 
+## Appearance & moderation UX (BUGS.md #2/#3/#5)
+
+- **#5** `admin.service.listUserLoginEvents` — filter `eventType notIn
+  ["refresh","page_visit"]` so the security-activity view shows only meaningful
+  auth events (rows kept in DB for the analysis job). Backend-only.
+- **#2** dark dropdown readability + configurability: new `--menu-fg` token
+  (`contracts/tokens.ts` registry, `tokens.scss` default `var(--c-fg)`); auto-
+  appears in the Style Editor Menu section (registry-driven). Frontend themes
+  native `<select>` option popups (`.app-layout select option` → `--menu-bg` /
+  `--menu-fg`) and applies `--menu-fg` to the PubNav dropdown + ThemePreview menu.
+- **#3** `/members` sort buttons configurable: new `segment` token group
+  (`--seg-bg/-fg/-hover-bg/-active-bg/-active-fg`) in the registry + `tokens.scss`
+  defaults; new Style Editor section (`SECTION_GROUPS` + `styleEditor.secSegment`
+  ×5 locales) with a ThemePreview specimen; `MembersPage.scss` `.mp-sortbox` reads
+  the tokens (+ hover state).
+- No backend token allow-list to update: `PUT /appearance/tokens` accepts any
+  keys and buildCSS emits the sparse saved map; the registry drives which controls
+  the editor shows.
+
 ## Dev-licensing removal (follow-up in the same PR)
 
 - Removed the legacy `LICENSE_DEV_PRIVATE_KEY` local-signing path — licensing is

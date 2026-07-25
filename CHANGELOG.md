@@ -54,6 +54,26 @@ tokens readable until their next write — no migration needed.
 
 New unit tests: `session-revocation.test.ts` (6), `secretBox.test.ts` (5).
 
+## Appearance & moderation UX fixes (BUGS.md #2/#3/#5)
+
+- **Dark-mode dropdowns are readable again + a new Menu-text token.** Native
+  `<select>` option popups defaulted to a white background in the dark theme
+  which, with light option text, gave an unreadable white-on-white menu. The
+  frontend now themes option popups with the menu tokens. Added a `--menu-fg`
+  (Menu text) token to the registry + Style Editor Menu section, so dropdown
+  text colour is configurable per light/dark alongside the existing menu bg /
+  border / hover / radius.
+- **`/members` sort buttons are now a Style Editor section.** New "Sort buttons"
+  segment token group (`--seg-bg` / `--seg-fg` / `--seg-hover-bg` /
+  `--seg-active-bg` / `--seg-active-fg`), rendered in the Style Editor with a
+  live preview specimen and localized (en/de/es/fr/pt). The `mp-sortbox` control
+  reads them (and gained a hover state).
+- **Security-activity view is no longer flooded with automatic events.** The ACP
+  user "security activity" list (`listUserLoginEvents`) excluded routine
+  `refresh` (token rotation ~every 15 min) and beta-gate `page_visit` telemetry,
+  which drowned out the meaningful auth events (login / failed / register /
+  password change). Those rows stay in the table for the analysis job.
+
 ## Remove the dev-licensing (local-signing) path
 
 Licensing now always goes through the connected account + license server; the
