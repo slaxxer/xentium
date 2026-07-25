@@ -65,6 +65,7 @@ export const NEC = {
   PLUGIN_INVALID_MIGRATION: "NEC-PLUGIN-2010",
   PLUGIN_MIGRATION_MISSING: "NEC-PLUGIN-2011", // up/down migration file absent from the package
   PLUGIN_MIGRATION_CHECKSUM: "NEC-PLUGIN-2012",// applied migration modified since install
+  PLUGIN_TABLE_NAMING: "NEC-PLUGIN-2013",      // migration object touches a reserved (ncf_/nodevo_) name or violates the plugin's declared tablePrefix
   PLUGIN_DISABLED: "NEC-PLUGIN-2020",
   PLUGIN_INCOMPATIBLE: "NEC-PLUGIN-2030",
 

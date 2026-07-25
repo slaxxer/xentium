@@ -602,6 +602,12 @@
         "cause": "El paquete del plugin incluye una versión modificada de una migración que este sitio ya ejecutó.",
         "fix": "No edites migraciones aplicadas. El proveedor debe publicar los cambios de esquema como una migración NUEVA en la siguiente versión."
       },
+      "NEC-PLUGIN-2013": {
+        "msg": "Nombre de tabla reservado o con prefijo incorrecto",
+        "desc": "Una migración de plugin intenta crear, modificar o eliminar un objeto de base de datos que es un objeto reservado del núcleo o que no coincide con el prefijo de tabla declarado por el plugin.",
+        "cause": "La migración nombra un objeto que empieza por ncf_, nodevo_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
+        "fix": "Asigna a cada tabla, índice, secuencia, tipo, función y disparador el prefijo propio del plugin y nunca toques objetos del núcleo."
+      },
       "NEC-PLUGIN-2020": {
         "msg": "Plugin no disponible",
         "desc": "La ruta del plugin solicitada no está disponible.",
