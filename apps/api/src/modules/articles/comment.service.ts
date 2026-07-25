@@ -9,6 +9,7 @@ import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { enforceCommentLength, enforceDailyCommentLimit } from "../../shared/middleware/contentLimits.js";
 
 const commentInclude = {
   author: {
@@ -157,6 +158,10 @@ export const commentService = {
       });
     }
 
+    // Enforce progression content limits (§38, Phase 7)
+    await enforceDailyCommentLimit(authorId);
+    await enforceCommentLength(authorId, body);
+
     const commentStatus = requireApproval ? "pending" : "published";
 
     const article = await prisma.article.findUnique({
@@ -205,10 +210,15 @@ export const commentService = {
         data: { articleId, authorId, body: sanitizeRichText(body), parentId: parentId ?? null, status: commentStatus },
         include: commentInclude,
       });
-      // Only increment commentCount for published comments
+      // Only count published comments — on the article, and on the author for
+      // the progression `min_comments` threshold (§38).
       if (commentStatus === "published") {
         await tx.article.update({
           where: { id: articleId },
+          data: { commentCount: { increment: 1 } },
+        });
+        await tx.user.update({
+          where: { id: authorId },
           data: { commentCount: { increment: 1 } },
         });
       }
@@ -255,6 +265,8 @@ export const commentService = {
       });
     }
 
+    await enforceCommentLength(viewerId, body);
+
     const updated = await prisma.articleComment.update({
       where: { id: commentId },
       data: { body: sanitizeRichText(body), editedAt: new Date() },
@@ -271,7 +283,7 @@ export const commentService = {
   ): Promise<void> {
     const existing = await prisma.articleComment.findUnique({
       where: { id: commentId },
-      select: { id: true, articleId: true, authorId: true, deletedAt: true },
+      select: { id: true, articleId: true, authorId: true, deletedAt: true, status: true },
     });
     if (!existing || existing.deletedAt) {
       throw new NodevoError({
@@ -306,10 +318,17 @@ export const commentService = {
           deletedReason: isOwn ? null : reason,
         },
       });
-      await tx.article.update({
-        where: { id: existing.articleId },
-        data: { commentCount: { decrement: 1 } },
-      });
+      // Mirror create: only a published comment was ever counted.
+      if (existing.status === "published") {
+        await tx.article.update({
+          where: { id: existing.articleId },
+          data: { commentCount: { decrement: 1 } },
+        });
+        await tx.user.update({
+          where: { id: existing.authorId },
+          data: { commentCount: { decrement: 1 } },
+        });
+      }
     });
   },
 };

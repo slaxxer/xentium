@@ -291,7 +291,11 @@ function ProgressionCard() {
       <div className="hf-prog__bar"><i style={{ width: `${percent}%` }} /></div>
       <p>
         {primary
-          ? <>{t("progression.remaining", { n: primary.remaining, label: primary.label })} </>
+          ? <>{t("progression.remaining", {
+              n: primary.remaining,
+              // Core metric keys are translated; a plugin's own label falls through as-is.
+              label: t(`progression.metric.${primary.label}`, { defaultValue: primary.label }),
+            })} </>
           : <>{t("progression.keepGoing")} </>}
         <b style={nextStyle}><FontAwesomeIcon icon={faTrophy} /> {next.badgeLabel}</b>
       </p>

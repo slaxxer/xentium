@@ -1,5 +1,6 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
@@ -15,7 +16,7 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
-import { enforcePostLength } from "../../shared/middleware/contentLimits.js";
+import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentLimits.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
@@ -30,10 +31,10 @@ const host: PluginHost = {
   middleware: {
     requireAuth,
     optionalAuth,
-    enforcePostLength,
     // Wrap so plugins can pass any permission-key string (core type is a strict union).
     requirePermission: (key: string) => requirePermission(key as never),
   },
+  progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
   utils:      { resolveAvatar, sanitizeRichText },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
@@ -138,6 +139,11 @@ export class PluginContextImpl implements PluginContext {
   registerStatSource(source: StatSource): void {
     statRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin stat source registered");
+  }
+
+  registerProgressionCriteria(criteria: ProgressionCriteria): void {
+    progressionCriteriaRegistry.register(this.pluginId, criteria);
+    logger.info({ pluginId: this.pluginId, criteria: criteria.id }, "Plugin progression criteria registered");
   }
 
   registerNecCodes(codes: NecCodeDeclaration[]): void {

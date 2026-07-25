@@ -1,4 +1,5 @@
 import './config/env.js';
+import type { Worker } from 'bullmq';
 import { bullConnection } from './infrastructure/queue.js';
 import { startArticleRevisionCleanupWorker } from './jobs/articleRevisionCleanup.js';
 import { startCheckPromotionWorker }          from './jobs/checkPromotion.js';
@@ -16,18 +17,29 @@ import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-
 
 // Each worker gets failure logging + dead-letter (error_log) + admin-notify
 // reliability handlers (§55). Retry/backoff come from defaultJobOptions.
-const workers = [
-  attachFailureHandler(startArticleRevisionCleanupWorker(), 'article-revision-cleanup'),
-  attachFailureHandler(startCheckPromotionWorker(),         'check-promotion'),
-  attachFailureHandler(startEmailNotificationWorker(),      'email-notification'),
-  attachFailureHandler(startBanExpiryWorker(),              'ban-expiry'),
-  attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
-  attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
-  attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
-  attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
-  attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
-  attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
-];
+//
+// A BullMQ worker starts consuming the moment it is constructed, so these are
+// built inside boot() AFTER plugins load — never at module scope. A job that
+// ran against a half-initialized process would read empty plugin registries and
+// reach a wrong answer silently: check-promotion would miss a plugin's
+// progression criteria (§38) and promote someone who has not met them, and
+// security-analysis would miss plugin scans.
+const workers: Worker[] = [];
+
+function startWorkers() {
+  workers.push(
+    attachFailureHandler(startArticleRevisionCleanupWorker(), 'article-revision-cleanup'),
+    attachFailureHandler(startCheckPromotionWorker(),         'check-promotion'),
+    attachFailureHandler(startEmailNotificationWorker(),      'email-notification'),
+    attachFailureHandler(startBanExpiryWorker(),              'ban-expiry'),
+    attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
+    attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
+    attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
+    attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
+    attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
+    attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
+  );
+}
 
 // Schedule repeating jobs from the registry, honoring admin config in `settings`
 // (ACP → System → Scheduled Tasks). A disabled job is removed from the scheduler.
@@ -53,6 +65,7 @@ async function boot() {
   } catch (err) {
     console.error('[worker] plugin init failed:', (err as Error)?.message ?? err);
   }
+  startWorkers();
   await scheduleJobs();
   console.log(`[worker] up, ${workers.length} worker(s) running, plugins loaded, scheduled jobs registered`);
 

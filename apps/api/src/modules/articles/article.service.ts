@@ -11,7 +11,7 @@ import type { CreateArticleInput, UpdateArticleInput, ListArticlesQuery } from "
 import type { ArticleDetail, ArticleListItem } from "./article.types.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
-import { enforcePostLength, enforceDailyPostLimit } from "../../shared/middleware/contentLimits.js";
+import { enforceArticleLength, enforceDailyArticleLimit } from "../../shared/middleware/contentLimits.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 
 const WORDS_PER_MINUTE = 200;
@@ -116,8 +116,8 @@ export const articleService = {
     const bodyPlain = tiptapToPlain(input.body);
 
     // Enforce progression content limits (§38, Phase 7)
-    await enforceDailyPostLimit(authorId);
-    await enforcePostLength(authorId, bodyPlain);
+    await enforceDailyArticleLimit(authorId);
+    await enforceArticleLength(authorId, bodyPlain);
 
     const slug = await uniqueSlug(input.title, (s) => articleRepository.slugExists(s));
 
@@ -180,9 +180,9 @@ export const articleService = {
     const willChangeBody  = input.body  !== undefined;
     const willChangeTitle = input.title !== undefined && input.title !== existing.title;
 
-    // Enforce post-length limit when body is being edited (§38)
+    // Enforce article-length limit when body is being edited (§38)
     if (willChangeBody && input.body) {
-      await enforcePostLength(viewerId, tiptapToPlain(input.body));
+      await enforceArticleLength(viewerId, tiptapToPlain(input.body));
     }
 
     const updated = await prisma.$transaction(async (tx) => {

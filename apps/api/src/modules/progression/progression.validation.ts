@@ -5,15 +5,17 @@ export const updateGroupProgressionSchema = z.object({
   ladderPosition:           z.number().int().positive().nullable().optional(),
   promoteFromGroupId:       z.string().nullable().optional(),
 
-  // Thresholds
-  minPosts:                 z.number().int().min(0).nullable().optional(),
-  minThreads:               z.number().int().min(0).nullable().optional(),
+  // Core thresholds (plugin thresholds — e.g. the forum's — are owned by the plugin)
+  minArticles:              z.number().int().min(0).nullable().optional(),
+  minComments:              z.number().int().min(0).nullable().optional(),
   minDaysMember:            z.number().int().min(0).nullable().optional(),
   minLikesReceived:         z.number().int().min(0).nullable().optional(),
 
-  // Content limits
-  maxPostLength:            z.number().int().min(0).nullable().optional(),
-  maxDailyPosts:            z.number().int().min(0).nullable().optional(),
+  // Core content limits
+  maxArticleLength:         z.number().int().min(0).nullable().optional(),
+  maxDailyArticles:         z.number().int().min(0).nullable().optional(),
+  maxCommentLength:         z.number().int().min(0).nullable().optional(),
+  maxDailyComments:         z.number().int().min(0).nullable().optional(),
   maxAttachments:           z.number().int().min(0).nullable().optional(),
 
   // Profile image limits

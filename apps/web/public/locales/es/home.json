@@ -35,7 +35,13 @@
     "topBody": "Estás en la cima de la escalera, ¡buen trabajo!",
     "almostThere": "¡Casi lo logras!",
     "remaining": "{{n}} {{label}} más para llegar a",
-    "keepGoing": "Sigue participando para llegar a"
+    "keepGoing": "Sigue participando para llegar a",
+    "metric": {
+      "articles": "artículos",
+      "comments": "comentarios",
+      "days": "días",
+      "likes": "me gusta"
+    }
   },
   "online": {
     "title": "En línea ahora"
