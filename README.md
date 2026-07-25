@@ -371,13 +371,42 @@ my-plugin/
 }
 ```
 
-**Table naming.** Core tables use the `ncf_` prefix; a plugin's tables must live in
-its own namespace. Declare a `tablePrefix` (short, snake_case, ending in `_`) and the
-migration runner enforces that **every** table, index, sequence, type, function, and
-trigger your migrations create — or alter/drop/index — begins with it. Regardless of
-whether you declare one, no plugin migration may ever touch a reserved core object
-(names beginning `ncf_`, `nodevo_`, `_prisma`, `pg_`, or `information_schema`);
-violations are rejected with `NEC-PLUGIN-2013`.
+### Migrations & database conventions
+
+Plugins own their schema through raw-SQL migrations, tracked **separately** from
+core (Prisma) in the `nodevo_plugin_migrations` table. Every rule below is
+enforced by the host on install/enable/update — a violation aborts the operation
+with the noted `NEC-PLUGIN-*` code, so design to them from the start.
+
+- **DDL only.** Migration files may contain only `CREATE` / `ALTER` / `DROP` of
+  `TABLE`, `INDEX`, `SEQUENCE`, `TYPE`, `FUNCTION`, `TRIGGER` (plus
+  `CREATE EXTENSION`). Any DML (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/
+  `COPY`/…) is rejected → `NEC-PLUGIN-2010`. Seed data belongs in your
+  `onEnable`, not a migration.
+- **Paired up/down.** Every `NNN_name.up.sql` must ship a matching
+  `NNN_name.down.sql` → `NEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
+  so down migrations are safely re-runnable.
+- **Table naming.** Core tables use the `ncf_` prefix; a plugin's schema must
+  stay in its own namespace. Declare a **`tablePrefix`** (short, snake_case,
+  ending in `_` — e.g. `forum_`, `sb_`) and the runner enforces that **every**
+  table, index, sequence, type, function, and trigger your migrations create —
+  or alter/drop/index — begins with it. Regardless of whether you declare one,
+  no plugin migration may ever touch a reserved core object (names beginning
+  `ncf_`, `nodevo_`, `_prisma`, `pg_`, or `information_schema`) → both violations
+  raise `NEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
+  a prefix is optional but strongly recommended — all four official plugins do.
+- **Applied migrations are immutable.** Once a migration has run, its checksum is
+  recorded; editing that file afterwards is rejected → `NEC-PLUGIN-2012`. Ship
+  schema changes as a **new** migration in the next version — never rewrite
+  history.
+- **Updates are forward-only, matched by name.** On update the runner runs only
+  migrations whose *name* it hasn't seen before (across any version), so keep the
+  historical list in the manifest intact and only append. Never renumber or
+  rename an already-shipped migration.
+- **No cross-boundary foreign keys.** Prisma is unaware of plugin tables, so a
+  plugin table cannot `REFERENCES` a core table (and core can't reference yours).
+  Store the id (e.g. `user_id TEXT`) and enforce integrity at the service layer;
+  clean up on account deactivation via the SDK's `onUserDeactivated` hook.
 
 ### The server entry
 
