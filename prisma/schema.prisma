@@ -66,9 +66,10 @@ model User {
   isActive     Boolean   @default(true)
   bannedUntil  DateTime? @map("banned_until")
 
-  postCount          Int      @default(0) @map("post_count")
-  threadCount        Int      @default(0) @map("thread_count")
+  postCount          Int      @default(0) @map("post_count")     // forum-populated (forum plugin)
+  threadCount        Int      @default(0) @map("thread_count")    // forum-populated (forum plugin)
   articleCount       Int      @default(0) @map("article_count")
+  commentCount       Int      @default(0) @map("comment_count")   // article comments authored (progression)
   likeCountReceived  Int      @default(0) @map("like_count_received")
   followerCount      Int      @default(0) @map("follower_count")
   followingCount     Int      @default(0) @map("following_count")
@@ -150,15 +151,20 @@ model GroupProgression {
   ladderPosition           Int?     @map("ladder_position")
   promoteFromGroupId       String?  @map("promote_from_group_id")
 
-  // Thresholds — all ANDed unless progression.threshold_logic = "or"
-  minPosts                 Int?     @map("min_posts")
-  minThreads               Int?     @map("min_threads")
+  // Core thresholds (article-CMS) — all ANDed unless progression.threshold_logic = "or".
+  // Forum thresholds (min posts/threads) are contributed by the forum plugin via
+  // registerProgressionCriteria, not stored here (§38 core/plugin split).
+  minArticles              Int?     @map("min_articles")
+  minComments              Int?     @map("min_comments")
   minDaysMember            Int?     @map("min_days_member")
   minLikesReceived         Int?     @map("min_likes_received")
 
-  // Content limits (enforced by Phase 7 middleware)
-  maxPostLength            Int?     @map("max_post_length")       // null = unlimited
-  maxDailyPosts            Int?     @map("max_daily_posts")
+  // Core content limits (enforced by Phase 7 middleware). Forum post limits live
+  // in the forum plugin. null = unlimited, on all four.
+  maxArticleLength         Int?     @map("max_article_length")
+  maxDailyArticles         Int?     @map("max_daily_articles")
+  maxCommentLength         Int?     @map("max_comment_length")
+  maxDailyComments         Int?     @map("max_daily_comments")
   maxAttachments           Int?     @map("max_attachments")       // reserved for Phase 14+
 
   // Profile image limits (§38)

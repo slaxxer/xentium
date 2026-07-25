@@ -1,7 +1,7 @@
 import { Router } from "express";
 import {
   loginHandler, refreshHandler, logoutHandler, meHandler,
-  registerHandler, sendCodeHandler, registrationStatusHandler,
+  registerHandler, sendCodeHandler, checkAvailabilityHandler, registrationStatusHandler,
   requestPasswordResetHandler, confirmPasswordResetHandler,
 } from "./auth.controller.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
@@ -14,9 +14,13 @@ const registerLimiter = makeRateLimiter("auth-register", 60 * 60_000, isDev ? 10
 const codeLimiter     = makeRateLimiter("auth-code",     60 * 60_000, isDev ? 1000 : 5);
 const refreshLimiter  = makeRateLimiter("auth-refresh",       60_000, isDev ? 1000 : 20);
 const resetLimiter    = makeRateLimiter("auth-reset",    60 * 60_000, isDev ? 1000 : 3);
+// Debounced as-you-type probe from the register wizard — needs a far looser
+// budget than the code/register limiters, but still bounded against scraping.
+const availLimiter    = makeRateLimiter("auth-avail",         60_000, isDev ? 1000 : 30);
 
 export const authRouter: Router = Router();
 authRouter.get("/registration-status", registrationStatusHandler);
+authRouter.post("/register/check-availability", availLimiter, checkAvailabilityHandler);
 authRouter.post("/register/send-code", codeLimiter, sendCodeHandler);
 authRouter.post("/register", registerLimiter, registerHandler);
 authRouter.post("/login", loginLimiter, loginHandler);

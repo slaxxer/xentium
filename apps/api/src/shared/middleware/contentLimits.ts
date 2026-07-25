@@ -3,6 +3,10 @@
  *
  * Reads the author's effective limits from group_progression and throws
  * NEC-PERM-1040 / NEC-PERM-1041 when a limit is exceeded.
+ *
+ * These cover CORE content only — articles and article comments. Plugin content
+ * (forum posts, shoutbox messages, …) is limited by the plugin that owns it,
+ * against its own per-group config; see `registerProgressionCriteria`.
  */
 
 import { prisma } from "../../infrastructure/db.js";
@@ -30,34 +34,61 @@ async function getEffectiveLimits(userId: string) {
   return withProgression[0]?.group.progression ?? null;
 }
 
+/** The group whose progression config governs a user, or null when off-ladder.
+ *  Exposed to plugins so they can look up their OWN per-group limits against
+ *  the same rung core promotes to. */
+export async function getEffectiveProgressionGroupId(
+  userId: string,
+): Promise<string | null> {
+  const prog = await getEffectiveLimits(userId);
+  return prog?.groupId ?? null;
+}
+
+function throwTooLong(max: number, actual: number): never {
+  throw new NodevoError({
+    code: NEC.PERM_CONTENT_TOO_LONG,
+    httpStatus: 422,
+    message: `Content too long for your current level. Maximum is ${max.toLocaleString()} characters (yours: ${actual.toLocaleString()}).`,
+  });
+}
+
 /**
- * Throw NEC-PERM-1040 when `bodyPlain` exceeds the user's `max_post_length`.
+ * Throw NEC-PERM-1040 when `bodyPlain` exceeds the user's `max_article_length`.
  * Call before persisting the body on create or update.
  */
-export async function enforcePostLength(
+export async function enforceArticleLength(
   userId: string,
   bodyPlain: string | null,
 ): Promise<void> {
   if (!bodyPlain) return;
   const prog = await getEffectiveLimits(userId);
-  if (!prog?.maxPostLength) return; // null = unlimited
+  if (!prog?.maxArticleLength) return; // null = unlimited
 
-  if (bodyPlain.length > prog.maxPostLength) {
-    throw new NodevoError({
-      code: NEC.PERM_CONTENT_TOO_LONG,
-      httpStatus: 422,
-      message: `Content too long for your current level. Maximum is ${prog.maxPostLength.toLocaleString()} characters (yours: ${bodyPlain.length.toLocaleString()}).`,
-    });
-  }
+  if (bodyPlain.length > prog.maxArticleLength) throwTooLong(prog.maxArticleLength, bodyPlain.length);
 }
 
 /**
- * Throw NEC-PERM-1041 when the user has already hit `max_daily_posts` today.
+ * Throw NEC-PERM-1040 when `body` exceeds the user's `max_comment_length`.
+ * Call before persisting an article comment on create or update.
+ */
+export async function enforceCommentLength(
+  userId: string,
+  body: string | null,
+): Promise<void> {
+  if (!body) return;
+  const prog = await getEffectiveLimits(userId);
+  if (!prog?.maxCommentLength) return; // null = unlimited
+
+  if (body.length > prog.maxCommentLength) throwTooLong(prog.maxCommentLength, body.length);
+}
+
+/**
+ * Throw NEC-PERM-1041 when the user has already hit `max_daily_articles` today.
  * Call before creating a new article.
  */
-export async function enforceDailyPostLimit(userId: string): Promise<void> {
+export async function enforceDailyArticleLimit(userId: string): Promise<void> {
   const prog = await getEffectiveLimits(userId);
-  if (!prog?.maxDailyPosts) return; // null = unlimited
+  if (!prog?.maxDailyArticles) return; // null = unlimited
 
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
@@ -70,11 +101,39 @@ export async function enforceDailyPostLimit(userId: string): Promise<void> {
     },
   });
 
-  if (todayCount >= prog.maxDailyPosts) {
+  if (todayCount >= prog.maxDailyArticles) {
     throw new NodevoError({
       code: NEC.PERM_DAILY_LIMIT,
       httpStatus: 422,
-      message: `Daily post limit reached. Your current level allows ${prog.maxDailyPosts} article${prog.maxDailyPosts !== 1 ? "s" : ""} per day.`,
+      message: `Daily article limit reached. Your current level allows ${prog.maxDailyArticles} article${prog.maxDailyArticles !== 1 ? "s" : ""} per day.`,
+    });
+  }
+}
+
+/**
+ * Throw NEC-PERM-1041 when the user has already hit `max_daily_comments` today.
+ * Call before creating a new article comment.
+ */
+export async function enforceDailyCommentLimit(userId: string): Promise<void> {
+  const prog = await getEffectiveLimits(userId);
+  if (!prog?.maxDailyComments) return; // null = unlimited
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const todayCount = await prisma.articleComment.count({
+    where: {
+      authorId:  userId,
+      deletedAt: null,
+      createdAt: { gte: startOfDay },
+    },
+  });
+
+  if (todayCount >= prog.maxDailyComments) {
+    throw new NodevoError({
+      code: NEC.PERM_DAILY_LIMIT,
+      httpStatus: 422,
+      message: `Daily comment limit reached. Your current level allows ${prog.maxDailyComments} comment${prog.maxDailyComments !== 1 ? "s" : ""} per day.`,
     });
   }
 }

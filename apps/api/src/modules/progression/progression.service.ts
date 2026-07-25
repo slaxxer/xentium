@@ -1,6 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
+import { progressionCriteriaRegistry } from "../../core/progression-registry/progression-criteria-registry.js";
 import type {
   UpdateGroupProgressionInput,
   GlobalProgressionSettingsInput,
@@ -154,8 +155,10 @@ export const progressionService = {
     const prog = withProgression[0]?.group.progression ?? null;
 
     return {
-      maxPostLength:            prog?.maxPostLength            ?? null,
-      maxDailyPosts:            prog?.maxDailyPosts            ?? null,
+      maxArticleLength:         prog?.maxArticleLength          ?? null,
+      maxDailyArticles:         prog?.maxDailyArticles          ?? null,
+      maxCommentLength:         prog?.maxCommentLength          ?? null,
+      maxDailyComments:         prog?.maxDailyComments          ?? null,
       maxAttachments:           prog?.maxAttachments            ?? null,
       maxProfileImageBytes:     prog?.maxProfileImageBytes      ?? null,
       allowedProfileImageTypes: prog?.allowedProfileImageTypes  ?? [],
@@ -179,7 +182,7 @@ export const progressionService = {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
-        postCount: true, threadCount: true, articleCount: true,
+        articleCount: true, commentCount: true,
         likeCountReceived: true, createdAt: true,
         groups: { include: { group: { include: { progression: true } } } },
       },
@@ -206,13 +209,16 @@ export const progressionService = {
     const useOr = (logicSetting?.value as string) === "or";
 
     const daysMember = Math.floor((Date.now() - user.createdAt.getTime()) / 86_400_000);
-    const totalPosts = user.postCount + user.articleCount; // both = content authored (§38)
 
     const metrics: { key: string; label: string; have: number; need: number }[] = [];
-    if (nextRung.minPosts         != null) metrics.push({ key: "posts",   label: "posts",     have: totalPosts,             need: nextRung.minPosts });
-    if (nextRung.minThreads       != null) metrics.push({ key: "threads", label: "threads",   have: user.threadCount,       need: nextRung.minThreads });
-    if (nextRung.minDaysMember    != null) metrics.push({ key: "days",    label: "days",      have: daysMember,             need: nextRung.minDaysMember });
-    if (nextRung.minLikesReceived != null) metrics.push({ key: "likes",   label: "likes",     have: user.likeCountReceived, need: nextRung.minLikesReceived });
+    if (nextRung.minArticles      != null) metrics.push({ key: "articles", label: "articles", have: user.articleCount,      need: nextRung.minArticles });
+    if (nextRung.minComments      != null) metrics.push({ key: "comments", label: "comments", have: user.commentCount,      need: nextRung.minComments });
+    if (nextRung.minDaysMember    != null) metrics.push({ key: "days",     label: "days",     have: daysMember,             need: nextRung.minDaysMember });
+    if (nextRung.minLikesReceived != null) metrics.push({ key: "likes",    label: "likes",    have: user.likeCountReceived, need: nextRung.minLikesReceived });
+
+    // Plugin-contributed metrics (e.g. the forum's posts/threads) so the bar
+    // reflects the same thresholds checkPromotion actually gates on.
+    metrics.push(...await progressionCriteriaRegistry.describe(userId, nextRung.groupId));
 
     const ratios = metrics.map(m => (m.need > 0 ? Math.min(1, m.have / m.need) : 1));
     // AND logic: gated by the least-complete metric; OR: by the most-complete.

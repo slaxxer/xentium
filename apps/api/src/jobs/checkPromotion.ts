@@ -11,6 +11,7 @@ import { prisma } from "../infrastructure/db.js";
 import { bullConnection, bullPrefix, queues } from "../infrastructure/queue.js";
 import { notificationService } from "../modules/notifications/notification.service.js";
 import { permissionCache } from "../modules/permissions/permission.cache.js";
+import { progressionCriteriaRegistry } from "../core/progression-registry/progression-criteria-registry.js";
 
 export interface CheckPromotionPayload {
   userId: string;
@@ -32,9 +33,8 @@ export async function processCheckPromotion(
     where: { id: userId },
     select: {
       id: true,
-      postCount: true,
-      threadCount: true,
       articleCount: true,
+      commentCount: true,
       likeCountReceived: true,
       createdAt: true,
       groups: {
@@ -80,14 +80,16 @@ export async function processCheckPromotion(
     (Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24),
   );
 
-  // postCount + articleCount both represent content authored (§38)
-  const totalPosts = user.postCount + user.articleCount;
-
   const checks: boolean[] = [];
-  if (nextRung.minPosts         != null) checks.push(totalPosts             >= nextRung.minPosts);
-  if (nextRung.minThreads       != null) checks.push(user.threadCount       >= nextRung.minThreads);
+  if (nextRung.minArticles      != null) checks.push(user.articleCount      >= nextRung.minArticles);
+  if (nextRung.minComments      != null) checks.push(user.commentCount      >= nextRung.minComments);
   if (nextRung.minDaysMember    != null) checks.push(daysMember             >= nextRung.minDaysMember);
   if (nextRung.minLikesReceived != null) checks.push(user.likeCountReceived >= nextRung.minLikesReceived);
+
+  // Plugin-contributed criteria (e.g. forum posts/threads) for this target rung.
+  // A disabled/uninstalled plugin contributes nothing, so its metrics stop
+  // counting toward promotion (intended §38 behavior).
+  checks.push(...await progressionCriteriaRegistry.evaluate(userId, nextRung.groupId));
 
   // No thresholds defined = not yet configured, skip
   if (checks.length === 0) return;
