@@ -160,7 +160,7 @@ function ChangeUsernameForm() {
   return (
     <div className="security-accordion__content">
       <p className="account-hint">
-        {t("security.current")}: <strong>@<Username username={user?.username ?? ""} badgeColor={user?.groups[0]?.badgeColor} /></strong>. {t("security.usernameCooldownNote")}
+        {t("security.current")}: <strong>@<Username username={user?.username ?? ""} badgeColor={user?.visibleGroups[0]?.badgeColor} /></strong>. {t("security.usernameCooldownNote")}
       </p>
       <form
         className="account-inline-form"

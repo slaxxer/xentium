@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
+import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { NodevoError } from "../errors/NodevoError.js";
 import { NEC } from "../errors/nec.js";
@@ -19,12 +20,20 @@ export const requireAuth: RequestHandler = async (req, _res, next) => {
   const token = req.headers.authorization?.replace("Bearer ", "");
   if (!token) throw unauthenticatedError();
 
-  let userId: string, sessionId: string;
+  let userId: string, sessionId: string, issuedAtMs: number | undefined;
   try {
-    ({ userId, sessionId } = await verifyAccess(token));
+    ({ userId, sessionId, issuedAtMs } = await verifyAccess(token));
   } catch {
     throw invalidTokenError();
   }
+
+  // Immediate revocation (BUGS.md #4): even though the JWT signature is valid,
+  // reject it if the session or the whole user has been revoked since it was
+  // issued (ban / deactivate / force-logout / password change / self-logout).
+  if (await isAccessTokenRevoked(userId, sessionId, issuedAtMs)) {
+    throw invalidTokenError();
+  }
+
   req.userId = userId;
   req.sessionId = sessionId;
 

@@ -9,6 +9,7 @@ import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/uti
 import { redis, bullConnection } from "../../infrastructure/redis.js";
 import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
+import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
@@ -321,14 +322,21 @@ export const adminService = {
 
   /** Paginated security/login activity for a user (newest first). */
   async listUserLoginEvents(userId: string, page: number, limit: number) {
+    // The security-activity view is for a human reviewer, so it shows only
+    // security-meaningful events (login / failed_redeem / register /
+    // password_change). Automatic, high-frequency telemetry — `refresh` (token
+    // rotation every ~15 min) and beta-gate `page_visit` — floods the list with
+    // redundant rows (BUGS.md #5) and is excluded. The rows stay in the table;
+    // the security-analysis job reads loginEvent directly, unaffected.
+    const where = { userId, eventType: { notIn: ["refresh", "page_visit"] } };
     return paginate(page, limit,
       (skip, take) => prisma.loginEvent.findMany({
-        where:   { userId },
+        where,
         orderBy: { createdAt: "desc" },
         select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
         skip, take,
       }),
-      () => prisma.loginEvent.count({ where: { userId } }),
+      () => prisma.loginEvent.count({ where }),
     );
   },
 
@@ -353,8 +361,8 @@ export const adminService = {
     if (requestingUserId && requestingUserId === userId) {
       throw NodevoError.forbidden("You cannot deactivate your own account");
     }
-    return prisma.$transaction(async (tx) => {
-      const updated = await tx.user.update({ where: { id: userId }, data: { isActive } });
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.user.update({ where: { id: userId }, data: { isActive } });
       // Deactivation must revoke all sessions immediately (§49/§17b): the next
       // /auth/refresh fails (rotateSession rechecks isActive), so the account is
       // signed out everywhere within the access-token TTL instead of continuing
@@ -365,8 +373,12 @@ export const adminService = {
           data:  { revokedAt: new Date() },
         });
       }
-      return updated;
+      return row;
     });
+    // Denylist outstanding access tokens so deactivation is immediate, not just
+    // bounded by the 15-min access-token TTL (BUGS.md #4).
+    if (!isActive) await revokeUserAccessTokens(userId);
+    return updated;
   },
 
   async banUser(opts: {
@@ -423,6 +435,9 @@ export const adminService = {
         },
       });
     });
+    // Immediate ban (BUGS.md #4): denylist any access token already in flight so
+    // the banned user is rejected on their next request, not up to 15 min later.
+    await revokeUserAccessTokens(opts.userId);
 
     const { notificationService } = await import("../notifications/notification.service.js");
     await notificationService.dispatch({
@@ -481,6 +496,8 @@ export const adminService = {
       where: { userId, revokedAt: null },
       data:  { revokedAt: new Date() },
     });
+    // Immediate force-logout (BUGS.md #4): revoke in-flight access tokens too.
+    await revokeUserAccessTokens(userId);
 
     await prisma.moderationLog.create({
       data: {

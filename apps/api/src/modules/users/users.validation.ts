@@ -14,12 +14,15 @@ export const createCommentSchema = z.object({
   body: z.string().min(1).max(2000),
 });
 
+// ProfileComment ids are cuid (Prisma @default(cuid())), NOT uuid — validating
+// as uuid rejected every real id with a 422 before the handler ran (profile
+// comment update/delete never worked; surfaced by the #3 live E2E).
 export const updateCommentSchema = z.object({
-  commentId: z.string().uuid(),
+  commentId: z.string().cuid(),
 });
 
 export const deleteCommentParamsSchema = z.object({
-  commentId: z.string().uuid(),
+  commentId: z.string().cuid(),
 });
 
 export const paginationSchema = z.object({

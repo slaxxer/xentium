@@ -14,7 +14,13 @@ export interface AuthUser {
   dobDisplay: "hidden" | "age" | "birthday";
   preferredLocale: string | null;
   likeCountReceived: number;
+  // FULL group membership — the source of truth for role gating (ACP/staff UI).
   groups: Array<{ id: string; name: string; key: string; icon: string | null; displayOrder: number; badgeColor: string | null; badgeLabel: string | null }>;
+  // Group IDs whose badge the user has chosen to hide (Account → Preferences).
+  hiddenBadges: string[];
+  // `groups` minus `hiddenBadges` — use this for the user's OWN badge display so
+  // hiding a badge never removes the group from identity/role checks (BUGS.md #1).
+  visibleGroups: AuthUser["groups"];
 }
 
 export interface AuthSnapshot {

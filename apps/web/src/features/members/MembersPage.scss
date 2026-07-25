@@ -151,10 +151,12 @@
 .mp-sortbox { display: flex; flex-wrap: wrap; gap: 6px; }
 .mp-sortbox button {
   font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
-  color: var(--c-fg-subtle);
-  background: var(--c-bg); border: none; padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  color: var(--seg-fg);
+  background: var(--seg-bg); border: none; padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  transition: background 0.12s, color 0.12s;
 }
-.mp-sortbox button.is-on { background: var(--c-fg); color: var(--c-bg); }
+.mp-sortbox button:hover:not(.is-on) { background: var(--seg-hover-bg); }
+.mp-sortbox button.is-on { background: var(--seg-active-bg); color: var(--seg-active-fg); }
 
 .mp-main { background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); overflow: hidden; }
 .mp-main--full { margin-top: 0; }

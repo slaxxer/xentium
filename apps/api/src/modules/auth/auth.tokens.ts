@@ -2,6 +2,7 @@ import { SignJWT, jwtVerify } from "jose";
 import crypto from "node:crypto";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
+import { revokeSessionAccessToken } from "./session-revocation.js";
 
 const secret = new TextEncoder().encode(process.env.JWT_SECRET);
 const ACCESS_TTL = "15m";
@@ -35,7 +36,11 @@ async function triggerSecurityCheck(): Promise<void> {
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
 
 async function issueAccess(userId: string, sessionId: string) {
-  return new SignJWT({ sid: sessionId })
+  // `ims` = issued-at in MILLISECONDS. The standard `iat` claim is only
+  // second-granular, which makes the revocation denylist (session-revocation.ts)
+  // ambiguous for tokens minted in the same second as a revocation. `ims` gives
+  // the check exact ordering.
+  return new SignJWT({ sid: sessionId, ims: Date.now() })
     .setProtectedHeader({ alg: "HS256" })
     .setSubject(userId)
     .setIssuedAt()
@@ -122,12 +127,20 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
 
 export async function verifyAccess(token: string) {
   const { payload } = await jwtVerify(token, secret);
-  return { userId: payload.sub as string, sessionId: payload.sid as string };
+  // Prefer the millisecond `ims` claim; fall back to `iat` seconds for any token
+  // minted before `ims` existed (bounded to the 15-min access-token lifetime).
+  const iatMs = (payload.ims as number | undefined) ?? (payload.iat !== undefined ? payload.iat * 1000 : undefined);
+  return { userId: payload.sub as string, sessionId: payload.sid as string, issuedAtMs: iatMs };
 }
 
 export async function revokeSession(rawRefresh: string) {
-  await prisma.session.updateMany({
-    where: { refreshTokenHash: hashToken(rawRefresh), revokedAt: null },
-    data: { revokedAt: new Date() },
+  const session = await prisma.session.findUnique({
+    where:  { refreshTokenHash: hashToken(rawRefresh) },
+    select: { id: true, revokedAt: true },
   });
+  if (!session || session.revokedAt) return;
+  await prisma.session.update({ where: { id: session.id }, data: { revokedAt: new Date() } });
+  // Immediate revocation (BUGS.md #4): kill this session's in-flight access token
+  // so self-logout takes effect on the next request, not after the 15-min TTL.
+  await revokeSessionAccessToken(session.id);
 }

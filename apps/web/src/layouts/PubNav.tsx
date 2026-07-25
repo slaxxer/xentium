@@ -75,7 +75,8 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const primaryGroup = topGroups(user.groups, (g) => g.displayOrder, 1)[0];
+  // Self badge in the nav respects the user's badge-visibility choice.
+  const primaryGroup = topGroups(user.visibleGroups, (g) => g.displayOrder, 1)[0];
 
   useEffect(() => {
     if (!open) return;

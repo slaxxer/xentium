@@ -7,9 +7,9 @@ import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { decryptSecret } from "../../shared/utils/secretBox.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
-import { devEntitlements } from "./dev-catalog.js";
 
 /** Map a license-server error response to a coded NodevoError: 5xx = server
  *  trouble (unreachable-class, grace applies), 4xx = an explicit refusal whose
@@ -73,11 +73,11 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
 }
 
 async function getPublicKey() {
-  // LICENSE_PUBLIC_KEY (env) overrides the bundled key. In dev it holds the
-  // public half of the dev signing pair, so the real RS256 verify path runs
-  // locally. In prod it is unset and the bundled marketplace key is used
-  // (packages/sdk/src/license-public-key.pem — must be licenseserver.ich.codes's
-  // public half; see DEPLOY note in the marketplace repo).
+  // LICENSE_PUBLIC_KEY (env) overrides the bundled entitlement-verification key —
+  // e.g. to verify against a non-default license server. Normally unset, and the
+  // bundled marketplace key is used (packages/sdk/src/license-public-key.pem —
+  // must be licenseserver.ich.codes's public half; see the marketplace repo's
+  // DEPLOY note).
   const pem = env.LICENSE_PUBLIC_KEY
     ? env.LICENSE_PUBLIC_KEY.replace(/\\n/g, "\n")
     : await readFile(PUBLIC_KEY_PATH, "utf8");
@@ -102,16 +102,10 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
 }
 
 /** Entitlement JWT for a raw key — used only to REFRESH legacy manual-key
- *  licenses and by provisionEntitlement; new activations are account-only. */
+ *  licenses; new activations are account-only. */
 async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<string> {
   const domain      = await getSiteDomain();
   const environment = await resolveEnvironment();
-
-  // Dev mode: sign locally with the dev private key. Its presence is the dev
-  // signal now that LICENSE_SERVER_URL is always defaulted to the marketplace.
-  if (env.LICENSE_DEV_PRIVATE_KEY) {
-    return signDevJwt(licenseKey, siteId, domain, environment);
-  }
 
   const res = await fetch(`${env.LICENSE_SERVER_URL}/activate`, {
     method: "POST",
@@ -129,34 +123,6 @@ async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<
 
   const { entitlementJwt } = await res.json() as { entitlementJwt: string };
   return entitlementJwt;
-}
-
-/** Dev-only: sign a JWT locally using the dev private key (matching the bundled public key). */
-async function signDevJwt(
-  licenseKey:  string,
-  siteId:      string,
-  domain:      string,
-  environment: DeployEnvironment,
-): Promise<string> {
-  const pemKey = (env.LICENSE_DEV_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
-  const privateKey = await jose.importPKCS8(pemKey, "RS256");
-
-  const now = Math.floor(Date.now() / 1000);
-
-  return new jose.SignJWT({
-    siteId,
-    licenseKey,
-    entitlements: devEntitlements(),
-    domain,
-    environment,
-    issuedAt:     now,
-    expiresAt:    now + 365 * 24 * 3600,    // 1 year
-    refreshAfter: now + 30  * 24 * 3600,    // 30 days
-  })
-    .setProtectedHeader({ alg: "RS256" })
-    .setIssuedAt(now)
-    .setExpirationTime("1y")
-    .sign(privateKey);
 }
 
 /**
@@ -184,14 +150,9 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
   const domain      = await getSiteDomain();
   const environment = await resolveEnvironment();
 
-  // Dev mode: local signing, same as the manual-key path.
-  if (env.LICENSE_DEV_PRIVATE_KEY) {
-    const keyRef = "NVL-****-****-DEV";
-    return { jwt: await signDevJwt(keyRef, siteId, domain, environment), keyRef };
-  }
-
   const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
-  const token = (row?.value as string | null) ?? null;
+  const stored = (row?.value as string | null) ?? null;
+  const token = stored === null ? null : decryptSecret(stored); // encrypted at rest (A1.5)
   if (!token) {
     throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one in ACP \u2192 Extensions \u2192 License." });
   }
@@ -274,13 +235,10 @@ export async function refreshLicense(): Promise<void> {
   if (!license) {
     // Connected account but nothing activated yet (connected before buying, or
     // pre-§53 instances): self-heal from the account instead of doing nothing.
-    // Dev mode stays manual — a refresh click must not conjure a dev license.
-    if (!env.LICENSE_DEV_PRIVATE_KEY) {
-      try {
-        await activateFromAccount();
-      } catch {
-        // No connected account / no usable license — nothing to refresh.
-      }
+    try {
+      await activateFromAccount();
+    } catch {
+      // No connected account / no usable license — nothing to refresh.
     }
     return;
   }
@@ -289,7 +247,7 @@ export async function refreshLicense(): Promise<void> {
   // state (the admin disconnected), not an outage — deactivate instead of
   // letting the grace window keep a zombie alive. Also converges instances
   // that disconnected before disconnect() learned to do this itself.
-  if (license.activatedVia === "account" && !env.LICENSE_DEV_PRIVATE_KEY) {
+  if (license.activatedVia === "account") {
     const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
     if (!row?.value) {
       await prisma.license.update({ where: { id: license.id }, data: { status: "deactivated" } });
@@ -337,21 +295,6 @@ export async function refreshLicense(): Promise<void> {
       logger.error({ licenseId: license.id }, "License expired (grace period exceeded)");
     }
   }
-}
-
-/**
- * Mint a domain-bound entitlement for the connected account / key without
- * persisting it. Used by the MarketplaceSource download gate (ADR 0001): the
- * source proves ownership, then hands the caller a fresh entitlement. In dev this
- * signs locally; in prod it comes from the license server.
- */
-export async function provisionEntitlement(
-  licenseKey = "account-connected",
-): Promise<{ jwt: string; expiresAt: string; siteId: string }> {
-  const siteId = await getSiteId();
-  const jwt    = await fetchEntitlementJwt(licenseKey, siteId);
-  const claims = await verifyEntitlementJwt(jwt);
-  return { jwt, expiresAt: new Date(claims.expiresAt * 1000).toISOString(), siteId };
 }
 
 export async function deactivateLicense(): Promise<void> {
