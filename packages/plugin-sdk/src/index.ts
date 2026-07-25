@@ -128,6 +128,33 @@ export interface StatSource {
   collect(): Promise<FooterStat[]>;
 }
 
+/** Progression promotion criteria a plugin contributes (§38). Core's promotion
+ *  job asks each registered criteria whether a user meets a target ladder
+ *  group's plugin-configured thresholds. `evaluate` returns ONE boolean per
+ *  threshold this plugin has set for `groupId` (empty if none) — core ANDs/ORs
+ *  them with its own checks per `progression.threshold_logic`. The plugin owns
+ *  the per-group thresholds AND the user's metrics; core never sees its schema. */
+export interface ProgressionCriteria {
+  id: string;                        // e.g. "forum"
+  evaluate(userId: string, groupId: string): Promise<boolean[]>;
+  /** Optional, DISPLAY ONLY: the same thresholds as have/need pairs, so the
+   *  member-facing progress bar shows what promotion actually gates on. Never
+   *  consulted by the promotion job — `evaluate` stays the single source of
+   *  truth. Derive both from one helper so they cannot drift. */
+  metrics?(userId: string, groupId: string): Promise<ProgressionMetric[]>;
+}
+
+/** One numeric threshold's progress, as shown in the progression UI. */
+export interface ProgressionMetric {
+  key:   string;                     // unique within the plugin, e.g. "forum.posts"
+  /** Doubles as a `progression.metric.<label>` translation key AND as the literal
+   *  text the UI falls back to when no locale defines it — keep it readable
+   *  (e.g. "forum posts", not "forumPosts"). */
+  label: string;
+  have:  number;
+  need:  number;
+}
+
 export interface NotifyOptions {
   userId:   string;
   type:     string;
@@ -163,10 +190,17 @@ export interface PluginHost {
   middleware: {
     requireAuth: any;
     optionalAuth: any;
-    enforcePostLength: any;
     /** Factory: `requirePermission(key)` → middleware gating on a permission
      *  key (e.g. "admin.access"). Use for plugin ACP / privileged routes. */
     requirePermission: (key: string) => any;
+  };
+  /** Progression primitives (§38). Core owns the ladder; a plugin owns the
+   *  thresholds and limits for its own content, keyed by the group id this
+   *  returns. */
+  progression: {
+    /** The group whose progression config governs `userId` (the user's highest
+     *  rung on the ladder), or null when the user is not on the ladder. */
+    getEffectiveGroupId: (userId: string) => Promise<string | null>;
   };
   /** Shared helper utilities. */
   utils: {
@@ -235,6 +269,12 @@ export interface PluginContext {
    *  footer. Core aggregates registered sources — it never queries plugin tables.
    *  Deregistered automatically on plugin disable. */
   registerStatSource(source: StatSource): void;
+
+  /** Register progression promotion criteria (e.g. forum posts/threads). Core's
+   *  promotion job asks registered criteria whether a user meets a target
+   *  group's plugin-configured thresholds; a disabled plugin's criteria stop
+   *  counting. Deregistered automatically on plugin disable. */
+  registerProgressionCriteria(criteria: ProgressionCriteria): void;
 
   /** Register NEC error codes for the Error Reference ACP page. */
   registerNecCodes(codes: NecCodeDeclaration[]): void;

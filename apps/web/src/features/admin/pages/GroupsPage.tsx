@@ -793,12 +793,14 @@ interface ProgressionData {
   groupId: string;
   isProgressionGroup: boolean;
   ladderPosition: number | null;
-  minPosts: number | null;
-  minThreads: number | null;
+  minArticles: number | null;
+  minComments: number | null;
   minDaysMember: number | null;
   minLikesReceived: number | null;
-  maxPostLength: number | null;
-  maxDailyPosts: number | null;
+  maxArticleLength: number | null;
+  maxDailyArticles: number | null;
+  maxCommentLength: number | null;
+  maxDailyComments: number | null;
 }
 
 function ProgressionModal({ group, onClose }: { group: Group; onClose: () => void }) {
@@ -824,12 +826,14 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
     mutationFn: () => api.patch(`/admin/progression/${group.id}`, {
       isProgressionGroup: form.isProgressionGroup,
       ladderPosition:     form.ladderPosition,
-      minPosts:           form.minPosts,
-      minThreads:         form.minThreads,
+      minArticles:        form.minArticles,
+      minComments:        form.minComments,
       minDaysMember:      form.minDaysMember,
       minLikesReceived:   form.minLikesReceived,
-      maxPostLength:      form.maxPostLength,
-      maxDailyPosts:      form.maxDailyPosts,
+      maxArticleLength:   form.maxArticleLength,
+      maxDailyArticles:   form.maxDailyArticles,
+      maxCommentLength:   form.maxCommentLength,
+      maxDailyComments:   form.maxDailyComments,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
@@ -915,8 +919,8 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               {([
-                ["minPosts",         t("groups.minPosts")],
-                ["minThreads",       t("groups.minThreads")],
+                ["minArticles",      t("groups.minArticles")],
+                ["minComments",      t("groups.minComments")],
                 ["minDaysMember",    t("groups.minDays")],
                 ["minLikesReceived", t("groups.minLikes")],
               ] as [keyof ProgressionData, string][]).map(([key, label]) => (
@@ -933,12 +937,20 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
               <div>
-                <label className="acp-label">{t("groups.maxLen")}</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder={t("groups.unlimited")} />
+                <label className="acp-label">{t("groups.maxArticleLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxArticleLength)} onChange={e => setNum("maxArticleLength", e.target.value)} placeholder={t("groups.unlimited")} />
               </div>
               <div>
-                <label className="acp-label">{t("groups.maxDaily")}</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder={t("groups.unlimited")} />
+                <label className="acp-label">{t("groups.maxDailyArticles")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyArticles)} onChange={e => setNum("maxDailyArticles", e.target.value)} placeholder={t("groups.unlimited")} />
+              </div>
+              <div>
+                <label className="acp-label">{t("groups.maxCommentLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxCommentLength)} onChange={e => setNum("maxCommentLength", e.target.value)} placeholder={t("groups.unlimited")} />
+              </div>
+              <div>
+                <label className="acp-label">{t("groups.maxDailyComments")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyComments)} onChange={e => setNum("maxDailyComments", e.target.value)} placeholder={t("groups.unlimited")} />
               </div>
             </div>
 

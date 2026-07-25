@@ -35,7 +35,13 @@
     "topBody": "Você está no topo da escada — bom trabalho.",
     "almostThere": "Quase lá!",
     "remaining": "Mais {{n}} {{label}} para alcançar",
-    "keepGoing": "Continue participando para alcançar"
+    "keepGoing": "Continue participando para alcançar",
+    "metric": {
+      "articles": "artigos",
+      "comments": "comentários",
+      "days": "dias",
+      "likes": "gostos"
+    }
   },
   "online": {
     "title": "Online agora"
