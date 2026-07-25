@@ -322,14 +322,21 @@ export const adminService = {
 
   /** Paginated security/login activity for a user (newest first). */
   async listUserLoginEvents(userId: string, page: number, limit: number) {
+    // The security-activity view is for a human reviewer, so it shows only
+    // security-meaningful events (login / failed_redeem / register /
+    // password_change). Automatic, high-frequency telemetry — `refresh` (token
+    // rotation every ~15 min) and beta-gate `page_visit` — floods the list with
+    // redundant rows (BUGS.md #5) and is excluded. The rows stay in the table;
+    // the security-analysis job reads loginEvent directly, unaffected.
+    const where = { userId, eventType: { notIn: ["refresh", "page_visit"] } };
     return paginate(page, limit,
       (skip, take) => prisma.loginEvent.findMany({
-        where:   { userId },
+        where,
         orderBy: { createdAt: "desc" },
         select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
         skip, take,
       }),
-      () => prisma.loginEvent.count({ where: { userId } }),
+      () => prisma.loginEvent.count({ where }),
     );
   },
 

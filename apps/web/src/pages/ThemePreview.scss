@@ -72,19 +72,30 @@ textarea.tp-field { resize: vertical; min-height: 72px; }
 // Menu specimen — rendered statically open so the menu tokens are always visible.
 .tp-menu {
   background: var(--menu-bg);
+  color: var(--menu-fg);
   border: 1px solid var(--menu-border-color);
   border-radius: var(--menu-radius);
   box-shadow: var(--shadow-pop);
   padding: 6px;
   min-width: 200px;
 }
+.tp-seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.tp-seg__btn {
+  font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+  color: var(--seg-fg);
+  background: var(--seg-bg); border: none; padding: 7px 12px;
+  border-radius: var(--radius-sm); cursor: pointer;
+  &:hover:not(.is-on) { background: var(--seg-hover-bg); }
+  &.is-on { background: var(--seg-active-bg); color: var(--seg-active-fg); }
+}
+
 .tp-menu__item {
   display: flex;
   align-items: center;
   width: 100%;
   padding: 9px 10px;
   border-radius: var(--radius-md);
-  color: var(--c-fg);
+  color: var(--menu-fg);
   font-family: var(--font-display);
   font-weight: 500;
   font-size: var(--fs-sm);

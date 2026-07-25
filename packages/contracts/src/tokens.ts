@@ -17,7 +17,7 @@ export type ThemeScope = "global" | "navbar" | "content" | "footer" | "aside";
 /** Editor grouping — regions (where) and components (what). */
 export type TokenGroup =
   | "global" | "navbar" | "content" | "footer" | "aside"   // palette + regions
-  | "button" | "card" | "field" | "menu";                  // components
+  | "button" | "card" | "field" | "menu" | "segment";      // components
 
 export interface TokenDef {
   var: string;
@@ -93,9 +93,17 @@ const COMPONENT_TOKENS: TokenDef[] = [
   { var: "--input-border-focus", label: "Field focus",      type: "color",  kind: "component", group: "field", inheritsFrom: "--c-accent", scopeable: true, state: "focus", editable: true },
   // Menu (dropdown + options)
   { var: "--menu-bg",             label: "Menu background", type: "color",  kind: "component", group: "menu", inheritsFrom: "--c-card", scopeable: true, editable: true },
+  { var: "--menu-fg",             label: "Menu text",       type: "color",  kind: "component", group: "menu", inheritsFrom: "--c-fg", scopeable: true, editable: true },
   { var: "--menu-border-color",   label: "Menu border",     type: "color",  kind: "component", group: "menu", control: "border", inheritsFrom: "--c-border", scopeable: true, editable: true },
   { var: "--menu-item-hover-bg",  label: "Menu item hover", type: "color",  kind: "component", group: "menu", inheritsFrom: "--c-bg-hover", scopeable: true, state: "hover", editable: true },
   { var: "--menu-radius",         label: "Menu radius",     type: "length", kind: "component", group: "menu", control: "radius", scopeable: true, editable: true },
+
+  // Segment / sort buttons (e.g. the /members sort control)
+  { var: "--seg-bg",        label: "Sort button bg",        type: "color", kind: "component", group: "segment", inheritsFrom: "--c-bg", editable: true },
+  { var: "--seg-fg",        label: "Sort button text",      type: "color", kind: "component", group: "segment", inheritsFrom: "--c-fg-subtle", editable: true },
+  { var: "--seg-hover-bg",  label: "Sort button hover",     type: "color", kind: "component", group: "segment", inheritsFrom: "--c-bg-hover", state: "hover", editable: true },
+  { var: "--seg-active-bg", label: "Sort button selected",  type: "color", kind: "component", group: "segment", inheritsFrom: "--c-fg", state: "active", editable: true },
+  { var: "--seg-active-fg", label: "Selected text",         type: "color", kind: "component", group: "segment", inheritsFrom: "--c-bg", state: "active", editable: true },
 ];
 
 export const TOKEN_REGISTRY: TokenDef[] = [...REGION_TOKENS, ...COMPONENT_TOKENS];

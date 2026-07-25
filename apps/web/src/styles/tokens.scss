@@ -151,9 +151,17 @@
   --input-border-focus: var(--c-accent);
 
   --menu-bg:            var(--c-card);
+  --menu-fg:            var(--c-fg);
   --menu-border-color:  var(--c-border);
   --menu-item-hover-bg: var(--c-bg-hover);
   --menu-radius:        var(--radius-md);
+
+  /* Segment / sort buttons (e.g. /members sort control) */
+  --seg-bg:        var(--c-bg);
+  --seg-fg:        var(--c-fg-subtle);
+  --seg-hover-bg:  var(--c-bg-hover);
+  --seg-active-bg: var(--c-fg);
+  --seg-active-fg: var(--c-bg);
 
   --avatar-presence: var(--c-success);
 

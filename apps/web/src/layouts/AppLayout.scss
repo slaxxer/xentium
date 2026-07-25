@@ -4,6 +4,16 @@
   min-height: 100dvh;
 }
 
+/* Native <select> option popups are drawn by the browser and, in the dark
+ * theme, defaulted to a white background — with our light option text that gave
+ * an unreadable white-on-white menu (BUGS.md #2). Theme them with the same menu
+ * tokens as custom dropdowns so they follow the Style Editor Menu section in both
+ * light and dark. (color-scheme handles Safari, which ignores option colours.) */
+.app-layout select option {
+  background: var(--menu-bg);
+  color: var(--menu-fg);
+}
+
 /* ── Public Navbar ─────────────────────────────────── */
 .pub-nav {
   position: sticky;
@@ -279,6 +289,7 @@
     top: calc(100% + 10px);
     right: 0;
     background: var(--menu-bg);
+    color: var(--menu-fg);
     border: 1px solid var(--menu-border-color);
     border-radius: var(--menu-radius);
     overflow: hidden;

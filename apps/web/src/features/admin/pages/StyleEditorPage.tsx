@@ -90,6 +90,7 @@ const SECTION_GROUPS: { heading: string; items: Section[] }[] = [
     { id: "card",   label: "styleEditor.secCard",   kind: "component", group: "card" },
     { id: "field",  label: "styleEditor.secField",  kind: "component", group: "field" },
     { id: "menu",   label: "styleEditor.secMenu",   kind: "component", group: "menu" },
+    { id: "segment", label: "styleEditor.secSegment", kind: "component", group: "segment" },
   ]},
   { heading: "styleEditor.grpSite", items: [
     { id: "branding",  label: "styleEditor.secBranding",   kind: "branding" },
