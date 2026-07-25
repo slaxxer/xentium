@@ -16,6 +16,19 @@ export const sendCodeSchema = z.object({
 });
 export type SendCodeInput = z.infer<typeof sendCodeSchema>;
 
+// Pre-flight availability probe for the registration wizard (step 1). Either
+// field may be sent on its own — the response only reports what was asked for.
+export const checkAvailabilitySchema = z.object({
+  email: z.string().email().optional(),
+  username: z
+    .string()
+    .min(3)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, - and _")
+    .optional(),
+}).refine((d) => !!(d.email || d.username), { message: "email or username required", path: ["username"] });
+export type CheckAvailabilityInput = z.infer<typeof checkAvailabilitySchema>;
+
 export const registerSchema = z.object({
   email: z.string().email(),
   username: z

@@ -22,6 +22,9 @@ interface ProfileFieldDef {
 
 type Step = 1 | 2 | 3;
 
+/** Live uniqueness state for a step-1 identity field. */
+type AvailState = "idle" | "checking" | "free" | "taken";
+
 // ─── Step metadata ────────────────────────────────────────────────────────────
 
 const STEPS = [{ n: 1 }, { n: 2 }, { n: 3 }] as const;
@@ -201,6 +204,11 @@ export function RegisterPage() {
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({});
   const [profileFields, setProfileFields] = useState<ProfileFieldDef[]>([]);
 
+  // Step 1 uniqueness — probed as you type so a taken email/username is caught
+  // here, not after the whole wizard has been filled in.
+  const [emailAvail, setEmailAvail] = useState<AvailState>("idle");
+  const [usernameAvail, setUsernameAvail] = useState<AvailState>("idle");
+
   // Step 2 fields
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -233,6 +241,38 @@ export function RegisterPage() {
       .then((slots) => setTermsPage(slots.terms))
       .catch(() => {});
   }, []);
+
+  // Debounced availability probes. Format-invalid input never hits the API —
+  // the local regex has already rejected it. A failed probe (offline, rate
+  // limited) falls back to "idle": the hard check in validateStep1 and the
+  // server on /auth/register stay authoritative.
+  useEffect(() => {
+    const value = email.trim();
+    if (!isValidEmail(value)) { setEmailAvail("idle"); return; }
+    setEmailAvail("checking");
+    let cancelled = false;
+    const id = setTimeout(() => {
+      api
+        .post<{ email?: boolean }>("/auth/register/check-availability", { email: value })
+        .then((r) => { if (!cancelled) setEmailAvail(r.email === false ? "taken" : "free"); })
+        .catch(() => { if (!cancelled) setEmailAvail("idle"); });
+    }, 450);
+    return () => { cancelled = true; clearTimeout(id); };
+  }, [email]);
+
+  useEffect(() => {
+    const value = username.trim();
+    if (!isValidUsername(value)) { setUsernameAvail("idle"); return; }
+    setUsernameAvail("checking");
+    let cancelled = false;
+    const id = setTimeout(() => {
+      api
+        .post<{ username?: boolean }>("/auth/register/check-availability", { username: value })
+        .then((r) => { if (!cancelled) setUsernameAvail(r.username === false ? "taken" : "free"); })
+        .catch(() => { if (!cancelled) setUsernameAvail("idle"); });
+    }, 450);
+    return () => { cancelled = true; clearTimeout(id); };
+  }, [username]);
 
   // Resend cooldown ticker
   useEffect(() => {
@@ -313,6 +353,10 @@ export function RegisterPage() {
     );
   }
 
+  // A live "taken" verdict reads as a field error even before Continue is pressed.
+  const emailError    = errors.email    || (emailAvail    === "taken" ? t("register.emailTakenShort") : "");
+  const usernameError = errors.username || (usernameAvail === "taken" ? t("register.usernameTaken")   : "");
+
   const strength = calcStrength(password);
   const passwordsMatch = confirm.length > 0 && password === confirm;
   const passwordsMismatch = confirm.length > 0 && password !== confirm;
@@ -322,7 +366,7 @@ export function RegisterPage() {
 
   // ── Step validation ──────────────────────────────────────────────────────
 
-  function validateStep1(): boolean {
+  async function validateStep1(): Promise<boolean> {
     const e: Record<string, string> = {};
     if (!isValidEmail(email)) e.email = t("register.invalidEmail");
     if (!isValidUsername(username)) e.username = t("register.invalidUsername");
@@ -330,6 +374,29 @@ export function RegisterPage() {
     for (const f of requiredFields) {
       if (!(fieldValues[f.id] ?? "").trim()) e[`field_${f.id}`] = t("register.required", { label: f.label });
     }
+    if (Object.keys(e).length > 0) {
+      setErrors(e);
+      return false;
+    }
+
+    // Format is fine — settle uniqueness before the wizard moves on, so a taken
+    // email/username never costs the user the rest of the form.
+    setLoading(true);
+    try {
+      const r = await api.post<{ email?: boolean; username?: boolean }>(
+        "/auth/register/check-availability",
+        { email: email.trim(), username: username.trim() },
+      );
+      if (r.email === false) e.email = t("register.emailTakenShort");
+      if (r.username === false) e.username = t("register.usernameTaken");
+      setEmailAvail(r.email === false ? "taken" : "free");
+      setUsernameAvail(r.username === false ? "taken" : "free");
+    } catch {
+      // Probe unavailable — let the user continue; /auth/register still rejects.
+    } finally {
+      setLoading(false);
+    }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -355,6 +422,7 @@ export function RegisterPage() {
     } catch (err: any) {
       if (err?.status === 409) {
         swalToast(t("register.emailTaken"));
+        setEmailAvail("taken");
         setStep(1);
       } else {
         swalToast(t("register.sendFailed"));
@@ -417,9 +485,11 @@ export function RegisterPage() {
         swalToast(t("register.codeWrong"));
       } else if (code === "NEC-AUTH-2001") {
         swalToast(t("register.emailTakenShort"));
+        setEmailAvail("taken");
         setStep(1);
       } else if (code === "NEC-AUTH-2002") {
         swalToast(t("register.usernameTaken"));
+        setUsernameAvail("taken");
         setStep(1);
       } else {
         swalToast(t("register.regFailed"));
@@ -433,7 +503,7 @@ export function RegisterPage() {
 
   async function handleNext() {
     if (step === 1) {
-      if (validateStep1()) setStep(2);
+      if (await validateStep1()) setStep(2);
     } else if (step === 2) {
       if (validateStep2()) await sendCode();
     } else {
@@ -444,6 +514,7 @@ export function RegisterPage() {
   const canAdvance =
     step === 1
       ? isValidEmail(email) && isValidUsername(username)
+        && emailAvail !== "taken" && usernameAvail !== "taken"
         && (!collectName || !nameRequired || !!name.trim())
         && requiredFields.every((f) => (fieldValues[f.id] ?? "").trim())
       : step === 2
@@ -509,15 +580,24 @@ export function RegisterPage() {
                       {t("register.email")} <span className="rw-label__required">*</span>
                     </label>
                     <input
-                      className={`rw-input${errors.email ? " rw-input--error" : ""}`}
+                      className={`rw-input${emailError ? " rw-input--error" : ""}`}
                       type="email"
                       placeholder={t("register.emailPlaceholder")}
                       value={email}
-                      onChange={(e) => setEmail(e.target.value)}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        setErrors((prev) => ({ ...prev, email: "" }));
+                      }}
                       autoFocus
                       autoComplete="email"
                     />
-                    {errors.email && <p className="rw-error">{errors.email}</p>}
+                    {emailError && <p className="rw-error">{emailError}</p>}
+                    {!emailError && emailAvail === "checking" && (
+                      <p className="rw-avail">{t("register.checking")}</p>
+                    )}
+                    {!emailError && emailAvail === "free" && (
+                      <p className="rw-avail rw-avail--free">{t("register.emailAvailable")}</p>
+                    )}
                   </div>
 
                   <div className="rw-field">
@@ -525,14 +605,23 @@ export function RegisterPage() {
                       {t("register.username")} <span className="rw-label__required">*</span>
                     </label>
                     <input
-                      className={`rw-input${errors.username ? " rw-input--error" : ""}`}
+                      className={`rw-input${usernameError ? " rw-input--error" : ""}`}
                       type="text"
                       placeholder={t("register.usernamePlaceholder")}
                       value={username}
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => {
+                        setUsername(e.target.value);
+                        setErrors((prev) => ({ ...prev, username: "" }));
+                      }}
                       autoComplete="username"
                     />
-                    {errors.username && <p className="rw-error">{errors.username}</p>}
+                    {usernameError && <p className="rw-error">{usernameError}</p>}
+                    {!usernameError && usernameAvail === "checking" && (
+                      <p className="rw-avail">{t("register.checking")}</p>
+                    )}
+                    {!usernameError && usernameAvail === "free" && (
+                      <p className="rw-avail rw-avail--free">{t("register.usernameAvailable")}</p>
+                    )}
                   </div>
 
                   {collectName && (
@@ -746,7 +835,7 @@ export function RegisterPage() {
                   onClick={handleNext}
                 >
                   {loading
-                    ? step === 2 ? t("register.sendingCode") : step === 3 ? t("register.creating") : "…"
+                    ? step === 2 ? t("register.sendingCode") : step === 3 ? t("register.creating") : t("register.checking")
                     : step < 3 ? `${t("register.continue")} →` : t("register.createBtn")}
                 </button>
               </div>

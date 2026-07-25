@@ -162,6 +162,29 @@ export async function login(identifier: string, password: string, pin: string | 
   };
 }
 
+/**
+ * Pre-flight uniqueness probe for the registration wizard — lets step 1 reject a
+ * taken email/username before the user fills in the rest of the form (and before
+ * a verification code is ever sent). Mirrors the lookups `register()` performs so
+ * the answer matches the eventual outcome; `register()` remains authoritative.
+ */
+export async function checkAvailability(
+  email?: string,
+  username?: string,
+): Promise<{ email?: boolean; username?: boolean }> {
+  const [existingEmail, existingUsername] = await Promise.all([
+    email ? prisma.user.findUnique({ where: { email }, select: { id: true } }) : null,
+    username
+      ? prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select: { id: true } })
+      : null,
+  ]);
+
+  return {
+    ...(email    !== undefined ? { email:    !existingEmail    } : {}),
+    ...(username !== undefined ? { username: !existingUsername } : {}),
+  };
+}
+
 export async function sendRegistrationCode(email: string): Promise<void> {
   // Check email not already taken
   const existing = await prisma.user.findUnique({ where: { email } });
