@@ -9,6 +9,7 @@ import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/uti
 import { redis, bullConnection } from "../../infrastructure/redis.js";
 import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
+import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
@@ -353,8 +354,8 @@ export const adminService = {
     if (requestingUserId && requestingUserId === userId) {
       throw NodevoError.forbidden("You cannot deactivate your own account");
     }
-    return prisma.$transaction(async (tx) => {
-      const updated = await tx.user.update({ where: { id: userId }, data: { isActive } });
+    const updated = await prisma.$transaction(async (tx) => {
+      const row = await tx.user.update({ where: { id: userId }, data: { isActive } });
       // Deactivation must revoke all sessions immediately (§49/§17b): the next
       // /auth/refresh fails (rotateSession rechecks isActive), so the account is
       // signed out everywhere within the access-token TTL instead of continuing
@@ -365,8 +366,12 @@ export const adminService = {
           data:  { revokedAt: new Date() },
         });
       }
-      return updated;
+      return row;
     });
+    // Denylist outstanding access tokens so deactivation is immediate, not just
+    // bounded by the 15-min access-token TTL (BUGS.md #4).
+    if (!isActive) await revokeUserAccessTokens(userId);
+    return updated;
   },
 
   async banUser(opts: {
@@ -423,6 +428,9 @@ export const adminService = {
         },
       });
     });
+    // Immediate ban (BUGS.md #4): denylist any access token already in flight so
+    // the banned user is rejected on their next request, not up to 15 min later.
+    await revokeUserAccessTokens(opts.userId);
 
     const { notificationService } = await import("../notifications/notification.service.js");
     await notificationService.dispatch({
@@ -481,6 +489,8 @@ export const adminService = {
       where: { userId, revokedAt: null },
       data:  { revokedAt: new Date() },
     });
+    // Immediate force-logout (BUGS.md #4): revoke in-flight access tokens too.
+    await revokeUserAccessTokens(userId);
 
     await prisma.moderationLog.create({
       data: {

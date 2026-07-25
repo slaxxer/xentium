@@ -5,6 +5,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
 import { DEFAULT_MODERATION_POLICY, humanizeCaseType, describeCaseSignal, type ModerationPolicy, type ReportTargetType } from "./moderation.types.js";
+import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 
 
 // Find the most recent unresolved case linking a user (used to decide whether a
@@ -1000,6 +1001,8 @@ export const moderationService = {
       where: { userId, revokedAt: null },
       data:  { revokedAt: new Date() },
     });
+    // Immediate force-logout (BUGS.md #4): revoke in-flight access tokens too.
+    await revokeUserAccessTokens(userId);
 
     await writeModLog({
       actorId,

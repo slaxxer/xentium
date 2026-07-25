@@ -6,7 +6,6 @@ import { getRequestMeta } from "../../shared/http/requestMeta.js";
 import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME, clearBetaCookie } from "../../shared/http/cookies.js";
 import { prisma } from "../../infrastructure/db.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
-import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { betaService } from "../beta/beta.service.js";
@@ -215,7 +214,12 @@ export async function meHandler(req: Request, res: Response) {
     },
   });
   if (!user) throw NodevoError.notFound("User not found");
-  // Respect the user's badge-visibility choices systemwide (incl. their own MeCard / nav).
-  const groups = filterHiddenBadges(user.groups, user.hiddenBadges);
-  res.json({ user: { ...user, groups, avatar: resolveAvatar(user.avatar) } });
+  // `me` returns the user's FULL group membership — this payload is the client's
+  // source of truth for role gating (ACP access, staff UI). Badge *visibility* is
+  // a presentational choice: `hiddenBadges` is sent alongside so the client can
+  // hide badges at render time WITHOUT dropping groups from the identity list.
+  // (Filtering groups here previously made "hide my Administrator badge" also
+  // revoke ACP access client-side — BUGS.md #1.) Badges shown to OTHER viewers
+  // are still filtered server-side in the profile/article/user endpoints.
+  res.json({ user: { ...user, avatar: resolveAvatar(user.avatar) } });
 }

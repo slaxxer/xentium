@@ -3,6 +3,7 @@ import { bullConnection, bullPrefix } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
 import { env } from "../config/env.js";
 import { bustSettingsCache } from "../shared/utils/settings.js";
+import { decryptSecret } from "../shared/utils/secretBox.js";
 import { logger } from "../infrastructure/logging/logger.js";
 
 /**
@@ -19,7 +20,8 @@ export async function processUpdateCheck(): Promise<void> {
   if (env.LICENSE_DEV_PRIVATE_KEY) return;
 
   const tokenRow = await prisma.setting.findUnique({ where: { key: "marketplace.nodevo.io.token" } });
-  const token = (tokenRow?.value as string | null) ?? null;
+  const storedToken = (tokenRow?.value as string | null) ?? null;
+  const token = storedToken === null ? null : decryptSecret(storedToken); // encrypted at rest (A1.5)
   if (!token) return; // no connected account — nothing to check against
 
   // Keep the authoritative paid-plugin-id set fresh (drives the license-by-id gate).

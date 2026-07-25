@@ -7,6 +7,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { decryptSecret } from "../../shared/utils/secretBox.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { devEntitlements } from "./dev-catalog.js";
@@ -191,7 +192,8 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
   }
 
   const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
-  const token = (row?.value as string | null) ?? null;
+  const stored = (row?.value as string | null) ?? null;
+  const token = stored === null ? null : decryptSecret(stored); // encrypted at rest (A1.5)
   if (!token) {
     throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one in ACP \u2192 Extensions \u2192 License." });
   }
