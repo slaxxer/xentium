@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
-import { prisma } from "../../infrastructure/db.js";
 import { CorePermissions } from "@nodevo/contracts";
+import { permissionsService } from "../permissions/permissions.service.js";
 import {
   articleLikeService,
   articleDislikeService,
@@ -16,15 +16,6 @@ import {
 } from "./comment.validation.js";
 import { articleIdParamSchema } from "./article.validation.js";
 
-async function hasPermission(userId: string, key: string): Promise<boolean> {
-  const count = await prisma.groupPermission.count({
-    where: {
-      permission: { key },
-      group: { users: { some: { userId } } },
-    },
-  });
-  return count > 0;
-}
 
 export const commentsController = {
   list: (async (req, res) => {
@@ -55,7 +46,7 @@ export const commentsController = {
     const { commentId } = commentIdParamSchema.parse(req.params);
     const { reason } = deleteCommentSchema.parse(req.body ?? {});
     const userId = req.userId!;
-    const canModerate = await hasPermission(userId, CorePermissions.ARTICLE_COMMENT_DELETE_ANY);
+    const canModerate = await permissionsService.userHasPermission(userId, CorePermissions.ARTICLE_COMMENT_DELETE_ANY);
     await commentService.softDelete(commentId, userId, canModerate, reason);
     res.status(204).send();
   }),

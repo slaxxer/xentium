@@ -1,11 +1,30 @@
 import type { RequestHandler } from "express";
 import { prisma } from "../../infrastructure/db.js";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
+import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
 import type { PermissionKey } from "@nodevo/contracts";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { NodevoError } from "../errors/NodevoError.js";
 import { NEC } from "../errors/nec.js";
 import { unauthenticatedError, invalidTokenError } from "./requireAuth.js";
+
+/**
+ * Verify the Bearer access token AND enforce the revocation denylist — these
+ * permission guards are sometimes mounted standalone (not after requireAuth), so
+ * they must run the same immediate-revocation check (BUGS.md #4).
+ */
+async function authedUserId(authHeader: string | undefined): Promise<{ userId: string; sessionId: string }> {
+  const token = authHeader?.replace("Bearer ", "");
+  if (!token) throw unauthenticatedError();
+  let userId: string, sessionId: string, issuedAtMs: number | undefined;
+  try {
+    ({ userId, sessionId, issuedAtMs } = await verifyAccess(token));
+  } catch {
+    throw invalidTokenError();
+  }
+  if (await isAccessTokenRevoked(userId, sessionId, issuedAtMs)) throw invalidTokenError();
+  return { userId, sessionId };
+}
 
 function permissionDeniedError(keys: PermissionKey[]) {
   return new NodevoError({
@@ -46,20 +65,13 @@ async function loadEffective(userId: string): Promise<string[]> {
 
 export function requirePermission(key: PermissionKey): RequestHandler {
   return async (req, _res, next) => {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) throw unauthenticatedError();
-
-    let userId: string;
-    try {
-      ({ userId } = await verifyAccess(token));
-    } catch {
-      throw invalidTokenError();
-    }
+    const { userId, sessionId } = await authedUserId(req.headers.authorization);
     const effective = await loadEffective(userId);
 
     if (!effective.includes(key)) throw permissionDeniedError([key]);
 
     req.userId = userId;
+    req.sessionId = sessionId;
     next();
   };
 }
@@ -67,20 +79,13 @@ export function requirePermission(key: PermissionKey): RequestHandler {
 /** Grants access if the user holds ANY one of the given permission keys. */
 export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
   return async (req, _res, next) => {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) throw unauthenticatedError();
-
-    let userId: string;
-    try {
-      ({ userId } = await verifyAccess(token));
-    } catch {
-      throw invalidTokenError();
-    }
+    const { userId, sessionId } = await authedUserId(req.headers.authorization);
     const effective = await loadEffective(userId);
 
     if (!keys.some((k) => effective.includes(k))) throw permissionDeniedError(keys);
 
     req.userId = userId;
+    req.sessionId = sessionId;
     next();
   };
 }

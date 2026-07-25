@@ -415,7 +415,7 @@ export function ArticleEditorPage() {
               <span>
                 <Username
                   username={userName}
-                  badgeColor={authStore.user?.groups[0]?.badgeColor}
+                  badgeColor={authStore.user?.visibleGroups[0]?.badgeColor}
                 /> · {t(`editor.status.${status}`)} ·{" "}
                 {isBusy ? t("editor.saving") : articleId ? t("editor.savedJustNow") : t("editor.newDraft")}
               </span>

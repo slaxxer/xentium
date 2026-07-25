@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { prisma } from "../../infrastructure/db.js";
 import { hashPassword, verifyPassword } from "../auth/auth.password.js";
+import { revokeSessionAccessToken } from "../auth/session-revocation.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
@@ -109,6 +110,17 @@ export const accountService = {
 
     const newHash = await hashPassword(newPassword);
 
+    // Collect the other active sessions up front so we can denylist their
+    // in-flight access tokens too — the current session is intentionally kept.
+    const others = await prisma.session.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(currentSessionId ? { id: { not: currentSessionId } } : {}),
+      },
+      select: { id: true },
+    });
+
     // Delete all sessions except the current one
     await prisma.$transaction([
       prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } }),
@@ -121,6 +133,9 @@ export const accountService = {
         data: { revokedAt: new Date() },
       }),
     ]);
+    // Immediate revocation (BUGS.md #4): those other sessions' access tokens are
+    // valid for up to 15 min otherwise. Current session untouched.
+    await Promise.all(others.map((s) => revokeSessionAccessToken(s.id)));
   },
 
   async getSessions(userId: string) {
@@ -135,6 +150,8 @@ export const accountService = {
     const session = await prisma.session.findFirst({ where: { id: sessionId, userId } });
     if (!session) throw new NodevoError({ code: "NEC-USER-4013", httpStatus: 404, message: "Session not found" });
     await prisma.session.update({ where: { id: sessionId }, data: { revokedAt: new Date() } });
+    // Immediate revocation (BUGS.md #4): kill this session's in-flight access token.
+    await revokeSessionAccessToken(sessionId);
   },
 
   async getPrivacySettings(userId: string) {

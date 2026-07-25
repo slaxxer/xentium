@@ -4,6 +4,7 @@ import { redis, rkey } from "../../infrastructure/redis.js";
 import { verifyPassword, hashPassword } from "./auth.password.js";
 import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
+import { revokeUserAccessTokens } from "./session-revocation.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { sendEmail, verificationCodeEmail, passwordResetEmail } from "../../infrastructure/email/email.service.js";
 import { notificationService } from "../notifications/notification.service.js";
@@ -397,6 +398,9 @@ export async function confirmPasswordReset(
       data:  { revokedAt: now },
     }),
   ]);
+  // Denylist any in-flight access token so the reset signs the user out
+  // everywhere immediately (BUGS.md #4), not just on next refresh.
+  await revokeUserAccessTokens(row.userId);
 
   // Security event (§43) — fire-and-forget, must not break the reset flow
   prisma.loginEvent.create({

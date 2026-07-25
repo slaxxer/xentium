@@ -30,6 +30,7 @@ import {
   resolveEnvironment,
 } from "./license-engine.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
+import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
 
 const SOURCE_ID = "nodevo.io";
 
@@ -52,14 +53,20 @@ const useDevLicensing = !!env.LICENSE_DEV_PRIVATE_KEY;
 
 async function readSetting(key: string): Promise<string | null> {
   const row = await prisma.setting.findUnique({ where: { key } });
-  return (row?.value as string | null) ?? null;
+  const value = (row?.value as string | null) ?? null;
+  // The account token is stored encrypted at rest (A1.5). decryptSecret passes
+  // through any legacy plaintext value unchanged, so pre-encryption tokens keep
+  // working until their next write.
+  if (value !== null && key === K_TOKEN) return decryptSecret(value);
+  return value;
 }
 
 async function writeSetting(key: string, value: string | null): Promise<void> {
   if (value === null) {
     await prisma.setting.deleteMany({ where: { key } });
   } else {
-    await prisma.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
+    const stored = key === K_TOKEN ? encryptSecret(value) : value;
+    await prisma.setting.upsert({ where: { key }, update: { value: stored }, create: { key, value: stored } });
   }
   bustSettingsCache(key);
 }
