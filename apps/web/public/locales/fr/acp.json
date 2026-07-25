@@ -602,6 +602,12 @@
         "cause": "Le paquet du plugin contient une version modifiée d'une migration que ce site a déjà exécutée.",
         "fix": "Ne modifiez jamais des migrations appliquées. Le fournisseur doit livrer les changements de schéma comme une NOUVELLE migration dans la version suivante."
       },
+      "NEC-PLUGIN-2013": {
+        "msg": "Nom de table réservé ou mal préfixé",
+        "desc": "Une migration de plugin tente de créer, modifier ou supprimer un objet de base de données qui est soit un objet réservé du cœur, soit un objet ne correspondant pas au préfixe de table déclaré par le plugin.",
+        "cause": "La migration nomme un objet commençant par ncf_, nodevo_, _prisma, pg_ ou information_schema, ou (lorsque le plugin déclare un tablePrefix) un objet qui omet ce préfixe.",
+        "fix": "Préfixez chaque table, index, séquence, type, fonction et déclencheur avec le préfixe propre au plugin, et ne touchez jamais aux objets du cœur."
+      },
       "NEC-PLUGIN-2020": {
         "msg": "Plugin non disponible",
         "desc": "La route de plugin demandée n'est pas disponible.",

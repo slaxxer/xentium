@@ -40,8 +40,8 @@ export async function runUpMigrations(
       continue;
     }
 
-    // Validate DDL-only before executing
-    validateMigrationSql(sql, entryPath);
+    // Validate DDL-only + naming before executing
+    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
 
     // Run inside a transaction
     await prisma.$transaction(async (tx) => {
@@ -88,7 +88,7 @@ export async function runNewUpMigrations(
     if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
-    validateMigrationSql(sql, entryPath);
+    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
 
     await prisma.$transaction(async (tx) => {
       const stmts = splitSqlStatements(sql);
@@ -123,7 +123,7 @@ export async function runDownMigrations(
     if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
-    validateMigrationSql(sql, entryPath);
+    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
 
     await prisma.$transaction(async (tx) => {
       const stmts = splitSqlStatements(sql);
@@ -160,7 +160,7 @@ export async function forceCleanupSchema(
 
     const sql = entry.getData().toString("utf8");
     try {
-      validateMigrationSql(sql, `migrations/${name}.down.sql`);
+      validateMigrationSql(sql, `migrations/${name}.down.sql`, { tablePrefix: manifest.tablePrefix });
     } catch {
       continue; // skip anything that isn't valid DDL — never run untrusted SQL
     }
@@ -185,8 +185,9 @@ export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): v
     if (!zip.getEntry(`migrations/${name}.down.sql`)) {
       throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
     }
-    // Pre-validate SQL
-    validateMigrationSql(zip.getEntry(`migrations/${name}.up.sql`)!.getData().toString(), `${name}.up.sql`);
-    validateMigrationSql(zip.getEntry(`migrations/${name}.down.sql`)!.getData().toString(), `${name}.down.sql`);
+    // Pre-validate SQL (DDL-only + naming)
+    const policy = { tablePrefix: manifest.tablePrefix };
+    validateMigrationSql(zip.getEntry(`migrations/${name}.up.sql`)!.getData().toString(), `${name}.up.sql`, policy);
+    validateMigrationSql(zip.getEntry(`migrations/${name}.down.sql`)!.getData().toString(), `${name}.down.sql`, policy);
   }
 }

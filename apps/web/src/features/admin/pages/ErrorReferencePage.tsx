@@ -66,6 +66,7 @@ const META: Record<string, { sev: NecEntry["sev"]; domain: string }> = {
   "NEC-PLUGIN-2010": { sev:"Error", domain:"Plugin Engine" },
   "NEC-PLUGIN-2011": { sev:"Error", domain:"Plugin Engine" },
   "NEC-PLUGIN-2012": { sev:"Error", domain:"Plugin Engine" },
+  "NEC-PLUGIN-2013": { sev:"Error", domain:"Plugin Engine" },
   "NEC-PLUGIN-2020": { sev:"Info", domain:"Plugin Engine" },
   "NEC-PLUGIN-2030": { sev:"Error", domain:"Plugin Engine" },
   // Core

@@ -26,6 +26,7 @@ export interface PluginManifest {
   minNodevoVersion: string;
   maxNodevoVersion?: string;
   licenseRequired:  boolean;
+  tablePrefix?:     string;        // e.g. "forum_" — when set, every DB object this plugin's migrations create/alter/drop MUST carry it
   permissions:      string[];      // permission keys declared by this plugin
   migrations:       string[];      // migration names (without .up/.down.sql)
   entrypoints: {

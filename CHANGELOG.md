@@ -1,23 +1,27 @@
 # Changelog
 
-## ACP Error Reference fully localized (i18n)
+## Plugin table-naming validator
 
-- **NEC error catalog is translatable** — the Error Reference page
-  (ACP → System → Error Reference) previously rendered its 54-code catalog
-  (message / description / cause / fix per code) in hardcoded English regardless
-  of the admin's language. The human-readable text now lives in the `acp` locale
-  bundle (`errorRef.codes.<CODE>`) and is resolved per language; the page keeps
-  only structural metadata (severity + domain) in code. Translated into all five
-  bundled languages (en/de/es/fr/pt).
-- **Severity and domain labels localized too** — the severity badges
-  (Critical/Error/Warning/Info) and domain tags (API, Auth, Permissions, …) now
-  display in the active language, while filtering still keys off the stable
-  identifier. Search also matches the localized domain name. Plugin-registered
-  NEC codes are unaffected — they arrive fully-formed from the server and merge
-  in as before.
-- **Stray ACP aria-labels externalized** — the number-stepper's
-  Decrease/Increase controls (`common.actions.*`) and the ACP topbar breadcrumb
-  (`acp.topbar.breadcrumb`), across all five languages.
-
-English text was carried over byte-for-byte from the previous hardcoded catalog
-(no wording change); this is a pure externalization.
+- **Migrations are now namespace-checked, not just DDL-checked.** Every plugin
+  migration already had to be DDL-only; the runner now also inspects the object
+  names each statement creates, alters, drops, or indexes.
+- **Reserved core namespace is protected for every plugin** — a migration may no
+  longer create, alter, or drop any object whose name begins `ncf_`, `nodevo_`,
+  `_prisma`, `pg_`, or `information_schema`. This closes the door on a plugin
+  reaching into core tables or Prisma/Postgres internals. Enforced whether or not
+  the plugin declares a prefix.
+- **Optional `tablePrefix` manifest field** — when a plugin declares one (short,
+  snake_case, ending in `_`, e.g. `forum_`), the runner requires **every** table,
+  index, sequence, type, function, and trigger its migrations create — and every
+  object they alter/drop/index — to carry that prefix. Keeps a plugin's schema in
+  its own namespace and unable to collide with core or another plugin.
+- **New error code `NEC-PLUGIN-2013`** for both violation kinds, catalogued in the
+  ACP Error Reference and translated across all five bundled languages
+  (en/de/es/fr/pt).
+- `CREATE EXTENSION` (global objects such as `pg_trgm`) and `COMMENT` are exempt
+  from the naming rules. The check runs on the same quote-/dollar-aware statement
+  tokenizer the executor uses, so validator and runner can't disagree on
+  boundaries.
+- The four official plugins declare their prefixes (`forum_`, `pm_`, `amod_`,
+  `sb_`); all 54 of their existing up/down migration files pass strict
+  enforcement unchanged.
