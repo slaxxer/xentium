@@ -16,12 +16,14 @@ interface LadderEntry {
   groupId: string;
   isProgressionGroup: boolean;
   ladderPosition: number | null;
-  minPosts: number | null;
-  minThreads: number | null;
+  minArticles: number | null;
+  minComments: number | null;
   minDaysMember: number | null;
   minLikesReceived: number | null;
-  maxPostLength: number | null;
-  maxDailyPosts: number | null;
+  maxArticleLength: number | null;
+  maxDailyArticles: number | null;
+  maxCommentLength: number | null;
+  maxDailyComments: number | null;
   badgeLabel: string | null;
   badgeColor: string | null;
   badgeTextShadow: boolean;
@@ -79,12 +81,14 @@ function GroupProgressionModal({
     mutationFn: () => api.patch(`/admin/progression/${groupId}`, {
       isProgressionGroup: form.isProgressionGroup,
       ladderPosition:     form.ladderPosition,
-      minPosts:           form.minPosts,
-      minThreads:         form.minThreads,
+      minArticles:        form.minArticles,
+      minComments:        form.minComments,
       minDaysMember:      form.minDaysMember,
       minLikesReceived:   form.minLikesReceived,
-      maxPostLength:      form.maxPostLength,
-      maxDailyPosts:      form.maxDailyPosts,
+      maxArticleLength:   form.maxArticleLength,
+      maxDailyArticles:   form.maxDailyArticles,
+      maxCommentLength:   form.maxCommentLength,
+      maxDailyComments:   form.maxDailyComments,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
@@ -159,8 +163,8 @@ function GroupProgressionModal({
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               {([
-                ["min_posts",           "minPosts",         t("progression.minPosts")],
-                ["min_threads",         "minThreads",       t("progression.minThreads")],
+                ["min_articles",        "minArticles",      t("progression.minArticles")],
+                ["min_comments",        "minComments",      t("progression.minComments")],
                 ["min_days_member",     "minDaysMember",    t("progression.minDays")],
                 ["min_likes_received",  "minLikesReceived", t("progression.minLikes")],
               ] as [string, keyof LadderEntry, string][]).map(([, key, label]) => (
@@ -177,12 +181,20 @@ function GroupProgressionModal({
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
               <div>
-                <label className="acp-label">{t("progression.maxLen")}</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxPostLength)} onChange={e => setNum("maxPostLength", e.target.value)} placeholder={t("progression.unlimited")} />
+                <label className="acp-label">{t("progression.maxArticleLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxArticleLength)} onChange={e => setNum("maxArticleLength", e.target.value)} placeholder={t("progression.unlimited")} />
               </div>
               <div>
-                <label className="acp-label">{t("progression.maxDaily")}</label>
-                <input className="acp-input" type="number" min={0} value={num(form.maxDailyPosts)} onChange={e => setNum("maxDailyPosts", e.target.value)} placeholder={t("progression.unlimited")} />
+                <label className="acp-label">{t("progression.maxDailyArticles")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyArticles)} onChange={e => setNum("maxDailyArticles", e.target.value)} placeholder={t("progression.unlimited")} />
+              </div>
+              <div>
+                <label className="acp-label">{t("progression.maxCommentLen")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxCommentLength)} onChange={e => setNum("maxCommentLength", e.target.value)} placeholder={t("progression.unlimited")} />
+              </div>
+              <div>
+                <label className="acp-label">{t("progression.maxDailyComments")}</label>
+                <input className="acp-input" type="number" min={0} value={num(form.maxDailyComments)} onChange={e => setNum("maxDailyComments", e.target.value)} placeholder={t("progression.unlimited")} />
               </div>
             </div>
 
@@ -330,19 +342,20 @@ export function ProgressionPage() {
 
   function thresholdSummary(e: LadderEntry): string {
     const parts: string[] = [];
-    if (e.minPosts)        parts.push(t("progression.sumPosts", { count: e.minPosts }));
-    if (e.minThreads)      parts.push(t("progression.sumThreads", { count: e.minThreads }));
+    if (e.minArticles)     parts.push(t("progression.sumArticles", { count: e.minArticles }));
+    if (e.minComments)     parts.push(t("progression.sumComments", { count: e.minComments }));
     if (e.minDaysMember)   parts.push(t("progression.sumDays", { count: e.minDaysMember }));
     if (e.minLikesReceived)parts.push(t("progression.sumLikes", { count: e.minLikesReceived }));
     return parts.length ? parts.join(" · ") : t("progression.sumNone");
   }
 
   function limitSummary(e: LadderEntry): string {
-    if (!e.maxPostLength && !e.maxDailyPosts) return t("progression.limUnlimited");
     const parts: string[] = [];
-    if (e.maxPostLength) parts.push(t("progression.limChars", { count: e.maxPostLength }));
-    if (e.maxDailyPosts) parts.push(t("progression.limPerDay", { count: e.maxDailyPosts }));
-    return parts.join(" · ");
+    if (e.maxArticleLength) parts.push(t("progression.limArticleChars",  { count: e.maxArticleLength }));
+    if (e.maxDailyArticles) parts.push(t("progression.limArticlesPerDay", { count: e.maxDailyArticles }));
+    if (e.maxCommentLength) parts.push(t("progression.limCommentChars",  { count: e.maxCommentLength }));
+    if (e.maxDailyComments) parts.push(t("progression.limCommentsPerDay", { count: e.maxDailyComments }));
+    return parts.length ? parts.join(" · ") : t("progression.limUnlimited");
   }
 
   // ── Render ───────────────────────────────────────────────────────────────

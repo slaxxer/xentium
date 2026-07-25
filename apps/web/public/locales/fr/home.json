@@ -35,7 +35,13 @@
     "topBody": "Vous êtes au sommet de lʼéchelle — beau travail.",
     "almostThere": "Presque !",
     "remaining": "Encore {{n}} {{label}} pour atteindre",
-    "keepGoing": "Continuez à participer pour atteindre"
+    "keepGoing": "Continuez à participer pour atteindre",
+    "metric": {
+      "articles": "articles",
+      "comments": "commentaires",
+      "days": "jours",
+      "likes": "j’aime"
+    }
   },
   "online": {
     "title": "En ligne"

@@ -268,6 +268,9 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { statRegistry } = await import("../stat-registry/stat-registry.js");
   statRegistry.deregister(pluginId);
 
+  const { progressionCriteriaRegistry } = await import("../progression-registry/progression-criteria-registry.js");
+  progressionCriteriaRegistry.deregister(pluginId);
+
   // Deregister NEC codes
   const { necRegistry } = await import("../nec-registry/nec-registry.js");
   necRegistry.deregister(pluginId);

@@ -35,7 +35,13 @@
     "topBody": "Du bist ganz oben auf der Leiter — gut gemacht.",
     "almostThere": "Fast geschafft!",
     "remaining": "Noch {{n}} {{label}} bis",
-    "keepGoing": "Bleib aktiv, um zu erreichen"
+    "keepGoing": "Bleib aktiv, um zu erreichen",
+    "metric": {
+      "articles": "Artikel",
+      "comments": "Kommentare",
+      "days": "Tage",
+      "likes": "Likes"
+    }
   },
   "online": {
     "title": "Jetzt online"

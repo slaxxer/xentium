@@ -33,7 +33,13 @@
     "topBody": "You’re at the top of the ladder — nice work.",
     "almostThere": "Almost there!",
     "remaining": "{{n}} more {{label}} to reach",
-    "keepGoing": "Keep participating to reach"
+    "keepGoing": "Keep participating to reach",
+    "metric": {
+      "articles": "articles",
+      "comments": "comments",
+      "days": "days",
+      "likes": "likes"
+    }
   },
   "online": { "title": "Online now" },
   "suggested": {
