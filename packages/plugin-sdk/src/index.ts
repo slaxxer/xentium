@@ -3,6 +3,15 @@
  *
  * Public contract for building Nodevo plugins.
  * Import this package in your plugin's server entry point.
+ *
+ * Companion docs for the parts that live on the WEB side (this package is the
+ * server contract only):
+ *  - `docs/plugin-acp-autosave.md` — ACP admin surfaces. Config pages and
+ *    per-group panels AUTOSAVE (no Save button) via the host's `useAutosave` +
+ *    `AutosaveStatus`; entity modals, secrets and destructive actions keep an
+ *    explicit action. Read before building any plugin admin UI, RBAC/progression
+ *    config included.
+ *  - `docs/plugin-i18n.md` — bundling translated UI strings.
  */
 
 // Use a structural type so plugin-sdk doesn't need express as a direct dep.
@@ -273,7 +282,11 @@ export interface PluginContext {
   /** Register progression promotion criteria (e.g. forum posts/threads). Core's
    *  promotion job asks registered criteria whether a user meets a target
    *  group's plugin-configured thresholds; a disabled plugin's criteria stop
-   *  counting. Deregistered automatically on plugin disable. */
+   *  counting. Deregistered automatically on plugin disable.
+   *
+   *  The admin UI for these thresholds belongs in the core Group settings dialog
+   *  via the web-side `groupConfigPanel` slot, and autosaves like every other
+   *  config surface — see `docs/plugin-acp-autosave.md`. */
   registerProgressionCriteria(criteria: ProgressionCriteria): void;
 
   /** Register NEC error codes for the Error Reference ACP page. */
