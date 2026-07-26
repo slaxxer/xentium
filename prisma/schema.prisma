@@ -236,6 +236,10 @@ model Session {
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  // The log-retention prune scans by last activity. This is the fastest-growing
+  // table in the schema (a row per refresh-token rotation), so the daily prune
+  // must not seq-scan it.
+  @@index([lastUsedAt])
 
   @@map("ncf_sessions")
 }
@@ -966,4 +970,56 @@ model ReviewedSecuritySignal {
   @@unique([signalType, signalValue])
   @@index([signalType, signalValue])
   @@map("ncf_reviewed_security_signals")
+}
+
+// ── Admin-created scheduled tasks ────────────────────────────────────────────
+// The predefined jobs in SCHEDULED_JOBS are code-owned: an admin can only change
+// WHEN they run. These rows are the admin-composed ones — an action key from the
+// core action registry + validated params + a schedule. Core executes only
+// registered handlers; there is no arbitrary code path.
+//
+// Plugin cron jobs are deliberately NOT here: a plugin owns its own schedules
+// end to end (it calls upsertJobScheduler itself from onEnable), so a task can
+// never reference a handler that disappears with a plugin.
+model ScheduledTask {
+  id          String    @id @default(cuid())
+  name        String
+  actionKey   String    @map("action_key")     // key in the core action registry
+  params      Json      @default("{}")         // validated against the action's Zod schema
+  schedule    Json                             // JobScheduleConfig (mode/interval/daily/cron/tz)
+  enabled     Boolean   @default(true)
+  dryRun      Boolean   @default(false) @map("dry_run")  // report, never write
+
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  // Denormalized last-run summary so the ACP list needs no per-row subquery.
+  lastRunAt   DateTime? @map("last_run_at")
+  lastStatus  String?   @map("last_status")    // 'running' | 'ok' | 'error' | 'skipped'
+
+  runs        ScheduledTaskRun[]
+
+  @@index([enabled])
+  @@map("ncf_scheduled_tasks")
+}
+
+// Per-run history. Pruned by the existing log-retention job (retention.task_runs_days)
+// rather than owning a cleanup path of its own.
+model ScheduledTaskRun {
+  id         String        @id @default(cuid())
+  taskId     String        @map("task_id")
+  task       ScheduledTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  startedAt  DateTime      @default(now()) @map("started_at")
+  finishedAt DateTime?     @map("finished_at")
+  durationMs Int?          @map("duration_ms")
+  // Written as 'running' when the row is created, then settled by the runner.
+  status     String                                 // 'running' | 'ok' | 'error' | 'skipped'
+  dryRun     Boolean       @default(false) @map("dry_run")
+  summary    String?       @db.Text                 // human-readable outcome
+  error      String?       @db.Text
+
+  @@index([taskId, startedAt])
+  @@map("ncf_scheduled_task_runs")
 }

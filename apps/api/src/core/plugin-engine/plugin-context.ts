@@ -20,6 +20,7 @@ import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentL
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
+import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
 
 /** Host services injected into every plugin's onEnable/onDisable context. */
 const host: PluginHost = {
@@ -35,7 +36,7 @@ const host: PluginHost = {
     requirePermission: (key: string) => requirePermission(key as never),
   },
   progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
-  utils:      { resolveAvatar, sanitizeRichText },
+  utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns } },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
     dispatch: async (opts: any) => {

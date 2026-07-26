@@ -109,6 +109,16 @@ export function defaultConfig(def: ScheduledJobDef): JobScheduleConfig {
 
 /** Turn a stored config into a concrete cron pattern. */
 export function resolveCron(cfg: JobScheduleConfig, def: ScheduledJobDef): string {
+  return resolveCronPattern(cfg, def.defaultCron);
+}
+
+/** Just the shape the cron maths reads — `enabled` is irrelevant here, so both
+ *  a stored JobScheduleConfig and a plugin's own object satisfy it. */
+export type CronShape = Pick<JobScheduleConfig, "mode" | "intervalMin" | "dailyTime" | "cron" | "tz">;
+
+/** Same maths, without a ScheduledJobDef — used by admin-created tasks (which
+ *  have no code-owned default) and exposed to plugins via host.utils.cron. */
+export function resolveCronPattern(cfg: CronShape, fallbackCron: string): string {
   if (cfg.mode === "interval") {
     const m = cfg.intervalMin ?? 30;
     if (m % 60 === 0) {
@@ -121,7 +131,7 @@ export function resolveCron(cfg: JobScheduleConfig, def: ScheduledJobDef): strin
     const [hh, mm] = (cfg.dailyTime ?? "02:00").split(":").map(Number);
     return `${mm} ${hh} * * *`;
   }
-  return cfg.cron?.trim() || def.defaultCron;
+  return cfg.cron?.trim() || fallbackCron;
 }
 
 /**

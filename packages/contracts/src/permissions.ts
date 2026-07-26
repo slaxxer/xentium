@@ -52,6 +52,11 @@ export const CorePermissions = {
   // Plugins
   PLUGIN_INSTALL: "plugin.install",
   PLUGIN_ENABLE: "plugin.enable",
+
+  // Scheduled tasks — admin-created recurring jobs. Separate from admin.access
+  // on purpose: a task runs unattended and some actions are destructive, so it
+  // can be withheld from admins who should not automate that.
+  SYSTEM_TASKS_MANAGE: "system.tasks.manage",
 } as const;
 
 export type PermissionKey =
