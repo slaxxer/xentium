@@ -493,6 +493,32 @@ Everything your plugin needs is injected — you never import core internals:
 
 The host has **no knowledge of your tables, ids, or routes**. Want your content in search or the home feed? Register a **source** that returns normalized items (`SearchResultItem` / `HomeFeedItem`). Core asks your source to run the query and merges the result — so your plugin can be installed, disabled, or removed and core simply iterates whatever is currently registered. Migrations are tracked separately from core (in `nodevo_plugin_migrations`) and must ship a `down.sql` for every `up.sql`.
 
+### ACP admin UI — config surfaces autosave
+
+Nodevo ACP **config** pages have no Save button: they persist on change and show a status
+indicator instead. Your plugin's admin UI must follow the same convention or it will feel
+foreign inside the ACP. Externalize the two host bridges in your `vite.config.ts`:
+
+```ts
+"@web/hooks/useAutosave":         `${H}.webUseAutosave`,
+"@web/components/AutosaveStatus": `${H}.webAutosaveStatus`,
+```
+
+```tsx
+const saveMut = useMutation({ mutationFn: (v: Settings) => api.put(`${BASE}/admin/settings`, v) });
+useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mutate(v); } });
+// …and render <AutosaveStatus saving={saveMut.isPending} /> in the header.
+```
+
+This applies to settings pages **and** per-group panels registered through the
+`groupConfigPanel` slot — which is where RBAC/progression-adjacent config belongs, so it
+appears as a tab in core's own Group settings dialog rather than a standalone page. An
+explicit action is still correct for **create/edit entity modals**, **secrets** (never
+autosave a half-typed credential — give it a Set/Remove), and **destructive actions**.
+
+📖 **Full recipe, the failure modes, and the `groupConfigPanel` + progression path:
+[`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).**
+
 ### Local development
 
 1. Put your plugin under `plugins/community-examples/<name>/` (or `plugins/official/<name>/`) — both are pnpm workspace members.
