@@ -1,0 +1,190 @@
+/* ============================================================================
+   ACP — Scheduled Tasks page
+
+   Two columns: the code-owned jobs (wide, they carry a radio-row schedule
+   editor) and the admin-created tasks as an aside. The aside is deliberately
+   narrow — a task is a summary + a few actions, not a form — and sticky, so
+   "New task" stays reachable while scrolling a long job list.
+   ============================================================================ */
+
+.sched-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: var(--sp-8);
+  align-items: start;
+}
+
+.sched-main { min-width: 0; }
+
+.sched-aside {
+  position: sticky;
+  top: var(--sp-2);
+  min-width: 0;
+  /* Its own scroll: the job column is the page's scroll, and a long task list
+     must not push the aside past the viewport it is pinned to. */
+  max-height: calc(100vh - var(--sp-8));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Below this the aside has no room to be an aside — it becomes a normal block
+   under the jobs, and un-sticks so it cannot cover them. */
+@media (max-width: 1080px) {
+  .sched-layout { grid-template-columns: minmax(0, 1fr); }
+  .sched-aside  { position: static; max-height: none; overflow: visible; }
+}
+
+/* ── Aside panel ──────────────────────────────────────────────────────────── */
+
+.ctask-panel {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-radius);
+  padding: var(--sp-5);
+}
+
+.ctask-panel__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+}
+
+.ctask-panel__title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--c-fg);
+  margin: 0;
+}
+
+.ctask-panel__count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--c-fg-subtle);
+}
+
+.ctask-panel__sub {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--c-fg-muted);
+  margin: var(--sp-2) 0 var(--sp-4);
+}
+
+.ctask-panel__new {
+  width: 100%;
+  justify-content: center;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  /* .btn-sm hard-sets an asymmetric `var(--sp-1) var(--sp-3)` with !important,
+     which reads as a letterbox once the button is full-width. Match the vertical
+     padding to the horizontal instead of editing the shared class — every other
+     .btn-sm in the ACP is inline and wants to stay compact. */
+  padding: var(--sp-3) !important;
+}
+
+.ctask-empty {
+  font-size: 12.5px;
+  color: var(--c-fg-subtle);
+  text-align: center;
+  padding: var(--sp-5) var(--sp-3);
+  border: 1px dashed var(--c-border-hi);
+  border-radius: var(--radius-md);
+}
+
+.ctask-error {
+  font-size: 12.5px;
+  color: var(--c-danger);
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--c-danger-soft);
+}
+
+/* ── Task card ────────────────────────────────────────────────────────────── */
+
+.ctask-list { display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.ctask {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--c-surface);
+}
+.ctask.is-disabled { opacity: 0.58; }
+
+.ctask__name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--c-fg);
+}
+
+.ctask__badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 1px 7px;
+  border-radius: var(--radius-pill);
+  color: var(--c-accent);
+  border: 1px solid var(--c-accent);
+}
+
+.ctask__meta {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--c-fg-muted);
+  margin-top: 3px;
+  word-break: break-word;
+}
+.ctask__meta code {
+  font-family: monospace;
+  color: var(--c-fg);
+}
+
+.ctask__status { font-weight: 700; }
+.ctask__status--ok      { color: var(--c-success); }
+.ctask__status--error   { color: var(--c-danger); }
+.ctask__status--running { color: var(--c-accent); }
+.ctask__status--idle    { color: var(--c-fg-muted); }
+
+.ctask__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  margin-top: var(--sp-3);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--c-rowline);
+}
+/* The toggle carries a word, the rest are icons — push it away from them so a
+   mis-click never lands on Delete. */
+.ctask__actions .ctask__toggle { margin-left: auto; font-size: 11.5px; }
+.ctask__actions .btn-ghost { padding: 4px 8px; }
+.ctask__danger { color: var(--c-danger); }
+
+.ctask__history-toggle {
+  font-size: 11.5px;
+  padding: 4px 0;
+  margin-top: var(--sp-1);
+}
+
+.ctask__runs {
+  margin-top: var(--sp-2);
+  padding-top: var(--sp-2);
+  border-top: 1px solid var(--c-rowline);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ctask__run { font-size: 11.5px; line-height: 1.45; }
+.ctask__run-head { display: flex; align-items: baseline; gap: var(--sp-2); flex-wrap: wrap; }
+.ctask__run-time { color: var(--c-fg-subtle); }
+.ctask__run-dry  { color: var(--c-accent); font-weight: 700; }
+.ctask__run-text { color: var(--c-fg-muted); word-break: break-word; }

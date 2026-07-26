@@ -13,6 +13,9 @@ const RETENTION_DEFAULTS = {
   "retention.activity_action_days":     180,
   "retention.error_log_days":           90,
   "retention.login_events_days":        180,
+  "retention.task_runs_days":           90,
+  "retention.sessions_days":            30,
+  "retention.auth_tokens_days":         7,
 };
 
 function cutoff(days: number): Date {
@@ -21,7 +24,8 @@ function cutoff(days: number): Date {
 
 /**
  * Prune unbounded log tables (§55 hardening): activity log (page visits get a
- * shorter window than the ACP-action audit trail), error log, and login events.
+ * shorter window than the ACP-action audit trail), error log, login events,
+ * scheduled-task run history, dead auth sessions and spent auth tokens.
  *
  * Dialog acknowledgments are NOT affected: they live in ncf_acp_visits (durable
  * last-visit marks, bounded to users × paths), precisely so this job can prune
@@ -36,6 +40,9 @@ export async function processLogRetention(): Promise<void> {
   const actionDays    = Number(cfg["retention.activity_action_days"])     || 0;
   const errorDays     = Number(cfg["retention.error_log_days"])           || 0;
   const loginDays     = Number(cfg["retention.login_events_days"])        || 0;
+  const taskRunDays   = Number(cfg["retention.task_runs_days"])           || 0;
+  const sessionDays   = Number(cfg["retention.sessions_days"])            || 0;
+  const authTokenDays = Number(cfg["retention.auth_tokens_days"])         || 0;
 
   const results: string[] = [];
 
@@ -65,6 +72,51 @@ export async function processLogRetention(): Promise<void> {
       where: { createdAt: { lt: cutoff(loginDays) } },
     });
     if (count) results.push(`${count} login event(s) > ${loginDays}d`);
+  }
+
+  // Scheduled-task run history. A task on a 5-minute schedule writes ~105k rows
+  // a year, so this table needs the same pruning as the other unbounded logs
+  // rather than a cleanup path of its own. The most recent run also lives
+  // denormalized on the task row, so pruning never blanks the ACP summary line.
+  if (taskRunDays > 0) {
+    const { count } = await prisma.scheduledTaskRun.deleteMany({
+      where: { startedAt: { lt: cutoff(taskRunDays) } },
+    });
+    if (count) results.push(`${count} task run(s) > ${taskRunDays}d`);
+  }
+
+  // Dead auth sessions. This is the fastest-growing table in the schema: the
+  // refresh token rotates on every use, and a rotation REVOKES the old row and
+  // CREATES a new one (auth.tokens.ts) rather than updating in place. With a
+  // 15-minute access token that is ~96 rows per continuously-active user per
+  // day, and nothing else in the codebase ever deletes a session row.
+  //
+  // Only rows that can no longer authenticate anything are eligible — revoked,
+  // or past their own expiry. Every reader of this table already filters to
+  // live sessions (`revokedAt: null, expiresAt > now`), and the security
+  // scanners correlate device/IP through ncf_login_events, not through here, so
+  // pruning dead rows costs no forensic history.
+  if (sessionDays > 0) {
+    const { count } = await prisma.session.deleteMany({
+      where: {
+        lastUsedAt: { lt: cutoff(sessionDays) },
+        OR: [{ revokedAt: { not: null } }, { expiresAt: { lt: new Date() } }],
+      },
+    });
+    if (count) results.push(`${count} dead session(s) > ${sessionDays}d`);
+  }
+
+  // Spent single-use auth tokens. Both are minutes-lived, so anything past its
+  // expiry by days is unreachable by definition — the window exists only to keep
+  // a short trail for support ("did that reset mail ever get used?").
+  if (authTokenDays > 0) {
+    const at = cutoff(authTokenDays);
+    const [resets, changes] = await Promise.all([
+      prisma.passwordResetToken.deleteMany({ where: { expiresAt: { lt: at } } }),
+      prisma.emailChangeToken.deleteMany({ where: { expiresAt: { lt: at } } }),
+    ]);
+    const n = resets.count + changes.count;
+    if (n) results.push(`${n} spent auth token(s) > ${authTokenDays}d`);
   }
 
   console.log(`[log-retention] ${results.length ? `pruned ${results.join(", ")}` : "nothing to prune"}`);
