@@ -11,6 +11,7 @@ import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
+import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
 import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-engine.js';
@@ -38,6 +39,7 @@ function startWorkers() {
     attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
     attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
     attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
+    attachFailureHandler(startScheduledTaskWorker(),          'scheduled-task'),
   );
 }
 
@@ -67,6 +69,16 @@ async function boot() {
   }
   startWorkers();
   await scheduleJobs();
+
+  // Converge Redis schedulers with the ncf_scheduled_tasks rows: drop orphans
+  // (a task deleted while the worker was down keeps firing otherwise) and
+  // re-assert every enabled task. After plugin init for the same reason the
+  // workers are — a half-initialized process draws wrong conclusions.
+  try {
+    await reconcileScheduledTasks();
+  } catch (err) {
+    console.error('[worker] scheduled-task reconcile failed:', (err as Error)?.message ?? err);
+  }
   console.log(`[worker] up, ${workers.length} worker(s) running, plugins loaded, scheduled jobs registered`);
 
   // Run the marketplace update check once on boot so a critical plugin patch

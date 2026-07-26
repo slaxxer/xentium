@@ -632,6 +632,11 @@ export const adminService = {
     "retention.activity_action_days":      180,
     "retention.error_log_days":            90,
     "retention.login_events_days":         180,
+    "retention.task_runs_days":            90,
+    // Dead (revoked/expired) refresh-token sessions and spent single-use auth
+    // tokens. Live sessions are never touched regardless of these windows.
+    "retention.sessions_days":             30,
+    "retention.auth_tokens_days":          7,
   } as Record<string, unknown>,
 
   async getSettings() {
