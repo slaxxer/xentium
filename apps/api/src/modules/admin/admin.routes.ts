@@ -7,6 +7,7 @@ import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
+import { scheduledTaskRouter } from "../scheduled-tasks/scheduled-task.routes.js";
 
 export const adminRouter: Router = Router();
 
@@ -149,3 +150,5 @@ adminRouter.post("/marketplace/update",        adminGuard, licenseActivateLimite
 adminRouter.use("/groups",       groupsRouter);
 adminRouter.use("/permissions",  permissionsRouter);
 adminRouter.use("/progression",  adminProgressionRouter);
+// Admin-created scheduled tasks (own permission: system.tasks.manage).
+adminRouter.use("/tasks",        scheduledTaskRouter);

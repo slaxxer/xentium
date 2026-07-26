@@ -5,6 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faClock, faPlay, faCheck, faCircleExclamation, faPause } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast } from "../../../lib/swal";
+import { CustomTasksSection } from "./CustomTasksSection";
+import "./ScheduledJobsPage.scss";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 interface JobConfig {
@@ -189,7 +191,7 @@ export function ScheduledJobsPage() {
   });
 
   return (
-    <div style={{ maxWidth: 860 }}>
+    <div style={{ maxWidth: 1260 }}>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.system")}</div>
@@ -200,11 +202,23 @@ export function ScheduledJobsPage() {
         {t("scheduled.subtitle")}
       </p>
 
-      {isLoading ? (
-        <div className="acp-card acp-empty">{t("scheduled.loading")}</div>
-      ) : (
-        jobs.map((job) => <JobCard key={job.key} job={job} />)
-      )}
+      {/* Admin-created tasks share this page with the code-owned jobs — both
+          answer "what runs on a schedule here?", and splitting them across two
+          nav entries would hide half the answer. They sit in an aside rather
+          than below the jobs so "New task" is reachable without scrolling past
+          every built-in job first. */}
+      <div className="sched-layout">
+        <div className="sched-main">
+          {isLoading ? (
+            <div className="acp-card acp-empty">{t("scheduled.loading")}</div>
+          ) : (
+            jobs.map((job) => <JobCard key={job.key} job={job} />)
+          )}
+        </div>
+        <div className="sched-aside">
+          <CustomTasksSection />
+        </div>
+      </div>
     </div>
   );
 }
