@@ -313,6 +313,13 @@ All **Admin**.
 |---|---|---|---|
 | * | `/api/p/:pluginId/*` | per plugin | Routes registered by an enabled plugin. A guard returns `404 NEC-PLUGIN-2020` when the plugin is disabled. |
 
+A plugin's **admin** endpoints under this prefix back ACP config surfaces, and those
+surfaces **autosave** — so expect a debounced write per edit rather than one save-button
+submit. Make them idempotent full-object writes, gate them on `admin.access` (they are not
+admin-gated by the `/api/p/` prefix itself), and never autosave secrets — give a write-only
+field its own explicit Set/Remove route. Web-side recipe:
+[`plugin-acp-autosave.md`](plugin-acp-autosave.md).
+
 ---
 
 ## Admin (ACP) — `/api/admin`
