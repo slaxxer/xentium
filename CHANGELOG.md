@@ -1,65 +1,63 @@
 # Changelog
 
-## Progression is no longer forum-flavoured (§38 core/plugin split)
+## Scheduled tasks admins can compose themselves
 
-Core's promotion ladder was built around forum posts and threads — columns core
-itself could never populate once the forum became an optional plugin. Core now
-keeps thresholds and limits for the content it actually owns (articles and article
-comments); the forum owns its own and hands core the verdict.
+The ACP's Scheduled Tasks page could only answer *when* the built-in jobs run.
+Every piece of periodic maintenance had to ship as code. Admins can now build
+their own task: a name, an action from a fixed catalogue, its parameters, and a
+schedule.
 
-- **New plugin primitive `registerProgressionCriteria`** — a plugin declares
-  `evaluate(userId, groupId) => boolean[]` for the thresholds it owns, plus an
-  optional display-only `metrics()` so the member-facing progress bar shows what
-  promotion actually gates on. Core never reads plugin tables. A criteria source
-  that throws is skipped, so a misbehaving plugin can neither block nor break
-  promotion — and disabling a plugin drops its thresholds from the ladder instead
-  of stranding members on a rung they can no longer clear. Plugins resolve the
-  governing rung through the new `host.progression.getEffectiveGroupId`.
-- **Core thresholds are now articles + comments** — `min_posts` / `min_threads`
-  become `min_articles` / `min_comments`, backed by a new `ncf_users.comment_count`
-  that create/delete keep in step (backfilled from existing published comments).
-- **Content limits split by content type** — `max_article_length`,
-  `max_daily_articles`, `max_comment_length`, `max_daily_comments`. The old
-  `max_post_length` / `max_daily_posts` were enforced on *articles* in core (the
-  forum merely borrowed the middleware), so article limits are preserved rather
-  than quietly dropped; comment limits are new and enforced on create and edit.
-- **Promotion could fire against a half-loaded worker** — BullMQ workers were
-  constructed at module scope, before `initializeEnabledPlugins()`. A
-  check-promotion job landing in that window read an empty criteria registry and
-  could promote someone who had not met a plugin's thresholds. Workers now start
-  after plugin initialization, which closes the same race for plugin security
-  scans.
-- **Comment counters were wrong in two places** — deleting a *pending* comment
-  decremented an `article.commentCount` it had never incremented, and the
-  moderator-side comment delete maintained no counters at all.
-- ACP → Progression and ACP → Groups expose the new threshold and limit fields;
-  the progress caption is now localized through `progression.metric.*` instead of
-  interpolating a raw machine key. Strings updated across en/de/es/fr/pt.
+- **A fixed action catalogue, never arbitrary code** — core runs only handlers
+  registered in its own action registry. A scheduler that could execute
+  admin-supplied code would turn any admin-session compromise into server
+  compromise, so that path does not exist. Plugin cron jobs stay outside the
+  catalogue as well: a plugin owns its schedules end to end, so a task can never
+  point at a handler that disappears when a plugin is disabled. Plugins get the
+  cron maths only, through the new `host.utils.cron`.
+- **Five actions to start with** — *Recompute counters* repairs drift in nine
+  denormalised counters; *Purge orphaned uploads* reclaims files no record points
+  at; *Purge deleted content* hard-deletes what has sat in the trash past a
+  window; *Trim article revisions* keeps the newest N per article; *Prune
+  notifications* ages out the feed on separate read/unread clocks.
+- **Destructive actions default to explaining themselves** — every one supports a
+  dry run that reports exactly what it would change and writes nothing, and the
+  ACP pushes you to use it first. *Purge deleted content* refuses to remove a
+  soft-deleted comment whose replies are still alive (the reply relation cascades,
+  so a naive purge would take live answers with it) and reports how many it held
+  back. *Purge orphaned uploads* treats images referenced from page and article
+  bodies as live, keeps files belonging to soft-deleted records, honours a grace
+  period on file age, and never touches plugin upload folders.
+- **A separate permission, `system.tasks.manage`** — deliberately not plain
+  `admin.access`, because these run unattended and some of them destroy data, so
+  the capability can be withheld from an admin who should not automate it. Every
+  mutation is audited through the existing ACP activity log.
+- **Schedules survive restarts and Redis** — a boot reconcile converges the
+  scheduler with the database: it drops schedules whose task was deleted while the
+  worker was down (which would otherwise fire forever) and re-asserts every
+  enabled task. A schedule that fails validation is rejected before it reaches
+  Redis, so the two stores cannot disagree.
+- **Parameter forms are generated from each action's own validation schema**, so
+  an action that gains a parameter needs no frontend change, and the form cannot
+  post a shape the server would reject.
+- Custom tasks appear as a panel beside the built-in jobs rather than below them —
+  both answer "what runs on a schedule here?", and stacking them put *New task*
+  behind a scroll past every built-in job.
 
-> **Upgrade note:** any `min_posts` / `min_threads` configured before this change
-> is dropped — there is no data migration (pre-alpha). Re-enter forum thresholds
-> under ACP → Groups → Forum.
+## Dead login sessions were never cleaned up
 
-## Registration — username & email availability checked at step 1
+`ncf_sessions` had no cleanup path at all, and it is the fastest-growing table in
+the schema: the refresh token rotates on every use, and each rotation revokes the
+old row and inserts a new one rather than updating in place. At a 15-minute access
+token that is roughly 96 rows per continuously-active user per day, kept forever.
 
-The register wizard only tested uniqueness on the final `POST /auth/register`, so a
-taken username surfaced *after* the user had filled in password, PIN and terms and
-verified an email code — then bounced them back to step 1 with the rest of the form
-still to redo. Identity is now settled before step 1 is allowed to advance.
-
-- **New public endpoint `POST /auth/register/check-availability`** — takes `email`
-  and/or `username` (same format rules as registration), returns which of them are
-  free. Behind its own `auth-avail` rate limiter (30/min in production), since the
-  wizard polls it as the user types. `checkAvailability()` mirrors the lookups
-  `register()` performs — email exact, username case-insensitive — so the probe's
-  answer matches the eventual outcome; `register()` remains authoritative.
-- **Register step 1 gives live feedback** — debounced (450 ms) probes for email and
-  username, inline *checking / available / taken* messages under each field, error
-  styling on the input, and **Continue disabled** while either reads taken.
-  `validateStep1()` re-checks authoritatively before advancing, so an in-flight or
-  skipped probe cannot let a taken value through. A failed probe (offline, rate
-  limited) does not block — the server still rejects.
-- A late `NEC-AUTH-2001` / `NEC-AUTH-2002` that bounces the wizard back to step 1
-  now marks the offending field instead of only firing a toast.
-- New strings (`checking`, `emailAvailable`, `usernameAvailable`) across
-  en/de/es/fr/pt; the new `.rw-avail` styles use existing tokens only.
+- Dead sessions — revoked, or past their own expiry — are now pruned once they
+  fall outside `retention.sessions_days` (default 30). Live sessions are never
+  touched regardless of the window, and login history is unaffected: the security
+  scanners correlate device and IP through login events, not through this table.
+- Spent password-reset and email-change tokens are cleared on their own window,
+  `retention.auth_tokens_days` (default 7). Both are minutes-lived, so anything
+  days past expiry is already unusable.
+- Scheduled-task run history is pruned on `retention.task_runs_days` (default 90).
+  A task on a five-minute schedule writes about 105,000 rows a year; the most
+  recent run is kept on the task row itself, so the ACP summary never goes blank.
+- As with the existing retention settings, `0` keeps a table forever.
