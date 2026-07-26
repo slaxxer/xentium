@@ -213,6 +213,16 @@ export interface PluginHost {
   };
   /** Shared helper utilities. */
   utils: {
+    /** Cron maths for plugins that run their own recurring jobs. Core does NOT
+     *  manage, display, or own a plugin's schedules — the plugin still calls
+     *  `upsertJobScheduler` itself in onEnable and removes it on disable. This
+     *  only stops every plugin re-implementing cron parsing and its guardrails.
+     *  `previewRuns` throws NEC-QUEUE-5001 on a bad expression or one that fires
+     *  more often than `minIntervalSec`. */
+    cron: {
+      resolveCron:  (cfg: { mode: "interval" | "daily" | "cron"; intervalMin?: number; dailyTime?: string; cron?: string; tz?: string }, fallbackCron: string) => string;
+      previewRuns:  (pattern: string, tz: string | undefined, minIntervalSec: number, count?: number) => string[];
+    };
     resolveAvatar: (...args: any[]) => any;
     /** Sanitize user-authored rich-text HTML (allowlist) before storage.
      *  Plugins that accept HTML bodies MUST run them through this on write. */
