@@ -67,8 +67,8 @@ catalogs:
       specifier: ^7
       version: 7.76.0
     react-router:
-      specifier: ^7
-      version: 7.15.1
+      specifier: ^8
+      version: 8.3.0
     supertest:
       specifier: ^7
       version: 7.2.2
@@ -392,7 +392,7 @@ importers:
         version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
       react-router:
         specifier: 'catalog:'
-        version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+        version: 8.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react-router-dom:
         specifier: ^7.15.1
         version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -590,280 +590,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
-
-  plugins/official/nodevo-advanced-moderation:
-    dependencies:
-      '@fortawesome/fontawesome-svg-core':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/free-solid-svg-icons':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/react-fontawesome':
-        specifier: '*'
-        version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
-      '@tanstack/react-query':
-        specifier: ^5
-        version: 5.100.11(react@19.2.6)
-      '@types/react':
-        specifier: '*'
-        version: 19.2.15
-      '@types/react-dom':
-        specifier: '*'
-        version: 19.2.3(@types/react@19.2.15)
-      express:
-        specifier: 'catalog:'
-        version: 5.2.1
-      react:
-        specifier: ^19.2.6
-        version: 19.2.6
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.6(react@19.2.6)
-      react-router-dom:
-        specifier: ^7
-        version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-    devDependencies:
-      '@types/express':
-        specifier: ^5
-        version: 5.0.6
-      '@types/node':
-        specifier: ^24
-        version: 24.12.4
-      '@vitejs/plugin-react':
-        specifier: 'catalog:'
-        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
-      i18next:
-        specifier: ^26.2.0
-        version: 26.2.0(typescript@6.0.3)
-      maxmind:
-        specifier: ^4.3.27
-        version: 4.3.29
-      react-i18next:
-        specifier: ^17.0.8
-        version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)(typescript@6.0.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
-      vitest:
-        specifier: 'catalog:'
-        version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
-
-  plugins/official/nodevo-forum:
-    dependencies:
-      '@fortawesome/fontawesome-svg-core':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/free-solid-svg-icons':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/react-fontawesome':
-        specifier: '*'
-        version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
-      '@tanstack/react-query':
-        specifier: ^5
-        version: 5.100.11(react@19.2.6)
-      '@types/react':
-        specifier: '*'
-        version: 19.2.15
-      '@types/react-dom':
-        specifier: '*'
-        version: 19.2.3(@types/react@19.2.15)
-      express:
-        specifier: 'catalog:'
-        version: 5.2.1
-      multer:
-        specifier: 'catalog:'
-        version: 2.2.0
-      react:
-        specifier: ^19.2.6
-        version: 19.2.6
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.6(react@19.2.6)
-      react-router-dom:
-        specifier: ^7
-        version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-    devDependencies:
-      '@types/express':
-        specifier: ^5
-        version: 5.0.6
-      '@types/multer':
-        specifier: ^2
-        version: 2.1.0
-      '@types/node':
-        specifier: ^24
-        version: 24.12.4
-      '@vitejs/plugin-react':
-        specifier: 'catalog:'
-        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
-      i18next:
-        specifier: ^26.2.0
-        version: 26.2.0(typescript@6.0.3)
-      react-i18next:
-        specifier: ^17.0.8
-        version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)(typescript@6.0.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
-
-  plugins/official/nodevo-messaging:
-    dependencies:
-      '@fortawesome/fontawesome-svg-core':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/free-solid-svg-icons':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/react-fontawesome':
-        specifier: '*'
-        version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
-      '@tanstack/react-query':
-        specifier: ^5
-        version: 5.100.11(react@19.2.6)
-      '@types/react':
-        specifier: '*'
-        version: 19.2.15
-      '@types/react-dom':
-        specifier: '*'
-        version: 19.2.3(@types/react@19.2.15)
-      express:
-        specifier: 'catalog:'
-        version: 5.2.1
-      react:
-        specifier: ^19.2.6
-        version: 19.2.6
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.6(react@19.2.6)
-      react-router-dom:
-        specifier: ^7
-        version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-    devDependencies:
-      '@types/express':
-        specifier: ^5
-        version: 5.0.6
-      '@types/node':
-        specifier: ^24
-        version: 24.12.4
-      '@vitejs/plugin-react':
-        specifier: 'catalog:'
-        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
-      i18next:
-        specifier: ^26.2.0
-        version: 26.2.0(typescript@6.0.3)
-      react-i18next:
-        specifier: ^17.0.8
-        version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)(typescript@6.0.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
-
-  plugins/official/nodevo-shoutbox:
-    dependencies:
-      '@fortawesome/fontawesome-svg-core':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/free-solid-svg-icons':
-        specifier: '*'
-        version: 7.2.0
-      '@fortawesome/react-fontawesome':
-        specifier: '*'
-        version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
-      '@nodevo/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
-      '@tanstack/react-query':
-        specifier: ^5
-        version: 5.100.11(react@19.2.6)
-      '@types/react':
-        specifier: '*'
-        version: 19.2.15
-      '@types/react-dom':
-        specifier: '*'
-        version: 19.2.3(@types/react@19.2.15)
-      express:
-        specifier: 'catalog:'
-        version: 5.2.1
-      react:
-        specifier: ^19.2.6
-        version: 19.2.6
-      react-dom:
-        specifier: ^19.2.6
-        version: 19.2.6(react@19.2.6)
-      react-router-dom:
-        specifier: ^7
-        version: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-    devDependencies:
-      '@nodevo/ui':
-        specifier: workspace:*
-        version: link:../../../packages/ui
-      '@types/express':
-        specifier: ^5
-        version: 5.0.6
-      '@types/node':
-        specifier: ^24
-        version: 24.12.4
-      '@vitejs/plugin-react':
-        specifier: 'catalog:'
-        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
-      i18next:
-        specifier: ^26.2.0
-        version: 26.2.0(typescript@6.0.3)
-      react-i18next:
-        specifier: ^17.0.8
-        version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
-      tsup:
-        specifier: ^8.5.1
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)(typescript@6.0.3)
-      typescript:
-        specifier: 'catalog:'
-        version: 6.0.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
 
 packages:
 
@@ -2681,6 +2407,9 @@ packages:
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
 
+  cookie-es@3.1.1:
+    resolution: {integrity: sha512-UaXxwISYJPTr9hwQxMFYZ7kNhSXboMXP+Z3TRX6f1/NyaGPfuNUZOWP1pUEb75B2HjfklIYLVRfWiFZJyC6Npg==}
+
   cookie-parser@1.4.7:
     resolution: {integrity: sha512-nGUvgXnotP3BsjiLX2ypbQnWoGUPIIfHQNZkkC668ntrzGWEZVW70HDEB1qnNGMicPje6EttlIgzo51YSwNQGw==}
     engines: {node: '>= 0.8.0'}
@@ -3390,10 +3119,6 @@ packages:
     resolution: {integrity: sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==}
     engines: {node: '>= 0.4'}
 
-  maxmind@4.3.29:
-    resolution: {integrity: sha512-Vxx0rh7omBekjZnsDxpw35SrGGM3Uy7NoIKWzZlvh3UcjihGaySR8n+YSQ8YBseCvhEn+yehA98rZkTDW+uhPw==}
-    engines: {node: '>=12', npm: '>=6'}
-
   media-typer@0.3.0:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
     engines: {node: '>= 0.6'}
@@ -3443,10 +3168,6 @@ packages:
 
   mlly@1.8.2:
     resolution: {integrity: sha512-d+ObxMQFmbt10sretNDytwt85VrbkhhUA/JBGm1MPaWJ65Cl4wOgLaB1NYvJSZ0Ef03MMEU/0xpPMXUIQ29UfA==}
-
-  mmdb-lib@2.2.1:
-    resolution: {integrity: sha512-DXO4L9W+08T+A7h5+xdT32l7IMot8z7WOH+7C1Maol571PnktQ8un7Ni4CyPFp4H+vht/FDA5/tpjRvWMFQDMw==}
-    engines: {node: '>=10', npm: '>=6'}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -3880,6 +3601,16 @@ packages:
       react-dom:
         optional: true
 
+  react-router@8.3.0:
+    resolution: {integrity: sha512-qyPMvW83jGIct3yiieisxdk9M745anqhpIMKN5m1t6yBMfgVPpt77aHOqs5fUlEJRMCGffg9BaQLH9oPVOL7xQ==}
+    engines: {node: '>=22.22.0'}
+    peerDependencies:
+      react: '>=19.2.7'
+      react-dom: '>=19.2.7'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+
   react@19.2.6:
     resolution: {integrity: sha512-sfWGGfavi0xr8Pg0sVsyHMAOziVYKgPLNrS7ig+ivMNb3wbCBw3KxtflsGBAwD3gYQlE/AEZsTLgToRrSCjb0Q==}
     engines: {node: '>=0.10.0'}
@@ -4143,10 +3874,6 @@ packages:
 
   thread-stream@3.1.0:
     resolution: {integrity: sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A==}
-
-  tiny-lru@11.3.4:
-    resolution: {integrity: sha512-UxWEfRKpFCabAf6fkTNdlfSw/RDUJ/4C6i1aLZaDnGF82PERHyYhz5CMCVYXtLt34LbqgfpJ2bjmgGKgxuF/6A==}
-    engines: {node: '>=12'}
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
@@ -6087,6 +5814,8 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
+  cookie-es@3.1.1: {}
+
   cookie-parser@1.4.7:
     dependencies:
       cookie: 0.7.2
@@ -6790,11 +6519,6 @@ snapshots:
 
   math-intrinsics@1.1.0: {}
 
-  maxmind@4.3.29:
-    dependencies:
-      mmdb-lib: 2.2.1
-      tiny-lru: 11.3.4
-
   media-typer@0.3.0: {}
 
   media-typer@1.1.0: {}
@@ -6833,8 +6557,6 @@ snapshots:
       pathe: 2.0.3
       pkg-types: 1.3.1
       ufo: 1.6.4
-
-  mmdb-lib@2.2.1: {}
 
   ms@2.1.3: {}
 
@@ -7096,14 +6818,6 @@ snapshots:
       postcss: 8.5.15
       tsx: 4.22.3
 
-  postcss-load-config@6.0.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3):
-    dependencies:
-      lilconfig: 3.1.3
-    optionalDependencies:
-      jiti: 2.7.0
-      postcss: 8.5.21
-      tsx: 4.22.3
-
   postcss@8.5.15:
     dependencies:
       nanoid: 3.3.12
@@ -7299,6 +7013,13 @@ snapshots:
       cookie: 1.1.1
       react: 19.2.6
       set-cookie-parser: 2.7.2
+    optionalDependencies:
+      react-dom: 19.2.6(react@19.2.6)
+
+  react-router@8.3.0(react-dom@19.2.6(react@19.2.6))(react@19.2.6):
+    dependencies:
+      cookie-es: 3.1.1
+      react: 19.2.6
     optionalDependencies:
       react-dom: 19.2.6(react@19.2.6)
 
@@ -7615,8 +7336,6 @@ snapshots:
     dependencies:
       real-require: 0.2.0
 
-  tiny-lru@11.3.4: {}
-
   tinybench@2.9.0: {}
 
   tinyexec@0.3.2: {}
@@ -7676,34 +7395,6 @@ snapshots:
       tree-kill: 1.2.2
     optionalDependencies:
       postcss: 8.5.15
-      typescript: 6.0.3
-    transitivePeerDependencies:
-      - jiti
-      - supports-color
-      - tsx
-      - yaml
-
-  tsup@8.5.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)(typescript@6.0.3):
-    dependencies:
-      bundle-require: 5.1.0(esbuild@0.27.7)
-      cac: 6.7.14
-      chokidar: 4.0.3
-      consola: 3.4.2
-      debug: 4.4.3
-      esbuild: 0.27.7
-      fix-dts-default-cjs-exports: 1.0.1
-      joycon: 3.1.1
-      picocolors: 1.1.1
-      postcss-load-config: 6.0.1(jiti@2.7.0)(postcss@8.5.21)(tsx@4.22.3)
-      resolve-from: 5.0.0
-      rollup: 4.60.4
-      source-map: 0.7.6
-      sucrase: 3.35.1
-      tinyexec: 0.3.2
-      tinyglobby: 0.2.16
-      tree-kill: 1.2.2
-    optionalDependencies:
-      postcss: 8.5.21
       typescript: 6.0.3
     transitivePeerDependencies:
       - jiti
