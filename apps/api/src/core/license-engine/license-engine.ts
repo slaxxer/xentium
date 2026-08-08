@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import * as jose from "jose";
 import type { DeployEnvironment, EntitlementStatus } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
@@ -22,12 +21,13 @@ async function licenseServerError(res: Response): Promise<NodevoError> {
     : new NodevoError({ code: NEC.LICENSE_SERVER_REJECTED, httpStatus: res.status, message });
 }
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-// Path to the bundled public key (in packages/sdk — read at repo root)
+// Path to the bundled public key (in packages/sdk — read at repo root).
+// Anchored on REPO_ROOT rather than walking up from import.meta.url: tsup
+// bundles this module into apps/api/dist/, so a fixed number of `..` hops is
+// only correct for the source layout and overshoots the repo root in a build.
 const PUBLIC_KEY_PATH = path.resolve(
-  __dirname,
-  "../../../../../packages/sdk/src/license-public-key.pem",
+  env.REPO_ROOT,
+  "packages/sdk/src/license-public-key.pem",
 );
 
 const GRACE_PERIOD_DAYS = 30;

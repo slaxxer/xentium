@@ -11,8 +11,26 @@ import { createRequire } from "node:module";
  * build is actually handed to testers.
  */
 const require = createRequire(import.meta.url);
-export const NODEVO_VERSION: string =
-  (require("../../package.json") as { version: string }).version;
+
+/**
+ * The package.json sits at a different relative depth depending on how this
+ * module is being executed: under tsx it runs from `src/config/`, but tsup
+ * bundles it into `dist/`, one level shallower. Resolving both keeps a single
+ * code path — hardcoding either one leaves the other with MODULE_NOT_FOUND at
+ * startup (which is exactly what the built server used to do).
+ */
+function readVersion(): string {
+  for (const candidate of ["../../package.json", "../package.json"]) {
+    try {
+      return (require(candidate) as { version: string }).version;
+    } catch {
+      // wrong layout — try the next candidate
+    }
+  }
+  throw new Error("NODEVO_VERSION: could not locate the api package.json");
+}
+
+export const NODEVO_VERSION: string = readVersion();
 
 /** "1.0.0-alpha.1" → [1, 0, 0] — prerelease/build metadata ignored. */
 export function baseVersion(version: string): [number, number, number] {
