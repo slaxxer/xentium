@@ -34,7 +34,8 @@
     "errorLog": "Fehlerprotokoll",
     "migrationHistory": "Migrationsverlauf",
     "about": "Über",
-    "guestHome": "Gäste-Startseite"
+    "guestHome": "Gäste-Startseite",
+    "emailTemplates": "E-Mail-Vorlagen"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -174,6 +175,22 @@
       "fromAddress": {
         "label": "Absenderadresse",
         "desc": "Der Absender, der bei ausgehenden E-Mails angezeigt wird."
+      },
+      "smtpUser": {
+        "label": "SMTP-Benutzername",
+        "desc": "Leer lassen, wenn über einen lokalen Mailserver ohne Anmeldung gesendet wird."
+      },
+      "smtpPass": {
+        "label": "SMTP-Passwort",
+        "desc": "Verschlüsselt gespeichert und nicht erneut angezeigt. Für ein lokales Relay ohne Authentifizierung leer lassen."
+      },
+      "smtpSecure": {
+        "label": "Implizites TLS",
+        "desc": "Für Port 465 aktivieren. Bei 587 ausgeschaltet lassen — dort wird per STARTTLS verschlüsselt."
+      },
+      "fromName": {
+        "label": "Absendername",
+        "desc": "Anzeigename neben der Absenderadresse."
       }
     },
     "placeholders": {
@@ -181,7 +198,9 @@
       "siteUrl": "https://meineseite.de",
       "siteDescription": "Eine Plattform auf Nodevo-Basis",
       "smtpHost": "smtp.beispiel.de",
-      "fromAddress": "no-reply@beispiel.de"
+      "fromAddress": "no-reply@beispiel.de",
+      "smtpUser": "no-reply@example.com",
+      "fromName": "Nodelab"
     },
     "options": {
       "regMode": {
@@ -204,7 +223,15 @@
         "followers": "Meiste Follower"
       }
     },
-    "toastSaved": "Einstellungen gespeichert!"
+    "toastSaved": "Einstellungen gespeichert!",
+    "secret": {
+      "configured": "Konfiguriert",
+      "remove": "Entfernen",
+      "set": "Setzen",
+      "saved": "Gespeichert",
+      "removed": "Entfernt",
+      "placeholder": "Neuen Wert eingeben"
+    }
   },
   "invite": {
     "title": "Einladungscodes",
@@ -1749,5 +1776,31 @@
     "permsCount_other": "{{count}} Berechtigungen",
     "progression": "Progression",
     "editTitleHint": "Name und Badge-Farbe bearbeiten"
+  },
+  "emailTemplates": {
+    "eyebrow": "System",
+    "title": "E-Mail-Vorlagen",
+    "subtitle": "Betreff und Inhalt der von dieser Website versendeten E-Mails bearbeiten. Änderungen werden automatisch gespeichert.",
+    "subject": "Betreff",
+    "body": "Inhalt (HTML)",
+    "placeholders": "Platzhalter",
+    "insert": "An den Inhalt anhängen",
+    "customized": "Angepasst",
+    "reset": "Auf Standard zurücksetzen",
+    "resetTitle": "Diese Vorlage zurücksetzen?",
+    "resetConfirm": "Die Vorlage wird auf die mit Nodevo ausgelieferte Fassung zurückgesetzt. Deine Änderungen gehen verloren.",
+    "resetDone": "Vorlage auf den Standard zurückgesetzt.",
+    "sendTest": "Test senden",
+    "testPlaceholder": "du@beispiel.de",
+    "testSent": "Testnachricht an {{to}} gesendet.",
+    "smtpMissing": "Es ist kein SMTP-Host konfiguriert, daher kann nichts gesendet werden. Unter Einstellungen → E-Mail festlegen.",
+    "smtpUnreachable": "SMTP ist konfiguriert, aber die Verbindung schlug fehl: {{error}}",
+    "keys": {
+      "notification": "Benachrichtigung",
+      "password_reset": "Passwort zurücksetzen",
+      "email_verify": "E-Mail bestätigen",
+      "email_change": "E-Mail-Änderung",
+      "smtp_test": "SMTP-Test"
+    }
   }
 }

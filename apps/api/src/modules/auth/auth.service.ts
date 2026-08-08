@@ -6,7 +6,8 @@ import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
 import { revokeUserAccessTokens } from "./session-revocation.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { sendEmail, verificationCodeEmail, passwordResetEmail } from "../../infrastructure/email/email.service.js";
+import { sendEmail } from "../../infrastructure/email/email.service.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 
@@ -195,11 +196,12 @@ export async function sendRegistrationCode(email: string): Promise<void> {
   const code = generateCode();
   await redis.setex(rkey("regcode", email), REG_CODE_TTL, code);
 
-  const sent = await sendEmail(
-    email,
-    "Your Nodevo verification code",
-    verificationCodeEmail(code),
-  );
+  const { subject, html } = await renderEmailTemplate("email_verify", {
+    ...(await siteVars()),
+    code,
+    expiry_minutes: String(Math.round(REG_CODE_TTL / 60)),
+  });
+  const sent = await sendEmail(email, subject, html);
 
   if (!sent) {
     // pino-pretty's transport worker captures stdout and discards non-JSON lines.
@@ -374,7 +376,12 @@ export async function requestPasswordReset(email: string): Promise<void> {
   const appUrl = process.env.APP_URL ?? "http://localhost:5173";
   const link = `${appUrl.replace(/\/$/, "")}/reset-password?token=${raw}`;
 
-  const sent = await sendEmail(email, "Reset your Nodevo password", passwordResetEmail(link));
+  const reset = await renderEmailTemplate("password_reset", {
+    ...(await siteVars()),
+    reset_url: link,
+    expiry_minutes: String(Math.round(RESET_TOKEN_TTL_MS / 60_000)),
+  });
+  const sent = await sendEmail(email, reset.subject, reset.html);
   if (!sent) {
     // Dev fallback — see sendRegistrationCode for why this writes to stderr.
     process.stderr.write(

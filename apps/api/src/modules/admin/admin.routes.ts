@@ -4,6 +4,7 @@ import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions, NEC } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { adminController } from "./admin.controller.js";
+import { adminEmailRouter } from "../email/email.routes.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
@@ -152,3 +153,4 @@ adminRouter.use("/permissions",  permissionsRouter);
 adminRouter.use("/progression",  adminProgressionRouter);
 // Admin-created scheduled tasks (own permission: system.tasks.manage).
 adminRouter.use("/tasks",        scheduledTaskRouter);
+adminRouter.use("/email",        adminEmailRouter);

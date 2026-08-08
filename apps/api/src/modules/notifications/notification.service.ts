@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { queues } from "../../infrastructure/queue.js";
-import { notificationEmail } from "../../infrastructure/email/email.service.js";
+import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationRepository } from "./notification.repository.js";
 import type { DispatchOptions, NotificationPreferenceResolved } from "./notification.types.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
@@ -82,19 +82,18 @@ export const notificationService = {
         select: { email: true },
       });
       if (user?.email) {
-        const siteName = await prisma.setting
-          .findUnique({ where: { key: "site.name" } })
-          .then((s) => (s?.value as string | null) ?? "Nodevo");
+        const { subject, html } = await renderEmailTemplate("notification", {
+          ...(await siteVars()),
+          title:       opts.title,
+          body:        opts.body,
+          link_url:    opts.link,
+          link_button: renderLinkButton(opts.link),
+        });
 
         await queues.emailNotification.add("email-notification", {
-          to:      user.email,
-          subject: opts.title,
-          html:    notificationEmail({
-            title:    opts.title,
-            body:     opts.body,
-            link:     opts.link,
-            siteName,
-          }),
+          to: user.email,
+          subject,
+          html,
         });
       }
     }

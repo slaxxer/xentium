@@ -36,7 +36,8 @@
     "errorLog": "Error Log",
     "migrationHistory": "Migration History",
     "about": "About",
-    "guestHome": "Guest Home"
+    "guestHome": "Guest Home",
+    "emailTemplates": "Email templates"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -264,6 +265,22 @@
       "previousUsernameDays": {
         "label": "Former-username window (days)",
         "desc": "How long a former username stays visible after a change. 0 = show all history."
+      },
+      "smtpUser": {
+        "label": "SMTP username",
+        "desc": "Leave empty when relaying through a local mail server that needs no login."
+      },
+      "smtpPass": {
+        "label": "SMTP password",
+        "desc": "Stored encrypted and never shown again. Leave empty for an unauthenticated local relay."
+      },
+      "smtpSecure": {
+        "label": "Implicit TLS",
+        "desc": "On for port 465. Leave off for 587, which upgrades the connection with STARTTLS."
+      },
+      "fromName": {
+        "label": "From name",
+        "desc": "Display name shown beside the sender address."
       }
     },
     "landing": {
@@ -279,7 +296,9 @@
       "siteUrl": "https://mysite.com",
       "siteDescription": "A Nodevo-powered platform",
       "smtpHost": "smtp.example.com",
-      "fromAddress": "no-reply@example.com"
+      "fromAddress": "no-reply@example.com",
+      "smtpUser": "no-reply@example.com",
+      "fromName": "Nodelab"
     },
     "options": {
       "regMode": {
@@ -307,7 +326,15 @@
         "either": "Email or username"
       }
     },
-    "toastSaved": "Settings saved!"
+    "toastSaved": "Settings saved!",
+    "secret": {
+      "configured": "Configured",
+      "remove": "Remove",
+      "set": "Set",
+      "saved": "Saved",
+      "removed": "Removed",
+      "placeholder": "Enter a new value"
+    }
   },
   "invite": {
     "title": "Invite Codes",
@@ -1959,5 +1986,31 @@
     "permsCount_other": "{{count}} permissions",
     "progression": "Progression",
     "editTitleHint": "Edit name and badge color"
+  },
+  "emailTemplates": {
+    "eyebrow": "System",
+    "title": "Email templates",
+    "subtitle": "Edit the subject and body of the mail this site sends. Changes save automatically.",
+    "subject": "Subject",
+    "body": "Body (HTML)",
+    "placeholders": "Placeholders",
+    "insert": "Append to the body",
+    "customized": "Customised",
+    "reset": "Reset to default",
+    "resetTitle": "Reset this template?",
+    "resetConfirm": "The template goes back to the version shipped with Nodevo. Your edits are discarded.",
+    "resetDone": "Template reset to the shipped default.",
+    "sendTest": "Send test",
+    "testPlaceholder": "you@example.com",
+    "testSent": "Test message sent to {{to}}.",
+    "smtpMissing": "No SMTP host is configured, so nothing can be sent. Set one under Settings → Email.",
+    "smtpUnreachable": "SMTP is configured but the connection failed: {{error}}",
+    "keys": {
+      "notification": "Notification",
+      "password_reset": "Password reset",
+      "email_verify": "Verify email",
+      "email_change": "Email change",
+      "smtp_test": "SMTP test"
+    }
   }
 }

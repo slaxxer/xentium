@@ -34,7 +34,8 @@
     "errorLog": "Registro de errores",
     "migrationHistory": "Historial de migraciones",
     "about": "Acerca de",
-    "guestHome": "Inicio para invitados"
+    "guestHome": "Inicio para invitados",
+    "emailTemplates": "Plantillas de correo"
   },
   "sidebar": {
     "adminPanel": "Panel de administración",
@@ -174,6 +175,22 @@
       "fromAddress": {
         "label": "Dirección del remitente",
         "desc": "El remitente mostrado en el correo saliente."
+      },
+      "smtpUser": {
+        "label": "Usuario SMTP",
+        "desc": "Déjalo vacío si envías a través de un servidor de correo local que no requiere inicio de sesión."
+      },
+      "smtpPass": {
+        "label": "Contraseña SMTP",
+        "desc": "Se guarda cifrada y no vuelve a mostrarse. Déjala vacía para un relé local sin autenticación."
+      },
+      "smtpSecure": {
+        "label": "TLS implícito",
+        "desc": "Actívalo para el puerto 465. Déjalo desactivado en el 587, que usa STARTTLS."
+      },
+      "fromName": {
+        "label": "Nombre del remitente",
+        "desc": "Nombre mostrado junto a la dirección del remitente."
       }
     },
     "placeholders": {
@@ -181,7 +198,9 @@
       "siteUrl": "https://misitio.com",
       "siteDescription": "Una plataforma impulsada por Nodevo",
       "smtpHost": "smtp.ejemplo.com",
-      "fromAddress": "no-reply@ejemplo.com"
+      "fromAddress": "no-reply@ejemplo.com",
+      "smtpUser": "no-reply@example.com",
+      "fromName": "Nodelab"
     },
     "options": {
       "regMode": {
@@ -204,7 +223,15 @@
         "followers": "Más seguidores"
       }
     },
-    "toastSaved": "¡Ajustes guardados!"
+    "toastSaved": "¡Ajustes guardados!",
+    "secret": {
+      "configured": "Configurado",
+      "remove": "Eliminar",
+      "set": "Guardar",
+      "saved": "Guardado",
+      "removed": "Eliminado",
+      "placeholder": "Introduce un nuevo valor"
+    }
   },
   "invite": {
     "title": "Códigos de invitación",
@@ -1749,5 +1776,31 @@
     "permsCount_other": "{{count}} permisos",
     "progression": "Progresión",
     "editTitleHint": "Editar nombre y color de la insignia"
+  },
+  "emailTemplates": {
+    "eyebrow": "Sistema",
+    "title": "Plantillas de correo",
+    "subtitle": "Edita el asunto y el contenido de los correos que envía este sitio. Los cambios se guardan automáticamente.",
+    "subject": "Asunto",
+    "body": "Contenido (HTML)",
+    "placeholders": "Marcadores",
+    "insert": "Añadir al contenido",
+    "customized": "Personalizada",
+    "reset": "Restablecer",
+    "resetTitle": "¿Restablecer esta plantilla?",
+    "resetConfirm": "La plantilla volverá a la versión incluida con Nodevo. Tus cambios se descartarán.",
+    "resetDone": "Plantilla restablecida al valor predeterminado.",
+    "sendTest": "Enviar prueba",
+    "testPlaceholder": "tu@ejemplo.com",
+    "testSent": "Mensaje de prueba enviado a {{to}}.",
+    "smtpMissing": "No hay ningún host SMTP configurado, así que no se puede enviar nada. Configúralo en Ajustes → Correo.",
+    "smtpUnreachable": "SMTP está configurado pero la conexión falló: {{error}}",
+    "keys": {
+      "notification": "Notificación",
+      "password_reset": "Restablecer contraseña",
+      "email_verify": "Verificar correo",
+      "email_change": "Cambio de correo",
+      "smtp_test": "Prueba SMTP"
+    }
   }
 }
