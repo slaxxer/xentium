@@ -5,6 +5,28 @@
     "typecheck": { "dependsOn": ["^build"] },
     "lint": {},
     "test": { "dependsOn": ["^build"] },
-    "dev": { "cache": false, "persistent": true }
+    "dev": { "cache": false, "persistent": true },
+
+    // The Prisma client is generated into apps/api/src/generated/prisma, which
+    // is gitignored — so turbo does not hash it by default. Without listing it
+    // explicitly, `prisma generate` after a schema change leaves the cache
+    // looking valid and turbo serves a bundle built against the PREVIOUS
+    // client: prisma.<newModel> is undefined at runtime, tsup does not
+    // typecheck, and it only surfaces on the first request that touches it.
+    // (That is exactly how a new model reached production undefined.)
+    // $TURBO_DEFAULT$ keeps the normal inputs and adds the generated client.
+    "@nodevo/api#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
+    },
+    "@nodevo/api#typecheck": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
+    },
+    "@nodevo/api#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
+    }
   }
 }
