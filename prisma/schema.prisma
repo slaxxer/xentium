@@ -271,6 +271,18 @@ model Setting {
   @@map("ncf_settings")
 }
 
+/// Admin overrides for outbound mail. Defaults ship in code
+/// (infrastructure/email/email-templates.ts); a row here replaces one template.
+/// No row means "use the shipped default" — which is what Reset restores.
+model EmailTemplate {
+  key       String   @id
+  subject   String
+  body      String
+  updatedAt DateTime @updatedAt
+
+  @@map("ncf_email_templates")
+}
+
 model Install {
   id          String    @id @default(uuid())
   currentStep String    @default("WELCOME")

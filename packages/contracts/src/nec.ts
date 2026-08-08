@@ -104,6 +104,11 @@ export const NEC = {
   CORE_STYLEPACK_INVALID: "NEC-CORE-8002", // uploaded .nvstyle failed validation — message names the file/rule
   CORE_MAINTENANCE: "NEC-CORE-8010",   // site in maintenance mode, requester not allowed
 
+  // Outbound mail (NEC-EMAIL-86xx)
+  EMAIL_TEMPLATE_UNKNOWN: "NEC-EMAIL-8601",  // no such template key
+  EMAIL_NOT_CONFIGURED:   "NEC-EMAIL-8602",  // no SMTP host set — nothing to send through
+  EMAIL_SEND_FAILED:      "NEC-EMAIL-8603",  // transport rejected the message; message carries the reason
+
   // Queue / background jobs
   QUEUE_JOB_FAILED: "NEC-QUEUE-5000",
   QUEUE_INVALID_SCHEDULE: "NEC-QUEUE-5001",  // admin-supplied cron/interval rejected

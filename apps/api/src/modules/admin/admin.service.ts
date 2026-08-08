@@ -12,10 +12,20 @@ import { permissionCache } from "../permissions/permission.cache.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
+import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { buildPaginationMeta } from "@nodevo/contracts";
+
+/**
+ * Settings whose value is write-only: stored encrypted, returned to the client
+ * only as SECRET_MASK so an admin can see that one is configured without the
+ * plaintext ever reaching a browser. Per the ACP convention these get explicit
+ * Set / Remove actions rather than autosave.
+ */
+const SECRET_SETTING_KEYS = new Set(["smtp.pass"]);
+const SECRET_MASK = "••••••••";
 
 /** Guard for sensitive account actions in the ACP. Blocks acting on your own
  *  account, and on any Administrator-group account — admins cannot be touched
@@ -622,9 +632,18 @@ export const adminService = {
     "articles.allow_comments":             true,
     "articles.require_comment_approval":   false,
     "articles.per_page":                   10,
-    "email.smtp_host":                     "",
-    "email.smtp_port":                     587,
-    "email.from_address":                  "",
+    // Outbound mail. These are the keys the sender actually reads
+    // (infrastructure/email/email.service.ts) — the old `email.smtp_*` trio was
+    // written by the ACP and read by nothing, so configuring mail never worked.
+    // user/pass stay blank for an unauthenticated local relay; smtp.pass is a
+    // write-only secret (encrypted at rest, never returned by getSettings).
+    "smtp.host":                           "",
+    "smtp.port":                           587,
+    "smtp.user":                           "",
+    "smtp.pass":                           "",
+    "smtp.from":                           "",
+    "smtp.from_name":                      "",
+    "smtp.secure":                         false,
     // Log retention windows in days, applied by the log-retention job (0 = keep
     // forever). Page visits are high-volume telemetry; ACP actions are the audit
     // trail and default to a longer window.
@@ -651,12 +670,25 @@ export const adminService = {
         merged.push({ key, value: value as any, updatedAt: new Date() });
       }
     }
-    return merged.sort((a, b) => a.key.localeCompare(b.key));
+    // Secrets never leave the server. The client only learns whether one is
+    // set, which is all the ACP needs to render Set / Remove.
+    return merged
+      .map(r => SECRET_SETTING_KEYS.has(r.key)
+        ? { ...r, value: r.value ? SECRET_MASK : "" }
+        : r)
+      .sort((a, b) => a.key.localeCompare(b.key));
   },
 
   async setSetting(key: string, value: unknown) {
     if (key === "beta.enabled" && value === false) {
       await prisma.betaAccessLog.deleteMany({});
+    }
+    if (SECRET_SETTING_KEYS.has(key)) {
+      // The client renders the mask, so it can echo it back on an unrelated
+      // save. Treat that as "leave the stored secret alone" rather than
+      // overwriting the real password with a row of bullets.
+      if (value === SECRET_MASK) return prisma.setting.findUnique({ where: { key } });
+      value = value ? encryptSecret(String(value)) : "";
     }
     const row = await prisma.setting.upsert({
       where: { key },

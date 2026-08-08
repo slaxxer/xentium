@@ -34,7 +34,8 @@
     "errorLog": "Registo de erros",
     "migrationHistory": "Histórico de migrações",
     "about": "Sobre",
-    "guestHome": "Início para visitantes"
+    "guestHome": "Início para visitantes",
+    "emailTemplates": "Modelos de e-mail"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -174,6 +175,22 @@
       "fromAddress": {
         "label": "Endereço do remetente",
         "desc": "O remetente mostrado no correio de saída."
+      },
+      "smtpUser": {
+        "label": "Utilizador SMTP",
+        "desc": "Deixe vazio se enviar através de um servidor de e-mail local que não exige autenticação."
+      },
+      "smtpPass": {
+        "label": "Palavra-passe SMTP",
+        "desc": "Guardada cifrada e nunca mais apresentada. Deixe vazio para um relay local sem autenticação."
+      },
+      "smtpSecure": {
+        "label": "TLS implícito",
+        "desc": "Ative para a porta 465. Deixe desativado na 587, que usa STARTTLS."
+      },
+      "fromName": {
+        "label": "Nome do remetente",
+        "desc": "Nome apresentado junto ao endereço do remetente."
       }
     },
     "placeholders": {
@@ -181,7 +198,9 @@
       "siteUrl": "https://omeusite.com",
       "siteDescription": "Uma plataforma com tecnologia Nodevo",
       "smtpHost": "smtp.exemplo.com",
-      "fromAddress": "no-reply@exemplo.com"
+      "fromAddress": "no-reply@exemplo.com",
+      "smtpUser": "no-reply@example.com",
+      "fromName": "Nodelab"
     },
     "options": {
       "regMode": {
@@ -204,7 +223,15 @@
         "followers": "Mais seguidores"
       }
     },
-    "toastSaved": "Definições guardadas!"
+    "toastSaved": "Definições guardadas!",
+    "secret": {
+      "configured": "Configurado",
+      "remove": "Remover",
+      "set": "Guardar",
+      "saved": "Guardado",
+      "removed": "Removido",
+      "placeholder": "Introduza um novo valor"
+    }
   },
   "invite": {
     "title": "Códigos de convite",
@@ -1749,5 +1776,31 @@
     "permsCount_other": "{{count}} permissões",
     "progression": "Progressão",
     "editTitleHint": "Editar nome e cor do selo"
+  },
+  "emailTemplates": {
+    "eyebrow": "Sistema",
+    "title": "Modelos de e-mail",
+    "subtitle": "Edite o assunto e o conteúdo dos e-mails enviados por este site. As alterações são guardadas automaticamente.",
+    "subject": "Assunto",
+    "body": "Conteúdo (HTML)",
+    "placeholders": "Marcadores",
+    "insert": "Acrescentar ao conteúdo",
+    "customized": "Personalizado",
+    "reset": "Repor predefinição",
+    "resetTitle": "Repor este modelo?",
+    "resetConfirm": "O modelo volta à versão fornecida com o Nodevo. As suas alterações serão descartadas.",
+    "resetDone": "Modelo reposto para a predefinição.",
+    "sendTest": "Enviar teste",
+    "testPlaceholder": "voce@exemplo.pt",
+    "testSent": "Mensagem de teste enviada para {{to}}.",
+    "smtpMissing": "Não há nenhum host SMTP configurado, por isso nada pode ser enviado. Defina um em Definições → E-mail.",
+    "smtpUnreachable": "O SMTP está configurado mas a ligação falhou: {{error}}",
+    "keys": {
+      "notification": "Notificação",
+      "password_reset": "Reposição de palavra-passe",
+      "email_verify": "Verificar e-mail",
+      "email_change": "Alteração de e-mail",
+      "smtp_test": "Teste SMTP"
+    }
   }
 }
