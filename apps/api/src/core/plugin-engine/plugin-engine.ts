@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { pathToFileURL, fileURLToPath } from "node:url";
 import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
@@ -18,8 +19,59 @@ import { pluginRouter } from "./plugin-router.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
 
+/**
+ * The api package's node_modules.
+ *
+ * Found by SEARCHING upward for the nearest node_modules rather than counting
+ * `..` hops — the search is what makes it correct from both `src/` under tsx and
+ * the bundled `dist/`, which sit at different depths.
+ */
+function hostNodeModules(): string | null {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (;;) {
+    const candidate = path.join(dir, "node_modules");
+    if (existsSync(candidate)) return candidate;
+    const parent = path.dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+/**
+ * Plugin server bundles externalise the host's shared singletons (`express`
+ * above all — a plugin Router must come from the SAME express instance), so
+ * they carry bare imports resolved from wherever the bundle sits on disk.
+ *
+ * With the default UPLOAD_DIR that happens to work: uploads land under
+ * `apps/api/`, and Node's upward walk reaches `apps/api/node_modules`. Point
+ * UPLOAD_DIR anywhere else — which is a documented, supported thing to do — and
+ * the walk instead reaches the workspace root, where pnpm's non-flat layout has
+ * no `express`. Every plugin then fails to load with a bare "Cannot find
+ * package 'express'", long after install appeared to succeed.
+ *
+ * A node_modules symlink at the plugin store makes the walk terminate correctly
+ * regardless of where the store lives. Best-effort: a failure here is not worth
+ * blocking startup over, and the default layout does not need it.
+ */
+async function ensureHostModulesLink(): Promise<void> {
+  const link = path.join(PLUGIN_STORE, "node_modules");
+  if (existsSync(link)) return;
+  const target = hostNodeModules();
+  if (!target) return;
+  try {
+    await fs.symlink(target, link, "junction");
+    logger.info({ link, target }, "Linked host node_modules into the plugin store");
+  } catch (err) {
+    logger.warn(
+      { err, link, target },
+      "Could not link host node_modules into the plugin store — plugins may fail to resolve shared packages",
+    );
+  }
+}
+
 async function ensurePluginDir(): Promise<void> {
   await fs.mkdir(PLUGIN_STORE, { recursive: true });
+  await ensureHostModulesLink();
 }
 
 function packagePath(pluginId: string, version: string): string {
@@ -379,6 +431,11 @@ async function callPluginHook(
 
 /** Called once at server startup — re-registers all enabled plugins in the registry. */
 export async function initializeEnabledPlugins(): Promise<void> {
+  // Also on boot, not just on install: an instance whose UPLOAD_DIR moved (or
+  // that installed plugins before this link existed) otherwise stays broken
+  // until the next install, with every plugin failing to resolve `express`.
+  await ensurePluginDir();
+
   const records = await prisma.installedPlugin.findMany({
     where: { status: { in: ["enabled", "installed", "disabled"] } },
   });
