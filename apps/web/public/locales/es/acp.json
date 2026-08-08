@@ -35,7 +35,7 @@
     "migrationHistory": "Historial de migraciones",
     "about": "Acerca de",
     "guestHome": "Inicio para invitados",
-    "emailTemplates": "Plantillas de correo"
+    "email": "Correo"
   },
   "sidebar": {
     "adminPanel": "Panel de administración",
@@ -101,10 +101,6 @@
       "members": {
         "title": "Miembros",
         "desc": "Ajustes de directorio y reconocimiento."
-      },
-      "email": {
-        "title": "Correo",
-        "desc": "Configuración del correo saliente (SMTP)."
       }
     },
     "fields": {
@@ -1777,10 +1773,10 @@
     "progression": "Progresión",
     "editTitleHint": "Editar nombre y color de la insignia"
   },
-  "emailTemplates": {
+  "email": {
     "eyebrow": "Sistema",
-    "title": "Plantillas de correo",
-    "subtitle": "Edita el asunto y el contenido de los correos que envía este sitio. Los cambios se guardan automáticamente.",
+    "title": "Correo",
+    "subtitle": "Configura el servidor de correo y edita los mensajes que envía este sitio. Los cambios se guardan automáticamente.",
     "subject": "Asunto",
     "body": "Contenido (HTML)",
     "placeholders": "Marcadores",
@@ -1801,6 +1797,16 @@
       "email_verify": "Verificar correo",
       "email_change": "Cambio de correo",
       "smtp_test": "Prueba SMTP"
-    }
+    },
+    "onThisPage": "En esta página",
+    "server": {
+      "title": "Servidor",
+      "desc": "Conexión SMTP usada para todo el correo saliente."
+    },
+    "templateDesc": "Asunto y contenido de este mensaje.",
+    "subjectDesc": "Texto plano. Los marcadores se sustituyen.",
+    "bodyDesc": "HTML. Los valores insertados en los marcadores se escapan automáticamente.",
+    "testTitle": "Enviar mensaje de prueba",
+    "testDesc": "Envía la plantilla de prueba SMTP a la dirección que elijas."
   }
 }
