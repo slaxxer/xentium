@@ -8,39 +8,9 @@ import { Avatar } from "../../components/Avatar";
 import { NotificationBell } from "../../components/NotificationBell";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
+// Breadcrumb + palette routes come from the one nav definition — see ACP_NAV_INDEX.
+import { ACP_NAV_INDEX as NAV_INDEX } from "./useAcpNav";
 import "./AcpTopbar.scss";
-
-// ── Command-palette index — mirrors the real ACP nav (AcpLayout `NAV`).
-//    label/sub are `acp` i18n keys, resolved at render. ───────────────────────
-interface NavEntry { labelKey: string; subKey: string; icon: AcpIconName; to: string }
-
-const NAV_INDEX: NavEntry[] = [
-  { labelKey: "nav.dashboard",        subKey: "nav.overview",      icon: "dashboard", to: "/admin" },
-  { labelKey: "nav.userList",         subKey: "nav.users",         icon: "user",      to: "/admin/users" },
-  { labelKey: "nav.groups",           subKey: "nav.users",         icon: "user",      to: "/admin/groups" },
-  { labelKey: "nav.profileFields",    subKey: "nav.users",         icon: "user",      to: "/admin/profile-fields" },
-  { labelKey: "nav.permissions",      subKey: "nav.accessControl", icon: "layers",    to: "/admin/permissions" },
-  { labelKey: "nav.progression",      subKey: "nav.accessControl", icon: "layers",    to: "/admin/progression" },
-  { labelKey: "nav.articles",         subKey: "nav.content",       icon: "file",      to: "/admin/articles" },
-  { labelKey: "nav.categories",       subKey: "nav.content",       icon: "file",      to: "/admin/categories" },
-  { labelKey: "nav.modLog",           subKey: "nav.moderation",    icon: "shield",    to: "/admin/modlog" },
-  { labelKey: "nav.modSettings",      subKey: "nav.moderation",    icon: "shield",    to: "/admin/modsettings" },
-  { labelKey: "nav.styleEditor",      subKey: "nav.appearance",    icon: "palette",   to: "/admin/style-editor" },
-  { labelKey: "nav.styles",           subKey: "nav.appearance",    icon: "palette",   to: "/admin/styles" },
-  { labelKey: "nav.styleHistory",     subKey: "nav.appearance",    icon: "palette",   to: "/admin/style-history" },
-  { labelKey: "nav.navigation",       subKey: "nav.appearance",    icon: "palette",   to: "/admin/navigation" },
-  { labelKey: "Guest Home",           subKey: "nav.appearance",    icon: "palette",   to: "/admin/guest-home" },
-  { labelKey: "nav.marketplace",      subKey: "nav.extensions",    icon: "puzzle",    to: "/admin/marketplace" },
-  { labelKey: "nav.installed",        subKey: "nav.extensions",    icon: "puzzle",    to: "/admin/installed" },
-  { labelKey: "nav.upload",           subKey: "nav.extensions",    icon: "puzzle",    to: "/admin/upload" },
-  { labelKey: "nav.license",          subKey: "nav.extensions",    icon: "puzzle",    to: "/admin/license" },
-  { labelKey: "nav.settings",         subKey: "nav.system",        icon: "cog",       to: "/admin/settings" },
-  { labelKey: "nav.scheduledTasks",   subKey: "nav.system",        icon: "cog",       to: "/admin/scheduled-tasks" },
-  { labelKey: "nav.errorReference",   subKey: "nav.system",        icon: "cog",       to: "/admin/error-ref" },
-  { labelKey: "nav.errorLog",         subKey: "nav.system",        icon: "cog",       to: "/admin/error-log" },
-  { labelKey: "nav.migrationHistory", subKey: "nav.system",        icon: "cog",       to: "/admin/migration-history" },
-  { labelKey: "nav.about",            subKey: "nav.system",        icon: "cog",       to: "/admin/about" },
-];
 
 interface PaletteItem {
   kind: "Navigation" | "Actions";
