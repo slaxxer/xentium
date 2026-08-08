@@ -1,0 +1,102 @@
+// Only what the shared ACP settings classes (pg-head, set-layout, set-secnav,
+// set-card, set-rows, set-row) do not already provide. Everything structural
+// comes from acpSystem.scss so this page cannot drift from the rest of the ACP.
+
+.em-warn {
+  margin: 0 0 4px;
+  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--c-warning) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-warning) 38%, transparent);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+// Marks a template the admin has overridden, so shipped defaults stay obvious.
+.em-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c-accent2, var(--c-accent));
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.em-danger { color: var(--c-danger); }
+
+.em-secret {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &__pill {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--c-success) 16%, transparent);
+    color: var(--c-success);
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+// Subject/body need the full card width, so the row stacks instead of using
+// the default label-left / control-right split.
+.em-row-stack {
+  display: block;
+
+  .set-row__control { margin-top: 9px; }
+}
+
+.em-full {
+  width: 100%;
+
+  .inp { width: 100%; }
+}
+
+.em-body {
+  width: 100%;
+  min-height: 320px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  resize: vertical;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+
+.em-ph {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.em-chip {
+  padding: 4px 9px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-surface-2, var(--c-surface));
+  color: var(--c-fg-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  cursor: pointer;
+
+  &:hover { border-color: var(--c-accent); color: var(--c-accent); }
+}
+
+.em-testbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .inp { width: 220px; }
+}

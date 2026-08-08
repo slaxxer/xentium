@@ -37,7 +37,7 @@
     "migrationHistory": "Migration History",
     "about": "About",
     "guestHome": "Guest Home",
-    "emailTemplates": "Email templates"
+    "email": "Email"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -111,10 +111,6 @@
       "members": {
         "title": "Members",
         "desc": "Directory and recognition settings."
-      },
-      "email": {
-        "title": "Email",
-        "desc": "Outgoing mail (SMTP) configuration."
       },
       "login": {
         "title": "Login",
@@ -1987,10 +1983,10 @@
     "progression": "Progression",
     "editTitleHint": "Edit name and badge color"
   },
-  "emailTemplates": {
+  "email": {
     "eyebrow": "System",
-    "title": "Email templates",
-    "subtitle": "Edit the subject and body of the mail this site sends. Changes save automatically.",
+    "title": "Email",
+    "subtitle": "Configure the mail server and edit the messages this site sends. Changes save automatically.",
     "subject": "Subject",
     "body": "Body (HTML)",
     "placeholders": "Placeholders",
@@ -2011,6 +2007,16 @@
       "email_verify": "Verify email",
       "email_change": "Email change",
       "smtp_test": "SMTP test"
-    }
+    },
+    "onThisPage": "On this page",
+    "server": {
+      "title": "Server",
+      "desc": "SMTP connection used for all outgoing mail."
+    },
+    "templateDesc": "Subject and body used when this message is sent.",
+    "subjectDesc": "Plain text. Placeholders are substituted.",
+    "bodyDesc": "HTML. Values substituted into placeholders are escaped automatically.",
+    "testTitle": "Send a test message",
+    "testDesc": "Delivers the SMTP test template to an address of your choice."
   }
 }

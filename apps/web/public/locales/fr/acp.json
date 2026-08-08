@@ -35,7 +35,7 @@
     "migrationHistory": "Historique des migrations",
     "about": "À propos",
     "guestHome": "Accueil visiteurs",
-    "emailTemplates": "Modèles d'e-mail"
+    "email": "E-mail"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",
@@ -101,10 +101,6 @@
       "members": {
         "title": "Membres",
         "desc": "Paramètres d'annuaire et de reconnaissance."
-      },
-      "email": {
-        "title": "E-mail",
-        "desc": "Configuration du courrier sortant (SMTP)."
       }
     },
     "fields": {
@@ -1777,10 +1773,10 @@
     "progression": "Progression",
     "editTitleHint": "Modifier le nom et la couleur du badge"
   },
-  "emailTemplates": {
+  "email": {
     "eyebrow": "Système",
-    "title": "Modèles d'e-mail",
-    "subtitle": "Modifiez l'objet et le contenu des e-mails envoyés par ce site. Les changements sont enregistrés automatiquement.",
+    "title": "E-mail",
+    "subtitle": "Configurez le serveur de messagerie et modifiez les messages envoyés par ce site. Les changements sont enregistrés automatiquement.",
     "subject": "Objet",
     "body": "Contenu (HTML)",
     "placeholders": "Variables",
@@ -1801,6 +1797,16 @@
       "email_verify": "Vérification de l'e-mail",
       "email_change": "Changement d'e-mail",
       "smtp_test": "Test SMTP"
-    }
+    },
+    "onThisPage": "Sur cette page",
+    "server": {
+      "title": "Serveur",
+      "desc": "Connexion SMTP utilisée pour tout le courrier sortant."
+    },
+    "templateDesc": "Objet et contenu de ce message.",
+    "subjectDesc": "Texte brut. Les variables sont remplacées.",
+    "bodyDesc": "HTML. Les valeurs insérées dans les variables sont échappées automatiquement.",
+    "testTitle": "Envoyer un message de test",
+    "testDesc": "Envoie le modèle de test SMTP à l'adresse de votre choix."
   }
 }

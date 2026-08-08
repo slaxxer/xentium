@@ -50,7 +50,7 @@ import { CategoriesPage }    from "../features/admin/pages/CategoriesPage";
 import { PagesPage }         from "../features/admin/pages/PagesPage";
 import { PageEditorPage }    from "../features/admin/pages/PageEditorPage";
 import { SettingsPage }      from "../features/admin/pages/SettingsPage";
-import { EmailTemplatesPage } from "../features/admin/pages/EmailTemplatesPage";
+import { EmailPage } from "../features/admin/pages/EmailPage";
 import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
 import { ModLogPage }      from "../features/admin/pages/ModLogPage";
@@ -263,7 +263,7 @@ function buildRouter() {
           { path: "categories",       element: <CategoriesPage /> },
           { path: "pages",            element: <PagesPage /> },
           { path: "settings",         element: <SettingsPage /> },
-          { path: "email-templates",  element: <EmailTemplatesPage /> },
+          { path: "email",            element: <EmailPage /> },
           { path: "about",            element: <AboutPage /> },
           // Moderation
           { path: "cases",            element: <ReviewCasesPage /> },
