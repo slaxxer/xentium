@@ -35,7 +35,7 @@
     "migrationHistory": "Histórico de migrações",
     "about": "Sobre",
     "guestHome": "Início para visitantes",
-    "emailTemplates": "Modelos de e-mail"
+    "email": "E-mail"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -101,10 +101,6 @@
       "members": {
         "title": "Membros",
         "desc": "Definições de diretório e reconhecimento."
-      },
-      "email": {
-        "title": "E-mail",
-        "desc": "Configuração do correio de saída (SMTP)."
       }
     },
     "fields": {
@@ -1777,10 +1773,10 @@
     "progression": "Progressão",
     "editTitleHint": "Editar nome e cor do selo"
   },
-  "emailTemplates": {
+  "email": {
     "eyebrow": "Sistema",
-    "title": "Modelos de e-mail",
-    "subtitle": "Edite o assunto e o conteúdo dos e-mails enviados por este site. As alterações são guardadas automaticamente.",
+    "title": "E-mail",
+    "subtitle": "Configure o servidor de correio e edite as mensagens enviadas por este site. As alterações são guardadas automaticamente.",
     "subject": "Assunto",
     "body": "Conteúdo (HTML)",
     "placeholders": "Marcadores",
@@ -1801,6 +1797,16 @@
       "email_verify": "Verificar e-mail",
       "email_change": "Alteração de e-mail",
       "smtp_test": "Teste SMTP"
-    }
+    },
+    "onThisPage": "Nesta página",
+    "server": {
+      "title": "Servidor",
+      "desc": "Ligação SMTP usada para todo o correio enviado."
+    },
+    "templateDesc": "Assunto e conteúdo desta mensagem.",
+    "subjectDesc": "Texto simples. Os marcadores são substituídos.",
+    "bodyDesc": "HTML. Os valores inseridos nos marcadores são escapados automaticamente.",
+    "testTitle": "Enviar mensagem de teste",
+    "testDesc": "Envia o modelo de teste SMTP para o endereço que escolher."
   }
 }
