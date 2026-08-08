@@ -8,68 +8,10 @@ import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
+import { SaveChip } from "../../../components/SaveChip";
+import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
 
 // Core landing values → i18n label keys; plugin destinations use their own label.
-/**
- * Write-only setting (currently the SMTP password). The server never returns
- * the stored value — only whether one exists — so this deliberately sits
- * outside the page's autosave: you Set a new value or Remove the existing one.
- */
-function SecretField({ settingKey, isSet }: { settingKey: string; isSet: boolean }) {
-  const { t } = useTranslation("acp");
-  const qc = useQueryClient();
-  const [entry, setEntry] = useState("");
-
-  const mut = useMutation({
-    mutationFn: (value: string) =>
-      api.put(`/admin/settings/${encodeURIComponent(settingKey)}`, { value }),
-    onSuccess: (_d, value) => {
-      setEntry("");
-      qc.invalidateQueries({ queryKey: ["acp-settings"] });
-      swalToast(t(value ? "settings.secret.saved" : "settings.secret.removed"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  if (isSet) {
-    return (
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span className="pill pill-ok">{t("settings.secret.configured")}</span>
-        <button
-          type="button"
-          className="btn-ghost btn-sm"
-          style={{ color: "var(--c-danger)" }}
-          disabled={mut.isPending}
-          onClick={() => mut.mutate("")}
-        >
-          {t("settings.secret.remove")}
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div style={{ display: "flex", gap: 8 }}>
-      <input
-        type="password"
-        className="inp"
-        autoComplete="new-password"
-        value={entry}
-        placeholder={t("settings.secret.placeholder")}
-        onChange={(e) => setEntry(e.target.value)}
-      />
-      <button
-        type="button"
-        className="btn-primary btn-sm"
-        disabled={!entry || mut.isPending}
-        onClick={() => mut.mutate(entry)}
-      >
-        {t("settings.secret.set")}
-      </button>
-    </div>
-  );
-}
-
 const CORE_LANDING_I18N: Record<string, string> = {
   home: "settings.landing.home",
   "/articles": "settings.landing.articles",
@@ -128,55 +70,6 @@ function parseSettings(settings: Setting[]): Record<string, unknown> {
 
 // ── Redesigned form controls (Hearth) ─────────────────────────────────────────
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      className={`sw${on ? " is-on" : ""}`}
-      onClick={onToggle}
-    />
-  );
-}
-
-function TextField({
-  value, onChange, placeholder, type = "text",
-}: {
-  value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
-}) {
-  return (
-    <input
-      className="inp"
-      type={type}
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  );
-}
-
-function NumberStepper({
-  value, onChange, min = 0, max = 999, step = 1,
-}: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number; step?: number;
-}) {
-  const { t } = useTranslation("common");
-  const set = (v: number) => onChange(Math.max(min, Math.min(max, v)));
-  return (
-    <div className="stepper">
-      <button type="button" aria-label={t("actions.decrease")} onClick={() => set(value - step)}>−</button>
-      <input
-        type="number"
-        value={value}
-        onChange={(e) => onChange(e.target.value === "" ? min : Number(e.target.value))}
-        onBlur={(e) => set(Number(e.target.value) || min)}
-      />
-      <button type="button" aria-label={t("actions.increase")} onClick={() => set(value + step)}>+</button>
-    </div>
-  );
-}
-
 function Select({
   value, onChange, options,
 }: {
@@ -218,16 +111,6 @@ function Select({
   );
 }
 
-function SaveChip({ saving }: { saving: boolean }) {
-  const { t } = useTranslation("acp");
-  return (
-    <div className={`savechip ${saving ? "is-saving" : "is-saved"}`} aria-live="polite">
-      {saving ? <span className="savechip__spin" /> : <span className="savechip__dot" />}
-      <span>{saving ? t("settings.saving") : t("settings.saved")}</span>
-    </div>
-  );
-}
-
 // ── Section schema ────────────────────────────────────────────────────────────
 
 // `i18nKey` → settings.fields.<i18nKey>.{label,desc}; `placeholderKey` →
@@ -236,7 +119,7 @@ function SaveChip({ saving }: { saving: boolean }) {
 interface SectionField {
   i18nKey: string;
   key: string;
-  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime" | "secret";
+  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime";
   placeholderKey?: string;
   optionsKey?: string;
   values?: string[];
@@ -321,20 +204,8 @@ const SECTIONS: Section[] = [
       { i18nKey: "hofRank", key: "members.hall_of_fame_metric", type: "select", optionsKey: "hofRank", values: ["likes", "posts", "threads", "followers"] },
     ],
   },
-  {
-    id: "email", icon: "mail",
-    fields: [
-      // These are the keys the sender actually reads. User/pass stay empty for
-      // an unauthenticated local relay (e.g. postfix on 127.0.0.1).
-      { i18nKey: "smtpHost",    key: "smtp.host",      type: "text",   placeholderKey: "smtpHost" },
-      { i18nKey: "smtpPort",    key: "smtp.port",      type: "number", min: 1, max: 65535, step: 1 },
-      { i18nKey: "smtpSecure",  key: "smtp.secure",    type: "toggle" },
-      { i18nKey: "smtpUser",    key: "smtp.user",      type: "text",   placeholderKey: "smtpUser" },
-      { i18nKey: "smtpPass",    key: "smtp.pass",      type: "secret" },
-      { i18nKey: "fromAddress", key: "smtp.from",      type: "text",   placeholderKey: "fromAddress" },
-      { i18nKey: "fromName",    key: "smtp.from_name", type: "text",   placeholderKey: "fromName" },
-    ],
-  },
+  // Outbound mail lives on its own page (ACP → System → Email), where the
+  // server configuration sits alongside the templates it renders.
 ];
 
 // Default values used until the API responds
@@ -375,13 +246,6 @@ const DEFAULTS: Record<string, unknown> = {
   "home.hot_threads_enabled":           true,
   "home.hot_threads_metric":            "replies",
   "members.hall_of_fame_metric":        "likes",
-  "smtp.host":                          "",
-  "smtp.port":                          587,
-  "smtp.secure":                        false,
-  "smtp.user":                          "",
-  "smtp.pass":                          "",
-  "smtp.from":                          "",
-  "smtp.from_name":                     "",
 };
 
 export function SettingsPage() {
@@ -440,11 +304,8 @@ export function SettingsPage() {
   }
 
   // Auto-save the General-tab settings only. The Beta tab (beta.*) is managed by
-  // its own panel/mutations, so those keys are excluded here. Secrets are also
-  // excluded: they get explicit Set / Remove actions, because autosaving a
-  // half-typed password would store the fragment — and the value we hold in the
-  // draft is only a mask anyway.
-  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields.filter(f => f.type !== "secret").map(f => f.key));
+  // its own panel/mutations, so those keys are excluded here.
+  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields.map(f => f.key));
   const rawAll = parseSettings(settings);
   const generalDraft = Object.fromEntries(GENERAL_KEYS.map(k => [k, draft[k]]));
   const generalSaved = settings.length
@@ -462,8 +323,6 @@ export function SettingsPage() {
   function renderControl(f: SectionField) {
     const val = draft[f.key];
     switch (f.type) {
-      case "secret":
-        return <SecretField settingKey={f.key} isSet={!!val} />;
       case "toggle":
         return <Toggle on={!!val} onToggle={() => set(f.key, !val)} />;
       case "number":

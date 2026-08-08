@@ -35,7 +35,7 @@
     "migrationHistory": "Migrationsverlauf",
     "about": "Über",
     "guestHome": "Gäste-Startseite",
-    "emailTemplates": "E-Mail-Vorlagen"
+    "email": "E-Mail"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -101,10 +101,6 @@
       "members": {
         "title": "Mitglieder",
         "desc": "Verzeichnis- und Anerkennungseinstellungen."
-      },
-      "email": {
-        "title": "E-Mail",
-        "desc": "Konfiguration für ausgehende E-Mails (SMTP)."
       }
     },
     "fields": {
@@ -1777,10 +1773,10 @@
     "progression": "Progression",
     "editTitleHint": "Name und Badge-Farbe bearbeiten"
   },
-  "emailTemplates": {
+  "email": {
     "eyebrow": "System",
-    "title": "E-Mail-Vorlagen",
-    "subtitle": "Betreff und Inhalt der von dieser Website versendeten E-Mails bearbeiten. Änderungen werden automatisch gespeichert.",
+    "title": "E-Mail",
+    "subtitle": "Mailserver konfigurieren und die von dieser Website versendeten Nachrichten bearbeiten. Änderungen werden automatisch gespeichert.",
     "subject": "Betreff",
     "body": "Inhalt (HTML)",
     "placeholders": "Platzhalter",
@@ -1801,6 +1797,16 @@
       "email_verify": "E-Mail bestätigen",
       "email_change": "E-Mail-Änderung",
       "smtp_test": "SMTP-Test"
-    }
+    },
+    "onThisPage": "Auf dieser Seite",
+    "server": {
+      "title": "Server",
+      "desc": "SMTP-Verbindung für den gesamten ausgehenden Mailverkehr."
+    },
+    "templateDesc": "Betreff und Inhalt dieser Nachricht.",
+    "subjectDesc": "Reiner Text. Platzhalter werden ersetzt.",
+    "bodyDesc": "HTML. In Platzhalter eingesetzte Werte werden automatisch escaped.",
+    "testTitle": "Testnachricht senden",
+    "testDesc": "Sendet die SMTP-Testvorlage an eine Adresse deiner Wahl."
   }
 }

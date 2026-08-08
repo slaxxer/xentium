@@ -77,7 +77,7 @@ export const ACP_NAV: NavItem[] = [
     label: "nav.system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), key: "system",
     children: [
       { label: "nav.settings", to: "/admin/settings" },
-      { label: "nav.emailTemplates", to: "/admin/email-templates" },
+      { label: "nav.email", to: "/admin/email" },
       { label: "nav.scheduledTasks", to: "/admin/scheduled-tasks" },
       { label: "nav.errorReference", to: "/admin/error-ref" },
       { label: "nav.errorLog", to: "/admin/error-log" },
