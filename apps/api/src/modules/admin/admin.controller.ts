@@ -394,15 +394,33 @@ export const adminController = {
     res.json(await marketplaceService.authorizeDownload(pluginId, version));
   }) as RequestHandler,
 
+  // STREAMS progress, same newline-delimited JSON contract as the update route:
+  // zero or more {phase,percent,message} events while the server authorizes →
+  // downloads (by bytes) → verifies → installs, then a final {done:true, ok, …}.
+  // Both are consumed by runStreamedJob() on the client.
   installFromMarketplace: (async (req, res) => {
     const { pluginId, version } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1),
     }).parse(req.body);
 
-    // Failures (download-phase ArtifactError, install-intake NodevoError) are all
-    // coded NodevoErrors now — let errorMiddleware shape + persist them.
-    res.status(201).json(await marketplaceService.installFromMarketplace(pluginId, version, req.userId!));
+    res.status(200);
+    res.setHeader("Content-Type", "application/x-ndjson; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("X-Accel-Buffering", "no"); // don't let a proxy buffer the stream
+    res.flushHeaders?.();
+    const emit = (evt: object) => { res.write(JSON.stringify(evt) + "\n"); };
+
+    try {
+      const result = await marketplaceService.installFromMarketplace(pluginId, version, req.userId!, (p) => emit(p));
+      emit({ done: true, ok: true, ...result });
+    } catch (err: any) {
+      // Headers are already sent, so errorMiddleware can no longer shape this —
+      // surface the coded failure as a terminal stream event instead.
+      emit({ done: true, ok: false, code: err?.code, message: err?.message ?? "Install failed." });
+    } finally {
+      res.end();
+    }
   }) as RequestHandler,
 
   // §16.2 update-in-place — STREAMS progress. The response is newline-delimited
