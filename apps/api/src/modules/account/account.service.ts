@@ -5,6 +5,7 @@ import { revokeSessionAccessToken } from "../auth/session-revocation.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
+import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { env } from "../../config/env.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
@@ -263,11 +264,13 @@ export const accountService = {
       data: { userId, newEmail, tokenHash, expiresAt },
     });
 
-    await sendEmail(
-      newEmail,
-      "Your email change verification code",
-      `<p>Your verification code is:</p><p style="font-size:32px;font-weight:bold;letter-spacing:6px">${code}</p><p>Enter this code to confirm your new email address. It expires in 30 minutes.</p>`,
-    );
+    const { subject, html } = await renderEmailTemplate("email_change", {
+      ...(await siteVars()),
+      code,
+      new_email: newEmail,
+      expiry_minutes: "30",
+    });
+    await sendEmail(newEmail, subject, html);
 
     return { codeSent: true };
   },

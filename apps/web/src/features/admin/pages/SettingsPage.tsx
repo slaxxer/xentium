@@ -10,6 +10,66 @@ import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 
 // Core landing values → i18n label keys; plugin destinations use their own label.
+/**
+ * Write-only setting (currently the SMTP password). The server never returns
+ * the stored value — only whether one exists — so this deliberately sits
+ * outside the page's autosave: you Set a new value or Remove the existing one.
+ */
+function SecretField({ settingKey, isSet }: { settingKey: string; isSet: boolean }) {
+  const { t } = useTranslation("acp");
+  const qc = useQueryClient();
+  const [entry, setEntry] = useState("");
+
+  const mut = useMutation({
+    mutationFn: (value: string) =>
+      api.put(`/admin/settings/${encodeURIComponent(settingKey)}`, { value }),
+    onSuccess: (_d, value) => {
+      setEntry("");
+      qc.invalidateQueries({ queryKey: ["acp-settings"] });
+      swalToast(t(value ? "settings.secret.saved" : "settings.secret.removed"), "success");
+    },
+    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  if (isSet) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <span className="pill pill-ok">{t("settings.secret.configured")}</span>
+        <button
+          type="button"
+          className="btn-ghost btn-sm"
+          style={{ color: "var(--c-danger)" }}
+          disabled={mut.isPending}
+          onClick={() => mut.mutate("")}
+        >
+          {t("settings.secret.remove")}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <input
+        type="password"
+        className="inp"
+        autoComplete="new-password"
+        value={entry}
+        placeholder={t("settings.secret.placeholder")}
+        onChange={(e) => setEntry(e.target.value)}
+      />
+      <button
+        type="button"
+        className="btn-primary btn-sm"
+        disabled={!entry || mut.isPending}
+        onClick={() => mut.mutate(entry)}
+      >
+        {t("settings.secret.set")}
+      </button>
+    </div>
+  );
+}
+
 const CORE_LANDING_I18N: Record<string, string> = {
   home: "settings.landing.home",
   "/articles": "settings.landing.articles",
@@ -176,7 +236,7 @@ function SaveChip({ saving }: { saving: boolean }) {
 interface SectionField {
   i18nKey: string;
   key: string;
-  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime";
+  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime" | "secret";
   placeholderKey?: string;
   optionsKey?: string;
   values?: string[];
@@ -264,9 +324,15 @@ const SECTIONS: Section[] = [
   {
     id: "email", icon: "mail",
     fields: [
-      { i18nKey: "smtpHost",    key: "email.smtp_host",    type: "text",   placeholderKey: "smtpHost" },
-      { i18nKey: "smtpPort",    key: "email.smtp_port",    type: "number", min: 1, max: 65535, step: 1 },
-      { i18nKey: "fromAddress", key: "email.from_address", type: "text",   placeholderKey: "fromAddress" },
+      // These are the keys the sender actually reads. User/pass stay empty for
+      // an unauthenticated local relay (e.g. postfix on 127.0.0.1).
+      { i18nKey: "smtpHost",    key: "smtp.host",      type: "text",   placeholderKey: "smtpHost" },
+      { i18nKey: "smtpPort",    key: "smtp.port",      type: "number", min: 1, max: 65535, step: 1 },
+      { i18nKey: "smtpSecure",  key: "smtp.secure",    type: "toggle" },
+      { i18nKey: "smtpUser",    key: "smtp.user",      type: "text",   placeholderKey: "smtpUser" },
+      { i18nKey: "smtpPass",    key: "smtp.pass",      type: "secret" },
+      { i18nKey: "fromAddress", key: "smtp.from",      type: "text",   placeholderKey: "fromAddress" },
+      { i18nKey: "fromName",    key: "smtp.from_name", type: "text",   placeholderKey: "fromName" },
     ],
   },
 ];
@@ -309,9 +375,13 @@ const DEFAULTS: Record<string, unknown> = {
   "home.hot_threads_enabled":           true,
   "home.hot_threads_metric":            "replies",
   "members.hall_of_fame_metric":        "likes",
-  "email.smtp_host":                    "",
-  "email.smtp_port":                    587,
-  "email.from_address":                 "",
+  "smtp.host":                          "",
+  "smtp.port":                          587,
+  "smtp.secure":                        false,
+  "smtp.user":                          "",
+  "smtp.pass":                          "",
+  "smtp.from":                          "",
+  "smtp.from_name":                     "",
 };
 
 export function SettingsPage() {
@@ -370,8 +440,11 @@ export function SettingsPage() {
   }
 
   // Auto-save the General-tab settings only. The Beta tab (beta.*) is managed by
-  // its own panel/mutations, so those keys are excluded here.
-  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields.map(f => f.key));
+  // its own panel/mutations, so those keys are excluded here. Secrets are also
+  // excluded: they get explicit Set / Remove actions, because autosaving a
+  // half-typed password would store the fragment — and the value we hold in the
+  // draft is only a mask anyway.
+  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields.filter(f => f.type !== "secret").map(f => f.key));
   const rawAll = parseSettings(settings);
   const generalDraft = Object.fromEntries(GENERAL_KEYS.map(k => [k, draft[k]]));
   const generalSaved = settings.length
@@ -389,6 +462,8 @@ export function SettingsPage() {
   function renderControl(f: SectionField) {
     const val = draft[f.key];
     switch (f.type) {
+      case "secret":
+        return <SecretField settingKey={f.key} isSet={!!val} />;
       case "toggle":
         return <Toggle on={!!val} onToggle={() => set(f.key, !val)} />;
       case "number":
