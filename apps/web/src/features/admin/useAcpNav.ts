@@ -5,13 +5,15 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";
-import { AcpIcon } from "./pages/acpIcons";
+import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
 import { useUploadAllowed } from "./hooks/useUploadAllowed";
 
 export interface NavChild { label: string; to: string }
 export interface NavItem {
   label: string;        // `acp` i18n key for core items; literal label for plugin sections
   icon: ReactNode;
+  iconName?: AcpIconName;  // same icon by name, for consumers that need it unrendered
+                           // (the topbar breadcrumb / command palette index below)
   to?: string;          // leaf item (no children)
   key?: string;         // grouping key
   children?: NavChild[];
@@ -21,9 +23,9 @@ export interface NavItem {
 // Plugin-registered sections supply literal labels — i18next returns the key as-is
 // when it's missing, so those pass through untranslated, which is correct.
 export const ACP_NAV: NavItem[] = [
-  { label: "nav.dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), to: "/admin" },
+  { label: "nav.dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), iconName: "dashboard", to: "/admin" },
   {
-    label: "nav.users", icon: createElement(AcpIcon, { name: "user", size: 18 }), key: "users",
+    label: "nav.users", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
     children: [
       { label: "nav.userList", to: "/admin/users" },
       { label: "nav.groups", to: "/admin/groups" },
@@ -31,14 +33,14 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.accessControl", icon: createElement(AcpIcon, { name: "layers", size: 18 }), key: "access",
+    label: "nav.accessControl", icon: createElement(AcpIcon, { name: "layers", size: 18 }), iconName: "layers", key: "access",
     children: [
       { label: "nav.permissions", to: "/admin/permissions" },
       { label: "nav.progression", to: "/admin/progression" },
     ],
   },
   {
-    label: "nav.content", icon: createElement(AcpIcon, { name: "file", size: 18 }), key: "content",
+    label: "nav.content", icon: createElement(AcpIcon, { name: "file", size: 18 }), iconName: "file", key: "content",
     children: [
       { label: "nav.articles", to: "/admin/articles" },
       { label: "nav.categories", to: "/admin/categories" },
@@ -46,7 +48,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), key: "moderation",
+    label: "nav.moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), iconName: "shield", key: "moderation",
     children: [
       { label: "nav.reviewCases", to: "/admin/cases" },
       { label: "nav.modLog", to: "/admin/modlog" },
@@ -54,7 +56,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), key: "appearance",
+    label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
     children: [
       { label: "nav.styleEditor", to: "/admin/style-editor" },
       { label: "nav.styles", to: "/admin/styles" },
@@ -64,7 +66,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.extensions", icon: createElement(AcpIcon, { name: "puzzle", size: 18 }), key: "extensions",
+    label: "nav.extensions", icon: createElement(AcpIcon, { name: "puzzle", size: 18 }), iconName: "puzzle", key: "extensions",
     children: [
       { label: "nav.marketplace", to: "/admin/marketplace" },
       { label: "nav.installed", to: "/admin/installed" },
@@ -74,7 +76,7 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
   {
-    label: "nav.system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), key: "system",
+    label: "nav.system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), iconName: "cog", key: "system",
     children: [
       { label: "nav.settings", to: "/admin/settings" },
       { label: "nav.email", to: "/admin/email" },
@@ -87,6 +89,34 @@ export const ACP_NAV: NavItem[] = [
     ],
   },
 ];
+
+export interface AcpNavEntry {
+  labelKey: string;
+  subKey: string;
+  icon: AcpIconName;
+  to: string;
+}
+
+/**
+ * Flattened route index derived from ACP_NAV — used by the topbar breadcrumb and
+ * the command palette.
+ *
+ * Derived rather than hand-maintained: the topbar previously kept its own copy,
+ * and six routes had already drifted out of it (Pages, Review Cases, Updates,
+ * Activity Log, Layout Editor, Email) — each one silently missing its
+ * breadcrumb and unreachable from the palette. Adding a nav entry now updates
+ * both automatically.
+ */
+export const ACP_NAV_INDEX: AcpNavEntry[] = ACP_NAV.flatMap((item) => {
+  const icon = item.iconName ?? "cog";
+  if (item.children?.length) {
+    return item.children.map((c) => ({
+      labelKey: c.label, subKey: item.label, icon, to: c.to,
+    }));
+  }
+  // Leaf entries (only the dashboard today) sit under a generic parent crumb.
+  return item.to ? [{ labelKey: item.label, subKey: "nav.overview", icon, to: item.to }] : [];
+});
 
 /** Returns the core nav with plugin-registered sections merged in:
  *  "content-area" plugin sections (e.g. Forum) sit between Content and Moderation;
