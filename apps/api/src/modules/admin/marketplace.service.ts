@@ -267,16 +267,22 @@ export const marketplaceService = {
    * enabling stays an explicit admin action. All failures are coded NodevoErrors
    * (ArtifactError for the download phase) — errorMiddleware shapes them.
    */
-  async installFromMarketplace(pluginId: string, version: string, userId: string) {
+  async installFromMarketplace(pluginId: string, version: string, userId: string, onProgress?: ProgressFn) {
     let buffer: Buffer;
     try {
-      buffer = await downloadAndVerifyArtifact(pluginId, version);
+      buffer = await downloadAndVerifyArtifact(pluginId, version, onProgress);
     } catch (err) {
       if (err instanceof NodevoError) throw err;
       throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
     }
 
+    // downloadAndVerifyArtifact runs to 75%; the remainder is the intake work.
+    // Coarse steps rather than invented precision — extraction and migrations
+    // have no meaningful fraction to report, and a bar that stalls at a real
+    // number reads better than one that creeps on a fabricated one.
+    onProgress?.({ phase: "installing", percent: 80 });
     const manifest = await pluginService.install(buffer, userId);
+    onProgress?.({ phase: "finalizing", percent: 95 });
     // A just-bought plugin isn't in the STORED entitlement JWT yet (it only
     // refreshes monthly) — refresh now so Enable works immediately instead
     // of failing NEC-LICENSE-9001 until the daily job. Best-effort.

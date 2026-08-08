@@ -3,8 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCloudArrowDown, faCircleCheck, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
-import { api, apiStream } from "../../../lib/api";
-import { openProgressDialog } from "../../../lib/dialog";
+import { api } from "../../../lib/api";
+import { runStreamedJob } from "../../../lib/streamProgress";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -14,15 +14,6 @@ interface PluginUpdate {
   critical:          boolean;
   renewalRequired:   boolean;
   changelog?:        string;
-}
-
-interface ProgressEvent {
-  phase?:   string;
-  percent?: number;
-  message?: string;
-  done?:    boolean;
-  ok?:      boolean;
-  version?: string;
 }
 
 export function UpdatesPage() {
@@ -39,50 +30,37 @@ export function UpdatesPage() {
   // Update-in-place (§16.2) with LIVE progress: the server streams ndjson step
   // events (authorize → download → verify → swap → migrate → enable) which drive
   // a progress dialog. The dialog is the whole feedback surface — no toast.
+  // Update-in-place (§16.2) with LIVE progress: the server streams ndjson step
+  // events (authorize → download → verify → swap → migrate → enable) which drive
+  // a progress dialog. The dialog is the whole feedback surface — no toast.
   async function runUpdate(u: PluginUpdate) {
     const name = u.name ?? u.pluginId;
-    const dlg = openProgressDialog({
-      icon:    u.critical ? "warning" : "update",
-      title:   t("updates.progressTitle", { name }),
-      message: t("updates.phase.starting"),
-    });
     setUpdatingId(u.pluginId);
     try {
-      const res = await apiStream("/admin/marketplace/update", { pluginId: u.pluginId, version: u.latestVersion });
-      if (!res.ok || !res.body) throw new Error(`http_${res.status}`);
-
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buf = "";
-      let final: ProgressEvent | null = null;
-
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buf += decoder.decode(value, { stream: true });
-        let nl: number;
-        while ((nl = buf.indexOf("\n")) >= 0) {
-          const line = buf.slice(0, nl).trim();
-          buf = buf.slice(nl + 1);
-          if (!line) continue;
-          const evt = JSON.parse(line) as ProgressEvent;
-          if (evt.done) { final = evt; continue; }
-          let label = t(`updates.phase.${evt.phase}`, { defaultValue: t("updates.phase.working") });
-          if (evt.message) label = `${label} ${evt.message}`; // e.g. downloaded-so-far when size is unknown
-          dlg.update(evt.percent ?? 0, label);
-        }
-      }
-
-      if (final?.ok) {
-        dlg.succeed(t("updates.progressDone", { name, version: final.version ?? u.latestVersion }));
+      const { ok } = await runStreamedJob(
+        "/admin/marketplace/update",
+        { pluginId: u.pluginId, version: u.latestVersion },
+        {
+          icon:         u.critical ? "warning" : "update",
+          title:        t("updates.progressTitle", { name }),
+          startMessage: t("updates.phase.starting"),
+          phaseLabel:   (phase, message) => {
+            const label = t(`updates.phase.${phase}`, { defaultValue: t("updates.phase.working") });
+            // e.g. downloaded-so-far when the artifact size is unknown
+            return message ? `${label} ${message}` : label;
+          },
+          successMessage: (final) =>
+            t("updates.progressDone", { name, version: (final.version as string) ?? u.latestVersion }),
+          failureMessage: (final, err) =>
+            (final?.message as string) ??
+            (err instanceof Error ? err.message : t("updates.progressFailed")),
+        },
+      );
+      if (ok) {
         void qc.invalidateQueries({ queryKey: ["acp-marketplace-updates"] });
         void qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
         void qc.invalidateQueries({ queryKey: ["acp-status-summary"] });
-      } else {
-        dlg.fail(final?.message ?? t("updates.progressFailed"));
       }
-    } catch (err) {
-      dlg.fail(err instanceof Error ? err.message : t("updates.progressFailed"));
     } finally {
       setUpdatingId(null);
     }

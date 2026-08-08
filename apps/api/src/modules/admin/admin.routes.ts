@@ -14,7 +14,22 @@ export const adminRouter: Router = Router();
 
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
 const isDev = process.env.NODE_ENV !== "production";
-const licenseActivateLimiter = makeRateLimiter("license-activate", 60 * 60_000, isDev ? 1000 : 5); // §26: 5/hr
+/**
+ * Marketplace artifact operations: authorize → install → update. Named for what
+ * it guards; despite the old name this limiter was never applied to licence
+ * activation.
+ *
+ * 5/hr was far too tight, because all three routes share ONE bucket: setting up
+ * a fresh instance with a handful of plugins exhausted it, and the 429 surfaces
+ * as an opaque failure that reads like the marketplace being down. A visible
+ * progress dialog makes people retry more, not less.
+ *
+ * It stays bounded — each call can pull a multi-megabyte artifact — but the real
+ * enforcement is elsewhere: the marketplace re-checks entitlement on every
+ * download, and every route here is already behind admin.access. This is a
+ * second fence, not the only one.
+ */
+const marketplaceArtifactLimiter = makeRateLimiter("marketplace-artifact", 60 * 60_000, isDev ? 1000 : 30);
 
 // Dashboard + health
 adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
@@ -141,11 +156,11 @@ adminRouter.get("/status-summary",             adminGuard, adminController.getSt
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.
-adminRouter.post("/marketplace/authorize",     adminGuard, licenseActivateLimiter, adminController.authorizeMarketplaceDownload);
+adminRouter.post("/marketplace/authorize",     adminGuard, marketplaceArtifactLimiter, adminController.authorizeMarketplaceDownload);
 // Direct install (§16.2): authorize → server-side fetch + sha256 verify → normal intake.
-adminRouter.post("/marketplace/install",       adminGuard, licenseActivateLimiter, adminController.installFromMarketplace);
+adminRouter.post("/marketplace/install",       adminGuard, marketplaceArtifactLimiter, adminController.installFromMarketplace);
 // Update-in-place (§16.2): same chokepoint, engine swaps the newer artifact in.
-adminRouter.post("/marketplace/update",        adminGuard, licenseActivateLimiter, adminController.updateFromMarketplace);
+adminRouter.post("/marketplace/update",        adminGuard, marketplaceArtifactLimiter, adminController.updateFromMarketplace);
 
 // Sub-routers
 adminRouter.use("/groups",       groupsRouter);
