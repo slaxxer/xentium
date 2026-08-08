@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
-import { apiErrorMessage, swalToast } from "../../../lib/swal";
+import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
@@ -85,16 +85,38 @@ export function MarketplacePage() {
 
   // Direct install (§16.2): the server authorizes at the chokepoint, fetches +
   // sha256-verifies the artifact, and runs the normal intake. Lands disabled.
+  // Progress streams as ndjson and drives a dialog — the same contract the
+  // Updates page uses — so a multi-megabyte download shows real byte progress
+  // instead of the button sitting silent until a toast appears at the end.
   const installMutation = useMutation({
-    mutationFn: (p: MarketplacePlugin) =>
-      api.post("/admin/marketplace/install", { pluginId: p.id, version: p.latestVersion }),
-    onSuccess: (_data, p) => {
-      void swalToast(t("marketplace.installSuccess", { name: p.name }), "success");
+    mutationFn: async (p: MarketplacePlugin) => {
+      const { ok } = await runStreamedJob(
+        "/admin/marketplace/install",
+        { pluginId: p.id, version: p.latestVersion },
+        {
+          icon:         "update",
+          title:        t("marketplace.progressTitle", { name: p.name }),
+          startMessage: t("marketplace.phase.starting"),
+          phaseLabel:   (phase, message) => {
+            const label = t(`marketplace.phase.${phase}`, { defaultValue: t("marketplace.phase.working") });
+            return message ? `${label} ${message}` : label;
+          },
+          successMessage: () => t("marketplace.progressDone", { name: p.name }),
+          failureMessage: (final, err) =>
+            (final?.message as string) ??
+            (err instanceof Error ? err.message : t("marketplace.progressFailed")),
+        },
+      );
+      if (!ok) throw new Error("install_failed");   // keeps isPending/isError honest
+      return ok;
+    },
+    onSuccess: () => {
+      // The dialog already reported the outcome; no toast on top of it.
       void queryClient.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+      void queryClient.invalidateQueries({ queryKey: ["acp-marketplace-updates"] });
     },
-    onError: (err: unknown) => {
-      void swalToast(t("marketplace.installFailed", { message: apiErrorMessage(err) }), "error");
-    },
+    // Failure is shown in the dialog too, so nothing to add here.
+    onError: () => {},
   });
 
   const { data: market }    = useQuery<MarketplaceResponse>({ queryKey: ["acp-marketplace"], queryFn: () => api.get("/admin/marketplace/plugins") });

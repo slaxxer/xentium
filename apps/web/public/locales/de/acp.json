@@ -1217,7 +1217,20 @@
     "updatesDialogCritical": "kritisch",
     "updatesDialogMore": "+{{count}} weitere Updates",
     "updatesDialogView": "Updates ansehen",
-    "updatesDialogLater": "Später"
+    "updatesDialogLater": "Später",
+    "progressTitle": "{{name}} wird installiert",
+    "progressDone": "{{name}} installiert",
+    "progressFailed": "Installation fehlgeschlagen",
+    "phase": {
+      "starting": "Wird gestartet…",
+      "working": "Wird bearbeitet…",
+      "authorizing": "Lizenz wird geprüft…",
+      "downloading": "Wird heruntergeladen…",
+      "verifying": "Download wird geprüft…",
+      "validating": "Paket wird validiert…",
+      "installing": "Wird installiert…",
+      "finalizing": "Wird abgeschlossen…"
+    }
   },
   "updates": {
     "title": "Updates",

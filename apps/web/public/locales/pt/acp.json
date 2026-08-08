@@ -1217,7 +1217,20 @@
     "updatesDialogCritical": "crítica",
     "updatesDialogMore": "+{{count}} outras atualizações",
     "updatesDialogView": "Ver atualizações",
-    "updatesDialogLater": "Mais tarde"
+    "updatesDialogLater": "Mais tarde",
+    "progressTitle": "A instalar {{name}}",
+    "progressDone": "{{name}} instalado",
+    "progressFailed": "Falha na instalação",
+    "phase": {
+      "starting": "A iniciar…",
+      "working": "A processar…",
+      "authorizing": "A verificar a sua licença…",
+      "downloading": "A transferir…",
+      "verifying": "A verificar a transferência…",
+      "validating": "A validar o pacote…",
+      "installing": "A instalar…",
+      "finalizing": "A concluir…"
+    }
   },
   "updates": {
     "title": "Atualizações",

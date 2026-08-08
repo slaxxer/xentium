@@ -1352,7 +1352,20 @@
     "updatesDialogCritical": "critical",
     "updatesDialogMore": "+{{count}} more updates",
     "updatesDialogView": "View updates",
-    "updatesDialogLater": "Later"
+    "updatesDialogLater": "Later",
+    "progressTitle": "Installing {{name}}",
+    "progressDone": "{{name}} installed",
+    "progressFailed": "Install failed",
+    "phase": {
+      "starting": "Starting…",
+      "working": "Working…",
+      "authorizing": "Checking your licence…",
+      "downloading": "Downloading…",
+      "verifying": "Verifying the download…",
+      "validating": "Validating the package…",
+      "installing": "Installing…",
+      "finalizing": "Finishing up…"
+    }
   },
   "updates": {
     "title": "Updates",
