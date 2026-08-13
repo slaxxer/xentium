@@ -1,5 +1,6 @@
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { PubNav } from "./PubNav";
+import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import { useAuth } from "../hooks/useAuth";
 import "./AppLayout.scss";
 import "./EditorLayout.scss";
@@ -34,7 +35,11 @@ export function EditorLayout() {
   return (
     <div className="editor-layout">
       <PubNav />
-      <Outlet />
+      {/* The editor is where unsaved work lives — keep the crash inside the
+          frame so the nav stays reachable instead of blanking the tab. */}
+      <RouteErrorBoundary variant="inline">
+        <Outlet />
+      </RouteErrorBoundary>
     </div>
   );
 }

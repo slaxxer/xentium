@@ -6,6 +6,7 @@ import { PubNav } from "./PubNav";
 import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
 import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
+import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
 import "./AppLayout.scss";
 
@@ -48,7 +49,11 @@ export function AppLayout() {
       <PubNav />
       <main className="app-main">
         <LayoutWidgetOutlet outlet="top" />
-        <Outlet />
+        {/* Page crashes stay contained: nav, footer and the widget outlets keep
+            working, and navigating away clears the error. */}
+        <RouteErrorBoundary variant="inline">
+          <Outlet />
+        </RouteErrorBoundary>
       </main>
       <SiteFooter />
       <ModCanvas />

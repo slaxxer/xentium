@@ -46,5 +46,44 @@
     "agoM": "há {{n}}m",
     "agoH": "há {{n}}h",
     "agoD": "há {{n}}d"
+  },
+  "guestHome": {
+    "hero": {
+      "badge": "criadores online",
+      "title": "Onde se encontram as pessoas que constroem com o Nodevo.",
+      "subtitle": "Faça perguntas, mostre o que criou, ajude a definir o roteiro e aprenda com {members} criadores. A leitura está aberta a todos.",
+      "ctaPrimary": "Juntar-se à conversa",
+      "ctaSecondary": "Explorar como visitante"
+    }
+  },
+  "errorPage": {
+    "eyebrow": "Erro inesperado",
+    "eyebrowChunk": "Nova versão disponível",
+    "eyebrowHttp": "O pedido falhou",
+    "title": "Esta página teve um problema.",
+    "titleChunk": "Este separador está a usar uma versão antiga.",
+    "titleHttp": "O servidor não conseguiu entregar esta página.",
+    "lead": "Algo nesta página falhou durante a renderização, por isso parámos aqui em vez de mostrar um ecrã partido. A tua conta e os teus dados estão intactos.",
+    "leadChunk": "Parte do site não carregou porque foi atualizado enquanto este separador estava aberto. Recarregar traz a nova versão — nada se perde.",
+    "leadHttp": "O servidor respondeu com {{status}}, por isso esta página não pôde ser construída. Pode ser temporário — vale a pena tentar de novo.",
+    "reference": "Referência",
+    "copy": "Copiar relatório",
+    "copied": "Copiado",
+    "retry": "Tentar de novo",
+    "reload": "Recarregar página",
+    "reloadNow": "Recarregar agora",
+    "reloadingIn": "Recarregamento automático em {{secs}} s",
+    "cancelReload": "Cancelar",
+    "home": "Ir para o início",
+    "back": "Voltar",
+    "errorLog": "Abrir registo de erros",
+    "errorRef": "Consultar este código",
+    "details": "Detalhes técnicos",
+    "detailsHint": "Visível apenas para administradores e em builds de desenvolvimento.",
+    "metaRoute": "Rota",
+    "metaTime": "Hora",
+    "metaMessage": "Mensagem",
+    "hint": "Se continuar a acontecer, envia a referência acima a um administrador — o relatório copiado inclui tudo o que é preciso para investigar.",
+    "footLabel": "Erro da aplicação · Nodevo"
   }
 }
