@@ -7,14 +7,8 @@ import { api } from "../../lib/api";
 import { swalToast } from "../../lib/swal";
 import { toast } from "../../lib/toast";
 import { openDialog } from "../../lib/dialog";
+import { safeReturnTo } from "./returnTo";
 import "./LoginPage.scss";
-
-/** Only allow returning to in-app relative paths to prevent open-redirect. */
-function safeReturnTo(raw: string | null): string {
-  if (!raw) return "/";
-  if (!raw.startsWith("/") || raw.startsWith("//")) return "/";
-  return raw;
-}
 
 function PinInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const refs = useRef<(HTMLInputElement | null)[]>([]);
