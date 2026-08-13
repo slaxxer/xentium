@@ -46,5 +46,44 @@
     "agoM": "il y a {{n}} min",
     "agoH": "il y a {{n}} h",
     "agoD": "il y a {{n}} j"
+  },
+  "guestHome": {
+    "hero": {
+      "badge": "créateurs en ligne",
+      "title": "Là où se retrouvent ceux qui construisent avec Nodevo.",
+      "subtitle": "Posez des questions, montrez vos réalisations, façonnez la feuille de route et apprenez de {members} créateurs. La lecture est ouverte à tous.",
+      "ctaPrimary": "Rejoindre la conversation",
+      "ctaSecondary": "Parcourir en invité"
+    }
+  },
+  "errorPage": {
+    "eyebrow": "Erreur inattendue",
+    "eyebrowChunk": "Nouvelle version disponible",
+    "eyebrowHttp": "Échec de la requête",
+    "title": "Cette page a rencontré un problème.",
+    "titleChunk": "Cet onglet utilise une version plus ancienne.",
+    "titleHttp": "Le serveur n’a pas pu fournir cette page.",
+    "lead": "Un élément de cette page a planté pendant l’affichage, nous nous sommes donc arrêtés ici plutôt que de vous montrer un écran cassé. Votre compte et vos données sont intacts.",
+    "leadChunk": "Une partie du site n’a pas pu se charger car le site a été mis à jour pendant que cet onglet était ouvert. Recharger récupère la nouvelle version — rien n’est perdu.",
+    "leadHttp": "Le serveur a répondu {{status}}, cette page n’a donc pas pu être construite. C’est peut-être temporaire — un nouvel essai vaut le coup.",
+    "reference": "Référence",
+    "copy": "Copier le rapport",
+    "copied": "Copié",
+    "retry": "Réessayer",
+    "reload": "Recharger la page",
+    "reloadNow": "Recharger maintenant",
+    "reloadingIn": "Rechargement automatique dans {{secs}} s",
+    "cancelReload": "Annuler",
+    "home": "Retour à l’accueil",
+    "back": "Retour",
+    "errorLog": "Ouvrir le journal d’erreurs",
+    "errorRef": "Rechercher ce code",
+    "details": "Détails techniques",
+    "detailsHint": "Visible uniquement par les administrateurs et dans les builds de développement.",
+    "metaRoute": "Route",
+    "metaTime": "Heure",
+    "metaMessage": "Message",
+    "hint": "Si cela se reproduit, transmettez la référence ci-dessus à un administrateur — le rapport copié contient tout ce qu’il faut pour remonter la piste.",
+    "footLabel": "Erreur applicative · Nodevo"
   }
 }

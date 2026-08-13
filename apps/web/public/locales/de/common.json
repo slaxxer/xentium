@@ -46,5 +46,44 @@
     "agoM": "vor {{n}}m",
     "agoH": "vor {{n}}h",
     "agoD": "vor {{n}}d"
+  },
+  "guestHome": {
+    "hero": {
+      "badge": "Entwickler online",
+      "title": "Wo sich Menschen treffen, die mit Nodevo bauen.",
+      "subtitle": "Stelle Fragen, zeige, was du gebaut hast, gestalte die Roadmap mit und lerne von {members} Machern. Lesen ist für alle offen.",
+      "ctaPrimary": "Mitmachen",
+      "ctaSecondary": "Als Gast stöbern"
+    }
+  },
+  "errorPage": {
+    "eyebrow": "Unerwarteter Fehler",
+    "eyebrowChunk": "Neue Version verfügbar",
+    "eyebrowHttp": "Anfrage fehlgeschlagen",
+    "title": "Auf dieser Seite ist ein Problem aufgetreten.",
+    "titleChunk": "Dieser Tab läuft mit einer älteren Version.",
+    "titleHttp": "Der Server konnte diese Seite nicht ausliefern.",
+    "lead": "Etwas auf dieser Seite ist beim Aufbau abgestürzt, deshalb haben wir hier abgebrochen, statt dir eine kaputte Ansicht zu zeigen. Dein Konto und deine Daten sind unberührt.",
+    "leadChunk": "Ein Teil der Seite konnte nicht geladen werden, weil die Website aktualisiert wurde, während dieser Tab offen war. Ein Neuladen holt die neue Version — es geht nichts verloren.",
+    "leadHttp": "Der Server hat mit {{status}} geantwortet, deshalb konnte diese Seite nicht erstellt werden. Vielleicht ist es nur vorübergehend — ein zweiter Versuch lohnt sich.",
+    "reference": "Referenz",
+    "copy": "Bericht kopieren",
+    "copied": "Kopiert",
+    "retry": "Erneut versuchen",
+    "reload": "Seite neu laden",
+    "reloadNow": "Jetzt neu laden",
+    "reloadingIn": "Automatisches Neuladen in {{secs}}s",
+    "cancelReload": "Abbrechen",
+    "home": "Zur Startseite",
+    "back": "Zurück",
+    "errorLog": "Fehlerprotokoll öffnen",
+    "errorRef": "Diesen Code nachschlagen",
+    "details": "Technische Details",
+    "detailsHint": "Nur für Administratoren und in Entwicklungs-Builds sichtbar.",
+    "metaRoute": "Route",
+    "metaTime": "Zeit",
+    "metaMessage": "Meldung",
+    "hint": "Wenn das öfter passiert, schick die Referenz oben an eine Administratorin oder einen Administrator — der kopierte Bericht enthält alles, was zur Analyse nötig ist.",
+    "footLabel": "Anwendungsfehler · Nodevo"
   }
 }
