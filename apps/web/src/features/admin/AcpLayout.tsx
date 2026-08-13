@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
 import "./AcpLayout.scss";
 import "./nav/AcpNav.scss";
+import { RouteErrorBoundary } from "../errors/ErrorBoundary";
 import { AcpTopbar } from "./AcpTopbar";
 import { useAcpNav } from "./useAcpNav";
 import { HorizontalNav } from "./nav/HorizontalNav";
@@ -163,7 +164,11 @@ function AcpShell() {
         <AcpTopbar />
         <HorizontalNav nav={nav} />
         <main className="acp-content">
-          <Outlet />
+          {/* A crashing ACP page must not take the nav with it — an admin needs
+              a way to click somewhere else. Clears on navigation. */}
+          <RouteErrorBoundary variant="inline">
+            <Outlet />
+          </RouteErrorBoundary>
         </main>
       </div>
     </div>
