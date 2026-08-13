@@ -51,12 +51,18 @@ function scopeSelector(sel: string, prefix: string): string {
   return `${prefix} ${t}`;
 }
 
+// Admin-authored CSS is attacker-adjacent input. `map: false` takes postcss's
+// early-out before it resolves a /*# sourceMappingURL */ comment, which would
+// otherwise read an arbitrary `.map` path off the server's disk (GHSA postcss
+// #42/#57). Version-independent — keep it even though we ship a patched postcss.
+const PARSE_OPTS = { map: false } as const;
+
 function scopeCustomCss(css: string, theme: ThemeName): string {
   if (!css.trim()) return "";
   const prefix = THEME_SCOPE[theme];
   let root: postcss.Root;
   try {
-    root = postcss.parse(css);
+    root = postcss.parse(css, PARSE_OPTS);
   } catch {
     return "";
   }
@@ -77,7 +83,7 @@ function scopeCustomCss(css: string, theme: ThemeName): string {
 function assertParsableCss(css: string, theme: ThemeName): void {
   if (!css.trim()) return;
   try {
-    postcss.parse(css);
+    postcss.parse(css, PARSE_OPTS);
   } catch (err) {
     throw new NodevoError({
       code: NEC.API_VALIDATION,

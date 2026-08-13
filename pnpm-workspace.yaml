@@ -27,7 +27,7 @@ catalog:
   react: ^19.2.6
   react-dom: ^19.2.6
   react-hook-form: ^7
-  react-router: ^7
+  react-router: ^7.18.2
   supertest: ^7
   tsx: ^4
   typescript: ^6
@@ -36,9 +36,11 @@ catalog:
   zod: ^4.4.3
 
 overrides:
-  form-data@<4.0.6: '>=4.0.6'
-  shell-quote@<1.9.0: '>=1.9.0'
-  hono@>=4 <4.12.25: '>=4.12.25 <5'
   brace-expansion@>=1 <1.1.16: '>=1.1.16 <2'
   brace-expansion@>=5 <5.0.7: '>=5.0.7 <6'
+  form-data@<4.0.6: '>=4.0.6'
+  hono@>=4 <4.12.25: '>=4.12.25 <5'
   js-yaml@>=4 <4.3.0: '>=4.3.0 <5'
+  react-router@>=7 <7.18.2: '>=7.18.2 <8'
+  react-router-dom@>=7 <7.18.2: '>=7.18.2 <8'
+  shell-quote@<1.9.0: '>=1.9.0'
