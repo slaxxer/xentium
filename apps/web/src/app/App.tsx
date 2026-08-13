@@ -76,6 +76,8 @@ import { ActivityLogPage }       from "../features/admin/pages/ActivityLogPage";
 import { ScheduledJobsPage }     from "../features/admin/pages/ScheduledJobsPage";
 import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
 import { CanonicalManager }      from "../components/CanonicalManager";
+import { RouteErrorPage }        from "../features/errors/RouteErrorPage";
+import { ErrorBoundary }         from "../features/errors/ErrorBoundary";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -224,14 +226,20 @@ function BetaGate({ children }: { children: React.ReactNode }) {
 
 function buildRouter() {
   return createBrowserRouter([
-  { path: "/install",   element: <InstallRoute /> },
-  { path: "/installer", element: <InstallRoute /> },
+  // `errorElement` on every TOP-LEVEL route: react-router walks up to the
+  // nearest one, so these four cover the whole tree and nothing can fall
+  // through to the framework's developer-facing default screen. Errors under a
+  // layout are caught closer, by the layout's own boundary, so the chrome
+  // survives (see AppLayout/AcpLayout/EditorLayout).
+  { path: "/install",   element: <InstallRoute />, errorElement: <RouteErrorPage /> },
+  { path: "/installer", element: <InstallRoute />, errorElement: <RouteErrorPage /> },
   // ADR-0003 Phase 2 — Style Editor specimen iframe. Top-level (no AppGuard) so it
   // renders independent of the install/maintenance/auth gates; the editor loads it
   // in an iframe as a spatial token selector.
-  { path: "/__theme-preview", element: <ThemePreview /> },
+  { path: "/__theme-preview", element: <ThemePreview />, errorElement: <RouteErrorPage /> },
   {
     element: <AppGuard />,
+    errorElement: <RouteErrorPage />,
     children: [
       { path: "/login",           element: <LoginPage /> },
       { path: "/register",        element: <RegisterPage /> },
@@ -316,7 +324,7 @@ function buildRouter() {
     ],
   },
   // Wildcard is top-level so it never forces AppGuard to render on /install
-  { path: "*", element: <NotFound /> },
+  { path: "*", element: <NotFound />, errorElement: <RouteErrorPage /> },
 ]);
 }
 
@@ -372,11 +380,16 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BadgeShadowSync />
-      <MaintenanceGate>
-        <BetaGate>
-          <RouterProvider router={router} />
-        </BetaGate>
-      </MaintenanceGate>
+      {/* Outermost net. The gates below live OUTSIDE the router, so their
+          crashes have no errorElement to reach — without this they'd blank the
+          document. Inside the provider so the screen can still read auth. */}
+      <ErrorBoundary variant="full">
+        <MaintenanceGate>
+          <BetaGate>
+            <RouterProvider router={router} />
+          </BetaGate>
+        </MaintenanceGate>
+      </ErrorBoundary>
       {/* Own feedback primitives: toast stack + confirm/alert dialogs (no swal) */}
       <ToastHost />
       <DialogHost />

@@ -46,5 +46,44 @@
     "agoM": "hace {{n}}m",
     "agoH": "hace {{n}}h",
     "agoD": "hace {{n}}d"
+  },
+  "guestHome": {
+    "hero": {
+      "badge": "creadores en línea",
+      "title": "Donde se reúne la gente que construye con Nodevo.",
+      "subtitle": "Haz preguntas, muestra lo que has creado, da forma a la hoja de ruta y aprende de {members} creadores. Leer está abierto a todos.",
+      "ctaPrimary": "Únete a la conversación",
+      "ctaSecondary": "Explorar como invitado"
+    }
+  },
+  "errorPage": {
+    "eyebrow": "Error inesperado",
+    "eyebrowChunk": "Nueva versión disponible",
+    "eyebrowHttp": "La solicitud falló",
+    "title": "Esta página ha tenido un problema.",
+    "titleChunk": "Esta pestaña está usando una versión antigua.",
+    "titleHttp": "El servidor no ha podido entregar esta página.",
+    "lead": "Algo de esta página falló mientras se dibujaba, así que paramos aquí en vez de mostrarte una pantalla rota. Tu cuenta y tus datos están intactos.",
+    "leadChunk": "Una parte del sitio no se pudo cargar porque se actualizó mientras esta pestaña estaba abierta. Al recargar se obtiene la nueva versión — no se pierde nada.",
+    "leadHttp": "El servidor respondió con {{status}}, así que esta página no se pudo construir. Puede ser temporal — merece la pena reintentarlo.",
+    "reference": "Referencia",
+    "copy": "Copiar informe",
+    "copied": "Copiado",
+    "retry": "Reintentar",
+    "reload": "Recargar página",
+    "reloadNow": "Recargar ahora",
+    "reloadingIn": "Recarga automática en {{secs}} s",
+    "cancelReload": "Cancelar",
+    "home": "Ir al inicio",
+    "back": "Volver",
+    "errorLog": "Abrir registro de errores",
+    "errorRef": "Buscar este código",
+    "details": "Detalles técnicos",
+    "detailsHint": "Visible solo para administradores y en compilaciones de desarrollo.",
+    "metaRoute": "Ruta",
+    "metaTime": "Hora",
+    "metaMessage": "Mensaje",
+    "hint": "Si vuelve a ocurrir, envía la referencia de arriba a un administrador — el informe copiado incluye todo lo necesario para rastrearlo.",
+    "footLabel": "Error de la aplicación · Nodevo"
   }
 }
