@@ -17,7 +17,6 @@
     "@fontsource/nunito": "^5.2.7",
     "@fontsource/open-sans": "^5.2.7",
     "@fontsource/poppins": "^5.2.7",
-
     "@fontsource/ubuntu": "^5.2.8",
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
@@ -54,7 +53,7 @@
     "react-hook-form": "catalog:",
     "react-i18next": "^17.0.8",
     "react-router": "catalog:",
-    "react-router-dom": "^7.15.1",
+    "react-router-dom": "^7.18.2",
     "zod": "catalog:"
   },
   "devDependencies": {
