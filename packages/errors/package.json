@@ -1,15 +1,16 @@
 {
   "name": "@nodevo/errors",
   "version": "1.0.0-alpha.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -33,5 +34,32 @@
   "dependencies": {
     "@nodevo/contracts": "workspace:*",
     "zod": "catalog:"
+  },
+  "description": "NodevoError, the NEC code registry, and the Express error middleware.",
+  "license": "MIT",
+  "author": "Nodevo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "directory": "packages/errors"
+  },
+  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/errors#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   }
 }
