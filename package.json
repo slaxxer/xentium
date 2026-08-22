@@ -23,6 +23,8 @@
     "db:reset": "prisma migrate reset --force",
     "db:studio": "prisma studio",
     "plugin:package": "node scripts/package-plugin.mjs",
+    "release:framework": "node scripts/release-framework.mjs",
+    "release:framework:dry": "node scripts/release-framework.mjs --dry-run",
     "e2e:reset": "prisma migrate reset --force",
     "e2e": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e",
     "e2e:ui": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e:ui"
