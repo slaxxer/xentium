@@ -22,6 +22,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 - [First run — the installer](#first-run--the-installer)
 - [Everyday commands](#everyday-commands)
 - [Project structure](#project-structure)
+- [Framework packages (npm)](#framework-packages-npm)
 - [Architecture in a nutshell](#architecture-in-a-nutshell)
 - [Layout system](#layout-system)
 - [Working on core](#working-on-core)
@@ -242,12 +243,16 @@ nodevo/
 │  └─ web/                  Vite + React frontend
 │     └─ src/               app, pages, features, components, layouts, hooks,
 │                           lib, plugins (slot/theme registries), styles
-├─ packages/
-│  ├─ contracts/            Shared types/DTOs/enums (permissions, pagination, NEC, …)
+├─ packages/               (@nodevo/* — ↑ marks the five published to npm)
+│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, NEC, …)
+│  ├─ errors/             ↑ NodevoError, NEC registry, Express error middleware
+│  ├─ server-kit/         ↑ Settings, pagination, secrets, rate limiting, uploads, storage
+│  ├─ auth/               ↑ Token service, password hashing, revocation, request guards
+│  ├─ plugin-engine/      ↑ Manifest validation, migration SQL guard, registry, router
 │  ├─ sdk/                  Shared runtime helpers (slug, access) + license public key
-│  ├─ plugin-sdk/           Public plugin authoring contract
+│  ├─ plugin-sdk/           Plugin authoring contract (not yet on npm — see above)
 │  ├─ ui/                   Shared React components (GroupAccessPicker)
-│  └─ config/              Shared tsconfig base
+│  └─ config/               Shared tsconfig base
 ├─ plugins/
 │  ├─ official/             First-party plugins (own repos / licensed)
 │  └─ community-examples/   Reference plugins for local dev
@@ -260,6 +265,79 @@ nodevo/
 
 **Module convention** — every feature module under `apps/api/src/modules/<name>/` keeps the same shape:
 `*.routes.ts → *.controller.ts → *.service.ts → *.repository.ts`, plus `*.validation.ts`, `*.types.ts`, `*.test.ts`.
+
+---
+
+## Framework packages (npm)
+
+Nodevo is a framework with the Nodevo CMS as its first application. The framework
+layer is published to npm under the [`@nodevo`](https://www.npmjs.com/org/nodevo)
+scope — public, MIT — so anything can be built on it, not just this CMS.
+
+These are the same packages core runs on. There is no separate "public API"
+that lags behind what we use ourselves.
+
+| Package | What it gives you |
+| --- | --- |
+| [`@nodevo/contracts`](https://www.npmjs.com/package/@nodevo/contracts) | Shared types, permission keys, pagination, and the NEC error-code registry |
+| [`@nodevo/errors`](https://www.npmjs.com/package/@nodevo/errors) | `NodevoError`, the NEC registry, and the Express error middleware |
+| [`@nodevo/server-kit`](https://www.npmjs.com/package/@nodevo/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
+| [`@nodevo/auth`](https://www.npmjs.com/package/@nodevo/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
+| [`@nodevo/plugin-engine`](https://www.npmjs.com/package/@nodevo/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
+
+```bash
+pnpm add @nodevo/errors @nodevo/server-kit
+```
+
+While the platform is in prerelease these publish under the `alpha` dist-tag, so
+pin explicitly:
+
+```bash
+pnpm add @nodevo/errors@alpha
+```
+
+Everything with a dependency is a **factory** — nothing reaches for a module
+singleton, so an application injects its own database, secret, Redis client or
+filesystem root:
+
+```ts
+import { createErrorMiddleware } from "@nodevo/errors";
+import { createSettings } from "@nodevo/server-kit";
+
+app.use(createErrorMiddleware({ isProd, logger, persist }));
+
+const settings = createSettings({
+  get:     (key)  => db.setting.findUnique({ where: { key } }),
+  getMany: (keys) => db.setting.findMany({ where: { key: { in: keys } } }),
+});
+```
+
+The boundary rule these packages are held to (ADR-0006): **a framework package
+may not know what a user, an article, or a page is.** So the layout/block system,
+appearance, and everything else CMS-shaped stays in `apps/`, and is not published.
+
+### For plugin developers
+
+> [!IMPORTANT]
+> **`@nodevo/plugin-sdk` is not on npm yet.** It is the authoring contract you
+> need, and it is deliberately held back: ADR-0006 splits it into a generic half
+> and a CMS-shaped half, and that is a breaking change. Publishing a version we
+> already know is wrong would be worse than the wait.
+>
+> Until it lands, take it from the repo — copy `packages/plugin-sdk/src/index.ts`
+> into your plugin, or add the repo as a git dependency. It is types only, so
+> nothing ships at runtime either way.
+
+The rest of the framework is installable today and useful in a plugin now:
+`@nodevo/contracts` for permission keys and NEC codes, `@nodevo/errors` so your
+plugin's failures come back in the same shape as core's.
+
+A plugin does **not** need `@nodevo/server-kit`, `@nodevo/auth` or
+`@nodevo/plugin-engine`. The host already runs those, and `ctx.host` hands you
+what it has — `prisma`, `queues`, `logger`, the auth middleware. Installing your
+own copy gives you a second, unconnected instance.
+
+Full authoring walkthrough below in [Plugin development guide](#plugin-development-guide).
 
 ---
 
@@ -418,6 +496,8 @@ registers into, remember the **worker** needs a restart to pick it up — in dev
 ## Plugin development guide
 
 Plugins are how you extend Nodevo without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, NEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
+
+See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@nodevo/plugin-sdk`.
 
 ### Anatomy of a plugin
 
