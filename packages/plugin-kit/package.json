@@ -1,0 +1,29 @@
+{
+  "name": "@nodevo/plugin-kit",
+  "version": "1.0.0-alpha.0",
+  "private": false,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "description": "The application-agnostic half of the Nodevo plugin authoring contract: manifest, definition, host bridge and context shape.",
+  "license": "MIT",
+  "author": "Nodevo",
+  "repository": { "type": "git", "url": "git+https://github.com/slaxxer/nodevo.git", "directory": "packages/plugin-kit" },
+  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/plugin-kit#readme",
+  "engines": { "node": ">=22.12" },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "prepublishOnly": "pnpm build"
+  },
+  "exports": { ".": "./src/index.ts" },
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } }
+  },
+  "devDependencies": { "@nodevo/config": "workspace:*", "typescript": "catalog:" }
+}

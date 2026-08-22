@@ -26,12 +26,11 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  * What gets published, in dependency order.
  *
  * NOT here: `@nodevo/config` (the shared tsconfig — a devDependency nobody
- * consuming needs) and `@nodevo/ui` (React components for the CMS, not
- * framework). `@nodevo/sdk` and `@nodevo/plugin-sdk` are absent too, which is
- * a real gap for third-party plugin authors — see the note at the foot of this
- * file.
+ * consuming needs), `@nodevo/ui` (React components for the CMS, not framework),
+ * and `@nodevo/sdk` (core runtime helpers plus the licence public key, which is
+ * a CMS concern).
  */
-const PACKAGES = ["contracts", "errors", "server-kit", "auth", "plugin-engine"];
+const PACKAGES = ["contracts", "errors", "server-kit", "auth", "plugin-engine", "plugin-kit", "plugin-sdk"];
 
 const dryRun = process.argv.includes("--dry-run");
 
@@ -121,17 +120,3 @@ if (dryRun) {
   console.log(`\nPublished @nodevo/* ${version} (tag: ${tag}).`);
   console.log("Consumers outside this repo pick it up with: pnpm update @nodevo/*");
 }
-
-/*
- * ── Not published, and worth revisiting ────────────────────────────────────
- *
- * `@nodevo/plugin-sdk` is the authoring contract for THIRD-PARTY plugins, and
- * it is not on the registry. An outside author therefore cannot install the one
- * package they need in order to build against Nodevo at all — they would have to
- * vendor it out of the repo.
- *
- * It is held back for one reason: ADR-0006 splits it into a generic half and a
- * CMS-shaped half, and that split is a breaking change for the four official
- * plugins. Publishing before the split would put a version on the registry that
- * is known to be wrong. Publish it immediately after.
- */

@@ -1,0 +1,40 @@
+# @nodevo/plugin-kit
+
+**The application-agnostic half of the Nodevo plugin contract.**
+
+Manifest, definition, host bridge and the base context — the shapes a plugin and
+its host agree on, with nothing in them that assumes a CMS.
+
+## Which package do you want?
+
+**Almost certainly [`@nodevo/plugin-sdk`](https://www.npmjs.com/package/@nodevo/plugin-sdk).**
+It re-exports this package in full and adds the Nodevo CMS surface (search
+sources, home feeds, progression, layout templates, ACP pages), so a CMS plugin
+gets everything from one import.
+
+Reach for this package directly only when writing a plugin for a *different*
+Nodevo-framework application, or tooling that handles plugins for any host.
+
+```ts
+import type { PluginDefinition, PluginContext } from "@nodevo/plugin-kit";
+
+export default {
+  id: "my-plugin",
+  async onEnable(ctx: PluginContext) {
+    await ctx.registerPermissions([
+      { key: "myplugin.thing.create", label: "Create things", domain: "My Plugin" },
+    ]);
+    ctx.registerRoutes(router);
+  },
+} satisfies PluginDefinition;
+```
+
+`PluginContext` and `PluginDefinition` are generic over the host bridge and the
+context, which is how an application layers its own registrations on without
+this package knowing they exist.
+
+---
+
+Part of the [Nodevo framework](https://github.com/slaxxer/nodevo).
+
+MIT © Slaxxer
