@@ -2,8 +2,11 @@
 /**
  * Publish the framework packages to npm.
  *
- *   node scripts/release-framework.mjs            # publish the current version
- *   node scripts/release-framework.mjs --dry-run  # show what would happen
+ *   node scripts/release-framework.mjs --otp=123456   # publish the current version
+ *   node scripts/release-framework.mjs --dry-run      # show what would happen
+ *
+ * npm requires a 2FA code to publish. Pass it with --otp and run immediately —
+ * codes expire in about 30 seconds.
  *
  * The packages are published; `apps/api` still consumes them as `workspace:*`
  * and always will. Depending on the registry from inside the repo that produces
@@ -33,6 +36,15 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKAGES = ["contracts", "errors", "server-kit", "auth", "plugin-engine", "plugin-kit", "plugin-sdk"];
 
 const dryRun = process.argv.includes("--dry-run");
+
+/**
+ * A one-time 2FA code. npm requires one to publish unless the credential is a
+ * granular token with 2FA bypass — and it should not be, for a token that can
+ * publish. Codes expire in about 30 seconds, so fetch one immediately before
+ * running this.
+ */
+const otpArg = process.argv.find((a) => a.startsWith("--otp="));
+const otp = otpArg?.slice("--otp=".length);
 
 // `stdio: "inherit"` streams to the terminal and returns null rather than a
 // string, so the trim only applies when output was actually captured.
@@ -109,6 +121,7 @@ run(
     // The repo tags releases itself; pnpm's own git checks would refuse a
     // perfectly good publish for want of a tag it expects to create.
     "--no-git-checks",
+    ...(otp ? ["--otp", otp] : []),
     ...(dryRun ? ["--dry-run"] : []),
   ],
   { stdio: "inherit" },
