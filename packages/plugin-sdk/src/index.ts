@@ -1,57 +1,46 @@
 /**
  * @nodevo/plugin-sdk
  *
- * Public contract for building Nodevo plugins.
- * Import this package in your plugin's server entry point.
+ * The authoring contract for Nodevo CMS plugins. Import this in your plugin's
+ * server entry point.
+ *
+ * ── What changed, and what did not ─────────────────────────────────────────
+ *
+ * The application-agnostic half of this contract now lives in
+ * `@nodevo/plugin-kit` — manifest, definition, host bridge and the base context
+ * — so that a plugin for a DIFFERENT Nodevo-framework application (the
+ * marketplace, for one) has something to build against that does not assume a
+ * CMS.
+ *
+ * This package re-exports all of it and adds the CMS surface on top, so its
+ * public shape is UNCHANGED. Existing plugins need no edits: `PluginContext`
+ * still carries `registerSearchSource`, `PluginHost` still carries
+ * `progression`, and one import still gets you everything.
  *
  * Companion docs for the parts that live on the WEB side (this package is the
  * server contract only):
  *  - `docs/plugin-acp-autosave.md` — ACP admin surfaces. Config pages and
  *    per-group panels AUTOSAVE (no Save button) via the host's `useAutosave` +
  *    `AutosaveStatus`; entity modals, secrets and destructive actions keep an
- *    explicit action. Read before building any plugin admin UI, RBAC/progression
- *    config included.
+ *    explicit action. Read before building any plugin admin UI.
  *  - `docs/plugin-i18n.md` — bundling translated UI strings.
  */
+import type {
+  PluginContext as BasePluginContext,
+  PluginDefinition as BasePluginDefinition,
+  PluginHost as BasePluginHost,
+} from "@nodevo/plugin-kit";
 
-// Use a structural type so plugin-sdk doesn't need express as a direct dep.
-// Express Router satisfies this interface.
-export interface PluginRouter {
-  use: (...args: any[]) => any;
-  get:    (...args: any[]) => any;
-  post:   (...args: any[]) => any;
-  patch:  (...args: any[]) => any;
-  put:    (...args: any[]) => any;
-  delete: (...args: any[]) => any;
-}
+// Everything application-agnostic, re-exported so one import still suffices.
+export type {
+  PluginRouter,
+  PluginManifest,
+  PermissionDeclaration,
+  NecCodeDeclaration,
+  NotifyOptions,
+} from "@nodevo/plugin-kit";
 
-// ── Manifest ──────────────────────────────────────────────────────────────────
-
-export interface PluginManifest {
-  id:               string;        // kebab-case, unique e.g. "nodevo-forum"
-  name:             string;
-  version:          string;        // semver
-  vendor:           string;
-  minNodevoVersion: string;
-  maxNodevoVersion?: string;
-  licenseRequired:  boolean;
-  tablePrefix?:     string;        // e.g. "forum_" — when set, every DB object this plugin's migrations create/alter/drop MUST carry it
-  permissions:      string[];      // permission keys declared by this plugin
-  migrations:       string[];      // migration names (without .up/.down.sql)
-  entrypoints: {
-    server?: string;               // relative path to server entry file
-    web?:    string;               // relative path to web entry file
-  };
-}
-
-// ── Registration types ────────────────────────────────────────────────────────
-
-export interface PermissionDeclaration {
-  key:      string;                // e.g. "forum.thread.create"
-  label:    string;
-  domain:   string;                // ACP section header e.g. "Forum"
-  defaults?: string[];             // group keys that get this permission on first install
-}
+// ── CMS declarations ─────────────────────────────────────────────────────────
 
 export interface NavItemDeclaration {
   label:       string;
@@ -228,75 +217,31 @@ export interface LayoutTemplateDeclaration {
   pluginId?: string;
 }
 
-export interface NotifyOptions {
-  userId:   string;
-  type:     string;
-  title:    string;
-  body:     string;
-  link?:    string;
-  channels: ("in_app" | "email")[];
-}
-
-// ── Host service bridge (injected so plugins don't import core internals) ─────
+// ── Host bridge ──────────────────────────────────────────────────────────────
 
 /**
- * Services the host core provides to a plugin's server code. Populated by the
- * core plugin engine and exposed on `PluginContext.host`. Members are loosely
- * typed so the SDK stays dependency-free; first-party plugins may narrow them
- * locally (e.g. cast `prisma` to the generated client type).
+ * The CMS's host bridge: everything `@nodevo/plugin-kit` guarantees (prisma,
+ * queues, env, logger, errors, middleware, cron), plus what only a community
+ * platform can offer.
  */
-export interface PluginHost {
-  /** The host Prisma client singleton. */
-  prisma: any;
-  /** BullMQ queue handles (plugins enqueue; the core worker processes). */
-  queues: any;
-  /** Validated host environment config. */
-  env: any;
-  /** Pino logger. */
-  logger: any;
-  /** Error primitives. */
-  errors: {
-    NodevoError: any;   // class — used as `new host.errors.NodevoError(...)`
-    NEC: any;           // NEC code registry object
-  };
-  /** Express middleware provided by the host. */
-  middleware: {
-    requireAuth: any;
-    optionalAuth: any;
-    /** Factory: `requirePermission(key)` → middleware gating on a permission
-     *  key (e.g. "admin.access"). Use for plugin ACP / privileged routes. */
-    requirePermission: (key: string) => any;
-  };
-  /** Progression primitives (§38). Core owns the ladder; a plugin owns the
-   *  thresholds and limits for its own content, keyed by the group id this
-   *  returns. */
+export interface PluginHost extends BasePluginHost {
+  /**
+   * Progression primitives (§38). Core owns the ladder; a plugin owns the
+   * thresholds and limits for its own content, keyed by the group id this
+   * returns.
+   */
   progression: {
-    /** The group whose progression config governs `userId` (the user's highest
-     *  rung on the ladder), or null when the user is not on the ladder. */
+    /** The group whose progression config governs `userId` — their highest rung
+     *  on the ladder — or null when the user is not on it. */
     getEffectiveGroupId: (userId: string) => Promise<string | null>;
   };
-  /** Shared helper utilities. */
-  utils: {
-    /** Cron maths for plugins that run their own recurring jobs. Core does NOT
-     *  manage, display, or own a plugin's schedules — the plugin still calls
-     *  `upsertJobScheduler` itself in onEnable and removes it on disable. This
-     *  only stops every plugin re-implementing cron parsing and its guardrails.
-     *  `previewRuns` throws NEC-QUEUE-5001 on a bad expression or one that fires
-     *  more often than `minIntervalSec`. */
-    cron: {
-      resolveCron:  (cfg: { mode: "interval" | "daily" | "cron"; intervalMin?: number; dailyTime?: string; cron?: string; tz?: string }, fallbackCron: string) => string;
-      previewRuns:  (pattern: string, tz: string | undefined, minIntervalSec: number, count?: number) => string[];
-    };
-    resolveAvatar: (...args: any[]) => any;
-    /** Sanitize user-authored rich-text HTML (allowlist) before storage.
-     *  Plugins that accept HTML bodies MUST run them through this on write. */
-    sanitizeRichText: (html: string) => string;
-  };
+
   /** Core notification service — dispatch passes through all fields incl. meta. */
   notificationService: {
     dispatch: (opts: any) => Promise<void>;
   };
-  /** Core moderation primitives for plugin security scans. */
+
+  /** Core moderation primitives, for plugin security scans. */
   security: {
     /** Open a review case (dedup + notify case managers), identical to core
      *  security-analysis cases. `type` is a free string (e.g. "impossible_travel"). */
@@ -305,98 +250,65 @@ export interface PluginHost {
      *  (system-attributed). Returns the banned usernames. Used by paid auto-ban. */
     autoBanMultiaccounts: (userIds: string[], reason: string) => Promise<string[]>;
   };
+
+  utils: BasePluginHost["utils"] & {
+    resolveAvatar: (...args: any[]) => any;
+    /** Sanitize user-authored rich-text HTML (allowlist) before storage.
+     *  Plugins accepting HTML bodies MUST run them through this on write. */
+    sanitizeRichText: (html: string) => string;
+  };
 }
 
-// ── Plugin context (injected into onEnable / onDisable) ───────────────────────
+// ── Context ──────────────────────────────────────────────────────────────────
 
-export interface NecCodeDeclaration {
-  code:   string;  // e.g. "NEC-FORUM-6001"
-  msg:    string;  // short display label
-  sev:    "Info" | "Warning" | "Error" | "Critical";
-  domain: string;  // shown as section header e.g. "Forum Plugin"
-  desc:   string;  // what happened
-  cause:  string;  // likely cause
-  fix:    string;  // suggested resolution
-}
-
-export interface PluginContext {
-  /** The plugin's id from the manifest. */
-  pluginId: string;
-
-  /** Host services (prisma, queues, middleware, errors, …) injected by core. */
-  host: PluginHost;
-
-  /** Register Express routes at /api/p/:pluginId/* */
-  registerRoutes(router: PluginRouter): void;
-
-  /** Register permission keys. Inserts into the permissions table. */
-  registerPermissions(perms: PermissionDeclaration[]): Promise<void>;
-
+/**
+ * What the CMS hands a plugin at enable time: the base context, plus every
+ * registration that only makes sense on a content and community platform.
+ */
+export interface PluginContext extends BasePluginContext<PluginHost> {
   /** Register a frontend nav item. */
   registerNavItem(item: NavItemDeclaration): Promise<void>;
 
   /** Register ACP sidebar pages (returned by GET /api/admin/registered-pages). */
   registerAcpPage(page: AcpPageDeclaration): void;
 
-  /** Register notification type strings for user preference UI. */
+  /** Register notification type strings for the user preference UI. */
   registerNotificationTypes(types: string[]): void;
 
-  /** Register a search content source (e.g. forum threads). Core asks it to run
-   *  the search and merges results — it never queries the plugin's tables. */
+  /** Register a search content source. Core asks it to run the search and
+   *  merges results — it never queries the plugin's tables. */
   registerSearchSource(source: SearchSource): void;
 
-  /** Register a home/guest feed content source (e.g. forum threads). */
+  /** Register a home/guest feed content source. */
   registerHomeFeedSource(source: HomeFeedSource): void;
 
-  /** Register a site-stats source (e.g. forum thread/post totals) shown in the
-   *  footer. Core aggregates registered sources — it never queries plugin tables.
-   *  Deregistered automatically on plugin disable. */
+  /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;
 
-  /** Register progression promotion criteria (e.g. forum posts/threads). Core's
-   *  promotion job asks registered criteria whether a user meets a target
-   *  group's plugin-configured thresholds; a disabled plugin's criteria stop
-   *  counting. Deregistered automatically on plugin disable.
-   *
-   *  The admin UI for these thresholds belongs in the core Group settings dialog
-   *  via the web-side `groupConfigPanel` slot, and autosaves like every other
-   *  config surface — see `docs/plugin-acp-autosave.md`. */
+  /** Register progression promotion criteria (§38). A disabled plugin's criteria
+   *  stop counting. The admin UI for its thresholds belongs in the core Group
+   *  settings dialog via the web-side `groupConfigPanel` slot, and autosaves —
+   *  see `docs/plugin-acp-autosave.md`. */
   registerProgressionCriteria(criteria: ProgressionCriteria): void;
 
-  /** Register NEC error codes for the Error Reference ACP page. */
-  registerNecCodes(codes: NecCodeDeclaration[]): void;
-
-  /** Open one of this plugin's own pages to the layout editor (ADR-0005). Throws
-   *  on a declaration core will not accept, which fails the enable rather than
-   *  half-registering the plugin. Deregistered automatically on disable — stored
-   *  layouts are kept, so re-enabling restores them. */
+  /** Open one of this plugin's own pages to the layout editor (ADR-0005).
+   *  Throws on a declaration core will not accept, failing the enable rather
+   *  than half-registering. Deregistered on disable — stored layouts are KEPT,
+   *  so re-enabling restores them. */
   registerLayoutTemplate(template: LayoutTemplateDeclaration): void;
 
-  /** Register a periodic security scan. Invoked by the core security-analysis
-   *  job (every 30 min) after its built-in patterns. Use host.security.createCase
-   *  to open review cases. Deregistered automatically on plugin disable. */
+  /** Register a periodic security scan, invoked by the core security-analysis
+   *  job after its built-in patterns. Use `host.security.createCase` to open
+   *  review cases. Deregistered on disable. */
   registerSecurityScan(fn: () => Promise<void>): void;
 
   /** Declare that this plugin REPLACES the named core baseline detection
-   *  patterns (§15 case types, e.g. "multi_account_suspicion"): core skips its
-   *  built-in version while the plugin is enabled — the plugin's registered
-   *  scan is expected to cover the pattern (usually an enhanced variant).
-   *  Claims are released automatically on disable, restoring the baseline. */
+   *  patterns (§15 case types): core skips its built-in version while the
+   *  plugin is enabled. Claims are released on disable, restoring the baseline. */
   claimSecurityPatterns(patterns: string[]): void;
-
-  /** Dispatch a notification through the core notification service. */
-  notify(opts: NotifyOptions): Promise<void>;
 }
 
-// ── Plugin definition — what a plugin exports from its server entry ───────────
+// ── Definition ───────────────────────────────────────────────────────────────
 
-export interface PluginDefinition {
-  /** Must match manifest.id */
-  id: string;
-
-  onEnable(ctx: PluginContext): void | Promise<void>;
-  onDisable?(ctx: PluginContext): void | Promise<void>;
-}
-
-// ── Re-export for convenience ─────────────────────────────────────────────────
-// Plugin authors import from their local express; the SDK just provides the contract.
+/** What a CMS plugin's server entry exports. */
+export type PluginDefinition = BasePluginDefinition<PluginContext>;
