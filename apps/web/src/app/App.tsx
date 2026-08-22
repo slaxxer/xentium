@@ -33,7 +33,9 @@ import { authStore } from "../lib/authStore";
 import { applyLogout, useAuth } from "../hooks/useAuth";
 import { useBetaActivityLogger } from "../hooks/useBetaActivityLogger";
 import { useActivityLogger } from "../hooks/useActivityLogger";
-import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
+import { applyTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
+import { LAYOUTS_QUERY_KEY, isLayoutPreview } from "../layout/useLayout";
+import { installPreviewBridge } from "../layout/previewBridge";
 import { slotRegistry } from "../plugins/slotRegistry";
 // ACP shell
 import { AcpLayout } from "../features/admin/AcpLayout";
@@ -58,10 +60,10 @@ import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
 import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
 import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
-import { StylesPage }       from "../features/admin/pages/StylesPage";
+import { LayoutEditorPage } from "../features/admin/pages/LayoutEditorPage";
 import { StyleHistoryPage } from "../features/admin/pages/StyleHistoryPage";
+import { ThemesPage }       from "../features/admin/pages/ThemesPage";
 import { NavigationPage }   from "../features/admin/pages/NavigationPage";
-import { GuestHomePage }   from "../features/admin/pages/GuestHomePage";
 // ACP pages — extensions
 import { MarketplacePage } from "../features/admin/pages/MarketplacePage";
 import { InstalledPage }   from "../features/admin/pages/InstalledPage";
@@ -113,7 +115,16 @@ function InstallRoute() {
 
 const INSTALL_PATHS = new Set(["/install", "/installer"]);
 
+/** Inside the layout editor's preview iframe, wire hover/select/drag (ADR-0005). */
+function usePreviewBridge() {
+  useEffect(() => {
+    if (!isLayoutPreview()) return;
+    return installPreviewBridge();
+  }, []);
+}
+
 function useCustomTokens(installed: boolean) {
+  const queryClient = useQueryClient();
   useEffect(() => {
     if (!installed) return;
     fetch("/api/appearance/css")
@@ -122,7 +133,12 @@ function useCustomTokens(installed: boolean) {
       .catch(() => {});
     // Keep every open client in sync with theme changes within a few seconds.
     startStyleSync();
-  }, [installed]);
+    // A layout publish bumps the same style version (ADR-0005), so page
+    // structure refreshes over the existing stream instead of a second one.
+    return onStyleVersionChange(() => {
+      void queryClient.invalidateQueries({ queryKey: LAYOUTS_QUERY_KEY });
+    });
+  }, [installed, queryClient]);
 }
 
 function AppGuard() {
@@ -131,6 +147,7 @@ function AppGuard() {
   useBetaActivityLogger();
   useActivityLogger();
   useCustomTokens(!!(data?.installed || (error as any)?.status === 410));
+  usePreviewBridge();
 
   // Pathless layout routes in React Router render for EVERY URL.
   // When on the install wizard, let InstallRoute own the page — return null
@@ -279,10 +296,18 @@ function buildRouter() {
           { path: "modsettings",      element: <ModSettingsPage /> },
           // Appearance
           { path: "style-editor",     element: <StyleEditorPage /> },
-          { path: "styles",           element: <StylesPage /> },
+          { path: "layout-editor",    element: <LayoutEditorPage /> },
           { path: "style-history",    element: <StyleHistoryPage /> },
           { path: "navigation",       element: <NavigationPage /> },
-          { path: "guest-home",       element: <GuestHomePage /> },
+          // `guest-home` retired 2026-08-09: the hero copy and section toggles are
+          // block props on the guest landing, edited in the Layout Editor. Redirected
+          // rather than 404'd, because the old path is in admins' history and docs.
+          { path: "guest-home",       element: <Navigate to="/admin/layout-editor" replace /> },
+          { path: "themes",           element: <ThemesPage /> },
+          // `styles` retired 2026-08-15: `.nvstyle` was merged into `.nvtheme`, so the
+          // pack library and its table are gone. Themes is where the format lives now,
+          // so a bookmark lands on its successor rather than on a 404.
+          { path: "styles",           element: <Navigate to="/admin/themes" replace /> },
           // Extensions
           { path: "marketplace",      element: <MarketplacePage /> },
           { path: "installed",        element: <InstalledPage /> },

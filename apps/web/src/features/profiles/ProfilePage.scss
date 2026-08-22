@@ -1,73 +1,55 @@
+/* 900px is a deliberate reading measure, narrower than the region — so the max-width
+   stays and only the horizontal padding goes, which the region now provides. */
 .profile-page {
   max-width: 900px;
   margin: 0 auto;
-  padding: var(--sp-10) var(--sp-8);
+  padding-block: var(--sp-10) var(--sp-8);
 
   @media (max-width: 640px) {
-    padding: var(--sp-6) var(--sp-4);
+    padding-block: var(--sp-6) var(--sp-4);
   }
 }
 
 /* ── Card ───────────────────────────────────────────── */
+/* The panel only. What sits inside it, and in what arrangement, is a layout
+   document: `columns`/`column` do the placement (ADR-0005), which is why the old
+   `.profile-header` / `.profile-info` / `.profile-title-row` wrappers are gone.
+   A wrapper an admin can neither see nor reorder is exactly what a layout replaces. */
 .profile-card {
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
-  padding: var(--sp-8);
   margin-bottom: var(--sp-6);
-}
 
-/* ── Header row ─────────────────────────────────────── */
-.profile-header {
-  display: flex;
-  gap: var(--sp-6);
-  align-items: flex-start;
-
-  @media (max-width: 540px) {
-    flex-direction: column;
-    align-items: center;
-  }
+  /* `md` is the padding this card always had, so the shipped default is identical. */
+  &--pad-none { padding: 0; }
+  &--pad-sm   { padding: var(--sp-4); }
+  &--pad-md   { padding: var(--sp-8); }
+  &--pad-lg   { padding: var(--sp-10); }
 }
 
 /* ── Avatar ─────────────────────────────────────────── */
+/* Sizes itself rather than relying on a parent's flex, since it is now movable —
+   `lg` is the 130px it always was. */
 .profile-av {
-  width: 130px;
-  height: 130px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent));
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.75rem;
   font-weight: 800;
   color: var(--c-on-accent);
   flex-shrink: 0;
   overflow: hidden;
 
+  &--sm { width: 64px;  height: 64px;  font-size: 1rem; }
+  &--md { width: 96px;  height: 96px;  font-size: 1.4rem; }
+  &--lg { width: 130px; height: 130px; font-size: 1.75rem; }
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-}
-
-/* ── Info column ────────────────────────────────────── */
-.profile-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.profile-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--sp-4);
-  margin-bottom: var(--sp-3);
-
-  @media (max-width: 540px) {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
   }
 }
 
@@ -113,7 +95,13 @@
   margin-top: var(--sp-2);
 }
 
+/* The per-group colours still arrive inline (they come from the DB, so they cannot
+   be tokens), but the box itself lives here instead of being repeated inline on
+   every badge. */
 .profile-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 2px var(--sp-2);
   background: var(--c-accent-soft);
   color: var(--c-accent);
@@ -121,6 +109,14 @@
   border-radius: var(--radius-sm);
   font-size: var(--fs-xs);
   font-weight: 600;
+
+  /* A ban notice is a moderation state, not decoration — fixed colours, and not
+     something the identity block's "show badges" option can switch off. */
+  &--banned {
+    background: var(--c-danger-soft);
+    color: var(--c-danger);
+    border-color: color-mix(in srgb, var(--c-danger) 25%, transparent);
+  }
 }
 
 /* ── Action cluster (follow / message / block) ──────── */

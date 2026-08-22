@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema } from "@nodevo/contracts";
 import { appearanceService } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
@@ -20,7 +20,9 @@ appearanceRouter.get("/css", async (req, res, next) => {
   try {
     const draft = req.query.source === "draft";
     const css   = draft
-      ? await appearanceService.buildCSS(await appearanceService.getDraftTokens())
+      // Effective, not just the admin layer: the draft has to preview the theme it is
+      // layered over, or a site with a theme installed previews as if it had none.
+      ? await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens())
       : await appearanceService.getLiveCss();
     res.setHeader("Content-Type", "text/css; charset=utf-8");
     res.setHeader("Cache-Control", draft ? "no-store" : "public, max-age=60");
@@ -60,7 +62,20 @@ appearanceRouter.get("/stream", async (_req, res, next) => {
 // Admin — read current tokens
 appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
   try {
-    res.json(await appearanceService.getTokens());
+    // `light`/`dark` stay the ADMIN layer alone — the editor writes back what it reads,
+    // so returning the merged set would turn every theme value into an admin override
+    // and quietly destroy the inheritance. `theme` is additive: the editor shows those
+    // values as the inherited baseline, which is what "Reset" now falls back to.
+    const [admin, theme, installed] = await Promise.all([
+      appearanceService.getTokens(),
+      // The STAGED theme layer, because the editor edits the draft: its "Inherited"
+      // labels and its preview must agree, and during the window between importing a
+      // theme and publishing it, the incoming theme is what a cleared override falls
+      // back to.
+      appearanceService.getThemeDraftTokens(),
+      appearanceService.getInstalledTheme(),
+    ]);
+    res.json({ ...admin, theme, installedTheme: installed });
   } catch (err) { next(err); }
 });
 
@@ -68,10 +83,12 @@ appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
 appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
   try {
     // Scope-keyed shape (ADR-0003): { light: { global: {..}, navbar: {..} }, dark: {..} }.
-    const scoped = z.record(z.string(), z.record(z.string(), z.string()));
+    // Names and values are validated (shared with theme import): every token here is
+    // emitted verbatim into the served stylesheet, and a value carrying `}` would close
+    // the block early — trusted admin or not, that is not worth leaving open.
     const body = z.object({
-      light: scoped,
-      dark:  scoped,
+      light: scopedTokensSchema,
+      dark:  scopedTokensSchema,
       label: z.string().optional(),
     }).parse(req.body);
 
@@ -83,6 +100,32 @@ appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
       req.userId!,
     );
     res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+/**
+ * Admin — patch ONE scope of the draft.
+ *
+ * Exists for the Layout Editor's variant panel: two surfaces editing the same draft by
+ * read-modify-write of the whole token set lose whichever edit landed first. A `null`
+ * value clears that token (back to inherited).
+ */
+appearanceRouter.patch("/tokens/scope/:scope", adminGuard, async (req, res, next) => {
+  try {
+    const { scope } = z.object({
+      // Only a scope this build knows — an unknown one would be stored and then
+      // silently skipped by buildCSS, which looks like the save failed.
+      scope: z.string().refine((s) => s === "global" || s in SCOPE_SELECTOR, "unknown scope"),
+    }).parse(req.params);
+
+    // `null` clears; the value rules are the same as a full token save.
+    const clearable = z.record(
+      tokenMapSchema.keyType,
+      z.union([tokenMapSchema.valueType, z.null()]),
+    );
+    const body = z.object({ light: clearable.optional(), dark: clearable.optional() }).parse(req.body ?? {});
+
+    res.json(await appearanceService.saveDraftScope(scope, body, req.userId!));
   } catch (err) { next(err); }
 });
 
@@ -145,46 +188,6 @@ appearanceRouter.post("/history/:id/restore", adminGuard, async (req, res, next)
     const { id } = z.object({ id: z.string() }).parse(req.params);
     const tokens = await appearanceService.restoreHistory(id, req.userId!);
     res.json(tokens);
-  } catch (err) { next(err); }
-});
-
-// ── Style packs (.nvstyle) ────────────────────────────────────────────────────
-
-const packUpload = multer({
-  storage: multer.memoryStorage(),
-  limits:  { fileSize: 10 * 1024 * 1024 },
-});
-
-appearanceRouter.get("/style-packs", adminGuard, async (_req, res, next) => {
-  try {
-    res.json(await appearanceService.listStylePacks());
-  } catch (err) { next(err); }
-});
-
-appearanceRouter.post("/style-packs", adminGuard, packUpload.single("file"), async (req, res, next) => {
-  try {
-    if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-    const pack = await appearanceService.installStylePack(req.file.buffer, req.userId!);
-    res.status(201).json(pack);
-  } catch (err: any) {
-    if (err?.message) return res.status(400).json({ message: err.message });
-    next(err);
-  }
-});
-
-appearanceRouter.post("/style-packs/:id/activate", adminGuard, async (req, res, next) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    const tokens = await appearanceService.activateStylePack(id, req.userId!);
-    res.json(tokens);
-  } catch (err) { next(err); }
-});
-
-appearanceRouter.delete("/style-packs/:id", adminGuard, async (req, res, next) => {
-  try {
-    const { id } = z.object({ id: z.string() }).parse(req.params);
-    await appearanceService.deleteStylePack(id);
-    res.status(204).end();
   } catch (err) { next(err); }
 });
 

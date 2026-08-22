@@ -54,8 +54,9 @@ export function ThemePreview() {
 
       {/* Region: content (scope root = .app-main) */}
       <main className="app-main tp-main" data-region="content" data-group="content">
-        {/* Aside rail — reuses the home rail class so the `aside` scope selector matches */}
-        <aside className="hf-left tp-rail" data-region="aside" data-group="aside">
+        {/* Aside rail. Region theming is token-based (`--aside-bg`), so this needs no
+            borrowed class — `.tp-rail` styles itself. */}
+        <aside className="tp-rail" data-region="aside" data-group="aside">
           <span className="tp-rail__h">Aside</span>
           <span className="tp-rail__row">Sidebar surface</span>
           <span className="tp-rail__row">Rails &amp; side panels</span>

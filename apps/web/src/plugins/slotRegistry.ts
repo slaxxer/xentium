@@ -180,6 +180,14 @@ class SlotRegistry {
   private _activePlugin    = "";
 
   private _own(key: string)                        { if (this._activePlugin) this._owners.set(key, this._activePlugin); }
+  /**
+   * Which plugin registered a slot id.
+   *
+   * Public because `layout/slotBlocks.tsx` derives a layout block per contribution
+   * and has to stamp `pluginId` on it — that is what makes disabling the plugin
+   * remove the block while leaving the admin's document untouched.
+   */
+  ownerOf(key: string): string | undefined     { return this._owners.get(key); }
   private _ownedBy(key: string, pid: string)       { return this._owners.get(key) === pid || key.startsWith(pid); }
 
   registerPluginMeta(meta: PluginMeta)                      { this._activePlugin = meta.pluginId; this.pluginMetas.push(meta); }

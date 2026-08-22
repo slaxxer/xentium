@@ -1,6 +1,8 @@
 import { createApp } from './app/app.js';
 import { prisma } from './infrastructure/db.js';
 import { registerCorePermissions } from './bootstrap/registerCorePermissions.js';
+import { logger } from "./infrastructure/logging/logger.js";
+import { migrateGuestHeroToLayout } from "./modules/layouts/guestHeroMigration.js";
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
@@ -30,6 +32,12 @@ export async function boot() {
     await registerCorePermissions();
     // Legacy installs may predate newer core nav links — idempotent re-seed.
     await seedDefaultNavItems().catch(() => { /* table not migrated yet */ });
+    // One-time: carry a customised Guest Home hero into the home layout document, now
+    // that those settings are block props. Flag-guarded, so a restart is a no-op; a
+    // failure must not stop the server booting, so it is caught and logged.
+    await migrateGuestHeroToLayout().catch((err: unknown) => {
+      logger.error({ err }, "Guest Home hero carry-over failed — hero text may need re-entering in the Layout Editor");
+    });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();
   } else {

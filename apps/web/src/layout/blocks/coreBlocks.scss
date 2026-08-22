@@ -1,0 +1,256 @@
+/* ============================================================================
+   Core layout blocks (ADR-0005)
+
+   Every value is a token. Blocks expose coarse variants (`--width-wide`,
+   `--gap-md`); anything finer belongs to the Style Editor, not to a block prop.
+   ============================================================================ */
+
+/* ── region ──────────────────────────────────────────────────────────────── */
+/* The content column, owned by the region rather than by each block. Sized so an
+   existing page container (e.g. `.al` at 1100px) still gets its full width and
+   stays exactly where it was: 1240 − 2×24 = 1192 > 1100. A block that wants to
+   break out uses `section` with `width: full`. */
+
+.nv-region {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding-inline: var(--sp-6);
+
+  @media (max-width: 640px) { padding-inline: var(--sp-4); }
+}
+
+/* ── section ─────────────────────────────────────────────────────────────── */
+
+.nv-section {
+  width: 100%;
+  margin-inline: auto;
+
+  /* `section` is the block that PAINTS a style variant (ADR-0005). Nothing defines
+     `--surface-*` globally, so an unstyled section is still a bare box — the border
+     width in particular defaults to 0, or every existing section would grow by 2px. */
+  background: var(--surface-bg, transparent);
+  border: var(--surface-border-width, 0) solid var(--surface-border, transparent);
+  border-radius: var(--surface-radius, 0);
+  box-shadow: var(--surface-shadow, none);
+
+  &--full   { max-width: none; }
+  &--wide   { max-width: 1280px; }
+  &--normal { max-width: var(--content-max, 1040px); }
+  &--narrow { max-width: 720px; }
+
+  &--pad-none { padding: 0; }
+  &--pad-sm   { padding: var(--sp-3) var(--sp-4); }
+  &--pad-md   { padding: var(--sp-6) var(--sp-4); }
+  &--pad-lg   { padding: var(--sp-10) var(--sp-4); }
+}
+
+/* ── columns ─────────────────────────────────────────────────────────────── */
+/* Collapse is intrinsic, never an admin knob — an admin must not be able to
+   produce a layout that is broken on mobile. */
+
+/* Flex rather than grid, because a track's share is a per-COLUMN property
+   (`column.width`) and a grid parent cannot read its children's props to build
+   `grid-template-columns`. Flex puts the sizing on the item, where the prop is. */
+.nv-columns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+
+  /* The count is a styling hook and a signal, not the sizing mechanism — the
+     tracks size themselves from their own `width`. */
+  &--1, &--2, &--3, &--4 { /* intentionally no sizing here */ }
+
+  &--gap-sm { gap: var(--sp-3); }
+  &--gap-md { gap: var(--sp-6); }
+  &--gap-lg { gap: var(--sp-10); }
+
+  /* Collapse stays INTRINSIC — never an admin knob. Wrapping happens on its own
+     once a weighted track hits its floor, and below the phone breakpoint the row
+     becomes a stack outright. This replaces a per-count media-query matrix, which
+     could not have known what an admin's weights were anyway. */
+  @media (max-width: 640px) {
+    flex-direction: column;
+    /* A stacked track is full width and must not stick, or a rail would pin itself
+       over the content it used to sit beside. */
+    > .nv-column { flex: 1 1 auto; width: 100%; position: static; }
+  }
+}
+
+/* A track.
+   `min-width: 0` because a flex item's automatic minimum is its content size, so
+   one long word or a wide table would push the track past its share and blow the
+   row out sideways.
+   `--auto` fits its content, which is what an avatar or a button group wants; the
+   numbers are relative weights, so `2` beside `1` is a two-thirds split. */
+.nv-column {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+
+  &--auto    { flex: 0 0 auto; }
+  /* The site's two named rail widths, so a rail is an ordinary track rather than a
+     bespoke wrapper. Token-driven — never a pixel literal here. */
+  &--sidebar { flex: 0 0 var(--sidebar-width); max-width: 100%; }
+  &--rail    { flex: 0 0 var(--rail-width);    max-width: 100%; }
+  &--1       { flex: 1 1 0; min-width: min(220px, 100%); }
+  &--2       { flex: 2 1 0; min-width: min(220px, 100%); }
+  &--3       { flex: 3 1 0; min-width: min(220px, 100%); }
+
+  /* Stickiness was the only thing the home page's `.hf-left`/`.hf-right` did that a
+     generic track could not, so it became a prop instead of a wrapper. */
+  &.is-sticky {
+    position: sticky;
+    top: calc(var(--nav-height) + var(--sp-4));
+  }
+}
+
+/* ── spacer ──────────────────────────────────────────────────────────────── */
+
+.nv-spacer {
+  &--sm { height: var(--sp-3); }
+  &--md { height: var(--sp-6); }
+  &--lg { height: var(--sp-10); }
+  &--xl { height: var(--sp-16); }
+}
+
+/* ── eyebrow ─────────────────────────────────────────────────────────────── */
+/* Matches what `.mp-eyebrow` looked like on the members page, which this replaces —
+   accent-coloured, so it reads as a label rather than muted small print. */
+
+.nv-eyebrow {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+
+  &--center { text-align: center; }
+}
+
+/* ── heading ─────────────────────────────────────────────────────────────── */
+
+.nv-heading {
+  margin-bottom: var(--sp-4);
+
+  &--center { text-align: center; }
+
+  &__eyebrow {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    margin-bottom: 6px;
+  }
+
+  /* Sized per level, so a page title looks like one. Without this an `h1` fell back
+     to the browser default and a `level` change did nothing visible. */
+  &__title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--c-fg);
+    margin: 0;
+    line-height: 1.1;
+
+    &:is(h1) { font-size: clamp(28px, 3vw, 38px); }
+    &:is(h2) { font-size: clamp(22px, 2.2vw, 28px); }
+    &:is(h3) { font-size: clamp(18px, 1.8vw, 22px); }
+  }
+}
+
+/* ── image ───────────────────────────────────────────────────────────────── */
+
+.nv-image {
+  margin: 0;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--card-radius);
+    object-fit: cover;
+  }
+
+  &--16x9 img { aspect-ratio: 16 / 9; }
+  &--4x3  img { aspect-ratio: 4 / 3; }
+  &--1x1  img { aspect-ratio: 1 / 1; }
+  &--auto img { height: auto; }
+}
+
+/* ── rich text ───────────────────────────────────────────────────────────── */
+
+.nv-richtext {
+  color: var(--c-fg);
+}
+
+/* ── editor preview affordances ──────────────────────────────────────────── */
+/* Injected by previewBridge into the PREVIEWED page (the iframe document), never
+   the live site. Drawn as separate overlays rather than by styling the blocks, so
+   the preview's own layout and styling stay byte-identical to production. */
+
+.nv-preview-overlay {
+  position: absolute;
+  display: none;
+  pointer-events: none;   /* never intercepts the clicks it is describing */
+  z-index: 2147483000;
+  border: 1px dashed var(--c-accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c-accent) 6%, transparent);
+
+  &.is-selected {
+    border-style: solid;
+    background: color-mix(in srgb, var(--c-accent) 12%, transparent);
+    box-shadow: 0 0 0 1px var(--c-accent);
+  }
+}
+
+.nv-preview-label {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 2147483001;
+  transform: translateY(-100%);
+  padding: 1px 6px;
+  border-radius: 4px 4px 0 0;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font: 600 10.5px/1.6 var(--ff-sans, sans-serif);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.nv-preview-dropline {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 2147483002;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 25%, transparent);
+}
+
+/* ── renderer diagnostics ────────────────────────────────────────────────── */
+/* Only ever rendered inside /__theme-preview: on the live site an unavailable or
+   failed block renders nothing at all. */
+
+.nv-block-missing,
+.nv-block-error {
+  padding: var(--sp-3) var(--sp-4);
+  border: 1px dashed var(--c-border-hi);
+  border-radius: var(--radius-md);
+  font-size: 12.5px;
+  color: var(--c-fg-subtle);
+  text-align: center;
+}
+
+.nv-block-error {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+  background: var(--c-danger-soft);
+}

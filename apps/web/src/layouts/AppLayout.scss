@@ -37,6 +37,25 @@
     @media (max-width: 640px) { padding: 0 var(--sp-4); }
   }
 
+  /* Composable zones (ADR-0005 Amendment 1). The navbar's arrangement comes from
+     the `chrome.header` document, so blocks land in one of three zones. The
+     regions render through LayoutRegion, which brings its own content column —
+     unwanted here, since .pub-nav__inner already is one. `display: contents`
+     dissolves the region wrapper so the blocks stay direct flex children and the
+     row behaves exactly as it did when the markup was hardcoded. */
+  &__zone {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    min-width: 0;
+
+    > .nv-region {
+      display: contents;
+    }
+  }
+
+  &__zone--center { justify-content: center; }
+
   /* Logo — gradient logomark + wordmark (Hearth) */
   &__logo {
     display: inline-flex;
