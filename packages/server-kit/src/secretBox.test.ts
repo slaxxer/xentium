@@ -1,5 +1,14 @@
+/**
+ * Encryption-at-rest for stored secrets. Carried over from `apps/api` with the
+ * extraction (ADR-0006); the last case is new and is the one that matters most
+ * here — the key derivation must not have changed, or every value encrypted
+ * before the move becomes undecryptable.
+ */
 import { describe, it, expect } from "vitest";
-import { encryptSecret, decryptSecret, isEncrypted } from "./secretBox.js";
+import { createSecretBox } from "./secretBox.js";
+
+const SECRET = "test-cookie-secret-with-enough-entropy";
+const { encryptSecret, decryptSecret, isEncrypted } = createSecretBox(SECRET);
 
 describe("secretBox encryption-at-rest", () => {
   it("round-trips a value", () => {
@@ -35,5 +44,18 @@ describe("secretBox encryption-at-rest", () => {
   it("handles unicode", () => {
     const plain = "tökén-🔐-ünïcode";
     expect(decryptSecret(encryptSecret(plain))).toBe(plain);
+  });
+
+  it("derives the same key from the same secret, across instances", () => {
+    // The extraction moved the derivation behind a factory. If the salt or the
+    // scrypt parameters drifted, this is the test that catches it — a value
+    // written by yesterday's build has to open with today's.
+    const other = createSecretBox(SECRET);
+    expect(other.decryptSecret(encryptSecret("carried-over"))).toBe("carried-over");
+  });
+
+  it("cannot open a value encrypted with a different secret", () => {
+    const stranger = createSecretBox("a-completely-different-secret");
+    expect(() => stranger.decryptSecret(encryptSecret("mine"))).toThrow();
   });
 });
