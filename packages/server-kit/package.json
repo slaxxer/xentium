@@ -1,0 +1,40 @@
+{
+  "name": "@nodevo/server-kit",
+  "version": "1.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@nodevo/contracts": "workspace:*",
+    "@nodevo/errors": "workspace:*"
+  },
+  "peerDependencies": {
+    "express": "catalog:",
+    "express-rate-limit": "catalog:",
+    "file-type": "^22.0.1",
+    "multer": "catalog:",
+    "rate-limit-redis": "^5.0.0"
+  },
+  "devDependencies": {
+    "@nodevo/config": "workspace:*",
+    "@types/express": "^5",
+    "@types/multer": "^2",
+    "express": "catalog:",
+    "express-rate-limit": "catalog:",
+    "file-type": "^22.0.1",
+    "multer": "catalog:",
+    "rate-limit-redis": "^5.0.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

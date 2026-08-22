@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { validateMigrationSql } from "./sql-validator.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { validateMigrationSql } from "./sqlValidator.js";
+import { NodevoError, NEC } from "@nodevo/errors";
 
 /** Assert the call throws a NodevoError carrying the given NEC code. */
 function expectNec(fn: () => void, code: string): void {

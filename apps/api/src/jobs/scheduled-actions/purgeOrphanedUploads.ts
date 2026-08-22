@@ -34,10 +34,13 @@ import path from "node:path";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
+import { ALLOWED_UPLOAD_DIRS } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { registerScheduledAction, type ActionResult, type ActionRunCtx } from "./action-registry.js";
 
-/** Upload subdirectories, matching LocalStorageProvider's ALLOWED list. */
-const ROOTS = ["avatars", "groups", "themes", "articles", "pages"] as const;
+/** Upload subdirectories. Taken FROM the storage provider rather than restated
+ *  beside it: a second copy is a copy that drifts, and a root missing here is a
+ *  directory this purge silently never visits. */
+const ROOTS = ALLOWED_UPLOAD_DIRS;
 type Root = (typeof ROOTS)[number];
 
 const paramsSchema = z.object({
