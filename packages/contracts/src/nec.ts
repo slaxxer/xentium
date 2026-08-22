@@ -93,6 +93,7 @@ export const NEC = {
   LICENSE_SOURCE_UNREACHABLE:"NEC-LICENSE-9007",  // marketplace unreachable — grace applies
   LICENSE_ALREADY_ACTIVE:    "NEC-LICENSE-9008",  // activate refused: a license is already active
   LICENSE_SERVER_REJECTED:   "NEC-LICENSE-9009",  // license server refused (4xx) — message carries the reason
+  LICENSE_SITE_ID_MISSING:   "NEC-LICENSE-9010",  // no ncf_installs row — this instance has no identity to license
 
   // Marketplace artifact intake (NEC-MARKETPLACE-91xx) — download-gate failures
   MARKETPLACE_NO_ARTIFACT: "NEC-MARKETPLACE-9101",      // source has no downloadable artifact
@@ -101,7 +102,11 @@ export const NEC = {
 
   // Core
   CORE_THEME_NOT_FOUND: "NEC-CORE-8001",
-  CORE_STYLEPACK_INVALID: "NEC-CORE-8002", // uploaded .nvstyle failed validation — message names the file/rule
+  // An uploaded `.nvtheme` failed validation. Deliberately NOT given a localized
+  // string in the `errors` namespace: the server composes a message naming the file
+  // and the rule, and `apiErrorMessage` prefers a localized string when one exists —
+  // so a generic code here would replace the only useful part of the response.
+  CORE_THEME_INVALID: "NEC-CORE-8002",
   CORE_MAINTENANCE: "NEC-CORE-8010",   // site in maintenance mode, requester not allowed
 
   // Outbound mail (NEC-EMAIL-86xx)

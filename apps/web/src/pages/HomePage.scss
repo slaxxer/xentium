@@ -1,27 +1,16 @@
 /* ── Hearth home feed ─────────────────────────────────────────────────── */
 
+/* The REGION owns the content column and its inline padding (ADR-0005), so this
+   wrapper keeps only the page's vertical rhythm. Leaving its old max-width and
+   horizontal padding here double-inset every page — 26px + the region's 24px. */
+/* The three-column split is a layout document too: `columns` with `sidebar` /
+   weighted / `rail` tracks. */
 .hf-wrap {
-  max-width: var(--content-max);
-  margin: 0 auto;
-  padding: 22px 26px 40px;
-  display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr 300px;
-  gap: 22px;
-  align-items: start;
-
-  &--guest {
-    grid-template-columns: minmax(0, 700px);
-    justify-content: center;
-  }
+  padding-block: 22px 40px;
 }
 
-.hf-left, .hf-right {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: sticky;
-  top: calc(var(--nav-height) + 22px);
-}
+/* `.hf-left` / `.hf-right` are gone — `.nv-column` already gives the flex column and
+   the gap, and `column.sticky` gives the rest. */
 
 /* shared rail card */
 .hf-card {
@@ -449,11 +438,9 @@
 }
 
 /* ── responsive ───────────────────────────────────────── */
-@media (max-width: 1100px) {
-  .hf-wrap { grid-template-columns: 1fr 300px; }
-  .hf-left { display: none; }
-}
+/* The rails are `columns` tracks now, and `.nv-columns` wraps and then stacks them
+   on its own — so there is nothing here to re-grid. Hiding a rail outright is no
+   longer core's call either: an admin who wants it gone removes the blocks. */
 @media (max-width: 760px) {
-  .hf-wrap { grid-template-columns: 1fr; padding: 16px; }
-  .hf-right { display: none; }
+  .hf-wrap { padding: 16px; }
 }

@@ -8,11 +8,11 @@ export * from './appearance.js';
 export * from './tokens.js';
 export * from './pages.js';
 export * from './users.js';
+export * from './layout.js';
 
 export type ThemeMode = 'light' | 'dark';
 
-export interface ThemeManifest {
-  id: string;
-  name: string;
-  mode: ThemeMode;
-}
+// The real `.nvtheme` manifest. Replaces a three-field interface that used to sit
+// here and described nothing ever written to disk — its only consumer was a
+// never-used ThemeRegistry, now deleted.
+export * from './theme.js';

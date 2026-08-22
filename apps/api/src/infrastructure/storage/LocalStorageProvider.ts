@@ -5,7 +5,10 @@ import { NodevoError } from '../../shared/errors/NodevoError';
 import { NEC } from '../../shared/errors/nec';
 import type { StorageProvider } from './StorageProvider';
 
-const ALLOWED = ['avatars', 'articles', 'pages', 'groups', path.join('themes', 'logo')];
+// `themes` covers both `themes/logo` (the site logo) and `themes/<theme-id>` (assets
+// unpacked from an imported .nvtheme). Written only by admin-authenticated paths, and
+// every filename is basenamed + sanitised before it gets here.
+const ALLOWED = ['avatars', 'articles', 'pages', 'groups', 'themes'];
 const BASE = path.resolve(env.UPLOAD_DIR);
 
 function resolveSafe(subdir: string, filename = ''): string {

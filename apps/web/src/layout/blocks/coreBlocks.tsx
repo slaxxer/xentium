@@ -1,0 +1,190 @@
+/**
+ * Core block catalogue (ADR-0005, v1).
+ *
+ * Importing this module registers the blocks. Props stay COARSE: fine visual
+ * control belongs to the Style Editor tokens (ADR-0003), and every prop added
+ * here is permanent, because stored documents — including ones inside purchased
+ * themes — must migrate forever.
+ */
+import { Children } from "react";
+import { useTranslation } from "react-i18next";
+import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@nodevo/contracts";
+import { LayoutWidgetOutlet } from "../../plugins/LayoutWidgetOutlet";
+import { ArticleContent } from "../../features/articles/components/ArticleContent";
+import { registerBlock, type BlockProps } from "../blockRegistry";
+import { useRenderedDocument } from "../LayoutRenderer";
+import { individuallyPlacedSlotIds } from "../slotBlocks";
+import { ArticleIndexBlock } from "./ArticleIndexBlock";
+import "./coreBlocks.scss";
+
+/**
+ * Resolve a `LocalizedText`. Core default documents carry i18n references so
+ * converting a page into a document does not hardcode English; admin-typed
+ * strings are literals.
+ */
+function useText(value: LocalizedText | undefined): string {
+  const { t } = useTranslation();
+  if (value == null) return "";
+  if (typeof value === "string") return value;
+  return t(value.key, { ns: value.ns }) as string;
+}
+
+// ── Structure ───────────────────────────────────────────────────────────────
+
+registerBlock({
+  type:      "section",
+  schema:    blockPropSchemas.section,
+  container: true,
+  editorMeta: { label: "Section", category: "structure" },
+  component: ({ props, children }) => (
+    <section className={`nv-section nv-section--${props.width} nv-section--pad-${props.padding}`}>
+      {children}
+    </section>
+  ),
+});
+
+registerBlock({
+  type:      "columns",
+  schema:    blockPropSchemas.columns,
+  container: true,
+  // A track is a `column`; nothing else may sit directly in the row, or a bare
+  // block would land where a track belongs and the grid would read as broken.
+  childTypes: ["column"],
+  editorMeta: { label: "Columns", category: "structure" },
+  // Collapse is intrinsic to the block, never an admin knob — that is what stops
+  // a non-developer producing a layout that is broken on mobile.
+  component: ({ props, children }) => {
+    // The track count IS the number of columns present, so there is no `count`
+    // prop to drift out of step with the tree. Clamped because CSS only defines
+    // tracks up to four, and a document can arrive from an imported theme.
+    const tracks = Math.min(Math.max(Children.count(children), 1), 4);
+    return (
+      <div className={`nv-columns nv-columns--${tracks} nv-columns--gap-${props.gap}`}>
+        {children}
+      </div>
+    );
+  },
+});
+
+registerBlock({
+  type:      "column",
+  schema:    blockPropSchemas.column,
+  container: true,
+  // Placeable only inside a row, which is also why it never appears in a
+  // region's block picker.
+  editorMeta: { label: "Column", category: "structure", onlyInside: ["columns"] },
+  // The track carries its own share, because a flex/grid parent cannot read its
+  // children's props to size them.
+  component: ({ props, children }) => (
+    <div className={`nv-column nv-column--${props.width}${props.sticky ? " is-sticky" : ""}`}>
+      {children}
+    </div>
+  ),
+});
+
+registerBlock({
+  type:      "spacer",
+  schema:    blockPropSchemas.spacer,
+  editorMeta: { label: "Spacer", category: "structure" },
+  component: ({ props }) => <div className={`nv-spacer nv-spacer--${props.size}`} aria-hidden="true" />,
+});
+
+// ── Content ─────────────────────────────────────────────────────────────────
+
+function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center" }>) {
+  const text    = useText(props.text);
+  const eyebrow = useText(props.eyebrow);
+  const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
+  return (
+    <header className={`nv-heading nv-heading--${props.align}`}>
+      {eyebrow && <div className="nv-heading__eyebrow">{eyebrow}</div>}
+      <Tag className="nv-heading__title">{text}</Tag>
+    </header>
+  );
+}
+
+function EyebrowBlock({ props }: BlockProps<{ text: LocalizedText; align: "start" | "center" }>) {
+  const text = useText(props.text);
+  if (!text) return null;
+  return <div className={`nv-eyebrow nv-eyebrow--${props.align}`}>{text}</div>;
+}
+
+registerBlock({
+  type:   "eyebrow",
+  schema: blockPropSchemas.eyebrow,
+  editorMeta: { label: "Eyebrow label", category: "content" },
+  component: EyebrowBlock,
+});
+
+registerBlock({
+  type:   "heading",
+  schema: blockPropSchemas.heading,
+  editorMeta: { label: "Heading", category: "content" },
+  component: HeadingBlock,
+});
+
+registerBlock({
+  type:   "richText",
+  schema: blockPropSchemas.richText,
+  editorMeta: { label: "Rich text", category: "content" },
+  // Same stored shape and renderer as `articles.body`, so a layout's prose and
+  // an article's prose can never drift in how marks are rendered.
+  component: ({ props }) => <div className="nv-richtext"><ArticleContent body={props.content} /></div>,
+});
+
+/**
+ * An admin-supplied image reference → a usable src.
+ *
+ * Absolute URLs and rooted paths pass through; anything else is an upload path. Shared
+ * so every block that takes an image resolves it identically.
+ */
+export function resolveImageSource(source: string): string {
+  return source.startsWith("http") || source.startsWith("/") ? source : `/uploads/${source}`;
+}
+
+function ImageBlock({ props }: BlockProps<{ source: string; alt?: LocalizedText; ratio: string }>) {
+  const alt = useText(props.alt);
+  const src = resolveImageSource(props.source);
+  return (
+    <figure className={`nv-image nv-image--${props.ratio.replace(":", "x")}`}>
+      <img src={src} alt={alt} loading="lazy" />
+    </figure>
+  );
+}
+
+registerBlock({
+  type:   "image",
+  schema: blockPropSchemas.image,
+  editorMeta: { label: "Image", category: "content" },
+  component: ImageBlock,
+});
+
+// ── Plugin compatibility ────────────────────────────────────────────────────
+
+registerBlock({
+  type:   "pluginSlot",
+  schema: blockPropSchemas.pluginSlot,
+  editorMeta: { label: "Plugin area", category: "plugin" },
+  // Not optional. Plugins render through slotRegistry, so without a block that
+  // places those outlets, activating a custom layout would silently remove the
+  // forum, shoutbox or messaging UI.
+  //
+  // Skips any widget the document ALSO places on its own — every layout widget is a
+  // block now (`layout/slotBlocks.tsx`), and rendering it here too would show it
+  // twice. The document comes from context so this reflects what is actually on
+  // screen, including the editor's unsaved preview.
+  component: ({ props }) => {
+    const doc = useRenderedDocument();
+    const placed = individuallyPlacedSlotIds(doc ? blockTypesIn(doc) : [], "layoutWidget");
+    return <LayoutWidgetOutlet outlet={props.slotId} skipIds={placed} />;
+  },
+});
+
+// ── Data-bound ──────────────────────────────────────────────────────────────
+
+registerBlock({
+  type:   "articleIndex",
+  schema: blockPropSchemas.articleIndex,
+  editorMeta: { label: "Article index", category: "data", allowedTemplates: ["article.index"] },
+  component: ArticleIndexBlock,
+});

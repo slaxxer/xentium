@@ -3,6 +3,7 @@
 // and the ACP jobs API (reads/updates them live). Event-driven workers
 // (article-revision-cleanup, check-promotion, email-notification) are NOT here —
 // they have no interval to configure.
+import { createHash } from "node:crypto";
 import parser from "cron-parser";
 import type { Queue } from "bullmq";
 import { NEC } from "@nodevo/contracts";
@@ -21,6 +22,10 @@ export interface ScheduledJobDef {
   defaultCron:    string;
   minIntervalSec: number;   // guardrail: reject schedules that fire more often than this
   defaultEnabled?: boolean; // default true; set false for opt-in jobs (e.g. appearance publish)
+  /** Spread this job's DEFAULT time across the day, per install (see jitteredDailyTime).
+   *  For jobs that call an external service on a schedule every install ships
+   *  identically. An admin-set time is never jittered. */
+  jitterDefault?: boolean;
 }
 
 export const SCHEDULED_JOBS: ScheduledJobDef[] = [
@@ -50,18 +55,15 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     defaultCron: "0 2 * * *", minIntervalSec: 5 * 60,
   },
   {
-    key: "license-refresh", schedulerId: "license-refresh-daily",
-    queue: queues.licenseRefresh, jobName: "license-refresh",
-    label: "License refresh",
-    description: "Refreshes plugin license entitlements from the marketplace (30-day grace applies).",
-    defaultCron: "0 2 * * *", minIntervalSec: 60 * 60,
-  },
-  {
+    // The single daily exchange with the license server. Absorbed the separate
+    // "license-refresh" job (retired 2026-08-22, see RETIRED_SCHEDULERS) —
+    // entitlement refresh and the update check are one conversation, and running
+    // them as two jobs thirty minutes apart bought nothing.
     key: "update-check", schedulerId: "update-check-daily",
     queue: queues.updateCheck, jobName: "update-check",
-    label: "Marketplace update check",
-    description: "Reports the installed plugin inventory to the marketplace and caches available updates, critical flags, and renewal warnings for the ACP.",
-    defaultCron: "30 2 * * *", minIntervalSec: 60 * 60,
+    label: "Marketplace sync",
+    description: "Refreshes license entitlements (30-day grace applies), then reports the installed plugin inventory and caches available updates, critical flags and renewal warnings for the ACP. The default time is spread per install; set an explicit one to override.",
+    defaultCron: "30 2 * * *", minIntervalSec: 60 * 60, jitterDefault: true,
   },
   {
     key: "appearance-publish", schedulerId: "appearance-publish-repeat",
@@ -158,6 +160,31 @@ export function previewRuns(pattern: string, tz: string | undefined, minInterval
   return runs.map((d) => d.toISOString());
 }
 
+/**
+ * Schedulers that used to exist and must be torn down on upgrade.
+ *
+ * `applyJobSchedule` only removes a scheduler when its job is DISABLED, and it
+ * iterates SCHEDULED_JOBS — so deleting a job definition does not unschedule it.
+ * The repeat entry simply stays in Redis and keeps enqueueing forever into a
+ * queue nothing consumes any more, which is invisible until someone wonders why
+ * a waiting-set is growing.
+ *
+ * Entries here are removed on every worker boot and are safe to run repeatedly.
+ * They can be dropped once every install has booted at least once past the
+ * release that retired them.
+ */
+export const RETIRED_SCHEDULERS: { schedulerId: string; queue: Queue; since: string }[] = [
+  // Merged into "update-check" (now "Marketplace sync") — one job does both halves.
+  { schedulerId: "license-refresh-daily", queue: queues.licenseRefresh, since: "2026-08-22" },
+];
+
+/** Tear down retired schedulers. Best-effort: never blocks boot. */
+export async function removeRetiredSchedulers(): Promise<void> {
+  for (const r of RETIRED_SCHEDULERS) {
+    await r.queue.removeJobScheduler(r.schedulerId).catch(() => {});
+  }
+}
+
 /** Apply a config to BullMQ. Idempotent; safe to call from server or worker (shared Redis). */
 export async function applyJobSchedule(def: ScheduledJobDef, cfg: JobScheduleConfig): Promise<void> {
   if (!cfg.enabled) {
@@ -173,12 +200,51 @@ export async function applyJobSchedule(def: ScheduledJobDef, cfg: JobScheduleCon
   );
 }
 
+/**
+ * A per-install daily time for jobs marked `jitterDefault`, or null to keep the
+ * code default.
+ *
+ * Every install ships the same `defaultCron`, so "0 2 * * *" on a job that calls
+ * the license server means every Nodevo instance in the world contacts the
+ * marketplace inside the same minute — two synchronised global spikes a day into
+ * a service that is idle the rest of the time, forcing it to be provisioned for
+ * peak rather than average. Spreading the default over the full day fixes that,
+ * and these two jobs touch nothing user-facing, so there is no reason to keep
+ * them in the small hours.
+ *
+ * Seeded by siteId + job key so it is STABLE across reboots — a per-boot random
+ * offset would make BullMQ rewrite the scheduler on every restart — and so the
+ * two jobs do not land on the same minute as each other.
+ *
+ * The siteId is read directly rather than through `getSiteId()`, which throws by
+ * design: spreading load is an optimisation, never correctness, so a missing
+ * install identity must fall back to the code default rather than leave the job
+ * unscheduled.
+ */
+async function jitteredDailyTime(def: ScheduledJobDef): Promise<string | null> {
+  if (!def.jitterDefault) return null;
+  const row = await prisma.install.findFirst({ select: { siteId: true } }).catch(() => null);
+  if (!row?.siteId) return null;
+
+  const digest = createHash("sha256").update(`${row.siteId}:${def.key}`).digest();
+  const hh = digest.readUInt16BE(0) % 24;
+  const mm = digest.readUInt16BE(2) % 60;
+  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+}
+
 export async function getJobConfig(def: ScheduledJobDef): Promise<JobScheduleConfig> {
+  const base = defaultConfig(def);
+
+  // Jitter applies to the DEFAULT only: an explicitly stored dailyTime below
+  // overwrites it, so an admin who picks a time keeps exactly that time.
+  const spread = await jitteredDailyTime(def);
+  if (spread && base.mode === "daily") base.dailyTime = spread;
+
   const row = await prisma.setting.findUnique({ where: { key: settingKey(def.key) } });
   if (row?.value && typeof row.value === "object" && !Array.isArray(row.value)) {
-    return { ...defaultConfig(def), ...(row.value as unknown as JobScheduleConfig) };
+    return { ...base, ...(row.value as unknown as JobScheduleConfig) };
   }
-  return defaultConfig(def);
+  return base;
 }
 
 export async function saveJobConfig(def: ScheduledJobDef, cfg: JobScheduleConfig): Promise<void> {

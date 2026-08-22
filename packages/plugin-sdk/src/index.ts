@@ -164,6 +164,70 @@ export interface ProgressionMetric {
   need:  number;
 }
 
+// ── Layout templates (ADR-0005 Amendment 3) ──────────────────────────────────
+
+/** One block in a template's default arrangement. Mirrors core's `BlockNode`. */
+export interface LayoutBlockNode {
+  /** Unique within the document — the editor and the preview both address by it. */
+  id:        string;
+  /** A registered block type: core's (`heading`) or your own (`forum.categories`). */
+  type:      string;
+  props?:    Record<string, unknown>;
+  children?: LayoutBlockNode[];
+}
+
+/** A template's default arrangement: blocks per region. */
+export interface LayoutTemplateDocument {
+  templateKey: string;
+  regions:     Record<string, LayoutBlockNode[]>;
+}
+
+/**
+ * A page your plugin owns, opened up to the layout editor.
+ *
+ * Declare it ONCE — a shared module your server entry and your web entry both
+ * import — and register it on both sides: `ctx.registerLayoutTemplate(decl)` here,
+ * and the host's `@web/layout/templateRegistry` from your web entry. The server's
+ * copy decides what may be SAVED; the browser's decides what RENDERS.
+ *
+ * Your page component then renders `<LayoutRenderer templateKey={...} context={…} />`
+ * instead of its own markup, and resolves its own data first — a block renders, the
+ * host fetches.
+ */
+export interface LayoutTemplateDeclaration {
+  /**
+   * Namespaced, e.g. `forum.index`. A bare word is refused, and so is any key core
+   * already owns — a plugin must never be able to redefine `home`.
+   */
+  key:    string;
+  /** Admin-facing name, shown in the layout editor's template picker. */
+  label:  string;
+  /**
+   * Region names, in RENDER ORDER. Order comes from here and never from the stored
+   * document, whose key order a `jsonb` column does not preserve.
+   */
+  regions: string[];
+  /**
+   * What the page renders before an admin arranges anything — normally the blocks
+   * that reproduce your current markup, so adopting a template changes nothing
+   * visible until somebody moves something.
+   *
+   * Held to exactly what a save is held to: unknown regions, a bad tree or a
+   * missing required block refuses the registration, and the plugin does not enable.
+   */
+  defaultDocument: LayoutTemplateDocument;
+  /** Block types the template refuses to be saved without. Use sparingly. */
+  requiredBlocks?: string[];
+  /** Same-origin path the ACP previews at, e.g. `/forum`. */
+  previewRoute?: string;
+  /**
+   * Set it to your plugin id when you share this declaration with your web entry,
+   * which has no context to infer it from. The server refuses a value that is not
+   * yours.
+   */
+  pluginId?: string;
+}
+
 export interface NotifyOptions {
   userId:   string;
   type:     string;
@@ -301,6 +365,12 @@ export interface PluginContext {
 
   /** Register NEC error codes for the Error Reference ACP page. */
   registerNecCodes(codes: NecCodeDeclaration[]): void;
+
+  /** Open one of this plugin's own pages to the layout editor (ADR-0005). Throws
+   *  on a declaration core will not accept, which fails the enable rather than
+   *  half-registering the plugin. Deregistered automatically on disable — stored
+   *  layouts are kept, so re-enabling restores them. */
+  registerLayoutTemplate(template: LayoutTemplateDeclaration): void;
 
   /** Register a periodic security scan. Invoked by the core security-analysis
    *  job (every 30 min) after its built-in patterns. Use host.security.createCase

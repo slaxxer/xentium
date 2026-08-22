@@ -4,6 +4,14 @@ import "./lib/i18n";
 import "./hooks/useFont"; // applies stored font to --ff-sans before first render
 import App from "./app/App";
 import "./plugins/host-globals"; // sets window.__NODEVO_HOST__ before any plugin bundle loads
+import "./layout/blocks/coreBlocks";   // registers the core block catalogue before first render
+import "./layout/blocks/chromeBlocks"; // navbar + footer blocks (ADR-0005 Amendment 1)
+import "./layout/blocks/pageDetailBlocks";   // page.detail: image / title / body
+import "./layout/blocks/pageTemplateBlocks"; // article.detail (deliberately whole-page)
+import "./layout/blocks/profileBlocks";      // profile, decomposed into movable pieces
+import "./layout/blocks/memberBlocks";       // members, decomposed into movable pieces
+import "./layout/blocks/homeBlocks";         // home, decomposed into movable pieces
+import "./layout/blocks/guestBlocks";        // the guest landing, likewise
 import "./styles/index.scss";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
@@ -93,6 +101,12 @@ async function bootstrap() {
       await loadPluginBundle(p.id, p.version);
     }
   }
+
+  // Every plugin slot contribution becomes its own layout block, so an admin can
+  // position a plugin's UI as freely as core's. Must run AFTER the bundles have
+  // registered their slots, and before the first render reads the registry.
+  const { registerSlotBlocks } = await import("./layout/slotBlocks");
+  registerSlotBlocks();
 
   createRoot(document.getElementById("root")!).render(
     <StrictMode>

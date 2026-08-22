@@ -110,12 +110,21 @@ const PREVIEW_STATES: { id: PreviewState; label: string }[] = [
 ];
 
 // Scope picker options for component sections (region surface tokens are global-only).
+//
+// The variant scopes are here because a variant IS a scope (ADR-0005): the Layout
+// Editor's Style panel edits a curated six tokens per variant, and this is where the
+// rest — button, field, menu, radius — can be re-scoped to one. Without them a theme
+// author could apply a look to a block and then not fully define it.
 const SCOPE_OPTIONS: { id: ThemeScope; label: string }[] = [
   { id: "global",  label: "styleEditor.scopeAll" },
   { id: "navbar",  label: "styleEditor.secNavbar" },
   { id: "content", label: "styleEditor.secContent" },
   { id: "footer",  label: "styleEditor.secFooter" },
   { id: "aside",   label: "styleEditor.secAside" },
+  { id: "variant.surface", label: "layoutEditor.variant.surface" },
+  { id: "variant.muted",   label: "layoutEditor.variant.muted" },
+  { id: "variant.accent",  label: "layoutEditor.variant.accent" },
+  { id: "variant.plain",   label: "layoutEditor.variant.plain" },
 ];
 
 const FONTS = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
@@ -140,14 +149,27 @@ function safeHex(v: string | undefined, fallback: string): string {
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
 }
 
-// Resolve the value a token would show when NOT explicitly overridden — i.e. its
-// inherited value. Follows the registry `inheritsFrom` chain down to a palette token
-// (whose value is the global override if present, else the HEARTH default).
-function inheritedValue(cssVar: string, mode: Mode, globalBucket: TokenMap): string {
+/**
+ * The value a token shows when it is NOT explicitly overridden — its inherited value.
+ *
+ * Three layers, nearest first: the installed THEME's value for this scope, then the
+ * admin's own global override, then the bundled default; failing all of those, the
+ * registry's `inheritsFrom` chain down to a palette token.
+ *
+ * The theme layer is why "Inherited" is honest on a site with a theme installed: the
+ * served stylesheet is the theme merged under the admin's overrides, so a token the admin
+ * has not touched shows the theme's colour — and clearing an override falls back to it
+ * rather than to stock Nodevo.
+ */
+function inheritedValue(
+  cssVar: string, mode: Mode, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
+): string {
+  const fromTheme = themeBuckets[scope]?.[cssVar] ?? themeBuckets.global?.[cssVar];
+  if (fromTheme !== undefined) return fromTheme;
   const def = (DEFAULTS[mode] as TokenMap)[cssVar];
   if (def !== undefined) return globalBucket[cssVar] ?? def;
   const reg: TokenDef | undefined = TOKEN_BY_VAR[cssVar];
-  if (reg?.inheritsFrom) return inheritedValue(reg.inheritsFrom, mode, globalBucket);
+  if (reg?.inheritsFrom) return inheritedValue(reg.inheritsFrom, mode, globalBucket, themeBuckets, scope);
   if (RADIUS_FALLBACK[cssVar] !== undefined) return `${RADIUS_FALLBACK[cssVar]}px`;
   return "";
 }
@@ -254,10 +276,16 @@ export function StyleEditorPage() {
   });
 
   // ── Token data (sparse scoped overrides) ────────────────────────────────────
-  const { data: saved, isLoading } = useQuery<ScopedTokenSet>({
+  const { data: saved, isLoading } = useQuery<ScopedTokenSet & {
+    theme?: ScopedTokenSet;
+    installedTheme?: { name?: string; version?: string } | null;
+  }>({
     queryKey: ["acp-tokens"],
     queryFn:  () => api.get("/appearance/tokens"),
   });
+  // NOT merged into `tokens`: the editor writes back what it holds, so folding the theme
+  // in would turn every theme value into an admin override and destroy the inheritance.
+  const themeTokens = saved?.theme;
   useEffect(() => {
     if (saved && !initialised.current) {
       initialised.current = true;
@@ -352,6 +380,8 @@ export function StyleEditorPage() {
 
   const section = ALL_SECTIONS.find((s) => s.id === sectionId) ?? ALL_SECTIONS[0]!;
   const globalBucket = tokens[mode].global ?? {};
+  /** What the installed theme defines — the layer under the admin's own edits. */
+  const themeBuckets: ScopedTokens = themeTokens?.[mode] ?? {};
 
   // The scope a section edits: regions + palette → global; components → the picker.
   const effScope: ThemeScope = section.kind === "component" ? scope : "global";
@@ -400,12 +430,18 @@ export function StyleEditorPage() {
     if (bucketHas(effScope, cssVar)) return { value: tokens![mode][effScope]![cssVar]!, overridden: true };
     // A component token in a region scope falls back to its global override, then base.
     if (effScope !== "global" && cssVar in globalBucket) return { value: globalBucket[cssVar]!, overridden: false };
-    return { value: inheritedValue(cssVar, mode, globalBucket), overridden: false };
+    return { value: inheritedValue(cssVar, mode, globalBucket, themeBuckets, effScope), overridden: false };
   }
 
   // ── Live preview CSS (scoped, mirrors the served stylesheet) ─────────────────
   const previewCss = (() => {
-    const scoped: ScopedTokens = tokens[mode];
+    // Theme first, admin on top — the same order `buildCSS` serves, so the preview cannot
+    // show a site that has no theme installed when it does.
+    const themeScoped: ScopedTokens = themeTokens?.[mode] ?? {};
+    const scoped: ScopedTokens = { ...themeScoped, ...tokens[mode] };
+    for (const key of Object.keys(themeScoped)) {
+      if (tokens[mode][key]) scoped[key] = { ...themeScoped[key], ...tokens[mode][key] };
+    }
     const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss[mode]) };
     const blocks: string[] = [];
     const gDecls = [

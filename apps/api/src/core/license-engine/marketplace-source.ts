@@ -126,8 +126,13 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     // a license is bound to the domain it was bought for, and only a
     // marketplace admin can release it — best-effort: an unreachable
     // marketplace must never block a disconnect.
-    if (token) {
-      const siteId = await getSiteId();
+    // getSiteId throws on an install with no identity row. A disconnect must
+    // work regardless — the local token is dropped below either way — so a
+    // missing identity just means the server cannot be told, exactly like an
+    // unreachable marketplace.
+    const siteId = token ? await getSiteId().catch(() => null) : null;
+
+    if (token && siteId) {
       await fetch(`${env.LICENSE_SERVER_URL}/account/deactivate`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },

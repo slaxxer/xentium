@@ -1,22 +1,18 @@
 /* ===== Members page · Hearth (Directory + Team + Leaderboard) ===== */
+/* The REGION owns the content column and its inline padding (ADR-0005), so this
+   wrapper keeps only the page's vertical rhythm. Leaving its old max-width and
+   horizontal padding here double-inset every page — 26px + the region's 24px. */
 .mp-wrap {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 32px 26px 48px;
+  padding-block: 32px 48px;
   font-family: var(--font-body);
   font-weight: 600;
   color: var(--c-fg);
 }
 
 /* page head + segmented tabs */
-.mp-pagehead {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 18px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
-}
+/* Was a flex row holding the title and the tabs; both are blocks now, and the row
+   itself is a `columns` arrangement in the default document. */
+.mp-heading { margin-bottom: 24px; }
 .mp-eyebrow {
   font-family: var(--font-display);
   font-size: 12px;
@@ -102,9 +98,13 @@
 .mp-follow:disabled { opacity: .6; cursor: default; }
 
 /* ── Directory ─────────────────────────────────────────────────────────── */
-.mp-dir { display: grid; grid-template-columns: 236px 1fr; gap: 24px; align-items: start; }
+/* The rail/list split is a layout document now (ADR-0005): `columns` with an
+   `auto` track and a weighted one. So the rail owns its width instead of
+   inheriting a grid track, and `.mp-dir` is gone. */
 
 .mp-rail {
+  width: 236px;
+  max-width: 100%;
   background: var(--aside-bg);
   border-radius: var(--radius-lg);
   padding: 16px;
@@ -279,8 +279,9 @@
 
 /* ── responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 980px) {
-  .mp-dir { grid-template-columns: 1fr; }
-  .mp-rail { position: static; }
+  /* `.nv-columns` wraps its own tracks, so the rail just stops being fixed-width
+     and unsticks — the row itself is the layout document's business now. */
+  .mp-rail { position: static; width: 100%; }
   .mp-stats { grid-template-columns: repeat(2, 1fr); }
   .mp-howto__list { grid-template-columns: 1fr; }
 }

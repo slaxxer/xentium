@@ -3,7 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHeart, faGlobe, faCodeBranch, faHashtag, faLock, faUserSlash, faUserCheck } from "@fortawesome/free-solid-svg-icons";
+// The ban lock and the follow/block icons moved with their markup into
+// `layout/blocks/profileBlocks.tsx`; what stays here is the tab bodies' own icons.
+import { faHeart, faGlobe, faCodeBranch, faHashtag } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { swalToast, swalConfirm, apiErrorMessage } from "../../lib/swal";
@@ -15,8 +17,10 @@ import { MiniEditor, type MiniEditorHandle } from "../../components/MiniEditor";
 import { Username } from "../../components/Username";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import "./ProfilePage.scss";
+import { LayoutRenderer } from "../../layout/LayoutRenderer";
+import { useLayoutDocument } from "../../layout/useLayout";
 
-interface PublicProfile {
+export interface PublicProfile {
   id: string;
   username: string;
   displayName: string | null;
@@ -64,9 +68,36 @@ interface ProfileComment {
 
 type Tab = "articles" | "wall" | "followers" | "following" | "information" | string;
 
+/** One stat row on the profile card, including plugin-contributed ones. */
+export interface ProfileStatRow {
+  value: number;
+  label: string;
+  onClick: (() => void) | undefined;
+}
+
+/**
+ * What `ProfilePage` resolves for the profile blocks (ADR-0005).
+ *
+ * Declared here rather than beside the blocks so the dependency runs one way:
+ * `profileBlocks` imports from this module, never the reverse.
+ */
+export interface ProfileContext {
+  profile: PublicProfile;
+  isAuthenticated: boolean;
+  tab: string;
+  setTab: (id: string) => void;
+  tabs: { id: string; label: string }[];
+  stats: ProfileStatRow[];
+  infoFields: PublicProfileField[];
+  onFollow: () => void;
+  onBlockToggle: () => void;
+  followPending: boolean;
+  blockPending: boolean;
+}
+
 const STATIC_TAB_IDS = ["articles", "wall", "followers", "following", "information"] as const;
 
-interface PublicProfileField {
+export interface PublicProfileField {
   key: string;
   label: string;
   type: string;
@@ -96,7 +127,7 @@ function UserCard({ user }: { user: ProfileUser }) {
   );
 }
 
-function UserList({ userId, type }: { userId: string; type: "followers" | "following" }) {
+export function UserList({ userId, type }: { userId: string; type: "followers" | "following" }) {
   const { t } = useTranslation(["profiles", "common"]);
   const [page, setPage] = useState(1);
   const { data, isLoading } = useQuery({
@@ -154,7 +185,7 @@ function ArticleRow({ a }: { a: ArticleListItem }) {
 
 const ARTICLES_PER_PAGE = 5;
 
-function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
+export function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
   const { t } = useTranslation("profiles");
   const [page, setPage] = useState(1);
 
@@ -261,7 +292,7 @@ function InformationField({ field }: { field: PublicProfileField }) {
 
 const LINK_KEYS = new Set(["website", "github", "discord"]);
 
-function InformationTab({
+export function InformationTab({
   profile,
   fields,
 }: {
@@ -313,7 +344,7 @@ function InformationTab({
   );
 }
 
-function ProfileWall({ profile }: { profile: PublicProfile }) {
+export function ProfileWall({ profile }: { profile: PublicProfile }) {
   const { t } = useTranslation("profiles");
   const { user: authUser, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -470,6 +501,7 @@ export function ProfilePage() {
   const [tab, setTab] = useState<Tab>(requestedTab && validTabIds.has(requestedTab) ? requestedTab : "articles");
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const layout = useLayoutDocument("profile");
 
   const {
     data: profile,
@@ -583,169 +615,26 @@ export function ProfilePage() {
     { value: profile.followingCount,    label: t("stat.following"), onClick: () => setTab("following") },
   ] as { value: number; label: string; onClick: (() => void) | undefined }[];
 
+  // Everything the profile blocks read. The host resolves it once — the queries,
+  // the tab state, the plugin stat slots and the follow/block handlers — so no
+  // block fetches and none of them can widen what a viewer sees.
+  const context: ProfileContext = {
+    profile,
+    isAuthenticated,
+    tab,
+    setTab: (id: string) => setTab(id as Tab),
+    tabs: TABS,
+    stats,
+    infoFields,
+    onFollow: () => followMutation.mutate(profile.viewerIsFollowing),
+    onBlockToggle: () => { void handleBlockToggle(); },
+    followPending: followMutation.isPending,
+    blockPending: blockMutation.isPending,
+  };
+
   return (
     <div className="profile-page">
-      <div className="profile-card">
-        <div className="profile-header">
-          <div className="profile-av">
-            {profile.avatar ? (
-              <img src={profile.avatar} alt={profile.username} />
-            ) : (
-              <span>{profile.username.charAt(0).toUpperCase()}</span>
-            )}
-          </div>
-
-          <div className="profile-info">
-            <div className="profile-title-row">
-              <div className="profile-identity">
-                <h1 className="profile-name">
-                  <Username
-                    username={profile.namePreference === "fullName" && profile.displayName ? profile.displayName : profile.username}
-                    badgeColor={profile.groups[0]?.badgeColor}
-                  />
-                </h1>
-                {profile.namePreference === "fullName" && profile.displayName && (
-                  <p className="profile-handle">@{profile.username}</p>
-                )}
-                {profile.previousUsernames.length > 0 && (
-                  <p className="profile-formerly">
-                    {t("formerlyKnownAs", { names: profile.previousUsernames.map((p) => p.username).join(", ") })}
-                  </p>
-                )}
-                <p className="profile-joined">
-                  {t("memberSince", { date: new Date(profile.joinedDate).toLocaleDateString(undefined, { year: "numeric", month: "long" }) })}
-                </p>
-                {profile.isBanned ? (
-                  <div className="profile-badges">
-                    {(() => {
-                      const color = "#ef4444";
-                      return (
-                        <span
-                          className="profile-badge profile-badge--banned"
-                          style={{
-                            background: `${color}20`,
-                            color,
-                            border: `1px solid ${color}40`,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          <FontAwesomeIcon icon={faLock} />
-                          {profile.isPermanentBan ? t("permanentlyBanned") : t("banned")}
-                        </span>
-                      );
-                    })()}
-                  </div>
-                ) : profile.groups.length > 0 && (
-                  <div className="profile-badges">
-                    {profile.groups.map((g) => {
-                      const color = g.badgeColor ?? "var(--c-accent)";
-                      return (
-                        <span
-                          key={g.id}
-                          className="profile-badge"
-                          style={{
-                            background: `${color}20`,
-                            color,
-                            border: `1px solid ${color}40`,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 5,
-                          }}
-                        >
-                          {g.badgeLabel ?? g.name}
-                        </span>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-
-              {!profile.isOwn && isAuthenticated && (
-                <div className="profile-actions">
-                  {!profile.viewerHasBlocked && (
-                    <button
-                      className={`profile-follow-btn${profile.viewerIsFollowing ? " profile-follow-btn--following" : ""}`}
-                      onClick={() => followMutation.mutate(profile.viewerIsFollowing)}
-                      disabled={followMutation.isPending}
-                    >
-                      {profile.viewerIsFollowing ? t("following") : t("follow")}
-                    </button>
-                  )}
-
-                  {/* Plugin-contributed actions (e.g. messaging PM button) */}
-                  {!profile.viewerHasBlocked &&
-                    slotRegistry.getProfileActions().map((a) => (
-                      <a.component
-                        key={a.id}
-                        profileId={profile.id}
-                        profileUsername={profile.username}
-                        isOwn={profile.isOwn}
-                      />
-                    ))}
-
-                  {/* Block / Unblock — core */}
-                  <button
-                    className={`profile-icon-btn${profile.viewerHasBlocked ? " profile-icon-btn--active" : ""}`}
-                    onClick={handleBlockToggle}
-                    disabled={blockMutation.isPending}
-                    title={profile.viewerHasBlocked ? t("unblock") : t("block")}
-                    aria-label={profile.viewerHasBlocked ? t("unblock") : t("block")}
-                  >
-                    <FontAwesomeIcon icon={profile.viewerHasBlocked ? faUserCheck : faUserSlash} />
-                  </button>
-                </div>
-              )}
-            </div>
-
-            <p className="profile-bio">{profile.bio || t("noBio")}</p>
-
-            <div className="profile-stats">
-              {stats.map(({ value, label, onClick }) => (
-                <div
-                  key={label}
-                  className={`profile-stat${onClick ? " profile-stat--clickable" : ""}`}
-                  onClick={onClick}
-                >
-                  <span className="profile-stat__value">{value.toLocaleString()}</span>
-                  <span className="profile-stat__label">{label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="profile-tabs">
-        {TABS.map((tabItem) => (
-          <button
-            key={tabItem.id}
-            className={`profile-tab${tab === tabItem.id ? " profile-tab--active" : ""}`}
-            onClick={() => setTab(tabItem.id)}
-          >
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="profile-content">
-        {tab === "articles"    && <ProfileArticlesTab profile={profile} />}
-        {tab === "wall"        && <ProfileWall profile={profile} />}
-        {tab === "followers"   && <UserList userId={profile.id} type="followers" />}
-        {tab === "following"   && <UserList userId={profile.id} type="following" />}
-        {tab === "information" && <InformationTab profile={profile} fields={infoFields} />}
-        {pluginTabs.map((pt) =>
-          tab === pt.id && (
-            <pt.component
-              key={pt.id}
-              profileId={profile.id}
-              profileUsername={profile.username}
-              isOwn={profile.isOwn}
-            />
-          ),
-        )}
-      </div>
+      <LayoutRenderer templateKey="profile" document={layout} context={context} />
     </div>
   );
 }

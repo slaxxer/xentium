@@ -58,6 +58,7 @@ export default defineConfig({
       "@web/hooks":      resolve(__dirname, "src/hooks"),
       "@web/plugins":    resolve(__dirname, "src/plugins"),
       "@web/components": resolve(__dirname, "src/components"),
+      "@web/layout":     resolve(__dirname, "src/layout"),
     },
   },
   server: {

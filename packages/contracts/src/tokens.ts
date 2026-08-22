@@ -8,11 +8,22 @@
 // remains the rendering default; this registry is the contract the editor writes
 // against. See CONTRIBUTING.md → "Theming tokens" for the contributor guide.
 
+import type { BlockVariant } from "./layout.js";
+
 export type TokenValueType = "color" | "length" | "shadow" | "keyword";
 export type TokenKind = "semantic" | "region" | "component" | "shape";
 
-/** Region scopes a component token may be overridden within. */
-export type ThemeScope = "global" | "navbar" | "content" | "footer" | "aside";
+/**
+ * Scopes a token may be overridden within.
+ *
+ * Two kinds, and the distinction matters: a REGION scope is a place on the page
+ * (`navbar`), while a VARIANT scope is a named look a layout block opts into
+ * (`variant.accent` — see `BLOCK_VARIANTS` in `layout.ts`). Both resolve to a DOM
+ * selector the same way, which is why one mechanism serves both.
+ */
+export type ThemeScope =
+  | "global" | "navbar" | "content" | "footer" | "aside"
+  | "variant.surface" | "variant.muted" | "variant.accent" | "variant.plain";
 
 /** Editor grouping — regions (where) and components (what). */
 export type TokenGroup =
@@ -46,7 +57,53 @@ export const SCOPE_SELECTOR: Record<ThemeScope, string> = {
   // TODO(phase-3): unify rails under a single `.app-rail` class across home/profile;
   // for now the home rails are the only aside surfaces.
   aside:   ".hf-left, .hf-right",
+
+  // Variant scopes. Listed rather than generated so the mapping is greppable and the
+  // `Record<ThemeScope, string>` type keeps them exhaustive — a new variant that is
+  // added to `BLOCK_VARIANTS` and forgotten here fails to typecheck.
+  "variant.surface": ".nv-v--surface",
+  "variant.muted":   ".nv-v--muted",
+  "variant.accent":  ".nv-v--accent",
+  "variant.plain":   ".nv-v--plain",
 };
+
+/** The scope id a block variant's overrides are stored under. */
+export const variantScopeId = (variant: BlockVariant): ThemeScope =>
+  `variant.${variant}` as ThemeScope;
+
+/** True for a scope that is a named look rather than a place on the page. */
+export const isVariantScope = (scope: string): boolean => scope.startsWith("variant.");
+
+/**
+ * What the Layout Editor's Style panel edits for the selected block's variant.
+ *
+ * A curated short list, NOT the whole registry: the panel exists so an admin can
+ * recolour the look they just applied without leaving the page they are arranging.
+ * The Style Editor stays the complete surface — it can re-scope every component token
+ * to a variant through its scope picker.
+ *
+ * `--surface-*` are the tokens `section` paints from. They have no global definition
+ * on purpose: an unstyled section must paint nothing, so the consumer supplies the
+ * fallback (`var(--surface-bg, transparent)`) and only a variant ever defines them.
+ *
+ * There is deliberately no separate row for a CARD's background: `tokens.scss` aliases
+ * `--card-bg` to `--surface-bg` for every variant, so one row moves both kinds of
+ * surface. Two rows meant recolouring a variant looked like it did nothing on a card.
+ */
+export interface VariantTokenRow {
+  cssVar: string;
+  /** i18n key (acp namespace) — matches how the Style Editor labels its palette rows. */
+  label: string;
+  type: Extract<TokenValueType, "color" | "length" | "shadow">;
+}
+
+export const VARIANT_TOKEN_ROWS: VariantTokenRow[] = [
+  { cssVar: "--surface-bg",     label: "layoutEditor.tokPanelBg",     type: "color" },
+  { cssVar: "--surface-border", label: "layoutEditor.tokPanelBorder", type: "color" },
+  { cssVar: "--c-fg",           label: "layoutEditor.tokText",        type: "color" },
+  { cssVar: "--c-fg-muted",     label: "layoutEditor.tokTextMuted",   type: "color" },
+  { cssVar: "--c-accent",       label: "layoutEditor.tokAccent",      type: "color" },
+];
 
 // ── Region surface tokens ──────────────────────────────────────────────────────
 const REGION_TOKENS: TokenDef[] = [
