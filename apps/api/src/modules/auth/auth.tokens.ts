@@ -1,19 +1,26 @@
-import { SignJWT, jwtVerify } from "jose";
-import crypto from "node:crypto";
+/**
+ * The CMS's session flow, built on the framework token primitives
+ * (`@nodevo/auth`).
+ *
+ * The package mints and verifies tokens and hashes refresh tokens. Everything
+ * below is application logic and stays here: sessions live in `ncf_sessions`,
+ * "banned" and "deactivated" are this application's states, login events feed
+ * its security analysis, and the device-cookie plumbing is its own. A framework
+ * package may not know what a user is (ADR-0006), and all of this does.
+ */
+import { createTokenService } from "@nodevo/auth";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
 import { revokeSessionAccessToken } from "./session-revocation.js";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET);
-const ACCESS_TTL = "15m";
-const REFRESH_TTL_DAYS = 30;
+const tokens = createTokenService({
+  accessSecret: process.env.JWT_SECRET ?? "",
+  // Keyed (HMAC) hash for refresh tokens (§43/§17b). Falls back to JWT_SECRET
+  // when the dedicated secret isn't provisioned, so existing installs start.
+  refreshHmacSecret: process.env.REFRESH_TOKEN_HMAC_SECRET || process.env.JWT_SECRET || "",
+});
 
-// Keyed (HMAC) hash for refresh tokens (§43/§17b) — a DB-read attacker without
-// the secret cannot confirm or derive tokens. Falls back to JWT_SECRET when the
-// dedicated secret isn't provisioned so existing installs don't break startup.
-const TOKEN_HMAC_KEY = process.env.REFRESH_TOKEN_HMAC_SECRET || process.env.JWT_SECRET || "";
-const hashToken = (raw: string) =>
-  crypto.createHmac("sha256", TOKEN_HMAC_KEY).update(raw).digest("hex");
+export const verifyAccess = tokens.verifyAccess;
 
 /**
  * Enqueue an immediate security analysis run.
@@ -35,28 +42,14 @@ async function triggerSecurityCheck(): Promise<void> {
 
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
 
-async function issueAccess(userId: string, sessionId: string) {
-  // `ims` = issued-at in MILLISECONDS. The standard `iat` claim is only
-  // second-granular, which makes the revocation denylist (session-revocation.ts)
-  // ambiguous for tokens minted in the same second as a revocation. `ims` gives
-  // the check exact ordering.
-  return new SignJWT({ sid: sessionId, ims: Date.now() })
-    .setProtectedHeader({ alg: "HS256" })
-    .setSubject(userId)
-    .setIssuedAt()
-    .setExpirationTime(ACCESS_TTL)
-    .sign(secret);
-}
-
 // called on successful login
 export async function createSession(userId: string, meta: Meta) {
-  const raw = crypto.randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + REFRESH_TTL_DAYS * 864e5);
+  const raw = tokens.generateRefreshToken();
   const session = await prisma.session.create({
     data: {
       userId,
-      refreshTokenHash: hashToken(raw),
-      expiresAt,
+      refreshTokenHash: tokens.hashRefreshToken(raw),
+      expiresAt: tokens.refreshExpiryFrom(),
       ip: meta.ip,
       userAgent: meta.userAgent,
       deviceCookieId: meta.deviceCookieId,
@@ -65,13 +58,13 @@ export async function createSession(userId: string, meta: Meta) {
   // Trigger security analysis shortly after login so multi-account / IP
   // patterns are detected in near real-time instead of waiting 30 minutes.
   triggerSecurityCheck().catch(() => null);
-  return { refreshToken: raw, accessToken: await issueAccess(userId, session.id) };
+  return { refreshToken: raw, accessToken: await tokens.issueAccess(userId, session.id) };
 }
 
 // called on POST /auth/refresh — rotates the refresh token
 export async function rotateSession(rawRefresh: string, meta: Meta) {
   const current = await prisma.session.findUnique({
-    where: { refreshTokenHash: hashToken(rawRefresh) },
+    where: { refreshTokenHash: tokens.hashRefreshToken(rawRefresh) },
   });
   if (!current || current.revokedAt || current.expiresAt < new Date()) {
     return null; // invalid / reused / expired → caller forces re-login
@@ -89,7 +82,7 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     await prisma.session.update({ where: { id: current.id }, data: { revokedAt: new Date() } });
     return null; // caller clears the cookie and forces re-login
   }
-  const raw = crypto.randomBytes(32).toString("base64url");
+  const raw = tokens.generateRefreshToken();
   const [, next] = await prisma.$transaction([
     prisma.session.update({
       where: { id: current.id },
@@ -98,8 +91,8 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     prisma.session.create({
       data: {
         userId: current.userId,
-        refreshTokenHash: hashToken(raw),
-        expiresAt: new Date(Date.now() + REFRESH_TTL_DAYS * 864e5),
+        refreshTokenHash: tokens.hashRefreshToken(raw),
+        expiresAt: tokens.refreshExpiryFrom(),
         ip: meta.ip,
         userAgent: meta.userAgent,
         deviceCookieId: meta.deviceCookieId,
@@ -122,20 +115,12 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     },
   }).then(() => triggerSecurityCheck()).catch(() => null);
 
-  return { refreshToken: raw, accessToken: await issueAccess(next.userId, next.id) };
-}
-
-export async function verifyAccess(token: string) {
-  const { payload } = await jwtVerify(token, secret);
-  // Prefer the millisecond `ims` claim; fall back to `iat` seconds for any token
-  // minted before `ims` existed (bounded to the 15-min access-token lifetime).
-  const iatMs = (payload.ims as number | undefined) ?? (payload.iat !== undefined ? payload.iat * 1000 : undefined);
-  return { userId: payload.sub as string, sessionId: payload.sid as string, issuedAtMs: iatMs };
+  return { refreshToken: raw, accessToken: await tokens.issueAccess(next.userId, next.id) };
 }
 
 export async function revokeSession(rawRefresh: string) {
   const session = await prisma.session.findUnique({
-    where:  { refreshTokenHash: hashToken(rawRefresh) },
+    where:  { refreshTokenHash: tokens.hashRefreshToken(rawRefresh) },
     select: { id: true, revokedAt: true },
   });
   if (!session || session.revokedAt) return;
