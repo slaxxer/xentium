@@ -148,6 +148,9 @@ importers:
       '@nodevo/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
+      '@nodevo/server-kit':
+        specifier: workspace:*
+        version: link:../../packages/server-kit
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
@@ -604,6 +607,46 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
+
+  packages/server-kit:
+    dependencies:
+      '@nodevo/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@nodevo/errors':
+        specifier: workspace:*
+        version: link:../errors
+    devDependencies:
+      '@nodevo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/express':
+        specifier: ^5
+        version: 5.0.6
+      '@types/multer':
+        specifier: ^2
+        version: 2.1.0
+      express:
+        specifier: 'catalog:'
+        version: 5.2.1
+      express-rate-limit:
+        specifier: 'catalog:'
+        version: 8.5.2(express@5.2.1)
+      file-type:
+        specifier: ^22.0.1
+        version: 22.0.1
+      multer:
+        specifier: 'catalog:'
+        version: 2.2.0
+      rate-limit-redis:
+        specifier: ^5.0.0
+        version: 5.0.0(express-rate-limit@8.5.2(express@5.2.1))
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
 
   packages/ui:
     dependencies:

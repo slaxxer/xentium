@@ -19,6 +19,7 @@
     "@nodevo/errors": "workspace:*",
     "@nodevo/plugin-sdk": "workspace:*",
     "@nodevo/sdk": "workspace:*",
+    "@nodevo/server-kit": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "catalog:",
     "adm-zip": "^0.6.0",
