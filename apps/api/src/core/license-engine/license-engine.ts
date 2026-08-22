@@ -127,14 +127,31 @@ async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<
 
 /**
  * This install's UUID, minted by the installer's finalize step into
- * ncf_installs.siteId. (A settings key "site.id" was read here historically,
- * but nothing ever wrote it — every instance reported "dev-site" to the
- * marketplace.) Exported: the single source for anything talking to the
+ * ncf_installs.siteId. Exported: the single source for anything talking to the
  * license server.
+ *
+ * THROWS when there is no install row. It used to fall back to the literal
+ * string "dev-site" (a settings key "site.id" was read here historically, but
+ * nothing ever wrote it — so every instance reported "dev-site"), and that
+ * fallback is a shared identity: activations, per-domain caps and audit trails
+ * from every affected install collapse into one bucket on the marketplace.
+ * Once entitlements bind to the siteId rather than the hostname it stops being
+ * a collision and becomes a license bypass, so an instance with no identity
+ * must not be able to talk to the license server at all.
+ *
+ * Callers that must not be blocked by this (e.g. disconnect, which has to work
+ * even when everything else is broken) catch it deliberately.
  */
 export async function getSiteId(): Promise<string> {
   const row = await prisma.install.findFirst({ select: { siteId: true } });
-  return row?.siteId ?? "dev-site";
+  if (!row?.siteId) {
+    throw new NodevoError({
+      code:       NEC.LICENSE_SITE_ID_MISSING,
+      httpStatus: 503,
+      message:    "This instance has no install identity yet. Finish the installer before connecting a marketplace account.",
+    });
+  }
+  return row.siteId;
 }
 
 /**
@@ -259,8 +276,10 @@ export async function refreshLicense(): Promise<void> {
   try {
     // Account-activated licenses refresh through the account token (the raw
     // key was never known here); manual keys refresh through /activate.
-    // siteId is re-read, not taken from the row: rows activated while getSiteId
-    // was broken carry "dev-site" — a refresh heals them to the install UUID.
+    // siteId is re-read, not taken from the row: rows activated before the
+    // "dev-site" fallback was removed carry that literal — a refresh heals them
+    // to the install UUID. If the install row is missing entirely this throws,
+    // and the catch below applies grace like any other refresh failure.
     const siteId = await getSiteId();
     const jwt = license.activatedVia === "account"
       ? (await fetchAccountEntitlementJwt(siteId)).jwt

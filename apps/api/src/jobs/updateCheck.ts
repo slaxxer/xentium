@@ -81,11 +81,36 @@ export async function processUpdateCheck(): Promise<void> {
   logger.info({ installed: plugins.length, updates: (body.updates ?? []).length }, "Marketplace update check completed");
 }
 
+/**
+ * The daily marketplace heartbeat — ONE scheduled job for both halves of the
+ * conversation with the license server.
+ *
+ * These used to be two jobs thirty minutes apart (`license-refresh` at 02:00,
+ * `update-check` at 02:30), which meant two wake-ups, two schedules to keep in
+ * sync, and two separate calls to the same server for what is one exchange.
+ *
+ * Order matters: the entitlement refresh runs FIRST and unconditionally, because
+ * `processUpdateCheck` returns early when no account token is stored, while
+ * manual-key licenses still have to refresh through `/activate`. Running the
+ * update check first would skip the refresh entirely on those installs.
+ *
+ * A refresh failure must not cost the update check: `refreshLicense` already
+ * applies the grace window internally, and anything that escapes it is logged
+ * and swallowed here so the second half still runs.
+ */
+export async function processMarketplaceSync(): Promise<void> {
+  const { refreshLicense } = await import("../core/license-engine/license-engine.js");
+  await refreshLicense().catch((err) => {
+    logger.warn({ err }, "License refresh failed during marketplace sync — grace period applies");
+  });
+  await processUpdateCheck();
+}
+
 export function startUpdateCheckWorker() {
   return new Worker(
     "update-check",
     async () => {
-      await processUpdateCheck();
+      await processMarketplaceSync();
     },
     { connection: bullConnection, prefix: bullPrefix },
   );

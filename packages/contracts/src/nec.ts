@@ -93,6 +93,7 @@ export const NEC = {
   LICENSE_SOURCE_UNREACHABLE:"NEC-LICENSE-9007",  // marketplace unreachable — grace applies
   LICENSE_ALREADY_ACTIVE:    "NEC-LICENSE-9008",  // activate refused: a license is already active
   LICENSE_SERVER_REJECTED:   "NEC-LICENSE-9009",  // license server refused (4xx) — message carries the reason
+  LICENSE_SITE_ID_MISSING:   "NEC-LICENSE-9010",  // no ncf_installs row — this instance has no identity to license
 
   // Marketplace artifact intake (NEC-MARKETPLACE-91xx) — download-gate failures
   MARKETPLACE_NO_ARTIFACT: "NEC-MARKETPLACE-9101",      // source has no downloadable artifact

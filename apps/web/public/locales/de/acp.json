@@ -738,6 +738,12 @@
         "desc": "Der Lizenzserver hat die Anfrage abgelehnt — die Meldung enthält den genauen Grund.",
         "cause": "Unbekannter oder widerrufener Schlüssel, beendete Lizenzlaufzeit, kein freier Domain-Platz, oder die Lizenz ist an eine andere Domain gebunden.",
         "fix": "Lies die Meldung: verlängere die Laufzeit, gib einen Domain-Platz frei bzw. kaufe einen hinzu, oder kontaktiere den Marktplatz-Support, um die Bindung umzuziehen."
+      },
+      "NEC-LICENSE-9010": {
+        "msg": "Installations-Identität fehlt",
+        "desc": "Diese Instanz hat keinen Installationsdatensatz und damit keine Identität für die Lizenzierung.",
+        "cause": "Der Installer wurde nie abgeschlossen oder die Zeile in ncf_installs wurde aus der Datenbank gelöscht.",
+        "fix": "Schließen Sie den Installer ab. Ist die Installation ansonsten intakt, stellen Sie die ncf_installs-Zeile aus einem Backup wieder her — ihre siteId ist die Bindung jeder Lizenz."
       }
     }
   },

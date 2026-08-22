@@ -738,6 +738,12 @@
         "desc": "Le serveur de licences a rejeté la requête — le message contient la raison exacte.",
         "cause": "Clé inconnue ou révoquée, période de licence terminée, aucun emplacement de domaine libre, ou la licence est liée à un autre domaine.",
         "fix": "Lisez le message : renouvelez la période, libérez/ajoutez un emplacement de domaine, ou contactez le support de la place de marché pour déplacer la liaison."
+      },
+      "NEC-LICENSE-9010": {
+        "msg": "Identité d'installation manquante",
+        "desc": "Cette instance n'a aucun enregistrement d'installation, donc aucune identité à licencier.",
+        "cause": "L'installateur n'a jamais été terminé, ou la ligne ncf_installs a été supprimée de la base de données.",
+        "fix": "Terminez l'installateur. Si l'installation est saine par ailleurs, restaurez la ligne ncf_installs depuis une sauvegarde — son siteId est ce à quoi chaque licence est liée."
       }
     }
   },

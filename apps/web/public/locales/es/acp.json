@@ -738,6 +738,12 @@
         "desc": "El servidor de licencias rechazó la petición; el mensaje incluye el motivo exacto.",
         "cause": "Clave desconocida o revocada, período de licencia finalizado, sin ranura de dominio libre, o la licencia está vinculada a otro dominio.",
         "fix": "Lee el mensaje: renueva el período, libera o añade una ranura de dominio, o contacta con el soporte del mercado para mover la vinculación."
+      },
+      "NEC-LICENSE-9010": {
+        "msg": "Falta la identidad de la instalación",
+        "desc": "Esta instancia no tiene registro de instalación, por lo que carece de identidad para licenciarse.",
+        "cause": "El instalador nunca se completó, o la fila de ncf_installs se eliminó de la base de datos.",
+        "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila ncf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
       }
     }
   },

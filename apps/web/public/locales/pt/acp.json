@@ -738,6 +738,12 @@
         "desc": "O servidor de licenças rejeitou o pedido — a mensagem contém o motivo exato.",
         "cause": "Chave desconhecida ou revogada, período de licença terminado, sem ranhura de domínio livre, ou a licença está associada a outro domínio.",
         "fix": "Lê a mensagem: renova o período, liberta/adiciona uma ranhura de domínio, ou contacta o suporte do mercado para mover a associação."
+      },
+      "NEC-LICENSE-9010": {
+        "msg": "Identidade da instalação ausente",
+        "desc": "Esta instância não tem registo de instalação, pelo que não tem identidade para licenciar.",
+        "cause": "O instalador nunca foi concluído, ou a linha ncf_installs foi eliminada da base de dados.",
+        "fix": "Conclua o instalador. Se a instalação estiver de resto saudável, restaure a linha ncf_installs a partir de uma cópia de segurança — o seu siteId é aquilo a que cada licença está vinculada."
       }
     }
   },
