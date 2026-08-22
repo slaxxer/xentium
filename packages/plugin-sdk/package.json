@@ -1,20 +1,49 @@
 {
   "name": "@nodevo/plugin-sdk",
-  "version": "1.0.0-alpha.0",
-  "private": true,
+  "version": "1.0.0-alpha.1",
+  "private": false,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "prepublishOnly": "pnpm build"
   },
   "devDependencies": {
     "typescript": "catalog:",
     "@nodevo/config": "workspace:*"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*"
+    "@nodevo/contracts": "workspace:*",
+    "@nodevo/plugin-kit": "workspace:*"
+  },
+  "description": "The authoring contract for Nodevo CMS plugins.",
+  "license": "MIT",
+  "author": "Nodevo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "directory": "packages/plugin-sdk"
+  },
+  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/plugin-sdk#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   }
 }
