@@ -6,9 +6,10 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "prepublishOnly": "pnpm build"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -19,5 +20,32 @@
   },
   "dependencies": {
     "zod": "catalog:"
+  },
+  "description": "Shared types, constants and NEC error codes for the Nodevo framework.",
+  "license": "MIT",
+  "author": "Nodevo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "directory": "packages/contracts"
+  },
+  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/contracts#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   }
 }

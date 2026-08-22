@@ -6,10 +6,11 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
   },
   "exports": {
     ".": "./src/index.ts"
@@ -30,5 +31,32 @@
     "express": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
+  },
+  "description": "Authentication primitives: token minting and verification, password hashing, access-token revocation, request guards.",
+  "license": "MIT",
+  "author": "Nodevo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "directory": "packages/auth"
+  },
+  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/auth#readme",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   }
 }
