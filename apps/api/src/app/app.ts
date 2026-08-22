@@ -34,6 +34,7 @@ import { inviteRouter }            from "../modules/invite/invite.routes.js";
 import { betaPublicRouter, betaAdminRouter } from "../modules/beta/beta.routes.js";
 import { moderationRouter }       from "../modules/moderation/moderation.routes.js";
 import { appearanceRouter }        from "../modules/appearance/appearance.routes.js";
+import { publicLayoutRouter }      from "../modules/layouts/layout.routes.js";
 import { pluginManagementRouter }  from "../modules/plugins/plugin.routes.js";
 import { pluginRouter }            from "../core/plugin-engine/plugin-router.js";
 import { extractedDir } from "../core/plugin-engine/plugin-engine.js";
@@ -41,7 +42,7 @@ import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
 
-const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', path.join('themes', 'logo')];
+const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', 'themes'];
 
 export function createApp(): Express {
   const app = express();
@@ -94,8 +95,18 @@ export function createApp(): Express {
       // stored MIME/extension is not magic-byte-verified, so they must never be
       // rendered inline as active content. Force download + block sniffing so a
       // .html/.svg attachment can't execute as same-origin HTML (stored XSS).
-      if (filePath.split(path.sep).join('/').includes('/forum-attachments/')) {
+      const rel = filePath.split(path.sep).join('/');
+      if (rel.includes('/forum-attachments/')) {
         res.setHeader('Content-Disposition', 'attachment');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
+      }
+      // Theme assets arrive inside an imported .nvtheme — an untrusted archive. Their
+      // type IS magic-byte-verified on import, but SVG has no magic bytes and can carry
+      // script, so navigating straight to one must not execute it. No attachment
+      // disposition here: unlike an attachment these have to render in <img> and CSS
+      // url(), which the sandbox CSP does not prevent.
+      if (rel.includes('/themes/')) {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
       }
@@ -199,6 +210,10 @@ export function createApp(): Express {
   app.use("/api/beta",             betaPublicRouter);
   app.use("/api/moderation",       moderationRouter);
   app.use("/api/appearance",       appearanceRouter);
+  // Published page structure (ADR-0005). Public and unauthenticated: layouts are
+  // global, and every block resolves its data through endpoints that apply their
+  // own permission checks.
+  app.use("/api/layouts",          publicLayoutRouter);
   app.use("/api/plugins",          pluginManagementRouter);
 
   // Plugin runtime routes — /api/p/:pluginId/...

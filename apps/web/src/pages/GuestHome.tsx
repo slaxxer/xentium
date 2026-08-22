@@ -1,13 +1,20 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
-import { articlesApi, articleCategoriesApi, type ArticleListItem, type ArticleCategoryNode } from "../lib/articlesApi";
+import { articlesApi, type ArticleListItem, type ArticleCategoryNode } from "../lib/articlesApi";
 import { Avatar } from "../components/Avatar";
 import "./GuestHome.scss";
 
 /* ============================================================================
+   Guest-landing PIECES.
+
+   This was one 400-line page component; it is now the parts the guest blocks in
+   `layout/blocks/guestBlocks.tsx` compose — the feeds, the rail, the cards and the
+   icon set. The page-level assembly, and the hero copy that used to come from the
+   `Appearance → Guest Home` settings, live in the layout document instead.
+   ============================================================================
    Guest home (logged-out landing). Hearth design, wired to real public data.
    Hero copy + which sections appear + which feed sources are shown are configured
    in ACP → Appearance → Guest Home (GET /home/guest-config). Feed sources are
@@ -26,7 +33,7 @@ const ICONS: Record<string, string> = {
   forum: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   changelog: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
 };
-function Icon({ name, size = 18, stroke = 2 }: { name: string; size?: number; stroke?: number }) {
+export function Icon({ name, size = 18, stroke = 2 }: { name: string; size?: number; stroke?: number }) {
   const d = ICONS[name];
   if (!d) return null;
   return (
@@ -48,22 +55,22 @@ const catIcon = (id: string) => CAT_ICONS[hashIndex(id, CAT_ICONS.length)]!;
 const hexSoft = (hex: string) => `color-mix(in srgb, ${hex} 13%, transparent)`;
 const fmt = (n: number | undefined) => (n == null ? "—" : n.toLocaleString());
 
-interface Stats { members: number; articles: number; today: number }
-interface OnlineData { total: number; users: { username: string; avatar: string | null }[] }
-interface PopularTag { name: string; slug: string; count: number }
-interface HomeFeedItem {
+export interface Stats { members: number; articles: number; today: number }
+export interface OnlineData { total: number; users: { username: string; avatar: string | null }[] }
+export interface PopularTag { name: string; slug: string; count: number }
+export interface HomeFeedItem {
   id: string; title: string; link: string; excerpt?: string | null; categoryLabel?: string | null;
   author?: { username: string; avatar: string | null } | null;
   metric?: number; metricLabel?: string; replies?: number; views?: number; createdAt: string;
 }
-interface GuestConfig {
+export interface GuestConfig {
   hero: { badge: string; title: string; subtitle: string; ctaPrimary: string; ctaSecondary: string };
   sections: { stats: boolean; presence: boolean; categories: boolean; online: boolean; tags: boolean };
   sources: string[];
   availableSources: { id: string; label: string }[];
 }
 
-const DEFAULT_CONFIG: GuestConfig = {
+export const DEFAULT_CONFIG: GuestConfig = {
   hero: {
     badge: "builders online now",
     title: "Where people who build with nodevo hang out.",
@@ -76,7 +83,7 @@ const DEFAULT_CONFIG: GuestConfig = {
   availableSources: [{ id: "articles", label: "Articles" }],
 };
 
-const GATE_COPY: Record<string, string> = {
+export const GATE_COPY: Record<string, string> = {
   vote: "Create an account to like topics",
   post: "Sign up to start a new topic",
   more: "Create a free account to read everything",
@@ -164,7 +171,7 @@ function FeedMore({ onGate, label }: { onGate: (k: string) => void; label: React
 }
 
 // ── single-source articles feed (rich: tabs + category chips) ────────────────────
-function ArticleFeed({ onGate, categories, totalArticles, showCategories }: { onGate: (k: string) => void; categories: ArticleCategoryNode[]; totalArticles: number | undefined; showCategories: boolean }) {
+export function ArticleFeed({ onGate, categories, totalArticles, showCategories }: { onGate: (k: string) => void; categories: ArticleCategoryNode[]; totalArticles: number | undefined; showCategories: boolean }) {
   const [tab, setTab] = useState<"latest" | "top">("latest");
   const [cat, setCat] = useState<string | null>(null);
 
@@ -210,7 +217,7 @@ function ArticleFeed({ onGate, categories, totalArticles, showCategories }: { on
 }
 
 // ── merged feed (multiple sources / any plugin source), newest-first ─────────────
-function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k: string) => void }) {
+export function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k: string) => void }) {
   const wantArticles = sources.includes("articles");
   const pluginSources = sources.filter((s) => s !== "articles");
 
@@ -258,7 +265,7 @@ function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k: string
 }
 
 // ── right rail ──────────────────────────────────────────────────────────────────
-function Rail({
+export function Rail({
   onRegister, onLogin, categories, online, tags, sections,
 }: {
   onRegister: () => void; onLogin: () => void;
@@ -323,79 +330,3 @@ function Rail({
 }
 
 // ── page ─────────────────────────────────────────────────────────────────────
-export function GuestHome() {
-  const navigate = useNavigate();
-  const [toast, setToast] = useState("");
-  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-
-  const goRegister = useCallback(() => navigate("/register"), [navigate]);
-  const goLogin = useCallback(() => navigate("/login"), [navigate]);
-  const gate = useCallback((kind: string) => {
-    setToast(GATE_COPY[kind] ?? GATE_COPY.default!);
-    if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(""), 4200);
-  }, []);
-
-  const { data: config = DEFAULT_CONFIG } = useQuery<GuestConfig>({ queryKey: ["guest-config"], queryFn: () => api.get("/home/guest-config") });
-  const { data: stats }      = useQuery<Stats>({ queryKey: ["guest-stats"], queryFn: () => api.get("/home/stats") });
-  const { data: online }     = useQuery<OnlineData>({ queryKey: ["online-count"], queryFn: () => api.get("/online"), refetchInterval: 60_000 });
-  const { data: categories = [] } = useQuery({ queryKey: ["article-categories"], queryFn: () => articleCategoriesApi.tree() });
-  const { data: tags = [] }  = useQuery<PopularTag[]>({ queryKey: ["popular-tags"], queryFn: () => articlesApi.popularTags() });
-  const { data: recent }     = useQuery({ queryKey: ["guest-recent"], queryFn: () => articlesApi.list({ page: 1, limit: 3, feed: "latest" }) });
-
-  const { hero, sections, sources } = config;
-  const presence = recent?.data ?? [];
-  const subtitle = hero.subtitle.replace("{members}", fmt(stats?.members));
-  const articlesOnly = sources.length === 1 && sources[0] === "articles";
-
-  return (
-    <div className="guest-home">
-      <section className="ghero">
-        <div className="ghero__lead">
-          <span className="ghero__badge"><i />{online?.total ?? 0} {hero.badge}</span>
-          <h1 className="ghero__title">{hero.title}</h1>
-          <p className="ghero__sub">{subtitle}</p>
-          <div className="ghero__cta">
-            <button className="btn btn--primary btn--lg" onClick={goRegister}>{hero.ctaPrimary} <Icon name="arrowRight" size={17} /></button>
-            <button className="btn btn--outline btn--lg" onClick={() => bodyRef.current?.scrollIntoView({ block: "start", behavior: "smooth" })}>{hero.ctaSecondary}</button>
-          </div>
-          {sections.stats && (
-            <div className="ghero__stats">
-              <div className="gstat"><div className="gstat__n">{fmt(stats?.members)}</div><div className="gstat__l">Members</div></div>
-              <div className="gstat"><div className="gstat__n">{fmt(stats?.articles)}</div><div className="gstat__l">Posts</div></div>
-              <div className="gstat"><div className="gstat__n">{fmt(stats?.today)}</div><div className="gstat__l">New today</div></div>
-            </div>
-          )}
-        </div>
-        {sections.presence && presence.length > 0 && (
-          <div className="ghero__side">
-            <div className="gpresence">
-              <div className="gpresence__head"><b>Happening right now</b><span className="gpresence__live"><i />Live</span></div>
-              {presence.map((a) => (
-                <div className="gpresence__row" key={a.id}>
-                  <Avatar user={{ username: a.author.username, avatar: a.author.avatar }} size={38} />
-                  <div className="gpresence__txt"><b>{a.author.username}</b><span>posted in {a.category?.name ?? "the community"}</span></div>
-                  <span className="gpresence__dot" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <div className="gbody" ref={bodyRef}>
-        {articlesOnly
-          ? <ArticleFeed onGate={gate} categories={categories} totalArticles={stats?.articles} showCategories={sections.categories} />
-          : <MergedFeed sources={sources} onGate={gate} />}
-        <Rail onRegister={goRegister} onLogin={goLogin} categories={categories} online={online} tags={tags} sections={sections} />
-      </div>
-
-      <div className={`gtoast${toast ? " is-show" : ""}`}>
-        <Icon name="sparkles" size={18} />
-        <b>{toast || ""}</b>
-        <button onClick={() => { setToast(""); goRegister(); }}>Sign up free</button>
-      </div>
-    </div>
-  );
-}

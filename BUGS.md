@@ -1,4 +1,4 @@
-OBSERVED BUGS;
+    thOBSERVED BUGS;
 
 1. in Account Settings > Preferences > Badges, currently when i unpin ADMINISTRATOR, it not just removes the ADM badge from my user profile (profile, forum, articles, sidebar etc.) it also removes me from the USER GROUP. IT ONLY SHOULD HIDE THE BADGE, NOT REMOVE ME FROM THE USER GROUP.
 2. actually if i choose a dropdown menu in our frontend, with the DARK style active, the dropdown background itself is WHITE so the FONT is also WHITE which results in a unseeable MENU, in our ACP > Appaerance > Style Editor, the DROPDOWN MENU for each Style (Light and Dark) should also be configurable

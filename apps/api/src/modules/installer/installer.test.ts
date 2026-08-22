@@ -9,6 +9,7 @@ vi.mock("../../core/installer-engine/steps/runMigrations.js", () => ({
 
 import { prisma } from "../../infrastructure/db.js";
 import { installGuard, __resetInstalledCache } from "../../shared/middleware/installGuard.js";
+import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { installerRouter } from "./installer.routes.js";
 
 function buildApp(): Express {
@@ -22,6 +23,12 @@ function buildApp(): Express {
 }
 
 async function resetDb() {
+  // Guarded, not optional: this truncates EVERY table, and it used to do so to
+  // whatever DATABASE_URL pointed at — which was the developer's own database until
+  // `vitest.config.ts` repointed the suite. The check throws unless the database is
+  // disposable, so a stray override fails loudly instead of deleting data.
+  assertDisposableDatabase();
+
   // Truncate every app table (CASCADE handles FK order) so the reset is
   // order-independent and survives leftover data from other suites/e2e runs.
   // _prisma_migrations is preserved so the schema stays intact.

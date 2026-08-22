@@ -1,11 +1,10 @@
 import { prisma } from "../../infrastructure/db.js";
-import AdmZip from "adm-zip";
 import postcss from "postcss";
 import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
-import { getFreshSetting as readSetting } from "../../shared/utils/settings.js";
+import { bustSettingsCache, getFreshSetting as readSetting } from "../../shared/utils/settings.js";
 import { publishStyleVersion } from "./appearance.sse.js";
 
 export type ThemeName = "light" | "dark";
@@ -16,6 +15,25 @@ export type { ScopedTokens, ScopedTokenSet };
 
 // Back-compat shim: legacy storage is a flat TokenMap (string values); the new
 // shape is scope→map (object values). Normalise either into the scoped shape.
+/**
+ * Overlay one scoped token set on another, per scope and per token.
+ *
+ * `over` wins. Both sides are sparse, and the result stays sparse: this is a merge of
+ * OVERRIDES, not a fill from defaults, so a token nobody set is still absent and still
+ * inherits through `tokens.scss`.
+ */
+function mergeLayers(base: ScopedTokenSet, over: ScopedTokenSet): ScopedTokenSet {
+  const out: ScopedTokenSet = { light: {}, dark: {} };
+  for (const theme of ["light", "dark"] as ThemeName[]) {
+    const scopes = new Set([...Object.keys(base[theme]), ...Object.keys(over[theme])]);
+    for (const scope of scopes) {
+      const merged = { ...(base[theme][scope] ?? {}), ...(over[theme][scope] ?? {}) };
+      if (Object.keys(merged).length > 0) out[theme][scope] = merged;
+    }
+  }
+  return out;
+}
+
 function normalizeScoped(value: unknown): ScopedTokens {
   if (!value || typeof value !== "object") return {};
   const obj  = value as Record<string, unknown>;
@@ -105,6 +123,25 @@ const DRAFT_LIGHT_KEY = "appearance.tokens.draft.light";
 const DRAFT_DARK_KEY  = "appearance.tokens.draft.dark";
 const DRAFT_BY_KEY    = "appearance.tokens.draft.by"; // user id who last edited the draft
 
+// ── Theme layer (inheritance) ────────────────────────────────────────────────
+// What an imported `.nvtheme` shipped, kept SEPARATE from the admin's own overrides.
+// That separation is the whole of token inheritance: the served stylesheet is the theme
+// merged UNDER the admin's edits, so re-importing a newer version of the theme replaces
+// this layer and every tweak the admin made survives — per token, not per file.
+//
+// The alternative (importing straight into the admin layer) is what XenForo and WoltLab
+// both make you live with: customise a purchased style and an update either clobbers your
+// work or you never take the update.
+const THEME_LIGHT_KEY = "appearance.tokens.theme.light";
+const THEME_DARK_KEY  = "appearance.tokens.theme.dark";
+// An import STAGES the theme layer, exactly as an admin's own edits are staged: a theme
+// changes every page at once, which is precisely the change to preview before committing.
+// Promoted by the same `publishDraft` — one "publish appearance" verb, not two.
+const THEME_DRAFT_LIGHT_KEY = "appearance.tokens.theme.draft.light";
+const THEME_DRAFT_DARK_KEY  = "appearance.tokens.theme.draft.dark";
+/** The manifest of the installed theme, so the ACP can name what it is inheriting from. */
+const THEME_INSTALLED_KEY = "appearance.theme.installed";
+
 function compileCustomCss(light: string, dark: string): string {
   return [scopeCustomCss(light, "light"), scopeCustomCss(dark, "dark")]
     .filter(Boolean)
@@ -125,19 +162,6 @@ const FONT_STACKS: Record<string, string> = {
   "Ubuntu":     "Ubuntu, sans-serif",
 };
 
-// Validates that CSS only contains :root { --custom-property: value } blocks.
-function validateStylePackCss(css: string): boolean {
-  const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "").trim();
-  if (!stripped) return true;
-  // Allow only :root { ... } blocks containing only CSS custom properties
-  const rootOnlyPattern = /^(:root\s*\{[^}]*\}[\s]*)+$/;
-  if (!rootOnlyPattern.test(stripped)) return false;
-  // Inside the block, only --variable: value; lines
-  const inner = stripped.replace(/:root\s*\{/g, "").replace(/\}/g, "");
-  const lines  = inner.split(";").map((l) => l.trim()).filter(Boolean);
-  return lines.every((l) => /^--[\w-]+\s*:\s*.+$/.test(l));
-}
-
 // Live-sync defaults. The interval is how often each open client polls the
 // version endpoint; clamped so a misconfigured value can't hammer the API or
 // stall propagation. Default 5s → theme changes reach every client within ~5s.
@@ -147,10 +171,6 @@ const LIVE_REFRESH_MAX_SECONDS     = 60;
 
 // Latest built live CSS, keyed by style version (per process; see getLiveCss).
 let liveCssMemo: { version: number; css: string } | null = null;
-
-function stylePackError(message: string): NodevoError {
-  return new NodevoError({ code: NEC.CORE_STYLEPACK_INVALID, httpStatus: 422, message });
-}
 
 export const appearanceService = {
   // Monotonic-ish marker bumped on every change that affects the served CSS.
@@ -176,7 +196,7 @@ export const appearanceService = {
   async getLiveCss(): Promise<string> {
     const version = await this.getStyleVersion();
     if (liveCssMemo && liveCssMemo.version === version) return liveCssMemo.css;
-    const css = await this.buildCSS(await this.getTokenOverrides());
+    const css = await this.buildCSS(await this.getEffectiveTokens());
     liveCssMemo = { version, css };
     return css;
   },
@@ -295,16 +315,65 @@ export const appearanceService = {
     ]);
   },
 
-  // Is there a draft that differs from what's currently live?
+  /**
+   * Merge ONE scope's overrides into the draft.
+   *
+   * The Layout Editor's variant panel is a second writer of the same draft, and a
+   * read-modify-write of the WHOLE token set from two surfaces loses whichever edit
+   * landed first. So this patches a single bucket server-side: a `null` value clears
+   * that token, and a bucket left empty is deleted rather than stored as `{}` — the
+   * storage is sparse by design, and "pending" is a stringify comparison.
+   */
+  async saveDraftScope(
+    scope: string,
+    patch: { light?: Record<string, string | null>; dark?: Record<string, string | null> },
+    savedById: string,
+  ): Promise<ScopedTokenSet> {
+    const draft = await this.getDraftTokens();
+    const next: ScopedTokenSet = { light: { ...draft.light }, dark: { ...draft.dark } };
+
+    for (const theme of ["light", "dark"] as ThemeName[]) {
+      const changes = patch[theme];
+      if (!changes) continue;
+      const bucket: TokenMap = { ...(next[theme][scope] ?? {}) };
+      for (const [cssVar, value] of Object.entries(changes)) {
+        if (value === null) delete bucket[cssVar];
+        else bucket[cssVar] = value;
+      }
+      if (Object.keys(bucket).length === 0) delete next[theme][scope];
+      else next[theme][scope] = bucket;
+    }
+
+    await this.saveDraftTokens(next, savedById);
+    return next;
+  },
+
+  /**
+   * Is there anything staged that differs from what is live?
+   *
+   * BOTH layers count. A freshly imported theme has no admin-layer changes at all, so
+   * checking only that would report "nothing to publish" straight after an import and
+   * leave the admin with no way to apply it.
+   */
   async getDraftStatus(): Promise<{ pending: boolean }> {
-    const [dl, dd] = await Promise.all([
+    const [dl, dd, tdl, tdd] = await Promise.all([
       readSetting<unknown>(DRAFT_LIGHT_KEY, null),
       readSetting<unknown>(DRAFT_DARK_KEY,  null),
+      readSetting<unknown>(THEME_DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DRAFT_DARK_KEY,  null),
     ]);
-    if (dl === null && dd === null) return { pending: false };
-    const draft = { light: normalizeScoped(dl), dark: normalizeScoped(dd) };
-    const live  = await this.getTokenOverrides();
-    return { pending: JSON.stringify(draft) !== JSON.stringify(live) };
+    if (dl === null && dd === null && tdl === null && tdd === null) return { pending: false };
+
+    const [live, themeLive] = await Promise.all([this.getTokenOverrides(), this.getThemeTokens()]);
+    if (dl !== null || dd !== null) {
+      const draft = { light: normalizeScoped(dl), dark: normalizeScoped(dd) };
+      if (JSON.stringify(draft) !== JSON.stringify(live)) return { pending: true };
+    }
+    if (tdl !== null || tdd !== null) {
+      const themeDraft = { light: normalizeScoped(tdl), dark: normalizeScoped(tdd) };
+      if (JSON.stringify(themeDraft) !== JSON.stringify(themeLive)) return { pending: true };
+    }
+    return { pending: false };
   },
 
   // Promote the draft to live: writes the live tokens (+ history + version bump →
@@ -331,10 +400,124 @@ export const appearanceService = {
     }
     if (!author) return false; // no valid author to attribute — refuse rather than FK-crash
 
+    /**
+     * The theme layer is promoted FIRST and separately: it is not the admin's work, so it
+     * does not belong in the style-history snapshot, which exists so an admin can get
+     * their own edits back. Restoring a snapshot restores overrides and the theme layer
+     * keeps sitting underneath — exactly the inheritance behaviour wanted.
+     *
+     * Only when something is actually staged. Promoting unconditionally wrote two empty
+     * `{}` settings on every publish of a site that has no theme at all — rows that mean
+     * nothing and invite a reader to think a theme is installed.
+     */
+    const [stagedLight, stagedDark] = await Promise.all([
+      readSetting<unknown>(THEME_DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DRAFT_DARK_KEY,  null),
+    ]);
+    if (stagedLight !== null || stagedDark !== null) {
+      const themeDraft = await this.getThemeDraftTokens();
+      await prisma.$transaction([
+        prisma.setting.upsert({
+          where:  { key: THEME_LIGHT_KEY },
+          update: { value: themeDraft.light as unknown as object },
+          create: { key: THEME_LIGHT_KEY, value: themeDraft.light as unknown as object },
+        }),
+        prisma.setting.upsert({
+          where:  { key: THEME_DARK_KEY },
+          update: { value: themeDraft.dark as unknown as object },
+          create: { key: THEME_DARK_KEY, value: themeDraft.dark as unknown as object },
+        }),
+      ]);
+    }
+
     const draft = await this.getDraftTokens();
     await this.saveTokens(draft, author, label ?? "Published appearance changes");
-    await prisma.setting.deleteMany({ where: { key: { in: [DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY] } } });
+    await prisma.setting.deleteMany({
+      where: { key: { in: [
+        DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY,
+        THEME_DRAFT_LIGHT_KEY, THEME_DRAFT_DARK_KEY,
+      ] } },
+    });
     return true;
+  },
+
+  // ── Theme layer ───────────────────────────────────────────────────────────
+
+  /** What the installed theme defines, LIVE. Empty when no theme has been published. */
+  async getThemeTokens(): Promise<ScopedTokenSet> {
+    const [light, dark] = await Promise.all([
+      readSetting<unknown>(THEME_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DARK_KEY,  null),
+    ]);
+    return { light: normalizeScoped(light), dark: normalizeScoped(dark) };
+  },
+
+  /** The staged theme layer, falling back to the live one when no import is pending. */
+  async getThemeDraftTokens(): Promise<ScopedTokenSet> {
+    const [light, dark] = await Promise.all([
+      readSetting<unknown>(THEME_DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DRAFT_DARK_KEY,  null),
+    ]);
+    if (light === null && dark === null) return this.getThemeTokens();
+    return { light: normalizeScoped(light), dark: normalizeScoped(dark) };
+  },
+
+  /**
+   * Stage a theme's tokens. Called by a `.nvtheme` import and by nothing else.
+   *
+   * Two properties, both deliberate. It writes the THEME layer, never the admin's — that
+   * separation is what makes an update non-destructive, per token. And it writes the
+   * layer's DRAFT, so an import changes nothing visitors see until publish, which is the
+   * same promise the layouts half of an import already makes.
+   */
+  async saveThemeTokens(tokens: ScopedTokenSet): Promise<void> {
+    await prisma.$transaction([
+      prisma.setting.upsert({
+        where:  { key: THEME_DRAFT_LIGHT_KEY },
+        update: { value: tokens.light as unknown as object },
+        create: { key: THEME_DRAFT_LIGHT_KEY, value: tokens.light as unknown as object },
+      }),
+      prisma.setting.upsert({
+        where:  { key: THEME_DRAFT_DARK_KEY },
+        update: { value: tokens.dark as unknown as object },
+        create: { key: THEME_DRAFT_DARK_KEY, value: tokens.dark as unknown as object },
+      }),
+    ]);
+    bustSettingsCache(THEME_DRAFT_LIGHT_KEY);
+    bustSettingsCache(THEME_DRAFT_DARK_KEY);
+  },
+
+  async getInstalledTheme(): Promise<Record<string, unknown> | null> {
+    return readSetting<Record<string, unknown> | null>(THEME_INSTALLED_KEY, null);
+  },
+
+  async setInstalledTheme(manifest: Record<string, unknown>): Promise<void> {
+    const value = { ...manifest, importedAt: new Date().toISOString() };
+    await prisma.setting.upsert({
+      where:  { key: THEME_INSTALLED_KEY },
+      update: { value: value as object },
+      create: { key: THEME_INSTALLED_KEY, value: value as object },
+    });
+    bustSettingsCache(THEME_INSTALLED_KEY);
+  },
+
+  /**
+   * The tokens that actually reach the page: the theme layer with the admin's on top.
+   *
+   * Merged per SCOPE and per TOKEN, so an admin who recoloured one accent keeps the rest
+   * of the theme. Sparse on both sides — an absent token inherits from `tokens.scss` as
+   * it always did.
+   */
+  async getEffectiveTokens(): Promise<ScopedTokenSet> {
+    const [theme, admin] = await Promise.all([this.getThemeTokens(), this.getTokenOverrides()]);
+    return mergeLayers(theme, admin);
+  },
+
+  /** Same, for the staged draft — what the Style Editor's preview renders. Both layers
+   *  are the staged ones, so an imported theme is previewed under the admin's edits. */
+  async getEffectiveDraftTokens(): Promise<ScopedTokenSet> {
+    const [theme, admin] = await Promise.all([this.getThemeDraftTokens(), this.getDraftTokens()]);
+    return mergeLayers(theme, admin);
   },
 
   // Served stylesheet: ONLY admin-saved overrides (no default fallback), normalised
@@ -348,11 +531,15 @@ export const appearanceService = {
     return { light: normalizeScoped(light), dark: normalizeScoped(dark) };
   },
 
-  // Wipe every appearance override so the app falls back to the bundled core
-  // (tokens.scss + index.scss). Bumps the version so all clients re-pull.
+  // Wipe the ADMIN's appearance overrides. With no theme installed the app falls back to
+  // the bundled core (tokens.scss + index.scss); with one installed it falls back to the
+  // THEME, which is the point of the separate layer — "reset" drops my edits, it does not
+  // uninstall someone else's work. Bumps the version so all clients re-pull.
   async resetAppearance(): Promise<void> {
     await prisma.setting.deleteMany({
       where: { key: { in: [
+        // NOT the theme layer (live or staged): "reset" drops MY edits, it does not
+        // uninstall the theme underneath them.
         "appearance.tokens.light", "appearance.tokens.dark",
         DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY,
         "appearance.font.family",  "appearance.font.weight", "appearance.font.size",
@@ -424,10 +611,16 @@ export const appearanceService = {
 
     // global → the theme root; a region scope → that region's selector under the
     // theme root, so a re-scoped component token only cascades inside the region.
-    const selectorFor = (theme: ThemeName, scope: string): string => {
+    // Returns null for a scope this build does not know, and the caller SKIPS it.
+    // Returning the theme root instead — which this did — silently promoted an
+    // unrecognised bucket to a global override: a `.nvtheme` naming a scope from a
+    // newer build would have recoloured the whole site.
+    const selectorFor = (theme: ThemeName, scope: string): string | null => {
       const prefixes = prefixesFor(theme);
-      const desc = scope === "global" ? "" : (SCOPE_SELECTOR[scope as ThemeScope] ?? "");
-      if (!desc || desc === ":root") return prefixes.join(", ");
+      if (scope === "global") return prefixes.join(", ");
+      const desc = SCOPE_SELECTOR[scope as ThemeScope];
+      if (!desc) return null;
+      if (desc === ":root") return prefixes.join(", ");
       const parts = desc.split(",").map((s) => s.trim()).filter(Boolean);
       return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
     };
@@ -455,7 +648,8 @@ export const appearanceService = {
         if (theme === "light" && scope === "global" && fontExtras.length) {
           body = [body, fontExtras.join("\n")].filter(Boolean).join("\n");
         }
-        if (body.trim()) parts.push(`${selectorFor(theme, scope)} {\n${body}\n}`);
+        const selector = selectorFor(theme, scope);
+        if (selector && body.trim()) parts.push(`${selector} {\n${body}\n}`);
       }
     }
 
@@ -473,84 +667,5 @@ export const appearanceService = {
     }
 
     return parts.join("\n\n");
-  },
-
-  // ── Style packs (.nvstyle) ─────────────────────────────────────────────────
-
-  async installStylePack(fileBuffer: Buffer, userId: string) {
-    const zip = new AdmZip(fileBuffer);
-
-    const manifestEntry = zip.getEntry("manifest.json");
-    if (!manifestEntry) throw stylePackError("Missing manifest.json");
-
-    let manifest: { name?: string; vendor?: string; version?: string };
-    try {
-      manifest = JSON.parse(manifestEntry.getData().toString("utf8"));
-    } catch {
-      throw stylePackError("manifest.json is not valid JSON");
-    }
-    if (!manifest.name) throw stylePackError("manifest.json missing required field: name");
-
-    const lightEntry = zip.getEntry("styles/light.css");
-    const darkEntry  = zip.getEntry("styles/dark.css");
-    if (!lightEntry) throw stylePackError("Missing styles/light.css");
-    if (!darkEntry)  throw stylePackError("Missing styles/dark.css");
-
-    const lightCss = lightEntry.getData().toString("utf8");
-    const darkCss  = darkEntry.getData().toString("utf8");
-
-    if (!validateStylePackCss(lightCss)) throw stylePackError("styles/light.css contains non-custom-property CSS rules");
-    if (!validateStylePackCss(darkCss))  throw stylePackError("styles/dark.css contains non-custom-property CSS rules");
-
-    return prisma.installedStylePack.create({
-      data: {
-        name:        manifest.name,
-        vendor:      manifest.vendor ?? "community",
-        version:     manifest.version ?? "1.0.0",
-        lightCss,
-        darkCss,
-        installedBy: userId,
-      },
-    });
-  },
-
-  async listStylePacks() {
-    return prisma.installedStylePack.findMany({
-      orderBy: { installedAt: "desc" },
-      select: { id: true, name: true, vendor: true, version: true, isActive: true, installedAt: true },
-    });
-  },
-
-  async activateStylePack(packId: string, userId: string) {
-    const pack = await prisma.installedStylePack.findUniqueOrThrow({ where: { id: packId } });
-
-    // Parse the light/dark CSS into token maps
-    const parseTokens = (css: string): TokenMap => {
-      const map: TokenMap = {};
-      const matches = css.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g);
-      for (const m of matches) {
-        if (m[1] && m[2]) map[m[1].trim()] = m[2].trim();
-      }
-      return map;
-    };
-
-    // Style packs are `:root`-only (validateStylePackCss) → their tokens are global.
-    const tokens: ScopedTokenSet = {
-      light: { global: parseTokens(pack.lightCss) },
-      dark:  { global: parseTokens(pack.darkCss) },
-    };
-
-    await this.saveTokens(tokens, userId, `Pack: ${pack.name}`);
-
-    await prisma.$transaction([
-      prisma.installedStylePack.updateMany({ data: { isActive: false } }),
-      prisma.installedStylePack.update({ where: { id: packId }, data: { isActive: true } }),
-    ]);
-
-    return tokens;
-  },
-
-  async deleteStylePack(packId: string) {
-    await prisma.installedStylePack.delete({ where: { id: packId } });
   },
 };

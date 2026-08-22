@@ -59,10 +59,10 @@ export const ACP_NAV: NavItem[] = [
     label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
     children: [
       { label: "nav.styleEditor", to: "/admin/style-editor" },
-      { label: "nav.styles", to: "/admin/styles" },
+      { label: "nav.layoutEditor", to: "/admin/layout-editor" },
+      { label: "nav.themes", to: "/admin/themes" },
       { label: "nav.styleHistory", to: "/admin/style-history" },
       { label: "nav.navigation", to: "/admin/navigation" },
-      { label: "nav.guestHome", to: "/admin/guest-home" },
     ],
   },
   {

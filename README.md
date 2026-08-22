@@ -23,6 +23,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 - [Everyday commands](#everyday-commands)
 - [Project structure](#project-structure)
 - [Architecture in a nutshell](#architecture-in-a-nutshell)
+- [Layout system](#layout-system)
 - [Working on core](#working-on-core)
 - [Plugin development guide](#plugin-development-guide)
 - [Migrating from another platform](#migrating-from-another-platform)
@@ -41,7 +42,8 @@ Nodevo is a **production-shaped, open-source community platform** you can run ou
 - 📝 **Articles / CMS** — TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
 - 👤 **Users & social** — profiles, custom profile fields, follow/block, profile walls, a group-based progression ("levels are groups") engine.
 - 🛡️ **Moderation** — reports, warnings, bans, review cases fed by **built-in abuse-pattern detection** (rapid logins, multi-account, registration bursts, ban evasion — informational, never auto-acting), immutable log, threshold engine, and a floating ModCanvas tool.
-- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.nvstyle` packs, font system, dynamic nav manager.
+- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.nvtheme` packages (colours-only or full), font system, dynamic nav manager.
+- 🧱 **Layout editor** — compose what appears on each page, and on the navbar and footer, by arranging **blocks** in named regions. Drag in the tree or directly in a live preview; edits appear instantly, autosave as a draft, and go live on an explicit publish. A layout is **data, not code**, so a theme can never execute anything.
 - 🔔 **Notifications** — core service every module dispatches through (in-app + queued email).
 - 🧩 **Plugin engine** — install/enable/disable lifecycle, sandboxed migrations, dynamic routes/permissions/ACP pages, and registry-based extension points.
 - 🛒 **Marketplace & licensing** — per-domain entitlement for official premium plugins (the core never gets bricked).
@@ -201,6 +203,17 @@ pnpm e2e:ui              # interactive runner
 pnpm plugin:package      # build + package a plugin into a .nvplugin
 ```
 
+**The API test database.** `installer.test.ts` asserts the install wizard starting from an
+empty database, so it truncates every table. It therefore runs against a **throwaway**
+database — `<yourdb>_test`, created and migrated automatically by
+`apps/api/vitest.config.ts` — and never your development data. A guard
+(`assertDisposableDatabase()`) independently refuses to truncate any database whose name
+does not end in `_test`, so a stray `DATABASE_URL` fails loudly instead of deleting.
+
+Set `TEST_DATABASE_URL` to point the suite somewhere specific (CI). `ALLOW_DESTRUCTIVE_TESTS=1`
+bypasses the guard — only ever aim that at a database you are happy to lose.
+
+
 Run a single API test file:
 
 ```bash
@@ -261,6 +274,75 @@ nodevo/
 Plugin (onEnable)  ──registers──▶  core registry  ──core iterates──▶  merged result
    e.g. registerSearchSource(...)      searchRegistry      GET /api/search
 ```
+
+---
+
+## Layout system
+
+**ACP → Appearance → Layout Editor.** Page structure is a stored **document**, not compiled markup:
+an ordered list of **blocks** per named **region**, per **template**. The Style Editor answers *how
+things look*; the Layout Editor answers *what goes where*.
+
+### Templates
+
+A fixed set — a layout re-arranges pages that already exist, it never creates routes.
+
+| Template | Renders at | Regions |
+|---|---|---|
+| `home` | `/` | header · main · aside · footer |
+| `article.index` | `/articles` | header · main · aside · footer |
+| `article.detail` | `/articles/:slug` | header · beforeBody · main · afterBody · aside · footer |
+| `page.detail` | `/p/:slug` | header · main · aside · footer |
+| `profile` | `/u/:username` | header · main · aside · footer |
+| `members` | `/members` | header · main · aside · footer |
+| `chrome.header` | the navbar, every page | left · center · right |
+| `chrome.footer` | the footer, every page | top · main · bottom |
+
+Auth screens and the whole ACP are **permanently excluded** — an admin must never be able to
+rearrange the screen they would need in order to repair a broken arrangement.
+
+### Editing behaviour
+
+- **Edits show immediately.** The preview is the real route in an iframe; the editor pushes the
+  in-progress document to it, so a change is visible before it is stored.
+- **The draft autosaves** (~700 ms after you stop). There is no save button.
+- **Publish is explicit** and site-wide. It promotes every pending draft, then clears them. Open
+  browser tabs update within seconds over the existing style-version SSE stream — no reload.
+- **Reset** restores the built-in default for that template and cannot be undone.
+- **Drag anywhere.** Reorder in the structure tree or directly inside the preview; blocks can move
+  between regions. `↑`/`↓` buttons remain as the keyboard path. Hovering a block outlines it
+  (dashed) with its type; clicking selects it in the tree and opens its settings.
+- **Block settings are generated** from each block's Zod schema — no hand-written forms.
+- **Required blocks** (`logo`, `userMenu` on the navbar) can be moved but not deleted, enforced in
+  the editor *and* the API.
+
+### Failure behaviour
+
+None of these can take a site down:
+
+- A stored document that fails validation → the built-in default renders, with a warning in the ACP.
+- An **unknown block type** (a plugin was disabled, a block retired) → that block is skipped and the
+  rest of the page renders. The node **stays in the document**, so re-enabling the plugin restores
+  it exactly where it was.
+- A block that throws → it degrades to nothing; its siblings still render.
+
+### Themes are data
+
+A `.nvtheme` is a zip of layout documents, tokens and assets — **never code**:
+
+```
+manifest.json            id, name, version, vendor, minNodevoVersion
+layouts/<template>.json  one document per template
+styles/light.css         :root custom properties only
+styles/dark.css
+```
+
+Export packages what is currently **published**; import validates everything first and stages it as
+a **draft**, so a theme is previewed before it goes live. A package with one broken layout applies
+none of itself. Because there is no executable code, reviewing a theme is reading JSON.
+
+Need a block the catalogue lacks? That is a **plugin**, not a theme — see
+[`docs/plugin-blocks.md`](docs/plugin-blocks.md).
 
 ---
 

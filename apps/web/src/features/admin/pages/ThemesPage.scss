@@ -1,0 +1,113 @@
+/* Appearance → Themes, plus the export dialog's form (rendered by DialogHost, so it
+   is styled here rather than inside the dialog's own stylesheet). */
+
+.thm {
+  &__intro {
+    margin: 0 0 var(--sp-4);
+    font-size: 13px;
+    color: var(--c-fg-subtle);
+    max-width: 70ch;
+  }
+
+  &__card {
+    padding: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+
+  &__card-title {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-fg-subtle);
+    margin-bottom: var(--sp-3);
+  }
+
+  &__installed {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+
+    svg { font-size: 20px; color: var(--c-accent); }
+    b { display: block; font-size: 14px; }
+    span { font-size: 12px; color: var(--c-fg-subtle); }
+  }
+
+  &__note {
+    margin: var(--sp-3) 0 0;
+    font-size: 12.5px;
+    color: var(--c-fg-subtle);
+    max-width: 80ch;
+  }
+
+  /* The result of the most sweeping change the ACP offers — it stays put. */
+  &__report {
+    margin-top: var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+
+    ul { margin: 0; padding-left: 1.1rem; }
+    li { font-size: 12.5px; margin: 2px 0; }
+  }
+
+  &__report-title {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: var(--sp-2);
+  }
+
+  &__warn {
+    color: var(--c-warning, var(--c-fg));
+    svg { margin-right: 4px; }
+  }
+}
+
+/* ── Export dialog form ─────────────────────────────────────────────────── */
+
+.thm-form {
+  text-align: left;
+
+  &__hint {
+    margin: 0 0 var(--sp-3);
+    font-size: 12.5px;
+    color: var(--c-fg-subtle);
+  }
+
+  /* Two columns so eight fields do not become a very tall dialog; collapses on
+     narrow viewports where a single column reads better anyway. */
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--sp-3);
+
+    @media (max-width: 560px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--c-fg-subtle);
+
+    .acp-input { width: 100%; font-size: 12.5px; }
+  }
+
+  &__req { color: var(--c-danger); font-style: normal; }
+
+  &__check {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    cursor: pointer;
+
+    input { margin-top: 3px; }
+    b { display: block; font-size: 12.5px; color: var(--c-fg); }
+    em { display: block; font-style: normal; font-size: 11.5px; color: var(--c-fg-subtle); }
+  }
+}

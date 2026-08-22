@@ -16,7 +16,6 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { NotificationBell } from "../components/NotificationBell";
 import { AcpStatusBadge } from "../components/AcpStatusBadge";
-import { slotRegistry } from "../plugins/slotRegistry";
 import { Username } from "../components/Username";
 import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
@@ -25,6 +24,8 @@ import { useTheme } from "../hooks/useTheme";
 import { useAuth, applyLogout } from "../hooks/useAuth";
 import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
+import { LayoutRegion } from "../layout/LayoutRenderer";
+import { useLayoutDocument } from "../layout/useLayout";
 
 interface NavItem {
   id: string;
@@ -169,10 +170,14 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
   );
 }
 
-function NavSearch() {
+export function NavSearchBlock({ expanded = false }: { expanded?: boolean }) {
+  return <NavSearch alwaysOpen={expanded} />;
+}
+
+function NavSearch({ alwaysOpen = false }: { alwaysOpen?: boolean }) {
   const { t } = useTranslation("common");
   const [value,   setValue]   = useState("");
-  const [focused, setFocused] = useState(false);
+  const [focused, setFocused] = useState(alwaysOpen);
   const inputRef  = useRef<HTMLInputElement>(null);
   const navigate  = useNavigate();
 
@@ -208,7 +213,7 @@ function NavSearch() {
         value={value}
         onChange={e => setValue(e.target.value)}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => setFocused(alwaysOpen)}
         aria-label={t("nav.search")}
       />
       {focused && <kbd className="nav-search__hint">↵</kbd>}
@@ -216,36 +221,90 @@ function NavSearch() {
   );
 }
 
-export function PubNav() {
+/** Logo — image if set, otherwise logoText or the default wordmark. */
+export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
+  const { data: branding } = useBranding();
+  return (
+    <NavLink to="/" className="pub-nav__logo">
+      {branding?.navbarUrl ? (
+        <img
+          src={branding.navbarUrl}
+          alt={branding.logoText ?? "Home"}
+          style={{ height: 32, maxWidth: 160, objectFit: "contain", display: "block" }}
+        />
+      ) : (
+        <>
+          <span className="pub-nav__logomark" aria-hidden><FontAwesomeIcon icon={faCircleNodes} /></span>
+          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "nodevo"}</span>}
+        </>
+      )}
+    </NavLink>
+  );
+}
+
+/** Light/dark switch. */
+export function NavThemeToggle() {
   const { t } = useTranslation("common");
   const { theme, toggle } = useTheme();
+  return (
+    <button
+      className="pub-nav__icon-btn"
+      onClick={toggle}
+      aria-label={t("nav.toggleTheme")}
+      title={theme === "dark" ? t("nav.switchToLight") : t("nav.switchToDark")}
+    >
+      <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
+    </button>
+  );
+}
+
+/** Signed-in only — the block decides, not the admin. */
+export function NavNotifications() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <NotificationBell /> : null;
+}
+
+/** Admins only; the badge flags pending plugin updates or an expiring licence. */
+export function NavAdminLink() {
+  const { t } = useTranslation("common");
+  const { user, isAuthenticated } = useAuth();
+  if (!isAuthenticated || !user || !hasAcpAccess(user.groups)) return null;
+  return (
+    <NavLink
+      to="/admin"
+      className="pub-nav__icon-btn pub-nav__icon-btn--acp"
+      aria-label={t("nav.adminPanel")}
+      title={t("nav.adminPanel")}
+    >
+      <FontAwesomeIcon icon={faGear} />
+      <AcpStatusBadge />
+    </NavLink>
+  );
+}
+
+/** Avatar dropdown when signed in; sign-in / register when not. */
+export function NavUserMenu() {
+  const { t } = useTranslation("common");
   const { user, isAuthenticated } = useAuth();
   const { open: registrationOpen, betaMode } = useRegistrationStatus();
-  const navItems             = useNavItems(isAuthenticated);
-  const { data: branding }   = useBranding();
 
-  const canAdmin = isAuthenticated && user ? hasAcpAccess(user.groups) : false;
-
+  if (isAuthenticated && user) return <UserDropdown user={user} />;
   return (
-    <nav className="pub-nav">
-      <div className="pub-nav__inner">
-        {/* Logo — image if set, otherwise logoText or default wordmark */}
-        <NavLink to="/" className="pub-nav__logo">
-          {branding?.navbarUrl ? (
-            <img
-              src={branding.navbarUrl}
-              alt={branding.logoText ?? "Home"}
-              style={{ height: 32, maxWidth: 160, objectFit: "contain", display: "block" }}
-            />
-          ) : (
-            <>
-              <span className="pub-nav__logomark" aria-hidden><FontAwesomeIcon icon={faCircleNodes} /></span>
-              <span className="pub-nav__wordmark">{branding?.logoText || "nodevo"}</span>
-            </>
-          )}
-        </NavLink>
+    <>
+      {registrationOpen && !betaMode && (
+        <NavLink to="/register" className="pub-nav__register-btn">{t("nav.register")}</NavLink>
+      )}
+      <NavLink to="/login" className="pub-nav__login-btn">{t("nav.signIn")}</NavLink>
+    </>
+  );
+}
 
-        {/* Primary nav links — driven by nav_items table */}
+/** Primary nav links — driven by the nav_items table. */
+export function NavPrimaryLinks() {
+  const { t } = useTranslation("common");
+  const { isAuthenticated } = useAuth();
+  const navItems = useNavItems(isAuthenticated);
+  return (
         <ul className="pub-nav__links">
           {navItems.map(item => {
             const isExternal = item.url.startsWith("http");
@@ -274,61 +333,32 @@ export function PubNav() {
             );
           })}
         </ul>
+  );
+}
 
+/**
+ * The public navbar. Arrangement comes from the `chrome.header` layout document
+ * (ADR-0005 Amendment 1), so an admin can move the logo, search, icons and the
+ * account menu between the left / centre / right regions. The shipped default
+ * reproduces the previous hardcoded order exactly, so nothing moves until
+ * somebody moves it.
+ *
+ * The ACP topbar is deliberately NOT composable — see the amendment.
+ */
+export function PubNav() {
+  const layout = useLayoutDocument("chrome.header");
+  return (
+    <nav className="pub-nav">
+      <div className="pub-nav__inner">
+        <div className="pub-nav__zone pub-nav__zone--left">
+          <LayoutRegion document={layout} region="left" />
+        </div>
+        <div className="pub-nav__zone pub-nav__zone--center">
+          <LayoutRegion document={layout} region="center" />
+        </div>
         <span className="pub-nav__spacer" />
-
-        {/* Right-side actions */}
-        <div className="pub-nav__actions">
-          <NavSearch />
-          {/* Theme toggle */}
-          <button
-            className="pub-nav__icon-btn"
-            onClick={toggle}
-            aria-label={t("nav.toggleTheme")}
-            title={theme === "dark" ? t("nav.switchToLight") : t("nav.switchToDark")}
-          >
-            <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
-          </button>
-
-          {isAuthenticated && user ? (
-            <>
-              {/* Plugin header widgets (e.g. messaging) — rendered left of the bell */}
-              {slotRegistry.getHeaderWidgets().map((w) => (
-                <w.component key={w.id} />
-              ))}
-
-              {/* Notification bell */}
-              <NotificationBell />
-
-              {/* Admin panel — only visible to admins; badge flags pending
-                  plugin updates / an expiring license waiting in the ACP */}
-              {canAdmin && (
-                <NavLink
-                  to="/admin"
-                  className="pub-nav__icon-btn pub-nav__icon-btn--acp"
-                  aria-label={t("nav.adminPanel")}
-                  title={t("nav.adminPanel")}
-                >
-                  <FontAwesomeIcon icon={faGear} />
-                  <AcpStatusBadge />
-                </NavLink>
-              )}
-
-              {/* Profile avatar + dropdown */}
-              <UserDropdown user={user} />
-            </>
-          ) : (
-            <>
-              {registrationOpen && !betaMode && (
-                <NavLink to="/register" className="pub-nav__register-btn">
-                  {t("nav.register")}
-                </NavLink>
-              )}
-              <NavLink to="/login" className="pub-nav__login-btn">
-                {t("nav.signIn")}
-              </NavLink>
-            </>
-          )}
+        <div className="pub-nav__zone pub-nav__actions">
+          <LayoutRegion document={layout} region="right" />
         </div>
       </div>
     </nav>

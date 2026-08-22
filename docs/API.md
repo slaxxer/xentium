@@ -249,9 +249,9 @@ scans or replace baselines via the SDK. Full pipeline: [security-detection.md](s
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/css` | Public | Compiled token CSS (injected on page load), emitted **scope-keyed** — see below. |
-| GET / PUT | `/tokens` | Admin | Read / save style tokens (scope-keyed map per theme; legacy flat = `global`). |
+| GET / PUT | `/tokens` | Admin | Read / save style tokens (scope-keyed map per theme; legacy flat = `global`). Writes land in the **draft**. |
+| PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ light?: { "--x": "#fff" \| null }, dark?: … }`, `null` clears. Returns the whole set. For a second editor of the same draft (the Layout Editor's variant panel) — a full-set read-modify-write from two surfaces loses whichever edit landed first. |
 | GET | `/version` | Public | Style version + poll interval for live theme sync. |
-| GET | `/style-packs` · POST (`multipart`) · POST `/:id/activate` · DELETE `/:id` | Admin | `.nvstyle` lifecycle. |
 | POST | `/history/:id/restore` | Admin | Restore a style-history snapshot. |
 | GET | `/branding` | Public | Resolved logo URLs + site name. |
 | POST | `/branding/:variant` (`multipart`) · DELETE `/branding/:variant` | Admin | Logo upload / reset (`variant` = `navbar` \| `icon`). |
@@ -276,9 +276,15 @@ All visual values are CSS custom properties resolved at runtime — three tiers,
   (`:root .pub-nav, [data-theme="light"] .pub-nav { … }`). Because custom properties inherit down
   the DOM, a region re-scopes a component token (e.g. `.pub-nav { --btn-bg }` themes only navbar
   buttons) — no per-region token names.
+- **Style variants:** a scope may also be a named LOOK rather than a place —
+  `variant.surface` / `variant.muted` / `variant.accent` / `variant.plain`, emitted under
+  `.nv-v--<name>`, which the renderer stamps on any block whose document says
+  `"variant": "accent"` (ADR-0005). `section` paints from the `--surface-*` set; every variant
+  aliases `--card-bg` and friends to it, so one background token moves both kinds of surface.
 - **Storage:** `PUT /tokens` takes a scope-keyed map per theme (`{ global: {…}, navbar: {…} }`);
-  legacy flat maps load as the `global` scope (back-compat). Saved keys are validated against the
-  registry.
+  legacy flat maps load as the `global` scope (back-compat). Token names must match
+  `--[\w-]+` and values may not contain `{ } < > ;` — they are emitted verbatim into the served
+  stylesheet. A scope this build does not know is **skipped**, never promoted to the theme root.
 - **Contributors:** add a `TokenDef` to `TOKEN_REGISTRY` + define it in `tokens.scss` (defaulting
   to its semantic base); never hardcode a literal. See **[CONTRIBUTING → Theming tokens](../CONTRIBUTING.md#theming-tokens)**.
 
@@ -293,6 +299,19 @@ All visual values are CSS custom properties resolved at runtime — three tiers,
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/api/online` | Public | Currently-online users grouped by group. |
+
+## Layouts — `/api/layouts`
+
+Published page structure (ADR-0005). Unauthenticated: layouts are global, and every block resolves
+its data through endpoints that apply their own permission checks.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/layouts` | Public | Every template's **published** `LayoutDocument`, keyed by `TemplateKey`. Templates with nothing stored return the built-in default, so the response always covers every key. Memoized in-process for 30 s; a publish busts it. |
+
+A `LayoutDocument` is `{ templateKey, schemaVersion, regions: { [region]: BlockNode[] } }`, where a
+`BlockNode` is `{ id, type, props, children? }`. Unknown `type` values are **not** an error — the
+renderer skips them and keeps them in the document.
 
 ## Plugin management — `/api/plugins`
 
@@ -376,6 +395,42 @@ All routes below are **Admin** (`admin.access`) unless a stricter permission is 
 | GET·POST·DELETE | `/marketplace/connection` | Account connection state / connect / disconnect. |
 | POST | `/marketplace/authorize` | The download gate → `AuthorizedDownload` (rate-limited). |
 | GET | `/registered-pages` | Plugin-registered ACP pages (drives ACP nav). |
+
+### Layouts & themes
+
+Gated on `admin.access`, like the rest of Appearance. Every mutation is audited by
+`acpActivityLogger`.
+
+| Method | Path | Description |
+|---|---|---|
+| GET | `/layouts` | Every template as the **draft** would render it (draft → published → default). Backs the editor's preview iframe. |
+| GET | `/layouts/templates` | The template catalogue: each `key` plus its declared `regions`, `label`, `pluginId`, `previewRoute`, `supportsVariants` and inheritance state. Built from the runtime registry, so an enabled plugin's templates are in it and a disabled one's are not. |
+| GET | `/layouts/draft-status` | `{ pending: TemplateKey[] }` — templates whose draft differs from live. |
+| GET | `/layouts/:templateKey` | The draft for one template, falling back to published, then to the default. |
+| PUT | `/layouts/:templateKey` | Save the draft (`{ document }`). Rejects an unknown region, a template-key mismatch, a document missing a **required** block, or a template nothing has registered — a plugin template needs its plugin enabled (all 422). |
+| POST | `/layouts/publish` | Promote **all** pending drafts to published and clear them. Bumps the style version → connected clients refresh over SSE. |
+| POST | `/layouts/:templateKey/discard` | Drop the draft, keep what is live. |
+| POST | `/layouts/:templateKey/reset` | Delete draft **and** published rows → back to the built-in default. Keeps the theme baseline. |
+| POST | `/layouts/:templateKey/revert-theme` | Stage the installed theme's version of this template as the draft. 404 when no theme ships it. |
+| POST | `/themes/export` | Build a `.nvtheme` from what is **published** — layouts, scoped tokens, custom CSS and every referenced image, with asset paths rewritten to package-relative. Body: `{ id, name, version, vendor, description?, license?, homepage?, authorUrl? }`. Responds `application/zip`. |
+| GET | `/themes/installed` | The installed theme's manifest + the templates its baseline covers. |
+| POST | `/themes/import` | Validate a `.nvtheme` (multipart `file`) and stage it as the **draft** — never live. All-or-nothing: one bad layout, asset or stylesheet applies none of it. Returns `{ manifest, templates, unknownTemplates, kept, replaced, tokensApplied, customCssApplied, assetsImported, unknownBlocks }`. |
+
+`unknownBlocks` is informational, not a failure — those blocks are kept in the document and render
+once the plugin providing them is enabled. `unknownTemplates` is the same idea one level up: layouts
+the package ships for templates this install has no definition for (a plugin template whose plugin is
+not enabled). They are skipped rather than stored — there are no declared regions to validate them
+against — and the rest of the theme still applies.
+
+**Inheritance:** a theme is a LAYER under the admin's own changes. Tokens go to the theme
+layer (`appearance.tokens.theme.*`), merged under the admin's overrides, so an update keeps
+every token the admin set. Layouts are per template: `templates` were applied, `kept` had been
+customised and were left alone with their new baseline recorded — recoverable with
+`POST /layouts/:templateKey/revert-theme`. Full rules: `docs/theme-packages.md`.
+
+Assets unpack to `uploads/themes/<manifest id>/`, magic-byte checked and bounded (100 files, 5 MB
+each, 40 MB total). `customCssApplied` is a **live** change, not a staged one: the custom-CSS console
+has no draft. Format reference: `docs/theme-packages.md`.
 
 ### System
 

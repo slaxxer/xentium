@@ -7,6 +7,7 @@ import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
+import { SchemaFields, defaultsFor, type FieldSchema, type FieldValues } from "../../../components/SchemaFields";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 
@@ -18,35 +19,17 @@ interface Schedule {
   tz?: string;
 }
 
-/** The JSON Schema subset our actions actually produce (see paramsJsonSchema on
- *  the API). Anything outside it is skipped rather than guessed at. */
-interface ParamProp {
-  type?:        string;
-  title?:       string;
-  description?: string;
-  default?:     unknown;
-  enum?:        string[];
-  minimum?:     number;
-  maximum?:     number;
-}
-interface ParamsSchema {
-  properties?: Record<string, ParamProp>;
-  required?:   string[];
-}
-
 interface ActionView {
   key: string; label: string; description: string; domain: string;
   destructive: boolean; minIntervalSec: number;
   /** null when the Zod schema has no JSON Schema representation. */
-  paramsSchema: ParamsSchema | null;
+  paramsSchema: FieldSchema | null;
 }
-
-type ParamValues = Record<string, unknown>;
 
 interface TaskView {
   id: string; name: string;
   actionKey: string; actionLabel: string; destructive: boolean;
-  params: ParamValues;
+  params: FieldValues;
   schedule: Schedule; cron: string;
   enabled: boolean; dryRun: boolean;
   lastRunAt: string | null; lastStatus: string | null;
@@ -70,91 +53,6 @@ const statusClass = (status: string | null) =>
     status === "ok" || status === "error" || status === "running" ? status : "idle"
   }`;
 
-// ── Action parameters ────────────────────────────────────────────────────────
-// Rendered from the JSON Schema the API derives from the action's own Zod
-// schema, so adding a parameter to an action needs no frontend change. The
-// server re-validates on save AND on every run, so this form is a convenience,
-// never the guarantee.
-
-const SUPPORTED = new Set(["string", "number", "integer", "boolean"]);
-
-/** "graceHours" → "Grace hours". Only used when the schema sets no title. */
-function prettify(key: string): string {
-  const s = key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/[_-]+/g, " ");
-  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
-}
-
-/** Seed values from the schema's defaults — the shape the server would apply
- *  anyway, made visible so the admin can see what they are agreeing to. */
-function defaultsFor(schema: ParamsSchema | null | undefined): ParamValues {
-  const out: ParamValues = {};
-  for (const [key, prop] of Object.entries(schema?.properties ?? {})) {
-    if (prop.default !== undefined) out[key] = prop.default;
-  }
-  return out;
-}
-
-function ParamsFields({ schema, values, onChange }: {
-  schema: ParamsSchema | null | undefined;
-  values: ParamValues;
-  onChange: (next: ParamValues) => void;
-}) {
-  const { t } = useTranslation("acp");
-  const props = Object.entries(schema?.properties ?? {});
-
-  if (schema === null) return <div className="acp-hint">{t("tasks.paramsUnsupported")}</div>;
-  if (props.length === 0) return null;
-
-  const set = (key: string, value: unknown) => onChange({ ...values, [key]: value });
-  const required = new Set(schema?.required ?? []);
-
-  return (
-    <>
-      {props.map(([key, prop]) => {
-        if (!SUPPORTED.has(prop.type ?? "")) return null;
-        const label = prop.title ?? prettify(key);
-        const value = values[key] ?? prop.default;
-
-        if (prop.type === "boolean") {
-          return (
-            <label key={key} style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer", marginBottom: 14 }}>
-              <input type="checkbox" checked={Boolean(value)}
-                onChange={(e) => set(key, e.target.checked)} style={{ marginTop: 3 }} />
-              <span>
-                <b style={{ fontSize: 13 }}>{label}</b>
-                {prop.description && <div className="acp-hint" style={{ marginTop: 2 }}>{prop.description}</div>}
-              </span>
-            </label>
-          );
-        }
-
-        return (
-          <div className="acp-form-field" key={key}>
-            <label className="acp-label">
-              {label}
-              {!required.has(key) && <span style={{ color: "var(--c-fg-subtle)" }}> · {t("tasks.optional")}</span>}
-            </label>
-            {prop.enum ? (
-              <select className="acp-input" value={String(value ?? "")} onChange={(e) => set(key, e.target.value)}>
-                {prop.enum.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-              </select>
-            ) : prop.type === "string" ? (
-              <input className="acp-input" value={String(value ?? "")} onChange={(e) => set(key, e.target.value)} />
-            ) : (
-              <input className="acp-input" type="number" style={{ width: 180 }}
-                min={prop.minimum} max={prop.maximum}
-                value={value === undefined || value === null ? "" : String(value)}
-                // Empty means "unset" — sending NaN would fail validation with a
-                // message about types rather than about the missing value.
-                onChange={(e) => set(key, e.target.value === "" ? undefined : Number(e.target.value))} />
-            )}
-            {prop.description && <div className="acp-hint">{prop.description}</div>}
-          </div>
-        );
-      })}
-    </>
-  );
-}
 
 // ── Create / edit dialog ─────────────────────────────────────────────────────
 // An entity modal, not a config surface — so it keeps explicit Save/Cancel per
@@ -174,7 +72,7 @@ function TaskDialog({ task, actions, onClose }: {
   const [dryRun, setDryRun]       = useState(task?.dryRun ?? false);
   // An existing task's stored params win over the defaults; a new one starts
   // from the schema's defaults so the form shows what will actually be applied.
-  const [params, setParams]       = useState<ParamValues>(
+  const [params, setParams]       = useState<FieldValues>(
     task?.params ?? defaultsFor(actions.find((a) => a.key === initialKey)?.paramsSchema),
   );
 
@@ -221,7 +119,7 @@ function TaskDialog({ task, actions, onClose }: {
           {action && <div className="acp-hint">{action.description}</div>}
         </div>
 
-        <ParamsFields schema={action?.paramsSchema} values={params} onChange={setParams} />
+        <SchemaFields schema={action?.paramsSchema} values={params} onChange={setParams} />
 
         {action?.destructive && (
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 10, borderRadius: 8, background: "color-mix(in srgb, var(--c-danger) 12%, transparent)", marginBottom: 14 }}>

@@ -41,6 +41,19 @@ let started = false;
 let lastVersion: number | null = null;
 let source: EventSource | null = null;
 
+// Anything else that must refresh when the style version changes. Page layouts
+// (ADR-0005) ride this channel rather than opening a second stream: a layout
+// publish bumps the same version, so one event refreshes both tokens and
+// structure. Listeners are called only on an actual change, never on the
+// connect/reconnect echo.
+const versionListeners = new Set<() => void>();
+
+/** Subscribe to style-version changes. Returns an unsubscribe function. */
+export function onStyleVersionChange(fn: () => void): () => void {
+  versionListeners.add(fn);
+  return () => versionListeners.delete(fn);
+}
+
 /**
  * Begin systemwide style sync over SSE. Idempotent — safe to call from multiple
  * mount points; only the first call opens the connection.
@@ -58,7 +71,14 @@ export function startStyleSync(): void {
     // Startup already injected the current CSS, so only refetch when the version
     // differs from what we last saw — which also catches a change that happened
     // while we were disconnected.
-    if (lastVersion !== null && version !== lastVersion) void refreshTokenCss();
+    if (lastVersion !== null && version !== lastVersion) {
+      void refreshTokenCss();
+      for (const fn of versionListeners) {
+        // One bad listener must not stop the others, or a thrown error here
+        // would leave clients on stale CSS.
+        try { fn(); } catch { /* ignore */ }
+      }
+    }
     lastVersion = version;
   });
   // On transient errors EventSource reconnects on its own using the server's
