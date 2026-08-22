@@ -31,3 +31,6 @@ plugins/packaged/
 # Runtime state (uploads, geoip, plugin extraction, …) — never commit; recreated on demand
 **/var/
 
+
+# Never commit a registry token — a project-level .npmrc holds one.
+.npmrc
