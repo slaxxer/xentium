@@ -11,7 +11,7 @@
  * v<version>` only when a build is actually handed to testers; move the
  * CHANGELOG's [Unreleased] section under the new version at the same time.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -25,20 +25,26 @@ if (!version || !SEMVER.test(version)) {
 }
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+/**
+ * Every workspace manifest, DISCOVERED rather than listed.
+ *
+ * This was a hardcoded array, and it went stale the moment packages were added:
+ * a bump silently skipped five of them, leaving half the workspace on the old
+ * version. Lockstep versioning that quietly is not lockstep is worse than none,
+ * because nothing fails — the packages just disagree.
+ *
+ * Plugins are excluded on purpose: they version themselves and target the
+ * platform through `minNodevoVersion` in their manifest.
+ */
 const manifests = [
   "package.json",
-  "apps/api/package.json",
-  "apps/web/package.json",
-  "packages/contracts/package.json",
-  "packages/sdk/package.json",
-  "packages/plugin-sdk/package.json",
-  "packages/ui/package.json",
-  "packages/config/package.json",
-  "packages/migrate-core/package.json",
-  "packages/migrate-wp/package.json",
-  "packages/migrate-phpbb/package.json",
-  "packages/migrate-xenforo/package.json",
   "e2e/package.json",
+  ...["apps", "packages"].flatMap((dir) =>
+    readdirSync(resolve(root, dir), { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => `${dir}/${e.name}/package.json`)
+      .filter((rel) => existsSync(resolve(root, rel))),
+  ),
 ];
 
 for (const rel of manifests) {

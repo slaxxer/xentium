@@ -1,6 +1,6 @@
 {
   "name": "@nodevo/migrate-core",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "private": true,
   "description": "Shared contract + loader for Nodevo platform-migration adapters (§34). Adapters extract a source platform into the intermediate model; this package loads it into a Nodevo database.",
   "type": "module",

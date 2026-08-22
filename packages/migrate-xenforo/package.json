@@ -1,6 +1,6 @@
 {
   "name": "@nodevo/migrate-xenforo",
-  "version": "1.0.0-alpha.0",
+  "version": "1.0.0-alpha.1",
   "private": true,
   "description": "XenForo 2.x → Nodevo migration adapter (§34, Wave 1). Connects directly to the XenForo MySQL database. Requires the nodevo-forum plugin on the target.",
   "type": "module",
