@@ -952,21 +952,6 @@ model NodevoPluginMigration {
   @@map("ncf_plugin_migrations")
 }
 
-// ── Phase 12: Style packs ──────────────────────────────────────────────────────
-
-model InstalledStylePack {
-  id          String   @id @default(uuid())
-  name        String
-  vendor      String   @default("community")
-  version     String   @default("1.0.0")
-  isActive    Boolean  @default(false) @map("is_active")
-  lightCss    String   @map("light_css") @db.Text
-  darkCss     String   @map("dark_css")  @db.Text
-  installedAt DateTime @default(now()) @map("installed_at")
-  installedBy String   @map("installed_by")
-
-  @@map("ncf_installed_style_packs")
-}
 
 // Reviewed security signals — device cookies / IPs that a mod has cleared.
 // The security analysis job skips case creation for these but still logs every match.
@@ -982,6 +967,34 @@ model ReviewedSecuritySignal {
   @@unique([signalType, signalValue])
   @@index([signalType, signalValue])
   @@map("ncf_reviewed_security_signals")
+}
+
+// ── Block layout composition (ADR-0005) ──────────────────────────────────────
+// A page's structure is a DOCUMENT, not code: blocks per named region, per
+// template. Two rows per template at most — the `draft` an admin is editing and
+// the `published` one the site serves — reusing the appearance draft→publish
+// model rather than inventing a second staging path.
+//
+// No row is required: a template with nothing stored renders DEFAULT_LAYOUTS
+// from @nodevo/contracts, which is also what "Reset to default" restores by
+// deleting rows. A template is never without a renderable document.
+model Layout {
+  id            String   @id @default(cuid())
+  templateKey   String   @map("template_key")  // TemplateKey — a fixed enum in contracts
+  /// '' = the template default; otherwise the variant key (a page slug for
+  /// `page.detail`). NOT NULL and '' rather than nullable, because Postgres treats
+  /// NULLs as DISTINCT in a unique index — a nullable column would admit two rows
+  /// for (template_key, NULL, scope), the duplicate the constraint exists to stop.
+  variant       String   @default("")
+  scope         String                          // 'draft' | 'published'
+  document      Json                            // LayoutDocument
+  schemaVersion Int      @default(1) @map("schema_version") // migration state, queryable
+  updatedById   String?  @map("updated_by_id")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@unique([templateKey, variant, scope])
+  @@index([scope, templateKey])
+  @@map("ncf_layouts")
 }
 
 // ── Admin-created scheduled tasks ────────────────────────────────────────────

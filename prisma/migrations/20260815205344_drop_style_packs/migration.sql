@@ -1,0 +1,11 @@
+-- `.nvstyle` was merged into `.nvtheme` (2026-08-15).
+--
+-- A style pack was a manifest plus a `:root`-only light/dark CSS pair, which is a
+-- strict subset of a theme package — so the format was absorbed rather than kept
+-- beside its own importer, its own copy of the `:root` rule and its own ACP page.
+-- Style packs are imported through the theme path now, and produced by exporting a
+-- theme with `tokensOnly`.
+--
+-- The table is dropped rather than left behind: it is confirmed empty on both the
+-- development and production installs, and nothing reads it any more.
+DROP TABLE IF EXISTS "ncf_installed_style_packs";

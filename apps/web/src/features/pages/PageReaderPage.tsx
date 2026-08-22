@@ -5,15 +5,29 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { pagesApi } from "../../lib/pagesApi";
 import { useAuth } from "../../hooks/useAuth";
-import { ArticleContent } from "../articles/components/ArticleContent";
+import { LayoutRenderer } from "../../layout/LayoutRenderer";
+import { useLayoutDocument } from "../../layout/useLayout";
+import type { PageDetailContext } from "../../layout/blocks/pageDetailBlocks";
 import "./PageReaderPage.scss";
 
-/** Public reader for a custom page. Strictly title + TipTap body inside the
- *  normal AppLayout — no templates, no blocks (§page-system). */
+/**
+ * Host container for the `page.detail` template (ADR-0005).
+ *
+ * It owns everything a block must not: the query, the not-found and loading
+ * states, and the staff check. WHAT renders and in which region comes from the
+ * layout document — the code default reproduces the previous hardcoded arrangement
+ * exactly, so adopting the template changed nothing on screen.
+ *
+ * The staff Edit shortcut is deliberately NOT a block. An admin who could move it
+ * could also delete it, and the affordance for fixing a page should not be
+ * something a layout can remove.
+ */
 export function PageReaderPage() {
   const { t } = useTranslation(["common", "acp"]);
   const { slug = "" } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  // The page's own layout if an admin gave it one, else the template default.
+  const layout = useLayoutDocument("page.detail", slug);
 
   // page.manage is admin + supermod — show them an inline Edit shortcut.
   const canManagePages = user?.groups?.some((g) => g.key === "admin" || g.key === "supermod") ?? false;
@@ -30,6 +44,14 @@ export function PageReaderPage() {
   }
 
   const p = pageQuery.data;
+  const context: PageDetailContext = {
+    page: {
+      id:            p.id,
+      title:         p.title,
+      body:          p.body,
+      featuredImage: p.featuredImage ?? null,
+    },
+  };
 
   return (
     <article className="page-view">
@@ -41,14 +63,7 @@ export function PageReaderPage() {
         </div>
       )}
 
-      {p.featuredImage && (
-        <img className="page-view__header-image" src={`/uploads/${p.featuredImage}`} alt="" />
-      )}
-
-      <h1 className="page-view__title">{p.title}</h1>
-      <div className="page-view__body">
-        <ArticleContent body={p.body} />
-      </div>
+      <LayoutRenderer templateKey="page.detail" document={layout} context={context} />
     </article>
   );
 }

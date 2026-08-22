@@ -4,11 +4,13 @@ import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions, NEC } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { adminController } from "./admin.controller.js";
-import { adminEmailRouter } from "../email/email.routes.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
 import { scheduledTaskRouter } from "../scheduled-tasks/scheduled-task.routes.js";
+import { adminLayoutRouter } from "../layouts/layout.routes.js";
+import { themeRouter } from "../themes/theme.routes.js";
+import { adminEmailRouter } from "../email/email.routes.js";
 
 export const adminRouter: Router = Router();
 
@@ -168,4 +170,8 @@ adminRouter.use("/permissions",  permissionsRouter);
 adminRouter.use("/progression",  adminProgressionRouter);
 // Admin-created scheduled tasks (own permission: system.tasks.manage).
 adminRouter.use("/tasks",        scheduledTaskRouter);
+// Page layout documents (ADR-0005) — same ADMIN_ACCESS gate as Appearance.
+adminRouter.use("/layouts",      adminLayoutRouter);
+// .nvtheme export/import — layouts + tokens as data, never code.
+adminRouter.use("/themes",       themeRouter);
 adminRouter.use("/email",        adminEmailRouter);

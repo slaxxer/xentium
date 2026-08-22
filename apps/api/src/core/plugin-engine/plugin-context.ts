@@ -1,5 +1,6 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration, LayoutTemplateDeclaration } from "@nodevo/plugin-sdk";
+import { registerTemplate } from "@nodevo/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
@@ -150,6 +151,38 @@ export class PluginContextImpl implements PluginContext {
   registerNecCodes(codes: NecCodeDeclaration[]): void {
     necRegistry.register(this.pluginId, codes);
     logger.info({ pluginId: this.pluginId, count: codes.length }, "Plugin NEC codes registered");
+  }
+
+  /**
+   * A plugin-owned page, opened to the layout editor (ADR-0005 Amendment 3).
+   *
+   * Ownership is stamped here rather than trusted from the declaration, so a plugin
+   * cannot register a template under another plugin's id and survive its disable. A
+   * declaration that names a DIFFERENT owner is refused outright — that is either a
+   * copy-paste error or an attempt at exactly that, and neither should enable.
+   *
+   * `registerTemplate` throws on anything it will not accept (a core key, another
+   * plugin's key, a malformed default document). The throw propagates through
+   * `callPluginHook`, which records it as a load error and leaves the plugin
+   * disabled — the right outcome, since the alternative is a plugin whose pages are
+   * registered and whose templates are not.
+   */
+  registerLayoutTemplate(template: LayoutTemplateDeclaration): void {
+    if (template.pluginId && template.pluginId !== this.pluginId) {
+      throw new Error(
+        `Plugin "${this.pluginId}" cannot register template "${template.key}" for "${template.pluginId}".`,
+      );
+    }
+    registerTemplate({
+      key:             template.key,
+      label:           template.label,
+      regions:         template.regions,
+      defaultDocument: template.defaultDocument as never,
+      requiredBlocks:  template.requiredBlocks,
+      previewRoute:    template.previewRoute,
+      pluginId:        this.pluginId,
+    });
+    logger.info({ pluginId: this.pluginId, template: template.key }, "Plugin layout template registered");
   }
 
   registerSecurityScan(fn: () => Promise<void>): void {

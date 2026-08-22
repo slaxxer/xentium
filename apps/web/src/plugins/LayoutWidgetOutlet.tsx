@@ -16,8 +16,24 @@ import { slotRegistry } from "./slotRegistry";
  * the current route (placement is plugin-side configuration), returning null
  * otherwise — so an unused outlet costs nothing visually.
  */
-export function LayoutWidgetOutlet({ outlet }: { outlet: string }) {
-  const widgets = slotRegistry.getLayoutWidgets();
+export function LayoutWidgetOutlet({
+  outlet,
+  skipIds,
+}: {
+  outlet: string;
+  /**
+   * Widget ids to leave out.
+   *
+   * Every layout widget is ALSO its own layout block now
+   * (`layout/slotBlocks.tsx`), which is how an admin positions one individually.
+   * Drawing it here as well would render it twice, so the `pluginSlot` block passes
+   * whatever the document already places — making the two mechanisms alternatives
+   * rather than a duplication hazard.
+   */
+  skipIds?: ReadonlySet<string>;
+}) {
+  const widgets = slotRegistry.getLayoutWidgets()
+    .filter((w) => !skipIds?.has(w.id));
   if (widgets.length === 0) return null;
   return (
     <>

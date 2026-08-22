@@ -13,9 +13,9 @@ import { timeAgo } from "../lib/time";
 import { useAuth } from "../hooks/useAuth";
 import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
-import { GuestHome } from "./GuestHome";
-import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import "./HomePage.scss";
+import { LayoutRenderer } from "../layout/LayoutRenderer";
+import { useLayoutDocument } from "../layout/useLayout";
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
@@ -38,7 +38,7 @@ type FeedFilter = "latest" | "following" | "top";
 
 /* ── left rail ────────────────────────────────────────────────────────── */
 
-function MeCard() {
+export function MeCard() {
   const { user } = useAuth();
   if (!user) return null;
   const badges = topGroups(user.groups, (g) => g.displayOrder, 3);
@@ -67,7 +67,7 @@ function MeCard() {
   );
 }
 
-function SectionNav() {
+export function SectionNav() {
   const { t } = useTranslation(["common", "home"]);
   const items = [
     { icon: faHouse,    label: t("common:nav.home"),      to: "/", active: true },
@@ -88,7 +88,7 @@ function SectionNav() {
   );
 }
 
-function SpacesCard() {
+export function SpacesCard() {
   const { t } = useTranslation("home");
   const { data: categories = [] } = useQuery({
     queryKey: ["article-categories"],
@@ -213,7 +213,7 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
   );
 }
 
-function Feed() {
+export function Feed() {
   const { t } = useTranslation("home");
   const [filter, setFilter] = useState<FeedFilter>("latest");
   const { data, isLoading } = useQuery({
@@ -263,7 +263,7 @@ interface ProgressionData {
   primary: { label: string; have: number; need: number; remaining: number } | null;
 }
 
-function ProgressionCard() {
+export function ProgressionCard() {
   const { t } = useTranslation("home");
   const { isAuthenticated } = useAuth();
   const { data } = useQuery<ProgressionData>({
@@ -311,7 +311,7 @@ interface SuggestedUser {
   badgeColor: string | null;
 }
 
-function SuggestedPeople() {
+export function SuggestedPeople() {
   const { t } = useTranslation("home");
   const { isAuthenticated } = useAuth();
   const { data } = useQuery<SuggestedUser[]>({
@@ -365,7 +365,7 @@ interface HotItem {
   author?: { username: string; avatar: string | null } | null;
 }
 
-function HotThreads() {
+export function HotThreads() {
   const { t } = useTranslation("home");
   const { data } = useQuery<{ enabled: boolean; items: HotItem[] }>({
     queryKey: ["hot-threads"],
@@ -390,7 +390,7 @@ function HotThreads() {
   );
 }
 
-function PopularTags() {
+export function PopularTags() {
   const { t } = useTranslation("home");
   const { data } = useQuery<{ name: string; slug: string; count: number }[]>({
     queryKey: ["popular-tags"],
@@ -413,32 +413,14 @@ function PopularTags() {
 
 /* ── page ─────────────────────────────────────────────────────────────── */
 
+/**
+ * Host container for the `home` template (ADR-0005).
+ *
+ * Nothing to hoist: the home cards share no interaction state, so each block keeps
+ * its own query. The guest/member split is not here either — it is an audience on the
+ * default document, so an admin can change who sees what.
+ */
 export function HomePage() {
-  const { isAuthenticated, isLoading } = useAuth();
-
-  // Logged-out visitors get the guest landing (hero + community feed + rail).
-  // The Hearth 3-column home is the signed-in experience.
-  if (!isLoading && !isAuthenticated) {
-    return <GuestHome />;
-  }
-
-  return (
-    <div className="hf-wrap">
-      <aside className="hf-left">
-        <MeCard />
-        <SectionNav />
-        <SpacesCard />
-      </aside>
-
-      <Feed />
-
-      <aside className="hf-right">
-        <LayoutWidgetOutlet outlet="aside" />
-        <ProgressionCard />
-        <HotThreads />
-        <PopularTags />
-        <SuggestedPeople />
-      </aside>
-    </div>
-  );
+  const layout = useLayoutDocument("home");
+  return <LayoutRenderer templateKey="home" document={layout} />;
 }

@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 // Appearance / Style Editor contracts.
 //
 // HEARTH_DEFAULT_TOKENS is the single shared copy of the editable semantic
@@ -19,6 +21,28 @@ export type TokenSet = { light: TokenMap; dark: TokenMap };
 // sparse: a token absent from every bucket inherits via tokens.scss `var(--base)`.
 export type ScopedTokens   = Record<string, TokenMap>;
 export type ScopedTokenSet = { light: ScopedTokens; dark: ScopedTokens };
+
+// ── Validation ────────────────────────────────────────────────────────────────
+// Every token that reaches storage is emitted verbatim into a served stylesheet, so
+// the shape is validated at the door rather than trusted: a value containing `}` would
+// close the block early and everything after it becomes arbitrary CSS. Applies to all
+// three ways in — the Style Editor, the Layout Editor's variant panel, and a
+// `.nvtheme` import.
+
+export const tokenMapSchema = z.record(
+  z.string().regex(/^--[\w-]+$/, 'token names must be CSS custom properties'),
+  z.string().max(400).refine((v) => !/[{}<>;]/.test(v), 'token values may not contain { } < > or ;'),
+);
+
+export const scopedTokensSchema = z.record(
+  z.string().regex(/^[\w.:-]+$/, 'scope ids must be identifiers'),
+  tokenMapSchema,
+);
+
+export const scopedTokenSetSchema = z.object({
+  light: scopedTokensSchema.default({}),
+  dark:  scopedTokensSchema.default({}),
+});
 
 export const HEARTH_DEFAULT_TOKENS: TokenSet = {
   light: {

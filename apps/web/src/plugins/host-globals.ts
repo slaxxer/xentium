@@ -27,6 +27,19 @@ import * as webUseAutosave from "@web/hooks/useAutosave";
 import * as webAutosaveStatus from "@web/components/AutosaveStatus";
 import * as webToast from "@web/lib/toast";
 import * as webDialog from "@web/lib/dialog";
+// Exposed from day one (ADR-0005) even though no plugin registers a block yet:
+// retrofitting a registry into a public API later is far more expensive than
+// shipping it as one now.
+import * as webBlockRegistry from "@web/layout/blockRegistry";
+// Layout templates (Amendment 3). Both halves are required and neither is optional:
+// a plugin registers its template through the registry and renders it through the
+// renderer, and both must be the HOST's copies — a plugin that bundled its own would
+// register into a Map nothing reads and render from a registry nothing wrote to.
+import * as webLayoutTemplateRegistry from "@web/layout/templateRegistry";
+import * as webLayoutRenderer from "@web/layout/LayoutRenderer";
+// `useLayoutDocument` — a plugin's page component is a HOST container like core's:
+// it resolves the document, resolves its own data, and hands both to the renderer.
+import * as webUseLayout from "@web/layout/useLayout";
 
 const HOST = {
   React,
@@ -50,6 +63,10 @@ const HOST = {
   webAutosaveStatus,
   webToast,
   webDialog,
+  webBlockRegistry,
+  webLayoutTemplateRegistry,
+  webLayoutRenderer,
+  webUseLayout,
 };
 
 declare global {

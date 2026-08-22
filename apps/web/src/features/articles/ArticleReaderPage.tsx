@@ -25,6 +25,8 @@ import { Avatar } from "../../components/Avatar";
 import { Username } from "../../components/Username";
 import { topGroups, roleColor } from "../../lib/groupBadge";
 import "./ArticleReaderPage.scss";
+import { LayoutRenderer } from "../../layout/LayoutRenderer";
+import { useLayoutDocument } from "../../layout/useLayout";
 
 /** Small follow-button component that fetches initial follow state from the author's profile. */
 function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; authorUsername: string }) {
@@ -64,7 +66,7 @@ function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; au
   );
 }
 
-export function ArticleReaderPage() {
+export function ArticleReaderContent() {
   const { t } = useTranslation(["articles", "common"]);
   const { slug = "" } = useParams<{ slug: string }>();
   const qc = useQueryClient();
@@ -547,4 +549,16 @@ export function ArticleReaderPage() {
       </section>
     </article>
   );
+}
+
+/**
+ * Host container for the `article.detail` template (ADR-0005).
+ *
+ * Thin on purpose: with one block per page the content above stays whole, so there
+ * is nothing to hoist. What this adds is the region structure — an admin can place
+ * blocks in the other regions around it.
+ */
+export function ArticleReaderPage() {
+  const layout = useLayoutDocument("article.detail");
+  return <LayoutRenderer templateKey="article.detail" document={layout} />;
 }

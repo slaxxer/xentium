@@ -1,0 +1,560 @@
+/* ============================================================================
+   ACP — Layout editor (ADR-0005)
+
+   A structure/settings rail beside a live preview. Mirrors the Style Editor's
+   list ⇄ preview model so appearance editing has one shape.
+   ============================================================================ */
+
+/* The layout editor is a WORKSPACE, not a document.
+   `.acp-content` caps every ACP page at a comfortable 1200px reading column, which
+   left the preview 828px on a wide display — the preview being the one thing an admin
+   is actually judging. Opting out here rather than raising the shared cap, so every
+   other ACP page keeps its measure. */
+.acp-content:has(> .lay) {
+  max-width: min(1900px, 100%);
+}
+
+.lay {
+
+  &__intro {
+    font-size: 13px;
+    color: var(--c-fg-muted);
+    margin: 0 0 var(--sp-4);
+    max-width: 680px;
+  }
+
+  /* ── toolbar ───────────────────────────────────────────────────────────── */
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-4);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    flex-wrap: wrap;
+  }
+
+  &__template { width: auto; min-width: 220px; }
+  /* Which INSTANCE of the template is being edited — only rendered for templates
+     that have instances. */
+  &__variant  { width: auto; min-width: 200px; }
+  &__audience { width: auto; min-width: 190px; }
+
+  /* Undo/redo sit together as one control, tight enough to read as a pair rather
+     than as two unrelated buttons that happen to be adjacent. */
+  &__history {
+    display: flex;
+    gap: var(--sp-1);
+
+    .btn-ghost { padding-inline: var(--sp-2); }
+  }
+
+  &__status {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+  }
+
+  &__bar-actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--sp-2);
+  }
+
+  /* A refused save. Uses the danger tokens because autosave is suspended behind it —
+     this is the one state in the editor where nothing is being persisted. */
+  &__conflict {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    flex-wrap: wrap;
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-4);
+    border: 1px solid var(--c-danger);
+    border-radius: var(--card-radius);
+    background: color-mix(in srgb, var(--c-danger) 12%, var(--card-bg));
+
+    strong { font-size: 13px; }
+    p { margin: 2px 0 0; font-size: 12px; color: var(--c-fg-subtle); }
+  }
+
+  &__conflict-actions {
+    display: flex;
+    gap: var(--sp-2);
+    flex-shrink: 0;
+  }
+
+  /* Sits between the toolbar and the panels: the reach of the layout being edited,
+     stated where the editing happens rather than in a tooltip nobody opens. */
+  &__variant-note {
+    margin: calc(-1 * var(--sp-2)) 0 var(--sp-4);
+    font-size: 12px;
+    color: var(--c-fg-subtle);
+  }
+
+  /* ── theme package ─────────────────────────────────────────────────────── */
+
+  /* Collapsed by default — exporting or importing a theme is an occasional act, and
+     open it pushed the preview down on every visit. */
+  &__theme {
+    padding: var(--sp-3) var(--sp-4);
+    margin-bottom: var(--sp-4);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+  }
+
+  &__theme-title {
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__theme-hint {
+    font-size: 12px;
+    color: var(--c-fg-muted);
+    margin: 4px 0 var(--sp-3);
+    max-width: 720px;
+  }
+
+  /* Names what the site inherits from — an admin who cannot see which theme is
+     installed cannot reason about what "Revert to theme" will do. */
+  &__theme-installed {
+    font-size: 12px;
+    color: var(--c-fg);
+    margin: 0 0 var(--sp-3);
+
+    span { color: var(--c-fg-subtle); }
+  }
+
+  &__theme-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+
+    .acp-input { width: auto; min-width: 130px; flex: 0 1 160px; }
+  }
+
+  /* Sits in the export row beside the manifest fields, because it changes what the
+     export CONTAINS rather than what it is called. */
+  &__theme-check {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: 12px;
+    color: var(--c-fg-subtle);
+    white-space: nowrap;
+    cursor: pointer;
+    button { white-space: nowrap; }
+  }
+
+  /* ── panes ─────────────────────────────────────────────────────────────── */
+
+  /* Two columns: structure and block settings stack in a single
+     narrow rail so the preview — the thing an admin is actually judging — gets
+     the whole remaining width. */
+  &__grid {
+    display: grid;
+    grid-template-columns: 300px minmax(0, 1fr);
+    gap: var(--sp-4);
+    align-items: start;
+  }
+
+  &__rail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    position: sticky;
+    top: var(--sp-2);
+    max-height: calc(100vh - var(--sp-8));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  @media (max-width: 1000px) {
+    &__grid { grid-template-columns: minmax(0, 1fr); }
+    &__rail { position: static; max-height: none; overflow: visible; }
+  }
+
+  &__tree,
+  &__props {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    padding: var(--sp-4);
+  }
+
+  &__pane-title {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    margin-bottom: var(--sp-3);
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  /* ── structure tree ────────────────────────────────────────────────────── */
+
+  &__region { margin-bottom: var(--sp-4); }
+
+  &__region-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--c-fg);
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--c-rowline);
+    margin-bottom: var(--sp-2);
+  }
+
+  /* Nesting depth arrives as `--lay-depth` from the renderer, so the indent maths
+     stays here rather than becoming inline pixel values in the component. */
+  &__empty,
+  &__node,
+  &__picker,
+  &__children,
+  &__dropline { --lay-depth: 1; }
+
+  &__empty {
+    font-size: 11.5px;
+    color: var(--c-fg-subtle);
+    padding: var(--sp-2) 0;
+    padding-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+  }
+
+  &__node {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 6px 8px;
+    padding-left: calc(8px + (var(--lay-depth) - 1) * var(--sp-4));
+    border-radius: var(--radius-sm);
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 12.5px;
+
+    &:hover { background: var(--c-accent-soft); }
+    &.is-selected { background: var(--c-accent-soft); border-color: var(--c-accent); }
+    /* A block whose plugin is disabled stays in the document — it is skipped at
+       render, never deleted, so re-enabling restores it where the admin put it. */
+    &.is-missing { color: var(--c-fg-subtle); font-style: italic; }
+    /* A container reads as a heading for the rows beneath it. */
+    &.is-container { font-weight: 600; }
+  }
+
+  /* Children of a container. The rule marks the nesting so a deep tree stays
+     readable in a 300px rail, where indentation alone stops being legible. */
+  &__children {
+    position: relative;
+    min-height: var(--sp-4);
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: calc(var(--lay-depth) * var(--sp-4) - 4px);
+      width: 1px;
+      background: var(--c-rowline);
+    }
+  }
+
+  &__node-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Drag-and-drop. The ↑/↓ buttons remain the keyboard path — drag is an
+     accelerator, never the only way to reorder. */
+
+  &__node[draggable="true"] { cursor: grab; }
+  &__node.is-dragging { opacity: 0.4; cursor: grabbing; }
+
+  /* Sits exactly where the block will land — across regions, and at the depth of
+     the list it is landing in. */
+  &__dropline {
+    height: 2px;
+    margin: 2px 0;
+    margin-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+    border-radius: 2px;
+    background: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-soft);
+  }
+
+  &__node-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+
+    button {
+      background: none;
+      border: none;
+      color: var(--c-fg-subtle);
+      cursor: pointer;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 11px;
+
+      &:hover:not(:disabled) { color: var(--c-fg); background: var(--c-bg-hover); }
+      &:disabled { opacity: 0.3; cursor: not-allowed; }
+    }
+  }
+
+  &__danger:hover:not(:disabled) { color: var(--c-danger) !important; }
+
+  /* Marks a block whose audience is narrowed. The preview deliberately still
+     renders it, so this is the only place the condition is visible. */
+  &__node-restricted {
+    margin-left: 6px;
+    font-size: 10px;
+    color: var(--c-fg-subtle);
+    cursor: help;
+  }
+
+  /* ── audience ──────────────────────────────────────────────────────────── */
+
+  &__vis {
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--c-rowline);
+  }
+
+  &__vis-title {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--c-fg);
+    margin-bottom: var(--sp-2);
+  }
+
+  &__vis-row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 3px 0;
+    font-size: 12.5px;
+    cursor: pointer;
+
+    input { cursor: pointer; }
+  }
+
+  &__vis-groups {
+    margin: var(--sp-2) 0 0 var(--sp-4);
+    padding-left: var(--sp-3);
+    border-left: 1px solid var(--c-rowline);
+  }
+
+  &__vis-warn { color: var(--c-warn); }
+
+  &__vis-note { margin-top: var(--sp-2); }
+
+  /* ── style variant (click-to-scope) ────────────────────────────────────── */
+
+  &__style {
+    margin-top: var(--sp-4);
+    padding-top: var(--sp-3);
+    border-top: 1px solid var(--c-rowline);
+  }
+
+  &__style-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--sp-4);
+  }
+
+  &__style-tokens {
+    margin-top: var(--sp-3);
+    padding: var(--sp-3);
+    border: 1px solid var(--c-rowline);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+  }
+
+  /* Says which look and which theme is being recoloured — without it the panel looks
+     like it is editing the block, which is the misunderstanding it exists to prevent. */
+  &__style-scope {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    margin-bottom: var(--sp-3);
+  }
+
+  &__style-token { margin-bottom: var(--sp-3); }
+
+  &__style-token-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    font-size: 12px;
+    color: var(--c-fg-muted);
+    margin-bottom: 4px;
+  }
+
+  &__style-token-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+
+    input[type="color"] {
+      width: 34px;
+      height: 30px;
+      flex-shrink: 0;
+      padding: 2px;
+      background: transparent;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+
+    .acp-input {
+      min-width: 0;
+      font-family: var(--ff-mono, monospace);
+      font-size: 12px;
+    }
+  }
+
+  &__style-reset {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--c-accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── block picker ──────────────────────────────────────────────────────── */
+
+  &__picker {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--sp-2);
+    margin-bottom: var(--sp-2);
+    /* Indented like the rows it will add to, so it is obvious whether a block is
+       about to land in the region or inside the container above it. */
+    margin-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+    border: 1px dashed var(--c-border-hi);
+    border-radius: var(--radius-md);
+  }
+
+  &__picker-search {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding-bottom: var(--sp-2);
+    color: var(--c-fg-subtle);
+
+    .acp-input { flex: 1; min-width: 0; font-size: 12.5px; padding: 4px 8px; }
+  }
+
+  /* The list scrolls, not the panel: a template can offer thirty blocks, and letting
+     the picker grow to fit them pushes the tree — and the preview beside it — down
+     the page every time the + is clicked. The search field stays put above it. */
+  &__picker-list {
+    max-height: 320px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  &__picker-group + &__picker-group { margin-top: var(--sp-2); }
+
+  &__picker-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--c-fg-subtle);
+    padding: 2px 6px;
+  }
+
+  &__picker-item {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    width: 100%;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    padding: 5px 6px;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg);
+    font-size: 12.5px;
+
+    /* Hover and the keyboard cursor are the same state deliberately — the pointer
+       moves the cursor, so there is only ever one highlighted row to commit. */
+    &:hover,
+    &.is-active { background: var(--c-accent-soft); }
+
+    span {
+      font-size: 10.5px;
+      color: var(--c-fg-subtle);
+      font-family: monospace;
+      /* Long block types must not push the label out of the row. */
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 45%;
+    }
+  }
+
+  /* ── preview ───────────────────────────────────────────────────────────── */
+
+  &__preview {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    padding: var(--sp-4);
+    position: relative;
+
+    iframe {
+      width: 100%;
+      height: calc(100vh - 230px);
+      min-height: 560px;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-md);
+      background: var(--c-bg);
+    }
+  }
+
+  &__preview-url {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: var(--c-fg-subtle);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+
+  /* ── props ─────────────────────────────────────────────────────────────── */
+
+  &__props-head {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--c-fg);
+    margin-bottom: var(--sp-3);
+  }
+}

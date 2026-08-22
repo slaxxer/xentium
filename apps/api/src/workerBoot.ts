@@ -7,13 +7,12 @@ import { startEmailNotificationWorker }       from './jobs/emailNotification.js'
 import { startBanExpiryWorker }               from './jobs/banExpiry.js';
 import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
-import { startLicenseRefreshWorker }          from './jobs/licenseRefresh.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
-import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule } from './jobs/scheduledJobs.js';
+import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule, removeRetiredSchedulers } from './jobs/scheduledJobs.js';
 import { initializeEnabledPlugins }           from './core/plugin-engine/plugin-engine.js';
 
 // Each worker gets failure logging + dead-letter (error_log) + admin-notify
@@ -35,7 +34,6 @@ function startWorkers() {
     attachFailureHandler(startBanExpiryWorker(),              'ban-expiry'),
     attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
     attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
-    attachFailureHandler(startLicenseRefreshWorker(),         'license-refresh'),
     attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
     attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
     attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
@@ -47,6 +45,13 @@ function startWorkers() {
 // (ACP → System → Scheduled Tasks). A disabled job is removed from the scheduler.
 // A bad saved config never crashes boot — it's logged and that job is skipped.
 async function scheduleJobs() {
+  // Retired schedulers first: a job definition that no longer exists is never
+  // visited by the loop below, so its Redis repeat entry would keep firing into
+  // a queue with no worker. Best-effort — a failure here must not stop the jobs
+  // that DO exist from being scheduled.
+  await removeRetiredSchedulers().catch((err) =>
+    console.error('[worker] failed to remove retired schedulers:', (err as Error)?.message ?? err));
+
   for (const def of SCHEDULED_JOBS) {
     try {
       await applyJobSchedule(def, await getJobConfig(def));
@@ -81,12 +86,14 @@ async function boot() {
   }
   console.log(`[worker] up, ${workers.length} worker(s) running, plugins loaded, scheduled jobs registered`);
 
-  // Run the marketplace update check once on boot so a critical plugin patch
-  // surfaces immediately instead of waiting up to ~24h for the next daily run —
-  // matters most right after a worker restart following an update deploy.
+  // Run the update-check HALF of the marketplace sync once on boot so a critical
+  // plugin patch surfaces immediately instead of waiting up to ~24h for the next
+  // daily run — matters most right after a worker restart following an update
+  // deploy. Deliberately NOT the full sync: refreshLicense() has no refreshAfter
+  // guard, so including it would call the license server on every restart.
   // Best-effort and non-blocking (processUpdateCheck self-guards dev/no-token and
   // keeps the last cache when the marketplace is unreachable). Honors the admin's
-  // ACP → Scheduled Tasks toggle: if update-check is disabled, the boot check is
+  // ACP → Scheduled Tasks toggle: if the sync job is disabled, the boot check is
   // skipped too, so turning it off silences update checking entirely.
   const updateDef = SCHEDULED_JOBS.find((d) => d.key === "update-check");
   if (updateDef) {

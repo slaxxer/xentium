@@ -294,6 +294,16 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   // Call plugin's onEnable hook if it has a server entry
   await callPluginHook(record, "onEnable");
 
+  /**
+   * If the hook registered layout templates, documents stored for them were being
+   * skipped while the plugin was off (`loadScope` ignores an unregistered key) and
+   * the memoized map still reflects that. Busting is cheap and unconditional here
+   * because the alternative is a page that renders its code default for up to 30
+   * seconds after the plugin comes back — reported as "my layout was lost".
+   */
+  const { layoutService } = await import("../../modules/layouts/layout.service.js");
+  layoutService.bustCache();
+
   logger.info({ pluginId }, "Plugin enabled");
 }
 
@@ -330,6 +340,23 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   // Deregister any plugin security scans
   const { securityScanRegistry } = await import("../security/security-scan-registry.js");
   securityScanRegistry.deregister(pluginId);
+
+  /**
+   * Layout templates the plugin declared (ADR-0005 Amendment 3).
+   *
+   * The stored documents are deliberately left in place — an admin's arrangement of
+   * a forum page must survive the forum being turned off and on, exactly as an
+   * unknown block survives in a document. The cache has to be busted because the
+   * published map is memoized per template key, and a disabled plugin's template
+   * must stop being served immediately rather than up to 30 seconds later.
+   */
+  const { deregisterTemplatesFor } = await import("@nodevo/contracts");
+  const droppedTemplates = deregisterTemplatesFor(pluginId);
+  if (droppedTemplates.length) {
+    const { layoutService } = await import("../../modules/layouts/layout.service.js");
+    layoutService.bustCache();
+    logger.info({ pluginId, templates: droppedTemplates }, "Plugin layout templates deregistered");
+  }
 
   // Deactivate plugin-owned nav items
   await prisma.navItem.updateMany({
