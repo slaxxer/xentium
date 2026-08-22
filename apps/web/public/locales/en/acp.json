@@ -841,6 +841,12 @@
         "desc": "The license server rejected the request — the message carries the exact reason.",
         "cause": "Unknown or revoked key, ended license term, no free domain slot, or the license is bound to another domain.",
         "fix": "Read the message: renew the term, free/add a domain slot, or contact marketplace support to move the binding."
+      },
+      "NEC-LICENSE-9010": {
+        "msg": "Install Identity Missing",
+        "desc": "This instance has no install record, so it has no identity to license.",
+        "cause": "The installer never finished, or the ncf_installs row was deleted from the database.",
+        "fix": "Complete the installer. If the install is otherwise healthy, restore the ncf_installs row from a backup — its siteId is what every license is bound to."
       }
     }
   },

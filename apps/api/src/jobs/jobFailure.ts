@@ -5,7 +5,10 @@ import { notificationService } from "../modules/notifications/notification.servi
 import { NEC } from "../shared/errors/nec.js";
 
 // Queues whose final failure pages admins (§55). Others are logged + retained.
-const CRITICAL_QUEUES = new Set(["email-notification", "license-refresh"]);
+// "update-check" carries the license refresh since the two merged (2026-08-22),
+// so it inherits license-refresh's criticality — a silently failing entitlement
+// refresh is exactly the thing an admin needs paging before grace runs out.
+const CRITICAL_QUEUES = new Set(["email-notification", "update-check"]);
 
 /**
  * Attaches reliability handlers to a BullMQ worker:
