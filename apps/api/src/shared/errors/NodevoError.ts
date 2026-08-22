@@ -1,31 +1,9 @@
-import type { NecCode } from './nec.js';
-
-export class NodevoError extends Error {
-  readonly code: NecCode;
-  readonly httpStatus: number;
-  readonly details?: unknown;
-  /** Set false for expected high-frequency rejections (token expiry, guest
-   *  refresh) so errorMiddleware skips the error_log write. Default true. */
-  readonly persist: boolean;
-
-  constructor(opts: { code: NecCode; httpStatus: number; message: string; details?: unknown; persist?: boolean }) {
-    super(opts.message);
-    this.name = 'NodevoError';
-    this.code = opts.code;
-    this.httpStatus = opts.httpStatus;
-    this.details = opts.details;
-    this.persist = opts.persist ?? true;
-  }
-
-  static notFound(message = 'Not found') {
-    return new NodevoError({ code: 'NEC-API-4004', httpStatus: 404, message });
-  }
-
-  static conflict(message = 'Conflict') {
-    return new NodevoError({ code: 'NEC-API-4009', httpStatus: 409, message });
-  }
-
-  static forbidden(message = 'Forbidden') {
-    return new NodevoError({ code: 'NEC-API-4003', httpStatus: 403, message });
-  }
-}
+/**
+ * Moved to `@nodevo/errors` (ADR-0006 — a framework package may not know what a
+ * user, an article, or a page is; this one knows none of them).
+ *
+ * Re-exported from the original path so the ~36 call sites keep working. New
+ * code should import from `@nodevo/errors` directly; this shim goes away once
+ * they have all been moved.
+ */
+export { NodevoError } from "@nodevo/errors";
