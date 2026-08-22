@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import bcrypt from "bcryptjs";
-import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
+import { verifyLegacyPassword, isLegacyScheme } from "./legacyPassword.js";
 
 describe("legacy password verification (migrated accounts)", () => {
   describe("phpass (WordPress / phpBB portable)", () => {

@@ -136,6 +136,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@nodevo/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@nodevo/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -447,6 +450,40 @@ importers:
       '@playwright/test':
         specifier: ^1.50.0
         version: 1.60.0
+
+  packages/auth:
+    dependencies:
+      '@nodevo/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@nodevo/errors':
+        specifier: workspace:*
+        version: link:../errors
+      argon2:
+        specifier: 'catalog:'
+        version: 0.41.1
+      bcryptjs:
+        specifier: ^3.0.3
+        version: 3.0.3
+      jose:
+        specifier: 'catalog:'
+        version: 6.2.3
+    devDependencies:
+      '@nodevo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/express':
+        specifier: ^5
+        version: 5.0.6
+      express:
+        specifier: 'catalog:'
+        version: 5.2.1
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
 
   packages/config: {}
 
