@@ -145,6 +145,9 @@ importers:
       '@nodevo/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@nodevo/plugin-engine':
+        specifier: workspace:*
+        version: link:../../packages/plugin-engine
       '@nodevo/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -612,6 +615,34 @@ importers:
       tsx:
         specifier: ^4.22.3
         version: 4.22.3
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vitest:
+        specifier: 'catalog:'
+        version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
+
+  packages/plugin-engine:
+    dependencies:
+      '@nodevo/contracts':
+        specifier: workspace:*
+        version: link:../contracts
+      '@nodevo/errors':
+        specifier: workspace:*
+        version: link:../errors
+      zod:
+        specifier: 'catalog:'
+        version: 4.4.3
+    devDependencies:
+      '@nodevo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/express':
+        specifier: ^5
+        version: 5.0.6
+      express:
+        specifier: 'catalog:'
+        version: 5.2.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3

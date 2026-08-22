@@ -18,6 +18,7 @@
     "@nodevo/auth": "workspace:*",
     "@nodevo/contracts": "workspace:*",
     "@nodevo/errors": "workspace:*",
+    "@nodevo/plugin-engine": "workspace:*",
     "@nodevo/plugin-sdk": "workspace:*",
     "@nodevo/sdk": "workspace:*",
     "@nodevo/server-kit": "workspace:*",
