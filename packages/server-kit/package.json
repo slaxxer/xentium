@@ -1,12 +1,12 @@
 {
   "name": "@nodevo/server-kit",
   "version": "1.0.0-alpha.0",
-  "private": true,
+  "private": false,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
     "test": "vitest run",
