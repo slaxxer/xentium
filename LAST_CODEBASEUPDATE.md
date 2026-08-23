@@ -60,6 +60,17 @@ licences listed → `owned=true` in the catalogue → download grant → 404 on 
 heartbeat rotates the token once. The ACP renders both licences with seats and
 updates windows, and a lapsed licence refuses to install with a renewal message.
 
+## Docs
+
+- **`docs/marketplace-protocol.md`** (new) — the outbound contract: install
+  binding and why signing pays for it, the canonical string and the four ways to
+  get it wrong, all eight endpoints, rotation on the heartbeat, the two-step
+  download, and the entitlement claim shape. It exists because the claim shape
+  drifted silently once; the doc says so, at the top.
+- `docs/API.md` — the licensing table was rewritten. It still documented
+  `POST /license/activate`, removed 2026-07-18, and had no `/marketplace/owned`,
+  `/updates`, `/install`, `/update` or `/status-summary`.
+
 ## Known, not done
 
 - ACP browse shows one page (limit 20) with no pagination UI — fine at 14

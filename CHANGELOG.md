@@ -14,6 +14,12 @@ it to a new host and nothing needs reissuing.
 - The catalogue marks what you already own, straight from the marketplace — a
   purchase made a minute ago shows up immediately.
 
+### Docs
+- `docs/marketplace-protocol.md` documents the contract between an install and a
+  marketplace — signing, endpoints, token rotation, and the entitlement claim
+  shape. The API reference's licensing section was rewritten; it still listed a
+  manual key-activation route removed in July.
+
 ### Fixed
 - **A licensed plugin could report as unlicensed.** The marketplace signs
   entitlement grants as objects; this side compared them as strings, so an owned
