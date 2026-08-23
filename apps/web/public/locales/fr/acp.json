@@ -278,7 +278,12 @@
     "deleted": "Code supprimé.",
     "enabled": "Mode bêta activé.",
     "disabled": "Mode bêta désactivé.",
-    "saveFailed": "Échec de l'enregistrement. Réessayez."
+    "saveFailed": "Échec de l'enregistrement. Réessayez.",
+    "routesTitle": "Pages publiques",
+    "routesDesc": "Chemins qui restent accessibles lorsque le mode bêta est actif — une page de lancement, par exemple. La racine du site, le panneau d'administration ainsi que les pages de connexion et d'inscription ne peuvent jamais être ouvertes ainsi.",
+    "routesPlaceholder": "/launch",
+    "routesAdd": "Ajouter",
+    "routesRemove": "Supprimer"
   },
   "about": {
     "eyebrow": "Système",

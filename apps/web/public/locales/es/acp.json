@@ -278,7 +278,12 @@
     "deleted": "Código eliminado.",
     "enabled": "Modo beta activado.",
     "disabled": "Modo beta desactivado.",
-    "saveFailed": "Error al guardar. Inténtalo de nuevo."
+    "saveFailed": "Error al guardar. Inténtalo de nuevo.",
+    "routesTitle": "Páginas públicas",
+    "routesDesc": "Rutas que siguen siendo accesibles con el modo beta activado — por ejemplo, una página de lanzamiento. La raíz del sitio, el panel de administración y las páginas de acceso y registro nunca pueden abrirse así.",
+    "routesPlaceholder": "/launch",
+    "routesAdd": "Añadir",
+    "routesRemove": "Quitar"
   },
   "about": {
     "eyebrow": "Sistema",

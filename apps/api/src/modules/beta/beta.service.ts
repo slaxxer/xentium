@@ -1,4 +1,4 @@
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta, normalizeBetaPublicRoutes } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { getSetting } from "../../shared/utils/settings.js";
@@ -13,6 +13,20 @@ function generateCode(): string {
 export const betaService = {
   async isEnabled(): Promise<boolean> {
     return Boolean(await getSetting("beta.enabled", false));
+  },
+
+  /**
+   * Paths that stay reachable while the gate is up.
+   *
+   * Normalised on every READ, not merely on write. `beta.public_routes` can be
+   * set through the generic `PUT /admin/settings/:key`, and a row already in the
+   * table predates any validation added later — so the stored value is treated
+   * as untrusted input and a reserved path cannot be smuggled in behind the
+   * writer's back.
+   */
+  async getPublicRoutes(): Promise<string[]> {
+    const raw = await getSetting<unknown>("beta.public_routes", []);
+    return normalizeBetaPublicRoutes(raw).routes;
   },
 
   /**

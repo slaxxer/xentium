@@ -381,7 +381,12 @@
     "deleted": "Code deleted.",
     "enabled": "Beta mode enabled.",
     "disabled": "Beta mode disabled.",
-    "saveFailed": "Failed to save. Try again."
+    "saveFailed": "Failed to save. Try again.",
+    "routesTitle": "Public pages",
+    "routesDesc": "Paths that stay reachable while beta mode is on — a launch or landing page, for example. The site root, the admin panel and the login and registration pages can never be opened up this way.",
+    "routesPlaceholder": "/launch",
+    "routesAdd": "Add",
+    "routesRemove": "Remove"
   },
   "about": {
     "eyebrow": "System",

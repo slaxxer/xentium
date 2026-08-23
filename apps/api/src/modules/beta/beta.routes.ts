@@ -44,7 +44,16 @@ betaPublicRouter.get("/status", optionalAuth, async (req, res, next) => {
       clearBetaCookie(res);
     }
 
-    res.json({ enabled: true, hasAccess: check.hasAccess, necCode: check.necCode ?? null });
+    // Sent to everyone the gate turns away, because they are the only ones who
+    // need it: the SPA cannot know which paths to let through until it is told.
+    // The list names routes, never content, so it discloses nothing the gate is
+    // holding back.
+    res.json({
+      enabled:      true,
+      hasAccess:    check.hasAccess,
+      necCode:      check.necCode ?? null,
+      publicRoutes: await betaService.getPublicRoutes(),
+    });
   } catch (e) { next(e); }
 });
 
