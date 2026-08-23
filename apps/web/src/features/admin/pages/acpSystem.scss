@@ -112,7 +112,21 @@
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-card);
   /* overflow intentionally visible so custom <Select> menus can escape the card */
-  scroll-margin-top: 84px; /* clears the sticky ACP topbar on scroll-spy jumps */
+}
+
+/* A plugin section's body.
+ *
+ * `.set-card` carries no padding of its own — core's own sections get theirs
+ * from `__head` and `.set-rows`. A plugin supplies only a body, so without this
+ * it rendered flush against all four edges and read as cramped. Same 22px
+ * gutter as the rows above it, so the two line up. */
+.set-card__body {
+  padding: 4px 22px 22px;
+
+  /* The body already provides the gutter, so a `.set-rows` group inside one must
+     not add its own — a plugin section reuses core's row markup to inherit its
+     typography, and would otherwise sit 22px further in than the rows above it. */
+  .set-rows { padding: 0; }
 }
 .set-card__head { display: flex; align-items: center; gap: 14px; padding: 18px 22px 16px; }
 .set-card__icon {

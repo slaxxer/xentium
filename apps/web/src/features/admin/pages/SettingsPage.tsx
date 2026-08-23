@@ -5,11 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faCopy, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { useAutosave, useAnySaving } from "../../../hooks/useAutosave";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
+import { ErrorBoundary } from "../../errors/ErrorBoundary";
+import { slotRegistry } from "../../../plugins/slotRegistry";
 
 // Core landing values → i18n label keys; plugin destinations use their own label.
 const CORE_LANDING_I18N: Record<string, string> = {
@@ -212,6 +214,7 @@ const SECTIONS: Section[] = [
 const DEFAULTS: Record<string, unknown> = {
   "beta.enabled":                       false,
   "beta.admin_key":                     "",
+  "beta.public_routes":                 [],
   "site.name":                          "My Nodevo Site",
   "site.url":                           "",
   "site.description":                   "",
@@ -251,7 +254,6 @@ const DEFAULTS: Record<string, unknown> = {
 export function SettingsPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"general" | "beta">("general");
 
   const { data: settings = [] } = useQuery<Setting[]>({
     queryKey: ["acp-settings"],
@@ -417,37 +419,24 @@ export function SettingsPage() {
     }
   }
 
-  // Scroll-spy: highlight the section nearest the top of the viewport. The ACP
-  // content scrolls with the document, so we listen on window.
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const pluginSections = slotRegistry.getSettingsSections();
+  const panelSaving    = useAnySaving();
   const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
 
-  useEffect(() => {
-    if (activeTab !== "general") return;
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        let current = SECTIONS[0]!.id;
-        for (const s of SECTIONS) {
-          const el = sectionRefs.current[s.id];
-          if (!el) continue;
-          if (el.getBoundingClientRect().top - 120 <= 0) current = s.id; else break;
-        }
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8) {
-          current = SECTIONS[SECTIONS.length - 1]!.id;
-        }
-        setActiveSection(current);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [activeTab]);
-
-  const jump = useCallback((id: string) => {
-    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  /**
+   * Switch section, rather than scroll to it.
+   *
+   * The nav used to be anchors into one very long page: clicking "Members" flung
+   * you past six other sections to reach it, and closing the loop meant scrolling
+   * all the way back. Each entry now SHOWS its own section and nothing else, so
+   * the page is only ever as tall as the thing you asked for.
+   *
+   * The draft is unaffected — it is one form spanning every section, so a field
+   * you edited stays edited (and saved) whether or not it is currently on screen.
+   */
+  const show = useCallback((id: string) => {
+    setActiveSection(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   return (
@@ -458,31 +447,13 @@ export function SettingsPage() {
           <h1 className="pg-title">{t("settings.title")}</h1>
           <p className="pg-sub">{t("settings.subtitle")}</p>
         </div>
-        {activeTab === "general" && <SaveChip saving={saveMutation.isPending} />}
+        {/* One indicator for the whole page. Plugin sections report into it via
+            `useReportSaving` rather than rendering a second chip of their own. */}
+        <SaveChip saving={saveMutation.isPending || panelSaving} />
       </div>
 
-      {/* Tab bar — keeps the General / Beta switch */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 22, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", padding: 3, maxWidth: 320 }}>
-        {(["general", "beta"] as const).map(tab => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1, padding: "7px 14px", borderRadius: "calc(var(--radius-sm) - 2px)",
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-              fontSize: 13, fontWeight: 600, transition: "background .15s, color .15s",
-              background: activeTab === tab ? "var(--c-card)" : "transparent",
-              color: activeTab === tab ? "var(--c-fg)" : "var(--c-fg-muted)",
-            }}
-          >
-            {tab === "general" ? t("settings.tabGeneral") : t("settings.tabBeta")}
-          </button>
-        ))}
-      </div>
 
-      {activeTab === "general" && (
-        <div className="set-layout">
+      <div className="set-layout">
           <nav className="set-secnav">
             <p className="set-secnav__label">{t("settings.onThisPage")}</p>
             {SECTIONS.map((s) => (
@@ -490,21 +461,31 @@ export function SettingsPage() {
                 key={s.id}
                 type="button"
                 className={activeSection === s.id ? "is-active" : ""}
-                onClick={() => jump(s.id)}
+                onClick={() => show(s.id)}
               >
                 <AcpIcon name={s.icon} size={17} />
                 <span>{t(`settings.sections.${s.id}.title`)}</span>
               </button>
             ))}
+            {/* Plugin sections sit under core's, marked with the extensions icon
+                so it is obvious where they came from. Their labels are literals:
+                a plugin's language is its own, and core has nothing to look up. */}
+            {pluginSections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={activeSection === s.id ? "is-active" : ""}
+                onClick={() => show(s.id)}
+              >
+                <AcpIcon name="puzzle" size={17} />
+                <span>{s.label}</span>
+              </button>
+            ))}
           </nav>
 
           <div className="set-content">
-            {SECTIONS.map((section) => (
-              <section
-                key={section.id}
-                className="set-card"
-                ref={(el) => { sectionRefs.current[section.id] = el; }}
-              >
+            {SECTIONS.filter((section) => section.id === activeSection).map((section) => (
+              <section key={section.id} className="set-card">
                 <div className="set-card__head">
                   <div className="set-card__icon"><AcpIcon name={section.icon} size={19} /></div>
                   <div className="set-card__titles">
@@ -528,18 +509,26 @@ export function SettingsPage() {
                 )}
               </section>
             ))}
-          </div>
-        </div>
-      )}
 
-      {activeTab === "beta" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <BetaSettingsPanel draft={draft} set={set} />
+            {/* Core renders the shell so a plugin section cannot look foreign;
+                the plugin supplies only the body. Each is isolated — one broken
+                plugin must not take the whole Settings page down. */}
+            {pluginSections.filter((sec) => sec.id === activeSection).map(({ id, label, description, component: Body }) => (
+              <section key={id} className="set-card">
+                <div className="set-card__head">
+                  <div className="set-card__icon"><AcpIcon name="puzzle" size={19} /></div>
+                  <div className="set-card__titles">
+                    <h3>{label}</h3>
+                    {description && <p>{description}</p>}
+                  </div>
+                </div>
+                <div className="set-card__body">
+                  <ErrorBoundary variant="inline"><Body /></ErrorBoundary>
+                </div>
+              </section>
+            ))}
           </div>
-          <BetaLogCard betaOn={Boolean(draft["beta.enabled"])} />
         </div>
-      )}
     </div>
   );
 }
@@ -670,295 +659,6 @@ function InviteCodesPanel() {
               </div>
             );
           })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Beta settings panel ───────────────────────────────────────────────────────
-
-interface BetaCode {
-  id: string; code: string; note: string | null;
-  redeemerIp: string | null; redeemedAt: string | null; createdAt: string;
-  createdBy:      { username: string };
-  registeredUser: { username: string } | null;
-}
-
-function saveSetting(key: string, value: unknown) {
-  return api.put(`/admin/settings/${encodeURIComponent(key)}`, { value });
-}
-
-function BetaSettingsPanel({
-  draft,
-  set,
-}: {
-  draft: Record<string, unknown>;
-  set: (key: string, value: unknown) => void;
-}) {
-  const { t } = useTranslation("acp");
-  const qc = useQueryClient();
-  const [note,    setNote]    = useState("");
-  const betaOn = Boolean(draft["beta.enabled"]);
-
-  const { data, isLoading } = useQuery<{ data: BetaCode[] }>({
-    queryKey: ["acp-beta-codes"],
-    queryFn:  () => api.get("/admin/beta-codes?limit=50"),
-  });
-
-  // Own mutation — isolated from the general settings save
-  const toggleMut = useMutation({
-    mutationFn: (next: boolean) => saveSetting("beta.enabled", next),
-    onMutate:   (next) => { set("beta.enabled", next); },          // optimistic
-    onError:    (_e, next) => { set("beta.enabled", !next); swalToast(t("beta.saveFailed")); }, // revert
-    onSuccess:  (_r, next) => swalToast(next ? t("beta.enabled") : t("beta.disabled"), "success"),
-  });
-
-  const createMut = useMutation({
-    mutationFn: () => api.post("/admin/beta-codes", { note: note.trim() || undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-beta-codes"] }); setNote(""); swalToast(t("beta.created"), "success"); },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  const revokeMut = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/beta-codes/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-beta-codes"] }); swalToast(t("beta.deleted"), "success"); },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  function copyCode(code: string) {
-    navigator.clipboard.writeText(code).then(() => swalToast(t("beta.copied"), "success"));
-  }
-
-  const codes = data?.data ?? [];
-
-  return (
-    <>
-      {/* Toggle card */}
-      <div className="acp-card" style={{ padding: "24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.modeTitle")}</div>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 16 }}>
-          {t("beta.modeDesc")}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("beta.enable")}</div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2 }}>
-              {t("beta.enableDesc")}
-            </div>
-          </div>
-          <Toggle on={betaOn} onToggle={() => !toggleMut.isPending && toggleMut.mutate(!betaOn)} />
-        </div>
-      </div>
-
-      {/* Beta codes + admin key — dimmed when beta is OFF */}
-      <div style={{ opacity: betaOn ? 1 : 0.5, pointerEvents: betaOn ? "auto" : "none", transition: "opacity .2s" }}>
-
-      {/* Beta codes card */}
-      <div className="acp-card" style={{ padding: "24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.codesTitle")}</div>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 18 }}>
-          {t("beta.codesDesc")}
-        </p>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input
-            className="acp-input"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t("beta.notePlaceholder")}
-            style={{ flex: 1 }}
-          />
-          <button type="button" className="btn-primary btn-sm" disabled={createMut.isPending} onClick={() => createMut.mutate()}>
-            <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("beta.generate")}
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.loading")}</div>
-        ) : codes.length === 0 ? (
-          <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.empty")}</div>
-        ) : (
-          <div style={{ border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            {codes.map((c, i) => {
-              const redeemed = !!c.redeemedAt;
-              return (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < codes.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                  <code style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 700, color: redeemed ? "var(--c-fg-muted)" : "var(--c-accent)", letterSpacing: "0.05em" }}>
-                    {c.code}
-                  </code>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--c-fg-muted)" }}>
-                    {c.note && <span>{c.note}</span>}
-                    {c.registeredUser
-                      ? <span style={{ color: "var(--c-success)" }}>{c.note ? " · " : ""}{t("beta.registeredAs", { username: c.registeredUser.username })}</span>
-                      : redeemed && c.redeemerIp
-                        ? <span>{c.note ? " · " : ""}{t("beta.lockedTo", { ip: c.redeemerIp })}</span>
-                        : null
-                    }
-                  </div>
-                  <span style={{ fontSize: 11, flexShrink: 0, color: c.registeredUser ? "var(--c-success)" : redeemed ? "var(--c-warn)" : "var(--c-fg-muted)" }}>
-                    {c.registeredUser ? t("beta.statusRegistered") : redeemed ? t("beta.statusRedeemed") : t("beta.statusAvailable")}
-                  </span>
-                  {!redeemed && (
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => copyCode(c.code)} title={t("beta.copy")}>
-                      <FontAwesomeIcon icon={faCopy} />
-                    </button>
-                  )}
-                  <button type="button" className="btn-ghost btn-sm" style={{ color: "var(--c-danger)" }} disabled={revokeMut.isPending} onClick={() => revokeMut.mutate(c.id)} title={t("beta.delete")}>
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      </div> {/* end dim wrapper */}
-    </>
-  );
-}
-
-// ── Beta activity log card ────────────────────────────────────────────────────
-
-interface BetaLogEntry {
-  id: string;
-  eventType: "page_visit" | "login" | "failed_redeem";
-  betaCode: string | null;
-  userId: string | null;
-  username: string | null;
-  url: string | null;
-  ip: string | null;
-  userAgent: string | null;
-  createdAt: string;
-}
-
-function parseDevice(ua: string | null): string {
-  if (!ua) return "Unknown";
-  if (/mobile/i.test(ua)) return "Mobile";
-  if (/tablet/i.test(ua)) return "Tablet";
-  return "Desktop";
-}
-
-function parseBrowser(ua: string | null): string {
-  if (!ua) return "";
-  if (/Firefox\//.test(ua))  return "Firefox";
-  if (/Edg\//.test(ua))      return "Edge";
-  if (/Chrome\//.test(ua))   return "Chrome";
-  if (/Safari\//.test(ua))   return "Safari";
-  return "Browser";
-}
-
-function shortDate(d: string) {
-  return new Date(d).toLocaleString("en-US", {
-    month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-}
-
-const EVENT_META: Record<string, { labelKey: string; color: string }> = {
-  page_visit:    { labelKey: "beta.eventVisit",   color: "var(--c-accent)"  },
-  login:         { labelKey: "beta.eventLogin",   color: "var(--c-success)" },
-  failed_redeem: { labelKey: "beta.eventBlocked", color: "var(--c-danger)"  },
-};
-
-function BetaLogCard({ betaOn }: { betaOn: boolean }) {
-  const { t } = useTranslation("acp");
-  const [page, setPage] = useState(1);
-
-  const { data, isLoading } = useQuery<{ data: BetaLogEntry[]; meta: { total: number; totalPages: number } }>({
-    queryKey:        ["acp-beta-log", page],
-    queryFn:         () => api.get(`/admin/beta-codes/log?page=${page}&limit=20`),
-    refetchInterval: 15_000,
-  });
-
-  const entries    = data?.data ?? [];
-  const totalPages = data?.meta.totalPages ?? 1;
-
-  return (
-    <div
-      className="acp-card"
-      style={{ padding: "24px", opacity: betaOn ? 1 : 0.5, pointerEvents: betaOn ? "auto" : "none", transition: "opacity .2s" }}
-    >
-      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>
-        {t("beta.logTitle")}
-      </div>
-      <p style={{ fontSize: 12, color: "var(--c-fg-muted)", marginBottom: 16 }}>
-        {t("beta.logDesc")}
-      </p>
-
-      {isLoading ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.loading")}</div>
-      ) : entries.length === 0 ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.logEmpty")}</div>
-      ) : (
-        <div style={{ maxHeight: 455, overflowY: "auto", paddingRight: 4 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {entries.map((e) => {
-            const meta      = EVENT_META[e.eventType];
-            const eventLabel = meta ? t(meta.labelKey) : e.eventType;
-            const eventColor = meta?.color ?? "var(--c-fg-muted)";
-            const isFailed  = e.eventType === "failed_redeem";
-            const device    = parseDevice(e.userAgent);
-            const browser   = parseBrowser(e.userAgent);
-
-            return (
-              <div
-                key={e.id}
-                style={{
-                  padding:      "9px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  background:   isFailed ? "rgba(248,113,113,0.07)" : "var(--c-surface)",
-                  border:       `1px solid ${isFailed ? "rgba(248,113,113,0.25)" : "var(--c-border)"}`,
-                  marginBottom: 4,
-                }}
-              >
-                {/* Top row: badge + url/event + time */}
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
-                    background: `${eventColor}20`, color: eventColor, border: `1px solid ${eventColor}30`,
-                    flexShrink: 0,
-                  }}>
-                    {eventLabel}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: isFailed ? "var(--c-danger)" : "var(--c-fg)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {e.url ?? (e.eventType === "login" ? t("beta.loggedIn") : e.eventType === "failed_redeem" ? t("beta.blockedAttempt") : "—")}
-                  </span>
-                  <span style={{ fontSize: 11, color: "var(--c-fg-muted)", flexShrink: 0 }}>
-                    {shortDate(e.createdAt)}
-                  </span>
-                </div>
-
-                {/* Bottom row: user + code + IP + device */}
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  {e.username && (
-                    <span style={{ fontSize: 11, color: "var(--c-accent)" }}>@{e.username}</span>
-                  )}
-                  {e.betaCode && (
-                    <code style={{ fontSize: 10, color: "var(--c-fg-muted)" }}>{e.betaCode}</code>
-                  )}
-                  {e.ip && (
-                    <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>📍 {e.ip}</span>
-                  )}
-                  {e.userAgent && (
-                    <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>
-                      {device}{browser ? ` · ${browser}` : ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
-          <button type="button" className="btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>{t("beta.prev")}</button>
-          <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>{page} / {totalPages}</span>
-          <button type="button" className="btn-ghost btn-sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t("beta.next")}</button>
         </div>
       )}
     </div>

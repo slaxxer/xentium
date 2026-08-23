@@ -1,7 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
-import { openDialog } from "../lib/dialog";
 import { ToastHost } from "../components/ToastHost";
 import { DialogHost } from "../components/DialogHost";
 import { AppLayout } from "../layouts/AppLayout";
@@ -10,7 +9,6 @@ import { ProfilePage } from "../features/profiles/ProfilePage";
 import { MembersPage } from "../features/members/MembersPage";
 import { AccountPage } from "../features/account/AccountPage";
 import { LoginPage } from "../features/auth/LoginPage";
-import { BetaGatePage } from "../features/auth/BetaGatePage";
 import { RegisterPage } from "../features/auth/RegisterPage";
 import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
 import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
@@ -29,9 +27,7 @@ import { useMaintenance } from "../features/maintenance/useMaintenance";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { api } from "../lib/api";
 import { setBadgeShadows, type GroupShadowConfig } from "../lib/badgeShadow";
-import { authStore } from "../lib/authStore";
-import { applyLogout, useAuth } from "../hooks/useAuth";
-import { useBetaActivityLogger } from "../hooks/useBetaActivityLogger";
+import { useAuth } from "../hooks/useAuth";
 import { useActivityLogger } from "../hooks/useActivityLogger";
 import { applyTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
 import { LAYOUTS_QUERY_KEY, isLayoutPreview } from "../layout/useLayout";
@@ -144,7 +140,6 @@ function useCustomTokens(installed: boolean) {
 function AppGuard() {
   const { pathname } = useLocation();
   const { data, isLoading, error } = useInstallStatus();
-  useBetaActivityLogger();
   useActivityLogger();
   useCustomTokens(!!(data?.installed || (error as any)?.status === 410));
   usePreviewBridge();
@@ -180,65 +175,49 @@ function FeatureGate({ feature, children }: { feature: FeatureKey; children: Rea
   return <>{children}</>;
 }
 
-function BetaGate({ children }: { children: React.ReactNode }) {
-  const qc             = useQueryClient();
-  const prevAccess     = useRef<boolean | null>(null);
+/**
+ * The pathname, tracked THROUGH client-side navigations.
+ *
+ * A root gate sits outside the router, so it has no `useLocation`. Reading
+ * `window.location` once is enough for the install paths (the wizard is a full
+ * page load), but not for the public-route allowance: without a subscription,
+ * one allowed path would render the entire app and every `<Link>` after it
+ * would sail straight past the gate.
+ */
+function useRouterPathname(router: ReturnType<typeof buildRouter>): string {
+  return useSyncExternalStore(
+    (onChange) => router.subscribe(() => onChange()),
+    () => router.state.location.pathname,
+    () => "/",
+  );
+}
 
-  // The gate is inert until the app is installed: pre-install the endpoint is
-  // 503-blocked by the install guard (polling it just spams the console), and
-  // the gate must never hijack the install wizard mid-flow.
-  const { data: install, error: installError } = useInstallStatus();
-  const installed = !!install?.installed || (installError as any)?.status === 410;
-
-  const { data, isLoading } = useQuery<{ enabled: boolean; hasAccess: boolean }>({
-    queryKey:        ["beta-status"],
-    queryFn:         () => api.get("/beta/status"),
-    staleTime:       0,           // always fresh on refetch
-    refetchInterval: 12_000,      // poll every 12 s
-    retry:           false,
-    enabled:         installed,
-  });
-
-  useEffect(() => {
-    const current = data?.hasAccess ?? null;
-    const prev    = prevAccess.current;
-
-    // Detect revocation: was accessible, now blocked (only while beta is still enabled)
-    if (prev === true && current === false && data?.enabled) {
-      (async () => {
-        if (authStore.token) {
-          try { await api.post("/auth/logout"); } catch { /* ignore */ }
-          applyLogout();
-        }
-        openDialog({
-          kind: "alert", icon: "warning",
-          title: "Beta access revoked",
-          body:  "Your beta access has been revoked by an administrator. You have been signed out.",
-        }).then(() => qc.invalidateQueries({ queryKey: ["beta-status"] }));
-      })();
-    }
-
-    prevAccess.current = current;
-  }, [data?.hasAccess, data?.enabled]);
-
-  // Not installed yet (or on the install wizard): pass through untouched.
-  if (!installed || INSTALL_PATHS.has(window.location.pathname)) return <>{children}</>;
-
-  if (isLoading) return LOADING;
-  if (data?.enabled && !data.hasAccess) {
-    return (
-      <BetaGatePage
-        onSuccess={(isNew) => {
-          if (isNew) {
-            window.location.href = "/register";
-          } else {
-            qc.invalidateQueries({ queryKey: ["beta-status"] });
-          }
-        }}
-      />
-    );
-  }
-  return <>{children}</>;
+/**
+ * Plugin gates, composed around the whole app.
+ *
+ * Core no longer knows what a beta is. A gate is a POLICY — "may this visitor
+ * see the site at all" — and policies belong to whatever implements them; the
+ * private-beta one now lives in the launch plugin, which registers here. With no
+ * plugin registered this renders its children and costs nothing.
+ *
+ * `pathname` is threaded down because a gate wraps the router and therefore has
+ * no `useLocation` of its own. Gates nest in `order`, outermost first, so the
+ * first registered gate is the first to get a say.
+ */
+function RootGates({ router, children }: { router: ReturnType<typeof buildRouter>; children: React.ReactNode }) {
+  const pathname = useRouterPathname(router);
+  const gates = slotRegistry.getRootGates();
+  return gates.reduceRight<React.ReactNode>(
+    (inner, { id, component: Gate }) => (
+      // A throwing gate must not black out the site: it loses its say and the
+      // app renders. A gate that fails open is the right failure for a beta —
+      // the alternative is a blank page nobody can get past, including staff.
+      <ErrorBoundary key={id} variant="full">
+        <Gate pathname={pathname}>{inner}</Gate>
+      </ErrorBoundary>
+    ),
+    children,
+  );
 }
 
 function buildRouter() {
@@ -383,7 +362,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
  *  legend-groups query (deduped by key). */
 function BadgeShadowSync() {
   // Inert until installed: pre-install /members/groups is 503-blocked by the
-  // install guard, and firing it just spams the console (same as BetaGate).
+  // install guard, and firing it just spams the console (same as a root gate).
   const { data: install, error: installError } = useInstallStatus();
   const installed = !!install?.installed || (installError as any)?.status === 410;
   const { data } = useQuery<GroupShadowConfig[]>({
@@ -410,9 +389,9 @@ export default function App() {
           document. Inside the provider so the screen can still read auth. */}
       <ErrorBoundary variant="full">
         <MaintenanceGate>
-          <BetaGate>
+          <RootGates router={router}>
             <RouterProvider router={router} />
-          </BetaGate>
+          </RootGates>
         </MaintenanceGate>
       </ErrorBoundary>
       {/* Own feedback primitives: toast stack + confirm/alert dialogs (no swal) */}

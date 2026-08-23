@@ -217,6 +217,68 @@ export interface LayoutTemplateDeclaration {
   pluginId?: string;
 }
 
+// ── Auth guards (§43) ────────────────────────────────────────────────────────
+
+/** What a guard is told about the request. Primitives only: a guard must not be
+ *  handed Express, or it could rewrite the response. */
+export interface AuthGuardRequest {
+  ip:        string;
+  userAgent: string | null;
+  /** Signed cookies, so a guard can read its own (e.g. an invite cookie). */
+  cookies:   Record<string, string>;
+}
+
+/** What a guard may add to `GET /auth/registration-status`. */
+export interface RegistrationStatusPatch {
+  open?:        boolean;
+  mode?:        string;
+  /** Heading + body shown when registration is closed, so the wording belongs to
+   *  the plugin enforcing the policy rather than to core. */
+  closedTitle?: string;
+  closedBody?:  string;
+}
+
+/**
+ * A gate on authentication.
+ *
+ * Core owns identity — passwords, sessions, tokens, groups. It does not own the
+ * question "is this person allowed in right now", which is a POLICY: a private
+ * beta, an allow-list, a paid seat. Implement only the moments you care about.
+ *
+ * Refuse by THROWING a `NodevoError`. A guard never returns a boolean, because a
+ * refusal carries the NEC code and the message the client shows, and those
+ * belong to whoever knows why the answer was no.
+ *
+ * `beforeLogin` and `beforeRegister` propagate their error — that is the point.
+ * The bookkeeping hooks are fire-and-forget: a failure there is logged and never
+ * unwinds an account that already exists.
+ */
+/** `"allow"` = this guard authorised the action; core's own policy is skipped. */
+export type AuthGuardDecision = "allow";
+
+export interface AuthGuard {
+  id: string;
+  /** Staff are passed too — YOUR policy decides whether to exempt them. */
+  beforeLogin?(req: AuthGuardRequest & { userId: string; isStaff: boolean }): Promise<void>;
+  /**
+   * Runs before any row is written.
+   *
+   * Return `"allow"` to AUTHORISE the registration outright — core then skips its
+   * own `auth.registration_mode` gate. A private beta where the invite is the
+   * credential needs this: it must work on a site whose registration is
+   * otherwise closed. Return nothing to express no opinion.
+   */
+  beforeRegister?(req: AuthGuardRequest): Promise<AuthGuardDecision | void>;
+  /** The account now exists — link it to whatever let them in. */
+  afterRegister?(req: AuthGuardRequest & { userId: string }): Promise<void>;
+  /** For your own audit trail. */
+  afterLogin?(req: AuthGuardRequest & { userId: string; isStaff: boolean }): Promise<void>;
+  /** Contribute to the registration-status endpoint; return null to abstain. */
+  registrationStatus?(req: AuthGuardRequest): Promise<RegistrationStatusPatch | null>;
+  /** Cookie names core clears on logout, so you never need the response object. */
+  cookiesToClearOnLogout?: string[];
+}
+
 // ── Host bridge ──────────────────────────────────────────────────────────────
 
 /**
@@ -296,6 +358,12 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    *  than half-registering. Deregistered on disable — stored layouts are KEPT,
    *  so re-enabling restores them. */
   registerLayoutTemplate(template: LayoutTemplateDeclaration): void;
+
+  /** Gate authentication (§43). Core owns identity; a guard owns the policy that
+   *  decides whether a given person may log in or register right now. Refuse by
+   *  throwing. Deregistered on disable — a disabled gate must stop gating, or an
+   *  admin who turns a beta off by disabling its plugin locks everyone out. */
+  registerAuthGuard(guard: AuthGuard): void;
 
   /** Register a periodic security scan, invoked by the core security-analysis
    *  job after its built-in patterns. Use `host.security.createCase` to open

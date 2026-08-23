@@ -609,10 +609,6 @@ export const adminService = {
     "site.description":                    "",
     "site.locale":                         "en",
     "site.timezone":                       "UTC",
-    "beta.enabled":                        false,
-    "beta.admin_key":                      "",
-    "beta.max_codes":                      50,
-    "beta.allow_revocation":               false,
     "auth.registration_mode":              "open",
     "auth.allow_registration":             true,
     "auth.require_email_verification":     true,
@@ -680,9 +676,10 @@ export const adminService = {
   },
 
   async setSetting(key: string, value: unknown) {
-    if (key === "beta.enabled" && value === false) {
-      await prisma.betaAccessLog.deleteMany({});
-    }
+    // No beta special-cases here any more. `beta.*` keys are still ordinary
+    // settings rows, but the plugin that owns the gate validates them on its own
+    // endpoint and normalises again on read — core has no opinion about what a
+    // beta route is, so it cannot be the thing that checks one.
     if (SECRET_SETTING_KEYS.has(key)) {
       // The client renders the mask, so it can echo it back on an unrelated
       // save. Treat that as "leave the stored secret alone" rather than

@@ -5,7 +5,10 @@ interface RegistrationStatus {
   open:           boolean;
   mode:           string;
   inviteRequired: boolean;
-  betaMode:       boolean;
+  /** Set by whatever auth guard closed registration, so the wording belongs to
+   *  the feature enforcing the policy rather than to core. */
+  closedTitle?:   string;
+  closedBody?:    string;
 }
 
 export function useRegistrationStatus() {
@@ -15,5 +18,5 @@ export function useRegistrationStatus() {
     staleTime: 60_000,
     retry: false,
   });
-  return data ?? { open: true, mode: "open", inviteRequired: false, betaMode: false };
+  return data ?? { open: true, mode: "open", inviteRequired: false };
 }
