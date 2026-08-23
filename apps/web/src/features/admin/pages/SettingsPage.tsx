@@ -419,40 +419,23 @@ export function SettingsPage() {
     }
   }
 
-  // Scroll-spy: highlight the section nearest the top of the viewport. The ACP
-  // content scrolls with the document, so we listen on window.
-  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
   const pluginSections = slotRegistry.getSettingsSections();
   const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
 
-  useEffect(() => {
-    let raf = 0;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        // Plugin sections render after core's, so the spy has to walk both or
-        // the nav would stick on the last core section once you scrolled past it.
-        const ids = [...SECTIONS.map((x) => x.id), ...slotRegistry.getSettingsSections().map((x) => x.id)];
-        let current = ids[0]!;
-        for (const id of ids) {
-          const el = sectionRefs.current[id];
-          if (!el) continue;
-          if (el.getBoundingClientRect().top - 120 <= 0) current = id; else break;
-        }
-        if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8) {
-          current = ids[ids.length - 1]!;
-        }
-        setActiveSection(current);
-      });
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    onScroll();
-    return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, []);
-
-  const jump = useCallback((id: string) => {
-    sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  /**
+   * Switch section, rather than scroll to it.
+   *
+   * The nav used to be anchors into one very long page: clicking "Members" flung
+   * you past six other sections to reach it, and closing the loop meant scrolling
+   * all the way back. Each entry now SHOWS its own section and nothing else, so
+   * the page is only ever as tall as the thing you asked for.
+   *
+   * The draft is unaffected — it is one form spanning every section, so a field
+   * you edited stays edited (and saved) whether or not it is currently on screen.
+   */
+  const show = useCallback((id: string) => {
+    setActiveSection(id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   return (
@@ -475,7 +458,7 @@ export function SettingsPage() {
                 key={s.id}
                 type="button"
                 className={activeSection === s.id ? "is-active" : ""}
-                onClick={() => jump(s.id)}
+                onClick={() => show(s.id)}
               >
                 <AcpIcon name={s.icon} size={17} />
                 <span>{t(`settings.sections.${s.id}.title`)}</span>
@@ -489,7 +472,7 @@ export function SettingsPage() {
                 key={s.id}
                 type="button"
                 className={activeSection === s.id ? "is-active" : ""}
-                onClick={() => jump(s.id)}
+                onClick={() => show(s.id)}
               >
                 <AcpIcon name="puzzle" size={17} />
                 <span>{s.label}</span>
@@ -498,12 +481,8 @@ export function SettingsPage() {
           </nav>
 
           <div className="set-content">
-            {SECTIONS.map((section) => (
-              <section
-                key={section.id}
-                className="set-card"
-                ref={(el) => { sectionRefs.current[section.id] = el; }}
-              >
+            {SECTIONS.filter((section) => section.id === activeSection).map((section) => (
+              <section key={section.id} className="set-card">
                 <div className="set-card__head">
                   <div className="set-card__icon"><AcpIcon name={section.icon} size={19} /></div>
                   <div className="set-card__titles">
@@ -531,12 +510,8 @@ export function SettingsPage() {
             {/* Core renders the shell so a plugin section cannot look foreign;
                 the plugin supplies only the body. Each is isolated — one broken
                 plugin must not take the whole Settings page down. */}
-            {pluginSections.map(({ id, label, description, component: Body }) => (
-              <section
-                key={id}
-                className="set-card"
-                ref={(el) => { sectionRefs.current[id] = el; }}
-              >
+            {pluginSections.filter((sec) => sec.id === activeSection).map(({ id, label, description, component: Body }) => (
+              <section key={id} className="set-card">
                 <div className="set-card__head">
                   <div className="set-card__icon"><AcpIcon name="puzzle" size={19} /></div>
                   <div className="set-card__titles">
@@ -544,7 +519,9 @@ export function SettingsPage() {
                     {description && <p>{description}</p>}
                   </div>
                 </div>
-                <ErrorBoundary variant="inline"><Body /></ErrorBoundary>
+                <div className="set-card__body">
+                  <ErrorBoundary variant="inline"><Body /></ErrorBoundary>
+                </div>
               </section>
             ))}
           </div>
