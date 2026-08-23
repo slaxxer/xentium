@@ -1,25 +1,19 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as jose from "jose";
-import type { DeployEnvironment, EntitlementStatus } from "@nodevo/contracts";
+import type { DeployEnvironment, EntitlementGrant, EntitlementStatus } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
-import { env, isProd } from "../../config/env.js";
+import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
-import { getSetting } from "../../shared/utils/settings.js";
-import { decryptSecret } from "../../shared/utils/secretBox.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
+import { getAccountToken, protocolFetch } from "./protocol-client.js";
+import { getSiteDomain, getSiteId, resolveEnvironment } from "./site-identity.js";
 
-/** Map a license-server error response to a coded NodevoError: 5xx = server
- *  trouble (unreachable-class, grace applies), 4xx = an explicit refusal whose
- *  message names the reason (unknown key, term ended, no free slot, …). */
-async function licenseServerError(res: Response): Promise<NodevoError> {
-  const body = await res.json().catch(() => ({}));
-  const message = (body as any).message ?? `License server returned ${res.status}`;
-  return res.status >= 500
-    ? new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message })
-    : new NodevoError({ code: NEC.LICENSE_SERVER_REJECTED, httpStatus: res.status, message });
-}
+// Re-exported so the many callers that ask this module "who am I" keep working;
+// the answers themselves now live in site-identity, which the protocol client
+// can import without a cycle back through here.
+export { getSiteDomain, getSiteId, resolveEnvironment };
 
 // Path to the bundled public key (in packages/sdk — read at repo root).
 // Anchored on REPO_ROOT rather than walking up from import.meta.url: tsup
@@ -31,46 +25,6 @@ const PUBLIC_KEY_PATH = path.resolve(
 );
 
 const GRACE_PERIOD_DAYS = 30;
-
-// ── Domain binding (ADR 0001) ────────────────────────────────────────────────
-
-/**
- * The host this instance is bound to. The admin-configured canonical URL
- * (`site.url`, the same one served in canonical/OG meta) is the source of
- * truth — APP_URL is only the pre-install / unset fallback. Domain-bound
- * licensing must follow what the site claims to be publicly, not a deploy env.
- */
-export async function getSiteDomain(): Promise<string> {
-  const canonical = await getSetting<string>("site.url", "");
-  try {
-    return new URL(canonical || env.APP_URL).host;
-  } catch {
-    return "localhost";
-  }
-}
-
-function isLocalHost(host: string): boolean {
-  const h = host.split(":")[0] ?? host;
-  return (
-    h === "localhost" ||
-    h === "127.0.0.1" ||
-    h === "::1" ||
-    h.endsWith(".local") ||
-    /^10\./.test(h) ||
-    /^192\.168\./.test(h) ||
-    /^172\.(1[6-9]|2\d|3[01])\./.test(h)
-  );
-}
-
-/**
- * Where this instance runs. Domain binding is enforced ONLY in `production`;
- * `development` / `staging` are uncapped and never domain-locked (ADR 0001 §5),
- * which keeps local dev, CI, and staging painless.
- */
-export async function resolveEnvironment(): Promise<DeployEnvironment> {
-  if (!isProd) return "development";
-  return isLocalHost(await getSiteDomain()) ? "staging" : "production";
-}
 
 async function getPublicKey() {
   // LICENSE_PUBLIC_KEY (env) overrides the bundled entitlement-verification key —
@@ -84,11 +38,19 @@ async function getPublicKey() {
   return jose.importSPKI(pem, "RS256");
 }
 
+/**
+ * The claims the marketplace signs. Mirrors its `EntitlementClaims` exactly —
+ * this is the consuming half of a published contract, so a field that drifts
+ * here does not fail loudly, it just quietly stops matching (a `missing`
+ * entitlement for a plugin the site owns).
+ */
 export interface EntitlementPayload {
   siteId:       string;
-  licenseKey:   string;
-  entitlements: string[];   // e.g. ["plugin.nodevo-forum", "plugin.nodevo-seo-tools"]
-  domain?:      string;        // bound host (ADR 0001) — optional for back-compat
+  /** Display reference (`NDV-…`), never the key itself. */
+  licenseRef:   string;
+  entitlements: EntitlementGrant[];
+  /** Reported at issue — display and audit only, gates nothing since v2. */
+  domain?:      string;
   environment?: DeployEnvironment;
   issuedAt:     number;
   expiresAt:    number;
@@ -101,92 +63,46 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
   return payload as unknown as EntitlementPayload;
 }
 
-/** Entitlement JWT for a raw key — used only to REFRESH legacy manual-key
- *  licenses; new activations are account-only. */
-async function fetchEntitlementJwt(licenseKey: string, siteId: string): Promise<string> {
-  const domain      = await getSiteDomain();
-  const environment = await resolveEnvironment();
-
-  const res = await fetch(`${env.LICENSE_SERVER_URL}/activate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    // Domain + environment are sent so the server can enforce the per-domain cap
-    // and bind the issued entitlement to this host (ADR 0001).
-    body: JSON.stringify({ licenseKey, siteId, domain, environment }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => null);
-
-  if (!res) {
-    throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "License server unreachable." });
-  }
-  if (!res.ok) throw await licenseServerError(res);
-
-  const { entitlementJwt } = await res.json() as { entitlementJwt: string };
-  return entitlementJwt;
-}
-
 /**
- * This install's UUID, minted by the installer's finalize step into
- * ncf_installs.siteId. Exported: the single source for anything talking to the
- * license server.
+ * Legacy manual-key refresh.
  *
- * THROWS when there is no install row. It used to fall back to the literal
- * string "dev-site" (a settings key "site.id" was read here historically, but
- * nothing ever wrote it — so every instance reported "dev-site"), and that
- * fallback is a shared identity: activations, per-domain caps and audit trails
- * from every affected install collapse into one bucket on the marketplace.
- * Once entitlements bind to the siteId rather than the hostname it stops being
- * a collision and becomes a license bypass, so an instance with no identity
- * must not be able to talk to the license server at all.
+ * Protocol v1 has no key-entry endpoint: manual key entry was removed from the
+ * ACP on 2026-07-18, and the server that served `/activate` no longer exists.
+ * Rows carrying `activatedVia: "key"` therefore cannot be refreshed by anyone,
+ * and pretending otherwise would just spend the 30-day grace window on requests
+ * to a dead host before failing anyway.
  *
- * Callers that must not be blocked by this (e.g. disconnect, which has to work
- * even when everything else is broken) catch it deliberately.
+ * Refused loudly rather than deleted: an admin who still holds one of these
+ * needs to be told to connect an account, not to watch a licence quietly rot.
  */
-export async function getSiteId(): Promise<string> {
-  const row = await prisma.install.findFirst({ select: { siteId: true } });
-  if (!row?.siteId) {
-    throw new NodevoError({
-      code:       NEC.LICENSE_SITE_ID_MISSING,
-      httpStatus: 503,
-      message:    "This instance has no install identity yet. Finish the installer before connecting a marketplace account.",
-    });
-  }
-  return row.siteId;
+async function fetchEntitlementJwt(): Promise<string> {
+  throw new NodevoError({
+    code:       NEC.LICENSE_SERVER_REJECTED,
+    httpStatus: 410,
+    message:    "Manual license keys can no longer be refreshed. Connect your marketplace account in ACP → Extensions → License.",
+  });
 }
 
 /**
- * Account-token activation (§53): the marketplace holds license keys hashed and
+ * Account activation (§53): the marketplace holds licence keys hashed and
  * activates directly off the connected account — the raw key never travels.
- * Setting key mirrors marketplace-source's `marketplace.<SOURCE_ID>.token`
- * (not imported from there: that module imports us, and a cycle at load time
- * would break the plugin loader's dynamic imports).
+ *
+ * `siteId` is sent in the body AND signed for in the headers. The marketplace
+ * refuses a mismatch: the signature proves which install is calling, the body
+ * says which it claims to be, and one install speaking for another is exactly
+ * what install-binding has to make impossible.
  */
-const MARKETPLACE_TOKEN_KEY = "marketplace.nodevo.io.token";
-
 async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string; keyRef: string }> {
-  const domain      = await getSiteDomain();
-  const environment = await resolveEnvironment();
-
-  const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
-  const stored = (row?.value as string | null) ?? null;
-  const token = stored === null ? null : decryptSecret(stored); // encrypted at rest (A1.5)
-  if (!token) {
-    throw new NodevoError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "No marketplace account is connected. Connect one in ACP \u2192 Extensions \u2192 License." });
-  }
-
-  const res = await fetch(`${env.LICENSE_SERVER_URL}/account/activate`, {
+  const body = await protocolFetch<{ entitlementJwt: string; license?: { keyRef?: string } }>({
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({ siteId, domain, environment }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => null);
-
-  if (!res) {
-    throw new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message: "License server unreachable." });
-  }
-  if (!res.ok) throw await licenseServerError(res);
-
-  const body = await res.json() as { entitlementJwt: string; license?: { keyRef?: string } };
+    path:   "/account/activate",
+    timeoutMs: 10_000,
+    body: {
+      siteId,
+      domain:      await getSiteDomain(),
+      environment: await resolveEnvironment(),
+    },
+  });
   return { jwt: body.entitlementJwt, keyRef: body.license?.keyRef ?? "NVL-account" };
 }
 
@@ -222,7 +138,7 @@ export async function activateFromAccount(): Promise<boolean> {
   });
 
   logger.info(
-    { keyRef, entitlements: claims.entitlements, domain: claims.domain ?? await getSiteDomain() },
+    { keyRef, entitlements: claims.entitlements.map((e) => e.id), domain: claims.domain ?? await getSiteDomain() },
     "License activated from connected marketplace account",
   );
   return true;
@@ -265,8 +181,7 @@ export async function refreshLicense(): Promise<void> {
   // letting the grace window keep a zombie alive. Also converges instances
   // that disconnected before disconnect() learned to do this itself.
   if (license.activatedVia === "account") {
-    const row = await prisma.setting.findUnique({ where: { key: MARKETPLACE_TOKEN_KEY } });
-    if (!row?.value) {
+    if (!(await getAccountToken())) {
       await prisma.license.update({ where: { id: license.id }, data: { status: "deactivated" } });
       logger.info({ licenseId: license.id }, "Account-activated license deactivated — no marketplace account connected");
       return;
@@ -274,8 +189,8 @@ export async function refreshLicense(): Promise<void> {
   }
 
   try {
-    // Account-activated licenses refresh through the account token (the raw
-    // key was never known here); manual keys refresh through /activate.
+    // Account-activated licenses refresh through the signed protocol; manual
+    // keys have no path left at all (see fetchEntitlementJwt).
     // siteId is re-read, not taken from the row: rows activated before the
     // "dev-site" fallback was removed carry that literal — a refresh heals them
     // to the install UUID. If the install row is missing entirely this throws,
@@ -283,7 +198,7 @@ export async function refreshLicense(): Promise<void> {
     const siteId = await getSiteId();
     const jwt = license.activatedVia === "account"
       ? (await fetchAccountEntitlementJwt(siteId)).jwt
-      : await fetchEntitlementJwt(license.licenseKey, siteId);
+      : await fetchEntitlementJwt();
     const claims = await verifyEntitlementJwt(jwt);
 
     await prisma.license.update({
@@ -351,7 +266,10 @@ export async function getEntitlementStatus(pluginId: string): Promise<Entitlemen
 
   try {
     const claims = await verifyEntitlementJwt(license.entitlementJwt);
-    if (!claims.entitlements.includes(`plugin.${pluginId}`)) {
+    // Grants are objects — matching against the array itself silently fails
+    // for every plugin, and "you do not own this" is not a failure mode that
+    // announces itself.
+    if (!claims.entitlements.some((e) => e.id === `plugin.${pluginId}`)) {
       return { ...base, state: "missing" };
     }
     // Production-only domain enforcement (ADR 0001 §5).

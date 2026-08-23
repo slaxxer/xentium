@@ -1,26 +1,60 @@
 import { Worker } from "bullmq";
 import { bullConnection, bullPrefix } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
-import { env } from "../config/env.js";
+import { redis, rkey } from "../infrastructure/redis.js";
 import { bustSettingsCache } from "../shared/utils/settings.js";
-import { decryptSecret } from "../shared/utils/secretBox.js";
 import { logger } from "../infrastructure/logging/logger.js";
+import {
+  acceptRotatedToken, getAccountToken, protocolFetch,
+} from "../core/license-engine/protocol-client.js";
+import { getSiteDomain, getSiteId } from "../core/license-engine/site-identity.js";
 
 /**
  * §16 daily update check-in: report the installed plugin inventory to the
  * marketplace and cache what came back (newer versions, critical flags,
- * renewalRequired). The ACP reads the cache — this is how customers see
- * renewal warnings and critical updates BEFORE something stops working.
- * The same call feeds the marketplace's per-site inventory view.
+ * published advisories). The ACP reads the cache — this is how customers see
+ * advisories and critical updates BEFORE something stops working. The same call
+ * feeds the marketplace's per-site inventory view.
+ *
+ * It is also where the account token ROTATES. Rotation rides the heartbeat
+ * deliberately: it is the one recurring call, so there is no second path that
+ * could hand out a credential nobody stores.
+ *
+ * Which is precisely why it must not run twice at once. It already can: the
+ * worker fires one on boot AND the daily scheduler fires its missed run, in the
+ * same millisecond. Two heartbeats mean two rotations, and the loser's token —
+ * the one the marketplace minted last — is the one written, stranding the
+ * other. Nothing breaks today only because rotation does not yet revoke the
+ * token it replaces; that is an accident, not a design, and this is the same
+ * race that silently signed people out of the portal.
  */
 const UPDATES_SETTING = "marketplace.updates";
 
-export async function processUpdateCheck(): Promise<void> {
-  const tokenRow = await prisma.setting.findUnique({ where: { key: "marketplace.nodevo.io.token" } });
-  const storedToken = (tokenRow?.value as string | null) ?? null;
-  const token = storedToken === null ? null : decryptSecret(storedToken); // encrypted at rest (A1.5)
-  if (!token) return; // no connected account — nothing to check against
+/** Comfortably longer than the call, far shorter than the daily cadence. */
+const LOCK_TTL_SECONDS = 120;
 
+export async function processUpdateCheck(): Promise<void> {
+  if (!(await getAccountToken())) return; // no connected account — nothing to check against
+
+  // Single-flight. NX+EX rather than a check-then-set: two racers must not both
+  // see an unlocked key. A stale lock expires on its own, so a crashed run
+  // costs one skipped heartbeat rather than a stuck one.
+  const lock = rkey("marketplace", "heartbeat");
+  const won = await redis.set(lock, String(Date.now()), "EX", LOCK_TTL_SECONDS, "NX");
+  if (!won) {
+    logger.debug("Marketplace heartbeat already running — skipping this trigger");
+    return;
+  }
+
+  try {
+    await runUpdateCheck();
+  } finally {
+    await redis.del(lock).catch(() => {});
+  }
+}
+
+/** The heartbeat itself. Only ever entered holding the lock above. */
+async function runUpdateCheck(): Promise<void> {
   // Keep the authoritative paid-plugin-id set fresh (drives the license-by-id gate).
   const { marketplaceSource } = await import("../core/license-engine/marketplace-source.js");
   await marketplaceSource.refreshPaidPluginIds().catch(() => {});
@@ -29,28 +63,52 @@ export async function processUpdateCheck(): Promise<void> {
     select: { id: true, name: true, installedVersion: true },
   });
 
-  const res = await fetch(`${env.LICENSE_SERVER_URL}/marketplace/updates`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-    body: JSON.stringify({
-      installed: plugins.map((p) => ({ pluginId: p.id, version: p.installedVersion })),
-    }),
-    signal: AbortSignal.timeout(15_000),
-  }).catch(() => null);
+  interface CheckResponse {
+    updates:    { id: string; latestVersion: string; critical?: boolean }[];
+    advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null }[];
+    token?:     string;
+  }
 
-  if (!res?.ok) {
-    logger.warn({ status: res?.status ?? "unreachable" }, "Marketplace update check failed — keeping last cache");
+  let body: CheckResponse;
+  try {
+    body = await protocolFetch<CheckResponse>({
+      method: "POST",
+      path:   "/updates/check",
+      timeoutMs: 15_000,
+      body: {
+        siteId: await getSiteId(),
+        domain: await getSiteDomain(),
+        installed: plugins.map((p) => ({ id: p.id, kind: "plugin", version: p.installedVersion })),
+      },
+    });
+  } catch (err) {
+    logger.warn({ err }, "Marketplace update check failed — keeping last cache");
     return;
   }
 
-  const body = await res.json() as { updates: { pluginId: string; latestVersion?: string }[] };
+  // Store the replacement BEFORE anything else can fail: the marketplace has
+  // already minted it, and the old one is only valid for a short overlap. A
+  // write skipped because a later step threw is an install that locks itself
+  // out on the next run.
+  await acceptRotatedToken(body.token);
+
   // Enrich with what only this instance knows: the display name and the
   // version currently installed — the ACP renders "Forum 1.0.3 → 1.0.4".
   const byId = new Map(plugins.map((p) => [p.id, p]));
+  // An advisory against something installed is a critical update, whatever the
+  // release itself claims: the marketplace flags severity per advisory, and the
+  // ACP's one "critical" bit is what actually reaches the admin.
+  const advised = new Set(
+    (body.advisories ?? [])
+      .filter((a) => a.severity === "critical" || a.severity === "high")
+      .map((a) => a.target),
+  );
   const updates = (body.updates ?? []).map((u) => ({
-    ...u,
-    name:             byId.get(u.pluginId)?.name ?? u.pluginId,
-    installedVersion: byId.get(u.pluginId)?.installedVersion ?? null,
+    pluginId:         u.id,
+    latestVersion:    u.latestVersion,
+    critical:         u.critical === true || advised.has(u.id),
+    name:             byId.get(u.id)?.name ?? u.id,
+    installedVersion: byId.get(u.id)?.installedVersion ?? null,
   }));
 
   // Stable anchor for "when this exact set of pending updates first appeared".
@@ -78,7 +136,10 @@ export async function processUpdateCheck(): Promise<void> {
   });
   bustSettingsCache(UPDATES_SETTING);
 
-  logger.info({ installed: plugins.length, updates: (body.updates ?? []).length }, "Marketplace update check completed");
+  logger.info(
+    { installed: plugins.length, updates: updates.length, advisories: (body.advisories ?? []).length },
+    "Marketplace update check completed",
+  );
 }
 
 /**

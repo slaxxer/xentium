@@ -1253,7 +1253,7 @@
     "accountTitle": "Marketplace-Konto",
     "connectedBadge": "Verbunden",
     "notConnectedBadge": "Nicht verbunden",
-    "accountDesc": "Dein nodevo.io-Konto ist die Lizenz: verbinde es und deine Lizenz wird automatisch für die Domain dieser Seite aktiviert. Käufe, Installationen und Updates laufen über das Konto — eine manuelle Schlüsseleingabe gibt es nicht.",
+    "accountDesc": "Dein Marketplace-Konto ist die Lizenz: Verbinde es, und jede Lizenz, die du besitzt, wird für DIESE Installation aktiviert. Die Bindung folgt der Installation, nicht der Domain — benenne die Seite um oder zieh sie auf einen neuen Host, es muss nichts neu ausgestellt werden.",
     "fieldAccount": "Konto",
     "fieldConnected": "Verbunden",
     "disconnect": "Trennen",
@@ -1288,7 +1288,8 @@
     "expiryDialogInDays_other": "in {{count}} Tagen",
     "expiryDialogExpiredMarker": "abgelaufen",
     "expiryDialogNote": "Erneuere deine Lizenz im Marktplatz, um eine Unterbrechung kostenpflichtiger Plugins zu vermeiden.",
-    "expiryDialogView": "Lizenz ansehen"
+    "expiryDialogView": "Lizenz ansehen",
+    "entitlementsHint": "Was die signierte Berechtigung dieser Installation derzeit gewährt. Dein Konto besitzt möglicherweise mehr — siehe oben."
   },
   "permissions": {
     "loading": "Lädt…",
@@ -1940,5 +1941,26 @@
     "fieldAuthorUrl": "Autoren-URL",
     "tokensOnly": "Nur Farben",
     "tokensOnlyHint": "Exportiert die Palette ohne Seitenlayouts und Bilder."
+  },
+  "owned": {
+    "title": "Deine Lizenzen",
+    "desc": "Alles, was dieses Marketplace-Konto besitzt, und wie jede Lizenz auf dieser Installation steht.",
+    "count": "{{count}} Lizenz",
+    "count_other": "{{count}} Lizenzen",
+    "empty": "Dieses Konto besitzt noch nichts.",
+    "browse": "Marketplace durchsuchen",
+    "unreachable": "Marketplace nicht erreichbar. Deine installierten Plugins laufen weiter — diese Liste füllt sich, sobald er wieder da ist.",
+    "activeHere": "Hier aktiv",
+    "updatesLapsed": "Updates abgelaufen",
+    "seats": "{{used}} von {{total}} Plätzen belegt",
+    "seatsUnlimited": "Unbegrenzte Plätze",
+    "updatesUntil": "Updates bis {{date}}",
+    "version": "v{{version}} installiert",
+    "versionUpdate": "v{{installed}} installiert → v{{latest}} verfügbar",
+    "install": "Installieren",
+    "installTitle": "{{name}} wird installiert",
+    "manage": "Verwalten",
+    "themes": "Zu den Themes",
+    "noSeat": "Kein freier Platz"
   }
 }
