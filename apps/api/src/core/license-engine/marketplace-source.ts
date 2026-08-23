@@ -235,8 +235,11 @@ class NodevoMarketplaceSource implements MarketplaceSource {
 
   /**
    * THE CHOKEPOINT. The marketplace checks the signature, the account, the
-   * licence and (in production) the seat before it issues a fresh entitlement
-   * and a single-use artifact URL.
+   * licence and the updates window before it issues a fresh entitlement and a
+   * single-use artifact URL.
+   *
+   * Not the seat — that is spent at activation, which is the binding event.
+   * Downloading something you are already bound to does not consume another.
    */
   async authorizeDownload(req: DownloadRequest): Promise<AuthorizedDownload> {
     const body = await protocolFetch<Omit<AuthorizedDownload, "pluginId" | "version">>({
