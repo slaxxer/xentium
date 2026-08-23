@@ -19,9 +19,14 @@ interface MarketplacePlugin {
   name:            string;
   description:     string;
   priceCents:      number;
-  latestVersion:   string;
+  /** Null when the listing exists but nothing has been published yet. */
+  latestVersion:   string | null;
   vendor:          string;
   licenseRequired: boolean;
+  /** The marketplace's answer, present when an account is connected. It knows
+   *  about a purchase made a minute ago; the entitlement JWT only refreshes
+   *  daily, so it does not. */
+  owned?:          boolean;
 }
 
 // PaginatedResponse<MarketplaceListing> (ADR 0001)
@@ -72,9 +77,13 @@ function getPluginColor(pluginId: string): string {
     ?? "var(--c-accent)";
 }
 
+/** Grants are signed as objects (`{id, updatesUntil?}`) — see EntitlementGrant.
+ *  Only the ids are wanted here. */
 function parseEntitlements(jwt: string): string[] {
-  try { return (JSON.parse(atob(jwt.split(".")[1]!)) as any).entitlements ?? []; }
-  catch { return []; }
+  try {
+    const grants = (JSON.parse(atob(jwt.split(".")[1]!)) as any).entitlements ?? [];
+    return grants.map((g: any) => (typeof g === "string" ? g : g?.id)).filter(Boolean);
+  } catch { return []; }
 }
 
 export function MarketplacePage() {
@@ -192,8 +201,14 @@ export function MarketplacePage() {
           const icon      = getPluginIcon(p.id);
           const color     = getPluginColor(p.id);
           const instStatus = installedMap[p.id];
-          const entitled  = entitlements.includes(`plugin.${p.id}`);
+          // Ownership from the marketplace wins when it answered; the local
+          // entitlement JWT is the offline fallback. A plugin bought two
+          // minutes ago is owned but not yet in any entitlement.
+          const entitled  = p.owned ?? entitlements.includes(`plugin.${p.id}`);
           const locked    = p.licenseRequired && !entitled;
+          // A free plugin needs no entitlement — gating it behind one offered
+          // "Buy" for something that costs nothing and installs fine.
+          const installable = (entitled || !p.licenseRequired) && !!p.latestVersion;
 
           return (
             <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1 }}>
@@ -224,7 +239,7 @@ export function MarketplacePage() {
                   <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/installed")}>
                     {t("marketplace.goManage")}
                   </button>
-                ) : entitled ? (
+                ) : installable ? (
                   <button
                     type="button"
                     className="btn-ghost btn-sm"

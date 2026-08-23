@@ -1253,7 +1253,7 @@
     "accountTitle": "Conta do marketplace",
     "connectedBadge": "Conectada",
     "notConnectedBadge": "Não conectada",
-    "accountDesc": "Sua conta nodevo.io é a licença: conecte-a e sua licença é ativada automaticamente para o domínio deste site. Compras, instalações e atualizações são autorizadas pela conta — não há entrada manual de chave.",
+    "accountDesc": "A tua conta do marketplace é a licença: liga-a e cada licença que possuis é ativada para ESTA instalação. A ligação segue a instalação, não o domínio — muda o nome do site ou passa-o para outro servidor e nada precisa de ser reemitido.",
     "fieldAccount": "Conta",
     "fieldConnected": "Conectada em",
     "disconnect": "Desconectar",
@@ -1288,7 +1288,8 @@
     "expiryDialogInDays_other": "em {{count}} dias",
     "expiryDialogExpiredMarker": "expirada",
     "expiryDialogNote": "Renove a sua licença no marketplace para evitar uma interrupção dos plugins pagos.",
-    "expiryDialogView": "Ver licença"
+    "expiryDialogView": "Ver licença",
+    "entitlementsHint": "O que a habilitação assinada concede neste momento a esta instalação. A tua conta pode possuir mais — vê acima."
   },
   "permissions": {
     "loading": "Carregando…",
@@ -1940,5 +1941,26 @@
     "fieldAuthorUrl": "URL do autor",
     "tokensOnly": "Apenas cores",
     "tokensOnlyHint": "Exporta a paleta sem esquemas de página nem imagens."
+  },
+  "owned": {
+    "title": "As tuas licenças",
+    "desc": "Tudo o que esta conta do marketplace possui, e como está cada licença nesta instalação.",
+    "count": "{{count}} licença",
+    "count_other": "{{count}} licenças",
+    "empty": "Esta conta ainda não possui nada.",
+    "browse": "Explorar o marketplace",
+    "unreachable": "Não foi possível contactar o marketplace. Os plugins instalados continuam a funcionar — esta lista preenche-se quando voltar.",
+    "activeHere": "Ativa aqui",
+    "updatesLapsed": "Atualizações expiradas",
+    "seats": "{{used}} de {{total}} lugares usados",
+    "seatsUnlimited": "Lugares ilimitados",
+    "updatesUntil": "Atualizações até {{date}}",
+    "version": "v{{version}} instalada",
+    "versionUpdate": "v{{installed}} instalada → v{{latest}} disponível",
+    "install": "Instalar",
+    "installTitle": "A instalar {{name}}",
+    "manage": "Gerir",
+    "themes": "Ir para Temas",
+    "noSeat": "Sem lugar livre"
   }
 }

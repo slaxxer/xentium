@@ -6,17 +6,27 @@
 import type { PaginatedRequest, PaginatedResponse } from "./pagination.js";
 import type { DeployEnvironment } from "./entitlement.js";
 
-/** A plugin listing in the catalogue mirror shown in ACP → Extensions → Marketplace. */
+/** A listing in the catalogue mirror shown in ACP → Extensions → Marketplace. */
 export interface MarketplaceListing {
   id:              string;
+  kind:            ProductKind;
   name:            string;
   description:     string;
   vendor:          string;
-  latestVersion:   string;
+  /** Null when nothing has been published yet — a listing can exist before its first release. */
+  latestVersion:   string | null;
   priceCents:      number;   // 0 = free
   currency:        string;
   licenseRequired: boolean;
+  category?:       string | null;
+  /** Present only when the catalogue was fetched with a connected account: does
+   *  this account hold a licence for it. The ONE place the marketplace answers
+   *  "do I own this" for a listing the instance may not have installed. */
+  owned?:          boolean;
 }
+
+/** The marketplace sells two kinds of thing. Themes are data, plugins are code. */
+export type ProductKind = "plugin" | "theme";
 
 /** State of the server-side connection to a marketplace account (never exposes the token). */
 export interface MarketplaceConnection {
@@ -29,9 +39,10 @@ export interface MarketplaceConnection {
 export interface DownloadRequest {
   pluginId:    string;
   version:     string;
-  siteId:      string;          // install-time site.id
-  domain:      string;          // APP_URL host
+  siteId:      string;          // install-time site.id — what a licence binds to
+  domain:      string;          // reported metadata only; binds nothing
   environment: DeployEnvironment;
+  kind?:       ProductKind;     // defaults to "plugin"
 }
 
 /**

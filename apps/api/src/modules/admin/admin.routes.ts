@@ -152,6 +152,7 @@ adminRouter.get("/nec-codes", adminGuard, async (_req, res, next) => {
 // Marketplace (ADR 0001) — catalogue mirror + server-side account connection.
 adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listMarketplacePlugins);
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
+adminRouter.get("/marketplace/owned",          adminGuard, adminController.getMarketplaceOwned);
 adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);

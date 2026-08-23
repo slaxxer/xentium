@@ -153,6 +153,41 @@ export const marketplaceService = {
     return marketplaceSource.getConnection();
   },
 
+  /**
+   * What this site's marketplace account OWNS, cross-referenced with what is
+   * actually installed here.
+   *
+   * The ACP could previously only infer ownership from the entitlement JWT,
+   * which lists grants rather than licences: it knows "you may run the Forum
+   * plugin" but not how many seats that licence has, how many are spent, when
+   * updates run out, or that a purchase made ten minutes ago exists at all. It
+   * also says nothing about a licence the account owns and this site has never
+   * activated — the exact case an admin moving a plugin between sites is in.
+   *
+   * `installedVersion`/`updateAvailable` are added here rather than asked of the
+   * marketplace: what is installed is local knowledge, and asking a remote
+   * service to tell us about our own filesystem is how the two drift.
+   */
+  async listOwned() {
+    const licenses = await marketplaceSource.listOwned();
+
+    const installed = await prisma.installedPlugin.findMany({ select: { id: true, installedVersion: true, status: true } });
+    const byId = new Map(installed.map((p) => [p.id, p]));
+
+    return {
+      licenses: licenses.map((l) => {
+        const local = byId.get(l.product.id);
+        return {
+          ...l,
+          installedVersion: local?.installedVersion ?? null,
+          installedStatus:  local?.status ?? null,
+          updateAvailable: !!(local && l.product.latestVersion
+            && compareSemver(l.product.latestVersion, local.installedVersion) > 0),
+        };
+      }),
+    };
+  },
+
   /** Connect the marketplace account, then best-effort auto-activate its license
    *  (§53: manual key entry is the offline fallback — an account without a usable
    *  license connects fine and activates later via refresh/retry). */
