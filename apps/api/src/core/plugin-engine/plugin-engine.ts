@@ -15,6 +15,7 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
+import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js";
 import { pluginRouter } from "./plugin-router.js";
 
 const PLUGIN_STORE = path.join(env.UPLOAD_DIR, "plugins");
@@ -340,6 +341,11 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   // Deregister any plugin security scans
   const { securityScanRegistry } = await import("../security/security-scan-registry.js");
   securityScanRegistry.deregister(pluginId);
+
+  // Auth guards go with the plugin. A disabled beta plugin must not keep gating
+  // logins — that would lock everyone out of a site whose admin just turned the
+  // gate off by disabling it.
+  authGuardRegistry.deregister(pluginId);
 
   /**
    * Layout templates the plugin declared (ADR-0005 Amendment 3).

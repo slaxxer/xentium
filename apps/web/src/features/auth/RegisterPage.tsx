@@ -188,7 +188,7 @@ function PinInput({ value, onChange }: { value: string; onChange: (v: string) =>
 export function RegisterPage() {
   const { t } = useTranslation("auth");
   const { isAuthenticated } = useAuth();
-  const { open: registrationOpen, inviteRequired, betaMode } = useRegistrationStatus();
+  const { open: registrationOpen, inviteRequired, closedTitle, closedBody } = useRegistrationStatus();
   const { data: siteConfig } = useSiteConfig();
   const collectName  = siteConfig?.auth?.collectName ?? false;
   const nameRequired = siteConfig?.auth?.nameRequired ?? false;
@@ -332,12 +332,16 @@ export function RegisterPage() {
         <div className="reg-wizard__right">
           <div className="reg-wizard__content" style={{ textAlign: "center" }}>
             <div className="reg-wizard__step-body">
-              <div className="rw-closed-icon">{betaMode ? "🚧" : "🔒"}</div>
+              {/* An auth guard that closed registration supplies its own wording;
+                  core falls back to the generic copy. That is what lets a beta
+                  say "private beta" without core owning a string for a feature
+                  it does not have. */}
+              <div className="rw-closed-icon">{closedTitle ? "🚧" : "🔒"}</div>
               <h1 className="reg-wizard__title">
-                {betaMode ? t("closed.betaTitle") : t("closed.closedTitle")}
+                {closedTitle ?? t("closed.closedTitle")}
               </h1>
               <p className="reg-wizard__subtitle">
-                {betaMode ? t("closed.betaBody") : t("closed.closedBody")}
+                {closedBody ?? t("closed.closedBody")}
               </p>
               <Link
                 to="/login"

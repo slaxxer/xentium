@@ -3,61 +3,57 @@ import { loginSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, r
 import { login, register, sendRegistrationCode, checkAvailability, requestPasswordReset, confirmPasswordReset } from "./auth.service.js";
 import { rotateSession, revokeSession } from "./auth.tokens.js";
 import { getRequestMeta } from "../../shared/http/requestMeta.js";
-import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME, clearBetaCookie } from "../../shared/http/cookies.js";
+import { setRefreshCookie, clearRefreshCookie, REFRESH_COOKIE_NAME } from "../../shared/http/cookies.js";
+import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { prisma } from "../../infrastructure/db.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { betaService } from "../beta/beta.service.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 
-const BETA_COOKIE = "nv_beta";
 
-/** Public — returns registration mode so the frontend can show/hide the register button and invite field. */
+
+/** The request's user-agent, however Express hands it over. */
+function uaOf(req: Request): string | null {
+  const raw = req.headers["user-agent"];
+  return Array.isArray(raw) ? raw[0] ?? null : (raw ?? null);
+}
+
+/** Staff = admin / supermod / moderator. Passed to guards so THEY decide whether
+ *  a policy exempts staff; core takes no view. */
+async function isStaffUser(userId: string): Promise<boolean> {
+  const groups = await prisma.userGroup.findMany({
+    where: { userId }, select: { group: { select: { key: true } } },
+  });
+  return groups.some((ug) => ["admin", "supermod", "moderator"].includes(ug.group.key));
+}
+
+/**
+ * Public — the frontend uses this to show or hide the register button.
+ *
+ * Core answers for its OWN policy (`auth.registration_mode`) and then lets auth
+ * guards amend it. A private beta used to be branched into this handler; core no
+ * longer knows what a beta is, so the plugin enforcing one supplies both the
+ * answer and the wording shown when it says no.
+ */
 export async function registrationStatusHandler(req: Request, res: Response) {
-  const [mode, betaEnabled] = await Promise.all([
-    getSetting("auth.registration_mode", "open"),
-    betaService.isEnabled(),
-  ]);
+  const mode = await getSetting("auth.registration_mode", "open");
 
-  if (betaEnabled) {
-    const cookieCode = req.signedCookies?.[BETA_COOKIE] as string | undefined;
-
-    // No cookie at all → blocked
-    if (!cookieCode) {
-      return res.json({ open: false, mode: "beta", inviteRequired: false, betaMode: true });
-    }
-
-    // Admin bypass key → never grants registration access
-    const adminKey = (await getSetting("beta.admin_key", "")) as string;
-    if (adminKey && cookieCode === adminKey) {
-      return res.json({ open: false, mode: "beta", inviteRequired: false, betaMode: true });
-    }
-
-    // Check IP validity and whether registration was already completed for this code
-    const record = await prisma.betaCode.findUnique({ where: { code: cookieCode } });
-    if (!record) {
-      return res.json({ open: false, mode: "beta", inviteRequired: false, betaMode: true });
-    }
-    if (record.redeemerIp && record.redeemerIp !== (req.ip ?? "")) {
-      return res.json({ open: false, mode: "beta", inviteRequired: false, betaMode: true });
-    }
-    if (record.registeredUserId) {
-      // Code already consumed — an account exists for this beta code
-      return res.json({ open: false, mode: "beta", inviteRequired: false, betaMode: true });
-    }
-
-    // Valid unredeemed code — allow registration
-    return res.json({ open: true, mode: "beta", inviteRequired: false, betaMode: true });
-  }
-
-  res.json({
+  const base = {
     open:           mode !== "closed",
     mode:           mode as string,
     inviteRequired: mode === "invite",
-    betaMode:       false,
+  };
+
+  const uaRaw = req.headers["user-agent"];
+  const patch = await authGuardRegistry.registrationStatus({
+    ip:        req.ip ?? "",
+    userAgent: Array.isArray(uaRaw) ? uaRaw[0] ?? null : (uaRaw ?? null),
+    cookies:   (req.signedCookies ?? {}) as Record<string, string>,
   });
+
+  res.json({ ...base, ...patch });
 }
 
 export async function sendCodeHandler(req: Request, res: Response) {
@@ -79,8 +75,7 @@ export async function registerHandler(req: Request, res: Response) {
 
   const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed;
   const meta           = getRequestMeta(req, res);
-  const betaCookieCode = (req.signedCookies?.[BETA_COOKIE] as string | undefined) || undefined;
-  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, betaCookieCode, name);
+  const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, name);
   setRefreshCookie(res, result.refreshToken);
   res.status(201).json({ accessToken: result.accessToken, user: result.user });
 }
@@ -107,45 +102,23 @@ export async function loginHandler(req: Request, res: Response) {
   }
   if ("requiresPin" in result) return res.status(200).json({ requiresPin: true });
 
-  // Staff accounts (admin / supermod / moderator) are never gated by beta mode.
-  const userGroups = await prisma.userGroup.findMany({
-    where:  { userId: result.user.id },
-    select: { group: { select: { key: true } } },
-  });
-  const isStaff = userGroups.some((ug) =>
-    ["admin", "supermod", "moderator"].includes(ug.group.key),
-  );
-
-  if (!isStaff) {
-    const betaCheck = await betaService.checkAccess(
-      req.signedCookies?.[BETA_COOKIE],
-      req.ip ?? "",
-    );
-    if (!betaCheck.hasAccess) {
-      throw new NodevoError({
-        code:       betaCheck.necCode ?? NEC.AUTH_BETA_REQUIRED,
-        httpStatus: 403,
-        message:    betaCheck.message ?? "Beta access required",
-      });
-    }
-  }
-
-  // Log beta login event — staff accounts are excluded from beta logs
-  if (!isStaff) {
-    const betaCookieForLog = req.signedCookies?.[BETA_COOKIE] as string | undefined;
-    if (betaCookieForLog) {
-      const uaRaw = req.headers["user-agent"];
-      const ua    = Array.isArray(uaRaw) ? (uaRaw[0] ?? "") : (uaRaw ?? "");
-      betaService.logEvent({
-        eventType: "login",
-        betaCode:  betaCookieForLog,
-        userId:    result.user.id,
-        username:  undefined, // resolved from userId by ACP display
-        ip:        req.ip ?? undefined,
-        userAgent: ua || undefined,
-      });
-    }
-  }
+  /**
+   * Plugin gates decide whether this identity may come in RIGHT NOW.
+   *
+   * Core has verified WHO they are; whether the door is open is a policy, and it
+   * belongs to whatever implements it. `isStaff` is passed rather than acted on:
+   * core does not assume a policy exempts staff, the guard decides. A refusal
+   * throws with the guard's own NEC code, so the client sees why.
+   */
+  const guardReq = {
+    ip:        req.ip ?? "",
+    userAgent: uaOf(req),
+    cookies:   (req.signedCookies ?? {}) as Record<string, string>,
+    userId:    result.user.id,
+    isStaff:   await isStaffUser(result.user.id),
+  };
+  await authGuardRegistry.beforeLogin(guardReq);
+  await authGuardRegistry.afterLogin(guardReq);
 
   setRefreshCookie(res, result.refreshToken);
   res.json({ accessToken: result.accessToken, user: result.user });
@@ -186,7 +159,11 @@ export async function logoutHandler(req: Request, res: Response) {
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
   if (raw) await revokeSession(raw);
   clearRefreshCookie(res);
-  clearBetaCookie(res);   // always clear beta cookie on logout
+  // Cookies plugin gates asked core to drop — a gate's cookie is its own, but
+  // only core holds the response, so it declares the name and core clears it.
+  for (const name of authGuardRegistry.cookiesToClearOnLogout()) {
+    res.clearCookie(name, { path: "/" });
+  }
   res.status(204).end();
 }
 

@@ -1,3 +1,39 @@
+# Plugin ACP surfaces
+
+## Typography and controls — the hard rule
+
+**A plugin's admin surface must be indistinguishable from core's.** Not similar:
+identical font, weights, sizes and spacing. An admin should not be able to tell
+which parts of the ACP came from a plugin.
+
+The only reliable way to get that is to use core's OWN classes and components,
+never to re-implement them. Hand-picked numbers always drift — the launch plugin
+had already ended up at weight 700 where core uses 600, at sizes core does not
+use anywhere.
+
+**Never set `font-family`, `font-weight` or `font-size` in a plugin ACP panel.**
+Use these instead — all global once the ACP is mounted, so a plugin bundle can
+rely on them without importing any core CSS:
+
+| Need | Use |
+|---|---|
+| A setting row | `.set-row` > `.set-row__label` + `.set-row__desc` + `.set-row__control` |
+| A group of rows | `.set-rows` |
+| A card/panel title + subtitle | `.set-card__titles` > `h3` + `p` (works standalone) |
+| Any secondary/description text | `.set-row__desc` |
+| Text input | `.acp-input` · select: `.acp-select` |
+| Buttons | `.btn-primary` / `.btn-ghost` / `.btn-ghost-danger`, plus `.btn-sm` |
+| Toggle, text field, number stepper | `@web/components/AcpControls` |
+
+Externalise the controls like any other host global:
+
+```ts
+"@web/components/AcpControls": `${H}.webAcpControls`,
+```
+
+Plugin-side CSS is for LAYOUT only — flex, grid, gaps, margins. If a rule in a
+plugin stylesheet mentions a font, it is a bug.
+
 # Plugin ACP autosave
 
 How a plugin's admin surfaces persist changes. Nodevo ACP **config** pages have no
@@ -34,16 +70,19 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
 1. **Externalize the bridges** in `vite.config.ts` (alongside the others):
 
    ```ts
-   "@web/hooks/useAutosave":         `${H}.webUseAutosave`,
-   "@web/components/AutosaveStatus": `${H}.webAutosaveStatus`,
+   "@web/hooks/useAutosave":   `${H}.webUseAutosave`,
+   "@web/components/SaveChip": `${H}.webSaveChip`,   // standalone pages only
    ```
+
+   `@web/components/AutosaveStatus` still resolves — it is an alias for
+   `SaveChip` — but new code should import `SaveChip`.
 
 2. **Wire the hook.** The server value is the baseline — `useAutosave` saves when
    the draft diverges from it, after a quiet period (600 ms default):
 
    ```tsx
    import { useAutosave } from "@web/hooks/useAutosave";
-   import { AutosaveStatus } from "@web/components/AutosaveStatus";
+   import { SaveChip } from "@web/components/SaveChip";
 
    const { data } = useQuery({ queryKey: ["myplugin", "settings"], queryFn: … });
    const [form, setForm] = useState<Settings | null>(null);
@@ -61,9 +100,28 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
 3. **Show the indicator** in the page/panel header — it is the affordance that
    replaces the Save button, so it is not optional:
 
+   **A panel nested in a host page reports; it does NOT render a chip.** A
+   plugin section on ACP → Settings sits under a page that already shows one, and
+   two indicators on one screen say the same thing twice — and can disagree while
+   a save is in flight. Report instead:
+
    ```tsx
-   <AutosaveStatus saving={saveMut.isPending} />
+   import { useAutosave, useReportSaving } from "@web/hooks/useAutosave";
+
+   useAutosave({ value: form, savedValue: data, onSave: (v) => saveMut.mutate(v) });
+   useReportSaving(saveMut.isPending);   // the host page's chip speaks for you
    ```
+
+   A **standalone** plugin ACP page — one that owns its own `pg-head` — renders
+   the chip itself, because there is nothing above it to report to:
+
+   ```tsx
+   <SaveChip saving={saveMut.isPending} />
+   ```
+
+   Either way it is core's own component and core's own engine. Do not hand-roll
+   an indicator: there used to be two, and the plugin-facing one was hardcoded
+   English.
 
 ### Rules that keep it correct
 

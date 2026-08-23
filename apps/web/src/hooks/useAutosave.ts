@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useId, useRef, useSyncExternalStore } from "react";
 
 interface AutosaveOptions<T> {
   /** Current draft value (the editable form state). */
@@ -47,4 +47,55 @@ export function useAutosave<T>({ value, savedValue, onSave, delay = 600 }: Autos
     }, delay);
     return () => clearTimeout(t);
   }, [valueJson, savedJson, delay]);
+}
+
+
+// ── Reporting save state UP to a host page ───────────────────────────────────
+
+/**
+ * Who is currently saving, by hook-instance id.
+ *
+ * A panel nested inside a page that ALREADY shows a `SaveChip` — a plugin
+ * section on ACP → Settings, say — should not render a second one. It reports
+ * instead, and the page's single indicator speaks for everything on it. Two
+ * chips on one screen say the same thing twice and can disagree while a save is
+ * in flight.
+ */
+const savers = new Set<string>();
+const listeners = new Set<() => void>();
+let anySaving = false;
+
+function publish(): void {
+  const next = savers.size > 0;
+  // Only wake subscribers when the ANSWER changes, not on every report — two
+  // panels saving at once must not re-render the page twice.
+  if (next === anySaving) return;
+  anySaving = next;
+  for (const fn of listeners) fn();
+}
+
+/**
+ * Report this panel's save state to the host page's indicator.
+ *
+ * Use INSTEAD of rendering a `SaveChip` when the surrounding page already has
+ * one. A standalone ACP page — one that owns its own `pg-head` — should still
+ * render the chip itself; there is nothing above it to report to.
+ */
+export function useReportSaving(saving: boolean): void {
+  const id = useId();
+  useEffect(() => {
+    if (saving) savers.add(id); else savers.delete(id);
+    publish();
+    // Unmounting mid-save must not leave the page stuck reporting "Saving…".
+    return () => { savers.delete(id); publish(); };
+  }, [id, saving]);
+}
+
+/** True while anything on the page has reported itself as saving. */
+export function useAnySaving(): boolean {
+  return useSyncExternalStore(
+    (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
+    () => anySaving,
+    () => false,
+  );
 }
