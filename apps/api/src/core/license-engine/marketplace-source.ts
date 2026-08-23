@@ -33,6 +33,16 @@ import {
 } from "./protocol-client.js";
 
 /**
+ * What the ACP browse list may ask for. `PaginatedRequest` plus a search term,
+ * which the catalogue answers SERVER-side — the shared pagination contract has
+ * no `q`, and adding one there would put a search field on every paginated
+ * endpoint in the product to serve this one caller.
+ */
+export interface MarketplaceListQuery extends PaginatedRequest {
+  q?: string;
+}
+
+/**
  * The set of ids the marketplace sells as PAID. Cached from the catalogue so the
  * licence gate can be authoritative BY ID, rather than trusting a plugin's
  * self-declared manifest `licenseRequired` — which an uploaded package controls.
@@ -172,8 +182,8 @@ class NodevoMarketplaceSource implements MarketplaceSource {
    * a real catalogue. The token rides along when we hold one, and that is what
    * makes `owned` come back populated.
    */
-  async listPlugins(opts: PaginatedRequest): Promise<PaginatedResponse<MarketplaceListing>> {
-    const page = await this.fetchCatalogPage({ page: opts.page, limit: opts.limit });
+  async listPlugins(opts: MarketplaceListQuery): Promise<PaginatedResponse<MarketplaceListing>> {
+    const page = await this.fetchCatalogPage({ page: opts.page, limit: opts.limit, q: opts.q });
     if (!page) {
       // Unreachable / not connected — the ACP browse list is simply blank
       // rather than a fabricated catalogue.
@@ -184,7 +194,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
 
   /** One catalogue page. null when the marketplace couldn't be reached, so
    *  callers never clobber a cached paid-id set with a fallback. */
-  private async fetchCatalogPage(q: { page: number; limit: number }): Promise<PaginatedResponse<MarketplaceListing> | null> {
+  private async fetchCatalogPage(q: { page: number; limit: number; q?: string }): Promise<PaginatedResponse<MarketplaceListing> | null> {
     try {
       return await protocolFetch<PaginatedResponse<MarketplaceListing>>({
         method: "GET",
@@ -194,7 +204,10 @@ class NodevoMarketplaceSource implements MarketplaceSource {
         signed: false,
         optionalToken: true,
         timeoutMs: 8_000,
-        query: { kind: "plugin", page: q.page, limit: q.limit },
+        // `q` is forwarded, never filtered here. The ACP used to search the
+        // FETCHED PAGE in memory, so a plugin on page 2 answered "no results"
+        // for its own name — a worse bug than the truncation it rode along with.
+        query: { kind: "plugin", page: q.page, limit: q.limit, ...(q.q ? { q: q.q } : {}) },
       });
     } catch {
       return null;

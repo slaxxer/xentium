@@ -1178,7 +1178,8 @@
       "validating": "Validando el paquete…",
       "installing": "Instalando…",
       "finalizing": "Finalizando…"
-    }
+    },
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensiones"
   },
   "updates": {
     "title": "Actualizaciones",
