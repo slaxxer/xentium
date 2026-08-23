@@ -1178,7 +1178,8 @@
       "validating": "Paket wird validiert…",
       "installing": "Wird installiert…",
       "finalizing": "Wird abgeschlossen…"
-    }
+    },
+    "pagination": "Seite {{page}} von {{totalPages}} — {{total}} Erweiterungen"
   },
   "updates": {
     "title": "Updates",

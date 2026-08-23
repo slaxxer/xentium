@@ -112,6 +112,11 @@ const errorLogSchema = z.object({
   domain:   z.string().optional(),
 });
 
+/** Browse query: the shared pagination contract plus the catalogue's `q`. */
+const marketplaceListQuerySchema = paginatedRequestSchema.extend({
+  q: z.string().min(1).max(128).optional(),
+});
+
 export const adminController = {
   // Dashboard
   dashboard: (async (_req, res) => {
@@ -360,7 +365,10 @@ export const adminController = {
   // ── Marketplace (ADR 0001) — logic lives in marketplace.service.ts ─────────
 
   listMarketplacePlugins: (async (req, res) => {
-    const opts = paginatedRequestSchema.parse(req.query);
+    // Pagination plus a search term. The catalogue searches server-side; the
+    // ACP used to filter the fetched page in memory, which made a plugin past
+    // the first page unfindable by its own name.
+    const opts = marketplaceListQuerySchema.parse(req.query);
     res.json(await marketplaceService.listPlugins(opts));
   }) as RequestHandler,
 

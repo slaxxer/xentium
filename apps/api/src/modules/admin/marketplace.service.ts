@@ -1,9 +1,9 @@
 import { createHash } from "node:crypto";
-import type { PaginatedRequest } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { compareSemver } from "../../shared/utils/semver.js";
+import type { MarketplaceListQuery } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceSource } from "../../core/license-engine/marketplace-source.js";
 import {
   getSiteDomain, getSiteId, resolveEnvironment,
@@ -145,7 +145,7 @@ async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setS
 }
 
 export const marketplaceService = {
-  listPlugins(opts: PaginatedRequest) {
+  listPlugins(opts: MarketplaceListQuery) {
     return marketplaceSource.listPlugins(opts);
   },
 

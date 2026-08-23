@@ -1313,7 +1313,8 @@
       "validating": "Validating the package…",
       "installing": "Installing…",
       "finalizing": "Finishing up…"
-    }
+    },
+    "pagination": "Page {{page}} of {{totalPages}} — {{total}} extensions"
   },
   "updates": {
     "title": "Updates",
