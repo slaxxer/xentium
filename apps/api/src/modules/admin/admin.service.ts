@@ -16,7 +16,7 @@ import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta, normalizeBetaPublicRoutes } from "@nodevo/contracts";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -682,6 +682,21 @@ export const adminService = {
   async setSetting(key: string, value: unknown) {
     if (key === "beta.enabled" && value === false) {
       await prisma.betaAccessLog.deleteMany({});
+    }
+    if (key === "beta.public_routes") {
+      // Validated here so a typo comes back as an error the admin can read.
+      // `betaService.getPublicRoutes()` normalises again on read — that is the
+      // guarantee; this is the message.
+      const { routes, rejected } = normalizeBetaPublicRoutes(value);
+      if (rejected.length > 0) {
+        throw new NodevoError({
+          code:       "NEC-ADMIN-3010",
+          httpStatus: 422,
+          message:    "One or more beta public routes were refused",
+          details:    { rejected },
+        });
+      }
+      value = routes;
     }
     if (SECRET_SETTING_KEYS.has(key)) {
       // The client renders the mask, so it can echo it back on an unrelated

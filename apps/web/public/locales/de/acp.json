@@ -278,7 +278,12 @@
     "deleted": "Code gelöscht.",
     "enabled": "Beta-Modus aktiviert.",
     "disabled": "Beta-Modus deaktiviert.",
-    "saveFailed": "Speichern fehlgeschlagen. Bitte erneut versuchen."
+    "saveFailed": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "routesTitle": "Öffentliche Seiten",
+    "routesDesc": "Pfade, die im Beta-Modus erreichbar bleiben — etwa eine Launch- oder Landingpage. Die Startseite, das Admin-Panel sowie Login und Registrierung lassen sich so nie freigeben.",
+    "routesPlaceholder": "/launch",
+    "routesAdd": "Hinzufügen",
+    "routesRemove": "Entfernen"
   },
   "about": {
     "eyebrow": "System",

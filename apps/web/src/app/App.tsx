@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { isBetaPublicRoute } from "@nodevo/contracts";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
 import { openDialog } from "../lib/dialog";
 import { ToastHost } from "../components/ToastHost";
@@ -180,9 +181,27 @@ function FeatureGate({ feature, children }: { feature: FeatureKey; children: Rea
   return <>{children}</>;
 }
 
-function BetaGate({ children }: { children: React.ReactNode }) {
+/**
+ * The pathname, tracked THROUGH client-side navigations.
+ *
+ * BetaGate sits outside the router, so it has no `useLocation`. Reading
+ * `window.location` once is enough for the install paths (the wizard is a full
+ * page load), but not for the public-route allowance: without a subscription,
+ * one allowed path would render the entire app and every `<Link>` after it
+ * would sail straight past the gate.
+ */
+function useRouterPathname(router: ReturnType<typeof buildRouter>): string {
+  return useSyncExternalStore(
+    (onChange) => router.subscribe(() => onChange()),
+    () => router.state.location.pathname,
+    () => "/",
+  );
+}
+
+function BetaGate({ router, children }: { router: ReturnType<typeof buildRouter>; children: React.ReactNode }) {
   const qc             = useQueryClient();
   const prevAccess     = useRef<boolean | null>(null);
+  const pathname       = useRouterPathname(router);
 
   // The gate is inert until the app is installed: pre-install the endpoint is
   // 503-blocked by the install guard (polling it just spams the console), and
@@ -190,7 +209,7 @@ function BetaGate({ children }: { children: React.ReactNode }) {
   const { data: install, error: installError } = useInstallStatus();
   const installed = !!install?.installed || (installError as any)?.status === 410;
 
-  const { data, isLoading } = useQuery<{ enabled: boolean; hasAccess: boolean }>({
+  const { data, isLoading } = useQuery<{ enabled: boolean; hasAccess: boolean; publicRoutes?: string[] }>({
     queryKey:        ["beta-status"],
     queryFn:         () => api.get("/beta/status"),
     staleTime:       0,           // always fresh on refetch
@@ -222,10 +241,17 @@ function BetaGate({ children }: { children: React.ReactNode }) {
   }, [data?.hasAccess, data?.enabled]);
 
   // Not installed yet (or on the install wizard): pass through untouched.
-  if (!installed || INSTALL_PATHS.has(window.location.pathname)) return <>{children}</>;
+  if (!installed || INSTALL_PATHS.has(pathname)) return <>{children}</>;
 
   if (isLoading) return LOADING;
-  if (data?.enabled && !data.hasAccess) {
+
+  // Routes an admin has opened up — a launch or landing page exists to be seen
+  // by exactly the people the gate turns away. The allowance can never name
+  // `/`, `/admin` or the auth routes; core normalises it on read, so what
+  // arrives here has already been through `BETA_RESERVED_ROUTES`.
+  const publicRoute = isBetaPublicRoute(pathname, data?.publicRoutes ?? []);
+
+  if (data?.enabled && !data.hasAccess && !publicRoute) {
     return (
       <BetaGatePage
         onSuccess={(isNew) => {
@@ -410,7 +436,7 @@ export default function App() {
           document. Inside the provider so the screen can still read auth. */}
       <ErrorBoundary variant="full">
         <MaintenanceGate>
-          <BetaGate>
+          <BetaGate router={router}>
             <RouterProvider router={router} />
           </BetaGate>
         </MaintenanceGate>
