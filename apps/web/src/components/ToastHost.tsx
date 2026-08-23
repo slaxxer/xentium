@@ -5,10 +5,11 @@ import { faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faXm
 import { subscribeToasts, getToasts, getToastCategoryDef, toast, type ToastItem } from "../lib/toast";
 import "./ToastHost.scss";
 
-// Renders the toast stack (top-right). Mounted once in the app root. Colors
+// Renders the toast stack (bottom centre), styled after the marketplace popup:
+// a neutral card with a colour-coded icon. Mounted once in the app root. Colours
 // resolve --toast-<category> → the semantic feedback tokens, so the Style
 // Editor's Feedback section themes toasts live; custom plugin categories carry
-// their registered color/icon and otherwise render as info.
+// their registered colour/icon and otherwise render as info.
 
 const CORE_ICONS: Record<string, IconDefinition> = {
   success: faCircleCheck,

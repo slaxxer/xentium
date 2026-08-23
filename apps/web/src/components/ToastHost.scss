@@ -1,17 +1,28 @@
-/* Toast stack — top-right, above everything (incl. ModCanvas). All colors are
- * tokens: --toast-<cat> falls back to the semantic feedback palette, so the
- * Style Editor Feedback section (and Custom CSS `--toast-*` overrides) theme
- * toasts live. */
+/* Toast stack — bottom centre, above everything (incl. ModCanvas).
+ *
+ * Styled after the marketplace's popup: a NEUTRAL card with a coloured icon,
+ * rather than a surface washed in the category colour. The colour says which
+ * kind of message this is; it does not need to repaint the whole card to do it,
+ * and a neutral surface stays legible against any page behind it.
+ *
+ * All colours are still tokens: `--toast-<cat>` falls back to the semantic
+ * feedback palette, so the Style Editor's Feedback section (and Custom CSS
+ * `--toast-*` overrides) theme toasts live.
+ */
 
 .nv-toasts {
   position: fixed;
-  top: 16px;
-  right: 16px;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
   z-index: 10000;
   display: flex;
+  /* Bottom-anchored, so a new toast appears nearest the edge and pushes older
+     ones up — the direction the eye is already travelling. */
   flex-direction: column;
+  align-items: center;
   gap: 10px;
-  width: min(360px, calc(100vw - 32px));
+  max-width: min(560px, calc(100vw - 32px));
   pointer-events: none;
 }
 
@@ -19,20 +30,21 @@
   --_toast-c: var(--toast-info, var(--c-info));
   position: relative;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
-  padding: 12px 14px 14px;
-  /* Category-tinted surface: soft wash of the category colour over the card
-   * bg (adapts to light/dark), full border in the category colour. */
-  background: color-mix(in srgb, var(--_toast-c) 12%, var(--toast-bg, var(--c-card)));
+  padding: 13px 22px;
+  /* Neutral surface + a strong hairline, exactly as the marketplace popup. */
+  background: var(--toast-bg, var(--c-card));
   color: var(--toast-fg, var(--c-fg));
   font-family: var(--ff-sans);   // follow the Style Editor font choice
-  border: 1px solid color-mix(in srgb, var(--_toast-c) 55%, transparent);
-  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  font-weight: 600;
+  border: 1px solid var(--c-border-hi);
+  border-radius: 14px;
   box-shadow: var(--shadow-pop);
   overflow: hidden;
   pointer-events: auto;
-  animation: nv-toast-in 0.22s ease-out;
+  animation: nv-toast-in 0.25s ease-out;
 
   &--success { --_toast-c: var(--toast-success, var(--c-success)); }
   &--warning { --_toast-c: var(--toast-warning, var(--c-warn)); }
@@ -41,13 +53,13 @@
 
   &__icon {
     color: var(--_toast-c);
-    font-size: 15px;
-    line-height: 1.4;
+    font-size: 18px;
+    line-height: 1;
     flex-shrink: 0;
   }
-  &__body  { flex: 1; min-width: 0; }
-  &__title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
-  &__msg   { font-size: 13px; line-height: 1.45; overflow-wrap: break-word; }
+  &__body  { min-width: 0; }
+  &__title { font-size: 13.5px; font-weight: 700; margin-bottom: 2px; }
+  &__msg   { font-size: 13.5px; font-weight: 600; line-height: 1.45; overflow-wrap: break-word; }
   &__action {
     margin-top: 8px;
     padding: 3px 10px;
@@ -63,7 +75,6 @@
   }
   &__count {
     flex-shrink: 0;
-    align-self: center;
     padding: 1px 7px;
     border-radius: 100px;
     font-size: 11px;
@@ -77,6 +88,8 @@
     place-items: center;
     width: 22px;
     height: 22px;
+    /* Nudged into the roomier horizontal padding so it does not crowd the text. */
+    margin-right: -8px;
     padding: 0;
     color: var(--c-fg-subtle);
     background: transparent;
@@ -101,9 +114,10 @@
   &.is-paused &__progress { animation-play-state: paused; }
 }
 
+/* Rises from below, because that is the edge it is anchored to. */
 @keyframes nv-toast-in {
-  from { opacity: 0; transform: translateX(14px); }
-  to   { opacity: 1; transform: translateX(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
 }
 @keyframes nv-toast-progress {
   from { transform: scaleX(1); }
