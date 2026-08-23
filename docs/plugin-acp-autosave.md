@@ -34,16 +34,20 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
 1. **Externalize the bridges** in `vite.config.ts` (alongside the others):
 
    ```ts
-   "@web/hooks/useAutosave":         `${H}.webUseAutosave`,
-   "@web/components/AutosaveStatus": `${H}.webAutosaveStatus`,
+   "@web/hooks/useAutosave":    `${H}.webUseAutosave`,
+   "@web/components/SaveChip":  `${H}.webSaveChip`,
    ```
+
+   `@web/components/AutosaveStatus` still resolves — it is an alias for
+   `SaveChip` — but new code should import `SaveChip`, which is the name core's
+   own pages use.
 
 2. **Wire the hook.** The server value is the baseline — `useAutosave` saves when
    the draft diverges from it, after a quiet period (600 ms default):
 
    ```tsx
    import { useAutosave } from "@web/hooks/useAutosave";
-   import { AutosaveStatus } from "@web/components/AutosaveStatus";
+   import { SaveChip } from "@web/components/SaveChip";
 
    const { data } = useQuery({ queryKey: ["myplugin", "settings"], queryFn: … });
    const [form, setForm] = useState<Settings | null>(null);
@@ -62,8 +66,13 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
    replaces the Save button, so it is not optional:
 
    ```tsx
-   <AutosaveStatus saving={saveMut.isPending} />
+   <SaveChip saving={saveMut.isPending} />
    ```
+
+   This is the SAME component core's own settings pages render, so a plugin
+   panel reports save state identically to the rest of the ACP — including in
+   the four non-English locales. Do not hand-roll an indicator: there used to be
+   two, and the plugin-facing one was hardcoded English.
 
 ### Rules that keep it correct
 

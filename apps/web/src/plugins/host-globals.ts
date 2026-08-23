@@ -25,6 +25,9 @@ import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
 import * as webUseAutosave from "@web/hooks/useAutosave";
 import * as webAutosaveStatus from "@web/components/AutosaveStatus";
+// The canonical autosave indicator. `webAutosaveStatus` is an alias for it and
+// stays exposed because existing plugin bundles import that name.
+import * as webSaveChip from "@web/components/SaveChip";
 import * as webToast from "@web/lib/toast";
 import * as webDialog from "@web/lib/dialog";
 // Exposed from day one (ADR-0005) even though no plugin registers a block yet:
@@ -61,6 +64,7 @@ const HOST = {
   webForumEditor,
   webUseAutosave,
   webAutosaveStatus,
+  webSaveChip,
   webToast,
   webDialog,
   webBlockRegistry,
