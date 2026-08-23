@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faCopy, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { useAutosave, useAnySaving } from "../../../hooks/useAutosave";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
@@ -420,6 +420,7 @@ export function SettingsPage() {
   }
 
   const pluginSections = slotRegistry.getSettingsSections();
+  const panelSaving    = useAnySaving();
   const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
 
   /**
@@ -446,7 +447,9 @@ export function SettingsPage() {
           <h1 className="pg-title">{t("settings.title")}</h1>
           <p className="pg-sub">{t("settings.subtitle")}</p>
         </div>
-        <SaveChip saving={saveMutation.isPending} />
+        {/* One indicator for the whole page. Plugin sections report into it via
+            `useReportSaving` rather than rendering a second chip of their own. */}
+        <SaveChip saving={saveMutation.isPending || panelSaving} />
       </div>
 
 
