@@ -31,7 +31,6 @@ import { homeRouter }         from "../modules/home/home.routes.js";
 import { searchRouter }       from "../modules/search/search.routes.js";
 import { optionalAuth }       from "../shared/middleware/optionalAuth.js";
 import { inviteRouter }            from "../modules/invite/invite.routes.js";
-import { betaPublicRouter, betaAdminRouter } from "../modules/beta/beta.routes.js";
 import { moderationRouter }       from "../modules/moderation/moderation.routes.js";
 import { appearanceRouter }        from "../modules/appearance/appearance.routes.js";
 import { publicLayoutRouter }      from "../modules/layouts/layout.routes.js";
@@ -207,7 +206,6 @@ export function createApp(): Express {
   app.use("/api/home",          homeRouter);
   app.use("/api/search", optionalAuth, searchRouter);
   app.use("/api/admin/invites",    inviteRouter);
-  app.use("/api/beta",             betaPublicRouter);
   app.use("/api/moderation",       moderationRouter);
   app.use("/api/appearance",       appearanceRouter);
   // Published page structure (ADR-0005). Public and unauthenticated: layouts are
@@ -218,8 +216,6 @@ export function createApp(): Express {
 
   // Plugin runtime routes — /api/p/:pluginId/...
   pluginRouter.mount(app);
-  app.use("/api/admin/beta-codes", betaAdminRouter);
-  // beta-log is also served under the same admin router (/log sub-route)
 
   // Public nav items — returns active items ordered by position.
   // Visibility filtering (members/groups) is handled client-side against auth state.

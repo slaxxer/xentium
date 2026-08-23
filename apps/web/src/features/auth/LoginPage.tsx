@@ -95,13 +95,15 @@ export function LoginPage() {
           duration: 7000,
         });
       } else if (code === "NEC-AUTH-1032") {
+        // An auth guard refused. The message is the guard's own — core no longer
+        // carries copy for policies it does not implement.
         openDialog({
           kind:  "alert", icon: "error",
           title: t("login.accessDenied"),
-          body:  t("login.betaIpLocked"),
+          body:  errObj?.message ?? err?.message ?? t("login.accessDenied"),
         });
       } else if (code === "NEC-AUTH-1030") {
-        swalToast(t("login.betaRequired"), "warning");
+        swalToast(errObj?.message ?? err?.message ?? t("login.accessDenied"), "warning");
       } else if (code === "NEC-AUTH-1040") {
         // Failed-login lockout — surface the server message (carries the retry window).
         swalToast(errObj?.message ?? err?.message ?? t("login.lockedOut"), "warning");

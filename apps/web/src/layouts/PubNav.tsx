@@ -286,12 +286,12 @@ export function NavAdminLink() {
 export function NavUserMenu() {
   const { t } = useTranslation("common");
   const { user, isAuthenticated } = useAuth();
-  const { open: registrationOpen, betaMode } = useRegistrationStatus();
+  const { open: registrationOpen } = useRegistrationStatus();
 
   if (isAuthenticated && user) return <UserDropdown user={user} />;
   return (
     <>
-      {registrationOpen && !betaMode && (
+      {registrationOpen && (
         <NavLink to="/register" className="pub-nav__register-btn">{t("nav.register")}</NavLink>
       )}
       <NavLink to="/login" className="pub-nav__login-btn">{t("nav.signIn")}</NavLink>

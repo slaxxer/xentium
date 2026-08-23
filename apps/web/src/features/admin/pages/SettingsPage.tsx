@@ -254,7 +254,6 @@ const DEFAULTS: Record<string, unknown> = {
 export function SettingsPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"general" | "beta">("general");
 
   const { data: settings = [] } = useQuery<Setting[]>({
     queryKey: ["acp-settings"],
@@ -423,23 +422,26 @@ export function SettingsPage() {
   // Scroll-spy: highlight the section nearest the top of the viewport. The ACP
   // content scrolls with the document, so we listen on window.
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const pluginSections = slotRegistry.getSettingsSections();
   const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
 
   useEffect(() => {
-    if (activeTab !== "general") return;
     let raf = 0;
     const onScroll = () => {
       if (raf) return;
       raf = requestAnimationFrame(() => {
         raf = 0;
-        let current = SECTIONS[0]!.id;
-        for (const s of SECTIONS) {
-          const el = sectionRefs.current[s.id];
+        // Plugin sections render after core's, so the spy has to walk both or
+        // the nav would stick on the last core section once you scrolled past it.
+        const ids = [...SECTIONS.map((x) => x.id), ...slotRegistry.getSettingsSections().map((x) => x.id)];
+        let current = ids[0]!;
+        for (const id of ids) {
+          const el = sectionRefs.current[id];
           if (!el) continue;
-          if (el.getBoundingClientRect().top - 120 <= 0) current = s.id; else break;
+          if (el.getBoundingClientRect().top - 120 <= 0) current = id; else break;
         }
         if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 8) {
-          current = SECTIONS[SECTIONS.length - 1]!.id;
+          current = ids[ids.length - 1]!;
         }
         setActiveSection(current);
       });
@@ -447,7 +449,7 @@ export function SettingsPage() {
     window.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
     return () => { window.removeEventListener("scroll", onScroll); if (raf) cancelAnimationFrame(raf); };
-  }, [activeTab]);
+  }, []);
 
   const jump = useCallback((id: string) => {
     sectionRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -461,31 +463,11 @@ export function SettingsPage() {
           <h1 className="pg-title">{t("settings.title")}</h1>
           <p className="pg-sub">{t("settings.subtitle")}</p>
         </div>
-        {activeTab === "general" && <SaveChip saving={saveMutation.isPending} />}
+        <SaveChip saving={saveMutation.isPending} />
       </div>
 
-      {/* Tab bar — keeps the General / Beta switch */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 22, background: "var(--c-surface)", border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", padding: 3, maxWidth: 320 }}>
-        {(["general", "beta"] as const).map(tab => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            style={{
-              flex: 1, padding: "7px 14px", borderRadius: "calc(var(--radius-sm) - 2px)",
-              border: "none", cursor: "pointer", fontFamily: "inherit",
-              fontSize: 13, fontWeight: 600, transition: "background .15s, color .15s",
-              background: activeTab === tab ? "var(--c-card)" : "transparent",
-              color: activeTab === tab ? "var(--c-fg)" : "var(--c-fg-muted)",
-            }}
-          >
-            {tab === "general" ? t("settings.tabGeneral") : t("settings.tabBeta")}
-          </button>
-        ))}
-      </div>
 
-      {activeTab === "general" && (
-        <div className="set-layout">
+      <div className="set-layout">
           <nav className="set-secnav">
             <p className="set-secnav__label">{t("settings.onThisPage")}</p>
             {SECTIONS.map((s) => (
@@ -497,6 +479,20 @@ export function SettingsPage() {
               >
                 <AcpIcon name={s.icon} size={17} />
                 <span>{t(`settings.sections.${s.id}.title`)}</span>
+              </button>
+            ))}
+            {/* Plugin sections sit under core's, marked with the extensions icon
+                so it is obvious where they came from. Their labels are literals:
+                a plugin's language is its own, and core has nothing to look up. */}
+            {pluginSections.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className={activeSection === s.id ? "is-active" : ""}
+                onClick={() => jump(s.id)}
+              >
+                <AcpIcon name="puzzle" size={17} />
+                <span>{s.label}</span>
               </button>
             ))}
           </nav>
@@ -531,46 +527,28 @@ export function SettingsPage() {
                 )}
               </section>
             ))}
+
+            {/* Core renders the shell so a plugin section cannot look foreign;
+                the plugin supplies only the body. Each is isolated — one broken
+                plugin must not take the whole Settings page down. */}
+            {pluginSections.map(({ id, label, description, component: Body }) => (
+              <section
+                key={id}
+                className="set-card"
+                ref={(el) => { sectionRefs.current[id] = el; }}
+              >
+                <div className="set-card__head">
+                  <div className="set-card__icon"><AcpIcon name="puzzle" size={19} /></div>
+                  <div className="set-card__titles">
+                    <h3>{label}</h3>
+                    {description && <p>{description}</p>}
+                  </div>
+                </div>
+                <ErrorBoundary variant="inline"><Body /></ErrorBoundary>
+              </section>
+            ))}
           </div>
         </div>
-      )}
-
-      {activeTab === "beta" && (
-        <>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              <BetaSettingsPanel draft={draft} set={set} />
-            </div>
-            <BetaLogCard betaOn={Boolean(draft["beta.enabled"])} />
-          </div>
-          <PluginSettingsSections tab="beta" />
-        </>
-      )}
-    </div>
-  );
-}
-
-/**
- * Panels plugins contribute into a Settings tab.
- *
- * Rendered AFTER core's own cards, always: a plugin extends a setting core owns,
- * so core's version of it is what an admin should meet first. Each section owns
- * its heading and its own data — this component knows nothing about any plugin,
- * which is the point.
- *
- * An error in one plugin's panel must not take the Settings page with it, so each
- * is wrapped; a plugin that throws loses its section and nothing else.
- */
-function PluginSettingsSections({ tab }: { tab: "general" | "beta" }) {
-  const sections = slotRegistry.getSettingsSections(tab);
-  if (sections.length === 0) return null;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
-      {sections.map(({ id, component: Section }) => (
-        <ErrorBoundary key={id} variant="inline">
-          <Section />
-        </ErrorBoundary>
-      ))}
     </div>
   );
 }
@@ -701,388 +679,6 @@ function InviteCodesPanel() {
               </div>
             );
           })}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Beta settings panel ───────────────────────────────────────────────────────
-
-interface BetaCode {
-  id: string; code: string; note: string | null;
-  redeemerIp: string | null; redeemedAt: string | null; createdAt: string;
-  createdBy:      { username: string };
-  registeredUser: { username: string } | null;
-}
-
-function saveSetting(key: string, value: unknown) {
-  return api.put(`/admin/settings/${encodeURIComponent(key)}`, { value });
-}
-
-function BetaSettingsPanel({
-  draft,
-  set,
-}: {
-  draft: Record<string, unknown>;
-  set: (key: string, value: unknown) => void;
-}) {
-  const { t } = useTranslation("acp");
-  const qc = useQueryClient();
-  const [note,    setNote]    = useState("");
-  const betaOn = Boolean(draft["beta.enabled"]);
-
-  const { data, isLoading } = useQuery<{ data: BetaCode[] }>({
-    queryKey: ["acp-beta-codes"],
-    queryFn:  () => api.get("/admin/beta-codes?limit=50"),
-  });
-
-  // Own mutation — isolated from the general settings save
-  const toggleMut = useMutation({
-    mutationFn: (next: boolean) => saveSetting("beta.enabled", next),
-    onMutate:   (next) => { set("beta.enabled", next); },          // optimistic
-    onError:    (_e, next) => { set("beta.enabled", !next); swalToast(t("beta.saveFailed")); }, // revert
-    onSuccess:  (_r, next) => swalToast(next ? t("beta.enabled") : t("beta.disabled"), "success"),
-  });
-
-  const createMut = useMutation({
-    mutationFn: () => api.post("/admin/beta-codes", { note: note.trim() || undefined }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-beta-codes"] }); setNote(""); swalToast(t("beta.created"), "success"); },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  const revokeMut = useMutation({
-    mutationFn: (id: string) => api.delete(`/admin/beta-codes/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["acp-beta-codes"] }); swalToast(t("beta.deleted"), "success"); },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  function copyCode(code: string) {
-    navigator.clipboard.writeText(code).then(() => swalToast(t("beta.copied"), "success"));
-  }
-
-  const codes = data?.data ?? [];
-
-  return (
-    <>
-      {/* Toggle card */}
-      <div className="acp-card" style={{ padding: "24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.modeTitle")}</div>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 16 }}>
-          {t("beta.modeDesc")}
-        </p>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("beta.enable")}</div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2 }}>
-              {t("beta.enableDesc")}
-            </div>
-          </div>
-          <Toggle on={betaOn} onToggle={() => !toggleMut.isPending && toggleMut.mutate(!betaOn)} />
-        </div>
-      </div>
-
-      {/* Beta codes + admin key — dimmed when beta is OFF */}
-      <div style={{ opacity: betaOn ? 1 : 0.5, pointerEvents: betaOn ? "auto" : "none", transition: "opacity .2s" }}>
-
-      {/* Beta codes card */}
-      <div className="acp-card" style={{ padding: "24px" }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.codesTitle")}</div>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 18 }}>
-          {t("beta.codesDesc")}
-        </p>
-
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          <input
-            className="acp-input"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t("beta.notePlaceholder")}
-            style={{ flex: 1 }}
-          />
-          <button type="button" className="btn-primary btn-sm" disabled={createMut.isPending} onClick={() => createMut.mutate()}>
-            <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("beta.generate")}
-          </button>
-        </div>
-
-        {isLoading ? (
-          <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.loading")}</div>
-        ) : codes.length === 0 ? (
-          <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.empty")}</div>
-        ) : (
-          <div style={{ border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
-            {codes.map((c, i) => {
-              const redeemed = !!c.redeemedAt;
-              return (
-                <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "11px 16px", borderBottom: i < codes.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                  <code style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 700, color: redeemed ? "var(--c-fg-muted)" : "var(--c-accent)", letterSpacing: "0.05em" }}>
-                    {c.code}
-                  </code>
-                  <div style={{ flex: 1, minWidth: 0, fontSize: 12, color: "var(--c-fg-muted)" }}>
-                    {c.note && <span>{c.note}</span>}
-                    {c.registeredUser
-                      ? <span style={{ color: "var(--c-success)" }}>{c.note ? " · " : ""}{t("beta.registeredAs", { username: c.registeredUser.username })}</span>
-                      : redeemed && c.redeemerIp
-                        ? <span>{c.note ? " · " : ""}{t("beta.lockedTo", { ip: c.redeemerIp })}</span>
-                        : null
-                    }
-                  </div>
-                  <span style={{ fontSize: 11, flexShrink: 0, color: c.registeredUser ? "var(--c-success)" : redeemed ? "var(--c-warn)" : "var(--c-fg-muted)" }}>
-                    {c.registeredUser ? t("beta.statusRegistered") : redeemed ? t("beta.statusRedeemed") : t("beta.statusAvailable")}
-                  </span>
-                  {!redeemed && (
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => copyCode(c.code)} title={t("beta.copy")}>
-                      <FontAwesomeIcon icon={faCopy} />
-                    </button>
-                  )}
-                  <button type="button" className="btn-ghost btn-sm" style={{ color: "var(--c-danger)" }} disabled={revokeMut.isPending} onClick={() => revokeMut.mutate(c.id)} title={t("beta.delete")}>
-                    <FontAwesomeIcon icon={faTrash} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Public routes card — pages that stay reachable while the gate is up */}
-      <BetaPublicRoutesCard draft={draft} set={set} />
-
-      </div> {/* end dim wrapper */}
-    </>
-  );
-}
-
-// ── Beta public routes card ───────────────────────────────────────────────────
-
-/**
- * Pages that stay reachable while the gate is up.
- *
- * A launch or landing page exists to be seen by exactly the people the gate
- * turns away, and before this the gate wrapped the whole app with no way
- * through. The server refuses `/`, `/admin` and the auth routes whatever is
- * typed here, and normalises the list again on read — this input is the
- * message, not the guarantee.
- */
-function BetaPublicRoutesCard({
-  draft,
-  set,
-}: {
-  draft: Record<string, unknown>;
-  set: (key: string, value: unknown) => void;
-}) {
-  const { t } = useTranslation("acp");
-  const [entry, setEntry] = useState("");
-
-  const routes = Array.isArray(draft["beta.public_routes"])
-    ? (draft["beta.public_routes"] as string[])
-    : [];
-
-  const saveMut = useMutation({
-    mutationFn: (next: string[]) => saveSetting("beta.public_routes", next),
-    onMutate:   (next) => { set("beta.public_routes", next); },
-    // Put the old list back: a refused entry must not linger in the UI looking saved.
-    onError:    (e) => { set("beta.public_routes", routes); swalToast(apiErrorMessage(e)); },
-  });
-
-  function add() {
-    const value = entry.trim();
-    if (!value || routes.includes(value)) { setEntry(""); return; }
-    saveMut.mutate([...routes, value]);
-    setEntry("");
-  }
-
-  return (
-    <div className="acp-card" style={{ padding: "24px" }}>
-      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.routesTitle")}</div>
-      <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 18 }}>
-        {t("beta.routesDesc")}
-      </p>
-
-      <div style={{ display: "flex", gap: 8, marginBottom: routes.length ? 16 : 0 }}>
-        <input
-          className="acp-input"
-          value={entry}
-          onChange={(e) => setEntry(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
-          placeholder={t("beta.routesPlaceholder")}
-          style={{ flex: 1 }}
-        />
-        <button type="button" className="btn-primary btn-sm" disabled={saveMut.isPending} onClick={add}>
-          <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("beta.routesAdd")}
-        </button>
-      </div>
-
-      {routes.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-          {routes.map((r) => (
-            <span
-              key={r}
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "5px 8px 5px 12px", borderRadius: "var(--radius-sm)",
-                border: "1px solid var(--c-border)", fontSize: 13, color: "var(--c-fg)",
-              }}
-            >
-              <code>{r}</code>
-              <button
-                type="button"
-                className="btn-ghost btn-sm"
-                style={{ color: "var(--c-danger)", padding: "0 4px" }}
-                disabled={saveMut.isPending}
-                onClick={() => saveMut.mutate(routes.filter((x) => x !== r))}
-                title={t("beta.routesRemove")}
-              >
-                <FontAwesomeIcon icon={faTrash} />
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Beta activity log card ────────────────────────────────────────────────────
-
-interface BetaLogEntry {
-  id: string;
-  eventType: "page_visit" | "login" | "failed_redeem";
-  betaCode: string | null;
-  userId: string | null;
-  username: string | null;
-  url: string | null;
-  ip: string | null;
-  userAgent: string | null;
-  createdAt: string;
-}
-
-function parseDevice(ua: string | null): string {
-  if (!ua) return "Unknown";
-  if (/mobile/i.test(ua)) return "Mobile";
-  if (/tablet/i.test(ua)) return "Tablet";
-  return "Desktop";
-}
-
-function parseBrowser(ua: string | null): string {
-  if (!ua) return "";
-  if (/Firefox\//.test(ua))  return "Firefox";
-  if (/Edg\//.test(ua))      return "Edge";
-  if (/Chrome\//.test(ua))   return "Chrome";
-  if (/Safari\//.test(ua))   return "Safari";
-  return "Browser";
-}
-
-function shortDate(d: string) {
-  return new Date(d).toLocaleString("en-US", {
-    month: "short", day: "numeric",
-    hour: "2-digit", minute: "2-digit", second: "2-digit",
-  });
-}
-
-const EVENT_META: Record<string, { labelKey: string; color: string }> = {
-  page_visit:    { labelKey: "beta.eventVisit",   color: "var(--c-accent)"  },
-  login:         { labelKey: "beta.eventLogin",   color: "var(--c-success)" },
-  failed_redeem: { labelKey: "beta.eventBlocked", color: "var(--c-danger)"  },
-};
-
-function BetaLogCard({ betaOn }: { betaOn: boolean }) {
-  const { t } = useTranslation("acp");
-  const [page, setPage] = useState(1);
-
-  const { data, isLoading } = useQuery<{ data: BetaLogEntry[]; meta: { total: number; totalPages: number } }>({
-    queryKey:        ["acp-beta-log", page],
-    queryFn:         () => api.get(`/admin/beta-codes/log?page=${page}&limit=20`),
-    refetchInterval: 15_000,
-  });
-
-  const entries    = data?.data ?? [];
-  const totalPages = data?.meta.totalPages ?? 1;
-
-  return (
-    <div
-      className="acp-card"
-      style={{ padding: "24px", opacity: betaOn ? 1 : 0.5, pointerEvents: betaOn ? "auto" : "none", transition: "opacity .2s" }}
-    >
-      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>
-        {t("beta.logTitle")}
-      </div>
-      <p style={{ fontSize: 12, color: "var(--c-fg-muted)", marginBottom: 16 }}>
-        {t("beta.logDesc")}
-      </p>
-
-      {isLoading ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.loading")}</div>
-      ) : entries.length === 0 ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("beta.logEmpty")}</div>
-      ) : (
-        <div style={{ maxHeight: 455, overflowY: "auto", paddingRight: 4 }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {entries.map((e) => {
-            const meta      = EVENT_META[e.eventType];
-            const eventLabel = meta ? t(meta.labelKey) : e.eventType;
-            const eventColor = meta?.color ?? "var(--c-fg-muted)";
-            const isFailed  = e.eventType === "failed_redeem";
-            const device    = parseDevice(e.userAgent);
-            const browser   = parseBrowser(e.userAgent);
-
-            return (
-              <div
-                key={e.id}
-                style={{
-                  padding:      "9px 12px",
-                  borderRadius: "var(--radius-sm)",
-                  background:   isFailed ? "rgba(248,113,113,0.07)" : "var(--c-surface)",
-                  border:       `1px solid ${isFailed ? "rgba(248,113,113,0.25)" : "var(--c-border)"}`,
-                  marginBottom: 4,
-                }}
-              >
-                {/* Top row: badge + url/event + time */}
-                <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, padding: "1px 7px", borderRadius: 20,
-                    background: `${eventColor}20`, color: eventColor, border: `1px solid ${eventColor}30`,
-                    flexShrink: 0,
-                  }}>
-                    {eventLabel}
-                  </span>
-                  <span style={{ fontSize: 12, fontWeight: 600, color: isFailed ? "var(--c-danger)" : "var(--c-fg)", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {e.url ?? (e.eventType === "login" ? t("beta.loggedIn") : e.eventType === "failed_redeem" ? t("beta.blockedAttempt") : "—")}
-                  </span>
-                  <span style={{ fontSize: 11, color: "var(--c-fg-muted)", flexShrink: 0 }}>
-                    {shortDate(e.createdAt)}
-                  </span>
-                </div>
-
-                {/* Bottom row: user + code + IP + device */}
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  {e.username && (
-                    <span style={{ fontSize: 11, color: "var(--c-accent)" }}>@{e.username}</span>
-                  )}
-                  {e.betaCode && (
-                    <code style={{ fontSize: 10, color: "var(--c-fg-muted)" }}>{e.betaCode}</code>
-                  )}
-                  {e.ip && (
-                    <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>📍 {e.ip}</span>
-                  )}
-                  {e.userAgent && (
-                    <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>
-                      {device}{browser ? ` · ${browser}` : ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-        </div>
-      )}
-
-      {totalPages > 1 && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
-          <button type="button" className="btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => p - 1)}>{t("beta.prev")}</button>
-          <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>{page} / {totalPages}</span>
-          <button type="button" className="btn-ghost btn-sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t("beta.next")}</button>
         </div>
       )}
     </div>
