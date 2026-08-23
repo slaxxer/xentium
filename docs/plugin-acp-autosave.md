@@ -34,13 +34,12 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
 1. **Externalize the bridges** in `vite.config.ts` (alongside the others):
 
    ```ts
-   "@web/hooks/useAutosave":    `${H}.webUseAutosave`,
-   "@web/components/SaveChip":  `${H}.webSaveChip`,
+   "@web/hooks/useAutosave":   `${H}.webUseAutosave`,
+   "@web/components/SaveChip": `${H}.webSaveChip`,   // standalone pages only
    ```
 
    `@web/components/AutosaveStatus` still resolves — it is an alias for
-   `SaveChip` — but new code should import `SaveChip`, which is the name core's
-   own pages use.
+   `SaveChip` — but new code should import `SaveChip`.
 
 2. **Wire the hook.** The server value is the baseline — `useAutosave` saves when
    the draft diverges from it, after a quiet period (600 ms default):
@@ -65,14 +64,28 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
 3. **Show the indicator** in the page/panel header — it is the affordance that
    replaces the Save button, so it is not optional:
 
+   **A panel nested in a host page reports; it does NOT render a chip.** A
+   plugin section on ACP → Settings sits under a page that already shows one, and
+   two indicators on one screen say the same thing twice — and can disagree while
+   a save is in flight. Report instead:
+
+   ```tsx
+   import { useAutosave, useReportSaving } from "@web/hooks/useAutosave";
+
+   useAutosave({ value: form, savedValue: data, onSave: (v) => saveMut.mutate(v) });
+   useReportSaving(saveMut.isPending);   // the host page's chip speaks for you
+   ```
+
+   A **standalone** plugin ACP page — one that owns its own `pg-head` — renders
+   the chip itself, because there is nothing above it to report to:
+
    ```tsx
    <SaveChip saving={saveMut.isPending} />
    ```
 
-   This is the SAME component core's own settings pages render, so a plugin
-   panel reports save state identically to the rest of the ACP — including in
-   the four non-English locales. Do not hand-roll an indicator: there used to be
-   two, and the plugin-facing one was hardcoded English.
+   Either way it is core's own component and core's own engine. Do not hand-roll
+   an indicator: there used to be two, and the plugin-facing one was hardcoded
+   English.
 
 ### Rules that keep it correct
 
