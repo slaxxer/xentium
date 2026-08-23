@@ -1388,7 +1388,7 @@
     "accountTitle": "Marketplace Account",
     "connectedBadge": "Connected",
     "notConnectedBadge": "Not connected",
-    "accountDesc": "Your nodevo.io account is the license: connect it and your license activates automatically for this site's domain. Purchases, installs and updates are all authorized through the account — there is no manual key entry.",
+    "accountDesc": "Your marketplace account is the licence: connect it and every licence you own activates for THIS install. The binding follows the install, not the domain — rename the site or move it to a new host and nothing needs reissuing.",
     "fieldAccount": "Account",
     "fieldConnected": "Connected",
     "disconnect": "Disconnect",
@@ -1423,7 +1423,8 @@
     "expiryDialogInDays_other": "in {{count}} days",
     "expiryDialogExpiredMarker": "expired",
     "expiryDialogNote": "Renew your license in the marketplace to avoid an interruption to paid plugins.",
-    "expiryDialogView": "View license"
+    "expiryDialogView": "View license",
+    "entitlementsHint": "What the signed entitlement currently grants this install. Your account may own more — see above."
   },
   "permissions": {
     "loading": "Loading…",
@@ -2150,5 +2151,26 @@
     "fieldAuthorUrl": "Author URL",
     "tokensOnly": "Colours only",
     "tokensOnlyHint": "Export the palette without page layouts or images."
+  },
+  "owned": {
+    "title": "Your licences",
+    "desc": "Everything this marketplace account owns, and where each licence stands on this install.",
+    "count": "{{count}} licence",
+    "count_other": "{{count}} licences",
+    "empty": "This account doesn't own anything yet.",
+    "browse": "Browse the marketplace",
+    "unreachable": "Couldn't reach the marketplace. Your installed plugins keep running — this list will fill in once it's back.",
+    "activeHere": "Active here",
+    "updatesLapsed": "Updates lapsed",
+    "seats": "{{used}} of {{total}} seats used",
+    "seatsUnlimited": "Unlimited seats",
+    "updatesUntil": "Updates until {{date}}",
+    "version": "v{{version}} installed",
+    "versionUpdate": "v{{installed}} installed → v{{latest}} available",
+    "install": "Install",
+    "installTitle": "Installing {{name}}",
+    "manage": "Manage",
+    "themes": "Go to Themes",
+    "noSeat": "No free seat"
   }
 }

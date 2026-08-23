@@ -6,6 +6,7 @@ import { faKey, faCheck, faRotate, faCircleExclamation, faPlug, faLinkSlash } fr
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
+import { OwnedLicenses } from "../components/OwnedLicenses";
 
 interface License {
   id:             string;
@@ -27,10 +28,12 @@ interface MarketplaceConnection {
   connectedAt: string | null;
 }
 
+/** Grants are signed as objects (`{id, updatesUntil?}`) — see EntitlementGrant.
+ *  Only the ids are wanted here. */
 function parseEntitlements(jwt: string): string[] {
   try {
-    const payload = JSON.parse(atob(jwt.split(".")[1]!));
-    return payload.entitlements ?? [];
+    const grants = JSON.parse(atob(jwt.split(".")[1]!)).entitlements ?? [];
+    return grants.map((g: any) => (typeof g === "string" ? g : g?.id)).filter(Boolean);
   } catch { return []; }
 }
 
@@ -89,7 +92,7 @@ export function LicensePage() {
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
 
   return (
-    <div style={{ maxWidth: 640 }}>
+    <div style={{ maxWidth: 820 }}>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.extensions")}</div>
@@ -156,6 +159,8 @@ export function LicensePage() {
         )}
       </div>
 
+      <OwnedLicenses connected={!!conn?.connected} />
+
       {isLoading ? (
         <div className="acp-card acp-empty">{t("license.loading")}</div>
       ) : license ? (
@@ -188,6 +193,7 @@ export function LicensePage() {
           {entitlements.length > 0 && (
             <div style={{ marginBottom:20 }}>
               <div style={{ fontSize:11, fontWeight:700, color:"var(--c-fg-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>{t("license.entitlements")}</div>
+              <div style={{ fontSize:12, color:"var(--c-fg-muted)", marginBottom:8 }}>{t("license.entitlementsHint")}</div>
               <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
                 {entitlements.map((e) => (
                   <span key={e} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
