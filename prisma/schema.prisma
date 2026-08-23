@@ -118,8 +118,6 @@ model User {
   styleHistories   StyleHistory[]
   invitesCreated   InviteCode[]    @relation("InviteCreated")
   invitesUsed      InviteCode[]    @relation("InviteUsed")
-  betaCodes           BetaCode[]  @relation("BetaCodeCreated")
-  betaCodeRegistered  BetaCode[]  @relation("BetaCodeRegistered")
 
   @@map("ncf_users")
 }
@@ -817,39 +815,10 @@ model InviteCode {
   @@map("ncf_invite_codes")
 }
 
-model BetaCode {
-  id          String    @id @default(cuid())
-  code        String    @unique
-  note        String?
-  createdById String    @map("created_by_id")
-  redeemerIp  String?   @map("redeemer_ip")
-  redeemerUa  String?   @map("redeemer_ua")
-  redeemedAt  DateTime? @map("redeemed_at")
-  createdAt   DateTime  @default(now()) @map("created_at")
-
-  registeredUserId String? @map("registered_user_id")
-
-  createdBy      User  @relation("BetaCodeCreated",    fields: [createdById],      references: [id], onDelete: Cascade)
-  registeredUser User? @relation("BetaCodeRegistered", fields: [registeredUserId], references: [id], onDelete: SetNull)
-
-  @@index([code])
-  @@map("ncf_beta_codes")
-}
-
-model BetaAccessLog {
-  id        String   @id @default(cuid())
-  eventType String   @map("event_type")  // page_visit | login | failed_redeem
-  betaCode  String?  @map("beta_code")
-  userId    String?  @map("user_id")
-  username  String?
-  url       String?
-  ip        String?
-  userAgent String?  @map("user_agent")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@index([createdAt(sort: Desc)])
-  @@map("ncf_beta_access_log")
-}
+// BetaCode / BetaAccessLog lived here. The beta gate is a plugin now
+// (`nodevo-launch`), which owns `launch_codes` and `launch_access_log`; its
+// install migration copies any rows these tables still held. Core keeps no
+// schema for a feature it no longer has an opinion about.
 
 model NavItem {
   id               String   @id @default(cuid())

@@ -6,12 +6,15 @@ import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
 import { revokeUserAccessTokens } from "./session-revocation.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 
-type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
+/** `cookies` carries the SIGNED cookies through to auth guards, which read their
+ *  own (a beta plugin needs `nv_beta`). Core never inspects them itself. */
+type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string; cookies?: Record<string, string> };
 
 const DUMMY_HASH = process.env.DUMMY_ARGON2_HASH!;
 
@@ -226,22 +229,25 @@ export async function register(
   fields: Array<{ fieldId: string; value: string; privacy: string }>,
   meta: Meta,
   inviteCode?: string,
-  betaCookieCode?: string,
   name?: string,
 ) {
-  const { betaService } = await import("../beta/beta.service.js");
-  const betaEnabled = await betaService.isEnabled();
+  /**
+   * Plugin gates run FIRST, and one of them may own registration outright.
+   *
+   * Core used to hardcode the private-beta policy here. It is a policy, not an
+   * identity concern, so it now lives in whatever plugin implements it: core
+   * asks its registered guards, and enforces its own `registration_mode` only
+   * when no guard has already authorised the request. A beta plugin returns
+   * "allow" because its invite IS the credential — which is what lets a beta run
+   * on a site whose registration is otherwise closed.
+   */
+  const guardAuthorised = await authGuardRegistry.beforeRegister({
+    ip:        meta.ip ?? "",
+    userAgent: meta.userAgent ?? null,
+    cookies:   meta.cookies ?? {},
+  });
 
-  if (betaEnabled) {
-    // Beta mode: beta cookie is the registration credential — no separate invite code
-    if (!betaCookieCode) {
-      throw new NodevoError({ code: "NEC-AUTH-1030", httpStatus: 403, message: "Beta access required to register" });
-    }
-    const check = await betaService.checkAccess(betaCookieCode, meta.ip ?? "");
-    if (!check.hasAccess) {
-      throw new NodevoError({ code: check.necCode ?? "NEC-AUTH-1030", httpStatus: 403, message: check.message ?? "Beta access denied" });
-    }
-  } else {
+  if (!guardAuthorised) {
     // Normal mode: check registration_mode setting
     const mode = await getSetting("auth.registration_mode", "open");
     if (mode === "closed") {
@@ -325,12 +331,17 @@ export async function register(
   // Invalidate the email verification code
   await redis.del(rkey("regcode", email));
 
-  if (betaEnabled && betaCookieCode) {
-    // Link the beta code to the newly registered user
-    await betaService.markRegistered(betaCookieCode, user.id).catch(() => {
-      console.warn("[beta] Failed to mark beta code as registered:", betaCookieCode);
-    });
-  } else if (inviteCode) {
+  // Let whichever guard authorised this link the account to what let them in.
+  // Isolated inside the registry: the row already exists, so a bookkeeping
+  // failure must never look like a failed registration.
+  await authGuardRegistry.afterRegister({
+    ip:        meta.ip ?? "",
+    userAgent: meta.userAgent ?? null,
+    cookies:   meta.cookies ?? {},
+    userId:    user.id,
+  });
+
+  if (inviteCode) {
     // Consume the invite code (normal invite mode)
     const { inviteService } = await import("../invite/invite.service.js");
     await inviteService.consume(inviteCode, user.id).catch(() => {

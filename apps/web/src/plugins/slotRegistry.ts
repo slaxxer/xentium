@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 
 // ── Profile tab (registered by plugins, rendered in /u/:username) ─────────────
 export interface ProfileTabSlot {
@@ -20,6 +20,31 @@ export interface PrivacySectionSlot {
   component: ComponentType;
 }
 
+// ── Root gate ─────────────────────────────────────────────────────────────────
+/**
+ * A gate a plugin wraps the ENTIRE app in.
+ *
+ * The counterpart to `registerAuthGuard` on the server: that one decides whether
+ * somebody may log in, this one decides whether the SPA renders at all. A
+ * private-beta plugin needs both — the API refuses the credential, and the
+ * browser has to show a code wall instead of the site.
+ *
+ * Core cannot host this itself. The gate sits OUTSIDE the router (it has to, or
+ * the app it is gating would already be mounted), so it has no `useLocation` —
+ * which is why core hands it `pathname`, tracked through client-side navigation.
+ * Without that a gate would read the URL once and every later `<Link>` would sail
+ * straight past it.
+ *
+ * A gate renders `children` to allow and its own screen to refuse. Gates compose
+ * in `order`, outermost first.
+ */
+export interface RootGateSlot {
+  id: string;
+  component: ComponentType<{ pathname: string; children: ReactNode }>;
+  /** Lower wraps further out. */
+  order?: number;
+}
+
 // ── ACP Settings section ──────────────────────────────────────────────────────
 /**
  * A panel a plugin contributes INTO an existing ACP → Settings tab.
@@ -30,17 +55,20 @@ export interface PrivacySectionSlot {
  * beta gate — an admin looking for it looks under Settings → Beta, not under a
  * separate heading three groups further down.
  *
- * `tab` names an existing core tab rather than creating one: a plugin that could
- * mint new Settings tabs would let three plugins produce three near-identical
- * ones. Contributing into a tab core already owns keeps the page coherent.
+ * It appears exactly like one of core's own: an entry in the "on this page" nav
+ * and a card in the flow. Core renders the shell — heading, icon, scroll anchor —
+ * so a plugin's section cannot look foreign, and supplies only the body.
+ *
+ * There is no `tab`. Settings had a General/Beta split while core owned a beta;
+ * the beta left for a plugin and took its tab with it.
  */
 export interface SettingsSectionSlot {
   id: string;
-  /** Which Settings tab to appear under. */
-  tab: "general" | "beta";
   label: string;
+  /** Sub-heading under the title, like core's own sections have. */
+  description?: string;
   component: ComponentType;
-  /** Lower renders first. Core's own cards always come before plugin sections. */
+  /** Lower renders first. Core's own sections always come before plugin ones. */
   order?: number;
 }
 
@@ -183,6 +211,7 @@ class SlotRegistry {
   private accountSections:   AccountSectionSlot[]   = [];
   private privacySections:   PrivacySectionSlot[]   = [];
   private settingsSections:  SettingsSectionSlot[]  = [];
+  private rootGates:         RootGateSlot[]         = [];
   private routes:            PluginRoute[]           = [];
   private pluginMetas:       PluginMeta[]            = [];
   private searchTabs:        SearchTabSlot[]         = [];
@@ -220,6 +249,7 @@ class SlotRegistry {
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
   registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
+  registerRootGate(slot: RootGateSlot)                       { this._own(slot.id);     this.rootGates.push(slot); }
   registerRoute(route: PluginRoute)                         { this._own(route.path);  this.routes.push(route); }
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
@@ -235,9 +265,11 @@ class SlotRegistry {
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
   getPrivacySections()   { return [...this.privacySections]; }
-  /** Plugin panels for one Settings tab, in `order`. */
-  getSettingsSections(tab: SettingsSectionSlot["tab"]) {
-    return this.settingsSections.filter((s) => s.tab === tab).sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  /** Outermost first. */
+  getRootGates()         { return [...this.rootGates].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  /** Plugin sections for ACP → Settings, in `order`. */
+  getSettingsSections() {
+    return [...this.settingsSections].sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
   }
   getSearchTabs()        { return [...this.searchTabs]; }
   getModCanvasSections() { return [...this.modCanvasSections]; }

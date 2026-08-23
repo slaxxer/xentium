@@ -14,8 +14,6 @@ export function clearRefreshCookie(res: Response) {
   res.clearCookie(REFRESH_COOKIE_NAME, { path: "/api/auth" });
 }
 
-export const BETA_COOKIE_NAME = "nv_beta";
-
-export function clearBetaCookie(res: Response) {
-  res.clearCookie(BETA_COOKIE_NAME, { path: "/" });
-}
+// The beta cookie used to be declared here. It belongs to whichever plugin gates
+// on it now: a guard names the cookies it wants cleared and core drops them on
+// logout, so core never has to know what any of them mean.

@@ -16,7 +16,7 @@ import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
-import { buildPaginationMeta, normalizeBetaPublicRoutes } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@nodevo/contracts";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -609,10 +609,6 @@ export const adminService = {
     "site.description":                    "",
     "site.locale":                         "en",
     "site.timezone":                       "UTC",
-    "beta.enabled":                        false,
-    "beta.admin_key":                      "",
-    "beta.max_codes":                      50,
-    "beta.allow_revocation":               false,
     "auth.registration_mode":              "open",
     "auth.allow_registration":             true,
     "auth.require_email_verification":     true,
@@ -680,24 +676,10 @@ export const adminService = {
   },
 
   async setSetting(key: string, value: unknown) {
-    if (key === "beta.enabled" && value === false) {
-      await prisma.betaAccessLog.deleteMany({});
-    }
-    if (key === "beta.public_routes") {
-      // Validated here so a typo comes back as an error the admin can read.
-      // `betaService.getPublicRoutes()` normalises again on read — that is the
-      // guarantee; this is the message.
-      const { routes, rejected } = normalizeBetaPublicRoutes(value);
-      if (rejected.length > 0) {
-        throw new NodevoError({
-          code:       "NEC-ADMIN-3010",
-          httpStatus: 422,
-          message:    "One or more beta public routes were refused",
-          details:    { rejected },
-        });
-      }
-      value = routes;
-    }
+    // No beta special-cases here any more. `beta.*` keys are still ordinary
+    // settings rows, but the plugin that owns the gate validates them on its own
+    // endpoint and normalises again on read — core has no opinion about what a
+    // beta route is, so it cannot be the thing that checks one.
     if (SECRET_SETTING_KEYS.has(key)) {
       // The client renders the mask, so it can echo it back on an unrelated
       // save. Treat that as "leave the stored secret alone" rather than

@@ -24,5 +24,13 @@ export function getRequestMeta(req: Request, res: Response) {
       maxAge: 1000 * 60 * 60 * 24 * 730, // ~2y
     });
   }
-  return { ip: normalizeIp(req.ip), userAgent: req.headers["user-agent"], deviceCookieId };
+  // `cookies` is carried so AUTH GUARDS can read their own (a beta plugin needs
+  // `nv_beta`). Signed only — an unsigned cookie is attacker-controlled, and a
+  // gate that trusted one could be walked straight through.
+  return {
+    ip:             normalizeIp(req.ip),
+    userAgent:      req.headers["user-agent"],
+    deviceCookieId,
+    cookies:        (req.signedCookies ?? {}) as Record<string, string>,
+  };
 }
