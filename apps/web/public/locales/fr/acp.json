@@ -1253,7 +1253,7 @@
     "accountTitle": "Compte marketplace",
     "connectedBadge": "Connecté",
     "notConnectedBadge": "Non connecté",
-    "accountDesc": "Votre compte nodevo.io est la licence : connectez-le et votre licence s'active automatiquement pour le domaine de ce site. Achats, installations et mises à jour passent par le compte — il n'y a pas de saisie manuelle de clé.",
+    "accountDesc": "Votre compte marketplace est la licence : connectez-le et chaque licence que vous possédez s'active pour CETTE installation. Le rattachement suit l'installation, pas le domaine — renommez le site ou déplacez-le, rien n'est à réémettre.",
     "fieldAccount": "Compte",
     "fieldConnected": "Connecté le",
     "disconnect": "Déconnecter",
@@ -1288,7 +1288,8 @@
     "expiryDialogInDays_other": "dans {{count}} jours",
     "expiryDialogExpiredMarker": "expirée",
     "expiryDialogNote": "Renouvelez votre licence sur la marketplace pour éviter une interruption des plugins payants.",
-    "expiryDialogView": "Voir la licence"
+    "expiryDialogView": "Voir la licence",
+    "entitlementsHint": "Ce que l'habilitation signée accorde actuellement à cette installation. Votre compte en possède peut-être davantage — voir ci-dessus."
   },
   "permissions": {
     "loading": "Chargement…",
@@ -1940,5 +1941,26 @@
     "fieldAuthorUrl": "URL de l'auteur",
     "tokensOnly": "Couleurs seulement",
     "tokensOnlyHint": "Exporte la palette sans les mises en page ni les images."
+  },
+  "owned": {
+    "title": "Vos licences",
+    "desc": "Tout ce que ce compte marketplace possède, et l'état de chaque licence sur cette installation.",
+    "count": "{{count}} licence",
+    "count_other": "{{count}} licences",
+    "empty": "Ce compte ne possède encore rien.",
+    "browse": "Parcourir le marketplace",
+    "unreachable": "Marketplace injoignable. Vos plugins installés continuent de fonctionner — cette liste se remplira à son retour.",
+    "activeHere": "Active ici",
+    "updatesLapsed": "Mises à jour échues",
+    "seats": "{{used}} poste(s) sur {{total}} utilisé(s)",
+    "seatsUnlimited": "Postes illimités",
+    "updatesUntil": "Mises à jour jusqu'au {{date}}",
+    "version": "v{{version}} installée",
+    "versionUpdate": "v{{installed}} installée → v{{latest}} disponible",
+    "install": "Installer",
+    "installTitle": "Installation de {{name}}",
+    "manage": "Gérer",
+    "themes": "Aller aux thèmes",
+    "noSeat": "Aucun poste libre"
   }
 }

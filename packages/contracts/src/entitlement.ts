@@ -8,6 +8,27 @@
 /** Where a Nodevo instance is running. Drives whether domain-binding is enforced. */
 export type DeployEnvironment = "production" | "staging" | "development";
 
+/**
+ * One thing an install is entitled to run, as signed into the entitlement JWT.
+ *
+ * A GRANT IS AN OBJECT, not a bare id string, and that is load-bearing:
+ * `updatesUntil` is what makes a lapsed-updates licence distinguishable from a
+ * dead one — the install keeps running what it has but may not fetch a newer
+ * version. A single global expiry cannot express that per product.
+ *
+ * The signing half lives in the marketplace and the verifying half is compiled
+ * into every install, so this shape is a PUBLISHED CONTRACT. Both ends have to
+ * move together.
+ */
+export interface EntitlementGrant {
+  /** Namespaced: `plugin.<id>` or `theme.<id>`. */
+  id:            string;
+  /** Unix seconds. Absent = perpetual. */
+  updatesUntil?: number;
+  /** Version ceiling this licence may upgrade to, e.g. "3.x". Absent = none. */
+  maxVersion?:   string;
+}
+
 /** Resolved state of a single plugin's entitlement on this site. */
 export type EntitlementState =
   | "valid"            // verified, in date, domain matches (or non-prod)

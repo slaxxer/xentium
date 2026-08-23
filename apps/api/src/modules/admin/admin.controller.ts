@@ -368,6 +368,13 @@ export const adminController = {
     res.json(await marketplaceService.getConnection());
   }) as RequestHandler,
 
+  // The ownership loop's instance end: ask the marketplace what this account
+  // holds. Not cached — an admin opening this page has usually just bought
+  // something, and a stale answer is the one thing it must not give.
+  getMarketplaceOwned: (async (_req, res) => {
+    res.json(await marketplaceService.listOwned());
+  }) as RequestHandler,
+
   getMarketplaceUpdates: (async (req, res) => {
     res.json(await marketplaceService.getUpdates(req.userId));
   }) as RequestHandler,

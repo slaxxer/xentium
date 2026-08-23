@@ -7,8 +7,8 @@ runtime under `/api/p/<pluginId>/*` and are documented by the plugin, not here.
 - **Base path:** all routes are under `/api`.
 - **Format:** JSON request/response bodies. `Content-Type: application/json` unless an
   endpoint takes a file (`multipart/form-data`, noted per endpoint).
-- **Last verified:** 2026-06-02 against the route files. When in doubt the route files are
-  the source of truth.
+- **Last verified:** 2026-08-23 against the route files (licensing/marketplace section);
+  the rest 2026-06-02. When in doubt the route files are the source of truth.
 
 ---
 
@@ -387,13 +387,24 @@ All routes below are **Admin** (`admin.access`) unless a stricter permission is 
 
 ### Extensions & licensing
 
+A connected marketplace account is the only activation path — manual key entry was removed
+from both the ACP and the API on 2026-07-18, so there is no `POST /license/activate`. The
+instance's side of the wire is documented separately in
+[`marketplace-protocol.md`](./marketplace-protocol.md).
+
 | Method | Path | Description |
 |---|---|---|
 | GET | `/installed-plugins` | Installed plugins (ACP view). |
-| GET | `/license` · POST `/license/activate` (rate-limited) · POST `/license/refresh` · DELETE `/license` | Manual license-key lifecycle. |
-| GET | `/marketplace/plugins` | Catalogue mirror (paginated). |
-| GET·POST·DELETE | `/marketplace/connection` | Account connection state / connect / disconnect. |
+| GET | `/license` | The active license row, or `null`. Includes the stored `entitlementJwt`. |
+| POST | `/license/refresh` | Re-activate from the connected account and re-verify. Self-heals an instance that connected before buying. |
+| DELETE | `/license` | Deactivate locally. Does not release the seat — that is `DELETE /marketplace/connection`. |
+| GET | `/marketplace/plugins` | Catalogue mirror. **Paginated server-side by the marketplace** (`page`/`limit`); an empty `data` means unreachable or not connected, never a fabricated catalogue. Listings carry `owned` when an account is connected. |
+| GET·POST·DELETE | `/marketplace/connection` | Account connection state / connect (`{authCode}`) / disconnect. Connect mints this install's signing keypair; disconnect releases seats and drops every local credential. |
+| GET | `/marketplace/owned` | **What this account owns**, cross-referenced with what is installed here: `{licenses: [{keyRef, status, seats, seatsUsed, activeHere, updatesUntil, purchasedAt, product, installedVersion, installedStatus, updateAvailable}]}`. Not cached — an admin opening this has usually just bought something. Distinct from the entitlement JWT, which lists *grants*, not licences. |
+| GET | `/marketplace/updates` | The update-check cache, reconciled against what is installed right now, plus per-admin `acknowledged`. |
 | POST | `/marketplace/authorize` | The download gate → `AuthorizedDownload` (rate-limited). |
+| POST | `/marketplace/install` · `/marketplace/update` | Direct install / update-in-place. **Stream ndjson progress**, not a single JSON response — see Plugin management. |
+| GET | `/status-summary` | Aggregated ACP badge signals (pending updates, license expiry, per-admin acknowledgement). |
 | GET | `/registered-pages` | Plugin-registered ACP pages (drives ACP nav). |
 
 ### Layouts & themes
@@ -462,7 +473,8 @@ has no draft. Format reference: `docs/theme-packages.md`.
 - Groups / permissions / progression are sub-mounted under **`/api/admin`**, not top-level
   `/api/groups` etc.
 - Licensing is under **`/api/admin/license`** + `/api/admin/marketplace` (ADR 0001/0002);
-  there is no top-level `/api/licenses`.
+  there is no top-level `/api/licenses`. The **outbound** protocol this instance speaks to
+  the marketplace is a separate contract — see [`marketplace-protocol.md`](./marketplace-protocol.md).
 - **Beta / invite** routes are an addition for gated deployments and are not in the
   original §17 plan.
 - There is **no machine-readable OpenAPI spec** yet — this hand-maintained reference is the
