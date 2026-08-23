@@ -20,6 +20,30 @@ export interface PrivacySectionSlot {
   component: ComponentType;
 }
 
+// ── ACP Settings section ──────────────────────────────────────────────────────
+/**
+ * A panel a plugin contributes INTO an existing ACP → Settings tab.
+ *
+ * The counterpart to `groupConfigPanel`, and it exists for the same reason: some
+ * plugin configuration belongs beside the core setting it extends, not in a
+ * top-level nav section of its own. A launch/waitlist plugin configures the
+ * beta gate — an admin looking for it looks under Settings → Beta, not under a
+ * separate heading three groups further down.
+ *
+ * `tab` names an existing core tab rather than creating one: a plugin that could
+ * mint new Settings tabs would let three plugins produce three near-identical
+ * ones. Contributing into a tab core already owns keeps the page coherent.
+ */
+export interface SettingsSectionSlot {
+  id: string;
+  /** Which Settings tab to appear under. */
+  tab: "general" | "beta";
+  label: string;
+  component: ComponentType;
+  /** Lower renders first. Core's own cards always come before plugin sections. */
+  order?: number;
+}
+
 // ── Frontend route (public or ACP) ───────────────────────────────────────────
 export interface PluginRoute {
   path: string;
@@ -158,6 +182,7 @@ class SlotRegistry {
   private profileTabs:       ProfileTabSlot[]       = [];
   private accountSections:   AccountSectionSlot[]   = [];
   private privacySections:   PrivacySectionSlot[]   = [];
+  private settingsSections:  SettingsSectionSlot[]  = [];
   private routes:            PluginRoute[]           = [];
   private pluginMetas:       PluginMeta[]            = [];
   private searchTabs:        SearchTabSlot[]         = [];
@@ -194,6 +219,7 @@ class SlotRegistry {
   registerProfileTab(slot: ProfileTabSlot)                  { this._own(slot.id);     this.profileTabs.push(slot); }
   registerAccountSection(slot: AccountSectionSlot)          { this._own(slot.id);     this.accountSections.push(slot); }
   registerPrivacySection(slot: PrivacySectionSlot)          { this._own(slot.id);     this.privacySections.push(slot); }
+  registerSettingsSection(slot: SettingsSectionSlot)         { this._own(slot.id);     this.settingsSections.push(slot); }
   registerRoute(route: PluginRoute)                         { this._own(route.path);  this.routes.push(route); }
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
@@ -209,6 +235,10 @@ class SlotRegistry {
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
   getPrivacySections()   { return [...this.privacySections]; }
+  /** Plugin panels for one Settings tab, in `order`. */
+  getSettingsSections(tab: SettingsSectionSlot["tab"]) {
+    return this.settingsSections.filter((s) => s.tab === tab).sort((a, b) => (a.order ?? 100) - (b.order ?? 100));
+  }
   getSearchTabs()        { return [...this.searchTabs]; }
   getModCanvasSections() { return [...this.modCanvasSections]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }

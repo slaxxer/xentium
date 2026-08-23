@@ -10,6 +10,8 @@ import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
+import { ErrorBoundary } from "../../errors/ErrorBoundary";
+import { slotRegistry } from "../../../plugins/slotRegistry";
 
 // Core landing values → i18n label keys; plugin destinations use their own label.
 const CORE_LANDING_I18N: Record<string, string> = {
@@ -212,6 +214,7 @@ const SECTIONS: Section[] = [
 const DEFAULTS: Record<string, unknown> = {
   "beta.enabled":                       false,
   "beta.admin_key":                     "",
+  "beta.public_routes":                 [],
   "site.name":                          "My Nodevo Site",
   "site.url":                           "",
   "site.description":                   "",
@@ -533,13 +536,41 @@ export function SettingsPage() {
       )}
 
       {activeTab === "beta" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <BetaSettingsPanel draft={draft} set={set} />
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <BetaSettingsPanel draft={draft} set={set} />
+            </div>
+            <BetaLogCard betaOn={Boolean(draft["beta.enabled"])} />
           </div>
-          <BetaLogCard betaOn={Boolean(draft["beta.enabled"])} />
-        </div>
+          <PluginSettingsSections tab="beta" />
+        </>
       )}
+    </div>
+  );
+}
+
+/**
+ * Panels plugins contribute into a Settings tab.
+ *
+ * Rendered AFTER core's own cards, always: a plugin extends a setting core owns,
+ * so core's version of it is what an admin should meet first. Each section owns
+ * its heading and its own data — this component knows nothing about any plugin,
+ * which is the point.
+ *
+ * An error in one plugin's panel must not take the Settings page with it, so each
+ * is wrapped; a plugin that throws loses its section and nothing else.
+ */
+function PluginSettingsSections({ tab }: { tab: "general" | "beta" }) {
+  const sections = slotRegistry.getSettingsSections(tab);
+  if (sections.length === 0) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+      {sections.map(({ id, component: Section }) => (
+        <ErrorBoundary key={id} variant="inline">
+          <Section />
+        </ErrorBoundary>
+      ))}
     </div>
   );
 }
@@ -814,8 +845,101 @@ function BetaSettingsPanel({
         )}
       </div>
 
+      {/* Public routes card — pages that stay reachable while the gate is up */}
+      <BetaPublicRoutesCard draft={draft} set={set} />
+
       </div> {/* end dim wrapper */}
     </>
+  );
+}
+
+// ── Beta public routes card ───────────────────────────────────────────────────
+
+/**
+ * Pages that stay reachable while the gate is up.
+ *
+ * A launch or landing page exists to be seen by exactly the people the gate
+ * turns away, and before this the gate wrapped the whole app with no way
+ * through. The server refuses `/`, `/admin` and the auth routes whatever is
+ * typed here, and normalises the list again on read — this input is the
+ * message, not the guarantee.
+ */
+function BetaPublicRoutesCard({
+  draft,
+  set,
+}: {
+  draft: Record<string, unknown>;
+  set: (key: string, value: unknown) => void;
+}) {
+  const { t } = useTranslation("acp");
+  const [entry, setEntry] = useState("");
+
+  const routes = Array.isArray(draft["beta.public_routes"])
+    ? (draft["beta.public_routes"] as string[])
+    : [];
+
+  const saveMut = useMutation({
+    mutationFn: (next: string[]) => saveSetting("beta.public_routes", next),
+    onMutate:   (next) => { set("beta.public_routes", next); },
+    // Put the old list back: a refused entry must not linger in the UI looking saved.
+    onError:    (e) => { set("beta.public_routes", routes); swalToast(apiErrorMessage(e)); },
+  });
+
+  function add() {
+    const value = entry.trim();
+    if (!value || routes.includes(value)) { setEntry(""); return; }
+    saveMut.mutate([...routes, value]);
+    setEntry("");
+  }
+
+  return (
+    <div className="acp-card" style={{ padding: "24px" }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 4 }}>{t("beta.routesTitle")}</div>
+      <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 18 }}>
+        {t("beta.routesDesc")}
+      </p>
+
+      <div style={{ display: "flex", gap: 8, marginBottom: routes.length ? 16 : 0 }}>
+        <input
+          className="acp-input"
+          value={entry}
+          onChange={(e) => setEntry(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
+          placeholder={t("beta.routesPlaceholder")}
+          style={{ flex: 1 }}
+        />
+        <button type="button" className="btn-primary btn-sm" disabled={saveMut.isPending} onClick={add}>
+          <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("beta.routesAdd")}
+        </button>
+      </div>
+
+      {routes.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {routes.map((r) => (
+            <span
+              key={r}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "5px 8px 5px 12px", borderRadius: "var(--radius-sm)",
+                border: "1px solid var(--c-border)", fontSize: 13, color: "var(--c-fg)",
+              }}
+            >
+              <code>{r}</code>
+              <button
+                type="button"
+                className="btn-ghost btn-sm"
+                style={{ color: "var(--c-danger)", padding: "0 4px" }}
+                disabled={saveMut.isPending}
+                onClick={() => saveMut.mutate(routes.filter((x) => x !== r))}
+                title={t("beta.routesRemove")}
+              >
+                <FontAwesomeIcon icon={faTrash} />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
