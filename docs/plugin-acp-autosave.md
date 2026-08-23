@@ -1,3 +1,39 @@
+# Plugin ACP surfaces
+
+## Typography and controls — the hard rule
+
+**A plugin's admin surface must be indistinguishable from core's.** Not similar:
+identical font, weights, sizes and spacing. An admin should not be able to tell
+which parts of the ACP came from a plugin.
+
+The only reliable way to get that is to use core's OWN classes and components,
+never to re-implement them. Hand-picked numbers always drift — the launch plugin
+had already ended up at weight 700 where core uses 600, at sizes core does not
+use anywhere.
+
+**Never set `font-family`, `font-weight` or `font-size` in a plugin ACP panel.**
+Use these instead — all global once the ACP is mounted, so a plugin bundle can
+rely on them without importing any core CSS:
+
+| Need | Use |
+|---|---|
+| A setting row | `.set-row` > `.set-row__label` + `.set-row__desc` + `.set-row__control` |
+| A group of rows | `.set-rows` |
+| A card/panel title + subtitle | `.set-card__titles` > `h3` + `p` (works standalone) |
+| Any secondary/description text | `.set-row__desc` |
+| Text input | `.acp-input` · select: `.acp-select` |
+| Buttons | `.btn-primary` / `.btn-ghost` / `.btn-ghost-danger`, plus `.btn-sm` |
+| Toggle, text field, number stepper | `@web/components/AcpControls` |
+
+Externalise the controls like any other host global:
+
+```ts
+"@web/components/AcpControls": `${H}.webAcpControls`,
+```
+
+Plugin-side CSS is for LAYOUT only — flex, grid, gaps, margins. If a rule in a
+plugin stylesheet mentions a font, it is a bug.
+
 # Plugin ACP autosave
 
 How a plugin's admin surfaces persist changes. Nodevo ACP **config** pages have no

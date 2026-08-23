@@ -122,6 +122,11 @@
  * gutter as the rows above it, so the two line up. */
 .set-card__body {
   padding: 4px 22px 22px;
+
+  /* The body already provides the gutter, so a `.set-rows` group inside one must
+     not add its own — a plugin section reuses core's row markup to inherit its
+     typography, and would otherwise sit 22px further in than the rows above it. */
+  .set-rows { padding: 0; }
 }
 .set-card__head { display: flex; align-items: center; gap: 14px; padding: 18px 22px 16px; }
 .set-card__icon {

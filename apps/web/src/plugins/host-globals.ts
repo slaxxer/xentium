@@ -28,6 +28,14 @@ import * as webAutosaveStatus from "@web/components/AutosaveStatus";
 // The canonical autosave indicator. `webAutosaveStatus` is an alias for it and
 // stays exposed because existing plugin bundles import that name.
 import * as webSaveChip from "@web/components/SaveChip";
+// The ACP's own form controls. Exposed so a plugin's admin surface is built from
+// the SAME components as core's, rather than re-implementing them in inline
+// styles and drifting on weight, size and spacing.
+//
+// `AcpIcon` is deliberately NOT here: it lives under `features/`, which the
+// `@web/*` alias does not cover, and inventing a namespace for one icon set is
+// not worth it — plugins already have FontAwesome through `FaReact`.
+import * as webAcpControls from "@web/components/AcpControls";
 import * as webToast from "@web/lib/toast";
 import * as webDialog from "@web/lib/dialog";
 // Exposed from day one (ADR-0005) even though no plugin registers a block yet:
@@ -65,6 +73,7 @@ const HOST = {
   webUseAutosave,
   webAutosaveStatus,
   webSaveChip,
+  webAcpControls,
   webToast,
   webDialog,
   webBlockRegistry,
