@@ -6,6 +6,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
+import { authGuardRegistry, type AuthGuard } from "../auth-guard-registry/auth-guard-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
 import { statRegistry } from "../stat-registry/stat-registry.js";
@@ -188,6 +189,11 @@ export class PluginContextImpl implements PluginContext {
   registerSecurityScan(fn: () => Promise<void>): void {
     securityScanRegistry.register(this.pluginId, fn);
     logger.info({ pluginId: this.pluginId }, "Plugin security scan registered");
+  }
+
+  registerAuthGuard(guard: AuthGuard): void {
+    authGuardRegistry.register(this.pluginId, guard);
+    logger.info({ pluginId: this.pluginId, guard: guard.id }, "Plugin auth guard registered");
   }
 
   claimSecurityPatterns(patterns: string[]): void {
