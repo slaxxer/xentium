@@ -2,11 +2,15 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faKey, faCheck, faRotate, faCircleExclamation, faPlug, faLinkSlash } from "@fortawesome/free-solid-svg-icons";
+import {
+  faKey, faRotate, faCircleExclamation, faPlug, faLinkSlash, faShieldHalved,
+  faTriangleExclamation, faCloudArrowDown, faChevronDown, faCopy, faCheck,
+} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
-import { OwnedLicenses } from "../components/OwnedLicenses";
+import { OwnedLicenses, rowIsLive, type OwnedLicense } from "../components/OwnedLicenses";
+import "./LicensePage.scss";
 
 interface License {
   id:             string;
@@ -37,15 +41,34 @@ function parseEntitlements(jwt: string): string[] {
   } catch { return []; }
 }
 
-function StatusDot({ color }: { color: string }) {
-  return <span style={{ width:8, height:8, borderRadius:"50%", background:color, display:"inline-block", flexShrink:0 }} />;
-}
+const fmtDate = (iso: string) =>
+  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+
+/** Warn this many days out. Matches the expiry dialog's own threshold so the
+ *  page and the nag cannot disagree about what "soon" means. */
+const EXPIRY_WARN_DAYS = 14;
+
+type Tone = "success" | "warn" | "danger" | "subtle";
+
+const TONE_VAR: Record<Tone, string> = {
+  success: "var(--c-success)",
+  warn:    "var(--c-warn)",
+  danger:  "var(--c-danger)",
+  subtle:  "var(--c-fg-subtle)",
+};
+
+/** `color-mix` over the token rather than a second hardcoded tint, so a themed
+ *  --c-success carries its own soft fill with it. */
+const soft = (tone: Tone, pct: number) =>
+  `color-mix(in srgb, ${TONE_VAR[tone]} ${pct}%, transparent)`;
 
 export function LicensePage() {
   const { t } = useTranslation("acp");
-  const qc       = useQueryClient();
+  const qc = useQueryClient();
   const [authCode, setAuthCode] = useState("");
   const [connectError, setConnectError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
 
   const { data: license, isLoading } = useQuery<License | null>({
     queryKey: ["acp-license"],
@@ -55,6 +78,17 @@ export function LicensePage() {
   const { data: conn } = useQuery<MarketplaceConnection>({
     queryKey: ["acp-marketplace-connection"],
     queryFn:  () => api.get("/admin/marketplace/connection"),
+  });
+
+  const connected = !!conn?.connected;
+
+  // Hoisted out of OwnedLicenses so the hero, the table and the rail all read
+  // ONE fetch. When they each had their own, "marketplace unreachable" could be
+  // true for the table and false for the banner above it.
+  const owned = useQuery<{ licenses: OwnedLicense[] }>({
+    queryKey: ["acp-marketplace-owned"],
+    queryFn:  () => api.get("/admin/marketplace/owned"),
+    enabled:  connected,
   });
 
   const connectMut = useMutation({
@@ -85,146 +119,283 @@ export function LicensePage() {
 
   const refreshMut = useMutation({
     mutationFn: () => api.post("/admin/license/refresh", {}),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-license"] }); swalToast(t("license.toastRefreshed"), "success"); },
+    onSuccess:  () => {
+      qc.invalidateQueries({ queryKey: ["acp-license"] });
+      // A refresh is the one moment a just-bought licence appears, so the table
+      // has to be re-asked too — that is the whole reason to press the button.
+      qc.invalidateQueries({ queryKey: ["acp-marketplace-owned"] });
+      swalToast(t("license.toastRefreshed"), "success");
+    },
     onError:    (e) => swalToast(apiErrorMessage(e)),
   });
 
+  const copy = (label: string, value: string) => {
+    void navigator.clipboard?.writeText(value).catch(() => {});
+    setCopied(label);
+    setTimeout(() => setCopied((c) => (c === label ? null : c)), 1400);
+  };
+
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
+  const licenses = owned.data?.licenses ?? [];
+  const offline = connected && !!owned.error;
+
+  const expiresAt = license?.expiresAt ? new Date(license.expiresAt) : null;
+  const daysLeft = expiresAt
+    ? Math.ceil((expiresAt.getTime() - Date.now()) / 86_400_000)
+    : null;
+  const isExpired = !!license && (license.status === "expired" || (daysLeft !== null && daysLeft < 0));
+
+  /** Five hero states. Row-level states (no seat, updates lapsed, not installed)
+   *  belong to the table — the hero speaks only for the install as a whole. */
+  const hero = (() => {
+    if (!connected) return {
+      tone: "subtle" as Tone, icon: faKey,
+      badge:    t("license.hero.badgeUnlicensed"),
+      headline: t("license.hero.disconnectedHeadline"),
+      sub:      t("license.hero.disconnectedSub"),
+      hint:     null as string | null,
+    };
+    if (!license) return {
+      tone: "subtle" as Tone, icon: faKey,
+      badge:    t("license.hero.badgeUnlicensed"),
+      headline: t("license.noLicenseTitle"),
+      sub:      t("license.noLicenseHint"),
+      hint:     null as string | null,
+    };
+    if (isExpired) return {
+      tone: "danger" as Tone, icon: faCircleExclamation,
+      badge:    t("license.hero.badgeExpired"),
+      headline: expiresAt ? t("license.hero.expiredHeadline", { date: fmtDate(license.expiresAt!) }) : t("license.hero.expiredHeadlineBare"),
+      sub:      t("license.hero.expiredSub"),
+      hint:     t("license.hero.expiredHint"),
+    };
+    if (offline) return {
+      tone: "warn" as Tone, icon: faCloudArrowDown,
+      badge:    t("license.hero.badgeLastKnown"),
+      headline: expiresAt ? t("license.hero.activeHeadline", { date: fmtDate(license.expiresAt!) }) : t("license.hero.activeHeadlineBare"),
+      sub:      t("license.hero.activatedOn", { date: fmtDate(license.activatedAt) }),
+      hint:     t("license.hero.offlineHint"),
+    };
+    if (daysLeft !== null && daysLeft <= EXPIRY_WARN_DAYS) return {
+      tone: "warn" as Tone, icon: faTriangleExclamation,
+      badge:    t("license.hero.badgeDays", { count: daysLeft }),
+      headline: t("license.hero.expiringHeadline", { date: fmtDate(license.expiresAt!) }),
+      sub:      t("license.hero.activatedOn", { date: fmtDate(license.activatedAt) }),
+      hint:     t("license.hero.expiringHint"),
+    };
+    return {
+      tone: "success" as Tone, icon: faShieldHalved,
+      badge:    t("license.hero.badgeActive"),
+      headline: expiresAt ? t("license.hero.activeHeadline", { date: fmtDate(license.expiresAt!) }) : t("license.hero.activeHeadlineBare"),
+      sub:      t("license.hero.activeSub", { date: fmtDate(license.activatedAt) }),
+      hint:     null as string | null,
+    };
+  })();
+
+  const techFields: [string, string][] = license ? [
+    [t("license.fieldKey"),          license.licenseKey],
+    [t("license.fieldSiteId"),       license.siteId],
+    [t("license.fieldActivated"),    fmtDate(license.activatedAt)],
+    [t("license.fieldRefreshAfter"), license.refreshAfter ? fmtDate(license.refreshAfter) : "—"],
+  ] : [];
+
+  const liveCount = licenses.filter((l) => rowIsLive(l, isExpired)).length;
 
   return (
-    <div style={{ maxWidth: 820 }}>
+    <div className="lic-page">
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.extensions")}</div>
           <h1 className="acp-page-title">{t("nav.license")}</h1>
         </div>
+        <button type="button" className="btn-ghost btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+          <FontAwesomeIcon icon={faRotate} spin={refreshMut.isPending} style={{ marginRight: 6 }} />
+          {refreshMut.isPending ? t("license.refreshing") : t("license.refresh")}
+        </button>
       </div>
 
       <ExtensionsUpdateBanner />
 
-      {/* Marketplace account — the primary, recommended path (ADR 0001) */}
-      <div className="acp-card" style={{ padding:"24px", marginBottom:20 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-          <FontAwesomeIcon icon={faPlug} style={{ color:"var(--c-accent)" }} />
-          <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{t("license.accountTitle")}</div>
-          <span style={{ marginLeft:"auto", fontSize:11, fontWeight:700, padding:"2px 9px", borderRadius:100,
-            background: conn?.connected ? "color-mix(in srgb, var(--c-success) 15%, transparent)" : "var(--c-surface)",
-            color: conn?.connected ? "var(--c-success)" : "var(--c-fg-muted)", border:"1px solid var(--c-border)" }}>
-            {conn?.connected ? t("license.connectedBadge") : t("license.notConnectedBadge")}
-          </span>
-        </div>
-        <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>
-          {t("license.accountDesc")}
-        </div>
+      <div className="lic-grid">
+        <div className="lic-col">
 
-        {conn?.connected ? (
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <div style={{ flex:1, display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{t("license.fieldAccount")}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)", fontFamily:"monospace", wordBreak:"break-all" }}>{conn.accountRef ?? "—"}</div>
+          {/* ── Status hero ─────────────────────────────────────────────── */}
+          <section className="lic-card">
+            <div className="lic-hero">
+              <div className="lic-hero__icon" style={{ background: soft(hero.tone, 12), color: TONE_VAR[hero.tone] }}>
+                <FontAwesomeIcon icon={hero.icon} />
               </div>
-              <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{t("license.fieldConnected")}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)" }}>{conn.connectedAt ? new Date(conn.connectedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" }) : "—"}</div>
+              <div className="lic-hero__body">
+                <div className="lic-hero__line">
+                  <div className="lic-hero__headline">{hero.headline}</div>
+                  <span className="lic-hero__badge" style={{ background: soft(hero.tone, 12), color: TONE_VAR[hero.tone] }}>
+                    {hero.badge}
+                  </span>
+                </div>
+                <div className="lic-hero__sub">{hero.sub}</div>
+                {hero.hint && (
+                  <div className="lic-hint" style={{ background: soft(hero.tone, 9), border: `1px solid ${soft(hero.tone, 28)}`, color: TONE_VAR[hero.tone] }}>
+                    <FontAwesomeIcon icon={faCircleExclamation} />
+                    <span>{hero.hint}</span>
+                  </div>
+                )}
               </div>
             </div>
-            <button type="button" className="btn-danger btn-sm" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
-              <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight:5 }} /> {t("license.disconnect")}
-            </button>
-          </div>
-        ) : (
-          <>
-            <div style={{ display:"flex", gap:10, marginBottom: connectError ? 10 : 0 }}>
-              <input
-                className="acp-input"
-                value={authCode}
-                onChange={(e) => { setAuthCode(e.target.value); setConnectError(null); }}
-                placeholder={t("license.authPlaceholder")}
-                style={{ flex:1 }}
-                onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
-              />
-              <button type="button" className="btn-primary btn-sm" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
-                <FontAwesomeIcon icon={faPlug} style={{ marginRight:5 }} />
-                {connectMut.isPending ? t("license.connecting") : t("license.connect")}
-              </button>
-            </div>
-            {connectError && (
-              <div style={{ padding:"10px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>
-                <FontAwesomeIcon icon={faCircleExclamation} style={{ marginTop:2, flexShrink:0 }} />
-                {connectError}
+
+            {isLoading ? null : license ? (
+              <>
+                <div className="lic-meta">
+                  <div className="lic-meta__item">
+                    <span className="lic-meta__label">{t("license.fieldDomain")}</span>
+                    <span className="lic-meta__value">{license.domain ?? "—"}</span>
+                  </div>
+                  <span className="lic-meta__rule" />
+                  <div className="lic-meta__item">
+                    <span className="lic-meta__label">{t("license.fieldEnvironment")}</span>
+                    <span className="lic-meta__value">{license.environment ?? "—"}</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm lic-meta__toggle"
+                    aria-expanded={detailsOpen}
+                    onClick={() => setDetailsOpen((o) => !o)}
+                  >
+                    {detailsOpen ? t("license.hideDetails") : t("license.showDetails")}
+                    <FontAwesomeIcon
+                      icon={faChevronDown}
+                      style={{ marginLeft: 7, fontSize: 10, transition: "transform .2s", transform: `rotate(${detailsOpen ? 180 : 0}deg)` }}
+                    />
+                  </button>
+                </div>
+
+                {detailsOpen && (
+                  <div className="lic-tech">
+                    <div className="lic-tech__label">{t("license.technical")}</div>
+                    <div className="lic-tech__grid">
+                      {techFields.map(([label, value]) => (
+                        <div className="lic-field" key={label}>
+                          <div className="lic-field__body">
+                            <div className="lic-field__label">{label}</div>
+                            <div className="lic-field__value">{value}</div>
+                          </div>
+                          <button
+                            type="button"
+                            className={`lic-copy${copied === label ? " is-copied" : ""}`}
+                            title={t("license.copy")}
+                            aria-label={t("license.copy")}
+                            onClick={() => copy(label, value)}
+                          >
+                            <FontAwesomeIcon icon={copied === label ? faCheck : faCopy} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : connected && (
+              <div className="lic-meta">
+                <button type="button" className="btn-primary btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+                  <FontAwesomeIcon icon={faRotate} spin={refreshMut.isPending} style={{ marginRight: 6 }} />
+                  {refreshMut.isPending ? t("license.refreshing") : t("license.activateFromAccount")}
+                </button>
               </div>
             )}
-          </>
-        )}
-      </div>
+          </section>
 
-      <OwnedLicenses connected={!!conn?.connected} />
+          {/* ── Licences & entitlements ─────────────────────────────────── */}
+          <OwnedLicenses
+            connected={connected}
+            licenses={licenses}
+            isLoading={owned.isLoading}
+            unreachable={offline}
+            expired={isExpired}
+            liveCount={liveCount}
+            onChanged={() => {
+              void qc.invalidateQueries({ queryKey: ["acp-marketplace-owned"] });
+              void qc.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
+            }}
+          />
+        </div>
 
-      {isLoading ? (
-        <div className="acp-card acp-empty">{t("license.loading")}</div>
-      ) : license ? (
-        <div className="acp-card" style={{ padding:"24px", marginBottom:20 }}>
-          <div style={{ fontSize:16, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("license.activeTitle")}</div>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20 }}>
-            <StatusDot color={license.status === "active" ? "var(--c-success)" : "var(--c-warn)"} />
-            <span style={{ fontSize:14, color: license.status === "active" ? "var(--c-success)" : "var(--c-warn)", fontWeight:600 }}>
-              {license.status === "active" ? t("license.statusActive") : license.status}
-              {license.expiresAt ? ` ${t("license.expires", { date: new Date(license.expiresAt).toLocaleDateString("en-US", { month:"long", day:"numeric", year:"numeric" }) })}` : ""}
-            </span>
-          </div>
-
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
-            {([
-              [t("license.fieldKey"),         license.licenseKey],
-              [t("license.fieldSiteId"),      license.siteId],
-              [t("license.fieldDomain"),      license.domain ?? "—"],
-              [t("license.fieldEnvironment"), license.environment ?? "—"],
-              [t("license.fieldActivated"),   new Date(license.activatedAt).toLocaleDateString("en-US", { month:"short", day:"numeric", year:"numeric" })],
-              [t("license.fieldRefreshAfter"), license.refreshAfter ? new Date(license.refreshAfter).toLocaleDateString() : "—"],
-            ] as [string, string][]).map(([l, v]) => (
-              <div key={l} style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"12px 14px" }}>
-                <div style={{ fontSize:11, color:"var(--c-fg-muted)", marginBottom:3, textTransform:"uppercase", fontWeight:700, letterSpacing:"0.06em" }}>{l}</div>
-                <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)", fontFamily:"monospace", wordBreak:"break-all" }}>{v}</div>
-              </div>
-            ))}
-          </div>
-
-          {entitlements.length > 0 && (
-            <div style={{ marginBottom:20 }}>
-              <div style={{ fontSize:11, fontWeight:700, color:"var(--c-fg-muted)", textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>{t("license.entitlements")}</div>
-              <div style={{ fontSize:12, color:"var(--c-fg-muted)", marginBottom:8 }}>{t("license.entitlementsHint")}</div>
-              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                {entitlements.map((e) => (
-                  <span key={e} style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
-                    <FontAwesomeIcon icon={faCheck} /> {e.replace("plugin.", "")}
-                  </span>
-                ))}
-              </div>
+        {/* ── Rail ──────────────────────────────────────────────────────── */}
+        <aside className="lic-col">
+          <section className="lic-rail__card">
+            <div className="lic-rail__title">
+              <FontAwesomeIcon icon={faPlug} />
+              {t("license.accountTitle")}
             </div>
-          )}
+            <div className="lic-rail__conn" style={{ color: connected ? "var(--c-success)" : "var(--c-fg-subtle)" }}>
+              <span className="lic-rail__dot" style={{ background: connected ? "var(--c-success)" : "var(--c-fg-subtle)" }} />
+              {connected ? t("license.connectedBadge") : t("license.notConnectedBadge")}
+            </div>
+            <div className="lic-rail__desc">{t("license.accountDesc")}</div>
 
-          <div style={{ display:"flex", gap:8 }}>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
-              <FontAwesomeIcon icon={faRotate} style={{ marginRight:5 }} />
-              {refreshMut.isPending ? t("license.refreshing") : t("license.refresh")}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="acp-card" style={{ padding:"24px", marginBottom:20, textAlign:"center" }}>
-          <FontAwesomeIcon icon={faKey} style={{ fontSize:28, color:"var(--c-fg-muted)", marginBottom:8 }} />
-          <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)", marginBottom:4 }}>{t("license.noLicenseTitle")}</div>
-          <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{t("license.noLicenseHint")}</div>
-          {conn?.connected && (
-            <button type="button" className="btn-primary btn-sm" style={{ marginTop:14 }} onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
-              <FontAwesomeIcon icon={faRotate} style={{ marginRight:5 }} />
-              {refreshMut.isPending ? t("license.refreshing") : t("license.activateFromAccount")}
-            </button>
-          )}
-        </div>
-      )}
+            {connected ? (
+              <div className="lic-rail__stack">
+                <div className="lic-rail__field">
+                  <div className="lic-field__label">{t("license.fieldAccount")}</div>
+                  <div className="lic-field__value">{conn?.accountRef ?? "—"}</div>
+                </div>
+                <div className="lic-rail__field">
+                  <div className="lic-field__label">{t("license.fieldConnected")}</div>
+                  <div className="lic-field__value" style={{ fontFamily: "inherit" }}>
+                    {conn?.connectedAt ? fmtDate(conn.connectedAt) : "—"}
+                  </div>
+                </div>
+                <button type="button" className="btn-ghost-danger btn-sm" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
+                  <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight: 6 }} />
+                  {t("license.disconnect")}
+                </button>
+              </div>
+            ) : (
+              <div className="lic-rail__stack">
+                <input
+                  className="acp-input"
+                  value={authCode}
+                  onChange={(e) => { setAuthCode(e.target.value); setConnectError(null); }}
+                  placeholder={t("license.authPlaceholder")}
+                  onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
+                />
+                <button type="button" className="btn-primary btn-sm" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
+                  <FontAwesomeIcon icon={faPlug} style={{ marginRight: 6 }} />
+                  {connectMut.isPending ? t("license.connecting") : t("license.connect")}
+                </button>
+                {connectError ? (
+                  <div className="lic-hint" style={{ marginTop: 0, background: "var(--c-danger-soft)", border: "1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", color: "var(--c-danger)" }}>
+                    <FontAwesomeIcon icon={faCircleExclamation} />
+                    <span>{connectError}</span>
+                  </div>
+                ) : (
+                  <div className="lic-rail__hint">{t("license.connectHint")}</div>
+                )}
+              </div>
+            )}
+          </section>
 
+          {license && (
+            <section className="lic-rail__card">
+              <div className="lic-rail__eyebrow">{t("license.entitlements")}</div>
+              <dl className="lic-rail__rows">
+                <div className="lic-rail__row">
+                  <dt>{t("license.railSignedUntil")}</dt>
+                  <dd>{license.expiresAt ? fmtDate(license.expiresAt) : "—"}</dd>
+                </div>
+                <div className="lic-rail__row">
+                  <dt>{t("license.railGrants")}</dt>
+                  <dd>{entitlements.length}</dd>
+                </div>
+                <div className="lic-rail__row">
+                  <dt>{t("license.railNextCheck")}</dt>
+                  <dd>{license.refreshAfter ? fmtDate(license.refreshAfter) : "—"}</dd>
+                </div>
+              </dl>
+              <div className="lic-rail__rule" />
+              <div className="lic-rail__note">{t("license.railNote")}</div>
+            </section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }
