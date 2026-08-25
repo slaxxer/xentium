@@ -1178,7 +1178,8 @@
       "validating": "Paket wird validiert…",
       "installing": "Wird installiert…",
       "finalizing": "Wird abgeschlossen…"
-    }
+    },
+    "pagination": "Seite {{page}} von {{totalPages}} — {{total}} Erweiterungen"
   },
   "updates": {
     "title": "Updates",
@@ -1252,7 +1253,37 @@
     "expiryDialogExpiredMarker": "abgelaufen",
     "expiryDialogNote": "Erneuere deine Lizenz im Marktplatz, um eine Unterbrechung kostenpflichtiger Plugins zu vermeiden.",
     "expiryDialogView": "Lizenz ansehen",
-    "entitlementsHint": "Was die signierte Berechtigung dieser Installation derzeit gewährt. Dein Konto besitzt möglicherweise mehr — siehe oben."
+    "entitlementsHint": "Was die signierte Berechtigung dieser Installation derzeit gewährt. Dein Konto besitzt möglicherweise mehr — siehe oben.",
+    "hero": {
+      "badgeUnlicensed": "Nicht lizenziert",
+      "badgeExpired": "Abgelaufen",
+      "badgeLastKnown": "Letzter Stand",
+      "badgeActive": "Aktiv",
+      "badgeDays_one": "{{count}} Tag",
+      "badgeDays_other": "{{count}} Tage",
+      "disconnectedHeadline": "Keine aktive Lizenz",
+      "disconnectedSub": "Der Kern läuft unbegrenzt weiter. Für Premium-Plugins verbinde rechts dein Marketplace-Konto — die Lizenz wird dann automatisch aktiviert.",
+      "expiredHeadline": "Lizenz am {{date}} abgelaufen",
+      "expiredHeadlineBare": "Lizenz abgelaufen",
+      "expiredSub": "Installierte Plugins laufen weiter. Neue Installationen und Updates sind blockiert, bis die Lizenz erneuert ist.",
+      "expiredHint": "Erneuere im Marketplace und aktualisiere danach die Berechtigungen — es muss nichts neu ausgestellt werden.",
+      "activeHeadline": "Lizenziert bis {{date}}",
+      "activeHeadlineBare": "Lizenziert",
+      "activeSub": "Aktiviert über dein Marketplace-Konto am {{date}}. Die Bindung folgt dieser Installation, nicht der Domain.",
+      "activatedOn": "Aktiviert über dein Marketplace-Konto am {{date}}.",
+      "expiringHeadline": "Läuft am {{date}} ab",
+      "expiringHint": "Nach dem Ablauf laufen installierte Plugins weiter, aber Updates und neue Installationen sind gesperrt.",
+      "offlineHint": "Der Marketplace ist derzeit nicht erreichbar. Angezeigt wird die zuletzt geprüfte, signierte Berechtigung — nichts ist gesperrt."
+    },
+    "showDetails": "Technische Details",
+    "hideDetails": "Details ausblenden",
+    "technical": "Technische Angaben",
+    "copy": "Kopieren",
+    "connectHint": "Code holen: Marketplace → Konto → Installationen → Code erzeugen.",
+    "railSignedUntil": "Signiert bis",
+    "railGrants": "Berechtigungen",
+    "railNextCheck": "Nächste Prüfung",
+    "railNote": "Die Prüfung läuft automatisch alle 24 Stunden. Manuell nur nötig, wenn du gerade etwas gekauft hast."
   },
   "permissions": {
     "loading": "Lädt…",
@@ -1924,6 +1955,22 @@
     "installTitle": "{{name}} wird installiert",
     "manage": "Verwalten",
     "themes": "Zu den Themes",
-    "noSeat": "Kein freier Platz"
+    "noSeat": "Kein freier Platz",
+    "countLive": "{{total}} Lizenzen · {{live}} hier aktiv",
+    "colProduct": "Produkt",
+    "colSeats": "Sitzplätze",
+    "colUpdates": "Updates",
+    "colHere": "Hier",
+    "stateLocked": "Gesperrt",
+    "stateUpdate": "Update {{version}}",
+    "stateActive": "Aktiv",
+    "stateNoSeat": "Kein Platz",
+    "stateInactive": "Nicht aktiv",
+    "seatsShort": "{{used}} / {{total}}",
+    "updatesNone": "—",
+    "update": "Aktualisieren",
+    "unreachableTitle": "Marketplace nicht erreichbar",
+    "emptyTitle": "Dieses Konto besitzt noch nichts",
+    "retry": "Erneut versuchen"
   }
 }

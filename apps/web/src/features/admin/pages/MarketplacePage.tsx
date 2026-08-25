@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation, Trans } from "react-i18next";
@@ -10,6 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
+import { Pager } from "../../../components/Pager";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
@@ -32,7 +33,7 @@ interface MarketplacePlugin {
 // PaginatedResponse<MarketplaceListing> (ADR 0001)
 interface MarketplaceResponse {
   data: MarketplacePlugin[];
-  meta: { total: number };
+  meta: { page: number; totalPages: number; total: number };
 }
 
 interface MarketplaceConnection {
@@ -91,6 +92,19 @@ export function MarketplacePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+
+  // The catalogue searches server-side, so the term belongs in the request, not
+  // in a filter over what happened to arrive. Debounced so typing does not fire
+  // a request per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+  // A new term restarts at page 1 — staying on page 3 of the previous result
+  // set shows an empty grid and looks like "no matches".
+  useEffect(() => { setPage(1); }, [debouncedSearch]);
 
   // Direct install (§16.2): the server authorizes at the chokepoint, fetches +
   // sha256-verifies the artifact, and runs the normal intake. Lands disabled.
@@ -128,7 +142,11 @@ export function MarketplacePage() {
     onError: () => {},
   });
 
-  const { data: market }    = useQuery<MarketplaceResponse>({ queryKey: ["acp-marketplace"], queryFn: () => api.get("/admin/marketplace/plugins") });
+  const { data: market }    = useQuery<MarketplaceResponse>({
+    queryKey: ["acp-marketplace", page, debouncedSearch],
+    queryFn:  () => api.get(`/admin/marketplace/plugins?page=${page}${debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""}`),
+    placeholderData: (prev) => prev,
+  });
   const { data: installed } = useQuery<InstalledPlugin[]>({ queryKey: ["acp-installed-plugins"], queryFn: () => api.get("/plugins") });
   const { data: license }   = useQuery<License | null>({ queryKey: ["acp-license"], queryFn: () => api.get("/admin/license") });
   const { data: conn }      = useQuery<MarketplaceConnection>({ queryKey: ["acp-marketplace-connection"], queryFn: () => api.get("/admin/marketplace/connection") });
@@ -136,9 +154,10 @@ export function MarketplacePage() {
   const entitlements = license ? parseEntitlements(license.entitlementJwt) : [];
   const installedMap = Object.fromEntries((installed ?? []).map((p) => [p.id, p.status]));
 
-  const plugins = (market?.data ?? []).filter((p) =>
-    !search || p.name.toLowerCase().includes(search.toLowerCase()) || p.description.toLowerCase().includes(search.toLowerCase()),
-  );
+  // No client-side filter: the server already answered this exact query. The
+  // old in-memory filter searched only the fetched page, so a plugin on page 2
+  // reported "no results" for its own name.
+  const plugins = market?.data ?? [];
 
   return (
     <div>
@@ -265,6 +284,20 @@ export function MarketplacePage() {
           );
         })}
       </div>
+
+      {/* Core's one pagination bar. It renders nothing at a single page, so a
+          small catalogue looks exactly as it did before. */}
+      {market?.meta && (
+        <Pager
+          page={market.meta.page}
+          totalPages={market.meta.totalPages}
+          onPage={setPage}
+          label={t("marketplace.pagination", {
+            page: market.meta.page, totalPages: market.meta.totalPages, total: market.meta.total,
+          })}
+          style={{ borderTop: "none" }}
+        />
+      )}
     </div>
   );
 }

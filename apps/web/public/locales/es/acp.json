@@ -1178,7 +1178,8 @@
       "validating": "Validando el paquete…",
       "installing": "Instalando…",
       "finalizing": "Finalizando…"
-    }
+    },
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensiones"
   },
   "updates": {
     "title": "Actualizaciones",
@@ -1252,7 +1253,37 @@
     "expiryDialogExpiredMarker": "caducada",
     "expiryDialogNote": "Renueva tu licencia en el marketplace para evitar una interrupción de los plugins de pago.",
     "expiryDialogView": "Ver licencia",
-    "entitlementsHint": "Lo que la habilitación firmada concede ahora mismo a esta instalación. Tu cuenta puede poseer más — mira arriba."
+    "entitlementsHint": "Lo que la habilitación firmada concede ahora mismo a esta instalación. Tu cuenta puede poseer más — mira arriba.",
+    "hero": {
+      "badgeUnlicensed": "Sin licencia",
+      "badgeExpired": "Caducada",
+      "badgeLastKnown": "Último estado",
+      "badgeActive": "Activa",
+      "badgeDays_one": "{{count}} día",
+      "badgeDays_other": "{{count}} días",
+      "disconnectedHeadline": "Sin licencia activa",
+      "disconnectedSub": "El núcleo sigue funcionando sin límite de tiempo. Para los plugins de pago, conecta tu cuenta del marketplace a la derecha: la licencia se activa sola.",
+      "expiredHeadline": "La licencia caducó el {{date}}",
+      "expiredHeadlineBare": "Licencia caducada",
+      "expiredSub": "Los plugins instalados siguen funcionando. Las instalaciones nuevas y las actualizaciones están bloqueadas hasta renovar la licencia.",
+      "expiredHint": "Renuévala en el marketplace y actualiza aquí los permisos: no hay que reemitir nada.",
+      "activeHeadline": "Con licencia hasta el {{date}}",
+      "activeHeadlineBare": "Con licencia",
+      "activeSub": "Activada con tu cuenta del marketplace el {{date}}. El vínculo sigue a esta instalación, no al dominio.",
+      "activatedOn": "Activada con tu cuenta del marketplace el {{date}}.",
+      "expiringHeadline": "Caduca el {{date}}",
+      "expiringHint": "Tras caducar, los plugins instalados siguen funcionando, pero las actualizaciones y las instalaciones nuevas quedan bloqueadas.",
+      "offlineHint": "Ahora mismo no se puede contactar con el marketplace. Se muestra el último permiso firmado y verificado: no hay nada bloqueado."
+    },
+    "showDetails": "Detalles técnicos",
+    "hideDetails": "Ocultar detalles",
+    "technical": "Datos técnicos",
+    "copy": "Copiar",
+    "connectHint": "Consigue un código: marketplace → Cuenta → Instalaciones → Generar código.",
+    "railSignedUntil": "Firmada hasta",
+    "railGrants": "Permisos",
+    "railNextCheck": "Próxima comprobación",
+    "railNote": "La comprobación se ejecuta automáticamente cada 24 horas. Solo hace falta hacerla a mano justo después de comprar algo."
   },
   "permissions": {
     "loading": "Cargando…",
@@ -1924,6 +1955,22 @@
     "installTitle": "Instalando {{name}}",
     "manage": "Gestionar",
     "themes": "Ir a Temas",
-    "noSeat": "Sin puesto libre"
+    "noSeat": "Sin puesto libre",
+    "countLive": "{{total}} licencias · {{live}} activas aquí",
+    "colProduct": "Producto",
+    "colSeats": "Plazas",
+    "colUpdates": "Actualizaciones",
+    "colHere": "Aquí",
+    "stateLocked": "Bloqueado",
+    "stateUpdate": "Actualizar a {{version}}",
+    "stateActive": "Activo",
+    "stateNoSeat": "Sin plaza",
+    "stateInactive": "Inactivo",
+    "seatsShort": "{{used}} / {{total}}",
+    "updatesNone": "—",
+    "update": "Actualizar",
+    "unreachableTitle": "Marketplace no disponible",
+    "emptyTitle": "Esta cuenta aún no tiene nada",
+    "retry": "Reintentar"
   }
 }

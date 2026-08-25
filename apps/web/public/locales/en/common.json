@@ -40,8 +40,6 @@
   },
   "maintenance": {
     "badge": "Maintenance in progress",
-    "remaining": "Remaining",
-    "backOnline": "Back online",
     "teamAccess": "Team access",
     "signInToBypass": "Maintenance mode is active. Sign in to bypass.",
     "notAuthorized": "Your account isn't allowed to bypass maintenance.",
@@ -52,7 +50,26 @@
     "signIn": "Sign in",
     "signingIn": "Signing in…",
     "signInError": "Sign-in failed. Check your credentials.",
-    "authorizedOnly": "Authorized personnel only"
+    "authorizedOnly": "Authorized personnel only",
+    "autoUpdates": "Updates on its own",
+    "hours": "Hours",
+    "minutes": "Minutes",
+    "seconds": "Seconds",
+    "backOnlineAround": "Back online around {{time}}",
+    "whatWereDoing": "What we're doing",
+    "stepCaption": "Step {{current}} of {{total}}",
+    "stepInProgress": "In progress",
+    "stepDone": "Done",
+    "stepQueued": "Queued",
+    "affectedServices": "Affected services",
+    "service": {
+      "offline": "Offline",
+      "degraded": "Degraded",
+      "operational": "Operational"
+    },
+    "updatesLabel": "Updates:",
+    "staffSignIn": "Staff sign-in",
+    "autoRefreshNote": "This page brings itself back the moment we're done — no need to reload."
   },
   "footer": {
     "whosOnline": "Who's online",

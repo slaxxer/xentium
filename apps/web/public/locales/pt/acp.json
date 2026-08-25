@@ -1178,7 +1178,8 @@
       "validating": "A validar o pacote…",
       "installing": "A instalar…",
       "finalizing": "A concluir…"
-    }
+    },
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensões"
   },
   "updates": {
     "title": "Atualizações",
@@ -1252,7 +1253,37 @@
     "expiryDialogExpiredMarker": "expirada",
     "expiryDialogNote": "Renove a sua licença no marketplace para evitar uma interrupção dos plugins pagos.",
     "expiryDialogView": "Ver licença",
-    "entitlementsHint": "O que a habilitação assinada concede neste momento a esta instalação. A tua conta pode possuir mais — vê acima."
+    "entitlementsHint": "O que a habilitação assinada concede neste momento a esta instalação. A tua conta pode possuir mais — vê acima.",
+    "hero": {
+      "badgeUnlicensed": "Sem licença",
+      "badgeExpired": "Expirada",
+      "badgeLastKnown": "Último estado",
+      "badgeActive": "Ativa",
+      "badgeDays_one": "{{count}} dia",
+      "badgeDays_other": "{{count}} dias",
+      "disconnectedHeadline": "Sem licença ativa",
+      "disconnectedSub": "O núcleo continua a funcionar sem limite de tempo. Para plugins pagos, liga a tua conta do marketplace à direita — a licença ativa-se sozinha.",
+      "expiredHeadline": "Licença expirou em {{date}}",
+      "expiredHeadlineBare": "Licença expirada",
+      "expiredSub": "Os plugins instalados continuam a funcionar. Novas instalações e atualizações ficam bloqueadas até renovares a licença.",
+      "expiredHint": "Renova no marketplace e atualiza aqui as permissões — não é preciso reemitir nada.",
+      "activeHeadline": "Licenciado até {{date}}",
+      "activeHeadlineBare": "Licenciado",
+      "activeSub": "Ativada através da tua conta do marketplace em {{date}}. A ligação segue esta instalação, não o domínio.",
+      "activatedOn": "Ativada através da tua conta do marketplace em {{date}}.",
+      "expiringHeadline": "Expira em {{date}}",
+      "expiringHint": "Depois de expirar, os plugins instalados continuam a funcionar, mas as atualizações e as novas instalações ficam bloqueadas.",
+      "offlineHint": "O marketplace está inacessível neste momento. O que vês é a última permissão assinada e verificada — nada está bloqueado."
+    },
+    "showDetails": "Detalhes técnicos",
+    "hideDetails": "Ocultar detalhes",
+    "technical": "Dados técnicos",
+    "copy": "Copiar",
+    "connectHint": "Obter um código: marketplace → Conta → Instalações → Gerar código.",
+    "railSignedUntil": "Assinada até",
+    "railGrants": "Permissões",
+    "railNextCheck": "Próxima verificação",
+    "railNote": "A verificação corre automaticamente a cada 24 horas. Só é preciso fazê-la à mão logo depois de comprares algo."
   },
   "permissions": {
     "loading": "Carregando…",
@@ -1924,6 +1955,22 @@
     "installTitle": "A instalar {{name}}",
     "manage": "Gerir",
     "themes": "Ir para Temas",
-    "noSeat": "Sem lugar livre"
+    "noSeat": "Sem lugar livre",
+    "countLive": "{{total}} licenças · {{live}} ativas aqui",
+    "colProduct": "Produto",
+    "colSeats": "Lugares",
+    "colUpdates": "Atualizações",
+    "colHere": "Aqui",
+    "stateLocked": "Bloqueado",
+    "stateUpdate": "Atualizar {{version}}",
+    "stateActive": "Ativo",
+    "stateNoSeat": "Sem lugar",
+    "stateInactive": "Inativo",
+    "seatsShort": "{{used}} / {{total}}",
+    "updatesNone": "—",
+    "update": "Atualizar",
+    "unreachableTitle": "Marketplace inacessível",
+    "emptyTitle": "Esta conta ainda não tem nada",
+    "retry": "Tentar novamente"
   }
 }

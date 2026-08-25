@@ -1,79 +1,38 @@
-# Last codebase update — 2026-08-23
+# Last codebase update — 2026-08-25
 
-**The instance ↔ marketplace link.** The CMS client spoke the deleted v1 protocol
-(`/account/connect` with no siteId, `/marketplace/plugins`, unsigned everything);
-the v2 marketplace serves `/api/v1` with Ed25519 request signing and install
-binding. Nothing connected the two. Now it does, verified live against a running
-marketplace — connect, activate, ownership, catalogue, download, heartbeat.
+**The maintenance screen + its ACP editor, rebuilt from the canvas** in
+`nodevo-redesign/Maintenance page redesign`. The public screen went from a split
+"colour panel + permanent login form" to a centred status card (countdown, named
+steps, affected services, follow-us links, staff sign-in in a dialog); ACP →
+System → Settings → Maintenance mode grew the editor those features need.
+Verified in the browser in both themes: steps and bar modes, both
+backgrounds, the sign-in dialog and its error path, and auto-refresh actually
+bringing the page back on its own when maintenance ended.
 
 ## New
 
 | File | Purpose |
 |---|---|
-| `apps/api/src/core/license-engine/site-identity.ts` | `getSiteId` / `getSiteDomain` / `resolveEnvironment`, extracted from license-engine so the protocol client can ask "who am I" without an import cycle. |
-| `apps/api/src/core/license-engine/protocol-client.ts` | The signed transport. Generates + stores the install's Ed25519 keypair (private half encrypted at rest), signs `{METHOD}\n{pathname}\n{ts}\n{sha256(body)}`, maps marketplace errors to NEC codes, persists rotated tokens. |
-| `apps/api/src/core/license-engine/entitlement-claims.test.ts` | Regression guard on the entitlement claim shape (see below). |
-| `apps/web/src/features/admin/components/OwnedLicenses.tsx` | ACP → License → "Your licences": what the account owns, seats, updates window, whether it is bound here, install if it is not. |
+| `apps/web/src/features/admin/pages/MaintenanceSettings.tsx` | The Maintenance-mode card body: master-switch banner, grouped rows, and the three repeating editors (steps, services, links) plus the background picker. Writes into the Settings page's own draft, so it autosaves with every other section and reports into the one SaveChip. |
 
 ## Changed
 
-- `marketplace-source.ts` — rewritten for `/api/v1`. Connect registers the public
-  key; catalogue is server-paginated (the paid-id refresh walks every page);
-  `listOwned()` is new; downloads send `kind`.
-- `license-engine.ts` — activation goes through the signed protocol. The legacy
-  manual-key `/activate` refresh now refuses with a coded error instead of
-  calling a host that no longer exists. **`EntitlementPayload.entitlements` is
-  `EntitlementGrant[]`, not `string[]`** — the marketplace has always signed
-  objects (`{id, updatesUntil?}`); this side matched them as strings, so
-  `getEntitlementStatus` returned `missing` for plugins the site owned, with
-  every check green. `licenseKey` → `licenseRef`, matching what is signed.
-- `jobs/updateCheck.ts` — heartbeat on `/updates/check`, advisories fold into the
-  `critical` flag, rotated token stored first. **Single-flight Redis lock**: the
-  worker fires one heartbeat on boot and the scheduler fires its missed run in
-  the same millisecond, so rotation happened twice and stranded a token.
-- `config/env.ts` — `LICENSE_SERVER_URL` defaults to
-  `https://marketplace.nodelab.codes/api/v1` (the old default host is gone).
-- `MarketplacePage.tsx` — prefers the marketplace's `owned` flag over the local
-  JWT (a purchase made a minute ago is not in a JWT that refreshes daily); free
-  plugins install without an entitlement instead of offering "Buy".
-- `contracts` — `EntitlementGrant` published; `MarketplaceListing` gains `kind`,
-  `owned`, nullable `latestVersion`; `DownloadRequest` gains `kind`.
-- 5 locales: `owned.*`, `license.entitlementsHint`, and `license.accountDesc`
-  rewritten (it still described domain binding).
+| File | Purpose |
+|---|---|
+| `apps/api/src/modules/maintenance/maintenance.service.ts` | Status document extended: progress `mode`/`steps`/`currentStep`, `countdown`, `autoRefresh`, `background`, `services`, `links`, `staffLink`. Settings are free-form JSON and this endpoint is public, so every structured value is re-checked on the way out — bounded lists, a fixed icon vocabulary, `http(s)`-only link URLs. |
+| `apps/web/src/features/maintenance/MaintenancePage.tsx` | Rewritten as the status card. Staff sign-in (with the PIN step) moved into a dialog; a locked-out account still gets the link even when the footer link is hidden. |
+| `apps/web/src/features/maintenance/MaintenancePage.scss` | Rewritten. Every hex in the canvas mapped to a `--c-*` token, so the screen themes in light as well as dark and both backgrounds follow the site's accents. |
+| `apps/web/src/features/maintenance/useMaintenance.ts` | Status types; the poll interval now follows the data — 30s while the site is up, 10s while the screen is showing with auto-refresh on, and off when the admin turned auto-refresh off. |
+| `apps/web/src/features/admin/pages/SettingsPage.tsx` | A section may now supply its own body (`custom`) with an explicit `keys` list, so the page-wide autosave still covers it. Maintenance is the first; new defaults added. |
+| `apps/web/src/features/admin/pages/acpSystem.scss` | The card's styles: group headings, master banner, live/offline pill, chips, segmented picker, list editors, status chips, background picker. |
+| `apps/web/public/locales/en/common.json` | Maintenance screen copy — countdown units, step states, service states, footer. Dropped `remaining`/`backOnline` (no longer rendered). |
+| `apps/web/public/locales/en/acp.json` | New `settings.maintenance.*` block; the old generic `settings.fields.maintenance*` / `placeholders.maintenance*` entries removed with the rows that used them. |
 
-## Marketplace repo (`~/Development/nodevo-marketplace`)
+## Notes
 
-- `GET /api/v1/account/licenses` — the ownership direction of the protocol.
-- Single-use download grants: `/downloads/authorize` now mints one and returns a
-  real `downloadUrl`; `GET /api/v1/downloads/:token` streams the artifact once.
-  `mkt_download_grants` existed and had never been used.
-- **The updates window is enforced** at the download gate. It was signed into
-  every entitlement and shown in the ACP while the gate ignored it, so renewing
-  updates bought nothing.
-- `optionalInstanceToken` on `/catalog` — `owned` was dead code without it.
-- +9 tests (`ownership.e2e.test.ts`). Suite 59 → 68.
-
-## Verified live, not just typechecked
-
-Both halves running: connect → signed activate → entitlement verifies → owned
-licences listed → `owned=true` in the catalogue → download grant → 404 on reuse →
-heartbeat rotates the token once. The ACP renders both licences with seats and
-updates windows, and a lapsed licence refuses to install with a renewal message.
-
-## Docs
-
-- **`docs/marketplace-protocol.md`** (new) — the outbound contract: install
-  binding and why signing pays for it, the canonical string and the four ways to
-  get it wrong, all eight endpoints, rotation on the heartbeat, the two-step
-  download, and the entitlement claim shape. It exists because the claim shape
-  drifted silently once; the doc says so, at the top.
-- `docs/API.md` — the licensing table was rewritten. It still documented
-  `POST /license/activate`, removed 2026-07-18, and had no `/marketplace/owned`,
-  `/updates`, `/install`, `/update` or `/status-summary`.
-
-## Known, not done
-
-- ACP browse shows one page (limit 20) with no pagination UI — fine at 14
-  listings, silently truncating past 20.
-- `popular` catalogue sort still falls back to alphabetical.
-- VAT is displayed but never charged (marketplace side, unchanged).
+- `maintenance.progress_mode` defaults to `bar` so existing installs are
+  unchanged: a bar that shows only above 0%. Steps are opt-in.
+- Only `en` was touched — de/es/fr/pt carry no maintenance or settings-field
+  keys and fall back to English.
+- The dev instance's maintenance settings were seeded during verification and
+  restored to defaults afterwards; maintenance is off.

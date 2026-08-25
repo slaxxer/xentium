@@ -36,6 +36,17 @@ export interface StreamedJobOptions {
   successMessage: (final: ProgressEvent) => string;
   /** Message shown when it fails, or when the stream dies mid-flight. */
   failureMessage: (final: ProgressEvent | null, error?: unknown) => string;
+  /**
+   * Render the progress somewhere else instead of in the shared dialog.
+   *
+   * The licence table puts the bar in the row being installed, because that is
+   * where the admin is already looking. A caller that opts out of the dialog
+   * owns the whole feedback surface — including reporting FAILURE, which the
+   * dialog would otherwise have shown.
+   */
+  silent?: boolean;
+  /** Every non-terminal `{phase, percent, message}` event, in order. */
+  onProgress?: (evt: ProgressEvent) => void;
 }
 
 export interface StreamedJobResult {
@@ -48,11 +59,15 @@ export async function runStreamedJob(
   body: unknown,
   opts: StreamedJobOptions,
 ): Promise<StreamedJobResult> {
-  const dlg = openProgressDialog({
-    icon: opts.icon ?? "update",
-    title: opts.title,
-    message: opts.startMessage ?? "",
-  });
+  // A no-op stand-in rather than `dlg?.` at four call sites: the streaming loop
+  // below is the fiddly part and must read identically in both modes.
+  const dlg = opts.silent
+    ? { update: () => {}, succeed: () => {}, fail: () => {} }
+    : openProgressDialog({
+        icon: opts.icon ?? "update",
+        title: opts.title,
+        message: opts.startMessage ?? "",
+      });
 
   try {
     const res = await apiStream(path, body);
@@ -81,6 +96,7 @@ export async function runStreamedJob(
           continue;   // a malformed line must not abort a running install
         }
         if (evt.done) { final = evt; continue; }
+        opts.onProgress?.(evt);
         dlg.update(evt.percent ?? 0, opts.phaseLabel(evt.phase, evt.message));
       }
     }
