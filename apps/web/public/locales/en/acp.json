@@ -92,7 +92,7 @@
       },
       "maintenance": {
         "title": "Maintenance mode",
-        "desc": "Take the site offline for everyone except a chosen group. Staff sign in on the maintenance screen to keep working."
+        "desc": "Take the site offline for everyone except a chosen group — and tell visitors what's happening."
       },
       "registration": {
         "title": "Registration",
@@ -135,34 +135,6 @@
       "landing": {
         "label": "Landing page",
         "desc": "Where the site root (/) sends visitors. Only enabled sections and installed plugins appear here."
-      },
-      "maintenanceEnabled": {
-        "label": "Maintenance mode",
-        "desc": "When on, the site shows the maintenance screen to everyone outside the allowed group."
-      },
-      "maintenanceAllowedGroup": {
-        "label": "Allowed group",
-        "desc": "Members of this group (and administrators) can sign in and use the site during maintenance."
-      },
-      "maintenanceTitle": {
-        "label": "Headline",
-        "desc": "The large heading shown on the maintenance screen."
-      },
-      "maintenanceMessage": {
-        "label": "Reason",
-        "desc": "A short explanation of why the site is down."
-      },
-      "maintenanceProgressLabel": {
-        "label": "Progress label",
-        "desc": "Text shown next to the progress bar (e.g. \"Migrating database\")."
-      },
-      "maintenanceProgressPercent": {
-        "label": "Progress %",
-        "desc": "Progress bar fill (0–100). Set to 0 to hide the bar."
-      },
-      "maintenanceEta": {
-        "label": "Back online (ETA)",
-        "desc": "Expected return time. Drives the countdown and the \"back online\" time. Leave empty to hide."
       },
       "siteUrl": {
         "label": "Site URL",
@@ -283,9 +255,6 @@
       "members": "Members"
     },
     "placeholders": {
-      "maintenanceTitle": "Down for a quick tune-up.",
-      "maintenanceMessage": "We're rolling out an update. We'll be back shortly.",
-      "maintenanceProgressLabel": "Migrating database",
       "siteName": "My Nodevo Site",
       "siteUrl": "https://mysite.com",
       "siteDescription": "A Nodevo-powered platform",
@@ -328,6 +297,105 @@
       "saved": "Saved",
       "removed": "Removed",
       "placeholder": "Enter a new value"
+    },
+    "maintenance": {
+      "pill": {
+        "offline": "Site offline · staff only",
+        "live": "Site is live"
+      },
+      "master": {
+        "label": "Maintenance mode",
+        "desc": "Everyone outside the allowed groups sees the maintenance screen. Admins always get through."
+      },
+      "groups": {
+        "access": "Who gets through",
+        "copy": "What visitors read",
+        "progress": "Progress",
+        "timing": "Timing",
+        "look": "Look of the page",
+        "extras": "Extras"
+      },
+      "allowedGroups": {
+        "label": "Allowed groups",
+        "desc": "These groups can sign in and use the site while maintenance is on.",
+        "adminLocked": "Administrators always have access during maintenance."
+      },
+      "headline": {
+        "label": "Headline",
+        "desc": "The large heading on the maintenance screen.",
+        "placeholder": "Down for a quick tune-up."
+      },
+      "reason": {
+        "label": "Reason",
+        "desc": "A short, human explanation of why the site is down.",
+        "placeholder": "We're making the community better. We'll be back shortly."
+      },
+      "mode": {
+        "label": "How progress is shown",
+        "desc": "Named steps read better for long work; a bar is fine for a quick job.",
+        "options": {
+          "steps": "Steps",
+          "bar": "Bar",
+          "hidden": "Hidden"
+        }
+      },
+      "steps": {
+        "label": "Steps",
+        "desc": "Name each stage of the work. Mark the one you're on — visitors see it live.",
+        "add": "Add step",
+        "new": "New step",
+        "remove": "Remove step",
+        "markCurrent": "Mark as the current step"
+      },
+      "bar": {
+        "label": "Bar label & fill",
+        "desc": "Text beside the bar, and how full it is (0–100). At 0 the bar is hidden.",
+        "placeholder": "Migrating database"
+      },
+      "eta": {
+        "label": "Back online (ETA)",
+        "desc": "Drives the countdown and the “back online” time. Leave empty to hide both."
+      },
+      "countdown": {
+        "label": "Live countdown",
+        "desc": "Show hours / minutes / seconds ticking down to the ETA."
+      },
+      "autoRefresh": {
+        "label": "Auto-refresh when back",
+        "desc": "Visitors land on the site the moment maintenance ends — no reload needed."
+      },
+      "background": {
+        "label": "Background",
+        "desc": "Both follow your site's accent colours.",
+        "options": {
+          "aurora": "Aurora",
+          "solid": "Solid"
+        }
+      },
+      "services": {
+        "label": "Affected services",
+        "desc": "Listed on the maintenance screen. Click a status chip to cycle it.",
+        "add": "Add service",
+        "new": "New service",
+        "remove": "Remove service",
+        "cycle": "Change status",
+        "states": {
+          "offline": "Offline",
+          "degraded": "Degraded",
+          "operational": "Operational"
+        }
+      },
+      "links": {
+        "label": "Where to follow updates",
+        "desc": "Shown as small icon links in the footer of the maintenance screen.",
+        "add": "Add link",
+        "remove": "Remove link",
+        "cycleIcon": "Change icon"
+      },
+      "staffLink": {
+        "label": "Staff sign-in link",
+        "desc": "A discreet link in the footer opens the sign-in panel. Hide it and staff use /login directly."
+      }
     }
   },
   "invite": {

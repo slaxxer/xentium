@@ -1,53 +1,38 @@
 # Last codebase update — 2026-08-25
 
-**ACP → Extensions → License, rebuilt from the canvas** in
-`nodevo-redesign/License page redesign`. The page was three stacked cards that
-each answered a different question; it is now a status hero, one merged
-licences-and-entitlements table, and a right rail. Verified in the browser in
-both themes against a local marketplace, which is where the one real bug turned
-up — everything below passed typecheck, lint and 423 tests before it was found.
+**The maintenance screen + its ACP editor, rebuilt from the canvas** in
+`nodevo-redesign/Maintenance page redesign`. The public screen went from a split
+"colour panel + permanent login form" to a centred status card (countdown, named
+steps, affected services, follow-us links, staff sign-in in a dialog); ACP →
+System → Settings → Maintenance mode grew the editor those features need.
+Verified in the browser in both themes: steps and bar modes, both
+backgrounds, the sign-in dialog and its error path, and auto-refresh actually
+bringing the page back on its own when maintenance ended.
 
 ## New
 
 | File | Purpose |
 |---|---|
-| `apps/web/src/features/admin/pages/LicensePage.scss` | The page's styles. Every hex in the canvas mapped to a semantic token — the map is documented in the file header — so the page themes in dark as well as light. |
+| `apps/web/src/features/admin/pages/MaintenanceSettings.tsx` | The Maintenance-mode card body: master-switch banner, grouped rows, and the three repeating editors (steps, services, links) plus the background picker. Writes into the Settings page's own draft, so it autosaves with every other section and reports into the one SaveChip. |
 
 ## Changed
 
 | File | Purpose |
 |---|---|
-| `apps/web/src/features/admin/pages/LicensePage.tsx` | Rewritten: header action, status hero with five derived states, two-column grid, right rail (connection + entitlement summary). Owns all three queries so hero, table and rail cannot disagree. |
-| `apps/web/src/features/admin/components/OwnedLicenses.tsx` | Rewritten as the merged table: product / seats / updates / here / action, with per-row state and action derivation and inline install progress. Now presentational — the query moved up to the page. |
-| `apps/web/src/lib/streamProgress.ts` | Two additive optional options, `silent` and `onProgress`, so a caller can render progress itself instead of in the shared dialog. Existing callers and all 10 tests untouched. |
-| `apps/web/public/locales/{en,de,es,fr,pt}/acp.json` | 44 new keys each, nested under `license.hero.*`, `license.rail*` and `owned.*`. |
+| `apps/api/src/modules/maintenance/maintenance.service.ts` | Status document extended: progress `mode`/`steps`/`currentStep`, `countdown`, `autoRefresh`, `background`, `services`, `links`, `staffLink`. Settings are free-form JSON and this endpoint is public, so every structured value is re-checked on the way out — bounded lists, a fixed icon vocabulary, `http(s)`-only link URLs. |
+| `apps/web/src/features/maintenance/MaintenancePage.tsx` | Rewritten as the status card. Staff sign-in (with the PIN step) moved into a dialog; a locked-out account still gets the link even when the footer link is hidden. |
+| `apps/web/src/features/maintenance/MaintenancePage.scss` | Rewritten. Every hex in the canvas mapped to a `--c-*` token, so the screen themes in light as well as dark and both backgrounds follow the site's accents. |
+| `apps/web/src/features/maintenance/useMaintenance.ts` | Status types; the poll interval now follows the data — 30s while the site is up, 10s while the screen is showing with auto-refresh on, and off when the admin turned auto-refresh off. |
+| `apps/web/src/features/admin/pages/SettingsPage.tsx` | A section may now supply its own body (`custom`) with an explicit `keys` list, so the page-wide autosave still covers it. Maintenance is the first; new defaults added. |
+| `apps/web/src/features/admin/pages/acpSystem.scss` | The card's styles: group headings, master banner, live/offline pill, chips, segmented picker, list editors, status chips, background picker. |
+| `apps/web/public/locales/en/common.json` | Maintenance screen copy — countdown units, step states, service states, footer. Dropped `remaining`/`backOnline` (no longer rendered). |
+| `apps/web/public/locales/en/acp.json` | New `settings.maintenance.*` block; the old generic `settings.fields.maintenance*` / `placeholders.maintenance*` entries removed with the rows that used them. |
 
-## The bug that only showed up on screen
+## Notes
 
-`rowIsLive` was `!expired && l.activeHere`. But `activeHere` is the
-*marketplace's* answer — a seat is bound to this install — and it becomes true
-the moment a licence activates, before any files exist locally. Two seeded rows
-therefore rendered a green **Active** chip next to an **Install** button, and the
-rail counted them as "2 active here".
-
-The canvas had this right (`!!installedVersion && p.activeHere`); the condition
-was dropped in the port. A row now requires the activation *and* an installed
-version. Same class as every entry in `ui-bugs-pass-tooling`: green tooling,
-wrong screen.
-
-## Deliberately not carried over
-
-- The canvas's bottom-right **scenario switcher** — an authoring affordance for
-  previewing the nine states, not product UI.
-- **"Last checked"**. There is no `lastCheckedAt` on the `License` model, only
-  `refreshAfter`, so the rail shows **Next check** from real data instead of
-  inventing a relative time. A real column is a small migration if wanted.
-
-## Open
-
-- `MarketplacePage` and `UpdatesPage` still install through the shared progress
-  dialog; only this page goes inline. Either propagate it or revert it —
-  `acp-page-conventions` says pages should not differ.
-- Two `@typescript-eslint/no-explicit-any` warnings in `LicensePage.tsx`, both
-  carried over verbatim from the previous file (`parseEntitlements`, the connect
-  `onError`). No new lint debt.
+- `maintenance.progress_mode` defaults to `bar` so existing installs are
+  unchanged: a bar that shows only above 0%. Steps are opt-in.
+- Only `en` was touched — de/es/fr/pt carry no maintenance or settings-field
+  keys and fall back to English.
+- The dev instance's maintenance settings were seeded during verification and
+  restored to defaults afterwards; maintenance is off.
