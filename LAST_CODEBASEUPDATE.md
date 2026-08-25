@@ -1,79 +1,53 @@
-# Last codebase update — 2026-08-23
+# Last codebase update — 2026-08-25
 
-**The instance ↔ marketplace link.** The CMS client spoke the deleted v1 protocol
-(`/account/connect` with no siteId, `/marketplace/plugins`, unsigned everything);
-the v2 marketplace serves `/api/v1` with Ed25519 request signing and install
-binding. Nothing connected the two. Now it does, verified live against a running
-marketplace — connect, activate, ownership, catalogue, download, heartbeat.
+**ACP → Extensions → License, rebuilt from the canvas** in
+`nodevo-redesign/License page redesign`. The page was three stacked cards that
+each answered a different question; it is now a status hero, one merged
+licences-and-entitlements table, and a right rail. Verified in the browser in
+both themes against a local marketplace, which is where the one real bug turned
+up — everything below passed typecheck, lint and 423 tests before it was found.
 
 ## New
 
 | File | Purpose |
 |---|---|
-| `apps/api/src/core/license-engine/site-identity.ts` | `getSiteId` / `getSiteDomain` / `resolveEnvironment`, extracted from license-engine so the protocol client can ask "who am I" without an import cycle. |
-| `apps/api/src/core/license-engine/protocol-client.ts` | The signed transport. Generates + stores the install's Ed25519 keypair (private half encrypted at rest), signs `{METHOD}\n{pathname}\n{ts}\n{sha256(body)}`, maps marketplace errors to NEC codes, persists rotated tokens. |
-| `apps/api/src/core/license-engine/entitlement-claims.test.ts` | Regression guard on the entitlement claim shape (see below). |
-| `apps/web/src/features/admin/components/OwnedLicenses.tsx` | ACP → License → "Your licences": what the account owns, seats, updates window, whether it is bound here, install if it is not. |
+| `apps/web/src/features/admin/pages/LicensePage.scss` | The page's styles. Every hex in the canvas mapped to a semantic token — the map is documented in the file header — so the page themes in dark as well as light. |
 
 ## Changed
 
-- `marketplace-source.ts` — rewritten for `/api/v1`. Connect registers the public
-  key; catalogue is server-paginated (the paid-id refresh walks every page);
-  `listOwned()` is new; downloads send `kind`.
-- `license-engine.ts` — activation goes through the signed protocol. The legacy
-  manual-key `/activate` refresh now refuses with a coded error instead of
-  calling a host that no longer exists. **`EntitlementPayload.entitlements` is
-  `EntitlementGrant[]`, not `string[]`** — the marketplace has always signed
-  objects (`{id, updatesUntil?}`); this side matched them as strings, so
-  `getEntitlementStatus` returned `missing` for plugins the site owned, with
-  every check green. `licenseKey` → `licenseRef`, matching what is signed.
-- `jobs/updateCheck.ts` — heartbeat on `/updates/check`, advisories fold into the
-  `critical` flag, rotated token stored first. **Single-flight Redis lock**: the
-  worker fires one heartbeat on boot and the scheduler fires its missed run in
-  the same millisecond, so rotation happened twice and stranded a token.
-- `config/env.ts` — `LICENSE_SERVER_URL` defaults to
-  `https://marketplace.nodelab.codes/api/v1` (the old default host is gone).
-- `MarketplacePage.tsx` — prefers the marketplace's `owned` flag over the local
-  JWT (a purchase made a minute ago is not in a JWT that refreshes daily); free
-  plugins install without an entitlement instead of offering "Buy".
-- `contracts` — `EntitlementGrant` published; `MarketplaceListing` gains `kind`,
-  `owned`, nullable `latestVersion`; `DownloadRequest` gains `kind`.
-- 5 locales: `owned.*`, `license.entitlementsHint`, and `license.accountDesc`
-  rewritten (it still described domain binding).
+| File | Purpose |
+|---|---|
+| `apps/web/src/features/admin/pages/LicensePage.tsx` | Rewritten: header action, status hero with five derived states, two-column grid, right rail (connection + entitlement summary). Owns all three queries so hero, table and rail cannot disagree. |
+| `apps/web/src/features/admin/components/OwnedLicenses.tsx` | Rewritten as the merged table: product / seats / updates / here / action, with per-row state and action derivation and inline install progress. Now presentational — the query moved up to the page. |
+| `apps/web/src/lib/streamProgress.ts` | Two additive optional options, `silent` and `onProgress`, so a caller can render progress itself instead of in the shared dialog. Existing callers and all 10 tests untouched. |
+| `apps/web/public/locales/{en,de,es,fr,pt}/acp.json` | 44 new keys each, nested under `license.hero.*`, `license.rail*` and `owned.*`. |
 
-## Marketplace repo (`~/Development/nodevo-marketplace`)
+## The bug that only showed up on screen
 
-- `GET /api/v1/account/licenses` — the ownership direction of the protocol.
-- Single-use download grants: `/downloads/authorize` now mints one and returns a
-  real `downloadUrl`; `GET /api/v1/downloads/:token` streams the artifact once.
-  `mkt_download_grants` existed and had never been used.
-- **The updates window is enforced** at the download gate. It was signed into
-  every entitlement and shown in the ACP while the gate ignored it, so renewing
-  updates bought nothing.
-- `optionalInstanceToken` on `/catalog` — `owned` was dead code without it.
-- +9 tests (`ownership.e2e.test.ts`). Suite 59 → 68.
+`rowIsLive` was `!expired && l.activeHere`. But `activeHere` is the
+*marketplace's* answer — a seat is bound to this install — and it becomes true
+the moment a licence activates, before any files exist locally. Two seeded rows
+therefore rendered a green **Active** chip next to an **Install** button, and the
+rail counted them as "2 active here".
 
-## Verified live, not just typechecked
+The canvas had this right (`!!installedVersion && p.activeHere`); the condition
+was dropped in the port. A row now requires the activation *and* an installed
+version. Same class as every entry in `ui-bugs-pass-tooling`: green tooling,
+wrong screen.
 
-Both halves running: connect → signed activate → entitlement verifies → owned
-licences listed → `owned=true` in the catalogue → download grant → 404 on reuse →
-heartbeat rotates the token once. The ACP renders both licences with seats and
-updates windows, and a lapsed licence refuses to install with a renewal message.
+## Deliberately not carried over
 
-## Docs
+- The canvas's bottom-right **scenario switcher** — an authoring affordance for
+  previewing the nine states, not product UI.
+- **"Last checked"**. There is no `lastCheckedAt` on the `License` model, only
+  `refreshAfter`, so the rail shows **Next check** from real data instead of
+  inventing a relative time. A real column is a small migration if wanted.
 
-- **`docs/marketplace-protocol.md`** (new) — the outbound contract: install
-  binding and why signing pays for it, the canonical string and the four ways to
-  get it wrong, all eight endpoints, rotation on the heartbeat, the two-step
-  download, and the entitlement claim shape. It exists because the claim shape
-  drifted silently once; the doc says so, at the top.
-- `docs/API.md` — the licensing table was rewritten. It still documented
-  `POST /license/activate`, removed 2026-07-18, and had no `/marketplace/owned`,
-  `/updates`, `/install`, `/update` or `/status-summary`.
+## Open
 
-## Known, not done
-
-- ACP browse shows one page (limit 20) with no pagination UI — fine at 14
-  listings, silently truncating past 20.
-- `popular` catalogue sort still falls back to alphabetical.
-- VAT is displayed but never charged (marketplace side, unchanged).
+- `MarketplacePage` and `UpdatesPage` still install through the shared progress
+  dialog; only this page goes inline. Either propagate it or revert it —
+  `acp-page-conventions` says pages should not differ.
+- Two `@typescript-eslint/no-explicit-any` warnings in `LicensePage.tsx`, both
+  carried over verbatim from the previous file (`parseEntitlements`, the connect
+  `onError`). No new lint debt.

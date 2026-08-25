@@ -1,0 +1,282 @@
+/* ACP → Extensions → License.
+ *
+ * The canvas for this page is authored in light-mode hex. Every one of those
+ * values is a semantic token here instead, which is what makes the page work in
+ * dark mode at all — the ACP ships both themes and the design only drew one.
+ *
+ * Colour map (canvas → token):
+ *   #1a1c2e fg      → --c-fg          #5b5e74 muted   → --c-fg-muted
+ *   #9499ae subtle  → --c-fg-subtle   #5865f2 accent  → --c-accent
+ *   #e7e9fd soft    → --c-accent-soft #23a55a success → --c-success
+ *   #f4a259 warn    → --c-warn        #ef4444 danger  → --c-danger
+ *   #e6e7f1 border  → --c-border      #f3f4fb bg      → --c-bg
+ *   #ffffff surface → --c-surface     18px radius     → --radius-lg
+ */
+
+.lic-page { max-width: 1200px; }
+
+.lic-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+.lic-col {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+/* The rail drops under the main column before the table has to scroll. */
+@media (max-width: 1000px) {
+  .lic-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* A card that owns its own padding — the table and the hero both need to run
+   their dividers edge to edge, which .acp-card's uniform padding prevents. */
+.lic-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+}
+
+/* ── Status hero ─────────────────────────────────────────────────────────── */
+
+.lic-hero { display: flex; align-items: flex-start; gap: 18px; padding: 24px 24px 20px; }
+
+.lic-hero__icon {
+  width: 46px; height: 46px;
+  border-radius: var(--radius-md);
+  display: grid; place-items: center;
+  flex: 0 0 auto;
+  font-size: 19px;
+}
+
+.lic-hero__body { flex: 1; min-width: 0; }
+
+.lic-hero__line {
+  display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 4px;
+}
+
+.lic-hero__headline { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--c-fg); }
+
+.lic-hero__badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); }
+
+.lic-hero__sub { font-size: 13px; color: var(--c-fg-muted); line-height: 1.5; text-wrap: pretty; }
+
+.lic-hint {
+  margin-top: 12px;
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px; font-weight: 600; line-height: 1.45;
+}
+.lic-hint > svg { margin-top: 2px; flex-shrink: 0; }
+
+/* ── Install / environment strip ─────────────────────────────────────────── */
+
+.lic-meta { display: flex; align-items: center; gap: 14px; padding: 0 24px 18px; flex-wrap: wrap; }
+
+.lic-meta__item { display: flex; align-items: baseline; gap: 7px; }
+
+.lic-meta__label {
+  font-size: 11px; font-weight: 700;
+  color: var(--c-fg-muted);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+.lic-meta__value { font-size: 13px; font-weight: 600; color: var(--c-fg); font-family: monospace; }
+
+.lic-meta__rule { width: 1px; height: 16px; background: var(--c-border); }
+
+.lic-meta__toggle { margin-left: auto; }
+
+/* ── Technical details drawer ────────────────────────────────────────────── */
+
+.lic-tech {
+  border-top: 1px solid var(--c-border);
+  background: var(--c-bg);
+  padding: 18px 24px 20px;
+}
+
+.lic-tech__label {
+  font-size: 11px; font-weight: 700;
+  color: var(--c-fg-muted);
+  text-transform: uppercase; letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.lic-tech__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 700px) { .lic-tech__grid { grid-template-columns: 1fr; } }
+
+.lic-field {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 12px 11px 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+
+.lic-field__body { min-width: 0; flex: 1; }
+
+.lic-field__label {
+  font-size: 11px; color: var(--c-fg-muted); margin-bottom: 3px;
+  text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em;
+}
+
+.lic-field__value {
+  font-size: 13px; font-weight: 600; color: var(--c-fg);
+  font-family: monospace; word-break: break-all;
+}
+
+.lic-copy {
+  width: 28px; height: 28px; flex: none;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-fg-subtle);
+  cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 11px;
+  transition: color .15s, border-color .15s;
+}
+.lic-copy:hover { border-color: var(--c-accent-glow); color: var(--c-accent); }
+.lic-copy.is-copied { color: var(--c-success); }
+
+/* ── Licences & entitlements table ───────────────────────────────────────── */
+
+.lic-sec__head { padding: 22px 24px 16px; }
+
+.lic-sec__title {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 5px;
+  font-size: 15px; font-weight: 800; color: var(--c-fg);
+}
+.lic-sec__title > svg { color: var(--c-accent); }
+
+.lic-sec__count { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--c-fg-muted); }
+
+.lic-sec__desc { font-size: 13px; color: var(--c-fg-muted); text-wrap: pretty; }
+
+.lic-tablewrap { overflow-x: auto; }
+
+.lic-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 120px 104px 128px 116px;
+  padding: 0 24px;
+  align-items: center;
+}
+
+.lic-row--head {
+  border-top: 1px solid var(--c-border);
+  border-bottom: 1px solid var(--c-border);
+  background: var(--c-bg);
+}
+
+.lic-row--head > div {
+  padding: 10px 6px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--c-fg-muted);
+}
+
+.lic-row--item { border-bottom: 1px solid var(--c-border); }
+.lic-row--item:last-child { border-bottom: 0; }
+.lic-row--item:hover { background: var(--c-bg-hover); }
+
+.lic-row__product { padding: 14px 6px; min-width: 0; display: flex; align-items: center; gap: 11px; }
+.lic-row__kind { font-size: 15px; color: var(--c-fg-subtle); flex-shrink: 0; width: 16px; text-align: center; }
+.lic-row__name { font-size: 13.5px; font-weight: 700; color: var(--c-fg); line-height: 1.3; }
+.lic-row__key { font-size: 11.5px; color: var(--c-fg-subtle); font-family: monospace; }
+
+.lic-row__cell { padding: 14px 6px; font-size: 12.5px; font-weight: 600; color: var(--c-fg-muted); }
+.lic-row__cell.is-warn { color: var(--c-warn); }
+
+.lic-row__state { padding: 14px 6px; }
+.lic-row__action { padding: 14px 6px; display: flex; justify-content: flex-end; }
+
+.lic-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 10.5px; font-weight: 700;
+  white-space: nowrap;
+}
+.lic-chip > svg { font-size: 9px; }
+
+/* Inline install progress — the row is where the admin is already looking. */
+.lic-progress { width: 100%; }
+.lic-progress__track {
+  height: 4px; border-radius: var(--radius-pill);
+  background: var(--c-accent-soft);
+  overflow: hidden; margin-bottom: 5px;
+}
+.lic-progress__bar {
+  height: 4px; border-radius: var(--radius-pill);
+  background: var(--c-accent);
+  transition: width .25s ease;
+}
+.lic-progress__phase { font-size: 10.5px; font-weight: 700; color: var(--c-accent); white-space: nowrap; }
+
+/* ── Empty / unreachable notice inside the table card ────────────────────── */
+
+.lic-notice { border-top: 1px solid var(--c-border); padding: 26px 24px 30px; text-align: center; }
+.lic-notice__icon { font-size: 22px; margin-bottom: 10px; }
+.lic-notice__title { font-size: 13.5px; font-weight: 700; color: var(--c-fg); margin-bottom: 4px; }
+.lic-notice__body {
+  font-size: 13px; color: var(--c-fg-muted);
+  max-width: 420px; margin: 0 auto 14px;
+  line-height: 1.5; text-wrap: pretty;
+}
+
+/* ── Right rail ──────────────────────────────────────────────────────────── */
+
+.lic-rail__card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border-color);
+  border-radius: var(--card-radius);
+  padding: 20px;
+}
+
+.lic-rail__title {
+  display: flex; align-items: center; gap: 9px; margin-bottom: 6px;
+  font-size: 14px; font-weight: 800; color: var(--c-fg);
+}
+.lic-rail__title > svg { color: var(--c-accent); font-size: 14px; }
+
+.lic-rail__conn { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; font-size: 12px; font-weight: 700; }
+.lic-rail__dot { width: 7px; height: 7px; border-radius: 50%; }
+
+.lic-rail__desc {
+  font-size: 12.5px; color: var(--c-fg-muted);
+  line-height: 1.55; margin-bottom: 16px; text-wrap: pretty;
+}
+
+.lic-rail__stack { display: flex; flex-direction: column; gap: 10px; }
+
+.lic-rail__field { background: var(--c-bg); border-radius: var(--radius-sm); padding: 11px 13px; }
+.lic-rail__field .lic-field__label { font-size: 10.5px; }
+
+.lic-rail__eyebrow {
+  font-size: 11px; font-weight: 700; color: var(--c-fg-muted);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
+}
+
+.lic-rail__rows { display: flex; flex-direction: column; gap: 11px; }
+
+.lic-rail__row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.lic-rail__row dt { font-size: 12.5px; color: var(--c-fg-muted); }
+.lic-rail__row dd { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--c-fg); font-family: monospace; }
+
+.lic-rail__rule { height: 1px; background: var(--c-border); margin: 16px 0 14px; }
+
+.lic-rail__note { font-size: 12px; color: var(--c-fg-subtle); line-height: 1.5; }
+
+.lic-rail__hint { font-size: 11.5px; color: var(--c-fg-subtle); line-height: 1.45; }
+
+/* Full-width variants of the shared buttons, for the rail's single column. */
+.lic-rail__stack .btn-primary,
+.lic-rail__stack .btn-ghost-danger { width: 100%; justify-content: center; }
