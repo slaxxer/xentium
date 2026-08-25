@@ -10,6 +10,7 @@ import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
+import { MaintenanceSettings, MaintenanceStatusPill } from "./MaintenanceSettings";
 import { ErrorBoundary } from "../../errors/ErrorBoundary";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 
@@ -130,7 +131,16 @@ interface SectionField {
   step?: number;
 }
 
-interface Section { id: string; icon: AcpIconName; fields: SectionField[] }
+/** A section is either a list of generic rows (`fields`) or a body of its own
+ *  (`custom`) — the latter still declares its `keys` so the page-wide autosave
+ *  covers it exactly like every other section. */
+interface Section {
+  id: string;
+  icon: AcpIconName;
+  fields?: SectionField[];
+  custom?: "maintenance";
+  keys?: string[];
+}
 
 const SECTIONS: Section[] = [
   {
@@ -153,15 +163,24 @@ const SECTIONS: Section[] = [
     ],
   },
   {
-    id: "maintenance", icon: "cog",
-    fields: [
-      { i18nKey: "maintenanceEnabled",        key: "maintenance.enabled",          type: "toggle" },
-      { i18nKey: "maintenanceAllowedGroup",   key: "maintenance.allowed_groups",   type: "groups" },
-      { i18nKey: "maintenanceTitle",          key: "maintenance.title",            type: "text", placeholderKey: "maintenanceTitle" },
-      { i18nKey: "maintenanceMessage",        key: "maintenance.message",          type: "text", placeholderKey: "maintenanceMessage" },
-      { i18nKey: "maintenanceProgressLabel",  key: "maintenance.progress_label",   type: "text", placeholderKey: "maintenanceProgressLabel" },
-      { i18nKey: "maintenanceProgressPercent",key: "maintenance.progress_percent", type: "number", min: 0, max: 100, step: 5 },
-      { i18nKey: "maintenanceEta",            key: "maintenance.eta",              type: "datetime" },
+    id: "maintenance", icon: "cog", custom: "maintenance",
+    keys: [
+      "maintenance.enabled",
+      "maintenance.allowed_groups",
+      "maintenance.title",
+      "maintenance.message",
+      "maintenance.progress_mode",
+      "maintenance.progress_label",
+      "maintenance.progress_percent",
+      "maintenance.steps",
+      "maintenance.current_step",
+      "maintenance.eta",
+      "maintenance.countdown",
+      "maintenance.auto_refresh",
+      "maintenance.background",
+      "maintenance.services",
+      "maintenance.links",
+      "maintenance.staff_link",
     ],
   },
   {
@@ -228,9 +247,20 @@ const DEFAULTS: Record<string, unknown> = {
   "maintenance.allowed_groups":         ["admin"],
   "maintenance.title":                  "Down for a quick tune-up.",
   "maintenance.message":                "We're making the community better. We'll be back shortly.",
+  // "bar" keeps installs that predate the progress modes exactly as they were:
+  // a bar that only appears once the percentage is above zero.
+  "maintenance.progress_mode":          "bar",
   "maintenance.progress_label":         "In progress",
   "maintenance.progress_percent":       0,
+  "maintenance.steps":                  [],
+  "maintenance.current_step":           1,
   "maintenance.eta":                    "",
+  "maintenance.countdown":              true,
+  "maintenance.auto_refresh":           true,
+  "maintenance.background":             "aurora",
+  "maintenance.services":               [],
+  "maintenance.links":                  [],
+  "maintenance.staff_link":             true,
   "auth.registration_mode":             "open",
   "auth.allow_registration":            true,
   "auth.require_email_verification":    true,
@@ -307,7 +337,7 @@ export function SettingsPage() {
 
   // Auto-save the General-tab settings only. The Beta tab (beta.*) is managed by
   // its own panel/mutations, so those keys are excluded here.
-  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields.map(f => f.key));
+  const GENERAL_KEYS = SECTIONS.flatMap(s => s.fields?.map(f => f.key) ?? s.keys ?? []);
   const rawAll = parseSettings(settings);
   const generalDraft = Object.fromEntries(GENERAL_KEYS.map(k => [k, draft[k]]));
   const generalSaved = settings.length
@@ -492,9 +522,17 @@ export function SettingsPage() {
                     <h3>{t(`settings.sections.${section.id}.title`)}</h3>
                     <p>{t(`settings.sections.${section.id}.desc`)}</p>
                   </div>
+                  {/* Whether the site is actually closed is the first thing an
+                      admin opening this card wants to know. */}
+                  {section.custom === "maintenance" && (
+                    <MaintenanceStatusPill on={draft["maintenance.enabled"] === true} />
+                  )}
                 </div>
+                {section.custom === "maintenance" ? (
+                  <MaintenanceSettings draft={draft} set={set} groups={allGroups} />
+                ) : (
                 <div className="set-rows">
-                  {section.fields.map((f) => (
+                  {(section.fields ?? []).map((f) => (
                     <div key={f.key} className="set-row">
                       <div>
                         <div className="set-row__label">{t(`settings.fields.${f.i18nKey}.label`)}</div>
@@ -504,6 +542,7 @@ export function SettingsPage() {
                     </div>
                   ))}
                 </div>
+                )}
                 {section.id === "registration" && draft["auth.registration_mode"] === "invite" && (
                   <div className="set-extra"><InviteCodesPanel /></div>
                 )}

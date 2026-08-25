@@ -341,3 +341,227 @@
   .set-row { grid-template-columns: 1fr; gap: 12px; }
   .set-row__control { justify-content: flex-start; }
 }
+
+/* ── Maintenance mode card (System → Settings → Maintenance mode) ───────────── */
+/* Its own body rather than the generic rows: the section grew editors (steps,
+   services, links) that no label/description/control row can carry. The shell,
+   the rows and the controls are still core's, so it reads as one card. */
+
+.mnt {
+  /* Rows whose control is a stacked editor align to the top of the label. */
+  .set-row--start { align-items: start; }
+  /* Editors need more room than a single control does. */
+  .set-row--start .set-row__control { align-items: stretch; }
+  .set-row--start .set-row__control > * { width: 100%; }
+}
+
+.mnt-group {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+  padding: 22px 0 4px;
+  margin-top: 8px;
+  border-top: 1px solid var(--c-rowline);
+
+  &.is-first { border-top: none; margin-top: 0; padding-top: 24px; }
+  /* The heading already draws the divider — the row under it must not double it. */
+  + .set-row { border-top: none; }
+}
+
+/* Master switch banner */
+.mnt-banner {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 18px;
+  margin-top: 4px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  transition: background 0.15s, border-color 0.15s;
+
+  &.is-on { background: var(--c-accent-soft); border-color: var(--c-accent); }
+
+  &__icon {
+    width: 34px; height: 34px; flex: none; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--c-accent-soft); color: var(--c-accent); font-size: 14px;
+  }
+  &__title { font-family: var(--font-display); font-weight: 600; font-size: 14.5px; color: var(--c-fg); }
+  &__desc {
+    font-weight: 600; font-size: 12.5px; color: var(--c-fg-muted);
+    margin-top: 2px; line-height: 1.45;
+  }
+  .sw { margin-left: auto; flex: none; }
+}
+
+/* Card-head "site is live / offline" pill */
+.mnt-pill {
+  margin-left: auto;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--c-success);
+  background: var(--c-success-soft);
+
+  i { width: 7px; height: 7px; border-radius: 50%; background: currentcolor; flex: none; }
+
+  &.is-on {
+    color: var(--c-warn);
+    background: color-mix(in srgb, var(--c-warn) 14%, transparent);
+    i { animation: mnt-dot 2.2s ease-out infinite; }
+  }
+}
+
+@keyframes mnt-dot {
+  0%        { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-warn) 50%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* Allowed-group chips */
+.mnt-chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.mnt-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer;
+  font-family: var(--font-body); font-weight: 600; font-size: 13px;
+  border: 1px solid var(--c-border); background: var(--c-bg); color: var(--c-fg-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover { border-color: var(--c-accent); color: var(--c-fg); }
+  &.is-on { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-accent); }
+  &:disabled { cursor: default; opacity: 0.85; }
+}
+
+/* Segmented picker (progress mode) */
+.mnt-seg {
+  display: flex; gap: 3px; padding: 3px; width: 100%;
+  background: var(--seg-bg, var(--c-bg)); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+
+  button {
+    flex: 1; border: none; padding: 8px 10px; border-radius: 9px; cursor: pointer;
+    font-family: var(--font-body); font-weight: 600; font-size: 13px;
+    background: none; color: var(--c-fg-muted);
+    transition: background 0.15s, color 0.15s;
+
+    &:hover { color: var(--c-fg); }
+    &.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+  }
+}
+
+/* Repeating editors: steps, services, links */
+.mnt-list {
+  display: flex; flex-direction: column; gap: 6px;
+
+  &__row { display: flex; align-items: center; gap: 8px; }
+  &__row .inp { flex: 1; min-width: 0; }
+}
+
+.inp--sm { height: 38px; padding: 0 12px; border-radius: 11px; font-size: 13.5px; }
+
+.mnt-add {
+  align-self: flex-start; margin-top: 2px;
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 13px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px dashed var(--c-border-hi); background: none; color: var(--c-fg-muted);
+  font-family: var(--font-body); font-weight: 600; font-size: 12.5px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: var(--c-accent); border-color: var(--c-accent); }
+  svg { font-size: 10px; }
+}
+
+.mnt-del {
+  width: 32px; height: 38px; flex: none; border-radius: var(--radius-sm); cursor: pointer;
+  border: 1px solid var(--c-border); background: var(--c-bg); color: var(--c-fg-subtle); font-size: 12px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: var(--c-danger); border-color: var(--c-danger); }
+}
+
+/* Current-step marker — a radio drawn in CSS, so no second icon pack. */
+.mnt-mark {
+  width: 30px; height: 38px; flex: none; border: none; background: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--c-fg-subtle);
+
+  &::before {
+    content: "";
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid currentcolor;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  &:hover { color: var(--c-accent); }
+  &.is-on {
+    color: var(--c-accent2);
+    &::before { box-shadow: inset 0 0 0 3px currentcolor; }
+  }
+}
+
+/* Service status chip — click cycles offline → degraded → operational */
+.mnt-state {
+  flex: none; display: inline-flex; align-items: center; gap: 7px;
+  height: 38px; padding: 0 11px; border-radius: 11px; border: none; cursor: pointer;
+  font-family: var(--font-body); font-weight: 700; font-size: 11.5px;
+
+  i { width: 6px; height: 6px; border-radius: 50%; background: currentcolor; flex: none; }
+
+  &.is-offline     { color: var(--c-danger);  background: var(--c-danger-soft); }
+  &.is-degraded    { color: var(--c-warn);    background: color-mix(in srgb, var(--c-warn) 14%, transparent); }
+  &.is-operational { color: var(--c-success); background: var(--c-success-soft); }
+}
+
+.mnt-linkicon {
+  width: 38px; height: 38px; flex: none; border-radius: 11px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--c-bg); border: 1px solid var(--c-border); color: var(--c-fg-muted); font-size: 14px;
+  transition: color 0.15s, border-color 0.15s;
+
+  &:hover { color: var(--c-accent); border-color: var(--c-accent); }
+}
+
+/* Bar mode packs a label and a stepper into one control cell. */
+.mnt-bar-row {
+  display: flex; gap: 8px; width: 100%; justify-content: flex-end;
+  .fld, .inp { flex: 1; min-width: 0; }
+  .stepper { flex: none; }
+}
+
+.mnt-textarea {
+  height: auto;
+  padding: 11px 14px;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+/* Background picker */
+.mnt-bgs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; width: 100%; }
+.mnt-bg {
+  border: 1px solid var(--c-border); background: none; border-radius: var(--radius-md);
+  padding: 4px; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover { border-color: var(--c-accent); }
+  &.is-on { border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+  &.is-on .mnt-bg__label { color: var(--c-accent); font-weight: 700; }
+
+  &__swatch { display: block; height: 44px; border-radius: 8px; }
+  &__label {
+    display: block; padding: 6px 0 3px;
+    font-family: var(--font-body); font-weight: 600; font-size: 11.5px; color: var(--c-fg-muted);
+  }
+}
+
+@media (max-width: 900px) {
+  .mnt-bgs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .mnt-bar-row { flex-wrap: wrap; }
+}
