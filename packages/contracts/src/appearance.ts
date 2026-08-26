@@ -92,3 +92,60 @@ export const HEARTH_DEFAULT_TOKENS: TokenSet = {
     "--btn-radius":     "10px",
   },
 };
+
+// ── Site font ─────────────────────────────────────────────────────────────────
+//
+// ONE definition, used by the API's `buildCSS` and by the Style Editor's live
+// preview. They emitted the font differently before: the server applied the size
+// through `body { font-size: var(--fs-base) }` while the preview applied it through
+// `html { font-size }` — which also rescales every rem on the page — and the preview
+// never emitted the WEIGHT at all, so the one control with no visible effect was the
+// one an admin was most likely to reach for. A preview that does not render what
+// ships is worse than no preview.
+
+export const FONT_FAMILIES = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
+export type FontFamily = (typeof FONT_FAMILIES)[number];
+
+export const FONT_STACKS: Record<string, string> = {
+  "Poppins":    "Poppins, sans-serif",
+  "Nunito":     "Nunito, sans-serif",
+  "Montserrat": "Montserrat, sans-serif",
+  "Open Sans":  '"Open Sans", sans-serif',
+  "Ubuntu":     "Ubuntu, sans-serif",
+};
+
+export interface SiteFont {
+  family?: string;
+  /** Numeric weight as a string, e.g. "500". */
+  weight?: string;
+  /** Base size in px, unitless, e.g. "16". */
+  size?: string;
+}
+
+/**
+ * The custom properties the site font sets, for a `:root` block.
+ *
+ * The family is site-wide — body (`--ff-sans`) AND headings (`--font-display`).
+ * The ACP re-pins all four on `body.nv-acp`, which is what keeps the admin panel on
+ * its own type regardless of what the site is set to.
+ */
+export function fontRootDecls(font: SiteFont): string[] {
+  const out: string[] = [];
+  if (font.family && FONT_STACKS[font.family]) {
+    out.push(`  --ff-sans: ${FONT_STACKS[font.family]};`);
+    out.push(`  --font-display: ${FONT_STACKS[font.family]};`);
+  }
+  if (font.weight) out.push(`  --fw-body: ${font.weight};`);
+  if (font.size)   out.push(`  --fs-base: ${font.size}px;`);
+  return out;
+}
+
+/** The rule that applies those properties, or null when nothing is set. */
+export function fontBodyRule(font: SiteFont): string | null {
+  const rules: string[] = [];
+  if (font.family) rules.push(`  font-family: var(--ff-sans);`);
+  if (font.size)   rules.push(`  font-size: var(--fs-base);`);
+  if (font.weight) rules.push(`  font-weight: var(--fw-body);`);
+  if (!rules.length) return null;
+  return `body, input, textarea, select, button {\n${rules.join("\n")}\n}`;
+}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -26,6 +27,9 @@ import {
   type ScopedTokenSet,
   type ThemeScope,
   type TokenDef,
+  FONT_FAMILIES,
+  fontRootDecls,
+  fontBodyRule,
 } from "@nodevo/contracts";
 import {
   SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
@@ -84,7 +88,7 @@ const PREVIEW_STATES: { id: PreviewState; label: string }[] = [
   { id: "focus", label: "styleEditor.stFocus" },
 ];
 
-const FONTS = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
+const FONTS = FONT_FAMILIES;
 const FONT_WEIGHTS = ["300", "400", "500", "600", "700", "800"] as const;
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 20;
@@ -194,7 +198,22 @@ export function StyleEditorPage() {
   const [mode, setMode] = useState<Mode>(
     () => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light"),
   );
-  const [tab, setTab] = useState<Tab>("tokens");
+  // The tab lives in the URL so it can be linked and survives a refresh — and so
+  // the retired `/admin/style-history` route can redirect straight to History
+  // rather than dropping you on Tokens.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const [tab, setTab] = useState<Tab>(
+    () => (TABS.some((x) => x.id === tabParam) ? (tabParam as Tab) : "tokens"),
+  );
+  const selectTab = (next: Tab) => {
+    setTab(next);
+    // Tokens is the default, so it stays out of the URL; `replace` keeps tab
+    // switching out of the back button's history.
+    const params = new URLSearchParams(searchParams);
+    if (next === "tokens") params.delete("tab"); else params.set("tab", next);
+    setSearchParams(params, { replace: true });
+  };
   const [sectionId, setSectionId] = useState(SECTIONS[0]!.id);
   const [scope, setScope] = useState<ThemeScope>("global");
   const [previewState, setPreviewState] = useState<PreviewState>("base");
@@ -315,12 +334,17 @@ export function StyleEditorPage() {
 
   const saveMut = useMutation({
     mutationFn: async () => {
-      await Promise.all([
-        api.put("/appearance/tokens", tokens),
-        api.put(`/admin/settings/${FONT_SETTING_KEY}`,    { value: fontFamily }),
-        api.put(`/admin/settings/${FSIZE_SETTING_KEY}`,   { value: fontSize   }),
-        api.put(`/admin/settings/${FWEIGHT_SETTING_KEY}`, { value: fontWeight }),
-      ]);
+      // Only what actually changed. The three font settings are INDEPENDENT rows, and
+      // writing all of them on every token edit is the same defect this page's sibling
+      // had: an editor left open holds the font it loaded, so recolouring a button
+      // wrote that stale font back over whoever changed it since. Tokens are one
+      // setting holding the whole sparse draft, so that one is written whole.
+      const snap = savedSnap;
+      const writes: Promise<unknown>[] = [api.put("/appearance/tokens", tokens)];
+      if (snap?.fontFamily !== fontFamily) writes.push(api.put(`/admin/settings/${FONT_SETTING_KEY}`,    { value: fontFamily }));
+      if (snap?.fontSize   !== fontSize)   writes.push(api.put(`/admin/settings/${FSIZE_SETTING_KEY}`,   { value: fontSize   }));
+      if (snap?.fontWeight !== fontWeight) writes.push(api.put(`/admin/settings/${FWEIGHT_SETTING_KEY}`, { value: fontWeight }));
+      await Promise.all(writes);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-style-history"] });
@@ -452,17 +476,16 @@ export function StyleEditorPage() {
     }
     const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss[mode]) };
     const blocks: string[] = [];
+    // The font comes from the SAME builders the API serves with (@nodevo/contracts),
+    // so the preview cannot render a font the site will not. It previously hand-rolled
+    // its own stack, skipped the weight entirely, and sized the page with
+    // `html { font-size }` — which rescales every rem, something production never does.
+    const font = { family: fontFamily, weight: fontWeight, size: fontSize };
     const gDecls = [
       ...Object.entries(globalVars).map(([k, v]) => `  ${k}: ${v} !important;`),
-      `  --ff-sans: "${fontFamily}", system-ui, sans-serif !important;`,
-      `  --font-body: "${fontFamily}", system-ui, sans-serif !important;`,
-      `  --font-display: "${fontFamily}", system-ui, sans-serif !important;`,
+      ...fontRootDecls(font).map((d) => d.replace(/;$/, " !important;")),
     ].join("\n");
     blocks.push(`:root {\n${gDecls}\n}`);
-    // The ACP pins fonts to Poppins on <body> (body.nv-acp), which sits closer
-    // in the var cascade than :root — re-override there so the font preview
-    // stays visible inside the editor. Site-wide = body AND headings.
-    blocks.push(`body.nv-acp {\n  --ff-sans: "${fontFamily}", system-ui, sans-serif !important;\n  --font-display: "${fontFamily}", system-ui, sans-serif !important;\n}`);
     for (const [s, map] of Object.entries(scoped)) {
       if (s === "global" || !map) continue;
       const sel = SCOPE_SELECTOR[s as ThemeScope];
@@ -470,7 +493,11 @@ export function StyleEditorPage() {
       const decls = Object.entries(map).map(([k, v]) => `  ${k}: ${v} !important;`).join("\n");
       if (decls.trim()) blocks.push(`${sel} {\n${decls}\n}`);
     }
-    blocks.push(`html { font-size: ${fontSize}px !important; }`);
+    // Applied exactly as the served stylesheet applies it. NOT to `body.nv-acp`:
+    // this CSS goes into the preview iframe, which is the SITE — the admin panel
+    // deliberately keeps its own type and must not follow the site font.
+    const bodyRule = fontBodyRule(font);
+    if (bodyRule) blocks.push(bodyRule.replace(/;$/gm, " !important;"));
     return blocks.join("\n");
   })();
 
@@ -515,50 +542,56 @@ export function StyleEditorPage() {
         </div>
 
         <div className="se-actions">
-          {/* Only the Tokens tab reads `mode`. Branding has no per-theme values, and
-              the Custom CSS console follows the ACP's OWN theme (`viewedTheme`), so
-              the switch would be a control that does nothing on either. */}
-          {tab === "tokens" && (
-            <>
-              <div className="se-modes">
-                {(["light", "dark"] as const).map((m) => (
-                  <button key={m} type="button" className={`se-mode${mode === m ? " is-on" : ""}`} onClick={() => setMode(m)}>
-                    <FontAwesomeIcon icon={m === "light" ? faSun : faMoon} />
-                    {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
-                    <span className="se-mode__n">{m === "light" ? lightCount : darkCount}</span>
-                  </button>
-                ))}
+          {/* State first, on its own line: what is unsaved and what is unpublished are
+              readings, not controls. Sharing a row with the buttons that act on them
+              made the header a wall of chips where nothing said which was which. */}
+          <div className="se-actions__state">
+            {(draftStatus?.pending || totalCount > 0) && (
+              <div className="se-draft">
+                <span className="se-draft__state"><span className="se-draft__dot" />{t("styleEditor.draft")}</span>
+                <span className="se-draft__count">{t("styleEditor.unpublishedN", { count: totalCount })}</span>
+                <button type="button" className="se-draft__btn" onClick={() => setShowDiff((v) => !v)} disabled={totalCount === 0}>
+                  {showDiff ? t("styleEditor.diffHide") : t("styleEditor.diffReview")}
+                </button>
               </div>
-              <span className="se-sep" />
-            </>
-          )}
+            )}
+            <AutosaveStatus saving={saveMut.isPending} />
+          </div>
 
-          {(draftStatus?.pending || totalCount > 0) && (
-            <div className="se-draft">
-              <span className="se-draft__state"><span className="se-draft__dot" />{t("styleEditor.draft")}</span>
-              <span className="se-draft__count">{t("styleEditor.unpublishedN", { count: totalCount })}</span>
-              <button type="button" className="se-draft__btn" onClick={() => setShowDiff((v) => !v)} disabled={totalCount === 0}>
-                {showDiff ? t("styleEditor.diffHide") : t("styleEditor.diffReview")}
-              </button>
-            </div>
-          )}
+          <div className="se-actions__row">
+            {/* Only the Tokens tab reads `mode`. Branding has no per-theme values, and
+                the Custom CSS console follows the ACP's OWN theme (`viewedTheme`), so
+                the switch would be a control that does nothing on either. */}
+            {tab === "tokens" && (
+              <>
+                <div className="se-modes">
+                  {(["light", "dark"] as const).map((m) => (
+                    <button key={m} type="button" className={`se-mode${mode === m ? " is-on" : ""}`} onClick={() => setMode(m)}>
+                      <FontAwesomeIcon icon={m === "light" ? faSun : faMoon} />
+                      {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
+                      <span className="se-mode__n">{m === "light" ? lightCount : darkCount}</span>
+                    </button>
+                  ))}
+                </div>
+                <span className="se-sep" />
+              </>
+            )}
 
-          <AutosaveStatus saving={saveMut.isPending} />
+            <button type="button" className="btn-ghost se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
+              <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
+            </button>
 
-          <button type="button" className="btn-ghost se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
-            <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
-          </button>
-
-          <button
-            type="button"
-            className="btn-primary se-act se-act--go"
-            disabled={publishMut.isPending || !draftStatus?.pending}
-            onClick={() => publishMut.mutate()}
-            title={t("styleEditor.publishHint")}
-          >
-            <FontAwesomeIcon icon={faCloudArrowUp} />
-            {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
-          </button>
+            <button
+              type="button"
+              className="btn-primary se-act se-act--go"
+              disabled={publishMut.isPending || !draftStatus?.pending}
+              onClick={() => publishMut.mutate()}
+              title={t("styleEditor.publishHint")}
+            >
+              <FontAwesomeIcon icon={faCloudArrowUp} />
+              {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -583,7 +616,7 @@ export function StyleEditorPage() {
 
       <div className="se-tabs">
         {TABS.map((x) => (
-          <button key={x.id} type="button" className={`se-tab${tab === x.id ? " is-on" : ""}`} onClick={() => setTab(x.id)}>
+          <button key={x.id} type="button" className={`se-tab${tab === x.id ? " is-on" : ""}`} onClick={() => selectTab(x.id)}>
             {t(x.label)}
           </button>
         ))}
@@ -605,7 +638,7 @@ export function StyleEditorPage() {
                         key={tile.cssVar}
                         type="button"
                         className={`se-tile${on ? " is-on" : ""}`}
-                        onClick={() => { selectSection(tile.section); setTab("tokens"); }}
+                        onClick={() => { selectSection(tile.section); selectTab("tokens"); }}
                       >
                         <span className="se-tile__sw" style={{ background: swatchOf(d.value) }}>
                           {d.origin === "own" && <span className="se-tile__dot" />}

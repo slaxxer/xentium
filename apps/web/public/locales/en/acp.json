@@ -25,7 +25,6 @@
     "styleEditor": "Style Editor",
     "layoutEditor": "Layout Editor",
     "themes": "Themes",
-    "styleHistory": "Style History",
     "navigation": "Navigation",
     "marketplace": "Marketplace",
     "installed": "Installed",
@@ -1247,8 +1246,6 @@
     }
   },
   "styleHistory": {
-    "sub": "Appearance",
-    "title": "Style History",
     "loading": "Loading…",
     "empty": "No saved style snapshots yet.",
     "by": "by",

@@ -4,9 +4,19 @@
 // font (Style Editor) or a user's personal font. On <body> so the app-root
 // overlay hosts (DialogHost/ToastHost) inherit it while the ACP is mounted —
 // and it outranks the user-font inline vars on <html>.
+//
+// ⚠ ALL FOUR properties, not just the family. The served stylesheet applies the
+// site font as `body, input, textarea, select, button { font-family; font-size;
+// font-weight }`, and `body.nv-acp` IS a body — so pinning only the family let the
+// site's size and weight through, and setting the site to 13px/700 re-typeset the
+// admin panel. The variables are re-pinned here rather than the rule being narrowed
+// server-side, because the ACP is the only surface that opts out and it is the one
+// that knows it.
 body.nv-acp {
   --ff-sans: var(--font-poppins);
   --font-display: var(--font-poppins);
+  --fs-base: 1rem;
+  --fw-body: 500;   // matches the base `body` weight in styles/index.scss
 }
 
 $sidebar-w: 230px;

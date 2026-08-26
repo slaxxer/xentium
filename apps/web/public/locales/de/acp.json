@@ -23,7 +23,6 @@
     "styleEditor": "Stil-Editor",
     "layoutEditor": "Layout-Editor",
     "themes": "Themes",
-    "styleHistory": "Stil-Verlauf",
     "navigation": "Navigation",
     "marketplace": "Marktplatz",
     "installed": "Installiert",
@@ -1044,8 +1043,6 @@
     }
   },
   "styleHistory": {
-    "sub": "Erscheinungsbild",
-    "title": "Stilverlauf",
     "loading": "Wird geladen…",
     "empty": "Noch keine gespeicherten Stil-Schnappschüsse.",
     "by": "von",
