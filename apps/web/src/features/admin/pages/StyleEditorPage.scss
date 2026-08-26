@@ -23,11 +23,31 @@
 
 /* ── Header controls ──────────────────────────────────────────────────────── */
 
+/* Two stacked lines, right-aligned under the title: what the page KNOWS on top
+   (unsaved, unpublished), what you can DO to it underneath. */
 .se-actions {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.se-actions__state,
+.se-actions__row {
+  display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+/* The state line carries no controls of its own height, so it needs a floor —
+   otherwise the header jumps when the draft pill appears or the chip changes. */
+.se-actions__state { min-height: 32px; }
+
+/* Narrow: let both lines start from the left so they do not drift apart. */
+@media (max-width: 720px) {
+  .se-actions { align-items: stretch; }
+  .se-actions__state,
+  .se-actions__row { justify-content: flex-start; }
 }
 
 /* Light/dark switch. The count is the whole point: an admin who edited dark and
