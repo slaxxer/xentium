@@ -23,7 +23,6 @@
     "styleEditor": "Éditeur de style",
     "layoutEditor": "Éditeur de mise en page",
     "themes": "Thèmes",
-    "styleHistory": "Historique des styles",
     "navigation": "Navigation",
     "marketplace": "Place de marché",
     "installed": "Installées",
@@ -1044,8 +1043,6 @@
     }
   },
   "styleHistory": {
-    "sub": "Apparence",
-    "title": "Historique des styles",
     "loading": "Chargement…",
     "empty": "Aucun instantané de style enregistré pour le moment.",
     "by": "par",

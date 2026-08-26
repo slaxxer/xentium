@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
+import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
@@ -153,14 +153,6 @@ function compileCustomCss(light: string, dark: string): string {
 export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 
 export type { TokenMap, TokenSet };
-
-const FONT_STACKS: Record<string, string> = {
-  "Poppins":    "Poppins, sans-serif",
-  "Nunito":     "Nunito, sans-serif",
-  "Montserrat": "Montserrat, sans-serif",
-  "Open Sans":  '"Open Sans", sans-serif',
-  "Ubuntu":     "Ubuntu, sans-serif",
-};
 
 // Live-sync defaults. The interval is how often each open client polls the
 // version endpoint; clamped so a misconfigured value can't hammer the API or
@@ -625,16 +617,11 @@ export const appearanceService = {
       return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
     };
 
-    const fontExtras: string[] = [];
-    // The chosen family is SITE-WIDE: body (--ff-sans) AND headings
-    // (--font-display). The ACP re-pins both to Poppins client-side
-    // (body.nv-acp); a user's profile font overrides via inline :root vars.
-    if (family && FONT_STACKS[family]) {
-      fontExtras.push(`  --ff-sans: ${FONT_STACKS[family]};`);
-      fontExtras.push(`  --font-display: ${FONT_STACKS[family]};`);
-    }
-    if (weight) fontExtras.push(`  --fw-body: ${weight};`);
-    if (size)   fontExtras.push(`  --fs-base: ${size}px;`);
+    // Shared with the Style Editor's live preview (@nodevo/contracts) so the preview
+    // cannot render a different font from the one this serves. The ACP re-pins all
+    // four properties on `body.nv-acp`; a user's profile font overrides via inline
+    // :root vars.
+    const fontExtras = fontRootDecls({ family, weight, size });
 
     const parts: string[] = [];
     // Emit a block only when it has content — otherwise the app inherits the bundled
@@ -653,13 +640,8 @@ export const appearanceService = {
       }
     }
 
-    if (family || weight || size) {
-      const bodyRules: string[] = [];
-      if (family) bodyRules.push(`  font-family: var(--ff-sans);`);
-      if (size)   bodyRules.push(`  font-size: var(--fs-base);`);
-      if (weight) bodyRules.push(`  font-weight: var(--fw-body);`);
-      parts.push(`body, input, textarea, select, button {\n${bodyRules.join("\n")}\n}`);
-    }
+    const bodyRule = fontBodyRule({ family, weight, size });
+    if (bodyRule) parts.push(bodyRule);
 
     // Admin custom CSS last — highest precedence, can override anything above.
     if (typeof customCss === "string" && customCss.trim()) {
