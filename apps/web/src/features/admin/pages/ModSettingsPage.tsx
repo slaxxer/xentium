@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { useAutosave, sameValue } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
 
 interface Setting { key: string; value: unknown }
@@ -24,6 +24,23 @@ function parse(settings: Setting[]): Record<string, unknown> {
   for (const s of settings) map[s.key] = s.value;
   return map;
 }
+
+/** Form field → the settings key it persists to. One list, so the save path and
+ *  the seed path cannot drift apart. */
+const SETTING_KEY: Record<string, string> = {
+  expiryEnabled:  "moderation.warning_expiry_enabled",
+  expiryDays:     "moderation.warning_expiry_days",
+  allowOverride:  "moderation.ban_allow_override",
+  appealEnabled:  "moderation.ban_appeals_enabled",
+  resetCount:     "moderation.reset_count_after_ban",
+  defaultBanDays: "moderation.default_ban_days",
+  minDays:        "moderation.min_ban_days",
+  maxDays:        "moderation.max_ban_days",
+  patRapid:       "security.pattern.rapid_login_attempts",
+  patMulti:       "security.pattern.multi_account_suspicion",
+  patRegBurst:    "security.pattern.registration_burst",
+  patBanEvasion:  "security.pattern.ban_evasion_suspicion",
+};
 
 export function ModSettingsPage() {
   const { t } = useTranslation("acp");
@@ -61,46 +78,25 @@ export function ModSettingsPage() {
   const [patRegBurst,    setPatRegBurst]    = useState(true);
   const [patBanEvasion,  setPatBanEvasion]  = useState(true);
 
-  // Seed from Settings API on first load
-  useEffect(() => {
-    if (!settings.length) return;
-    setExpiryEnabled( raw["moderation.warning_expiry_enabled"]  as boolean ?? true);
-    setExpiryDays(    raw["moderation.warning_expiry_days"]     as number  ?? 90);
-    setAllowOverride( raw["moderation.ban_allow_override"]      as boolean ?? true);
-    setAppealEnabled( raw["moderation.ban_appeals_enabled"]     as boolean ?? false);
-    setResetCount(    raw["moderation.reset_count_after_ban"]   as boolean ?? false);
-    setDefaultBanDays(raw["moderation.default_ban_days"]        as number  ?? 7);
-    setMinDays(       raw["moderation.min_ban_days"]            as number  ?? 1);
-    setMaxDays(       raw["moderation.max_ban_days"]            as number  ?? 365);
-    setPatRapid(      raw["security.pattern.rapid_login_attempts"]    as boolean ?? true);
-    setPatMulti(      raw["security.pattern.multi_account_suspicion"] as boolean ?? true);
-    setPatRegBurst(   raw["security.pattern.registration_burst"]      as boolean ?? true);
-    setPatBanEvasion( raw["security.pattern.ban_evasion_suspicion"]   as boolean ?? true);
-  }, [settings.length]);
+  const setField = {
+    expiryEnabled:  setExpiryEnabled,
+    expiryDays:     setExpiryDays,
+    allowOverride:  setAllowOverride,
+    appealEnabled:  setAppealEnabled,
+    resetCount:     setResetCount,
+    defaultBanDays: setDefaultBanDays,
+    minDays:        setMinDays,
+    maxDays:        setMaxDays,
+    patRapid:       setPatRapid,
+    patMulti:       setPatMulti,
+    patRegBurst:    setPatRegBurst,
+    patBanEvasion:  setPatBanEvasion,
+  } as Record<string, (v: never) => void>;
 
-  function entriesOf(s: {
-    expiryEnabled: boolean; expiryDays: number; allowOverride: boolean; appealEnabled: boolean;
-    resetCount: boolean; defaultBanDays: number; minDays: number; maxDays: number;
-    patRapid: boolean; patMulti: boolean; patRegBurst: boolean; patBanEvasion: boolean;
-  }): Array<[string, unknown]> {
-    return [
-      ["moderation.warning_expiry_enabled",  s.expiryEnabled],
-      ["moderation.warning_expiry_days",     s.expiryDays],
-      ["moderation.ban_allow_override",      s.allowOverride],
-      ["moderation.ban_appeals_enabled",     s.appealEnabled],
-      ["moderation.reset_count_after_ban",   s.resetCount],
-      ["moderation.default_ban_days",        s.defaultBanDays],
-      ["moderation.min_ban_days",            s.minDays],
-      ["moderation.max_ban_days",            s.maxDays],
-      ["security.pattern.rapid_login_attempts",    s.patRapid],
-      ["security.pattern.multi_account_suspicion", s.patMulti],
-      ["security.pattern.registration_burst",      s.patRegBurst],
-      ["security.pattern.ban_evasion_suspicion",   s.patBanEvasion],
-    ];
-  }
+
 
   // Draft (current form) vs the server's persisted values, using identical
-  // defaults to the seeding above so a freshly-loaded form never auto-saves.
+  // defaults to the merge below so a freshly-loaded form never auto-saves.
   const draft = { expiryEnabled, expiryDays, allowOverride, appealEnabled, resetCount, defaultBanDays, minDays, maxDays, patRapid, patMulti, patRegBurst, patBanEvasion };
   const savedValue = settings.length ? {
     expiryEnabled:  raw["moderation.warning_expiry_enabled"] as boolean ?? true,
@@ -117,7 +113,51 @@ export function ModSettingsPage() {
     patBanEvasion:  raw["security.pattern.ban_evasion_suspicion"]   as boolean ?? true,
   } : undefined;
 
-  useAutosave({ value: draft, savedValue, onSave: (d) => saveMutation.mutate(entriesOf(d)) });
+  /** The last server snapshot this page merged — see the effect below. */
+  const serverRef = useRef<Record<string, unknown> | null>(null);
+
+  /**
+   * Merge each new server snapshot into the form, per field.
+   *
+   * This seeded on `[settings.length]`, which re-ran only if the NUMBER of
+   * settings rows changed — so a tab left open while somebody edited the same
+   * settings elsewhere kept its stale form, while `savedValue` (derived every
+   * render) went fresh. Autosave then saw form ≠ saved and wrote the whole
+   * stale form back, reverting the other session's changes.
+   *
+   * A field nobody has touched here follows the server; a field with an unsaved
+   * local edit keeps it, because autosave is about to push it.
+   */
+  useEffect(() => {
+    if (!settings.length || !savedValue) return;
+    const prevServer = serverRef.current;
+    serverRef.current = savedValue as Record<string, unknown>;
+    for (const [key, incoming] of Object.entries(savedValue)) {
+      if (prevServer) {
+        if (sameValue(incoming, prevServer[key])) continue;                        // unchanged on the server
+        if (!sameValue((draft as Record<string, unknown>)[key], prevServer[key])) continue; // unsaved local edit
+      }
+      setField[key]?.(incoming as never);
+    }
+    // `settings` is structurally shared by the query client, so this runs when
+    // the DATA changes, not on every refetch returning the same rows. `draft` is
+    // deliberately not a dependency — it changes on every keystroke, and this
+    // must only react to the server.
+  }, [settings]);
+
+  // Only the fields that changed are written — a save must not stamp the whole
+  // form over whatever the server holds. See the merge effect above.
+  useAutosave({
+    value: draft,
+    savedValue,
+    onSave: (d) => {
+      const saved = savedValue as Record<string, unknown> | undefined;
+      const changed = Object.entries(d)
+        .filter(([field, value]) => !sameValue(value, saved?.[field]))
+        .map(([field, value]) => [SETTING_KEY[field]!, value] as [string, unknown]);
+      if (changed.length) saveMutation.mutate(changed);
+    },
+  });
 
   return (
     <div>

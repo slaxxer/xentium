@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUpload, faXmark, faRotateLeft, faRotateRight, faTriangleExclamation, faCloudArrowUp } from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import {
+  faXmark, faRotateLeft, faRotateRight, faCloudArrowUp, faSun, faMoon,
+  faMagnifyingGlass, faSliders, faObjectGroup, faArrowTurnDown,
+  faArrowUp, faArrowDown, faArrowLeft, faArrowRight,
+} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
@@ -10,6 +15,7 @@ import { useAutosave } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
 import { refreshTokenCss } from "../../../lib/liveStyle";
 import { useTheme } from "../../../hooks/useTheme";
+import { StyleHistoryList } from "../components/StyleHistoryList";
 import {
   HEARTH_DEFAULT_TOKENS,
   TOKEN_REGISTRY,
@@ -20,12 +26,21 @@ import {
   type ScopedTokenSet,
   type ThemeScope,
   type TokenDef,
-  type TokenGroup,
 } from "@nodevo/contracts";
+import {
+  SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
+  type Section,
+} from "./styleTokens";
+import {
+  parseShadow, formatShadow, shadowValueFor, SHADOW_SEED,
+  type ShadowKind, type ShadowParts,
+} from "./shadowValue";
+import "./StyleEditorPage.scss";
 
 const CUSTOM_CSS_PREVIEW_ID = "nodevo-custom-css-preview";
 
 type Mode = "light" | "dark";
+type Tab = "tokens" | "branding" | "css" | "history";
 
 interface StyleDraft {
   tokens: ScopedTokenSet;
@@ -40,64 +55,24 @@ interface StyleDraft {
 // defaults; a true Reset clears the server overrides so the app inherits tokens.scss.
 const DEFAULTS = HEARTH_DEFAULT_TOKENS;
 
-// Registry tokens with no HEARTH default and no inheritsFrom (radius long-hands)
-// fall back to these so the slider shows the right starting position.
-const RADIUS_FALLBACK: Record<string, number> = {
-  "--btn-radius": 10, "--card-radius": 18, "--input-radius": 14, "--menu-radius": 14,
+// Where the inheritance chain ENDS. Two kinds of token land here:
+//
+//  • radius long-hands, which have no HEARTH default and no `inheritsFrom`, so the
+//    slider needs a starting position;
+//  • terminal `inheritsFrom` targets that `tokens.scss` defines but
+//    HEARTH_DEFAULT_TOKENS does not, because they are not themselves editable
+//    (`--c-on-accent`, `--shadow-card`).
+//
+// Without the second group a row resolves to the empty string and renders its
+// placeholder — "Button text" showed `#rrggbb` rather than white. `styleTokens.test.ts`
+// fails if a new `inheritsFrom` target has no resolution here or in the contract.
+export const BASE_FALLBACK: Record<string, string> = {
+  "--btn-radius": "10px", "--card-radius": "18px", "--input-radius": "14px", "--menu-radius": "14px",
+  "--c-on-accent": "#ffffff",
+  // The Soft preset's own value, so an untouched card shadow reads as Soft rather
+  // than as nothing selected.
+  "--shadow-card": "var(--shadow-card)",
 };
-
-// ── Semantic sections (not in TOKEN_REGISTRY — they ARE the palette base) ────────
-interface ColorRow { l: string; cssVar: string }
-const PALETTE_ROWS: ColorRow[] = [
-  { l: "styleEditor.rowBg", cssVar: "--c-bg" },
-  { l: "styleEditor.rowSurface", cssVar: "--c-surface" },
-  { l: "styleEditor.rowCard", cssVar: "--c-card" },
-  { l: "styleEditor.rowAccent", cssVar: "--c-accent" },
-  { l: "styleEditor.rowAccent2", cssVar: "--c-accent2" },
-  { l: "styleEditor.rowBorder", cssVar: "--c-border" },
-];
-const TEXT_ROWS: ColorRow[] = [
-  { l: "styleEditor.rowFg", cssVar: "--c-fg" },
-  { l: "styleEditor.rowMuted", cssVar: "--c-fg-muted" },
-  { l: "styleEditor.rowSubtle", cssVar: "--c-fg-subtle" },
-  { l: "styleEditor.rowHoverBg", cssVar: "--c-bg-hover" },
-];
-const FEEDBACK_ROWS: ColorRow[] = [
-  { l: "styleEditor.rowSuccess", cssVar: "--c-success" },
-  { l: "styleEditor.rowWarn", cssVar: "--c-warn" },
-  { l: "styleEditor.rowDanger", cssVar: "--c-danger" },
-  { l: "styleEditor.rowInfo", cssVar: "--c-info" },
-  { l: "styleEditor.rowUpdate", cssVar: "--c-update" },
-];
-
-// ── Section list (the ADR-0003 "backbone") ──────────────────────────────────────
-type SectionKind = "palette" | "text" | "feedback" | "region" | "component" | "branding" | "customcss";
-interface Section { id: string; label: string; kind: SectionKind; group?: TokenGroup }
-const SECTION_GROUPS: { heading: string; items: Section[] }[] = [
-  { heading: "styleEditor.grpPalette", items: [
-    { id: "palette",  label: "styleEditor.secPalette", kind: "palette" },
-    { id: "text",     label: "styleEditor.secText",   kind: "text" },
-    { id: "feedback", label: "styleEditor.secFeedback",        kind: "feedback" },
-  ]},
-  { heading: "styleEditor.grpRegions", items: [
-    { id: "navbar",  label: "styleEditor.secNavbar",  kind: "region", group: "navbar" },
-    { id: "content", label: "styleEditor.secContent", kind: "region", group: "content" },
-    { id: "footer",  label: "styleEditor.secFooter",  kind: "region", group: "footer" },
-    { id: "aside",   label: "styleEditor.secAside",   kind: "region", group: "aside" },
-  ]},
-  { heading: "styleEditor.grpComponents", items: [
-    { id: "button", label: "styleEditor.secButton", kind: "component", group: "button" },
-    { id: "card",   label: "styleEditor.secCard",   kind: "component", group: "card" },
-    { id: "field",  label: "styleEditor.secField",  kind: "component", group: "field" },
-    { id: "menu",   label: "styleEditor.secMenu",   kind: "component", group: "menu" },
-    { id: "segment", label: "styleEditor.secSegment", kind: "component", group: "segment" },
-  ]},
-  { heading: "styleEditor.grpSite", items: [
-    { id: "branding",  label: "styleEditor.secBranding",   kind: "branding" },
-    { id: "customcss", label: "styleEditor.secCustomCss", kind: "customcss" },
-  ]},
-];
-const ALL_SECTIONS = SECTION_GROUPS.flatMap((g) => g.items);
 
 // 3b — "preview state" forces a state on the specimen so token states you can't
 // hover-click (menu hover bg, field focus border) are editable. Only the states
@@ -109,35 +84,36 @@ const PREVIEW_STATES: { id: PreviewState; label: string }[] = [
   { id: "focus", label: "styleEditor.stFocus" },
 ];
 
-// Scope picker options for component sections (region surface tokens are global-only).
-//
-// The variant scopes are here because a variant IS a scope (ADR-0005): the Layout
-// Editor's Style panel edits a curated six tokens per variant, and this is where the
-// rest — button, field, menu, radius — can be re-scoped to one. Without them a theme
-// author could apply a look to a block and then not fully define it.
-const SCOPE_OPTIONS: { id: ThemeScope; label: string }[] = [
-  { id: "global",  label: "styleEditor.scopeAll" },
-  { id: "navbar",  label: "styleEditor.secNavbar" },
-  { id: "content", label: "styleEditor.secContent" },
-  { id: "footer",  label: "styleEditor.secFooter" },
-  { id: "aside",   label: "styleEditor.secAside" },
-  { id: "variant.surface", label: "layoutEditor.variant.surface" },
-  { id: "variant.muted",   label: "layoutEditor.variant.muted" },
-  { id: "variant.accent",  label: "layoutEditor.variant.accent" },
-  { id: "variant.plain",   label: "layoutEditor.variant.plain" },
-];
-
 const FONTS = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
 const FONT_WEIGHTS = ["300", "400", "500", "600", "700", "800"] as const;
+const FONT_SIZE_MIN = 12;
+const FONT_SIZE_MAX = 20;
 
 const FONT_SETTING_KEY    = "appearance.font.family";
 const FSIZE_SETTING_KEY   = "appearance.font.size";
 const FWEIGHT_SETTING_KEY = "appearance.font.weight";
 
-const SHADOW_PRESETS: { id: string; label: string; value: string }[] = [
-  { id: "none",   label: "styleEditor.shNone",   value: "none" },
-  { id: "soft",   label: "styleEditor.shSoft",   value: "var(--shadow-card)" },
-  { id: "strong", label: "styleEditor.shStrong", value: "var(--shadow-pop)" },
+// The kinds the shadow control offers, in order. `raw` is not offered — it is only
+// reached by a value the controls cannot represent, and then edited as text.
+const SHADOW_KINDS: { id: Exclude<ShadowKind, "raw">; label: string }[] = [
+  { id: "none",   label: "styleEditor.shNone" },
+  { id: "soft",   label: "styleEditor.shSoft" },
+  { id: "strong", label: "styleEditor.shStrong" },
+  { id: "custom", label: "styleEditor.shCustom" },
+];
+
+const SHADOW_SIDES: { key: "top" | "bottom" | "left" | "right"; label: string; icon: IconDefinition }[] = [
+  { key: "top",    label: "styleEditor.shTop",    icon: faArrowUp },
+  { key: "bottom", label: "styleEditor.shBottom", icon: faArrowDown },
+  { key: "left",   label: "styleEditor.shLeft",   icon: faArrowLeft },
+  { key: "right",  label: "styleEditor.shRight",  icon: faArrowRight },
+];
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: "tokens",   label: "styleEditor.tabTokens" },
+  { id: "branding", label: "styleEditor.secBranding" },
+  { id: "css",      label: "styleEditor.secCustomCss" },
+  { id: "history",  label: "styleEditor.tabHistory" },
 ];
 
 function numVal(v: string | undefined, fallback: number): number {
@@ -148,6 +124,13 @@ function safeHex(v: string | undefined, fallback: string): string {
   if (!v) return fallback;
   return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
 }
+/** A value the browser can paint as a swatch, or nothing. */
+function swatchOf(v: string): string {
+  return /^(#|rgb|hsl|color-mix)/i.test(v.trim()) ? v : "transparent";
+}
+
+/** How a token's value was arrived at — what the row's tag and chain report. */
+type Origin = "own" | "global" | "theme" | "inherited";
 
 /**
  * The value a token shows when it is NOT explicitly overridden — its inherited value.
@@ -163,15 +146,24 @@ function safeHex(v: string | undefined, fallback: string): string {
  */
 function inheritedValue(
   cssVar: string, mode: Mode, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
-): string {
+): { value: string; origin: Origin; from?: string } {
   const fromTheme = themeBuckets[scope]?.[cssVar] ?? themeBuckets.global?.[cssVar];
-  if (fromTheme !== undefined) return fromTheme;
+  if (fromTheme !== undefined) return { value: fromTheme, origin: "theme" };
   const def = (DEFAULTS[mode] as TokenMap)[cssVar];
-  if (def !== undefined) return globalBucket[cssVar] ?? def;
+  if (def !== undefined) {
+    const own = globalBucket[cssVar];
+    return own !== undefined ? { value: own, origin: "global" } : { value: def, origin: "inherited" };
+  }
   const reg: TokenDef | undefined = TOKEN_BY_VAR[cssVar];
-  if (reg?.inheritsFrom) return inheritedValue(reg.inheritsFrom, mode, globalBucket, themeBuckets, scope);
-  if (RADIUS_FALLBACK[cssVar] !== undefined) return `${RADIUS_FALLBACK[cssVar]}px`;
-  return "";
+  if (reg?.inheritsFrom) {
+    const up = inheritedValue(reg.inheritsFrom, mode, globalBucket, themeBuckets, scope);
+    // The chain names the token this one falls back to, not wherever that one
+    // ultimately resolved — "--btn-bg ← --c-accent" is what an admin can act on.
+    return { value: up.value, origin: up.origin === "own" ? "inherited" : up.origin, from: reg.inheritsFrom };
+  }
+  const base = BASE_FALLBACK[cssVar];
+  if (base !== undefined) return { value: base, origin: "inherited" };
+  return { value: "", origin: "inherited" };
 }
 
 // Pull `--var: value` overrides out of `:root {}` / `html {}` blocks in raw custom
@@ -188,6 +180,12 @@ function extractRootVars(css: string): Record<string, string> {
   return out;
 }
 
+/** Every editable token a section owns — palette rows or registry rows. */
+function sectionVars(section: Section): string[] {
+  if (section.rows) return section.rows.map((r) => r.cssVar);
+  return TOKEN_REGISTRY.filter((tok) => tok.group === section.group && tok.editable).map((tok) => tok.var);
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function StyleEditorPage() {
@@ -196,9 +194,13 @@ export function StyleEditorPage() {
   const [mode, setMode] = useState<Mode>(
     () => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light"),
   );
-  const [sectionId, setSectionId] = useState(ALL_SECTIONS[0]!.id);
+  const [tab, setTab] = useState<Tab>("tokens");
+  const [sectionId, setSectionId] = useState(SECTIONS[0]!.id);
   const [scope, setScope] = useState<ThemeScope>("global");
   const [previewState, setPreviewState] = useState<PreviewState>("base");
+  const [hotspots, setHotspots] = useState(false);
+  const [jumpOpen, setJumpOpen] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
   const { theme: viewedTheme } = useTheme();
 
   const [tokens, setTokens] = useState<ScopedTokenSet | null>(null);
@@ -328,7 +330,6 @@ export function StyleEditorPage() {
       // ACP you're working in with unpublished changes. The ACP keeps showing the
       // published theme until Publish (which calls refreshTokenCss).
       setSavedSnap(draftRef.current);
-      swalToast(t("styleEditor.toastDraft"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
@@ -346,6 +347,7 @@ export function StyleEditorPage() {
       await refreshTokenCss();
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
       qc.invalidateQueries({ queryKey: ["acp-style-history"] });
+      setShowDiff(false);
       swalToast(t("styleEditor.toastPublished"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -378,17 +380,23 @@ export function StyleEditorPage() {
 
   if (isLoading || !tokens) return <div className="acp-card acp-empty">{t("styleEditor.loading")}</div>;
 
-  const section = ALL_SECTIONS.find((s) => s.id === sectionId) ?? ALL_SECTIONS[0]!;
+  const section = SECTION_BY_ID[sectionId] ?? SECTIONS[0]!;
   const globalBucket = tokens[mode].global ?? {};
   /** What the installed theme defines — the layer under the admin's own edits. */
   const themeBuckets: ScopedTokens = themeTokens?.[mode] ?? {};
 
   // The scope a section edits: regions + palette → global; components → the picker.
+  //
+  // ⚠ Region tokens go in `global`, NOT in their own scope bucket, even though a
+  // bucket exists for them. `--nav-bg` is consumed only by `.pub-nav`, so `:root`
+  // and `.pub-nav` render identically — while every install that has ever set a
+  // navbar colour has it stored under `global`. Reading the region bucket instead
+  // would show those existing overrides as "Inherited" and write a second copy.
   const effScope: ThemeScope = section.kind === "component" ? scope : "global";
 
   function selectSection(id: string) {
     setSectionId(id);
-    const next = ALL_SECTIONS.find((s) => s.id === id);
+    const next = SECTION_BY_ID[id];
     if (next?.kind !== "component") setScope("global"); // reset picker off component sections
   }
 
@@ -396,7 +404,7 @@ export function StyleEditorPage() {
   // surface's data-component/data-region (which doubles as a section id); `pickScope`
   // is the enclosing region so clicking a button *in the navbar* preselects scope Navbar.
   function handlePick(group: string, pickScope: string) {
-    const sec = ALL_SECTIONS.find((s) => s.id === group);
+    const sec = SECTION_BY_ID[group];
     if (!sec) return;
     setSectionId(group);
     if (sec.kind === "component" && SCOPE_OPTIONS.some((o) => o.id === pickScope)) setScope(pickScope as ThemeScope);
@@ -425,12 +433,12 @@ export function StyleEditorPage() {
     });
   }
 
-  // Resolved value + override state for a token at the active scope.
-  function display(cssVar: string): { value: string; overridden: boolean } {
-    if (bucketHas(effScope, cssVar)) return { value: tokens![mode][effScope]![cssVar]!, overridden: true };
+  // Resolved value + where it came from, at the active scope.
+  function display(cssVar: string, atScope: ThemeScope = effScope): { value: string; origin: Origin; from?: string } {
+    if (bucketHas(atScope, cssVar)) return { value: tokens![mode][atScope]![cssVar]!, origin: "own" };
     // A component token in a region scope falls back to its global override, then base.
-    if (effScope !== "global" && cssVar in globalBucket) return { value: globalBucket[cssVar]!, overridden: false };
-    return { value: inheritedValue(cssVar, mode, globalBucket, themeBuckets, effScope), overridden: false };
+    if (atScope !== "global" && cssVar in globalBucket) return { value: globalBucket[cssVar]!, origin: "global" };
+    return inheritedValue(cssVar, mode, globalBucket, themeBuckets, atScope);
   }
 
   // ── Live preview CSS (scoped, mirrors the served stylesheet) ─────────────────
@@ -466,358 +474,593 @@ export function StyleEditorPage() {
     return blocks.join("\n");
   })();
 
+  // ── Draft accounting ────────────────────────────────────────────────────────
+  // Counted per mode so the switch can say there is work waiting on the side you
+  // are not looking at.
+  const countMode = (m: Mode) =>
+    Object.values(tokens![m]).reduce((n, bucket) => n + Object.keys(bucket ?? {}).length, 0);
+  const lightCount = countMode("light");
+  const darkCount  = countMode("dark");
+  const totalCount = lightCount + darkCount;
+
+  const diffRows = (["light", "dark"] as const).flatMap((m) =>
+    Object.entries(tokens![m]).flatMap(([sc, bucket]) =>
+      Object.entries(bucket ?? {}).map(([cssVar, value]) => ({
+        key: `${m}|${sc}|${cssVar}`,
+        label: tokenLabel(cssVar, t),
+        where: `${t(SCOPE_LABEL[sc] ?? sc)} · ${t("styleEditor.mode_" + m)}`,
+        value,
+      })),
+    ),
+  );
+
   // Rows for the active section.
-  const registryRows: TokenDef[] = section.group
-    ? TOKEN_REGISTRY.filter((t) => t.group === section.group && t.editable)
+  const rowVars = sectionVars(section);
+  const setHere = rowVars.filter((v) => bucketHas(effScope, v)).length;
+
+  // Scopes this section's tokens are already set in — the answer to "why does the
+  // navbar look different?" without hunting through the picker.
+  const scopeMarks = section.kind === "component"
+    ? SCOPE_OPTIONS
+        .map((o) => ({ id: o.id, n: rowVars.filter((v) => bucketHas(o.id, v)).length }))
+        .filter((m) => m.n > 0)
     : [];
 
   return (
-    <div>
+    <div className="se-page">
       <div className="acp-page-header">
         <div className="acp-page-header__left">
           <div className="acp-page-sub">{t("nav.appearance")}</div>
           <h1 className="acp-page-title">{t("nav.styleEditor")}</h1>
         </div>
-        <div style={{ display:"flex", gap:12, alignItems:"center" }}>
-          {draftStatus?.pending && (
-            <span style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"3px 10px", borderRadius:100, fontSize:12, fontWeight:700, background:"var(--c-warn-soft, rgba(245,158,11,.14))", color:"var(--c-warn)" }}>
-              <FontAwesomeIcon icon={faTriangleExclamation} /> {t("styleEditor.unpublished")}
-            </span>
+
+        <div className="se-actions">
+          {/* Only the Tokens tab reads `mode`. Branding has no per-theme values, and
+              the Custom CSS console follows the ACP's OWN theme (`viewedTheme`), so
+              the switch would be a control that does nothing on either. */}
+          {tab === "tokens" && (
+            <>
+              <div className="se-modes">
+                {(["light", "dark"] as const).map((m) => (
+                  <button key={m} type="button" className={`se-mode${mode === m ? " is-on" : ""}`} onClick={() => setMode(m)}>
+                    <FontAwesomeIcon icon={m === "light" ? faSun : faMoon} />
+                    {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
+                    <span className="se-mode__n">{m === "light" ? lightCount : darkCount}</span>
+                  </button>
+                ))}
+              </div>
+              <span className="se-sep" />
+            </>
           )}
-          <button type="button" className="btn-ghost btn-sm" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
-            <FontAwesomeIcon icon={faRotateLeft} style={{ marginRight:5 }} /> {t("styleEditor.reset")}
-          </button>
+
+          {(draftStatus?.pending || totalCount > 0) && (
+            <div className="se-draft">
+              <span className="se-draft__state"><span className="se-draft__dot" />{t("styleEditor.draft")}</span>
+              <span className="se-draft__count">{t("styleEditor.unpublishedN", { count: totalCount })}</span>
+              <button type="button" className="se-draft__btn" onClick={() => setShowDiff((v) => !v)} disabled={totalCount === 0}>
+                {showDiff ? t("styleEditor.diffHide") : t("styleEditor.diffReview")}
+              </button>
+            </div>
+          )}
+
           <AutosaveStatus saving={saveMut.isPending} />
+
+          <button type="button" className="btn-ghost se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
+            <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
+          </button>
+
           <button
             type="button"
-            className="btn-primary btn-sm"
+            className="btn-primary se-act se-act--go"
             disabled={publishMut.isPending || !draftStatus?.pending}
             onClick={() => publishMut.mutate()}
             title={t("styleEditor.publishHint")}
           >
-            <FontAwesomeIcon icon={faCloudArrowUp} style={{ marginRight:5 }} />
+            <FontAwesomeIcon icon={faCloudArrowUp} />
             {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
           </button>
         </div>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"232px 1fr", gap:20 }}>
-
-        {/* Sidebar */}
-        <div className="acp-card" style={{ padding:16, alignSelf:"start" }}>
-          {section.kind !== "customcss" && (
-            <>
-              <div className="acp-label">{t("styleEditor.modeLabel")}</div>
-              <div style={{ display:"flex", gap:6, marginBottom:20 }}>
-                {(["light","dark"] as const).map((m) => (
-                  <button key={m} type="button" onClick={() => setMode(m)} style={{
-                    flex:1, padding:"7px", borderRadius:"var(--radius-sm)", fontSize:12, fontWeight:700,
-                    cursor:"pointer", fontFamily:"inherit", textTransform:"capitalize",
-                    background: mode===m ? "var(--c-accent)" : "var(--c-card)",
-                    color:      mode===m ? "#fff"            : "var(--c-fg-muted)",
-                    border:    `1px solid ${mode===m ? "var(--c-accent)" : "var(--c-border)"}`,
-                  }}>
-                    {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
-                  </button>
-                ))}
+      {showDiff && totalCount > 0 && (
+        <div className="se-diff">
+          <div className="se-diff__head">
+            <div className="se-diff__title">{t("styleEditor.diffTitle")}</div>
+            <button type="button" className="se-diff__close" onClick={() => setShowDiff(false)}>{t("styleEditor.close")}</button>
+          </div>
+          <div className="se-diff__grid">
+            {diffRows.map((d) => (
+              <div key={d.key} className="se-diff__row">
+                <span className="se-diff__sw" style={{ background: swatchOf(d.value) }} />
+                <span className="se-diff__label">{d.label}</span>
+                <span className="se-diff__where">{d.where}</span>
+                <code className="se-diff__val">{d.value}</code>
               </div>
-            </>
-          )}
-
-          {SECTION_GROUPS.map((grp) => (
-            <div key={grp.heading} style={{ marginBottom:10 }}>
-              <div className="acp-label" style={{ fontSize:10, letterSpacing:"0.06em", opacity:0.7 }}>{t(grp.heading)}</div>
-              {grp.items.map((s) => (
-                <button key={s.id} type="button" onClick={() => selectSection(s.id)} style={{
-                  display:"block", width:"100%", textAlign:"left", padding:"8px 12px",
-                  borderRadius:"var(--radius-sm)", fontSize:13, fontWeight: sectionId===s.id ? 700 : 500,
-                  cursor:"pointer", fontFamily:"inherit", marginBottom:2,
-                  background: sectionId===s.id ? "var(--c-accent-soft)" : "transparent",
-                  color:      sectionId===s.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
-                  border:     `1px solid ${sectionId===s.id ? "var(--c-accent-glow)" : "transparent"}`,
-                }}>
-                  {sectionId===s.id ? "▸ " : ""}{t(s.label)}
-                </button>
-              ))}
-            </div>
-          ))}
-
+            ))}
+          </div>
         </div>
+      )}
 
-        {/* Editor column (top-right of the grid; preview moves to a full-width row below) */}
-        <div style={{ minWidth:0, display:"flex", flexDirection:"column", gap:16 }}>
+      <div className="se-tabs">
+        {TABS.map((x) => (
+          <button key={x.id} type="button" className={`se-tab${tab === x.id ? " is-on" : ""}`} onClick={() => setTab(x.id)}>
+            {t(x.label)}
+          </button>
+        ))}
+      </div>
 
-          {section.kind === "branding" ? (
-            <div className="acp-card" style={{ padding:24 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>{t("styleEditor.secBranding")}</div>
-              <p style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
-                {t("styleEditor.brandingIntro")}
-              </p>
-              <div style={{ marginBottom:20 }}>
-                <div className="acp-label">{t("styleEditor.logoText")}</div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <input className="acp-input" value={logoText} onChange={(e) => setLogoText(e.target.value)} placeholder={t("styleEditor.logoPlaceholder")} style={{ flex:1 }} />
-                  <button type="button" className="btn-primary btn-sm" onClick={() => saveLogoTextMut.mutate()} disabled={saveLogoTextMut.isPending}>{t("styleEditor.save")}</button>
+      {tab === "tokens" && (
+        <>
+          {/* ── Palette board — the site's colours, visible without opening anything ── */}
+          <div className="se-board">
+            {BOARD.map((cluster) => (
+              <div className="se-cluster" key={cluster.heading}>
+                <div className="se-cluster__h">{t(cluster.heading)}</div>
+                <div className="se-cluster__tiles">
+                  {cluster.tiles.map((tile) => {
+                    const d = display(tile.cssVar, "global");
+                    const on = sectionId === tile.section;
+                    return (
+                      <button
+                        key={tile.cssVar}
+                        type="button"
+                        className={`se-tile${on ? " is-on" : ""}`}
+                        onClick={() => { selectSection(tile.section); setTab("tokens"); }}
+                      >
+                        <span className="se-tile__sw" style={{ background: swatchOf(d.value) }}>
+                          {d.origin === "own" && <span className="se-tile__dot" />}
+                        </span>
+                        <span className="se-tile__label">{tokenLabel(tile.cssVar, t)}</span>
+                        <code className="se-tile__val">{d.value}</code>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20 }}>
-                <BrandingSlot label={t("styleEditor.navbarLogo")} hint={t("styleEditor.navbarLogoHint")}
-                  currentUrl={branding?.navbarUrl ?? null} accept="image/png,image/svg+xml,image/webp"
-                  onUpload={(f) => uploadBrandingMut.mutate({ variant:"navbar", file:f })}
-                  onDelete={() => deleteBrandingMut.mutate("navbar")}
-                  busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending} />
-                <BrandingSlot label={t("styleEditor.favicon")} hint={t("styleEditor.faviconHint")}
-                  currentUrl={branding?.iconUrl ?? null} accept="image/png,image/x-icon,image/svg+xml"
-                  onUpload={(f) => uploadBrandingMut.mutate({ variant:"icon", file:f })}
-                  onDelete={() => deleteBrandingMut.mutate("icon")}
-                  busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending} square />
-              </div>
-            </div>
+            ))}
 
-          ) : section.kind === "customcss" ? (
-            <div className="acp-card" style={{ padding:24 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12, marginBottom:4 }}>
-                <div>
-                  <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>
-                    {t("styleEditor.secCustomCss")}
-                    <span style={{ color:"var(--c-accent)", fontSize:13, fontWeight:700, marginLeft:8 }}>· {t("styleEditor.themeSuffix", { theme: t("styleEditor.mode_" + viewedTheme) })}</span>
+            {/* Typography is a palette decision, so it sits with the palette. */}
+            <div className="se-type">
+              <div className="se-cluster__h">{t("styleEditor.clType")}</div>
+              <div className="se-type__body">
+                <div className="se-type__aa" style={{ fontFamily: `"${fontFamily}", system-ui, sans-serif`, fontWeight: Number(fontWeight) }}>Aa</div>
+                <div className="se-type__col">
+                  <div className="se-type__row">
+                    <select className="se-type__select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} aria-label={t("styleEditor.fontFamily")}>
+                      {FONTS.map((f) => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
+                    </select>
+                    <div className="se-step">
+                      <button type="button" aria-label={t("styleEditor.fontSmaller")}
+                        disabled={numVal(fontSize, 16) <= FONT_SIZE_MIN}
+                        onClick={() => setFontSize(String(Math.max(FONT_SIZE_MIN, numVal(fontSize, 16) - 1)))}>−</button>
+                      <span className="se-step__v">{numVal(fontSize, 16)}px</span>
+                      <button type="button" aria-label={t("styleEditor.fontBigger")}
+                        disabled={numVal(fontSize, 16) >= FONT_SIZE_MAX}
+                        onClick={() => setFontSize(String(Math.min(FONT_SIZE_MAX, numVal(fontSize, 16) + 1)))}>+</button>
+                    </div>
                   </div>
-                  <p style={{ fontSize:13, color:"var(--c-fg-muted)", margin:0, maxWidth:560 }}>
-                    {t("styleEditor.cssIntro")}
-                  </p>
-                </div>
-                <button type="button" className="btn-primary btn-sm" onClick={() => saveCustomCssMut.mutate()} disabled={saveCustomCssMut.isPending || !customDirty}>
-                  {saveCustomCssMut.isPending ? t("styleEditor.saving") : t("styleEditor.applySave")}
-                </button>
-              </div>
-              <textarea value={activeCss} spellCheck={false}
-                onChange={(e) => setCustomCss((p) => ({ ...p, [viewedTheme]: e.target.value }))}
-                onKeyDown={(e) => {
-                  if (e.key === "Tab") {
-                    e.preventDefault();
-                    const el = e.currentTarget; const s = el.selectionStart, end = el.selectionEnd;
-                    const next = activeCss.slice(0, s) + "  " + activeCss.slice(end);
-                    setCustomCss((p) => ({ ...p, [viewedTheme]: next }));
-                    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 2; });
-                  }
-                }}
-                placeholder={".acp-card {\n  background: #101018;\n}\n\narticle, aside {\n  border-radius: 18px;\n}"}
-                style={{
-                  width:"100%", minHeight:360, marginTop:16, boxSizing:"border-box",
-                  fontFamily:"ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
-                  fontSize:13, lineHeight:1.6, tabSize:2, background:"var(--c-bg)", color:"var(--c-fg)",
-                  border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:"14px 16px", resize:"vertical", outline:"none",
-                }} />
-              <div style={{ display:"flex", justifyContent:"space-between", marginTop:8, fontSize:11, color:"var(--c-fg-muted)" }}>
-                <span>{customDirty ? t("styleEditor.unsaved") : t("styleEditor.saved")}</span>
-                <span>{t("styleEditor.charCount", { count: activeCss.length.toLocaleString() })}</span>
-              </div>
-            </div>
-
-          ) : (
-            <div className="acp-card" style={{ padding:24 }}>
-              <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:4 }}>
-                {t(section.label)}
-                <span style={{ color:"var(--c-fg-muted)", fontSize:13, fontWeight:400, marginLeft:8 }}>· {t("styleEditor.modeMode", { mode: t("styleEditor.mode_" + mode) })}</span>
-              </div>
-
-              {/* Scope picker — component sections only (region surfaces are global). */}
-              {section.kind === "component" && (
-                <div style={{ margin:"14px 0 18px" }}>
-                  <div className="acp-label">{t("styleEditor.applyTo")}</div>
-                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                    {SCOPE_OPTIONS.map((o) => (
-                      <button key={o.id} type="button" onClick={() => setScope(o.id)} style={{
-                        padding:"5px 12px", borderRadius:"var(--radius-pill)", fontSize:12, fontWeight:700,
-                        cursor:"pointer", fontFamily:"inherit",
-                        background: scope===o.id ? "var(--c-accent-soft)" : "var(--c-card)",
-                        color:      scope===o.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
-                        border:    `1px solid ${scope===o.id ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-                      }}>{t(o.label)}</button>
+                  <div className="se-weights">
+                    {FONT_WEIGHTS.map((w) => (
+                      <button key={w} type="button" className={`se-weight${fontWeight === w ? " is-on" : ""}`}
+                        style={{ fontWeight: Number(w) as React.CSSProperties["fontWeight"] }}
+                        onClick={() => setFontWeight(w)}>{w}</button>
                     ))}
                   </div>
-                  <p style={{ fontSize:11, color:"var(--c-fg-muted)", marginTop:6, lineHeight:1.4 }}>
-                    {scope === "global"
-                      ? t("styleEditor.editEvery")
-                      : t("styleEditor.editOnly", { region: t(SCOPE_OPTIONS.find((o)=>o.id===scope)?.label ?? "") })}
-                  </p>
+                  <div className="se-type__hint">{t("styleEditor.fontScope")}</div>
                 </div>
-              )}
-
-              {section.kind === "text" && (
-                <FontControls fontFamily={fontFamily} setFontFamily={setFontFamily} fontWeight={fontWeight} setFontWeight={setFontWeight} fontSize={fontSize} setFontSize={setFontSize} />
-              )}
-
-              {/* Semantic palette rows (not in registry) */}
-              {(section.kind === "palette" || section.kind === "text" || section.kind === "feedback") &&
-                (section.id === "palette" ? PALETTE_ROWS : section.id === "text" ? TEXT_ROWS : FEEDBACK_ROWS).map((row) => {
-                  const d = display(row.cssVar);
-                  return <ColorControl key={row.cssVar} label={t(row.l)} value={d.value} overridden={d.overridden}
-                    onChange={(v) => setOverride("global", row.cssVar, v)} onReset={() => clearOverride("global", row.cssVar)} />;
-                })}
-
-              {/* Feedback colors drive the toast system — fire live samples to preview */}
-              {section.kind === "feedback" && (
-                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => {
-                    toast.success(t("styleEditor.sampleSuccess"));
-                    toast.info(t("styleEditor.sampleInfo"));
-                    toast.warning(t("styleEditor.sampleWarning"));
-                    toast.error(t("styleEditor.sampleError"));
-                  }}>
-                    {t("styleEditor.previewToasts")}
-                  </button>
-                  <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 6 }}>
-                    {t("styleEditor.toastsUse")}
-                  </div>
-                </div>
-              )}
-
-              {/* Registry-driven region / component rows */}
-              {registryRows.map((tok) => {
-                const d = display(tok.var);
-                const onChange = (v: string) => setOverride(effScope, tok.var, v);
-                const onReset  = () => clearOverride(effScope, tok.var);
-                if (tok.control === "radius")
-                  return <RadiusControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
-                if (tok.control === "shadow")
-                  return <ShadowControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
-                return <ColorControl key={tok.var} label={tok.label} value={d.value} overridden={d.overridden} onChange={onChange} onReset={onReset} />;
-              })}
+              </div>
             </div>
-          )}
-          {/* Live preview stacks below the editor (within the editor column, so it
-              aligns under the editor and not under the Mode sidebar). It spans the
-              full editor-column width so the real navbar shows all its tabs. */}
-          {section.kind !== "branding" && (
+          </div>
+
+          {/* ── Canvas + inspector ───────────────────────────────────────────── */}
+          <div className="se-work">
             <PreviewFrame
               mode={mode}
               css={previewCss}
               extraCss={cssPreview}
-              activeGroup={section.group}
-              editingLabel={t(section.label)}
-              editingKind={section.kind}
-              scopeLabel={section.kind === "component" && scope !== "global"
-                ? t(SCOPE_OPTIONS.find((o) => o.id === scope)?.label ?? "")
-                : null}
+              activeGroup={section.id}
+              hotspots={hotspots}
+              setHotspots={setHotspots}
               previewState={previewState}
               setPreviewState={setPreviewState}
               onPick={handlePick}
             />
-          )}
-        </div>{/* editor column + preview */}
-      </div>{/* grid: Mode | Editor */}
-    </div>
-  );
-}
 
-// ── Row controls ────────────────────────────────────────────────────────────────
+            <div className="se-insp">
+              <div className="se-insp__head">
+                <div className="se-insp__top">
+                  <div className="se-insp__id">
+                    <span className="se-insp__icon"><FontAwesomeIcon icon={faSliders} /></span>
+                    <div style={{ minWidth: 0 }}>
+                      <div className="se-insp__title">{t(section.label)}</div>
+                      <div className="se-insp__kind">
+                        {t(`styleEditor.k${section.kind === "component" ? "Component" : section.kind === "region" ? "Region" : "Palette"}`)}
+                        {section.kind === "component" && ` · ${t(SCOPE_LABEL[scope] ?? scope)}`}
+                      </div>
+                    </div>
+                  </div>
+                  <button type="button" className="se-chip se-chip--icon" onClick={() => setJumpOpen((v) => !v)}>
+                    <FontAwesomeIcon icon={faMagnifyingGlass} /> {t("styleEditor.jumpTo")}
+                  </button>
+                </div>
 
-function RowShell({ label, overridden, onReset, children }: { label: string; overridden: boolean; onReset: () => void; children: React.ReactNode }) {
-  const { t } = useTranslation("acp");
-  return (
-    <div style={{ marginBottom:18 }}>
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:6 }}>
-        <span className="acp-label" style={{ margin:0 }}>{label}</span>
-        {overridden
-          ? <button type="button" onClick={onReset} title={t("styleEditor.revertTitle")}
-              style={{ fontSize:11, fontWeight:700, color:"var(--c-accent)", background:"none", border:"none", cursor:"pointer", display:"inline-flex", alignItems:"center", gap:4 }}>
-              <FontAwesomeIcon icon={faRotateRight} /> {t("styleEditor.reset")}
-            </button>
-          : <span style={{ fontSize:10, fontWeight:700, letterSpacing:"0.04em", textTransform:"uppercase", color:"var(--c-fg-subtle)" }}>{t("styleEditor.inherited")}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
+                {jumpOpen && (
+                  <div className="se-jump">
+                    {SECTIONS.map((s) => (
+                      <button key={s.id} type="button" className={`se-chip${s.id === sectionId ? " is-on" : ""}`}
+                        onClick={() => { selectSection(s.id); setJumpOpen(false); }}>
+                        {t(s.label)}
+                      </button>
+                    ))}
+                  </div>
+                )}
 
-function ColorControl({ label, value, overridden, onChange, onReset }: { label: string; value: string; overridden: boolean; onChange: (v:string)=>void; onReset: ()=>void }) {
-  return (
-    <RowShell label={label} overridden={overridden} onReset={onReset}>
-      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-        <input type="color" value={safeHex(value, "#888888")} onChange={(e) => onChange(e.target.value)}
-          style={{ width:40, height:36, border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", cursor:"pointer", padding:2, background:"transparent", flexShrink:0, opacity: overridden ? 1 : 0.85 }} />
-        <input className="acp-input" value={value} onChange={(e) => onChange(e.target.value)}
-          style={{ width:160, fontFamily:"monospace", fontSize:13 }} placeholder="#rrggbb" />
-      </div>
-    </RowShell>
-  );
-}
+                {section.kind === "component" && (
+                  <div className="se-scope">
+                    <div className="se-scope__row">
+                      <span className="se-scope__lab">{t("styleEditor.applyTo")}</span>
+                      <select className="se-scope__select" value={scope} onChange={(e) => setScope(e.target.value as ThemeScope)}>
+                        {SCOPE_OPTIONS.map((o) => <option key={o.id} value={o.id}>{t(o.label)}</option>)}
+                      </select>
+                    </div>
+                    <p className="se-scope__sentence">
+                      {scope === "global"
+                        ? t("styleEditor.editEvery")
+                        : t("styleEditor.editOnly", { region: t(SCOPE_LABEL[scope] ?? scope) })}
+                    </p>
+                    {scopeMarks.length > 0 && (
+                      <div className="se-scope__marks">
+                        <span className="se-scope__marksLab">{t("styleEditor.alreadySetIn")}</span>
+                        {scopeMarks.map((m) => (
+                          <button key={m.id} type="button" className={`se-chip${m.id === scope ? " is-on" : ""}`} onClick={() => setScope(m.id)}>
+                            {t(SCOPE_LABEL[m.id] ?? m.id)} · {m.n}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
-function RadiusControl({ label, value, overridden, onChange, onReset }: { label: string; value: string; overridden: boolean; onChange: (v:string)=>void; onReset: ()=>void }) {
-  const n = numVal(value, 0);
-  return (
-    <RowShell label={label} overridden={overridden} onReset={onReset}>
-      <input type="range" min={0} max={28} value={n} onChange={(e) => onChange(`${e.target.value}px`)}
-        style={{ width:"100%", accentColor:"var(--c-accent)", marginBottom:4, opacity: overridden ? 1 : 0.85 }} />
-      <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>{n}px</div>
-    </RowShell>
-  );
-}
+              <div className="se-rows">
+                {rowVars.map((cssVar) => {
+                  const d = display(cssVar);
+                  const def = TOKEN_BY_VAR[cssVar];
+                  return (
+                    <TokenRow
+                      key={cssVar}
+                      label={tokenLabel(cssVar, t)}
+                      cssVar={cssVar}
+                      value={d.value}
+                      origin={d.origin}
+                      inheritsFrom={d.from ?? def?.inheritsFrom}
+                      control={def?.control === "radius" ? "radius" : def?.control === "shadow" ? "shadow" : "color"}
+                      mode={mode}
+                      onChange={(v) => setOverride(effScope, cssVar, v)}
+                      onReset={() => clearOverride(effScope, cssVar)}
+                    />
+                  );
+                })}
 
-function ShadowControl({ label, value, overridden, onChange, onReset }: { label: string; value: string; overridden: boolean; onChange: (v:string)=>void; onReset: ()=>void }) {
-  const { t } = useTranslation("acp");
-  const preset = SHADOW_PRESETS.find((p) => p.value === value);
-  const isCustom = overridden && !preset;
-  return (
-    <RowShell label={label} overridden={overridden} onReset={onReset}>
-      <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom: isCustom ? 8 : 0 }}>
-        {SHADOW_PRESETS.map((p) => {
-          const on = overridden && preset?.id === p.id;
-          return (
-            <button key={p.id} type="button" onClick={() => onChange(p.value)} style={{
-              padding:"5px 12px", borderRadius:"var(--radius-sm)", fontSize:12, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
-              background: on ? "var(--c-accent-soft)" : "var(--c-card)",
-              color:      on ? "var(--c-accent)"       : "var(--c-fg-muted)",
-              border:    `1px solid ${on ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-            }}>{t(p.label)}</button>
-          );
-        })}
-      </div>
-      {isCustom && (
-        <input className="acp-input" value={value} onChange={(e) => onChange(e.target.value)} style={{ width:"100%", fontFamily:"monospace", fontSize:12 }} />
+                {/* Feedback colours drive the toast system — fire live samples to preview. */}
+                {section.kind === "feedback" && (
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
+                    <button type="button" className="btn-ghost btn-sm" onClick={() => {
+                      toast.success(t("styleEditor.sampleSuccess"));
+                      toast.info(t("styleEditor.sampleInfo"));
+                      toast.warning(t("styleEditor.sampleWarning"));
+                      toast.error(t("styleEditor.sampleError"));
+                    }}>
+                      {t("styleEditor.previewToasts")}
+                    </button>
+                    <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 6 }}>
+                      {t("styleEditor.toastsUse")}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="se-insp__foot">
+                <span className="se-insp__summary">
+                  {t("styleEditor.setHere", { set: setHere, total: rowVars.length, mode: t("styleEditor.mode_" + mode) })}
+                </span>
+                {setHere > 0 && (
+                  <button type="button" className="se-insp__revert"
+                    onClick={() => rowVars.forEach((v) => clearOverride(effScope, v))}>
+                    {t("styleEditor.revertGroup")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
       )}
-    </RowShell>
+
+      {tab === "branding" && (
+        <div className="se-brand">
+          <div>
+            <div className="se-brand__h">{t("styleEditor.logoText")}</div>
+            <p className="se-brand__p">{t("styleEditor.logoTextHint")}</p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="se-brand__input" value={logoText} onChange={(e) => setLogoText(e.target.value)}
+                placeholder={t("styleEditor.logoPlaceholder")} />
+              <button type="button" className="btn-primary btn-sm" onClick={() => saveLogoTextMut.mutate()} disabled={saveLogoTextMut.isPending}>
+                {t("styleEditor.save")}
+              </button>
+            </div>
+            <div className="se-brand__specimen">
+              <span className="se-brand__mark" />
+              <span className="se-brand__word">{logoText || t("styleEditor.logoPlaceholder")}</span>
+            </div>
+          </div>
+
+          <BrandingSlot
+            label={t("styleEditor.navbarLogo")} hint={t("styleEditor.navbarLogoHint")}
+            currentUrl={branding?.navbarUrl ?? null} accept="image/png,image/svg+xml,image/webp"
+            onUpload={(f) => uploadBrandingMut.mutate({ variant: "navbar", file: f })}
+            onDelete={() => deleteBrandingMut.mutate("navbar")}
+            busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
+          />
+          <BrandingSlot
+            label={t("styleEditor.favicon")} hint={t("styleEditor.faviconHint")}
+            currentUrl={branding?.iconUrl ?? null} accept="image/png,image/x-icon,image/svg+xml"
+            onUpload={(f) => uploadBrandingMut.mutate({ variant: "icon", file: f })}
+            onDelete={() => deleteBrandingMut.mutate("icon")}
+            busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
+          />
+        </div>
+      )}
+
+      {tab === "css" && (
+        <div className="se-css">
+          <div className="se-css__card">
+            <div className="se-css__head">
+              <div>
+                <div className="se-css__title">
+                  {t("styleEditor.secCustomCss")}
+                  <span>· {t("styleEditor.themeSuffix", { theme: t("styleEditor.mode_" + viewedTheme) })}</span>
+                </div>
+                <p className="se-css__sub">{t("styleEditor.cssIntro")}</p>
+              </div>
+              <button type="button" className="btn-primary btn-sm" onClick={() => saveCustomCssMut.mutate()} disabled={saveCustomCssMut.isPending || !customDirty}>
+                {saveCustomCssMut.isPending ? t("styleEditor.saving") : t("styleEditor.applySave")}
+              </button>
+            </div>
+            <textarea
+              className="se-css__ta"
+              value={activeCss}
+              spellCheck={false}
+              onChange={(e) => setCustomCss((p) => ({ ...p, [viewedTheme]: e.target.value }))}
+              onKeyDown={(e) => {
+                if (e.key === "Tab") {
+                  e.preventDefault();
+                  const el = e.currentTarget; const s = el.selectionStart, end = el.selectionEnd;
+                  const next = activeCss.slice(0, s) + "  " + activeCss.slice(end);
+                  setCustomCss((p) => ({ ...p, [viewedTheme]: next }));
+                  requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 2; });
+                }
+              }}
+              placeholder={":root {\n  --c-accent2: #0ea5b7;\n}\n\narticle, aside {\n  border-radius: 22px;\n}"}
+            />
+            <div className="se-css__meta">
+              <span>{customDirty ? t("styleEditor.unsaved") : t("styleEditor.saved")}</span>
+              <span>{t("styleEditor.charCount", { count: activeCss.length.toLocaleString() })}</span>
+            </div>
+          </div>
+
+          {/* Custom CSS is applied AFTER every token, so a `:root` variable here silently
+              beats whatever the inspector shows. Naming those is the only way the two
+              surfaces stop contradicting each other. */}
+          <div className="se-css__card">
+            <div className="se-css__title" style={{ marginBottom: 10 }}>{t("styleEditor.cssShadowTitle")}</div>
+            <p className="se-css__sub" style={{ marginBottom: 14 }}>{t("styleEditor.cssShadowBody")}</p>
+            {(() => {
+              const vars = Object.entries(extractRootVars(activeCss));
+              if (vars.length === 0) return <p className="se-css__sub">{t("styleEditor.cssShadowNone")}</p>;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {vars.map(([cssVar, value]) => (
+                    <div className="se-shadow" key={cssVar}>
+                      <span className="se-shadow__sw" style={{ background: swatchOf(value) }} />
+                      <span className="se-shadow__l">{tokenLabel(cssVar, t)}</span>
+                      <code className="se-shadow__v">{value}</code>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {tab === "history" && <StyleHistoryList />}
+    </div>
   );
 }
 
-// ── Font controls (Text section) ──────────────────────────────────────────────
+// ── Token row ───────────────────────────────────────────────────────────────────
 
-function FontControls({ fontFamily, setFontFamily, fontWeight, setFontWeight, fontSize, setFontSize }: {
-  fontFamily: string; setFontFamily: (v:string)=>void; fontWeight: string; setFontWeight: (v:string)=>void; fontSize: string; setFontSize: (v:string)=>void;
+function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, mode, onChange, onReset }: {
+  label: string; cssVar: string; value: string; origin: Origin; inheritsFrom?: string;
+  control: "color" | "radius" | "shadow"; mode: Mode;
+  onChange: (v: string) => void; onReset: () => void;
 }) {
   const { t } = useTranslation("acp");
+  const own = origin === "own";
+  const tag = own ? t("styleEditor.tagSet")
+    : origin === "global" ? t("styleEditor.tagFromGlobal")
+    : origin === "theme"  ? t("styleEditor.tagFromTheme")
+    : t("styleEditor.inherited");
+  // The chain answers "inherited from WHAT" — the question the old bare
+  // "Inherited" label raised and never answered.
+  const chain = own ? cssVar
+    : inheritsFrom      ? `${cssVar} ← ${inheritsFrom}`
+    : origin === "global" ? `${cssVar} ← ${t("styleEditor.scopeAll")}`
+    : origin === "theme"  ? `${cssVar} ← ${t("styleEditor.chainTheme")}`
+    : `${cssVar} ← ${t("styleEditor.chainDefault")}`;
+
+  const n = numVal(value, 0);
+
   return (
-    <>
-      <div style={{ marginBottom:20 }}>
-        <div className="acp-label">{t("styleEditor.fontFamily")}</div>
-        <select className="acp-select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} style={{ width:"100%" }}>
-          {FONTS.map((f) => <option key={f} value={f} style={{ fontFamily:f }}>{f}</option>)}
-        </select>
+    <div className={`se-row${own ? " is-set" : ""}`}>
+      <div className="se-row__head">
+        <span className="se-row__label">{label}</span>
+        <span className={`se-row__tag${own ? " is-set" : ""}`}>{tag}</span>
       </div>
-      <div style={{ marginBottom:20 }}>
-        <div className="acp-label">{t("styleEditor.fontWeight")}</div>
-        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-          {FONT_WEIGHTS.map((w) => (
-            <button key={w} type="button" onClick={() => setFontWeight(w)} style={{
-              padding:"5px 12px", borderRadius:"var(--radius-sm)", fontSize:12, fontWeight: parseInt(w) as React.CSSProperties["fontWeight"],
-              cursor:"pointer", fontFamily:"inherit",
-              background: fontWeight===w ? "var(--c-accent-soft)" : "var(--c-card)",
-              color:      fontWeight===w ? "var(--c-accent)"       : "var(--c-fg-muted)",
-              border:    `1px solid ${fontWeight===w ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-            }}>{w}</button>
-          ))}
+
+      <div className="se-row__ctl" style={control === "shadow" ? { display: "none" } : undefined}>
+        {control === "color" && (
+          <>
+            <input type="color" className="se-row__color" value={safeHex(value, "#888888")}
+              onChange={(e) => onChange(e.target.value)} aria-label={label} />
+            <input className="se-row__text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="#rrggbb" />
+          </>
+        )}
+        {control === "radius" && (
+          <>
+            <span className="se-row__radiusPreview" style={{ borderRadius: value || 0 }} />
+            <input type="range" className="se-row__range" min={0} max={28} value={n}
+              onChange={(e) => onChange(`${e.target.value}px`)} aria-label={label} />
+            <code className="se-row__num">{n}px</code>
+          </>
+        )}
+      </div>
+
+      {control === "shadow" && <ShadowControl value={value} mode={mode} onChange={onChange} />}
+
+      <div className="se-row__foot">
+        <span className="se-row__chain">
+          <FontAwesomeIcon icon={faArrowTurnDown} />
+          <code>{chain}</code>
+        </span>
+        {own && (
+          <button type="button" className="se-row__revert" onClick={onReset} title={t("styleEditor.revertTitle")}>
+            <FontAwesomeIcon icon={faRotateRight} /> {t("styleEditor.revertInherited")}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ShadowControl ─────────────────────────────────────────────────────────────
+//
+// None / Soft / Strong picked a shadow; they could not design one. Custom opens the
+// parts a shadow actually has — which way it falls, how far, how soft, how far it
+// spreads, its colour, and whether it sits inside the element.
+//
+// The two presets stay `var(--shadow-card)` / `var(--shadow-pop)` so a site that
+// wants "whatever the theme calls soft" keeps following the theme. Switching to
+// Custom resolves that reference to real numbers ONCE, which is the moment the
+// value stops tracking the theme — and the panel is on screen saying so.
+
+function ShadowControl({ value, mode, onChange }: {
+  value: string; mode: Mode; onChange: (v: string) => void;
+}) {
+  const { t } = useTranslation("acp");
+  const parsed = parseShadow(value);
+
+  // The parts the sliders drive. A parsed custom value supplies them; anything else
+  // seeds from the preset it currently is, so opening Custom starts where you were
+  // rather than at zero.
+  const seed: ShadowParts = parsed.kind === "custom" ? parsed.parts
+    : SHADOW_SEED[mode][parsed.kind === "strong" ? "strong" : "soft"];
+
+  const set = (patch: Partial<ShadowParts>) => onChange(formatShadow({ ...seed, ...patch }));
+
+  // Opposite sides cancel, so picking one clears the other on that axis. Clicking an
+  // active side turns it off, which is how a shadow becomes centred on that axis.
+  const toggleSide = (key: "top" | "bottom" | "left" | "right") => {
+    const opposite = { top: "bottom", bottom: "top", left: "right", right: "left" } as const;
+    set({ [key]: !seed[key], [opposite[key]]: false } as Partial<ShadowParts>);
+  };
+
+  return (
+    <div className="se-sh">
+      <div className="se-sh__kinds">
+        {SHADOW_KINDS.map((k) => (
+          <button
+            key={k.id}
+            type="button"
+            className={`se-chip${parsed.kind === k.id ? " is-on" : ""}`}
+            onClick={() => onChange(shadowValueFor(k.id, seed, value))}
+          >{t(k.label)}</button>
+        ))}
+      </div>
+
+      {parsed.kind === "raw" && (
+        <>
+          <p className="se-sh__note">{t("styleEditor.shRawNote")}</p>
+          <input className="se-row__text" style={{ width: "100%", flex: "none" }}
+            value={value} onChange={(e) => onChange(e.target.value)} />
+        </>
+      )}
+
+      {parsed.kind === "custom" && (
+        <div className="se-sh__panel">
+          {/* The shadow itself, at the size it is actually being judged at. */}
+          <div className="se-sh__stage">
+            <span className="se-sh__chip" style={{ boxShadow: formatShadow(seed) }} />
+          </div>
+
+          <div className="se-sh__sides">
+            <span className="se-sh__lab">{t("styleEditor.shDirection")}</span>
+            <div className="se-sh__arrows">
+              {SHADOW_SIDES.map((sd) => (
+                <button
+                  key={sd.key}
+                  type="button"
+                  className={`se-chip se-sh__arrow${seed[sd.key] ? " is-on" : ""}`}
+                  title={t(sd.label)}
+                  aria-label={t(sd.label)}
+                  aria-pressed={seed[sd.key]}
+                  onClick={() => toggleSide(sd.key)}
+                ><FontAwesomeIcon icon={sd.icon} /></button>
+              ))}
+            </div>
+            <button
+              type="button"
+              className={`se-chip${seed.inset ? " is-on" : ""}`}
+              aria-pressed={seed.inset}
+              onClick={() => set({ inset: !seed.inset })}
+            >{t("styleEditor.shInset")}</button>
+          </div>
+
+          <ShadowSlider label={t("styleEditor.shDistance")} value={seed.distance} min={0} max={40}
+            onChange={(v) => set({ distance: v })} />
+          <ShadowSlider label={t("styleEditor.shBlur")} value={seed.blur} min={0} max={80}
+            onChange={(v) => set({ blur: v })} />
+          <ShadowSlider label={t("styleEditor.shSpread")} value={seed.spread} min={-20} max={40}
+            onChange={(v) => set({ spread: v })} />
+
+          <div className="se-sh__field">
+            <span className="se-sh__lab">{t("styleEditor.shColour")}</span>
+            <input type="color" className="se-row__color" value={seed.color}
+              aria-label={t("styleEditor.shColour")}
+              onChange={(e) => set({ color: e.target.value })} />
+            <input type="range" className="se-row__range" min={0} max={100} value={Math.round(seed.alpha * 100)}
+              aria-label={t("styleEditor.shOpacity")}
+              onChange={(e) => set({ alpha: Number(e.target.value) / 100 })} />
+            <code className="se-row__num">{Math.round(seed.alpha * 100)}%</code>
+          </div>
+
+          <code className="se-sh__out">{formatShadow(seed)}</code>
         </div>
-      </div>
-      <div style={{ marginBottom:20 }}>
-        <div className="acp-label">{t("styleEditor.fontSize")}</div>
-        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-          <input type="range" min={12} max={20} value={parseInt(fontSize)||16} onChange={(e) => setFontSize(e.target.value)} style={{ flex:1, accentColor:"var(--c-accent)" }} />
-          <span style={{ fontSize:12, color:"var(--c-fg-muted)", minWidth:36 }}>{fontSize}px</span>
-        </div>
-      </div>
-      <div style={{ height:1, background:"var(--c-border)", marginBottom:20 }} />
-    </>
+      )}
+    </div>
+  );
+}
+
+function ShadowSlider({ label, value, min, max, onChange }: {
+  label: string; value: number; min: number; max: number; onChange: (v: number) => void;
+}) {
+  return (
+    <div className="se-sh__field">
+      <span className="se-sh__lab">{label}</span>
+      <input type="range" className="se-row__range" min={min} max={max} value={value}
+        aria-label={label} onChange={(e) => onChange(Number(e.target.value))} />
+      <code className="se-row__num">{value}px</code>
+    </div>
   );
 }
 
@@ -837,12 +1080,41 @@ function FontControls({ fontFamily, setFontFamily, fontWeight, setFontWeight, fo
 
 const REGION_IDS = ["navbar", "content", "footer", "aside"];
 
-function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingKind, scopeLabel, previewState, setPreviewState, onPick }: {
+/**
+ * The editor's own marks on the specimen: what is selectable, what is selected, and
+ * a forced hover/focus so state-only tokens can be edited at all.
+ *
+ * ⚠ These rules may only ever DECORATE. The selection ring used to round itself with
+ * `border-radius:4px`, which set the radius of the element it was highlighting — so
+ * selecting Card pinned the card at 4px and the Card radius slider appeared to do
+ * nothing. Editing a radius is exactly when its group is selected, so every radius
+ * control was dead in the one view whose job is to show the effect. An outline
+ * follows the element's own border curve anyway, so the rule bought nothing.
+ *
+ * Anything added here must be invisible to the tokens being edited; `outline` is the
+ * whole budget, and the hover/focus rules paint only from the state tokens they
+ * exist to preview. Guarded by `styleTokens.test.ts`.
+ */
+export function previewOverlayRules({ activeGroup, hotspots, previewState }: {
+  activeGroup?: string; hotspots: boolean; previewState: PreviewState;
+}): string {
+  const rules: string[] = [];
+  // Every editable surface, dashed — "click any surface" is only useful once you
+  // can see which ones those are.
+  if (hotspots) rules.push(`[data-group]{outline:1px dashed var(--c-fg-subtle);outline-offset:3px;}`);
+  if (activeGroup) rules.push(`[data-group="${activeGroup}"]{outline:2px solid var(--c-accent);outline-offset:3px;}`);
+  if (previewState === "hover") rules.push(`.tp-menu__item{background:var(--menu-item-hover-bg)!important;}`);
+  if (previewState === "focus") rules.push(`.tp-field{border-color:var(--input-border-focus)!important;box-shadow:0 0 0 3px var(--c-accent-soft)!important;}`);
+  return rules.join("\n");
+}
+
+function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick }: {
   mode: Mode; css: string; extraCss: string; activeGroup?: string;
-  editingLabel: string; editingKind: SectionKind; scopeLabel: string | null;
+  hotspots: boolean; setHotspots: (v: boolean) => void;
   previewState: PreviewState; setPreviewState: (s: PreviewState) => void;
   onPick: (group: string, scope: string) => void;
 }) {
+  const { t } = useTranslation("acp");
   const ref = useRef<HTMLIFrameElement>(null);
   const onPickRef = useRef(onPick); onPickRef.current = onPick;
   const prevGroup = useRef<string | undefined>(undefined);
@@ -863,11 +1135,7 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
 
       let ov = doc.getElementById("nodevo-preview-overlay") as HTMLStyleElement | null;
       if (!ov) { ov = doc.createElement("style"); ov.id = "nodevo-preview-overlay"; doc.head.appendChild(ov); }
-      const rules: string[] = [];
-      if (activeGroup) rules.push(`[data-group="${activeGroup}"]{outline:2px solid var(--c-accent);outline-offset:3px;border-radius:4px;}`);
-      if (previewState === "hover") rules.push(`.tp-menu__item{background:var(--menu-item-hover-bg)!important;}`);
-      if (previewState === "focus") rules.push(`.tp-field{border-color:var(--input-border-focus)!important;box-shadow:0 0 0 3px var(--c-accent-soft)!important;}`);
-      ov.textContent = rules.join("\n");
+      ov.textContent = previewOverlayRules({ activeGroup, hotspots, previewState });
 
       if (activeGroup && activeGroup !== prevGroup.current) {
         doc.querySelector(`[data-group="${activeGroup}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -877,7 +1145,7 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
     apply();
     iframe.addEventListener("load", apply);
     return () => iframe.removeEventListener("load", apply);
-  }, [mode, css, extraCss, activeGroup, previewState]);
+  }, [mode, css, extraCss, activeGroup, previewState, hotspots]);
 
   // Capture-phase click-to-select on the iframe document (attached once per load).
   useEffect(() => {
@@ -885,17 +1153,17 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
     if (!iframe) return;
     let boundDoc: Document | null = null;
     const handler = (e: Event) => {
-      const t = e.target as HTMLElement | null;
-      if (!t?.closest) return;
-      const reg = t.closest("[data-region]");
+      const el = e.target as HTMLElement | null;
+      if (!el?.closest) return;
+      const reg = el.closest("[data-region]");
       const regionId = reg?.getAttribute("data-region") ?? "global";
       const scope = REGION_IDS.includes(regionId) ? regionId : "global";
-      const comp = t.closest("[data-component]");
+      const comp = el.closest("[data-component]");
       if (comp) { onPickRef.current(comp.getAttribute("data-component")!, scope); return; }
       // A real (untagged) native form control is a Field — e.g. the live navbar's
       // search box. Map it to the Field component scoped to its region, instead of
       // falling through and selecting the enclosing region.
-      if (t.closest("input, select, textarea")) { onPickRef.current("field", scope); return; }
+      if (el.closest("input, select, textarea")) { onPickRef.current("field", scope); return; }
       if (reg) onPickRef.current(regionId, "global");
     };
     const attach = () => {
@@ -913,103 +1181,83 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, editingLabel, editingK
     };
   }, []);
 
-  const { t } = useTranslation("acp");
-  const kindLabel: Record<SectionKind, string> = {
-    palette: "styleEditor.kPalette", text: "styleEditor.kPalette", feedback: "styleEditor.kPalette",
-    region: "styleEditor.kRegion", component: "styleEditor.kComponent", branding: "styleEditor.secBranding", customcss: "styleEditor.secCustomCss",
-  };
-
   return (
-    <div style={{ width: "100%" }}>
-      {/* Toolbar — tells the admin exactly what surface their edits target */}
-      <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
-        padding: "8px 12px", background: "var(--c-card)", border: "1px solid var(--c-border)", borderBottom: "none",
-        borderRadius: "var(--radius-md) var(--radius-md) 0 0",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--c-fg-subtle)" }}>
-            {t("styleEditor.editing")}
-          </span>
-          {/* Active section chip */}
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 11px", borderRadius: "var(--radius-pill)",
-            background: "var(--c-accent-soft)", color: "var(--c-accent)", border: "1px solid var(--c-accent-glow)",
-            fontSize: 12.5, fontWeight: 700,
-          }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "var(--c-accent)" }} />
-            {editingLabel}
-          </span>
-          <span style={{ fontSize: 10, fontWeight: 700, color: "var(--c-fg-subtle)", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-            {t(kindLabel[editingKind])}
-          </span>
-          {/* Scope chip — only when a component is scoped to a specific region */}
-          {scopeLabel && (
-            <>
-              <span style={{ fontSize: 11, color: "var(--c-fg-subtle)" }}>{t("styleEditor.in")}</span>
-              <span style={{
-                padding: "3px 10px", borderRadius: "var(--radius-pill)", background: "var(--c-card)",
-                border: "1px solid var(--c-border)", color: "var(--c-fg-muted)", fontSize: 12, fontWeight: 700,
-              }}>{scopeLabel}</span>
-            </>
-          )}
-          <span style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginLeft: 2 }}>· {t("styleEditor.modeMode", { mode: t("styleEditor.mode_" + mode) })}</span>
+    <div className="se-canvas">
+      <div className="se-canvas__bar">
+        <div className="se-canvas__left">
+          <span className="se-live"><span className="se-live__dot" />{t("styleEditor.livePreview")}</span>
+          <span className="se-sep" style={{ height: 18 }} />
+          <span className="se-canvas__hint">{t("styleEditor.clickToEdit")}</span>
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
-          {PREVIEW_STATES.map((s) => (
-            <button key={s.id} type="button" onClick={() => setPreviewState(s.id)} title={t("styleEditor.forceState")} style={{
-              padding: "3px 9px", borderRadius: "var(--radius-sm)", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit",
-              background: previewState === s.id ? "var(--c-accent-soft)" : "transparent",
-              color:      previewState === s.id ? "var(--c-accent)"       : "var(--c-fg-muted)",
-              border:    `1px solid ${previewState === s.id ? "var(--c-accent-glow)" : "var(--c-border)"}`,
-            }}>{t(s.label)}</button>
-          ))}
+        <div className="se-canvas__right">
+          <button type="button" className={`se-chip se-chip--icon${hotspots ? " is-on" : ""}`} onClick={() => setHotspots(!hotspots)}>
+            <FontAwesomeIcon icon={faObjectGroup} /> {t("styleEditor.outlineAreas")}
+          </button>
+          <span className="se-sep" style={{ height: 18 }} />
+          <div style={{ display: "flex", gap: 4 }}>
+            {PREVIEW_STATES.map((s) => (
+              <button key={s.id} type="button" className={`se-chip${previewState === s.id ? " is-on" : ""}`}
+                onClick={() => setPreviewState(s.id)} title={t("styleEditor.forceState")}>
+                {t(s.label)}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      <div style={{ borderRadius: "0 0 var(--radius-md) var(--radius-md)", overflow: "hidden", border: "1px solid var(--c-border)", boxShadow: "var(--shadow-card)", background: "var(--c-bg)" }}>
-        <iframe ref={ref} src="/__theme-preview" title={t("styleEditor.previewTitle")}
-          style={{ width: "100%", height: 600, border: "none", display: "block" }} />
+      <div className="se-canvas__frame">
+        <iframe ref={ref} src="/__theme-preview" title={t("styleEditor.previewTitle")} />
       </div>
-      <p style={{ fontSize: 11, color: "var(--c-fg-muted)", marginTop: 8, lineHeight: 1.4 }}>
-        {t("styleEditor.previewHint")}
-      </p>
     </div>
   );
 }
 
 // ── BrandingSlot ──────────────────────────────────────────────────────────────
 
-function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, busy, square }: {
+function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, busy }: {
   label: string; hint: string; currentUrl: string | null; accept: string;
-  onUpload: (f: File) => void; onDelete: () => void; busy: boolean; square?: boolean;
+  onUpload: (f: File) => void; onDelete: () => void; busy: boolean;
 }) {
   const { t } = useTranslation("acp");
   const inputRef = useRef<HTMLInputElement>(null);
-  const previewH = square ? 64 : 40;
+  const [over, setOver] = useState(false);
+
+  // The MIME allow-list is re-checked here as well as by `accept`, because a drop
+  // never consults the file dialog's filter. The API checks magic bytes regardless;
+  // this only spares the admin a round-trip to be told no.
+  const take = (file: File | undefined) => {
+    if (!file) return;
+    if (accept.split(",").includes(file.type)) onUpload(file);
+    else swalToast(t("styleEditor.badType"));
+  };
+
   return (
     <div>
-      <div className="acp-label">{label}</div>
-      <div style={{ background:"var(--c-surface)", border:"1px solid var(--c-border)", borderRadius:"var(--radius-sm)", padding:16, display:"flex", flexDirection:"column", gap:12 }}>
-        <div style={{ height:previewH+16, display:"flex", alignItems:"center", justifyContent:"center", background:"var(--c-bg)", borderRadius:"var(--radius-sm)", border:"1px solid var(--c-border)" }}>
-          {currentUrl
-            ? <img src={currentUrl} alt={label} style={{ maxHeight:previewH, maxWidth:"100%", objectFit:"contain" }} />
-            : <span style={{ fontSize:11, color:"var(--c-fg-muted)" }}>{t("styleEditor.noImage")}</span>}
-        </div>
-        <div style={{ display:"flex", gap:6 }}>
-          <button type="button" className="btn-ghost btn-sm" style={{ flex:1 }} disabled={busy} onClick={() => inputRef.current?.click()}>
-            <FontAwesomeIcon icon={faUpload} style={{ marginRight:5 }} /> {t("styleEditor.upload")}
-          </button>
-          {currentUrl && (
-            <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={onDelete}
-              style={{ color:"var(--c-danger)", borderColor:"color-mix(in srgb,var(--c-danger) 35%,transparent)" }}>
+      <div className="se-brand__h">{label}</div>
+      <p className="se-brand__p">{hint}</p>
+      <div
+        className={`se-drop${over ? " is-over" : ""}`}
+        onClick={() => !busy && inputRef.current?.click()}
+        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); if (!busy) take(e.dataTransfer.files[0]); }}
+      >
+        {currentUrl ? (
+          <>
+            <img src={currentUrl} alt={label} />
+            <button type="button" className="se-drop__x" disabled={busy} title={t("styleEditor.remove")}
+              onClick={(e) => { e.stopPropagation(); onDelete(); }}>
               <FontAwesomeIcon icon={faXmark} />
             </button>
-          )}
-        </div>
-        <div style={{ fontSize:11, color:"var(--c-fg-muted)" }}>{hint}</div>
-        <input ref={inputRef} type="file" accept={accept} style={{ display:"none" }}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
+          </>
+        ) : (
+          <div>
+            <div className="se-drop__t">{t("styleEditor.dropImage")}</div>
+            <div className="se-drop__s">{t("styleEditor.orBrowse")}</div>
+          </div>
+        )}
       </div>
+      <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
+        onChange={(e) => { take(e.target.files?.[0]); e.target.value = ""; }} />
     </div>
   );
 }

@@ -1,92 +1,111 @@
 # Changelog
 
-## The maintenance screen, redesigned — and a real editor behind it
+## The Style Editor, redesigned around the site you are editing
 
-The maintenance screen was a split panel: a coloured half carrying a headline and
-a percentage, and a permanent login form filling the other half. It told visitors
-almost nothing and asked them to log in. It is now a centred status card that
-answers the questions people actually have — how long, what is being done, what
-is affected — and keeps staff sign-in behind a discreet link that opens a dialog.
+ACP → Appearance → Style Editor was a list. A rail of fourteen sections down the
+left, one card of rows in the middle, and the live preview pushed below the fold —
+so the thing being changed and the thing showing the change were never on screen
+together. It also never said what "Inherited" inherited *from*, which is the one
+question an admin has while looking at a colour they did not set.
 
-ACP → System → Settings → **Maintenance mode** grew the editor to match.
-
-### Added
-- **A live countdown** to the ETA (hours / minutes / seconds), with the "back
-  online around HH:MM" time under it. Off by a toggle when a deadline would be a
-  promise you cannot keep.
-- **Named progress steps.** "Step 3 of 4 — Rebuilding search index" reads better
-  on a long job than a percentage does. The percentage bar is still there: the
-  new **How progress is shown** control picks Steps, Bar, or Hidden.
-- **Affected services** with an offline / degraded / operational status each.
-- **Where to follow updates** — footer icon links (Discord, X, GitHub, Mastodon,
-  Telegram, YouTube, a status page, email, or a plain link).
-- **Two backgrounds** — Aurora and Solid — both mixed from the site's own accent
-  colours rather than a fixed palette, and previewed in the picker.
-- **Auto-refresh when back**: visitors land on the site the moment maintenance
-  ends, no reload. With it off, the poll stops and the visitor reloads when they
-  choose to.
-- **Staff sign-in link** toggle, for admins who would rather staff went to
-  `/login` directly.
-
-### Changed
-- The maintenance settings section renders its own body instead of the generic
-  label/description/control rows — the editors (steps, services, links) do not
-  fit one. It still writes into the Settings page's single draft, so it autosaves
-  with everything else and reports into the one SaveChip.
-- The card head carries a **site is live / site offline · staff only** pill.
-- The screen names the site from site config instead of the literal "Nodevo".
-- Every colour is a `--c-*` token, so the screen renders in both themes and
-  follows the Style Editor's accent. The design was drawn in dark only.
-
-### Notes
-- `maintenance.progress_mode` defaults to `bar`, so installs that predate the
-  modes look exactly as they did: a bar that appears only above 0%.
-- The status endpoint is public and its settings are free-form JSON, so the
-  service re-checks everything it returns — bounded lists, a fixed icon
-  vocabulary, and `http(s)`-only link URLs (a `javascript:` URL in a setting
-  never reaches an anchor).
-- A locked-out account is always offered the sign-in link, even with the footer
-  link hidden — otherwise it has no way back in.
-
-## The licence page, redesigned
-
-ACP → Extensions → License used to be three stacked cards that each answered a
-different question and never referred to each other: a marketplace-account box, a
-list of what you own, and a technical dump of the active licence. Whether the
-install was actually licensed — the one thing the page exists to say — was
-somewhere in the middle, in body text.
-
-It now opens with that answer, and puts everything the account owns into one
-table beside it.
+It is now a canvas: the site's palette across the top, the live preview and a token
+inspector side by side underneath, and four tabs where the rail used to be.
 
 ### Added
-- A **status hero**: licensed-until, a state badge, and a hint when there is
-  something to do about it. Five states — active, expiring, expired, marketplace
-  unreachable, and not connected — each derived from real licence data rather
-  than a generic "active/inactive".
-- **Licences and entitlements are one table.** What the account bought and what
-  this install may run are different facts, and the columns now say both:
-  seats, updates window, and whether the licence is live here.
-- **Technical details collapse.** Licence key, site ID, activation and next-check
-  dates moved into a drawer, each with a copy button — support information, not
-  the headline.
-- A right rail carrying the marketplace connection and a short entitlement
-  summary: signed-until, grant count, and when the automatic check next runs.
-- Install progress renders **in the row being installed**, rather than in a modal
-  over the page you are reading.
+- **A palette board.** Every colour the site is built from — surfaces, brand, text,
+  feedback — as swatches at the top of the page, each showing its value and a dot
+  when it is a value *you* set rather than one you inherited. Clicking a swatch opens
+  its group, so the board is navigation as well as display. Typography sits with it:
+  family, size and weight are palette decisions.
+- **The preview sits beside the inspector**, full height, and the toolbar says what
+  it wants from you — "Click any surface to edit it". **Outline editable areas**
+  dashes every surface that responds, because "click any surface" only helps once
+  you can see which ones those are.
+- **The inherit chain, spelled out.** Every row now reads `--btn-bg ← --c-accent`
+  rather than a bare "Inherited", and distinguishes four origins: your override,
+  a value from Everywhere, a value from the installed theme, and the built-in
+  default. Overridden rows carry an accent spine, so one glance down the rail
+  separates what you set from what the site handed you.
+- **"What Publish will change."** The Draft pill counts the unpublished tokens and
+  opens a list of exactly which ones, with scope and theme — instead of a warning
+  triangle that said only that *something* was pending.
+- **Per-theme change counts on the light/dark switch**, so work waiting on the side
+  you are not looking at is visible from the header.
+- **"Already set in"** chips on component groups: the scopes that group is already
+  overridden in, one click away. The answer to "why is the navbar different?"
+- **Jump to…**, a flat list of all twelve groups, replacing the permanent rail.
+- **A real shadow editor.** None / Soft / Strong could pick a shadow but not design
+  one. A fourth option, **Custom**, opens the parts a shadow actually has: which way
+  it falls (up, down, left, right — opposite sides cancel to centred), how far, how
+  much **blur**, how much **spread**, its colour and opacity, and whether it is
+  **inset**. A preview renders the shadow on the site's own surface colour, and the
+  resulting `box-shadow` is shown as text underneath.
+- **Custom CSS names what it overrides.** Custom CSS is applied after every token,
+  so a `:root` variable there silently beats the inspector. The tab now lists those
+  declarations beside the editor, so the two surfaces stop contradicting each other.
+- **Branding accepts a drop**, and shows the wordmark as it will actually render.
+- **Style history says what changed** — derived by diffing each snapshot against
+  the one before it, since the stored label is only a timestamp. The list is now
+  one component shared with ACP → Appearance → Style history, which had drifted
+  into a second, plainer rendering of the same rows.
 
 ### Fixed
-- **A licence could show "Active" next to an Install button.** The marketplace
-  reports `activeHere` as soon as a seat binds to an install, which happens
-  before any files exist locally. The row now requires both the activation and
-  an installed version before it claims to be live, and the "active here" count
-  in the rail counts the same thing.
-- The hero, the table and the rail read a single fetch. Previously each asked
-  separately, so "marketplace unreachable" could be true for the table and false
-  for the panel directly above it.
+- **Region and component token names were never translated.** `TOKEN_REGISTRY`
+  labels are English documentation, not translations, and the editor rendered them
+  raw — so half of a German or French Style Editor was in English. All 40 now have
+  keys in every bundled locale, with the registry label kept as the fallback so a
+  plugin's own token still renders a readable name.
+- **Three rows resolved to nothing and rendered their placeholder.** "Info" showed
+  an empty swatch and "Button text" showed the literal `#rrggbb`, because
+  `--c-info`, `--c-update` and `--c-on-accent` are reachable through the inheritance
+  chain but had no value at the end of it. Every chain now terminates, and a test
+  fails if a new one does not.
+- **An untouched card shadow showed three unlit chips** instead of the Soft preset
+  it actually had.
+- **Every radius control was dead in the preview.** The selection ring rounded
+  itself with `border-radius: 4px` — which set the radius of the element it was
+  highlighting. Selecting Card pinned the card at 4px, and editing a radius is
+  exactly when its group is selected, so dragging Button, Card, Field or Menu
+  radius changed nothing you could see. The ring is an outline now, which follows
+  the element's own border curve anyway.
 
 ### Notes
-- Every colour in the page comes from a semantic token, so it renders in both ACP
-  themes. The design was drawn in light mode only.
-- Refreshing entitlements now also re-asks for owned licences — that is the one
-  moment a just-bought licence appears, which is the whole reason to press it.
+- Soft and Strong still store as `var(--shadow-card)` / `var(--shadow-pop)`, so a
+  site set to "Soft" keeps following whatever the installed theme calls soft.
+  Switching to Custom resolves that reference to real numbers once — the point at
+  which the value stops tracking the theme.
+- A shadow the controls cannot describe is **left alone**: stacked shadows, an
+  offset whose two axes differ (`4px 12px`), or a colour outside hex/rgb. Those
+  stay verbatim and are edited as text, rather than being silently rewritten into
+  something the controls can express.
+- Region tokens still store under `global`, not their own scope bucket. `--nav-bg`
+  is consumed only by `.pub-nav`, so `:root` and `.pub-nav` render identically —
+  while every install that has set a navbar colour has it under `global`. Reading
+  the region bucket would show those existing overrides as "Inherited" and write a
+  second copy.
+- Every colour on the page is a semantic token, so it renders in both ACP themes.
+  The design was drawn in light mode only.
+
+## ACP settings: a stale tab no longer reverts everyone else's changes
+
+Three defects in how ACP settings forms decide what to save. All were found
+while verifying the maintenance editor, and all predate it.
+
+### Fixed
+- **A settings tab left open silently reverted changes made elsewhere.** The
+  draft re-seeded on `[settings.length]` — the NUMBER of settings rows — so a
+  refetch that brought new *values* never reached the form, while the
+  "saved" side it is compared against went fresh. Autosave saw a difference and
+  wrote the whole stale draft back. Each new server snapshot is now merged per
+  key: a key nobody touched locally follows the server, a key with an unsaved
+  local edit keeps it. Applies to System → Settings and Moderation → Settings.
+- **An endless save loop on any object-valued setting.** Draft-vs-saved is a
+  JSON comparison, and the saved side has been through Postgres `jsonb`, which
+  stores object keys in its own order. `{icon,label,url}` and `{url,icon,label}`
+  are the same settings but different strings, and saving could not make them
+  agree — so the form saved, refetched, disagreed, and saved again forever. One
+  click on "Add link" was measured at 84 PUTs. Comparisons now normalise key
+  order (`stableStringify`), which fixes it for every autosaving ACP form.
+- **A save wrote every setting on the page.** One toggle PUT all 42 keys, which
+  is what made the stale-tab bug destructive instead of merely wrong. Saves now
+  carry only the keys that actually changed — the same click is one PUT.
