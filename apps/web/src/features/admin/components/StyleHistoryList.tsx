@@ -67,9 +67,12 @@ function summarise(
 }
 
 /**
- * The style-history list, shared by ACP → Appearance → Style history and the Style
- * Editor's History tab. One list, so the two cannot describe the same snapshots
- * differently.
+ * The style-history list — the Style Editor's History tab.
+ *
+ * It lived on its own ACP page (Appearance → Style history) until 2026-08-26, which
+ * put the snapshots one nav level away from the editor that made them. That route
+ * now redirects here. Kept as its own component because a snapshot list is a
+ * self-contained thing, not because a second surface renders it.
  */
 export function StyleHistoryList() {
   const { t } = useTranslation("acp");

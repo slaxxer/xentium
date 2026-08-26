@@ -57,7 +57,6 @@ import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
 import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
 import { LayoutEditorPage } from "../features/admin/pages/LayoutEditorPage";
-import { StyleHistoryPage } from "../features/admin/pages/StyleHistoryPage";
 import { ThemesPage }       from "../features/admin/pages/ThemesPage";
 import { NavigationPage }   from "../features/admin/pages/NavigationPage";
 // ACP pages — extensions
@@ -276,7 +275,8 @@ function buildRouter() {
           // Appearance
           { path: "style-editor",     element: <StyleEditorPage /> },
           { path: "layout-editor",    element: <LayoutEditorPage /> },
-          { path: "style-history",    element: <StyleHistoryPage /> },
+          // Retired 2026-08-26: the same list is the Style Editor's History tab.
+          { path: "style-history",    element: <Navigate to="/admin/style-editor?tab=history" replace /> },
           { path: "navigation",       element: <NavigationPage /> },
           // `guest-home` retired 2026-08-09: the hero copy and section toggles are
           // block props on the guest landing, edited in the Layout Editor. Redirected
