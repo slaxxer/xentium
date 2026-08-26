@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPlus, faTrash, faCopy, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave, useAnySaving } from "../../../hooks/useAutosave";
+import { useAutosave, useAnySaving, sameValue } from "../../../hooks/useAutosave";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
@@ -304,17 +304,51 @@ export function SettingsPage() {
   // Local draft state seeded from API
   const [draft, setDraft] = useState<Record<string, unknown>>(DEFAULTS);
 
+  /**
+   * The last server snapshot this page merged.
+   *
+   * It is what lets a refetch tell "somebody else changed this key" apart from
+   * "I changed it and it has not saved yet" — the two look identical if you
+   * only compare the draft against the incoming values.
+   */
+  const serverRef = useRef<Record<string, unknown> | null>(null);
+
+  /**
+   * Merge each new server snapshot into the draft, per key.
+   *
+   * This used to re-seed on `[settings.length]`, which meant it re-ran only if
+   * the NUMBER of settings rows changed — so a tab that had been open while
+   * somebody edited the same settings elsewhere kept its stale draft, while
+   * `generalSaved` (derived from the query on every render) went fresh. Autosave
+   * then saw draft ≠ saved and dutifully wrote the WHOLE stale draft back,
+   * silently reverting every change the other session had made.
+   *
+   * Now: a key nobody has touched locally follows the server, and a key with an
+   * unsaved local edit keeps it (autosave is about to push it). If both changed,
+   * the local edit wins and gets saved — last writer, but a deliberate one.
+   */
   useEffect(() => {
     if (!settings.length) return;
     const raw = parseSettings(settings);
+    const server = Object.fromEntries(
+      Object.keys(DEFAULTS).map((key) => [key, key in raw ? raw[key] : DEFAULTS[key]]),
+    );
+    const prevServer = serverRef.current;
+    serverRef.current = server;
+
     setDraft(prev => {
+      if (!prevServer) return { ...prev, ...server }; // first load: the server IS the draft
       const next = { ...prev };
       for (const key of Object.keys(DEFAULTS)) {
-        if (key in raw) next[key] = raw[key];
+        if (sameValue(server[key], prevServer[key])) continue;  // unchanged on the server
+        if (!sameValue(prev[key], prevServer[key])) continue;   // unsaved local edit — keep mine
+        next[key] = server[key];
       }
       return next;
     });
-  }, [settings.length]);
+    // `settings` is structurally shared by the query client, so this runs when
+    // the DATA changes, not on every refetch that returns the same rows.
+  }, [settings]);
 
   const saveMutation = useMutation({
     mutationFn: (entries: Array<[string, unknown]>) =>
@@ -344,10 +378,21 @@ export function SettingsPage() {
     ? Object.fromEntries(GENERAL_KEYS.map(k => [k, k in rawAll ? rawAll[k] : DEFAULTS[k]]))
     : undefined;
 
+  /**
+   * Save only the keys that actually changed.
+   *
+   * This used to PUT the whole page — 42 keys — for a single toggle, which is
+   * what made a stale tab destructive rather than merely wrong: one save stamped
+   * every setting on the page over whatever the server held. Sending just the
+   * edits means a save can only ever affect what was edited.
+   */
   useAutosave({
     value: generalDraft,
     savedValue: generalSaved,
-    onSave: (d) => saveMutation.mutate(Object.entries(d)),
+    onSave: (d) => {
+      const changed = Object.entries(d).filter(([key, value]) => !sameValue(value, generalSaved?.[key]));
+      if (changed.length) saveMutation.mutate(changed);
+    },
   });
 
   const tzOptions = TIMEZONES.map((tz) => ({ value: tz, label: tz }));
