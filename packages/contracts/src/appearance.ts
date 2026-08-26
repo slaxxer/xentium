@@ -61,6 +61,10 @@ export const HEARTH_DEFAULT_TOKENS: TokenSet = {
     "--c-success":      "#23a55a",
     "--c-warn":         "#f4a259",
     "--c-danger":       "#ef4444",
+    // Both are editable rows in the Style Editor's Feedback group, so both need a
+    // default here or the row renders empty and "Inherited" names nothing.
+    "--c-info":         "#38bdf8",
+    "--c-update":       "#414144",
     "--btn-bg":         "#5865f2",
     "--card-radius":    "18px",
     "--btn-radius":     "10px",
@@ -81,6 +85,8 @@ export const HEARTH_DEFAULT_TOKENS: TokenSet = {
     "--c-success":      "#3ba55d",
     "--c-warn":         "#f4a259",
     "--c-danger":       "#f87171",
+    "--c-info":         "#38bdf8",
+    "--c-update":       "#8f8f94",   // lighter neutral — #414144 vanishes on dark cards
     "--btn-bg":         "#7c84ff",
     "--card-radius":    "18px",
     "--btn-radius":     "10px",

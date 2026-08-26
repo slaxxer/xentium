@@ -1,0 +1,912 @@
+/* ACP → Appearance → Style Editor.
+ *
+ * The canvas for this page ("Style Editor redesign plan") is authored in
+ * light-mode hex. Every one of those values is a semantic token here instead,
+ * which is what makes the page work in dark mode at all — the ACP ships both
+ * themes and the design only drew one.
+ *
+ * Colour map (canvas → token):
+ *   #1a1c2e fg      → --c-fg          #5b5e74 muted   → --c-fg-muted
+ *   #9499ae subtle  → --c-fg-subtle   #5865f2 accent  → --c-accent
+ *   #e7e9fd soft    → --c-accent-soft #23a55a success → --c-success
+ *   #f4a259 warn    → --c-warn        #ef4444 danger  → --c-danger
+ *   #e6e7f1 border  → --c-border      #f3f4fb bg      → --c-bg
+ *   #ffffff surface → --card-bg       18px radius     → --radius-lg
+ *
+ * ⚠ This page previews the SITE's tokens, so the specimen lives in an iframe
+ * (`/__theme-preview`) and nothing here may leak into it. Everything below is
+ * under `.se-*` and paints the ACP, which stays on the published theme until
+ * Publish — see StyleEditorPage.tsx.
+ */
+
+.se-page { max-width: 1400px; }
+
+/* ── Header controls ──────────────────────────────────────────────────────── */
+
+.se-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Light/dark switch. The count is the whole point: an admin who edited dark and
+   forgot needs to see that there IS something over there. */
+.se-modes {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+}
+.se-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--c-fg-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-mode:hover { color: var(--c-fg); }
+.se-mode.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+.se-mode__n {
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  color: var(--c-fg-subtle);
+  font-size: 10.5px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.se-mode.is-on .se-mode__n { background: var(--c-accent); color: var(--c-on-accent, #fff); }
+
+.se-sep { width: 1px; height: 28px; background: var(--c-border); flex: none; }
+
+/* Draft state, in words. "Unpublished" as a bare warning pill never said how
+   much was waiting, so nobody could tell a stray click from an afternoon. */
+.se-draft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 6px 0 14px;
+  border-radius: var(--radius-pill);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--shadow-card);
+}
+.se-draft__state {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-fg);
+}
+.se-draft__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-warn); flex: none; }
+.se-draft__count { font-size: 13px; font-weight: 600; color: var(--c-fg-muted); white-space: nowrap; }
+.se-draft__btn {
+  height: 30px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  color: var(--c-fg-muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-draft__btn:hover { color: var(--c-fg); }
+
+/* The header's two actions. They sit beside a 42px Draft pill and a 40px mode
+   switch, so `btn-sm` left them looking like an afterthought next to the state
+   they act on. Sized to the row instead. */
+.se-act {
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+  flex: none;
+
+  svg { display: block; flex-shrink: 0; }
+}
+.se-act--go {
+  padding: 0 20px;
+  font-size: 14px;
+  font-weight: 700;
+}
+/* Only while it can actually be pressed — a glow under a disabled control
+   advertises an action that is not available. */
+.se-act--go:not(:disabled) { box-shadow: 0 8px 24px var(--c-accent-glow); }
+
+/* ── Diff ("What Publish will change") ────────────────────────────────────── */
+
+.se-diff {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px;
+  margin-bottom: 16px;
+}
+.se-diff__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.se-diff__title { font-size: 14px; font-weight: 700; color: var(--c-fg); }
+.se-diff__close {
+  border: none;
+  background: none;
+  color: var(--c-accent);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-diff__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 28px;
+}
+@media (max-width: 1100px) { .se-diff__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px)  { .se-diff__grid { grid-template-columns: minmax(0, 1fr); } }
+.se-diff__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--c-border);
+  min-width: 0;
+}
+.se-diff__sw {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid var(--c-border);
+  flex: none;
+}
+.se-diff__label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--c-fg);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.se-diff__where { font-size: 11px; font-weight: 700; color: var(--c-fg-subtle); flex: none; }
+.se-diff__val {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 11.5px;
+  color: var(--c-fg-muted);
+  flex: none;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
+
+.se-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  align-self: flex-start;
+  width: fit-content;
+  margin-bottom: 16px;
+}
+.se-tab {
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-fg-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-tab:hover { color: var(--c-fg); }
+.se-tab.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+
+/* ── Palette board ────────────────────────────────────────────────────────── */
+
+.se-board {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 22px 20px;
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.se-cluster { display: flex; flex-direction: column; gap: 10px; }
+.se-cluster__h {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+}
+.se-cluster__tiles { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.se-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  width: 92px;
+  padding: 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+}
+.se-tile:hover { background: var(--c-bg); }
+.se-tile.is-on { background: var(--c-accent-soft); border-color: var(--c-accent-glow); }
+.se-tile__sw {
+  position: relative;
+  display: block;
+  height: 44px;
+  border-radius: 9px;
+  border: 1px solid var(--c-border);
+}
+/* The dot is the only thing separating "this is the colour" from "this is the
+   colour I chose" — a board of swatches otherwise cannot show ownership. */
+.se-tile__dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 0 2px var(--card-bg);
+}
+.se-tile__label { font-size: 11px; font-weight: 600; color: var(--c-fg); white-space: nowrap; }
+.se-tile__val {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 10.5px;
+  color: var(--c-fg-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Typography sits in the board because a font is a palette decision, not a
+   token buried three sections down. */
+.se-type { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.se-type__body { display: flex; gap: 10px; align-items: stretch; }
+.se-type__aa {
+  width: 78px;
+  height: 78px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-size: 34px;
+  font-weight: 700;
+  color: var(--c-fg);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.se-type__col { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.se-type__row { display: flex; align-items: center; gap: 8px; }
+.se-type__select {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+.se-step {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+  flex: none;
+}
+.se-step button {
+  width: 30px;
+  height: 100%;
+  border: none;
+  background: none;
+  color: var(--c-fg-muted);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-step button:hover:not(:disabled) { color: var(--c-fg); }
+.se-step button:disabled { opacity: 0.4; cursor: default; }
+.se-step__v {
+  min-width: 46px;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border-left: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-border);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--c-fg);
+}
+.se-weights { display: flex; gap: 4px; flex-wrap: wrap; }
+.se-weight {
+  padding: 5px 9px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--c-bg);
+  color: var(--c-fg-subtle);
+  font-family: inherit;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.se-weight.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+.se-type__hint { font-size: 11.5px; color: var(--c-fg-subtle); line-height: 1.4; }
+
+/* ── Canvas + inspector ───────────────────────────────────────────────────── */
+
+.se-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 404px;
+  gap: 16px;
+  align-items: stretch;
+}
+/* The inspector drops under the canvas before either gets too narrow to use. */
+@media (max-width: 1180px) { .se-work { grid-template-columns: minmax(0, 1fr); } }
+
+.se-canvas {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.se-canvas__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--c-border);
+  flex: none;
+  flex-wrap: wrap;
+}
+.se-canvas__left { display: flex; align-items: center; gap: 10px; min-width: 0; flex-wrap: wrap; }
+.se-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--c-fg);
+}
+.se-live__dot { width: 7px; height: 7px; border-radius: 50%; background: var(--c-success); flex: none; }
+.se-canvas__hint { font-size: 12px; font-weight: 600; color: var(--c-fg-muted); }
+.se-canvas__right { display: flex; align-items: center; gap: 8px; flex: none; }
+.se-canvas__frame { flex: 1; min-height: 0; display: flex; }
+.se-canvas__frame iframe { width: 100%; height: 100%; min-height: 620px; border: none; display: block; }
+
+.se-chip {
+  padding: 4px 11px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  background: var(--c-bg);
+  color: var(--c-fg-muted);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.se-chip:hover { color: var(--c-fg); }
+.se-chip.is-on { background: var(--c-accent-soft); color: var(--c-accent); border-color: var(--c-accent-glow); }
+.se-chip--icon { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; }
+
+.se-insp {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.se-insp__head { padding: 16px 18px 14px; border-bottom: 1px solid var(--c-border); flex: none; }
+.se-insp__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.se-insp__id { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.se-insp__icon {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  flex: none;
+  font-size: 12px;
+}
+.se-insp__title {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--c-fg);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+.se-insp__kind {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+}
+.se-jump {
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.se-scope {
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+}
+.se-scope__row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.se-scope__lab { font-size: 12.5px; font-weight: 600; color: var(--c-fg-muted); }
+.se-scope__select {
+  flex: 1;
+  min-width: 150px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+}
+.se-scope__sentence { font-size: 11.5px; color: var(--c-fg-muted); line-height: 1.45; margin: 7px 0 0; }
+.se-scope__marks { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.se-scope__marksLab {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+}
+
+.se-rows { flex: 1; overflow: auto; padding: 6px 18px 14px; min-height: 0; }
+
+/* ── Token row ────────────────────────────────────────────────────────────── */
+
+.se-row { padding: 13px 0 12px; border-top: 1px solid var(--c-border); }
+/* An overridden row carries a spine, so a scan down the rail separates what the
+   admin set from what the site handed them without reading a single tag. */
+.se-row.is-set {
+  box-shadow: inset 3px 0 0 var(--c-accent);
+  padding-left: 11px;
+  margin-left: -11px;
+}
+.se-row__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.se-row__label { font-size: 13.5px; font-weight: 600; color: var(--c-fg); }
+.se-row__tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+  flex: none;
+}
+.se-row__tag.is-set {
+  font-weight: 800;
+  color: var(--c-accent);
+  background: var(--c-accent-soft);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+}
+.se-row__ctl { display: flex; align-items: center; gap: 9px; }
+.se-row__color {
+  width: 36px;
+  height: 34px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  background: transparent;
+  cursor: pointer;
+  flex: none;
+}
+.se-row__text {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-fg);
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 13px;
+}
+.se-row.is-set .se-row__text { border-color: var(--c-accent-glow); }
+.se-row__radiusPreview {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: 2px solid var(--c-fg-subtle);
+}
+.se-row__range { flex: 1; min-width: 0; accent-color: var(--c-accent); }
+.se-row__num {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 12px;
+  color: var(--c-fg-muted);
+  min-width: 44px;
+  text-align: right;
+}
+.se-row__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 7px;
+}
+/* The inherit chain, spelled out. "Inherited" alone never said inherited from
+   WHAT, which is the only question an admin actually has at that moment. */
+.se-row__chain {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--c-fg-subtle);
+  min-width: 0;
+}
+.se-row__chain code {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.se-row__revert {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: none;
+  background: none;
+  color: var(--c-accent);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: none;
+}
+
+/* ── Shadow editor ────────────────────────────────────────────────────────── */
+
+.se-sh { display: flex; flex-direction: column; gap: 9px; }
+.se-sh__kinds { display: flex; gap: 6px; flex-wrap: wrap; }
+.se-sh__note { font-size: 11.5px; color: var(--c-fg-muted); line-height: 1.45; margin: 0; }
+
+.se-sh__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+}
+
+/* The shadow, on the page's own surface colour — judging a shadow against anything
+   else tells you about the swatch rather than about the site. */
+.se-sh__stage {
+  display: grid;
+  place-items: center;
+  padding: 18px 0 20px;
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+}
+.se-sh__chip {
+  width: 92px;
+  height: 40px;
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+}
+
+.se-sh__sides { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.se-sh__arrows { display: flex; gap: 4px; }
+.se-sh__arrow {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.se-sh__field { display: flex; align-items: center; gap: 9px; }
+.se-sh__lab {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--c-fg-muted);
+  min-width: 62px;
+  flex: none;
+}
+
+.se-sh__out {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 10.5px;
+  color: var(--c-fg-subtle);
+  word-break: break-all;
+  line-height: 1.45;
+}
+
+.se-insp__foot {
+  flex: none;
+  padding: 11px 18px;
+  border-top: 1px solid var(--c-border);
+  background: var(--c-bg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.se-insp__summary { font-size: 11.5px; font-weight: 600; color: var(--c-fg-muted); }
+.se-insp__revert {
+  border: none;
+  background: none;
+  color: var(--c-accent);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  flex: none;
+}
+
+/* ── Branding tab ─────────────────────────────────────────────────────────── */
+
+.se-brand {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 980px) { .se-brand { grid-template-columns: minmax(0, 1fr); } }
+.se-brand__h { font-size: 15px; font-weight: 800; color: var(--c-fg); margin-bottom: 4px; }
+.se-brand__p { font-size: 13px; color: var(--c-fg-muted); margin: 0 0 14px; }
+.se-brand__input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  border-radius: var(--radius-md);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  color: var(--c-fg);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+}
+.se-brand__specimen {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.se-brand__mark {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  flex: none;
+}
+.se-brand__word {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  color: var(--c-fg);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.se-drop {
+  position: relative;
+  height: 150px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--c-border);
+  background: var(--c-bg);
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 12px;
+  cursor: pointer;
+}
+.se-drop.is-over { border-color: var(--c-accent); background: var(--c-accent-soft); }
+.se-drop__t { font-size: 13px; font-weight: 700; color: var(--c-fg-muted); }
+.se-drop__s { font-size: 11.5px; color: var(--c-fg-subtle); }
+.se-drop img { max-height: 96px; max-width: 100%; object-fit: contain; }
+.se-drop__x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  background: var(--card-bg);
+  color: var(--c-danger);
+  font-size: 12px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* ── Custom CSS tab ───────────────────────────────────────────────────────── */
+
+.se-css {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 16px;
+  align-items: start;
+}
+@media (max-width: 1080px) { .se-css { grid-template-columns: minmax(0, 1fr); } }
+.se-css__card {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 20px 22px;
+}
+.se-css__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.se-css__head > button { flex: none; white-space: nowrap; }
+.se-css__title { font-size: 15px; font-weight: 800; color: var(--c-fg); }
+.se-css__title span { color: var(--c-accent); font-size: 13px; margin-left: 6px; }
+.se-css__sub { font-size: 12.5px; color: var(--c-fg-muted); margin: 2px 0 0; }
+.se-css__ta {
+  width: 100%;
+  min-height: 330px;
+  box-sizing: border-box;
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  resize: vertical;
+  outline: none;
+}
+.se-css__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--c-fg-muted);
+}
+.se-shadow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+}
+.se-shadow__sw { width: 20px; height: 20px; border-radius: 6px; flex: none; border: 1px solid var(--c-border); }
+.se-shadow__l { font-size: 12.5px; font-weight: 600; color: var(--c-fg); flex: 1; min-width: 0; }
+.se-shadow__v {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 11.5px;
+  color: var(--c-fg-muted);
+  flex: none;
+}
+
+/* ── History tab / page ───────────────────────────────────────────────────── */
+
+.se-hist {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 8px 22px 16px;
+}
+.se-hist__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 0;
+  border-top: 1px solid var(--c-border);
+  flex-wrap: wrap;
+}
+.se-hist__row:first-child { border-top: none; }
+.se-hist__dot { width: 9px; height: 9px; border-radius: 50%; flex: none; background: var(--c-border); }
+.se-hist__dot.is-live { background: var(--c-success); }
+.se-hist__id { min-width: 200px; }
+.se-hist__t { font-size: 13.5px; font-weight: 700; color: var(--c-fg); }
+.se-hist__when { font-size: 11.5px; color: var(--c-fg-subtle); }
+.se-hist__sum { flex: 1; font-size: 12.5px; color: var(--c-fg-muted); min-width: 0; }
+.se-hist__tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  flex: none;
+  color: var(--c-fg-subtle);
+  background: var(--c-bg);
+}
+.se-hist__tag.is-live { color: var(--c-success); background: color-mix(in srgb, var(--c-success) 12%, transparent); }
