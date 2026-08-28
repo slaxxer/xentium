@@ -74,16 +74,12 @@
 
 .ctask-panel__new {
   width: 100%;
-  justify-content: center;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--sp-2);
   margin-bottom: var(--sp-4);
-  /* .btn-sm hard-sets an asymmetric `var(--sp-1) var(--sp-3)` with !important,
-     which reads as a letterbox once the button is full-width. Match the vertical
-     padding to the horizontal instead of editing the shared class — every other
-     .btn-sm in the ACP is inline and wants to stay compact. */
-  padding: var(--sp-3) !important;
+  /* A small button reads as a letterbox once it is full-width, so this one
+     squares up its box. It sets the SIZE TOKEN rather than the padding: the
+     shared class no longer hard-sets anything, so there is nothing left to
+     out-shout, and the button keeps every other property of its variant. */
+  --btn-pad-y: var(--sp-3);
 }
 
 .ctask-empty {

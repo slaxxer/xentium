@@ -107,6 +107,22 @@ function buildUrl(path: string): URL {
 }
 
 /**
+ * Where to send a HUMAN — the marketplace's storefront, not its API.
+ *
+ * The ACP has to be able to say "get your code here" and "free a seat there"
+ * with a link the admin can actually click, and the only thing an install knows
+ * about its marketplace is the API base. In production that is the same origin
+ * as the storefront (nginx serves the SPA and proxies `/api`), so dropping the
+ * `/api/vN` suffix is right; in dev the two run on different ports, which is
+ * what `MARKETPLACE_WEB_URL` is for.
+ */
+export function marketplaceWebUrl(path = "/"): string {
+  const base = (env.MARKETPLACE_WEB_URL ?? env.LICENSE_SERVER_URL.replace(/\/api\/v\d+\/?$/, ""))
+    .replace(/\/+$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+/**
  * Map a marketplace response to a coded NodevoError.
  *
  * 5xx is unreachable-class (grace applies, nothing is refused); 4xx is an
@@ -150,9 +166,16 @@ interface ProtocolRequest {
   path:      string;                      // relative to LICENSE_SERVER_URL, e.g. "/account/activate"
   body?:     unknown;
   query?:    Record<string, string | number | undefined>;
-  /** Sign + authenticate. Only `/account/connect` sets this false. */
+  /** Sign the request. Only `/account/connect` sets this false. */
   signed?:   boolean;
-  /** Send the Bearer token if we hold one, but don't require it. */
+  /**
+   * Send the Bearer token if we hold one, but do not require one.
+   *
+   * True for the public catalogue (where a token only enriches the response)
+   * and for the linking handshake, which is SIGNED but pre-account by
+   * definition: proving we hold the key we are registering is the whole claim,
+   * and there is no account token to send until the handshake succeeds.
+   */
   optionalToken?: boolean;
   timeoutMs?: number;
 }
@@ -186,7 +209,7 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
   if (body !== undefined) headers["Content-Type"] = "application/json";
 
   const token = signed || optionalToken ? await getAccountToken() : null;
-  if (signed && !token) {
+  if (signed && !optionalToken && !token) {
     throw new NodevoError({
       code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400,
       message: "No marketplace account is connected. Connect one in ACP → Extensions → License.",

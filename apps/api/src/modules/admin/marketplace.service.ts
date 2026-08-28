@@ -5,6 +5,7 @@ import { getSetting } from "../../shared/utils/settings.js";
 import { compareSemver } from "../../shared/utils/semver.js";
 import type { MarketplaceListQuery } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceSource } from "../../core/license-engine/marketplace-source.js";
+import { marketplaceWebUrl } from "../../core/license-engine/protocol-client.js";
 import {
   getSiteDomain, getSiteId, resolveEnvironment,
   refreshLicense, activateFromAccount,
@@ -15,13 +16,13 @@ import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC, type NecCode } from "../../shared/errors/nec.js";
+import { countGrants, licenseAttention } from "./licenseAttention.js";
 
 /** One coarse step in the install/update progress stream (0..100 overall). */
 export interface UpdateProgress { phase: string; percent: number; message?: string }
 export type ProgressFn = (p: UpdateProgress) => void;
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
-const EXPIRING_SOON_DAYS = 30;
 
 /** Download/verify failure — a coded NodevoError so it flows through
  *  errorMiddleware in the canonical `{error:{code,…}}` shape. */
@@ -144,13 +145,43 @@ async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setS
   return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates };
 }
 
+/**
+ * Poll secrets for in-flight link requests, held in memory only.
+ *
+ * Not a settings row: this is a short-lived credential for a handshake that
+ * lasts ten minutes and belongs to one admin's click. Persisting it would mean
+ * a live claim credential sitting in the database for every abandoned attempt,
+ * which is exactly what the marketplace side goes out of its way not to do. A
+ * restart mid-handshake costs one more click.
+ */
+const linkSecrets = new Map<string, { secret: string; expiresAt: number }>();
+
+/** Drop anything the admin walked away from, so an idle instance is not holding
+ *  secrets for handshakes nobody is waiting on. */
+function pruneLinkSecrets() {
+  const now = Date.now();
+  for (const [id, held] of linkSecrets) if (held.expiresAt < now) linkSecrets.delete(id);
+}
+
 export const marketplaceService = {
   listPlugins(opts: MarketplaceListQuery) {
     return marketplaceSource.listPlugins(opts);
   },
 
-  getConnection() {
-    return marketplaceSource.getConnection();
+  /**
+   * Connection state, plus where the admin has to go to get a connect code.
+   *
+   * The URL is served rather than hardcoded in the ACP because the marketplace
+   * host is a per-deployment setting (`LICENSE_SERVER_URL`), and a link the
+   * browser guessed would be right only for installs pointed at the default
+   * one. It carries no credential — it is the storefront's public address.
+   */
+  async getConnection() {
+    return {
+      ...(await marketplaceSource.getConnection()),
+      accountUrl: marketplaceWebUrl("/account"),
+      licencesUrl: marketplaceWebUrl("/account/licences"),
+    };
   },
 
   /**
@@ -206,6 +237,59 @@ export const marketplaceService = {
     return marketplaceSource.disconnect();
   },
 
+  /**
+   * Start the one-click link, and hand the browser only what it may hold.
+   *
+   * The poll secret is the credential that claims the account token, so it
+   * stays on the server: the ACP gets the code to display and the URL to open,
+   * and polls through this API rather than talking to the marketplace itself.
+   * That is also why the ACP never sees an account token at all — the same rule
+   * the download gate follows.
+   */
+  async startLink() {
+    pruneLinkSecrets();
+    const link = await marketplaceSource.startLink();
+    linkSecrets.set(link.linkId, { secret: link.pollSecret, expiresAt: Date.parse(link.expiresAt) });
+    return {
+      linkId:       link.linkId,
+      userCode:     link.userCode,
+      approveUrl:   link.approveUrl,
+      expiresAt:    link.expiresAt,
+      pollInterval: link.pollInterval,
+    };
+  },
+
+  /**
+   * Poll a link this instance started. Approval activates immediately, so the
+   * admin's next paint already shows what they own — the whole point of the
+   * one-click flow is that connecting and being licensed are one step.
+   */
+  async pollLink(linkId: string) {
+    const held = linkSecrets.get(linkId);
+    if (!held || held.expiresAt < Date.now()) {
+      linkSecrets.delete(linkId);
+      throw new NodevoError({
+        code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 404,
+        message: "That connection attempt is no longer in progress. Start a new one.",
+      });
+    }
+
+    const result = await marketplaceSource.pollLink(linkId, held.secret);
+    if (result.status === "pending") return result;
+
+    // Settled either way — the secret is single-use and has no second life.
+    linkSecrets.delete(linkId);
+    if (result.status !== "approved") return result;
+
+    let licenseActivated = false;
+    try {
+      licenseActivated = await activateFromAccount();
+    } catch (err) {
+      logger.info({ err }, "Marketplace linked; no license auto-activated");
+    }
+    return { ...result, licenseActivated };
+  },
+
   /** The authenticated download gate — verifies account + per-domain ownership and
    *  returns a fresh domain-bound entitlement for this site. */
   async authorizeDownload(pluginId: string, version: string) {
@@ -255,18 +339,18 @@ export const marketplaceService = {
     const pluginUpdates = updates.length;
     const criticalUpdate = updates.some((u) => u.critical);
 
-    // License expiry.
-    let licenseExpiringSoon = false;
-    let licenseExpired = false;
-    let licenseDaysLeft: number | null = null;
-    const license = await adminService.getActiveLicense();
-    if (license?.expiresAt) {
-      const daysLeft = (new Date(license.expiresAt).getTime() - Date.now()) / 86_400_000;
-      licenseDaysLeft = Math.ceil(daysLeft);
-      if (daysLeft <= 0) licenseExpired = true;
-      else if (daysLeft <= EXPIRING_SOON_DAYS) licenseExpiringSoon = true;
-    }
-    const licenseAttention = licenseExpiringSoon || licenseExpired;
+    // Entitlement health. NOT "your subscription is ending" — see
+    // licenseAttention.ts for why the previous rule was true for every
+    // connected install in the field, forever.
+    const license = await adminService.getActiveEntitlement();
+    const attention = licenseAttention(
+      license?.expiresAt ?? null,
+      countGrants(license?.entitlementJwt),
+    );
+    const licenseExpiringSoon = attention.expiringSoon;
+    const licenseExpired = attention.expired;
+    const licenseDaysLeft = attention.daysLeft;
+    const needsAttention = licenseExpiringSoon || licenseExpired;
 
     // Per-admin acknowledgement for the license-expiry dialog: has THIS admin
     // visited /admin/license since the license entered the warning window
@@ -274,9 +358,8 @@ export const marketplaceService = {
     // renewal, so the dialog re-nudges each cycle. Same visit-based model as the
     // update dialog (a dismissal never counts; only looking does).
     let licenseAcknowledged = true;
-    if (licenseAttention && userId && license?.expiresAt) {
-      const anchor = new Date(new Date(license.expiresAt).getTime() - EXPIRING_SOON_DAYS * 86_400_000);
-      licenseAcknowledged = await activityService.hasVisitedSince(userId, "/admin/license", anchor);
+    if (needsAttention && userId && attention.anchor) {
+      licenseAcknowledged = await activityService.hasVisitedSince(userId, "/admin/license", attention.anchor);
     }
 
     return {
@@ -289,9 +372,9 @@ export const marketplaceService = {
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
       // Badge count: each pending update + the license (once) if it needs attention.
-      total: pluginUpdates + (licenseAttention ? 1 : 0),
+      total: pluginUpdates + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
-      urgent: criticalUpdate || licenseAttention,
+      urgent: criticalUpdate || needsAttention,
     };
   },
 

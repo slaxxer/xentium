@@ -30,7 +30,7 @@ const license: { row: Record<string, unknown> | null } = { row: null };
 vi.mock("../../infrastructure/db.js", () => ({
   prisma: {
     install: { findFirst: async () => ({ siteId: "9f1c8a04-1c2b-4d3e-9f10-abcdef012345" }) },
-    license: { findFirst: async () => license.row },
+    entitlement: { findFirst: async () => license.row },
     setting: { findUnique: async () => null },
   },
 }));

@@ -4,49 +4,86 @@
    (--btn-bg / --btn-danger-bg) — never a gradient. Radius + colour are editable
    from the Style Editor → Buttons section. Feature stylesheets must NOT redefine
    .btn-primary / .btn-danger / .btn-ghost; extend with their own modifier instead.
+
+   SIZE is a token, not a per-class decision (--btn-pad-y/-x, --btn-fs, --btn-fw,
+   --btn-gap in tokens.scss). Every class below reads the same four, so the three
+   variants are the same height by construction rather than by three authors
+   agreeing. They did not agree: ghost carried one step less horizontal padding
+   and a lighter weight, which is visible the moment a ghost sits beside a
+   primary — which is most places.
+
+   A size modifier (.btn-sm) redefines those tokens ON the element instead of
+   overriding padding, so it needs no !important and does not care which
+   stylesheet loaded last.
    ============================================================================ */
 
+/* The shared box. Buttons are inline-flex with a fixed line-height so that
+   adding an icon cannot change a button's height — a button that grows when it
+   gains a spinner is how a row of controls ends up misaligned mid-interaction. */
+%btn-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--btn-gap);
+  padding: var(--btn-pad-y) var(--btn-pad-x);
+  font-family: inherit;
+  font-size: var(--btn-fs);
+  font-weight: var(--btn-fw);
+  line-height: 1.25;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+
+  svg { display: block; flex-shrink: 0; }
+}
+
 .btn-primary {
+  @extend %btn-box;
   background: var(--btn-bg);
   color: var(--btn-fg);
-  border: none;
-  border-radius: var(--btn-radius);
-  font-weight: 600;
-  cursor: pointer;
+  border: 1px solid transparent;
   transition: opacity 0.15s;
-  padding: var(--sp-2) var(--sp-5);
-  font-size: var(--fs-sm);
 
   &:hover:not(:disabled) { opacity: 0.85; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .btn-danger {
+  @extend %btn-box;
   background: var(--btn-danger-bg);
   color: var(--c-on-accent);
-  border: none;
-  border-radius: var(--btn-radius);
-  font-weight: 600;
-  cursor: pointer;
+  border: 1px solid transparent;
   transition: opacity 0.15s;
-  padding: var(--sp-2) var(--sp-5);
-  font-size: var(--fs-sm);
 
   &:hover:not(:disabled) { opacity: 0.85; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .btn-ghost {
+  @extend %btn-box;
   background: transparent;
   color: var(--c-fg-muted);
   border: 1px solid var(--c-border);
-  border-radius: var(--btn-radius);
-  font-weight: 500;
-  cursor: pointer;
-  font-size: var(--fs-sm);
   transition: border-color 0.15s, color 0.15s;
-  padding: var(--sp-2) var(--sp-4);
 
   &:hover:not(:disabled) { border-color: var(--c-accent-glow); color: var(--c-accent); }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
+}
+
+/* ── Size modifiers ─────────────────────────────────────────────────────────
+   Token swaps, so they compose with any variant above and with anything that
+   consumes the same tokens (.btn-ghost-danger). The border is part of the box
+   in every variant, so a ghost and a primary at the same size are the same
+   height to the pixel. */
+
+.btn-sm {
+  --btn-pad-y: var(--sp-1);
+  --btn-pad-x: var(--sp-3);
+  --btn-fs:    var(--fs-xs);
+  --btn-gap:   var(--sp-1);
+}
+
+.btn-lg {
+  --btn-pad-y: var(--sp-3);
+  --btn-pad-x: var(--sp-6);
+  --btn-fs:    var(--fs-base);
 }

@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faKey, faRotate, faCircleExclamation, faPlug, faLinkSlash, faShieldHalved,
   faTriangleExclamation, faCloudArrowDown, faChevronDown, faCopy, faCheck,
+  faArrowUpRightFromSquare,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
@@ -12,9 +13,13 @@ import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { OwnedLicenses, rowIsLive, type OwnedLicense } from "../components/OwnedLicenses";
 import "./LicensePage.scss";
 
+/** The install's stored entitlement DOCUMENT (`ncf_entitlements`), not a licence.
+ *  The marketplace issues one on every activation, including for an account that
+ *  owns nothing — which is why the hero below reads its GRANTS rather than its
+ *  existence. */
 interface License {
   id:             string;
-  licenseKey:     string;
+  licenseRef:     string;
   siteId:         string;
   status:         string;
   domain:         string | null;
@@ -30,6 +35,26 @@ interface MarketplaceConnection {
   connected:   boolean;
   accountRef:  string | null;
   connectedAt: string | null;
+  /** Where the admin gets a connect code. Served, not guessed: the marketplace
+   *  host is a per-deployment setting, so a URL built in the browser would only
+   *  be right for installs pointed at the default one. */
+  accountUrl:  string;
+  licencesUrl: string;
+}
+
+/** An in-flight one-click handshake. The poll secret is deliberately absent —
+ *  it is the credential that claims the account token and never leaves the
+ *  server; the browser only ever holds the id, the code and the URL. */
+interface LinkStart {
+  linkId:       string;
+  userCode:     string;
+  approveUrl:   string;
+  expiresAt:    string;
+  pollInterval: number;
+}
+
+interface LinkStatus {
+  status: "pending" | "approved" | "denied" | "expired";
 }
 
 /** Grants are signed as objects (`{id, updatesUntil?}`) — see EntitlementGrant.
@@ -69,6 +94,7 @@ export function LicensePage() {
   const [connectError, setConnectError] = useState<string | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
+  const [link, setLink] = useState<LinkStart | null>(null);
 
   const { data: license, isLoading } = useQuery<License | null>({
     queryKey: ["acp-license"],
@@ -91,11 +117,75 @@ export function LicensePage() {
     enabled:  connected,
   });
 
+  const onConnected = () => {
+    qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] });
+    // Connecting activates every licence the account holds, so the two views of
+    // that — the stored entitlement and the ownership table — are both stale
+    // the moment it succeeds.
+    qc.invalidateQueries({ queryKey: ["acp-license"] });
+    qc.invalidateQueries({ queryKey: ["acp-marketplace-owned"] });
+    setConnectError(null);
+    swalToast(t("license.toastConnected"), "success");
+  };
+
   const connectMut = useMutation({
     mutationFn: () => api.post("/admin/marketplace/connection", { authCode: authCode.trim() }),
-    onSuccess:  () => { qc.invalidateQueries({ queryKey: ["acp-marketplace-connection"] }); setAuthCode(""); setConnectError(null); swalToast(t("license.toastConnected"), "success"); },
+    onSuccess:  () => { setAuthCode(""); onConnected(); },
     onError:    (e: any) => setConnectError(e?.data?.message ?? apiErrorMessage(e)),
   });
+
+  /**
+   * The one-click handshake.
+   *
+   * Start it, open the marketplace in a new tab, and poll until the account
+   * holder decides. The code is shown here so it can be compared against the
+   * one on the approval screen — that comparison is what makes an approval link
+   * safe to click, so it is displayed prominently rather than tucked away.
+   */
+  const linkMut = useMutation<LinkStart>({
+    mutationFn: () => api.post("/admin/marketplace/link", {}),
+    onSuccess:  (started) => {
+      setLink(started);
+      setConnectError(null);
+      // Opened from the click's own handler chain, so it is not treated as a
+      // popup. If the browser blocks it anyway the URL is on screen as a link.
+      window.open(started.approveUrl, "_blank", "noopener,noreferrer");
+    },
+    onError:    (e: any) => setConnectError(e?.data?.message ?? apiErrorMessage(e)),
+  });
+
+  const linkPoll = useQuery<LinkStatus>({
+    queryKey: ["acp-marketplace-link", link?.linkId],
+    queryFn:  () => api.get(`/admin/marketplace/link/${link!.linkId}`),
+    enabled:  !!link && !connected,
+    // The marketplace names the cadence; honouring it keeps every install in
+    // the field on one budget rather than on whatever each client felt like.
+    refetchInterval: (link?.pollInterval ?? 3) * 1000,
+    // A poll is a question about someone else's decision — retrying a failed
+    // one silently would hide a dead handshake behind an interval that never
+    // ends.
+    retry: false,
+    gcTime: 0,
+  });
+
+  useEffect(() => {
+    const status = linkPoll.data?.status;
+    if (!status || status === "pending") return;
+
+    setLink(null);
+    if (status === "approved") { onConnected(); return; }
+    setConnectError(t(status === "denied" ? "license.linkDenied" : "license.linkExpired"));
+    // Keyed on the STATUS alone: `onConnected` is rebuilt every render, and
+    // depending on it would re-run this on every paint while a poll is live.
+  }, [linkPoll.data?.status]);
+
+  // A handshake that errors out (the instance restarted, the marketplace went
+  // away) must not leave the panel waiting on a poll that will never answer.
+  useEffect(() => {
+    if (!linkPoll.error) return;
+    setLink(null);
+    setConnectError(apiErrorMessage(linkPoll.error));
+  }, [linkPoll.error]);
 
   const disconnectMut = useMutation({
     mutationFn: () => api.delete("/admin/marketplace/connection"),
@@ -162,6 +252,22 @@ export function LicensePage() {
       sub:      t("license.noLicenseHint"),
       hint:     null as string | null,
     };
+    // Connected, holding a signed entitlement, and it grants NOTHING.
+    //
+    // This is the ordinary state of an account that has registered and linked
+    // but not bought anything, and it used to fall through to the green
+    // "Licensed until <date> · Active" below — because a `license` row exists
+    // the moment an account connects. Connecting is not buying: the row is the
+    // signed document, and an empty document is not a licence. Saying otherwise
+    // told a brand-new account it was licensed for a month, next to a table
+    // reading "this account doesn't own anything yet".
+    if (entitlements.length === 0) return {
+      tone: "subtle" as Tone, icon: faKey,
+      badge:    t("license.hero.badgeNoLicences"),
+      headline: t("license.hero.noLicencesHeadline"),
+      sub:      t("license.hero.noLicencesSub"),
+      hint:     null as string | null,
+    };
     if (isExpired) return {
       tone: "danger" as Tone, icon: faCircleExclamation,
       badge:    t("license.hero.badgeExpired"),
@@ -193,7 +299,7 @@ export function LicensePage() {
   })();
 
   const techFields: [string, string][] = license ? [
-    [t("license.fieldKey"),          license.licenseKey],
+    [t("license.fieldKey"),          license.licenseRef],
     [t("license.fieldSiteId"),       license.siteId],
     [t("license.fieldActivated"),    fmtDate(license.activatedAt)],
     [t("license.fieldRefreshAfter"), license.refreshAfter ? fmtDate(license.refreshAfter) : "—"],
@@ -343,37 +449,83 @@ export function LicensePage() {
                     {conn?.connectedAt ? fmtDate(conn.connectedAt) : "—"}
                   </div>
                 </div>
-                <button type="button" className="btn-ghost-danger btn-sm" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
+                <button type="button" className="btn-ghost-danger" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
                   <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight: 6 }} />
                   {t("license.disconnect")}
                 </button>
               </div>
+            ) : link ? (
+              /* Waiting on the human. The code is the point of this state: it is
+                 the only thing that lets the person on the approval screen know
+                 the request came from HERE and not from a link somebody sent
+                 them. */
+              <div className="lic-rail__stack">
+                <div className="lic-link">
+                  <div className="lic-link__label">{t("license.linkCodeLabel")}</div>
+                  <div className="lic-link__code">{link.userCode}</div>
+                </div>
+                <div className="lic-link__waiting">
+                  <FontAwesomeIcon icon={faRotate} spin style={{ marginRight: 7 }} />
+                  {t("license.linkWaiting")}
+                </div>
+                <a className="lic-rail__link" href={link.approveUrl} target="_blank" rel="noreferrer noopener">
+                  {t("license.linkReopen")}
+                  <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginLeft: 5, fontSize: "0.85em" }} />
+                </a>
+                <button type="button" className="btn-ghost" onClick={() => setLink(null)}>
+                  {t("license.linkCancel")}
+                </button>
+              </div>
             ) : (
               <div className="lic-rail__stack">
-                <input
-                  className="acp-input"
-                  value={authCode}
-                  onChange={(e) => { setAuthCode(e.target.value); setConnectError(null); }}
-                  placeholder={t("license.authPlaceholder")}
-                  onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
-                />
-                <button type="button" className="btn-primary btn-sm" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
+                <button type="button" className="btn-primary" disabled={linkMut.isPending} onClick={() => linkMut.mutate()}>
                   <FontAwesomeIcon icon={faPlug} style={{ marginRight: 6 }} />
-                  {connectMut.isPending ? t("license.connecting") : t("license.connect")}
+                  {linkMut.isPending ? t("license.connecting") : t("license.linkConnect")}
                 </button>
+
+                {/* The typed code still works, and has to: an install whose
+                    admin cannot open a browser tab from this machine — a
+                    headless box, a locked-down network — has no other way in.
+                    It is second because it is the harder path, not because it
+                    is deprecated. */}
+                <details className="lic-link__manual">
+                  <summary>{t("license.linkManual")}</summary>
+                  <div className="lic-rail__hint" style={{ marginBottom: 8 }}>
+                    {t("license.connectHint")}{" "}
+                    <a href={conn?.accountUrl ?? "#"} target="_blank" rel="noreferrer noopener" className="lic-rail__link">
+                      {t("license.connectHintLink")}
+                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginLeft: 5, fontSize: "0.85em" }} />
+                    </a>
+                  </div>
+                  <input
+                    className="acp-input"
+                    value={authCode}
+                    onChange={(e) => { setAuthCode(e.target.value); setConnectError(null); }}
+                    placeholder={t("license.authPlaceholder")}
+                    onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
+                  />
+                  <button type="button" className="btn-ghost" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
+                    {connectMut.isPending ? t("license.connecting") : t("license.connect")}
+                  </button>
+                </details>
                 {connectError ? (
                   <div className="lic-hint" style={{ marginTop: 0, background: "var(--c-danger-soft)", border: "1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", color: "var(--c-danger)" }}>
                     <FontAwesomeIcon icon={faCircleExclamation} />
                     <span>{connectError}</span>
                   </div>
                 ) : (
-                  <div className="lic-rail__hint">{t("license.connectHint")}</div>
+                  <div className="lic-rail__hint">{t("license.linkHint")}</div>
                 )}
               </div>
             )}
           </section>
 
-          {license && (
+          {/* Only when the document actually grants something. "Signed until /
+              Grants 0 / Next check" is the paperwork's own metadata, and shown
+              to an account that has just linked and bought nothing it reads as
+              though a licence were in force — the same impression the hero used
+              to give. An empty card is not neutral here; it is a claim. */}
+          {license && entitlements.length > 0 && (
             <section className="lic-rail__card">
               <div className="lic-rail__eyebrow">{t("license.entitlements")}</div>
               <dl className="lic-rail__rows">

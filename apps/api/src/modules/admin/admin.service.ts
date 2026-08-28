@@ -1005,8 +1005,10 @@ export const adminService = {
 
   // ── License ───────────────────────────────────────────────────────────────
 
-  async getActiveLicense() {
-    return prisma.license.findFirst({
+  /** The install's current signed entitlement document, or null. NOT proof of a
+   *  licence — see the Entitlement model and licenseAttention.ts. */
+  async getActiveEntitlement() {
+    return prisma.entitlement.findFirst({
       where: { status: "active" },
       orderBy: { activatedAt: "desc" },
     });

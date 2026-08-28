@@ -33,6 +33,12 @@ const schema = z.object({
   // which is also what every request signature covers — see protocol-client.
   LICENSE_SERVER_URL:      z.string().url().default("https://marketplace.nodelab.codes/api/v1"),
   LICENSE_PUBLIC_KEY:      z.string().optional(),  // overrides the bundled entitlement-verification key (e.g. to point at a non-default license server); prod uses the bundled marketplace key
+  // Where a HUMAN goes — the marketplace's storefront, for the links the ACP
+  // shows an admin ("get a connect code", "free a seat"). Derived from
+  // LICENSE_SERVER_URL by dropping the `/api/vN` suffix, which is correct in
+  // production (nginx serves the SPA from the same origin) but not in dev,
+  // where the API and the storefront run on different ports.
+  MARKETPLACE_WEB_URL:     z.string().url().optional(),
   REPO_ROOT: z.string().default(path.resolve(process.cwd(), "../..")),
   PRISMA_SCHEMA_PATH: z.string().default(path.resolve(process.cwd(), "prisma/schema.prisma")),
   // When true, auto-installs + enables first-party plugins from plugins/official/
