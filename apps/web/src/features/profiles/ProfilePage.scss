@@ -569,10 +569,8 @@
 /* ── Shared button helpers ──────────────────────────── */
 // .btn-primary / .btn-ghost → styles/buttons.scss (shared, token-driven).
 
-.btn-sm {
-  padding: var(--sp-2) var(--sp-3);
-  font-size: var(--fs-sm);
-}
+// .btn-sm → styles/buttons.scss. This file had its own, one step taller than
+// the ACP's, and both were global.
 
 /* ── Articles tab ───────────────────────────────────────── */
 .profile-articles {

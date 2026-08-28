@@ -114,7 +114,7 @@ async function fetchAccountEntitlementJwt(siteId: string): Promise<{ jwt: string
  * from before that still refresh via /activate.)
  */
 export async function activateFromAccount(): Promise<boolean> {
-  const existing = await prisma.license.findFirst({ where: { status: "active" } });
+  const existing = await prisma.entitlement.findFirst({ where: { status: "active" } });
   if (existing) return false;
 
   const siteId = await getSiteId();
@@ -131,9 +131,9 @@ export async function activateFromAccount(): Promise<boolean> {
     expiresAt:      new Date(claims.expiresAt * 1000),
     refreshAfter:   new Date(claims.refreshAfter * 1000),
   };
-  await prisma.license.upsert({
-    where:  { licenseKey: keyRef },
-    create: { licenseKey: keyRef, ...data },
+  await prisma.entitlement.upsert({
+    where:  { licenseRef: keyRef },
+    create: { licenseRef: keyRef, ...data },
     update: data,
   });
 
@@ -155,7 +155,7 @@ export async function activateFromAccount(): Promise<boolean> {
  * Rows are kept as `deactivated` so a reconnect revives them via upsert.
  */
 export async function deactivateAccountLicenses(): Promise<number> {
-  const { count } = await prisma.license.updateMany({
+  const { count } = await prisma.entitlement.updateMany({
     where: { status: "active", activatedVia: "account" },
     data:  { status: "deactivated" },
   });
@@ -164,7 +164,7 @@ export async function deactivateAccountLicenses(): Promise<number> {
 }
 
 export async function refreshLicense(): Promise<void> {
-  const license = await prisma.license.findFirst({ where: { status: "active" } });
+  const license = await prisma.entitlement.findFirst({ where: { status: "active" } });
   if (!license) {
     // Connected account but nothing activated yet (connected before buying, or
     // pre-§53 instances): self-heal from the account instead of doing nothing.
@@ -182,7 +182,7 @@ export async function refreshLicense(): Promise<void> {
   // that disconnected before disconnect() learned to do this itself.
   if (license.activatedVia === "account") {
     if (!(await getAccountToken())) {
-      await prisma.license.update({ where: { id: license.id }, data: { status: "deactivated" } });
+      await prisma.entitlement.update({ where: { id: license.id }, data: { status: "deactivated" } });
       logger.info({ licenseId: license.id }, "Account-activated license deactivated — no marketplace account connected");
       return;
     }
@@ -201,7 +201,7 @@ export async function refreshLicense(): Promise<void> {
       : await fetchEntitlementJwt();
     const claims = await verifyEntitlementJwt(jwt);
 
-    await prisma.license.update({
+    await prisma.entitlement.update({
       where: { id: license.id },
       data: {
         siteId,
@@ -222,7 +222,7 @@ export async function refreshLicense(): Promise<void> {
     const graceCutoff = new Date(Date.now() - GRACE_PERIOD_DAYS * 24 * 3600 * 1000);
     const lastRefresh  = license.refreshAfter ?? license.activatedAt;
     if (lastRefresh < graceCutoff) {
-      await prisma.license.update({
+      await prisma.entitlement.update({
         where: { id: license.id },
         data:  { status: "expired" },
       });
@@ -232,7 +232,7 @@ export async function refreshLicense(): Promise<void> {
 }
 
 export async function deactivateLicense(): Promise<void> {
-  await prisma.license.updateMany({
+  await prisma.entitlement.updateMany({
     where: { status: "active" },
     data:  { status: "deactivated" },
   });
@@ -250,7 +250,7 @@ export async function deactivateLicense(): Promise<void> {
  */
 export async function getEntitlementStatus(pluginId: string): Promise<EntitlementStatus> {
   const environment = await resolveEnvironment();
-  const license = await prisma.license.findFirst({ where: { status: "active" } });
+  const license = await prisma.entitlement.findFirst({ where: { status: "active" } });
 
   const base = {
     pluginId,
@@ -305,4 +305,133 @@ export async function pluginRequiresLicense(pluginId: string): Promise<boolean> 
   const { getSetting } = await import("../../shared/utils/settings.js");
   const paidIds = await getSetting<string[]>("marketplace.paid_plugin_ids", []);
   return Array.isArray(paidIds) && paidIds.includes(pluginId);
+}
+
+/**
+ * THE ENABLE GATE. Decide whether this plugin may be turned on, and when the
+ * answer is no, say something the admin can act on.
+ *
+ * Everything here exists because the old gate — one cache read, one JWT read,
+ * then a fixed refusal — was wrong in three separate ways at once, and each way
+ * looked like the others:
+ *
+ *  1. `marketplace.paid_plugin_ids` was written ONLY by a plugin upload and the
+ *     daily heartbeat, so a plugin the marketplace started selling this morning
+ *     was un-gated on every install until that install's next heartbeat. The
+ *     gate now syncs the set itself when it is stale.
+ *  2. A plugin bought since the last entitlement refresh is genuinely owned but
+ *     is not in the stored JWT yet, and the gate refused it. It now asks the
+ *     marketplace once before saying no — which is also what makes "buy it,
+ *     then enable it" work in the same minute.
+ *  3. Every refusal said "Activate a license in ACP → Extensions → License",
+ *     including to admins whose licence was already active and whose real
+ *     problem was that all their seats were in use somewhere else. There is
+ *     nothing to activate in that state, so the advice sent them in a circle.
+ *
+ * `pluginName` is only for the message; the decision is by id throughout.
+ */
+export async function assertPluginEnableAllowed(pluginId: string, pluginName: string): Promise<void> {
+  const { marketplaceSource } = await import("./marketplace-source.js");
+
+  // Is this a paid id at all? Re-sync first, so the answer is not up to a day
+  // out of date. `never` means this install has never reached the marketplace,
+  // so the set cannot be trusted to say "free" — see the fall-through below.
+  const freshness = await marketplaceSource.ensurePaidPluginIdsFresh();
+  const paid = await pluginRequiresLicense(pluginId);
+
+  if (!paid) {
+    if (freshness !== "never") return;
+    // No set has ever been fetched, so "not in the set" carries no information.
+    // The package's own manifest flag is the only signal left. It may only add
+    // caution, never remove it: trusting a `false` here would reopen exactly the
+    // "repackage a paid plugin as free" hole the by-id design closes, whereas
+    // trusting a `true` at most asks an offline admin to connect an account.
+    const record = await prisma.installedPlugin.findUnique({
+      where:  { id: pluginId },
+      select: { licenseRequired: true },
+    });
+    if (!record?.licenseRequired) return;
+    throw new NodevoError({
+      code:       NEC.LICENSE_SOURCE_UNREACHABLE,
+      httpStatus: 503,
+      message:    `"${pluginName}" declares that it needs a licence, and the marketplace could not be reached to check. Connect this install to a marketplace account and try again.`,
+    });
+  }
+
+  if (await isPluginEntitled(pluginId)) return;
+
+  // Owned-but-not-in-the-JWT is the ordinary state right after a purchase, so
+  // ask before refusing. Best-effort: a refresh that fails leaves the stored
+  // entitlement (and its grace window) exactly as it was.
+  await refreshLicense().catch(() => {});
+  if (await isPluginEntitled(pluginId)) return;
+
+  throw await explainEnableRefusal(pluginId, pluginName);
+}
+
+/**
+ * Turn "not entitled" into the specific reason, by asking the marketplace what
+ * this account actually owns.
+ *
+ * `/account/licenses` already carries seats, seat usage and whether the licence
+ * is bound HERE, so no protocol change was needed to tell "you never bought it"
+ * apart from "you bought it and all your seats are on other sites" — the two
+ * states that had been collapsing into one unhelpful message.
+ *
+ * Falls back to the generic refusal whenever the marketplace cannot be asked:
+ * a vaguer message is better than a wrong one, and being offline is not proof
+ * of anything about ownership.
+ */
+async function explainEnableRefusal(pluginId: string, pluginName: string): Promise<NodevoError> {
+  const { marketplaceWebUrl } = await import("./protocol-client.js");
+  const generic = new NodevoError({
+    code:       NEC.LICENSE_NOT_FOUND,
+    httpStatus: 402,
+    message:    `"${pluginName}" needs a licence from your marketplace account, and this install does not have one yet.`,
+  });
+
+  if (!(await getAccountToken())) {
+    return new NodevoError({
+      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+      httpStatus: 402,
+      message:    `"${pluginName}" is a paid plugin. Connect your marketplace account in ACP → Extensions → Licence and every licence you own activates for this install.`,
+    });
+  }
+
+  let owned;
+  try {
+    const { marketplaceSource } = await import("./marketplace-source.js");
+    owned = await marketplaceSource.listOwned();
+  } catch {
+    return generic;
+  }
+
+  const licence = owned.find((l) => l.product.kind === "plugin" && l.product.id === pluginId);
+  if (!licence) {
+    return new NodevoError({
+      code:       NEC.LICENSE_NOT_FOUND,
+      httpStatus: 402,
+      message:    `Your marketplace account does not own "${pluginName}". It is available at ${marketplaceWebUrl(`/plugins/${pluginId}`)}.`,
+    });
+  }
+
+  // Owned, not bound here, and every seat spent elsewhere: the one refusal the
+  // admin can fix without buying anything, and the one the old message hid.
+  if (!licence.activeHere && licence.seats !== null && licence.seatsUsed >= licence.seats) {
+    return new NodevoError({
+      code:       NEC.LICENSE_CAP_REACHED,
+      httpStatus: 402,
+      message:    `All ${licence.seats} seat${licence.seats === 1 ? "" : "s"} of your "${pluginName}" licence are in use on other installs. Free one at ${marketplaceWebUrl("/account/licences")} and enable it again.`,
+    });
+  }
+
+  if (licence.status === "expired" || licence.status === "revoked") {
+    return new NodevoError({
+      code:       NEC.LICENSE_EXPIRED,
+      httpStatus: 402,
+      message:    `Your "${pluginName}" licence is ${licence.status}. Renew it at ${marketplaceWebUrl("/account/licences")} to enable the plugin again.`,
+    });
+  }
+
+  return generic;
 }

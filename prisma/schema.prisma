@@ -754,9 +754,29 @@ model InstalledPlugin {
   @@map("ncf_installed_plugins")
 }
 
-model License {
+/// The current signed entitlement document for this install — NOT a licence.
+///
+/// The distinction is load-bearing and used to be lost in the name. The
+/// marketplace issues one of these on every activation as a signed statement of
+/// WHAT THIS ACCOUNT OWNS, and it issues one even when the answer is nothing.
+/// While this was called `License`, the row's mere existence read as proof of a
+/// licence: a freshly linked account that had bought nothing was shown
+/// "Licensed until <date>", and the admin badge warned that a licence was
+/// expiring when what was really approaching was the document's own 30-day
+/// freshness window — which a healthy install refreshes every 7 days and never
+/// reaches.
+///
+/// A LICENCE is a product entitlement held by an account on the marketplace,
+/// with seats and an updates window; the instance reads those from
+/// `/account/licenses` and never stores them. What lives here is the signed
+/// paperwork that says which ones apply to this install, plus when it must be
+/// re-fetched. `entitlements: []` inside the JWT is a perfectly ordinary state.
+model Entitlement {
   id             String    @id @default(cuid())
-  licenseKey     String    @unique @map("license_key")
+  /// Display reference from the marketplace (e.g. "NDV-LBP7-4K2M") or
+  /// "NVL-account". Never the licence key itself — the raw key never reaches an
+  /// install, which is why calling this `licenseKey` was wrong twice over.
+  licenseRef     String    @unique @map("license_ref")
   siteId         String    @map("site_id")
   entitlementJwt String    @db.Text @map("entitlement_jwt")
   status         String    @default("active")  // active | expired | deactivated
@@ -764,10 +784,12 @@ model License {
   domain         String?                        // APP_URL host bound at activation (ADR 0001)
   environment    String?                        // production | staging | development (ADR 0001)
   activatedAt    DateTime  @default(now()) @map("activated_at")
+  /// When the DOCUMENT stops being valid (+30d at issue). Not a subscription
+  /// end date — see modules/admin/licenseAttention.ts before warning about it.
   expiresAt      DateTime? @map("expires_at")
   refreshAfter   DateTime? @map("refresh_after")
 
-  @@map("ncf_licenses")
+  @@map("ncf_entitlements")
 }
 
 model ErrorLog {

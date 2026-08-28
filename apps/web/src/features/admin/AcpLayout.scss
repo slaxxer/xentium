@@ -543,19 +543,16 @@ table.acp-table {
 }
 
 // Shared btn helpers (also used in account)
-// .btn-primary / .btn-danger / .btn-ghost now live in styles/buttons.scss
-// (single source of truth, token-driven). ACP-only modifiers remain below.
-
-.btn-sm {
-  padding: var(--sp-1) var(--sp-3) !important;
-  font-size: var(--fs-xs) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 5px !important;
-  line-height: 1 !important;
-
-  svg { display: block; flex-shrink: 0; }
-}
+// .btn-primary / .btn-danger / .btn-ghost / .btn-sm / .btn-lg now live in
+// styles/buttons.scss (single source of truth, token-driven). ACP-only
+// modifiers remain below.
+//
+// .btn-sm used to be redefined HERE with !important on every property, and
+// again in AccountPage.scss and ProfilePage.scss with two other sets of values.
+// All three were global class names in one cascade, so which size a small
+// button actually got came down to stylesheet order. One definition now, and it
+// swaps size TOKENS rather than overriding padding, which is what removed the
+// need for !important in the first place.
 
 // Modal
 .acp-modal-overlay {
@@ -819,20 +816,28 @@ table.acp-table {
   padding-right: 8px;
 }
 
+// Same box as every other button — it reads the shared size tokens instead of
+// its own padding, so it lines up with the .btn-ghost beside it. It had
+// `padding: 0` vertically, which meant its height was whatever its content
+// happened to be and it never quite matched anything.
 .btn-ghost-danger {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  padding: 0 var(--sp-3);
-  color: var(--c-danger);
-  border: 1px solid rgba(248, 113, 113, 0.3);
-  border-radius: var(--btn-radius);
-  background: transparent;
-  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  transition: background 0.15s, border-color 0.15s;
+  justify-content: center;
+  gap: var(--btn-gap);
+  padding: var(--btn-pad-y) var(--btn-pad-x);
   font-family: inherit;
+  font-size: var(--btn-fs);
+  font-weight: var(--btn-fw);
+  line-height: 1.25;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+  color: var(--c-danger);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  background: transparent;
+  transition: background 0.15s, border-color 0.15s;
+
+  svg { display: block; flex-shrink: 0; }
 
   &:hover:not(:disabled) {
     background: rgba(248, 113, 113, 0.1);
