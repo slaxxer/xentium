@@ -29,7 +29,7 @@ import { getSiteDomain, getSiteId, resolveEnvironment } from "./site-identity.js
 import {
   SOURCE_ID, K_REF, K_AT,
   clearIdentity, getAccountToken, getOrCreateKeypair, setAccountToken,
-  protocolFetch, readSetting, writeSetting,
+  protocolFetch, readSetting, writeSetting, marketplaceWebUrl,
 } from "./protocol-client.js";
 
 /**
@@ -49,6 +49,23 @@ export interface MarketplaceListQuery extends PaginatedRequest {
  * Read by license-engine.pluginRequiresLicense.
  */
 const K_PAID_IDS = "marketplace.paid_plugin_ids";
+
+/**
+ * How long the enable gate trusts the cached paid-id set before re-syncing it.
+ *
+ * The set decides whether a plugin needs a licence AT ALL, and it used to be
+ * written from exactly two places — a plugin upload and the daily heartbeat —
+ * so a plugin listed as paid this morning was UN-GATED on every install until
+ * that install's next heartbeat, up to 24 hours later. Fifteen minutes is short
+ * enough that a new listing takes effect while the operator is still watching,
+ * and long enough that clicking Enable down a list of plugins is one network
+ * call rather than one per plugin.
+ */
+const PAID_IDS_TTL_MS = 15 * 60_000;
+
+/** Whether the gate can trust the set it is about to read.
+ *  `never` = this install has never successfully synced one. */
+export type PaidIdsFreshness = "fresh" | "stale" | "never";
 
 /** What the marketplace's `/account/licenses` hands back (protocol v1). */
 export interface OwnedLicense {
@@ -117,6 +134,87 @@ class NodevoMarketplaceSource implements MarketplaceSource {
 
     logger.info({ source: this.id, accountRef }, "Marketplace account connected");
     return { sourceId: this.id, connected: true, accountRef, connectedAt };
+  }
+
+  /**
+   * Open a one-click link request: the alternative to an admin copying a code
+   * out of one browser tab and into another.
+   *
+   * Signed, but tokenless. There is no account token yet — finding out whose
+   * account this install belongs to is what the handshake is for — so the
+   * signature is made with the keypair being registered, and the marketplace
+   * checks it against the public half carried in the body. That proves we hold
+   * the private half, which is the only claim being made at this point.
+   *
+   * Returns the code to SHOW the admin (they compare it against the approval
+   * screen), the URL to open, and the secret this install polls with. The
+   * secret stays server-side: the browser is shown the code and the URL, never
+   * the credential that claims the token.
+   */
+  async startLink(): Promise<{
+    linkId: string; userCode: string; pollSecret: string;
+    approveUrl: string; expiresAt: string; pollInterval: number;
+  }> {
+    const siteId = await getSiteId();
+    const { publicKeyB64 } = await getOrCreateKeypair();
+
+    const body = await protocolFetch<{
+      linkId: string; userCode: string; pollSecret: string; expiresAt: string; pollInterval: number;
+    }>({
+      method: "POST",
+      path:   "/account/link/start",
+      optionalToken: true,
+      timeoutMs: 10_000,
+      body: {
+        siteId,
+        publicKey:   publicKeyB64,
+        domain:      await getSiteDomain(),
+        environment: await resolveEnvironment(),
+      },
+    });
+
+    return { ...body, approveUrl: marketplaceWebUrl(`/link/${body.linkId}`) };
+  }
+
+  /**
+   * Ask what the human decided, and take the token if they approved.
+   *
+   * `pending` is an ANSWER, not a failure — this is called on a timer while the
+   * admin is still looking at the approval screen, and turning "not yet" into a
+   * thrown error would fill the log with failures that are the normal case.
+   */
+  async pollLink(linkId: string, pollSecret: string): Promise<
+    | { status: "pending" | "denied" | "expired" }
+    | { status: "approved"; accountRef: string; connectedAt: string }
+  > {
+    const { publicKeyB64 } = await getOrCreateKeypair();
+
+    const body = await protocolFetch<{
+      status: "pending" | "denied" | "expired" | "approved";
+      token?: string; accountRef?: string;
+    }>({
+      method: "POST",
+      path:   "/account/link/poll",
+      optionalToken: true,
+      timeoutMs: 10_000,
+      body: { linkId, pollSecret, publicKey: publicKeyB64 },
+    });
+
+    if (body.status !== "approved" || !body.token) {
+      return { status: body.status as "pending" | "denied" | "expired" };
+    }
+
+    // Identical to the tail of connect(), because it IS a connect — the code
+    // and the handshake are two ways of arriving at the same credential.
+    const accountRef  = body.accountRef ?? "connected-account";
+    const connectedAt = new Date().toISOString();
+
+    await setAccountToken(body.token);
+    await writeSetting(K_REF, accountRef);
+    await writeSetting(K_AT, connectedAt);
+
+    logger.info({ source: this.id, accountRef }, "Marketplace account connected (one-click link)");
+    return { status: "approved", accountRef, connectedAt };
   }
 
   /**
@@ -220,11 +318,11 @@ class NodevoMarketplaceSource implements MarketplaceSource {
    * Walks every page: the set gates whether a plugin needs a licence at all, so
    * a partial set silently un-gates whatever fell off the end.
    */
-  async refreshPaidPluginIds(): Promise<void> {
+  async refreshPaidPluginIds(): Promise<boolean> {
     const ids: string[] = [];
     for (let page = 1; ; page++) {
       const res = await this.fetchCatalogPage({ page, limit: 100 });
-      if (!res) return;   // unreachable mid-walk — keep the last cached set intact
+      if (!res) return false;   // unreachable mid-walk — keep the last cached set intact
       for (const l of res.data) if (l.licenseRequired) ids.push(l.id);
       if (page >= (res.meta.totalPages ?? 1)) break;
       if (page > 50) break;   // a catalogue this size means something is wrong upstream
@@ -232,6 +330,27 @@ class NodevoMarketplaceSource implements MarketplaceSource {
 
     await prisma.setting.upsert({ where: { key: K_PAID_IDS }, update: { value: ids }, create: { key: K_PAID_IDS, value: ids } });
     bustSettingsCache(K_PAID_IDS);
+    return true;
+  }
+
+  /**
+   * Re-sync the paid-id set if it is older than the TTL, and report how much the
+   * caller may trust what is now cached.
+   *
+   * Called by the enable gate. The row's own `updatedAt` is the sync clock — it
+   * is bumped on every successful walk, including one that finds the same ids,
+   * so "we asked recently" and "the answer changed" stay separate questions.
+   *
+   * Never throws: an unreachable marketplace leaves the last known set in place
+   * and says so, and the gate decides what to do about it.
+   */
+  async ensurePaidPluginIdsFresh(): Promise<PaidIdsFreshness> {
+    const row = await prisma.setting.findUnique({ where: { key: K_PAID_IDS }, select: { updatedAt: true } });
+    if (row && Date.now() - row.updatedAt.getTime() < PAID_IDS_TTL_MS) return "fresh";
+
+    const synced = await this.refreshPaidPluginIds().catch(() => false);
+    if (synced) return "fresh";
+    return row ? "stale" : "never";
   }
 
   /** Everything this install's account owns — licences, seats, update windows.

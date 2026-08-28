@@ -9,7 +9,7 @@ import { validateManifest, type PluginManifest } from "./manifest-validator.js";
 import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
-import { isPluginEntitled, pluginRequiresLicense } from "../license-engine/license-engine.js";
+import { assertPluginEnableAllowed } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
@@ -268,16 +268,12 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   // License check — authoritative BY ID: a plugin needs an entitlement iff the
   // marketplace sells THIS id as paid, regardless of what its (uploadable) manifest
   // `licenseRequired` flag claims. Closes the "repackage a paid plugin as free" hole.
-  if (await pluginRequiresLicense(pluginId)) {
-    const entitled = await isPluginEntitled(pluginId);
-    if (!entitled) {
-      throw new NodevoError({
-        code:       NEC.LICENSE_NOT_FOUND,
-        httpStatus: 402,
-        message:    `Plugin "${record.name}" requires an active license entitlement. Activate a license in ACP → Extensions → License.`,
-      });
-    }
-  }
+  //
+  // The gate re-syncs what it reads and asks the marketplace before refusing, so
+  // a plugin bought a minute ago enables now rather than after the next daily
+  // heartbeat, and a refusal names the actual reason. It throws its own coded
+  // errors — see assertPluginEnableAllowed.
+  await assertPluginEnableAllowed(pluginId, record.name);
 
   await prisma.installedPlugin.update({
     where: { id: pluginId },

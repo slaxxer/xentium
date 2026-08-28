@@ -400,7 +400,8 @@
 /* ── Shared btn helpers (also used by profile/wall) ─── */
 // .btn-primary / .btn-danger / .btn-ghost → styles/buttons.scss (shared, token-driven).
 
-.btn-sm { padding: var(--sp-1) var(--sp-3); font-size: var(--fs-sm); }
+// .btn-sm → styles/buttons.scss. This file had its own, one step taller than
+// the ACP's, and both were global.
 
 /* ── Avatar section ─────────────────────────────────── */
 .account-avatar-section {

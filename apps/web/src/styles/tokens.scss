@@ -114,6 +114,20 @@
   --btn-fg:        var(--c-on-accent);
   --btn-danger-bg: var(--c-danger);
 
+  /* SIZE, as tokens, because a button's box is not a per-feature decision.
+     Every button class reads these four and sets no padding or font-size of its
+     own, so primary, ghost and danger are the same height by construction —
+     they used to drift (ghost was one step narrower and a weight lighter, and
+     ghost-danger had no vertical padding at all, so its height depended on
+     whatever was inside it). A size modifier redefines the tokens ON the
+     element rather than overriding the padding, which is what lets `.btn-sm`
+     work without `!important` and without depending on stylesheet order. */
+  --btn-pad-y: var(--sp-2);
+  --btn-pad-x: var(--sp-5);
+  --btn-fs:    var(--fs-sm);
+  --btn-fw:    600;
+  --btn-gap:   var(--sp-2);
+
   /* ── Region tokens — each DEFAULTS to a semantic token, so the
      global palette still cascades until a region is explicitly overridden.
      Region surfaces (nav/footer/content/aside) consume these. ── */
