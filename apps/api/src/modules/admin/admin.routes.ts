@@ -85,7 +85,7 @@ adminRouter.delete("/comments/profile/:id", adminGuard, adminController.deletePr
 adminRouter.get("/installed-plugins", adminGuard, adminController.listInstalledPlugins);
 
 // License
-adminRouter.get("/license",            adminGuard, adminController.getActiveLicense);
+adminRouter.get("/license",            adminGuard, adminController.getActiveEntitlement);
 // Manual key activation removed 2026-07-18: the ACP requires a linked
 // marketplace account — activation happens from the account (connect/refresh).
 adminRouter.post("/license/refresh",   adminGuard, adminController.refreshLicense);
@@ -157,6 +157,11 @@ adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMa
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);
+// The one-click handshake: start one, then poll it while the admin approves in
+// the marketplace tab. The typed connect code above still works and is the
+// fallback for anyone who cannot open a browser tab from this machine.
+adminRouter.post("/marketplace/link",          adminGuard, adminController.startMarketplaceLink);
+adminRouter.get("/marketplace/link/:linkId",   adminGuard, adminController.pollMarketplaceLink);
 adminRouter.delete("/marketplace/connection",  adminGuard, adminController.disconnectMarketplace);
 // The authenticated download gate — proves account + per-domain ownership.
 adminRouter.post("/marketplace/authorize",     adminGuard, marketplaceArtifactLimiter, adminController.authorizeMarketplaceDownload);

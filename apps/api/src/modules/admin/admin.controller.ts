@@ -347,8 +347,8 @@ export const adminController = {
   }) as RequestHandler,
 
   // License
-  getActiveLicense: (async (_req, res) => {
-    const license = await adminService.getActiveLicense();
+  getActiveEntitlement: (async (_req, res) => {
+    const license = await adminService.getActiveEntitlement();
     res.json(license ?? null);
   }) as RequestHandler,
 
@@ -374,6 +374,22 @@ export const adminController = {
 
   getMarketplaceConnection: (async (_req, res) => {
     res.json(await marketplaceService.getConnection());
+  }) as RequestHandler,
+
+  /**
+   * Begin the one-click link. Returns the code to show the admin and the URL to
+   * open — never the poll secret, which stays server-side.
+   */
+  startMarketplaceLink: (async (_req, res) => {
+    res.status(201).json(await marketplaceService.startLink());
+  }) as RequestHandler,
+
+  /** Where the ACP waits. `pending` is a 200 with a status, not an error: it is
+   *  the normal answer for as long as the admin is still reading the approval
+   *  screen. */
+  pollMarketplaceLink: (async (req, res) => {
+    const { linkId } = z.object({ linkId: z.string().min(1).max(64) }).parse(req.params);
+    res.json(await marketplaceService.pollLink(linkId));
   }) as RequestHandler,
 
   // The ownership loop's instance end: ask the marketplace what this account
