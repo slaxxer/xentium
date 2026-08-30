@@ -95,6 +95,8 @@ function toHex(value: string, fallback = "#888888"): string {
 export function BlockStyleFields({
   variant,
   onVariantChange,
+  className,
+  onClassNameChange,
   /** True for a block that can hold others — the ones a surface makes sense on. */
   isContainer,
   /** CSS for the preview iframe, so a token edit is visible before it is saved. */
@@ -103,6 +105,10 @@ export function BlockStyleFields({
   variant: BlockVariant | undefined;
   /** `undefined` = no variant, which is what an unstyled block stores. */
   onVariantChange: (next: BlockVariant | undefined) => void;
+  /** `undefined` = no handle. Unlike the variant this applies to leaves too — an
+   *  image tile is the case it exists for. */
+  className: string | undefined;
+  onClassNameChange: (next: string | undefined) => void;
   isContainer: boolean;
   onPreviewCss: (css: string) => void;
 }) {
@@ -209,6 +215,30 @@ export function BlockStyleFields({
   return (
     <div className="lay__style">
       <div className="lay__vis-title">{t("layoutEditor.style")}</div>
+
+      {/* Deliberately outside the container branch below: a variant only makes sense
+          on something with a surface, but a CSS handle is for any block at all, and
+          the leaf case (an image tile in a custom navbar) is the one it was added
+          for. Invalid input is rejected by `blockClassNameSchema` on save; the field
+          filters the obviously-wrong characters as you type so it cannot autosave a
+          document the API will refuse. */}
+      <div className="lay__style-class">
+        <label className="acp-label" htmlFor="nv-block-class">
+          {t("layoutEditor.classNameLabel")}
+        </label>
+        <input
+          id="nv-block-class"
+          className="acp-input"
+          value={className ?? ""}
+          placeholder="nav-tile"
+          maxLength={120}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/[^A-Za-z0-9_ -]/g, "");
+            onClassNameChange(raw.trim() ? raw : undefined);
+          }}
+        />
+        <p className="acp-hint lay__vis-note">{t("layoutEditor.classNameNote")}</p>
+      </div>
 
       {!isContainer ? (
         // Honest rather than a knob that does nothing visible: a leaf has no surface of

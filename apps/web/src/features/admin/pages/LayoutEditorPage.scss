@@ -374,6 +374,22 @@
     gap: 0 var(--sp-4);
   }
 
+  /* The CSS handle. A stacked field rather than a `__style-row`, because it is a text
+     input with a two-line explanation, not a row of radios — and it sits above the
+     variant picker for every block, including the leaves the picker refuses. */
+  &__style-class {
+    margin-bottom: var(--sp-3);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--c-rowline);
+
+    .acp-input {
+      width: 100%;
+      margin-top: var(--sp-1);
+      font-family: var(--ff-mono, ui-monospace, monospace);
+      font-size: 12.5px;
+    }
+  }
+
   &__style-tokens {
     margin-top: var(--sp-3);
     padding: var(--sp-3);
@@ -557,4 +573,111 @@
     color: var(--c-fg);
     margin-bottom: var(--sp-3);
   }
+}
+
+/* ── section background (BlockBackground) ─────────────────────────────────── */
+/* A sibling of `.lay`, not nested: the panel is mounted inside the settings rail
+   but it is its own component, and nesting its rules under `.lay` would tie them
+   to a parent it does not otherwise depend on. */
+.lay-bg {
+  margin-top: var(--sp-4);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-border);
+
+  &__title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    margin-bottom: var(--sp-3);
+  }
+
+  /* What the image and the gradient compose to. The checkerboard shows through a
+     transparent or partial background, so "nothing set" and "set to something
+     see-through" do not look identical. */
+  &__preview {
+    height: 64px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--sp-3);
+
+    span {
+      font-size: 11.5px;
+      color: var(--c-fg-subtle);
+    }
+  }
+
+  &__row {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+
+  &__label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-muted);
+  }
+
+  &__file {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+
+    img {
+      width: 56px;
+      height: 36px;
+      flex: none;
+      object-fit: cover;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+    }
+  }
+
+  &__stop {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+
+    /* The native swatch, sized to match the text field beside it. Chrome draws its
+       own padding inside the control, so the border is ours and the padding is
+       removed rather than fought with. */
+    input[type="color"] {
+      inline-size: 34px;
+      block-size: 30px;
+      flex: none;
+      padding: 0;
+      border: 1px solid var(--c-border);
+      border-radius: var(--radius-sm);
+      background: none;
+      cursor: pointer;
+    }
+
+    .acp-input { flex: 1; min-width: 0; font-family: var(--ff-mono, monospace); font-size: 12px; }
+  }
+
+  &__x {
+    flex: none;
+    background: none;
+    border: none;
+    padding: 4px 6px;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+
+    &:hover { color: var(--c-danger); background: var(--c-bg-hover); }
+  }
+
+  &__note { margin-top: var(--sp-2); }
 }

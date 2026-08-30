@@ -235,9 +235,23 @@ export function StyleEditorPage() {
   const activeCss = customCss[viewedTheme];
   const customDirty = customCss.light !== customCssSaved.light || customCss.dark !== customCssSaved.dark;
 
+  /**
+   * The installed theme's own stylesheet, which sits UNDER this editor's content.
+   *
+   * Read separately and never merged into the textarea: this console saves back exactly
+   * what it shows, so editing a merged blob would store the theme's CSS as the admin's
+   * own and the next theme update would have nothing left to inherit. Same rule, and the
+   * same reason, as the token editor's `theme` field.
+   */
+  const [themeCss, setThemeCss] = useState<Record<Mode, string>>({ light: "", dark: "" });
+
   useEffect(() => {
-    api.get<{ light?: string; dark?: string }>("/appearance/custom-css")
-      .then((r) => { const next = { light: r?.light ?? "", dark: r?.dark ?? "" }; setCustomCss(next); setCustomCssSaved(next); })
+    api.get<{ light?: string; dark?: string; theme?: { light?: string; dark?: string } }>("/appearance/custom-css")
+      .then((r) => {
+        const next = { light: r?.light ?? "", dark: r?.dark ?? "" };
+        setCustomCss(next); setCustomCssSaved(next);
+        setThemeCss({ light: r?.theme?.light ?? "", dark: r?.theme?.dark ?? "" });
+      })
       .catch(() => {});
   }, []);
 
@@ -854,6 +868,12 @@ export function StyleEditorPage() {
                   <span>· {t("styleEditor.themeSuffix", { theme: t("styleEditor.mode_" + viewedTheme) })}</span>
                 </div>
                 <p className="se-css__sub">{t("styleEditor.cssIntro")}</p>
+                {/* Without this the inheritance is invisible: an admin sees an empty
+                    textarea and concludes the site has no custom CSS, while a theme's
+                    stylesheet is on every page. */}
+                {themeCss[viewedTheme].trim() && (
+                  <p className="se-css__sub">{t("styleEditor.cssThemeLayer")}</p>
+                )}
               </div>
               <button type="button" className="btn-primary btn-sm" onClick={() => saveCustomCssMut.mutate()} disabled={saveCustomCssMut.isPending || !customDirty}>
                 {saveCustomCssMut.isPending ? t("styleEditor.saving") : t("styleEditor.applySave")}

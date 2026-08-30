@@ -1385,9 +1385,19 @@
       "verifying": "Verifying the download…",
       "validating": "Validating the package…",
       "installing": "Installing…",
-      "finalizing": "Finishing up…"
+      "finalizing": "Finishing up…",
+      "importing": "Applying the theme…"
     },
-    "pagination": "Page {{page}} of {{totalPages}} — {{total}} extensions"
+    "pagination": "Page {{page}} of {{totalPages}} — {{total}} extensions",
+    "tab": {
+      "plugin": "Plugins",
+      "theme": "Themes"
+    },
+    "searchThemesPlaceholder": "Search themes…",
+    "themeDraftNote": "Installing a theme stages it as a draft — nothing changes for visitors until you publish it.",
+    "themeGoManage": "Go to Themes",
+    "themeInstalled": "Installed",
+    "themeStaged": "{{name}} was staged as a draft. Publish it to put it live."
   },
   "updates": {
     "title": "Updates",
@@ -1917,6 +1927,7 @@
     "faviconHint": "PNG, ICO or SVG · max 2 MB · recommended 64×64 px",
     "themeSuffix": "{{theme}} theme",
     "cssIntro": "Raw CSS for the theme you're viewing — scoped & applied after the tokens so it overrides any rule. Switch your theme with the top-bar toggle to edit the other one. Edits preview live; Apply & Save stores both themes and pushes them to every visitor.",
+    "cssThemeLayer": "An installed theme also ships a stylesheet. It is applied before this one, so your rules here win — and nothing you write is overwritten when the theme updates.",
     "saving": "Saving…",
     "applySave": "Apply & Save",
     "unsaved": "Unsaved changes — previewing live",
@@ -2059,6 +2070,8 @@
       "plain": "Plain"
     },
     "variantNote": "A variant is a named look defined by the theme, not a colour on this block — every block set to the same variant stays in step, in both light and dark. Saved with the layout.",
+    "classNameLabel": "CSS class",
+    "classNameNote": "An optional handle for your own CSS, e.g. nav-tile. Style through it — .nav-tile > * or .nav-tile img — since the handle itself paints nothing. Saved with the layout.",
     "variantLeaf": "This block has no surface of its own. Set the style on the section or card that holds it, and this block follows it.",
     "variantScope": "{{variant}} · {{theme}} theme",
     "modeLight": "Light",
@@ -2124,16 +2137,9 @@
     },
     "region": {
       "header": "Header",
-      "beforeBody": "Before body",
-      "main": "Main",
-      "afterBody": "After body",
-      "aside": "Sidebar",
-      "footer": "Footer",
-      "left": "Left",
-      "center": "Center",
-      "right": "Right",
-      "top": "Top",
-      "bottom": "Bottom"
+      "main": "Body",
+      "aside": "Aside",
+      "footer": "Footer"
     },
     "audienceViewHint": "Filters the tree and the preview to one arrangement. Blocks you add are limited to it.",
     "audienceView": {
@@ -2151,7 +2157,29 @@
       "content": "Content",
       "data": "Data",
       "plugin": "Plugin"
-    }
+    },
+    "bgTitle": "Background",
+    "bgNone": "No background",
+    "bgImage": "Image",
+    "bgUpload": "Upload image",
+    "bgUploading": "Uploading…",
+    "bgRemove": "Remove",
+    "bgGradient": "Gradient",
+    "bgAddFirst": "Add a gradient",
+    "bgAddStop": "Add colour",
+    "bgRemoveStop": "Remove this colour",
+    "bgStop": "Colour {{n}}",
+    "bgOneStop": "One colour paints a flat fill. Add a second for a gradient.",
+    "bgAngle": "Direction",
+    "bgAngle180": "Top to bottom",
+    "bgAngle0": "Bottom to top",
+    "bgAngle90": "Left to right",
+    "bgAngle270": "Right to left",
+    "bgAngle135": "Top-left to bottom-right",
+    "bgAngle315": "Bottom-right to top-left",
+    "bgAngle45": "Bottom-left to top-right",
+    "bgAngle225": "Top-right to bottom-left",
+    "bgNote": "The image is drawn over the gradient, so either alone works. A colour written as var(--c-accent) follows the site's palette and both themes."
   },
   "groups": {
     "glow": "Glow on usernames",
@@ -2311,7 +2339,9 @@
     "fieldHomepage": "Homepage URL",
     "fieldAuthorUrl": "Author URL",
     "tokensOnly": "Colours only",
-    "tokensOnlyHint": "Export the palette without page layouts or images."
+    "tokensOnlyHint": "Export the palette without page layouts or images.",
+    "fieldScreenshot": "Preview image",
+    "fieldScreenshotHint": "Packed into the theme as its screenshot and shown on marketplace listings. PNG, JPEG, WebP or AVIF."
   },
   "owned": {
     "title": "Your licences",

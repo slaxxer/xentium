@@ -41,7 +41,7 @@ import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
 
-const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', 'themes'];
+const ALLOWED_UPLOAD_DIRS = ['avatars', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts'];
 
 export function createApp(): Express {
   const app = express();

@@ -20,6 +20,40 @@
   @media (max-width: 640px) { padding-inline: var(--sp-4); }
 }
 
+/* EDITOR ONLY — `LayoutRegion` renders this shape solely in the preview, never on
+   the live site. An empty region is invisible by construction, which is right for a
+   visitor and wrong for someone arranging the page: a masthead band that holds
+   nothing had nowhere to click, so "the header" could not be selected at all.
+
+   Deliberately quiet: a dashed outline naming the region, tall enough to hit
+   comfortably and short enough that a template with three empty regions does not
+   turn into a wall of placeholders. */
+.nv-region--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  margin-block: var(--sp-2);
+  border: 1px dashed var(--c-border-hi, var(--c-border));
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--c-accent) 4%, transparent);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+
+  span {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &:hover {
+    border-color: var(--c-accent);
+    background: color-mix(in srgb, var(--c-accent) 10%, transparent);
+  }
+}
+
 /* ── section ─────────────────────────────────────────────────────────────── */
 
 .nv-section {
@@ -43,6 +77,51 @@
   &--pad-sm   { padding: var(--sp-3) var(--sp-4); }
   &--pad-md   { padding: var(--sp-6) var(--sp-4); }
   &--pad-lg   { padding: var(--sp-10) var(--sp-4); }
+
+  /* Only when a background is actually set — the inline style carries the layers,
+     these carry how they behave. `cover` + `center` is the only pair that makes an
+     arbitrary photograph work at an arbitrary band height, which is what an admin
+     who uploads one is expecting. */
+  &--bg {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* A section given a minimum height centres what is in it. The `min-height` itself
+     is inline (it is a number an admin chose); this is the arrangement that number
+     implies, and the only one anyone wants from a band taller than its content. */
+  &--tall {
+    display: flex;
+    align-items: center;
+
+    > .nv-section__inner { flex: 1; min-width: 0; }
+  }
+
+  /* ── the content column ──────────────────────────────────────────────────
+     Transparent for `wide` / `normal` / `narrow`: the SECTION is already the
+     constrained box there, so a second max-width would just nest two columns. */
+  &__inner { width: 100%; }
+
+  /* `full` is the one that spans, so it is the one whose content has to be put
+     back in the page's rail. These numbers are not chosen here — they MATCH
+     `.nv-region` and `.pub-nav__inner` exactly, which is what makes a masthead
+     logo land directly above the navbar logo instead of a few pixels off.
+
+     ⚠ Declared after `--pad-*` on purpose: the pad classes set the `padding`
+     shorthand, so zeroing the inline half has to come later to win on source
+     order — both selectors have the same specificity. */
+  &--full {
+    padding-inline: 0;
+
+    > .nv-section__inner {
+      max-width: var(--content-max);
+      margin-inline: auto;
+      padding-inline: var(--sp-6);
+
+      @media (max-width: 640px) { padding-inline: var(--sp-4); }
+    }
+  }
 }
 
 /* ── columns ─────────────────────────────────────────────────────────────── */
@@ -72,8 +151,15 @@
   @media (max-width: 640px) {
     flex-direction: column;
     /* A stacked track is full width and must not stick, or a rail would pin itself
-       over the content it used to sit beside. */
-    > .nv-column { flex: 1 1 auto; width: 100%; position: static; }
+       over the content it used to sit beside.
+
+       DESCENDANT, not `>`. A block that carries a style variant or a CSS handle is
+       rendered inside a `display: contents` wrapper, and selectors match the DOM, not
+       the box tree — so `> .nv-column` silently stopped matching any column an admin
+       had styled, and those columns kept sticking over the content on a phone. Every
+       `.nv-column` lives in a `.nv-columns` that is stacking at this width anyway,
+       including nested ones, so the descendant form is also the more correct rule. */
+    .nv-column { flex: 1 1 auto; width: 100%; position: static; }
   }
 }
 
@@ -174,6 +260,16 @@
     height: 100%;
     border-radius: var(--card-radius);
     object-fit: cover;
+  }
+
+  /* A linked image is still an image: the anchor must not introduce a text box,
+     an underline or a link colour between the figure and the img, or every
+     aspect-ratio rule above would be measuring the wrong element. */
+  &__link {
+    display: block;
+    height: 100%;
+    color: inherit;
+    text-decoration: none;
   }
 
   &--16x9 img { aspect-ratio: 16 / 9; }

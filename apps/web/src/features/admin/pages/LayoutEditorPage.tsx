@@ -63,6 +63,7 @@ import {
   removeBlock,
   updateBlockProps,
   updateBlockVariant,
+  updateBlockClassName,
   updateBlockVisibility,
   type Regions,
 } from "../../../layout/blockTree";
@@ -77,6 +78,7 @@ import {
 } from "./LayoutTree";
 import { BlockVisibilityFields } from "./BlockVisibility";
 import { BlockStyleFields } from "./BlockStyle";
+import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import "./LayoutEditorPage.scss";
 
 /** The route each template previews at. Themes re-lay-out existing pages, so a
@@ -422,9 +424,15 @@ export function LayoutEditorPage() {
         region?: string; parentId?: string | null; index?: number;
         action?: "undo" | "redo";
       };
+
       if (msg?.source !== "nv-preview") return;
 
       if (msg.type === "select" && msg.id) setSelectedId(msg.id);
+
+      // An empty region was clicked in the preview. Open the SAME add-block picker
+      // the region's own `+` opens — the key is `r:<region>`, so there is one picker
+      // and one code path whichever surface asked for it.
+      if (msg.type === "addTo" && msg.region) latest.current.openAdd(`r:${msg.region}`);
 
       if (msg.type === "move" && msg.id && msg.region && typeof msg.index === "number") {
         // Goes through the same `applyTree` the tree's own drags use, so a move made
@@ -686,8 +694,12 @@ export function LayoutEditorPage() {
    * reach the current closures without having to re-bind the listeners themselves —
    * re-binding a `dragover` handler mid-gesture is how a drag gets dropped.
    */
-  const latest = useRef({ applyTree, undo: undoEdit, redo: redoEdit });
-  latest.current = { applyTree, undo: undoEdit, redo: redoEdit };
+  // `openAdd` rides along for the same reason the others do: the message listener is
+  // registered once, so it must read the current callbacks rather than close over the
+  // ones that existed when it was attached.
+  const openAdd = (key: string) => setAdding(key);
+  const latest = useRef({ applyTree, undo: undoEdit, redo: redoEdit, openAdd });
+  latest.current = { applyTree, undo: undoEdit, redo: redoEdit, openAdd };
 
   /**
    * Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (Ctrl+Y too, for the Windows muscle memory).
@@ -791,6 +803,10 @@ export function LayoutEditorPage() {
 
   const updateVariant = (id: string, variant: BlockVariant | undefined) => {
     applyTree((r) => updateBlockVariant(r, id, variant));
+  };
+
+  const updateClassName = (id: string, className: string | undefined) => {
+    applyTree((r) => updateBlockClassName(r, id, className));
   };
 
   // ── Drag handling ─────────────────────────────────────────────────────────
@@ -1201,9 +1217,31 @@ export function LayoutEditorPage() {
                 schema={schemaFor(selected.node.type)}
                 values={selected.node.props}
                 onChange={(next) => updateProps(selected.node.id, next)}
+                // The background props get a picker, an uploader and a preview
+                // instead of a text box and a number — see BlockBackground.
+                omit={selected.node.type === "section" ? BACKGROUND_PROPS : undefined}
               />
               {Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length === 0 && (
                 <div className="acp-hint">{t("layoutEditor.noProps")}</div>
+              )}
+              {/* A section is the block that paints, so it is the one that carries a
+                  background. Keyed by block for the same reason BlockStyle is:
+                  switching selection must reset the panel, not carry one block's
+                  pending upload to another. */}
+              {selected.node.type === "section" && (
+                <BlockBackgroundFields
+                  // ⚠ NAMESPACED, not the bare block id. `BlockStyleFields` below is
+                  // a sibling in this same pane and already keys on that id — two
+                  // siblings sharing a key makes React warn and, as it documents,
+                  // DUPLICATE them: the panel doubled on every edit until the rail
+                  // held eight copies. Nothing in the saved document was ever wrong,
+                  // which is why only looking at it caught this.
+                  key={`bg:${selected.node.id}`}
+                  image={selected.node.props.backgroundImage as string | undefined}
+                  gradient={selected.node.props.backgroundGradient as string[] | undefined}
+                  angle={selected.node.props.backgroundAngle as number | undefined}
+                  onChange={(patch) => updateProps(selected.node.id, { ...selected.node.props, ...patch })}
+                />
               )}
               {/* A required block may be moved anywhere but never restricted: an
                   audience would achieve by hiding exactly what deletion is
@@ -1223,6 +1261,8 @@ export function LayoutEditorPage() {
                 key={selected.node.id}
                 variant={selected.node.variant}
                 onVariantChange={(next) => updateVariant(selected.node.id, next)}
+                className={selected.node.className}
+                onClassNameChange={(next) => updateClassName(selected.node.id, next)}
                 isContainer={!!getBlock(selected.node.type)?.container}
                 onPreviewCss={setStyleCss}
               />

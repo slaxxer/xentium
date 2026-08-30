@@ -132,7 +132,17 @@ appearanceRouter.patch("/tokens/scope/:scope", adminGuard, async (req, res, next
 // Admin — read raw per-theme custom CSS for the console editor
 appearanceRouter.get("/custom-css", adminGuard, async (_req, res, next) => {
   try {
-    res.json(await appearanceService.getCustomCss());
+    // Same shape and the same reason as `/tokens`: `light`/`dark` are the ADMIN layer
+    // alone, because the console writes back exactly what it reads — returning the two
+    // layers concatenated would save the theme's stylesheet as the admin's own, and the
+    // next theme update would have nothing left to inherit. `theme` is additive, and it
+    // is the STAGED layer so the console agrees with the preview during the window
+    // between importing a theme and publishing it.
+    const [admin, theme] = await Promise.all([
+      appearanceService.getCustomCss(),
+      appearanceService.getThemeDraftCustomCss(),
+    ]);
+    res.json({ ...admin, theme });
   } catch (err) { next(err); }
 });
 

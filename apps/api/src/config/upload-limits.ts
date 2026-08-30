@@ -35,6 +35,14 @@ export const UPLOAD_LIMITS = {
     maxBytes: 512 * KB,
     allowedMimeTypes: ["image/png", "image/x-icon", "image/svg+xml"],
   },
+  // Section backgrounds placed from the layout editor. Larger than a featured
+  // image because this one is a full-bleed band behind a masthead, not a card
+  // thumbnail — and still bounded, because it is served to every visitor on
+  // every page when it sits in the chrome.
+  LAYOUT_IMAGE: {
+    maxBytes: 5 * MB,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"],
+  },
   PLUGIN_PACKAGE: {
     maxBytes: 50 * MB,
     allowedMimeTypes: ["application/zip", "application/octet-stream"],

@@ -105,11 +105,18 @@ describe("the rendered wrapper", () => {
     expect(el.style.display).toBe("contents");
   });
 
-  it("adds NO wrapper when the block has no variant", () => {
+  it("adds no VARIANT class when the block has no variant", () => {
     render(<LayoutRegion document={doc([heading()])} region="main" />);
-    // The region's own element, then the heading — nothing in between.
+    expect(document.querySelector('[class*="nv-v--"]')).toBeNull();
+    // There IS still a wrapper — it carries the block's type class, which every block
+    // gets so a theme can target one without an admin adding a handle
+    // (`classContract.test.tsx`). It stays `display: contents`, so nothing about the
+    // variant's safety on a flex or grid parent changes.
     const region = document.querySelector(".nv-region") as HTMLElement;
-    expect(region.firstElementChild!.classList.contains("nv-heading")).toBe(true);
+    const wrapper = region.firstElementChild as HTMLElement;
+    expect(wrapper.classList.contains("nv-b--heading")).toBe(true);
+    expect(wrapper.style.display).toBe("contents");
+    expect(wrapper.firstElementChild!.classList.contains("nv-heading")).toBe(true);
   });
 
   it("wraps the block itself, so the block's element stays inside", () => {

@@ -1182,9 +1182,19 @@
       "verifying": "Download wird geprüft…",
       "validating": "Paket wird validiert…",
       "installing": "Wird installiert…",
-      "finalizing": "Wird abgeschlossen…"
+      "finalizing": "Wird abgeschlossen…",
+      "importing": "Theme wird angewendet…"
     },
-    "pagination": "Seite {{page}} von {{totalPages}} — {{total}} Erweiterungen"
+    "pagination": "Seite {{page}} von {{totalPages}} — {{total}} Erweiterungen",
+    "tab": {
+      "plugin": "Plugins",
+      "theme": "Themes"
+    },
+    "searchThemesPlaceholder": "Themes durchsuchen…",
+    "themeDraftNote": "Ein installiertes Theme wird als Entwurf abgelegt — für Besucher ändert sich nichts, bis du es veröffentlichst.",
+    "themeGoManage": "Zu den Themes",
+    "themeInstalled": "Installiert",
+    "themeStaged": "{{name}} wurde als Entwurf abgelegt. Veröffentliche es, um es live zu schalten."
   },
   "updates": {
     "title": "Updates",
@@ -1639,6 +1649,7 @@
     "faviconHint": "PNG, ICO oder SVG · max. 2 MB · empfohlen 64×64 px",
     "themeSuffix": "{{theme}} Theme",
     "cssIntro": "Rohes CSS für das Theme, das du gerade ansiehst — nach den Token gescoped & angewendet, sodass es jede Regel überschreibt. Wechsle dein Theme über den Umschalter oben, um das andere zu bearbeiten. Änderungen werden live vorgeschaut; „Anwenden & Speichern“ speichert beide Themes und veröffentlicht sie für alle Besucher.",
+    "cssThemeLayer": "Ein installiertes Theme bringt ebenfalls ein Stylesheet mit. Es wird vor diesem angewendet, deine Regeln gewinnen also — und beim Theme-Update wird nichts davon überschrieben.",
     "saving": "Wird gespeichert…",
     "applySave": "Anwenden & Speichern",
     "unsaved": "Ungespeicherte Änderungen — Live-Vorschau",
@@ -1781,6 +1792,8 @@
       "plain": "Schlicht"
     },
     "variantNote": "Eine Variante ist ein benannter Look aus dem Theme, keine Farbe an diesem Block — alle Blöcke mit derselben Variante bleiben einheitlich, in Hell und Dunkel. Wird mit dem Layout gespeichert.",
+    "classNameLabel": "CSS-Klasse",
+    "classNameNote": "Ein optionaler Anker für eigenes CSS, z. B. nav-tile. Gestalte darüber — .nav-tile > * oder .nav-tile img — der Anker selbst zeichnet nichts. Wird mit dem Layout gespeichert.",
     "variantLeaf": "Dieser Block hat keine eigene Fläche. Setze den Stil an der Sektion oder Karte, die ihn enthält — dieser Block folgt dann automatisch.",
     "variantScope": "{{variant}} · Theme {{theme}}",
     "modeLight": "Hell",
@@ -1845,17 +1858,10 @@
       "chrome.footer": "Fußbereich"
     },
     "region": {
-      "header": "Kopfbereich",
-      "beforeBody": "Vor dem Inhalt",
-      "main": "Hauptbereich",
-      "afterBody": "Nach dem Inhalt",
-      "aside": "Seitenleiste",
-      "footer": "Fußbereich",
-      "left": "Links",
-      "center": "Mitte",
-      "right": "Rechts",
-      "top": "Oben",
-      "bottom": "Unten"
+      "header": "Header",
+      "main": "Body",
+      "aside": "Aside",
+      "footer": "Footer"
     },
     "audienceViewHint": "Filtert Baum und Vorschau auf eine Anordnung. Hinzugefügte Blöcke werden darauf beschränkt.",
     "audienceView": {
@@ -1873,7 +1879,29 @@
       "content": "Inhalt",
       "data": "Daten",
       "plugin": "Plugin"
-    }
+    },
+    "bgTitle": "Hintergrund",
+    "bgNone": "Kein Hintergrund",
+    "bgImage": "Bild",
+    "bgUpload": "Bild hochladen",
+    "bgUploading": "Wird hochgeladen…",
+    "bgRemove": "Entfernen",
+    "bgGradient": "Verlauf",
+    "bgAddFirst": "Verlauf hinzufügen",
+    "bgAddStop": "Farbe hinzufügen",
+    "bgRemoveStop": "Diese Farbe entfernen",
+    "bgStop": "Farbe {{n}}",
+    "bgOneStop": "Eine Farbe ergibt eine einfarbige Fläche. Füge eine zweite für einen Verlauf hinzu.",
+    "bgAngle": "Richtung",
+    "bgAngle180": "Oben nach unten",
+    "bgAngle0": "Unten nach oben",
+    "bgAngle90": "Links nach rechts",
+    "bgAngle270": "Rechts nach links",
+    "bgAngle135": "Oben links nach unten rechts",
+    "bgAngle315": "Unten rechts nach oben links",
+    "bgAngle45": "Unten links nach oben rechts",
+    "bgAngle225": "Oben rechts nach unten links",
+    "bgNote": "Das Bild liegt über dem Verlauf, beides funktioniert auch einzeln. Eine Farbe als var(--c-accent) folgt der Palette und beiden Themes."
   },
   "groups": {
     "glow": "Leuchten bei Benutzernamen",
@@ -2033,7 +2061,9 @@
     "fieldHomepage": "Homepage-URL",
     "fieldAuthorUrl": "Autoren-URL",
     "tokensOnly": "Nur Farben",
-    "tokensOnlyHint": "Exportiert die Palette ohne Seitenlayouts und Bilder."
+    "tokensOnlyHint": "Exportiert die Palette ohne Seitenlayouts und Bilder.",
+    "fieldScreenshot": "Vorschaubild",
+    "fieldScreenshotHint": "Wird als Screenshot ins Theme gepackt und in Marktplatz-Einträgen angezeigt. PNG, JPEG, WebP oder AVIF."
   },
   "owned": {
     "title": "Deine Lizenzen",

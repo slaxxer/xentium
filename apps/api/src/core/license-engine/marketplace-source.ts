@@ -18,6 +18,7 @@ import type {
   MarketplaceSource,
   PaginatedRequest,
   PaginatedResponse,
+  ProductKind,
 } from "@nodevo/contracts";
 import { NEC } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
@@ -40,6 +41,10 @@ import {
  */
 export interface MarketplaceListQuery extends PaginatedRequest {
   q?: string;
+  /** Which half of the catalogue to browse. Defaults to plugins — the ACP's
+   *  Marketplace page opened on plugins for its whole life, and a missing
+   *  parameter must not silently start mixing themes into that grid. */
+  kind?: ProductKind;
 }
 
 /**
@@ -281,7 +286,9 @@ class NodevoMarketplaceSource implements MarketplaceSource {
    * makes `owned` come back populated.
    */
   async listPlugins(opts: MarketplaceListQuery): Promise<PaginatedResponse<MarketplaceListing>> {
-    const page = await this.fetchCatalogPage({ page: opts.page, limit: opts.limit, q: opts.q });
+    const page = await this.fetchCatalogPage({
+      page: opts.page, limit: opts.limit, q: opts.q, kind: opts.kind ?? "plugin",
+    });
     if (!page) {
       // Unreachable / not connected — the ACP browse list is simply blank
       // rather than a fabricated catalogue.
@@ -290,9 +297,14 @@ class NodevoMarketplaceSource implements MarketplaceSource {
     return page;
   }
 
-  /** One catalogue page. null when the marketplace couldn't be reached, so
-   *  callers never clobber a cached paid-id set with a fallback. */
-  private async fetchCatalogPage(q: { page: number; limit: number; q?: string }): Promise<PaginatedResponse<MarketplaceListing> | null> {
+  /** One catalogue page of ONE kind. null when the marketplace couldn't be
+   *  reached, so callers never clobber a cached paid-id set with a fallback.
+   *
+   *  ⚠ `kind` is required rather than defaulted. The paid-id walk below and the
+   *  ACP browse list are the only two callers, and they want opposite halves of
+   *  the catalogue — a default here is how theme ids would end up in the set the
+   *  PLUGIN enable gate reads. */
+  private async fetchCatalogPage(q: { page: number; limit: number; q?: string; kind: ProductKind }): Promise<PaginatedResponse<MarketplaceListing> | null> {
     try {
       return await protocolFetch<PaginatedResponse<MarketplaceListing>>({
         method: "GET",
@@ -305,7 +317,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
         // `q` is forwarded, never filtered here. The ACP used to search the
         // FETCHED PAGE in memory, so a plugin on page 2 answered "no results"
         // for its own name — a worse bug than the truncation it rode along with.
-        query: { kind: "plugin", page: q.page, limit: q.limit, ...(q.q ? { q: q.q } : {}) },
+        query: { kind: q.kind, page: q.page, limit: q.limit, ...(q.q ? { q: q.q } : {}) },
       });
     } catch {
       return null;
@@ -321,7 +333,7 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   async refreshPaidPluginIds(): Promise<boolean> {
     const ids: string[] = [];
     for (let page = 1; ; page++) {
-      const res = await this.fetchCatalogPage({ page, limit: 100 });
+      const res = await this.fetchCatalogPage({ page, limit: 100, kind: "plugin" });
       if (!res) return false;   // unreachable mid-walk — keep the last cached set intact
       for (const l of res.data) if (l.licenseRequired) ids.push(l.id);
       if (page >= (res.meta.totalPages ?? 1)) break;

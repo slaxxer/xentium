@@ -145,6 +145,44 @@ Three rules worth knowing when authoring:
   for it and no way to render "the look it meant", so it fails validation rather than
   landing as a silent no-op.
 
+## CSS handles — `className` and linked images
+
+A variant covers "which named look", not "this one tile". For that a block carries an
+optional **`className`**: your own handle, which custom CSS can select on.
+
+```jsonc
+// layouts/chrome.header.json — an image navbar
+{ "id": "t1", "type": "image", "className": "nav-tile",
+  "props": { "source": "assets/forum.png", "ratio": "auto", "href": "/forum" } }
+```
+
+```css
+/* styles/custom-light.css */
+.nav-tile > *          { width: 120px; }
+.nav-tile img          { border-radius: 8px; transition: filter .15s; }
+.nav-tile:hover img    { filter: brightness(1.15); }
+```
+
+Three things decide how you write that CSS:
+
+- **Style *through* the handle, not on it.** It is stamped on the same
+  `display: contents` wrapper the variant uses, so it generates no box:
+  `.nav-tile { background: … }` paints nothing, while `.nav-tile > *`,
+  `.nav-tile img` and `.nav-tile .nv-image` all work. This is the price of the handle
+  being safe on **every** block — including a plugin's, which never had to opt in —
+  and of never breaking the flex and grid parents that size the real element.
+  Descendant and `:hover` selectors behave normally, because `:hover` matches an
+  ancestor of the hovered box whether or not that ancestor generates one.
+- **`nv-` is reserved.** A handle is 1–4 CSS identifiers, letters/digits/`-`/`_`, and
+  may not begin with `nv-` — that prefix is core's own class contract, and a document
+  that could mint one could impersonate a core class or hand itself a variant.
+- **`image.href` makes artwork a link**, which is what an image navbar needs:
+  `navLinks` renders text, so before this there was no way to say "this tile goes to
+  /forum". Relative paths and `http`/`https`/`mailto` only — a `javascript:` or
+  `data:` URL is refused at validation, so it cannot arrive in a package either.
+  There is deliberately no `hoverSource`: a hover swap is CSS the handle already
+  expresses, and every block prop is permanent.
+
 ## Assets
 
 An asset reference inside a document is a path into the receiving site's uploads —
@@ -161,10 +199,11 @@ and rewrites the reference to `assets/<file>`; import unpacks them to
 
 ## Import semantics
 
-- Lands in the **draft**, never live — layouts and tokens both. A theme rewrites every
-  page at once, which is exactly the change to preview before committing. (Custom CSS is
-  the exception above.) One "Publish appearance" promotes the staged theme, and the layout
-  draft publishes as usual.
+- Lands in the **draft**, never live — layouts, tokens and the stylesheet alike. A theme
+  rewrites every page at once, which is exactly the change to preview before committing.
+  One "Publish appearance" promotes the staged theme, and the layout draft publishes as
+  usual. (The stylesheet used to be the exception — applied live, and into the admin's own
+  keys. See *Inheritance* below.)
 - **All-or-nothing**: every layout, token, stylesheet and asset is validated before a
   single byte is written, so one bad file leaves the site untouched.
 - **Unknown blocks are kept, not dropped.** They are reported to the admin, skipped by
@@ -205,6 +244,88 @@ Every import records the new baseline either way, so:
 
 The import result names all of it: `templates` (applied), `kept` (yours, untouched),
 `replaced` (the version that was installed before).
+
+**The stylesheet inherits as a layer.** `styles/custom-*.css` lands in the theme's own
+layer and is emitted **before** the admin's console CSS, so on two rules of equal
+specificity the admin still wins — the same relationship their tokens have with yours.
+`Reset appearance` clears the admin's stylesheet and leaves the theme's in place.
+
+> ⚠ Before 2026-08-29 an import called the admin's own `saveCustomCss`, so installing a
+> theme **destroyed whatever CSS the admin had written** — no baseline, nothing to
+> recover from, and applied live. A package carrying only `custom-light.css` blanked
+> their dark stylesheet too, because both keys were always written together.
+
+## The class contract
+
+A theme is CSS plus data — it cannot register a block or change a component — so every bit
+of design control it has runs through class names. Three things are promised, and it is
+worth knowing which is which, because they are not equally strong.
+
+**1. `nv-b--<type>` on every block.** Always present, on every instance, for core, plugin
+and future blocks alike:
+
+```css
+.nv-b--boardStats .stat-value { font-family: "Bebas Neue"; }
+.nv-b--profileCard            { --card-radius: 0; }
+```
+
+This is the hook a *downloaded* theme relies on. `className` is per instance and only an
+admin can set it, so a theme that does not control the site's layouts had nothing to aim
+at — and roughly fifty blocks render into their parent's markup and emit no class of their
+own at all. A plugin's dotted type is flattened for the selector:
+`forum.recentThreads` → `.nv-b--forum-recentThreads`.
+
+**2. Root classes**, for the blocks that own a root element:
+
+| Block | Root class | | Block | Root class |
+|---|---|---|---|---|
+| `section` | `.nv-section` | | `image` | `.nv-image` |
+| `columns` | `.nv-columns` | | `guestHero` | `.ghero` |
+| `column` | `.nv-column` | | `guestBody` | `.gbody` |
+| `spacer` | `.nv-spacer` | | `profileCard` | `.profile-card` |
+| `heading` | `.nv-heading` | | `richText` | `.nv-richtext` |
+
+**3. Everything else is current behaviour, not a promise.** The classes inside a block
+(`.ghero__title`, `.mp-list`, `.ac__excerpt`) are real and stable in practice, but they
+are not yet covered by the guard, and the prefixes are inconsistent because several blocks
+were decomposed out of existing pages and kept those pages' names. Target them through
+`nv-b--<type>` or your own handle so a rename cannot reach across your whole stylesheet.
+
+> ⚠ **Never use `>`, `+` or `~` against a block's root class from outside that block.**
+> Every block is rendered inside a `display: contents` wrapper. It generates no box, so it
+> cannot disturb a flex or grid parent — but selectors match the **DOM**, not the box
+> tree, so a combinator aimed across a block boundary silently matches nothing. Use a
+> descendant selector. (Core shipped `.nv-columns > .nv-column` and it stopped applying to
+> any column an admin had styled, leaving a sticky rail pinned over the content it was
+> meant to stack under on a phone.)
+
+## What a theme's stylesheet may and may not do
+
+Your own console CSS is written by you, so it is checked for syntax and otherwise left
+alone. A stylesheet arriving inside a package is a stranger's code on every page of
+someone else's site, so it has two extra rules — both enforced at import, before a single
+byte is written:
+
+- **No `@import`.** It fetches a stylesheet from another server at render time, which is
+  both a live dependency on someone else's uptime and a request carrying your visitors'
+  IPs. Put the rules in the file.
+- **No remote `url()`.** Same reason, plus a sharper one: with an attribute selector
+  (`input[value^="a"] { background: url(…) }`) a remote URL leaks what is on the page one
+  character at a time. Ship the file in `assets/` and reference it as `assets/<file>`.
+
+What *is* allowed: `assets/…` references (rewritten on import to wherever the files
+landed — this is why an image in a theme's stylesheet works at all), `data:` URLs, and
+site-absolute paths like `/uploads/branding/logo.png`, which are same-origin and cannot
+reach off-site. A reference to a file the package does not carry is refused by name.
+
+Export is the mirror: the files your stylesheet references are copied into the package and
+the references rewritten package-relative, so a `.nvtheme` exported from a site running a
+theme imports cleanly somewhere else.
+
+This does **not** make a stranger's CSS harmless — CSS can still lay a fixed-position
+element over a button, or restyle a control into something it is not. The answer to that
+is staging: the stylesheet now arrives in the draft with everything else, so an admin sees
+the site before a visitor does.
 
 ## Building one
 

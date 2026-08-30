@@ -21,7 +21,6 @@ import AdmZip from "adm-zip";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileTypeFromBuffer } from "file-type";
-import postcss from "postcss";
 import {
   DEFAULT_VARIANT,
   LAYOUT_SCHEMA_VERSION,
@@ -51,6 +50,12 @@ import { NEC } from "../../shared/errors/nec.js";
 import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
+import {
+  assertThemeCssSafe,
+  collectCssUploadRefs,
+  rewriteThemeCssUrls,
+  toPackageCssUrls,
+} from "./themeCss.js";
 
 /**
  * Block types this install can render, derived from the core catalogue in
@@ -210,7 +215,8 @@ export interface ImportReport {
   /** The theme that was installed before this import, when there was one. */
   replaced: { id: string; name: string; version: string } | null;
   tokensApplied: boolean;
-  /** Applied LIVE, not staged — the custom CSS console has no draft of its own. */
+  /** Staged in the theme's own CSS layer, under the admin's stylesheet, like everything
+   *  else in the package. It used to overwrite the admin's CSS outright, and live. */
   customCssApplied: boolean;
   assetsImported: number;
   /** Non-fatal: blocks the package references that this install cannot render.
@@ -298,7 +304,49 @@ async function stageAssets(zip: AdmZip): Promise<StagedAsset[]> {
   return staged;
 }
 
+/**
+ * Open a package and read its manifest, without touching a single setting.
+ *
+ * Split out of `importTheme` so the marketplace download gate can ask "is this
+ * really the theme I asked for?" the way it already asks a `.nvplugin` — the
+ * check that a package's manifest id matches the requested product. Doing that
+ * by starting an import and rolling it back is not an option: an import is
+ * all-or-nothing but it is not free, and the point is to refuse the bytes BEFORE
+ * anything is staged.
+ */
+function readManifest(fileBuffer: Buffer): { zip: AdmZip; manifest: ThemeManifestInput } {
+  let zip: AdmZip;
+  try {
+    zip = new AdmZip(fileBuffer);
+  } catch {
+    throw themeError("Not a readable .nvtheme archive");
+  }
+
+  const manifestEntry = zip.getEntry(THEME_PATHS.manifest);
+  if (!manifestEntry) throw themeError(`Missing ${THEME_PATHS.manifest}`);
+
+  const manifestText = readText(manifestEntry, THEME_PATHS.manifest);
+  let raw: unknown;
+  try {
+    raw = JSON.parse(manifestText);
+  } catch {
+    throw themeError("manifest.json is not valid JSON");
+  }
+
+  const parsed = themeManifestSchema.safeParse(adoptStylePack(raw, zip));
+  if (!parsed.success) {
+    throw themeError(`Invalid manifest: ${issueList(parsed.error)}`);
+  }
+  return { zip, manifest: parsed.data };
+}
+
 export const themeService = {
+  /** What this package claims to be. The download gate's check, and nothing more —
+   *  a package that passes here can still be refused by the full import. */
+  validateOnly(fileBuffer: Buffer): ThemeManifestInput {
+    return readManifest(fileBuffer).manifest;
+  },
+
   /**
    * Build a `.nvtheme` from what is currently PUBLISHED — the site as visitors
    * see it, not a half-finished draft.
@@ -306,13 +354,44 @@ export const themeService = {
   async exportTheme(
     meta: Pick<ThemeManifestInput, "id" | "name" | "version" | "vendor" | "description"
       | "license" | "homepage" | "authorUrl">,
-    opts: { tokensOnly?: boolean } = {},
+    opts: { tokensOnly?: boolean; screenshot?: Buffer } = {},
   ): Promise<Buffer> {
+    /**
+     * The preview image, packed like any other asset and named in the manifest.
+     *
+     * `screenshot` has been in the manifest schema since the format was written and
+     * nothing ever produced one — a listing had no picture, which on a marketplace is
+     * the difference between a theme someone looks at and one they scroll past. It is
+     * an ASSET rather than a URL because it has to travel with the package: a link to
+     * the exporting site's uploads is a broken image on the marketplace and everywhere
+     * else, exactly as a document's image reference would be.
+     *
+     * Validated HERE rather than in the route because "what a theme may carry" is this
+     * file's rule, and it is the same magic-byte check an imported asset gets — an
+     * export is the one end of the format we control, so shipping something an import
+     * would refuse is a bug we would only find on someone else's install.
+     */
+    let screenshotName: string | undefined;
+    if (opts.screenshot?.length) {
+      if (opts.screenshot.length > THEME_ASSET_LIMITS.maxBytesEach) {
+        throw themeError(`The preview image exceeds ${THEME_ASSET_LIMITS.maxBytesEach} bytes`);
+      }
+      const detected = await fileTypeFromBuffer(opts.screenshot);
+      // Images only, and no SVG: a preview is rendered by a marketplace that did not
+      // build the package, and SVG is the one image kind that can carry script. Inside
+      // a theme's own assets it is admitted under a sandbox CSP this file cannot promise
+      // anyone else has.
+      const ok = detected && ["image/png", "image/jpeg", "image/webp", "image/avif"].includes(detected.mime);
+      if (!ok) throw themeError("The preview image must be a PNG, JPEG, WebP or AVIF");
+      screenshotName = `screenshot.${detected.ext}`;
+    }
+
     const manifest: ThemeManifestInput = themeManifestSchema.parse({
       ...meta,
       minNodevoVersion: NODEVO_VERSION,
       schemaVersion:    LAYOUT_SCHEMA_VERSION,
       packageVersion:   THEME_PACKAGE_VERSION,
+      ...(screenshotName ? { screenshot: `${THEME_PATHS.assets}${screenshotName}` } : {}),
     });
 
     const [layouts, tokens, customCss] = await Promise.all([
@@ -321,7 +400,19 @@ export const themeService = {
       // and on a site with a theme installed most of the look lives in the theme layer.
       // Exporting the admin layer alone would produce a package that is only the diff.
       appearanceService.getEffectiveTokens(),
-      appearanceService.getCustomCss(),
+      // EFFECTIVE, for the same reason the tokens above are: an export is "the site as
+      // visitors see it", and on a site running a theme most of the stylesheet is the
+      // theme's. Exporting the admin layer alone would drop it silently.
+      (async () => {
+        const [admin, theme] = await Promise.all([
+          appearanceService.getCustomCss(),
+          appearanceService.getThemeCustomCss(),
+        ]);
+        return {
+          light: [theme.light, admin.light].filter((c) => c.trim()).join("\n\n"),
+          dark:  [theme.dark,  admin.dark ].filter((c) => c.trim()).join("\n\n"),
+        };
+      })(),
     ]);
 
     const zip = new AdmZip();
@@ -333,6 +424,14 @@ export const themeService = {
     // broken image everywhere else — the reference travels, the file does not.
     const assetNames = new Map<string, string>();   // upload path → name in the zip
     const used = new Set<string>();
+    // Reserved BEFORE the documents are walked, so a page image that happens to be
+    // called `screenshot.png` is renamed around it rather than overwriting the preview.
+    // The collision is silent otherwise: `zip.addFile` twice under one name leaves
+    // whichever won, and the manifest would point at a page's hero image.
+    if (screenshotName) {
+      used.add(screenshotName);
+      zip.addFile(`${THEME_PATHS.assets}${screenshotName}`, opts.screenshot!);
+    }
     // Registered templates, so a theme exported from a site running the forum carries
     // the forum's pages too. On a site without that plugin the file is skipped at
     // import — the same "unknown thing is skipped, not fatal" rule as a block.
@@ -387,11 +486,38 @@ export const themeService = {
     // ── Custom CSS ────────────────────────────────────────────────────────
     // The escape hatch for a look the tokens cannot express. Stored raw and scoped by
     // the IMPORTING site at build time, exactly as the console's own CSS is.
-    if (customCss.light.trim()) {
-      zip.addFile(THEME_PATHS.customLight, Buffer.from(customCss.light, "utf8"));
+    //
+    // Its `url()`s get the same treatment a document's asset references do: the file is
+    // copied into the package and the reference rewritten package-relative. Without it
+    // an exported stylesheet points at `/uploads/themes/<the SOURCE site's id>/…`, which
+    // is a broken image everywhere else — and which the importer now refuses outright as
+    // a file the package does not carry.
+    const packCss = async (css: string): Promise<string> => {
+      if (!css.trim()) return css;
+      for (const ref of collectCssUploadRefs(css)) {
+        if (assetNames.has(ref)) continue;
+        const buf = await readUpload(ref);
+        if (!buf) continue;   // dangling, left as authored — not fatal, same as a document
+        const base = path.basename(ref).replace(/[^\w.-]/g, "_");
+        let name = base;
+        for (let i = 2; used.has(name); i++) name = `${i}-${base}`;
+        used.add(name);
+        assetNames.set(ref, name);
+        zip.addFile(`${THEME_PATHS.assets}${name}`, buf);
+      }
+      return toPackageCssUrls(css, (upload) => {
+        const name = assetNames.get(upload);
+        return name ? `${THEME_PATHS.assets}${name}` : undefined;
+      });
+    };
+
+    const packedLight = await packCss(customCss.light);
+    const packedDark  = await packCss(customCss.dark);
+    if (packedLight.trim()) {
+      zip.addFile(THEME_PATHS.customLight, Buffer.from(packedLight, "utf8"));
     }
-    if (customCss.dark.trim()) {
-      zip.addFile(THEME_PATHS.customDark, Buffer.from(customCss.dark, "utf8"));
+    if (packedDark.trim()) {
+      zip.addFile(THEME_PATHS.customDark, Buffer.from(packedDark, "utf8"));
     }
 
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify(manifest, null, 2), "utf8"));
@@ -408,29 +534,7 @@ export const themeService = {
    * which is the point of having merged them.
    */
   async importTheme(fileBuffer: Buffer, userId: string): Promise<ImportReport> {
-    let zip: AdmZip;
-    try {
-      zip = new AdmZip(fileBuffer);
-    } catch {
-      throw themeError("Not a readable .nvtheme archive");
-    }
-
-    const manifestEntry = zip.getEntry(THEME_PATHS.manifest);
-    if (!manifestEntry) throw themeError(`Missing ${THEME_PATHS.manifest}`);
-
-    const manifestText = readText(manifestEntry, THEME_PATHS.manifest);
-    let raw: unknown;
-    try {
-      raw = JSON.parse(manifestText);
-    } catch {
-      throw themeError("manifest.json is not valid JSON");
-    }
-
-    const parsedManifest = themeManifestSchema.safeParse(adoptStylePack(raw, zip));
-    if (!parsedManifest.success) {
-      throw themeError(`Invalid manifest: ${issueList(parsedManifest.error)}`);
-    }
-    const manifest = parsedManifest.data;
+    const { zip, manifest } = readManifest(fileBuffer);
     assertCompatible(manifest);
     const previous = await appearanceService.getInstalledTheme();
 
@@ -552,18 +656,20 @@ export const themeService = {
     };
     const customCss = { light: readCss(THEME_PATHS.customLight), dark: readCss(THEME_PATHS.customDark) };
     const hasCustomCss = !!(customCss.light.trim() || customCss.dark.trim());
-    for (const [theme, css] of Object.entries(customCss)) {
-      if (!css.trim()) continue;
-      try {
-        // map:false — never let a /*# sourceMappingURL */ comment in an uploaded
-        // package make postcss resolve and read a file off disk (GHSA postcss #42/#57).
-        postcss.parse(css, { map: false });
-      } catch (err) {
-        throw themeError(`styles/custom-${theme}.css has a syntax error: ${err instanceof Error ? err.message : "invalid CSS"}`);
-      }
-    }
 
     const assets = await stageAssets(zip);
+
+    /**
+     * A stranger's stylesheet, checked before a single byte is written.
+     *
+     * It runs here rather than after the assets are saved because a package that must
+     * be refused has to be refused while refusing it is still free — the same
+     * all-or-nothing rule the layouts and tokens follow. That is also why it takes the
+     * package's asset NAMES: the paths they will be stored at do not exist yet.
+     */
+    const packAssets = new Set(assets.map((a) => a.packName));
+    assertThemeCssSafe(customCss.light, THEME_PATHS.customLight, packAssets);
+    assertThemeCssSafe(customCss.dark,  THEME_PATHS.customDark,  packAssets);
 
     if (Object.keys(documents).length === 0 && !tokens && !hasCustomCss) {
       throw themeError("Package contains no layouts and no styles");
@@ -622,10 +728,44 @@ export const themeService = {
     const replaced = previous
       ? { id: String(previous.id ?? ""), name: String(previous.name ?? ""), version: String(previous.version ?? "") }
       : null;
-    await appearanceService.setInstalledTheme(manifest as unknown as Record<string, unknown>);
-    // Custom CSS has no draft of its own — the console edits it live — so it applies
-    // immediately. Reported rather than hidden.
-    if (hasCustomCss) await appearanceService.saveCustomCss(customCss);
+
+    /**
+     * The stored manifest points at where the preview image actually landed, not at
+     * where it sat inside the zip.
+     *
+     * ⚠ Deliberate asymmetry: in a PACKAGE `screenshot` is package-relative
+     * (`assets/screenshot.png`), and in the INSTALLED record it is this install's
+     * upload path — the same rewrite a document's image reference gets three
+     * paragraphs up, and for the same reason. Anything reading the installed theme is
+     * about to render the image, and `assets/screenshot.png` resolves to nothing.
+     * A package that names a file it does not carry keeps its value untouched rather
+     * than being blanked: it may be pointing at a CDN, which is the one case where the
+     * author's own path is still the right one.
+     */
+    const shot = manifest.screenshot ? assetPaths.get(manifest.screenshot) : undefined;
+    const installedManifest = { ...manifest, ...(shot ? { screenshot: shot } : {}) };
+    await appearanceService.setInstalledTheme(installedManifest as unknown as Record<string, unknown>);
+
+    /**
+     * The stylesheet goes to the THEME layer, staged — the same treatment as the tokens
+     * three lines up, and for the same reason.
+     *
+     * It used to call `saveCustomCss`, which is the ADMIN's stylesheet: importing a
+     * theme destroyed whatever CSS the admin had written, with no baseline recorded and
+     * nowhere to recover it from. A package carrying only a light stylesheet blanked
+     * their dark one too, since both keys were always written together.
+     *
+     * `url(assets/…)` is rewritten to where the assets actually landed. Nothing did this
+     * before, so every image a theme shipped through its stylesheet resolved against
+     * `/api/appearance/css` and 404'd.
+     */
+    if (hasCustomCss) {
+      const rewrite = (css: string) => rewriteThemeCssUrls(css, (ref) => assetPaths.get(ref));
+      await appearanceService.saveThemeCustomCss({
+        light: rewrite(customCss.light),
+        dark:  rewrite(customCss.dark),
+      });
+    }
 
     return {
       manifest,

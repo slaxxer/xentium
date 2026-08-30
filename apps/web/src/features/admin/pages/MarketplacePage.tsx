@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEnvelope, faMagnifyingGlass,
   faChartBar, faShield, faKey, faCheck, faLock,
-  faFlask, faPuzzlePiece, faShieldHalved,
+  faFlask, faPuzzlePiece, faShieldHalved, faPalette, faImage,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
@@ -15,8 +15,11 @@ import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
+type ProductKind = "plugin" | "theme";
+
 interface MarketplacePlugin {
   id:              string;
+  kind:            ProductKind;
   name:            string;
   description:     string;
   priceCents:      number;
@@ -24,6 +27,9 @@ interface MarketplacePlugin {
   latestVersion:   string | null;
   vendor:          string;
   licenseRequired: boolean;
+  /** A theme's own screenshot, served BY the marketplace as an absolute URL.
+   *  Null for plugins and for themes whose package shipped none. */
+  screenshot?:     string | null;
   /** The marketplace's answer, present when an account is connected. It knows
    *  about a purchase made a minute ago; the entitlement JWT only refreshes
    *  daily, so it does not. */
@@ -43,6 +49,12 @@ interface MarketplaceConnection {
 interface InstalledPlugin {
   id:     string;
   status: string;
+}
+
+/** A site runs at most ONE theme, so "what is installed" is a single manifest
+ *  rather than the list the plugin grid works from. */
+interface InstalledTheme {
+  manifest: { id: string; name: string; version: string } | null;
 }
 
 interface License {
@@ -93,6 +105,10 @@ export function MarketplacePage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  // Which half of the catalogue is on screen. Two grids rather than one mixed
+  // one: a plugin card asks "is it enabled", a theme card asks "is it the look
+  // this site is wearing", and the two questions have no shared answer.
+  const [kind, setKind] = useState<ProductKind>("plugin");
 
   // The catalogue searches server-side, so the term belongs in the request, not
   // in a filter over what happened to arrive. Debounced so typing does not fire
@@ -102,9 +118,10 @@ export function MarketplacePage() {
     const id = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(id);
   }, [search]);
-  // A new term restarts at page 1 — staying on page 3 of the previous result
-  // set shows an empty grid and looks like "no matches".
-  useEffect(() => { setPage(1); }, [debouncedSearch]);
+  // A new term — or a new tab — restarts at page 1. Staying on page 3 of the
+  // previous result set shows an empty grid and looks like "no matches", and
+  // switching to Themes on page 3 of the plugins is the same bug.
+  useEffect(() => { setPage(1); }, [debouncedSearch, kind]);
 
   // Direct install (§16.2): the server authorizes at the chokepoint, fetches +
   // sha256-verifies the artifact, and runs the normal intake. Lands disabled.
@@ -115,7 +132,7 @@ export function MarketplacePage() {
     mutationFn: async (p: MarketplacePlugin) => {
       const { ok } = await runStreamedJob(
         "/admin/marketplace/install",
-        { pluginId: p.id, version: p.latestVersion },
+        { pluginId: p.id, version: p.latestVersion, kind: p.kind },
         {
           icon:         "update",
           title:        t("marketplace.progressTitle", { name: p.name }),
@@ -124,7 +141,13 @@ export function MarketplacePage() {
             const label = t(`marketplace.phase.${phase}`, { defaultValue: t("marketplace.phase.working") });
             return message ? `${label} ${message}` : label;
           },
-          successMessage: () => t("marketplace.progressDone", { name: p.name }),
+          // A theme lands in the DRAFT — importing one rewrites the arrangement of
+          // every page at once, which is exactly the change staging exists for. An
+          // admin who installs a theme and sees the site unchanged is looking at
+          // correct behaviour, and has to be told so here.
+          successMessage: () => p.kind === "theme"
+            ? t("marketplace.themeStaged", { name: p.name })
+            : t("marketplace.progressDone", { name: p.name }),
           failureMessage: (final, err) =>
             (final?.message as string) ??
             (err instanceof Error ? err.message : t("marketplace.progressFailed")),
@@ -137,15 +160,29 @@ export function MarketplacePage() {
       // The dialog already reported the outcome; no toast on top of it.
       void queryClient.invalidateQueries({ queryKey: ["acp-installed-plugins"] });
       void queryClient.invalidateQueries({ queryKey: ["acp-marketplace-updates"] });
+      // Everything a theme import touches — the same set the Themes page
+      // invalidates after a manual upload, because it is the same import.
+      void queryClient.invalidateQueries({ queryKey: ["acp-theme-installed"] });
+      void queryClient.invalidateQueries({ queryKey: ["acp-layout"] });
+      void queryClient.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      void queryClient.invalidateQueries({ queryKey: ["acp-layout-templates"] });
+      void queryClient.invalidateQueries({ queryKey: ["acp-tokens"] });
     },
     // Failure is shown in the dialog too, so nothing to add here.
     onError: () => {},
   });
 
   const { data: market }    = useQuery<MarketplaceResponse>({
-    queryKey: ["acp-marketplace", page, debouncedSearch],
-    queryFn:  () => api.get(`/admin/marketplace/plugins?page=${page}${debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""}`),
+    queryKey: ["acp-marketplace", kind, page, debouncedSearch],
+    queryFn:  () => api.get(`/admin/marketplace/plugins?kind=${kind}&page=${page}${debouncedSearch ? `&q=${encodeURIComponent(debouncedSearch)}` : ""}`),
     placeholderData: (prev) => prev,
+  });
+  // Only while the Themes tab is open: on the plugins tab it is a request whose
+  // answer nothing on screen would use.
+  const { data: theme }     = useQuery<InstalledTheme>({
+    queryKey: ["acp-theme-installed"],
+    queryFn:  () => api.get("/admin/themes/installed"),
+    enabled:  kind === "theme",
   });
   const { data: installed } = useQuery<InstalledPlugin[]>({ queryKey: ["acp-installed-plugins"], queryFn: () => api.get("/plugins") });
   const { data: license }   = useQuery<License | null>({ queryKey: ["acp-license"], queryFn: () => api.get("/admin/license") });
@@ -205,21 +242,54 @@ export function MarketplacePage() {
         </button>
       </div>
 
+      {/* Two halves of one catalogue. The core's tab bar, not a bespoke control —
+          the ACP has exactly one of these and this page is not the exception. */}
+      <div className="acp-tab-bar" style={{ marginBottom: 20 }}>
+        {(["plugin", "theme"] as const).map((k) => (
+          <button
+            key={k}
+            type="button"
+            className={`acp-tab${kind === k ? " acp-tab--active" : ""}`}
+            onClick={() => setKind(k)}
+          >
+            <FontAwesomeIcon icon={k === "theme" ? faPalette : faPuzzlePiece} />{" "}
+            {t(`marketplace.tab.${k}`)}
+          </button>
+        ))}
+      </div>
+
       <div style={{ display:"flex", gap:10, marginBottom:20 }}>
         <input
           className="acp-input"
-          placeholder={t("marketplace.searchPlaceholder")}
+          placeholder={t(kind === "theme" ? "marketplace.searchThemesPlaceholder" : "marketplace.searchPlaceholder")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ width:280 }}
         />
       </div>
 
+      {/* Said once above the grid rather than on every card: a theme is staged,
+          not applied, and the admin has somewhere to go to finish the job. */}
+      {kind === "theme" && (
+        <p style={{ fontSize:12.5, color:"var(--c-fg-subtle)", margin:"-8px 0 18px", maxWidth:"80ch" }}>
+          {t("marketplace.themeDraftNote")}{" "}
+          <button type="button" onClick={() => navigate("/admin/themes")}
+            style={{ background:"none", border:"none", padding:0, color:"var(--c-accent)", fontWeight:700, textDecoration:"underline", cursor:"pointer", font:"inherit" }}>
+            {t("marketplace.themeGoManage")}
+          </button>
+        </p>
+      )}
+
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))", gap:16 }}>
         {plugins.map((p) => {
-          const icon      = getPluginIcon(p.id);
-          const color     = getPluginColor(p.id);
-          const instStatus = installedMap[p.id];
+          const isTheme   = p.kind === "theme";
+          const icon      = isTheme ? faPalette : getPluginIcon(p.id);
+          const color     = isTheme ? "var(--c-accent)" : getPluginColor(p.id);
+          // A site wears one theme, so "installed" is an identity check against the
+          // one manifest — not a lookup in the plugin map, which has no theme in it.
+          const instStatus = isTheme
+            ? (theme?.manifest?.id === p.id ? "enabled" : undefined)
+            : installedMap[p.id];
           // Ownership from the marketplace wins when it answered; the local
           // entitlement JWT is the offline fallback. A plugin bought two
           // minutes ago is owned but not yet in any entitlement.
@@ -230,12 +300,37 @@ export function MarketplacePage() {
           const installable = (entitled || !p.licenseRequired) && !!p.latestVersion;
 
           return (
-            <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1 }}>
+            <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1, overflow:"hidden" }}>
               {locked && (
-                <div style={{ position:"absolute", top:14, right:14 }}>
+                <div style={{ position:"absolute", top:14, right:14, zIndex:1 }}>
                   <FontAwesomeIcon icon={faLock} style={{ color:"var(--c-fg-muted)", fontSize:14 }} />
                 </div>
               )}
+
+              {/* A theme is bought for how it looks, so its screenshot leads the
+                  card. A theme whose package shipped none gets a plain placeholder
+                  rather than nothing — a grid where some cards have a picture and
+                  others start with text reads as a loading failure. */}
+              {isTheme && (
+                p.screenshot ? (
+                  <img
+                    src={p.screenshot}
+                    alt=""
+                    loading="lazy"
+                    // ⚠ `maxWidth: none` is load-bearing: the app's global `img`
+                    // rule caps every image at `max-width: 100%`, which clamps a
+                    // full-bleed width straight back to the padded content box —
+                    // silently, and only visibly as an image that is inset on one
+                    // side. The negative margins alone do not survive it.
+                    style={{ display:"block", width:"calc(100% + 44px)", maxWidth:"none", margin:"-22px -22px 14px", aspectRatio:"16 / 10", objectFit:"cover", background:"var(--c-surface)" }}
+                  />
+                ) : (
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"calc(100% + 44px)", margin:"-22px -22px 14px", aspectRatio:"16 / 10", background:"var(--c-surface)", borderBottom:"1px solid var(--c-border)", color:"var(--c-fg-subtle)", fontSize:22 }}>
+                    <FontAwesomeIcon icon={faImage} />
+                  </div>
+                )
+              )}
+
               <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12 }}>
                 <div style={{ width:44, height:44, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color }}>
                   <FontAwesomeIcon icon={icon} />
@@ -252,7 +347,11 @@ export function MarketplacePage() {
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                 {instStatus === "enabled" ? (
                   <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
-                    <FontAwesomeIcon icon={faCheck} /> {t("marketplace.enabled")}
+                    {/* For a theme this says "installed", not "enabled": it may be
+                        staged in the draft and not live yet, and calling that
+                        enabled would be a claim about the public site that is
+                        false until someone publishes. */}
+                    <FontAwesomeIcon icon={faCheck} /> {t(isTheme ? "marketplace.themeInstalled" : "marketplace.enabled")}
                   </span>
                 ) : instStatus ? (
                   <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/installed")}>
