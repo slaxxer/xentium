@@ -319,6 +319,31 @@ export function updateBlockVariant(
 }
 
 /**
+ * Set or clear a block's custom CSS class handle.
+ *
+ * Same absence rule as the variant and the audience: an empty handle is no field at
+ * all, so adding a class and removing it again leaves the document byte-identical and
+ * "pending" does not light up over a round trip that changed nothing.
+ *
+ * Whitespace is normalised here rather than at the input, because the same handle
+ * typed as `nav-tile ` and `nav-tile` must produce one document, not two that compare
+ * unequal.
+ */
+export function updateBlockClassName(
+  regions: Regions,
+  id: string,
+  className: string | undefined,
+): Regions {
+  if (!findNode(regions, id)) return regions;
+  const cleaned = className?.trim().replace(/\s+/g, " ");
+  const next = clone(regions);
+  const { node } = findNode(next, id)!;
+  if (!cleaned) delete node.className;
+  else node.className = cleaned;
+  return next;
+}
+
+/**
  * Whether a block may be dropped into a container, ignoring what the container
  * accepts — that part is the registry's call, not the tree's.
  *

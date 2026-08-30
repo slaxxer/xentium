@@ -14,6 +14,74 @@
   color: var(--menu-fg);
 }
 
+/* ── Public site chrome ────────────────────────────── */
+/* The `<header>` wrapping an optional band, the nav strip, and another optional
+   band. It paints nothing itself — `.pub-nav` keeps its own background, and a band
+   is painted by the `section` inside it.
+
+   ⚠ `display: contents` is LOAD-BEARING, not tidiness. A `position: sticky` element
+   is constrained by its PARENT's box: giving `.pub-nav` a real wrapper meant it
+   stuck only until this 116px header scrolled past, and the navbar then travelled
+   off the top of every page on the site. Dissolving the box puts the bands and the
+   nav back as direct children of `.app-layout`, so sticky spans the whole page
+   exactly as it did before the element existed — while the `<header>` stays in the
+   DOM for semantics.
+
+   The same reason the region wrappers and the variant wrapper use it. */
+.pub-head {
+  display: contents;
+
+  /**
+   * The header REGION is dissolved too, for both of the reasons its wrapper is.
+   *
+   * `.nv-region` is a centred content column — right for a page's regions, wrong for
+   * site chrome, which spans the viewport and lets the navbar's own `__inner` do the
+   * centring. Left as a column, the whole header rendered inside a 1240px box with
+   * the masthead's background stopping at its edges.
+   *
+   * ⚠ And it is a BOX, which is what `position: sticky` is constrained by: the nav
+   * strip would stick only until the header scrolled past — the same regression the
+   * `<header>` wrapper caused, one level down. Dissolving it puts the masthead and
+   * the navbar back as direct children of `.app-layout`.
+   *
+   * The `<header>` element and its landmark survive; only the box goes.
+   */
+  > .nv-region--header {
+    display: contents;
+  }
+}
+
+/* The logo block's own styles, at TOP LEVEL rather than nested inside `.pub-nav`.
+   It is placeable in the nav strip and anywhere else in the header — rules scoped to
+   the nav simply did not apply in a masthead, where the block rendered as a bare
+   `inline` anchor whose line box spanned the whole band, making the entire masthead
+   a link to the home page. */
+.pub-nav__logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.85; }
+}
+
+.pub-nav__logo-img {
+  display: block;
+  height: var(--nv-logo-h, 32px);
+  max-width: var(--nv-logo-max, 160px);
+  width: auto;
+  object-fit: contain;
+}
+
+/* A masthead's logo is the masthead's, not the nav strip's — the nav's 32px stays
+   the default and a section in the header asks for bigger. An admin who wants another
+   size gives the block a `className` and sets `--nv-logo-h` in the CSS console. */
+.nv-section--tall {
+  --nv-logo-h:   64px;
+  --nv-logo-max: 320px;
+}
+
 /* ── Public Navbar ─────────────────────────────────── */
 .pub-nav {
   position: sticky;
@@ -35,6 +103,30 @@
     height: 100%;
 
     @media (max-width: 640px) { padding: 0 var(--sp-4); }
+
+    /**
+     * The row's three ends, from `align` on the node rather than from three regions.
+     *
+     * `margin-inline-start: auto` on the FIRST right-aligned child pushes it and
+     * everything after it to the end — one rule, no spacer element, and it degrades
+     * correctly when nothing is right-aligned. The centre uses the same trick from
+     * both sides.
+     *
+     * ⚠ These target the block WRAPPER, which is `display: contents` and generates
+     * no box — so the margin has to land on the block's own element instead. The
+     * wrapper is transparent to flex layout: its child IS the flex item, which is
+     * why the selector reaches through it. This is the one place a `>` is allowed
+     * against a wrapper, because it is the navbar styling its OWN children.
+     */
+    /* The FIRST right-aligned child — "a right one immediately preceded by a
+       non-right one". `:first-of-type` cannot express this: every wrapper is a
+       `div`, so it matches the first child of the row regardless of alignment,
+       which is the logo. */
+    > :not([data-nv-align="right"]) + [data-nv-align="right"] > * {
+      margin-inline-start: auto;
+    }
+
+    > [data-nv-align="center"] > * { margin-inline: auto; }
   }
 
   /* Composable zones (ADR-0005 Amendment 1). The navbar's arrangement comes from
@@ -52,19 +144,23 @@
     > .nv-region {
       display: contents;
     }
+
+    /* …except the editor's empty-region placeholder, which needs to keep its box
+       to be visible and clickable. Dissolved by the rule above it would render as
+       a bare word floating between the nav items. Sized down to a chip, because a
+       nav zone is 68px tall and the standalone placeholder's 56px would push the
+       strip out of shape. */
+    > .nv-region--empty {
+      display: inline-flex;
+      min-height: 0;
+      margin-block: 0;
+      padding: 4px 10px;
+    }
   }
 
   &__zone--center { justify-content: center; }
 
   /* Logo — gradient logomark + wordmark (Hearth) */
-  &__logo {
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    flex-shrink: 0;
-    transition: opacity 0.15s;
-    &:hover { opacity: 0.85; }
-  }
 
   &__logomark {
     width: 34px;

@@ -1,3 +1,5 @@
+import path from "node:path";
+import { randomUUID } from "node:crypto";
 import type { Request, RequestHandler } from "express";
 import {
   listTemplates,
@@ -5,6 +7,7 @@ import {
   type LayoutSelector,
 } from "@nodevo/contracts";
 import { layoutService } from "./layout.service.js";
+import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import {
   templateKeyParamSchema,
   variantQuerySchema,
@@ -112,5 +115,27 @@ export const layoutController = {
   reset: (async (req, res) => {
     await layoutService.reset(selectorOf(req));
     res.json({ ok: true });
+  }) as RequestHandler,
+
+  /**
+   * An image for a block that takes one — today the `section` background an admin
+   * places behind a masthead.
+   *
+   * Its own directory (`layouts/`) rather than a page's or an article's, because it
+   * belongs to the site's STRUCTURE and outlives any one piece of content: deleting
+   * the page a background was first uploaded from must not blank the site header.
+   *
+   * The filename is random, not the admin's. Two admins uploading `header.jpg` a
+   * month apart must not silently replace each other's band, and the original name
+   * is attacker-controlled text we have no reason to keep. The extension comes from
+   * the magic-byte sniff the upload middleware already did, never from the name.
+   */
+  uploadImage: (async (req, res) => {
+    const file = req.file!;
+    const name = `${randomUUID()}.${file.detectedExt ?? "bin"}`;
+    const relPath = await storage.save(path.join("layouts"), name, file.buffer);
+    // The stored PATH is what a document holds — `resolveImageSource` turns it into
+    // a URL, and the theme exporter needs the path to find the bytes on disk.
+    res.status(201).json({ path: relPath, url: storage.publicUrl(relPath) });
   }) as RequestHandler,
 };

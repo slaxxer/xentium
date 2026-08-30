@@ -34,6 +34,31 @@ const CHROME_FOOTER = ["chrome.footer"];
 
 // ── Header ──────────────────────────────────────────────────────────────────
 
+/**
+ * The nav strip — a row, and a container whose children are what is in it.
+ *
+ * It renders the markup `PubNav` used to render inline, so the shipped default looks
+ * exactly as it did when the navbar was a template with three regions. What changed
+ * is WHERE the arrangement lives: a child's `align` says which end of the row it sits
+ * at, replacing region membership.
+ *
+ * ⚠ The children are rendered by the layout renderer, not by this component — it
+ * receives them already wrapped, so a child's `align` cannot be read here. The row is
+ * laid out in CSS from `[data-nv-align]`, which `RenderNode` stamps on the wrapper;
+ * that also keeps a plugin's block alignable without it knowing anything about us.
+ */
+registerBlock({
+  type:      "navbar",
+  schema:    blockPropSchemas.navbar,
+  container: true,
+  editorMeta: { label: "Navbar", category: "structure", allowedTemplates: CHROME_HEADER },
+  component: ({ children }: BlockProps<Record<string, never>>) => (
+    <nav className="pub-nav">
+      <div className="pub-nav__inner">{children}</div>
+    </nav>
+  ),
+});
+
 registerBlock({
   type:   "logo",
   schema: blockPropSchemas.logo,

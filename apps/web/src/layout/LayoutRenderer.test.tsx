@@ -397,15 +397,16 @@ describe("LayoutRenderer — region order", () => {
     expect(ids).toEqual(["h", "m", "a", "f"]);
   });
 
-  it("uses the six declared regions of article.detail in order", () => {
+  it("uses the four declared landmarks of article.detail in order", () => {
     render(<LayoutRenderer templateKey="article.detail" document={{
       templateKey: "article.detail", schemaVersion: 1,
-      regions: {
-        main: [n("m", "t.leaf")], afterBody: [n("af", "t.leaf")],
-        header: [n("h", "t.leaf")], beforeBody: [n("bf", "t.leaf")],
-      },
+      regions: { main: [n("m", "t.leaf")], header: [n("h", "t.leaf")] },
     }} />);
-    expect(domOrder()).toEqual(["header", "beforeBody", "main", "afterBody"]);
+    // All four, including the two this document leaves empty: in the editor an empty
+    // region renders a placeholder so it can be seen, clicked and dropped into — a
+    // region that held nothing previously had nowhere to click at all. On the live
+    // site it still renders nothing (asserted below, without `__layout=draft`).
+    expect(domOrder()).toEqual(["header", "main", "aside", "footer"]);
   });
 
   it("still honours an explicit regions prop", () => {
@@ -428,5 +429,70 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
     } finally {
       window.history.replaceState({}, "", `/${search}`);
     }
+  });
+
+  /**
+   * The empty-region placeholder is editor furniture. On the live site an empty
+   * region must render NOTHING — reserving 56px of dashed outline above every page
+   * for a region nobody filled would be a visible defect on every visitor's screen.
+   */
+  it("renders no placeholder for an empty region when not previewing", () => {
+    const empty = { templateKey: "members", schemaVersion: 1, regions: {} } as never;
+    const search = window.location.search;
+    window.history.replaceState({}, "", "/");
+    try {
+      render(<LayoutRegion document={empty} region="main" />);
+      expect(document.querySelectorAll(".nv-region--empty")).toHaveLength(0);
+      expect(document.querySelectorAll("[data-nv-empty]")).toHaveLength(0);
+    } finally {
+      window.history.replaceState({}, "", `/${search}`);
+    }
+  });
+
+  it("DOES render one in the editor, carrying the region it would drop into", () => {
+    const empty = { templateKey: "members", schemaVersion: 1, regions: {} } as never;
+    render(<LayoutRegion document={empty} region="main" />);
+    const ph = document.querySelector(".nv-region--empty") as HTMLElement;
+    expect(ph).not.toBeNull();
+    // `data-nv-region` makes it a legal drop target for DROP_PARENT; `data-nv-empty`
+    // is what the bridge reads to ask the editor to open the add picker.
+    expect(ph.dataset.nvRegion).toBe("main");
+    expect(ph.dataset.nvEmpty).toBe("main");
+  });
+});
+
+/**
+ * Regions are HTML5 landmarks, not divs.
+ *
+ * A region named `aside` that emits a `<div>` is a landmark the page promised and did
+ * not deliver — screen readers navigate by landmark and search engines read them.
+ */
+describe("LayoutRenderer — regions are landmarks", () => {
+  const withOne = (region: string) => ({
+    templateKey: "members", schemaVersion: 1,
+    regions: { [region]: [n("x", "t.leaf")] },
+  }) as never;
+
+  it("renders header, aside and footer as their own elements", () => {
+    for (const [region, tag] of [["header", "HEADER"], ["aside", "ASIDE"], ["footer", "FOOTER"]]) {
+      cleanup();
+      render(<LayoutRegion document={withOne(region!)} region={region!} />);
+      expect(document.querySelector("[data-nv-region]")!.tagName).toBe(tag);
+    }
+  });
+
+  /**
+   * ⚠ `main` stays a div. `AppLayout` already wraps the page in `<main>`, and a
+   * document may contain exactly ONE — a second here would be invalid HTML on every
+   * page of the site.
+   */
+  it("leaves main as a div, because the page already has the one <main>", () => {
+    render(<LayoutRegion document={withOne("main")} region="main" />);
+    expect(document.querySelector("[data-nv-region]")!.tagName).toBe("DIV");
+  });
+
+  it("gives an empty region's placeholder the same element", () => {
+    render(<LayoutRegion document={{ templateKey: "members", schemaVersion: 1, regions: {} } as never} region="aside" />);
+    expect(document.querySelector(".nv-region--empty")!.tagName).toBe("ASIDE");
   });
 });
