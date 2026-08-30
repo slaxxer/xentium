@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { CorePermissions } from "@nodevo/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
+import { uploadSingle } from "../../shared/middleware/upload.js";
 import { layoutController } from "./layout.controller.js";
 
 /**
@@ -25,6 +26,16 @@ adminLayoutRouter.post("/:templateKey/reset",    guard, layoutController.reset);
 // Inheritance: back to what the installed theme ships, as distinct from `/reset`, which
 // goes back to the CODE default. With a theme installed those are two different documents.
 adminLayoutRouter.post("/:templateKey/revert-theme", guard, layoutController.revertToTheme);
+
+/**
+ * An image a block references — the `section` background, today.
+ *
+ * Not under `/:templateKey`: the file is not owned by one template. The same
+ * background can sit in the chrome and on a landing page, and an upload that lived
+ * under whichever template happened to be open when it was chosen would be a path
+ * that lies about what it belongs to.
+ */
+adminLayoutRouter.post("/images", guard, ...uploadSingle("LAYOUT_IMAGE", "file"), layoutController.uploadImage);
 
 /**
  * Public: the published documents the frontend renders. Unauthenticated —

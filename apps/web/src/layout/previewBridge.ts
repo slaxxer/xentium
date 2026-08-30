@@ -59,7 +59,9 @@ type Msg =
       index: number;
     }
   /** A keystroke this document swallowed that belongs to the editor around it. */
-  | { source: "nv-preview"; type: "shortcut"; action: "undo" | "redo" };
+  | { source: "nv-preview"; type: "shortcut"; action: "undo" | "redo" }
+  /** An empty region was clicked — open the add-block picker for it. */
+  | { source: "nv-preview"; type: "addTo"; region: string };
 
 const post = (msg: Msg) => window.parent?.postMessage(msg, window.location.origin);
 
@@ -198,6 +200,16 @@ export function installPreviewBridge(): () => void {
 
   // ── click to select ──────────────────────────────────────────────────────
   const onClick = (e: MouseEvent) => {
+    // An empty region's placeholder has no block to select — clicking it means
+    // "put something here", which is the only thing it could mean.
+    const empty = (e.target as Element | null)?.closest?.("[data-nv-empty]") as HTMLElement | null;
+    if (empty?.dataset.nvEmpty) {
+      e.preventDefault();
+      e.stopPropagation();
+      post({ source: "nv-preview", type: "addTo", region: empty.dataset.nvEmpty });
+      return;
+    }
+
     const w = wrapperFrom(e.target);
     if (!w?.dataset.nvBlock) return;
     // Selecting must not also follow a link or submit something in the preview.

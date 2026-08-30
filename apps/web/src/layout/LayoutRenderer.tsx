@@ -31,6 +31,7 @@ import {
   isRestricted,
   parseLayoutDocument,
   regionsFor,
+  blockTypeClass,
   variantClass,
   type AudienceView,
   type BlockNode,
@@ -204,20 +205,62 @@ function RenderNode({
    */
   const variant = node.variant ? variantClass(node.variant) : undefined;
 
-  // In the editor preview each block needs identity in the DOM so hovering,
-  // selecting and dragging can address it. The same `display: contents` wrapper
-  // carries both concerns, so the preview's DOM matches the live page's shape.
-  // Outside the preview a wrapper exists only when there is a variant to apply.
+  /**
+   * The designer's own handle rides the SAME wrapper. It is deliberately not passed
+   * into the block: a class threaded through 52 components would be honoured by core
+   * blocks and silently ignored by every plugin block a theme wants to skin, and the
+   * uniform target is the whole point of giving custom CSS something to select.
+   *
+   * So the handle is styled THROUGH — `.nav-tile > *`, `.nav-tile .nv-image` — since
+   * the wrapper paints nothing. Descendant and `:hover` selectors behave normally,
+   * because `:hover` matches an ancestor of the hovered box whether or not that
+   * ancestor generates one.
+   */
+  const custom = node.className?.trim() || undefined;
+
+  /**
+   * The type class, on every block, always. It is the only hook a downloaded theme has
+   * for the ~50 blocks that render into their parent's markup and emit no root class of
+   * their own, and the only one that works without an admin adding a handle by hand.
+   *
+   * Making it unconditional is also what finally makes the sentence below true: the
+   * wrapper used to exist for every block in the preview but only for a STYLED block on
+   * the live site, so the two DOMs differed exactly where a theme author was least
+   * likely to notice — CSS written while looking at the preview could break once
+   * published.
+   *
+   * ⚠ Selectors match the DOM, not the box tree, so this wrapper sits between a
+   * container block and its children for CSS purposes even though it generates no box.
+   * A stylesheet may therefore never reach across a block boundary with `>`, `+` or
+   * `~`. Guarded by `classContract.test.tsx`.
+   */
+  const wrapperClass = [blockTypeClass(node.type), variant, custom]
+    .filter(Boolean).join(' ');
+
+  /**
+   * Which end of a row this block sits at, on the wrapper so a ROW can lay it out.
+   *
+   * On the wrapper rather than passed to the block for the same reason `variant` and
+   * `className` are: a navbar is exactly where a plugin's block wants to be
+   * placeable, and a prop threaded through 52 components would be honoured by core
+   * and ignored by everything else. `navbar`'s CSS reads `[data-nv-align]`.
+   *
+   * Absent when unset — the attribute is never written empty, so "no alignment" and
+   * "aligned to the start" stay the same thing in the DOM as they are in the document.
+   */
+  const align = node.align ? { "data-nv-align": node.align } : {};
+
+  // In the editor preview each block ALSO needs identity in the DOM so hovering,
+  // selecting and dragging can address it — the data attributes below.
   if (!isEditorPreview()) {
-    return variant
-      ? <div className={variant} style={CONTENTS}>{rendered}</div>
-      : rendered;
+    return <div className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
   }
   return (
     <div
-      className={variant}
+      className={wrapperClass}
       data-nv-block={node.id}
       data-nv-type={node.type}
+      {...align}
       // Parentage is stamped rather than derived: a container's real element sits
       // BETWEEN its wrapper and its children's wrappers, so `:scope >` finds
       // nothing and an ancestor walk has to know which elements to skip. A flat
@@ -239,6 +282,42 @@ function RenderNode({
 
 // ── Region + document ───────────────────────────────────────────────────────
 
+/**
+ * The HTML element a region renders as.
+ *
+ * A region named `aside` that emits a `<div>` is a landmark the page promised and did
+ * not deliver: screen-reader users navigate by landmark, and search engines read them.
+ * The name already says what the thing IS, so it should be that element.
+ *
+ * ⚠ `main` is deliberately absent. `AppLayout` already wraps the page in
+ * `<main className="app-main">`, and a document may contain exactly ONE `<main>` —
+ * emitting a second here would be invalid HTML on every page of the site.
+ *
+ * ⚠ Chrome regions are absent too, and are already inside the right landmark:
+ * `chrome.header`'s zones sit in `<header>`/`<nav>`, `chrome.footer`'s in `<footer>`.
+ * Nesting a second one would be legal and meaningless.
+ */
+const REGION_ELEMENT: Record<string, "header" | "aside" | "footer"> = {
+  header: "header",
+  aside:  "aside",
+  footer: "footer",
+};
+
+/**
+ * "bandAbove" → "Band above". A local humanise rather than a translation lookup:
+ * this renders inside the PREVIEW, which is the public site with the editor's bridge
+ * injected, and the site does not load the ACP's translation namespace. Reaching for
+ * one would resolve to the raw key on the one surface that shows it.
+ */
+function humaniseRegion(region: string): string {
+  // `main` is the KEY and `<main>` is the element, but "Body" is what it is called
+  // everywhere an admin sees it — the editor's tree says Body too. The key stays
+  // `main` because naming it `body` would fight the element it emits.
+  if (region === "main") return "Body";
+  const spaced = region.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1).toLowerCase();
+}
+
 export function LayoutRegion({
   document: doc,
   region,
@@ -251,21 +330,44 @@ export function LayoutRegion({
   const viewer = useBlockViewer();
   const previewAudience = usePreviewAudience();
   const nodes = doc.regions[region] ?? [];
-  if (nodes.length === 0) return null;
+
+  /**
+   * An empty region is invisible on the live site and VISIBLE in the editor.
+   *
+   * On the site that is obviously right — an empty region must not reserve space.
+   * In the editor it was the reason a masthead band could not be clicked at all:
+   * the band renders nothing until it holds something, so "the header" was a thing
+   * an admin could see in the tree, could not see on the page, and had nowhere to
+   * click. Every empty region had the same gap; the band just made it obvious.
+   *
+   * The placeholder carries `data-nv-region`, so it is already a legal drop target
+   * (`DROP_PARENT`), and clicking it asks the editor to open the add-block picker
+   * for this region.
+   */
+  if (nodes.length === 0) {
+    if (!isLayoutPreview()) return null;
+    const Empty = REGION_ELEMENT[region] ?? "div";
+    return (
+      <Empty className="nv-region nv-region--empty" data-nv-region={region} data-nv-empty={region}>
+        <span>{humaniseRegion(region)}</span>
+      </Empty>
+    );
+  }
   // The region owns the content column. Without it a bare block (one not wrapped
   // in a `section`) renders edge-to-edge while the page's own container stays
   // centred — blocks would otherwise each have to carry page layout, which is
   // how a block catalogue turns into a generic web builder.
+  const Tag = REGION_ELEMENT[region] ?? "div";
   return (
     <LayoutDocumentContext.Provider value={doc}>
-      <div className={`nv-region nv-region--${region}`} data-nv-region={region}>
+      <Tag className={`nv-region nv-region--${region}`} data-nv-region={region}>
         {nodes.map((node) => (
           <RenderNode
             key={node.id} node={node} context={context}
             region={region} parentId={null} viewer={viewer} previewAudience={previewAudience}
           />
         ))}
-      </div>
+      </Tag>
     </LayoutDocumentContext.Provider>
   );
 }

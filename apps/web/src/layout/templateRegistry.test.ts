@@ -50,7 +50,15 @@ describe("core templates", () => {
   });
 
   it("keep their declared regions and required blocks", () => {
-    expect(regionsFor("chrome.header")).toEqual(["left", "center", "right"]);
+    // The site header is ONE region, because the navbar is IN the header rather than
+    // beside it — it is a `navbar` block, so ordering a masthead against it is
+    // ordering blocks in a list.
+    expect(regionsFor("chrome.header")).toEqual(["header"]);
+    expect(regionsFor("chrome.footer")).toEqual(["footer"]);
+    // ⚠ ORDER is the contract, not just membership: this array is the render order
+    // AND the editor's Structure order, so a region that drifted would render in the
+    // wrong place while still reading correctly as a set.
+    expect(regionsFor("article.detail")).toEqual(["header", "main", "aside", "footer"]);
     expect(requiredBlocksFor("chrome.header")).toEqual(["logo", "userMenu"]);
     expect(requiredBlocksFor("home")).toBeUndefined();
   });

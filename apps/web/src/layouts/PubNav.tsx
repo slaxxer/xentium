@@ -227,10 +227,14 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   return (
     <NavLink to="/" className="pub-nav__logo">
       {branding?.navbarUrl ? (
+        /* Sized by CSS, not inline: the same block now sits in the nav strip AND in
+           a masthead band, and a hardcoded 32px made a 250px band render a logo the
+           size of a favicon. `--nv-logo-h` lets the context say how big, which is
+           also the codebase's own rule about visual values living in tokens. */
         <img
+          className="pub-nav__logo-img"
           src={branding.navbarUrl}
           alt={branding.logoText ?? "Home"}
-          style={{ height: 32, maxWidth: 160, objectFit: "contain", display: "block" }}
         />
       ) : (
         <>
@@ -337,30 +341,28 @@ export function NavPrimaryLinks() {
 }
 
 /**
- * The public navbar. Arrangement comes from the `chrome.header` layout document
- * (ADR-0005 Amendment 1), so an admin can move the logo, search, icons and the
- * account menu between the left / centre / right regions. The shipped default
- * reproduces the previous hardcoded order exactly, so nothing moves until
- * somebody moves it.
+ * The public site chrome: ONE region, which is the header.
+ *
+ * The navbar is a BLOCK in it (`navbar`), not a peer of it — a navbar is part of a
+ * header, which is what a header is. Everything else an admin puts up there is a
+ * block in the same list, so ordering a masthead above or below the nav strip is
+ * moving blocks, not choosing between purpose-built slots.
+ *
+ * This replaced `left`/`center`/`right` regions plus two `band*` regions I had added
+ * for a masthead. Which end of the strip a block sits at is now `align` on the node.
+ *
+ * ⚠ `<header>` is emitted by `LayoutRegion` (the region is named `header`), not here,
+ * so the landmark comes from the same place on every template. `.pub-head` only
+ * exists to dissolve its own box — see the SCSS: a real wrapper made the sticky
+ * navbar stick only until the header scrolled past.
  *
  * The ACP topbar is deliberately NOT composable — see the amendment.
  */
 export function PubNav() {
   const layout = useLayoutDocument("chrome.header");
   return (
-    <nav className="pub-nav">
-      <div className="pub-nav__inner">
-        <div className="pub-nav__zone pub-nav__zone--left">
-          <LayoutRegion document={layout} region="left" />
-        </div>
-        <div className="pub-nav__zone pub-nav__zone--center">
-          <LayoutRegion document={layout} region="center" />
-        </div>
-        <span className="pub-nav__spacer" />
-        <div className="pub-nav__zone pub-nav__actions">
-          <LayoutRegion document={layout} region="right" />
-        </div>
-      </div>
-    </nav>
+    <div className="pub-head">
+      <LayoutRegion document={layout} region="header" />
+    </div>
   );
 }
