@@ -3,6 +3,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { compareSemver } from "../../shared/utils/semver.js";
+import type { ProductKind } from "@nodevo/contracts";
 import type { MarketplaceListQuery } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceSource } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceWebUrl } from "../../core/license-engine/protocol-client.js";
@@ -12,6 +13,7 @@ import {
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { pluginService } from "../plugins/plugin.service.js";
+import { themeService } from "../themes/theme.service.js";
 import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
@@ -36,14 +38,21 @@ export class ArtifactError extends NodevoError {
 /**
  * Chokepoint: authorize the download for this site, stream the package (120s /
  * 50 MB cap, reporting byte progress), sha256-verify, and confirm the manifest id
- * matches the requested plugin. Reports coarse progress (authorizing → downloading
+ * matches the requested product. Reports coarse progress (authorizing → downloading
  * → verifying → validating, ~5..75%). Throws ArtifactError(status) on failure;
  * returns the verified buffer on success.
+ *
+ * `kind` picks which manifest reader runs at the validating step. Everything
+ * before it — the gate, the transfer, the checksum — is identical for both, which
+ * is why a theme download is this function with one branch rather than a second
+ * copy of it: the chokepoint is supposed to be ONE place.
  */
-async function downloadAndVerifyArtifact(pluginId: string, version: string, onProgress?: ProgressFn): Promise<Buffer> {
+async function downloadAndVerifyArtifact(
+  productId: string, version: string, kind: ProductKind, onProgress?: ProgressFn,
+): Promise<Buffer> {
   onProgress?.({ phase: "authorizing", percent: 5 });
   const authorized = await marketplaceSource.authorizeDownload({
-    pluginId, version,
+    pluginId: productId, version, kind,
     siteId:      await getSiteId(),
     domain:      await getSiteDomain(),
     environment: await resolveEnvironment(),
@@ -90,11 +99,13 @@ async function downloadAndVerifyArtifact(pluginId: string, version: string, onPr
   }
 
   onProgress?.({ phase: "validating", percent: 75 });
-  // Validate first so a mismatched package (manifest id ≠ requested plugin) is
-  // rejected before any install/update step touches the running instance.
-  const info = await pluginService.validateOnly(buffer);
-  if (info.id !== pluginId) {
-    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested plugin.`, 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
+  // Validate first so a mismatched package (manifest id ≠ requested product) is
+  // rejected before any install/import step touches the running instance.
+  const info = kind === "theme"
+    ? themeService.validateOnly(buffer)
+    : await pluginService.validateOnly(buffer);
+  if (info.id !== productId) {
+    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested ${kind}.`, 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
   }
 
   return buffer;
@@ -292,10 +303,11 @@ export const marketplaceService = {
 
   /** The authenticated download gate — verifies account + per-domain ownership and
    *  returns a fresh domain-bound entitlement for this site. */
-  async authorizeDownload(pluginId: string, version: string) {
+  async authorizeDownload(pluginId: string, version: string, kind: ProductKind = "plugin") {
     return marketplaceSource.authorizeDownload({
       pluginId,
       version,
+      kind,
       siteId:      await getSiteId(),
       domain:      await getSiteDomain(),
       environment: await resolveEnvironment(),
@@ -388,7 +400,7 @@ export const marketplaceService = {
   async installFromMarketplace(pluginId: string, version: string, userId: string, onProgress?: ProgressFn) {
     let buffer: Buffer;
     try {
-      buffer = await downloadAndVerifyArtifact(pluginId, version, onProgress);
+      buffer = await downloadAndVerifyArtifact(pluginId, version, "plugin", onProgress);
     } catch (err) {
       if (err instanceof NodevoError) throw err;
       throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
@@ -412,12 +424,58 @@ export const marketplaceService = {
     return { id: manifest.id, name: manifest.name, version: manifest.version };
   },
 
+  /**
+   * Install a THEME from the marketplace: the same chokepoint, the same transfer
+   * and the same checksum as a plugin — then the ordinary `.nvtheme` import
+   * instead of the plugin intake.
+   *
+   * ⚠ It lands in the DRAFT, not live, because that is what importing a theme has
+   * always done and a downloaded theme is exactly the case the staging exists for:
+   * a theme rewrites the arrangement of every page at once. Callers must say so —
+   * an admin who clicks Install and sees nothing change on the site is looking at
+   * correct behaviour they were not told about.
+   *
+   * Returns the import REPORT, not a bare ok: which templates it applied, which of
+   * the admin's own it kept, and what it could not render. That report is the whole
+   * reason `themeService.importTheme` answers with more than a boolean, and it is
+   * the same thing the manual upload path shows.
+   */
+  async installThemeFromMarketplace(themeId: string, version: string, userId: string, onProgress?: ProgressFn) {
+    let buffer: Buffer;
+    try {
+      buffer = await downloadAndVerifyArtifact(themeId, version, "theme", onProgress);
+    } catch (err) {
+      if (err instanceof NodevoError) throw err;
+      throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
+    }
+
+    onProgress?.({ phase: "importing", percent: 80 });
+    const report = await themeService.importTheme(buffer, userId);
+
+    onProgress?.({ phase: "finalizing", percent: 95 });
+    // A theme bought minutes ago is not in the stored entitlement JWT yet — the
+    // same reason the plugin path refreshes here. Best-effort: the import has
+    // already succeeded and a refresh failure must not undo it.
+    await refreshLicense().catch(() => {});
+
+    return {
+      id: report.manifest.id, name: report.manifest.name, version: report.manifest.version,
+      templates:        report.templates,
+      kept:             report.kept,
+      unknownBlocks:    report.unknownBlocks,
+      unknownTemplates: report.unknownTemplates,
+      assetsImported:   report.assetsImported,
+      customCssApplied: report.customCssApplied,
+      replaced:         report.replaced,
+    };
+  },
+
   /** §16.2 update-in-place: download+verify (byte progress), then swap/migrate/
    *  re-enable via the plugin engine. Progress events flow through onProgress;
    *  errors propagate to the caller (the controller turns them into a terminal
    *  stream event — headers are already sent by then). */
   async updateFromMarketplace(pluginId: string, version: string, userId: string, onProgress?: ProgressFn) {
-    const buffer = await downloadAndVerifyArtifact(pluginId, version, onProgress);
+    const buffer = await downloadAndVerifyArtifact(pluginId, version, "plugin", onProgress);
     const manifest = await pluginService.update(buffer, userId, onProgress);
     return { id: manifest.id, name: manifest.name, version: manifest.version };
   },

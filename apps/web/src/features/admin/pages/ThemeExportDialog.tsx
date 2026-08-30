@@ -10,7 +10,7 @@
  * pushes every change into a draft object the caller reads on confirm. That also means
  * a rejected export can simply RE-OPEN with everything still typed in.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { openDialog } from "../../../lib/dialog";
@@ -26,15 +26,25 @@ export interface ThemeExportMeta {
   authorUrl: string;
   /** Palette only — no layouts, and therefore no assets. */
   tokensOnly: boolean;
+  /**
+   * The preview image, packed into the package as `assets/screenshot.<ext>`.
+   *
+   * Not a manifest STRING like the fields above: a path typed into a form points at
+   * this machine, and the whole point of an asset is that it travels with the package.
+   * Null is the normal case — a theme kept for yourself needs no picture.
+   */
+  screenshot: File | null;
 }
 
 const BLANK: ThemeExportMeta = {
   id: "my-theme", name: "My theme", version: "1.0.0", vendor: "",
-  license: "", homepage: "", authorUrl: "", tokensOnly: false,
+  license: "", homepage: "", authorUrl: "", tokensOnly: false, screenshot: null,
 };
 
 /** The manifest fields the API accepts from an author, with their labels. */
-const FIELDS: { key: keyof ThemeExportMeta; label: string; placeholder?: string; type?: string }[] = [
+type TextField = Exclude<keyof ThemeExportMeta, "tokensOnly" | "screenshot">;
+
+const FIELDS: { key: TextField; label: string; placeholder?: string; type?: string }[] = [
   { key: "id",        label: "fieldId",        placeholder: "my-theme" },
   { key: "name",      label: "fieldName",      placeholder: "My theme" },
   { key: "version",   label: "fieldVersion",   placeholder: "1.0.0" },
@@ -43,6 +53,18 @@ const FIELDS: { key: keyof ThemeExportMeta; label: string; placeholder?: string;
   { key: "homepage",  label: "fieldHomepage",  type: "url" },
   { key: "authorUrl", label: "fieldAuthorUrl", type: "url" },
 ];
+
+/** A thumbnail of the picked file. The object URL is revoked when the file changes
+ *  or the dialog closes — a blob URL held past its element leaks the image. */
+function ScreenshotPreview({ file }: { file: File }) {
+  const [url, setUrl] = useState<string>("");
+  useEffect(() => {
+    const next = URL.createObjectURL(file);
+    setUrl(next);
+    return () => URL.revokeObjectURL(next);
+  }, [file]);
+  return url ? <img className="thm-form__shot-preview" src={url} alt="" /> : null;
+}
 
 function ThemeExportForm({ initial, onChange }: {
   initial: ThemeExportMeta;
@@ -74,13 +96,26 @@ function ThemeExportForm({ initial, onChange }: {
             <input
               className="acp-input"
               type={type ?? "text"}
-              value={value[key] as string}
+              value={value[key]}
               placeholder={placeholder}
               onChange={(e) => set({ [key]: e.target.value } as Partial<ThemeExportMeta>)}
             />
           </label>
         ))}
       </div>
+
+      {/* The listing's picture. Shown back as a thumbnail because the one thing a
+          file input cannot tell you is whether you picked the right image. */}
+      <label className="thm-form__shot">
+        <span>{t("themes.fieldScreenshot")}</span>
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/avif"
+          onChange={(e) => set({ screenshot: e.target.files?.[0] ?? null })}
+        />
+        <em>{t("themes.fieldScreenshotHint")}</em>
+        {value.screenshot && <ScreenshotPreview file={value.screenshot} />}
+      </label>
 
       <label className="thm-form__check">
         <input type="checkbox" checked={value.tokensOnly}
@@ -95,7 +130,7 @@ function ThemeExportForm({ initial, onChange }: {
 }
 
 /** Fields the manifest cannot be built without. */
-const REQUIRED: (keyof ThemeExportMeta)[] = ["id", "name", "version", "vendor"];
+const REQUIRED: TextField[] = ["id", "name", "version", "vendor"];
 
 /**
  * Ask for the manifest, and keep asking while it is incomplete.

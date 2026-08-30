@@ -1182,9 +1182,19 @@
       "verifying": "Verificando la descarga…",
       "validating": "Validando el paquete…",
       "installing": "Instalando…",
-      "finalizing": "Finalizando…"
+      "finalizing": "Finalizando…",
+      "importing": "Aplicando el tema…"
     },
-    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensiones"
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensiones",
+    "tab": {
+      "plugin": "Plugins",
+      "theme": "Temas"
+    },
+    "searchThemesPlaceholder": "Buscar temas…",
+    "themeDraftNote": "Al instalar un tema se guarda como borrador: nada cambia para los visitantes hasta que lo publiques.",
+    "themeGoManage": "Ir a Temas",
+    "themeInstalled": "Instalado",
+    "themeStaged": "{{name}} se guardó como borrador. Publícalo para ponerlo en marcha."
   },
   "updates": {
     "title": "Actualizaciones",
@@ -1639,6 +1649,7 @@
     "faviconHint": "PNG, ICO o SVG · máx. 2 MB · recomendado 64×64 px",
     "themeSuffix": "tema {{theme}}",
     "cssIntro": "CSS sin procesar para el tema que estás viendo — con ámbito y aplicado tras los tokens para que anule cualquier regla. Cambia tu tema con el interruptor de la barra superior para editar el otro. Los cambios se previsualizan en vivo; «Aplicar y guardar» almacena ambos temas y los publica para todos los visitantes.",
+    "cssThemeLayer": "Un tema instalado también incluye su propia hoja de estilos. Se aplica antes que esta, así que tus reglas ganan, y nada de lo que escribas aquí se pierde cuando el tema se actualice.",
     "saving": "Guardando…",
     "applySave": "Aplicar y guardar",
     "unsaved": "Cambios sin guardar — vista previa en vivo",
@@ -1781,6 +1792,8 @@
       "plain": "Simple"
     },
     "variantNote": "Una variante es un estilo con nombre definido por el tema, no un color en este bloque: todos los bloques con la misma variante se mantienen iguales, en claro y en oscuro. Se guarda con el diseño.",
+    "classNameLabel": "Clase CSS",
+    "classNameNote": "Un identificador opcional para tu propio CSS, p. ej. nav-tile. Aplica los estilos a través de él — .nav-tile > * o .nav-tile img — porque el identificador en sí no pinta nada. Se guarda con el diseño.",
     "variantLeaf": "Este bloque no tiene superficie propia. Aplica el estilo a la sección o tarjeta que lo contiene y este bloque la seguirá.",
     "variantScope": "{{variant}} · tema {{theme}}",
     "modeLight": "Claro",
@@ -1846,16 +1859,9 @@
     },
     "region": {
       "header": "Cabecera",
-      "beforeBody": "Antes del contenido",
-      "main": "Principal",
-      "afterBody": "Después del contenido",
-      "aside": "Barra lateral",
-      "footer": "Pie",
-      "left": "Izquierda",
-      "center": "Centro",
-      "right": "Derecha",
-      "top": "Arriba",
-      "bottom": "Abajo"
+      "main": "Cuerpo",
+      "aside": "Aside",
+      "footer": "Pie"
     },
     "audienceViewHint": "Filtra el árbol y la vista previa a una disposición. Los bloques que añadas se limitan a ella.",
     "audienceView": {
@@ -1873,7 +1879,29 @@
       "content": "Contenido",
       "data": "Datos",
       "plugin": "Plugin"
-    }
+    },
+    "bgTitle": "Fondo",
+    "bgNone": "Sin fondo",
+    "bgImage": "Imagen",
+    "bgUpload": "Subir imagen",
+    "bgUploading": "Subiendo…",
+    "bgRemove": "Quitar",
+    "bgGradient": "Degradado",
+    "bgAddFirst": "Añadir un degradado",
+    "bgAddStop": "Añadir color",
+    "bgRemoveStop": "Quitar este color",
+    "bgStop": "Color {{n}}",
+    "bgOneStop": "Un color pinta un relleno plano. Añade un segundo para un degradado.",
+    "bgAngle": "Dirección",
+    "bgAngle180": "De arriba abajo",
+    "bgAngle0": "De abajo arriba",
+    "bgAngle90": "De izquierda a derecha",
+    "bgAngle270": "De derecha a izquierda",
+    "bgAngle135": "De arriba izquierda a abajo derecha",
+    "bgAngle315": "De abajo derecha a arriba izquierda",
+    "bgAngle45": "De abajo izquierda a arriba derecha",
+    "bgAngle225": "De arriba derecha a abajo izquierda",
+    "bgNote": "La imagen se dibuja sobre el degradado, y cada uno funciona por separado. Un color escrito como var(--c-accent) sigue la paleta del sitio y ambos temas."
   },
   "groups": {
     "glow": "Brillo en los nombres",
@@ -2033,7 +2061,9 @@
     "fieldHomepage": "URL de la web",
     "fieldAuthorUrl": "URL del autor",
     "tokensOnly": "Solo colores",
-    "tokensOnlyHint": "Exporta la paleta sin diseños de página ni imágenes."
+    "tokensOnlyHint": "Exporta la paleta sin diseños de página ni imágenes.",
+    "fieldScreenshot": "Imagen de vista previa",
+    "fieldScreenshotHint": "Se incluye en el tema como su captura y se muestra en las fichas del mercado. PNG, JPEG, WebP o AVIF."
   },
   "owned": {
     "title": "Tus licencias",
