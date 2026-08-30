@@ -31,16 +31,82 @@ function useText(value: LocalizedText | undefined): string {
 
 // ── Structure ───────────────────────────────────────────────────────────────
 
+/**
+ * The section's background, as a CSS `background-image` value.
+ *
+ * Image and gradient COMPOSE: CSS paints the first layer on top, so the image sits
+ * over the gradient and either alone works. Returns undefined when neither is set,
+ * so an untouched section emits no inline style at all and keeps painting exactly
+ * what its style variant gives it.
+ *
+ * ⚠ The values are already schema-validated (`cssColorSchema`, and an asset path or
+ * URL) — this composes them, it does not sanitise them. A document is untrusted
+ * input, so the guarantee has to live in the schema where a `.nvtheme` import hits
+ * it too, not in a renderer a plugin could bypass.
+ */
+export function sectionBackground(props: {
+  backgroundImage?: string;
+  backgroundGradient?: string[];
+  backgroundAngle?: number;
+}): string | undefined {
+  const layers: string[] = [];
+  if (props.backgroundImage?.trim()) {
+    layers.push(`url("${resolveImageSource(props.backgroundImage.trim())}")`);
+  }
+  const stops = (props.backgroundGradient ?? []).filter((c) => c.trim());
+  if (stops.length) {
+    // One colour is a flat fill, which `linear-gradient` cannot express with a
+    // single stop — repeat it so "pick one colour" does the obvious thing.
+    const list = stops.length === 1 ? [stops[0]!, stops[0]!] : stops;
+    layers.push(`linear-gradient(${props.backgroundAngle ?? 180}deg, ${list.join(", ")})`);
+  }
+  return layers.length ? layers.join(", ") : undefined;
+}
+
+function SectionBlock({ props, children }: BlockProps<{
+  width: string; padding: string; minHeight?: number;
+  backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number;
+}>) {
+  const background = sectionBackground(props);
+  const tall = (props.minHeight ?? 0) > 0;
+  const classes = [
+    "nv-section",
+    `nv-section--${props.width}`,
+    `nv-section--pad-${props.padding}`,
+    background ? "nv-section--bg" : "",
+    tall ? "nv-section--tall" : "",
+  ].filter(Boolean).join(" ");
+
+  return (
+    <section
+      className={classes}
+      style={{
+        ...(background ? { backgroundImage: background } : {}),
+        ...(tall ? { minHeight: `${props.minHeight}px` } : {}),
+      }}
+    >
+      {/**
+       * The content column, and the reason a full-bleed section still lines up with
+       * the rest of the page.
+       *
+       * A `width: full` section spans the viewport so its background does, but its
+       * CONTENT belongs in the same rail as the navbar and the page body — a masthead
+       * logo hard against the window edge while the nav logo below it sits inset is
+       * the thing that makes a band look bolted on. The wrapper is unconditional so
+       * the DOM shape does not change with the width prop; it only takes on a
+       * max-width when the section is full.
+       */}
+      <div className="nv-section__inner">{children}</div>
+    </section>
+  );
+}
+
 registerBlock({
   type:      "section",
   schema:    blockPropSchemas.section,
   container: true,
   editorMeta: { label: "Section", category: "structure" },
-  component: ({ props, children }) => (
-    <section className={`nv-section nv-section--${props.width} nv-section--pad-${props.padding}`}>
-      {children}
-    </section>
-  ),
+  component: SectionBlock,
 });
 
 registerBlock({
@@ -142,12 +208,22 @@ export function resolveImageSource(source: string): string {
   return source.startsWith("http") || source.startsWith("/") ? source : `/uploads/${source}`;
 }
 
-function ImageBlock({ props }: BlockProps<{ source: string; alt?: LocalizedText; ratio: string }>) {
+function ImageBlock({
+  props,
+}: BlockProps<{ source: string; alt?: LocalizedText; ratio: string; href?: string }>) {
   const alt = useText(props.alt);
   const src = resolveImageSource(props.source);
+  const img = <img src={src} alt={alt} loading="lazy" />;
   return (
     <figure className={`nv-image nv-image--${props.ratio.replace(":", "x")}`}>
-      <img src={src} alt={alt} loading="lazy" />
+      {/* A linked image is how an image navbar is built: `columns` → `column` →
+          `image{source, href, className}` per tile, with the look in custom CSS.
+          `rel` is unconditional rather than computed from the origin — it costs
+          nothing on an internal link and is the failure that matters on an
+          external one. The scheme was already refused by `linkHrefSchema`. */}
+      {props.href
+        ? <a className="nv-image__link" href={props.href} rel="noopener noreferrer">{img}</a>
+        : img}
     </figure>
   );
 }

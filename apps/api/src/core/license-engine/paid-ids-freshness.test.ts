@@ -127,4 +127,38 @@ describe("ensurePaidPluginIdsFresh", () => {
     await marketplaceSource.ensurePaidPluginIdsFresh();
     expect(upsert.mock.calls[0]![0]).toMatchObject({ create: { value: ["paid-one"] } });
   });
+
+  /**
+   * The catalogue sells themes as well as plugins, and this set is read by the
+   * PLUGIN enable gate — `pluginRequiresLicense` asks "is this id in the paid
+   * set?" and has no idea what kind the id belongs to. A walk that stopped
+   * naming its kind would fill the set with paid theme ids, and every one of
+   * them would then be a plugin the gate believes needs a licence.
+   *
+   * It is a silent failure in the direction that matters least on day one and
+   * most later: nothing breaks until a theme and a plugin share an id, or until
+   * something else starts reading the set.
+   */
+  it("walks ONLY the plugin half of the catalogue", async () => {
+    await marketplaceSource.ensurePaidPluginIdsFresh();
+    for (const [args] of protocolFetch.mock.calls) {
+      expect((args as { query?: { kind?: string } }).query?.kind).toBe("plugin");
+    }
+  });
+});
+
+/**
+ * The other caller of the same walk. The ACP browse list asks for one half at a
+ * time, and a request that named no kind would mix themes into the plugin grid.
+ */
+describe("listPlugins", () => {
+  it("asks the catalogue for the kind it was given", async () => {
+    await marketplaceSource.listPlugins({ page: 1, limit: 20, order: "desc", kind: "theme" });
+    expect(protocolFetch.mock.calls[0]![0].query).toMatchObject({ kind: "theme" });
+  });
+
+  it("defaults to plugins, which is the grid this page has always shown", async () => {
+    await marketplaceSource.listPlugins({ page: 1, limit: 20, order: "desc" });
+    expect(protocolFetch.mock.calls[0]![0].query).toMatchObject({ kind: "plugin" });
+  });
 });

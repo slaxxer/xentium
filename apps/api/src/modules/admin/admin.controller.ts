@@ -112,9 +112,12 @@ const errorLogSchema = z.object({
   domain:   z.string().optional(),
 });
 
-/** Browse query: the shared pagination contract plus the catalogue's `q`. */
+/** Browse query: the shared pagination contract plus the catalogue's `q` and
+ *  which half of it to show. `kind` defaults to plugins so every existing caller
+ *  keeps the grid it has always had. */
 const marketplaceListQuerySchema = paginatedRequestSchema.extend({
-  q: z.string().min(1).max(128).optional(),
+  q:    z.string().min(1).max(128).optional(),
+  kind: z.enum(["plugin", "theme"]).default("plugin"),
 });
 
 export const adminController = {
@@ -418,11 +421,12 @@ export const adminController = {
   }) as RequestHandler,
 
   authorizeMarketplaceDownload: (async (req, res) => {
-    const { pluginId, version } = z.object({
+    const { pluginId, version, kind } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1).default("latest"),
+      kind:     z.enum(["plugin", "theme"]).default("plugin"),
     }).parse(req.body);
-    res.json(await marketplaceService.authorizeDownload(pluginId, version));
+    res.json(await marketplaceService.authorizeDownload(pluginId, version, kind));
   }) as RequestHandler,
 
   // STREAMS progress, same newline-delimited JSON contract as the update route:
@@ -430,9 +434,13 @@ export const adminController = {
   // downloads (by bytes) → verifies → installs, then a final {done:true, ok, …}.
   // Both are consumed by runStreamedJob() on the client.
   installFromMarketplace: (async (req, res) => {
-    const { pluginId, version } = z.object({
+    // `kind` picks the intake, not the route: both halves of the catalogue go
+    // through one authenticated download gate, one rate limiter and one progress
+    // contract. A second endpoint would be a second place to forget the limiter.
+    const { pluginId, version, kind } = z.object({
       pluginId: z.string().min(1),
       version:  z.string().min(1),
+      kind:     z.enum(["plugin", "theme"]).default("plugin"),
     }).parse(req.body);
 
     res.status(200);
@@ -443,7 +451,9 @@ export const adminController = {
     const emit = (evt: object) => { res.write(JSON.stringify(evt) + "\n"); };
 
     try {
-      const result = await marketplaceService.installFromMarketplace(pluginId, version, req.userId!, (p) => emit(p));
+      const result = kind === "theme"
+        ? await marketplaceService.installThemeFromMarketplace(pluginId, version, req.userId!, (p) => emit(p))
+        : await marketplaceService.installFromMarketplace(pluginId, version, req.userId!, (p) => emit(p));
       emit({ done: true, ok: true, ...result });
     } catch (err: any) {
       // Headers are already sent, so errorMiddleware can no longer shape this —

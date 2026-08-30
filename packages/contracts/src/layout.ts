@@ -60,17 +60,35 @@ export const isChromeTemplate = (key: TemplateKey): boolean => key.startsWith('c
 
 /** Regions the CORE templates expose. Plugin templates declare their own. */
 export const TEMPLATE_REGIONS = {
+  /*
+   * FOUR REGIONS, and they are the HTML5 landmarks. A page is a header, a body, an
+   * aside and a footer; anything finer is an arrangement INSIDE one of them, which
+   * is what blocks and containers are for.
+   *
+   * This replaced a set that had grown by accretion — `beforeBody`/`afterBody` on
+   * one template, `left`/`center`/`right` on the navbar, `top`/`main`/`bottom` on
+   * the footer, and two `band*` regions added for a masthead. Each was reasonable
+   * alone; together they meant "where does this go?" had a different answer per
+   * template, and the names promised landmarks the markup did not deliver.
+   *
+   * ⚠ `main` is the KEY and `<main>` is the element; the editor LABELS it "Body".
+   * Naming the key `body` would fight the element it emits — `<body>` is the whole
+   * document, and the landmark for page content is `<main>`.
+   */
   'home':           ['header', 'main', 'aside', 'footer'],
   'article.index':  ['header', 'main', 'aside', 'footer'],
-  'article.detail': ['header', 'beforeBody', 'main', 'afterBody', 'aside', 'footer'],
+  'article.detail': ['header', 'main', 'aside', 'footer'],
   'page.detail':    ['header', 'main', 'aside', 'footer'],
   'profile':        ['header', 'main', 'aside', 'footer'],
   'members':        ['header', 'main', 'aside', 'footer'],
-  // Three regions, because a navbar's meaning is positional: "logo left, search
-  // centre, account right" is what people reason about, and one ordered list
-  // could not express it without an alignment prop on every block.
-  'chrome.header':  ['left', 'center', 'right'],
-  'chrome.footer':  ['top', 'main', 'bottom'],
+  /*
+   * The site's own header and footer: ONE region each, because the navbar is not a
+   * peer of the header — it is IN the header, which is what a header is. It is a
+   * `navbar` BLOCK here, so ordering a masthead above or below it is moving blocks
+   * in a list rather than choosing between two purpose-built regions.
+   */
+  'chrome.header':  ['header'],
+  'chrome.footer':  ['footer'],
 } as const satisfies Record<CoreTemplateKey, readonly string[]>;
 
 /**
@@ -461,6 +479,33 @@ export interface BlockNode {
    * that one selects a document, this one styles a block inside it.
    */
   variant?: BlockVariant;
+  /**
+   * A designer's own CSS handle for this one block. Absent = none, and — same rule as
+   * `visibility` and `variant` — the default is never stored.
+   *
+   * Stamped on the SAME `display: contents` wrapper the variant uses, which is what
+   * makes it safe on any block, including a plugin's: the block's own element stays the
+   * one its flex or grid parent sizes. The consequence is that the handle is something
+   * you style THROUGH, not on — `.nav-tile > *` or `.nav-tile .nv-image` paint, while
+   * `.nav-tile { background: … }` cannot, because the wrapper generates no box.
+   * Descendant and `:hover` selectors work normally.
+   *
+   * This exists because `data-nv-block` is not a contract: ids are opaque and a
+   * rebuilt block gets a new one, so custom CSS had no stable target.
+   */
+  className?: string;
+  /**
+   * Which end of a ROW this block sits at. Absent = the start.
+   *
+   * Read by `navbar`, which is the only block that is a row. It carries what the
+   * navbar's old `left`/`center`/`right` regions carried, and is what allowed the
+   * navbar to become a block inside the header instead of a template beside it.
+   *
+   * Node-level rather than a prop for the same reason `variant` and `className` are:
+   * a navbar is exactly where a PLUGIN's block wants to be placeable, and a prop
+   * would be honoured by core blocks and ignored by everything else.
+   */
+  align?: 'left' | 'center' | 'right';
 }
 
 /**
@@ -495,6 +540,10 @@ export const MAX_BLOCK_DEPTH = 8;
  */
 export const CORE_CONTAINER_TYPES = [
   'section', 'columns', 'column', 'profileCard',
+  // The nav strip. A container because its children ARE the navbar's contents —
+  // it replaced three regions, so what used to be region membership is now
+  // parentage.
+  'navbar',
   // The guest landing's surface and its two styled grids — see `guestBlocks.tsx`.
   'guestSurface', 'guestHero', 'guestBody',
 ] as const;
@@ -648,6 +697,64 @@ export const blockVariantSchema = z.enum(BLOCK_VARIANTS);
  */
 export const variantClass = (variant: BlockVariant): string => `nv-v--${variant}`;
 
+/**
+ * A block's custom class handle.
+ *
+ * Space-separated CSS identifiers, because a designer reasonably wants
+ * `nav-tile is-primary`. Character-restricted rather than merely escaped: this string
+ * is written into a class attribute AND is the thing a theme's stylesheet selects on,
+ * so anything that could terminate a selector or an attribute is refused outright.
+ *
+ * `nv-` is RESERVED. Core's own classes live under that prefix and step into the
+ * documented class contract themes style against; letting a document mint one would
+ * let a stored layout impersonate a core class — or a variant (`nv-v--accent`) it was
+ * never given.
+ */
+const CLASS_TOKEN = /^[A-Za-z][A-Za-z0-9_-]*$/;
+
+export const blockClassNameSchema = z
+  .string()
+  .max(120)
+  .refine(
+    (v) => {
+      const tokens = v.trim().split(/\s+/).filter(Boolean);
+      return (
+        tokens.length > 0 &&
+        tokens.length <= 4 &&
+        tokens.every((t) => CLASS_TOKEN.test(t) && !t.toLowerCase().startsWith('nv-'))
+      );
+    },
+    {
+      message:
+        'className must be 1-4 CSS identifiers, letters/digits/-/_ only, and may not start with the reserved `nv-` prefix',
+    },
+  );
+
+/**
+ * The class that identifies a block by TYPE, on every instance of it.
+ *
+ * This is the block-level half of the class contract themes style against. It exists
+ * because the other half could not carry the weight on its own: `className` is per
+ * instance and only an admin can set it, so a downloaded theme — which does not control
+ * the layouts on the site it lands on — had no way to say "every board-stats block".
+ * Most blocks also render into their parent's markup and emit no root class of their
+ * own, so for roughly fifty of them there was nothing to select at all.
+ *
+ * Stamped by the renderer on the same `display: contents` wrapper as the variant and
+ * the handle, which is what makes it free, uniform, and available to a plugin's blocks
+ * without the plugin doing anything.
+ *
+ * ⚠ **This is a compatibility contract.** The class is derived from the registry key, so
+ * renaming a block type renames its class and breaks any theme that targeted it — the
+ * same commitment as renaming a prop, and the reason `nv-` is reserved against
+ * `className`.
+ *
+ * A plugin type is namespaced with a dot (`forum.recentThreads`), which is not usable in
+ * a selector unescaped, so separators are flattened to `-`.
+ */
+export const blockTypeClass = (type: string): string =>
+  `nv-b--${type.replace(/[^A-Za-z0-9_-]+/g, '-')}`;
+
 export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
   z.object({
     id:         z.string().min(1).max(64),
@@ -656,8 +763,49 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
     children:   z.array(blockNodeSchema).optional(),
     visibility: blockVisibilitySchema.optional(),
     variant:    blockVariantSchema.optional(),
+    className:  blockClassNameSchema.optional(),
+
+    /**
+     * Which end of a row this block sits at.
+     *
+     * NODE-LEVEL, like `variant` and `className`, for the same reason: threading it
+     * through 52 prop schemas would be honoured by core blocks and silently ignored
+     * by every plugin block, and a navbar is exactly where a plugin's block wants to
+     * be placeable.
+     *
+     * Read by `navbar`, which is a row and the only place "which end" means
+     * anything. Absent = start of the row. It replaces the navbar's old
+     * `left`/`center`/`right` REGIONS: the trade is one optional field against three
+     * regions that existed on one template and nowhere else, and it is what lets the
+     * navbar be a block instead of a template.
+     */
+    align:      z.enum(['left', 'center', 'right']).optional(),
   }),
 );
+
+/**
+ * One colour a document may carry.
+ *
+ * ⚠ STRICT on purpose. These values are handed to the renderer and composed into a
+ * `linear-gradient(...)`, and a document is untrusted input twice over — an admin
+ * types one, and a purchased `.nvtheme` ships others. An unbounded string would let
+ * a package smuggle `url(https://tracker/…)` or a second declaration into whatever
+ * it is interpolated into. Hex, `rgb()/rgba()`, `hsl()/hsla()` and `var(--token)`
+ * cover every colour anyone needs and nothing else parses.
+ *
+ * `var(--token)` is deliberately allowed and is the form a THEME should use: a stop
+ * written as `var(--c-accent)` follows the site's palette and both light and dark for
+ * free, which a picked hex cannot. The colour picker writes hex; an author may write
+ * either.
+ */
+export const cssColorSchema = z
+  .string()
+  .trim()
+  .max(64)
+  .regex(
+    /^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%/]+\)|hsla?\([\d\s.,%/a-z]+\)|var\(--[a-zA-Z0-9_-]+\))$/,
+    'must be a hex, rgb(), hsl() or var(--token) colour',
+  );
 
 export const layoutDocumentSchema = z.object({
   // Shape, not membership: a plugin's template key is not knowable at compile time,
@@ -694,11 +842,98 @@ export interface LayoutDraftResponse {
 // tokens (ADR-0003). Every prop added here is permanent: stored documents —
 // including ones inside purchased themes — must migrate forever.
 
+/**
+ * A link target an admin or a theme may supply.
+ *
+ * Relative paths and http/https/mailto only. The scheme check is a DENY of the
+ * script-bearing ones rather than an allow-list of shapes, because the useful values
+ * here are mostly relative (`/forum`, `../page`) and an allow-list of URL shapes would
+ * reject them. A `.nvtheme` from a stranger is a way into this field, so `javascript:`
+ * must never survive validation and be handed to an `href`.
+ */
+/**
+ * The href with everything a browser IGNORES while resolving a scheme removed:
+ * whitespace, C0 controls and DEL. `java\tscript:` and `java script:` navigate exactly
+ * like `javascript:`, so the scheme check has to run on this, not on the raw string.
+ */
+const schemeProbe = (v: string): string =>
+  Array.from(v)
+    .filter((c) => {
+      const code = c.charCodeAt(0);
+      return code > 0x20 && code !== 0x7f;
+    })
+    .join('');
+
+export const linkHrefSchema = z
+  .string()
+  .min(1)
+  .max(500)
+  .refine((v) => !/^(?:[a-z0-9+.-]*script|data):/i.test(schemeProbe(v)), {
+    message: 'href scheme is not allowed',
+  });
+
 export const blockPropSchemas = {
   /** Layout container. `width` maps to a token-driven max-width, not a pixel value. */
+  /**
+   * A band of the page, and the block that PAINTS — every other block draws into
+   * whatever surface a section provides. That is why the background lives here
+   * rather than on a header-specific block: a masthead, a hero and a call-to-action
+   * strip are the same thing wearing different content.
+   *
+   * Image and gradient COMPOSE rather than exclude each other: CSS layers the image
+   * over the gradient, so either alone works and both together gives the gradient as
+   * the ground an image with transparency sits on. Neither set = no background, and
+   * the section is invisible exactly as it was before.
+   */
   section: z.object({
     width:   z.enum(['full', 'wide', 'normal', 'narrow']).default('normal'),
     padding: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
+
+    /**
+     * An upload path (`layouts/masthead.jpg`) or an absolute URL. Empty = none.
+     *
+     * `asset: true` is what makes it TRAVEL: the exporter copies the file into the
+     * package and rewrites this to `assets/<file>`, and the importer unpacks it and
+     * rewrites it again. Without the flag a theme's masthead would arrive as a path
+     * into the exporting machine's uploads directory — a broken image everywhere.
+     *
+     * ⚠ It must stay a TOP-LEVEL string prop. `assetPropsOf` reads the schema's own
+     * properties for the flag, so folding this into a nested `background` object
+     * would silently stop it being collected.
+     */
+    backgroundImage: z.string().max(500).default('').meta({
+      title:       'Background image',
+      description: 'Upload path or URL. Leave empty for none.',
+      asset:       true,
+    }),
+
+    /**
+     * Gradient stops, in order. Empty = no gradient; ONE colour paints a flat fill.
+     *
+     * Capped at three because a gradient is a background, not an illustration — and
+     * the cap is the schema's, so a hand-written document or a `.nvtheme` cannot
+     * exceed what the editor offers.
+     */
+    backgroundGradient: z.array(cssColorSchema).max(3).default([]),
+
+    /** Gradient direction in degrees; 180 = top to bottom, the CSS default. */
+    backgroundAngle: z.number().int().min(0).max(360).default(180),
+
+    /**
+     * A floor for the section's height, in pixels. 0 = as tall as its content.
+     *
+     * MINIMUM rather than fixed: a masthead is given a height so the band has
+     * presence, but a fixed height clips — a longer nav on a narrow viewport, a
+     * bigger font from an accessibility setting, a logo that turned out taller than
+     * the number someone typed. A floor gives the same look and cannot hide content.
+     *
+     * A section with a floor CENTRES its content vertically, because that is the only
+     * arrangement anyone wants from a band taller than what is in it.
+     */
+    minHeight: z.number().int().min(0).max(2000).default(0).meta({
+      title:       'Minimum height (px)',
+      description: '0 = as tall as its content. A taller band centres its content.',
+    }),
   }),
 
   /**
@@ -779,6 +1014,16 @@ export const blockPropSchemas = {
     source: z.string().min(1).meta({ title: 'Image', asset: true }),
     alt:    localizedTextSchema.optional(),
     ratio:  z.enum(['auto', '16:9', '4:3', '1:1']).default('auto'),
+    /**
+     * Makes the image a link. Without it an image could only ever decorate, which is
+     * what stopped a theme from building an image navbar: `navLinks` renders text, so
+     * there was no way to express "this artwork is the link to /forum".
+     *
+     * No `hoverSource` companion on purpose — a hover swap is CSS the `className`
+     * handle can already express, and every prop here is permanent.
+     */
+    href: linkHrefSchema.optional()
+      .meta({ title: 'Links to', description: 'A path like /forum, or a full URL. Leave empty for a plain image.' }),
   }),
 
   /**
@@ -982,6 +1227,16 @@ export const blockPropSchemas = {
   // and would let an admin build a header that is empty for the visitors who most
   // need it.
 
+  /**
+   * The nav strip, as a BLOCK inside the header.
+   *
+   * It has no props of its own — it is a row, and everything about what is in it is
+   * expressed by its children and their `align`. Making it a block is what lets a
+   * masthead sit above or below it: both are blocks in the header region, so the
+   * order is the order they are in, not a choice between two named slots.
+   */
+  navbar: z.object({}),
+
   logo: z.object({
     showWordmark: z.boolean().default(true)
       .meta({ title: 'Show site name next to the logo' }),
@@ -1103,9 +1358,12 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'article.detail': {
     templateKey: 'article.detail', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [], beforeBody: [],
+      // `beforeBody`/`afterBody` are gone: they were two empty regions that existed
+      // on this one template so something could be placed around the article, which
+      // is what ordering blocks inside `main` already does.
+      header: [],
       main: [node('a-detail', 'articleDetail')],
-      afterBody: [], aside: [], footer: [],
+      aside: [], footer: [],
     },
   },
   // Reproduces PageReaderPage's previous hardcoded markup exactly — image, then
@@ -1194,34 +1452,40 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
       aside: [], footer: [],
     },
   },
-  // Reproduces the hardcoded PubNav arrangement exactly, so adopting the layout
-  // system moves nothing until an admin moves it — and "Reset to default"
-  // restores precisely what shipped.
+  /*
+   * The site header: a `navbar` block, and room above and below it for anything
+   * else. Reproduces the hardcoded PubNav arrangement exactly — the same blocks in
+   * the same order — so adopting this moves nothing until an admin moves it.
+   *
+   * `align` carries what the old `left`/`center`/`right` regions carried. Absent is
+   * the start of the row, so the logo and the links need none.
+   */
   'chrome.header': {
     templateKey: 'chrome.header', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      left:   [node('h-logo', 'logo', { showWordmark: true }), node('h-nav', 'navLinks')],
-      center: [],
-      right:  [
-        node('h-search',  'search', { expanded: false }),
-        node('h-theme',   'themeToggle'),
-        node('h-widgets', 'headerWidgets'),
-        node('h-notif',   'notifications'),
-        node('h-admin',   'adminLink'),
-        node('h-user',    'userMenu'),
+      header: [
+        { ...node('h-navbar', 'navbar'), children: [
+          node('h-logo', 'logo', { showWordmark: true }),
+          node('h-nav', 'navLinks'),
+          { ...node('h-search', 'search', { expanded: false }), align: 'right' as const },
+          { ...node('h-theme',   'themeToggle'),   align: 'right' as const },
+          { ...node('h-widgets', 'headerWidgets'), align: 'right' as const },
+          { ...node('h-notif',   'notifications'), align: 'right' as const },
+          { ...node('h-admin',   'adminLink'),     align: 'right' as const },
+          { ...node('h-user',    'userMenu'),      align: 'right' as const },
+        ] },
       ],
     },
   },
   'chrome.footer': {
     templateKey: 'chrome.footer', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      top:    [],
-      main:   [
+      footer: [
         node('f-online', 'whosOnline', { maxNames: 20 }),
         node('f-legend', 'groupLegend'),
         node('f-stats',  'boardStats'),
+        node('f-brand',  'branding', { showUptime: true }),
       ],
-      bottom: [node('f-brand', 'branding', { showUptime: true })],
     },
   },
 };

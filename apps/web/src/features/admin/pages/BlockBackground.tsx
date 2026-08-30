@@ -1,0 +1,205 @@
+/**
+ * The `section` background, in the layout editor's settings rail.
+ *
+ * ## Why this is a panel and not three form fields
+ *
+ * The rail's generic `SchemaFields` renders whatever a Zod schema describes, which
+ * for these three props would be a text box you paste a path into, a number, and —
+ * for the gradient, an array — nothing at all. An admin choosing a masthead
+ * background wants to see the picture and the colours, so this panel owns the three
+ * props and `SchemaFields` is told to skip them.
+ *
+ * ## Why the colours are on the block, when variants exist
+ *
+ * `BlockStyle` argues at length that a per-block colour picker is what makes theme
+ * ecosystems incoherent, and that argument still holds for a block's SURFACE — which
+ * is why the variant system exists and why this panel does not touch it. A gradient
+ * background is the deliberate exception: it is an image made of colours, chosen for
+ * one specific band, and there is no sensible way to express "this masthead's
+ * three-stop gradient" as a shared named look that other blocks could adopt.
+ *
+ * The escape hatch stays open, though: a stop may be written as `var(--c-accent)`,
+ * and a stop written that way follows the site's palette and both light and dark for
+ * free. The picker writes hex because a picker can only write hex; the text field
+ * next to it accepts either, which is what a theme author will use.
+ *
+ * ## Two things that are NOT staged separately
+ *
+ * Unlike `BlockStyle` — where the variant is layout and the tokens are appearance —
+ * everything here is a block prop, so it is all part of the LAYOUT draft and lands
+ * with the same Publish. No second staging area to explain.
+ */
+import { useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash, faUpload, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { api } from "../../../lib/api";
+import { toast } from "../../../lib/toast";
+import { apiErrorMessage } from "../../../lib/swal";
+import { resolveImageSource, sectionBackground } from "../../../layout/blocks/coreBlocks";
+
+/** The props this panel owns. `SchemaFields` is given the same list to skip. */
+export const BACKGROUND_PROPS = ["backgroundImage", "backgroundGradient", "backgroundAngle"] as const;
+
+/** The most a section may carry — the schema caps the array at the same number, so a
+ *  hand-written document cannot exceed what the editor offers. */
+const MAX_STOPS = 3;
+
+/** Directions worth a click. The stored value is degrees, so a theme may still use
+ *  any angle; this is the set an admin is offered rather than a limit on the prop. */
+const ANGLES = [180, 0, 90, 270, 135, 315, 45, 225] as const;
+
+/** A picker can only hold a hex value. Anything else — `var(--c-accent)`, `rgb(…)` —
+ *  is valid, editable as text, and simply not representable in the swatch. */
+const isHex = (v: string) => /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
+
+interface Props {
+  image:     string | undefined;
+  gradient:  string[] | undefined;
+  angle:     number | undefined;
+  onChange:  (patch: { backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number }) => void;
+}
+
+export function BlockBackgroundFields({ image, gradient, angle, onChange }: Props) {
+  const { t } = useTranslation("acp");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const stops = gradient ?? [];
+  const currentAngle = angle ?? 180;
+
+  async function upload(file: File) {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      // The stored PATH is what the document holds, never the URL: the theme
+      // exporter reads the path off disk to copy the bytes into the package, and a
+      // URL would leave it with nothing to find.
+      const res = await api.post<{ path: string }>("/admin/layouts/images", fd);
+      onChange({ backgroundImage: res.path });
+    } catch (e) {
+      toast.error(apiErrorMessage(e));
+    } finally {
+      setUploading(false);
+      // Cleared so re-picking the SAME file fires `change` again — otherwise a
+      // failed upload cannot be retried without choosing a different file.
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  const setStop = (i: number, value: string) => {
+    const next = [...stops];
+    next[i] = value;
+    onChange({ backgroundGradient: next });
+  };
+
+  const preview = sectionBackground({
+    backgroundImage: image, backgroundGradient: stops, backgroundAngle: currentAngle,
+  });
+
+  return (
+    <div className="lay-bg">
+      <div className="lay-bg__title">{t("layoutEditor.bgTitle")}</div>
+
+      {/* What the two halves actually compose to. The rail is narrow and a gradient
+          angle is impossible to hold in your head — showing the result is cheaper
+          than describing it. */}
+      <div
+        className="lay-bg__preview"
+        style={preview ? { backgroundImage: preview } : undefined}
+      >
+        {!preview && <span>{t("layoutEditor.bgNone")}</span>}
+      </div>
+
+      {/* ── Image ─────────────────────────────────────────────────────────── */}
+      <div className="lay-bg__row">
+        <span className="lay-bg__label">{t("layoutEditor.bgImage")}</span>
+        {image ? (
+          <div className="lay-bg__file">
+            <img src={resolveImageSource(image)} alt="" />
+            <button type="button" className="btn-ghost btn-sm"
+              onClick={() => onChange({ backgroundImage: "" })}>
+              <FontAwesomeIcon icon={faTrash} /> {t("layoutEditor.bgRemove")}
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="btn-ghost btn-sm" disabled={uploading}
+            onClick={() => fileRef.current?.click()}>
+            <FontAwesomeIcon icon={faUpload} />{" "}
+            {uploading ? t("layoutEditor.bgUploading") : t("layoutEditor.bgUpload")}
+          </button>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/avif,image/gif"
+          hidden
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
+        />
+      </div>
+
+      {/* ── Gradient ──────────────────────────────────────────────────────── */}
+      <div className="lay-bg__row">
+        <span className="lay-bg__label">{t("layoutEditor.bgGradient")}</span>
+
+        {stops.map((stop, i) => (
+          <div className="lay-bg__stop" key={i}>
+            <input
+              type="color"
+              // A non-hex stop (a token, an rgb()) has no swatch to show. Black is
+              // the browser's own fallback; the text field beside it is the truth.
+              value={isHex(stop) ? stop : "#000000"}
+              onChange={(e) => setStop(i, e.target.value)}
+              aria-label={t("layoutEditor.bgStop", { n: i + 1 })}
+            />
+            <input
+              className="acp-input"
+              value={stop}
+              placeholder="#1b1e36"
+              onChange={(e) => setStop(i, e.target.value)}
+            />
+            <button type="button" className="lay-bg__x"
+              title={t("layoutEditor.bgRemoveStop")}
+              onClick={() => onChange({ backgroundGradient: stops.filter((_, j) => j !== i) })}>
+              <FontAwesomeIcon icon={faTrash} />
+            </button>
+          </div>
+        ))}
+
+        {stops.length < MAX_STOPS && (
+          <button type="button" className="btn-ghost btn-sm"
+            onClick={() => onChange({ backgroundGradient: [...stops, "#1b1e36"] })}>
+            <FontAwesomeIcon icon={faPlus} />{" "}
+            {t(stops.length === 0 ? "layoutEditor.bgAddFirst" : "layoutEditor.bgAddStop")}
+          </button>
+        )}
+
+        {/* One colour is a flat fill, which is a legitimate thing to want and not
+            obviously a "gradient" — so the panel says so rather than looking broken. */}
+        {stops.length === 1 && <div className="acp-hint">{t("layoutEditor.bgOneStop")}</div>}
+      </div>
+
+      {/* Direction is meaningless with nothing to point, so it appears with the
+          second stop rather than sitting permanently disabled. */}
+      {stops.length > 1 && (
+        <div className="lay-bg__row">
+          <span className="lay-bg__label">{t("layoutEditor.bgAngle")}</span>
+          <select className="acp-input" value={currentAngle}
+            onChange={(e) => onChange({ backgroundAngle: Number(e.target.value) })}>
+            {ANGLES.map((a) => (
+              <option key={a} value={a}>{t(`layoutEditor.bgAngle${a}`)}</option>
+            ))}
+            {/* A theme may ship any angle; keep it selectable rather than snapping
+                the admin's document to the nearest one we happen to offer. */}
+            {!ANGLES.includes(currentAngle as (typeof ANGLES)[number]) && (
+              <option value={currentAngle}>{currentAngle}°</option>
+            )}
+          </select>
+        </div>
+      )}
+
+      <div className="acp-hint lay-bg__note">{t("layoutEditor.bgNote")}</div>
+    </div>
+  );
+}

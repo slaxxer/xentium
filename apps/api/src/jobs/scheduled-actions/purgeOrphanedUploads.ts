@@ -92,11 +92,33 @@ async function refsInJson(table: string, column: string): Promise<string[]> {
 }
 
 /**
+ * Upload paths referenced by LAYOUT DOCUMENTS.
+ *
+ * ⚠ A second matcher, not a second call to `refsInJson`, because a layout stores a
+ * BARE RELATIVE path (`"layouts/a.png"`, what `storage.save` returns) while an
+ * article body stores the public URL (`/uploads/…`). The `/uploads/` pattern finds
+ * nothing here, so reusing it would report every section background as unreferenced
+ * and the purge would delete the site's masthead — quietly, on a schedule, weeks
+ * after anyone touched it.
+ *
+ * Both scopes are scanned. A DRAFT is unpublished work an admin is mid-way through,
+ * and deleting the image out from under it is the same loss as deleting a live one.
+ */
+async function refsInLayouts(): Promise<string[]> {
+  const roots = ROOTS.join("|");
+  const rows = await prisma.$queryRawUnsafe<{ ref: string }[]>(
+    `SELECT DISTINCT (regexp_matches("document"::text, '(?:/uploads/)?((?:${roots})/[^"''\\ )>]+)', 'g'))[1] AS ref
+       FROM "ncf_layouts"`,
+  );
+  return rows.map((r) => r.ref);
+}
+
+/**
  * Every upload path the database still points at. Conservative by construction:
  * anything that might be a reference is treated as one.
  */
 async function collectReferenced(): Promise<Set<string>> {
-  const [users, groups, logos, articles, pages, articleBodyRefs, pageBodyRefs] = await Promise.all([
+  const [users, groups, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
     prisma.user.findMany({ where: { avatar: { not: null } }, select: { avatar: true } }),
     prisma.group.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
     prisma.setting.findMany({ where: { key: { startsWith: "appearance.logo." } }, select: { value: true } }),
@@ -104,6 +126,10 @@ async function collectReferenced(): Promise<Set<string>> {
     prisma.page.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
     refsInJson("ncf_articles", "body"),
     refsInJson("ncf_pages", "body"),
+    // Section backgrounds and every other asset prop a block carries. These live
+    // ONLY in the document — no column points at them — so without this the files
+    // have no reference anywhere and the sweep treats them all as orphans.
+    refsInLayouts(),
   ]);
 
   const set = new Set<string>();
@@ -121,6 +147,7 @@ async function collectReferenced(): Promise<Set<string>> {
   pages.forEach((p) => add(p.featuredImage));
   articleBodyRefs.forEach(add);
   pageBodyRefs.forEach(add);
+  layoutRefs.forEach(add);
   return set;
 }
 
@@ -203,7 +230,7 @@ registerScheduledAction({
   key:   "system.purge-orphaned-uploads",
   label: "Purge orphaned uploads",
   description:
-    "Deletes files in the core upload folders (avatars, groups, themes, articles, pages) that no record points at " +
+    "Deletes files in the core upload folders (avatars, groups, themes, articles, pages, layouts) that no record points at " +
     "any more — replaced avatars and group icons, and the leftovers of deleted articles and pages. Inline images " +
     "referenced from page/article bodies and files belonging to soft-deleted records are kept, and plugin upload " +
     "folders are never touched. Always dry-run this first: deleted files cannot be recovered.",

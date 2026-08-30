@@ -131,14 +131,18 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
  * The caller owns res.body/res.ok — this does not parse or throw on !ok.
  */
 export async function apiStream(path: string, body: unknown): Promise<Response> {
+  // FormData carries its own multipart Content-Type, including the boundary the
+  // server splits on. Setting the header ourselves would overwrite it with one
+  // that has no boundary, and every field would arrive unparsed.
+  const isForm = body instanceof FormData;
   const build = (token: string | null): RequestInit => ({
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     credentials: "include",
-    body: JSON.stringify(body),
+    body: isForm ? body : JSON.stringify(body),
   });
   let res = await fetch(`${BASE}${path}`, build(authStore.token));
   if (res.status === 401 && authStore.token) {

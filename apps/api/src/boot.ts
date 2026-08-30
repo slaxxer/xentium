@@ -3,6 +3,7 @@ import { prisma } from './infrastructure/db.js';
 import { registerCorePermissions } from './bootstrap/registerCorePermissions.js';
 import { logger } from "./infrastructure/logging/logger.js";
 import { migrateGuestHeroToLayout } from "./modules/layouts/guestHeroMigration.js";
+import { migrateRegionConsolidation } from "./modules/layouts/regionConsolidationMigration.js";
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
@@ -37,6 +38,13 @@ export async function boot() {
     // failure must not stop the server booting, so it is caught and logged.
     await migrateGuestHeroToLayout().catch((err: unknown) => {
       logger.error({ err }, "Guest Home hero carry-over failed — hero text may need re-entering in the Layout Editor");
+    });
+    // One-time: carry stored layouts onto the four-landmark region set. Without it a
+    // site that had saved a layout keeps its navbar and footer blocks in the document
+    // and stops RENDERING them — an unknown region is skipped by design, so the loss
+    // is silent. Same guarantees as the carry-over above.
+    await migrateRegionConsolidation().catch((err: unknown) => {
+      logger.error({ err }, "Layout region carry-over failed — the header or footer may render empty until it is re-run");
     });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();

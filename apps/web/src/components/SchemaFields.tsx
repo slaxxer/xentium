@@ -81,16 +81,28 @@ export function defaultsFor(schema: FieldSchema | null | undefined): FieldValues
   return out;
 }
 
-export function SchemaFields({ schema, values, onChange }: {
+export function SchemaFields({ schema, values, onChange, omit }: {
   schema: FieldSchema | null | undefined;
   values: FieldValues;
   onChange: (next: FieldValues) => void;
+  /**
+   * Fields a caller renders ITSELF with a purpose-built control.
+   *
+   * The generic form is deliberately plain — it can only produce inputs, selects and
+   * checkboxes — so a prop that deserves a colour picker or a file upload is handed
+   * back to the caller rather than shown twice or shown badly. Omitting is a display
+   * choice only: the value still lives in the same props object and the server still
+   * validates it against the same schema.
+   */
+  omit?: readonly string[];
 }) {
   const { t } = useTranslation("acp");
-  const props = Object.entries(schema?.properties ?? {});
+  const hidden = new Set(omit ?? []);
+  const props = Object.entries(schema?.properties ?? {}).filter(([key]) => !hidden.has(key));
 
   if (schema === null) return <div className="acp-hint">{t("tasks.paramsUnsupported")}</div>;
   if (props.length === 0) return null;
+
 
   const set = (key: string, value: unknown) => onChange({ ...values, [key]: value });
   const required = new Set(schema?.required ?? []);

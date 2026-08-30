@@ -19,6 +19,15 @@ export interface MarketplaceListing {
   currency:        string;
   licenseRequired: boolean;
   category?:       string | null;
+  /**
+   * Absolute URL of the listing's preview image, or null.
+   *
+   * A THEME's whole pitch is what it looks like, and a grid of themes rendered as
+   * name-and-price cards asks an admin to buy a look they cannot see. The URL is
+   * absolute and served by the marketplace: the image lives there, not on the
+   * instance, so nothing is downloaded until the admin actually installs.
+   */
+  screenshot?:     string | null;
   /** Present only when the catalogue was fetched with a connected account: does
    *  this account hold a licence for it. The ONE place the marketplace answers
    *  "do I own this" for a listing the instance may not have installed. */

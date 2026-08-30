@@ -218,11 +218,12 @@ function useFooterMeta() {
  */
 export function SiteFooter() {
   const layout = useLayoutDocument("chrome.footer");
+  // ONE region, named `footer`. `top`/`main`/`bottom` were three slots for ordering,
+  // which is what a single ordered list already is. `LayoutRegion` emits the
+  // `<footer>` landmark, so this wrapper only carries the styling.
   return (
-    <footer className="nv-foot">
-      <LayoutRegion document={layout} region="top" />
-      <LayoutRegion document={layout} region="main" />
-      <LayoutRegion document={layout} region="bottom" />
-    </footer>
+    <div className="nv-foot">
+      <LayoutRegion document={layout} region="footer" />
+    </div>
   );
 }

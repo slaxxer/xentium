@@ -213,6 +213,32 @@ the variant's tokens, so a colour set there stays consistent across every block 
 variant and travels inside a `.nvtheme`; a prop would be a per-block literal that breaks
 dark mode and cannot be themed.
 
+## So does the admin's CSS handle
+
+Beside the variant an admin may give any block a **`className`** — their own handle for
+custom CSS. Like the variant it rides the `display: contents` wrapper, so your block
+gets it without registering anything, without a prop, and without the class ever landing
+on an element you position.
+
+Your block also gets **`nv-b--<your-type>`** on that wrapper, automatically. A dotted type
+is flattened for the selector, so `myplugin.stats` is `.nv-b--myplugin-stats`. That is the
+hook a downloaded theme uses to skin your block, since a theme cannot add a handle to
+layouts it does not control.
+
+Three consequences for you:
+
+- **Do not add a `className` prop of your own.** It already exists one level up, on the
+  node, and a second one would be a permanent per-block surface duplicating it.
+- **Give your block's real elements stable, prefixed classes**, because that is what a
+  theme ends up selecting — `.nv-b--myplugin-stats .myplugin-stats__count`. Treat those
+  class names as part of your block's public contract: renaming one breaks a theme exactly
+  the way renaming a prop would. So is your block's TYPE, now that the class is derived
+  from it.
+- **Never use `>`, `+` or `~` across a block boundary in your stylesheet.** The wrapper
+  sits between a container block and its children in the DOM, and selectors match the DOM
+  even though the wrapper generates no box. Use descendant selectors. Core shipped this
+  bug once and it broke the mobile collapse for every styled column.
+
 ## Data: core blocks vs plugin blocks
 
 Core blocks **never fetch**. They receive data as props from a host container that
