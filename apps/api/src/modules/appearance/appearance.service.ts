@@ -142,8 +142,41 @@ const THEME_DRAFT_DARK_KEY  = "appearance.tokens.theme.draft.dark";
 /** The manifest of the installed theme, so the ACP can name what it is inheriting from. */
 const THEME_INSTALLED_KEY = "appearance.theme.installed";
 
-function compileCustomCss(light: string, dark: string): string {
-  return [scopeCustomCss(light, "light"), scopeCustomCss(dark, "dark")]
+// ── Theme layer: custom CSS ──────────────────────────────────────────────────
+// Custom CSS was the one channel a theme did NOT layer. An import called
+// `saveCustomCss` with the package's contents, which overwrote the admin's own
+// stylesheet outright — unrecoverably, since unlike a layout no baseline was recorded,
+// and unlike a token there was nowhere else for it to live. A package shipping only
+// `custom-light.css` even blanked the admin's DARK css, because both keys were always
+// written together.
+//
+// So the theme's CSS gets its own layer, mirroring the token layer exactly: staged by an
+// import, promoted by the same `publishDraft`, and emitted BEFORE the admin's CSS so
+// that on an equally-specific rule the admin still wins. `resetAppearance` leaves it
+// alone for the same reason it leaves the token layer alone.
+const THEME_CSS_LIGHT_KEY = "appearance.custom_css.theme.light";
+const THEME_CSS_DARK_KEY  = "appearance.custom_css.theme.dark";
+const THEME_CSS_DRAFT_LIGHT_KEY = "appearance.custom_css.theme.draft.light";
+const THEME_CSS_DRAFT_DARK_KEY  = "appearance.custom_css.theme.draft.dark";
+
+/**
+ * The served custom-CSS blob: the THEME layer first, the admin's own after it.
+ *
+ * Order is the whole of the inheritance. Both layers are scoped to the same theme root,
+ * so two rules of equal specificity are decided by source order — putting the admin
+ * last means their stylesheet wins exactly the way their tokens do, and a theme update
+ * can never take a customisation away.
+ */
+function compileCustomCss(
+  admin: { light: string; dark: string },
+  theme: { light: string; dark: string },
+): string {
+  return [
+    scopeCustomCss(theme.light, "light"),
+    scopeCustomCss(theme.dark,  "dark"),
+    scopeCustomCss(admin.light, "light"),
+    scopeCustomCss(admin.dark,  "dark"),
+  ]
     .filter(Boolean)
     .join("\n\n");
 }
@@ -220,7 +253,10 @@ export const appearanceService = {
   async saveCustomCss(css: { light: string; dark: string }): Promise<void> {
     assertParsableCss(css.light, "light");
     assertParsableCss(css.dark, "dark");
-    const compiled = compileCustomCss(css.light, css.dark);
+    // Recompiled against the LIVE theme layer, not a blank one: this writes the whole
+    // served blob, so dropping the theme half here would silently uninstall a theme's
+    // stylesheet the first time an admin touched their own.
+    const compiled = compileCustomCss(css, await this.getThemeCustomCss());
     await prisma.$transaction([
       prisma.setting.upsert({
         where:  { key: "appearance.custom_css_light" },
@@ -241,20 +277,79 @@ export const appearanceService = {
     await this.bumpStyleVersion();
   },
 
-  /** Theme-scoped custom CSS for both themes, ready to append to the stylesheet. */
+  /** Both layers, both themes, scoped and ready to append to the stylesheet. */
   async buildCustomCss(): Promise<string> {
     const compiled = await readSetting<string | null>(CUSTOM_CSS_COMPILED_KEY, null);
     if (compiled !== null) return compiled;
     // Raw CSS saved before compile-on-save existed (or the legacy single blob):
     // compile once and persist so subsequent /css requests skip postcss entirely.
-    const { light, dark } = await this.getCustomCss();
-    const result = compileCustomCss(light, dark);
+    return this.recompileCustomCss();
+  },
+
+  /**
+   * Rebuild and cache the served blob from whatever both layers currently hold.
+   *
+   * The cache is a single setting on the public hot path (`GET /appearance/css`), so
+   * every writer of EITHER layer has to come through here — a theme publish that
+   * skipped it would leave the site serving the previous theme's stylesheet until an
+   * admin happened to save their own CSS.
+   */
+  async recompileCustomCss(): Promise<string> {
+    const [admin, theme] = await Promise.all([this.getCustomCss(), this.getThemeCustomCss()]);
+    const result = compileCustomCss(admin, theme);
     await prisma.setting.upsert({
       where:  { key: CUSTOM_CSS_COMPILED_KEY },
       update: { value: result },
       create: { key: CUSTOM_CSS_COMPILED_KEY, value: result },
     });
+    bustSettingsCache(CUSTOM_CSS_COMPILED_KEY);
     return result;
+  },
+
+  // ── Theme layer: custom CSS ───────────────────────────────────────────────
+
+  /** What the installed theme's stylesheet is, LIVE. Empty when nothing is published. */
+  async getThemeCustomCss(): Promise<{ light: string; dark: string }> {
+    const [light, dark] = await Promise.all([
+      readSetting<string | null>(THEME_CSS_LIGHT_KEY, null),
+      readSetting<string | null>(THEME_CSS_DARK_KEY,  null),
+    ]);
+    return { light: light ?? "", dark: dark ?? "" };
+  },
+
+  /** The staged theme stylesheet, falling back to the live one when nothing is staged. */
+  async getThemeDraftCustomCss(): Promise<{ light: string; dark: string }> {
+    const [light, dark] = await Promise.all([
+      readSetting<string | null>(THEME_CSS_DRAFT_LIGHT_KEY, null),
+      readSetting<string | null>(THEME_CSS_DRAFT_DARK_KEY,  null),
+    ]);
+    if (light === null && dark === null) return this.getThemeCustomCss();
+    return { light: light ?? "", dark: dark ?? "" };
+  },
+
+  /**
+   * Stage an imported theme's stylesheet. Nothing served changes until publish.
+   *
+   * Both keys are written even when the package carries only one, because "this theme
+   * has no dark stylesheet" is a fact about the theme that has to replace the previous
+   * theme's dark stylesheet. That is safe here in a way it never was against the admin's
+   * keys: this layer belongs to the theme, so overwriting all of it is correct.
+   */
+  async saveThemeCustomCss(css: { light: string; dark: string }): Promise<void> {
+    await prisma.$transaction([
+      prisma.setting.upsert({
+        where:  { key: THEME_CSS_DRAFT_LIGHT_KEY },
+        update: { value: css.light },
+        create: { key: THEME_CSS_DRAFT_LIGHT_KEY, value: css.light },
+      }),
+      prisma.setting.upsert({
+        where:  { key: THEME_CSS_DRAFT_DARK_KEY },
+        update: { value: css.dark },
+        create: { key: THEME_CSS_DRAFT_DARK_KEY, value: css.dark },
+      }),
+    ]);
+    bustSettingsCache(THEME_CSS_DRAFT_LIGHT_KEY);
+    bustSettingsCache(THEME_CSS_DRAFT_DARK_KEY);
   },
 
   /** Scope a single raw blob for one theme — used by the live-preview endpoint. */
@@ -348,13 +443,20 @@ export const appearanceService = {
    * leave the admin with no way to apply it.
    */
   async getDraftStatus(): Promise<{ pending: boolean }> {
-    const [dl, dd, tdl, tdd] = await Promise.all([
+    const [dl, dd, tdl, tdd, tcl, tcd] = await Promise.all([
       readSetting<unknown>(DRAFT_LIGHT_KEY, null),
       readSetting<unknown>(DRAFT_DARK_KEY,  null),
       readSetting<unknown>(THEME_DRAFT_LIGHT_KEY, null),
       readSetting<unknown>(THEME_DRAFT_DARK_KEY,  null),
+      // The theme's staged STYLESHEET counts too, and it is not optional politeness:
+      // `publishDraft` returns early when nothing is pending, so a package carrying
+      // `styles/custom-*.css` and no `tokens.json` would stage a stylesheet that could
+      // never be published — staged forever, invisible, with no way to apply it.
+      readSetting<string | null>(THEME_CSS_DRAFT_LIGHT_KEY, null),
+      readSetting<string | null>(THEME_CSS_DRAFT_DARK_KEY,  null),
     ]);
-    if (dl === null && dd === null && tdl === null && tdd === null) return { pending: false };
+    if (dl === null && dd === null && tdl === null && tdd === null
+      && tcl === null && tcd === null) return { pending: false };
 
     const [live, themeLive] = await Promise.all([this.getTokenOverrides(), this.getThemeTokens()]);
     if (dl !== null || dd !== null) {
@@ -364,6 +466,12 @@ export const appearanceService = {
     if (tdl !== null || tdd !== null) {
       const themeDraft = { light: normalizeScoped(tdl), dark: normalizeScoped(tdd) };
       if (JSON.stringify(themeDraft) !== JSON.stringify(themeLive)) return { pending: true };
+    }
+    if (tcl !== null || tcd !== null) {
+      const themeCssLive = await this.getThemeCustomCss();
+      if ((tcl ?? "") !== themeCssLive.light || (tcd ?? "") !== themeCssLive.dark) {
+        return { pending: true };
+      }
     }
     return { pending: false };
   },
@@ -422,14 +530,48 @@ export const appearanceService = {
       ]);
     }
 
+    /**
+     * The theme's stylesheet is promoted on its OWN staged-ness, not the tokens'.
+     *
+     * A package may carry `styles/custom-*.css` and no `tokens.json`, or the reverse.
+     * Gating this on the token check above would silently strand one half of such a
+     * theme in the draft forever.
+     */
+    const [stagedCssLight, stagedCssDark] = await Promise.all([
+      readSetting<string | null>(THEME_CSS_DRAFT_LIGHT_KEY, null),
+      readSetting<string | null>(THEME_CSS_DRAFT_DARK_KEY,  null),
+    ]);
+    const themeCssStaged = stagedCssLight !== null || stagedCssDark !== null;
+    if (themeCssStaged) {
+      await prisma.$transaction([
+        prisma.setting.upsert({
+          where:  { key: THEME_CSS_LIGHT_KEY },
+          update: { value: stagedCssLight ?? "" },
+          create: { key: THEME_CSS_LIGHT_KEY, value: stagedCssLight ?? "" },
+        }),
+        prisma.setting.upsert({
+          where:  { key: THEME_CSS_DARK_KEY },
+          update: { value: stagedCssDark ?? "" },
+          create: { key: THEME_CSS_DARK_KEY, value: stagedCssDark ?? "" },
+        }),
+      ]);
+      bustSettingsCache(THEME_CSS_LIGHT_KEY);
+      bustSettingsCache(THEME_CSS_DARK_KEY);
+    }
+
     const draft = await this.getDraftTokens();
     await this.saveTokens(draft, author, label ?? "Published appearance changes");
     await prisma.setting.deleteMany({
       where: { key: { in: [
         DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY,
         THEME_DRAFT_LIGHT_KEY, THEME_DRAFT_DARK_KEY,
+        THEME_CSS_DRAFT_LIGHT_KEY, THEME_CSS_DRAFT_DARK_KEY,
       ] } },
     });
+    // The served blob is a cache of both layers, so promoting the theme's half has to
+    // rebuild it. `saveTokens` already bumped the style version, and this runs before
+    // the request returns, so no client can observe the stale pair.
+    if (themeCssStaged) await this.recompileCustomCss();
     return true;
   },
 
@@ -535,10 +677,16 @@ export const appearanceService = {
         "appearance.tokens.light", "appearance.tokens.dark",
         DRAFT_LIGHT_KEY, DRAFT_DARK_KEY, DRAFT_BY_KEY,
         "appearance.font.family",  "appearance.font.weight", "appearance.font.size",
+        // NOT the theme's stylesheet (live or staged), for the same reason the token
+        // layer survives: reset drops MY edits, it does not uninstall the theme.
         "appearance.custom_css_light", "appearance.custom_css_dark", "appearance.custom_css",
         CUSTOM_CSS_COMPILED_KEY,
       ] } },
     });
+    // Deleting the compiled cache is not enough: the next reader would rebuild it from
+    // both layers anyway, but doing it here means the theme's stylesheet is provably
+    // still being served the moment reset returns.
+    await this.recompileCustomCss();
     await this.bumpStyleVersion();
   },
 

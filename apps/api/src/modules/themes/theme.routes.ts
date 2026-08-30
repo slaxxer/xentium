@@ -25,6 +25,21 @@ const upload = multer({
 });
 
 /**
+ * The export form, which may carry one preview image.
+ *
+ * NOT `uploadSingle`: that middleware answers 400 when the field is absent, and a
+ * screenshot is optional — most exports are still a form with no file at all.
+ * multer passes a plain JSON request straight through untouched, so this route
+ * keeps accepting the body it always accepted; the magic-byte check that
+ * `uploadSingle` would have run lives in `exportTheme`, next to the rest of the
+ * rules about what a package may carry.
+ */
+const screenshotUpload = multer({
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: THEME_ASSET_LIMITS.maxBytesEach, files: 1 },
+});
+
+/**
  * The author-supplied half of the manifest. Picked from the manifest schema itself
  * rather than restated, so the two can never disagree about what a version looks like;
  * the version fields the service fills in are deliberately not accepted here.
@@ -39,8 +54,13 @@ const exportSchema = themeManifestSchema.pick({
    * This is what `.nvstyle` existed for: handing someone a colour scheme without
    * shipping the arrangement of every page along with it. It is an OPTION on the one
    * format now rather than a second format with its own manifest and its own validator.
+   *
+   * ⚠ Accepts the STRING "true" as well as the boolean. A multipart body has no types
+   * — every field arrives as text — and `z.coerce.boolean()` is not the fix: it is
+   * JS truthiness, so the string "false" coerces to `true` and a tokens-only export
+   * would silently become a full one.
    */
-  tokensOnly: z.boolean().optional(),
+  tokensOnly: z.union([z.boolean(), z.enum(["true", "false"]).transform((v) => v === "true")]).optional(),
 });
 
 /** What theme is installed, if any — the thing the site is inheriting from. */
@@ -54,10 +74,10 @@ themeRouter.get("/installed", guard, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-themeRouter.post("/export", guard, async (req, res, next) => {
+themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async (req, res, next) => {
   try {
     const { tokensOnly, ...meta } = exportSchema.parse(req.body ?? {});
-    const buffer = await themeService.exportTheme(meta, { tokensOnly });
+    const buffer = await themeService.exportTheme(meta, { tokensOnly, screenshot: req.file?.buffer });
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.nvtheme"`);
     res.send(buffer);

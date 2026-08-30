@@ -1182,9 +1182,19 @@
       "verifying": "Vérification du téléchargement…",
       "validating": "Validation du paquet…",
       "installing": "Installation…",
-      "finalizing": "Finalisation…"
+      "finalizing": "Finalisation…",
+      "importing": "Application du thème…"
     },
-    "pagination": "Page {{page}} sur {{totalPages}} — {{total}} extensions"
+    "pagination": "Page {{page}} sur {{totalPages}} — {{total}} extensions",
+    "tab": {
+      "plugin": "Plugins",
+      "theme": "Thèmes"
+    },
+    "searchThemesPlaceholder": "Rechercher des thèmes…",
+    "themeDraftNote": "Installer un thème le place en brouillon : rien ne change pour les visiteurs tant que vous ne le publiez pas.",
+    "themeGoManage": "Aller aux thèmes",
+    "themeInstalled": "Installé",
+    "themeStaged": "{{name}} a été placé en brouillon. Publiez-le pour le mettre en ligne."
   },
   "updates": {
     "title": "Mises à jour",
@@ -1639,6 +1649,7 @@
     "faviconHint": "PNG, ICO ou SVG · max 2 Mo · recommandé 64×64 px",
     "themeSuffix": "thème {{theme}}",
     "cssIntro": "CSS brut pour le thème que vous consultez — cadré & appliqué après les jetons afin de remplacer toute règle. Changez de thème avec le bouton en haut pour éditer l'autre. Les modifications sont prévisualisées en direct ; « Appliquer & Enregistrer » stocke les deux thèmes et les publie pour tous les visiteurs.",
+    "cssThemeLayer": "Un thème installé fournit aussi sa propre feuille de style. Elle est appliquée avant celle-ci, donc vos règles l'emportent — et rien de ce que vous écrivez ici n'est écrasé lors d'une mise à jour du thème.",
     "saving": "Enregistrement…",
     "applySave": "Appliquer & Enregistrer",
     "unsaved": "Modifications non enregistrées — aperçu en direct",
@@ -1781,6 +1792,8 @@
       "plain": "Neutre"
     },
     "variantNote": "Une variante est un style nommé défini par le thème, pas une couleur posée sur ce bloc : tous les blocs qui la partagent restent cohérents, en clair comme en sombre. Enregistrée avec la mise en page.",
+    "classNameLabel": "Classe CSS",
+    "classNameNote": "Une prise optionnelle pour votre propre CSS, par exemple nav-tile. Stylez au travers — .nav-tile > * ou .nav-tile img — la prise elle-même ne peint rien. Enregistrée avec la mise en page.",
     "variantLeaf": "Ce bloc n’a pas de surface propre. Appliquez le style à la section ou à la carte qui le contient : ce bloc la suivra.",
     "variantScope": "{{variant}} · thème {{theme}}",
     "modeLight": "Clair",
@@ -1846,16 +1859,9 @@
     },
     "region": {
       "header": "En-tête",
-      "beforeBody": "Avant le contenu",
-      "main": "Principal",
-      "afterBody": "Après le contenu",
-      "aside": "Barre latérale",
-      "footer": "Pied de page",
-      "left": "Gauche",
-      "center": "Centre",
-      "right": "Droite",
-      "top": "Haut",
-      "bottom": "Bas"
+      "main": "Corps",
+      "aside": "Aside",
+      "footer": "Pied"
     },
     "audienceViewHint": "Filtre l’arborescence et l’aperçu sur une seule disposition. Les blocs ajoutés y sont limités.",
     "audienceView": {
@@ -1873,7 +1879,29 @@
       "content": "Contenu",
       "data": "Données",
       "plugin": "Extension"
-    }
+    },
+    "bgTitle": "Arrière-plan",
+    "bgNone": "Aucun arrière-plan",
+    "bgImage": "Image",
+    "bgUpload": "Téléverser une image",
+    "bgUploading": "Téléversement…",
+    "bgRemove": "Retirer",
+    "bgGradient": "Dégradé",
+    "bgAddFirst": "Ajouter un dégradé",
+    "bgAddStop": "Ajouter une couleur",
+    "bgRemoveStop": "Retirer cette couleur",
+    "bgStop": "Couleur {{n}}",
+    "bgOneStop": "Une seule couleur donne un aplat. Ajoutez-en une deuxième pour un dégradé.",
+    "bgAngle": "Direction",
+    "bgAngle180": "De haut en bas",
+    "bgAngle0": "De bas en haut",
+    "bgAngle90": "De gauche à droite",
+    "bgAngle270": "De droite à gauche",
+    "bgAngle135": "Haut gauche vers bas droite",
+    "bgAngle315": "Bas droite vers haut gauche",
+    "bgAngle45": "Bas gauche vers haut droite",
+    "bgAngle225": "Haut droite vers bas gauche",
+    "bgNote": "L'image est dessinée par-dessus le dégradé ; chacun fonctionne seul. Une couleur écrite var(--c-accent) suit la palette du site et les deux thèmes."
   },
   "groups": {
     "glow": "Halo sur les noms",
@@ -2033,7 +2061,9 @@
     "fieldHomepage": "URL du site",
     "fieldAuthorUrl": "URL de l'auteur",
     "tokensOnly": "Couleurs seulement",
-    "tokensOnlyHint": "Exporte la palette sans les mises en page ni les images."
+    "tokensOnlyHint": "Exporte la palette sans les mises en page ni les images.",
+    "fieldScreenshot": "Image d'aperçu",
+    "fieldScreenshotHint": "Intégrée au thème comme capture et affichée sur les fiches de la marketplace. PNG, JPEG, WebP ou AVIF."
   },
   "owned": {
     "title": "Vos licences",

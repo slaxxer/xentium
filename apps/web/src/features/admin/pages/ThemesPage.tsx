@@ -19,6 +19,7 @@ import { faDownload, faUpload, faPalette, faTriangleExclamation } from "@fortawe
 import { api, apiStream } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
+import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import { openThemeExportDialog } from "./ThemeExportDialog";
 import "./ThemesPage.scss";
 
@@ -26,6 +27,9 @@ interface InstalledTheme {
   manifest: {
     id: string; name: string; version: string;
     vendor?: string; importedAt?: string;
+    /** Where the package's preview image landed on THIS install — the importer
+     *  rewrites the package-relative path to an upload path, so it renders. */
+    screenshot?: string;
   } | null;
   /** Templates the theme layer holds — what "Revert to theme" can restore. */
   templates: string[];
@@ -78,13 +82,18 @@ export function ThemesPage() {
     if (!meta) return;
     setExporting(true);
     try {
-      const { tokensOnly, ...fields } = meta;
-      const body = {
+      const { tokensOnly, screenshot, ...fields } = meta;
+      // Multipart, because the package may carry a preview image — and multipart
+      // has no types, so `tokensOnly` goes as the string the server's schema
+      // explicitly accepts rather than as a value JS truthiness would misread.
+      const body = new FormData();
+      for (const [k, v] of Object.entries(fields)) {
         // Blank optionals are omitted rather than sent as "" — the API rejects an
         // empty string where it wants a URL.
-        ...Object.fromEntries(Object.entries(fields).filter(([, v]) => v.trim() !== "")),
-        ...(tokensOnly ? { tokensOnly: true } : {}),
-      };
+        if (v.trim() !== "") body.append(k, v);
+      }
+      if (tokensOnly) body.append("tokensOnly", "true");
+      if (screenshot) body.append("screenshot", screenshot);
       const res = await apiStream("/admin/themes/export", body);
       if (!res.ok) {
         const err = await res.json().catch(() => null);
@@ -126,7 +135,12 @@ export function ThemesPage() {
         {installed ? (
           <>
             <div className="thm__installed">
-              <FontAwesomeIcon icon={faPalette} />
+              {/* The theme's own picture when it shipped one, the generic glyph when
+                  it did not. Resolved exactly as an image block resolves its source,
+                  so a theme pointing at a CDN still works. */}
+              {installed.screenshot
+                ? <img className="thm__shot" src={resolveImageSource(installed.screenshot)} alt="" />
+                : <FontAwesomeIcon icon={faPalette} />}
               <div>
                 <b>{installed.name} {installed.version}</b>
                 <span>

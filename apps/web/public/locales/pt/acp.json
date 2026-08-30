@@ -1182,9 +1182,19 @@
       "verifying": "A verificar a transferência…",
       "validating": "A validar o pacote…",
       "installing": "A instalar…",
-      "finalizing": "A concluir…"
+      "finalizing": "A concluir…",
+      "importing": "A aplicar o tema…"
     },
-    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensões"
+    "pagination": "Página {{page}} de {{totalPages}} — {{total}} extensões",
+    "tab": {
+      "plugin": "Plugins",
+      "theme": "Temas"
+    },
+    "searchThemesPlaceholder": "Procurar temas…",
+    "themeDraftNote": "Instalar um tema guarda-o como rascunho — nada muda para os visitantes até o publicares.",
+    "themeGoManage": "Ir para Temas",
+    "themeInstalled": "Instalado",
+    "themeStaged": "{{name}} foi guardado como rascunho. Publica-o para o colocar no ar."
   },
   "updates": {
     "title": "Atualizações",
@@ -1639,6 +1649,7 @@
     "faviconHint": "PNG, ICO ou SVG · máx. 2 MB · recomendado 64×64 px",
     "themeSuffix": "tema {{theme}}",
     "cssIntro": "CSS bruto para o tema que você está vendo — com escopo e aplicado após os tokens para substituir qualquer regra. Alterne o seu tema com o botão da barra superior para editar o outro. As alterações têm pré-visualização ao vivo; “Aplicar e salvar” armazena ambos os temas e os publica para todos os visitantes.",
+    "cssThemeLayer": "Um tema instalado também traz a sua própria folha de estilos. É aplicada antes desta, por isso as tuas regras ganham — e nada do que escreveres aqui se perde quando o tema for atualizado.",
     "saving": "Salvando…",
     "applySave": "Aplicar e salvar",
     "unsaved": "Alterações não salvas — pré-visualizando ao vivo",
@@ -1781,6 +1792,8 @@
       "plain": "Simples"
     },
     "variantNote": "Uma variante é um estilo com nome definido pelo tema, não uma cor neste bloco — todos os blocos com a mesma variante mantêm-se iguais, em claro e escuro. É guardada com o layout.",
+    "classNameLabel": "Classe CSS",
+    "classNameNote": "Um identificador opcional para o teu próprio CSS, por exemplo nav-tile. Aplica o estilo através dele — .nav-tile > * ou .nav-tile img — porque o identificador em si não pinta nada. É guardado com o layout.",
     "variantLeaf": "Este bloco não tem superfície própria. Define o estilo na secção ou cartão que o contém e este bloco acompanha-o.",
     "variantScope": "{{variant}} · tema {{theme}}",
     "modeLight": "Claro",
@@ -1846,16 +1859,9 @@
     },
     "region": {
       "header": "Cabeçalho",
-      "beforeBody": "Antes do conteúdo",
-      "main": "Principal",
-      "afterBody": "Depois do conteúdo",
-      "aside": "Barra lateral",
-      "footer": "Rodapé",
-      "left": "Esquerda",
-      "center": "Centro",
-      "right": "Direita",
-      "top": "Topo",
-      "bottom": "Fundo"
+      "main": "Corpo",
+      "aside": "Aside",
+      "footer": "Rodapé"
     },
     "audienceViewHint": "Filtra a árvore e a pré-visualização para uma disposição. Os blocos que adicionar ficam limitados a ela.",
     "audienceView": {
@@ -1873,7 +1879,29 @@
       "content": "Conteúdo",
       "data": "Dados",
       "plugin": "Plugin"
-    }
+    },
+    "bgTitle": "Fundo",
+    "bgNone": "Sem fundo",
+    "bgImage": "Imagem",
+    "bgUpload": "Carregar imagem",
+    "bgUploading": "A carregar…",
+    "bgRemove": "Remover",
+    "bgGradient": "Gradiente",
+    "bgAddFirst": "Adicionar um gradiente",
+    "bgAddStop": "Adicionar cor",
+    "bgRemoveStop": "Remover esta cor",
+    "bgStop": "Cor {{n}}",
+    "bgOneStop": "Uma cor pinta um preenchimento liso. Adiciona uma segunda para um gradiente.",
+    "bgAngle": "Direção",
+    "bgAngle180": "De cima para baixo",
+    "bgAngle0": "De baixo para cima",
+    "bgAngle90": "Da esquerda para a direita",
+    "bgAngle270": "Da direita para a esquerda",
+    "bgAngle135": "Cima-esquerda para baixo-direita",
+    "bgAngle315": "Baixo-direita para cima-esquerda",
+    "bgAngle45": "Baixo-esquerda para cima-direita",
+    "bgAngle225": "Cima-direita para baixo-esquerda",
+    "bgNote": "A imagem é desenhada sobre o gradiente, e cada um funciona sozinho. Uma cor escrita como var(--c-accent) segue a paleta do site e ambos os temas."
   },
   "groups": {
     "glow": "Brilho nos nomes",
@@ -2033,7 +2061,9 @@
     "fieldHomepage": "URL do site",
     "fieldAuthorUrl": "URL do autor",
     "tokensOnly": "Apenas cores",
-    "tokensOnlyHint": "Exporta a paleta sem esquemas de página nem imagens."
+    "tokensOnlyHint": "Exporta a paleta sem esquemas de página nem imagens.",
+    "fieldScreenshot": "Imagem de pré-visualização",
+    "fieldScreenshotHint": "Incluída no tema como captura e mostrada nas fichas do marketplace. PNG, JPEG, WebP ou AVIF."
   },
   "owned": {
     "title": "As tuas licenças",
