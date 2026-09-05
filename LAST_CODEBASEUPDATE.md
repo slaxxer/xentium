@@ -1,650 +1,928 @@
-# Last codebase update — 2026-08-29
+**The editor.** Clicking a block opens the document that owns it. `data-nv-template`
+travels on every wrapper, so a click on the masthead band, the navbar or the
+who's-online panel switches the editor to that template with the block selected —
+which is how the header and footer are arranged from the page you are looking at. The
+preview stays on the page you were on (`previewPageKey`); chrome renders on every
+route, so opening the header must not move you.
+- ⚠ ONE document at a time, named in the picker. Each has its own draft and its own
+  publish; two behind one Publish button would make the button lie.
+- ⚠ Dragging (`data-nv-drag`) and empty-region drop targets stay with the OPEN
+  document, because both rewrite the tree the editor is holding.
+- Page bands are "Above body" / "Below body", named by where they are, since what they
+  are not is the header.
 
-Steps 1, 2, 3 and 4 of the theme-marketplace track, plus chrome bands + section backgrounds.
+# Last codebase update — 2026-08-30 (session 2)
 
-# Part 1 — the designer's handles
+Theme-marketplace **step 5, parts 1–8** + a layout-editor pass and a header block: paid themes end to end, a theme's dependency
+footprint published with its listing, the marketplace rendering the theme itself so a
+buyer can see it before paying, the INSTANCE rendering a theme over the admin's own
+site and content — reversibly — and, finally, a theme that goes LIVE when it is
+applied instead of waiting in two different drafts — which uncovered a stale-CSS bug
+that had been keeping the site on the previous theme — and one that had been letting
+the site repaint the ADMIN PANEL. Spans BOTH repos.
+Everything below is verified in a running browser, not only under test.
 
-Step 1: the two handles a designer needs before a theme
-creator community can build anything that isn't already expressible in tokens. Small on
-purpose — both fields are permanent, so the surface stays as narrow as the use case.
-
-The decisions this step follows were taken today and are recorded in the
-`theme-marketplace-plan` memory: distributed themes MAY ship custom CSS (with hardening,
-which is step 2); paid themes are in scope from the start; the theme catalogue is a
-`kind` field on the existing marketplace, not a second property.
-
-## What this unblocks
-
-An image navbar — the thing that has no expression in the block catalogue today:
-
-```jsonc
-// chrome.header, per tile
-{ "type": "image", "className": "nav-tile",
-  "props": { "source": "assets/forum.png", "href": "/forum" } }
-```
-
-```css
-.nav-tile > *       { width: 120px; }
-.nav-tile:hover img { filter: brightness(1.15); }
-```
-
-`navLinks` renders text and has no props, so before this there was no way to say "this
-artwork is the link to /forum", and no stable selector to style one tile with.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `packages/contracts/src/layout.ts` | `className` on `BlockNode` + `blockClassNameSchema` (1–4 CSS identifiers, `nv-` refused). New `linkHrefSchema` and `image.href`. |
-| `apps/web/src/layout/LayoutRenderer.tsx` | The handle rides the SAME `display: contents` wrapper as the variant; that wrapper now also exists outside the editor when only a handle is set. |
-| `apps/web/src/layout/blocks/coreBlocks.tsx` | `ImageBlock` wraps the `<img>` in `a.nv-image__link` when `href` is set. |
-| `apps/web/src/layout/blocks/coreBlocks.scss` | `.nv-image__link` — a block box with no link colour or underline, so the aspect-ratio rules keep measuring the right element. |
-| `apps/web/src/layout/blockTree.ts` | `updateBlockClassName` — deletes the field when cleared, normalises whitespace. |
-| `apps/web/src/features/admin/pages/BlockStyle.tsx` | The CSS-class field, deliberately ABOVE and OUTSIDE the container branch. |
-| `apps/web/src/features/admin/pages/LayoutEditorPage.tsx` | Wires it to the tree op. |
-| `apps/web/src/features/admin/pages/LayoutEditorPage.scss` | `&__style-class`. |
-| `apps/web/public/locales/{en,de,es,fr,pt}/acp.json` | `layoutEditor.classNameLabel` / `.classNameNote`. |
-| `apps/web/src/layout/blockHandles.test.tsx` | **New**, 21 tests: the class contract, the tree op, the wrapper, the href scheme refusals, the anchor. |
-| `docs/theme-packages.md` | New "CSS handles" section — the `> *` idiom, the reserved prefix, `image.href`. |
-| `docs/plugin-blocks.md` | New section: plugin blocks get the handle free, must NOT add a `className` prop, and their own class names are now a public contract. |
-
-## ⚠ The one decision worth remembering
-
-**The handle is stamped on the `display: contents` wrapper, NOT passed into the block.**
-
-Threading a `className` prop through the 52 registered block components would have been
-honoured by core blocks and silently ignored by every plugin block a theme wants to skin —
-and skinning a plugin's block is exactly what a theme marketplace needs. The wrapper is
-uniform across core, plugin and future blocks, costs no per-block work, and cannot break
-the flex and grid parents that size the real element.
-
-The price: the handle paints nothing, so custom CSS styles *through* it — `.nav-tile > *`,
-`.nav-tile img`, `.nav-tile .nv-image`. Descendant and `:hover` selectors work normally,
-because `:hover` matches an ancestor of the hovered box whether or not that ancestor
-generates one. Documented in both docs, because it is the first thing a theme author hits.
-
-**This is a compatibility contract now.** Moving the class to the block's real element
-later would break every shipped theme's `.handle > *` rules.
-
-Other rules that are permanent as of this step:
-
-- **`nv-` is reserved.** A document that could mint a core class could impersonate one, or
-  hand itself a variant (`nv-v--accent`) nobody granted it.
-- **No `hoverSource` on `image`.** A hover swap is CSS the handle already expresses, and
-  every block prop is permanent.
-- **`linkHrefSchema` strips whitespace and C0 controls before testing the scheme**, because
-  `java\tscript:` navigates exactly like `javascript:`. A `.nvtheme` from a stranger is a
-  way into that field.
-
-## Verified
-
-`pnpm --filter @nodevo/web test` — 499 pass (23 files), including the 21 new ones.
-Typecheck, lint and build clean for `@nodevo/web` and `@nodevo/contracts`.
-
-Then checked in the running app, because green tests have missed UI bugs here before:
-the field renders on a LEAF block (`articleIndex`, which the variant picker refuses), the
-input filters illegal characters as you type, the value round-trips through the API into
-`ncf_layouts.document` in the DRAFT only, and the rendered preview carries
-`<a class="nv-image__link" href="/forum" rel="noopener noreferrer">` inside a `.nav-tile`
-wrapper with `display: contents`. Test edits were reverted; the dev draft is byte-identical
-to its pre-session state.
-
-## ⚠ Two pre-existing failures found, NOT caused by this work, NOT fixed
-
-Both are in `plugins/official/nodevo-shoutbox` (git-ignored) and both fail `pnpm typecheck`,
-so `pnpm backbone:check` cannot go green until they are dealt with:
-
-- `web/blocks/ShoutboxBlock.tsx:39` — `editorMeta.description` is not in `BlockDefinition`.
-  Either drop the line or add `description?: string` to the registry type.
-- `web/components/ShoutboxWidget.tsx:285` — `outlet` is referenced but `ShoutboxWidget()`
-  takes no props. A leftover from when the widget was an outlet contribution rather than a
-  block; `const isAside = outlet === "aside"` never compiles.
-
-Separately, adding an Image block with no `source` yet renders "Block image failed to
-render" in the preview: `resolveImageSource(undefined)` throws once the schema parse fails.
-Pre-existing, harmless, but it is the first thing an admin sees after adding the block.
-
+`pnpm backbone:check` green (typecheck 30/30, lint 0, API **294**, web **598**, build clean);
+marketplace **178** tests green.
 
 ---
 
-# Part 2 — the theme's stylesheet gets a layer, and a stranger's gets hardened
+## Part 1 — Paid themes (`~/Development/nodevo`)
 
-Step 2 started as "add draft→publish staging to custom CSS" and the premise turned out to
-be wrong. Custom CSS was the one channel of four that a `.nvtheme` did **not** layer:
+### `apps/api/src/core/license-engine/marketplace-source.ts`
+- `marketplace.paid_theme_ids` — a SECOND key and a SECOND catalogue walk, never a
+  widening of `paid_plugin_ids`. That set feeds the plugin enable gate, which asks
+  "is this id paid?" and cannot tell a theme id from a plugin id.
+- The walk is now `refreshPaidIds(kind)`, with `kind` selecting both the half walked
+  and the key written from one map, so the two can never be chosen separately.
+  `refreshPaidPluginIds` / `refreshPaidThemeIds` / `ensurePaidIdsFresh(kind)`.
 
-| Channel | Before | Now |
-|---|---|---|
-| Tokens | own layer, staged, merged under the admin | unchanged |
-| Layouts | own baseline, staged, customised templates kept | unchanged |
-| **Custom CSS** | **overwrote the admin's keys, live** | **own layer, staged, emitted under the admin's** |
-| Assets | own directory per theme id | unchanged |
+### `apps/api/src/core/license-engine/license-engine.ts`
+- Entitlement grants are `<kind>.<id>`; `getEntitlementStatus(id, kind)` and
+  `isEntitled(id, kind)` now honour that. `plugin.` was hardcoded, so an owned THEME
+  matched nothing and read as `missing`.
+- `themeRequiresLicense(id)` beside `pluginRequiresLicense(id)`, sharing only the lookup.
+- `assertThemeDownloadAllowed(themeId)` — the theme download PRE-CHECK, and only that.
+  The marketplace remains the authority; this replaces its deliberately vague 404 with
+  a sentence naming the theme and where to buy it.
+  ⚠ It may only ADD a refusal the real gate would also make. Two consequences:
+  a `never` freshness proceeds (no information), and the stored entitlement is a fast
+  YES but never a NO — a grant only exists if activation found a SEAT, and
+  `/downloads/authorize` does not look at seats at all. Refusing on a missing grant
+  would have blocked a paying customer whose seats are spent on other installs.
 
-So importing a theme **destroyed whatever CSS the admin had written** — no baseline
-recorded (unlike a layout), nowhere else to live (unlike a token), and applied live so it
-happened before anyone had looked. A package carrying only `custom-light.css` blanked
-their **dark** stylesheet too, because both admin keys were always written together.
+### `apps/api/src/modules/admin/marketplace.service.ts`
+- `installThemeFromMarketplace` runs the pre-check before the round trip.
+- **`listOwned` knows about the installed theme.** It resolved `installedVersion` from
+  `installedPlugin`, a table a theme id has never been in, so every owned theme came
+  back `null`: permanently "Inactive", never offering an update, whatever the site wore.
+  Now read from `appearance.theme.installed` — and ONLY for the theme actually worn,
+  since a site wears one. `installedStatus` stays null: a theme has no enabled state.
 
-Two more things were simply missing, found while building this:
+### `apps/api/src/jobs/updateCheck.ts`
+- The heartbeat refreshes both paid-id sets.
 
-- **A theme's `url(assets/…)` was never rewritten.** Documents get `rewriteAssetRefs`;
-  stylesheets got nothing, so every image a theme shipped through its CSS resolved against
-  `/api/appearance/css` and 404'd. Export had the mirror hole.
-- **`publishDraft` returns early when nothing is pending**, and `getDraftStatus` did not
-  look at the staged stylesheet — so a package carrying `styles/custom-*.css` and no
-  `tokens.json` would have staged CSS that could never be published.
+### `apps/web/.../MarketplacePage.tsx`, `OwnedLicenses.tsx`
+- `entitlements.includes(\`plugin.${p.id}\`)` → `\`${p.kind}.${p.id}\`` (an owned theme
+  offered "Buy" whenever the catalogue did not answer `owned`).
+- The owned-licence row passes `kind` on install — without it a theme ran the PLUGIN
+  intake over a `.nvtheme`. Its action ladder no longer swallows install for themes,
+  and theme queries are invalidated after one.
 
-## Files
-
-| File | Purpose |
-|---|---|
-| `apps/api/src/modules/themes/themeCss.ts` | **New.** `assertThemeCssSafe` (refuses `@import` and remote `url()`), `rewriteThemeCssUrls`, `collectCssUploadRefs`, `toPackageCssUrls`. |
-| `apps/api/src/modules/appearance/appearance.service.ts` | The layer: 4 new keys, `getThemeCustomCss` / `getThemeDraftCustomCss` / `saveThemeCustomCss` / `recompileCustomCss`; `compileCustomCss` now emits theme-then-admin; `publishDraft` promotes it on its OWN staged-ness; `getDraftStatus` counts it; `resetAppearance` keeps it. |
-| `apps/api/src/modules/appearance/appearance.routes.ts` | `GET /custom-css` returns the admin layer **plus a separate `theme` field** — merging them would make the console save the theme's CSS as the admin's own. |
-| `apps/api/src/modules/themes/theme.service.ts` | Import validates before writing and stages into the theme layer; export carries the EFFECTIVE stylesheet and packs its images. |
-| `apps/web/src/features/admin/pages/StyleEditorPage.tsx` | Reads the theme layer separately; the console says a theme stylesheet sits underneath. |
-| `apps/web/public/locales/*/acp.json` | `styleEditor.cssThemeLayer`. |
-| `apps/api/src/modules/appearance/themeCssLayer.test.ts` | **New**, 10 tests against the real DB: emission order, publish, draft-status, reset. |
-| `apps/api/src/modules/themes/theme.service.test.ts` | 9 new tests + one rewritten (it asserted the bug). |
-| `docs/theme-packages.md` | The stylesheet layer, and what a theme's CSS may and may not do. |
-
-## ⚠ What is permanent here
-
-- **Emission order IS the inheritance.** Both layers are scoped to the same root, so equal
-  specificity is decided by source order — the admin's stylesheet must stay last.
-- **`GET /custom-css` must never return the layers merged.** The console writes back what
-  it reads; merging would store the theme's CSS as the admin's own and leave the next
-  update nothing to inherit. Exactly the trap `/tokens` already documents.
-- **Every writer of either layer must go through `recompileCustomCss`.** The served blob
-  is one cached setting on a public hot path; a publish that skipped it would leave the
-  site on the previous stylesheet.
-- **The hardening is a DENY of reaching off-site, not a safety guarantee.** CSS can still
-  lay a fixed-position element over a button. Staging is the answer to that, and it is why
-  the stylesheet now arrives in the draft.
-
-## Verified
-
-API 200/200 (18 files), web 499/499 (23 files); typecheck, lint and build clean for api,
-web and contracts.
-
-Then end-to-end against the running server: a theme-layer row reaches
-`GET /api/appearance/css` correctly scoped (`:root:not([data-theme="dark"])`), and with
-both layers present the theme's rule is emitted at line 15 and the admin's at line 17 —
-theme first, admin second. Both verification rows were removed and the compiled cache
-rebuilt to empty, which is its correct resting state.
-
+### Marketplace repo
+- `src/modules/commerce/theme-purchase.e2e.test.ts` — order → licence → activation →
+  `theme.<id>` grant → authorized download, plus the seat and refund cases. The stack
+  was already kind-agnostic; "the code does not mention plugins" is a claim about the
+  code, not the product.
 
 ---
 
-# Part 3 — the class contract, and a shipped bug it exposed
+## Part 2 — The dependency footprint (`requires`, DERIVED not declared)
 
-Step 3 was scoped as "document the classes blocks already emit and guard them". Half that
-premise was wrong: only `coreBlocks.tsx` uses the `nv-` prefix. The blocks decomposed out
-of existing pages kept those pages' names (`ghero__`, `mp-`, `profile-`, `ac__`), and a
-survey that rendered all 60 registered blocks found that **most emit no root class at
-all** — they render into their parent's markup and resolve their content from host
-context. So for roughly fifty blocks there was nothing for a theme to select.
+A theme arranging `forum.index` needs that plugin; the importer skips what it cannot
+render, which is right at runtime and reads as "I bought this and half of it did not
+appear" on a marketplace.
 
-That matters specifically for a DOWNLOADED theme: `className` is per instance and only an
-admin can set it, so a theme that does not control the site's layouts had no hook.
+### Marketplace repo
+- `Product.usesTemplates` / `usesBlocks` / `footprintAt` (two migrations —
+  `20260830131500_product_theme_footprint`, `20260830133000_product_footprint_walked_at`).
+- `extractFootprint()` in `ingest.service.ts` walks `layouts/*.json` on every theme
+  release. Derived because a declaration is a second copy of what the documents already
+  state — the same argument that made the screenshot an extraction.
+  ⚠ The template key comes from the FILENAME, matching the CMS importer exactly.
+  ⚠ Types and template keys, never plugin ids: a plugin's id (`nodevo-forum`) and its
+  namespace (`forum.`) are different strings and the package carries neither mapping.
+- ⚠ **`footprintAt` is load-bearing.** A Postgres `text[]` cannot be null under Prisma,
+  so both arrays default to EMPTY — which is also the real answer for "walked, needs
+  nothing". Without the marker a listing nobody looked at is indistinguishable from a
+  clean one, and the ACP would draw an unearned all-clear. The API omits the arrays
+  entirely when it is null.
 
-## What was added
+### CMS
+- `MarketplaceListing.usesTemplates/usesBlocks` in contracts.
+- `apps/web/src/layout/themeFootprint.ts` — `themeGaps()` (what THIS site cannot draw)
+  and `blocksThisSiteCannotDraw()`. Warning renders on the theme card, before the button.
+- `apps/web/src/features/admin/hooks/themeInstallResult.ts` — one shared sentence for
+  both install entry points, which had already drifted once.
 
-**`nv-b--<type>` on every block**, derived from the registry key and stamped by the
-renderer on the same `display: contents` wrapper as the variant and the handle. Free,
-uniform, and available to a plugin's blocks without the plugin doing anything. A dotted
-plugin type is flattened for the selector: `forum.recentThreads` → `.nv-b--forum-recentThreads`.
+### ⚠⚠ THE BUG FOUND ONLY BY LOOKING — the two registries disagree
+The API's `KNOWN_BLOCKS` is the CORE catalogue. Blocks are registered by plugin code in
+the BROWSER, so the server cannot see one and reports **every plugin block** as unknown.
+That is correct for its own purpose (an unrecognised node is KEPT, never rejected, so a
+theme survives its plugin being disabled) and false the moment it is repeated to an
+admin. Both report surfaces printed it verbatim, so a site running the forum plugin was
+told `forum.categories` could not be rendered while it was on screen — and the
+pre-purchase card, which checks the real registry, said the opposite about the same
+theme minutes earlier. Both now filter through `blocksThisSiteCannotDraw`, and the
+Themes page wording was wrong in the same direction. Guarded by
+`themeFootprint.test.ts` ("agrees with the pre-purchase card about the same site").
 
-This is the one thing invented rather than documented, and it is invented because without
-it the contract does not exist for most of the catalogue.
-
-Side effect worth having: the wrapper is now unconditional, so **the live DOM finally
-matches the editor preview's shape**. It did not before — the preview wrapped every block,
-the live site only a styled one — so CSS written while looking at the preview could break
-on publish, which is the worst possible place for that difference to live.
-
-## ⚠ The bug this exposed — shipped, user-visible
-
-`coreBlocks.scss:76` was `.nv-columns > .nv-column`. Every block is wrapped, and
-**selectors match the DOM, not the box tree**, so the moment an admin gave a column a
-style variant the wrapper landed between the row and the track and that rule stopped
-matching. Its own comment says what it prevents: *"A stacked track is full width and must
-not stick, or a rail would pin itself over the content it used to sit beside."*
-
-So on a phone, a styled column kept `position: sticky` and its desktop width — a rail
-pinned over the content it was supposed to stack under. Present since variants shipped;
-step 1's `className` widened it. Now a descendant selector, which is also the more correct
-rule (every `.nv-columns` is stacking at that width, nested ones included).
-
-Verified against the LIVE stylesheet, not just the source: the rule in the browser is
-`.nv-columns .nv-column` under `(max-width: 640px)`, a real sticky rail **matches** it, and
-the same rail does **not** match the old `> ` form.
-
-I swept every `>`, `+` and `~` in the web SCSS: this was the only one crossing a block
-boundary. The rest sit inside a single component's own markup.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `packages/contracts/src/layout.ts` | `blockTypeClass()`. |
-| `apps/web/src/layout/LayoutRenderer.tsx` | The wrapper is unconditional and carries the type class. |
-| `apps/web/src/layout/blocks/coreBlocks.scss` | `.nv-columns > .nv-column` → descendant, with the reason. |
-| `apps/web/src/layout/classContract.test.tsx` | **New**, 8 tests: the type class on every registered block, one shared wrapper, live-DOM-matches-preview, the root-class table, and a static sweep that fails if any SCSS aims a combinator across a block boundary. |
-| `apps/web/src/layout/{variants,blockHandles}.test.tsx` | Two assertions updated — both said "no wrapper when unstyled", which is now deliberately false. |
-| `docs/theme-packages.md` | The class contract: the three tiers, the root-class table, the combinator warning. |
-| `docs/plugin-blocks.md` | Plugin blocks get the type class free; their own class names AND their block type are now a public contract. |
-
-## ⚠ What is permanent
-
-- **A block's TYPE is now a compatibility surface.** Renaming it renames its class and
-  breaks any theme targeting it — the same commitment as renaming a prop.
-- **No combinator may cross a block boundary**, ever, in core or in a plugin. Guarded.
-- The **root-class table** in `classContract.test.tsx` and the table in
-  `docs/theme-packages.md` must change together.
-
-## What is deliberately NOT promised
-
-The classes *inside* a block (`.ghero__title`, `.mp-list`, `.ac__excerpt`) are real and
-stable in practice but are not covered by the guard, and their prefixes are inconsistent
-for the decomposition reason above. Documented as "current behaviour, not a promise", with
-the advice to scope through `nv-b--<type>` or a handle. Renaming them into one namespace is
-a separate, mechanical change worth doing only if it is worth the churn — it was not folded
-in here, because a 200-class rename inside a step scoped as "write down what exists" is how
-a contract acquires bugs.
-
-## Verified
-
-Web 507/507 (24 files), API 200/200; typecheck, lint and build clean across web, api and
-contracts. In the running app: 27 blocks on the home page, every one carrying its type
-class, every wrapper computing to `display: contents`, and the three-column home layout
-unchanged.
+`unknownTemplates` needs no filtering: the server's template registry DOES include
+plugin templates, and an unregistered one is genuinely dropped.
 
 ---
 
-# Part 4 — distribution plumbing
+## Part 3 — Preview-before-install: the marketplace renders the theme
 
-Step 4: the marketplace can now SELL a theme, and the ACP can browse and install one.
-Three pieces, in the order they depend on each other — `kind` through the catalogue read
-path, a Themes tab in the ACP, and `screenshot` end to end.
+**The finding that shaped it.** Trying a theme is ONE-WAY today. Install stages it
+(correct), but nothing un-stages it: `/admin/layouts/:templateKey/discard` is per
+template and layouts only, and `resetAppearance` deliberately keeps the theme layer
+(live and staged) — "reset drops MY edits, it does not uninstall the theme". The
+Themes page offers Export and Import and no uninstall. So the plan's note that
+"try-before-install already exists in essence — needs only a marketplace entry
+point" was wrong, and building on it would have built on a false premise.
 
-The two repos move together; the marketplace half is in `~/Development/nodevo-marketplace`.
+And the harder half is not an implementation gap at all: letting someone try a theme
+they have not bought, on their own site, means handing over the package, which is
+the one thing the download chokepoint exists to prevent. A theme has no runtime;
+nothing can un-give it. So the preview has to live where the theme never leaves.
 
-## `kind` — much of it already existed
+### Marketplace: `src/modules/catalog/themePreview.ts`
+Renders the theme FROM THE PACKAGE at ingest — one page per template per scheme —
+and writes them to `theme-previews/<id>/<key>__<scheme>.html`. `Product.previewTemplates`
+records which pages exist (migration `20260830150000_product_preview_templates`).
 
-`Product.kind`, `/catalog?kind=`, `authorizeDownload`'s `kind`, and an artifact path that
-already knew about `.nvtheme` were all in place from an earlier session. What was missing
-was on the INSTANCE side: `fetchCatalogPage` hardcoded `kind: "plugin"`.
+This is what selling DATA makes possible: the layouts are documents naming exactly
+what they place and the tokens are a validated map, so no scratch instance and no
+headless browser are needed. **Exact:** the arrangement (block tree, region by
+region) and the palette (its real tokens) — the two things a theme actually ships.
+**Not exact, and the page says so:** block interiors, whose real appearance is a
+React component in the CMS's web app.
 
-⚠ **Removing that hardcode is not a one-line change.** The same helper backs
-`refreshPaidPluginIds`, whose output — `marketplace.paid_plugin_ids` — is read by the
-PLUGIN enable gate, which asks "is this id in the paid set?" and has no idea what kind an
-id belongs to. A defaulted `kind` would quietly fill that set with paid THEME ids. So
-`fetchCatalogPage` takes `kind` as a REQUIRED parameter: the two callers want opposite
-halves of the catalogue, and there is no sensible default for both. Pinned by a test.
+⚠ Region order comes from `regionsFor()`, never the document's key order (the
+`jsonb` trap). ⚠ Token values are parsed through the CMS's OWN `scopedTokenSetSchema`
+— the same validator the Style Editor and the importer use — because that is what
+refuses a value carrying `}` `<` `>` `;`, and a local copy could drift.
+⚠ The theme's `styles/custom-*.css` is deliberately EXCLUDED: hardening it lives in
+the CMS API (`themeCss.ts`), and a second copy of a security control in a second
+repo is worse than omitting the CSS. Moving that hardening to a shared package is
+the follow-up.
 
-## One download gate, two intakes
+### Marketplace: `GET /api/v1/catalog/:id/preview/:template?scheme=`
+The only route on the service answering with a document built from a stranger's
+archive, so its headers carry its safety.
+⚠ It cannot ride the `/media/previews` static mount: that sends `default-src 'none'`,
+right for a PNG and fatal for a document (every style stripped), and loosening it
+would loosen the lock on every listing image.
+⚠ **A second helmet default had to be undone** — helmet sends
+`X-Frame-Options: SAMEORIGIN`, the exact opposite of the `frame-ancestors *` this
+route needs. Same shape as the CORP bug from step 4: invisible to `curl`, breaks
+only when embedded cross-origin.
 
-`downloadAndVerifyArtifact` gained a `kind` and one branch, at the validating step only.
-The gate, the transfer, the 50 MB cap, the sha256 and the rate limiter are identical for
-both — the chokepoint is supposed to be ONE place, and a second endpoint would be a
-second place to forget the limiter. `POST /admin/marketplace/install` takes `kind`
-(default `"plugin"`), and a theme runs `themeService.importTheme` instead of the plugin
-intake.
-
-⚠ **A theme install lands in the DRAFT.** That is what importing a theme has always done
-and it is correct — a theme rewrites the arrangement of every page at once. But an admin
-who clicks Install and sees the site unchanged is looking at behaviour nobody told them
-about, so the ACP says it twice: above the grid, and in the success dialog ("staged as a
-draft. Publish it to put it live").
-
-## `screenshot` — from the author's file picker to the listing
-
-`screenshot` had been in `themeManifestSchema` since the format was written and NOTHING
-ever produced one. Now:
-
-1. The export dialog has a preview-image picker; the export request became multipart.
-2. `exportTheme` validates it by magic bytes and packs it as `assets/screenshot.<ext>`.
-3. `importTheme` rewrites `manifest.screenshot` to the upload path it landed at, so the
-   ACP renders it.
-4. The MARKETPLACE extracts it from the uploaded `.nvtheme` on ingest — no operator
-   upload step, so the listing always shows the version actually being sold.
-
-⚠ The name is reserved in the asset namespace BEFORE documents are walked: a page image
-called `screenshot.png` would otherwise overwrite the preview silently, and the manifest
-would point at a hero image.
-⚠ SVG is refused for a preview (though it is a fine theme asset): the preview is rendered
-by a marketplace we do not control, and SVG is the one image format that can carry script.
-⚠ `tokensOnly` accepts the STRING `"true"` — multipart has no types, and
-`z.coerce.boolean()` is JS truthiness, so `"false"` would coerce to `true`.
-
-## ⚠⚠ Two bugs that passed every check and were found only by LOOKING
-
-Both were green under typecheck, lint, 351 CMS tests and 141 marketplace tests.
-
-1. **`Cross-Origin-Resource-Policy: same-origin`** — helmet's default. It makes a browser
-   refuse to EMBED the preview anywhere but the marketplace's own origin, and every
-   consumer of that route is somewhere else (an instance's ACP renders the catalogue in
-   its own admin panel). It fails as a broken image with NO console error, and `curl` sees
-   a perfectly good 200. The previews mount now sets `cross-origin` explicitly.
-2. **`img { max-width: 100% }`** — the global rule in both apps. It clamps a full-bleed
-   `width: calc(100% + 44px)` straight back to the padded content box, so the card image
-   sat inset on one side and read as a layout glitch. `max-width: none` is load-bearing on
-   both the ACP theme card and the storefront listing card.
-
-## Files — CMS
-
-| File | Purpose |
-|---|---|
-| `packages/contracts/src/marketplace.ts` | `screenshot` on `MarketplaceListing` — an absolute URL, because the ACP renders this catalogue on a different origin. |
-| `apps/api/src/core/license-engine/marketplace-source.ts` | `kind` on `MarketplaceListQuery`; `fetchCatalogPage` takes it as REQUIRED; the paid-id walk pins `"plugin"`. |
-| `apps/api/src/modules/admin/marketplace.service.ts` | `downloadAndVerifyArtifact(id, version, kind)`; new `installThemeFromMarketplace` returning the import report. |
-| `apps/api/src/modules/admin/admin.controller.ts` | `kind` on the browse query, the authorize body and the install body; the install route branches on it. |
-| `apps/api/src/modules/themes/theme.service.ts` | `readManifest` extracted; `validateOnly` for the download gate; screenshot packed on export and repointed on import. |
-| `apps/api/src/modules/themes/theme.routes.ts` | Optional `screenshot` upload on export (multer directly — `uploadSingle` 400s on a missing field); boolish `tokensOnly`. |
-| `apps/web/src/lib/api.ts` | `apiStream` passes FormData through without overwriting its multipart boundary. |
-| `apps/web/src/features/admin/pages/MarketplacePage.tsx` | Plugins / Themes tab bar, theme cards with screenshots, theme-aware install and invalidation. |
-| `apps/web/src/features/admin/pages/ThemeExportDialog.tsx` | Preview-image picker with a live thumbnail (object URL revoked on change). |
-| `apps/web/src/features/admin/pages/ThemesPage.{tsx,scss}` | Export posts multipart; the installed theme shows its own screenshot. |
-| `apps/web/public/locales/*/acp.json` | Tab labels, the draft note, the staged-install message, the preview-image field. Five locales. |
-| `…/theme.service.test.ts`, `…/paid-ids-freshness.test.ts` | 8 new tests: the screenshot round trip, the name collision, the SVG refusal, and the kind-per-caller trap. |
-
-## Files — marketplace (`~/Development/nodevo-marketplace`)
-
-| File | Purpose |
-|---|---|
-| `prisma/schema.prisma` + `20260829204246_product_screenshot` | `Product.screenshotPath`. |
-| `src/modules/catalog/ingest.service.ts` | `extractPreview` — pulls the screenshot out of an uploaded `.nvtheme`, magic-byte checked, basenamed, bounded. Best-effort: never fails a release over a picture. |
-| `src/app.ts` | Public `/media/previews` static mount (deliberately NOT the upload root — its sibling `artifacts/` is token-gated) with nosniff, sandbox CSP and `CORP: cross-origin`. |
-| `src/modules/catalog/{catalog,listing}.routes.ts` | `previewUrl()` and `screenshot` on the catalogue and the detail payload. |
-| `web/src/pages/ThemeDetail.tsx`, `web/src/components/ListingCard.{tsx,scss}` | The real screenshot when there is one; the mock gradient stays as the fallback. |
-| `src/modules/catalog/ingest.e2e.test.ts` | 5 new tests: extraction, no-screenshot, traversal, non-image, and that `artifacts/` is still not served. |
-
-## Verified in the browser, not only in tests
-
-The whole loop, against four local servers: export a package with a preview → publish it
-to the marketplace as a theme → the extractor stores and serves the image → the ACP
-Themes tab shows it → Install runs the gate and stages a draft → the card flips to
-"Installed" and Appearance → Themes shows the theme with its own thumbnail.
-
-CMS 210 API + 507 web; marketplace 141. Typecheck, lint and build clean on both repos.
+### Storefront + ACP
+`ThemeDetail` shows the live render with real template tabs and a light/dark toggle
+— replacing six invented pill names ("Article, Index, Author…") that were not
+Nodevo templates at all. The dead **"Preview with my content"** button was removed:
+it had no handler, and next to a real preview it promised something that cannot
+exist.
+`apps/web/.../ThemePreview.tsx` puts the same preview in the ACP, where installs
+actually happen, via a Preview button on each theme card.
+⚠ `sandbox=""` on both iframes is a SECOND lock on top of the route's CSP,
+deliberately duplicated because the first one lives in another repo.
 
 ---
 
-# Part 5 — chrome bands and section backgrounds
+## Part 4 — The REAL preview: your site, your data, the new theme
 
-A masthead row — logo one side, something the other — as a band SEPARATE from the
-navbar, whose order the admin controls. Plus a background for it: an uploaded image,
-a gradient of up to three picked colours, or both.
+> ⚠ **Superseded in part by Part 6.** Everything below was written while applying a
+> theme STAGED it. It no longer does — a theme goes live the moment it is applied —
+> so the draft-vs-published sentences here describe the road, not the destination.
+> The undo, the draft-aware CSS and the chrome-free render all survive; where they
+> say "staged", read "written live and staged together".
 
-## Why two regions rather than a second template
+The marketplace render (part 3) answers "what does this theme look like" for a theme
+you have not bought. It cannot answer "what does MY SITE look like in it" — block
+interiors are components the marketplace does not have, and the content is yours.
+That answer only exists on the instance, and almost all of it was already there.
 
-`chrome.header` WAS the navbar: one band, three regions (`left | center | right`),
-rendered as a single `<nav>` with three flex zones. Those regions are horizontal by
-construction, so there was nowhere to stack a second row.
+### `?__layout=preview` — draft data, no editor chrome
+`?__layout=draft` already renders REAL routes with the draft's layouts, which is how
+the Layout Editor's iframe works: real blocks, real content, real plugins. But one
+predicate meant two things — "read the draft" AND "show the editor's affordances" —
+so the first version of this painted empty-region drop targets labelled HEADER and
+FOOTER over the page. An admin deciding on a theme was being shown the editor.
+Split into `isDraftLayout()` (both modes) and `isLayoutPreview()` (editor only), with
+`preview` as the new chrome-free mode. Guarded by `previewMode.test.ts`.
 
-The alternative — a ninth core template plus a setting saying which comes first — puts
-ARRANGEMENT outside the layout document, which is the one place this system answers
-every other ordering question. So `chrome.header` gained two regions instead, named by
-POSITION: **`bandAbove`** and **`bandBelow`**, wrapping the nav strip.
+### The colours were wrong too
+`useCustomTokens` always fetched the PUBLISHED stylesheet, so a draft preview showed
+an arrangement nobody had staged in a palette nobody had chosen. It now fetches
+`?source=draft` whenever the draft is being rendered — which also fixes the Layout
+Editor's own preview. And `buildCSS` gained `{ draft: true }`, because the custom-CSS
+half still came from the compiled LIVE blob: a theme was previewed in its own colours
+under the PREVIOUS theme's stylesheet, a look neither theme has.
 
-- Ordering is "which region is it in". Dragging one `section` from `bandAbove` to
-  `bandBelow` swaps the masthead and the navbar; `moveBlock` already takes a region.
-- A site may run BOTH — a utility strip above and a masthead below.
-- **Purely additive**: a document that predates them has no such key, so there is no
-  migration, no packaged theme breaks, and nothing renders until someone uses one.
+### Undo — the thing that makes trying a theme possible
+`importTheme` now takes a ROLLBACK POINT before its first write: the staged layout
+scopes (`draft` + `theme`) and every appearance theme layer, live and staged, plus the
+installed manifest. `POST /admin/themes/discard` puts it all back.
+- ⚠ Taken BEFORE any write — snapshotting after would capture the theme being
+  installed as if it were what was there before.
+- ⚠ The restore DELETES first. Writing rows back would leave every row the import
+  created for a template that had none, so "undo" would undo almost nothing.
+- ⚠ An ABSENT setting is deleted, not written as null: `getThemeDraftCustomCss`
+  falls back to the live stylesheet only when both draft keys are absent.
+- ⚠ ONE level, and PUBLISH clears it — after a publish the rollback covers only the
+  staged scopes, so applying it would restore old drafts under a newly published
+  theme, a state neither theme ever had.
+- ⚠ It does NOT delete the theme's uploaded assets: the purge job reclaims them, and
+  deleting here would race a re-import of the same theme.
 
-⚠ `PubNav` is now a `<header>` wrapping the bands and the `<nav>`. A masthead is site
-identity, not navigation — inside `<nav>` it would tell a screen reader a logo and a
-tagline are links.
+ACP: the Themes page gains **Preview on my site** and **Undo this theme** (the latter
+only while a rollback exists), with a confirm that says the undo is lossy — layout
+edits made since the import live in the same draft scope.
 
-⚠ The band DISSOLVES the region wrapper (`display: contents`) so a `section width:
-full` can actually span. That makes `section` the authoring unit for a band, which is
-the right pairing: it is the block that paints, so it is where the background lives.
-
-## The background, on `section`
-
-Three permanent props, on the block that paints rather than on a header-specific one —
-a masthead, a hero and a CTA strip are the same thing wearing different content.
-
-- `backgroundImage` — an upload path or URL, `meta({ asset: true })`.
-- `backgroundGradient` — up to 3 stops.
-- `backgroundAngle` — degrees.
-
-Image and gradient COMPOSE rather than exclude: CSS layers the image over the
-gradient, so either alone works and both together gives the gradient as the ground a
-transparent PNG sits on.
-
-⚠ `backgroundImage` must stay a TOP-LEVEL string prop — `assetPropsOf` reads the
-schema's own properties for the flag, so folding it into a nested `background` object
-would silently stop it travelling inside a `.nvtheme`.
-
-⚠ `cssColorSchema` is strict (hex / rgb() / hsl() / `var(--token)`) because these
-values are composed into a `linear-gradient(...)` and a document is untrusted twice
-over — an admin types one, a purchased theme ships others. `var(--token)` is
-deliberately allowed and is what a THEME should use: it follows the palette and both
-light and dark, which a picked hex cannot.
-
-New: `POST /admin/layouts/images` (random filename, magic-byte-checked), the
-`LAYOUT_IMAGE` limit, and `layouts/` added to BOTH upload allowlists.
-
-## ⚠⚠ Three bugs found only by LOOKING — all green under every check
-
-1. **Two React siblings shared a key.** `BlockStyleFields` already keyed on
-   `selected.node.id`; the new `BlockBackgroundFields` was given the SAME key in the
-   same parent. React warns and, as it documents, DUPLICATES — the panel doubled on
-   every edit until the rail held eight copies. Nothing in the saved document was ever
-   wrong, so only the browser showed it. Key is now namespaced (`bg:${id}`).
-2. **`ALLOWED_UPLOAD_DIRS` exists TWICE** — one in `app/app.ts` deciding what
-   `/uploads` SERVES, one in `LocalStorageProvider.ts` deciding what may be WRITTEN.
-   Adding the dir to the serving list alone got a 403 on upload. Both now say so.
-3. **The orphan-purge job would have deleted every background.** `ROOTS =
-   ALLOWED_UPLOAD_DIRS`, and `collectReferenced()` read users, groups, logos, articles
-   and pages — never `ncf_layouts`. A `layouts/` file is referenced ONLY from a
-   document, so adding the directory made its whole contents orphans, deleted on a
-   schedule weeks later. Added `refsInLayouts()`, which needs its OWN matcher: a
-   layout stores a BARE relative path (`layouts/a.png`), not the `/uploads/` URL an
-   article body stores. Verified with the job's real dry run — the referenced file is
-   skipped as REFERENCED, not merely as young.
-
-## Files
-
-| File | Purpose |
-|---|---|
-| `packages/contracts/src/layout.ts` | `bandAbove`/`bandBelow` on `chrome.header`; `cssColorSchema`; the three `section` background props. |
-| `apps/web/src/layouts/PubNav.tsx` | `<header>` + `ChromeBand`, rendered only when the region holds something. |
-| `apps/web/src/layouts/AppLayout.scss` | `.pub-head` / `.pub-band`, with the region dissolve. |
-| `apps/web/src/layout/blocks/coreBlocks.{tsx,scss}` | `sectionBackground()` composer + `SectionBlock`; `--bg` sizing rules. |
-| `apps/web/src/features/admin/pages/BlockBackground.tsx` | The panel: upload, up to 3 colour rows, direction, live preview. |
-| `apps/web/src/components/SchemaFields.tsx` | `omit` — hand a prop back to a caller with a purpose-built control. |
-| `apps/web/src/features/admin/pages/LayoutEditorPage.{tsx,scss}` | Mounts the panel (namespaced key); `.lay-bg` styles. |
-| `apps/api/src/modules/layouts/layout.{routes,controller}.ts` | `POST /admin/layouts/images`. |
-| `apps/api/src/config/upload-limits.ts`, `app/app.ts`, `infrastructure/storage/LocalStorageProvider.ts` | `LAYOUT_IMAGE`; `layouts` on both allowlists, with the two-lists trap documented. |
-| `apps/api/src/jobs/scheduled-actions/purgeOrphanedUploads.ts` | `refsInLayouts()` — the fix for bug 3. |
-| `apps/web/public/locales/*/acp.json` | Panel strings + the two region labels. Five locales. |
-| `apps/web/src/layout/sectionBackground.test.tsx` | 16 tests: composition order, the schema's refusals, the bands. |
-
-## Verified in the browser
-
-Added a section to `bandAbove`, gave it a two-stop gradient at 90°, watched it render
-above the nav; moved it to `bandBelow` and watched it flip below; uploaded an image
-through the picker and saw it layer over the gradient, full-bleed.
-
-CMS 210 API + 523 web. Typecheck, lint and build clean.
-
-## Part 5b — making the band a real masthead
-
-Three follow-ups so a band reads as part of the page rather than a strip bolted above it.
-
-**`section.minHeight`** (px, 0 = auto). A MINIMUM, not a fixed height: a masthead is
-given a height for presence, but a fixed one clips — a bigger accessibility font, a
-taller logo, a wrapped line. A floor looks identical and cannot hide content. A section
-with a floor CENTRES its content vertically, which is the only arrangement anyone wants
-from a band taller than what is in it.
-
-**`.nv-section__inner`** — the content column. A `width: full` section spans the
-viewport so its BACKGROUND does, but its CONTENT belongs in the page's rail; a masthead
-logo hard against the window edge with the nav logo inset below it is exactly what makes
-a band look bolted on. The inner's `max-width` / `margin-inline` / `padding-inline`
-MATCH `.nv-region` and `.pub-nav__inner` deliberately — measured in the browser, the
-masthead logo and the nav content below it both land at x=147.
-- ⚠ The wrapper is UNCONDITIONAL. A DOM shape that changed with the width prop would
-  break custom CSS the moment an admin narrowed a band — the same class of failure as a
-  combinator crossing a block boundary.
-- ⚠ Its `--full` rules are declared AFTER `--pad-*`: the pad classes set the `padding`
-  shorthand, so zeroing the inline half has to win on source order (equal specificity).
-
-**The logo is sized by CSS, not inline.** `NavLogo` hardcoded `height: 32` — the same
-block now sits in the nav strip AND in a 250px band, where 32px is a favicon. It is now
-`--nv-logo-h` (32px default, 64px in a band), which is also the codebase's own rule
-about visual values living in tokens.
-- ⚠ `.pub-nav__logo` was nested inside `.pub-nav` in SCSS, so the logo block rendered
-  UNSTYLED in a band. Its rules are top-level now — a block placeable in five regions
-  cannot have its styling scoped to one of them.
-
-`showWordmark: false` was already the "image, no text" switch; nothing new was needed
-for that half.
-
-Verified in the browser: a 250px band above the nav, gradient background, site logo
-image at 64px on the left, its left edge pixel-aligned with the nav content below it.
-Web 527 (25 files).
-
-## ⚠⚠ Part 5c — the `<header>` wrapper broke the sticky navbar site-wide
-
-Introducing `<header>` around the nav strip (so the bands had somewhere to live) made
-that wrapper the navbar's **containing block**. `position: sticky` is constrained by its
-PARENT's box, not by the viewport — and the header is only as tall as the chrome. The
-navbar stuck for ~48px of scroll and then travelled off the top of **every page on the
-site**.
-
-Green under typecheck, lint and 738 tests. Measured in the browser: `navTop: -268` at
-`scrollY: 316`.
-
-Fixed with `.pub-head { display: contents; }` — the same idiom the region and variant
-wrappers use. The box dissolves, the bands and the nav go back to being direct children
-of `.app-layout`, sticky spans the page exactly as before, and the `<header>` element
-stays for semantics.
-
-Guarded by a static assertion in `classContract.test.tsx` (verified to FAIL when the
-declaration is removed): jsdom performs no layout and cannot scroll, so the test asserts
-the fix rather than the symptom.
-
-Re-verified after the fix: `navTop: 0` at `scrollY: 480`, band still 250px, masthead
-logo still pixel-aligned with the nav content at x=147.
-
-**Rule worth keeping: wrapping an existing element changes what `position: sticky` can
-travel within.** Nothing in the type system or the test suite can see it.
-
-## Part 5d — an empty region could not be clicked
-
-Reported as "I can't click the header block". Not a click-handling bug: preview clicks,
-tree clicks and the selection ring all worked. The band **had nothing to click**.
-
-A masthead band renders nothing until it holds a block, so "the header" was a thing an
-admin could see in the tree, could not see on the page, and had nowhere to click. Every
-empty region had the same gap — `LayoutRegion` returns null when empty — the band just
-made it obvious, because a header is the one region people expect to configure before
-putting anything in it.
-
-**An empty region now renders a placeholder IN THE EDITOR ONLY** (`isLayoutPreview()`):
-a dashed strip naming the region. It carries `data-nv-region`, so it was already a legal
-drop target, plus `data-nv-empty`, which the bridge reads to post a new `addTo` message —
-the editor opens the SAME add-block picker the region's `+` opens (`r:<region>`), so
-there is one picker and one code path whichever surface asked.
-
-⚠ **The `display: contents` dissolve bit twice.** Both `.pub-nav__zone > .nv-region` and
-`.pub-band > .nv-region` dissolve the region wrapper so blocks lay out as direct
-children. That also dissolves the placeholder, leaving only its label's text clickable —
-so a real click in the middle of an empty band still hit nothing, while a synthetic click
-on the label worked. Both now re-assert a box for `.nv-region--empty` (a chip in the nav
-strip, a full-width strip in a band). **Found only by clicking with a real mouse; a
-dispatched event went straight to the label and looked fine.**
-
-Region labels are humanised locally (`bandAbove` → "Band above") rather than translated:
-the preview is the SITE with the bridge injected, and the site does not load the ACP
-translation namespace, so a lookup would print the raw key on the one surface that shows it.
-
-Guarded by two tests: the placeholder is absent without `__layout=draft`, and present
-with it carrying both data attributes. `LayoutRenderer.test.tsx`'s region-order case now
-asserts all SIX declared regions of `article.detail` in order — it was named "six" and
-asserted four, because the empty two rendered nothing.
-
-Verified with real mouse clicks: both bands show a full-width strip, hover highlights,
-clicking opens the picker for that region, and the live site renders zero placeholders.
-Web 530 (25 files).
+**Verified end to end in Chrome:** live site purple → install Clanforge 2.0.0 → the
+real home page renders in the theme's orange with real profile/feed/who's-online/
+board-stats blocks → live site still purple for visitors → Undo → back to 1.4.0,
+orange gone from the draft, Undo button gone (one level, consumed).
 
 ---
 
-# Part 6 — one region set: header / body / aside / footer
+## Part 5 — A theme LIBRARY, and a preview that looks like the page
 
-The region set had grown by accretion — three navbar zones, three footer slots,
-`beforeBody`/`afterBody` on one template, and the two `band*` regions I had just added
-for a masthead. Each was defensible alone; together, "where does this go?" had a
-different answer per template and the names promised landmarks the markup did not emit.
+### Installing a second theme no longer destroys the first
+`appearance.theme.installed` was ONE settings key holding ONE manifest, so a second
+import silently replaced the first and going back meant finding the original
+`.nvtheme` again. New `ncf_themes` table (migration `20260830153000_theme_library`) —
+installed is not active, the same distinction plugins draw (§10/§54).
+- The row stores the theme's **applicable payload** (documents, tokens, stylesheets
+  with asset refs already rewritten), not the package: that is what lets a switch
+  need no file, and it is why uninstall takes `uploads/themes/<id>/` with it.
+- `applyTheme()` was extracted from `importTheme` so activation runs the SAME code —
+  two paths that both "apply a theme" is how one quietly stops staging the stylesheet.
+- ⚠ Exactly one row active; the clear and the set share a transaction.
+- ⚠ **Uninstalling the ACTIVE theme is refused** — it would leave the site wearing a
+  theme with no baseline for "Revert to theme" and no way back.
+- ⚠ **Backfill**: every install predating the library has a theme applied and no row,
+  so the library would open empty on a site that visibly has one. `backfillLibrary()`
+  reconstructs the payload from the `theme`-scope layouts + theme token layer + theme
+  stylesheet — exactly what an activation replays. Runs once, on read.
+- ACP: an "Installed themes" list with Activate / remove, active one first.
 
-**Every template is now the four HTML5 landmarks**, and `LayoutRegion` emits the real
-elements (`<header>`, `<aside>`, `<footer>`; `main` stays a `<div>` because `AppLayout`
-already owns the one `<main>` a document may contain).
+### The marketplace preview is a PAGE now, not a diagram
+The first version drew every block as a labelled grey box, which told a buyer which
+blocks a theme places and nothing about what it looks like — and what it looks like is
+the whole reason anyone buys a theme. Every core type now renders realistic markup
+with sample content: the navbar is a navbar with a logo, links and a search field; an
+article index is a grid of cards with headlines, excerpts and bylines; a member list
+has avatars and roles; board stats are numbers. Painted in the theme's own tokens,
+which is the part that is exact.
+- Region LABELS are gone — a page does not caption its own header.
+- Style-variant and audience badges are gone: annotations are what made it read as a
+  diagram, and the variant badge named something the renderer does not actually apply
+  (scoped tokens need selector machinery this deliberately skips).
+- An audience-restricted block still DRAWS: a preview shows the whole design, and
+  picking one audience would be calling that the theme.
+- Plugin blocks render as a neutral panel carrying the type — a theme that arranges a
+  forum should still show where the forum goes.
 
-**The navbar is a BLOCK inside the header**, because a navbar is part of a header —
-which is what a header is. `chrome.header` and `chrome.footer` have one region each.
-Ordering a masthead above or below the nav strip is now ordering blocks in a list,
-which is what the two bands existed to fake.
+**Verified in Chrome:** installed Meadow over Clanforge → both in the library →
+switched → active flipped, draft accent went `#ff5c39` → `#2f9e5e`, both still
+installed → the real site rendered in Meadow's green.
 
-**`align` replaces the navbar's three zones** — a node-level field beside `variant`,
-`className` and `visibility`, for the same reason those are node-level: a navbar is
-exactly where a PLUGIN's block wants to be placeable, and a prop threaded through 52
-components would be honoured by core and ignored by everything else. The start of the
-row is the ABSENT case, never stored.
+## Part 6 — Applying a theme is LIVE (no publish step)
 
-## The migration is the point
+The verification at the end of part 5 asked the plain question — activate from the
+library, then open the site with no preview flag and no publish — and the answer was
+that visitors still had the old theme. That is what draft→publish means, and it was
+the wrong shape for this decision.
 
-An unknown region is KEPT and skipped by design ("disabling a plugin must never delete
-an admin's layout"). So without a carry-over, a site that had ever saved a layout would
-keep every navbar block in its document and simply stop rendering them — no error, no
-missing row, just a site with no navigation. `regionConsolidationMigration.ts` runs at
-boot, flag-guarded, across ALL scopes (draft and the theme baseline included — either
-left on the old shape would resurrect the broken document the moment it was used).
+Draft→publish is an **editing** affordance: batch many small edits, publish when the
+set is coherent. Activating a theme is ONE atomic decision, and staging it made that
+decision a two-step action and, worse, a **two-place** one — the layouts had to be
+published from the Layout Editor and the tokens and stylesheet from the Style Editor,
+with nothing on the Themes page saying so. Once there was a real preview (parts 3–4),
+an undo, and a library to switch back through, staging had stopped buying anything.
 
-⚠ A masthead already built in a band keeps its side of the navbar: that ordering was
-the whole reason the bands existed. ⚠ `article.detail` merges in READING order —
-appending `beforeBody` to the end of `main` would move an intro below the article.
-Verified against the real dev database, not only in tests.
+- `layoutService.applyThemeDocument()` writes `published` **and** `draft` in one
+  transaction and busts the published memo; `applyTheme()` calls it for every template
+  the admin has not customised. Tokens and the theme stylesheet already wrote their
+  live and draft keys together (`saveThemeTokens`, `saveThemeCustomCss`).
+- `bumpStyleVersion()` is now load-bearing rather than cosmetic: it is the SSE channel
+  every open tab listens on, and a theme that went live silently would sit unseen
+  until someone reloaded.
+- ⚠ **The rollback snapshot had to grow.** `snapshotStagedScopes` deliberately excluded
+  `published` while an import never wrote it. Now that activation goes live, an undo
+  that skipped `published` would leave visitors wearing the theme the admin just
+  rejected — the one state undo exists to prevent. It snapshots and restores all three
+  scopes (`published`, `draft`, `theme`), and still DELETES before writing back.
+- Unchanged by going live: the theme LAYER is still recorded for every template (it is
+  what the next update compares against and what "Revert to theme" restores), and a
+  customised template is still KEPT, never overwritten.
+- ACP + storefront copy in all five locales now says the theme is live
+  (`themes.previewHint`, `marketplace.themeDraftNote`, `themes.reportStaged`).
+  **"View my site" links to the plain route** — it used to carry
+  `?__layout=preview`, which after this change would show the admin's own unpublished
+  layout edits and call them the theme.
+- Guarded by `theme.service.test.ts` → "applying a theme is live" (publishes rather
+  than stages, bumps the style version, still writes the layer, still keeps a
+  customised template, and does all of it on a SWITCH too, not only on import).
 
-## ⚠ Traps hit while doing it
-
-- **The sticky trap, one level down.** The header REGION is a box too, so dissolving
-  `.pub-head` was no longer enough — `.nv-region--header` also needs `display: contents`,
-  or the navbar sticks only until the header scrolls past. It also has to go for a
-  second reason: `.nv-region` is a centred content column, and site chrome spans the
-  viewport. The guard now asserts both.
-- **`:first-of-type` is not "the first one that matches".** Every block wrapper is a
-  `div`, so `[data-nv-align="right"]:first-of-type` matched the first child of the row
-  regardless of alignment — i.e. nothing useful, and the right-hand icons never moved.
-  The rule is `:not([align=right]) + [align=right]`.
-- **I deleted the logo styles by accident** removing the band CSS — the slice spanned
-  them. The logo then rendered as a bare `inline` anchor whose line box covered the
-  whole masthead, making the entire band a link to the home page. Caught by measuring,
-  not by any check.
-
-Web 535 (25 files), API 218 (19 files). Typecheck, lint and build clean.
+⚠ `?__layout=preview` (chrome-free draft render) is KEPT: the `isDraftLayout` /
+`isLayoutPreview` split is what stops editor chrome leaking onto a preview, and the
+mode is still the honest way to look at a staged layout draft. It just has no linked
+entry point any more — worth one in the Layout Editor.
 
 ---
 
-# Part 7 — the shoutbox unblock (`backbone:check` is green again)
+## Part 7 — ⚠⚠ THE BUG GOING LIVE UNCOVERED: the site kept the old theme
 
-Two pre-existing typecheck errors in the git-ignored `plugins/official/nodevo-shoutbox`
-had been failing the gate since the block work started. Both are leftovers from the
-outlet → block migration, and both are dead code rather than a missing feature:
+Found by doing exactly what an admin would: activate from the library, then open the
+site with no preview flag. The server had switched — `/appearance/css` served the new
+palette, `ncf_themes` had flipped, the ACP had repainted — and **the site itself was
+still wearing the previous theme**, on a fresh page load, indefinitely.
 
-- `web/blocks/ShoutboxBlock.tsx` declared `editorMeta.description`. Nothing reads it —
-  `LayoutTree.tsx` renders `label` and the block's `type` as the secondary text, and no
-  core block defines one. Widening `BlockDefinition` for a field the picker does not
-  show would make the contract lie, so the line is gone.
-- `web/components/ShoutboxWidget.tsx` referenced `outlet`, which no longer exists:
-  `ShoutboxWidget()` takes no props since the outlet contribution became a block. It
-  drove two values. `marginBottom` is now unconditionally 20 — a region stacks blocks
-  with no gap of its own, so the block owns its bottom margin — and the message list's
-  `maxHeight` is 260, the value every non-aside placement already used.
+Two things had to line up for that, and both were true:
 
-`pnpm backbone:check`: 20/20 tasks, typecheck 30/30 packages, lint 0 errors,
-web 535 (25 files), API 218 (19 files).
+1. **`/appearance/css` was `public, max-age=60`.** A page loading inside that window
+   gets the stylesheet from before the switch, out of the browser's own cache. It is
+   now `no-cache` — REVALIDATE, not "do not store": the ETag makes the usual answer a
+   **304 with no body**, so the cache still saves the bytes and the first paint is
+   always the current theme.
+2. **The client compared the wrong two things.** `liveStyle.ts` refetched when one
+   stream event differed from the PREVIOUS one. The connect echo carries the current
+   version, so a client holding a stale stylesheet recorded the new version as its own
+   baseline, saw no further change, and never reconciled — stale for the life of the
+   tab. It now compares **what it is holding** against what the stream announces:
+   `/appearance/css` stamps `X-Style-Version` (live responses only — a stamped draft
+   would let a preview reconcile itself back to the live theme), and the client keeps
+   `loadedVersion` beside `streamVersion`.
+   - ⚠ `reconcile()` runs on BOTH inputs, because either can arrive second: the stream
+     can connect before the startup fetch resolves.
+   - ⚠ **One refetch per announced version** (`attemptedFor`). The refetch restamps
+     `loadedVersion` from what actually came back, so a response that is still stale —
+     an intermediary that ignores `no-store` — would otherwise land straight back in
+     `reconcile` and fetch forever.
+   - ⚠ A refresh refetches the SAME half it loaded. `refreshTokenCss` always fetched
+     the live stylesheet, so a reconcile inside a draft preview would quietly end the
+     preview.
+- **Three copies of the startup fetch** (`App.tsx`, `AppLayout.tsx`,
+  `ThemePreview.tsx`) are now one `loadTokenCss()` — three call sites is how one of
+  them keeps dropping the version stamp the reconcile depends on. `AppLayout`'s copy
+  is gone entirely: it renders under `AppGuard`, which already loads tokens, and its
+  copy always asked for the LIVE stylesheet — so in a draft preview the two raced,
+  and the wrong one could win.
+- Guards: `apps/web/src/lib/liveStyle.test.ts` (6 cases, incl. the stale-hold and the
+  no-loop bound) and `apps/api/src/modules/appearance/cssFreshness.test.ts` (3).
+
+**Verified in Chrome:** live tab open on the site → activate the other theme in the
+ACP → the open tab repaints in ~1s with no reload; and a page loaded immediately after
+a switch paints the new theme on first paint (before, it painted the old one and kept
+it).
+
+---
+
+## Part 8 — The admin panel is not part of the site's design
+
+Reported while looking at Part 7: switching the theme repainted the **ACP** too. It
+had always been that way — the served stylesheet declares the palette on `:root`, and
+the ACP is the same document — but a theme switch made it impossible to miss. A site
+in orange gave you an orange admin panel, and the panel is a tool, not a page of the
+site. The font was already pinned for exactly this reason; the colours now are too.
+
+### `apps/web/src/styles/_tokenDefaults.scss` (new)
+The token DEFAULTS as three mixins (`primitives`, `palette-light`, `palette-dark`,
+`components`) and no rules of its own. `tokens.scss` includes them for the document;
+the ACP includes them for itself. One source, so the two cannot drift — the values
+moved, nothing changed.
+
+### `AcpLayout.scss`
+`body.nv-acp` re-declares the whole palette (element+class **outranks** the `:root`
+and `[data-theme]` the stylesheet writes), plus `[data-theme="dark"] body.nv-acp` for
+dark — the ACP still follows the READER's light/dark choice; it is the SITE's palette
+it opts out of. The existing font pin stays, and the two comments that described the
+old behaviour as deliberate ("admin custom CSS shows through in the ACP", "the Style
+Editor's field knob reaches them") were rewritten rather than left to mislead.
+
+### Custom CSS stops at the panel too (`appearance.service.ts`)
+`scopeSelector` anchors every rule under `body:not(.nv-acp)`, compounding onto a
+`body` selector rather than nesting a second one. So `a { color: red }` written for
+the site no longer recolours admin links.
+- ⚠ `:root` / `html` rules stay document-wide. Qualifying a rule on the ROOT element
+  by a class on its child needs `:has()`, and an unsupported selector drops the
+  admin's ENTIRE stylesheet rather than one rule — too dear a failure for the case,
+  and those rules declare tokens, which the ACP re-declares over anyway.
+
+### ⚠ The pin makes one surface lie, so there is an opt-out from the opt-out
+`BlockStyle`'s variant probe measures a real element with `getComputedStyle` — that
+is how the panel shows what `accent` currently looks like without duplicating the
+SCSS in TS. It attaches to `document.body`… which is now `body.nv-acp`, so it would
+have reported the ADMIN PANEL's colours as the site's. The probe now sits inside a
+`.nv-site-tokens` host: `tokens.scss` gives that class the defaults back, and
+`buildCSS` **mirrors the global bucket onto it** (`:root, [data-theme="light"],
+.nv-site-tokens`), so what it measures is what the site paints.
+- Only the global bucket is mirrored: a region scope names a selector that exists on
+  the site, and a variant scope is emitted under `:root`, so it already reaches a
+  probe anywhere in the document.
+- Guarded by `apps/api/src/modules/appearance/acpSeparation.test.ts` (7).
+
+**Verified in Chrome:** site on Clanforge (orange) → ACP renders in its own blurple,
+light and dark, across Themes / Style Editor / Layout Editor, while the Style Editor's
+swatches and both preview iframes still show the site's orange. Measured in the ACP:
+`html --c-accent: #ff7a5c` (site) vs `body --c-accent: #7c84ff` (panel), and a probe
+inside `.nv-site-tokens` resolving `--surface-bg: #2e1a14` from the site's palette.
+
+---
+
+## Part 9 — The layout editor: one header, one footer, and a rail beside the body
+
+Two complaints, one session: the site header was missing from the editor's preview,
+and `aside` was a band under the body rather than a column next to it.
+
+### `aside` means BESIDE (`LayoutRenderer`, `coreBlocks.scss`)
+Regions were emitted in template order, so the four landmarks rendered as four
+stacked strips. `main` and `aside` are now one row (`.nv-body-row`) — body plus a
+`--rail-width` rail, collapsing to a column under 1024px, which is intrinsic and not
+an admin knob (the same rule `columns` follows).
+- The pairing is in the RENDERER, not in a stylesheet on `.app-main`, because it is a
+  property of the template's region set: a template that declares no `aside` gets no
+  row, and `chrome.header` must not be wrapped in a page content column.
+- The ROW owns the content column now (`.nv-region, .nv-body-row` share the rule) and
+  the regions inside it are plain tracks — two centred columns side by side would each
+  be inset by their own padding, and a `section width: full` in the body would break
+  out of the wrong box.
+- ⚠ `min-width: 0` on the body track, or one wide child (a table, a long word, a card
+  grid) refuses to shrink and pushes the rail off the page.
+- ⚠ An empty rail is `display: none`, so it takes no space AND leaves no flex gap.
+  On the live site the region renders nothing at all; this covers the editor's
+  placeholder and a rail whose every block is hidden from this viewer.
+- Guarded by `bodyRow.test.tsx` (8, incl. the landmark contract) and `LayoutRenderer.test.tsx`.
+
+### Whose header is that? (`humaniseRegion`, `layoutEditor.pageRegion`)
+A page's `header` region is a band between the SITE header and the body, and both
+were labelled "Header" — which is exactly how an admin came to read an empty page
+header region as the site header having disappeared. Page regions are now named as
+page ones ("Page header" / "Page footer") in the tree AND in the preview placeholder;
+chrome templates keep the plain names, and the picker calls them "Header (site-wide)"
+/ "Footer (site-wide)" instead of "Navbar". One hint line in the tree says where the
+site-wide pair lives, one says that `aside` sits beside the body. Five locales.
+
+### The preview shows the STAGED site, and says where that differs
+The complaint that started this was a masthead missing from every page's preview: this
+site's `chrome.header` draft is a bare `navbar` while its published version carries the
+band. The first fix drew the chrome from PUBLISHED instead — which was the wrong half
+of the answer. The header was missing from the TREE, so nothing said it had a staged
+version at all; and once the header is editable from a page, drawing it from anything
+but the draft would hide the admin's own edit.
+
+So: one source for everything on screen — published on the site, **staged in the
+editor** — and the rule an admin can hold is that the editor previews what Publish
+would ship (`/admin/layouts/publish` promotes every pending draft). A listed row whose
+document has a pending draft says so, which is the missing sentence that made a staged
+header look like a lost one.
+- `&__editing=<templateKey>` still names the open document, but now decides
+  affordances (drag, drop targets), not which version is drawn.
+- ⚠ `?__layout=preview` (the theme preview) names none — it shows the whole staged
+  site, which is exactly what it is for.
+
+### What belongs to the open document, and what does not
+Every empty region used to draw a drop target and every block was draggable, whichever
+document it came from — so clicking the page's empty aside while arranging the header
+asked the editor to add a block to a region `chrome.header` does not have. Selection
+is now open to everything (that is the way IN); dragging and drop targets are the open
+document's alone, because both act on the tree the editor is holding.
+- Guarded by `previewScenery.test.tsx` (6) and `previewMode.test.ts` (+4).
+
+### ⚠⚠ The site's header IS the header — and it is editable from any page
+Naming the page's bands was not enough: the masthead band + navbar were still not
+being TREATED as the header. Two places said so.
+
+**The DOM.** A page template's `header`/`footer` regions emitted `<header>` and
+`<footer>` — so every page carried TWO banner landmarks and TWO contentinfos, and the
+pair that is not the header and footer sat nested inside `<main>`. Landmarks are now
+the SITE's alone: `regionElement()` gives `<header>`/`<footer>` to `chrome.*` only,
+and a page's bands render as divs (`aside` keeps its complementary landmark). Live
+`/members` now reports exactly `HEADER.nv-region--header`, `DIV.nv-region--header`,
+`DIV.nv-region--main`, `FOOTER.nv-region--footer`.
+
+**The editor.** The site header was absent from a page's structure while a band that
+is not the header was called "Header". Now the tree is the PAGE, top to bottom —
+Header (site-wide) · Above body · Body · Aside · Below body · Footer (site-wide) —
+whichever document is open, and **every part of it is reachable**:
+- **Click the masthead band, the navbar, or the who's-online panel in the preview and
+  the editor opens that document with the block selected.** Delete the logo, add a
+  block beside it, edit its props — the header and footer are arranged from the page
+  you are looking at, which is where an admin is when they decide to change them.
+  `data-nv-template` on every wrapper is what carries the owning document to the
+  bridge; the tree's listed rows do the same thing on click.
+- The preview stays on the page you were on (`previewPageKey`): chrome renders on
+  every route, so opening the header must not move you to another page.
+- ⚠ ONE document at a time, and the picker says which. Each has its own draft and its
+  own publish; two behind one Publish button would make the button lie. The tree keeps
+  showing the whole page either way, so opening the header loses nothing from view.
+- ⚠ Dragging stays with the OPEN document (`data-nv-drag`), because a move rewrites
+  the tree the editor is holding — as do empty-region drop targets.
+- Page bands are "Above body" / "Below body", named by where they are, since what they
+  are not is the header.
+
+**Verified in Chrome:** on Article index the tree reads Header (site-wide) · Above
+body · Body · Aside · Below body · Footer (site-wide), and the preview reads the same
+top to bottom. The rail sits beside the body (row 1240 = body 868 + gap 24 + rail 300).
+Clicking **who's online** in the preview opened Footer (site-wide) with that block
+selected, its four blocks arrangeable and its props in the panel — still previewing
+`/articles`. Clicking the **navbar links** opened Header (site-wide) the same way. In
+the DOM every block carries `data-nv-template`, and only the open document's carry
+`data-nv-drag`.
+
+---
+
+## Part 10 — THE HEADER, as one block
+
+The header had become something an admin assembled: a full-width `section`, a height,
+two colour stops, a `logo` dropped inside it, and the navbar under it. Every one of
+those is a step where a site's most recognisable element could be got wrong, and none
+of them says "header" anywhere.
+
+### `header` — the block (`contracts/layout.ts`, `chromeBlocks.tsx`)
+The band, with the four things anyone actually sets: **height** (default **250px**,
+full width), **background** (gradient stops + angle, image over it), **show the
+logo** (left of the band, in line with the navbar's), **show the site name**.
+- ⚠ `height` is a FLOOR (`min-height`), like `section.minHeight`: a translated site
+  name, a bigger accessibility font or a taller logo must push the band, never be
+  clipped by it.
+- ⚠ Deliberately NOT a container. Everything a masthead holds in practice is the logo,
+  and a band that accepts arbitrary blocks is a `section` — which still exists, and is
+  still placeable in the header for exactly that.
+- ⚠ The inner column's numbers MATCH `.nv-region` and `.pub-nav__inner`, which is what
+  puts the masthead logo directly above the navbar's own.
+- The background panel is now offered by SCHEMA (`paintsBackground()`), not by
+  `type === "section"` — a second name check is how the two would have drifted.
+
+### The arrangement is the ORDER
+`chrome.header` ships `[header, navbar]`. The navbar above the band or below it is one
+drag; a site that wants no band deletes the block and runs on the navbar alone; the
+picker puts it back. There is no third concept for "masthead above or below" — that is
+what two `band*` regions used to be, and they are gone.
+
+### `headerBandMigration.ts` — every existing site gets it
+A shipped default only reaches sites that never touched their header. A one-time
+carry-over converts a full-width `section` at the top of `chrome.header` into the
+block, value for value: same gradient, same angle, same image, same height, and a
+`logo` CHILD becomes the `showLogo` / `showWordmark` settings.
+- ⚠ Only when it IS the masthead: full width, decorated (a height or a background),
+  and holding nothing but the logo. A section carrying a heading or a search field is
+  left alone — converting it would delete what it holds.
+- ⚠ It adopts the SHIPPED id (`h-band`), or an untouched header would read as
+  customised for ever after ("is this customised?" is a `JSON.stringify` against the
+  code default) and theme updates would stop touching it.
+- ⚠ Every scope, including `draft` and `theme` — the same reason the region
+  consolidation gives.
+- Guarded by `headerBandMigration.test.ts` (11), half of which are the cases it must
+  REFUSE.
+
+### The navbar's logo is removable
+`REQUIRED_BLOCKS['chrome.header']` was `['logo', 'userMenu']`, so the logo could be
+moved but never deleted — and a site whose navbar deliberately has none, because the
+mark already fills the band above it, could not save that. It is `['userMenu']` now.
+A way home is not one block's job (the navigation links are one, the band's own logo
+is another); being unable to SIGN IN is the thing an admin cannot undo from the front
+end, which is why the account menu stays required.
+
+### …and the "site-wide" rows are gone
+The previous pass listed the header and footer inside every page's tree, tagged
+SITE-WIDE. It was noise: they are their own templates in the picker, and clicking them
+in the preview already opens them. The tree shows the open document's regions and
+nothing else.
+
+**Verified in Chrome:** the dev site's hand-built masthead was migrated on boot —
+published `chrome.header` is now `[header, navbar]` with `height: 250`,
+`backgroundAngle: 90`, `showLogo: true`, `showWordmark: false` carried from the logo
+child — and the live site renders pixel-identically (`.nv-header`, `min-height: 250px`,
+`linear-gradient(90deg, …)`). In the editor, "Header" is offered in the header
+template's picker and its settings panel reads Height (px) 250 · Show the logo · Show
+the site name.
+
+---
+
+## Part 11 — A page is a body and a rail
+
+The page-level `header` and `footer` regions are gone. They were bands above and below
+the body, INSIDE `<main>` — so they were never the page's header and footer (the site's
+are, `chrome.*`), every shipped default left them empty, and what they offered over a
+`section` at the top of the body was a name. The wrong one: an admin reading "Header"
+in a page's structure reasonably concluded the site header had gone missing, which is
+the thread that ran through this whole session.
+
+`TEMPLATE_REGIONS` for the six page templates is `['main', 'aside']`. The editor's
+tree reads **Body · Aside**, and the renderer's naming and landmark rules lost the
+branch that existed only for the page pair.
+
+### `pageBandMigration.ts` — nothing is lost on the way
+An undeclared region is KEPT and skipped by design ("disabling a plugin must never
+delete an admin's layout"), so a site that HAD put a block above its body would keep
+it in the document and simply stop rendering it — silently, and indistinguishable from
+a deletion. The carry-over folds the bands into the body: the one above lands at the
+TOP, the one below at the BOTTOM.
+- ⚠ ORDER, not concatenation: appending both would move an admin's intro under the
+  article.
+- ⚠ It also drops EMPTY regions the template no longer declares — including the
+  `beforeBody` / `afterBody` the earlier region consolidation left behind on
+  `article.detail`. One stray empty key makes an untouched page read as CUSTOMISED
+  for ever (that question is a `JSON.stringify` against the code default), and a theme
+  update then declines to touch it.
+- ⚠ Empty ONLY. An undeclared region still holding blocks is an admin's work — a
+  plugin whose template is not registered right now — and it is kept.
+- Guarded by `pageBandMigration.test.ts` (9).
+
+### The one default that used a band
+`members` shipped its head row (eyebrow + title + tabs) in the page `header` region.
+It is the first block of the BODY now — the same position, without the misleading
+name.
+
+**Verified:** the migration ran on the dev database — every page row is `main,aside`,
+`article.detail` lost its two leftover empty regions — and the editor's Structure pane
+reads Body · Aside with the site header and footer rendering around the preview as
+before.
+
+---
+
+## Part 11 — the FOOTER is a block, and the rail is finished
+
+Raised on inspection of the layout editor: `chrome.header` had shipped `[header,
+navbar]` for a release while `chrome.footer` was still four loose leaves, so an admin
+could arrange what was IN the footer and never the footer itself. Its band —
+`--footer-bg`, the hairline above it, the content column — was hardcoded in
+`SiteFooter.tsx`.
+
+### The `footer` block
+- A CONTAINER, and the peer of `navbar` rather than of `header`: the masthead sits
+  ABOVE the navbar and is its own block, while the footer's band IS what holds its
+  pieces. `chrome.footer` now ships one band with the four pieces inside it.
+- Props: `minHeight` (a floor), the `section`/`header` background trio
+  (image over gradient, `asset: true` so it travels in a `.nvtheme`), and
+  `showTopBorder` — off for a footer whose own background already separates it.
+- ⚠ It renders `.nv-foot`, which IS `SCOPE_SELECTOR.footer`: the Style Editor's
+  entire Footer panel is emitted under that class, so renaming it empties the panel.
+  `footerBand.test.tsx` pins the two together.
+- ⚠ The band draws a background only when the document asks for one. A band that
+  always painted would override `--footer-bg` — a colour the admin chose in a
+  different editor — so adopting the block changes nothing about an existing site.
+- `SiteFooter` no longer wraps anything: the region still emits the `<footer>`
+  landmark, the block paints inside it. A wrapper would leave the band behind when an
+  admin drags the pieces out to say "no footer chrome", and would nest two bands.
+
+### `footerBandMigration.ts` (boot, flag `layout.footerBandMigrated`)
+Wraps a stored footer's region children in the band, every scope, order and audiences
+untouched. Refuses rather than producing a tree deeper than `MAX_BLOCK_DEPTH`.
+
+⚠⚠ **`parseLayoutDocument` does NOT fill a block's prop defaults** — `props` is a
+passthrough record. So the code default stringifies as `{"showTopBorder":true}`, and
+the first version of this migration (which wrote the full prop set) made an untouched
+footer compare UNEQUAL to its own default: the draft chip said "pending publish" for
+ever and a theme update would have refused the template as customised. Caught by
+looking at the dev database, not by any test that was passing at the time. The band
+now emits exactly the default's props, and a test asserts the two stringify alike.
+The comment on `codeDefault()` explains parse normalisation — it normalises key ORDER,
+which is a different thing from filling defaults.
+
+### The aside rail — the gaps closed
+It was wired end to end (all six page templates, `<aside>`, the body row, the ≤1024px
+collapse) and used by nothing: every code default ships it empty, and `home` builds
+its rails from `columns`/`column width: sidebar|rail` instead. The decision was to
+keep it as the page's ONE simple rail and leave `columns` as the power tool (two
+rails, or a rail on the left, are still its job), then fix what was missing:
+
+- ⚠⚠ **`SCOPE_SELECTOR.aside` was dead.** It pointed at `.hf-left, .hf-right` — home's
+  two hardcoded rail wrappers, DELETED when home was decomposed into blocks. The
+  scope outlived them, so every edit in the Style Editor's Aside section was emitted
+  under a selector matching nothing: "Aside background" did precisely nothing. It now
+  names both ways of building a rail (`.nv-region--aside, .nv-column--sidebar,
+  .nv-column--rail`), and `scopeSelectors.test.ts` checks EVERY scope against the
+  source. ⚠ That test strips comments first — `.hf-left` is still named all over the
+  codebase in the comments explaining why it is gone, and a scan that counted those
+  would have passed on the very bug it exists to catch.
+- **The rail sticks**, at `column.sticky`'s offset, so a rail behaves the same however
+  it was built; `position: static` again once the row stacks.
+- **`--rail-width` / `--sidebar-width` are editable** (Style Editor → Aside), which
+  needed a plain `size` control — every `length` in the registry until now folded into
+  the radius slider, whose 0–28 range is meaningless for a rail. `TokenDef` gained
+  `min`/`max`, and `BASE_FALLBACK` the two starting values.
+- **The picker marks page-width blocks** when the target is the rail (the `aside`
+  region, or a `column` sized `sidebar`/`rail`): `editorMeta.wide`, shown as a WIDE
+  chip. Advisory, never a rule — a `section` in a rail is how you give the rail a
+  background, and refusing a layout the renderer can draw would be the worse error.
+
+**Verified in the browser:** the site footer renders identically (one `<footer>`, band
+inside, no nested wrapper); the editor's Structure pane reads Footer → Footer → the
+four pieces with the band's own settings panel; toggling the line off changes the
+preview and toggling it back leaves the draft byte-equal to the default ("Up to
+date"); the WIDE chips appear in the Aside picker and not in the Body's; the Rail
+width slider stages `--rail-width: 360px` into the draft stylesheet and "Revert to
+inherited" removes it again; and `/articles` renders `<aside class="nv-region--aside">`
+sticky at 300px, resizing with the token.
+
+Totals: API **305**, web **606**, `backbone:check` green.
+
+---
+
+## Part 12 — a track that draws nothing no longer holds width open
+
+⚠ An earlier attempt at this — rendering the preview at a fixed 1440 and scaling it
+into the pane — was **reverted at the user's request**; `previewScale.ts`, the Fit/100%
+control and the stage wrapper are gone, and the frame is `width: 100%` again. The
+complaint was never about the preview's width. It was that the feed does not get the
+room beside it.
+
+### The rule `:empty` was meant to be, written with `:has()`
+`.nv-body-row > .nv-region--aside:empty { display: none }` could never fire: every
+block is wrapped in a `display: contents` element that exists whether or not the block
+rendered anything, so a rail was never `:empty`. It held `--rail-width` open and drew
+a hole. Same for a `column` — home's right rail reserved its track on a site with no
+threads and no tags, and the feed beside it stopped at **412px of a 938px row**.
+
+Both are now `:not(:has(.nv-block:not(:empty)))`, which asks the question `:empty` was
+meant to ask: did anything in here draw? Measured after: the rail column collapses and
+the feed takes **666px**.
+
+⚠⚠ **`.nv-block` is a new class on every block wrapper, and it is a LAYOUT
+DEPENDENCY.** The obvious selector — `[data-nv-block]` — is stamped by the renderer in
+the EDITOR only, so the first version of this rule matched nothing on the real page
+and collapsed *every* track on it (caught in the browser, one reload later). Pinned by
+`classContract.test.tsx`.
+⚠ Descendant, never `> .nv-block`: a column's children are `display: contents`
+wrappers and a combinator aimed across one silently stops matching.
+⚠ It applies in the editor too. A container holding nothing is arranged from the
+TREE, which addresses every level explicitly — the preview must not lie about how
+wide a page is.
+
+### Kept from the same pass
+- The empty-region placeholder carries its region's modifier (`nv-region--aside`), so
+  an empty rail in the EDITOR is `--rail-width` and not half the row. It is excluded
+  from the collapse rule above: it is the drop target for a region with no blocks.
+- `--rail-width` is 260px.
+
+**Verified in the browser:** live home unchanged (its rail has content and all three
+tracks fill the row); home's draft in the editor went from a cramped feed beside a
+rail of nothing to a feed that takes the whole remaining width, the empty rail
+collapsed. Re-measured at the final `--rail-width` of 260px.
+
+Totals: API **305**, web **608**.
+
+---
+
+## Part 13 — a plugin block that draws nothing now says so
+
+"Choose the shoutbox plugin slot and it never appears in the rail." Two causes.
+
+### The dev instance was running a plugin build from July
+`apps/api/var/uploads/plugins/nodevo-shoutbox/web/dist/index.umd.js` was dated Jul 26
+and registered a `registerLayoutWidget`; the source has since replaced that with a
+first-class `shoutbox.box` BLOCK (the plugin's own write-up explains why: the widget
+used to gate on its own `placement` enum, so an admin could drop it anywhere and it
+rendered nothing unless a setting in another screen agreed). Both manifests say
+1.3.0, so nothing could detect the drift — the update check compares versions.
+Refreshed by copying the built bundle over the installed one; the server bundles were
+byte-identical, and forum/messaging/launch were already in sync.
+
+⚠ A stale plugin build is invisible when the version did not move. Worth a rebuild
+before diagnosing any "the plugin does not render" report.
+
+### The editor now labels a block that rendered nothing
+A block can render nothing and still be exactly where the admin put it: a widget that
+self-gates, a permission the admin lacks, a card with no data yet. On the site that is
+correct and silent; in the editor it was indistinguishable from "the block was never
+added" — and with Part 12's collapse, the rail it was dropped into vanished with it.
+
+- `previewBridge` stamps `data-nv-editor` on `<html>` (removed on teardown, pinned in
+  `previewMode.test.ts`). It is the bridge's job because the bridge exists only in the
+  preview.
+- Part 12's two collapse rules are now scoped `:root:not([data-nv-editor])`: the SITE
+  collapses an empty track, the EDITOR keeps it.
+- `[data-nv-block]:empty::after` draws a small dashed "`<type>` — nothing to draw
+  here". `data-nv-block` is stamped in the preview only, so it can never reach a
+  visitor.
+- ⚠ `:empty` ignores pseudo-elements, so the marker never makes a block count as
+  drawn — the live-site rules keep seeing an empty wrapper. And a `display: contents`
+  element generates no box but its pseudo-elements do, which is the only reason a
+  wrapper with no children can show anything.
+
+**Verified in the browser:** after the refresh the picker offers "Shoutbox"
+(`shoutbox.box`), and dropping it in home's right rail renders the shoutbox —
+messages, input and all. The silent blocks around it (`pluginSlot`, `homeHotThreads`,
+`homePopularTags`, `headerWidgets`) now say so instead of leaving a gap.
+
+⚠ Left in the dev draft, not fixed for the user: home holds two
+`slot.layoutWidget.nodevo-shoutbox` nodes — the OLD derived widget block. They now
+report "unavailable" (unknown type, skipped and kept). Delete them and place the
+Shoutbox block instead.
+
+### The middle column's floor
+Decided against moving `.nv-columns` to CSS grid. The tracks already behave as two
+fixed rails plus a fluid middle (`sidebar` 248 / `1` = `flex: 1 1 0` / `rail` 260),
+measured 248 · 636 · 260 on the live home with the shoutbox rendering at 246px inside
+a 248px rail — placement was never the problem. Grid would buy deterministic tracks
+and cost the thing that makes `column.width` work at all: a grid parent cannot read
+its children, and the width is a per-CHILD prop (the reason the row is flex, written
+down beside the rule).
+
+What did change is the floor a weighted track refuses to go below: **220px → 320px**.
+220 is a RAIL's width — beside two real rails the body could be squeezed narrower than
+the cards it holds and still count as a three-column row. The row now wraps at ~924px
+of row width instead of ~824, and a wrapped middle takes the full width, which is what
+a narrow screen can actually show.
+
+⚠ Still `min(320px, 100%)`: a bare `320px` would make a lone track wider than its
+parent on a phone.
+
+⚠ No "belongs in a rail" hint was added — the admin picks the rail, and a plugin block
+is just a block (the WIDE chip from Part 11 stays: it marks page-width blocks when the
+TARGET is a rail, which is the opposite question).
+
+Totals: API **305**, web **609**.
+
+---
+
+## Part 14 — ⚠⚠ the autosave could write one template's blocks into another's draft
+
+Found while clearing two stray nodes out of home's `aside`: the draft came back with
+its RIGHT RAIL COLUMN missing — `column:rail` and its five blocks — while `published`
+still had it. Restored from `published` (the two were otherwise identical), then
+found the mechanism.
+
+`useAutosave` writes `doc` to `/admin/layouts/${templateKey}`. Those two change at
+DIFFERENT MOMENTS: `templateKey` moves the instant the picker is clicked, and `doc` is
+replaced a render or two later, when the new template's draft query resolves. Between
+them the editor holds the OUTGOING document under the INCOMING key — and the autosave
+is on a 700ms timer, so it can land inside that window. What it overwrites is a saved
+layout nobody was editing, and it says nothing.
+
+`versionRef` makes it worse rather than catching it: it holds the version of the row
+being edited, so a write from that window carries one template's version against
+another template's row.
+
+Both halves fixed:
+- **The guard.** `onSave` refuses a document whose own `templateKey` is not the one
+  being edited. The document knows where it belongs — `LayoutDocument.templateKey` is
+  part of the schema and `parseLayoutDocument` enforces it.
+- **The address.** The PUT goes to `next.templateKey`, never the ambient picker
+  state, so a write that does happen goes to the right row.
+
+Pinned by `layoutAutosaveTarget.test.ts` (5).
+
+⚠ It reproduces most easily by switching templates programmatically (which is how it
+was hit), but nothing about it requires that: a slow draft fetch and a click on the
+picker are enough. Treat any "my layout lost a block" report as this until ruled out.
+
+Totals: API **305**, web **614**.
+
+---
+
+## Part 15 — the shoutbox places itself, without core changes
+
+"Someone who isn't firm with the Layout Editor yet should install the plugin, pick
+forum or rail, and be done." Built entirely inside `nodevo-shoutbox` — no core, no
+SDK change.
+
+### The setting became an action
+`placement` was a select that had stopped being read: the block decides where the
+shoutbox renders, so the control could be changed with no effect at all. It is
+replaced by a **Where it sits** card whose buttons WRITE the layout document through
+core's existing admin API (`GET`/`PUT /admin/layouts/:templateKey`) as the admin:
+*Home rail* → a `shoutbox.box` in home's `aside`, *Forum index* → the top of
+`forum.index`'s body, *Take it off* → removed. The card's state is read back from the
+document, so nothing can claim a placement the page does not have.
+
+`web/acp/placement.model.ts` holds the document maths (pure, 14 tests):
+- **Move, never copy.** The block is removed from the other target first, at any
+  depth — an admin may have dragged it inside a `section` since it was placed, and a
+  shallow scan would leave that copy and add a second.
+- **`freshId` walks the whole document.** This plugin writes into a page it does not
+  own; a duplicate id is refused by the API.
+- `aside` is the home target, not a rail COLUMN: every page template declares
+  `aside`, while a rail column exists only in the shipped arrangement.
+
+### ⚠⚠ Why not `host.prisma`
+A plugin is handed the host's full prisma client and could write `ncf_layouts`
+directly. `PUT /admin/layouts/:key` is not a thin wrapper: it runs `validateBlockTree`
+(depth, duplicate ids, container rules), the required-block check, the `baseVersion`
+conflict guard, the ACP activity log — and `publishedMemo.bust()` for the service's
+30s cache, which a plugin cannot reach. A row written behind all that is invisible
+until the cache expires, and an invalid one renders as the shipped DEFAULT while the
+admin's real document sits unused in the table.
+
+⚠ And it never publishes. `POST /admin/layouts/publish` is SITE-WIDE — a plugin
+pressing it would push out layout work somebody else staged and has not finished. It
+stages, says so, and links to the editor.
+
+⚠ So there is no auto-placement at install: `onEnable` has no admin session and the
+prisma path is closed. The card shows "not on any page yet" instead, and one click
+fixes it.
+
+**Verified in the browser:** the card reads "not on any page yet" on a clean draft;
+*Home rail* writes exactly one `shoutbox.box` (id `sb`) into home's `aside` and leaves
+the three columns untouched; the card flips to ✓ Home rail with the draft note; *Take
+it off* empties it again. Left unplaced, as asked.
+
+Totals: API **305**, web **614**, shoutbox **14**.
+
+---
+
+## Not done — step 5 remainder
+The **creator portal** (submit a `.nvtheme`, auto-validate, versions + changelog +
+compat range).
+
+## Local dev state left behind
+The dev marketplace has a `clanforge` theme listing (versions 1.0.0–1.4.0) and a
+hand-inserted `mkt_licenses` row `NDV-CLAN-DEV1` for the connected account, both
+created to exercise the paths above in a browser. Delete if unwanted.
