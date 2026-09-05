@@ -1191,10 +1191,19 @@
       "theme": "Thèmes"
     },
     "searchThemesPlaceholder": "Rechercher des thèmes…",
-    "themeDraftNote": "Installer un thème le place en brouillon : rien ne change pour les visiteurs tant que vous ne le publiez pas.",
+    "themeDraftNote": "Installer un thème l'applique aussitôt : vos pages prennent sa disposition et ses couleurs, et les visiteurs le voient immédiatement.",
     "themeGoManage": "Aller aux thèmes",
     "themeInstalled": "Installé",
-    "themeStaged": "{{name}} a été placé en brouillon. Publiez-le pour le mettre en ligne."
+    "themeStaged": "{{name}} est maintenant le thème actif.",
+    "themeGapsTitle": "{{count}} élément que ce site ne peut pas afficher",
+    "themeGapsTitle_other": "{{count}} éléments que ce site ne peut pas afficher",
+    "themeGapsHint": "Ils nécessitent une extension absente. Le reste du thème s'installe normalement, et ces parties apparaîtront dès que l'extension sera là.",
+    "themeSkipped": "{{count}} élément nécessite une extension absente et n'apparaîtra pas encore : {{list}}.",
+    "themeSkipped_other": "{{count}} éléments nécessitent une extension absente et n'apparaîtront pas encore : {{list}}.",
+    "preview": "Aperçu",
+    "previewTitle": "{{name}} — aperçu",
+    "previewClose": "Fermer",
+    "previewNote": "Rendu par la place de marché à partir de la version en vente : la disposition et les couleurs sont donc celles du thème. L'intérieur des blocs est un substitut — ce qui s'y trouve, c'est votre contenu, dessiné par les composants de votre site."
   },
   "updates": {
     "title": "Mises à jour",
@@ -1748,7 +1757,9 @@
       "seg-fg": "Texte du bouton de tri",
       "seg-hover-bg": "Bouton de tri au survol",
       "seg-active-bg": "Bouton de tri sélectionné",
-      "seg-active-fg": "Texte sélectionné"
+      "seg-active-fg": "Texte sélectionné",
+      "rail-width": "Largeur de la colonne",
+      "sidebar-width": "Largeur de la barre latérale"
     },
     "shCustom": "Personnalisée",
     "shDirection": "Tombe",
@@ -1813,6 +1824,8 @@
     "noBlocks": "Aucun bloc disponible pour ce modèle.",
     "searchBlocks": "Rechercher des blocs…",
     "noMatches": "Aucun bloc ne correspond à « {{query}} ».",
+    "wide": "Large",
+    "wideHint": "Conçu pour la largeur du corps — il sera à l’étroit dans la colonne latérale.",
     "emptyRegion": "Vide",
     "unavailable": "indisponible",
     "saving": "Enregistrement…",
@@ -1854,8 +1867,8 @@
       "page.detail": "Page personnalisée",
       "profile": "Profil",
       "members": "Membres",
-      "chrome.header": "Barre de navigation",
-      "chrome.footer": "Pied de page"
+      "chrome.header": "En-tête",
+      "chrome.footer": "Pied"
     },
     "region": {
       "header": "En-tête",
@@ -1863,6 +1876,12 @@
       "aside": "Aside",
       "footer": "Pied"
     },
+    "pageRegion": {
+      "main": "Corps",
+      "aside": "Colonne latérale"
+    },
+    "pageChromeHint": "Une page, c'est un corps et une colonne à côté. L'en-tête et le pied sont des modèles à part, identiques sur chaque page — cliquez sur l'un d'eux dans l'aperçu pour l'organiser.",
+    "asideHint": "Se place à côté du corps, et en dessous sur un écran étroit.",
     "audienceViewHint": "Filtre l’arborescence et l’aperçu sur une seule disposition. Les blocs ajoutés y sont limités.",
     "audienceView": {
       "guests": "Public : invités",
@@ -2036,7 +2055,7 @@
     "importTitle": "Installer un thème",
     "importBtn": "Choisir un fichier…",
     "importing": "Installation…",
-    "importHint": "Accepte .nvtheme et .nvstyle. L'import est mis en brouillon : rien ne change pour les visiteurs tant que vous ne publiez pas depuis l'Éditeur de mise en page.",
+    "importHint": "Accepte .nvtheme et .nvstyle. Le thème est appliqué dès son installation ; vos pages personnalisées sont conservées.",
     "reportTitle": "Résultat de l'import",
     "reportTemplates": "{{count}} modèle(s) appliqué(s).",
     "reportKept": "{{count}} modèle(s) conservé(s) tel(s) que vous les aviez.",
@@ -2044,7 +2063,7 @@
     "reportCustomCss": "Le CSS personnalisé du thème s'applique immédiatement — il n'a pas de brouillon.",
     "reportUnknownTemplates": "Ignorés, aucun plugin correspondant ici : {{list}}",
     "reportUnknownBlocks": "Des blocs que ce site ne sait pas afficher ont été conservés : {{list}}",
-    "reportStaged": "Ouvrez l'Éditeur de mise en page pour prévisualiser, puis publiez.",
+    "reportStaged": "Le thème est actif. Ouvrez l'éditeur de mise en page pour ajuster une page.",
     "exportBtn": "Exporter le thème",
     "exporting": "Export…",
     "exportTitle": "Exporter le thème",
@@ -2063,7 +2082,23 @@
     "tokensOnly": "Couleurs seulement",
     "tokensOnlyHint": "Exporte la palette sans les mises en page ni les images.",
     "fieldScreenshot": "Image d'aperçu",
-    "fieldScreenshotHint": "Intégrée au thème comme capture et affichée sur les fiches de la marketplace. PNG, JPEG, WebP ou AVIF."
+    "fieldScreenshotHint": "Intégrée au thème comme capture et affichée sur les fiches de la marketplace. PNG, JPEG, WebP ou AVIF.",
+    "previewLive": "Voir mon site",
+    "previewHint": "Ouvre votre site avec ce thème appliqué. Il est déjà actif pour les visiteurs — la bibliothèque ci-dessous sert à revenir en arrière.",
+    "discardBtn": "Annuler ce thème",
+    "discarding": "Annulation…",
+    "discardTitle": "Annuler l'import du thème ?",
+    "discardBody": "Vos pages et vos couleurs reviennent à leur état d'avant l'installation — pour les visiteurs aussi. Les modifications de mise en page faites depuis seront également annulées.",
+    "discardDone": "L'import du thème a été annulé.",
+    "discardDoneReplaced": "Annulé — retour à {{name}}.",
+    "discardHintReplaced": "Annuler restaure {{name}}.",
+    "discardHintNone": "Annuler restaure vos propres mises en page.",
+    "libraryTitle": "Thèmes installés",
+    "libraryHint": "Tous les thèmes installés ici. Un seul est actif, et changer applique l'autre aussitôt.",
+    "libraryActive": "Actif",
+    "libraryActivate": "Activer",
+    "activated": "{{name}} est maintenant le thème actif.",
+    "removed": "Thème supprimé."
   },
   "owned": {
     "title": "Vos licences",

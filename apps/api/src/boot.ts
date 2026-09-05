@@ -4,6 +4,9 @@ import { registerCorePermissions } from './bootstrap/registerCorePermissions.js'
 import { logger } from "./infrastructure/logging/logger.js";
 import { migrateGuestHeroToLayout } from "./modules/layouts/guestHeroMigration.js";
 import { migrateRegionConsolidation } from "./modules/layouts/regionConsolidationMigration.js";
+import { migrateHeaderBandBlocks } from "./modules/layouts/headerBandMigration.js";
+import { migratePageBandsIntoBody } from "./modules/layouts/pageBandMigration.js";
+import { migrateFooterBandBlocks } from "./modules/layouts/footerBandMigration.js";
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
@@ -45,6 +48,26 @@ export async function boot() {
     // is silent. Same guarantees as the carry-over above.
     await migrateRegionConsolidation().catch((err: unknown) => {
       logger.error({ err }, "Layout region carry-over failed — the header or footer may render empty until it is re-run");
+    });
+    // One-time: a masthead built out of a full-width `section` becomes the `header`
+    // block, so a site that already has one gets the header's own settings rather
+    // than only new installs. Renders identically either way — same gradient, same
+    // height — so a failure here is cosmetic, not structural.
+    await migrateHeaderBandBlocks().catch((err: unknown) => {
+      logger.error({ err }, "Masthead carry-over failed — the header still renders, as a section");
+    });
+    // One-time: a page's own `header`/`footer` bands fold into its body. They are
+    // gone from the region set, and an undeclared region is KEPT and skipped — so a
+    // site that had put something in one would stop rendering it, silently.
+    await migratePageBandsIntoBody().catch((err: unknown) => {
+      logger.error({ err }, "Page band carry-over failed — blocks above or below a page body may not render until it is re-run");
+    });
+    // One-time: a stored footer's loose pieces move INSIDE the `footer` block, which
+    // is what paints the band now that `SiteFooter` no longer wraps them in one. A
+    // failure leaves the pieces rendering unpainted, so it is cosmetic — but it is
+    // also the only thing that gives an existing site the footer's own settings.
+    await migrateFooterBandBlocks().catch((err: unknown) => {
+      logger.error({ err }, "Footer carry-over failed — the footer renders without its band until it is re-run");
     });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();

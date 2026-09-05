@@ -37,7 +37,11 @@ export interface TokenDef {
   kind: TokenKind;
   group: TokenGroup;
   /** Compound editor control this token folds into (else a plain row). */
-  control?: "border" | "shadow" | "radius";
+  control?: "border" | "shadow" | "radius" | "size";
+  /** `size` only: the slider's ends, in px. A length needs a range to be draggable,
+   *  and the sensible range for a rail is not the sensible range for a radius. */
+  min?: number;
+  max?: number;
   /** Per-side facet (border long-hands). */
   side?: "top" | "right" | "bottom" | "left";
   /** Base token it falls back to when unset — seeds the inherit↔override UX. */
@@ -54,9 +58,20 @@ export const SCOPE_SELECTOR: Record<ThemeScope, string> = {
   navbar:  ".pub-nav",
   content: ".app-main",
   footer:  ".nv-foot",
-  // TODO(phase-3): unify rails under a single `.app-rail` class across home/profile;
-  // for now the home rails are the only aside surfaces.
-  aside:   ".hf-left, .hf-right",
+  /*
+   * Every rail on the site, however it was built.
+   *
+   * It used to be `.hf-left, .hf-right` — the home page's two hardcoded rail
+   * wrappers — and those classes were DELETED when home was decomposed into blocks.
+   * The scope survived them: the Style Editor kept offering an Aside section whose
+   * every edit was emitted under a selector that matched nothing, so "Aside
+   * background" was a control that did exactly nothing.
+   *
+   * Both ways to build a rail are listed, because both are legitimate: the `aside`
+   * REGION is the page's one simple rail, and a `column` sized `sidebar`/`rail` is
+   * what a page with two rails (or a rail on the left) uses instead.
+   */
+  aside:   ".nv-region--aside, .nv-column--sidebar, .nv-column--rail",
 
   // Variant scopes. Listed rather than generated so the mapping is greppable and the
   // `Record<ThemeScope, string>` type keeps them exhaustive — a new variant that is
@@ -125,9 +140,20 @@ const REGION_TOKENS: TokenDef[] = [
   { var: "--footer-fg-subtle",    label: "Footer subtle text",type: "color", kind: "region", group: "footer", inheritsFrom: "--c-fg-subtle", editable: true },
   { var: "--footer-border-color", label: "Footer border",     type: "color", kind: "region", group: "footer", control: "border", inheritsFrom: "--c-border", editable: true },
   { var: "--footer-accent",       label: "Footer accent",     type: "color", kind: "region", group: "footer", inheritsFrom: "--c-accent", editable: true },
-  // Aside (home/profile rails)
+  // Aside — the page's rail, whether it is the `aside` region or a `column` track
   { var: "--aside-bg",           label: "Aside background", type: "color", kind: "region", group: "aside", inheritsFrom: "--c-card", editable: true },
   { var: "--aside-border-color", label: "Aside border",     type: "color", kind: "region", group: "aside", control: "border", inheritsFrom: "--c-border", editable: true },
+  /*
+   * How wide the rail is. It was a pixel value in `_tokenDefaults.scss` and nowhere
+   * else — the one measurement of a page's shape that an admin could see and not
+   * change. `column width: rail` reads the same token, so a rail is the same width
+   * however it was built.
+   *
+   * ⚠ Global only (no `scopeable`): a rail whose width depends on which rail it is
+   * would make the two ways of building one disagree.
+   */
+  { var: "--rail-width",    label: "Rail width",    type: "length", kind: "region", group: "aside", control: "size", min: 200, max: 480, editable: true },
+  { var: "--sidebar-width", label: "Sidebar width", type: "length", kind: "region", group: "aside", control: "size", min: 160, max: 420, editable: true },
 ];
 
 // ── Component tokens (scopeable per region) ────────────────────────────────────

@@ -28,6 +28,7 @@ import {
 import {
   audienceInView,
   isBlockVisibleTo,
+  isChromeTemplate,
   isRestricted,
   parseLayoutDocument,
   regionsFor,
@@ -41,7 +42,7 @@ import {
 } from "@nodevo/contracts";
 import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
-import { isLayoutPreview, usePreviewAudience } from "./useLayout";
+import { editingTemplate, isLayoutPreview, usePreviewAudience } from "./useLayout";
 
 /**
  * True inside the layout editor's preview iframe — which loads a REAL route with
@@ -71,6 +72,29 @@ const isEditorPreview = () =>
 const LayoutDocumentContext = createContext<LayoutDocument | null>(null);
 
 export const useRenderedDocument = (): LayoutDocument | null => useContext(LayoutDocumentContext);
+
+/**
+ * Whether the document being rendered is the one the editor has open.
+ *
+ * A preview is never one document: the page's regions arrive with the site header
+ * and footer around them, and those are as much part of the page as its body — the
+ * masthead band and the navbar ARE the header. So every block stays addressable,
+ * whichever document it comes from; clicking one that belongs to another document
+ * switches the editor to it (the bridge sends the template along, see `data-nv-template`).
+ *
+ * What this decides is narrower: whose EMPTY REGIONS get a drop target, and whose
+ * blocks may be dragged. Both act on the open document's tree, so offering them for
+ * another one would ask the editor to move a block it is not holding.
+ *
+ * ⚠ `null` (no template named) treats everything as open: that is an older editor
+ * link, and the theme specimen at `/__theme-preview`, which has no edited template.
+ */
+function useIsOpenDocument(): boolean {
+  const doc = useContext(LayoutDocumentContext);
+  if (!isEditorPreview()) return false;
+  const editing = editingTemplate();
+  return editing === null || doc?.templateKey === editing;
+}
 
 // ── Audience ────────────────────────────────────────────────────────────────
 
@@ -148,6 +172,8 @@ function RenderNode({
   previewAudience: AudienceView | null;
 }) {
   const def = getBlock(node.type);
+  const doc = useRenderedDocument();
+  const isOpenDocument = useIsOpenDocument();
 
   /**
    * Audience (ADR-0005 + Amendment 2). Narrowing only — when the audience admits the
@@ -234,7 +260,16 @@ function RenderNode({
    * A stylesheet may therefore never reach across a block boundary with `>`, `+` or
    * `~`. Guarded by `classContract.test.tsx`.
    */
-  const wrapperClass = [blockTypeClass(node.type), variant, custom]
+  /*
+   * `nv-block` FIRST — the one class every block wrapper carries, whatever its type.
+   *
+   * `nv-b--<type>` names WHICH block this is; `nv-block` says only "a block lives
+   * here", which is the question a layout rule asks: a `column` or a rail collapses
+   * when nothing inside it drew anything, and that test has to work on the live site.
+   * `data-nv-block` cannot answer it — the renderer stamps that in the EDITOR only,
+   * so a rule written against it would collapse every track on the real page.
+   */
+  const wrapperClass = ['nv-block', blockTypeClass(node.type), variant, custom]
     .filter(Boolean).join(' ');
 
   /**
@@ -251,7 +286,10 @@ function RenderNode({
   const align = node.align ? { "data-nv-align": node.align } : {};
 
   // In the editor preview each block ALSO needs identity in the DOM so hovering,
-  // selecting and dragging can address it — the data attributes below.
+  // selecting and dragging can address it — the data attributes below. For EVERY
+  // document on screen, not just the open one: the header and footer are part of the
+  // page an admin is looking at, and clicking one of their blocks is how you get to
+  // edit it. `data-nv-template` is what lets the bridge say which document to open.
   if (!isEditorPreview()) {
     return <div className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
   }
@@ -267,6 +305,14 @@ function RenderNode({
       // `[data-nv-parent="id"]` query is exact at any depth.
       data-nv-parent={parentId ?? ""}
       data-nv-region={region}
+      // Which DOCUMENT this block lives in. A page's preview also renders the site
+      // header and footer, and a click on one of those has to open THAT document
+      // rather than address an id the open one does not contain.
+      data-nv-template={doc?.templateKey ?? ""}
+      // Dragging moves a block within the tree the editor is holding, so it is
+      // offered only for the open document. Selecting is not: that is how you get
+      // to the header in the first place.
+      {...(isOpenDocument ? { "data-nv-drag": "1" } : {})}
       // Marks a legal drop parent for the bridge. Only set when the block can
       // actually hold children, so hovering a leaf resolves to its region.
       {...(def.container ? { "data-nv-container": "1" } : {})}
@@ -289,25 +335,33 @@ function RenderNode({
  * not deliver: screen-reader users navigate by landmark, and search engines read them.
  * The name already says what the thing IS, so it should be that element.
  *
+ * ⚠⚠ `header` and `footer` are the SITE's, and belong to `chrome.*` alone.
+ * `chrome.header` holds the masthead band and the navbar — that IS the page's
+ * `<header>` — and `chrome.footer` is its `<footer>`. A page template has neither
+ * region any more (it is a body and a rail); while it did, every page carried two
+ * banner landmarks and two contentinfos, with the pair that is NOT the header and
+ * footer nested inside `<main>`. The check stays because a PLUGIN template may
+ * declare a region called `header`, and a plugin's page is a page.
+ *
  * ⚠ `main` is deliberately absent. `AppLayout` already wraps the page in
  * `<main className="app-main">`, and a document may contain exactly ONE `<main>` —
  * emitting a second here would be invalid HTML on every page of the site.
- *
- * ⚠ Chrome regions are absent too, and are already inside the right landmark:
- * `chrome.header`'s zones sit in `<header>`/`<nav>`, `chrome.footer`'s in `<footer>`.
- * Nesting a second one would be legal and meaningless.
  */
-const REGION_ELEMENT: Record<string, "header" | "aside" | "footer"> = {
-  header: "header",
-  aside:  "aside",
-  footer: "footer",
-};
+function regionElement(region: string, templateKey?: TemplateKey): "header" | "aside" | "footer" | "div" {
+  if (region === "aside") return "aside";
+  if (templateKey && isChromeTemplate(templateKey)) {
+    if (region === "header") return "header";
+    if (region === "footer") return "footer";
+  }
+  return "div";
+}
 
 /**
  * "bandAbove" → "Band above". A local humanise rather than a translation lookup:
  * this renders inside the PREVIEW, which is the public site with the editor's bridge
  * injected, and the site does not load the ACP's translation namespace. Reaching for
  * one would resolve to the raw key on the one surface that shows it.
+ *
  */
 function humaniseRegion(region: string): string {
   // `main` is the KEY and `<main>` is the element, but "Body" is what it is called
@@ -346,9 +400,31 @@ export function LayoutRegion({
    */
   if (nodes.length === 0) {
     if (!isLayoutPreview()) return null;
-    const Empty = REGION_ELEMENT[region] ?? "div";
+    // …and only for the template being edited. A placeholder belonging to another
+    // document is a drop target that cannot accept a drop: clicking the page's empty
+    // aside while arranging the site header asked the editor to add a block to a
+    // region `chrome.header` does not have.
+    const editing = editingTemplate();
+    if (editing !== null && doc.templateKey !== editing) return null;
+    const Empty = regionElement(region, doc.templateKey);
     return (
-      <Empty className="nv-region nv-region--empty" data-nv-region={region} data-nv-empty={region}>
+      <Empty
+        /*
+         * The region's OWN modifier as well, and that is not cosmetic.
+         *
+         * Without `nv-region--aside` the placeholder does not match
+         * `.nv-body-row > .nv-region--aside`, so it falls back to `flex: 0 1 auto`
+         * and an EMPTY rail took half the row: the body was squeezed to 583px of a
+         * 1240px row, home's three tracks no longer fitted, and `.nv-columns`
+         * wrapped. The editor showed a collapsed page that the live site never had —
+         * because on the site an empty region renders nothing at all, so only the
+         * preview could be wrong.
+         */
+        className={`nv-region nv-region--${region} nv-region--empty`}
+        data-nv-region={region}
+        data-nv-template={doc.templateKey}
+        data-nv-empty={region}
+      >
         <span>{humaniseRegion(region)}</span>
       </Empty>
     );
@@ -357,10 +433,14 @@ export function LayoutRegion({
   // in a `section`) renders edge-to-edge while the page's own container stays
   // centred — blocks would otherwise each have to carry page layout, which is
   // how a block catalogue turns into a generic web builder.
-  const Tag = REGION_ELEMENT[region] ?? "div";
+  const Tag = regionElement(region, doc.templateKey);
   return (
     <LayoutDocumentContext.Provider value={doc}>
-      <Tag className={`nv-region nv-region--${region}`} data-nv-region={region}>
+      <Tag
+        className={`nv-region nv-region--${region}`}
+        data-nv-region={region}
+        data-nv-template={doc.templateKey}
+      >
         {nodes.map((node) => (
           <RenderNode
             key={node.id} node={node} context={context}
@@ -402,11 +482,39 @@ export function LayoutRenderer({ templateKey, context, document: raw, regions }:
    * admin-editable, which is exactly why the template is the authority here.
    */
   const names = regions ?? regionsFor(templateKey);
+
+  /**
+   * BODY and ASIDE are one row, not two bands.
+   *
+   * `aside` means "beside" — it is the page's rail, and rendering it after the body
+   * put it UNDER the body, which is neither what the word says nor what anyone
+   * arranging a page expects. Every region was simply emitted in order, so the four
+   * landmarks read as four stacked strips.
+   *
+   * The pairing is done HERE rather than in CSS on `.app-main`, because it is a
+   * property of the template's region set (a template that declares only `main` gets
+   * no row) and because the row, not each region, owns the content column.
+   *
+   * ⚠ Order inside the row is fixed — body then rail — regardless of how the
+   * template lists them. `regionsFor` decides which regions exist, not which side
+   * the rail is on.
+   */
+  const row = names.includes("main") && names.includes("aside");
+
   return (
     <>
-      {names.map((region) => (
-        <LayoutRegion key={region} document={doc} region={region} context={context} />
-      ))}
+      {names.map((region) => {
+        if (row && region === "aside") return null;   // rendered inside the row
+        if (row && region === "main") {
+          return (
+            <div className="nv-body-row" key="body-row">
+              <LayoutRegion document={doc} region="main" context={context} />
+              <LayoutRegion document={doc} region="aside" context={context} />
+            </div>
+          );
+        }
+        return <LayoutRegion key={region} document={doc} region={region} context={context} />;
+      })}
     </>
   );
 }

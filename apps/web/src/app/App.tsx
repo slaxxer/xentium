@@ -29,8 +29,8 @@ import { api } from "../lib/api";
 import { setBadgeShadows, type GroupShadowConfig } from "../lib/badgeShadow";
 import { useAuth } from "../hooks/useAuth";
 import { useActivityLogger } from "../hooks/useActivityLogger";
-import { applyTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
-import { LAYOUTS_QUERY_KEY, isLayoutPreview } from "../layout/useLayout";
+import { loadTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
+import { LAYOUTS_QUERY_KEY, isDraftLayout, isLayoutPreview } from "../layout/useLayout";
 import { installPreviewBridge } from "../layout/previewBridge";
 import { slotRegistry } from "../plugins/slotRegistry";
 // ACP shell
@@ -122,10 +122,17 @@ function useCustomTokens(installed: boolean) {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!installed) return;
-    fetch("/api/appearance/css")
-      .then((r) => (r.ok ? r.text() : ""))
-      .then((css) => { if (css) applyTokenCss(css); })
-      .catch(() => {});
+    /**
+     * In a layout PREVIEW, the draft stylesheet — the layouts already come from the
+     * draft (`usePublishedLayouts`), and serving them under published colours showed
+     * an arrangement nobody had staged in a palette nobody had chosen.
+     *
+     * It matters most for a THEME, which stages both halves at once: previewing one
+     * with live colours is previewing half of it. `?source=draft` is the effective
+     * draft — the theme layer with the admin's own on top — so this is the same
+     * stylesheet a publish would produce.
+     */
+    void loadTokenCss({ draft: isDraftLayout() });
     // Keep every open client in sync with theme changes within a few seconds.
     startStyleSync();
     // A layout publish bumps the same style version (ADR-0005), so page

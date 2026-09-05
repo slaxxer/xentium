@@ -51,7 +51,7 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { SchemaFields, defaultsFor, type FieldSchema } from "../../../components/SchemaFields";
 import { acceptsChild, getBlock } from "../../../layout/blockRegistry";
 import { shortcutFor } from "../../../layout/editorShortcuts";
-import { LAYOUT_PREVIEW_PARAM } from "../../../layout/useLayout";
+import { LAYOUT_PREVIEW_PARAM, LAYOUT_EDITING_PARAM } from "../../../layout/useLayout";
 import {
   canNestInto,
   cloneBlock,
@@ -141,6 +141,13 @@ function conflictVersion(e: unknown): string | null {
 }
 
 /** JSON Schema for a block's props, straight from its registered Zod schema. */
+/** True when a block's own schema carries the background props — the panel below
+ *  edits them, and `SchemaFields` skips them, from this one answer. */
+function paintsBackground(type: string): boolean {
+  const props = schemaFor(type)?.properties ?? {};
+  return BACKGROUND_PROPS.every((p) => p in props);
+}
+
 function schemaFor(type: string): FieldSchema | null {
   const def = getBlock(type);
   if (!def) return null;
@@ -187,6 +194,19 @@ export function LayoutEditorPage() {
   const qc = useQueryClient();
 
   const [templateKey, setTemplateKey] = useState<TemplateKey>("article.index");
+  /**
+   * Which PAGE the preview is showing, which is not always the document being edited.
+   *
+   * The site header and footer render on every page, so opening one of them should
+   * not throw away the page you were looking at — you clicked the masthead ON this
+   * page, and that is where you want to see the change. Only a page template moves
+   * the preview.
+   */
+  const [previewPageKey, setPreviewPageKey] = useState<TemplateKey>("article.index");
+  /** Read by the preview's message listener, which is registered once and must not
+   *  close over the template that happened to be open when it was attached. */
+  const templateKeyRef = useRef<TemplateKey>(templateKey);
+  templateKeyRef.current = templateKey;
   // "" = the template default. A variant is one instance of the template — a page
   // slug for `page.detail`.
   const [variant, setVariant] = useState<string>(DEFAULT_VARIANT);
@@ -411,6 +431,11 @@ export function LayoutEditorPage() {
    */
   useEffect(() => { history.clear(); }, [templateKey, variant]);
 
+  /** A page template is also the page the preview renders; chrome is not. */
+  useEffect(() => {
+    if (!isChromeTemplate(templateKey)) setPreviewPageKey(templateKey);
+  }, [templateKey]);
+
   /**
    * Messages from the preview iframe: an admin clicked a block, or dragged one.
    * The editor stays the single source of truth — the preview reports intent and
@@ -420,19 +445,44 @@ export function LayoutEditorPage() {
     const onMessage = (e: MessageEvent) => {
       if (e.origin !== window.location.origin) return; // never trust a foreign frame
       const msg = e.data as {
-        source?: string; type?: string; id?: string;
+        source?: string; type?: string; id?: string; templateKey?: string;
         region?: string; parentId?: string | null; index?: number;
         action?: "undo" | "redo";
       };
 
       if (msg?.source !== "nv-preview") return;
 
-      if (msg.type === "select" && msg.id) setSelectedId(msg.id);
+      /**
+       * Clicking a block OPENS its document.
+       *
+       * The header and footer are on the page an admin is arranging — the masthead
+       * band and the navbar ARE the header — so clicking one has to lead somewhere.
+       * It leads here: the editor switches to that document and selects the block, so
+       * the next thing you can do is delete the logo or drop something beside it.
+       * The preview stays on the same page (`previewPageKey`), because that is where
+       * the click happened.
+       *
+       * ⚠ One document at a time, deliberately. Each has its own draft and its own
+       * publish; editing two behind one screen is how a Publish comes to mean
+       * something other than what the button says. Switching is the honest version,
+       * and the tree keeps showing the whole page either way.
+       */
+      if (msg.type === "select" && msg.id) {
+        if (msg.templateKey && msg.templateKey !== templateKeyRef.current) {
+          setTemplateKey(msg.templateKey as TemplateKey);
+        }
+        setSelectedId(msg.id);
+      }
 
       // An empty region was clicked in the preview. Open the SAME add-block picker
       // the region's own `+` opens — the key is `r:<region>`, so there is one picker
       // and one code path whichever surface asked for it.
-      if (msg.type === "addTo" && msg.region) latest.current.openAdd(`r:${msg.region}`);
+      if (msg.type === "addTo" && msg.region) {
+        if (msg.templateKey && msg.templateKey !== templateKeyRef.current) {
+          setTemplateKey(msg.templateKey as TemplateKey);
+        }
+        latest.current.openAdd(`r:${msg.region}`);
+      }
 
       if (msg.type === "move" && msg.id && msg.region && typeof msg.index === "number") {
         // Goes through the same `applyTree` the tree's own drags use, so a move made
@@ -521,10 +571,21 @@ export function LayoutEditorPage() {
     // Suspended while a conflict is unresolved: retrying on every keystroke would
     // hammer a write the server has already refused, and would bury the prompt that
     // is the only way out of it.
-    onSave: (next) => { if (next && !conflict) save.mutate(next); },
+    //
+    // ⚠ And refused outright while the held document belongs to another template —
+    // the window that opens every time the picker moves, before the new draft has
+    // resolved. `versionRef` is the other half of the reason: it holds the version
+    // of the row being EDITED, so a write from that window would carry one
+    // template's version against another template's row.
+    onSave: (next) => {
+      if (!next || conflict) return;
+      if (next.templateKey !== templateKey) return;
+      save.mutate(next);
+    },
   });
 
   const templateInfo = templatesQuery.data?.find((x) => x.key === templateKey);
+  const previewTemplateInfo = templatesQuery.data?.find((x) => x.key === previewPageKey);
   const regions = templateInfo?.regions ?? [];
   // From the local registry rather than the catalogue: a plugin's template is
   // registered in this browser by the plugin's own bundle, and the required-block
@@ -544,8 +605,22 @@ export function LayoutEditorPage() {
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   const save = useMutation({
+    /*
+     * ⚠ Addressed by the DOCUMENT's own template key, never by the picker's.
+     *
+     * `templateKey` is state that changes the instant the picker moves; `doc` is
+     * replaced a render or two later, when the new template's draft resolves. In
+     * that window the editor holds the OUTGOING document under the INCOMING key —
+     * and a 700ms autosave landing there PUTs one template's blocks into another
+     * template's draft. Silent, and it destroys work: what it overwrites is a saved
+     * layout nobody asked it to touch.
+     *
+     * The document knows which template it belongs to, so it addresses itself. The
+     * `onSave` guard below refuses the mismatch outright; this is the second half,
+     * so that a write which does happen goes to the right row.
+     */
     mutationFn: (next: LayoutDocument) =>
-      api.put<LayoutDraftResponse>(`/admin/layouts/${templateKey}${qs}`, {
+      api.put<LayoutDraftResponse>(`/admin/layouts/${next.templateKey}${qs}`, {
         document: next,
         baseVersion: versionRef.current,
       }),
@@ -890,6 +965,57 @@ export function LayoutEditorPage() {
     if (current) save.mutate(current);
   };
 
+  /** The open document's regions, arrangeable. */
+  const editableRegions = () => regions.map((region) => {
+    const nodes = doc?.regions[region] ?? [];
+    const addKey = `r:${region}`;
+    return (
+      <div
+        className="lay__region"
+        key={region}
+        // Region-level target so a drop on the region's own chrome — its heading, its
+        // padding, the "Empty" placeholder — appends rather than doing nothing. Rows
+        // and containers stop propagation, so this only fires when nothing more
+        // specific claimed the drop.
+        onDragOver={(e) => hover(e, { region, parentId: null, index: nodes.length })}
+        onDrop={dropHere}
+      >
+        <div className="lay__region-head">
+          <span>
+            {t(
+              isChromeTemplate(templateKey)
+                ? `layoutEditor.region.${region}`
+                : `layoutEditor.pageRegion.${region}`,
+              { defaultValue: t(`layoutEditor.region.${region}`, { defaultValue: region }) },
+            )}
+          </span>
+          <button type="button" className="btn-ghost btn-sm"
+            onClick={() => toggleAdd(addKey)}
+            title={t("layoutEditor.addBlock")}>
+            <FontAwesomeIcon icon={faPlus} />
+          </button>
+        </div>
+
+        {adding === addKey && (
+          <BlockPicker
+            templateKey={templateKey} depth={1} t={t}
+            narrow={region === "aside"}
+            onPick={(type) => addBlock(type, region, null)}
+            onClose={closeAdd}
+          />
+        )}
+
+        {/* Said once, where the surprise is: `aside` is the only region whose
+            position is not simply "next". */}
+        {region === "aside" && (
+          <p className="lay__region-hint">{t("layoutEditor.asideHint")}</p>
+        )}
+
+        <BlockList nodes={nodes} region={region} parentId={null} depth={1} ctx={treeCtx} />
+      </div>
+    );
+  });
+
   const toggleAdd = (key: string) => setAdding((cur) => (cur === key ? null : key));
   const closeAdd = () => setAdding(null);
 
@@ -958,17 +1084,27 @@ export function LayoutEditorPage() {
    * published page is used; with no pages at all the fallback route applies and the
    * preview honestly shows nothing to arrange.
    */
+  // The PAGE being previewed — which stays put when the open document is the site
+  // header or footer, because those render on this page too and that is where the
+  // admin just clicked one.
   const previewRoute =
-    templateKey === "page.detail"    && previewPageSlug    ? `/p/${encodeURIComponent(previewPageSlug)}`
-    : templateKey === "profile"        && previewUsername    ? `/u/${encodeURIComponent(previewUsername)}`
-    : templateKey === "article.detail" && previewArticleSlug ? `/articles/${encodeURIComponent(previewArticleSlug)}`
+    previewPageKey === "page.detail"    && previewPageSlug    ? `/p/${encodeURIComponent(previewPageSlug)}`
+    : previewPageKey === "profile"        && previewUsername    ? `/u/${encodeURIComponent(previewUsername)}`
+    : previewPageKey === "article.detail" && previewArticleSlug ? `/articles/${encodeURIComponent(previewArticleSlug)}`
     // A plugin says where its own page lives; core cannot know. `/` is the honest
     // fallback for a plugin that declared no route — it previews the chrome and shows
     // the admin that this template has no page to point at.
-    : templateInfo?.previewRoute
-      ?? PREVIEW_ROUTE[templateKey as CoreTemplateKey]
+    : previewTemplateInfo?.previewRoute
+      ?? PREVIEW_ROUTE[previewPageKey as CoreTemplateKey]
       ?? "/";
-  const previewSrc = `${previewRoute}?${LAYOUT_PREVIEW_PARAM}=draft`;
+  /**
+   * `__editing` names the template under the cursor, so the preview can draw THAT
+   * one from the draft and everything around it — the site header and footer — from
+   * what is published. Without it the preview showed every template's staged state
+   * at once, and a stale `chrome.header` draft read as the site header disappearing.
+   */
+  const previewSrc =
+    `${previewRoute}?${LAYOUT_PREVIEW_PARAM}=draft&${LAYOUT_EDITING_PARAM}=${encodeURIComponent(templateKey)}`;
 
   return (
     <div className="lay">
@@ -1166,41 +1302,13 @@ export function LayoutEditorPage() {
         {/* ── Structure ─────────────────────────────────────────────────── */}
         <div className="lay__tree">
           <div className="lay__pane-title">{t("layoutEditor.structure")}</div>
-          {regions.map((region) => {
-            const nodes = doc?.regions[region] ?? [];
-            const addKey = `r:${region}`;
-            return (
-              <div
-                className="lay__region"
-                key={region}
-                // Region-level target so a drop on the region's own chrome — its
-                // heading, its padding, the "Empty" placeholder — appends rather
-                // than doing nothing. Rows and containers stop propagation, so
-                // this only fires when nothing more specific claimed the drop.
-                onDragOver={(e) => hover(e, { region, parentId: null, index: nodes.length })}
-                onDrop={dropHere}
-              >
-                <div className="lay__region-head">
-                  <span>{t(`layoutEditor.region.${region}`, { defaultValue: region })}</span>
-                  <button type="button" className="btn-ghost btn-sm"
-                    onClick={() => toggleAdd(addKey)}
-                    title={t("layoutEditor.addBlock")}>
-                    <FontAwesomeIcon icon={faPlus} />
-                  </button>
-                </div>
-
-                {adding === addKey && (
-                  <BlockPicker
-                    templateKey={templateKey} depth={1} t={t}
-                    onPick={(type) => addBlock(type, region, null)}
-                    onClose={closeAdd}
-                  />
-                )}
-
-                <BlockList nodes={nodes} region={region} parentId={null} depth={1} ctx={treeCtx} />
-              </div>
-            );
-          })}
+          {/* The open document's own regions, and nothing else. The header and the
+              footer are their own templates in the picker — clicking one of their
+              blocks in the preview opens it, which is the short way there. */}
+          {!isChromeTemplate(templateKey) && (
+            <p className="lay__region-hint">{t("layoutEditor.pageChromeHint")}</p>
+          )}
+          {editableRegions()}
         </div>
 
         {/* ── Props (under Structure, same rail) ────────────────────────── */}
@@ -1219,16 +1327,18 @@ export function LayoutEditorPage() {
                 onChange={(next) => updateProps(selected.node.id, next)}
                 // The background props get a picker, an uploader and a preview
                 // instead of a text box and a number — see BlockBackground.
-                omit={selected.node.type === "section" ? BACKGROUND_PROPS : undefined}
+                omit={paintsBackground(selected.node.type) ? BACKGROUND_PROPS : undefined}
               />
               {Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length === 0 && (
                 <div className="acp-hint">{t("layoutEditor.noProps")}</div>
               )}
-              {/* A section is the block that paints, so it is the one that carries a
-                  background. Keyed by block for the same reason BlockStyle is:
-                  switching selection must reset the panel, not carry one block's
+              {/* Whether a block paints is read from its SCHEMA, not from its name:
+                  `section` was the only one that did until the header band became a
+                  block of its own, and a second `type === "…"` check is how the two
+                  would have drifted. Keyed by block for the same reason BlockStyle
+                  is: switching selection must reset the panel, not carry one block's
                   pending upload to another. */}
-              {selected.node.type === "section" && (
+              {paintsBackground(selected.node.type) && (
                 <BlockBackgroundFields
                   // ⚠ NAMESPACED, not the bare block id. `BlockStyleFields` below is
                   // a sibling in this same pane and already keys on that id — two

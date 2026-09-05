@@ -261,6 +261,38 @@ model LoginEvent {
   @@map("ncf_login_events")
 }
 
+/// An installed theme. INSTALLED is not ACTIVE — the same distinction plugins draw
+/// (§10/§54), and for the same reason: an admin trying a second theme must not lose
+/// the first. Before this table there was one settings key holding one manifest, so
+/// importing a theme silently destroyed whatever had been installed before it.
+///
+/// The row carries the theme's applicable PAYLOAD, not the original `.nvtheme`: the
+/// layout documents, tokens and stylesheets exactly as the importer resolved them,
+/// with every asset reference already rewritten to this install's upload paths. That
+/// is what lets a theme be re-activated later without the package it came from —
+/// and it is why uninstalling has to take the assets with it.
+model Theme {
+  /// The manifest id. Re-importing the same id UPDATES the row (an upgrade), which
+  /// is why this is the primary key rather than a generated one.
+  id            String   @id
+  name          String
+  version       String
+  vendor        String
+  /// The manifest as stored: `screenshot` already repointed at the upload path.
+  manifest      Json
+  /// `{ documents, tokens, customCss }` — everything `activate` needs to apply it.
+  payload       Json
+  /// Exactly one row may be true. Enforced in the service, which clears the others
+  /// inside the same transaction that sets this one.
+  active        Boolean  @default(false)
+  installedAt   DateTime @default(now()) @map("installed_at")
+  activatedAt   DateTime? @map("activated_at")
+  installedById String?  @map("installed_by_id")
+
+  @@index([active])
+  @@map("ncf_themes")
+}
+
 model Setting {
   key       String   @id
   value     Json

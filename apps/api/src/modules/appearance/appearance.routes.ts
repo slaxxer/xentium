@@ -22,10 +22,36 @@ appearanceRouter.get("/css", async (req, res, next) => {
     const css   = draft
       // Effective, not just the admin layer: the draft has to preview the theme it is
       // layered over, or a site with a theme installed previews as if it had none.
-      ? await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens())
+      ? await appearanceService.buildCSS(
+          await appearanceService.getEffectiveDraftTokens(),
+          // The STAGED stylesheet too, not just the staged tokens — otherwise a
+          // theme being previewed wears its own colours under the previous theme's
+          // CSS, which is a look neither theme has.
+          { draft: true },
+        )
       : await appearanceService.getLiveCss();
     res.setHeader("Content-Type", "text/css; charset=utf-8");
-    res.setHeader("Cache-Control", draft ? "no-store" : "public, max-age=60");
+    /**
+     * The version of the stylesheet in this response, so a client can tell what it
+     * is HOLDING from what the server is announcing. Without it, a page that loaded
+     * a cached stylesheet adopts the SSE's first version as its own baseline, sees
+     * no change, and stays painted in the previous theme — which is exactly what a
+     * theme switch looked like from the site.
+     */
+    if (!draft) {
+      // LIVE only. The draft stylesheet is not what the stream announces, so
+      // stamping it would let a preview reconcile itself back to the live theme.
+      res.setHeader("X-Style-Version", String(await appearanceService.getStyleVersion()));
+      res.setHeader("Access-Control-Expose-Headers", "X-Style-Version");
+    }
+    /**
+     * `no-cache` means REVALIDATE, not "do not store": the ETag turns the usual
+     * request into a 304 with no body, so the cache still saves the bytes while the
+     * first paint is always the current theme. `max-age=60` bought a little less
+     * traffic at the price of up to a minute of the OLD theme on every load right
+     * after a change — the one moment anybody is looking.
+     */
+    res.setHeader("Cache-Control", draft ? "no-store" : "no-cache");
     res.send(css);
   } catch (err) { next(err); }
 });

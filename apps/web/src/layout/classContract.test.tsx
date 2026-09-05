@@ -129,6 +129,32 @@ const ROOT_CLASSES: Record<string, string> = {
   profileCard: "profile-card",
 };
 
+/**
+ * `nv-block` — the class that says "a block drew here", on every wrapper.
+ *
+ * A rail and a column collapse when nothing inside them rendered, and the test for
+ * that is `:has(.nv-block:not(:empty))`. The renderer's OTHER handle,
+ * `data-nv-block`, is stamped in the EDITOR only — a rule written against it matched
+ * nothing on the real page and collapsed every track on it. So this class is a
+ * layout dependency, not decoration.
+ */
+describe("nv-block", () => {
+  it("is on every block wrapper, on the live site", () => {
+    const nodes: BlockNode[] = [
+      { id: "a", type: "heading", props: { text: "H", level: 2 } },
+      { id: "b", type: "richText", props: {} },
+      { ...({ id: "c", type: "section", props: { width: "normal", padding: "md" } } as BlockNode),
+        children: [{ id: "d", type: "spacer", props: { size: "md" } }] },
+    ];
+    const { container } = render(<LayoutRegion document={doc(nodes)} region="main" />);
+    const wrappers = [...container.querySelectorAll("[class*='nv-b--']")];
+    expect(wrappers.length).toBeGreaterThan(3);
+    for (const w of wrappers) {
+      expect([...w.classList], w.className).toContain("nv-block");
+    }
+  });
+});
+
 describe("root classes", () => {
   it("still exist in the source that emits them", () => {
     // Static rather than rendered, because most of these blocks need host data to

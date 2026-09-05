@@ -223,6 +223,19 @@
     margin-bottom: var(--sp-2);
   }
 
+  /* The site header and footer, listed where they render — first and last. Quieter
+     than an editable region, because that is exactly what they are not here: their
+     blocks belong to another document, and the row's Edit button goes there. */
+  /* One line, quiet: what a region IS, said where the name alone is not enough —
+     which page's header this is, and that `aside` is a rail rather than the next
+     band down. Anything longer belongs in the docs, not in the rail. */
+  &__region-hint {
+    margin: 0 0 var(--sp-2);
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--c-fg-subtle);
+  }
+
   /* Nesting depth arrives as `--lay-depth` from the renderer, so the indent maths
      stays here rather than becoming inline pixel values in the component. */
   &__empty,
@@ -534,6 +547,23 @@
       white-space: nowrap;
       max-width: 45%;
     }
+  }
+
+  /* "Designed for the body's width", shown only when adding to a rail. A quiet
+     warning tone rather than a danger one: it is advice about a fit, and the block
+     is added anyway if that is what the admin wants. */
+  &__picker-wide {
+    margin-right: auto;
+    flex: 0 0 auto;
+    font-family: inherit;
+    font-size: 9.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-warn);
+    border: 1px solid color-mix(in srgb, var(--c-warn) 45%, transparent);
+    border-radius: var(--radius-sm);
+    padding: 0 4px;
   }
 
   /* ── preview ───────────────────────────────────────────────────────────── */

@@ -105,7 +105,7 @@ registerBlock({
   type:      "section",
   schema:    blockPropSchemas.section,
   container: true,
-  editorMeta: { label: "Section", category: "structure" },
+  editorMeta: { label: "Section", category: "structure", wide: true },
   component: SectionBlock,
 });
 
@@ -116,7 +116,7 @@ registerBlock({
   // A track is a `column`; nothing else may sit directly in the row, or a bare
   // block would land where a track belongs and the grid would read as broken.
   childTypes: ["column"],
-  editorMeta: { label: "Columns", category: "structure" },
+  editorMeta: { label: "Columns", category: "structure", wide: true },
   // Collapse is intrinsic to the block, never an admin knob — that is what stops
   // a non-developer producing a layout that is broken on mobile.
   component: ({ props, children }) => {
@@ -261,6 +261,6 @@ registerBlock({
 registerBlock({
   type:   "articleIndex",
   schema: blockPropSchemas.articleIndex,
-  editorMeta: { label: "Article index", category: "data", allowedTemplates: ["article.index"] },
+  editorMeta: { label: "Article index", category: "data", allowedTemplates: ["article.index"], wide: true },
   component: ArticleIndexBlock,
 });

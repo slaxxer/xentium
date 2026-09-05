@@ -56,6 +56,28 @@ export interface MarketplaceListQuery extends PaginatedRequest {
 const K_PAID_IDS = "marketplace.paid_plugin_ids";
 
 /**
+ * The same question for the other half of the catalogue: which THEME ids are sold
+ * as paid.
+ *
+ * A SECOND key and a SECOND walk, deliberately — not a widening of the set above.
+ * `marketplace.paid_plugin_ids` is read by the plugin enable gate, which asks "is
+ * this id paid?" and has no idea what kind an id is; a theme id landing in that set
+ * would gate a plugin that does not exist. The two sets never mix.
+ *
+ * ⚠ And unlike the plugin set, NOTHING here gates a theme from RUNNING. A theme has
+ * no runtime and never will (ADR-0001 / §53) — this set exists so the ACP can say
+ * "buy" instead of "install", and so a refusal at the download gate can be explained
+ * in words the admin can act on. The authoritative gate is the marketplace's.
+ */
+const K_PAID_THEME_IDS = "marketplace.paid_theme_ids";
+
+/** Which cached set answers for a kind. */
+const PAID_IDS_KEY: Record<ProductKind, string> = {
+  plugin: K_PAID_IDS,
+  theme:  K_PAID_THEME_IDS,
+};
+
+/**
  * How long the enable gate trusts the cached paid-id set before re-syncing it.
  *
  * The set decides whether a plugin needs a licence AT ALL, and it used to be
@@ -325,24 +347,41 @@ class NodevoMarketplaceSource implements MarketplaceSource {
   }
 
   /**
-   * Best-effort refresh of the paid-id set from the live catalogue.
+   * Best-effort refresh of ONE kind's paid-id set from the live catalogue.
    *
-   * Walks every page: the set gates whether a plugin needs a licence at all, so
-   * a partial set silently un-gates whatever fell off the end.
+   * Walks every page: for plugins the set gates whether one needs a licence at
+   * all, so a partial set silently un-gates whatever fell off the end.
+   *
+   * ⚠ `kind` selects both the half of the catalogue walked AND the key written,
+   * from the one map. Passing a kind and writing the other key is the one way
+   * this could put theme ids in front of the plugin enable gate, so the two are
+   * never chosen separately.
    */
-  async refreshPaidPluginIds(): Promise<boolean> {
+  private async refreshPaidIds(kind: ProductKind): Promise<boolean> {
     const ids: string[] = [];
     for (let page = 1; ; page++) {
-      const res = await this.fetchCatalogPage({ page, limit: 100, kind: "plugin" });
+      const res = await this.fetchCatalogPage({ page, limit: 100, kind });
       if (!res) return false;   // unreachable mid-walk — keep the last cached set intact
       for (const l of res.data) if (l.licenseRequired) ids.push(l.id);
       if (page >= (res.meta.totalPages ?? 1)) break;
       if (page > 50) break;   // a catalogue this size means something is wrong upstream
     }
 
-    await prisma.setting.upsert({ where: { key: K_PAID_IDS }, update: { value: ids }, create: { key: K_PAID_IDS, value: ids } });
-    bustSettingsCache(K_PAID_IDS);
+    const key = PAID_IDS_KEY[kind];
+    await prisma.setting.upsert({ where: { key }, update: { value: ids }, create: { key, value: ids } });
+    bustSettingsCache(key);
     return true;
+  }
+
+  /** The plugin half. Feeds the enable gate — see `pluginRequiresLicense`. */
+  async refreshPaidPluginIds(): Promise<boolean> {
+    return this.refreshPaidIds("plugin");
+  }
+
+  /** The theme half. Feeds the ACP's buy-vs-install state and the download
+   *  refusal message — never a runtime check. */
+  async refreshPaidThemeIds(): Promise<boolean> {
+    return this.refreshPaidIds("theme");
   }
 
   /**
@@ -356,13 +395,20 @@ class NodevoMarketplaceSource implements MarketplaceSource {
    * Never throws: an unreachable marketplace leaves the last known set in place
    * and says so, and the gate decides what to do about it.
    */
-  async ensurePaidPluginIdsFresh(): Promise<PaidIdsFreshness> {
-    const row = await prisma.setting.findUnique({ where: { key: K_PAID_IDS }, select: { updatedAt: true } });
+  async ensurePaidIdsFresh(kind: ProductKind): Promise<PaidIdsFreshness> {
+    const key = PAID_IDS_KEY[kind];
+    const row = await prisma.setting.findUnique({ where: { key }, select: { updatedAt: true } });
     if (row && Date.now() - row.updatedAt.getTime() < PAID_IDS_TTL_MS) return "fresh";
 
-    const synced = await this.refreshPaidPluginIds().catch(() => false);
+    const synced = await this.refreshPaidIds(kind).catch(() => false);
     if (synced) return "fresh";
     return row ? "stale" : "never";
+  }
+
+  /** The enable gate's call. Named for its caller because it is the one place
+   *  where the answer decides whether a plugin may run. */
+  async ensurePaidPluginIdsFresh(): Promise<PaidIdsFreshness> {
+    return this.ensurePaidIdsFresh("plugin");
   }
 
   /** Everything this install's account owns — licences, seats, update windows.

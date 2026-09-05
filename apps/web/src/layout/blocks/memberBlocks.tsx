@@ -40,7 +40,7 @@ const ON_MEMBERS: { allowedTemplates: string[] } = { allowedTemplates: ["members
 registerBlock({
   type:   "membersTabs",
   schema: blockPropSchemas.membersTabs,
-  editorMeta: { label: "Members tabs", category: "data", ...ON_MEMBERS },
+  editorMeta: { label: "Members tabs", category: "data", ...ON_MEMBERS, wide: true },
   component: ({ context }: Ctx) => (
     <div className="mp-segtabs">
       {context.tabs.map((tb) => (
@@ -102,7 +102,7 @@ registerBlock({
 registerBlock({
   type:   "membersList",
   schema: blockPropSchemas.membersList,
-  editorMeta: { label: "Member list", category: "data", ...ON_MEMBERS },
+  editorMeta: { label: "Member list", category: "data", ...ON_MEMBERS, wide: true },
   component: ({ props, context }: Ctx<{ showCount: boolean }>) => {
     const { t } = useTranslation("members");
     const { members, meta, facets, listLoading, q } = context;
@@ -199,7 +199,7 @@ registerBlock({
 registerBlock({
   type:   "membersPodium",
   schema: blockPropSchemas.membersPodium,
-  editorMeta: { label: "Podium", category: "data", ...ON_MEMBERS },
+  editorMeta: { label: "Podium", category: "data", ...ON_MEMBERS, wide: true },
   component: ({ context }: Ctx) => {
     const { t } = useTranslation("members");
     if (!context.show.hof) return null;

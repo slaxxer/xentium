@@ -170,21 +170,63 @@ describe("the site chrome", () => {
     expect(regionsFor("chrome.footer")).toEqual(["footer"]);
   });
 
-  it("gives every page the same four landmarks, in order", () => {
+  /**
+   * ⚠ TWO regions on a page: the body and the rail beside it. It was four — a band
+   * above the body and one below — and those were never the page's header and footer
+   * (the site's are), shipped empty in every default, and offered nothing over a
+   * `section` at the top of the body except a misleading name.
+   */
+  it("gives every page a body and a rail, in that order", () => {
     for (const key of ["home", "article.index", "article.detail", "page.detail", "profile", "members"] as const) {
-      expect(regionsFor(key)).toEqual(["header", "main", "aside", "footer"]);
+      expect(regionsFor(key)).toEqual(["main", "aside"]);
     }
   });
 
-  it("ships the navbar as a block in the header, with the same items as before", () => {
+  /**
+   * ⚠ THE HEADER IS TWO BLOCKS: the band and the navbar, in that order by default.
+   * Which one is on top is their ORDER in the region — one drag — and a site that
+   * wants no band deletes the first. That is the whole model; there is no third
+   * concept for "masthead above or below".
+   */
+  it("ships the band and the navbar as the header, band first", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
-    const [navbar, ...rest] = doc.regions.header!;
-    expect(rest).toHaveLength(0);
-    expect(navbar!.type).toBe("navbar");
-    expect(navbar!.children!.map((c) => c.type)).toEqual([
+    expect(doc.regions.header!.map((b) => b.type)).toEqual(["header", "navbar"]);
+  });
+
+  it("ships the band 250px tall, full width, with the logo in it", () => {
+    const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
+    const band = doc.regions.header![0]!;
+    expect(band.props.height).toBe(250);
+    expect(band.props.showLogo).toBe(true);
+    expect(band.props.backgroundGradient).toHaveLength(2);
+  });
+
+  it("ships the navbar with the same items as before", () => {
+    const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
+    const navbar = doc.regions.header!.find((b) => b.type === "navbar")!;
+    expect(navbar.children!.map((c) => c.type)).toEqual([
       "logo", "navLinks", "search", "themeToggle", "headerWidgets",
       "notifications", "adminLink", "userMenu",
     ]);
+  });
+
+  it("takes the navbar ABOVE the band, which is the other arrangement", () => {
+    const base = DEFAULT_LAYOUTS["chrome.header"];
+    const [band, navbar] = base.regions.header!;
+    const parsed = parseLayoutDocument("chrome.header", {
+      ...base, regions: { header: [navbar!, band!] },
+    });
+    expect(parsed.usedDefault).toBe(false);
+    expect(parsed.document.regions.header!.map((b) => b.type)).toEqual(["navbar", "header"]);
+  });
+
+  it("takes a header with the band deleted — the navbar alone", () => {
+    const base = DEFAULT_LAYOUTS["chrome.header"];
+    const parsed = parseLayoutDocument("chrome.header", {
+      ...base, regions: { header: [base.regions.header![1]!] },
+    });
+    expect(parsed.usedDefault).toBe(false);
+    expect(parsed.document.regions.header!.map((b) => b.type)).toEqual(["navbar"]);
   });
 
   /**
@@ -194,27 +236,28 @@ describe("the site chrome", () => {
    */
   it("stores align only where it is not the start of the row", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
-    const children = doc.regions.header![0]!.children!;
+    const children = doc.regions.header!.find((b) => b.type === "navbar")!.children!;
     expect(children.find((c) => c.type === "logo")!.align).toBeUndefined();
     expect(children.find((c) => c.type === "userMenu")!.align).toBe("right");
   });
 
-  /** A masthead is a `section` in the header, above or below the navbar — which is
-   *  the ordering the two `band*` regions used to express with two named slots. */
-  it("takes a masthead section beside the navbar, either side of it", () => {
-    const masthead = {
+  /** A `section` is still placeable in the header — it is the generic band, and the
+   *  sites that built a masthead out of one before the `header` block existed keep
+   *  working exactly as they did. */
+  it("still takes a plain section beside the two, either side of them", () => {
+    const extra = {
       id: "mast", type: "section",
-      props: { width: "full", padding: "md", minHeight: 250 },
+      props: { width: "full", padding: "md", minHeight: 120 },
       children: [],
     };
     const base = DEFAULT_LAYOUTS["chrome.header"];
     for (const regions of [
-      { header: [masthead, ...base.regions.header!] },
-      { header: [...base.regions.header!, masthead] },
+      { header: [extra, ...base.regions.header!] },
+      { header: [...base.regions.header!, extra] },
     ]) {
       const parsed = parseLayoutDocument("chrome.header", { ...base, regions });
       expect(parsed.usedDefault).toBe(false);
-      expect(parsed.document.regions.header).toHaveLength(2);
+      expect(parsed.document.regions.header).toHaveLength(3);
     }
   });
 });

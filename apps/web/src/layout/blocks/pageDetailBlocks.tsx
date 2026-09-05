@@ -58,7 +58,7 @@ registerBlock({
 registerBlock({
   type:   "pageBody",
   schema: blockPropSchemas.pageBody,
-  editorMeta: { label: "Page body", category: "data", ...ON_PAGE },
+  editorMeta: { label: "Page body", category: "data", ...ON_PAGE, wide: true },
   component: ({ context }: BlockProps<unknown, PageDetailContext>) =>
     context.page
       ? <div className="page-view__body"><ArticleContent body={context.page.body} /></div>

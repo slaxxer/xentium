@@ -1,9 +1,10 @@
 // Live theme sync — push transport (Server-Sent Events).
 //
 // The active appearance tokens are served as CSS from /api/appearance/css and
-// injected into a single <style id="nodevo-custom-tokens"> tag. That endpoint is
-// browser-cached (max-age=60) for load performance, so on its own a change in the
-// Style Editor would take up to a minute to reach other open clients.
+// injected into a single <style id="nodevo-custom-tokens"> tag. That endpoint
+// revalidates rather than being held for a minute, so a page always PAINTS the
+// current theme; on its own, though, a change made after the page loaded would
+// never reach it.
 //
 // To make changes propagate "systemwide" the moment they happen — without every
 // client polling forever — each client opens ONE EventSource to
@@ -27,18 +28,56 @@ export function applyTokenCss(css: string): void {
   el.textContent = css;
 }
 
-/** Fetch the active CSS bypassing the browser HTTP cache, then apply it. */
+/** Refetch the stylesheet this client is showing, bypassing the browser cache.
+ *  The SAME half it loaded — refreshing a preview with the LIVE stylesheet would
+ *  quietly end the preview. */
 export async function refreshTokenCss(): Promise<void> {
+  const url = loadedDraft ? "/api/appearance/css?source=draft&t=" : "/api/appearance/css?t=";
+  await fetchTokenCss(`${url}${Date.now()}`, { cache: "no-store" });
+}
+
+/**
+ * The STARTUP load: inject the current stylesheet and remember which version it is.
+ *
+ * Every mount point that paints tokens goes through here rather than fetching the
+ * endpoint itself — three copies of the same `fetch` is how one of them would keep
+ * dropping the version stamp that the reconcile below depends on.
+ *
+ * `draft` is the layout preview's stylesheet (the theme layer plus the admin's own
+ * staged edits); it carries no version of its own and is never reconciled, because
+ * the draft is not what the stream announces.
+ */
+export async function loadTokenCss(opts: { draft?: boolean } = {}): Promise<void> {
+  loadedDraft = !!opts.draft;
+  await fetchTokenCss(loadedDraft ? "/api/appearance/css?source=draft" : "/api/appearance/css");
+}
+
+async function fetchTokenCss(url: string, init?: RequestInit): Promise<void> {
   try {
-    const res = await fetch(`/api/appearance/css?t=${Date.now()}`, { cache: "no-store" });
-    if (res.ok) applyTokenCss(await res.text());
+    const res = await fetch(url, init);
+    if (!res.ok) return;
+    const css = await res.text();
+    if (!css) return;
+    applyTokenCss(css);
+    // Absent on a draft response and on any older API — `null` then means "unknown",
+    // which the reconcile treats as a reason to fall back, never as a match.
+    const stamped = Number(res.headers.get("X-Style-Version"));
+    loadedVersion = Number.isFinite(stamped) && stamped > 0 ? stamped : null;
+    reconcile();
   } catch {
     /* offline / transient — EventSource reconnect reconciles */
   }
 }
 
 let started = false;
-let lastVersion: number | null = null;
+/** Whether this client is showing the DRAFT stylesheet (a layout/theme preview). */
+let loadedDraft = false;
+/** The version of the CSS currently injected, when the response said so. */
+let loadedVersion: number | null = null;
+/** The latest version the server has announced on the stream. */
+let streamVersion: number | null = null;
+/** The announced version a refetch has already been fired for. */
+let attemptedFor: number | null = null;
 let source: EventSource | null = null;
 
 // Anything else that must refresh when the style version changes. Page layouts
@@ -54,6 +93,42 @@ export function onStyleVersionChange(fn: () => void): () => void {
   return () => versionListeners.delete(fn);
 }
 
+function notifyVersionListeners(): void {
+  for (const fn of versionListeners) {
+    // One bad listener must not stop the others, or a thrown error here would
+    // leave clients on stale CSS.
+    try { fn(); } catch { /* ignore */ }
+  }
+}
+
+/**
+ * Refetch when what we are HOLDING is not what the server is announcing.
+ *
+ * ⚠ This compares the injected stylesheet's own version against the stream's, NOT
+ * one stream event against the previous one. Comparing events is what made a theme
+ * switch invisible: the page loaded a cached stylesheet, the stream's first event
+ * carried the NEW version, the client recorded it as its baseline and, seeing no
+ * further change, kept painting the old theme for as long as the tab stayed open.
+ *
+ * Runs on both inputs — a stream event and a startup load — because either can
+ * arrive second.
+ */
+function reconcile(): void {
+  if (streamVersion === null || loadedVersion === null) return;
+  if (streamVersion === loadedVersion) return;
+  /**
+   * ⚠ ONE refetch per announced version. The refetch stamps `loadedVersion` with
+   * whatever actually came back, so a response that is STILL stale — an
+   * intermediary that ignored `no-store`, a version bumped again mid-flight —
+   * would land right back here and fetch forever. The next announcement is what
+   * tries again.
+   */
+  if (attemptedFor === streamVersion) return;
+  attemptedFor = streamVersion;
+  void refreshTokenCss();
+  notifyVersionListeners();
+}
+
 /**
  * Begin systemwide style sync over SSE. Idempotent — safe to call from multiple
  * mount points; only the first call opens the connection.
@@ -67,19 +142,18 @@ export function startStyleSync(): void {
   source.addEventListener("version", (e) => {
     const version = Number((e as MessageEvent).data);
     if (!Number.isFinite(version)) return;
-    // The first event (and each reconnect's first event) is the current version.
-    // Startup already injected the current CSS, so only refetch when the version
-    // differs from what we last saw — which also catches a change that happened
-    // while we were disconnected.
-    if (lastVersion !== null && version !== lastVersion) {
+    const previous = streamVersion;
+    streamVersion = version;
+
+    if (loadedVersion !== null) { reconcile(); return; }
+
+    // No version stamp on the stylesheet we hold (a draft preview, or an older
+    // API): fall back to the original rule — the first event of a connection is
+    // the current version, so only a CHANGE between events is actionable.
+    if (previous !== null && previous !== version) {
       void refreshTokenCss();
-      for (const fn of versionListeners) {
-        // One bad listener must not stop the others, or a thrown error here
-        // would leave clients on stale CSS.
-        try { fn(); } catch { /* ignore */ }
-      }
+      notifyVersionListeners();
     }
-    lastVersion = version;
   });
   // On transient errors EventSource reconnects on its own using the server's
   // `retry:` hint; no manual handling needed. Closing only happens on page unload.

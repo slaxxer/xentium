@@ -55,9 +55,13 @@ export async function processUpdateCheck(): Promise<void> {
 
 /** The heartbeat itself. Only ever entered holding the lock above. */
 async function runUpdateCheck(): Promise<void> {
-  // Keep the authoritative paid-plugin-id set fresh (drives the license-by-id gate).
+  // Keep both paid-id sets fresh. The plugin set drives the license-by-id enable
+  // gate; the theme set only drives what the ACP offers and how a refused download
+  // explains itself, but a stale one still shows an admin "Install" on something
+  // they would then be charged for.
   const { marketplaceSource } = await import("../core/license-engine/marketplace-source.js");
   await marketplaceSource.refreshPaidPluginIds().catch(() => {});
+  await marketplaceSource.refreshPaidThemeIds().catch(() => {});
 
   const plugins = await prisma.installedPlugin.findMany({
     select: { id: true, name: true, installedVersion: true },
