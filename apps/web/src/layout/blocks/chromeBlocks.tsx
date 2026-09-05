@@ -28,6 +28,8 @@ import {
 import {
   FooterWhosOnline, FooterGroupLegend, FooterBoardStats, FooterBranding,
 } from "../../layouts/SiteFooter";
+import { sectionBackground } from "./coreBlocks";
+import "./chromeBlocks.scss";
 
 const CHROME_HEADER = ["chrome.header"];
 const CHROME_FOOTER = ["chrome.footer"];
@@ -47,6 +49,50 @@ const CHROME_FOOTER = ["chrome.footer"];
  * laid out in CSS from `[data-nv-align]`, which `RenderNode` stamps on the wrapper;
  * that also keeps a plugin's block alignable without it knowing anything about us.
  */
+/**
+ * THE HEADER — the band, and the logo in it.
+ *
+ * One block rather than a `section` an admin has to assemble (full width, a height,
+ * two colour stops, a `logo` dropped inside): this is the site's most recognisable
+ * element and it should be one thing with four settings. `section` is still there for
+ * every OTHER band; what makes this one different is that it is the header.
+ *
+ * ⚠ `height` is a FLOOR (`min-height`). A translated site name, a bigger font from an
+ * accessibility setting or a taller logo must push the band, never be clipped by it.
+ *
+ * ⚠ The inner column matches `.nv-region` and `.pub-nav__inner` exactly, which is
+ * what puts the masthead logo directly above the navbar's own instead of a few pixels
+ * off. Those numbers live in `chromeBlocks.scss` next to the rule that uses them.
+ */
+function SiteHeaderBlock({ props }: BlockProps<{
+  height?: number; showLogo?: boolean; showWordmark?: boolean;
+  backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number;
+}>) {
+  const background = sectionBackground(props);
+  return (
+    <div
+      className={`nv-header${background ? " nv-header--bg" : ""}`}
+      style={{
+        minHeight: `${props.height ?? 250}px`,
+        ...(background ? { backgroundImage: background } : {}),
+      }}
+    >
+      {props.showLogo !== false && (
+        <div className="nv-header__inner">
+          <NavLogo showWordmark={props.showWordmark !== false} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+registerBlock({
+  type:      "header",
+  schema:    blockPropSchemas.header,
+  editorMeta: { label: "Header", category: "structure", allowedTemplates: CHROME_HEADER },
+  component: SiteHeaderBlock,
+});
+
 registerBlock({
   type:      "navbar",
   schema:    blockPropSchemas.navbar,
@@ -138,6 +184,50 @@ registerBlock({
 });
 
 // ── Footer ──────────────────────────────────────────────────────────────────
+
+/**
+ * THE FOOTER — the band, and everything in it.
+ *
+ * A CONTAINER, unlike the header's band: the masthead sits above the navbar and is a
+ * block of its own, while the footer's band IS what holds its pieces. Painting them
+ * onto it means they are its children, not its siblings.
+ *
+ * ⚠ The class is `.nv-foot` and must stay `.nv-foot` — it is `SCOPE_SELECTOR.footer`,
+ * so the Style Editor's entire Footer section is emitted under it. The background
+ * here is drawn OVER `--footer-bg` (which that panel sets) rather than instead of it:
+ * a footer with no gradient of its own keeps whatever the Style Editor gave it, so
+ * adopting this block changes nothing about how an existing site looks.
+ */
+function SiteFooterBlock({ props, children }: BlockProps<{
+  minHeight?: number; showTopBorder?: boolean;
+  backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number;
+}> ) {
+  const background = sectionBackground(props);
+  const classes = [
+    "nv-foot",
+    background ? "nv-foot--bg" : "",
+    props.showTopBorder === false ? "nv-foot--noline" : "",
+  ].filter(Boolean).join(" ");
+  return (
+    <div
+      className={classes}
+      style={{
+        ...(props.minHeight ? { minHeight: `${props.minHeight}px` } : {}),
+        ...(background ? { backgroundImage: background } : {}),
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+registerBlock({
+  type:      "footer",
+  schema:    blockPropSchemas.footer,
+  container: true,
+  editorMeta: { label: "Footer", category: "structure", allowedTemplates: CHROME_FOOTER },
+  component: SiteFooterBlock,
+});
 
 registerBlock({
   type:   "whosOnline",

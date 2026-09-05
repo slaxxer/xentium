@@ -367,15 +367,13 @@ describe("LayoutRenderer — audiences", () => {
  * had a stored layout. Nothing but looking at a real page catches that.
  */
 describe("LayoutRenderer — region order", () => {
-  /** Exactly what jsonb hands back for a four-region template. */
+  /** Exactly what jsonb hands back for a two-region template — reversed. */
   const jsonbOrder = {
     templateKey: "members" as const,
     schemaVersion: 1,
     regions: {
-      main:   [n("m", "t.leaf")],
-      aside:  [n("a", "t.leaf")],
-      footer: [n("f", "t.leaf")],
-      header: [n("h", "t.leaf")],
+      aside: [n("a", "t.leaf")],
+      main:  [n("m", "t.leaf")],
     },
   };
 
@@ -387,31 +385,35 @@ describe("LayoutRenderer — region order", () => {
 
   it("renders the template's declared order, not the document's key order", () => {
     render(<LayoutRenderer templateKey="members" document={jsonbOrder} />);
-    expect(domOrder()).toEqual(["header", "main", "aside", "footer"]);
+    expect(domOrder()).toEqual(["main", "aside"]);
   });
 
-  it("puts a header block above a main block even when stored last", () => {
+  it("puts a body block before a rail block even when stored the other way", () => {
     render(<LayoutRenderer templateKey="members" document={jsonbOrder} />);
     const ids = [...document.querySelectorAll("[data-nv-block]")]
       .map((el) => (el as HTMLElement).dataset.nvBlock);
-    expect(ids).toEqual(["h", "m", "a", "f"]);
+    expect(ids).toEqual(["m", "a"]);
   });
 
-  it("uses the four declared landmarks of article.detail in order", () => {
+  it("renders both declared regions of a page, including the one left empty", () => {
     render(<LayoutRenderer templateKey="article.detail" document={{
       templateKey: "article.detail", schemaVersion: 1,
-      regions: { main: [n("m", "t.leaf")], header: [n("h", "t.leaf")] },
+      regions: { main: [n("m", "t.leaf")] },
     }} />);
-    // All four, including the two this document leaves empty: in the editor an empty
-    // region renders a placeholder so it can be seen, clicked and dropped into — a
-    // region that held nothing previously had nowhere to click at all. On the live
-    // site it still renders nothing (asserted below, without `__layout=draft`).
-    expect(domOrder()).toEqual(["header", "main", "aside", "footer"]);
+    // In the editor an empty region renders a placeholder so it can be seen, clicked
+    // and dropped into — a region that held nothing previously had nowhere to click
+    // at all. On the live site it still renders nothing (asserted below, without
+    // `__layout=draft`).
+    expect(domOrder()).toEqual(["main", "aside"]);
   });
 
   it("still honours an explicit regions prop", () => {
-    render(<LayoutRenderer templateKey="members" document={jsonbOrder} regions={["aside", "header"]} />);
-    expect(domOrder()).toEqual(["aside", "header"]);
+    // ⚠ Not by reordering the body PAIR: `main` and `aside` are one row, and the body
+    // comes before the rail in the DOM whatever order they are listed in — reading
+    // order, and the order a screen reader gets. The prop chooses WHICH regions
+    // render, which is what a page that interleaves its own markup needs.
+    render(<LayoutRenderer templateKey="members" document={jsonbOrder} regions={["aside"]} />);
+    expect(domOrder()).toEqual(["aside"]);
   });
 });
 
@@ -467,18 +469,43 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
  * A region named `aside` that emits a `<div>` is a landmark the page promised and did
  * not deliver — screen readers navigate by landmark and search engines read them.
  */
+/**
+ * ⚠⚠ ONE header and ONE footer per page, and they are the SITE's.
+ *
+ * `chrome.header` holds the masthead band and the navbar — that IS the page's
+ * `<header>`, and `chrome.footer` is its `<footer>`. A page template's own
+ * `header`/`footer` regions are bands above and below its body, inside `<main>`;
+ * emitting landmarks for those too gave every page two banners and two contentinfos,
+ * with the pair that is NOT the header and footer nested inside the main content.
+ */
 describe("LayoutRenderer — regions are landmarks", () => {
-  const withOne = (region: string) => ({
-    templateKey: "members", schemaVersion: 1,
+  const withOne = (region: string, templateKey = "members") => ({
+    templateKey, schemaVersion: 1,
     regions: { [region]: [n("x", "t.leaf")] },
   }) as never;
 
-  it("renders header, aside and footer as their own elements", () => {
-    for (const [region, tag] of [["header", "HEADER"], ["aside", "ASIDE"], ["footer", "FOOTER"]]) {
+  it("renders the SITE's header and footer as the landmarks", () => {
+    for (const [templateKey, region, tag] of [
+      ["chrome.header", "header", "HEADER"],
+      ["chrome.footer", "footer", "FOOTER"],
+    ]) {
       cleanup();
-      render(<LayoutRegion document={withOne(region!)} region={region!} />);
+      render(<LayoutRegion document={withOne(region!, templateKey!)} region={region!} />);
       expect(document.querySelector("[data-nv-region]")!.tagName).toBe(tag);
     }
+  });
+
+  it("leaves a PAGE's own bands as divs — they are not the header and footer", () => {
+    for (const region of ["header", "footer"]) {
+      cleanup();
+      render(<LayoutRegion document={withOne(region)} region={region} />);
+      expect(document.querySelector("[data-nv-region]")!.tagName).toBe("DIV");
+    }
+  });
+
+  it("renders a page's aside as the complementary landmark it is", () => {
+    render(<LayoutRegion document={withOne("aside")} region="aside" />);
+    expect(document.querySelector("[data-nv-region]")!.tagName).toBe("ASIDE");
   });
 
   /**
@@ -494,5 +521,21 @@ describe("LayoutRenderer — regions are landmarks", () => {
   it("gives an empty region's placeholder the same element", () => {
     render(<LayoutRegion document={{ templateKey: "members", schemaVersion: 1, regions: {} } as never} region="aside" />);
     expect(document.querySelector(".nv-region--empty")!.tagName).toBe("ASIDE");
+  });
+
+  /**
+   * …and the same CLASS, which is what sizes it.
+   *
+   * Without `nv-region--aside` the placeholder does not match
+   * `.nv-body-row > .nv-region--aside`, falls back to `flex: 0 1 auto`, and an EMPTY
+   * rail took half the row: the body was squeezed to 583px of 1240, home's three
+   * tracks stopped fitting and `.nv-columns` wrapped. The editor showed a collapsed
+   * page the live site never had — an empty region renders nothing there, so only
+   * the preview could be wrong.
+   */
+  it("gives it the region's own modifier, so the rail is a rail even when empty", () => {
+    render(<LayoutRegion document={{ templateKey: "members", schemaVersion: 1, regions: {} } as never} region="aside" />);
+    const ph = document.querySelector(".nv-region--empty")!;
+    expect([...ph.classList]).toEqual(expect.arrayContaining(["nv-region", "nv-region--aside", "nv-region--empty"]));
   });
 });

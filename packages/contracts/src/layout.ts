@@ -61,26 +61,26 @@ export const isChromeTemplate = (key: TemplateKey): boolean => key.startsWith('c
 /** Regions the CORE templates expose. Plugin templates declare their own. */
 export const TEMPLATE_REGIONS = {
   /*
-   * FOUR REGIONS, and they are the HTML5 landmarks. A page is a header, a body, an
-   * aside and a footer; anything finer is an arrangement INSIDE one of them, which
-   * is what blocks and containers are for.
+   * TWO REGIONS on a page: the body, and the rail beside it.
    *
-   * This replaced a set that had grown by accretion — `beforeBody`/`afterBody` on
-   * one template, `left`/`center`/`right` on the navbar, `top`/`main`/`bottom` on
-   * the footer, and two `band*` regions added for a masthead. Each was reasonable
-   * alone; together they meant "where does this go?" had a different answer per
-   * template, and the names promised landmarks the markup did not deliver.
+   * A page also had its own `header` and `footer` regions — bands above and below
+   * the body, inside `<main>`. They were the accretion this set was supposed to end:
+   * the page's header is not the page's header, it is a band under the SITE's header
+   * (`chrome.header`), and every code default shipped both of them EMPTY. What they
+   * offered over "a `section` at the top of the body" was a name, and the name was
+   * the wrong one — an admin reading "Header" in a page's structure reasonably
+   * concluded the site header had gone missing.
    *
    * ⚠ `main` is the KEY and `<main>` is the element; the editor LABELS it "Body".
    * Naming the key `body` would fight the element it emits — `<body>` is the whole
    * document, and the landmark for page content is `<main>`.
    */
-  'home':           ['header', 'main', 'aside', 'footer'],
-  'article.index':  ['header', 'main', 'aside', 'footer'],
-  'article.detail': ['header', 'main', 'aside', 'footer'],
-  'page.detail':    ['header', 'main', 'aside', 'footer'],
-  'profile':        ['header', 'main', 'aside', 'footer'],
-  'members':        ['header', 'main', 'aside', 'footer'],
+  'home':           ['main', 'aside'],
+  'article.index':  ['main', 'aside'],
+  'article.detail': ['main', 'aside'],
+  'page.detail':    ['main', 'aside'],
+  'profile':        ['main', 'aside'],
+  'members':        ['main', 'aside'],
   /*
    * The site's own header and footer: ONE region each, because the navbar is not a
    * peer of the header — it is IN the header, which is what a header is. It is a
@@ -94,14 +94,20 @@ export const TEMPLATE_REGIONS = {
 /**
  * Blocks a CORE template refuses to be saved without.
  *
- * Page templates tolerate an empty region; chrome does not. A header with no way
- * to reach the site and no way to sign in is a locked door, so these can be moved
- * between regions but never deleted.
+ * Page templates tolerate an empty region; chrome does not. A header with no way to
+ * sign in is a locked door, so this can be moved between regions but never deleted.
+ *
+ * ⚠ The LOGO is not one of them, and used to be. A logo is a way home, not the only
+ * one — the navigation links are, the `header` band carries its own logo, and a site
+ * whose navbar is deliberately without one (the mark already fills the band above it)
+ * was being told it could not save that. "Reachable" is what matters and no single
+ * block owns it; being unable to SIGN IN is the thing an admin cannot undo from the
+ * front end, which is why `userMenu` stays.
  *
  * ⚠ Read it through `requiredBlocksFor()`, which also answers for plugin templates.
  */
 export const REQUIRED_BLOCKS: Partial<Record<CoreTemplateKey, readonly string[]>> = {
-  'chrome.header': ['logo', 'userMenu'],
+  'chrome.header': ['userMenu'],
 };
 
 /**
@@ -544,6 +550,9 @@ export const CORE_CONTAINER_TYPES = [
   // it replaced three regions, so what used to be region membership is now
   // parentage.
   'navbar',
+  // The footer band. A container for the same reason `navbar` is one: its children
+  // ARE the footer's contents, and they have to sit ON the band that paints them.
+  'footer',
   // The guest landing's surface and its two styled grids — see `guestBlocks.tsx`.
   'guestSurface', 'guestHero', 'guestBody',
 ] as const;
@@ -1235,6 +1244,60 @@ export const blockPropSchemas = {
    * masthead sit above or below it: both are blocks in the header region, so the
    * order is the order they are in, not a choice between two named slots.
    */
+  /**
+   * THE HEADER — the band at the top of every page.
+   *
+   * Not a `section` with a gradient on it: that is what it used to be, and it made
+   * the site's most recognisable element an arrangement an admin had to know how to
+   * assemble (a full-width section, a height, two colour stops, a logo dropped
+   * inside). It is one block now, with the four things anyone actually sets.
+   *
+   * It sits in `chrome.header` beside the `navbar`, and their ORDER is the
+   * arrangement: navbar under the band or over it, by moving one row. Deleting the
+   * block is how a site chooses to have no band at all and run on the navbar alone —
+   * the picker puts it back.
+   *
+   * ⚠ Deliberately NOT a container. Everything a masthead holds in practice is the
+   * logo, and a band that accepts arbitrary blocks is a `section` — which still
+   * exists for exactly that.
+   */
+  header: z.object({
+    /**
+     * A FLOOR, not a fixed height, for the same reason `section.minHeight` is one:
+     * a longer wordmark, a bigger font from an accessibility setting or a translated
+     * site name must push the band rather than be clipped by it.
+     */
+    height: z.number().int().min(0).max(2000).default(250).meta({
+      title:       'Height (px)',
+      description: 'The band grows if its content needs more. 0 = only as tall as the logo.',
+    }),
+
+    /** Upload path or absolute URL, drawn OVER the gradient. `asset: true` is what
+     *  makes it travel in a `.nvtheme` — see `section.backgroundImage`. */
+    backgroundImage: z.string().max(500).default('').meta({
+      title:       'Background image',
+      description: 'Upload path or URL. Drawn over the gradient. Leave empty for none.',
+      asset:       true,
+    }),
+
+    /** Gradient stops, in order. Empty = no gradient; ONE colour paints a flat fill. */
+    backgroundGradient: z.array(cssColorSchema).max(3).default(['#2b1055', '#7597de']),
+
+    /** Gradient direction in degrees; 90 = left to right, which is how a wide band
+     *  reads. Same units as `section` so the two panels behave identically. */
+    backgroundAngle: z.number().int().min(0).max(360).default(90),
+
+    /** The logo, at the left of the band, aligned with the navbar's own. */
+    showLogo: z.boolean().default(true).meta({
+      title:       'Show the logo',
+      description: 'At the left of the band, in line with the navbar below it.',
+    }),
+
+    /** The site name beside the logomark — the same choice the `logo` block offers,
+     *  because a masthead often wants the mark alone at a larger size. */
+    showWordmark: z.boolean().default(true).meta({ title: 'Show the site name too' }),
+  }),
+
   navbar: z.object({}),
 
   logo: z.object({
@@ -1258,6 +1321,50 @@ export const blockPropSchemas = {
   headerWidgets: z.object({}),
 
   userMenu: z.object({}),
+
+  /**
+   * THE FOOTER — the band, and everything in it.
+   *
+   * The peer of `navbar`, NOT of `header`: the masthead band sits ABOVE the navbar
+   * and is therefore its own block, while the footer's band IS its container — its
+   * pieces are painted ON it, so a band beside them would leave the contents outside
+   * the thing that draws them.
+   *
+   * Before this the footer's own appearance — background, the hairline above it, the
+   * content column — was hardcoded in `SiteFooter.tsx`, so `chrome.footer` was a
+   * region holding four leaves and an admin who clicked "the footer" found nothing
+   * there. The header had been a block for a release; this is the other half.
+   *
+   * ⚠ It renders `.nv-foot`, which is `SCOPE_SELECTOR.footer` — the Style Editor's
+   * whole Footer section is emitted under that class. Renaming it here silently
+   * empties that panel.
+   */
+  footer: z.object({
+    /** A FLOOR, like `header.height` and `section.minHeight`: footer content is
+     *  translated, and a taller stack must push the band rather than be clipped. */
+    minHeight: z.number().int().min(0).max(2000).default(0).meta({
+      title:       'Minimum height (px)',
+      description: 'The band grows with its contents. 0 = only as tall as they need.',
+    }),
+
+    /** Upload path or absolute URL, drawn OVER the gradient — see `header`. */
+    backgroundImage: z.string().max(500).default('').meta({
+      title:       'Background image',
+      description: 'Upload path or URL. Drawn over the gradient. Leave empty for none.',
+      asset:       true,
+    }),
+
+    /** Empty = the footer keeps `--footer-bg` from the Style Editor, which is what
+     *  a site that has never opened this panel is already wearing. A gradient here
+     *  is an override, never the default look. */
+    backgroundGradient: z.array(cssColorSchema).max(3).default([]),
+
+    backgroundAngle: z.number().int().min(0).max(360).default(90),
+
+    /** The hairline that separates the footer from the page. Off for a footer whose
+     *  own background already does the separating. */
+    showTopBorder: z.boolean().default(true).meta({ title: 'Line above the footer' }),
+  }),
 
   whosOnline: z.object({
     maxNames: z.number().int().min(0).max(100).default(20)
@@ -1289,7 +1396,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'home': {
     templateKey: 'home', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [],
       main: [
         // The guest landing, composed. One `guests` audience on the surface hides the
         // whole subtree from members. The hero copy here is the SHIPPED wording, held
@@ -1343,16 +1449,14 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
           ],
         },
       ],
-      aside: [], footer: [],
+      aside: [],
     },
   },
   'article.index': {
     templateKey: 'article.index', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [],
       main:   [node('default-index', 'articleIndex', { defaultView: 'grid', showFilters: true })],
       aside:  [],
-      footer: [],
     },
   },
   'article.detail': {
@@ -1361,9 +1465,8 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
       // `beforeBody`/`afterBody` are gone: they were two empty regions that existed
       // on this one template so something could be placed around the article, which
       // is what ordering blocks inside `main` already does.
-      header: [],
       main: [node('a-detail', 'articleDetail')],
-      aside: [], footer: [],
+      aside: [],
     },
   },
   // Reproduces PageReaderPage's previous hardcoded markup exactly — image, then
@@ -1372,14 +1475,12 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'page.detail': {
     templateKey: 'page.detail', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [],
       main:   [
         node('p-image', 'pageImage'),
         node('p-title', 'pageTitle', { level: 1 }),
         node('p-body',  'pageBody'),
       ],
       aside:  [],
-      footer: [],
     },
   },
   // The profile card, composed the way an admin could have composed it — the
@@ -1388,7 +1489,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'profile': {
     templateKey: 'profile', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [],
       main: [
         { ...node('pr-card', 'profileCard', { padding: 'md' }), children: [
           { ...node('pr-row', 'columns', { gap: 'md' }), children: [
@@ -1414,7 +1514,7 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
         node('pr-tabs',    'profileTabs'),
         node('pr-content', 'profileContent'),
       ],
-      aside: [], footer: [],
+      aside: [],
     },
   },
   // The head row and the rail/list row, rebuilt as weighted columns — the same
@@ -1422,7 +1522,11 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'members': {
     templateKey: 'members', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      header: [
+      // The head row opens the BODY. It used to sit in the page's own `header`
+      // region — a band above the body, inside `<main>` — and that region is gone:
+      // it was never the page's header (the site's is), and "first block in the
+      // body" is the same position without the misleading name.
+      main: [
         { ...node('m-headrow', 'columns', { gap: 'md' }), children: [
           { ...node('m-titlecol', 'column', { width: '1' }), children: [
             // Two elements, not one: the label and the title are separately movable
@@ -1434,8 +1538,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
             node('m-tabs', 'membersTabs'),
           ] },
         ] },
-      ],
-      main: [
         { ...node('m-dirrow', 'columns', { gap: 'md' }), children: [
           { ...node('m-railcol', 'column', { width: 'auto' }), children: [
             node('m-filters', 'membersFilters', { showSearch: true, showSort: true }),
@@ -1449,7 +1551,7 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
         node('m-podium', 'membersPodium'),
         node('m-howto', 'membersHowTo'),
       ],
-      aside: [], footer: [],
+      aside: [],
     },
   },
   /*
@@ -1464,6 +1566,12 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     templateKey: 'chrome.header', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       header: [
+        // The band first, the navbar under it — the arrangement most sites start
+        // from, and one drag from the other one.
+        node('h-band', 'header', {
+          height: 250, showLogo: true, showWordmark: true,
+          backgroundGradient: ['#2b1055', '#7597de'], backgroundAngle: 90,
+        }),
         { ...node('h-navbar', 'navbar'), children: [
           node('h-logo', 'logo', { showWordmark: true }),
           node('h-nav', 'navLinks'),
@@ -1477,14 +1585,20 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
       ],
     },
   },
+  // The site footer: ONE band block holding the four pieces, mirroring the header's
+  // `[band, navbar]`. Deleting the band means "no footer chrome" and the pieces can
+  // be dragged out of it to say exactly that; the shipped arrangement is what the
+  // hardcoded `.nv-foot` wrapper rendered before it was a block.
   'chrome.footer': {
     templateKey: 'chrome.footer', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       footer: [
-        node('f-online', 'whosOnline', { maxNames: 20 }),
-        node('f-legend', 'groupLegend'),
-        node('f-stats',  'boardStats'),
-        node('f-brand',  'branding', { showUptime: true }),
+        { ...node('f-band', 'footer', { showTopBorder: true }), children: [
+          node('f-online', 'whosOnline', { maxNames: 20 }),
+          node('f-legend', 'groupLegend'),
+          node('f-stats',  'boardStats'),
+          node('f-brand',  'branding', { showUptime: true }),
+        ] },
       ],
     },
   },
@@ -1552,8 +1666,8 @@ export function validateBlockTree(
       // belongs — both render as a broken grid rather than an error.
       // A required block may be MOVED anywhere — including into a container — but
       // an audience would let an admin do by restriction exactly what deletion is
-      // forbidden to do. A header nobody can see a logo or a sign-in link in is
-      // the locked door that `REQUIRED_BLOCKS` exists to prevent.
+      // forbidden to do. A header nobody can see a sign-in link in is the locked
+      // door that `REQUIRED_BLOCKS` exists to prevent.
       if (required.has(node.type) && isRestricted(node.visibility)) {
         problems.push(`Block "${node.type}" is required and cannot be limited to an audience.`);
       }

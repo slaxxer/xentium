@@ -72,6 +72,9 @@ const DEFAULTS = HEARTH_DEFAULT_TOKENS;
 // fails if a new `inheritsFrom` target has no resolution here or in the contract.
 export const BASE_FALLBACK: Record<string, string> = {
   "--btn-radius": "10px", "--card-radius": "18px", "--input-radius": "14px", "--menu-radius": "14px",
+  // The rail widths, which `_tokenDefaults.scss` defines and no HEARTH token does —
+  // without a starting position the slider sits at 0 and reads as "no rail".
+  "--rail-width": "260px", "--sidebar-width": "248px",
   "--c-on-accent": "#ffffff",
   // The Soft preset's own value, so an untouched card shadow reads as Soft rather
   // than as nothing selected.
@@ -781,7 +784,11 @@ export function StyleEditorPage() {
                       value={d.value}
                       origin={d.origin}
                       inheritsFrom={d.from ?? def?.inheritsFrom}
-                      control={def?.control === "radius" ? "radius" : def?.control === "shadow" ? "shadow" : "color"}
+                      control={def?.control === "radius" ? "radius"
+                        : def?.control === "shadow" ? "shadow"
+                        : def?.control === "size" ? "size" : "color"}
+                      min={def?.min}
+                      max={def?.max}
                       mode={mode}
                       onChange={(v) => setOverride(effScope, cssVar, v)}
                       onReset={() => clearOverride(effScope, cssVar)}
@@ -933,9 +940,11 @@ export function StyleEditorPage() {
 
 // ── Token row ───────────────────────────────────────────────────────────────────
 
-function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, mode, onChange, onReset }: {
+function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, max, mode, onChange, onReset }: {
   label: string; cssVar: string; value: string; origin: Origin; inheritsFrom?: string;
-  control: "color" | "radius" | "shadow"; mode: Mode;
+  control: "color" | "radius" | "shadow" | "size"; mode: Mode;
+  /** `size` only — the slider's ends, from the token's registry entry. */
+  min?: number; max?: number;
   onChange: (v: string) => void; onReset: () => void;
 }) {
   const { t } = useTranslation("acp");
@@ -962,6 +971,18 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, mode, o
       </div>
 
       <div className="se-row__ctl" style={control === "shadow" ? { display: "none" } : undefined}>
+        {/* A plain length — a measurement of the page's shape rather than of a
+            corner, so it gets the token's own range instead of the radius slider's
+            0–28. The readout is the control's only numeric feedback: unlike a
+            radius there is no swatch that shows the value. */}
+        {control === "size" && (
+          <>
+            <input type="range" className="se-row__range"
+              min={min ?? 0} max={max ?? 400} value={n}
+              onChange={(e) => onChange(`${e.target.value}px`)} aria-label={label} />
+            <code className="se-row__num">{n}px</code>
+          </>
+        )}
         {control === "color" && (
           <>
             <input type="color" className="se-row__color" value={safeHex(value, "#888888")}

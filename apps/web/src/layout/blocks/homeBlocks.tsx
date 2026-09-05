@@ -51,13 +51,13 @@ const ON_HOME: { allowedTemplates: string[] } = { allowedTemplates: ["home"] };
  * object widens to a union of every core schema, hence the narrowing cast — all nine
  * of these are `z.object({})`.
  */
-const simple = (type: string, label: string, Component: () => ReactNode) =>
+const simple = (type: string, label: string, Component: () => ReactNode, wide = false) =>
   registerBlock({
     type,
     schema: blockPropSchemas[type as keyof typeof blockPropSchemas] as ZodType<
       Record<string, never>
     >,
-    editorMeta: { label, category: "data", ...ON_HOME },
+    editorMeta: { label, category: "data", ...ON_HOME, ...(wide ? { wide: true } : {}) },
     component: () => <Component />,
   });
 
@@ -70,7 +70,9 @@ simple("homeSectionNav", "Section nav", SectionNav);
 simple("homeSpaces",     "Spaces",      SpacesCard);
 
 // Centre.
-simple("homeFeed", "Feed", Feed);
+// The one home card that is a page-width layout rather than a rail card — the
+// picker says so when it is offered for the rail.
+simple("homeFeed", "Feed", Feed, true);
 
 // Right rail.
 simple("homeProgression",     "Progression",      ProgressionCard);

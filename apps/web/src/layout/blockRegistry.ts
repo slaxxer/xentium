@@ -59,6 +59,16 @@ export interface BlockDefinition<P = any, C = any> {
      * region's block picker: a track outside its row has nothing to occupy.
      */
     onlyInside?: string[];
+    /**
+     * "Designed for the body's width" — a whole page-width layout in itself.
+     *
+     * ADVISORY, never a rule. The picker says so when the block is being added to
+     * the rail (or a narrow track) and then adds it anyway if that is what the admin
+     * wants: a `section` in a rail is a perfectly good way to give it a background,
+     * and the one thing worse than a cramped block is an editor that refuses a
+     * layout its own renderer can draw. Marking is what a rule would have got wrong.
+     */
+    wide?: boolean;
   };
 }
 

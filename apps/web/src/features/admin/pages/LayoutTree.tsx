@@ -90,11 +90,20 @@ const CATEGORY_ORDER = ["structure", "content", "data", "plugin"] as const;
  * requires the mouse.
  */
 export function BlockPicker({
-  templateKey, parentType, depth, t, onPick, onClose,
+  templateKey, parentType, narrow, depth, t, onPick, onClose,
 }: {
   templateKey: TemplateKey;
   /** The container being added into; omitted at region level. */
   parentType?: string;
+  /**
+   * The target is a RAIL — the `aside` region, or a `column` sized `sidebar`/`rail`.
+   *
+   * Rows for page-width blocks are marked rather than hidden. Hiding them would be a
+   * rule, and the rule would be wrong: a `section` in a rail is how you give the rail
+   * a background. So the picker says which blocks were designed for the body and lets
+   * the admin decide, which is the same bargain the audience marks make.
+   */
+  narrow?: boolean;
   depth: number;
   t: TreeCtx["t"];
   onPick: (type: string) => void;
@@ -216,6 +225,11 @@ export function BlockPicker({
                 onClick={() => onPick(block.type)}
               >
                 <b>{block.editorMeta!.label}</b>
+                {narrow && block.editorMeta!.wide && (
+                  <span className="lay__picker-wide" title={t("layoutEditor.wideHint")}>
+                    {t("layoutEditor.wide")}
+                  </span>
+                )}
                 {/* The category used to sit here and now names the group instead, so
                     the slot shows something that varies per row: which plugin
                     contributed the block, or the type the search also matches. */}
@@ -388,6 +402,10 @@ export function TreeNode({
       {ctx.adding === addKey && (
         <BlockPicker
           templateKey={ctx.templateKey} parentType={node.type} depth={depth + 1} t={ctx.t}
+          // A track sized like a rail IS one — the two ways of building a rail get
+          // the same warning, or the mark would depend on which one was used.
+          narrow={node.type === "column"
+            && ["sidebar", "rail"].includes(String((node.props as { width?: string }).width ?? ""))}
           onPick={(type) => ctx.add(type, region, node.id)}
           onClose={ctx.closeAdd}
         />
