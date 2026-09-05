@@ -86,10 +86,33 @@ describe("the served stylesheet", () => {
 
 // ── Staging ─────────────────────────────────────────────────────────────────
 
-describe("the staged theme stylesheet", () => {
-  it("changes nothing served until it is published", async () => {
+/**
+ * ⚠⚠ THIS CONTRACT CHANGED. `saveThemeCustomCss` used to write the DRAFT only, so a
+ * theme's stylesheet sat staged until someone published — and going fully live took
+ * publishes in TWO different pages, because the layouts staged separately.
+ *
+ * Draft→publish is an EDITING affordance: batch many small edits, publish when the
+ * set is coherent. Activating a theme is one atomic decision, and staging it bought
+ * nothing once a real preview, an undo and a theme library existed. A theme goes ON
+ * when it is applied. The draft is still written, and that mirror is load-bearing.
+ */
+describe("applying a theme's stylesheet", () => {
+  it("is live immediately, with no publish step", async () => {
     await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
-    expect(await appearanceService.buildCustomCss()).not.toContain(".incoming");
+    expect(await appearanceService.buildCustomCss()).toContain(".incoming");
+  });
+
+  it("⚠ mirrors into the draft, so pending admin edits preview against the NEW theme", async () => {
+    // An admin with staged Style Editor edits previews `theme.draft ⊕ admin.draft`.
+    // Leaving the draft layer on the old theme would show their staged work over a
+    // theme that is no longer on the site.
+    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    expect((await appearanceService.getThemeDraftCustomCss()).light).toBe(".incoming { color: red }");
+  });
+
+  it("leaves nothing pending, because nothing is waiting to be published", async () => {
+    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    expect((await appearanceService.getDraftStatus()).pending).toBe(false);
   });
 
   it("falls back to the live layer when nothing is staged", async () => {
@@ -97,19 +120,13 @@ describe("the staged theme stylesheet", () => {
     expect((await appearanceService.getThemeDraftCustomCss()).light).toBe(".live { color: red }");
   });
 
-  it("reports pending — even for a theme that ships CSS and NO tokens", async () => {
-    // `publishDraft` returns early when nothing is pending, so without this a package
-    // carrying only `styles/custom-*.css` would stage a stylesheet that could never be
-    // published: staged forever, invisible, with no way to apply it.
+  it("still reports pending for a stylesheet that reached the draft another way", async () => {
+    // `publishDraft` returns early when nothing is pending, and a draft row can still
+    // arrive without going through `saveThemeCustomCss` — restored by an undo, or
+    // written by an older build. It must not be strandable.
     expect((await appearanceService.getDraftStatus()).pending).toBe(false);
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
     expect((await appearanceService.getDraftStatus()).pending).toBe(true);
-  });
-
-  it("is not pending when the staged stylesheet equals the live one", async () => {
-    await put(THEME_LIGHT, ".same { color: red }");
-    await appearanceService.saveThemeCustomCss({ light: ".same { color: red }", dark: "" });
-    expect((await appearanceService.getDraftStatus()).pending).toBe(false);
   });
 });
 
@@ -134,9 +151,12 @@ describe("publishing", () => {
     return user.id;
   }
 
-  it("promotes the staged stylesheet, clears the draft and rebuilds what is served", async () => {
+  /** The promotion path still exists and still has to work — a stylesheet can reach
+   *  the draft layer without `saveThemeCustomCss` (an undo restoring one, an older
+   *  build), and publishing must promote it rather than strand it. */
+  it("promotes a stylesheet that reached the draft layer some other way", async () => {
     const admin = await anAdmin();
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
 
     expect(await appearanceService.publishDraft(admin, "test")).toBe(true);
 
@@ -150,7 +170,7 @@ describe("publishing", () => {
   it("leaves the admin's stylesheet untouched across a publish", async () => {
     const admin = await anAdmin();
     await appearanceService.saveCustomCss({ light: ".mine { color: blue }", dark: "" });
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
 
     await appearanceService.publishDraft(admin, "test");
 

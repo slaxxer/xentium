@@ -1,22 +1,44 @@
 // ── ACP Layout ───────────────────────────────────────────────────────────────
+@use "../../styles/tokenDefaults" as defaults;
 
-// The ACP keeps its own identity: Poppins everywhere, regardless of the site
-// font (Style Editor) or a user's personal font. On <body> so the app-root
-// overlay hosts (DialogHost/ToastHost) inherit it while the ACP is mounted —
-// and it outranks the user-font inline vars on <html>.
+// The ACP keeps its own identity: its own COLOURS and Poppins everywhere,
+// regardless of the site's theme, the Style Editor, or a user's personal font.
+// On <body> so the app-root overlay hosts (DialogHost/ToastHost) inherit it while
+// the ACP is mounted — and it outranks the user-font inline vars on <html>.
 //
-// ⚠ ALL FOUR properties, not just the family. The served stylesheet applies the
-// site font as `body, input, textarea, select, button { font-family; font-size;
+// ⚠ THE PALETTE, not just the type. The served stylesheet declares the site's
+// tokens on `:root`, and the admin panel was reading them: installing a theme or
+// moving one slider in the Style Editor repainted the ACP as well, so a site in
+// orange gave you an orange admin panel. The site's design is the site's; the ACP
+// re-declares the DEFAULTS on `body.nv-acp` — element+class, which outranks the
+// `:root` (and `[data-theme]`) the stylesheet writes — and keeps its own look.
+// Anything inside the ACP that must show the SITE's colours opts back in with
+// `.nv-site-tokens` (styles/tokens.scss).
+//
+// ⚠ ALL FOUR font properties, not just the family. The served stylesheet applies
+// the site font as `body, input, textarea, select, button { font-family; font-size;
 // font-weight }`, and `body.nv-acp` IS a body — so pinning only the family let the
 // site's size and weight through, and setting the site to 13px/700 re-typeset the
 // admin panel. The variables are re-pinned here rather than the rule being narrowed
 // server-side, because the ACP is the only surface that opts out and it is the one
 // that knows it.
 body.nv-acp {
+  @include defaults.primitives;
+  @include defaults.palette-light;
+  @include defaults.components;
+
   --ff-sans: var(--font-poppins);
   --font-display: var(--font-poppins);
   --fs-base: 1rem;
   --fw-body: 500;   // matches the base `body` weight in styles/index.scss
+}
+
+// Dark is the document's own choice (the ACP has the same toggle the site does),
+// so this follows `data-theme` — it is the site's PALETTE the ACP opts out of, not
+// the reader's preference. Higher specificity than the block above, so it wins in
+// dark regardless of source order.
+[data-theme="dark"] body.nv-acp {
+  @include defaults.palette-dark;
 }
 
 $sidebar-w: 230px;
@@ -25,15 +47,17 @@ $topbar-h: 52px;
 .acp-layout {
   display: flex;
   min-height: 100dvh;
-  // No background here on purpose: <body> already paints var(--c-bg), and keeping
-  // this transparent lets admin custom CSS (e.g. `body { background }`) show through
-  // in the ACP the same way it does on the public site. Surfaces (sidebar, topbar,
-  // cards) still set their own backgrounds.
+  // No background here on purpose: <body> already paints var(--c-bg) — which, in
+  // here, is the ACP's own token, not the site's. (It used to be the site's, and
+  // admin custom CSS painted the admin panel along with the public site; that is
+  // exactly what the pin above ends.) Surfaces (sidebar, topbar, cards) still set
+  // their own backgrounds.
 
   // ADR-0003 reserved `acp` scope: ACP form fields read surface-white rather than
-  // the recessed --c-bg used on the public site. Fields still consume --input-bg
-  // (so the Style Editor's field knob reaches them) — we just rebind the token for
-  // the ACP subtree instead of hardcoding --c-surface on each control.
+  // the recessed --c-bg used on the public site. Rebound for the ACP subtree rather
+  // than hardcoding --c-surface on each control. ⚠ Both sides of this now resolve to
+  // the ACP's OWN tokens — the Style Editor's field knob styles the site's fields,
+  // not these.
   --input-bg: var(--c-surface);
 }
 

@@ -9,11 +9,12 @@ import { marketplaceSource } from "../../core/license-engine/marketplace-source.
 import { marketplaceWebUrl } from "../../core/license-engine/protocol-client.js";
 import {
   getSiteDomain, getSiteId, resolveEnvironment,
-  refreshLicense, activateFromAccount,
+  refreshLicense, activateFromAccount, assertThemeDownloadAllowed,
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { pluginService } from "../plugins/plugin.service.js";
 import { themeService } from "../themes/theme.service.js";
+import { appearanceService } from "../appearance/appearance.service.js";
 import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
@@ -216,15 +217,34 @@ export const marketplaceService = {
     const installed = await prisma.installedPlugin.findMany({ select: { id: true, installedVersion: true, status: true } });
     const byId = new Map(installed.map((p) => [p.id, p]));
 
+    // A site wears ONE theme, so "what is installed" is a single manifest rather
+    // than a table — and a theme row was reading the plugin table, where its id has
+    // never existed. Every owned theme therefore came back installedVersion: null:
+    // permanently "Inactive", never offering an update, whatever was actually on the
+    // site. The manifest is the only local record a theme leaves.
+    const theme = await appearanceService.getInstalledTheme();
+    const themeId      = typeof theme?.id === "string" ? theme.id : null;
+    const themeVersion = typeof theme?.version === "string" ? theme.version : null;
+
     return {
       licenses: licenses.map((l) => {
-        const local = byId.get(l.product.id);
+        const isTheme = l.product.kind === "theme";
+        // ⚠ Only the theme this site actually wears counts as installed. Matching on
+        // kind alone would mark every owned theme installed at the wearing theme's
+        // version the moment one of them was imported.
+        const localVersion = isTheme
+          ? (themeId === l.product.id ? themeVersion : null)
+          : (byId.get(l.product.id)?.installedVersion ?? null);
+        const local = isTheme ? undefined : byId.get(l.product.id);
+
         return {
           ...l,
-          installedVersion: local?.installedVersion ?? null,
-          installedStatus:  local?.status ?? null,
-          updateAvailable: !!(local && l.product.latestVersion
-            && compareSemver(l.product.latestVersion, local.installedVersion) > 0),
+          installedVersion: localVersion,
+          // A theme has no enabled/disabled state — it is staged in the appearance
+          // draft or it is published, and neither is this field's vocabulary.
+          installedStatus:  isTheme ? null : (local?.status ?? null),
+          updateAvailable: !!(localVersion && l.product.latestVersion
+            && compareSemver(l.product.latestVersion, localVersion) > 0),
         };
       }),
     };
@@ -441,6 +461,11 @@ export const marketplaceService = {
    * the same thing the manual upload path shows.
    */
   async installThemeFromMarketplace(themeId: string, version: string, userId: string, onProgress?: ProgressFn) {
+    // Before the round trip, not instead of it. The marketplace makes the real
+    // decision; this only turns its deliberately vague 404 into a sentence naming
+    // the theme and where to buy it. It never permits what the gate would refuse.
+    await assertThemeDownloadAllowed(themeId);
+
     let buffer: Buffer;
     try {
       buffer = await downloadAndVerifyArtifact(themeId, version, "theme", onProgress);

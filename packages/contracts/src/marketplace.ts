@@ -28,6 +28,52 @@ export interface MarketplaceListing {
    * instance, so nothing is downloaded until the admin actually installs.
    */
   screenshot?:     string | null;
+  /**
+   * A THEME's dependency footprint, derived from the package at ingest: every
+   * template it ships a layout for, and every block type those layouts place.
+   *
+   * A theme arranging `forum.index`, or placing a `forum.recentThreads`, needs
+   * that plugin. The importer already handles the absence gracefully — it skips
+   * what it cannot render and keeps the rest, so an admin's arrangement survives
+   * a plugin being disabled — which is right at runtime and reads as "I bought
+   * this and half of it did not appear" when the theme was just purchased. These
+   * let the ACP say so BEFORE the money.
+   *
+   * ⚠ Types and template keys, NOT plugin ids: a plugin's id (`nodevo-forum`) and
+   * its block namespace (`forum.`) are deliberately different strings, and the
+   * package carries neither the id nor the mapping. Only an instance that HAS the
+   * plugin can resolve one to the other — which is exactly the instance that does
+   * not need the warning. So the ACP names the block types it cannot draw, rather
+   * than guessing at a plugin to sell.
+   *
+   * Absent for plugins, and absent on a theme published before the footprint
+   * existed — an empty array means "needs nothing beyond core", so the two must
+   * not be conflated.
+   */
+  usesTemplates?:  string[];
+  usesBlocks?:     string[];
+  /**
+   * A THEME rendered by the MARKETPLACE, from the version on sale.
+   *
+   * A theme has no runtime, so the authenticated download is the only chokepoint
+   * there will ever be — which means "install it and see" cannot be undone and
+   * "try it on your own site" cannot happen without giving the theme away. The
+   * marketplace draws it instead and serves markup, so a buyer can look at the
+   * arrangement and the palette before spending anything.
+   *
+   * `previewTemplates` is which pages have a rendering (NOT `usesTemplates`: a
+   * layout that failed to parse ships no page and must not offer a dead tab), and
+   * `previewUrlBase` is where they live — absolute, because the ACP renders this
+   * catalogue on the instance's own origin. One page is
+   * `${previewUrlBase}/${templateKey}?scheme=light|dark`.
+   *
+   * ⚠ The document is built from a stranger's package. It is served under a CSP
+   * that sandboxes it and forbids scripts, and it must ALSO be embedded in a
+   * sandboxed iframe: the second lock belongs where the embedding happens, so it
+   * cannot be lost if the route is ever refactored.
+   */
+  previewTemplates?: string[];
+  previewUrlBase?:   string;
   /** Present only when the catalogue was fetched with a connected account: does
    *  this account hold a licence for it. The ONE place the marketplace answers
    *  "do I own this" for a listing the instance may not have installed. */
