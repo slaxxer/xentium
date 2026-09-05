@@ -40,6 +40,6 @@ import { ArticleReaderContent } from "../../features/articles/ArticleReaderPage"
 registerBlock({
   type:   "articleDetail",
   schema: blockPropSchemas.articleDetail,
-  editorMeta: { label: "Article", category: "data", allowedTemplates: ["article.detail"] },
+  editorMeta: { label: "Article", category: "data", allowedTemplates: ["article.detail"], wide: true },
   component: () => <ArticleReaderContent />,
 });

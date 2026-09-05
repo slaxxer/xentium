@@ -61,19 +61,29 @@ const EMPTY_PATCH: Patch = { light: {}, dark: {} };
  *
  * The probe is attached to `document.body` because a custom property declared on a
  * detached element resolves against nothing — `var(--c-card)` would come back empty.
- * The ACP renders the published theme, so this is the same value the live site paints.
+ *
+ * ⚠ …and body, in here, is `body.nv-acp`, which re-declares the whole palette so the
+ * admin panel does not follow the site's theme. Measuring straight against it would
+ * report the ACP's colours as the SITE's — a themed site would be told its accent
+ * panel is blurple. The probe therefore sits inside a `.nv-site-tokens` host, which
+ * restores the defaults and receives the served stylesheet's global overrides, so
+ * what is measured is what the site paints. The variant rules themselves need no
+ * such help: they are emitted under `:root`, and reach any element in the document.
  */
 function resolveVariantTokens(variant: BlockVariant, cssVars: string[]): Record<string, string> {
   const out: Record<string, string> = {};
   if (typeof document === "undefined") return out;
+  const host = document.createElement("div");
+  host.className = "nv-site-tokens";
+  host.setAttribute("aria-hidden", "true");
+  host.style.cssText = "position:absolute;left:-9999px;width:0;height:0;pointer-events:none";
   const probe = document.createElement("div");
   probe.className = variantClass(variant);
-  probe.setAttribute("aria-hidden", "true");
-  probe.style.cssText = "position:absolute;left:-9999px;width:0;height:0;pointer-events:none";
-  document.body.appendChild(probe);
+  host.appendChild(probe);
+  document.body.appendChild(host);
   const computed = getComputedStyle(probe);
   for (const cssVar of cssVars) out[cssVar] = computed.getPropertyValue(cssVar).trim();
-  probe.remove();
+  host.remove();
   return out;
 }
 

@@ -58,8 +58,15 @@ describe("core templates", () => {
     // ⚠ ORDER is the contract, not just membership: this array is the render order
     // AND the editor's Structure order, so a region that drifted would render in the
     // wrong place while still reading correctly as a set.
-    expect(regionsFor("article.detail")).toEqual(["header", "main", "aside", "footer"]);
-    expect(requiredBlocksFor("chrome.header")).toEqual(["logo", "userMenu"]);
+    expect(regionsFor("article.detail")).toEqual(["main", "aside"]);
+    /**
+     * ⚠ The SIGN-IN only. The logo used to be required too, and a site whose navbar
+     * deliberately has none — the mark already fills the `header` band above it —
+     * could not save that. A way home is not one block's job (the nav links are one,
+     * the band's own logo is another); being unable to sign in is the thing an admin
+     * cannot undo from the front end.
+     */
+    expect(requiredBlocksFor("chrome.header")).toEqual(["userMenu"]);
     expect(requiredBlocksFor("home")).toBeUndefined();
   });
 

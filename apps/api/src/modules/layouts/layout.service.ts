@@ -558,5 +558,83 @@ export const layoutService = {
     defaultCache = new Map();
   },
 
+  /**
+   * Put a theme's document for one template ON — published AND draft together.
+   *
+   * ⚠ Both scopes, deliberately. `published` is what visitors get, so writing only
+   * that would leave the Layout Editor still showing the previous theme's
+   * arrangement as a pending draft — an edit the admin never made, which they would
+   * then publish over the top. And a draft row that merely EQUALS the published one
+   * is not pending (`getDraftStatus` compares them), so this leaves nothing spurious
+   * waiting to be published.
+   */
+  async applyThemeDocument(templateKey: TemplateKey, doc: LayoutDocument, userId: string): Promise<void> {
+    const row = { document: doc as object, schemaVersion: doc.schemaVersion, updatedById: userId };
+    await prisma.$transaction(["published", "draft"].map((scope) => prisma.layout.upsert({
+      where:  { templateKey_variant_scope: { templateKey, variant: DEFAULT_VARIANT, scope } },
+      update: row,
+      create: { templateKey, variant: DEFAULT_VARIANT, scope, ...row },
+    })));
+    publishedMemo.bust();
+  },
+
+  /**
+   * Every stored row for the scopes a theme import touches, as raw JSON.
+   *
+   * Raw and unparsed on purpose: this is a SNAPSHOT to be put back byte for byte,
+   * not something to render. Parsing here would silently normalise a document, and
+   * a restore that "fixes" what it restores is not a restore.
+   *
+   * ⚠ `published` IS included, and has to be. It used to be excluded on the grounds
+   * that an import never wrote it — true while activating a theme only staged. Now
+   * that activation goes LIVE, an undo that skipped `published` would leave visitors
+   * on the theme the admin just rejected, which is the one thing undo exists to
+   * prevent.
+   */
+  async snapshotStagedScopes(): Promise<LayoutRowSnapshot[]> {
+    const rows = await prisma.layout.findMany({
+      where:  { scope: { in: ["draft", "theme", "published"] } },
+      select: { templateKey: true, variant: true, scope: true, document: true },
+    });
+    return rows.map((r) => ({
+      templateKey: r.templateKey,
+      variant:     r.variant,
+      scope:       r.scope as Scope,
+      document:    r.document as unknown,
+    }));
+  },
+
+  /**
+   * Put those scopes back exactly as the snapshot found them.
+   *
+   * ⚠ It DELETES first. A restore that only wrote rows back would leave behind every
+   * row the import created for a template that had none before — which is most of
+   * them on a site that had never staged a layout, so "undo" would undo almost
+   * nothing.
+   */
+  async restoreStagedScopes(snapshot: LayoutRowSnapshot[], userId: string): Promise<void> {
+    await prisma.$transaction([
+      prisma.layout.deleteMany({ where: { scope: { in: ["draft", "theme", "published"] } } }),
+      ...snapshot.map((row) => prisma.layout.create({
+        data: {
+          templateKey: row.templateKey,
+          variant:     row.variant,
+          scope:       row.scope,
+          document:    row.document as object,
+          updatedById: userId,
+        },
+      })),
+    ]);
+    this.bustCache();
+  },
+
   SCHEMA_VERSION: LAYOUT_SCHEMA_VERSION,
 };
+
+/** One `ncf_layouts` row, captured verbatim. */
+export interface LayoutRowSnapshot {
+  templateKey: string;
+  variant:     string;
+  scope:       Scope;
+  document:    unknown;
+}

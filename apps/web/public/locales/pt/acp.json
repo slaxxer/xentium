@@ -1191,10 +1191,19 @@
       "theme": "Temas"
     },
     "searchThemesPlaceholder": "Procurar temas…",
-    "themeDraftNote": "Instalar um tema guarda-o como rascunho — nada muda para os visitantes até o publicares.",
+    "themeDraftNote": "Instalar um tema aplica-o de imediato: as tuas páginas assumem a disposição e as cores dele, e os visitantes veem logo.",
     "themeGoManage": "Ir para Temas",
     "themeInstalled": "Instalado",
-    "themeStaged": "{{name}} foi guardado como rascunho. Publica-o para o colocar no ar."
+    "themeStaged": "{{name}} é agora o tema ativo.",
+    "themeGapsTitle": "{{count}} elemento que este site não consegue desenhar",
+    "themeGapsTitle_other": "{{count}} elementos que este site não consegue desenhar",
+    "themeGapsHint": "Precisam de um plugin que não tens. O resto do tema instala normalmente e estas partes aparecem assim que o plugin existir.",
+    "themeSkipped": "{{count}} elemento precisa de um plugin que este site não tem e ainda não vai aparecer: {{list}}.",
+    "themeSkipped_other": "{{count}} elementos precisam de um plugin que este site não tem e ainda não vão aparecer: {{list}}.",
+    "preview": "Pré-visualização",
+    "previewTitle": "{{name}} — pré-visualização",
+    "previewClose": "Fechar",
+    "previewNote": "Renderizado pelo marketplace a partir da versão à venda, por isso a disposição e as cores são do próprio tema. O interior dos blocos são marcadores: o que vai lá dentro é o teu conteúdo, desenhado pelos componentes do teu site."
   },
   "updates": {
     "title": "Atualizações",
@@ -1748,7 +1757,9 @@
       "seg-fg": "Texto do botão de ordenação",
       "seg-hover-bg": "Botão de ordenação ao passar o cursor",
       "seg-active-bg": "Botão de ordenação selecionado",
-      "seg-active-fg": "Texto selecionado"
+      "seg-active-fg": "Texto selecionado",
+      "rail-width": "Largura da coluna",
+      "sidebar-width": "Largura da barra lateral"
     },
     "shCustom": "Personalizada",
     "shDirection": "Cai",
@@ -1813,6 +1824,8 @@
     "noBlocks": "Não há blocos disponíveis para este modelo.",
     "searchBlocks": "Procurar blocos…",
     "noMatches": "Nenhum bloco corresponde a «{{query}}».",
+    "wide": "Largo",
+    "wideHint": "Pensado para a largura do corpo — ficará apertado na coluna lateral.",
     "emptyRegion": "Vazio",
     "unavailable": "indisponível",
     "saving": "A guardar…",
@@ -1854,7 +1867,7 @@
       "page.detail": "Página personalizada",
       "profile": "Perfil",
       "members": "Membros",
-      "chrome.header": "Barra de navegação",
+      "chrome.header": "Cabeçalho",
       "chrome.footer": "Rodapé"
     },
     "region": {
@@ -1863,6 +1876,12 @@
       "aside": "Aside",
       "footer": "Rodapé"
     },
+    "pageRegion": {
+      "main": "Corpo",
+      "aside": "Barra lateral"
+    },
+    "pageChromeHint": "Uma página é um corpo e uma barra lateral. O cabeçalho e o rodapé são modelos próprios, iguais em todas as páginas — clique num deles na pré-visualização para o organizar.",
+    "asideHint": "Fica ao lado do corpo e abaixo dele num ecrã estreito.",
     "audienceViewHint": "Filtra a árvore e a pré-visualização para uma disposição. Os blocos que adicionar ficam limitados a ela.",
     "audienceView": {
       "guests": "Público: visitantes",
@@ -2036,7 +2055,7 @@
     "importTitle": "Instalar um tema",
     "importBtn": "Escolher ficheiro…",
     "importing": "A instalar…",
-    "importHint": "Aceita .nvtheme e .nvstyle. A importação fica em rascunho — nada muda para os visitantes até publicares no Editor de esquema.",
+    "importHint": "Aceita .nvtheme e .nvstyle. O tema é aplicado assim que é instalado; as tuas páginas personalizadas são mantidas.",
     "reportTitle": "Resultado da importação",
     "reportTemplates": "{{count}} modelo(s) aplicado(s).",
     "reportKept": "{{count}} modelo(s) mantido(s) como os tinhas.",
@@ -2044,7 +2063,7 @@
     "reportCustomCss": "O CSS próprio do tema foi aplicado de imediato — não tem rascunho.",
     "reportUnknownTemplates": "Ignorados, não há plugin para eles aqui: {{list}}",
     "reportUnknownBlocks": "Blocos que este site não consegue apresentar foram mantidos: {{list}}",
-    "reportStaged": "Abre o Editor de esquema para pré-visualizar e depois publica.",
+    "reportStaged": "O tema está ativo. Abre o Editor de layout para afinar qualquer página.",
     "exportBtn": "Exportar tema",
     "exporting": "A exportar…",
     "exportTitle": "Exportar tema",
@@ -2063,7 +2082,23 @@
     "tokensOnly": "Apenas cores",
     "tokensOnlyHint": "Exporta a paleta sem esquemas de página nem imagens.",
     "fieldScreenshot": "Imagem de pré-visualização",
-    "fieldScreenshotHint": "Incluída no tema como captura e mostrada nas fichas do marketplace. PNG, JPEG, WebP ou AVIF."
+    "fieldScreenshotHint": "Incluída no tema como captura e mostrada nas fichas do marketplace. PNG, JPEG, WebP ou AVIF.",
+    "previewLive": "Ver o meu site",
+    "previewHint": "Abre o teu site com este tema aplicado. Já está ativo para os visitantes — a biblioteca abaixo é como voltas atrás.",
+    "discardBtn": "Anular este tema",
+    "discarding": "A anular…",
+    "discardTitle": "Anular a importação do tema?",
+    "discardBody": "As tuas páginas e cores voltam ao estado anterior à instalação — também para os visitantes. As alterações de layout feitas desde então serão igualmente revertidas.",
+    "discardDone": "A importação do tema foi anulada.",
+    "discardDoneReplaced": "Anulado — de volta a {{name}}.",
+    "discardHintReplaced": "Anular repõe {{name}}.",
+    "discardHintNone": "Anular repõe os teus próprios layouts.",
+    "libraryTitle": "Temas instalados",
+    "libraryHint": "Todos os temas instalados aqui. Só um está ativo, e mudar aplica o outro de imediato.",
+    "libraryActive": "Ativo",
+    "libraryActivate": "Ativar",
+    "activated": "{{name}} é agora o tema ativo.",
+    "removed": "Tema removido."
   },
   "owned": {
     "title": "As tuas licenças",

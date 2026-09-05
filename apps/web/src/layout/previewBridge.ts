@@ -48,7 +48,13 @@ const LABEL_ID = "nv-preview-label";
 const LINE_ID = "nv-preview-dropline";
 
 type Msg =
-  | { source: "nv-preview"; type: "select"; id: string }
+  /**
+   * `templateKey` names the document the block belongs to. A page's preview also
+   * renders the site header and footer, and those are as much part of the page as
+   * its body — clicking one of their blocks opens THAT document in the editor
+   * instead of addressing an id the open one does not contain.
+   */
+  | { source: "nv-preview"; type: "select"; id: string; templateKey?: string }
   | {
       source: "nv-preview";
       type: "move";
@@ -61,7 +67,7 @@ type Msg =
   /** A keystroke this document swallowed that belongs to the editor around it. */
   | { source: "nv-preview"; type: "shortcut"; action: "undo" | "redo" }
   /** An empty region was clicked — open the add-block picker for it. */
-  | { source: "nv-preview"; type: "addTo"; region: string };
+  | { source: "nv-preview"; type: "addTo"; region: string; templateKey?: string };
 
 const post = (msg: Msg) => window.parent?.postMessage(msg, window.location.origin);
 
@@ -193,7 +199,10 @@ export function installPreviewBridge(): () => void {
     const w = wrapperFrom(e.target);
     if (w === hovered) return;
     hovered = w;
-    if (w) w.setAttribute("draggable", "true");
+    // Draggable only where a drag can land: moving a block rewrites the tree the
+    // editor is holding, and the header's blocks live in another document until the
+    // admin opens it (one click on the block does exactly that).
+    if (w?.dataset.nvDrag) w.setAttribute("draggable", "true");
     redraw();
   };
   const onLeave = () => { hovered = null; redraw(); };
@@ -206,7 +215,10 @@ export function installPreviewBridge(): () => void {
     if (empty?.dataset.nvEmpty) {
       e.preventDefault();
       e.stopPropagation();
-      post({ source: "nv-preview", type: "addTo", region: empty.dataset.nvEmpty });
+      post({
+        source: "nv-preview", type: "addTo", region: empty.dataset.nvEmpty,
+        templateKey: empty.dataset.nvTemplate || undefined,
+      });
       return;
     }
 
@@ -216,7 +228,13 @@ export function installPreviewBridge(): () => void {
     e.preventDefault();
     e.stopPropagation();
     selectedId = w.dataset.nvBlock;
-    post({ source: "nv-preview", type: "select", id: selectedId });
+    // The block's own document travels with the id. Clicking the masthead band or a
+    // navbar item is how an admin edits the HEADER — the editor opens that document
+    // and selects the block, rather than looking for an id it does not have.
+    post({
+      source: "nv-preview", type: "select", id: selectedId,
+      templateKey: w.dataset.nvTemplate || undefined,
+    });
     redraw();
   };
 
@@ -359,6 +377,20 @@ export function installPreviewBridge(): () => void {
   document.addEventListener("mouseover", onOver, true);
   document.addEventListener("mouseleave", onLeave);
   document.addEventListener("click", onClick, true);
+  /*
+   * "The editor is looking at this page", for CSS to read.
+   *
+   * Two rules need it, and both are about the same thing: a block that DREW NOTHING.
+   * On the site a rail or a column holding only such blocks collapses, because the
+   * visitor is looking at a page with nothing in it. In the editor that would mean
+   * dropping a block and seeing the track vanish — so here the track stays and the
+   * block says, in its own place, that it drew nothing.
+   *
+   * Stamped by the BRIDGE because the bridge is the editor's presence in this
+   * document: it is installed only in the preview, and removed with it.
+   */
+  document.documentElement.dataset.nvEditor = "1";
+
   document.addEventListener("dragstart", onDragStart, true);
   document.addEventListener("dragover", onDragOver);
   document.addEventListener("drop", onDrop);
@@ -381,5 +413,6 @@ export function installPreviewBridge(): () => void {
     window.removeEventListener("scroll", redraw, true);
     window.removeEventListener("resize", redraw);
     overlay.remove(); label.remove(); line.remove();
+    delete document.documentElement.dataset.nvEditor;
   };
 }

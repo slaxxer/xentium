@@ -11,13 +11,83 @@
    stays exactly where it was: 1240 − 2×24 = 1192 > 1100. A block that wants to
    break out uses `section` with `width: full`. */
 
-.nv-region {
+.nv-region,
+.nv-body-row {
   width: 100%;
   max-width: var(--content-max);
   margin-inline: auto;
   padding-inline: var(--sp-6);
 
   @media (max-width: 640px) { padding-inline: var(--sp-4); }
+}
+
+/* ── body + aside ─────────────────────────────────────────────────────────
+   `aside` means BESIDE. The regions used to be emitted one after another, so the
+   page's rail rendered as a strip under the body — the word promised one thing and
+   the page did another.
+
+   The ROW is the content column now, and the two regions inside it are plain
+   tracks: two centred columns side by side would each be inset by their own
+   padding, and a `section width: full` inside the body would break out of the wrong
+   box. */
+.nv-body-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-6);
+
+  > .nv-region {
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
+  /* `min-width: 0` or a wide child (a table, a long word, a grid of cards) refuses
+     to shrink and pushes the rail off the page — the flexbox default is `auto`. */
+  > .nv-region--main  { flex: 1 1 auto; min-width: 0; }
+
+  /* The rail STICKS, the way `column.sticky` does — same offset, so a rail built
+     either way behaves the same. It is not a prop here because a region has no
+     props, and it is not a prop for the good reason too: a rail that scrolls away
+     while a long body keeps going is the behaviour nobody asks for. `flex-start`
+     comes from the row, which is what lets a sticky flex item work at all. */
+  > .nv-region--aside {
+    flex: 0 0 var(--rail-width);
+    min-width: 0;
+    position: sticky;
+    top: calc(var(--nav-height) + var(--sp-4));
+  }
+
+  /* A rail that DRAWS NOTHING takes no space, and the body gets the width back.
+
+     ⚠ `:empty` was the old test and it could not work: every block is wrapped in a
+     `display: contents` element that exists whether or not the block rendered
+     anything, so a rail holding a block that draws nothing for this viewer — a
+     guest-only surface seen by a member, a "hot threads" card on a site with no
+     threads — was never `:empty`. It held `--rail-width` open and drew a hole:
+     home's feed measured 666px beside 230px of nothing.
+
+     `:has()` asks the question `:empty` was meant to ask — is there a wrapper with
+     anything in it.
+
+     ⚠ NOT in the editor (`:root:not([data-nv-editor])`, stamped by `previewBridge`).
+     Collapsing there would mean dropping a block into the rail and watching the rail
+     disappear — which is exactly what a plugin block that draws nothing for the
+     admin looks like. The editor keeps the track and labels the silent block
+     instead; see `[data-nv-block]:empty` below. */
+  :root:not([data-nv-editor]) & > .nv-region--aside:not(.nv-region--empty):not(:has(.nv-block:not(:empty))) {
+    display: none;
+  }
+
+  /* Collapse is intrinsic, never an admin knob — the same rule `columns` follows.
+     A rail beside a body is a desktop arrangement; below that it is a band under
+     the body, which is what a narrow screen can show. */
+  @media (max-width: 1024px) {
+    flex-direction: column;
+
+    /* Stacked, the rail is a band under the body — and a band that sticks would
+       pin itself over the content below it. */
+    > .nv-region--aside { flex: 0 0 auto; width: 100%; position: static; }
+  }
 }
 
 /* EDITOR ONLY — `LayoutRegion` renders this shape solely in the preview, never on
@@ -175,14 +245,36 @@
   flex-direction: column;
   gap: var(--sp-4);
 
+  /* Same rule as the rail, for the same reason: a track whose blocks all draw
+     nothing must not hold its share of the row open. It is the arrangement that is
+     empty, not the page — home's right rail on a site with no threads and no tags
+     reserved 230px and showed a gap, and the feed beside it stopped at 666px of a
+     920px row.
+
+     ⚠ `.nv-block`, never `[data-nv-block]`: the attribute is stamped in the EDITOR
+     only, so a rule written against it matches nothing on the real page and
+     collapses every track on it. ⚠ And NOT `> .nv-block`: a column's children are
+     `display: contents` wrappers and a combinator aimed across one silently stops
+     matching (`classContract` pins that rule). The descendant form is also the
+     right question — a block nested in a `section` inside the column is content. */
+  :root:not([data-nv-editor]) &:not(:has(.nv-block:not(:empty))) { display: none; }
+
   &--auto    { flex: 0 0 auto; }
   /* The site's two named rail widths, so a rail is an ordinary track rather than a
      bespoke wrapper. Token-driven — never a pixel literal here. */
   &--sidebar { flex: 0 0 var(--sidebar-width); max-width: 100%; }
   &--rail    { flex: 0 0 var(--rail-width);    max-width: 100%; }
-  &--1       { flex: 1 1 0; min-width: min(220px, 100%); }
-  &--2       { flex: 2 1 0; min-width: min(220px, 100%); }
-  &--3       { flex: 3 1 0; min-width: min(220px, 100%); }
+  /* The floor a WEIGHTED track refuses to go below, and the trigger for the row to
+     wrap. It was 220px, which is a rail's width: beside two real rails a body could
+     be squeezed to something narrower than the cards it holds and still count as a
+     three-column row. 320 is the width the feed's own contents want — a composer, an
+     article card — so the row stacks instead of pretending.
+
+     ⚠ It is `min(…, 100%)` so a track alone in a narrow container still fits: a bare
+     `320px` floor would make the column wider than its parent on a phone. */
+  &--1       { flex: 1 1 0; min-width: min(320px, 100%); }
+  &--2       { flex: 2 1 0; min-width: min(320px, 100%); }
+  &--3       { flex: 3 1 0; min-width: min(320px, 100%); }
 
   /* Stickiness was the only thing the home page's `.hf-left`/`.hf-right` did that a
      generic track could not, so it became a prop instead of a wrapper. */
@@ -349,4 +441,37 @@
   border-color: var(--c-danger);
   color: var(--c-danger);
   background: var(--c-danger-soft);
+}
+
+/* ── EDITOR ONLY: a block that drew nothing ─────────────────────────────────
+   `data-nv-block` is stamped in the preview and nowhere else, so this cannot reach
+   a visitor's page.
+
+   A block can render nothing and still be exactly where the admin put it: a plugin
+   widget that self-gates on a setting, a permission the admin lacks, a card with no
+   data yet. On the site that is correct and silent. In the editor it was
+   indistinguishable from "the block was not added" — and with empty tracks
+   collapsing, the rail it was dropped into vanished too.
+
+   ⚠ `:empty` ignores pseudo-elements, so this marker never makes the block count as
+   drawn: the live-site collapse rules keep seeing an empty wrapper. And a
+   `display: contents` element generates no box of its own but its pseudo-elements
+   do, which is what lets a wrapper with no children show anything at all. */
+[data-nv-block]:empty::after {
+  content: attr(data-nv-type) " — nothing to draw here";
+  display: block;
+  /* Deliberately small. It appears wherever a block is silent — including inside the
+     navbar, where a card-sized notice would push the strip apart and misrepresent the
+     header the admin is arranging. */
+  padding: 3px 7px;
+  border: 1px dashed var(--c-border-hi, var(--c-border));
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--c-warn) 6%, transparent);
+  color: var(--c-fg-subtle);
+  font-size: 10.5px;
+  font-family: var(--font-body);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
