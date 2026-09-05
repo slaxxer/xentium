@@ -12,15 +12,17 @@
  * beside the template picker.
  */
 import { useRef, useState } from "react";
+import { blocksThisSiteCannotDraw } from "../../../layout/themeFootprint";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faDownload, faUpload, faPalette, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faUpload, faPalette, faTriangleExclamation, faEye, faRotateLeft, faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { api, apiStream } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import { openThemeExportDialog } from "./ThemeExportDialog";
+import { openDialog } from "../../../lib/dialog";
 import "./ThemesPage.scss";
 
 interface InstalledTheme {
@@ -33,6 +35,19 @@ interface InstalledTheme {
   } | null;
   /** Templates the theme layer holds — what "Revert to theme" can restore. */
   templates: string[];
+  /** Whether the LAST import can still be walked back, and what it replaced. One
+   *  level only: a second import overwrites the undo point, and publishing drops it. */
+  rollback: { available: boolean; replaced: string | null; at: string | null };
+}
+
+/** One row of the library. The payload never leaves the server — this is what the
+ *  ACP needs to draw a card and offer a switch. */
+interface LibraryTheme {
+  id: string; name: string; version: string; vendor: string;
+  active: boolean;
+  installedAt: string;
+  activatedAt: string | null;
+  screenshot: string | null;
 }
 
 interface ImportReport {
@@ -49,7 +64,77 @@ export function ThemesPage() {
   const qc = useQueryClient();
   const fileRef = useRef<HTMLInputElement>(null);
   const [report, setReport] = useState<ImportReport | null>(null);
+  // ⚠ NOT `report.unknownBlocks` as received. The API's known-block set is the CORE
+  // catalogue — plugin blocks are registered in the browser, so the server cannot see
+  // one and names every one of them, and this report was telling admins that blocks
+  // rendering on their own site could not be rendered. See `blocksThisSiteCannotDraw`.
+  const undrawable = report ? blocksThisSiteCannotDraw(report.unknownBlocks) : [];
   const [exporting, setExporting] = useState(false);
+
+  /**
+   * Undo the last import — the whole of it, in one action.
+   *
+   * Everything the import touched goes back: every layout scope it wrote —
+   * `published` included, since applying a theme goes live — and both
+   * appearance theme layers. The confirmation is not ceremony — the admin may have
+   * edited a layout since importing, and those edits live in the same draft scope the
+   * restore replaces, so this is genuinely lossy in a way the button alone cannot say.
+   */
+  const discardMut = useMutation({
+    mutationFn: () => api.post<{ restored: boolean; replaced: string | null }>("/admin/themes/discard", {}),
+    onSuccess: (res) => {
+      toast.success(res.replaced
+        ? t("themes.discardDoneReplaced", { name: res.replaced })
+        : t("themes.discardDone"));
+      setReport(null);
+      // The same set an import invalidates — this is the same change, backwards.
+      invalidateTheme();
+    },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e)),
+  });
+
+  async function confirmDiscard() {
+    const ok = await openDialog({
+      kind: "confirm",
+      icon: "warning",
+      danger: true,
+      title: t("themes.discardTitle"),
+      body:  t("themes.discardBody"),
+      confirmText: t("themes.discardBtn"),
+    });
+    if (ok) discardMut.mutate();
+  }
+
+  /** Everything installed here — active first. Installed is not active. */
+  const libraryQuery = useQuery<{ themes: LibraryTheme[] }>({
+    queryKey: ["acp-theme-library"],
+    queryFn:  () => api.get("/admin/themes/library"),
+  });
+
+  const activateMut = useMutation({
+    mutationFn: (id: string) => api.post(`/admin/themes/library/${id}/activate`, {}),
+    onSuccess: (_r, id) => {
+      const name = libraryQuery.data?.themes.find((t) => t.id === id)?.name ?? id;
+      toast.success(t("themes.activated", { name }));
+      invalidateTheme();
+    },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e)),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: (id: string) => api.delete(`/admin/themes/library/${id}`),
+    onSuccess: () => { toast.success(t("themes.removed")); invalidateTheme(); },
+    onError: (e: unknown) => toast.error(apiErrorMessage(e)),
+  });
+
+  /** Everything a theme change touches, in one place — three call sites had been
+   *  keeping their own copies of this list. */
+  function invalidateTheme() {
+    for (const key of ["acp-theme-installed", "acp-theme-library", "acp-layout",
+                       "acp-layout-status", "acp-layout-templates", "acp-tokens"]) {
+      void qc.invalidateQueries({ queryKey: [key] });
+    }
+  }
 
   const installedQuery = useQuery<InstalledTheme>({
     queryKey: ["acp-theme-installed"],
@@ -65,7 +150,7 @@ export function ThemesPage() {
     },
     onSuccess: (res) => {
       setReport(res);
-      // Everything a theme touches: the layouts it staged, what counts as customised,
+      // Everything a theme touches: the layouts it wrote, what counts as customised,
       // the tokens under the Style Editor, and the installed-theme record itself.
       qc.invalidateQueries({ queryKey: ["acp-layout"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
@@ -152,11 +237,99 @@ export function ThemesPage() {
               </div>
             </div>
             <p className="thm__note">{t("themes.installedNote")}</p>
+
+            {/* ── Look at it, or take it back ──────────────────────────────
+                Applying a theme is LIVE: every page takes its arrangement and
+                colours the moment it is activated, visitors included. So the two
+                things an admin needs afterwards are a way to LOOK at the result
+                and a way OUT. Neither existed: the only preview was of the
+                theme's own package, and nothing could undo an import. */}
+            <div className="thm__actions">
+              <a
+                className="btn-primary btn-sm"
+                // The plain route, no `__layout` flag. The theme is already published,
+                // so this is the page visitors get; a draft preview here would show
+                // the admin's own unpublished layout edits and call them the theme.
+                href="/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FontAwesomeIcon icon={faEye} /> {t("themes.previewLive")}
+              </a>
+              {installedQuery.data?.rollback?.available && (
+                <button
+                  type="button"
+                  className="btn-ghost btn-sm"
+                  disabled={discardMut.isPending}
+                  onClick={() => void confirmDiscard()}
+                >
+                  <FontAwesomeIcon icon={faRotateLeft} />{" "}
+                  {discardMut.isPending ? t("themes.discarding") : t("themes.discardBtn")}
+                </button>
+              )}
+            </div>
+            <p className="thm__note">
+              {t("themes.previewHint")}
+              {installedQuery.data?.rollback?.replaced
+                ? ` ${t("themes.discardHintReplaced", { name: installedQuery.data.rollback.replaced })}`
+                : installedQuery.data?.rollback?.available
+                  ? ` ${t("themes.discardHintNone")}`
+                  : ""}
+            </p>
           </>
         ) : (
           <p className="thm__note">{t("themes.installedNone")}</p>
         )}
       </div>
+
+      {/* ── The library ─────────────────────────────────────────────────────
+          Installed is not active — the same distinction plugins draw. Until this
+          existed, a single settings key held one manifest, so installing a second
+          theme destroyed the first and an admin could not look at two and choose. */}
+      {/* Shown as soon as anything is installed, not only at two: an admin needs to
+          see that the library exists before they have a second theme in it. */}
+      {(libraryQuery.data?.themes.length ?? 0) > 0 && (
+        <div className="acp-card thm__card">
+          <div className="thm__card-title">{t("themes.libraryTitle")}</div>
+          <p className="thm__note">{t("themes.libraryHint")}</p>
+          <div className="thm__library">
+            {libraryQuery.data!.themes.map((th) => (
+              <div key={th.id} className={`thm__lib${th.active ? " thm__lib--on" : ""}`}>
+                {th.screenshot
+                  ? <img className="thm__lib-shot" src={resolveImageSource(th.screenshot)} alt="" />
+                  : <div className="thm__lib-shot thm__lib-shot--none"><FontAwesomeIcon icon={faPalette} /></div>}
+                <div className="thm__lib-body">
+                  <b>{th.name} {th.version}</b>
+                  <span>{t("themes.installedBy", { vendor: th.vendor || "—" })}</span>
+                </div>
+                <div className="thm__lib-actions">
+                  {th.active ? (
+                    <span className="thm__lib-active">
+                      <FontAwesomeIcon icon={faCheck} /> {t("themes.libraryActive")}
+                    </span>
+                  ) : (
+                    <>
+                      <button type="button" className="btn-primary btn-sm"
+                        disabled={activateMut.isPending}
+                        onClick={() => activateMut.mutate(th.id)}>
+                        {t("themes.libraryActivate")}
+                      </button>
+                      {/* Only ever offered for a theme that is NOT active: removing
+                          the active one would leave the site wearing something with
+                          no baseline and no way back. The API refuses it too. */}
+                      <button type="button" className="btn-ghost btn-sm"
+                        disabled={removeMut.isPending}
+                        onClick={() => removeMut.mutate(th.id)}>
+                        <FontAwesomeIcon icon={faTrash} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Install one ─────────────────────────────────────────────────── */}
       <div className="acp-card thm__card">
@@ -196,11 +369,14 @@ export function ThemesPage() {
                 </li>
               )}
               {/* Not an error: the blocks stay in the document and reappear when the
-                  plugin that provides them is enabled. */}
-              {report.unknownBlocks.length > 0 && (
+                  plugin that provides them is enabled.
+                  ⚠ FILTERED, not printed as received — the API's list names every
+                  plugin block because it cannot see the browser's registry, so it
+                  used to report blocks that were rendering on this very site. */}
+              {undrawable.length > 0 && (
                 <li className="thm__warn">
                   <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
-                  {t("themes.reportUnknownBlocks", { list: report.unknownBlocks.join(", ") })}
+                  {t("themes.reportUnknownBlocks", { list: undrawable.join(", ") })}
                 </li>
               )}
             </ul>

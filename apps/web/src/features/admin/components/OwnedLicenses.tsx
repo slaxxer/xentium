@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { toast } from "../../../lib/toast";
+import { themeInstallMessage } from "../hooks/themeInstallResult";
 
 /**
  * What this site's marketplace account owns, and where each licence stands here.
@@ -67,6 +68,8 @@ export const seatsFull = (l: OwnedLicense) =>
 export const rowIsLive = (l: OwnedLicense, expired: boolean) =>
   !expired && l.activeHere && !!l.installedVersion;
 
+const isThemeRow = (l: OwnedLicense) => l.product.kind === "theme";
+
 const hasUpdate = (l: OwnedLicense) =>
   l.updateAvailable && !!l.installedVersion && l.installedVersion !== l.product.latestVersion;
 
@@ -83,6 +86,7 @@ export function OwnedLicenses({
 }) {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   // Which row is streaming, and how far along. Inline rather than the shared
   // progress dialog: the row IS the thing being installed, and the admin is
   // already looking at it.
@@ -93,7 +97,11 @@ export function OwnedLicenses({
       setProgress({ id: l.product.id, pct: 4, phase: t("marketplace.phase.starting") });
       const { ok, final } = await runStreamedJob(
         "/admin/marketplace/install",
-        { pluginId: l.product.id, version: l.product.latestVersion },
+        // ⚠ `kind` is not optional here in practice. The endpoint defaults it to
+        // "plugin", so an owned THEME installed from this panel ran the plugin
+        // intake over a `.nvtheme` and failed on the manifest — the row is the one
+        // place that knows which half of the catalogue it is looking at.
+        { pluginId: l.product.id, version: l.product.latestVersion, kind: l.product.kind },
         {
           silent:       true,
           title:        t("owned.installTitle", { name: l.product.name }),
@@ -107,7 +115,9 @@ export function OwnedLicenses({
             const label = t(`marketplace.phase.${phase}`, { defaultValue: t("marketplace.phase.working") });
             return message ? `${label} ${message}` : label;
           },
-          successMessage: () => t("marketplace.progressDone", { name: l.product.name }),
+          successMessage: (f) => isThemeRow(l)
+            ? themeInstallMessage(t, l.product.name, f)
+            : t("marketplace.progressDone", { name: l.product.name }),
           failureMessage: (f, err) =>
             (f?.message as string) ?? (err instanceof Error ? err.message : t("marketplace.progressFailed")),
         },
@@ -116,11 +126,26 @@ export function OwnedLicenses({
       if (!ok) {
         throw new Error((final?.message as string) ?? t("marketplace.progressFailed"));
       }
-      toast.success(t("marketplace.progressDone", { name: l.product.name }));
+      // `silent` means the dialog reported nothing, so this toast IS the outcome —
+      // including what the import had to leave out.
+      toast.success(isThemeRow(l)
+        ? themeInstallMessage(t, l.product.name, final)
+        : t("marketplace.progressDone", { name: l.product.name }));
       return ok;
     },
     onSettled: () => setProgress(null),
-    onSuccess: onChanged,
+    onSuccess: (_ok, l) => {
+      onChanged();
+      // A theme install is the appearance import, wherever it was started from —
+      // the same set the Marketplace page and the Themes page invalidate. Without
+      // this the panel says "installed" while the ACP still shows the old theme.
+      if (isThemeRow(l)) {
+        for (const key of [
+          "acp-theme-installed", "acp-layout", "acp-layout-status",
+          "acp-layout-templates", "acp-tokens",
+        ]) void queryClient.invalidateQueries({ queryKey: [key] });
+      }
+    },
     onError:   (e: unknown) => toast.error(e instanceof Error ? e.message : t("marketplace.progressFailed")),
   });
 
@@ -187,15 +212,22 @@ export function OwnedLicenses({
                 ? { label: t("owned.stateNoSeat"), icon: faBan, tone: "var(--c-warn)", bg: "color-mix(in srgb, var(--c-warn) 14%, transparent)" }
                 : { label: t("owned.stateInactive"), icon: faCircle, tone: "var(--c-fg-muted)", bg: "var(--c-bg)" };
 
+            // A theme row used to fall through to "Themes" INSTEAD of installing,
+            // because `installedVersion` was always null for a theme and the panel
+            // had no way to fetch one. Now that the row knows what the site wears,
+            // a theme installs and updates from here like anything else — and the
+            // Themes link is what it was always meant to be: where you go once it
+            // is already installed.
+            const isTheme = l.product.kind === "theme";
             const action =
               hasUpdate(l)
                 ? { label: t("owned.update"), icon: faArrowUp, primary: true,  run: () => installMut.mutate(l) }
               : l.installedVersion
-                ? { label: t("owned.manage"), icon: faSliders, primary: false, run: () => navigate("/admin/installed") }
+                ? isTheme
+                  ? { label: t("owned.themes"), icon: faPalette, primary: false, run: () => navigate("/admin/themes") }
+                  : { label: t("owned.manage"), icon: faSliders, primary: false, run: () => navigate("/admin/installed") }
               : noSeat
                 ? { label: t("owned.noSeat"), icon: faBan, primary: false, disabled: true, run: () => {} }
-              : l.product.kind === "theme"
-                ? { label: t("owned.themes"), icon: faPalette, primary: false, run: () => navigate("/admin/themes") }
                 : { label: t("owned.install"), icon: faDownload, primary: true, run: () => installMut.mutate(l) };
 
             return (

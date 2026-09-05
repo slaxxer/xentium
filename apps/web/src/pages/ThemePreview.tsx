@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { PubNav } from "../layouts/PubNav";
 import { SiteFooter } from "../layouts/SiteFooter";
-import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
+import { loadTokenCss, startStyleSync } from "../lib/liveStyle";
 import "../layouts/AppLayout.scss";
 import "./ThemePreview.scss";
 
@@ -26,10 +26,7 @@ export function ThemePreview() {
 
   // Mirror AppLayout: inject the saved token overrides and keep them live-synced.
   useEffect(() => {
-    fetch("/api/appearance/css")
-      .then((r) => (r.ok ? r.text() : ""))
-      .then((css) => { if (css) applyTokenCss(css); })
-      .catch(() => {});
+    void loadTokenCss();
     startStyleSync();
   }, []);
 

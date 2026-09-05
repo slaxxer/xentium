@@ -1,0 +1,224 @@
+// ── Token DEFAULTS, as mixins ────────────────────────────────────────────────
+//
+// The values live here, and nothing in this file emits a rule: it is included
+// once by `tokens.scss` for the document, and again by the ACP for itself.
+//
+// ⚠ Why the ACP needs its own copy: the served stylesheet declares the site's
+// palette on `:root`, so before this every Style Editor edit and every installed
+// theme repainted the ADMIN PANEL too — a site in orange gave you an orange ACP.
+// The admin panel is not part of the site's design; it re-declares these on
+// `body.nv-acp`, which outranks `:root`, and so keeps its own look whatever the
+// site wears. Same reasoning as the font pin that was already there.
+//
+// A surface that DOES want the site's colours inside the ACP opts back in with
+// `.nv-site-tokens` (see tokens.scss) — the Layout Editor's variant probe is the
+// one caller.
+
+// Tier 1 — primitives (never referenced directly by components).
+@mixin primitives {
+  --primitive-blurple-600: #5865f2;  /* light accent */
+  --primitive-blurple-400: #7c84ff;  /* dark accent  */
+  --primitive-blurple-300: #b6bbff;
+  --primitive-cyan-500:   #00b1cf;  /* light secondary (electric cyan) */
+  --primitive-cyan-400:   #2bd4ee;  /* dark secondary  */
+  --primitive-green-500:  #23a55a;  /* light success / presence */
+  --primitive-green-400:  #3ba55d;  /* dark success / presence  */
+  --primitive-amber-500:  #f4a259;
+  --primitive-sky-400:    #38bdf8;
+  --primitive-red-400:    #f87171;
+  --primitive-mist-50:    #f3f4fb;  /* light app bg (cool) */
+  --primitive-white:      #ffffff;
+  --primitive-ink-900:    #1a1c2e;  /* light text */
+  --primitive-ink-600:    #5b5e74;
+  --primitive-ink-400:    #9499ae;
+  --primitive-night-950:  #0c0d18;  /* dark app bg */
+  --primitive-night-900:  #14162a;  /* dark surface */
+  --primitive-night-850:  #1b1e36;  /* dark card */
+  --primitive-night-50:   #e9ebff;  /* dark text */
+}
+
+// Tier 2 — semantic, LIGHT.
+@mixin palette-light {
+  color-scheme: light;
+  --c-bg:            var(--primitive-mist-50);
+  --c-bg-hover:      #ebedf7;
+  --c-surface:       var(--primitive-white);
+  --c-card:          var(--primitive-white);
+  --c-accent:        var(--primitive-blurple-600);
+  --c-accent2:       var(--primitive-cyan-500);
+  --c-accent-soft:   #e7e9fd;
+  --c-accent2-soft:  #d6f3f8;
+  --c-accent-glow:   rgba(88, 101, 242, 0.22);
+  --c-on-accent:     #ffffff;
+  --c-fg:            var(--primitive-ink-900);
+  --c-fg-muted:      var(--primitive-ink-600);
+  --c-fg-subtle:     var(--primitive-ink-400);
+  --c-border:        #e6e7f1;
+  --c-border-hi:     #d8dae8;
+  --c-rowline:       #eef0f7;
+  --input-bg:        var(--c-bg);
+  --nav-icon-btn-bg: var(--c-bg);   /* navbar action buttons — chrome, NOT a form field (decoupled from --input-bg) */
+  --c-success:       var(--primitive-green-500);
+  --c-success-soft:  rgba(35, 165, 90, 0.10);
+  --c-warn:          var(--primitive-amber-500);
+  --c-danger:        #ef4444;
+  --c-danger-soft:   rgba(239, 68, 68, 0.10);
+  --c-info:          var(--primitive-sky-400);
+  --c-update:        #414144;   // neutral "plugin update available" toast accent
+
+  --shadow-card:  0 6px 24px rgba(30, 40, 90, 0.08);
+  --shadow-pop:   0 12px 40px rgba(30, 40, 90, 0.13);
+}
+
+// Tier 2 — semantic, DARK.
+@mixin palette-dark {
+  color-scheme: dark;
+  --c-bg:            var(--primitive-night-950);
+  --c-bg-hover:      #232645;
+  --c-surface:       var(--primitive-night-900);
+  --c-card:          var(--primitive-night-850);
+  --c-accent:        var(--primitive-blurple-400);
+  --c-accent2:       var(--primitive-cyan-400);
+  --c-accent-soft:   rgba(124, 132, 255, 0.15);
+  --c-accent2-soft:  rgba(43, 212, 238, 0.15);
+  --c-accent-glow:   rgba(124, 132, 255, 0.28);
+  --c-on-accent:     #ffffff;
+  --c-fg:            var(--primitive-night-50);
+  --c-fg-muted:      #9da2c4;
+  --c-fg-subtle:     #6a6f90;
+  --c-border:        rgba(255, 255, 255, 0.08);
+  --c-border-hi:     rgba(255, 255, 255, 0.13);
+  --c-rowline:       rgba(255, 255, 255, 0.055);
+  --input-bg:        rgba(255, 255, 255, 0.045);
+  --nav-icon-btn-bg: rgba(255, 255, 255, 0.045);   /* navbar action buttons — chrome, NOT a form field (decoupled from --input-bg) */
+  --c-success:       var(--primitive-green-400);
+  --c-success-soft:  rgba(59, 165, 93, 0.16);
+  --c-warn:          var(--primitive-amber-500);
+  --c-danger:        var(--primitive-red-400);
+  --c-danger-soft:   rgba(248, 113, 113, 0.14);
+  --c-info:          var(--primitive-sky-400);
+  --c-update:        #8f8f94;   // lighter neutral — #414144 vanishes on dark cards
+
+  --shadow-card:  0 8px 30px rgba(0, 0, 0, 0.34);
+  --shadow-pop:   0 16px 48px rgba(0, 0, 0, 0.48);
+}
+
+// Tier 3 — component tokens.
+@mixin components {
+  /* radii — Hearth scale */
+  --radius-sm:   10px;   /* chips, small buttons */
+  --radius-md:   14px;   /* inputs, icon buttons */
+  --radius-lg:   18px;   /* standard cards, side nav */
+  --radius-xl:   22px;   /* hero "me" card, feed post cards */
+  --radius-pill: 999px;
+  --card-radius:  var(--radius-lg);
+  --btn-radius:   var(--radius-sm);
+  --input-radius: var(--radius-md);
+
+  /* Buttons — every button surface references these (NO gradients on controls).
+     --btn-bg is a single solid colour; it defaults to the accent but is its own
+     editable token (Style Editor → Buttons), so buttons can be recoloured /
+     re-rounded independently. --btn-danger-bg tracks the editable Danger colour. */
+  --btn-bg:        var(--c-accent);
+  --btn-fg:        var(--c-on-accent);
+  --btn-danger-bg: var(--c-danger);
+
+  /* SIZE, as tokens, because a button's box is not a per-feature decision.
+     Every button class reads these four and sets no padding or font-size of its
+     own, so primary, ghost and danger are the same height by construction —
+     they used to drift (ghost was one step narrower and a weight lighter, and
+     ghost-danger had no vertical padding at all, so its height depended on
+     whatever was inside it). A size modifier redefines the tokens ON the
+     element rather than overriding the padding, which is what lets `.btn-sm`
+     work without `!important` and without depending on stylesheet order. */
+  --btn-pad-y: var(--sp-2);
+  --btn-pad-x: var(--sp-5);
+  --btn-fs:    var(--fs-sm);
+  --btn-fw:    600;
+  --btn-gap:   var(--sp-2);
+
+  /* ── Region tokens — each DEFAULTS to a semantic token, so the
+     global palette still cascades until a region is explicitly overridden.
+     Region surfaces (nav/footer/content/aside) consume these. ── */
+  --nav-bg:            color-mix(in srgb, var(--c-surface) 88%, transparent);
+  --nav-fg:            var(--c-fg);
+  --nav-fg-muted:      var(--c-fg-muted);
+  --nav-border-color:  var(--c-border);
+  --nav-active:        var(--c-accent);
+  --nav-active-bg:     var(--c-accent-soft);
+  /* navbar action buttons (theme toggle / bell / gear / avatar) — own tokens, NOT
+     the Field input tokens. --nav-icon-btn-bg is set per-theme above (light/dark). */
+  --nav-icon-btn-hover-bg: var(--c-accent-soft);
+
+  --content-bg:            var(--c-bg);
+  --content-border-color:  var(--c-border);
+
+  --footer-bg:            var(--c-surface);
+  --footer-fg:            var(--c-fg-muted);
+  --footer-fg-subtle:     var(--c-fg-subtle);
+  --footer-border-color:  var(--c-border);
+  --footer-accent:        var(--c-accent);
+
+  --aside-bg:            var(--c-card);
+  --aside-border-color:  var(--c-border);
+
+  /* ── Component tokens — scopeable per region via CSS var
+     inheritance. --card-radius / --input-radius / --input-bg / --btn-* already
+     defined above; these add the rest. ── */
+  --card-bg:           var(--c-card);
+  --card-border-color: var(--c-border);
+  --card-shadow:       var(--shadow-card);
+
+  --input-border-color: var(--c-border);
+  --input-fg:           var(--c-fg);
+  --input-border-focus: var(--c-accent);
+
+  --menu-bg:            var(--c-card);
+  --menu-fg:            var(--c-fg);
+  --menu-border-color:  var(--c-border);
+  --menu-item-hover-bg: var(--c-bg-hover);
+  --menu-radius:        var(--radius-md);
+
+  /* Segment / sort buttons (e.g. /members sort control) */
+  --seg-bg:        var(--c-bg);
+  --seg-fg:        var(--c-fg-subtle);
+  --seg-hover-bg:  var(--c-bg-hover);
+  --seg-active-bg: var(--c-fg);
+  --seg-active-fg: var(--c-bg);
+
+  --avatar-presence: var(--c-success);
+
+  /* Typography. The admin's Style Editor font applies SITE-WIDE (body AND
+     headings: --ff-sans + --font-display both follow it via the served CSS);
+     a user's profile font choice overrides it for that user. The ACP always
+     re-pins both to Poppins (body.nv-acp in AcpLayout.scss). */
+  --font-poppins: "Poppins", system-ui, sans-serif;
+  --font-display: var(--font-poppins);
+  --font-body:    var(--font-poppins);   /* Poppins until the admin/user picks another */
+  --ff-sans:      var(--font-body);
+  --ff-mono: "JetBrains Mono", "Cascadia Code", "Fira Mono", monospace;
+  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem;
+  --fs-lg: 1.125rem; --fs-xl: 1.25rem; --fs-2xl: 1.5rem; --fs-3xl: 1.875rem;
+
+  /* Spacing */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.25rem; --sp-6: 1.5rem; --sp-8: 2rem; --sp-10: 2.5rem; --sp-12: 3rem; --sp-16: 4rem;
+
+  /* Layout */
+  --nav-height: 68px;
+  --sidebar-width: 248px;
+  /* The narrow right-hand rail. A token because `column.width: rail`
+     reproduces it as a layout track (ADR-0005). */
+  --rail-width: 260px;
+  --content-max: 1240px;
+  --content-narrow: 760px;
+
+  /* Shadows — soft + warm. Legacy --shadow-sm/md/lg alias the card shadow so
+     existing components pick up Hearth elevation; --shadow-card is canonical. */
+  --shadow-sm: var(--shadow-card);
+  --shadow-md: var(--shadow-card);
+  --shadow-lg: var(--shadow-pop);
+  --shadow-inset-knob: 0 1px 3px rgba(0, 0, 0, 0.18);
+  /* Branded accent glow (logomarks, CTAs) — theme-aware via --c-accent-glow. */
+  --shadow-glow: 0 8px 24px var(--c-accent-glow);
+}

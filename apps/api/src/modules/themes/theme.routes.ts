@@ -70,7 +70,59 @@ themeRouter.get("/installed", guard, async (_req, res, next) => {
       appearanceService.getInstalledTheme(),
       layoutService.getThemeLayer(),
     ]);
-    res.json({ manifest, templates: Object.keys(templates) });
+    res.json({ manifest, templates: Object.keys(templates), rollback: await themeService.getRollbackState() });
+  } catch (err) { next(err); }
+});
+
+/** A theme id in a path. Validated rather than cast: Express 5 types a param as
+ *  `string | string[]`, and this one is joined to an upload path on uninstall. */
+const themeIdParam = z.object({ id: z.string().regex(/^[a-z0-9-]+$/, "not a theme id") });
+
+/**
+ * The theme LIBRARY — everything installed here, active one first.
+ *
+ * Installed is not active, the same way it is for plugins. Before this existed a
+ * single settings key held one manifest, so installing a second theme destroyed the
+ * first: an admin could not look at two and choose.
+ */
+themeRouter.get("/library", guard, async (_req, res, next) => {
+  try {
+    res.json({ themes: await themeService.listThemes() });
+  } catch (err) { next(err); }
+});
+
+/** Switch to a theme already installed here. Staged like an import — previewable,
+ *  and undoable — so activating is not a commitment either. */
+themeRouter.post("/library/:id/activate", guard, async (req, res, next) => {
+  try {
+    const { id } = themeIdParam.parse(req.params);
+    res.json(await themeService.activateTheme(id, req.userId!));
+  } catch (err) { next(err); }
+});
+
+/** Remove one from the library. Refuses the ACTIVE theme — see the service. */
+themeRouter.delete("/library/:id", guard, async (req, res, next) => {
+  try {
+    const { id } = themeIdParam.parse(req.params);
+    await themeService.uninstallTheme(id);
+    res.status(204).end();
+  } catch (err) { next(err); }
+});
+
+/**
+ * Undo the last theme import.
+ *
+ * The verb that makes trying a theme possible at all. Installing one restages every
+ * page and until this existed there was no way back — per-template discard covers
+ * layouts only, and `resetAppearance` deliberately keeps the theme layer. So an admin
+ * could not find out what a theme looked like without accepting it.
+ *
+ * Idempotent: with nothing to undo it answers `restored: false` rather than erroring,
+ * because "there is nothing staged" is a state, not a failure.
+ */
+themeRouter.post("/discard", guard, async (req, res, next) => {
+  try {
+    res.json(await themeService.discardImportedTheme(req.userId!));
   } catch (err) { next(err); }
 });
 

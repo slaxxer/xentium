@@ -6,13 +6,17 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEnvelope, faMagnifyingGlass,
   faChartBar, faShield, faKey, faCheck, faLock,
-  faFlask, faPuzzlePiece, faShieldHalved, faPalette, faImage,
+  faFlask, faPuzzlePiece, faShieldHalved, faPalette, faImage, faTriangleExclamation, faEye,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
 import { Pager } from "../../../components/Pager";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
+import { themeGaps } from "../../../layout/themeFootprint";
+import { themeInstallMessage } from "../hooks/themeInstallResult";
+import { ThemePreview } from "../components/ThemePreview";
+import { openPanelDialog } from "../../../lib/dialog";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
 type ProductKind = "plugin" | "theme";
@@ -34,6 +38,14 @@ interface MarketplacePlugin {
    *  about a purchase made a minute ago; the entitlement JWT only refreshes
    *  daily, so it does not. */
   owned?:          boolean;
+  /** A theme's dependency footprint, read off the package at ingest. See
+   *  `MarketplaceListing` in @nodevo/contracts. */
+  usesTemplates?:  string[];
+  usesBlocks?:     string[];
+  /** Pages the MARKETPLACE has rendered of this theme, and where they live.
+   *  Absolute — the marketplace serves them, on its own origin. */
+  previewTemplates?: string[];
+  previewUrlBase?:   string;
 }
 
 // PaginatedResponse<MarketplaceListing> (ADR 0001)
@@ -145,8 +157,10 @@ export function MarketplacePage() {
           // every page at once, which is exactly the change staging exists for. An
           // admin who installs a theme and sees the site unchanged is looking at
           // correct behaviour, and has to be told so here.
-          successMessage: () => p.kind === "theme"
-            ? t("marketplace.themeStaged", { name: p.name })
+          // The card warned before the purchase; this is the same fact after it,
+          // for the admin who bought anyway or whose plugin was disabled since.
+          successMessage: (final) => p.kind === "theme"
+            ? themeInstallMessage(t, p.name, final)
             : t("marketplace.progressDone", { name: p.name }),
           failureMessage: (final, err) =>
             (final?.message as string) ??
@@ -227,7 +241,7 @@ export function MarketplacePage() {
             <>
               <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.licenseActive")}</div>
               <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>
-                {entitlements.length ? t("marketplace.entitlementsList", { list: entitlements.map((e) => e.replace("plugin.", "")).join(", ") }) : t("marketplace.noEntitlements")}
+                {entitlements.length ? t("marketplace.entitlementsList", { list: entitlements.map((e) => e.replace(/^(plugin|theme)\./, "")).join(", ") }) : t("marketplace.noEntitlements")}
               </div>
             </>
           ) : (
@@ -268,8 +282,8 @@ export function MarketplacePage() {
         />
       </div>
 
-      {/* Said once above the grid rather than on every card: a theme is staged,
-          not applied, and the admin has somewhere to go to finish the job. */}
+      {/* Said once above the grid rather than on every card: installing a theme
+          applies it immediately, and the admin has somewhere to go to manage it. */}
       {kind === "theme" && (
         <p style={{ fontSize:12.5, color:"var(--c-fg-subtle)", margin:"-8px 0 18px", maxWidth:"80ch" }}>
           {t("marketplace.themeDraftNote")}{" "}
@@ -293,11 +307,19 @@ export function MarketplacePage() {
           // Ownership from the marketplace wins when it answered; the local
           // entitlement JWT is the offline fallback. A plugin bought two
           // minutes ago is owned but not yet in any entitlement.
-          const entitled  = p.owned ?? entitlements.includes(`plugin.${p.id}`);
+          // ⚠ Keyed `<kind>.<id>` — the marketplace has signed both halves since the
+          // catalogue learned to sell themes. Hardcoding `plugin.` here made every
+          // owned THEME read as unowned whenever the catalogue did not answer
+          // `owned` (offline, or no account connected), which offered "Buy" for
+          // something already paid for.
+          const entitled  = p.owned ?? entitlements.includes(`${p.kind}.${p.id}`);
           const locked    = p.licenseRequired && !entitled;
           // A free plugin needs no entitlement — gating it behind one offered
           // "Buy" for something that costs nothing and installs fine.
           const installable = (entitled || !p.licenseRequired) && !!p.latestVersion;
+          // Only a theme carries a footprint; `themeGaps` answers null for anything
+          // without one, including a theme listed before footprints existed.
+          const gaps = isTheme ? themeGaps(p) : null;
 
           return (
             <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1, overflow:"hidden" }}>
@@ -344,13 +366,67 @@ export function MarketplacePage() {
               <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:6 }}>{p.name}</div>
               <div style={{ fontSize:13, color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
 
+              {/* On the CARD, beside the price — a theme's missing pieces are part
+                  of what it costs, and a warning shown after the purchase is not
+                  a warning. The types are named because that is the true thing we
+                  can say; see `themeGaps`. */}
+              {gaps && (
+                <div
+                  style={{
+                    display:"flex", gap:8, alignItems:"flex-start", marginBottom:16, padding:"9px 11px",
+                    borderRadius:"var(--radius-md)", background:"color-mix(in srgb, var(--c-warn) 12%, transparent)",
+                    color:"var(--c-fg)", fontSize:12, lineHeight:1.5,
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTriangleExclamation} style={{ color:"var(--c-warn)", marginTop:2 }} />
+                  <div>
+                    <div style={{ fontWeight:700 }}>
+                      {t("marketplace.themeGapsTitle", { count: gaps.blocks.length + gaps.templates.length })}
+                    </div>
+                    <div style={{ color:"var(--c-fg-muted)", wordBreak:"break-word" }}>
+                      {[...gaps.templates, ...gaps.blocks].join(", ")}
+                    </div>
+                    <div style={{ color:"var(--c-fg-muted)", marginTop:3 }}>{t("marketplace.themeGapsHint")}</div>
+                  </div>
+                </div>
+              )}
+
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {/* Beside the install action, never instead of it. Installing a
+                    theme restages every page at once, and until this existed the
+                    only way to see one was to do it — on a change that has no undo
+                    (a theme has no runtime; nothing can un-give the package). */}
+                {isTheme && p.previewUrlBase && p.previewTemplates?.length ? (
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm"
+                    onClick={() => void openPanelDialog({
+                      // An ALERT, not a confirm: there is nothing here to agree to,
+                      // and a Cancel beside a Close asks the admin which of two
+                      // identical outcomes they meant.
+                      kind:  "alert",
+                      icon:  "info",
+                      title: t("marketplace.previewTitle", { name: p.name }),
+                      confirmText: t("marketplace.previewClose"),
+                      bodyNode: (
+                        <ThemePreview
+                          name={p.name}
+                          base={p.previewUrlBase!}
+                          templates={p.previewTemplates!}
+                        />
+                      ),
+                    })}
+                  >
+                    <FontAwesomeIcon icon={faEye} style={{ marginRight: 6 }} />
+                    {t("marketplace.preview")}
+                  </button>
+                ) : null}
                 {instStatus === "enabled" ? (
                   <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
-                    {/* For a theme this says "installed", not "enabled": it may be
-                        staged in the draft and not live yet, and calling that
-                        enabled would be a claim about the public site that is
-                        false until someone publishes. */}
+                    {/* For a theme this says "installed", not "enabled": a theme
+                        has no enabled state, and the library may hold several while
+                        exactly one is active — "enabled" would claim this is the one
+                        the site is wearing, which is a different question. */}
                     <FontAwesomeIcon icon={faCheck} /> {t(isTheme ? "marketplace.themeInstalled" : "marketplace.enabled")}
                   </span>
                 ) : instStatus ? (

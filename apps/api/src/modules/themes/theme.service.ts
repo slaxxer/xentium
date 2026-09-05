@@ -19,10 +19,10 @@
  */
 import AdmZip from "adm-zip";
 import fs from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import path from "node:path";
 import { fileTypeFromBuffer } from "file-type";
 import {
-  DEFAULT_VARIANT,
   LAYOUT_SCHEMA_VERSION,
   templateKeys,
   blockPropSchemas,
@@ -42,8 +42,10 @@ import {
   regionsFor,
   validateBlockTree,
   type LayoutDocument,
+  type TemplateKey,
 } from "@nodevo/contracts";
 import { env } from "../../config/env.js";
+import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
@@ -533,10 +535,48 @@ export const themeService = {
    * Accepts a `.nvstyle` too — see `adoptStylePack`. One ingestion path for both,
    * which is the point of having merged them.
    */
+  /**
+   * Undo the last theme import — the whole of it, in one action.
+   *
+   * The counterpart to the rollback point taken in `importTheme`, and the thing that
+   * makes installing a theme a decision an admin can walk back. Restores the staged
+   * layout scopes and the appearance theme layers exactly as they were, then drops
+   * the undo point: it describes a state that no longer exists once it has been
+   * applied, and offering it twice would put the site back to before an import that
+   * has already been undone.
+   *
+   * ⚠ What it does NOT do is delete the theme's uploaded ASSETS
+   * (`uploads/themes/<id>/`). Nothing else references them once the documents are
+   * restored, and the purge job already reclaims unreferenced uploads — whereas
+   * deleting them here would race a re-import of the same theme and break the
+   * documents it had just written. Files are cheap; a broken layout is not.
+   */
+  async discardImportedTheme(userId: string): Promise<{ restored: boolean; replaced: string | null }> {
+    const rollback = await appearanceService.getThemeRollback();
+    if (!rollback) return { restored: false, replaced: null };
+
+    await layoutService.restoreStagedScopes(rollback.layouts, userId);
+    await appearanceService.restoreThemeLayers(rollback.layers);
+    await appearanceService.clearThemeRollback();
+
+    return { restored: true, replaced: rollback.replaced };
+  },
+
+  /** Is there a theme import that can still be walked back? */
+  async getRollbackState(): Promise<{ available: boolean; replaced: string | null; at: string | null }> {
+    const rollback = await appearanceService.getThemeRollback();
+    return {
+      available: !!rollback,
+      replaced:  rollback?.replaced ?? null,
+      at:        rollback?.at ?? null,
+    };
+  },
+
   async importTheme(fileBuffer: Buffer, userId: string): Promise<ImportReport> {
     const { zip, manifest } = readManifest(fileBuffer);
     assertCompatible(manifest);
-    const previous = await appearanceService.getInstalledTheme();
+    // What was installed before is read by `applyTheme`, which is the only thing that
+    // needs it — it reports the replacement and records the rollback point.
 
     // ── Parse everything BEFORE writing anything ──────────────────────────
     const documents: Partial<Record<string, LayoutDocument>> = {};
@@ -687,85 +727,36 @@ export const themeService = {
     }
 
     /**
-     * Inheritance (the fifth gap). Ownership is read BEFORE anything is written, because
-     * writing the new baseline is itself what would make a customised template look
-     * untouched.
-     */
-    const ownership = await layoutService.getOwnership();
-    const applied: string[] = [];
-    const kept: string[] = [];
-
-    for (const [key, doc] of Object.entries(documents)) {
-      if (!doc) continue;
-      // A package-relative `assets/hero.jpg` becomes this install's upload path. An
-      // absolute URL, or a path this package does not carry, is left untouched — a
-      // theme may still point at a CDN.
-      rewriteAssetRefs(doc, (ref) => assetPaths.get(ref));
-
-      // The baseline is recorded either way: it is what the NEXT update compares
-      // against, and what "Revert to theme" restores.
-      await layoutService.saveThemeLayer(key, doc, userId);
-
-      if (ownership[key]?.customised) {
-        kept.push(key);
-        continue;
-      }
-      // Template default, never a variant — see the export note above.
-      await layoutService.saveDraft({ templateKey: key, variant: DEFAULT_VARIANT }, doc, userId);
-      applied.push(key);
-    }
-
-    /**
-     * Tokens go to the THEME layer, not the admin's draft.
+     * The applicable form of this theme, with every asset reference already pointing
+     * at where the files actually landed on THIS install.
      *
-     * That is token-level inheritance: the served stylesheet is the theme merged under
-     * the admin's own overrides, so an admin who recoloured one accent keeps exactly that
-     * and takes everything else the update brings. Importing into the admin layer — which
-     * this used to do — made the first update overwrite every tweak.
-     */
-    if (tokens) await appearanceService.saveThemeTokens(tokens);
-
-    const replaced = previous
-      ? { id: String(previous.id ?? ""), name: String(previous.name ?? ""), version: String(previous.version ?? "") }
-      : null;
-
-    /**
-     * The stored manifest points at where the preview image actually landed, not at
-     * where it sat inside the zip.
-     *
-     * ⚠ Deliberate asymmetry: in a PACKAGE `screenshot` is package-relative
-     * (`assets/screenshot.png`), and in the INSTALLED record it is this install's
-     * upload path — the same rewrite a document's image reference gets three
-     * paragraphs up, and for the same reason. Anything reading the installed theme is
-     * about to render the image, and `assets/screenshot.png` resolves to nothing.
-     * A package that names a file it does not carry keeps its value untouched rather
-     * than being blanked: it may be pointing at a CDN, which is the one case where the
-     * author's own path is still the right one.
+     * Built before anything is applied, and stored in the library, because it is what
+     * lets the theme be activated again later without the `.nvtheme` it came from.
+     * Storing the raw package instead would mean re-unpacking (and re-writing assets)
+     * on every switch, and would leave the stored copy disagreeing with the files on
+     * disk the moment either changed.
      */
     const shot = manifest.screenshot ? assetPaths.get(manifest.screenshot) : undefined;
     const installedManifest = { ...manifest, ...(shot ? { screenshot: shot } : {}) };
-    await appearanceService.setInstalledTheme(installedManifest as unknown as Record<string, unknown>);
 
-    /**
-     * The stylesheet goes to the THEME layer, staged — the same treatment as the tokens
-     * three lines up, and for the same reason.
-     *
-     * It used to call `saveCustomCss`, which is the ADMIN's stylesheet: importing a
-     * theme destroyed whatever CSS the admin had written, with no baseline recorded and
-     * nowhere to recover it from. A package carrying only a light stylesheet blanked
-     * their dark one too, since both keys were always written together.
-     *
-     * `url(assets/…)` is rewritten to where the assets actually landed. Nothing did this
-     * before, so every image a theme shipped through its stylesheet resolved against
-     * `/api/appearance/css` and 404'd.
-     */
-    if (hasCustomCss) {
-      const rewrite = (css: string) => rewriteThemeCssUrls(css, (ref) => assetPaths.get(ref));
-      await appearanceService.saveThemeCustomCss({
-        light: rewrite(customCss.light),
-        dark:  rewrite(customCss.dark),
-      });
+    const rewriteCss = (css: string) => rewriteThemeCssUrls(css, (ref) => assetPaths.get(ref));
+    for (const doc of Object.values(documents)) {
+      if (doc) rewriteAssetRefs(doc, (ref) => assetPaths.get(ref));
     }
+
+    const payload: ThemePayload = {
+      documents: documents as Record<string, LayoutDocument>,
+      tokens:    tokens ?? null,
+      customCss: hasCustomCss
+        ? { light: rewriteCss(customCss.light), dark: rewriteCss(customCss.dark) }
+        : null,
+    };
+
+    // INSTALLED, then ACTIVE — two steps even though an import does both, because the
+    // row has to survive the next import. Before the library existed, installing a
+    // second theme destroyed the first.
+    await this.saveInstalledTheme(installedManifest, payload, userId);
+    const { applied, kept, replaced } = await this.applyTheme(installedManifest, payload, userId);
 
     return {
       manifest,
@@ -779,4 +770,236 @@ export const themeService = {
       unknownBlocks: [...unknownBlocks],
     };
   },
+
+  /**
+   * Write a stored theme into the appearance layers and the draft.
+   *
+   * The half of an import that CHANGES the site, split out so activating a theme
+   * already in the library runs exactly the same code. Two paths that both "apply a
+   * theme" but drift apart is how one of them quietly stops staging the stylesheet.
+   *
+   * Everything it writes is STAGED: the theme layer and the draft. Nothing a visitor
+   * sees changes until the appearance draft is published.
+   */
+  async applyTheme(
+    manifest: Record<string, unknown>,
+    payload: ThemePayload,
+    userId: string,
+  ): Promise<{ applied: string[]; kept: string[]; replaced: { id: string; name: string; version: string } | null }> {
+    const previous = await appearanceService.getInstalledTheme();
+
+    /**
+     * Inheritance. Ownership is read BEFORE anything is written, because writing the
+     * new baseline is itself what would make a customised template look untouched.
+     */
+    const ownership = await layoutService.getOwnership();
+
+    /**
+     * THE ROLLBACK POINT. Taken after every check and before the first write, because
+     * this is the last instant at which the pre-application state still exists.
+     *
+     * Applying a theme restages the arrangement of every page at once, and until this
+     * existed there was no way back: `discard` is per-template and layouts only, and
+     * `resetAppearance` deliberately keeps the theme layer ("reset drops MY edits, it
+     * does not uninstall the theme"). So the only way to find out what a theme looked
+     * like was to accept it permanently.
+     *
+     * ⚠ ONE level. This is "undo what I just did", not version history — the library
+     * is what lets an admin go back to a theme from further back than that.
+     */
+    await appearanceService.saveThemeRollback({
+      layouts:  await layoutService.snapshotStagedScopes(),
+      layers:   await appearanceService.snapshotThemeLayers(),
+      replaced: previous ? String(previous.name ?? previous.id ?? "") : null,
+      at:       new Date().toISOString(),
+    });
+
+    const applied: string[] = [];
+    const kept: string[] = [];
+
+    for (const [key, doc] of Object.entries(payload.documents)) {
+      if (!doc) continue;
+      // The baseline is recorded either way: it is what the NEXT update compares
+      // against, and what "Revert to theme" restores.
+      await layoutService.saveThemeLayer(key as TemplateKey, doc, userId);
+
+      if (ownership[key]?.customised) {
+        kept.push(key);
+        continue;
+      }
+      // Template default, never a variant — a slug is site content, not the theme's.
+      // LIVE: activating a theme is the decision, not a change waiting to be
+      // published. Writes `published` and `draft` together — see applyThemeDocument.
+      await layoutService.applyThemeDocument(key as TemplateKey, doc, userId);
+      applied.push(key);
+    }
+
+    /**
+     * Tokens go to the THEME layer, not the admin's draft — that is token-level
+     * inheritance: the served stylesheet is the theme merged UNDER the admin's own
+     * overrides, so an admin who recoloured one accent keeps exactly that and takes
+     * everything else the update brings.
+     */
+    if (payload.tokens) await appearanceService.saveThemeTokens(payload.tokens);
+
+    await appearanceService.setInstalledTheme(manifest);
+
+    /** The stylesheet gets the same treatment as the tokens: its own layer, so an
+     *  import can never destroy the admin's own CSS. */
+    if (payload.customCss) await appearanceService.saveThemeCustomCss(payload.customCss);
+
+    // The theme is ON now, so every open tab has to hear about it. Reuses the style
+    // version the appearance SSE already carries — layouts ride the same channel.
+    await appearanceService.bumpStyleVersion();
+
+    return {
+      applied,
+      kept,
+      replaced: previous
+        ? { id: String(previous.id ?? ""), name: String(previous.name ?? ""), version: String(previous.version ?? "") }
+        : null,
+    };
+  },
+
+  /** Add or update a library row, and make it the active one. Exactly one row may be
+   *  active, which is why the clear and the set share a transaction. */
+  async saveInstalledTheme(
+    manifest: Record<string, unknown>,
+    payload: ThemePayload,
+    userId: string,
+  ): Promise<void> {
+    const id = String(manifest.id ?? "");
+    const row = {
+      name:    String(manifest.name ?? id),
+      version: String(manifest.version ?? "0.0.0"),
+      vendor:  String(manifest.vendor ?? ""),
+      manifest:    manifest as object,
+      payload:     payload as unknown as object,
+      active:      true,
+      activatedAt: new Date(),
+    };
+    await prisma.$transaction([
+      prisma.theme.updateMany({ where: { active: true }, data: { active: false } }),
+      prisma.theme.upsert({
+        where:  { id },
+        update: row,
+        create: { id, ...row, installedById: userId },
+      }),
+    ]);
+  },
+
+  /**
+   * Give the CURRENTLY installed theme a library row if it does not have one.
+   *
+   * Every install that predates the library is in exactly this state: a theme is
+   * applied and `appearance.theme.installed` names it, but nothing recorded the
+   * package, so the library would open empty on a site that visibly has a theme.
+   *
+   * The payload is reconstructed from what the theme itself left behind — the
+   * `theme`-scope layout rows, the theme token layer and the theme stylesheet. That
+   * IS the payload: those three are what an import writes and what an activation
+   * replays, so a backfilled row re-activates exactly like an imported one. Asset
+   * references in them were already rewritten at import, so nothing needs repointing.
+   *
+   * Runs on read, once, like the custom-CSS compile-on-read next door. Cheap after
+   * the first time: the row exists and the lookup short-circuits.
+   */
+  async backfillLibrary(): Promise<void> {
+    const installed = await appearanceService.getInstalledTheme();
+    const id = installed?.id ? String(installed.id) : null;
+    if (!id) return;
+
+    const existing = await prisma.theme.findUnique({ where: { id }, select: { id: true } });
+    if (existing) return;
+
+    const [documents, tokens, customCss] = await Promise.all([
+      layoutService.getThemeLayer(),
+      appearanceService.getThemeTokens(),
+      appearanceService.getThemeCustomCss(),
+    ]);
+
+    const hasCss = !!(customCss.light || customCss.dark);
+    await this.saveInstalledTheme(installed as Record<string, unknown>, {
+      documents: documents as Record<string, LayoutDocument>,
+      tokens:    tokens ?? null,
+      customCss: hasCss ? customCss : null,
+    }, "");
+  },
+
+  /** Everything installed here, newest first, with the active one flagged. */
+  async listThemes() {
+    await this.backfillLibrary();
+    const rows = await prisma.theme.findMany({
+      orderBy: [{ active: "desc" }, { installedAt: "desc" }],
+      // ⚠ NOT `payload`. It carries every layout document of every installed theme
+      // and this feeds a list; the ACP needs the manifest and nothing more.
+      select: {
+        id: true, name: true, version: true, vendor: true, manifest: true,
+        active: true, installedAt: true, activatedAt: true,
+      },
+    });
+    return rows.map((r) => ({
+      ...r,
+      installedAt: r.installedAt.toISOString(),
+      activatedAt: r.activatedAt?.toISOString() ?? null,
+      screenshot:  (r.manifest as Record<string, unknown> | null)?.screenshot ?? null,
+    }));
+  },
+
+  /**
+   * Switch to a theme already in the library.
+   *
+   * The point of the library: an admin who installed a second theme to look at it can
+   * go back to the first without the original file. Staged like an import, so it is
+   * previewable and undoable in exactly the same way.
+   */
+  async activateTheme(id: string, userId: string) {
+    const row = await prisma.theme.findUnique({ where: { id } });
+    if (!row) {
+      throw new NodevoError({
+        code: NEC.API_NOT_FOUND, httpStatus: 404,
+        message: `No theme "${id}" is installed here.`,
+      });
+    }
+
+    const manifest = row.manifest as Record<string, unknown>;
+    const payload  = row.payload as unknown as ThemePayload;
+
+    const result = await this.applyTheme(manifest, payload, userId);
+    await this.saveInstalledTheme(manifest, payload, userId);
+
+    return { id: row.id, name: row.name, version: row.version, ...result };
+  },
+
+  /**
+   * Remove a theme from the library.
+   *
+   * ⚠ Refuses the ACTIVE one. Deleting the row would leave the site wearing a theme
+   * with no record of where it came from, no baseline for "Revert to theme", and no
+   * way back — the exact state the library exists to prevent. Switch first.
+   *
+   * Assets go too: nothing else references `uploads/themes/<id>/` once the row is
+   * gone, and leaving them means an admin who uninstalls a theme has no way to
+   * reclaim the space.
+   */
+  async uninstallTheme(id: string): Promise<void> {
+    const row = await prisma.theme.findUnique({ where: { id }, select: { active: true, name: true } });
+    if (!row) return;
+    if (row.active) {
+      throw new NodevoError({
+        code: NEC.API_CONFLICT, httpStatus: 409,
+        message: `"${row.name}" is the active theme. Switch to another one before removing it.`,
+      });
+    }
+    await prisma.theme.delete({ where: { id } });
+    await rm(path.join(env.UPLOAD_DIR, "themes", id), { recursive: true, force: true }).catch(() => {});
+  },
 };
+
+/** A theme in the form that can be APPLIED: asset references already rewritten to
+ *  this install's upload paths. Stored in the library so a switch needs no package. */
+export interface ThemePayload {
+  documents: Record<string, LayoutDocument>;
+  tokens:    ScopedTokenSet | null;
+  customCss: { light: string; dark: string } | null;
+}

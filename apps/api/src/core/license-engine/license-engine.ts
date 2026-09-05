@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as jose from "jose";
-import type { DeployEnvironment, EntitlementGrant, EntitlementStatus } from "@nodevo/contracts";
+import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
@@ -247,8 +247,14 @@ export async function deactivateLicense(): Promise<void> {
  * Domain binding is enforced ONLY in `production`: a signed `domain` claim that
  * doesn't match this site's host yields `domain_mismatch`. In `development` /
  * `staging` the domain claim is informational and never blocks.
+ *
+ * ⚠ A grant is keyed `<kind>.<id>`, and the marketplace has issued both halves
+ * since the catalogue learned to sell themes. `kind` defaults to `plugin` because
+ * every caller that predates themes means a plugin — but a THEME asked for under
+ * the default matches nothing and reads as `missing`, which is exactly how an
+ * owned theme came back unowned.
  */
-export async function getEntitlementStatus(pluginId: string): Promise<EntitlementStatus> {
+export async function getEntitlementStatus(pluginId: string, kind: ProductKind = "plugin"): Promise<EntitlementStatus> {
   const environment = await resolveEnvironment();
   const license = await prisma.entitlement.findFirst({ where: { status: "active" } });
 
@@ -269,7 +275,7 @@ export async function getEntitlementStatus(pluginId: string): Promise<Entitlemen
     // Grants are objects — matching against the array itself silently fails
     // for every plugin, and "you do not own this" is not a failure mode that
     // announces itself.
-    if (!claims.entitlements.some((e) => e.id === `plugin.${pluginId}`)) {
+    if (!claims.entitlements.some((e) => e.id === `${kind}.${pluginId}`)) {
       return { ...base, state: "missing" };
     }
     // Production-only domain enforcement (ADR 0001 §5).
@@ -286,10 +292,16 @@ export async function getEntitlementStatus(pluginId: string): Promise<Entitlemen
   }
 }
 
-/** Boolean convenience: is the plugin usable right now (valid or within grace). */
-export async function isPluginEntitled(pluginId: string): Promise<boolean> {
-  const { state } = await getEntitlementStatus(pluginId);
+/** Boolean convenience: is the product entitled right now (valid or within grace). */
+export async function isEntitled(productId: string, kind: ProductKind = "plugin"): Promise<boolean> {
+  const { state } = await getEntitlementStatus(productId, kind);
   return state === "valid" || state === "grace";
+}
+
+/** Is the plugin usable right now. The enable gate's call — named for it, because
+ *  for a plugin this decides whether code runs, and for a theme nothing ever does. */
+export async function isPluginEntitled(pluginId: string): Promise<boolean> {
+  return isEntitled(pluginId, "plugin");
 }
 
 /**
@@ -302,9 +314,28 @@ export async function isPluginEntitled(pluginId: string): Promise<boolean> {
  * they aren't your product and couldn't be entitled through your account anyway.
  */
 export async function pluginRequiresLicense(pluginId: string): Promise<boolean> {
+  return idIsPaid(pluginId, "marketplace.paid_plugin_ids");
+}
+
+/**
+ * Whether the marketplace sells this THEME id as paid.
+ *
+ * Read by the ACP (buy vs install) and by the theme download path, so a refusal
+ * can name the reason. ⚠ NOT by anything that renders: a theme is data, it has no
+ * runtime, and a licence check on a theme already installed would be theatre —
+ * the file is on disk and the pages are already arranged. The authoritative gate
+ * is the marketplace's authenticated download, and it is the only one.
+ */
+export async function themeRequiresLicense(themeId: string): Promise<boolean> {
+  return idIsPaid(themeId, "marketplace.paid_theme_ids");
+}
+
+/** Shared read of a cached paid-id set. The two sets are separate keys on
+ *  purpose (see marketplace-source) — this only shares the lookup. */
+async function idIsPaid(productId: string, key: string): Promise<boolean> {
   const { getSetting } = await import("../../shared/utils/settings.js");
-  const paidIds = await getSetting<string[]>("marketplace.paid_plugin_ids", []);
-  return Array.isArray(paidIds) && paidIds.includes(pluginId);
+  const paidIds = await getSetting<string[]>(key, []);
+  return Array.isArray(paidIds) && paidIds.includes(productId);
 }
 
 /**
@@ -367,6 +398,96 @@ export async function assertPluginEnableAllowed(pluginId: string, pluginName: st
   if (await isPluginEntitled(pluginId)) return;
 
   throw await explainEnableRefusal(pluginId, pluginName);
+}
+
+/**
+ * THE THEME DOWNLOAD PRE-CHECK — and it is only that.
+ *
+ * A paid theme is bought the same way a paid plugin is, but nothing about it can
+ * ever be checked again once the file is here: a theme is data, it has no code to
+ * run a check, and the pages it arranged are already arranged. So this runs at
+ * DOWNLOAD time and nowhere else, and a theme that got in by any other route
+ * (a manual `.nvtheme` upload, a restore) is deliberately not touched. The
+ * redistribution that follows from that is known and accepted (ADR-0001 / §53).
+ *
+ * The authoritative refusal is the marketplace's — it will not hand over an
+ * artifact this account has no licence for. This exists because that refusal is a
+ * deliberately vague 404 ("no such release, or it is not available to this
+ * account"), which an admin reads as the marketplace being broken. Refusing here
+ * first turns it into a sentence with a link in it.
+ *
+ * ⚠ Therefore it may only ever ADD a refusal the real gate would also make, never
+ * withhold something the gate would hand over. Two consequences that are easy to
+ * get wrong:
+ *
+ *  - A set this install has never fetched carries no information, so `never`
+ *    proceeds to the real gate rather than guessing.
+ *  - The stored entitlement is a fast YES, never a NO. A grant only exists if
+ *    activation found this install a SEAT, and `/downloads/authorize` does not
+ *    look at seats at all — it looks at the licence row. So an account whose
+ *    production seats are all spent elsewhere still downloads, and refusing it
+ *    here would have invented a rule the marketplace does not have.
+ */
+export async function assertThemeDownloadAllowed(themeId: string, themeName = themeId): Promise<void> {
+  const { marketplaceSource } = await import("./marketplace-source.js");
+
+  const freshness = await marketplaceSource.ensurePaidIdsFresh("theme");
+  if (freshness === "never") return;              // no set has ever been fetched — say nothing
+  if (!(await themeRequiresLicense(themeId))) return;
+
+  // Fast yes: an entitled theme needs no round trip. Bought minutes ago is the
+  // ordinary case here — a theme is browsed, bought and installed in one sitting,
+  // while the stored JWT refreshes monthly — so a miss is worth one refresh.
+  if (await isEntitled(themeId, "theme")) return;
+  await refreshLicense().catch(() => {});
+  if (await isEntitled(themeId, "theme")) return;
+
+  // Still no grant. That is NOT yet a refusal (see the seat note above): ask what
+  // the account actually holds, which is the same question the gate asks.
+  let owned;
+  try {
+    owned = await marketplaceSource.listOwned();
+  } catch {
+    return;   // cannot ask — the real gate decides, as it would have anyway
+  }
+
+  const licence = owned.find((l) => l.product.kind === "theme" && l.product.id === themeId);
+  if (licence && (licence.status === "active" || licence.status === "expiring")) return;
+
+  throw await themeRefusal(themeId, themeName, licence);
+}
+
+/** The theme half of `explainEnableRefusal`, over a licence already fetched.
+ *  Shorter, because two of that function's outcomes cannot arise here: a theme
+ *  has no local manifest claiming it needs a licence, and a download spends no seat. */
+async function themeRefusal(
+  themeId:   string,
+  themeName: string,
+  licence:   { status: string } | undefined,
+): Promise<NodevoError> {
+  const { marketplaceWebUrl: url } = await import("./protocol-client.js");
+
+  if (!(await getAccountToken())) {
+    return new NodevoError({
+      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+      httpStatus: 402,
+      message:    `"${themeName}" is a paid theme. Connect your marketplace account in ACP → Extensions → Licence and every licence you own applies to this install.`,
+    });
+  }
+
+  if (licence) {
+    return new NodevoError({
+      code:       NEC.LICENSE_EXPIRED,
+      httpStatus: 402,
+      message:    `Your "${themeName}" licence is ${licence.status}. Renew it at ${url("/account/licences")} to download it again — a theme you already installed keeps working.`,
+    });
+  }
+
+  return new NodevoError({
+    code:       NEC.LICENSE_NOT_FOUND,
+    httpStatus: 402,
+    message:    `Your marketplace account does not own "${themeName}". It is available at ${url(`/themes/${themeId}`)}.`,
+  });
 }
 
 /**

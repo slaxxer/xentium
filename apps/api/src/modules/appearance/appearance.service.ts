@@ -56,17 +56,36 @@ const THEME_SCOPE: Record<ThemeName, string> = {
 // with the theme scope. @keyframes step rules, @font-face and nested rules are left
 // untouched so animations/fonts still work. Invalid CSS is dropped (returns "")
 // rather than corrupting the whole served stylesheet.
+//
+// ⚠ The site's CSS stops at the admin panel. Custom CSS is the SITE's design, and
+// the ACP is not part of it — an `a { color }` or a `body { background }` written
+// for the site was landing on the admin panel too, the same complaint the palette
+// pin answers (`body.nv-acp`, apps/web/src/styles/_tokenDefaults.scss). So every
+// rule is anchored under `body:not(.nv-acp)`: the ACP puts that class on <body>
+// while it is mounted and takes it off on the way out.
+//
+// ⚠ `:root` / `html` rules are the exception and stay document-wide, because a rule
+// on the root element cannot be qualified by a class on its child without `:has()`,
+// and an unsupported selector would silently drop the admin's ENTIRE stylesheet
+// rather than one rule. In practice those rules declare TOKENS, which the ACP
+// re-declares over anyway — what remains is html-level paint.
+const SITE_BODY = "body:not(.nv-acp)";
+
 // Apply the theme scope to one selector. Selectors that target the root element
 // (`:root` / `html`) get the scope MERGED onto them (compound) so a custom
 // `:root { --c-accent: red }` actually overrides the palette token — prefixing as
-// a descendant (`scope :root`) would match nothing. Everything else is a descendant.
+// a descendant (`scope :root`) would match nothing. A selector for `body` itself is
+// merged onto the ACP exclusion for the same reason. Everything else is a descendant.
 function scopeSelector(sel: string, prefix: string): string {
   const t = sel.trim();
   if (t === ":root" || t === "html") return prefix;
   // `:root.x` / `html.x` / `:root[x]` / `:root:hover` → keep the trailing compound
   const m = t.match(/^(?::root|html)((?:[.#:[]|::).*)$/);
   if (m) return prefix + m[1];
-  return `${prefix} ${t}`;
+  // `body`, `body.x`, `body > .y` — compounded onto the exclusion, never `body body`.
+  const b = t.match(/^body((?:[.#:[]|::)[^\s>+~]*)?([\s>+~][\s\S]*)?$/);
+  if (b) return `${prefix} ${SITE_BODY}${b[1] ?? ""}${b[2] ?? ""}`;
+  return `${prefix} ${SITE_BODY} ${t}`;
 }
 
 // Admin-authored CSS is attacker-adjacent input. `map: false` takes postcss's
@@ -141,6 +160,8 @@ const THEME_DRAFT_LIGHT_KEY = "appearance.tokens.theme.draft.light";
 const THEME_DRAFT_DARK_KEY  = "appearance.tokens.theme.draft.dark";
 /** The manifest of the installed theme, so the ACP can name what it is inheriting from. */
 const THEME_INSTALLED_KEY = "appearance.theme.installed";
+/** One level of undo for the last theme import — see `saveThemeRollback`. */
+const THEME_ROLLBACK_KEY = "appearance.theme.rollback";
 
 // ── Theme layer: custom CSS ──────────────────────────────────────────────────
 // Custom CSS was the one channel a theme did NOT layer. An import called
@@ -186,6 +207,21 @@ function compileCustomCss(
 export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 
 export type { TokenMap, TokenSet };
+
+/** The appearance half of a theme-import rollback: setting key → prior value,
+ *  where `null` means the setting did not exist and must be deleted again. */
+export type ThemeLayerSnapshot = Record<string, unknown>;
+
+/** Everything needed to put the site back the way it was before the last import. */
+export interface ThemeRollback {
+  /** Type-only import: erased at compile time, so naming the layout service's row
+   *  shape here cannot create a runtime cycle between the two modules. */
+  layouts:  import("../layouts/layout.service.js").LayoutRowSnapshot[];
+  layers:   ThemeLayerSnapshot;
+  /** The theme that was installed before, for the ACP to name in the undo button. */
+  replaced: string | null;
+  at:       string;
+}
 
 // Live-sync defaults. The interval is how often each open client polls the
 // version endpoint; clamped so a misconfigured value can't hammer the API or
@@ -286,6 +322,13 @@ export const appearanceService = {
     return this.recompileCustomCss();
   },
 
+  /** The same blob a publish would produce, built from the STAGED theme layer.
+   *  Never cached: a draft changes on every import and is read only by a preview. */
+  async buildDraftCustomCss(): Promise<string> {
+    const [admin, theme] = await Promise.all([this.getCustomCss(), this.getThemeDraftCustomCss()]);
+    return compileCustomCss(admin, theme);
+  },
+
   /**
    * Rebuild and cache the served blob from whatever both layers currently hold.
    *
@@ -335,21 +378,27 @@ export const appearanceService = {
    * theme's dark stylesheet. That is safe here in a way it never was against the admin's
    * keys: this layer belongs to the theme, so overwriting all of it is correct.
    */
+  /** The theme's stylesheet, LIVE and mirrored into the draft — same reasoning as
+   *  `saveThemeTokens`, and it must stay in step with it: a theme whose colours went
+   *  live while its stylesheet waited for a publish is a look it never had. */
   async saveThemeCustomCss(css: { light: string; dark: string }): Promise<void> {
+    const put = (key: string, value: string) => prisma.setting.upsert({
+      where: { key }, update: { value }, create: { key, value },
+    });
+
     await prisma.$transaction([
-      prisma.setting.upsert({
-        where:  { key: THEME_CSS_DRAFT_LIGHT_KEY },
-        update: { value: css.light },
-        create: { key: THEME_CSS_DRAFT_LIGHT_KEY, value: css.light },
-      }),
-      prisma.setting.upsert({
-        where:  { key: THEME_CSS_DRAFT_DARK_KEY },
-        update: { value: css.dark },
-        create: { key: THEME_CSS_DRAFT_DARK_KEY, value: css.dark },
-      }),
+      put(THEME_CSS_LIGHT_KEY, css.light),
+      put(THEME_CSS_DARK_KEY,  css.dark),
+      put(THEME_CSS_DRAFT_LIGHT_KEY, css.light),
+      put(THEME_CSS_DRAFT_DARK_KEY,  css.dark),
     ]);
-    bustSettingsCache(THEME_CSS_DRAFT_LIGHT_KEY);
-    bustSettingsCache(THEME_CSS_DRAFT_DARK_KEY);
+    for (const key of [THEME_CSS_LIGHT_KEY, THEME_CSS_DARK_KEY,
+                       THEME_CSS_DRAFT_LIGHT_KEY, THEME_CSS_DRAFT_DARK_KEY]) {
+      bustSettingsCache(key);
+    }
+    // The served blob is a cached setting on a public hot path — every writer of
+    // either layer comes through here, or the site keeps serving the old stylesheet.
+    await this.recompileCustomCss();
   },
 
   /** Scope a single raw blob for one theme — used by the live-preview endpoint. */
@@ -485,6 +534,12 @@ export const appearanceService = {
     const { pending } = await this.getDraftStatus();
     if (!pending) return false;
 
+    // Publishing is the decision the undo point existed to defer. Once the staged
+    // theme is live, the rollback covers only the staged scopes, so applying it would
+    // restore the old drafts and leave the new theme published — a state neither
+    // theme ever had. Dropped here rather than left to expire.
+    await this.clearThemeRollback();
+
     let author = savedById ?? (await readSetting<string | null>(DRAFT_BY_KEY, null)) ?? undefined;
     if (author) {
       const exists = await prisma.user.findUnique({ where: { id: author }, select: { id: true } });
@@ -604,21 +659,127 @@ export const appearanceService = {
    * layer's DRAFT, so an import changes nothing visitors see until publish, which is the
    * same promise the layouts half of an import already makes.
    */
+  /**
+   * Put a theme's tokens on — LIVE, and mirrored into the draft.
+   *
+   * ⚠ It used to write the draft ONLY, which made activating a theme a two-step
+   * action: stage it here, then find Publish. Worse, going fully live took publishes
+   * in TWO different pages, because the layouts staged separately. Activating a theme
+   * is one atomic decision, not a set of edits being batched — draft→publish is an
+   * EDITING affordance and it was doing the wrong job here.
+   *
+   * The draft is written too, and that mirror is load-bearing: an admin with pending
+   * Style Editor edits previews `theme.draft ⊕ admin.draft`, so leaving the draft on
+   * the OLD theme would preview their staged edits against a theme that is no longer
+   * on the site.
+   */
   async saveThemeTokens(tokens: ScopedTokenSet): Promise<void> {
+    const put = (key: string, value: unknown) => prisma.setting.upsert({
+      where:  { key },
+      update: { value: value as object },
+      create: { key, value: value as object },
+    });
+
     await prisma.$transaction([
-      prisma.setting.upsert({
-        where:  { key: THEME_DRAFT_LIGHT_KEY },
-        update: { value: tokens.light as unknown as object },
-        create: { key: THEME_DRAFT_LIGHT_KEY, value: tokens.light as unknown as object },
-      }),
-      prisma.setting.upsert({
-        where:  { key: THEME_DRAFT_DARK_KEY },
-        update: { value: tokens.dark as unknown as object },
-        create: { key: THEME_DRAFT_DARK_KEY, value: tokens.dark as unknown as object },
-      }),
+      put(THEME_LIGHT_KEY, tokens.light),
+      put(THEME_DARK_KEY,  tokens.dark),
+      put(THEME_DRAFT_LIGHT_KEY, tokens.light),
+      put(THEME_DRAFT_DARK_KEY,  tokens.dark),
     ]);
-    bustSettingsCache(THEME_DRAFT_LIGHT_KEY);
-    bustSettingsCache(THEME_DRAFT_DARK_KEY);
+    for (const key of [THEME_LIGHT_KEY, THEME_DARK_KEY, THEME_DRAFT_LIGHT_KEY, THEME_DRAFT_DARK_KEY]) {
+      bustSettingsCache(key);
+    }
+  },
+
+  /**
+   * Everything an import is about to overwrite in the appearance layers.
+   *
+   * Both halves of each pair — LIVE and STAGED. An import writes the staged ones, but
+   * a discard that restored only those would leave the live theme layer holding a theme
+   * the admin decided against, which is exactly the state they were trying to leave.
+   */
+  async snapshotThemeLayers(): Promise<ThemeLayerSnapshot> {
+    const [tokLight, tokDark, tokDraftLight, tokDraftDark,
+           cssLight, cssDark, cssDraftLight, cssDraftDark, installed] = await Promise.all([
+      readSetting<unknown>(THEME_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DARK_KEY, null),
+      readSetting<unknown>(THEME_DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_DRAFT_DARK_KEY, null),
+      readSetting<unknown>(THEME_CSS_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_CSS_DARK_KEY, null),
+      readSetting<unknown>(THEME_CSS_DRAFT_LIGHT_KEY, null),
+      readSetting<unknown>(THEME_CSS_DRAFT_DARK_KEY, null),
+      readSetting<Record<string, unknown> | null>(THEME_INSTALLED_KEY, null),
+    ]);
+    return {
+      [THEME_LIGHT_KEY]: tokLight, [THEME_DARK_KEY]: tokDark,
+      [THEME_DRAFT_LIGHT_KEY]: tokDraftLight, [THEME_DRAFT_DARK_KEY]: tokDraftDark,
+      [THEME_CSS_LIGHT_KEY]: cssLight, [THEME_CSS_DARK_KEY]: cssDark,
+      [THEME_CSS_DRAFT_LIGHT_KEY]: cssDraftLight, [THEME_CSS_DRAFT_DARK_KEY]: cssDraftDark,
+      [THEME_INSTALLED_KEY]: installed,
+    };
+  },
+
+  /**
+   * Put the theme layers back exactly as the snapshot found them.
+   *
+   * ⚠ A key that was ABSENT is deleted, not written as null. `readSetting` treats a
+   * missing row and a null value the same on the way out, but they are not the same
+   * on the way in: `getThemeDraftCustomCss` falls back to the LIVE stylesheet only
+   * when both draft keys are absent, so writing nulls would pin an empty draft
+   * forever and silently blank a theme that is still installed.
+   */
+  async restoreThemeLayers(snapshot: ThemeLayerSnapshot): Promise<void> {
+    for (const [key, value] of Object.entries(snapshot)) {
+      if (value === null || value === undefined) {
+        await prisma.setting.deleteMany({ where: { key } });
+      } else {
+        await prisma.setting.upsert({
+          where:  { key },
+          update: { value: value as object },
+          create: { key, value: value as object },
+        });
+      }
+      bustSettingsCache(key);
+    }
+    // The served blob is a cached setting on a public hot path — every writer of
+    // either layer has to come back through here.
+    await this.recompileCustomCss();
+    await this.bumpStyleVersion();
+  },
+
+  /**
+   * Record what the site looked like immediately before a theme import.
+   *
+   * One row, one level, overwritten by the next import. Small enough for a setting:
+   * layout documents are tens of KB in total, and this is the same store the theme
+   * layers themselves live in, so a rollback can never end up in a different
+   * transaction from the thing it is rolling back.
+   */
+  async saveThemeRollback(value: ThemeRollback): Promise<void> {
+    await prisma.setting.upsert({
+      where:  { key: THEME_ROLLBACK_KEY },
+      update: { value: value as unknown as object },
+      create: { key: THEME_ROLLBACK_KEY, value: value as unknown as object },
+    });
+    bustSettingsCache(THEME_ROLLBACK_KEY);
+  },
+
+  async getThemeRollback(): Promise<ThemeRollback | null> {
+    return readSetting<ThemeRollback | null>(THEME_ROLLBACK_KEY, null);
+  },
+
+  /**
+   * Drop the undo point.
+   *
+   * Called on PUBLISH as well as on use. Once the staged theme is live, "undo the
+   * import" no longer describes anything safe: the rollback only ever covered the
+   * staged scopes, so applying it after a publish would restore the old drafts while
+   * leaving the new theme published — a state neither theme ever had.
+   */
+  async clearThemeRollback(): Promise<void> {
+    await prisma.setting.deleteMany({ where: { key: THEME_ROLLBACK_KEY } });
+    bustSettingsCache(THEME_ROLLBACK_KEY);
   },
 
   async getInstalledTheme(): Promise<Record<string, unknown> | null> {
@@ -734,12 +895,21 @@ export const appearanceService = {
     return tokens;
   },
 
-  async buildCSS(tokens: ScopedTokenSet): Promise<string> {
+  /**
+   * `opts.draft` builds the stylesheet a PREVIEW should see rather than the live one.
+   *
+   * Tokens are already the caller's choice — they pass the draft set in. The custom
+   * CSS was not: it always came from the compiled LIVE blob, so a preview of a staged
+   * theme rendered that theme's colours with the PREVIOUS theme's stylesheet. Harmless
+   * while the only preview was the token specimen page, and wrong the moment a whole
+   * theme is being previewed on the real site.
+   */
+  async buildCSS(tokens: ScopedTokenSet, opts?: { draft?: boolean }): Promise<string> {
     const [family, weight, size, customCss] = await Promise.all([
       readSetting("appearance.font.family", ""),
       readSetting("appearance.font.weight", ""),
       readSetting("appearance.font.size",   ""),
-      this.buildCustomCss(),
+      opts?.draft ? this.buildDraftCustomCss() : this.buildCustomCss(),
     ]);
 
     const decls = (map: TokenMap) =>
@@ -749,6 +919,19 @@ export const appearanceService = {
     const prefixesFor = (theme: ThemeName) =>
       theme === "light" ? [":root", '[data-theme="light"]'] : ['[data-theme="dark"]'];
 
+    /**
+     * The same global overrides, mirrored onto the opt-in class.
+     *
+     * The ACP re-declares the whole palette on `body.nv-acp` so the admin panel does
+     * not follow the site's theme — which also cuts off the few places in there that
+     * must show what the SITE looks like (the Layout Editor's variant probe measures
+     * exactly that). `.nv-site-tokens` is how such a surface asks for the site's
+     * palette back, and it only means that if these overrides reach it too: the
+     * bundled defaults alone would show the site as it was before anyone themed it.
+     */
+    const siteMirrorFor = (theme: ThemeName) =>
+      theme === "light" ? [".nv-site-tokens"] : ['[data-theme="dark"] .nv-site-tokens'];
+
     // global → the theme root; a region scope → that region's selector under the
     // theme root, so a re-scoped component token only cascades inside the region.
     // Returns null for a scope this build does not know, and the caller SKIPS it.
@@ -757,10 +940,14 @@ export const appearanceService = {
     // newer build would have recoloured the whole site.
     const selectorFor = (theme: ThemeName, scope: string): string | null => {
       const prefixes = prefixesFor(theme);
-      if (scope === "global") return prefixes.join(", ");
+      // Only the global bucket is mirrored: a region scope names a selector that
+      // exists on the site (`.pub-nav`, `.app-main`), and a variant scope is emitted
+      // under `:root`, so it already reaches a probe anywhere in the document.
+      const root = [...prefixes, ...siteMirrorFor(theme)].join(", ");
+      if (scope === "global") return root;
       const desc = SCOPE_SELECTOR[scope as ThemeScope];
       if (!desc) return null;
-      if (desc === ":root") return prefixes.join(", ");
+      if (desc === ":root") return root;
       const parts = desc.split(",").map((s) => s.trim()).filter(Boolean);
       return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
     };
