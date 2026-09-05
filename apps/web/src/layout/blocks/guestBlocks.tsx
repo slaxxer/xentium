@@ -237,7 +237,7 @@ registerBlock({
 registerBlock({
   type:   "guestFeed",
   schema: blockPropSchemas.guestFeed,
-  editorMeta: { label: "Guest feed", category: "data", ...ON_HOME },
+  editorMeta: { label: "Guest feed", category: "data", ...ON_HOME, wide: true },
   component: ({ props }: BlockProps<{ showCategories: boolean }>) => {
     const gate = useContext(GateContext);
     const sources = useFeedSources();

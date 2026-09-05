@@ -7,7 +7,6 @@ import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
 import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
-import { applyTokenCss, startStyleSync } from "../lib/liveStyle";
 import "./AppLayout.scss";
 
 /** Keeps the <link rel="icon"> in sync with the uploaded favicon. */
@@ -29,19 +28,7 @@ function useFavicon() {
   }, [data?.iconUrl]);
 }
 
-/** Injects the active appearance token overrides and keeps them live-synced. */
-function useCustomTokens() {
-  useEffect(() => {
-    fetch("/api/appearance/css")
-      .then((r) => (r.ok ? r.text() : ""))
-      .then((css) => { if (css) applyTokenCss(css); })
-      .catch(() => {});
-    startStyleSync();
-  }, []);
-}
-
 export function AppLayout() {
-  useCustomTokens();
   useFavicon();
 
   return (

@@ -138,7 +138,9 @@ describe("the rendered handle", () => {
     // assertion is about what is NOT on it, not about whether it exists.
     const wrapper = (document.querySelector(".nv-region") as HTMLElement)
       .firstElementChild as HTMLElement;
-    expect(wrapper.className).toBe("nv-b--heading");
+    // `nv-block` is on every wrapper whatever the block is — it is what lets a rail
+    // or a column ask "did anything in here draw?"; `nv-b--heading` says which block.
+    expect(wrapper.className).toBe("nv-block nv-b--heading");
     expect(wrapper.firstElementChild!.classList.contains("nv-heading")).toBe(true);
   });
 

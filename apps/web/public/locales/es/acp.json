@@ -1191,10 +1191,19 @@
       "theme": "Temas"
     },
     "searchThemesPlaceholder": "Buscar temas…",
-    "themeDraftNote": "Al instalar un tema se guarda como borrador: nada cambia para los visitantes hasta que lo publiques.",
+    "themeDraftNote": "Instalar un tema lo aplica de inmediato: tus páginas toman su disposición y colores, y los visitantes lo ven al instante.",
     "themeGoManage": "Ir a Temas",
     "themeInstalled": "Instalado",
-    "themeStaged": "{{name}} se guardó como borrador. Publícalo para ponerlo en marcha."
+    "themeStaged": "{{name}} ya es el tema activo.",
+    "themeGapsTitle": "{{count}} elemento que este sitio no puede dibujar",
+    "themeGapsTitle_other": "{{count}} elementos que este sitio no puede dibujar",
+    "themeGapsHint": "Necesitan un plugin que no tienes. El resto del tema se instala con normalidad y estas partes aparecerán cuando llegue el plugin.",
+    "themeSkipped": "{{count}} elemento necesita un plugin que este sitio no tiene y aún no aparecerá: {{list}}.",
+    "themeSkipped_other": "{{count}} elementos necesitan un plugin que este sitio no tiene y aún no aparecerán: {{list}}.",
+    "preview": "Vista previa",
+    "previewTitle": "{{name}} — vista previa",
+    "previewClose": "Cerrar",
+    "previewNote": "Renderizado por el marketplace a partir de la versión en venta, así que la disposición y los colores son los del propio tema. El interior de los bloques son marcadores: lo que va dentro es tu contenido, dibujado por los componentes de tu sitio."
   },
   "updates": {
     "title": "Actualizaciones",
@@ -1748,7 +1757,9 @@
       "seg-fg": "Texto del botón de orden",
       "seg-hover-bg": "Botón de orden al pasar el cursor",
       "seg-active-bg": "Botón de orden seleccionado",
-      "seg-active-fg": "Texto seleccionado"
+      "seg-active-fg": "Texto seleccionado",
+      "rail-width": "Ancho de la barra",
+      "sidebar-width": "Ancho de la barra lateral"
     },
     "shCustom": "Personalizada",
     "shDirection": "Cae",
@@ -1813,6 +1824,8 @@
     "noBlocks": "No hay bloques disponibles para esta plantilla.",
     "searchBlocks": "Buscar bloques…",
     "noMatches": "Ningún bloque coincide con «{{query}}».",
+    "wide": "Ancho",
+    "wideHint": "Diseñado para el ancho del cuerpo: quedará apretado en la barra lateral.",
     "emptyRegion": "Vacío",
     "unavailable": "no disponible",
     "saving": "Guardando…",
@@ -1854,7 +1867,7 @@
       "page.detail": "Página personalizada",
       "profile": "Perfil",
       "members": "Miembros",
-      "chrome.header": "Barra de navegación",
+      "chrome.header": "Encabezado",
       "chrome.footer": "Pie"
     },
     "region": {
@@ -1863,6 +1876,12 @@
       "aside": "Aside",
       "footer": "Pie"
     },
+    "pageRegion": {
+      "main": "Cuerpo",
+      "aside": "Barra lateral"
+    },
+    "pageChromeHint": "Una página es un cuerpo y una barra lateral. El encabezado y el pie son plantillas propias, iguales en todas las páginas: haz clic en uno en la vista previa para organizarlo.",
+    "asideHint": "Se sitúa junto al cuerpo, y debajo en pantallas estrechas.",
     "audienceViewHint": "Filtra el árbol y la vista previa a una disposición. Los bloques que añadas se limitan a ella.",
     "audienceView": {
       "guests": "Público: invitados",
@@ -2036,7 +2055,7 @@
     "importTitle": "Instalar un tema",
     "importBtn": "Elegir archivo…",
     "importing": "Instalando…",
-    "importHint": "Acepta .nvtheme y .nvstyle. La importación queda en borrador: nada cambia para los visitantes hasta que publiques en el Editor de diseño.",
+    "importHint": "Acepta .nvtheme y .nvstyle. El tema se aplica en cuanto se instala; tus páginas personalizadas se conservan.",
     "reportTitle": "Resultado de la importación",
     "reportTemplates": "{{count}} plantilla(s) aplicada(s).",
     "reportKept": "{{count}} plantilla(s) conservada(s) tal como las tenías.",
@@ -2044,7 +2063,7 @@
     "reportCustomCss": "El CSS propio del tema se aplicó de inmediato: no tiene borrador.",
     "reportUnknownTemplates": "Omitidas, aquí no hay plugin para ellas: {{list}}",
     "reportUnknownBlocks": "Se conservaron bloques que este sitio no puede representar: {{list}}",
-    "reportStaged": "Abre el Editor de diseño para previsualizar y luego publica.",
+    "reportStaged": "El tema está activo. Abre el Editor de diseño para ajustar cualquier página.",
     "exportBtn": "Exportar tema",
     "exporting": "Exportando…",
     "exportTitle": "Exportar tema",
@@ -2063,7 +2082,23 @@
     "tokensOnly": "Solo colores",
     "tokensOnlyHint": "Exporta la paleta sin diseños de página ni imágenes.",
     "fieldScreenshot": "Imagen de vista previa",
-    "fieldScreenshotHint": "Se incluye en el tema como su captura y se muestra en las fichas del mercado. PNG, JPEG, WebP o AVIF."
+    "fieldScreenshotHint": "Se incluye en el tema como su captura y se muestra en las fichas del mercado. PNG, JPEG, WebP o AVIF.",
+    "previewLive": "Ver mi sitio",
+    "previewHint": "Abre tu sitio con este tema aplicado. Ya está activo para los visitantes; la biblioteca de abajo es cómo vuelves atrás.",
+    "discardBtn": "Deshacer este tema",
+    "discarding": "Deshaciendo…",
+    "discardTitle": "¿Deshacer la importación del tema?",
+    "discardBody": "Tus páginas y colores vuelven a como estaban antes de instalar este tema, también para los visitantes. Los cambios de diseño hechos desde entonces se revertirán igualmente.",
+    "discardDone": "Se deshizo la importación del tema.",
+    "discardDoneReplaced": "Deshecho — de vuelta a {{name}}.",
+    "discardHintReplaced": "Deshacer restaura {{name}}.",
+    "discardHintNone": "Deshacer restaura tus propios diseños.",
+    "libraryTitle": "Temas instalados",
+    "libraryHint": "Todos los temas instalados aquí. Solo uno está activo y cambiar aplica el otro de inmediato.",
+    "libraryActive": "Activo",
+    "libraryActivate": "Activar",
+    "activated": "{{name}} ya es el tema activo.",
+    "removed": "Tema eliminado."
   },
   "owned": {
     "title": "Tus licencias",

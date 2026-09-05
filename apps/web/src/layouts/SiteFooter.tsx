@@ -220,10 +220,12 @@ export function SiteFooter() {
   const layout = useLayoutDocument("chrome.footer");
   // ONE region, named `footer`. `top`/`main`/`bottom` were three slots for ordering,
   // which is what a single ordered list already is. `LayoutRegion` emits the
-  // `<footer>` landmark, so this wrapper only carries the styling.
-  return (
-    <div className="nv-foot">
-      <LayoutRegion document={layout} region="footer" />
-    </div>
-  );
+  // `<footer>` landmark.
+  //
+  // There is no `.nv-foot` wrapper here any more: the band is the `footer` BLOCK, the
+  // way the masthead is the `header` block. A wrapper here would paint the band
+  // whether or not the document asked for one — so "delete the footer chrome" would
+  // leave its background behind, and the block's own background would draw inside a
+  // second one.
+  return <LayoutRegion document={layout} region="footer" />;
 }

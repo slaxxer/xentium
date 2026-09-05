@@ -1191,10 +1191,19 @@
       "theme": "Themes"
     },
     "searchThemesPlaceholder": "Themes durchsuchen…",
-    "themeDraftNote": "Ein installiertes Theme wird als Entwurf abgelegt — für Besucher ändert sich nichts, bis du es veröffentlichst.",
+    "themeDraftNote": "Ein Theme wird sofort angewendet — deine Seiten übernehmen Aufbau und Farben, Besucher sehen es unmittelbar.",
     "themeGoManage": "Zu den Themes",
     "themeInstalled": "Installiert",
-    "themeStaged": "{{name}} wurde als Entwurf abgelegt. Veröffentliche es, um es live zu schalten."
+    "themeStaged": "{{name}} ist jetzt das aktive Theme.",
+    "themeGapsTitle": "{{count}} Element, das diese Seite nicht darstellen kann",
+    "themeGapsTitle_other": "{{count}} Elemente, die diese Seite nicht darstellen kann",
+    "themeGapsHint": "Sie benötigen ein Plugin, das hier fehlt. Der Rest des Themes wird normal installiert; diese Teile erscheinen, sobald das Plugin da ist.",
+    "themeSkipped": "{{count}} Element benötigt ein hier fehlendes Plugin und erscheint noch nicht: {{list}}.",
+    "themeSkipped_other": "{{count}} Elemente benötigen ein hier fehlendes Plugin und erscheinen noch nicht: {{list}}.",
+    "preview": "Vorschau",
+    "previewTitle": "{{name}} — Vorschau",
+    "previewClose": "Schließen",
+    "previewNote": "Vom Marktplatz aus der verkauften Version gerendert — Aufbau und Farben stammen also vom Theme selbst. Blockinhalte sind Platzhalter: Was darin steht, sind deine Inhalte, gezeichnet von den Komponenten deiner Seite."
   },
   "updates": {
     "title": "Updates",
@@ -1748,7 +1757,9 @@
       "seg-fg": "Sortier-Schaltfläche Text",
       "seg-hover-bg": "Sortier-Schaltfläche bei Hover",
       "seg-active-bg": "Sortier-Schaltfläche ausgewählt",
-      "seg-active-fg": "Ausgewählter Text"
+      "seg-active-fg": "Ausgewählter Text",
+      "rail-width": "Breite der Seitenspalte",
+      "sidebar-width": "Breite der Sidebar"
     },
     "shCustom": "Eigene",
     "shDirection": "Fällt",
@@ -1813,6 +1824,8 @@
     "noBlocks": "Für diese Vorlage sind keine Blöcke verfügbar.",
     "searchBlocks": "Blöcke suchen…",
     "noMatches": "Keine Blöcke passen zu „{{query}}“.",
+    "wide": "Breit",
+    "wideHint": "Für die Breite des Inhalts gedacht – in der Seitenspalte wird es eng.",
     "emptyRegion": "Leer",
     "unavailable": "nicht verfügbar",
     "saving": "Wird gespeichert…",
@@ -1854,8 +1867,8 @@
       "page.detail": "Eigene Seite",
       "profile": "Profil",
       "members": "Mitglieder",
-      "chrome.header": "Navigationsleiste",
-      "chrome.footer": "Fußbereich"
+      "chrome.header": "Header",
+      "chrome.footer": "Footer"
     },
     "region": {
       "header": "Header",
@@ -1863,6 +1876,12 @@
       "aside": "Aside",
       "footer": "Footer"
     },
+    "pageRegion": {
+      "main": "Inhalt",
+      "aside": "Seitenleiste"
+    },
+    "pageChromeHint": "Eine Seite besteht aus Inhalt und einer Seitenleiste daneben. Header und Footer sind eigene Vorlagen und auf jeder Seite gleich — klicke einen in der Vorschau an, um ihn zu bearbeiten.",
+    "asideHint": "Steht neben dem Inhalt, auf schmalen Bildschirmen darunter.",
     "audienceViewHint": "Filtert Baum und Vorschau auf eine Anordnung. Hinzugefügte Blöcke werden darauf beschränkt.",
     "audienceView": {
       "guests": "Zielgruppe: Gäste",
@@ -2036,7 +2055,7 @@
     "importTitle": "Theme installieren",
     "importBtn": "Datei wählen…",
     "importing": "Wird installiert…",
-    "importHint": "Akzeptiert .nvtheme und .nvstyle. Der Import landet im Entwurf — für Besucher ändert sich nichts, bis im Layout-Editor veröffentlicht wird.",
+    "importHint": "Akzeptiert .nvtheme und .nvstyle. Das Theme wird sofort nach der Installation angewendet; eigene angepasste Seiten bleiben erhalten.",
     "reportTitle": "Ergebnis des Imports",
     "reportTemplates": "{{count}} Vorlage(n) übernommen.",
     "reportKept": "{{count}} Vorlage(n) unverändert behalten.",
@@ -2044,7 +2063,7 @@
     "reportCustomCss": "Das eigene CSS des Themes gilt sofort — dafür gibt es keinen Entwurf.",
     "reportUnknownTemplates": "Übersprungen, kein passendes Plugin vorhanden: {{list}}",
     "reportUnknownBlocks": "Blöcke, die diese Website nicht darstellen kann, wurden beibehalten: {{list}}",
-    "reportStaged": "Im Layout-Editor ansehen und dann veröffentlichen.",
+    "reportStaged": "Das Theme ist aktiv. Im Layout-Editor kannst du einzelne Seiten feinjustieren.",
     "exportBtn": "Theme exportieren",
     "exporting": "Wird exportiert…",
     "exportTitle": "Theme exportieren",
@@ -2063,7 +2082,23 @@
     "tokensOnly": "Nur Farben",
     "tokensOnlyHint": "Exportiert die Palette ohne Seitenlayouts und Bilder.",
     "fieldScreenshot": "Vorschaubild",
-    "fieldScreenshotHint": "Wird als Screenshot ins Theme gepackt und in Marktplatz-Einträgen angezeigt. PNG, JPEG, WebP oder AVIF."
+    "fieldScreenshotHint": "Wird als Screenshot ins Theme gepackt und in Marktplatz-Einträgen angezeigt. PNG, JPEG, WebP oder AVIF.",
+    "previewLive": "Meine Seite ansehen",
+    "previewHint": "Öffnet deine Seite mit diesem Theme. Es ist bereits für Besucher aktiv — über die Bibliothek unten wechselst du zurück.",
+    "discardBtn": "Theme rückgängig machen",
+    "discarding": "Wird rückgängig gemacht…",
+    "discardTitle": "Theme-Import rückgängig machen?",
+    "discardBody": "Deine Seiten und Farben kehren in den Zustand vor der Installation zurück — auch für Besucher. Layout-Änderungen seitdem werden ebenfalls zurückgesetzt.",
+    "discardDone": "Der Theme-Import wurde rückgängig gemacht.",
+    "discardDoneReplaced": "Rückgängig — zurück zu {{name}}.",
+    "discardHintReplaced": "Rückgängig stellt {{name}} wieder her.",
+    "discardHintNone": "Rückgängig stellt deine eigenen Layouts wieder her.",
+    "libraryTitle": "Installierte Themes",
+    "libraryHint": "Alle hier installierten Themes. Nur eines ist aktiv; ein Wechsel wendet das andere sofort an.",
+    "libraryActive": "Aktiv",
+    "libraryActivate": "Aktivieren",
+    "activated": "{{name}} ist jetzt das aktive Theme.",
+    "removed": "Theme entfernt."
   },
   "owned": {
     "title": "Deine Lizenzen",

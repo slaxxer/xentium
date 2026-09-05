@@ -227,7 +227,7 @@ registerBlock({
 registerBlock({
   type:   "profileTabs",
   schema: blockPropSchemas.profileTabs,
-  editorMeta: { label: "Profile tabs", category: "data", ...ON_PROFILE },
+  editorMeta: { label: "Profile tabs", category: "data", ...ON_PROFILE, wide: true },
   component: ({ context }: Ctx) => (
     <div className="profile-tabs">
       {context.tabs.map((item) => (
@@ -244,7 +244,7 @@ registerBlock({
 registerBlock({
   type:   "profileContent",
   schema: blockPropSchemas.profileContent,
-  editorMeta: { label: "Profile tab content", category: "data", ...ON_PROFILE },
+  editorMeta: { label: "Profile tab content", category: "data", ...ON_PROFILE, wide: true },
   component: ({ context }: Ctx) => {
     const { profile, tab, infoFields } = context;
     return (

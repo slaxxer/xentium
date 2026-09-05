@@ -18,12 +18,18 @@ const world = {
   pages:      [] as { data: { id: string; licenseRequired: boolean }[]; meta: { totalPages: number } }[],
 };
 
-const upsert = vi.fn(async (_args: { create: { value: string[] } }) => ({}));
-const protocolFetch = vi.fn(async ({ query }: any) => {
+const upsert = vi.fn(async (_args: { where: { key: string }; create: { value: string[] } }) => ({}));
+/** The default catalogue: honours `world.reachable` and serves `world.pages`.
+ *  ⚠ Restored in `beforeEach` — one test below swaps in a walk that dies on page
+ *  two, and `mockClear` keeps the implementation, so without this every later
+ *  test in the file inherits it and an "unreachable" world answers happily. */
+const catalogue = async ({ query }: any) => {
   if (!world.reachable) throw new Error("unreachable");
   const page = Number(query?.page ?? 1);
   return world.pages[page - 1] ?? { data: [], meta: { totalPages: world.pages.length || 1 } };
-});
+};
+
+const protocolFetch = vi.fn(catalogue);
 
 vi.mock("../../infrastructure/db.js", () => ({
   prisma: {
@@ -65,6 +71,7 @@ beforeEach(() => {
   world.pages = [{ data: [{ id: "nodevo-forum", licenseRequired: true }], meta: { totalPages: 1 } }];
   upsert.mockClear();
   protocolFetch.mockClear();
+  protocolFetch.mockImplementation(catalogue);
 });
 
 describe("ensurePaidPluginIdsFresh", () => {
@@ -144,6 +151,49 @@ describe("ensurePaidPluginIdsFresh", () => {
     for (const [args] of protocolFetch.mock.calls) {
       expect((args as { query?: { kind?: string } }).query?.kind).toBe("plugin");
     }
+  });
+});
+
+/**
+ * The theme half. Same walk, DIFFERENT KEY — and that separation is the whole
+ * design, not an implementation detail.
+ *
+ * `marketplace.paid_plugin_ids` is what the enable gate reads to decide whether
+ * code may run. `marketplace.paid_theme_ids` is read by the ACP (buy vs install)
+ * and by the download pre-check, and by nothing that renders — a theme has no
+ * runtime and never gets checked again once it is on disk. Merging the two sets
+ * would hand theme ids to the gate; writing one walk's result under the other's
+ * key would do it silently.
+ */
+describe("paid THEME ids", () => {
+  it("walks only the theme half of the catalogue", async () => {
+    await marketplaceSource.refreshPaidThemeIds();
+    expect(protocolFetch).toHaveBeenCalled();
+    for (const [args] of protocolFetch.mock.calls) {
+      expect((args as { query?: { kind?: string } }).query?.kind).toBe("theme");
+    }
+  });
+
+  it("writes its own setting key, never the plugin one", async () => {
+    await marketplaceSource.refreshPaidThemeIds();
+    expect(upsert.mock.calls[0]![0].where.key).toBe("marketplace.paid_theme_ids");
+  });
+
+  it("leaves the plugin key to the plugin walk", async () => {
+    await marketplaceSource.refreshPaidPluginIds();
+    expect(upsert.mock.calls[0]![0].where.key).toBe("marketplace.paid_plugin_ids");
+  });
+
+  it("keeps a cached theme set through an outage, like the plugin set does", async () => {
+    world.row = { updatedAt: minutesAgo(60) };
+    world.reachable = false;
+    await expect(marketplaceSource.ensurePaidIdsFresh("theme")).resolves.toBe("stale");
+    expect(upsert).not.toHaveBeenCalled();
+  });
+
+  it("reports `never` with no set and no marketplace", async () => {
+    world.reachable = false;
+    await expect(marketplaceSource.ensurePaidIdsFresh("theme")).resolves.toBe("never");
   });
 });
 

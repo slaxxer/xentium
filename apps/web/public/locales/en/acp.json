@@ -1394,10 +1394,19 @@
       "theme": "Themes"
     },
     "searchThemesPlaceholder": "Search themes…",
-    "themeDraftNote": "Installing a theme stages it as a draft — nothing changes for visitors until you publish it.",
+    "themeDraftNote": "Installing a theme applies it straight away — your pages take its arrangement and colours, and visitors see it immediately.",
     "themeGoManage": "Go to Themes",
     "themeInstalled": "Installed",
-    "themeStaged": "{{name}} was staged as a draft. Publish it to put it live."
+    "themeStaged": "{{name}} is now the active theme.",
+    "themeGapsTitle": "{{count}} piece this site cannot draw",
+    "themeGapsTitle_other": "{{count}} pieces this site cannot draw",
+    "themeGapsHint": "They need a plugin you do not have. The rest of the theme installs normally, and these appear once the plugin does.",
+    "themeSkipped": "{{count}} piece needs a plugin this site does not have and will not appear yet: {{list}}.",
+    "themeSkipped_other": "{{count}} pieces need a plugin this site does not have and will not appear yet: {{list}}.",
+    "preview": "Preview",
+    "previewTitle": "{{name}} — preview",
+    "previewClose": "Close",
+    "previewNote": "Rendered by the marketplace from the version on sale, so the arrangement and colours are this theme's own. Block interiors are placeholders — what goes inside them is your content, drawn by your site's own components."
   },
   "updates": {
     "title": "Updates",
@@ -2026,7 +2035,9 @@
       "seg-fg": "Sort button text",
       "seg-hover-bg": "Sort button hover",
       "seg-active-bg": "Sort button selected",
-      "seg-active-fg": "Selected text"
+      "seg-active-fg": "Selected text",
+      "rail-width": "Rail width",
+      "sidebar-width": "Sidebar width"
     },
     "shCustom": "Custom",
     "shDirection": "Falls",
@@ -2091,6 +2102,8 @@
     "noBlocks": "No blocks available for this template.",
     "searchBlocks": "Search blocks…",
     "noMatches": "No blocks match “{{query}}”.",
+    "wide": "Wide",
+    "wideHint": "Designed for the body’s width — it will be cramped in the rail.",
     "emptyRegion": "Empty",
     "unavailable": "unavailable",
     "saving": "Saving…",
@@ -2132,7 +2145,7 @@
       "page.detail": "Custom page",
       "profile": "Profile",
       "members": "Members",
-      "chrome.header": "Navbar",
+      "chrome.header": "Header",
       "chrome.footer": "Footer"
     },
     "region": {
@@ -2141,6 +2154,12 @@
       "aside": "Aside",
       "footer": "Footer"
     },
+    "pageRegion": {
+      "main": "Body",
+      "aside": "Aside"
+    },
+    "pageChromeHint": "A page is a body and a rail beside it. The header and footer are their own templates, the same on every page — click one in the preview to arrange it.",
+    "asideHint": "Sits beside the body, and under it on a narrow screen.",
     "audienceViewHint": "Filters the tree and the preview to one arrangement. Blocks you add are limited to it.",
     "audienceView": {
       "guests": "Audience: guests",
@@ -2314,7 +2333,7 @@
     "importTitle": "Install a theme",
     "importBtn": "Choose file…",
     "importing": "Installing…",
-    "importHint": "Accepts .nvtheme and .nvstyle. The import is staged as a draft — nothing changes for visitors until you publish in the Layout Editor.",
+    "importHint": "Accepts .nvtheme and .nvstyle. The theme is applied as soon as it is installed; your own customised pages are kept.",
     "reportTitle": "Import result",
     "reportTemplates": "{{count}} template(s) applied.",
     "reportKept": "{{count}} template(s) kept as you had them.",
@@ -2322,7 +2341,7 @@
     "reportCustomCss": "The theme's custom CSS applied immediately — it has no draft.",
     "reportUnknownTemplates": "Skipped, no plugin for them here: {{list}}",
     "reportUnknownBlocks": "Blocks this site cannot render were kept in place: {{list}}",
-    "reportStaged": "Open the Layout Editor to preview, then publish.",
+    "reportStaged": "The theme is live. Open the Layout Editor to fine-tune any page.",
     "exportBtn": "Export theme",
     "exporting": "Exporting…",
     "exportTitle": "Export theme",
@@ -2341,7 +2360,23 @@
     "tokensOnly": "Colours only",
     "tokensOnlyHint": "Export the palette without page layouts or images.",
     "fieldScreenshot": "Preview image",
-    "fieldScreenshotHint": "Packed into the theme as its screenshot and shown on marketplace listings. PNG, JPEG, WebP or AVIF."
+    "fieldScreenshotHint": "Packed into the theme as its screenshot and shown on marketplace listings. PNG, JPEG, WebP or AVIF.",
+    "previewLive": "View my site",
+    "previewHint": "Opens your site with this theme applied. It is already live for visitors — the library below is how you switch back.",
+    "discardBtn": "Undo this theme",
+    "discarding": "Undoing…",
+    "discardTitle": "Undo this theme import?",
+    "discardBody": "Your pages and colours go back to how they were before this theme was installed — for visitors too. Any layout edits you have made since then will go back as well.",
+    "discardDone": "The theme import was undone.",
+    "discardDoneReplaced": "Undone — back to {{name}}.",
+    "discardHintReplaced": "Undoing puts {{name}} back.",
+    "discardHintNone": "Undoing puts your own layouts back.",
+    "libraryTitle": "Installed themes",
+    "libraryHint": "Every theme installed here. Only one is active at a time, and switching applies the other one straight away.",
+    "libraryActive": "Active",
+    "libraryActivate": "Activate",
+    "activated": "{{name}} is now the active theme.",
+    "removed": "Theme removed."
   },
   "owned": {
     "title": "Your licences",

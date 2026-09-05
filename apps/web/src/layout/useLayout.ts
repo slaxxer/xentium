@@ -40,9 +40,57 @@ interface PublishedLayouts {
  */
 export const LAYOUT_PREVIEW_PARAM = "__layout";
 
+/**
+ * The two ways to render the DRAFT on a real route.
+ *
+ * `draft` is the Layout EDITOR's iframe: draft data plus the editor's own chrome —
+ * region drop zones, hover outlines, the selection bridge.
+ *
+ * `preview` is the same data with none of that. It exists because "show me my site
+ * with this theme" and "let me edit this layout" were one flag, so previewing a
+ * staged theme painted empty-region drop targets labelled HEADER and FOOTER over
+ * the page. An admin deciding whether to keep a theme was being shown the editor,
+ * not the site.
+ */
+const DRAFT_MODES = new Set(["draft", "preview"]);
+
+/** Which template the Layout Editor has open, named by the preview URL. */
+export const LAYOUT_EDITING_PARAM = "__editing";
+
+/**
+ * The template being edited, or `null` when this is not the editor's own preview.
+ *
+ * Read from the URL rather than passed down, for the same reason the mode is: the
+ * preview is a REAL route in an iframe, and the only channel it shares with the
+ * editor at first paint is its address.
+ */
+export function editingTemplate(): TemplateKey | null {
+  if (typeof window === "undefined") return null;
+  if (layoutMode() !== "draft") return null;
+  const key = new URLSearchParams(window.location.search).get(LAYOUT_EDITING_PARAM);
+  return key ? (key as TemplateKey) : null;
+}
+
+function layoutMode(): string | null {
+  if (typeof window === "undefined") return null;
+  return new URLSearchParams(window.location.search).get(LAYOUT_PREVIEW_PARAM);
+}
+
+/** Render the DRAFT rather than what is published. Both modes. */
+export function isDraftLayout(): boolean {
+  const mode = layoutMode();
+  return mode !== null && DRAFT_MODES.has(mode);
+}
+
+/**
+ * Show the editor's affordances. `draft` only — never `preview`.
+ *
+ * ⚠ Keep this apart from `isDraftLayout`. They were one predicate, and every new
+ * caller had to guess which meaning it wanted; the guess that put editor chrome on
+ * a theme preview is the one that made the split necessary.
+ */
 export function isLayoutPreview(): boolean {
-  if (typeof window === "undefined") return false;
-  return new URLSearchParams(window.location.search).get(LAYOUT_PREVIEW_PARAM) === "draft";
+  return layoutMode() === "draft";
 }
 
 /**
@@ -111,7 +159,9 @@ function subscribeLive(fn: () => void): () => void {
 const liveSnapshot = () => liveDocs;
 
 export function usePublishedLayouts() {
-  const preview = isLayoutPreview();
+  // DATA, so both modes — a preview that read published layouts would be a preview
+  // of nothing.
+  const preview = isDraftLayout();
   return useQuery<PublishedLayouts>({
     queryKey: preview ? [...LAYOUTS_QUERY_KEY, "draft"] : LAYOUTS_QUERY_KEY,
     queryFn:  () => api.get(preview ? "/admin/layouts" : "/layouts"),
@@ -129,7 +179,21 @@ export function usePublishedLayouts() {
  * whole point; a template hierarchy is what this design exists to avoid.
  */
 export function useLayoutDocument(templateKey: TemplateKey, variant?: string): LayoutDocument {
+  /**
+   * ONE source for every document on screen: published on the site, staged in the
+   * editor. The site header and footer are editable from a page's editor — click the
+   * masthead and it opens — so they have to show what is staged, or an edit made two
+   * clicks ago would not appear. The rule an admin can hold: the editor previews the
+   * staged site, and Publish ships exactly that (it promotes every pending draft).
+   *
+   * ⚠ It briefly worked the other way — drafts for the open template, published for
+   * the chrome around it — to explain a masthead that was missing from every preview.
+   * That was the wrong half of the answer: the header was missing from the TREE, so
+   * nothing said it had a staged version at all. It is in the tree now, and a pending
+   * chrome draft says so where it is listed.
+   */
   const { data } = usePublishedLayouts();
+  const source = data;
   // In the preview, an unsaved document pushed by the editor wins — that is what
   // makes edits appear instantly rather than only after a save. Keyed by selector so
   // editing one page's layout does not bleed into another's preview.
@@ -141,7 +205,7 @@ export function useLayoutDocument(templateKey: TemplateKey, variant?: string): L
   // plugin's bundle registered it before the app mounted, while this query has not
   // come back yet.
   return live[key]
-    ?? (variant ? data?.variants?.[templateKey]?.[variant] : undefined)
-    ?? data?.templates?.[templateKey]
+    ?? (variant ? source?.variants?.[templateKey]?.[variant] : undefined)
+    ?? source?.templates?.[templateKey]
     ?? defaultLayoutFor(templateKey);
 }

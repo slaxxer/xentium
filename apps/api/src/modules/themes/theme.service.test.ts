@@ -55,6 +55,8 @@ const appearance = {
   /** The theme's OWN stylesheet layer — what an import stages, under the admin's. */
   themeCustomCss: { light: "", dark: "" },
   savedThemeCustomCss: null as { light: string; dark: string } | null,
+  /** Applying a theme is LIVE, so it has to tell open clients. */
+  styleVersionBumps: 0,
 };
 
 vi.mock("../layouts/layout.service.js", () => ({
@@ -64,12 +66,30 @@ vi.mock("../layouts/layout.service.js", () => ({
       sel: { templateKey: TemplateKey; variant: string }, doc: LayoutDocument,
     ) => { savedDrafts.set(`${sel.templateKey}|${sel.variant}`, doc); return doc; },
     saveThemeLayer: async (key: TemplateKey, doc: LayoutDocument) => { themeLayer.set(key, doc); },
+    // A theme applies LIVE now: published and draft together, no publish step.
+    applyThemeDocument: async (key: TemplateKey, doc: LayoutDocument) => {
+      savedDrafts.set(`${key}|`, doc);
+      livePublished.set(key, doc);
+    },
     getThemeLayer: async () => Object.fromEntries(themeLayer),
     getOwnership: async () => Object.fromEntries(
       (Object.keys(DEFAULT_LAYOUTS) as TemplateKey[]).map((k) => [
         k, { customised: customised.has(k), hasTheme: themeLayer.has(k) },
       ]),
     ),
+    // The undo point an import takes before it writes anything. Recorded here so a
+    // test can assert it was taken BEFORE the writes — the whole value of the
+    // rollback is that it captures the state the import is about to replace.
+    snapshotStagedScopes: async () => {
+      rollbackProbe.snapshotAt = savedDrafts.size + themeLayer.size;
+      return [...savedDrafts.entries()].map(([k, doc]) => ({
+        templateKey: k.split("|")[0]!, variant: "", scope: "draft" as const, document: doc,
+      }));
+    },
+    restoreStagedScopes: async (rows: { templateKey: string; document: unknown }[]) => {
+      rollbackProbe.restoreCalled = true;
+      rollbackProbe.restored = rows.map((r) => r.templateKey);
+    },
   },
 }));
 
@@ -81,10 +101,52 @@ vi.mock("../appearance/appearance.service.js", () => ({
     saveThemeTokens:    async (t: unknown) => { appearance.savedThemeTokens = t; },
     saveCustomCss:      async (c: unknown) => { appearance.savedCustomCss = c; },
     getThemeCustomCss:  async () => appearance.themeCustomCss,
+    getThemeTokens:     async () => appearance.savedThemeTokens ?? null,
     saveThemeCustomCss: async (c: { light: string; dark: string }) => {
       appearance.savedThemeCustomCss = c;
     },
     setInstalledTheme:  async (m: Record<string, unknown>) => { appearance.savedInstalled = m; },
+    bumpStyleVersion:   async () => { appearance.styleVersionBumps = (appearance.styleVersionBumps ?? 0) + 1; },
+    snapshotThemeLayers: async () => ({ probe: "before" }),
+    restoreThemeLayers:  async (snap: unknown) => { rollbackProbe.layers = snap; },
+    saveThemeRollback:   async (v: unknown) => { rollbackProbe.saved = v; },
+    getThemeRollback:    async () => rollbackProbe.saved ?? null,
+    clearThemeRollback:  async () => { rollbackProbe.cleared = true; },
+  },
+}));
+
+/** What the import/discard pair did with the undo point. */
+const rollbackProbe: Record<string, any> = {};
+
+/** What a theme application actually PUBLISHED — the live half. */
+const livePublished = new Map<string, LayoutDocument>();
+
+/** An in-memory stand-in for `ncf_themes`. Only the operations the service uses. */
+const library = { rows: new Map<string, any>() };
+
+vi.mock("../../infrastructure/db.js", () => ({
+  prisma: {
+    theme: {
+      findUnique: async ({ where }: any) => library.rows.get(where.id) ?? null,
+      findMany:   async () => [...library.rows.values()],
+      updateMany: async ({ where, data }: any) => {
+        for (const row of library.rows.values()) {
+          if (where.active === undefined || row.active === where.active) Object.assign(row, data);
+        }
+        return { count: 0 };
+      },
+      upsert: async ({ where, update, create }: any) => {
+        const existing = library.rows.get(where.id);
+        const row = existing
+          ? Object.assign(existing, update)
+          : { installedAt: new Date(), activatedAt: null, ...create };
+        library.rows.set(where.id, row);
+        return row;
+      },
+      delete: async ({ where }: any) => { library.rows.delete(where.id); return {}; },
+    },
+    // The service's transaction is a list of already-issued promises.
+    $transaction: async (ops: Promise<unknown>[]) => Promise.all(ops),
   },
 }));
 
@@ -834,5 +896,256 @@ describe("theme custom CSS", () => {
 
     // And what it produced is accepted back.
     await expect(themeService.importTheme(zip.toBuffer(), "user-1")).resolves.toBeTruthy();
+  });
+});
+
+/** The smallest package the importer accepts: one template default, no assets. */
+const themePackage = (manifest?: Record<string, unknown>) => pack({
+  [`${THEME_PATHS.layouts}home.json`]: JSON.stringify(DEFAULT_LAYOUTS.home),
+}, manifest);
+
+/**
+ * Undoing a theme import.
+ *
+ * The behaviour that makes trying a theme possible at all. Installing one restages
+ * the arrangement of every page at once, and before this existed there was no way
+ * back: per-template discard covers layouts only, `resetAppearance` deliberately
+ * keeps the theme layer ("reset drops MY edits, it does not uninstall the theme"),
+ * and nothing recorded what had been replaced. An admin could not find out what a
+ * theme looked like without accepting it permanently.
+ */
+describe("undoing an import", () => {
+  beforeEach(() => {
+    for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
+  });
+
+  it("takes the undo point BEFORE it writes anything", async () => {
+    // ⚠ The ordering is the whole feature. Snapshotting after the first write would
+    // capture the theme being installed as if it were what was there before, and
+    // "undo" would restore the thing it was meant to remove.
+    await themeService.importTheme(themePackage(), "u1");
+    expect(rollbackProbe.saved).toBeTruthy();
+    expect(rollbackProbe.snapshotAt).toBe(0);
+  });
+
+  it("records the theme it replaced, so the undo can name it", async () => {
+    appearance.installed = { id: "old-theme", name: "Old Theme", version: "1.0.0" };
+    await themeService.importTheme(themePackage(), "u1");
+    expect(rollbackProbe.saved.replaced).toBe("Old Theme");
+  });
+
+  it("restores both halves and then drops the undo point", async () => {
+    await themeService.importTheme(themePackage(), "u1");
+    const res = await themeService.discardImportedTheme("u1");
+
+    expect(res.restored).toBe(true);
+    // Layouts AND appearance layers — an import writes both, so undoing only one
+    // leaves a site wearing half of a theme nobody chose.
+    expect(rollbackProbe.restoreCalled).toBe(true);
+    expect(rollbackProbe.layers).toEqual({ probe: "before" });
+    // Consumed: it describes a state that no longer exists once applied, and
+    // offering it twice would undo an import that has already been undone.
+    expect(rollbackProbe.cleared).toBe(true);
+  });
+
+  it("puts back the drafts that existed before the import, and only those", async () => {
+    // The case the empty-site test cannot show: an admin who had already staged a
+    // layout must get THAT back, not the theme's version of it and not nothing.
+    savedDrafts.set("home|", DEFAULT_LAYOUTS.home as LayoutDocument);
+    await themeService.importTheme(themePackage(), "u1");
+    await themeService.discardImportedTheme("u1");
+    expect(rollbackProbe.restored).toEqual(["home"]);
+  });
+
+  it("restores an EMPTY set on a site that had staged nothing", async () => {
+    // Restoring "no staged rows" is the correct undo for a site with none — and it
+    // is the case a restore that only wrote rows back would get wrong, leaving every
+    // row the import created in place and undoing almost nothing.
+    await themeService.importTheme(themePackage(), "u1");
+    await themeService.discardImportedTheme("u1");
+    expect(rollbackProbe.restoreCalled).toBe(true);
+    expect(rollbackProbe.restored).toEqual([]);
+  });
+
+  it("is a no-op, not an error, when there is nothing to undo", async () => {
+    // "Nothing is staged" is a state an admin can be in, not a failure.
+    const res = await themeService.discardImportedTheme("u1");
+    expect(res).toEqual({ restored: false, replaced: null });
+  });
+
+  it("reports whether an undo is available", async () => {
+    expect(await themeService.getRollbackState()).toMatchObject({ available: false });
+    await themeService.importTheme(themePackage(), "u1");
+    expect(await themeService.getRollbackState()).toMatchObject({ available: true });
+  });
+});
+
+/**
+ * The theme LIBRARY — installed is not active.
+ *
+ * A site can have many themes installed and exactly one active, the same way plugins
+ * work (§10/§54). Before this, a single settings key held ONE manifest, so importing
+ * a second theme destroyed the first: an admin could not put two side by side and
+ * choose, and going back meant finding the original `.nvtheme` again.
+ */
+describe("the library", () => {
+  beforeEach(() => {
+    library.rows.clear();
+    for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
+  });
+
+  it("keeps a theme when a DIFFERENT one is installed after it", async () => {
+    // The complaint this feature answers, stated as a test.
+    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+
+    expect([...library.rows.keys()].sort()).toEqual(["aurora", "meadow"]);
+  });
+
+  it("marks exactly one active — the one just installed", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+
+    expect(library.rows.get("aurora")!.active).toBe(false);
+    expect(library.rows.get("meadow")!.active).toBe(true);
+  });
+
+  it("UPDATES the row when the same id is imported again", async () => {
+    // An upgrade, not a second entry: the id is what a licence and an entitlement
+    // point at, so two rows for one theme would be two answers to one question.
+    await themeService.importTheme(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
+    await themeService.importTheme(themePackage({ id: "aurora", version: "2.0.0" }), "u1");
+
+    expect(library.rows.size).toBe(1);
+    expect(library.rows.get("aurora")!.version).toBe("2.0.0");
+  });
+
+  it("stores the payload, so a switch needs no package", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    const payload = library.rows.get("aurora")!.payload as { documents: Record<string, unknown> };
+    expect(Object.keys(payload.documents)).toContain("home");
+  });
+
+  it("applies a stored theme on activate, and flips which row is active", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+
+    await themeService.activateTheme("aurora", "u1");
+
+    expect(library.rows.get("aurora")!.active).toBe(true);
+    expect(library.rows.get("meadow")!.active).toBe(false);
+    // Applied, not merely flagged: the draft carries the theme's layouts again.
+    expect(appearance.savedInstalled).toMatchObject({ id: "aurora" });
+  });
+
+  it("takes a fresh undo point when switching, so a switch is reversible too", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+    delete rollbackProbe.saved;
+
+    await themeService.activateTheme("aurora", "u1");
+    expect(rollbackProbe.saved).toBeTruthy();
+  });
+
+  it("refuses to activate something that is not installed", async () => {
+    await expect(themeService.activateTheme("nope", "u1")).rejects.toMatchObject({ httpStatus: 404 });
+  });
+
+  it("⚠ refuses to uninstall the ACTIVE theme", async () => {
+    // Deleting it would leave the site wearing a theme with no record of where it
+    // came from, no baseline for "Revert to theme", and no way back — the exact
+    // state the library exists to prevent.
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await expect(themeService.uninstallTheme("aurora")).rejects.toMatchObject({ httpStatus: 409 });
+    expect(library.rows.has("aurora")).toBe(true);
+  });
+
+  it("uninstalls one that is not active", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+    await themeService.uninstallTheme("aurora");
+    expect([...library.rows.keys()]).toEqual(["meadow"]);
+  });
+
+  /**
+   * Every install that predates the library is in this state: a theme is applied and
+   * the settings key names it, but no row exists — so the library would open empty on
+   * a site that visibly has a theme. The payload is reconstructed from what the theme
+   * left behind, which is exactly what an activation replays.
+   */
+  it("backfills a row for a theme installed before the library existed", async () => {
+    appearance.installed = { id: "legacy", name: "Legacy", version: "1.0.0", vendor: "V" };
+    themeLayer.set("home" as TemplateKey, DEFAULT_LAYOUTS.home as LayoutDocument);
+
+    await themeService.listThemes();
+    expect(library.rows.get("legacy")).toBeTruthy();
+    expect(library.rows.get("legacy")!.active).toBe(true);
+  });
+
+  it("does not backfill over a row that already exists", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
+    appearance.installed = { id: "aurora", name: "Aurora", version: "1.0.0" };
+    await themeService.listThemes();
+    expect(library.rows.get("aurora")!.version).toBe("1.0.0");
+    expect(library.rows.size).toBe(1);
+  });
+});
+
+/**
+ * ⚠⚠ A THEME GOES LIVE WHEN IT IS APPLIED — no publish step.
+ *
+ * It used to stage everything as a draft, which made activating a theme a two-step
+ * action and, worse, a two-PLACE one: the layouts published from the Layout Editor
+ * and the tokens and stylesheet from the Style Editor, with nothing saying so.
+ *
+ * Draft→publish is an EDITING affordance — batch many small edits, publish when the
+ * set is coherent — and it was doing the wrong job here. Activating a theme is one
+ * atomic decision, and staging it stopped buying anything once there was a real
+ * preview, an undo, and a library to switch back through.
+ */
+describe("applying a theme is live", () => {
+  beforeEach(() => {
+    livePublished.clear();
+    library.rows.clear();
+    appearance.styleVersionBumps = 0;
+  });
+
+  it("publishes the theme's layouts rather than staging them", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    expect([...livePublished.keys()]).toContain("home");
+  });
+
+  it("tells every open client, over the channel that already exists", async () => {
+    // The style version is what the appearance SSE carries, and layouts ride the same
+    // channel — a theme that went live silently would sit unseen until a reload.
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    expect(appearance.styleVersionBumps).toBeGreaterThan(0);
+  });
+
+  it("still writes the theme LAYER, which is what Revert to theme restores", async () => {
+    // Live is not a reason to stop recording the baseline: it is what the next update
+    // compares against and what an admin reverts one template to.
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    expect(themeLayer.has("home" as TemplateKey)).toBe(true);
+  });
+
+  it("still leaves a customised template alone", async () => {
+    // Going live changes WHERE a theme's document lands, not the inheritance rule:
+    // an admin who arranged a page keeps their arrangement.
+    customised.add("home" as TemplateKey);
+    const report = await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    expect(report.kept).toContain("home");
+    expect(livePublished.has("home")).toBe(false);
+  });
+
+  it("goes live on a SWITCH too, not only on import", async () => {
+    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+    livePublished.clear();
+    appearance.styleVersionBumps = 0;
+
+    await themeService.activateTheme("aurora", "u1");
+    expect([...livePublished.keys()]).toContain("home");
+    expect(appearance.styleVersionBumps).toBeGreaterThan(0);
   });
 });
