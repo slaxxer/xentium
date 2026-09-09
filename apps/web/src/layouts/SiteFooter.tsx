@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../lib/api";
+import { ThemeChooser } from "../layout/blocks/ThemeChooserBlock";
 import { Username } from "../components/Username";
 import { useAuth } from "../hooks/useAuth";
 import { LayoutRegion } from "../layout/LayoutRenderer";
@@ -137,7 +138,11 @@ export function FooterBoardStats() {
 }
 
 /** Wordmark, footer nav links, copyright and (optionally) uptime + latency. */
-export function FooterBranding({ showUptime = true }: { showUptime?: boolean }) {
+export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
+  showUptime?: boolean;
+  /** The reader's theme picker, at the right of the brand row. */
+  showThemeChooser?: boolean;
+}) {
   const { t } = useTranslation("common");
   const { isAuthenticated } = useAuth();
   const { data: meta } = useFooterMeta();
@@ -169,7 +174,7 @@ export function FooterBranding({ showUptime = true }: { showUptime?: boolean }) 
           <span className="nv-wordmark">Nodevo</span>
         </Link>
         {footerLinks.length > 0 && (
-          <nav className="nv-links">
+          <nav className="nv-links nv-links--grow">
             {footerLinks.map((item) =>
               item.url.startsWith("/") ? (
                 <Link key={item.id} to={item.url}>{item.label}</Link>
@@ -180,6 +185,14 @@ export function FooterBranding({ showUptime = true }: { showUptime?: boolean }) 
               ),
             )}
           </nav>
+        )}
+        {/* The theme picker, at the RIGHT of the brand row. Part of `branding` rather
+            than a block of its own: it belongs beside the site's mark and its links,
+            and a second placeable control that does the same thing is two ways to
+            reach one setting. `nv-themepick` is pushed over by `margin-left: auto`,
+            which works whether or not there are footer links. */}
+        {showThemeChooser && (
+          <span className="nv-themepick"><ThemeChooser /></span>
         )}
       </div>
 

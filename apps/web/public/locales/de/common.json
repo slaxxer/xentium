@@ -85,5 +85,14 @@
     "metaMessage": "Meldung",
     "hint": "Wenn das öfter passiert, schick die Referenz oben an eine Administratorin oder einen Administrator — der kopierte Bericht enthält alles, was zur Analyse nötig ist.",
     "footLabel": "Anwendungsfehler · Nodevo"
+  },
+  "themeChooser": {
+    "open": "Theme wählen",
+    "title": "Themes",
+    "close": "Schließen",
+    "inUse": "Aktiv",
+    "siteBadge": "Website",
+    "note": "Deine Wahl, auf diesem Gerät. Für alle anderen ändert sich nichts.",
+    "activeBadge": "Aktiv"
   }
 }

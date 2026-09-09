@@ -21,6 +21,7 @@ import {
   type TemplateKey,
 } from "@nodevo/contracts";
 import { api } from "../lib/api";
+import { viewerThemeParam } from "../lib/viewerTheme";
 
 export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 
@@ -162,9 +163,24 @@ export function usePublishedLayouts() {
   // DATA, so both modes — a preview that read published layouts would be a preview
   // of nothing.
   const preview = isDraftLayout();
+  /**
+   * A visitor wearing an installed theme reads THAT theme's documents.
+   *
+   * ⚠ Never in preview. `/admin/layouts` is the admin's own working set, and an
+   * admin who happened to be wearing a theme would otherwise arrange one document
+   * while the editor showed them another.
+   * ⚠ In the QUERY KEY as well as the URL, or switching theme would be answered from
+   * the cache of the previous one — the layouts would stay put while the colours
+   * changed, which is the half-applied look this whole feature exists to avoid.
+   */
+  const themed = preview ? "" : viewerThemeParam();
   return useQuery<PublishedLayouts>({
-    queryKey: preview ? [...LAYOUTS_QUERY_KEY, "draft"] : LAYOUTS_QUERY_KEY,
-    queryFn:  () => api.get(preview ? "/admin/layouts" : "/layouts"),
+    queryKey: preview
+      ? [...LAYOUTS_QUERY_KEY, "draft"]
+      : themed ? [...LAYOUTS_QUERY_KEY, themed] : LAYOUTS_QUERY_KEY,
+    queryFn:  () => api.get(
+      preview ? "/admin/layouts" : themed ? `/layouts?${themed}` : "/layouts",
+    ),
     staleTime: Infinity,   // invalidated explicitly on the style-version event
     retry: false,          // a failure falls back to defaults; retrying blocks nothing
   });

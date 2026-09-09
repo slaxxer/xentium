@@ -15,7 +15,7 @@ import { z } from "zod";
 import { cleanup, render, fireEvent, screen } from "@testing-library/react";
 import type { BlockNode } from "@nodevo/contracts";
 import { deregisterBlock, registerBlock } from "../../../layout/blockRegistry";
-import { BlockList, BlockPicker, type TreeCtx } from "./LayoutTree";
+import { BlockList, type TreeCtx } from "./LayoutTree";
 
 const TEST_TYPES = ["t.box", "t.row", "t.cell", "t.leaf"];
 const noop = () => null;
@@ -60,7 +60,6 @@ function ctxWith(over: Partial<TreeCtx> = {}): TreeCtx {
     selectedId: null,
     dragId: null,
     dropAt: null,
-    adding: null,
     required: new Set<string>(),
     audience: "members",
     select: vi.fn(),
@@ -68,11 +67,10 @@ function ctxWith(over: Partial<TreeCtx> = {}): TreeCtx {
     endDrag: vi.fn(),
     hover: vi.fn(),
     drop: vi.fn(),
-    closeAdd: vi.fn(),
     duplicate: vi.fn(),
     nudge: vi.fn(),
     remove: vi.fn(),
-    toggleAdd: vi.fn(),
+    browse: vi.fn(),
     add: vi.fn(),
     ...over,
   };
@@ -90,7 +88,8 @@ const renderTree = (over: Partial<TreeCtx> = {}, nodes = tree()) => {
 const row = (id: string): HTMLElement =>
   document.querySelector(`.lay__node[data-block-id="${id}"]`) as HTMLElement;
 
-const labelOf = (id: string) => row(id).querySelector(".lay__node-label")!.textContent;
+/** The row's NAME. `.lay__node-label` also carries the block's type under it. */
+const labelOf = (id: string) => row(id).querySelector(".lay__node-name")!.textContent;
 const depthOf = (el: HTMLElement) => el.style.getPropertyValue("--lay-depth");
 
 /** A row's action button by its accessible name. */
@@ -139,8 +138,12 @@ describe("recursive rendering", () => {
   it("labels a block whose plugin is gone without dropping it from the tree", () => {
     // Disabling a plugin must never delete layout an admin built.
     renderTree({}, [n("ghost", "plugin.retired")]);
-    const el = screen.getByText(/plugin\.retired/).closest(".lay__node") as HTMLElement;
+    // By id, not by text: the row shows the type TWICE now — as the name, because
+    // there is no registered label to use, and again on its own type line.
+    const el = row("ghost");
     expect(el.className).toContain("is-missing");
+    expect(el.querySelector(".lay__node-name")!.textContent).toContain("plugin.retired");
+    expect(el.querySelector(".lay__node-type")!.textContent).toBe("plugin.retired");
   });
 });
 
@@ -211,37 +214,25 @@ describe("adding into a container", () => {
     expect(action("leafIn", ADD_INSIDE)).toBeNull();
   });
 
-  it("opens the picker keyed to that specific container", () => {
+  it("opens the catalogue for that specific container", () => {
+    // The `+` used to raise a dropdown under the row. It opens the dialog now, and
+    // the target travels with it — region AND parent, because a container accepts a
+    // different set from the region around it.
     const { ctx } = renderTree();
     fireEvent.click(action("row", ADD_INSIDE));
-    expect(ctx.toggleAdd).toHaveBeenCalledWith("c:row");
+    expect(ctx.browse).toHaveBeenCalledWith("main", "row");
   });
 
-  it("adds into the container, not the region", () => {
-    const { ctx } = renderTree({ adding: "c:box" });
-    fireEvent.click(screen.getByText("Leaf", { selector: ".lay__picker-item b" }));
-    expect(ctx.add).toHaveBeenCalledWith("t.leaf", "main", "box");
+  it("addresses the container it was clicked on, at any depth", () => {
+    const { ctx } = renderTree();
+    fireEvent.click(action("cell", ADD_INSIDE));
+    expect(ctx.browse).toHaveBeenCalledWith("main", "cell");
   });
 
-  it("offers only what the container accepts", () => {
-    // t.row declares childTypes: ["t.cell"].
-    renderTree({ adding: "c:row" });
-    const offered = [...document.querySelectorAll(".lay__picker-item b")].map((b) => b.textContent);
-    expect(offered).toEqual(["Cell"]);
-  });
-
-  it("keeps a container-only block out of a region's picker", () => {
-    // t.cell declares onlyInside: ["t.row"], so a region must not offer it.
-    render(<BlockPicker templateKey="home" depth={1} t={ctxWith().t} onPick={vi.fn()} onClose={vi.fn()} />);
-    const offered = [...document.querySelectorAll(".lay__picker-item b")].map((b) => b.textContent);
-    expect(offered).toContain("Leaf");
-    expect(offered).not.toContain("Cell");
-  });
-
-  it("indents the picker to the level it will add at", () => {
-    renderTree({ adding: "c:row" });
-    expect((document.querySelector(".lay__picker") as HTMLElement).style.getPropertyValue("--lay-depth"))
-      .toBe("3");
+  it("does not also select the row it acts on", () => {
+    const { ctx } = renderTree();
+    fireEvent.click(action("box", ADD_INSIDE));
+    expect(ctx.select).not.toHaveBeenCalled();
   });
 });
 
@@ -441,151 +432,6 @@ describe("drag reporting", () => {
  * cursor indexes a flattened list while the eye reads a grouped one, so a mismatch
  * would make Enter commit a block other than the highlighted one.
  */
-describe("the block picker", () => {
-  const EXTRA = ["t.zeta", "t.alpha", "t.stat", "t.widget"];
-
-  beforeEach(() => {
-    // Registered out of alphabetical order on purpose: the picker sorts within a
-    // group, and registration order is an accident of which file imported first.
-    registerBlock({
-      type: "t.zeta", schema: z.object({}), component: noop,
-      editorMeta: { label: "Zeta text", category: "content" },
-    });
-    registerBlock({
-      type: "t.alpha", schema: z.object({}), component: noop,
-      editorMeta: { label: "Alpha text", category: "content" },
-    });
-    registerBlock({
-      type: "t.stat", schema: z.object({}), component: noop,
-      editorMeta: { label: "Stats", category: "data" },
-    });
-    registerBlock({
-      type: "t.widget", schema: z.object({}), component: noop, pluginId: "test-plugin",
-      editorMeta: { label: "Widget", category: "plugin" },
-    });
-  });
-
-  afterEach(() => { for (const type of EXTRA) deregisterBlock(type); });
-
-  const openPicker = (onPick = vi.fn(), onClose = vi.fn()) => {
-    render(
-      <BlockPicker templateKey="home" depth={1} t={ctxWith().t} onPick={onPick} onClose={onClose} />,
-    );
-    return { onPick, onClose, input: screen.getByRole("textbox") };
-  };
-
-  const labels = () =>
-    [...document.querySelectorAll(".lay__picker-item b")].map((b) => b.textContent);
-  const headings = () =>
-    [...document.querySelectorAll(".lay__picker-group-title")].map((h) => h.textContent);
-  const activeLabel = () =>
-    document.querySelector(".lay__picker-item.is-active b")?.textContent ?? null;
-
-  it("groups by category, in build order rather than alphabetically", () => {
-    openPicker();
-    expect(headings()).toEqual([
-      "layoutEditor.category.structure",
-      "layoutEditor.category.content",
-      "layoutEditor.category.data",
-      "layoutEditor.category.plugin",
-    ]);
-  });
-
-  it("sorts alphabetically within a group", () => {
-    openPicker();
-    const all = labels();
-    expect(all.indexOf("Alpha text")).toBeLessThan(all.indexOf("Zeta text"));
-  });
-
-  it("filters by label", () => {
-    const { input } = openPicker();
-    fireEvent.change(input, { target: { value: "zeta" } });
-    expect(labels()).toEqual(["Zeta text"]);
-  });
-
-  it("filters by type, which is what the row shows", () => {
-    const { input } = openPicker();
-    // Nothing is LABELLED "t.stat"; an author who knows the type can still find it.
-    fireEvent.change(input, { target: { value: "t.stat" } });
-    expect(labels()).toEqual(["Stats"]);
-  });
-
-  it("says nothing matched, rather than that nothing is available", () => {
-    const { input } = openPicker();
-    fireEvent.change(input, { target: { value: "qqqq" } });
-    expect(labels()).toEqual([]);
-    expect(screen.getByText("layoutEditor.noMatches")).toBeTruthy();
-    expect(screen.queryByText("layoutEditor.noBlocks")).toBeNull();
-  });
-
-  it("commits the first match on Enter", () => {
-    const { input, onPick } = openPicker();
-    fireEvent.change(input, { target: { value: "alpha" } });
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(onPick).toHaveBeenCalledWith("t.alpha");
-  });
-
-  it("walks the results with the arrow keys, across group boundaries", () => {
-    const { input, onPick } = openPicker();
-    // Region level offers Box and Row from structure, then the content group — so
-    // the third row is in a different group from the first, and the cursor has to
-    // step into it rather than stopping at the heading.
-    const ordered = labels();
-    expect(ordered.slice(0, 3)).toEqual(["Box", "Row", "Alpha text"]);
-    expect(activeLabel()).toBe("Box");
-    fireEvent.keyDown(input, { key: "ArrowDown" });
-    fireEvent.keyDown(input, { key: "ArrowDown" });
-    expect(activeLabel()).toBe("Alpha text");
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(onPick).toHaveBeenCalledWith("t.alpha");
-  });
-
-  it("wraps at the ends", () => {
-    const { input } = openPicker();
-    const ordered = labels();
-    fireEvent.keyDown(input, { key: "ArrowUp" });
-    expect(activeLabel()).toBe(ordered[ordered.length - 1]);
-    fireEvent.keyDown(input, { key: "ArrowDown" });
-    expect(activeLabel()).toBe(ordered[0]);
-  });
-
-  it("still commits the right row after the search shortens the list", () => {
-    const { input, onPick } = openPicker();
-    // Walk deep into the full list, then narrow it to a single row. Whether the
-    // cursor is reset or merely clamped, Enter must land on the one visible match
-    // and not on an index that is now past the end.
-    for (let i = 0; i < 5; i++) fireEvent.keyDown(input, { key: "ArrowDown" });
-    fireEvent.change(input, { target: { value: "widget" } });
-    expect(labels()).toEqual(["Widget"]);
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(onPick).toHaveBeenCalledWith("t.widget");
-  });
-
-  it("follows the pointer, so Enter commits the row being looked at", () => {
-    const { onPick, input } = openPicker();
-    fireEvent.mouseEnter(screen.getByText("Stats", { selector: ".lay__picker-item b" }).parentElement!);
-    expect(activeLabel()).toBe("Stats");
-    fireEvent.keyDown(input, { key: "Enter" });
-    expect(onPick).toHaveBeenCalledWith("t.stat");
-  });
-
-  it("closes on Escape without adding anything", () => {
-    const { input, onClose, onPick } = openPicker();
-    fireEvent.keyDown(input, { key: "Escape" });
-    expect(onClose).toHaveBeenCalledTimes(1);
-    expect(onPick).not.toHaveBeenCalled();
-  });
-
-  it("names the contributing plugin on a plugin block, and the type otherwise", () => {
-    openPicker();
-    const secondary = (label: string) =>
-      screen.getByText(label, { selector: ".lay__picker-item b" })
-        .parentElement!.querySelector("span")!.textContent;
-    expect(secondary("Widget")).toBe("test-plugin");
-    expect(secondary("Stats")).toBe("t.stat");
-  });
-});
-
 describe("duplicating a block", () => {
   const DUPLICATE = "layoutEditor.duplicateBlock";
 

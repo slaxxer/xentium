@@ -85,5 +85,14 @@
     "metaMessage": "Message",
     "hint": "Si cela se reproduit, transmettez la référence ci-dessus à un administrateur — le rapport copié contient tout ce qu’il faut pour remonter la piste.",
     "footLabel": "Erreur applicative · Nodevo"
+  },
+  "themeChooser": {
+    "open": "Choisir un thème",
+    "title": "Thèmes",
+    "close": "Fermer",
+    "inUse": "Utilisé",
+    "siteBadge": "Site",
+    "note": "Votre choix, sur cet appareil. Cela ne change rien pour les autres.",
+    "activeBadge": "Actif"
   }
 }

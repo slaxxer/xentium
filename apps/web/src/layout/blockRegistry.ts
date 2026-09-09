@@ -12,6 +12,7 @@
  * the permission and visibility checks. A block that queries on its own would
  * move access control into theme-authored configuration.
  */
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import type { ComponentType } from "react";
 import type { ZodType } from "zod";
 
@@ -49,6 +50,16 @@ export interface BlockDefinition<P = any, C = any> {
   editorMeta?: {
     label: string;
     category: "structure" | "content" | "data" | "plugin";
+    /**
+     * The glyph the editor draws beside this block, in the tree and the library.
+     *
+     * Optional, and normally omitted: `layout/blockIcons.ts` knows the core
+     * catalogue, and anything it does not know falls back to the category. A PLUGIN
+     * block is the case this exists for — that file cannot name a type it has never
+     * heard of, and a puzzle piece for every plugin block is a poor answer when the
+     * plugin knows exactly what its block is.
+     */
+    icon?: IconDefinition;
     /** Restrict to templates whose context this block needs. Omit = any. */
     allowedTemplates?: string[];
     /**

@@ -19,6 +19,30 @@ const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
 appearanceRouter.get("/css", async (req, res, next) => {
   try {
     const draft = req.query.source === "draft";
+
+    /**
+     * A visitor wearing an installed theme that is not the site's.
+     *
+     * ⚠ No `X-Style-Version` on this response, and no `no-cache` revalidation
+     * against the live version either: what is served here is not the live sheet,
+     * so stamping it would let the reconciler decide the client is out of date and
+     * pull it back to the site's own theme on the next stream tick — the visitor's
+     * choice undone by a mechanism designed to fix staleness.
+     */
+    const wanted = typeof req.query.theme === "string" ? req.query.theme : "";
+    if (!draft && wanted) {
+      const themed = await appearanceService.getThemeCss(wanted);
+      if (themed !== null) {
+        res.setHeader("Content-Type", "text/css; charset=utf-8");
+        res.setHeader("Cache-Control", "no-cache");
+        res.send(themed);
+        return;
+      }
+      // An id naming nothing installed falls through to the live sheet. A cookie
+      // outlives an uninstall, and a visitor holding a stale one must see the site,
+      // not an error and not a blank page.
+    }
+
     const css   = draft
       // Effective, not just the admin layer: the draft has to preview the theme it is
       // layered over, or a site with a theme installed previews as if it had none.

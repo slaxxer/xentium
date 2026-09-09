@@ -66,6 +66,21 @@ type Msg =
     }
   /** A keystroke this document swallowed that belongs to the editor around it. */
   | { source: "nv-preview"; type: "shortcut"; action: "undo" | "redo" }
+  /**
+   * Where the SELECTED block sits, so the floating inspector can move out of its way.
+   *
+   * In this frame's own pixels — the editor knows the scale it draws the frame at and
+   * the panel's width, and neither is knowable from in here.
+   */
+  | { source: "nv-preview"; type: "bounds"; id: string; left: number; right: number }
+  /**
+   * The selected block's own actions, taken from the chip on the page.
+   *
+   * The tree has carried these all along; the canvas has not, so acting on a block
+   * you can SEE meant finding its row first. Both end in the same editor call.
+   */
+  | { source: "nv-preview"; type: "duplicate"; id: string }
+  | { source: "nv-preview"; type: "remove"; id: string }
   /** An empty region was clicked — open the add-block picker for it. */
   | { source: "nv-preview"; type: "addTo"; region: string; templateKey?: string };
 
@@ -163,6 +178,27 @@ export function installPreviewBridge(): () => void {
 
   let hovered: HTMLElement | null = null;
   let selectedId: string | null = null;
+  /**
+   * What the chip says and offers for the SELECTED block.
+   *
+   * Sent by the editor with the highlight, because neither fact is knowable in here:
+   * the label lives in the block registry's `editorMeta`, and whether a block may be
+   * removed is a rule about the TEMPLATE (`REQUIRED_BLOCKS`) that this document has
+   * never been told. A chip offering a delete the editor would refuse is worse than
+   * no chip.
+   */
+  let selectedLabel: string | null = null;
+  let selectedRemovable = false;
+  /**
+   * What to CALL each audience, sent by the editor.
+   *
+   * This document is the site, and the words are in the ACP bundle, which the site
+   * has no reason to load. Sending three strings beats making the preview pull an
+   * admin namespace, and beats printing the raw key at an admin in five languages.
+   */
+  let audienceLabels: Record<string, string> = {};
+  /** The selection whose bounds the editor already has. */
+  let reportedFor: string | null = null;
   let dragId: string | null = null;
   let drop: { region: string; parentId: string | null; index: number } | null = null;
 
@@ -181,18 +217,111 @@ export function installPreviewBridge(): () => void {
       width:  `${rect.width}px`,
       height: `${rect.height}px`,
     });
-    label.style.display = "block";
-    label.textContent = wrapper.dataset.nvType ?? "block";
+    drawLabel(wrapper, selected);
     Object.assign(label.style, {
       top:  `${rect.top + window.scrollY}px`,
       left: `${rect.left + window.scrollX}px`,
     });
   }
 
+  /**
+   * The chip above a block: what it is, and — once selected — what can be done to it.
+   *
+   * Two different chips on purpose. HOVER says what a thing IS, in the vocabulary a
+   * `.nvtheme` and `docs/plugin-blocks.md` use, so pointing at the page answers "what
+   * block is that". SELECTED says what it is CALLED and carries its actions, because
+   * by then the question has been answered and the next one is what to do with it.
+   *
+   * ⚠ The chip is the one part of the overlay that takes pointer events, and only
+   * when selected. Everything else here is `pointer-events: none` so it can never
+   * intercept a click meant for the page underneath.
+   */
+  function drawLabel(wrapper: HTMLElement, selected: boolean) {
+    // ⚠ `inline-flex`, not `block`. The stylesheet lays the chip out as a row, but an
+    // inline style beats a class: setting `block` here stacked the name and its two
+    // action buttons vertically, and the rule that was supposed to prevent it looked
+    // correct in the file.
+    label.style.display = "inline-flex";
+    label.classList.toggle("is-selected", selected);
+    label.replaceChildren();
+
+    if (!selected) {
+      label.style.pointerEvents = "none";
+      const type = document.createElement("span");
+      type.textContent = wrapper.dataset.nvType ?? "block";
+      label.append(type);
+      // Says the block is conditional at the place the condition is invisible: the
+      // preview deliberately still draws a restricted block, so nothing else on the
+      // page distinguishes it from one everybody sees.
+      // ⚠ `data-nv-restricted` — the renderer's own name for it, and it carries the
+      // audience as its value. There is no `data-nv-audience`.
+      const audience = wrapper.dataset.nvRestricted;
+      if (audience) {
+        const note = document.createElement("span");
+        note.className = "nv-preview-label__note";
+        note.textContent = ` · ${audienceLabels[audience] ?? audience}`;
+        label.append(note);
+      }
+      return;
+    }
+
+    label.style.pointerEvents = "auto";
+    const name = document.createElement("span");
+    name.textContent = selectedLabel ?? wrapper.dataset.nvType ?? "block";
+    label.append(name);
+
+    const id = wrapper.dataset.nvBlock;
+    if (!id) return;
+
+    const action = (kind: "duplicate" | "remove", glyph: string) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "nv-preview-label__act";
+      b.textContent = glyph;
+      b.title = kind;
+      b.addEventListener("click", (e) => {
+        // The chip sits ON the block; without this the click would also select it.
+        e.preventDefault();
+        e.stopPropagation();
+        post({ source: "nv-preview", type: kind, id });
+      });
+      return b;
+    };
+
+    label.append(action("duplicate", "⧉"));
+    // Required blocks are moved, never removed — the editor refuses it, so the chip
+    // must not offer it.
+    if (selectedRemovable) label.append(action("remove", "🗑"));
+  }
+
   const redraw = () => {
     const target = hovered ?? (selectedId ? wrapperById(selectedId) : null);
     frame(target, !hovered && !!selectedId);
+    reportBounds();
   };
+
+  /**
+   * Tell the editor where the selection is.
+   *
+   * ⚠ The SELECTION only, never the hover. The inspector shows the selected block, so
+   * moving the panel as the pointer sweeps the page would be motion answering nothing
+   * — and would make the panel unreachable, since crossing the page to get to it is a
+   * hover of everything in between.
+   */
+  function reportBounds() {
+    if (!selectedId) { reportedFor = null; return; }
+    const wrapper = wrapperById(selectedId);
+    const rect = wrapper && boxOf(wrapper);
+    if (!rect) return;
+    // Once per selection: `redraw` also runs on every hover, and a message per
+    // mousemove would be a postMessage storm for an answer that has not changed.
+    if (reportedFor === selectedId) return;
+    reportedFor = selectedId;
+    post({
+      source: "nv-preview", type: "bounds", id: selectedId,
+      left: rect.left + window.scrollX, right: rect.right + window.scrollX,
+    });
+  }
 
   // ── hover ────────────────────────────────────────────────────────────────
   const onOver = (e: MouseEvent) => {
@@ -329,7 +458,18 @@ export function installPreviewBridge(): () => void {
     if (e.origin !== window.location.origin) return; // never trust a foreign frame
     const data = e.data as { source?: string; type?: string; id?: string | null };
     if (data?.source !== "nv-editor") return;
-    if (data.type === "highlight") { selectedId = data.id ?? null; redraw(); }
+    if (data.type === "labels") {
+      audienceLabels = (e.data as { audience?: Record<string, string> }).audience ?? {};
+      redraw();
+    }
+
+    if (data.type === "highlight") {
+      selectedId = data.id ?? null;
+      const d = e.data as { label?: string; removable?: boolean };
+      selectedLabel = d.label ?? null;
+      selectedRemovable = d.removable === true;
+      redraw();
+    }
 
     /**
      * Staged variant tokens.

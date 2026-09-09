@@ -10,6 +10,7 @@
  * The server always re-validates. This form is a convenience, never the guarantee.
  */
 import { useTranslation } from "react-i18next";
+import "./SchemaFields.scss";
 
 /** The JSON Schema subset our Zod contracts actually produce. */
 export interface SchemaProp {
@@ -81,7 +82,7 @@ export function defaultsFor(schema: FieldSchema | null | undefined): FieldValues
   return out;
 }
 
-export function SchemaFields({ schema, values, onChange, omit }: {
+export function SchemaFields({ schema, values, onChange, omit, compact }: {
   schema: FieldSchema | null | undefined;
   values: FieldValues;
   onChange: (next: FieldValues) => void;
@@ -95,6 +96,19 @@ export function SchemaFields({ schema, values, onChange, omit }: {
    * validates it against the same schema.
    */
   omit?: readonly string[];
+  /**
+   * Richer controls for a panel that is READ AT A GLANCE.
+   *
+   * ⚠ Opt-in, not the default. This component also draws plugin config pages and task
+   * parameter forms, where the plain input/select/checkbox set is the established look
+   * and a silent restyle would change screens nobody asked about. The Layout Editor's
+   * inspector is a narrow floating panel scanned between edits, where a switch reads
+   * as on/off without being read and a short enum is quicker to hit than to open.
+   *
+   * It changes only how a value is PICKED. Same keys, same values, same schema, same
+   * server validation.
+   */
+  compact?: boolean;
 }) {
   const { t } = useTranslation("acp");
   const hidden = new Set(omit ?? []);
@@ -124,6 +138,22 @@ export function SchemaFields({ schema, values, onChange, omit }: {
         const refHint = nonPrimitive ? String((value as { key?: string }).key ?? "") : undefined;
 
         if (prop.type === "boolean") {
+          // A SWITCH, when the caller asked for one: still a real checkbox, so it
+          // keeps the label association, the focus ring and the keyboard behaviour —
+          // only its appearance changes.
+          if (compact) {
+            return (
+              <label className="sf-switch" key={key}>
+                <span className="sf-switch__text">
+                  <b>{label}</b>
+                  {prop.description && <span className="acp-hint">{prop.description}</span>}
+                </span>
+                <input type="checkbox" checked={Boolean(value)}
+                  onChange={(e) => set(key, e.target.checked)} />
+                <span className="sf-switch__track" aria-hidden="true" />
+              </label>
+            );
+          }
           return (
             <label key={key} style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer", marginBottom: 14 }}>
               <input type="checkbox" checked={Boolean(value)}
@@ -142,7 +172,24 @@ export function SchemaFields({ schema, values, onChange, omit }: {
               {label}
               {!required.has(key) && <span style={{ color: "var(--c-fg-subtle)" }}> · {t("tasks.optional")}</span>}
             </label>
-            {prop.enum ? (
+            {/* A SHORT enum becomes a segmented control: every option visible, one
+                click to change, no menu to open. Past four it goes back to a select —
+                a row of eight buttons in a 320px panel wraps into a wall. */}
+            {prop.enum && compact && prop.enum.length <= 4 ? (
+              <div className="sf-seg" role="group" aria-label={label}>
+                {prop.enum.map((opt) => {
+                  const on = String(value ?? "") === String(opt);
+                  return (
+                    <button key={String(opt)} type="button"
+                      className={on ? "is-on" : ""}
+                      aria-pressed={on}
+                      onClick={() => set(key, numeric ? Number(opt) : opt)}>
+                      {String(opt)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : prop.enum ? (
               <select className="acp-input" value={String(value ?? "")}
                 onChange={(e) => set(key, numeric ? Number(e.target.value) : e.target.value)}>
                 {prop.enum.map((opt) => (
