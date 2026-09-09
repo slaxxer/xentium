@@ -14,6 +14,7 @@ import {
   cloneBlock,
   collectIds,
   containsId,
+  countDescendants,
   findNode,
   insertBlock,
   moveBlock,
@@ -402,5 +403,40 @@ describe("cloneBlock", () => {
     const before = JSON.stringify(original);
     cloneBlock(original, new Set(idsOf(original)));
     expect(JSON.stringify(original)).toBe(before);
+  });
+});
+
+describe("countDescendants", () => {
+  // What a delete confirm has to say out loud. `home`'s right rail was a column with
+  // five blocks in it, and removing the column removed all six — twice, silently.
+  const leaf = (id: string): BlockNode => ({ id, type: "t.leaf", props: {} });
+
+  it("is zero for a block that holds nothing", () => {
+    expect(countDescendants(leaf("a"))).toBe(0);
+    expect(countDescendants({ ...leaf("a"), children: [] })).toBe(0);
+  });
+
+  it("counts a container's direct children", () => {
+    const col: BlockNode = { id: "col", type: "t.col", props: {}, children: [leaf("a"), leaf("b")] };
+    expect(countDescendants(col)).toBe(2);
+  });
+
+  it("counts every level, not just the first", () => {
+    // A row holding a column holding three blocks is five gone, not one.
+    const row: BlockNode = {
+      id: "row", type: "t.row", props: {},
+      children: [{
+        id: "col", type: "t.col", props: {},
+        children: [leaf("a"), leaf("b"), leaf("c")],
+      }],
+    };
+    expect(countDescendants(row)).toBe(4);
+  });
+
+  it("does not count the block itself", () => {
+    // The confirm says "and N inside it" — including the node would overstate it by
+    // one on every container in the tree.
+    const col: BlockNode = { id: "col", type: "t.col", props: {}, children: [leaf("a")] };
+    expect(countDescendants(col)).toBe(1);
   });
 });

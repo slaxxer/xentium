@@ -24,6 +24,14 @@ export interface ThemeExportMeta {
   license: string;
   homepage: string;
   authorUrl: string;
+  /**
+   * A sentence or two about the theme, for whoever is choosing it.
+   *
+   * ⚠ Not decoration. It is what the reader's theme picker shows under the name, and
+   * what a marketplace listing reads — a theme that says nothing about itself is
+   * chosen from its thumbnail alone. Capped at 500 by the manifest schema.
+   */
+  description: string;
   /** Palette only — no layouts, and therefore no assets. */
   tokensOnly: boolean;
   /**
@@ -38,11 +46,12 @@ export interface ThemeExportMeta {
 
 const BLANK: ThemeExportMeta = {
   id: "my-theme", name: "My theme", version: "1.0.0", vendor: "",
-  license: "", homepage: "", authorUrl: "", tokensOnly: false, screenshot: null,
+  license: "", homepage: "", authorUrl: "", description: "",
+  tokensOnly: false, screenshot: null,
 };
 
 /** The manifest fields the API accepts from an author, with their labels. */
-type TextField = Exclude<keyof ThemeExportMeta, "tokensOnly" | "screenshot">;
+type TextField = Exclude<keyof ThemeExportMeta, "tokensOnly" | "screenshot" | "description">;
 
 const FIELDS: { key: TextField; label: string; placeholder?: string; type?: string }[] = [
   { key: "id",        label: "fieldId",        placeholder: "my-theme" },
@@ -103,6 +112,21 @@ function ThemeExportForm({ initial, onChange }: {
           </label>
         ))}
       </div>
+
+      {/* Prose, so a TEXTAREA rather than a row in the grid above. It is the longest
+          thing an author writes here and the only one a reader will read. */}
+      <label className="thm-form__field thm-form__field--wide">
+        <span>{t("themes.fieldDescription")}</span>
+        <textarea
+          className="acp-input"
+          rows={3}
+          maxLength={500}
+          value={value.description}
+          placeholder={t("themes.fieldDescriptionPlaceholder")}
+          onChange={(e) => set({ description: e.target.value })}
+        />
+        <em>{t("themes.fieldDescriptionHint")}</em>
+      </label>
 
       {/* The listing's picture. Shown back as a thumbnail because the one thing a
           file input cannot tell you is whether you picked the right image. */}

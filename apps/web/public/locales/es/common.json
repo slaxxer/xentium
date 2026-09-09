@@ -85,5 +85,14 @@
     "metaMessage": "Mensaje",
     "hint": "Si vuelve a ocurrir, envía la referencia de arriba a un administrador — el informe copiado incluye todo lo necesario para rastrearlo.",
     "footLabel": "Error de la aplicación · Nodevo"
+  },
+  "themeChooser": {
+    "open": "Elegir un tema",
+    "title": "Temas",
+    "close": "Cerrar",
+    "inUse": "En uso",
+    "siteBadge": "Sitio",
+    "note": "Tu elección, en este dispositivo. No cambia nada para los demás.",
+    "activeBadge": "Activo"
   }
 }

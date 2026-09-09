@@ -58,9 +58,17 @@ interface Props {
   gradient:  string[] | undefined;
   angle:     number | undefined;
   onChange:  (patch: { backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number }) => void;
+  /**
+   * This block's surface is already painted elsewhere, so an empty panel means
+   * "inheriting" rather than "blank".
+   *
+   * True for the footer, whose colours are the Style Editor's Footer panel. Anything
+   * set here is drawn OVER that, and clearing it hands the block back.
+   */
+  inherits?: boolean;
 }
 
-export function BlockBackgroundFields({ image, gradient, angle, onChange }: Props) {
+export function BlockBackgroundFields({ image, gradient, angle, onChange, inherits }: Props) {
   const { t } = useTranslation("acp");
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -109,7 +117,12 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange }: Prop
         className="lay-bg__preview"
         style={preview ? { backgroundImage: preview } : undefined}
       >
-        {!preview && <span>{t("layoutEditor.bgNone")}</span>}
+        {/* ⚠ "No background" is not true of every block. The footer is PAINTED by
+            the Style Editor (`--footer-bg` under `SCOPE_SELECTOR.footer`), so an
+            empty panel there means "inheriting", not "blank" — and an admin told
+            the wrong one of those goes looking for a colour control that already
+            exists somewhere else. What is empty here is the block's OVERRIDE. */}
+        {!preview && <span>{t(inherits ? "layoutEditor.bgInherits" : "layoutEditor.bgNone")}</span>}
       </div>
 
       {/* ── Image ─────────────────────────────────────────────────────────── */}
@@ -161,7 +174,21 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange }: Prop
             />
             <button type="button" className="lay-bg__x"
               title={t("layoutEditor.bgRemoveStop")}
-              onClick={() => onChange({ backgroundGradient: stops.filter((_, j) => j !== i) })}>
+              /*
+               * ⚠ Removing the LAST stop clears the prop, it does not store `[]`.
+               *
+               * An empty array and an absent key render identically, so both are
+               * "no gradient" — but draft-vs-published is a `JSON.stringify`
+               * comparison, so a block left holding `backgroundGradient: []` reads
+               * as changed for ever. The toolbar says "Draft is ahead of the live
+               * site" about an edit that was undone, and a theme update declines
+               * the template as customised. Same rule as `visibility` and
+               * `variant`: the default is never written down.
+               */
+              onClick={() => {
+                const next = stops.filter((_, j) => j !== i);
+                onChange({ backgroundGradient: next.length ? next : undefined });
+              }}>
               <FontAwesomeIcon icon={faTrash} />
             </button>
           </div>

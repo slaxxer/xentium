@@ -230,6 +230,22 @@ const LIVE_REFRESH_DEFAULT_SECONDS = 5;
 const LIVE_REFRESH_MIN_SECONDS     = 2;
 const LIVE_REFRESH_MAX_SECONDS     = 60;
 
+/**
+ * Built CSS per installed theme, for visitors wearing one.
+ *
+ * Keyed by theme id alone and never expired: a theme's payload is immutable once
+ * installed — changing it means installing a new version, which replaces the row —
+ * so unlike the live sheet there is no version to invalidate against. Cleared on
+ * uninstall so a removed theme cannot go on being served from memory.
+ */
+const themeCssMemo = new Map<string, string>();
+
+/** Forget a theme's built stylesheet — call when its row changes or goes away. */
+export function bustThemeCss(themeId?: string): void {
+  if (themeId) themeCssMemo.delete(themeId);
+  else themeCssMemo.clear();
+}
+
 // Latest built live CSS, keyed by style version (per process; see getLiveCss).
 let liveCssMemo: { version: number; css: string } | null = null;
 
@@ -259,6 +275,43 @@ export const appearanceService = {
     if (liveCssMemo && liveCssMemo.version === version) return liveCssMemo.css;
     const css = await this.buildCSS(await this.getEffectiveTokens());
     liveCssMemo = { version, css };
+    return css;
+  },
+
+  /**
+   * The stylesheet for ONE INSTALLED THEME, for a visitor wearing it.
+   *
+   * ⚠ The theme's OWN tokens, with no admin layer over them. The admin's overrides
+   * were authored against the site's active theme — a colour chosen to sit on that
+   * theme's surface has no meaning on another one, and merging the two produces a
+   * palette neither theme has. A visitor choosing a theme gets it as its author
+   * shipped it; the site's own visitors get the site, admin edits and all.
+   *
+   * Returns null when the id names nothing installed, so the caller can fall back to
+   * the live sheet rather than serve a blank one: a cookie outlives an uninstall.
+   */
+  async getThemeCss(themeId: string): Promise<string | null> {
+    const cached = themeCssMemo.get(themeId);
+    if (cached) return cached;
+
+    /*
+     * ⚠ Read straight from the row, NOT through `themeService`. That module already
+     * imports this one (activation applies tokens through `appearanceService`), so
+     * calling back the other way would close an import cycle for the sake of one
+     * `findUnique`.
+     */
+    const row = await prisma.theme.findUnique({
+      where: { id: themeId }, select: { payload: true },
+    });
+    const payload = (row?.payload ?? null) as { tokens?: unknown } | null;
+    if (!payload?.tokens) return null;
+
+    const raw = payload.tokens as { light?: unknown; dark?: unknown };
+    const css = await this.buildCSS({
+      light: normalizeScoped(raw.light),
+      dark:  normalizeScoped(raw.dark),
+    });
+    themeCssMemo.set(themeId, css);
     return css;
   },
 

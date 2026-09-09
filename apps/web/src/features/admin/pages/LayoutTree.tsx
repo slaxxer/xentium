@@ -11,24 +11,22 @@
  * which keeps the working document in one place: the tree reports intent, exactly
  * as the preview iframe does.
  */
-import {
-  Fragment, useEffect, useMemo, useRef, useState,
-  type CSSProperties, type DragEvent, type KeyboardEvent,
-} from "react";
+import { Fragment, type CSSProperties, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
-  faPlus, faTrash, faArrowUp, faArrowDown, faEyeSlash, faMagnifyingGlass, faClone,
+  faPlus, faTrash, faArrowUp, faArrowDown, faEyeSlash, faClone, faGripVertical,
 } from "@fortawesome/free-solid-svg-icons";
+import { iconFor } from "../../../layout/blockIcons";
 import {
   audienceInView,
+  isChromeTemplate,
   isRestricted,
   type AudienceView,
   type BlockNode,
   type TemplateKey,
 } from "@nodevo/contracts";
-import { getBlock, listPlaceableBlocks } from "../../../layout/blockRegistry";
-
+import { getBlock } from "../../../layout/blockRegistry";
 
 /** Where a dragged block would land. `parentId: null` is the region's own list. */
 export interface DropAt { region: string; parentId: string | null; index: number }
@@ -44,7 +42,6 @@ export interface TreeCtx {
   dragId: string | null;
   dropAt: DropAt | null;
   /** Which "add block" picker is open: `r:<region>` or `c:<blockId>`. */
-  adding: string | null;
   required: Set<string>;
   /**
    * Which audience's arrangement is being edited. Rows outside it are not rendered —
@@ -60,9 +57,14 @@ export interface TreeCtx {
   remove: (id: string) => void;
   /** Copy a block and everything inside it in beside itself. */
   duplicate: (id: string) => void;
-  toggleAdd: (key: string) => void;
-  /** Close whichever picker is open, without adding — the Escape path. */
-  closeAdd: () => void;
+  /**
+   * Open the CATALOGUE for a target — a region, or a container inside it.
+   *
+   * Adding used to raise a dropdown under the row, which could show a name and a
+   * type and nothing else, in a 288px rail. One `+` now means one thing everywhere:
+   * the dialog, which has room for a block's shape and a sentence about it.
+   */
+  browse: (region: string, parentId: string | null) => void;
   add: (type: string, region: string, parentId: string | null) => void;
 }
 
@@ -70,177 +72,19 @@ export interface TreeCtx {
 export const indent = (depth: number) => ({ "--lay-depth": depth }) as CSSProperties;
 
 /**
- * Category order: the frame first, then what fills it, then where the data comes
- * from. It follows how a page gets built, which is a better ordering than the
- * alphabet for the one list an admin reads top to bottom.
- */
-const CATEGORY_ORDER = ["structure", "content", "data", "plugin"] as const;
-
-/**
- * The block picker: search, then grouped results.
+ * What a region is CALLED, in the one place both the tabs and the library ask.
  *
- * It was a flat button list, written when there were a handful of blocks; there are
- * over fifty now and a template routinely offers thirty, which is more than anyone
- * reads. The category was already on every block — it was rendered as a subtitle on
- * each row, where it did nothing but repeat itself — so grouping by it costs no new
- * metadata.
- *
- * Keyboard-first: the search field takes focus on open, ↑/↓ walk the results and
- * Enter commits, so adding a known block is type-three-letters-Enter and never
- * requires the mouse.
+ * A page's `main` is "Body" and the chrome's is not — the key stays `main` because it
+ * emits `<main>`, so the label has to be looked up per template kind. `region` is the
+ * last fallback so a plugin template's own region name still reads as something.
  */
-export function BlockPicker({
-  templateKey, parentType, narrow, depth, t, onPick, onClose,
-}: {
-  templateKey: TemplateKey;
-  /** The container being added into; omitted at region level. */
-  parentType?: string;
-  /**
-   * The target is a RAIL — the `aside` region, or a `column` sized `sidebar`/`rail`.
-   *
-   * Rows for page-width blocks are marked rather than hidden. Hiding them would be a
-   * rule, and the rule would be wrong: a `section` in a rail is how you give the rail
-   * a background. So the picker says which blocks were designed for the body and lets
-   * the admin decide, which is the same bargain the audience marks make.
-   */
-  narrow?: boolean;
-  depth: number;
-  t: TreeCtx["t"];
-  onPick: (type: string) => void;
-  /** Escape closes the picker without adding anything. */
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState("");
-  const [cursor, setCursor] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const activeRef = useRef<HTMLButtonElement>(null);
-
-  // Both directions of the parent/child relationship are applied by the registry,
-  // so a `column` never shows up in a region and a `columns` row offers only tracks.
-  const items = useMemo(
-    () => listPlaceableBlocks(templateKey, parentType),
-    [templateKey, parentType],
-  );
-
-  // Matched on the TYPE as well as the label: a theme author who knows a block is
-  // `profileStats` should not have to work out what it is called in the UI, and the
-  // type is on the row precisely so it can be searched for.
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((b) =>
-      b.editorMeta!.label.toLowerCase().includes(q) || b.type.toLowerCase().includes(q));
-  }, [items, query]);
-
-  /**
-   * Grouped for display, each row carrying its position in the flattened list.
-   *
-   * The cursor indexes the flattened order, so it has to be assigned while the groups
-   * are built — computing it afterwards with an `indexOf` per row would be both
-   * quadratic and a second source of truth for what "next" means.
-   */
-  const groups = useMemo(() => {
-    let i = 0;
-    return CATEGORY_ORDER
-      .map((category) => ({
-        category,
-        rows: matches
-          .filter((b) => b.editorMeta!.category === category)
-          // Alphabetical within a group. Registration order is an implementation
-          // detail of which file imported first, which is not findable by anyone.
-          .sort((a, b) => a.editorMeta!.label.localeCompare(b.editorMeta!.label))
-          .map((block) => ({ block, index: i++ })),
-      }))
-      .filter((g) => g.rows.length > 0);
-  }, [matches]);
-
-  const count = groups.reduce((n, g) => n + g.rows.length, 0);
-  // Clamped rather than reset: narrowing the search shortens the list under the
-  // cursor, and an index past the end would leave Enter committing nothing.
-  const active = count === 0 ? -1 : Math.min(cursor, count - 1);
-
-  useEffect(() => { setCursor(0); }, [query]);
-  // Focused on open so the picker can be driven straight from the keyboard — the `+`
-  // was clicked, which means the next act is choosing, not aiming.
-  useEffect(() => { inputRef.current?.focus(); }, []);
-  // Optional call: the list only scrolls once it overflows, so keeping the cursor in
-  // view is an enhancement — and jsdom does not implement `scrollIntoView` at all, so
-  // an unguarded call would throw in every test that opens the picker.
-  useEffect(() => { activeRef.current?.scrollIntoView?.({ block: "nearest" }); }, [active]);
-
-  const onKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const row = groups.flatMap((g) => g.rows).find((r) => r.index === active);
-      if (row) onPick(row.block.type);
-      return;
-    }
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      if (count === 0) return;
-      // Wraps: the list is short, and a cursor that stops dead at either end costs
-      // more keystrokes than it saves.
-      setCursor((c) => (Math.min(c, count - 1) + (e.key === "ArrowDown" ? 1 : -1) + count) % count);
-    }
-  };
-
-  return (
-    <div className="lay__picker" style={indent(depth)}>
-      <div className="lay__picker-search">
-        <FontAwesomeIcon icon={faMagnifyingGlass} />
-        <input
-          ref={inputRef}
-          className="acp-input"
-          type="text"
-          value={query}
-          placeholder={t("layoutEditor.searchBlocks")}
-          aria-label={t("layoutEditor.searchBlocks")}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
-      </div>
-
-      <div className="lay__picker-list">
-        {/* Two different emptinesses: nothing may be placed here at all, or nothing
-            matches what was typed. Saying "no blocks available" to someone with a
-            typo in the search box would send them looking for the wrong problem. */}
-        {items.length === 0 && <div className="acp-hint">{t("layoutEditor.noBlocks")}</div>}
-        {items.length > 0 && count === 0 && (
-          <div className="acp-hint">{t("layoutEditor.noMatches", { query: query.trim() })}</div>
-        )}
-
-        {groups.map(({ category, rows }) => (
-          <div className="lay__picker-group" key={category}>
-            <div className="lay__picker-group-title">{t(`layoutEditor.category.${category}`)}</div>
-            {rows.map(({ block, index }) => (
-              <button
-                key={block.type}
-                ref={index === active ? activeRef : undefined}
-                type="button"
-                className={`lay__picker-item${index === active ? " is-active" : ""}`}
-                // The pointer moves the cursor too, so Enter always commits the row
-                // being looked at rather than one the keyboard left behind.
-                onMouseEnter={() => setCursor(index)}
-                onClick={() => onPick(block.type)}
-              >
-                <b>{block.editorMeta!.label}</b>
-                {narrow && block.editorMeta!.wide && (
-                  <span className="lay__picker-wide" title={t("layoutEditor.wideHint")}>
-                    {t("layoutEditor.wide")}
-                  </span>
-                )}
-                {/* The category used to sit here and now names the group instead, so
-                    the slot shows something that varies per row: which plugin
-                    contributed the block, or the type the search also matches. */}
-                <span>{block.pluginId ?? block.type}</span>
-              </button>
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+export function regionLabel(region: string, templateKey: TemplateKey, t: TreeCtx["t"]): string {
+  return t(
+    isChromeTemplate(templateKey)
+      ? `layoutEditor.region.${region}`
+      : `layoutEditor.pageRegion.${region}`,
+    { defaultValue: t(`layoutEditor.region.${region}`, { defaultValue: region }) },
+  ) as string;
 }
 
 export function BlockList({
@@ -311,7 +155,6 @@ export function TreeNode({
   const def = getBlock(node.type);
   const isContainer = !!def?.container;
   const children = node.children ?? [];
-  const addKey = `c:${node.id}`;
   const restricted = isRestricted(node.visibility);
 
   return (
@@ -342,9 +185,32 @@ export function TreeNode({
         }}
         onDrop={ctx.drop}
       >
+        {/* ONE slot, two jobs. At rest it says what KIND of block this is — a tree is
+            scanned rather than read, and the glyph is what makes "the image one"
+            findable without parsing every label. On hover it becomes the grip, which
+            is the drag's affordance: the row has been draggable all along and nothing
+            said so.
+            ⚠ Sharing the slot is not decoration. A separate grip cost a permanent
+            16px of a 288px rail that nests three deep, and the names paid for it —
+            "Your card" rendered as "Your c". Reserving the width and revealing the
+            grip on hover would have shifted every row sideways under the pointer.
+            The arrows stay regardless: a drag is unavailable from a keyboard. */}
+        <span className="lay__node-icon" aria-hidden="true">
+          <FontAwesomeIcon icon={iconFor(node.type)} className="lay__node-icon-type" />
+          <FontAwesomeIcon icon={faGripVertical} className="lay__node-icon-grip" />
+        </span>
         <span className="lay__node-label">
-          {def?.editorMeta?.label ?? node.type}
-          {!def && <em> · {ctx.t("layoutEditor.unavailable")}</em>}
+          {/* `title` because the rail is 288px and nests: a long label ellipsises,
+              and the full one has to stay reachable without opening anything. */}
+          <span className="lay__node-name" title={def?.editorMeta?.label ?? node.type}>
+            {def?.editorMeta?.label ?? node.type}
+            {!def && <em> · {ctx.t("layoutEditor.unavailable")}</em>}
+          </span>
+          {/* The TYPE, under the name. A label is what a block is called and a type is
+              what it IS — the two diverge exactly where it matters (`forum.categories`
+              is "Forum categories" until a second plugin ships one), and the type is
+              also what `docs/plugin-blocks.md` and a `.nvtheme` speak in. */}
+          <code className="lay__node-type">{node.type}</code>
           {/* The preview does not hide a restricted block — an admin who limited
               one to a group they are not in would otherwise lose the ability to
               select it — so the TREE is where "this is conditional" is shown. */}
@@ -361,7 +227,7 @@ export function TreeNode({
           {isContainer && (
             <button type="button"
               title={ctx.t("layoutEditor.addInside")} aria-label={ctx.t("layoutEditor.addInside")}
-              onClick={(e) => { e.stopPropagation(); ctx.toggleAdd(addKey); }}>
+              onClick={(e) => { e.stopPropagation(); ctx.browse(region, node.id); }}>
               <FontAwesomeIcon icon={faPlus} />
             </button>
           )}
@@ -398,18 +264,6 @@ export function TreeNode({
           )}
         </span>
       </div>
-
-      {ctx.adding === addKey && (
-        <BlockPicker
-          templateKey={ctx.templateKey} parentType={node.type} depth={depth + 1} t={ctx.t}
-          // A track sized like a rail IS one — the two ways of building a rail get
-          // the same warning, or the mark would depend on which one was used.
-          narrow={node.type === "column"
-            && ["sidebar", "rail"].includes(String((node.props as { width?: string }).width ?? ""))}
-          onPick={(type) => ctx.add(type, region, node.id)}
-          onClose={ctx.closeAdd}
-        />
-      )}
 
       {isContainer && (
         // Its own drop target, so a drop on the container's padding appends

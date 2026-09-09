@@ -63,6 +63,21 @@ const cacheKey = (templateKey: string, variant: string) => `${templateKey}${SEP}
 /** Published documents are read on nearly every page render. */
 const publishedMemo = memoTtl(async () => loadScope("published"), 30_000);
 
+/**
+ * Parsed documents per installed theme, for visitors wearing one.
+ *
+ * Keyed by theme id and never expired, for the same reason the themed stylesheet is:
+ * a theme's payload is immutable once installed. Cleared when a theme is installed
+ * or removed.
+ */
+const themeLayoutMemo = new Map<string, Record<string, LayoutDocument>>();
+
+/** Forget a theme's parsed documents — call when its row changes or goes away. */
+export function bustThemeLayouts(themeId?: string): void {
+  if (themeId) themeLayoutMemo.delete(themeId);
+  else themeLayoutMemo.clear();
+}
+
 async function loadScope(scope: Scope): Promise<ScopeMap> {
   const rows = await prisma.layout.findMany({ where: { scope } });
   const out: ScopeMap = new Map();
@@ -256,6 +271,50 @@ export const layoutService = {
   /** Every published document, defaults filled in. The shape the frontend consumes. */
   async getPublishedAll(): Promise<PublishedLayouts> {
     return toPublished(await publishedMemo());
+  },
+
+  /**
+   * The same, as a VISITOR wearing one of the installed themes would see it.
+   *
+   * The theme's own documents where it ships one, the site's published document
+   * everywhere else. A theme rarely ships all eight templates — `meadow` ships only
+   * `home` — and the alternative to falling back would be a visitor whose profile
+   * page is the bare code default because the theme had no opinion about it.
+   *
+   * ⚠ The theme's documents replace the site's; they are NOT merged with them. The
+   * admin's arrangement was built on the ACTIVE theme, and a per-template mix of two
+   * themes' layouts is an arrangement nobody designed. Whoever wears the site's own
+   * theme still gets the admin's work, which is the case that matters.
+   *
+   * ⚠ Returns the plain published set for an id naming nothing installed — a cookie
+   * outlives an uninstall.
+   */
+  async getPublishedAllForTheme(themeId: string): Promise<PublishedLayouts> {
+    const site = await this.getPublishedAll();
+
+    const cached = themeLayoutMemo.get(themeId);
+    if (cached) return { ...site, templates: { ...site.templates, ...cached } };
+
+    const row = await prisma.theme.findUnique({
+      where: { id: themeId }, select: { payload: true },
+    });
+    const documents = (row?.payload as { documents?: Record<string, unknown> } | null)?.documents;
+    if (!documents) return site;
+
+    // Parsed through the same function every other document goes through: a payload
+    // is data that arrived in a zip, and the render path must never be the first
+    // thing to find out it is malformed.
+    // ⚠ `usedDefault` means the document did not parse — and the CODE default is not
+    // what this theme ships, so the template is dropped and the SITE's document is
+    // used instead. Keeping the fallback would replace an admin's page with an empty
+    // one on the strength of a theme's broken file.
+    const parsed: Record<string, LayoutDocument> = {};
+    for (const [key, doc] of Object.entries(documents)) {
+      const { document, usedDefault } = parseLayoutDocument(key as TemplateKey, doc);
+      if (!usedDefault) parsed[key] = document;
+    }
+    themeLayoutMemo.set(themeId, parsed);
+    return { ...site, templates: { ...site.templates, ...parsed } };
   },
 
   /**
