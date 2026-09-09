@@ -50,8 +50,8 @@ import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
-import { appearanceService, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
-import { layoutService } from "../layouts/layout.service.js";
+import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
+import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
 import {
   assertThemeCssSafe,
   collectCssUploadRefs,
@@ -880,12 +880,17 @@ export const themeService = {
     };
     await prisma.$transaction([
       prisma.theme.updateMany({ where: { active: true }, data: { active: false } }),
+      // Reinstalling the same id replaces the payload, so anything built from the
+      // old one has to go — the caches are keyed by id alone and would otherwise
+      // outlive the version they were built from.
       prisma.theme.upsert({
         where:  { id },
         update: row,
         create: { id, ...row, installedById: userId },
       }),
     ]);
+    bustThemeCss(id);
+    bustThemeLayouts(id);
   },
 
   /**
@@ -927,6 +932,59 @@ export const themeService = {
   },
 
   /** Everything installed here, newest first, with the active one flagged. */
+  /**
+   * What a VISITOR may know about the installed themes: a name and an id.
+   *
+   * Deliberately not `listThemes`: that carries the vendor, the manifest, install
+   * timestamps and who installed it — an admin's inventory, and none of a reader's
+   * business. This feeds the public switcher, so it says only what is needed to
+   * offer a choice and to show which one is the site's own.
+   */
+  async listThemesForVisitors(): Promise<{
+    id: string; name: string; version: string; active: boolean;
+    description: string | null; screenshot: string | null;
+  }[]> {
+    await this.backfillLibrary();
+    const rows = await prisma.theme.findMany({
+      orderBy: [{ active: "desc" }, { name: "asc" }],
+      // The manifest comes too, but only three of its fields are passed on: a reader
+      // choosing a theme is shown what it is CALLED, what it LOOKS like and what it
+      // says about itself. The vendor, the compatibility range and the rest stay in
+      // the admin's library.
+      select: { id: true, name: true, version: true, active: true, manifest: true },
+    });
+    return rows.map(({ manifest, ...row }) => {
+      const m = (manifest ?? {}) as Record<string, unknown>;
+      return {
+        ...row,
+        description: typeof m.description === "string" ? m.description : null,
+        // Where the image actually LANDED — import rewrites the package-relative
+        // path to this install's uploads. A theme with none is normal, and the
+        // chooser draws a placeholder rather than a broken image.
+        screenshot:  typeof m.screenshot === "string" ? m.screenshot : null,
+      };
+    });
+  },
+
+  /**
+   * One theme's applicable payload — its tokens, its documents, its stylesheet.
+   *
+   * The row already holds everything an activation would replay, which is what lets
+   * a viewer wear a theme without it being installed over the site's own.
+   * ⚠ Returns null for a theme that is not installed, and the callers treat that as
+   * "no such choice" rather than an error: a cookie can name a theme that has since
+   * been uninstalled, and a visitor holding a stale one must simply see the site.
+   */
+  async getThemePayload(id: string): Promise<{
+    tokens?: unknown; documents?: Record<string, unknown>; customCss?: unknown;
+  } | null> {
+    const row = await prisma.theme.findUnique({ where: { id }, select: { payload: true } });
+    if (!row) return null;
+    return (row.payload ?? {}) as {
+      tokens?: unknown; documents?: Record<string, unknown>; customCss?: unknown;
+    };
+  },
+
   async listThemes() {
     await this.backfillLibrary();
     const rows = await prisma.theme.findMany({
@@ -992,6 +1050,11 @@ export const themeService = {
       });
     }
     await prisma.theme.delete({ where: { id } });
+    // ⚠ Both per-theme caches, or a visitor still wearing it goes on being served a
+    // stylesheet and layouts for a theme whose files were just deleted — the images
+    // 404 while everything else looks fine.
+    bustThemeCss(id);
+    bustThemeLayouts(id);
     await rm(path.join(env.UPLOAD_DIR, "themes", id), { recursive: true, force: true }).catch(() => {});
   },
 };

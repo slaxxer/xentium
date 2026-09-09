@@ -25,10 +25,21 @@ function selectorOf(req: Request): LayoutSelector {
 export const layoutController = {
   /**
    * Public: every published document. Served on page render, so it is memoized
-   * in-process and carries no user-specific content — layouts are global.
+   * in-process.
+   *
+   * `?theme=<id>` answers as a VISITOR WEARING that installed theme would see the
+   * site: the theme's own documents where it ships one, the site's published
+   * elsewhere. Still no user-specific content — the answer depends on the theme
+   * chosen, not on who is asking, so it stays cacheable per theme.
+   *
+   * An unknown id falls through to the site's own layouts rather than failing: the
+   * choice lives in a cookie, and a cookie outlives an uninstall.
    */
-  publicList: (async (_req, res) => {
-    res.json(await layoutService.getPublishedAll());
+  publicList: (async (req, res) => {
+    const theme = typeof req.query.theme === "string" ? req.query.theme : "";
+    res.json(theme
+      ? await layoutService.getPublishedAllForTheme(theme)
+      : await layoutService.getPublishedAll());
   }) as RequestHandler,
 
   /**

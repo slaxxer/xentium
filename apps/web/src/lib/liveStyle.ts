@@ -15,6 +15,8 @@
 // and the server resends the current version on connect, so a change missed while
 // disconnected is reconciled on reconnect.
 
+import { viewerThemeParam } from "./viewerTheme";
+
 const STYLE_ID = "nodevo-custom-tokens";
 
 /** Inject (or replace) the global token <style> tag. */
@@ -32,8 +34,15 @@ export function applyTokenCss(css: string): void {
  *  The SAME half it loaded — refreshing a preview with the LIVE stylesheet would
  *  quietly end the preview. */
 export async function refreshTokenCss(): Promise<void> {
-  const url = loadedDraft ? "/api/appearance/css?source=draft&t=" : "/api/appearance/css?t=";
-  await fetchTokenCss(`${url}${Date.now()}`, { cache: "no-store" });
+  /**
+   * ⚠ The SAME half that was loaded — draft, a visitor's theme, or the site's own.
+   * A refresh that dropped the qualifier would answer with the live site sheet, and
+   * the reader would be snapped out of the theme they chose by a mechanism whose
+   * only job is to fix staleness.
+   */
+  const themed = loadedDraft ? "" : viewerThemeParam();
+  const qualifier = loadedDraft ? "source=draft&" : themed ? `${themed}&` : "";
+  await fetchTokenCss(`/api/appearance/css?${qualifier}t=${Date.now()}`, { cache: "no-store" });
 }
 
 /**
@@ -49,7 +58,20 @@ export async function refreshTokenCss(): Promise<void> {
  */
 export async function loadTokenCss(opts: { draft?: boolean } = {}): Promise<void> {
   loadedDraft = !!opts.draft;
-  await fetchTokenCss(loadedDraft ? "/api/appearance/css?source=draft" : "/api/appearance/css");
+  if (loadedDraft) {
+    await fetchTokenCss("/api/appearance/css?source=draft");
+    return;
+  }
+  /**
+   * A visitor wearing one of the installed themes gets THAT stylesheet.
+   *
+   * ⚠ The response carries no `X-Style-Version`, so `loadedVersion` stays null and
+   * `reconcile()` treats it the way it treats a draft: the stream can announce what
+   * it likes and this client will not pull itself back to the site's own theme. That
+   * is the point — the reader's choice must survive the admin publishing.
+   */
+  const themed = viewerThemeParam();
+  await fetchTokenCss(themed ? `/api/appearance/css?${themed}` : "/api/appearance/css");
 }
 
 async function fetchTokenCss(url: string, init?: RequestInit): Promise<void> {
@@ -147,9 +169,18 @@ export function startStyleSync(): void {
 
     if (loadedVersion !== null) { reconcile(); return; }
 
-    // No version stamp on the stylesheet we hold (a draft preview, or an older
-    // API): fall back to the original rule — the first event of a connection is
-    // the current version, so only a CHANGE between events is actionable.
+    /**
+     * No version stamp on the stylesheet we hold. Three ways that happens, and one
+     * of them must NOT refetch:
+     *  - a draft preview, and an older API — the original rule applies: the first
+     *    event of a connection is the current version, so only a CHANGE is
+     *    actionable;
+     *  - ⚠ a VISITOR WEARING A THEME, which is not the live sheet and never becomes
+     *    stale against it. Refetching there would spend a request to replace the
+     *    themed stylesheet with an identical one on every publish the admin makes.
+     */
+    if (viewerThemeParam()) { notifyVersionListeners(); return; }
+
     if (previous !== null && previous !== version) {
       void refreshTokenCss();
       notifyVersionListeners();

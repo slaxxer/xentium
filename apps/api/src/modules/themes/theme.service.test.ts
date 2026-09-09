@@ -60,6 +60,8 @@ const appearance = {
 };
 
 vi.mock("../layouts/layout.service.js", () => ({
+  // The layout half of the same per-theme cache.
+  bustThemeLayouts: () => {},
   layoutService: {
     getPublishedAll: async () => published,
     saveDraft: async (
@@ -94,6 +96,9 @@ vi.mock("../layouts/layout.service.js", () => ({
 }));
 
 vi.mock("../appearance/appearance.service.js", () => ({
+  // Per-theme stylesheets are memoised by id; install and uninstall clear them, so
+  // the mock has to offer the same door or those paths throw here and only here.
+  bustThemeCss: () => {},
   appearanceService: {
     getEffectiveTokens: async () => appearance.effective,
     getCustomCss:       async () => appearance.customCss,

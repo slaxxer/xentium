@@ -145,5 +145,14 @@
       "ctaPrimary": "Join the conversation",
       "ctaSecondary": "Browse as guest"
     }
+  },
+  "themeChooser": {
+    "open": "Choose a theme",
+    "title": "Themes",
+    "close": "Close",
+    "inUse": "In use",
+    "siteBadge": "Site",
+    "note": "Your choice, on this device. It changes nothing for anyone else.",
+    "activeBadge": "Active"
   }
 }
