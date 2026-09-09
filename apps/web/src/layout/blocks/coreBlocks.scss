@@ -397,19 +397,58 @@
   }
 }
 
+/* Two chips in one element. HOVER names the block's TYPE — the word a `.nvtheme`
+   and the docs use — so pointing at the page answers "what block is that". SELECTED
+   names it the way the tree does and carries its actions, because by then that
+   question is answered. */
 .nv-preview-label {
   position: absolute;
   display: none;
+  align-items: center;
+  gap: 6px;
   pointer-events: none;
   z-index: 2147483001;
   transform: translateY(-100%);
-  padding: 1px 6px;
-  border-radius: 4px 4px 0 0;
-  background: var(--c-accent);
-  color: var(--c-on-accent);
-  font: 600 10.5px/1.6 var(--ff-sans, sans-serif);
-  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 6px 6px 0 0;
+  background: var(--c-bg-hover, rgb(0 0 0 / 0.7));
+  color: var(--c-fg);
+  border: 1px solid var(--c-border);
+  border-bottom: 0;
+  font: 600 10px/1.6 monospace;
   white-space: nowrap;
+
+  &.is-selected {
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    border-color: var(--c-accent);
+    font: 800 10.5px/1.6 var(--ff-sans, sans-serif);
+    letter-spacing: 0.02em;
+  }
+}
+
+/* "· members only" — the preview draws a restricted block like any other, so this
+   is the only place on the page the condition is visible. */
+.nv-preview-label__note { opacity: 0.72; font-weight: 500; }
+
+/* The chip's own buttons. The ONLY part of the overlay that takes pointer events,
+   and only while selected — everything else must never intercept a click meant for
+   the page beneath it. */
+.nv-preview-label__act {
+  display: grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.22);
+  color: inherit;
+  font-size: 9px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover { background: rgb(255 255 255 / 0.4); }
 }
 
 .nv-preview-dropline {

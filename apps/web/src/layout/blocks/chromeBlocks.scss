@@ -48,6 +48,23 @@
    the other way would move `SCOPE_SELECTOR.footer`'s target away from the styles
    the Style Editor's Footer panel is written against. */
 .nv-foot {
+  /* The band spans the window. `.nv-region--footer` is `display: contents` in
+     `AppLayout.scss`, so nothing above this constrains it any more. */
+  width: 100%;
+
+  /* ⚠ The SAME numbers as `.nv-header__inner`, `.nv-region` and `.pub-nav__inner`.
+     The footer's contents have to line up with the page above them, and the four
+     rules are the four places that decides. Changing one without the others is the
+     bug the header's own copy of this comment exists to prevent. */
+  &__inner {
+    width: 100%;
+    max-width: var(--content-max);
+    margin-inline: auto;
+    padding-inline: var(--sp-6);
+
+    @media (max-width: 640px) { padding-inline: var(--sp-4); }
+  }
+
   &--bg {
     background-size: cover;
     background-position: center;

@@ -76,6 +76,18 @@ export function findNode(regions: Regions, id: string): NodeLocation | null {
   return null;
 }
 
+/**
+ * How many blocks are UNDER `node`, at any depth — not counting `node` itself.
+ *
+ * Deleting a container takes its whole subtree with it, and the number is the only
+ * honest way to say how much: "delete this column" and "delete these six blocks" are
+ * the same click.
+ */
+export function countDescendants(node: BlockNode): number {
+  if (!node.children?.length) return 0;
+  return node.children.reduce((n, child) => n + 1 + countDescendants(child), 0);
+}
+
 /** Levels in the subtree rooted at `node`, counting `node` itself as one. */
 export function subtreeHeight(node: BlockNode): number {
   if (!node.children?.length) return 1;

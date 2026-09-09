@@ -1,0 +1,266 @@
+/**
+ * The block catalogue dialog, and the little drawings on its cards.
+ *
+ * Built on `.acp-modal` so it inherits the ACP's own surface, shadow and scrollbar —
+ * the overlay is the same one every other admin dialog uses. Only the sizing and the
+ * inside are its own, because a catalogue is a grid and the shared modal is a form.
+ */
+.nv-cat {
+  /* Wider and taller than a form dialog: three cards across is what makes a grid
+     scannable, and one column of cards is just the rail again. */
+  max-width: 880px;
+  width: 100%;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+
+  &__head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--sp-4);
+    padding: var(--sp-5) var(--sp-5) var(--sp-4);
+
+    h2 {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--c-fg);
+      margin: 0;
+    }
+
+    p {
+      margin: 5px 0 0;
+      font-size: 12.5px;
+      color: var(--c-fg-subtle);
+      line-height: 1.5;
+      max-width: 62ch;
+    }
+  }
+
+  &__controls {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    padding: 0 var(--sp-5) var(--sp-4);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  &__search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 220px;
+    height: 40px;
+    padding: 0 14px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    color: var(--c-fg-subtle);
+
+    &:focus-within { border-color: var(--c-accent); }
+
+    input {
+      flex: 1;
+      min-width: 0;
+      background: none;
+      border: 0;
+      outline: none;
+      color: var(--c-fg);
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 500;
+    }
+  }
+
+  &__tabs {
+    display: flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-bg);
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 0;
+      padding: 6px 12px;
+      border-radius: calc(var(--radius-md) - 4px);
+      background: none;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--c-fg-subtle);
+      cursor: pointer;
+
+      &:hover:not(:disabled) { color: var(--c-fg); }
+      &:disabled { opacity: 0.35; cursor: not-allowed; }
+
+      &.is-on { background: var(--c-accent); color: var(--c-on-accent); }
+
+      span {
+        font-size: 10px;
+        font-weight: 800;
+        opacity: 0.75;
+      }
+    }
+  }
+
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: var(--sp-4) var(--sp-5) var(--sp-5);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-3);
+
+    @media (max-width: 780px) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (max-width: 520px) { grid-template-columns: minmax(0, 1fr); }
+  }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    padding: 0;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+    font: inherit;
+    cursor: pointer;
+    overflow: hidden;
+
+    &:hover, &:focus-visible {
+      border-color: var(--c-accent);
+      background: var(--c-bg-hover);
+    }
+  }
+
+  &__art {
+    display: block;
+    height: 88px;
+    padding: 14px;
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  &__meta {
+    display: block;
+    padding: 12px 14px 14px;
+
+    code {
+      display: block;
+      font-family: monospace;
+      font-size: 9.5px;
+      color: var(--c-fg-subtle);
+      margin-top: 7px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--c-fg);
+  }
+
+  &__badge {
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-accent);
+    background: var(--c-accent-soft);
+    padding: 2px 6px;
+    border-radius: 999px;
+  }
+
+  &__desc {
+    display: block;
+    font-size: 11.5px;
+    color: var(--c-fg-subtle);
+    line-height: 1.45;
+    margin-top: 5px;
+  }
+
+  &__empty {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: center;
+    text-align: center;
+    padding: 48px 20px;
+
+    b { font-size: 14px; font-weight: 600; color: var(--c-fg-subtle); }
+    span { font-size: 12.5px; color: var(--c-fg-subtle); opacity: 0.75; }
+  }
+}
+
+/* ── the card artwork ──────────────────────────────────────────────────────── */
+/* Primitives in token colours rather than a picture, so the drawings follow the
+   ACP's palette in both themes. Never a screenshot: what a block really looks like
+   depends on the site's tokens, its variant and its data. */
+.nv-art {
+  display: flex;
+  height: 100%;
+  gap: 7px;
+
+  i, .nv-art__row { display: block; }
+
+  &--stack { flex-direction: column; }
+  &--text  { flex-direction: column; gap: 6px; justify-content: center; }
+  &--list  { flex-direction: column; gap: 7px; }
+  &--grid  { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 6px; }
+  &--chip  { align-items: center; }
+
+  &__bar    { height: 12px; border-radius: 4px; background: var(--c-accent-soft); }
+  &__fill   { flex: 1; border-radius: 6px; background: var(--c-bg-hover); }
+  &__wide   { flex: 2; border-radius: 6px; background: var(--c-accent-soft); }
+  &__narrow { flex: 1; border-radius: 6px; background: var(--c-bg-hover); }
+  &__cell   { border-radius: 5px; background: var(--c-bg-hover); }
+  &__media  { flex: 1; border-radius: 6px; background: var(--c-accent-soft); }
+
+  &__line {
+    height: 6px;
+    border-radius: 3px;
+    background: var(--c-bg-hover);
+    flex: 1;
+
+    &--head { height: 8px; width: 38%; background: var(--c-accent-soft); flex: none; }
+    &--short { width: 62%; flex: none; }
+  }
+
+  &__row { display: flex; align-items: center; gap: 6px; }
+  &__dot { width: 14px; height: 14px; border-radius: 50%; background: var(--c-accent-soft); flex: none; }
+
+  &__pill {
+    height: 14px;
+    flex: 1;
+    border-radius: 999px;
+    background: var(--c-accent-soft);
+
+    &--dim { background: var(--c-bg-hover); }
+  }
+
+  /* The first cell of a grid carries the accent, so the shape reads as "a set of
+     things, one of them yours" rather than four identical blanks. */
+  &--grid .nv-art__cell:first-child { background: var(--c-accent-soft); }
+}

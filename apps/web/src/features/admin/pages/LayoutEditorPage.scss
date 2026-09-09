@@ -162,9 +162,13 @@
   /* Two columns: structure and block settings stack in a single
      narrow rail so the preview — the thing an admin is actually judging — gets
      the whole remaining width. */
+  /* TWO columns: the structure, then the canvas. The selected block's
+     settings are the third pane but not a third COLUMN — they float over the canvas,
+     so the canvas is the same width whether or not anything is selected. See
+     `.lay__props` for why that matters more than the pixels it saves. */
   &__grid {
     display: grid;
-    grid-template-columns: 300px minmax(0, 1fr);
+    grid-template-columns: 288px minmax(0, 1fr);
     gap: var(--sp-4);
     align-items: start;
   }
@@ -185,8 +189,362 @@
     &__rail { position: static; max-height: none; overflow: visible; }
   }
 
-  &__tree,
-  &__props {
+  /* ── the document chip ─────────────────────────────────────────────────── */
+  /* The select is laid over the chip at zero opacity: the chip is what is read, the
+     select is what is operated. Both must cover the same box, or the caret would be
+     decoration that does not open anything. */
+  &__doc {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 40px;
+    padding: 0 11px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border);
+    background: var(--card-bg);
+    cursor: pointer;
+
+    &:hover, &:focus-within { border-color: var(--c-accent); }
+
+    .lay__template {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      border: 0;
+      cursor: pointer;
+      font: inherit;
+    }
+  }
+
+  &__doc-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 11px;
+    flex: none;
+  }
+
+  &__doc-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+    min-width: 0;
+
+    b {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--c-fg);
+    }
+
+    code {
+      font-family: monospace;
+      font-size: 10px;
+      color: var(--c-fg-subtle);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  /* This document has unpublished changes — the same dot the picker's options carry. */
+  &__doc-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--c-warn);
+    flex: none;
+  }
+
+  &__doc-caret { color: var(--c-fg-subtle); font-size: 11px; flex: none; }
+
+  /* ── toolbar pills ─────────────────────────────────────────────────────── */
+  /* Two facts, two pills: what is STORED and what is LIVE. They were one grey line
+     that had to pick between them. */
+  &__pills {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  &__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--c-border);
+    background: var(--c-bg-hover);
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    white-space: nowrap;
+
+    &--ok {
+      color: var(--c-success);
+      border-color: color-mix(in srgb, var(--c-success) 34%, transparent);
+      background: color-mix(in srgb, var(--c-success) 12%, transparent);
+    }
+
+    /* The one that means "visitors are not seeing this yet". Warm rather than red:
+       an unpublished draft is the editor's normal state, not a fault. */
+    &--warn {
+      color: var(--c-warn);
+      border-color: color-mix(in srgb, var(--c-warn) 40%, transparent);
+      background: color-mix(in srgb, var(--c-warn) 12%, transparent);
+    }
+  }
+
+  &__pill-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  /* ── draft actions menu ────────────────────────────────────────────────── */
+  &__menu { position: relative; }
+
+  &__menu-list {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 208px;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-border-color);
+    background: var(--card-bg);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+
+    button {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border: 0;
+      border-radius: var(--radius-sm);
+      background: none;
+      font-family: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--c-fg);
+      text-align: left;
+      cursor: pointer;
+
+      &:hover:not(:disabled) { background: var(--c-bg-hover); }
+      &:disabled { opacity: 0.4; cursor: not-allowed; }
+    }
+  }
+
+  &__menu-danger:hover:not(:disabled) { color: var(--c-danger); }
+
+  /* ── publish ───────────────────────────────────────────────────────────── */
+  &__publish {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* How many documents go live. Publish is site-wide, and this is the only thing
+     on screen that says the count is more than the one being edited. */
+  &__publish-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 0.22);
+    font-size: 10.5px;
+    font-weight: 800;
+  }
+
+  /* ── region tabs ───────────────────────────────────────────────────────── */
+  /* One row of regions instead of four stacked headings. The count is the point:
+     a template where three of four regions are empty says so at a glance. */
+  &__tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: var(--sp-3);
+  }
+
+  &__tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    background: var(--c-bg);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 4px 10px;
+    cursor: pointer;
+
+    &:hover { color: var(--c-fg); }
+
+    &.is-on {
+      color: var(--c-accent);
+      background: var(--c-accent-soft);
+      border-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
+    }
+
+    /* The chrome tabs open ANOTHER DOCUMENT, so they are not part of the selected
+       set — dashed says "this leaves the page you are arranging". */
+    &--chrome {
+      border-style: dashed;
+      border-color: var(--c-border);
+    }
+  }
+
+  &__tab-count {
+    font-size: 10.5px;
+    font-weight: 700;
+    color: var(--c-fg-subtle);
+    background: var(--c-surface);
+    border-radius: 999px;
+    padding: 0 5px;
+    min-width: 17px;
+    text-align: center;
+  }
+
+  &__pane-count {
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* Into the catalogue, from under the tree. */
+  &__browse {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: var(--sp-2);
+    padding: 9px;
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--c-border-hi, var(--c-border));
+    background: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+
+    &:hover { color: var(--c-accent); border-color: var(--c-accent); }
+  }
+
+  /* ── canvas toolbar ────────────────────────────────────────────────────── */
+  &__canvasbar {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+    flex-wrap: wrap;
+  }
+
+  &__seg {
+    display: flex;
+    gap: 2px;
+    background: var(--c-bg);
+    border-radius: 999px;
+    padding: 2px;
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--c-fg-muted);
+      background: none;
+      border: none;
+      border-radius: 999px;
+      padding: 4px 11px;
+      cursor: pointer;
+
+      &:hover { color: var(--c-fg); }
+
+      &.is-on {
+        color: var(--c-accent);
+        background: var(--c-surface);
+      }
+    }
+
+    &--icons button { padding: 4px 9px; }
+  }
+
+  &__canvasbar-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__canvasbar-width {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+  }
+
+  &__zoom {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--c-fg-muted);
+    background: var(--c-bg);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 3px 9px;
+    cursor: pointer;
+
+    &.is-on {
+      color: var(--c-accent);
+      border-color: color-mix(in srgb, var(--c-accent) 40%, transparent);
+    }
+  }
+
+  /* The stage clips what the frame draws: a transform does not change layout size,
+     so a scaled frame would otherwise paint outside the pane. */
+  &__stage {
+    height: calc(100vh - 230px);
+    min-height: 560px;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-bg);
+  }
+
+  /* Sized to what the scaled frame DRAWS, and clips it. Without this the frame keeps
+     its full layout size whatever the transform says, which pushed compare's second
+     frame off screen and left dead space under the first. */
+  &__frame {
+    overflow: hidden;
+    flex: none;
+  }
+
+  &__tree {
     background: var(--card-bg);
     border: 1px solid var(--card-border-color);
     border-radius: var(--card-radius);
@@ -248,7 +606,7 @@
     font-size: 11.5px;
     color: var(--c-fg-subtle);
     padding: var(--sp-2) 0;
-    padding-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+    padding-left: calc((var(--lay-depth) - 1) * 12px);
   }
 
   &__node {
@@ -256,7 +614,7 @@
     align-items: center;
     gap: var(--sp-2);
     padding: 6px 8px;
-    padding-left: calc(8px + (var(--lay-depth) - 1) * var(--sp-4));
+    padding-left: calc(8px + (var(--lay-depth) - 1) * 12px);
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
@@ -264,6 +622,31 @@
 
     &:hover { background: var(--c-accent-soft); }
     &.is-selected { background: var(--c-accent-soft); border-color: var(--c-accent); }
+
+    /* Row chrome appears on approach. The actions were always visible, which put
+       four icons on every row of a fourteen-row tree and left the names competing
+       with controls for a 288px rail. `focus-within` is not an extra — without it
+       the buttons would be unreachable by keyboard, which is exactly who needs
+       them most, since the alternative to the arrows is a drag. */
+    &:hover,
+    &:focus-within,
+    &.is-selected {
+      .lay__node-actions { opacity: 1; pointer-events: auto; }
+    }
+
+    &:hover .lay__node-icon,
+    &.is-selected .lay__node-icon {
+      background: var(--c-accent);
+      color: var(--c-on-accent);
+    }
+
+    /* On hover the slot turns into the grip. Selection alone does NOT — a selected
+       row is read, and swapping its glyph for a handle would lose the one thing
+       saying what kind of block is being edited. */
+    &:hover {
+      .lay__node-icon-type { opacity: 0; }
+      .lay__node-icon-grip { opacity: 1; }
+    }
     /* A block whose plugin is disabled stays in the document — it is skipped at
        render, never deleted, so re-enabling restores it where the admin put it. */
     &.is-missing { color: var(--c-fg-subtle); font-style: italic; }
@@ -282,10 +665,50 @@
       position: absolute;
       top: 0;
       bottom: 0;
-      left: calc(var(--lay-depth) * var(--sp-4) - 4px);
+      left: calc(var(--lay-depth) * 12px - 4px);
       width: 1px;
       background: var(--c-rowline);
     }
+  }
+
+  /* What kind of block this is — and, on hover, the drag handle. Both glyphs stack
+     in the same 22px box so neither costs the name any width. */
+  &__node-icon {
+    position: relative;
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: var(--c-bg-hover);
+    color: var(--c-fg-subtle);
+    font-size: 9.5px;
+
+    > * { grid-area: 1 / 1; transition: opacity 0.1s ease; }
+  }
+
+  &__node-icon-grip { opacity: 0; cursor: grab; }
+
+  /* ⚠ Both children need their OWN ellipsis. The label is a flex column of two
+     BLOCKS, and `text-overflow` on the parent does nothing for block children — it
+     clipped mid-glyph instead ("Your card" → "Your c"). */
+  &__node-name,
+  &__node-type {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &__node-type {
+    display: block;
+    font-family: monospace;
+    font-size: 9.5px;
+    color: var(--c-fg-subtle);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__node-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -301,7 +724,7 @@
   &__dropline {
     height: 2px;
     margin: 2px 0;
-    margin-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+    margin-left: calc((var(--lay-depth) - 1) * 12px);
     border-radius: 2px;
     background: var(--c-accent);
     box-shadow: 0 0 0 3px var(--c-accent-soft);
@@ -311,6 +734,9 @@
     display: flex;
     gap: 2px;
     flex-shrink: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease;
 
     button {
       background: none;
@@ -381,10 +807,13 @@
     border-top: 1px solid var(--c-rowline);
   }
 
+  /* Pills, so a gap on BOTH axes — they wrap, and a row gap of zero let two lines
+     of chips touch. */
   &__style-row {
     display: flex;
     flex-wrap: wrap;
-    gap: 0 var(--sp-4);
+    gap: 6px;
+    position: relative;
   }
 
   /* The CSS handle. A stacked field rather than a `__style-row`, because it is a text
@@ -480,7 +909,7 @@
     margin-bottom: var(--sp-2);
     /* Indented like the rows it will add to, so it is obvious whether a block is
        about to land in the region or inside the container above it. */
-    margin-left: calc((var(--lay-depth) - 1) * var(--sp-4));
+    margin-left: calc((var(--lay-depth) - 1) * 12px);
     border: 1px dashed var(--c-border-hi);
     border-radius: var(--radius-md);
   }
@@ -576,13 +1005,27 @@
     position: relative;
 
     iframe {
-      width: 100%;
-      height: calc(100vh - 230px);
+      display: block;
+      /* Height fills the stage; WIDTH is set inline from the chosen device, and is
+         the one thing the previewed page's own media queries read. */
+      height: 100%;
       min-height: 560px;
-      border: 1px solid var(--c-border);
-      border-radius: var(--radius-md);
+      border: 0;
       background: var(--c-bg);
     }
+  }
+
+  &__preview-open {
+    display: inline-grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg-subtle);
+    font-size: 11px;
+    flex: none;
+
+    &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
   }
 
   &__preview-url {
@@ -593,8 +1036,190 @@
     letter-spacing: 0;
   }
 
+  /* ── props: the floating inspector ─────────────────────────────────────── */
+  /* Absolute, inside `.lay__preview` — NOT a grid column and NOT `fixed`. As a
+     column it took 320px the canvas needed to draw a 1280 desktop preview at 100%,
+     and appearing with the selection resized the stage, which re-scaled the whole
+     page under Fit on every click. Absolute keeps it inside the pane it belongs to,
+     so it scrolls with the editor and cannot end up over the ACP's own chrome.
+     ⚠ 320px here is `INSPECTOR_WIDTH` in the page — the side decision measures how
+     much of the selected block this covers, so the two must not drift. */
+  &__props {
+    position: absolute;
+    z-index: 3;
+    top: calc(var(--sp-4) + 34px);
+    bottom: var(--sp-4);
+    width: 320px;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    /* It floats over content, so it needs to read as ABOVE rather than merely on
+       top of — without a shadow the page shows through the join and the panel looks
+       like part of the previewed site. */
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+    padding: var(--sp-3) var(--sp-4) var(--sp-4);
+  }
 
-  /* ── props ─────────────────────────────────────────────────────────────── */
+  &__props--right { right: var(--sp-4); }
+  &__props--left  { left:  var(--sp-4); }
+
+  &__props-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    padding-bottom: var(--sp-3);
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  &__props-ident {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  &__props-icon {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 12px;
+    flex: none;
+  }
+
+  /* The block's NAME over its type and region. Two rows with the same label are told
+     apart by exactly these two facts, and neither was on screen. */
+  &__props-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    min-width: 0;
+
+    b { font-size: 13.5px; font-weight: 700; color: var(--c-fg); }
+
+    code {
+      font-family: monospace;
+      font-size: 10px;
+      color: var(--c-fg-subtle);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+
+  &__props-acts {
+    display: flex;
+    gap: 1px;
+    flex: none;
+  }
+
+  /* Divides the panel's three unrelated stacks: the block's own options, who sees
+     it, and how it is painted. */
+  /* ── style section ─────────────────────────────────────────────────────── */
+  &__style-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  /* Where these colours are SAVED. A variant edit lands in the site's tokens, so it
+     recolours every block wearing that variant — the one thing this panel could be
+     mistaken for is a per-block colour. */
+  &__style-badge {
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+
+  /* Real radios, drawn as chips: five one-word choices belong on one line in a
+     320px panel, not on five rows. */
+  &__variant-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--c-border);
+    background: var(--c-bg-hover);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+
+    input {
+      position: absolute;
+      opacity: 0;
+      width: 0;
+      height: 0;
+      pointer-events: none;
+    }
+
+    &:hover { color: var(--c-fg); }
+
+    &.is-on {
+      border-color: var(--c-accent);
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+    }
+
+    &:focus-within { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  }
+
+  &__props-section {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    margin-bottom: var(--sp-2);
+  }
+
+  /* The fields scroll, the bar does not: closing must stay reachable from a block
+     with more settings than the panel is tall. */
+  &__props-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin-top: var(--sp-3);
+  }
+
+  /* The way back in after closing, since closing keeps the selection. */
+  &__props-chip {
+    position: absolute;
+    z-index: 3;
+    bottom: var(--sp-4);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: 999px;
+    box-shadow: 0 8px 20px rgb(0 0 0 / 0.24);
+    padding: 7px 13px;
+    cursor: pointer;
+
+    &:hover { border-color: var(--c-accent); }
+  }
+
+  &__props-chip--right { right: var(--sp-4); }
+  &__props-chip--left  { left:  var(--sp-4); }
 
   &__props-head {
     font-family: var(--font-display);
