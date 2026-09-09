@@ -1376,6 +1376,21 @@ export const blockPropSchemas = {
 
   branding: z.object({
     showUptime: z.boolean().default(true).meta({ title: 'Show uptime and latency' }),
+    /**
+     * The reader's theme picker, at the right of the brand row.
+     *
+     * ⚠ A prop on BRANDING rather than a block of its own. It belongs beside the
+     * site's mark and its links, and a second placeable control doing the same thing
+     * would be two ways to reach one setting — with nothing saying which the admin
+     * meant when both were on the page.
+     *
+     * It draws nothing when fewer than two themes are installed, so leaving it on is
+     * free for a site that has never installed one.
+     */
+    showThemeChooser: z.boolean().default(true).meta({
+      title:       'Show the theme picker',
+      description: 'Lets a reader choose between installed themes, for themselves only.',
+    }),
   }),
 } as const;
 

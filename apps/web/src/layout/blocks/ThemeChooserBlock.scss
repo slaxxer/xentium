@@ -1,0 +1,206 @@
+/* The reader's theme choice: an icon in the footer's brand row, and the dialog it
+   opens. A theme is a LOOK, so the choice is made from thumbnails rather than from a
+   list of names. */
+
+.nv-themepick__open {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid var(--footer-border-color, var(--c-border));
+  background: none;
+  color: var(--c-fg-subtle);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.14s ease, border-color 0.14s ease;
+
+  &:hover { color: var(--c-fg); border-color: var(--c-accent); }
+  &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+}
+
+/* ── the dialog ────────────────────────────────────────────────────────────── */
+/* Its own, not the ACP's `.acp-modal`: those styles are pinned to the admin panel
+   and this renders on the public site, which wears the visitor's theme. */
+.nv-themedlg {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(0 0 0 / 0.55);
+
+  &__panel {
+    /* A footer control offering a handful of options. It was 780px of cards, which
+       is a page, not a dialog. */
+    width: 420px;
+    max-width: 100%;
+    max-height: 86vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--radius-lg, 18px);
+    box-shadow: 0 16px 48px rgb(0 0 0 / 0.42);
+    overflow: hidden;
+  }
+
+  &__head {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 16px 13px;
+    border-bottom: 1px solid var(--c-border);
+
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--c-fg);
+    }
+
+    p {
+      margin: 4px 0 0;
+      font-size: 11.5px;
+      color: var(--c-fg-subtle);
+      line-height: 1.5;
+    }
+  }
+
+  &__x {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+
+    &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
+  }
+
+  &__list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 16px 18px;
+  }
+}
+
+/* ── a theme's card ────────────────────────────────────────────────────────── */
+/* A ROW: thumbnail, then what the theme is called and what it says about itself.
+   Big enough to tell two themes apart, small enough that a list of them is a list. */
+.nv-themecard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  /* More room on the RIGHT: the tick sits there, and at 8px it read as pinned to the
+     border rather than placed inside the row. */
+  padding: 8px 14px 8px 8px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  font: inherit;
+  cursor: pointer;
+
+  &:hover, &:focus-visible { border-color: var(--c-accent); }
+  &.is-worn { border-color: var(--c-accent); background: var(--c-accent-soft); }
+
+  &__shot {
+    position: relative;
+    flex: none;
+    display: block;
+    width: 76px;
+    height: 48px;
+    border-radius: var(--radius-sm);
+    background: var(--c-bg-hover);
+    border: 1px solid var(--c-border);
+    overflow: hidden;
+
+    img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  /* A theme that ships no screenshot. A grey rectangle would read as an image that
+     failed; a mark says there is nothing to show. */
+  &__noshot {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    color: var(--c-fg-subtle);
+    opacity: 0.4;
+    font-size: 15px;
+  }
+
+  /* At the END of the row: over a 76px thumbnail it would cover the picture. */
+  &__worn {
+    flex: none;
+    margin-left: 4px;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 999px;
+    background: var(--c-accent);
+    color: var(--c-on-accent);
+    font-size: 10px;
+  }
+
+  &__body { flex: 1; min-width: 0; display: block; }
+
+  &__name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px 7px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--c-fg);
+  }
+
+  /* Two badges, two facts. `--active` is what the READER wears and is filled, so it
+     reads as a state; the plain one is what the SITE wears and is quieter, because it
+     is context rather than something the reader did. */
+  &__badge {
+    flex: none;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-accent);
+    background: var(--c-accent-soft);
+    padding: 2px 6px;
+    border-radius: 999px;
+
+    &--active {
+      color: var(--c-on-accent);
+      background: var(--c-accent);
+    }
+  }
+
+  /* Two lines at most. A 500-character description is allowed and would otherwise
+     make one row taller than the whole dialog. */
+  &__desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin-top: 3px;
+    font-size: 11.5px;
+    color: var(--c-fg-subtle);
+    line-height: 1.45;
+  }
+}

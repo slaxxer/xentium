@@ -216,7 +216,11 @@ function SiteFooterBlock({ props, children }: BlockProps<{
         ...(background ? { backgroundImage: background } : {}),
       }}
     >
-      {children}
+      {/* ⚠ The band is FULL WIDTH and the column is inside it — the same shape as
+          `.nv-header` / `.nv-header__inner`. The band has to reach the edges of the
+          window for a background to mean anything, and its contents have to line up
+          with the page above it; one element cannot do both. */}
+      <div className="nv-foot__inner">{children}</div>
     </div>
   );
 }
@@ -254,5 +258,6 @@ registerBlock({
   type:   "branding",
   schema: blockPropSchemas.branding,
   editorMeta: { label: "Copyright & uptime", category: "content", allowedTemplates: CHROME_FOOTER },
-  component: ({ props }: BlockProps<{ showUptime: boolean }>) => <FooterBranding showUptime={props.showUptime} />,
+  component: ({ props }: BlockProps<{ showUptime: boolean; showThemeChooser: boolean }>) =>
+    <FooterBranding showUptime={props.showUptime} showThemeChooser={props.showThemeChooser} />,
 });

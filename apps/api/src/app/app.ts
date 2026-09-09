@@ -17,6 +17,7 @@ import { articlesRouter, articleCommentsRouter } from "../modules/articles/artic
 import { articleCategoriesRouter } from "../modules/article-categories/article-category.routes.js";
 import { pagesRouter, pagesAdminRouter } from "../modules/pages/page.routes.js";
 import { siteRouter } from "../modules/site/site.routes.js";
+import { themePublicRouter } from "../modules/themes/themePublic.routes.js";
 import { siteService, type FeatureKey } from "../modules/site/site.service.js";
 import { requireFeature } from "../shared/middleware/requireFeature.js";
 import { maintenanceRouter } from "../modules/maintenance/maintenance.routes.js";
@@ -201,6 +202,9 @@ export function createApp(): Express {
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);
   app.use("/api/activity",      activityRouter);
+  // Public: which installed themes a reader may choose between. NOT under
+  // `/api/admin` — see `themePublic.routes.ts`.
+  app.use("/api/themes",        themePublicRouter);
   app.use("/api/site",          siteRouter);
   app.use("/api/members",       membersRouter);
   app.use("/api/home",          homeRouter);
