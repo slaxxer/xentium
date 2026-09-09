@@ -28,6 +28,25 @@
    DOM for semantics.
 
    The same reason the region wrappers and the variant wrapper use it. */
+/**
+ * The FOOTER's region, dissolved for the same reason the header's is.
+ *
+ * ⚠ Scoped to `.app-layout`, NOT to `.pub-head`. The header's region sits inside
+ * `.pub-head`; the footer's is a direct child of `.app-layout`, and a copy of the
+ * header's rule nested beside it matched nothing at all — the band stayed 1192px
+ * wide in a 3387px window and the fix looked correct in the file.
+ *
+ * `.nv-region` is a centred content column, which is right for a page's regions and
+ * wrong for site chrome: a footer's background has to reach the edges of the window.
+ * The column moves onto the block's own `.nv-foot__inner`, exactly as the header
+ * puts it on `.nv-header__inner`.
+ *
+ * The `<footer>` element and its contentinfo landmark survive; only the box goes.
+ */
+.app-layout > .nv-region--footer {
+  display: contents;
+}
+
 .pub-head {
   display: contents;
 
@@ -49,6 +68,7 @@
   > .nv-region--header {
     display: contents;
   }
+
 }
 
 /* The logo block's own styles, at TOP LEVEL rather than nested inside `.pub-nav`.

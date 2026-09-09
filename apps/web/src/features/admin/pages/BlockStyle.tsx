@@ -224,7 +224,14 @@ export function BlockStyleFields({
 
   return (
     <div className="lay__style">
-      <div className="lay__vis-title">{t("layoutEditor.style")}</div>
+      <div className="lay__style-head">
+        <span className="lay__vis-title">{t("layoutEditor.style")}</span>
+        {/* Says WHERE a colour edited here lands: in the site's theme tokens, not on
+            this block. Editing one recolours every block wearing the same variant,
+            which is the point of a variant and the one thing an admin can mistake it
+            for — a per-block colour. */}
+        <span className="lay__style-badge">{t("layoutEditor.themeTokens")}</span>
+      </div>
 
       {/* Deliberately outside the container branch below: a variant only makes sense
           on something with a surface, but a CSS handle is for any block at all, and
@@ -256,8 +263,14 @@ export function BlockStyleFields({
         <p className="acp-hint">{t("layoutEditor.variantLeaf")}</p>
       ) : (
         <>
-          <div className="lay__style-row">
-            <label className="lay__vis-row">
+          {/* PILLS, not a stack of radios. Five mutually exclusive one-word choices
+              read as a set when they sit on one line, and the panel is 320px wide —
+              the stacked version spent five rows saying what one row can.
+              ⚠ Still real radios underneath: same name, same keyboard behaviour, same
+              announcement. Only the drawing changed. */}
+          <div className="lay__style-row" role="radiogroup"
+               aria-label={t("layoutEditor.style")}>
+            <label className={`lay__variant-pill${!variant ? " is-on" : ""}`}>
               <input
                 type="radio" name="nv-block-variant"
                 checked={!variant}
@@ -266,7 +279,7 @@ export function BlockStyleFields({
               <span>{t("layoutEditor.variant.none")}</span>
             </label>
             {BLOCK_VARIANTS.map((v) => (
-              <label className="lay__vis-row" key={v}>
+              <label className={`lay__variant-pill${variant === v ? " is-on" : ""}`} key={v}>
                 <input
                   type="radio" name="nv-block-variant"
                   checked={variant === v}

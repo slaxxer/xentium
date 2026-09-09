@@ -135,6 +135,11 @@
   max-width: var(--content-max);
   margin: 0 auto;
 }
+/* The links take the slack so the theme picker sits hard right. Without it the row
+   packs to the left and the picker lands against the last link. */
+.nv-links--grow { flex: 1; }
+/* …and this is the fallback when there are no links at all. */
+.nv-themepick { margin-left: auto; display: inline-flex; align-items: center; }
 .nv-brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--c-fg); }
 .nv-logomark {
   width: 34px;
