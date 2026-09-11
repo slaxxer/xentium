@@ -4,10 +4,19 @@
 
 ### Added
 
-- **Badges.** Awards an admin grants by hand — a catalogue in `ACP → Users → Badges`,
-  an icon that is either an uploaded image or a curated glyph, and two permissions so
-  granting one can be handed out without handing over the catalogue. A badge is
-  **held, not accumulated**: granting it twice is the same badge.
+- **Badges.** A catalogue in `ACP → Users → Badges`, granted on a member's own page
+  in Users, with two permissions so handing out a badge can be delegated without
+  handing over the catalogue. A badge is **held, not accumulated**: granting it twice
+  is the same badge. Its mark is a curated glyph, tinted by the badge's colour.
+- **Badges you earn.** A badge can carry thresholds — articles, comments, likes,
+  followers — and a scheduled sweep grants it to whoever meets **all** of them. Off by
+  default: a badge an admin creates is a badge an admin hands out. The metrics are a
+  registry a plugin extends, which is how the forum offers posts and threads **only
+  while it is installed**; a threshold belonging to a disabled plugin is skipped and
+  starts counting again when it comes back. Nothing is ever taken away.
+- **Badges tell you.** Earning one, or being given one, arrives in the notification
+  bell under a single "Badges" preference. Quiet when there is nothing to say: a
+  re-grant that only corrects the reason, or an admin granting one to themselves.
 - **One component draws badges everywhere.** The profile, the article author card and
   the forum's post card all use it; a plugin adopts awards with one line and no query
   change. Requests are batched, so a thread of twenty cards asks once.
