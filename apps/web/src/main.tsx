@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./lib/i18n";
+import { startIconKit } from "./lib/iconKit";
 import "./hooks/useFont"; // applies stored font to --ff-sans before first render
 import App from "./app/App";
 import "./plugins/host-globals"; // sets window.__NODEVO_HOST__ before any plugin bundle loads
@@ -58,6 +59,11 @@ function loadPluginBundle(id: string, version?: string): Promise<void> {
 
 // ── Bootstrap: check enabled plugins, then render ─────────────────────────────
 async function bootstrap() {
+  // The site's FontAwesome kit, if its admin has one. Started FIRST and never
+  // awaited: it is additive on top of the bundled free set, so nothing about the
+  // app's boot should wait on a third-party script.
+  startIconKit();
+
   // Site default language for visitors with no explicit choice (§60.3) —
   // makes the admin's chosen language take effect on every device, not just
   // the one that ran the installer (which has the wizard's nv_locale cookie).

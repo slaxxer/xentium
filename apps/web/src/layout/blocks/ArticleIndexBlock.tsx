@@ -14,7 +14,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faTableCells, faList, faHeart, faComment } from "@fortawesome/free-solid-svg-icons";
 import type { ArticleListItem } from "../../lib/articlesApi";
 import { UserAvatar } from "../../components/UserAvatar";

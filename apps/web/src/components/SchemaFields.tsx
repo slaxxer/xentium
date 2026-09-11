@@ -11,9 +11,12 @@
  */
 import { useTranslation } from "react-i18next";
 import "./SchemaFields.scss";
+import { IconPicker } from "./IconPicker";
 
 /** The JSON Schema subset our Zod contracts actually produce. */
 export interface SchemaProp {
+  /** A hint the editor may honour: currently "icon". */
+  format?: string;
   type?:        string;
   title?:       string;
   description?: string;
@@ -196,6 +199,15 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                   <option key={String(opt)} value={String(opt)}>{String(opt)}</option>
                 ))}
               </select>
+            ) : prop.type === "string" && prop.format === "icon" ? (
+              /* ⚠ A FORMAT hint, not a new prop type. Any block — core or plugin —
+                 that declares `.meta({ format: "icon" })` gets the picker with no
+                 change here and no registration of its own, which is the same
+                 "blocks declare, the editor renders" split ADR-0005 already uses. */
+              <IconPicker
+                value={nonPrimitive ? "" : String(value ?? "")}
+                onChange={(tok) => set(key, tok)}
+              />
             ) : prop.type === "string" ? (
               <input className="acp-input"
                 value={nonPrimitive ? "" : String(value ?? "")}

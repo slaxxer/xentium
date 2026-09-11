@@ -16,6 +16,7 @@ import { useRenderedDocument } from "../LayoutRenderer";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { ArticleIndexBlock } from "./ArticleIndexBlock";
 import "./coreBlocks.scss";
+import { TokenIcon } from "../../components/TokenIcon";
 
 /**
  * Resolve a `LocalizedText`. Core default documents carry i18n references so
@@ -157,14 +158,19 @@ registerBlock({
 
 // ── Content ─────────────────────────────────────────────────────────────────
 
-function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center" }>) {
+function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: LocalizedText; level: 1 | 2 | 3; align: "start" | "center"; icon?: string }>) {
   const text    = useText(props.text);
   const eyebrow = useText(props.eyebrow);
   const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
   return (
     <header className={`nv-heading nv-heading--${props.align}`}>
       {eyebrow && <div className="nv-heading__eyebrow">{eyebrow}</div>}
-      <Tag className="nv-heading__title">{text}</Tag>
+      <Tag className="nv-heading__title">
+        {/* ⚠ `TokenIcon` renders nothing at all when the prop is absent or cannot be
+            drawn, so a heading without one is unchanged down to the markup. */}
+        {props.icon && <TokenIcon token={props.icon} className="nv-heading__icon" />}
+        {text}
+      </Tag>
     </header>
   );
 }

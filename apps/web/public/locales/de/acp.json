@@ -1783,7 +1783,23 @@
     "shSpread": "Streuung",
     "shColour": "Farbe",
     "shOpacity": "Deckkraft des Schattens",
-    "shRawNote": "Dieser Schatten enthält mehr, als diese Regler beschreiben können, und wird daher als Text bearbeitet. Wähle eine Vorgabe oder „Eigene“, um ihn zu ersetzen."
+    "shRawNote": "Dieser Schatten enthält mehr, als diese Regler beschreiben können, und wird daher als Text bearbeitet. Wähle eine Vorgabe oder „Eigene“, um ihn zu ersetzen.",
+    "iconKit": "FontAwesome-Pro-Kit",
+    "iconKitHint": "Füge deine Kit-ID oder die vollständige https://kit.fontawesome.com/…-URL ein. Leer lassen, um die mitgelieferten kostenlosen Icons zu verwenden.",
+    "iconKitPlaceholder": "a1b2c3d4e5",
+    "iconKitLicence": "Nutzt dein eigenes FontAwesome-Abo, nur auf dieser Website. Nodevo liefert den kostenlosen Satz; ein Kit ergänzt die Pro-Icons, die deine Lizenz abdeckt.",
+    "toastIconKit": "Icon-Kit gespeichert. Neu laden, um Pro-Icons zu sehen.",
+    "iconKitInvalid": "Das ist kein FontAwesome-Kit. Füge die Kit-ID aus deinem FontAwesome-Konto ein oder die vollständige https://kit.fontawesome.com/…-URL.",
+    "iconStyle": "Icon-Stil",
+    "iconStyleHint": "Gilt für jedes Icon auf der Website und im Adminbereich. Benötigt ein Kit — alle außer Solid sind Pro-Stile.",
+    "toastIconStyle": "Icon-Stil gespeichert. Neu laden, um ihn zu sehen.",
+    "iconGroup_classic": "Classic",
+    "iconGroup_duotone": "Duotone",
+    "iconGroup_sharp": "Sharp",
+    "iconGroup_sharpDuotone": "Sharp Duotone",
+    "iconGroup_proPlus": "Pro+ (nicht alle Icons)",
+    "iconStyleBundled": "(mitgeliefert, kein Kit nötig)",
+    "iconStylePartial": "⚠ Dies ist eine stilisierte Familie, keine Strichstärke der gesamten Bibliothek. Icons ohne passendes Zeichen werden nicht gezeichnet."
   },
   "layoutEditor": {
     "title": "Layout-Editor",
@@ -1980,7 +1996,11 @@
       "tablet": "Tablet",
       "phone": "Handy"
     },
-    "zoomHint": "Rahmen einpassen oder in voller Größe zeigen."
+    "zoomHint": "Rahmen einpassen oder in voller Größe zeigen.",
+    "iconMode": "Icons",
+    "iconModeHint": "Klicke ein beliebiges Icon in der Vorschau an, um genau dieses zu ändern.",
+    "iconOverride": "Icon · {{slot}}",
+    "iconOverrideClear": "Original-Icon verwenden"
   },
   "groups": {
     "glow": "Leuchten bei Benutzernamen",
@@ -2272,5 +2292,16 @@
       "forum.posts": "Forenbeiträge",
       "forum.threads": "Themen"
     }
+  },
+  "iconPicker": {
+    "namePlaceholder": "star",
+    "searchPlaceholder": "Mitgelieferte Icons suchen…",
+    "followSite": "Website-Stil folgen",
+    "needsKit": "Stile benötigen ein FontAwesome-Kit. Lege eines unter Branding fest.",
+    "partialFamily": "⚠ Eine stilisierte Familie — sie deckt nicht jedes Icon ab. Prüfe die Vorschau.",
+    "notBundled": "Kein mitgeliefertes Icon. Es benötigt das Kit der Website und wird sonst nicht gezeichnet.",
+    "bundled": "Mitgelieferte Icons",
+    "noMatches": "Kein passendes Icon.",
+    "needsName": "Wähle zuerst ein Icon — ein Stil allein hat nichts, worauf er wirken kann."
   }
 }

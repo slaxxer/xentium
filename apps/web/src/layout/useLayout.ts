@@ -22,6 +22,15 @@ import {
 } from "@nodevo/contracts";
 import { api } from "../lib/api";
 import { viewerThemeParam } from "../lib/viewerTheme";
+/**
+ * ⚠ Re-exported, not redefined. These moved to `previewMode` so the icon wrapper can
+ * ask without pulling this module's dependencies in behind it; every existing caller
+ * imports them from here and should keep working untouched.
+ */
+export {
+  LAYOUT_PREVIEW_PARAM, isDraftLayout, isLayoutPreview, isEditorPreview,
+} from "./previewMode";
+import { isDraftLayout, isLayoutPreview } from "./previewMode";
 
 export const LAYOUTS_QUERY_KEY = ["layouts"] as const;
 
@@ -39,7 +48,6 @@ interface PublishedLayouts {
  * which is permission-gated — a visitor adding it by hand still gets published
  * layouts, because the request 403s and the query falls back to defaults.
  */
-export const LAYOUT_PREVIEW_PARAM = "__layout";
 
 /**
  * The two ways to render the DRAFT on a real route.
@@ -53,7 +61,6 @@ export const LAYOUT_PREVIEW_PARAM = "__layout";
  * the page. An admin deciding whether to keep a theme was being shown the editor,
  * not the site.
  */
-const DRAFT_MODES = new Set(["draft", "preview"]);
 
 /** Which template the Layout Editor has open, named by the preview URL. */
 export const LAYOUT_EDITING_PARAM = "__editing";
@@ -67,32 +74,14 @@ export const LAYOUT_EDITING_PARAM = "__editing";
  */
 export function editingTemplate(): TemplateKey | null {
   if (typeof window === "undefined") return null;
-  if (layoutMode() !== "draft") return null;
+  if (!isLayoutPreview()) return null;
   const key = new URLSearchParams(window.location.search).get(LAYOUT_EDITING_PARAM);
   return key ? (key as TemplateKey) : null;
 }
 
-function layoutMode(): string | null {
-  if (typeof window === "undefined") return null;
-  return new URLSearchParams(window.location.search).get(LAYOUT_PREVIEW_PARAM);
-}
 
-/** Render the DRAFT rather than what is published. Both modes. */
-export function isDraftLayout(): boolean {
-  const mode = layoutMode();
-  return mode !== null && DRAFT_MODES.has(mode);
-}
 
-/**
- * Show the editor's affordances. `draft` only — never `preview`.
- *
- * ⚠ Keep this apart from `isDraftLayout`. They were one predicate, and every new
- * caller had to guess which meaning it wanted; the guess that put editor chrome on
- * a theme preview is the one that made the split necessary.
- */
-export function isLayoutPreview(): boolean {
-  return layoutMode() === "draft";
-}
+
 
 /**
  * Which arrangement the EDITOR is showing (preview only).

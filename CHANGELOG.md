@@ -1,55 +1,37 @@
 # Changelog
 
-## Badges you award, a profile rebuilt to its design, and rails that breathe
+## Icons you choose — Pro kits, one style, or one icon at a time
 
 ### Added
 
-- **Badges.** A catalogue in `ACP → Users → Badges`, granted on a member's own page
-  in Users, with two permissions so handing out a badge can be delegated without
-  handing over the catalogue. A badge is **held, not accumulated**: granting it twice
-  is the same badge. Its mark is a curated glyph, tinted by the badge's colour.
-- **Badges you earn.** A badge can carry thresholds — articles, comments, likes,
-  followers — and a scheduled sweep grants it to whoever meets **all** of them. Off by
-  default: a badge an admin creates is a badge an admin hands out. The metrics are a
-  registry a plugin extends, which is how the forum offers posts and threads **only
-  while it is installed**; a threshold belonging to a disabled plugin is skipped and
-  starts counting again when it comes back. Nothing is ever taken away.
-- **Badges tell you.** Earning one, or being given one, arrives in the notification
-  bell under a single "Badges" preference. Quiet when there is nothing to say: a
-  re-grant that only corrects the reason, or an admin granting one to themselves.
-- **One component draws badges everywhere.** The profile, the article author card and
-  the forum's post card all use it; a plugin adopts awards with one line and no query
-  change. Requests are batched, so a thread of twenty cards asks once.
-- **Recent visitors.** Who has looked at a profile lately, with an all-time view total
-  that counts guests. Pruned on a schedule, because a record of who looked at whom is
-  a longer memory than the feature needs.
-- **Member cover images**, with the rank gate the design calls for — "Unlocked at
-  Contributor" is real, and "animated covers" is a file type a rank grants.
-- **Sample data in the layout editor**, so a rail can be arranged on a site where
-  nobody has followers or a rank yet.
+- **FontAwesome Pro, per instance.** An admin with their own Pro subscription pastes
+  their own kit id in `Appearance → Style Editor → Branding` and the whole site draws
+  with it. Nodevo keeps shipping the free set: with no kit, a kit that fails to load,
+  or a kit that is slow, every icon still draws exactly as before.
+- **One icon style for the whole site** — Classic, Duotone, Sharp and Sharp Duotone in
+  four weights each, plus the Pro+ families (Jelly, Slab, Vellum, Utility and the
+  rest). Plugins follow it too, with no plugin change and no rebuild.
+- **Change any single icon.** In the layout editor, turn on **Icons** in the preview
+  toolbar and click any icon on the page: it opens a picker, and the choice is saved
+  into the layout draft and reaches visitors when the draft is published. Individual,
+  not global — the heart on an article card and the heart in the sidebar are separate
+  icons and stay that way.
+- **An icon picker anywhere an icon is data.** Badge glyphs use it, and any block —
+  core or plugin — gets the same control by declaring `format: "icon"` on a prop. The
+  `heading` block gains an optional icon as the first example.
 
 ### Changed
 
-- **The profile page matches its design 1:1** — the cover band, an overlapped
-  squircle avatar, the name and its pills on one row, stat tiles, pill tabs and
-  article cards with a thumbnail, a read-time chip and an excerpt.
-- **Rank progress is one component**, shared by the profile and the home rail. Home
-  gains the rung chips and the "next rank unlocks" list it never had, and the two
-  endpoints that had drifted apart now answer with the same shape.
-- **The rank ladder is retired.** Rank progress is the one rank block, and it can be
-  placed on any page rather than only the profile.
-- **Per-rank profile image limits are enforced.** They had been stored since Phase 7,
-  settable in no UI and read by no upload route.
+- **Badge glyphs are no longer limited to a curated list of 48.** A site with a kit
+  can use anything the kit draws.
+- **The admin panel keeps the free icons**, whatever the site is set to — the same
+  separation that already pins its font and its token layer. Changing how your
+  community looks should not change the tool you change it with.
 
 ### Fixed
 
-- **The layout editor appeared to freeze.** Every document opened a style-sync stream
-  and nothing closed it; the editor's preview re-opens one on every template switch,
-  and once six were open the browser could not talk to the origin at all, so every
-  request queued forever.
-- **One fixed gap around every page.** The space under the header came from a placed
-  block, the space above the footer from nothing, and each page added its own on top —
-  so the seam measured 64, 88 or 96 depending on the route.
-- **Rail cards had no gap between them** and read as one tall card with rules across it.
-- The profile body was capped narrower than the cards inside it; its bio and stats
-  were indented by the avatar column instead of spanning the card.
+- **The layout editor's preview could miss what the editor told it.** State is pushed
+  when the iframe fires `load`, which happens *before* the app inside has mounted and
+  subscribed — so that push was dropped. The document survived only because it is
+  re-pushed on every change; anything sent once was lost. The preview now announces
+  itself and the editor answers.

@@ -1783,7 +1783,23 @@
     "shSpread": "Étendue",
     "shColour": "Couleur",
     "shOpacity": "Opacité de l'ombre",
-    "shRawNote": "Cette ombre contient plus que ces réglages ne peuvent décrire ; elle se modifie donc en texte. Choisissez un préréglage ou Personnalisée pour la remplacer."
+    "shRawNote": "Cette ombre contient plus que ces réglages ne peuvent décrire ; elle se modifie donc en texte. Choisissez un préréglage ou Personnalisée pour la remplacer.",
+    "iconKit": "Kit FontAwesome Pro",
+    "iconKitHint": "Collez l'identifiant de votre kit, ou son URL complète https://kit.fontawesome.com/…. Laissez vide pour utiliser les icônes gratuites fournies.",
+    "iconKitPlaceholder": "a1b2c3d4e5",
+    "iconKitLicence": "Utilise votre propre abonnement FontAwesome, sur ce site uniquement. Nodevo fournit le jeu gratuit ; un kit ajoute les icônes Pro que couvre votre licence.",
+    "toastIconKit": "Kit d'icônes enregistré. Rechargez pour voir les icônes Pro.",
+    "iconKitInvalid": "Ce n'est pas un kit FontAwesome. Collez l'identifiant du kit depuis votre compte FontAwesome, ou l'URL complète https://kit.fontawesome.com/….",
+    "iconStyle": "Style d'icônes",
+    "iconStyleHint": "S'applique à toutes les icônes du site et du panneau. Nécessite un kit : tous sauf Solid sont des styles Pro.",
+    "toastIconStyle": "Style d'icônes enregistré. Rechargez pour le voir.",
+    "iconGroup_classic": "Classic",
+    "iconGroup_duotone": "Duotone",
+    "iconGroup_sharp": "Sharp",
+    "iconGroup_sharpDuotone": "Sharp Duotone",
+    "iconGroup_proPlus": "Pro+ (couverture partielle)",
+    "iconStyleBundled": "(fourni, sans kit)",
+    "iconStylePartial": "⚠ C'est une famille stylisée, pas une graisse de toute la bibliothèque. Les icônes sans glyphe ne s'afficheront pas."
   },
   "layoutEditor": {
     "title": "Éditeur de mise en page",
@@ -1980,7 +1996,11 @@
       "tablet": "Tablette",
       "phone": "Téléphone"
     },
-    "zoomHint": "Ajuster le cadre au panneau, ou l’afficher en taille réelle."
+    "zoomHint": "Ajuster le cadre au panneau, ou l’afficher en taille réelle.",
+    "iconMode": "Icônes",
+    "iconModeHint": "Cliquez sur une icône de l'aperçu pour ne changer que celle-ci.",
+    "iconOverride": "Icône · {{slot}}",
+    "iconOverrideClear": "Utiliser l'icône d'origine"
   },
   "groups": {
     "glow": "Halo sur les noms",
@@ -2272,5 +2292,16 @@
       "forum.posts": "Messages du forum",
       "forum.threads": "Sujets du forum"
     }
+  },
+  "iconPicker": {
+    "namePlaceholder": "star",
+    "searchPlaceholder": "Rechercher les icônes fournies…",
+    "followSite": "Suivre le style du site",
+    "needsKit": "Les styles nécessitent un kit FontAwesome. Configurez-en un dans Branding.",
+    "partialFamily": "⚠ Famille stylisée : elle ne couvre pas toutes les icônes. Vérifiez l'aperçu.",
+    "notBundled": "Icône non fournie. Elle nécessite le kit du site, sinon elle ne s'affichera pas.",
+    "bundled": "Icônes fournies",
+    "noMatches": "Aucune icône ne correspond.",
+    "needsName": "Choisissez d'abord une icône : un style seul n'a rien à quoi s'appliquer."
   }
 }

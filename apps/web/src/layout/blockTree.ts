@@ -377,3 +377,30 @@ export function canNestInto(
   if (!parent) return false;
   return parent.depth + subtreeHeight(found.node) <= maxDepth;
 }
+
+/**
+ * Set or clear ONE icon override on a block.
+ *
+ * ⚠ The same absence rule the variant and the class handle follow, applied twice: an
+ * empty token deletes the entry, and emptying the last entry deletes the map. Setting
+ * an override and clearing it again must leave the document byte-identical, because
+ * "pending" is a `JSON.stringify` comparison — an empty `{}` left behind would light
+ * the publish button up over a round trip that changed nothing.
+ */
+export function updateBlockIconOverride(
+  regions: Regions,
+  id: string,
+  slot: string,
+  token: string | undefined,
+): Regions {
+  if (!findNode(regions, id)) return regions;
+  const next = clone(regions);
+  const { node } = findNode(next, id)!;
+  const map = { ...(node.iconOverrides ?? {}) };
+  const cleaned = token?.trim();
+  if (cleaned) map[slot] = cleaned;
+  else delete map[slot];
+  if (Object.keys(map).length === 0) delete node.iconOverrides;
+  else node.iconOverrides = map;
+  return next;
+}

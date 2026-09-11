@@ -512,6 +512,11 @@ export interface BlockNode {
    * would be honoured by core blocks and ignored by everything else.
    */
   align?: 'left' | 'center' | 'right';
+  /**
+   * Per-occurrence icon replacements, keyed `"<icon-name>#<n>"` (the nth icon of
+   * that name in this block, in render order) → an icon token.
+   */
+  iconOverrides?: Record<string, string>;
 }
 
 /**
@@ -789,6 +794,24 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
      * navbar be a block instead of a template.
      */
     align:      z.enum(['left', 'center', 'right']).optional(),
+
+    /**
+     * Per-occurrence icon replacements inside this block.
+     *
+     * Keyed `"<icon-name>#<n>"` — the nth icon of that name in this block, in render
+     * order. The value is an icon token (`"star"`, `"jelly-regular:star"`).
+     *
+     * ⚠ NODE-LEVEL, so an override travels with the block when it is moved or
+     * duplicated, and is published with the layout draft like everything else here.
+     *
+     * ⚠ The key is POSITIONAL, which is the trade this design makes. Replacing the
+     * third `chevron-down` in a block addresses it by being third; if a block is
+     * later rewritten to render a different number of them, the override can land on
+     * a neighbour. That is why `n` is scoped per NAME rather than per block — adding
+     * an unrelated icon does not shift the others — and why an override that cannot
+     * draw falls back to the icon the code asked for rather than to a hole.
+     */
+    iconOverrides: z.record(z.string().max(80), z.string().max(80)).optional(),
   }),
 );
 
@@ -1011,6 +1034,17 @@ export const blockPropSchemas = {
     eyebrow: localizedTextSchema.optional(),
     level:   z.union([z.literal(1), z.literal(2), z.literal(3)]).default(2),
     align:   z.enum(['start', 'center']).default('start'),
+    /**
+     * An optional glyph before the title.
+     *
+     * ⚠ `format: "icon"` is a HINT to the editor, not a new prop type — SchemaFields
+     * renders the icon picker for it, and any other block (core or plugin) gets the
+     * same control by declaring the same hint. Nothing needs registering.
+     *
+     * ⚠ Optional and never defaulted: absent means no icon, and storing a default
+     * would make every heading ever created carry one.
+     */
+    icon: z.string().optional().meta({ title: 'Icon', format: 'icon' }),
   }),
 
   richText: z.object({

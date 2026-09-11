@@ -11,7 +11,7 @@
  * being shown: on a profile it is that member's, on the home rail it is the viewer's
  * own. That is `useRankSubject`, and it is the whole difference.
  */
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faCheck } from "@fortawesome/free-solid-svg-icons";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";

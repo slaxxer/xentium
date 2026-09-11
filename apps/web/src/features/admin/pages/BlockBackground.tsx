@@ -31,7 +31,7 @@
  */
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faTrash, faUpload, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import {
   faTriangleExclamation, faArrowsRotate, faRotateRight, faHouse, faArrowLeft,
   faCopy, faCheck, faBookOpen, faListUl,

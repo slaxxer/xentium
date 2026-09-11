@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../components/Icon";
 import { faUsers } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../lib/api";
 import { ThemeChooser } from "../layout/blocks/ThemeChooserBlock";

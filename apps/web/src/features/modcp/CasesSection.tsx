@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faTriangleExclamation, faBan, faUserCheck, faCheckDouble } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { timeAgo } from "../../lib/time";

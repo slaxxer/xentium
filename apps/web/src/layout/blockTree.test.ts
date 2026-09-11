@@ -23,6 +23,7 @@ import {
   updateBlockProps,
   updateBlockVisibility,
   type Regions,
+  updateBlockIconOverride,
 } from "./blockTree";
 
 const n = (id: string, children?: BlockNode[]): BlockNode => ({
@@ -438,5 +439,47 @@ describe("countDescendants", () => {
     // one on every container in the tree.
     const col: BlockNode = { id: "col", type: "t.col", props: {}, children: [leaf("a")] };
     expect(countDescendants(col)).toBe(1);
+  });
+});
+
+describe("icon overrides", () => {
+  const tree = (): Regions => ({ body: [{ id: "a", type: "heading", props: {} }] });
+
+  it("stores one override on the block", () => {
+    const r = updateBlockIconOverride(tree(), "a", "gear#0", "rocket");
+    expect(r.body![0]!.iconOverrides).toEqual({ "gear#0": "rocket" });
+  });
+
+  it("keeps other slots when one changes", () => {
+    let r = updateBlockIconOverride(tree(), "a", "gear#0", "rocket");
+    r = updateBlockIconOverride(r, "a", "star#1", "jelly-regular:heart");
+    expect(r.body![0]!.iconOverrides).toEqual({
+      "gear#0": "rocket", "star#1": "jelly-regular:heart",
+    });
+  });
+
+  /**
+   * ⚠ THE ABSENCE RULE, twice. Setting an override and clearing it must leave the
+   * document byte-identical: "pending" is a `JSON.stringify` comparison, so an empty
+   * `{}` left behind lights the publish button up over a round trip that changed
+   * nothing.
+   */
+  it("leaves no trace when the last override is cleared", () => {
+    const before = tree();
+    let r = updateBlockIconOverride(before, "a", "gear#0", "rocket");
+    r = updateBlockIconOverride(r, "a", "gear#0", undefined);
+    expect(r.body![0]!.iconOverrides).toBeUndefined();
+    expect(JSON.stringify(r)).toBe(JSON.stringify(before));
+  });
+
+  it("treats whitespace as clearing", () => {
+    let r = updateBlockIconOverride(tree(), "a", "gear#0", "rocket");
+    r = updateBlockIconOverride(r, "a", "gear#0", "   ");
+    expect(r.body![0]!.iconOverrides).toBeUndefined();
+  });
+
+  it("returns the tree untouched for an unknown block", () => {
+    const before = tree();
+    expect(updateBlockIconOverride(before, "nope", "gear#0", "rocket")).toBe(before);
   });
 });

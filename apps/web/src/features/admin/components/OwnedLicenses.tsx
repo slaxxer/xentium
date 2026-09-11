@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faBagShopping, faCheck, faCloudArrowDown, faDownload, faArrowUp, faLock,
   faBan, faCircle, faSliders, faArrowUpRightFromSquare, faPuzzlePiece, faPalette,

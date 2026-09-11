@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faTriangleExclamation, faBan, faUserCheck, faRotateLeft, faShield, faNetworkWired } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { timeAgo } from "../../../lib/time";
