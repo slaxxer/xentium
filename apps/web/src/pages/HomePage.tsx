@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faHouse, faStar, faComments, faHeart, faPenToSquare, faImage, faSquarePollVertical,
-  faEllipsis, faShareNodes, faBookmark, faUsers, faTrophy, faFire, faTag,
+  faEllipsis, faShareNodes, faBookmark, faUsers, faFire, faTag,
 } from "@fortawesome/free-solid-svg-icons";
 import { articlesApi, articleCategoriesApi, type ArticleListItem } from "../lib/articlesApi";
 import { api } from "../lib/api";
@@ -255,53 +255,13 @@ export function Feed() {
 
 /* ── right rail ───────────────────────────────────────────────────────── */
 
-interface ProgressionData {
-  current: { badgeLabel: string | null; badgeColor: string | null } | null;
-  next: { badgeLabel: string | null; badgeColor: string | null } | null;
-  atTop: boolean;
-  percent: number;
-  primary: { label: string; have: number; need: number; remaining: number } | null;
-}
-
-export function ProgressionCard() {
-  const { t } = useTranslation("home");
-  const { isAuthenticated } = useAuth();
-  const { data } = useQuery<ProgressionData>({
-    queryKey: ["me-progression"],
-    queryFn: () => api.get("/users/me/progression"),
-    enabled: isAuthenticated,
-  });
-  if (!data) return null;
-
-  // Top of the ladder (or progression not configured) — no next rung.
-  if (data.atTop || !data.next) {
-    return (
-      <section className="hf-card hf-prog">
-        <div className="hf-prog__row"><b>{t("progression.topReached")}</b><span><FontAwesomeIcon icon={faTrophy} /></span></div>
-        <p>{t("progression.topBody")}</p>
-      </section>
-    );
-  }
-
-  const { next, percent, primary } = data;
-  const nextStyle = next.badgeColor ? { color: next.badgeColor } : undefined;
-  return (
-    <section className="hf-card hf-prog">
-      <div className="hf-prog__row"><b>{t("progression.almostThere")}</b><span>{percent}%</span></div>
-      <div className="hf-prog__bar"><i style={{ width: `${percent}%` }} /></div>
-      <p>
-        {primary
-          ? <>{t("progression.remaining", {
-              n: primary.remaining,
-              // Core metric keys are translated; a plugin's own label falls through as-is.
-              label: t(`progression.metric.${primary.label}`, { defaultValue: primary.label }),
-            })} </>
-          : <>{t("progression.keepGoing")} </>}
-        <b style={nextStyle}><FontAwesomeIcon icon={faTrophy} /> {next.badgeLabel}</b>
-      </p>
-    </section>
-  );
-}
+/**
+ * ⚠ `ProgressionCard` lived here and is gone. It drew a second progress bar against
+ * `GET /users/me/progression`, in the `home` namespace, for the same thing the
+ * profile rail already drew — see `features/progression/rank.tsx`. The
+ * `homeProgression` block renders `RankProgress` now, so the two agree by
+ * construction rather than by anyone remembering to update both.
+ */
 
 interface SuggestedUser {
   id: string;

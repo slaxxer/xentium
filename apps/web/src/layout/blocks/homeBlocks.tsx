@@ -29,12 +29,12 @@ import type { ReactNode } from "react";
 import type { ZodType } from "zod";
 import { blockPropSchemas } from "@nodevo/contracts";
 import { registerBlock } from "../blockRegistry";
+import { RankProgress, useRankFor } from "../../features/progression/rank";
 import {
   Feed,
   HotThreads,
   MeCard,
   PopularTags,
-  ProgressionCard,
   SectionNav,
   SpacesCard,
   SuggestedPeople,
@@ -75,7 +75,17 @@ simple("homeSpaces",     "Spaces",      SpacesCard);
 simple("homeFeed", "Feed", Feed, true);
 
 // Right rail.
-simple("homeProgression",     "Progression",      ProgressionCard);
+/**
+ * ⚠ The block KEY stays `homeProgression` — existing home layouts reference it, and
+ * renaming a block type orphans it in every stored document. Only what it renders
+ * changed: the same `RankProgress` the profile rail draws, about the VIEWER.
+ */
+registerBlock({
+  type:   "homeProgression",
+  schema: blockPropSchemas.homeProgression,
+  editorMeta: { label: "Rank progress", category: "data" },
+  component: ({ context }) => <RankProgress data={useRankFor(context)} />,
+});
 simple("homeHotThreads",      "Hot threads",      HotThreads);
 simple("homePopularTags",     "Popular tags",     PopularTags);
 simple("homeSuggestedPeople", "Suggested people", SuggestedPeople);
