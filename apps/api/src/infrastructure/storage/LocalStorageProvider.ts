@@ -6,7 +6,8 @@
  * directories, because `avatars` / `articles` / `themes` are CMS concepts.
  * `themes` covers both `themes/logo` (the site logo) and `themes/<theme-id>`
  * (assets unpacked from an imported .nvtheme). `layouts` holds imagery a block
- * references — a `section` background, today. Written only by admin-
+ * references — a `section` background, today. `badges` holds award icons (ADR-0009),
+ * bounded to 32x32 at the route that writes them. Written only by admin-
  * authenticated paths, and every filename is basenamed + sanitised before it
  * gets here.
  *
@@ -24,7 +25,7 @@ import { env } from "../../config/env.js";
  * files are REFERENCED becomes a directory whose contents are all orphans, and the
  * purge deletes them on a schedule long after anyone connects the two.
  */
-export const ALLOWED_UPLOAD_DIRS = ["avatars", "articles", "pages", "groups", "themes", "layouts"] as const;
+export const ALLOWED_UPLOAD_DIRS = ["avatars", "articles", "pages", "groups", "badges", "themes", "layouts"] as const;
 
 export { LocalStorageProvider };
 

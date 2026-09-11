@@ -54,6 +54,10 @@ export const NEC = {
   STORE_TYPE_NOT_PERMITTED: "NEC-STORE-7002",
   STORE_MIME_MISMATCH: "NEC-STORE-7003",
   STORE_PATH_FORBIDDEN: "NEC-STORE-7004",
+  /** The image is larger than the surface it is for allows. Dimensions, not bytes —
+   *  7001 already answers "too big to store", and a 32x32 badge slot refuses a
+   *  perfectly small 512x512 PNG for a reason a size limit cannot express. */
+  STORE_IMAGE_TOO_LARGE: "NEC-STORE-7005",
 
   // Plugin
   PLUGIN_INVALID_MANIFEST: "NEC-PLUGIN-2001",
