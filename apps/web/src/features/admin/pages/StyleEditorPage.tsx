@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faXmark, faRotateLeft, faRotateRight, faCloudArrowUp, faSun, faMoon,
@@ -11,6 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { looksLikeKit } from "../../../lib/iconKit";
 import { toast } from "../../../lib/toast";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
@@ -40,6 +41,7 @@ import {
   type ShadowKind, type ShadowParts,
 } from "./shadowValue";
 import "./StyleEditorPage.scss";
+import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@nodevo/contracts";
 
 const CUSTOM_CSS_PREVIEW_ID = "nodevo-custom-css-preview";
 
@@ -289,10 +291,48 @@ export function StyleEditorPage() {
   // ── Branding ──────────────────────────────────────────────────────────────
   const { data: branding, refetch: refetchBranding } = useQuery<{
     navbarUrl: string | null; iconUrl: string | null; logoText: string | null;
+      iconKitUrl?: string | null;
+      iconStyle?: string | null;
   }>({ queryKey: ["acp-branding"], queryFn: () => api.get("/appearance/branding") });
 
   const [logoText, setLogoText] = useState("");
   useEffect(() => { if (branding !== undefined) setLogoText(branding?.logoText ?? ""); }, [branding?.logoText]);
+  const [iconKit, setIconKit] = useState("");
+  useEffect(() => { if (branding !== undefined) setIconKit(branding?.iconKitUrl ?? ""); }, [branding?.iconKitUrl]);
+
+  /**
+   * ⚠ Its own endpoint, not the generic settings PUT. The value becomes a
+   * `<script src>` for every visitor, so the server validates it against a host
+   * allowlist and rebuilds the URL rather than storing what was typed.
+   */
+  const saveIconStyleMut = useMutation({
+    mutationFn: (style: string) => api.put("/appearance/branding/icon-style", { style }),
+    onSuccess:  () => {
+      refetchBranding();
+      qc.invalidateQueries({ queryKey: ["pub-branding"] });
+      swalToast(t("styleEditor.toastIconStyle"), "success");
+    },
+    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const saveIconKitMut = useMutation({
+    mutationFn: () => {
+      // ⚠ Checked here so the message can be specific. The server refuses the same
+      // shapes, but may only answer with a NEC code, which renders as the generic
+      // "check your input" — useless to an admin who pasted a real id from the
+      // wrong place.
+      if (iconKit.trim() && !looksLikeKit(iconKit)) {
+        return Promise.reject(new Error(t("styleEditor.iconKitInvalid")));
+      }
+      return api.put("/appearance/branding/icon-kit", { kit: iconKit });
+    },
+    onSuccess:  () => {
+      refetchBranding();
+      qc.invalidateQueries({ queryKey: ["pub-branding"] });
+      swalToast(t("styleEditor.toastIconKit"), "success");
+    },
+    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
 
   const saveLogoTextMut = useMutation({
     mutationFn: () => api.put("/appearance/branding/text", { text: logoText }),
@@ -846,6 +886,50 @@ export function StyleEditorPage() {
               <span className="se-brand__mark" />
               <span className="se-brand__word">{logoText || t("styleEditor.logoPlaceholder")}</span>
             </div>
+          </div>
+
+          <div>
+            <div className="se-brand__h">{t("styleEditor.iconKit")}</div>
+            <p className="se-brand__p">{t("styleEditor.iconKitHint")}</p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input className="se-brand__input" value={iconKit} onChange={(e) => setIconKit(e.target.value)}
+                placeholder={t("styleEditor.iconKitPlaceholder")} spellCheck={false} />
+              <button type="button" className="btn-primary btn-sm" onClick={() => saveIconKitMut.mutate()} disabled={saveIconKitMut.isPending}>
+                {t("styleEditor.save")}
+              </button>
+            </div>
+            <p className="se-brand__p">{t("styleEditor.iconKitLicence")}</p>
+
+            <div className="se-brand__h" style={{ marginTop: "var(--sp-4)" }}>{t("styleEditor.iconStyle")}</div>
+            {/* ⚠ Only meaningful with a kit: every style but Solid is Pro, and naming
+                one with no kit loaded would emit a class nothing defines. The select
+                is disabled rather than hidden so the capability is discoverable. */}
+            <p className="se-brand__p">{t("styleEditor.iconStyleHint")}</p>
+            <select
+              className="se-brand__input"
+              value={branding?.iconStyle ?? "solid"}
+              disabled={!branding?.iconKitUrl || saveIconStyleMut.isPending}
+              onChange={(e) => saveIconStyleMut.mutate(e.target.value)}
+            >
+              {/* ⚠ Grouped by FAMILY, and the style names are NOT translated — they
+                  are FontAwesome's own product names, the same words the admin just
+                  read on their kit page. Only the group headings are localised. */}
+              {(["classic", "duotone", "sharp", "sharpDuotone", "proPlus"] as IconStyleGroup[]).map((g) => (
+                <optgroup key={g} label={t(`styleEditor.iconGroup_${g}`)}>
+                  {ICON_STYLE_DEFS.filter((d) => d.group === g).map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.id === "solid" ? `${d.label} ${t("styleEditor.iconStyleBundled")}` : d.label}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            {/* ⚠ The Pro+ families are stylised sets, not a weight of the whole
+                library. An icon they have no glyph for simply does not draw, and
+                there is nothing to fall back to — so say it before it happens. */}
+            {iconStyleDef(branding?.iconStyle ?? "solid")?.full === false && (
+              <p className="se-brand__p">{t("styleEditor.iconStylePartial")}</p>
+            )}
           </div>
 
           <BrandingSlot

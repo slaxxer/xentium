@@ -26,7 +26,7 @@
  * ones), and the follow/block handlers. None of them fetch, and none of them take a
  * prop that selects data — the props are presentational only.
  */
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import {
   faLock, faUserSlash, faUserCheck, faChevronRight, faEye,
   faImage, faXmark, faCloudArrowUp,

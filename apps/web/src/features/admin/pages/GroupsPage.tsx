@@ -6,7 +6,7 @@ import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { groupByDomain } from "../../../lib/permissions";
 import type { Permission } from "../../../lib/permissions";
 import { slotRegistry } from "../../../plugins/slotRegistry";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faPlus, faSave, faTrash, faUsers, faKey, faDiagramProject, faPencil, faToggleOn, faToggleOff, faChevronDown, faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
 
 interface Group {

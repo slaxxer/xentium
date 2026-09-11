@@ -9,7 +9,8 @@ import * as React from "react";
 import * as ReactJsxRuntime from "react/jsx-runtime";
 import * as ReactRouterDom from "react-router-dom";
 import * as ReactQuery from "@tanstack/react-query";
-import * as FaReact from "@fortawesome/react-fontawesome";
+import * as FaReactNs from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon as StyledFaIcon } from "../components/Icon";
 import * as ReactI18next from "react-i18next";
 
 import * as webApi from "@web/lib/api";
@@ -62,7 +63,13 @@ const HOST = {
   ReactJsxRuntime,
   ReactRouterDom,
   ReactQuery,
-  FaReact,
+  /**
+   * ⚠ `FontAwesomeIcon` is SWAPPED for core's wrapper, so every plugin follows the
+   * site's icon style with no plugin change and no rebuild. Plugins externalise
+   * this module (see any plugin's vite.config), which makes this one line the
+   * difference between "core is Pro and the forum is not" and a consistent app.
+   */
+  FaReact: { ...FaReactNs, FontAwesomeIcon: StyledFaIcon },
   ReactI18next,
   webApi,
   webSwal,

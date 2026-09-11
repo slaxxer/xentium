@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "./Icon";
 import { faTriangleExclamation, faCopy, faCheck, faRotateRight, faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { useFatalError } from "../lib/fatalError";
 import "./FatalErrorOverlay.scss";

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faKey, faRotate, faCircleExclamation, faPlug, faLinkSlash, faShieldHalved,
   faTriangleExclamation, faCloudArrowDown, faChevronDown, faCopy, faCheck,

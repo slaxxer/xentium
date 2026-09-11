@@ -19,13 +19,13 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faRotateLeft, faRotateRight, faXmark,
   faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faSliders,
   faCheck, faSpinner, faEllipsis, faArrowUpFromBracket,
   faChevronDown, faFileLines, faWindowMaximize, faArrowUpRightFromSquare,
-  faClone, faTrash,
+  faClone, faTrash, faIcons,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { z } from "zod";
@@ -71,6 +71,7 @@ import {
   updateBlockVariant,
   updateBlockClassName,
   updateBlockVisibility,
+  updateBlockIconOverride,
   type Regions,
 } from "../../../layout/blockTree";
 import { useAutosave } from "../../../hooks/useAutosave";
@@ -89,6 +90,7 @@ import { BlockCatalogue } from "./BlockCatalogue";
 import { BlockStyleFields } from "./BlockStyle";
 import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import "./LayoutEditorPage.scss";
+import { IconPicker } from "../../../components/IconPicker";
 
 /**
  * The three canvas widths, and what they are for.
@@ -259,6 +261,16 @@ export function LayoutEditorPage() {
    *  close over the template that happened to be open when it was attached. */
   const templateKeyRef = useRef<TemplateKey>(templateKey);
   templateKeyRef.current = templateKey;
+  /** Same reason as `templateKeyRef`: the push runs from a listener registered once. */
+  const iconModeRef = useRef(false);
+  /**
+   * The full push, kept current for the message listener.
+   *
+   * ⚠ That listener is registered once with no deps, so it cannot call `pushTo`
+   * directly — it would send whatever document and audience existed when the editor
+   * mounted. Assigned on every render instead.
+   */
+  const pushAllRef = useRef<() => void>(() => {});
   // "" = the template default. A variant is one instance of the template — a page
   // slug for `page.detail`.
   const [variant, setVariant] = useState<string>(DEFAULT_VARIANT);
@@ -274,6 +286,23 @@ export function LayoutEditorPage() {
    * most templates are about, and every template except `home` has only one arrangement.
    */
   const [audience, setAudience] = useState<AudienceView>("members");
+  /**
+   * Icon mode, and the icon it produced.
+   *
+   * ⚠ Two pieces of state, not one. The MODE stays on while an admin works through
+   * several icons — turning it off after each pick would make changing four icons
+   * four trips to the toolbar — while the SELECTION is whichever one is open now.
+   */
+  const [iconMode, setIconMode] = useState(false);
+  iconModeRef.current = iconMode;
+  const [iconPick, setIconPick] = useState<{ id: string; slot: string } | null>(null);
+  /**
+   * ⚠ The rail scrolls, and this panel opens BELOW the block's own settings. An admin
+   * clicks an icon in the preview and the thing that answered them can be off-screen —
+   * which reads as "nothing happened", the same complaint that turned out to be the
+   * handshake race. Cheap insurance against the same symptom from a different cause.
+   */
+  const iconPanelRef = useRef<HTMLDivElement>(null);
   const previewRef = useRef<HTMLIFrameElement>(null);
 
   /**
@@ -643,6 +672,7 @@ export function LayoutEditorPage() {
         region?: string; parentId?: string | null; index?: number;
         action?: "undo" | "redo";
         left?: number; right?: number;
+        slot?: string;
       };
 
       if (msg?.source !== "nv-preview") return;
@@ -667,6 +697,31 @@ export function LayoutEditorPage() {
           setTemplateKey(msg.templateKey as TemplateKey);
         }
         setSelectedId(msg.id);
+      }
+
+      /**
+       * The preview's bridge is listening.
+       *
+       * ⚠ The `onLoad` push races it — the iframe fires `load` before the React app
+       * inside has mounted and subscribed, so that push is dropped. The document
+       * survived only because it is re-pushed on every change; icon mode was pushed
+       * once and lost, which left the toggle looking on while the preview had no idea.
+       */
+      if (msg.type === "ready") pushAllRef.current();
+
+      /**
+       * One icon was clicked, in icon mode.
+       *
+       * ⚠ The block is selected too. The override is stored ON that block, so the
+       * rail must be showing it — otherwise an admin picks an icon and the panel that
+       * opens belongs to something else.
+       */
+      if (msg.type === "iconPick" && msg.id && msg.slot) {
+        if (msg.templateKey && msg.templateKey !== templateKeyRef.current) {
+          setTemplateKey(msg.templateKey as TemplateKey);
+        }
+        setSelectedId(msg.id);
+        setIconPick({ id: msg.id, slot: msg.slot });
       }
 
       // An empty region was clicked in the preview. Open the SAME add-block picker
@@ -732,6 +787,7 @@ export function LayoutEditorPage() {
       );
     }
     win.postMessage({ source: "nv-editor", type: "audience", audience: forAudience }, window.location.origin);
+    win.postMessage({ source: "nv-editor", type: "iconMode", on: iconModeRef.current }, window.location.origin);
     win.postMessage({ source: "nv-editor", type: "tokens", css: styleCss }, window.location.origin);
     // The preview draws a restricted block like any other — the chip is the only
     // place the condition shows — so it needs the words for it.
@@ -747,6 +803,12 @@ export function LayoutEditorPage() {
       window.location.origin,
     );
   };
+
+  useEffect(() => {
+    if (iconPick) iconPanelRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [iconPick]);
+
+  pushAllRef.current = () => pushTo(previewRef.current?.contentWindow, audience);
 
   /**
    * Pending variant tokens, pushed into the preview as a stylesheet.
@@ -1852,6 +1914,25 @@ export function LayoutEditorPage() {
               ))}
             </div>
 
+            {/* ⚠ A MODE, not a one-shot. Icons are clicked in runs — changing four
+                of them should not mean four trips back to this button. While it is
+                on, a click in the preview picks an icon instead of selecting a
+                block, and the preview outlines every icon so that is visible. */}
+            <button type="button"
+              className={`lay__zoom${iconMode ? " is-on" : ""}`}
+              aria-pressed={iconMode}
+              title={t("layoutEditor.iconModeHint")}
+              onClick={() => {
+                const on = !iconMode;
+                setIconMode(on);
+                if (!on) setIconPick(null);
+                previewRef.current?.contentWindow?.postMessage(
+                  { source: "nv-editor", type: "iconMode", on }, window.location.origin,
+                );
+              }}>
+              <FontAwesomeIcon icon={faIcons} /> {t("layoutEditor.iconMode")}
+            </button>
+
             <span className="lay__canvasbar-width">
               {t(`layoutEditor.device.${device}`)} · {deviceWidth}
             </span>
@@ -2004,6 +2085,33 @@ export function LayoutEditorPage() {
                   onChange={(next) => updateVisibility(selected.node.id, next)}
                 />
               )}
+              {/* One icon, picked in the preview.
+                  ⚠ Shown only while an icon of THIS block is picked — the override
+                  lives on the block, so offering the panel for a block whose icon was
+                  not clicked would write the override onto the wrong node. */}
+              {iconPick && iconPick.id === selected.node.id && (
+                <div className="lay__iconpick" ref={iconPanelRef}>
+                  <div className="acp-label">
+                    {t("layoutEditor.iconOverride", { slot: iconPick.slot.replace("#", " · ") })}
+                  </div>
+                  <IconPicker
+                    key={iconPick.slot}
+                    value={selected.node.iconOverrides?.[iconPick.slot] ?? ""}
+                    onChange={(tok) => applyTree((r) =>
+                      updateBlockIconOverride(r, iconPick.id, iconPick.slot, tok))}
+                  />
+                  {/* ⚠ Clearing must be reachable: an override that cannot be undone
+                      without hand-editing the document is a trap, and the picker has
+                      no empty state of its own. */}
+                  <button type="button" className="btn-ghost btn-sm"
+                    disabled={!selected.node.iconOverrides?.[iconPick.slot]}
+                    onClick={() => applyTree((r) =>
+                      updateBlockIconOverride(r, iconPick.id, iconPick.slot, undefined))}>
+                    {t("layoutEditor.iconOverrideClear")}
+                  </button>
+                </div>
+              )}
+
               {/* Click-to-scope: the block chooses a look, the panel edits what that
                   look means. Keyed by block so switching selection resets the panel's
                   pending edits rather than carrying them to another block. */}

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faImage, faGlobe, faLock, faKey } from "@fortawesome/free-solid-svg-icons";
 import {
   articlesApi,

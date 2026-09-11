@@ -42,16 +42,15 @@ import {
 } from "@nodevo/contracts";
 import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
-import { editingTemplate, isLayoutPreview, usePreviewAudience } from "./useLayout";
+import { editingTemplate, isEditorPreview, isLayoutPreview, usePreviewAudience } from "./useLayout";
+import { IconSlotProvider } from "./iconSlots";
 
 /**
  * True inside the layout editor's preview iframe — which loads a REAL route with
  * `?__layout=draft`, not a mock page, so blocks get real context. Diagnostics and
  * the hover/drag affordances exist only here; the live site gets neither.
  */
-const isEditorPreview = () =>
-  typeof window !== "undefined" &&
-  (window.location.pathname === "/__theme-preview" || isLayoutPreview());
+
 
 // ── The document being rendered ──────────────────────────────────────────────
 
@@ -214,9 +213,16 @@ function RenderNode({
       ))
     : undefined;
 
+  /**
+   * ⚠ Children render inside this provider, so an icon drawn by a NESTED block gets
+   * that block's scope, not this one's. Overrides stay with the block whose code
+   * actually draws the icon, which is the block an admin clicked.
+   */
   const rendered = (
     <BlockBoundary blockType={node.type}>
-      <Block props={props as never} context={context} children={children} />
+      <IconSlotProvider blockId={node.id} overrides={node.iconOverrides}>
+        <Block props={props as never} context={context} children={children} />
+      </IconSlotProvider>
     </BlockBoundary>
   );
 

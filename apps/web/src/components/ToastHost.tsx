@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "./Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { subscribeToasts, getToasts, getToastCategoryDef, toast, type ToastItem } from "../lib/toast";

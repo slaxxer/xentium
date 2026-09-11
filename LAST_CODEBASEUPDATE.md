@@ -1,92 +1,80 @@
-# Last codebase update — 2026-09-11
+# Last codebase update — 2026-09-11 (icons)
 
-Seven pieces, all verified in a running browser rather than only under test:
-**badges** (catalogue, rewards, notifications), the **profile redesign at 1:1**,
-**recent visitors**, **cover uploads**, **one rank component**, and a set of
-**layout fixes** that came out of looking at the result.
+FontAwesome Pro **per instance**, one site-wide style, and **per-occurrence icon
+overrides** in the layout editor. Verified against a real Pro+ kit in a running
+browser, not only under test.
 
-`pnpm backbone:check` green — typecheck 30/30, lint 0 errors, API **378** tests,
-web **681**, build clean.
-
-⚠ Five migrations, applied by hand and NOT by `prisma migrate dev` — plugin tables
-live outside the Prisma schema, so `migrate dev` reads drift and offers to reset the
-database. Write the SQL, then `prisma migrate deploy`.
+`pnpm backbone:check` green — typecheck 30/30, lint 0 errors, API **388** tests,
+web **735**, build clean. **No migrations** — the kit and style are settings rows,
+and an override lives inside the layout document.
 
 ---
 
-## Badges (ADR-0009)
+## Why a kit, and not bundled Pro
 
-`ncf_badges` + `ncf_user_badges`, keyed on the pair. Catalogue CRUD under
-`badge.manage`, granting under `badge.assign`.
+A Pro licence covers the sites its owner operates; Nodevo is installed by strangers on
+their own servers. `apps/web` builds to a `dist` each instance deploys, so bundling Pro
+would copy licensed artwork into every install — the key stays secret while the thing it
+protects is distributed. A kit is fetched at RUNTIME with the admin's own id.
+
+**Full rationale, security rules and the resolution order: `docs/icon-kits.md`.**
+
+## The pieces
 
 | Area | Note |
 | --- | --- |
-| `modules/badges/` | service, controller, routes; public batch + catalogue reads |
-| `core/badge-registry/` | the extension point — plugins add metrics, core compares |
-| `jobs/scheduled-actions/awardBadges.ts` | the sweep; `system.award-badges`, 15-min floor |
-| `components/UserBadges.tsx` | the ONE renderer, a host global so plugins adopt it in one line |
-| `lib/userBadges.ts` | microtask batching — a page of cards is one request |
-| `lib/badgeIcons.ts` | ⚠ explicit imports; `import * as` would pull the whole pack |
-| `BadgesPage.tsx` | ACP → Users → Badges: the catalogue only |
-| `UserDetailPage.tsx` | where an admin actually grants one |
+| `modules/appearance/iconKit.ts` | ⚠ SECURITY CODE — this value becomes a `<script src>` |
+| `contracts/src/icons.ts` | the style table and the icon-token format, shared by API + web |
+| `components/Icon.tsx` | the drop-in wrapper; 66 files import it instead of the library |
+| `components/TokenIcon.tsx` | an icon stored as DATA, with the fallback chain |
+| `components/IconPicker.tsx` | two tiers: bundled grid, kit-only by name |
+| `layout/iconSlots.tsx` | per-occurrence identity |
+| `lib/iconScope.tsx` | the ACP keeps the free set |
 
-**Rewards.** `autoAward` + `criteria` (JSON, because the keys are extensible). ALL
-thresholds must be met.
+⚠ **The kit URL is an allowlist, not a string.** Protocol is checked BEFORE host —
+`javascript:` and `data:` parse fine and have no hostname. Validated on READ as well as
+write; a settings row can arrive from a restored backup.
 
-⚠ Two ways to over-grant, both closed and both tested: **empty criteria** (`[].every()`
-is true) and criteria whose keys **all** belong to absent plugins. Either would have put
-a badge on every member of the site.
+⚠ **No Pro artwork is bundled.** Only the icon's NAME is read out of the free definition
+and handed to the kit as a class.
 
-⚠ `User` has **no `deletedAt`** — the sweep filters on `isActive` alone. A mocked test
-asserting `deletedAt: null` agreed with the bug all the way to a failed job.
+⚠ **Plugins came free** — they externalise `@fortawesome/react-fontawesome`, so swapping
+`FontAwesomeIcon` in `host-globals` covers every plugin with no rebuild.
 
-**Notifications.** `badge.earned` (sweep) and `badge.granted` (by hand), both matched by
-the `badge.*` preference pattern.
+⚠ **An ESLint guard** (`no-restricted-imports`) stops a new file bypassing the wrapper —
+that failure is invisible in review and in tests. It immediately caught a `.ts` file the
+`.tsx` sweep had missed.
 
-⚠ A type absent from `slotRegistry.coreSystemPrefixes` draws a `UserAvatar` built from
-its **title string**. A sender-less notification would have rendered initials cut out of
-a sentence — nothing in the suite covers that path.
+## Per-occurrence overrides
 
-**Glyphs only.** Uploads were removed after the fact: column, routes, `BADGE_ICON`
-limits, **both** upload-dir allowlists, and the purge job's knowledge of the folder.
+`BlockNode.iconOverrides`, keyed `"<icon-name>#<n>"` — the nth icon of that name in that
+block. Travels with the block; publishes with the draft.
 
-⚠ `--badge-mark` sizes the mark instead of `font-size`. A glyph is an SVG measured in
-`em`, so `--locked`'s type rules for its "+N" pill were shrinking every padlock next to
-an earned badge.
+⚠ **Slots are claimed once per component instance, in a ref.** Counting during render was
+wrong under StrictMode's double invoke: the first icon was `#1` in development and `#0` in
+production, so the key the editor stored was not the key the live site computed.
+`iconSlots.test.tsx` renders under `StrictMode` to hold that shut.
 
-## Profile — the redesign, visitors, covers
+⚠ The key stays anchored to the name the CODE asked for, never the replacement — otherwise
+an override loses its own anchor and can never be cleared.
 
-⚠ The comparison against the mock-up found three real bugs: `.profile-page` capped at
-900px from before it had a rail; bio and stats nested inside the identity column so
-they never reached the card's edge; the badges card missing from the shared rail-card
-rule and so drawing no panel.
+⚠ The key is POSITIONAL. Rewriting a block to draw a different number of icons of the same
+name can move an existing override onto a neighbour. That is the trade per-occurrence makes.
 
-- **Visitors** — `ncf_profile_views` (named, pruned) and `profile_view_count`
-  (all-time, guests included). ⚠ A write on a read path: self-views skipped, guests
-  write no row, a 15-minute Redis window keeps a reload out of Postgres, and the call
-  swallows its own errors.
-- **Covers** — `profileImageLimits.ts` is the one chokepoint for BOTH the avatar and
-  the cover. ⚠ `shared/middleware/imageDimensions.ts` enforces a DIMENSION ceiling a
-  byte limit cannot express; `image-size` is a new API dependency. ⚠ `maxProfileImageBytes` / `allowedProfileImageTypes` had been dead since
-  Phase 7: no UI set them, no route read them. An empty type list means NO per-rank
-  restriction, not "nothing allowed".
+## Two bugs only looking caught
 
-## One rank component
+1. **The preview handshake race** (pre-existing). The editor pushes on the iframe's `load`
+   event, which fires before the app inside has subscribed. Icon mode was pushed once and
+   silently lost — the toggle read "on" while the preview had no idea. The preview now
+   posts `ready` and the editor answers with everything.
+2. **A style with no name** stored `"sharp-solid:"` — saved fine, parsed to nothing, drew
+   nothing, and looked exactly like a broken control.
 
-⚠ Two endpoints whose shapes had drifted; `/me/progression` delegates to the profile
-composer now. `features/progression/rank.tsx` is the single implementation, and its
-STYLES travel with it — in `ProfilePage.scss` they matched nothing on the home rail.
-The ladder is retired entirely.
+## Known limits
 
-## Layout fixes
-
-- ⚠ **Style-stream leak.** Every document opened one, nothing closed it, and the
-  editor's preview re-opens one per template switch. At six the browser stops talking
-  to the origin and the editor looks frozen. Preview opens none; the rest close on
-  `pagehide` and reopen from bfcache.
-- ⚠ **One fixed gap** — `.app-main { padding-block }`. Padding, not margin: the gap
-  carries `--content-bg`, where a margin would show the layout background (ADR-0003).
-- Rail cards space themselves with `gap`, because `display: contents` wrappers mean a
-  silent block must contribute none.
-- Editor sample data, gated on the editor flag AND the viewer being staff — the
-  preview flag is a URL parameter anyone can type.
+- **Pro+ families have partial coverage.** A name they lack renders a missing-glyph BOX,
+  not nothing, and a web-font kit gives no signal to hook. The picker's preview is the
+  mitigation. Prefer a full-coverage family site-wide; pin Pro+ per icon.
+- **Icons outside any block cannot be overridden** — `button.mc-trigger` (the moderation
+  canvas launcher) is core chrome in `AppLayout`, not a layout block, so there is nowhere
+  to store an override. Plugin slot contributions ARE covered, via `slotBlocks`.
