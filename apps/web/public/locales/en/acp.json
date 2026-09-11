@@ -2061,7 +2061,23 @@
     "shSpread": "Spread",
     "shColour": "Colour",
     "shOpacity": "Shadow opacity",
-    "shRawNote": "This shadow has more than these controls can describe, so it is edited as text. Pick a preset or Custom to replace it."
+    "shRawNote": "This shadow has more than these controls can describe, so it is edited as text. Pick a preset or Custom to replace it.",
+    "iconKit": "FontAwesome Pro kit",
+    "iconKitHint": "Paste your kit id, or its full https://kit.fontawesome.com/… URL. Leave empty to use the bundled free icons.",
+    "iconKitPlaceholder": "a1b2c3d4e5",
+    "iconKitLicence": "Uses your own FontAwesome subscription, on this site only. Nodevo ships the free set; a kit adds the Pro icons your licence covers.",
+    "toastIconKit": "Icon kit saved. Reload to see Pro icons.",
+    "iconKitInvalid": "That is not a FontAwesome kit. Paste the kit id from your FontAwesome account, or the full https://kit.fontawesome.com/… URL.",
+    "iconStyle": "Icon style",
+    "iconStyleHint": "Applies to every icon in the site and the admin panel. Needs a kit — all but Solid are Pro styles.",
+    "toastIconStyle": "Icon style saved. Reload to see it.",
+    "iconGroup_classic": "Classic",
+    "iconGroup_duotone": "Duotone",
+    "iconGroup_sharp": "Sharp",
+    "iconGroup_sharpDuotone": "Sharp Duotone",
+    "iconGroup_proPlus": "Pro+ (partial icon coverage)",
+    "iconStyleBundled": "(bundled, no kit needed)",
+    "iconStylePartial": "⚠ This is a stylised family, not a weight of the whole library. Icons it has no glyph for will not draw."
   },
   "layoutEditor": {
     "title": "Layout Editor",
@@ -2258,7 +2274,11 @@
       "tablet": "Tablet",
       "phone": "Phone"
     },
-    "zoomHint": "Fit the frame into the pane, or show it at full size."
+    "zoomHint": "Fit the frame into the pane, or show it at full size.",
+    "iconMode": "Icons",
+    "iconModeHint": "Click any icon in the preview to change just that one.",
+    "iconOverride": "Icon · {{slot}}",
+    "iconOverrideClear": "Use the original icon"
   },
   "groups": {
     "glow": "Glow on usernames",
@@ -2550,5 +2570,16 @@
       "forum.posts": "Forum posts",
       "forum.threads": "Forum threads"
     }
+  },
+  "iconPicker": {
+    "namePlaceholder": "star",
+    "searchPlaceholder": "Search bundled icons…",
+    "followSite": "Follow the site style",
+    "needsKit": "Styles need a FontAwesome kit. Set one in Branding.",
+    "partialFamily": "⚠ A stylised family — it does not cover every icon. Check the preview draws.",
+    "notBundled": "Not one of the icons core ships. It needs the site's kit, and will not draw without one.",
+    "bundled": "Bundled icons",
+    "noMatches": "No bundled icon matches.",
+    "needsName": "Choose an icon first — a style on its own has nothing to apply to."
   }
 }

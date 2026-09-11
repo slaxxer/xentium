@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faPuzzlePiece, faUpload, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { Badge } from "../../../components/Badge";

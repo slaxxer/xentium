@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faMagnifyingGlass, faCircleInfo } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { Badge } from "../../../components/Badge";

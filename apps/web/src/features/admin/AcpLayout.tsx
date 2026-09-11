@@ -11,6 +11,7 @@ import { RouteErrorBoundary } from "../errors/ErrorBoundary";
 import { AcpTopbar } from "./AcpTopbar";
 import { useAcpNav } from "./useAcpNav";
 import { HorizontalNav } from "./nav/HorizontalNav";
+import { IconScope } from "../../lib/iconScope";
 
 // The ACP uses the horizontal navbar layout. A runtime layout/density/accent
 // switcher (with sidebar + icon-rail chromes and a Tweaks panel) was prototyped
@@ -159,19 +160,26 @@ function AcpShell() {
   useAcpAlerts();
 
   return (
-    <div className="acp-layout" data-layout="horizontal">
-      <div className="acp-main">
-        <AcpTopbar />
-        <HorizontalNav nav={nav} />
-        <main className="acp-content">
-          {/* A crashing ACP page must not take the nav with it — an admin needs
-              a way to click somewhere else. Clears on navigation. */}
-          <RouteErrorBoundary variant="inline">
-            <Outlet />
-          </RouteErrorBoundary>
-        </main>
+    // ⚠ The ACP draws with the BUNDLED free icons, never the site's chosen style —
+    // the same separation that pins its font and its token layer. An admin restyling
+    // their community must not restyle the tool they are doing it with, and a Pro+
+    // family with partial coverage would leave holes in the panel's own chrome.
+    // Previews inside here opt back in with <IconScope value="site">.
+    <IconScope value="acp">
+      <div className="acp-layout" data-layout="horizontal">
+        <div className="acp-main">
+          <AcpTopbar />
+          <HorizontalNav nav={nav} />
+          <main className="acp-content">
+            {/* A crashing ACP page must not take the nav with it — an admin needs
+                a way to click somewhere else. Clears on navigation. */}
+            <RouteErrorBoundary variant="inline">
+              <Outlet />
+            </RouteErrorBoundary>
+          </main>
+        </div>
       </div>
-    </div>
+    </IconScope>
   );
 }
 

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 // The ban lock and the follow/block icons moved with their markup into
 // `layout/blocks/profileBlocks.tsx`; what stays here is the tab bodies' own icons.
 import { faHeart, faGlobe, faCodeBranch, faHashtag } from "@fortawesome/free-solid-svg-icons";

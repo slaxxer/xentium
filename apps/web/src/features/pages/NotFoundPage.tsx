@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faHouse, faArrowLeft, faTriangleExclamation, faComments } from "@fortawesome/free-solid-svg-icons";
 import "./NotFoundPage.scss";
 

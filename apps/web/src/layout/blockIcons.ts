@@ -106,6 +106,16 @@ const BY_TYPE: Record<string, IconDefinition> = {
 };
 
 /**
+ * Every definition this file imports, for the icon catalogue to index by name.
+ *
+ * ⚠ Derived from the two maps rather than listed again — a third list would drift,
+ * and the point of exporting this is that these glyphs are ALREADY in the bundle, so
+ * the picker can offer them for nothing.
+ */
+export const ALL_BLOCK_ICONS: readonly IconDefinition[] =
+  [...Object.values(BY_CATEGORY), ...Object.values(BY_TYPE)];
+
+/**
  * The glyph for a block type.
  *
  * `editorMeta.icon` first (a plugin's own choice), then this file, then the block's

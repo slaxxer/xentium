@@ -13,7 +13,7 @@
  */
 import { Fragment, type CSSProperties, type DragEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faTrash, faArrowUp, faArrowDown, faEyeSlash, faClone, faGripVertical,
 } from "@fortawesome/free-solid-svg-icons";

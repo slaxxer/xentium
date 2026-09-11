@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "./Icon";
 import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
 
 interface AccordionSectionProps {

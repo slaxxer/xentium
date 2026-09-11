@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { useQuery } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faShield, faGear } from "@fortawesome/free-solid-svg-icons";
 import { Username } from "../../../components/Username";
 import { api } from "../../../lib/api";

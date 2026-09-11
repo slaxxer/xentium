@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faDatabase, faCheck, faCircleExclamation, faArrowsRotate } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 

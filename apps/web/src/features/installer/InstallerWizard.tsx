@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import i18n from "../../lib/i18n";
 import { getCookie, setCookie } from "../../lib/cookies";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import {
   faCheck,
   faXmark,

@@ -2,13 +2,16 @@ import { Router } from "express";
 import { z } from "zod";
 import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema } from "@nodevo/contracts";
+import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema,
+         DEFAULT_ICON_STYLE, isIconStyle } from "@nodevo/contracts";
 import { appearanceService } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
+import { parseKitUrl } from "./iconKit.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 
 export const appearanceRouter: Router = Router();
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
@@ -274,10 +277,12 @@ const EXT: Record<string, string> = {
 // Public — returns current branding settings
 appearanceRouter.get("/branding", async (_req, res, next) => {
   try {
-    const [navbar, icon, logoText] = await Promise.all([
+    const [navbar, icon, logoText, iconKit, iconStyle] = await Promise.all([
       prisma.setting.findUnique({ where: { key: "appearance.logo.navbar" } }),
       prisma.setting.findUnique({ where: { key: "appearance.logo.icon"   } }),
       prisma.setting.findUnique({ where: { key: "appearance.logo.text"   } }),
+      prisma.setting.findUnique({ where: { key: "appearance.icons.kit"   } }),
+      prisma.setting.findUnique({ where: { key: "appearance.icons.style" } }),
     ]);
     const toUrl = (row: { value: unknown } | null) => {
       const v = row?.value as string | null;
@@ -288,6 +293,15 @@ appearanceRouter.get("/branding", async (_req, res, next) => {
       navbarUrl:  toUrl(navbar),
       iconUrl:    toUrl(icon),
       logoText:   (logoText?.value as string | null) ?? null,
+      // ⚠ Validated on the way OUT too, not just when it was written. This value
+      // becomes a `<script src>` in every visitor's browser, and a settings row can
+      // arrive from a restored backup or a hand-edited database — the write path is
+      // not the only way one appears.
+      iconKitUrl: parseKitUrl(iconKit?.value),
+      // ⚠ Also normalised on the way out: an unknown style must read as "solid",
+      // which is the bundled free set, rather than emitting a class nothing defines
+      // and leaving every icon on the page blank.
+      iconStyle: isIconStyle(iconStyle?.value) ? iconStyle!.value : DEFAULT_ICON_STYLE,
     });
   } catch (err) { next(err); }
 });
@@ -334,6 +348,51 @@ appearanceRouter.delete("/branding/:variant", adminGuard, async (req, res, next)
 });
 
 // Admin — save logo text
+/**
+ * The site's FontAwesome kit.
+ *
+ * ⚠ Its OWN endpoint rather than the generic `PUT /admin/settings/:key`, because
+ * this is the one setting whose value is executed as JavaScript by every visitor.
+ * The generic endpoint takes any key and any string; this one takes a kit and
+ * nothing else. Sending an empty string clears it.
+ */
+appearanceRouter.put("/branding/icon-style", adminGuard, async (req, res, next) => {
+  try {
+    // ⚠ Validated against the shared list, so a style the app cannot turn into
+    // classes can never be stored — an unknown one would blank every icon.
+    const { style } = z.object({
+      style: z.string().refine(isIconStyle, "Unknown icon style"),
+    }).parse(req.body);
+    await prisma.setting.upsert({
+      where:  { key: "appearance.icons.style" },
+      update: { value: style },
+      create: { key: "appearance.icons.style", value: style },
+    });
+    bustSettingsCache("appearance.icons.style");
+    res.json({ iconStyle: style });
+  } catch (err) { next(err); }
+});
+
+appearanceRouter.put("/branding/icon-kit", adminGuard, async (req, res, next) => {
+  try {
+    const { kit } = z.object({ kit: z.string().max(200) }).parse(req.body);
+    const url = kit.trim() ? parseKitUrl(kit) : "";
+    if (url === null) {
+      throw new NodevoError({
+        code: NEC.API_VALIDATION, httpStatus: 400,
+        message: "Not a FontAwesome kit. Paste the kit id, or its https://kit.fontawesome.com/... URL.",
+      });
+    }
+    await prisma.setting.upsert({
+      where:  { key: "appearance.icons.kit" },
+      update: { value: url },
+      create: { key: "appearance.icons.kit", value: url },
+    });
+    bustSettingsCache("appearance.icons.kit");
+    res.json({ iconKitUrl: url || null });
+  } catch (err) { next(err); }
+});
+
 appearanceRouter.put("/branding/text", adminGuard, async (req, res, next) => {
   try {
     const { text } = z.object({ text: z.string().max(80) }).parse(req.body);

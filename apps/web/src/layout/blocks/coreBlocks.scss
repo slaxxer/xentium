@@ -532,3 +532,31 @@
   text-overflow: ellipsis;
   text-align: center;
 }
+
+/* An optional glyph before a heading's text. Sized from the heading itself so it
+   scales with the level rather than needing a rule per level. */
+.nv-heading__icon {
+  margin-right: 0.45em;
+  color: var(--c-accent);
+}
+
+/**
+ * Icon mode, in the layout editor's preview.
+ *
+ * ⚠ Every icon becomes the click target, so the page has to SAY so — otherwise an
+ * admin clicking an icon and selecting its block instead cannot tell which mode they
+ * are in. The outline is drawn on hover only, so the preview still reads as the page.
+ */
+.nv-icon-mode {
+  [data-nv-icon] {
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    outline: 1px dashed color-mix(in srgb, var(--c-accent) 55%, transparent);
+    outline-offset: 2px;
+  }
+
+  [data-nv-icon]:hover {
+    outline: 2px solid var(--c-accent);
+    background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+  }
+}

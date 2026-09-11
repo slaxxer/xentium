@@ -1,5 +1,5 @@
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "./Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCircleQuestion, faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faCloudArrowDown } from "@fortawesome/free-solid-svg-icons";
 import { subscribeDialog, getDialog, resolveDialog, type DialogIcon } from "../lib/dialog";

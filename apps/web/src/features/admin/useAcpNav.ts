@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { createElement } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";

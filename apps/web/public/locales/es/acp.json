@@ -1783,7 +1783,23 @@
     "shSpread": "Extensión",
     "shColour": "Color",
     "shOpacity": "Opacidad de la sombra",
-    "shRawNote": "Esta sombra tiene más de lo que estos controles pueden describir, así que se edita como texto. Elige un ajuste o Personalizada para reemplazarla."
+    "shRawNote": "Esta sombra tiene más de lo que estos controles pueden describir, así que se edita como texto. Elige un ajuste o Personalizada para reemplazarla.",
+    "iconKit": "Kit de FontAwesome Pro",
+    "iconKitHint": "Pega el id de tu kit o su URL completa https://kit.fontawesome.com/…. Déjalo vacío para usar los iconos gratuitos incluidos.",
+    "iconKitPlaceholder": "a1b2c3d4e5",
+    "iconKitLicence": "Usa tu propia suscripción de FontAwesome, solo en este sitio. Nodevo incluye el conjunto gratuito; un kit añade los iconos Pro que cubre tu licencia.",
+    "toastIconKit": "Kit de iconos guardado. Recarga para ver los iconos Pro.",
+    "iconKitInvalid": "Eso no es un kit de FontAwesome. Pega el id del kit de tu cuenta de FontAwesome, o la URL completa https://kit.fontawesome.com/….",
+    "iconStyle": "Estilo de iconos",
+    "iconStyleHint": "Se aplica a todos los iconos del sitio y del panel. Requiere un kit: todos salvo Solid son estilos Pro.",
+    "toastIconStyle": "Estilo de iconos guardado. Recarga para verlo.",
+    "iconGroup_classic": "Classic",
+    "iconGroup_duotone": "Duotone",
+    "iconGroup_sharp": "Sharp",
+    "iconGroup_sharpDuotone": "Sharp Duotone",
+    "iconGroup_proPlus": "Pro+ (cobertura parcial)",
+    "iconStyleBundled": "(incluido, sin kit)",
+    "iconStylePartial": "⚠ Es una familia estilizada, no un grosor de toda la biblioteca. Los iconos sin glifo no se dibujarán."
   },
   "layoutEditor": {
     "title": "Editor de diseño",
@@ -1980,7 +1996,11 @@
       "tablet": "Tableta",
       "phone": "Móvil"
     },
-    "zoomHint": "Ajustar el marco al panel o verlo a tamaño completo."
+    "zoomHint": "Ajustar el marco al panel o verlo a tamaño completo.",
+    "iconMode": "Iconos",
+    "iconModeHint": "Haz clic en cualquier icono de la vista previa para cambiar solo ese.",
+    "iconOverride": "Icono · {{slot}}",
+    "iconOverrideClear": "Usar el icono original"
   },
   "groups": {
     "glow": "Brillo en los nombres",
@@ -2272,5 +2292,16 @@
       "forum.posts": "Mensajes del foro",
       "forum.threads": "Temas del foro"
     }
+  },
+  "iconPicker": {
+    "namePlaceholder": "star",
+    "searchPlaceholder": "Buscar iconos incluidos…",
+    "followSite": "Seguir el estilo del sitio",
+    "needsKit": "Los estilos requieren un kit de FontAwesome. Configura uno en Branding.",
+    "partialFamily": "⚠ Familia estilizada: no cubre todos los iconos. Comprueba la vista previa.",
+    "notBundled": "No es un icono incluido. Necesita el kit del sitio; sin él no se dibujará.",
+    "bundled": "Iconos incluidos",
+    "noMatches": "Ningún icono coincide.",
+    "needsName": "Elige primero un icono: un estilo por sí solo no tiene a qué aplicarse."
   }
 }

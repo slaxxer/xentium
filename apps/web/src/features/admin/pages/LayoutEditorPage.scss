@@ -1336,3 +1336,14 @@
 
   &__note { margin-top: var(--sp-2); }
 }
+
+/* The picked icon's panel. Sits above the style fields because it is about the
+   thing the admin just clicked, and reading order should follow the pointer. */
+.lay__iconpick {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-bottom: var(--sp-3);
+  margin-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--c-border);
+}
