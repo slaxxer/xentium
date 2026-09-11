@@ -22,6 +22,7 @@ import { ArticleContent } from "./components/ArticleContent";
 import { MiniEditor, type MiniEditorHandle } from "../../components/MiniEditor";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Avatar } from "../../components/Avatar";
+import { UserBadges } from "../../components/UserBadges";
 import { Username } from "../../components/Username";
 import { topGroups, roleColor } from "../../lib/groupBadge";
 import "./ArticleReaderPage.scss";
@@ -424,6 +425,10 @@ export function ArticleReaderContent() {
                   badgeColor={primary?.progression?.badgeColor ?? null}
                   roleKey={primary?.key ?? null}
                 />
+                {/* Awards, beside the group pills. The component fetches its own
+                    (batched with every other card on the page) and draws nothing at
+                    all when this author holds none. */}
+                <UserBadges userId={a.author.id} max={6} className="ard__author-awards" />
                 {ordered.length > 0 && (
                   <div className="ard__author-badges">
                     {ordered.map(({ group: g }) => {

@@ -801,7 +801,13 @@ interface ProgressionData {
   maxDailyArticles: number | null;
   maxCommentLength: number | null;
   maxDailyComments: number | null;
+  maxProfileImageBytes: number | null;
+  allowedProfileImageTypes: string[];
+  canUploadCover: boolean;
 }
+
+/** The image types a rank may be granted. GIF is the one that means "animated". */
+const PROFILE_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"] as const;
 
 function ProgressionModal({ group, onClose }: { group: Group; onClose: () => void }) {
   const { t } = useTranslation("acp");
@@ -834,6 +840,9 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
       maxDailyArticles:   form.maxDailyArticles,
       maxCommentLength:   form.maxCommentLength,
       maxDailyComments:   form.maxDailyComments,
+      maxProfileImageBytes:     form.maxProfileImageBytes,
+      allowedProfileImageTypes: form.allowedProfileImageTypes,
+      canUploadCover:           form.canUploadCover,
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["acp-progression"] });
@@ -952,6 +961,61 @@ function ProgressionModal({ group, onClose }: { group: Group; onClose: () => voi
                 <label className="acp-label">{t("groups.maxDailyComments")}</label>
                 <input className="acp-input" type="number" min={0} value={num(form.maxDailyComments)} onChange={e => setNum("maxDailyComments", e.target.value)} placeholder={t("groups.unlimited")} />
               </div>
+            </div>
+
+            {/* Profile images. ⚠ These three were stored since Phase 7 and enforced
+                nowhere, and appeared in no UI at all — an admin had no way to set
+                them and nothing read them. Both upload routes go through
+                `assertProfileImageAllowed` now. */}
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+              {t("groups.profileImages")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("groups.profileImagesNote")}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div>
+                <label className="acp-label">{t("groups.maxProfileImageKb")}</label>
+                <input className="acp-input" type="number" min={0}
+                  value={form.maxProfileImageBytes == null ? "" : String(Math.round(form.maxProfileImageBytes / 1024))}
+                  placeholder={t("groups.unlimited")}
+                  onChange={e => setForm(p => ({
+                    ...p,
+                    // Stored in BYTES, typed in KB — an admin should not have to
+                    // count zeroes to say "512 KB".
+                    maxProfileImageBytes: e.target.value === "" ? null : Number(e.target.value) * 1024,
+                  }))} />
+              </div>
+              <div>
+                <label className="acp-label">{t("groups.coverAllowed")}</label>
+                <button type="button"
+                  className={form.canUploadCover === false ? "btn-ghost btn-sm" : "btn-primary btn-sm"}
+                  style={{ width: "100%" }}
+                  onClick={() => setForm(p => ({ ...p, canUploadCover: p.canUploadCover === false }))}>
+                  <FontAwesomeIcon icon={form.canUploadCover === false ? faToggleOff : faToggleOn} style={{ marginRight: 6 }} />
+                  {form.canUploadCover === false ? t("groups.coverNo") : t("groups.coverYes")}
+                </button>
+              </div>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <label className="acp-label">{t("groups.imageTypes")}</label>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {PROFILE_IMAGE_TYPES.map((mime) => {
+                  const on = (form.allowedProfileImageTypes ?? []).includes(mime);
+                  return (
+                    <button key={mime} type="button"
+                      className={on ? "btn-primary btn-sm" : "btn-ghost btn-sm"}
+                      onClick={() => setForm(p => {
+                        const cur = p.allowedProfileImageTypes ?? [];
+                        return { ...p, allowedProfileImageTypes: on ? cur.filter(m => m !== mime) : [...cur, mime] };
+                      })}>
+                      {mime.replace("image/", "")}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* ⚠ Empty means NO per-rank restriction, not "nothing allowed". Say so,
+                  or an admin reads an empty row as a locked-down rank. */}
+              <p style={{ fontSize: 11, color: "var(--c-fg-muted)", marginTop: 6 }}>
+                {t("groups.imageTypesNote")}
+              </p>
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>

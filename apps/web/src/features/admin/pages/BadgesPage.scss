@@ -1,0 +1,235 @@
+/**
+ * ⚠ ACP tokens only — the admin panel does not wear the site's design (user rule,
+ * 2026-08-30). Nothing here reads a palette value the served stylesheet writes.
+ *
+ * `--badge-color` is set per badge as an inline custom property, so one value drives
+ * a mark's tint, its border and its glyph without a rule per badge.
+ */
+@use "./acpSystem.scss";
+
+.bdg-mark {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  color: var(--badge-color, var(--c-accent));
+  background: color-mix(in srgb, var(--badge-color, var(--c-accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color, var(--c-accent)) 34%, transparent);
+
+  /* The glyph is sized from the box's own `font-size` — see `Mark`. Height only:
+     a FontAwesome icon's width follows its aspect and must not be squashed. */
+  svg { height: 1em; width: auto; }
+}
+
+.bdg-mark__dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+
+.bdg-hint { color: var(--c-fg-muted); margin: 0 0 var(--sp-3); }
+
+.bdg-section-label {
+  margin: var(--sp-4) 0 var(--sp-2);
+  font-weight: 700;
+  color: var(--c-fg);
+}
+
+/* ── The catalogue list ─────────────────────────────────────────────────── */
+
+.bdg-list { display: flex; flex-direction: column; gap: 6px; }
+
+.bdg-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+}
+
+.bdg-row__id { display: flex; flex-direction: column; min-width: 0; }
+.bdg-row__name { font-weight: 700; }
+.bdg-row__key  { font-family: monospace; color: var(--c-fg-muted); }
+
+/* The description gives up its space first — the name and the actions must not
+   wrap on a narrow panel. */
+.bdg-row__desc {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--c-fg-muted);
+}
+
+.bdg-row__holders { margin-left: auto; color: var(--c-fg-muted); white-space: nowrap; }
+
+.bdg-row__act {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+
+  &:hover { color: var(--c-fg); border-color: var(--c-fg-muted); }
+  &--danger:hover { color: var(--c-danger); border-color: var(--c-danger); }
+}
+
+/* ── The modal ──────────────────────────────────────────────────────────── */
+
+.bdg-modal { max-width: 620px; max-height: 88vh; overflow-y: auto; }
+
+.bdg-modal__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+
+  h2 { margin: 0; }
+  p  { margin: 0; color: var(--c-fg-muted); }
+}
+
+.bdg-modal__foot {
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: flex-end;
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--c-border);
+}
+
+.bdg-color {
+  width: 56px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  cursor: pointer;
+}
+
+/* The curated glyph grid. Auto-fill rather than a fixed column count so the list
+   can grow without the layout being re-tuned each time. */
+.bdg-glyphs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+  gap: 6px;
+}
+
+.bdg-glyph {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+
+  &:hover { color: var(--c-fg); border-color: var(--c-fg-muted); }
+
+  &.is-active {
+    color: var(--c-accent);
+    border-color: var(--c-accent);
+    background: color-mix(in srgb, var(--c-accent) 14%, transparent);
+  }
+}
+
+/* ── Awarding ───────────────────────────────────────────────────────────── */
+
+.bdg-results { display: flex; flex-direction: column; gap: 4px; }
+
+.bdg-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { border-color: var(--c-accent); }
+  &:disabled { opacity: 0.55; cursor: default; }
+}
+
+.bdg-result__name { font-weight: 600; }
+.bdg-result__act  { color: var(--c-fg-muted); }
+
+.bdg-holders { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.bdg-holder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 10px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+}
+
+.bdg-holder__name { font-weight: 600; }
+.bdg-holder__note { color: var(--c-fg-muted); }
+
+.bdg-holder__revoke {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+
+  &:hover { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 16%, transparent); }
+}
+
+/* ── The reward system ─────────────────────────────────────────────────────
+   Only visible once the switch is on: an admin handing a badge out by hand should
+   never have to read past a block of thresholds that do not apply to them. */
+.bdg-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bdg-criteria {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-2) var(--sp-4);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+
+.bdg-criterion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+
+  input { max-width: 96px; }
+
+  &__label { display: inline-flex; align-items: baseline; gap: 6px; }
+
+  /* Which plugin a metric comes from — because disabling it stops the threshold
+     counting, and an admin should not have to discover that afterwards. */
+  &__from {
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    padding: 1px 6px;
+  }
+}
+
+.bdg-hint--warn { color: var(--c-warn, var(--c-fg-muted)); }

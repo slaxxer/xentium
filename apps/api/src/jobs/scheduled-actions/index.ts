@@ -11,5 +11,7 @@ import "./purgeOrphanedUploads.js";
 import "./purgeDeletedContent.js";
 import "./trimArticleRevisions.js";
 import "./pruneNotifications.js";
+import "./pruneProfileViews.js";
+import "./awardBadges.js";
 
 export { getAction, listActions, type ScheduledActionDef } from "./action-registry.js";

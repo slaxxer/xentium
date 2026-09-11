@@ -6,7 +6,8 @@
 /* The three-column split is a layout document too: `columns` with `sidebar` /
    weighted / `rail` tracks. */
 .hf-wrap {
-  padding-block: 22px 40px;
+  /* ⚠ No vertical padding: the gap to the chrome is `.app-main`'s, one number for
+     every route. This page used to add 22/40 on top of it. */
 }
 
 /* `.hf-left` / `.hf-right` are gone — `.nv-column` already gives the flex column and
@@ -323,18 +324,9 @@
 }
 
 /* ── right rail: progression ──────────────────────────── */
-.hf-prog {
-  &__row { display: flex; justify-content: space-between; align-items: center; b { font-family: var(--font-display); font-weight: 600; font-size: 14px; } span { color: var(--c-accent); font-weight: 800; } }
-  &__bar {
-    height: 9px;
-    border-radius: var(--radius-pill);
-    background: var(--c-accent-soft);
-    margin: 12px 0;
-    overflow: hidden;
-    i { display: block; height: 100%; border-radius: var(--radius-pill); background: linear-gradient(90deg, var(--c-accent2), var(--c-accent)); }
-  }
-  p { font-size: 13px; color: var(--c-fg-muted); font-weight: 600; b { color: var(--c-fg); } }
-}
+/* ⚠ `.hf-prog` is gone. The home rail's progression card was a second implementation
+   of the profile's rank rail; both are `features/progression/rank.tsx` now, and its
+   styles travel with it. */
 
 /* ── right rail: online now ───────────────────────────── */
 .hf-onlinen {

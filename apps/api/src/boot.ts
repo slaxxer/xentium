@@ -1,6 +1,7 @@
 import { createApp } from './app/app.js';
 import { prisma } from './infrastructure/db.js';
 import { registerCorePermissions } from './bootstrap/registerCorePermissions.js';
+import { registerCoreBadgeMetrics } from './core/badge-registry/badge-criteria-registry.js';
 import { logger } from "./infrastructure/logging/logger.js";
 import { migrateGuestHeroToLayout } from "./modules/layouts/guestHeroMigration.js";
 import { migrateRegionConsolidation } from "./modules/layouts/regionConsolidationMigration.js";
@@ -34,6 +35,9 @@ async function isInstalled(): Promise<boolean> {
 export async function boot() {
   if (await isInstalled()) {
     await registerCorePermissions();
+    // ⚠ BEFORE plugins boot: a plugin registers its own badge metrics in `onEnable`,
+    // and core's four must already be there or the first sweep measures nothing.
+    registerCoreBadgeMetrics();
     // Legacy installs may predate newer core nav links — idempotent re-seed.
     await seedDefaultNavItems().catch(() => { /* table not migrated yet */ });
     // One-time: carry a customised Guest Home hero into the home layout document, now

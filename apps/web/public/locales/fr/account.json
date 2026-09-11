@@ -84,6 +84,10 @@
       "progression": {
         "label": "Montées de niveau",
         "desc": "Lorsque vous passez à un nouveau niveau"
+      },
+      "badges": {
+        "label": "Badges",
+        "desc": "Lorsque vous obtenez un nouveau badge"
       }
     }
   },

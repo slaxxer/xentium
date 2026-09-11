@@ -6,9 +6,14 @@
  * directories, because `avatars` / `articles` / `themes` are CMS concepts.
  * `themes` covers both `themes/logo` (the site logo) and `themes/<theme-id>`
  * (assets unpacked from an imported .nvtheme). `layouts` holds imagery a block
- * references — a `section` background, today. Written only by admin-
- * authenticated paths, and every filename is basenamed + sanitised before it
- * gets here.
+ * references — a `section` background, today. `badges` holds award icons (ADR-0009),
+ * bounded to 32x32 at the route that writes them. `covers` holds members' own profile
+ * covers — one file per user, replaced in place.
+ *
+ * ⚠ Most of these are written only by admin-authenticated paths, but `avatars` and
+ * `covers` are NOT: a member writes their own, named after their user id. Every
+ * filename is basenamed + sanitised before it gets here, and those two routes carry
+ * their own per-rank limits (`assertProfileImageAllowed`).
  *
  * ⚠ There is a SECOND list of the same name in `app/app.ts` deciding what
  * `/uploads` will SERVE. They are separate on purpose — a directory can be
@@ -24,7 +29,7 @@ import { env } from "../../config/env.js";
  * files are REFERENCED becomes a directory whose contents are all orphans, and the
  * purge deletes them on a schedule long after anyone connects the two.
  */
-export const ALLOWED_UPLOAD_DIRS = ["avatars", "articles", "pages", "groups", "themes", "layouts"] as const;
+export const ALLOWED_UPLOAD_DIRS = ["avatars", "covers", "articles", "pages", "groups", "themes", "layouts"] as const;
 
 export { LocalStorageProvider };
 

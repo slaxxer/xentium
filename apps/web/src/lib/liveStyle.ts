@@ -160,6 +160,31 @@ export function startStyleSync(): void {
   started = true;
   if (typeof EventSource === "undefined") return; // unsupported (negligible in practice)
 
+  openStream();
+  /**
+   * ⚠ Closed EXPLICITLY when the document goes away, and reopened if it comes back.
+   *
+   * "The browser closes it on unload" was the assumption, and it is not reliable: a
+   * bfcache'd page is frozen rather than unloaded, and a proxy in front of the API
+   * may hold the upstream socket open long after the client is gone. Each one that
+   * lingers costs a connection from the browser's per-origin budget, and at six the
+   * ORIGIN stops answering that page entirely.
+   *
+   * `pagehide`, not `unload`: `unload` is not fired reliably and disqualifies the
+   * page from bfcache outright.
+   */
+  window.addEventListener("pagehide", () => {
+    source?.close();
+    source = null;
+  });
+  // Restored from bfcache with a closed stream — reopen, and let `reconcile` catch
+  // up on anything published while the page was frozen.
+  window.addEventListener("pageshow", (e) => {
+    if ((e as PageTransitionEvent).persisted && !source) openStream();
+  });
+}
+
+function openStream(): void {
   source = new EventSource("/api/appearance/stream");
   source.addEventListener("version", (e) => {
     const version = Number((e as MessageEvent).data);
@@ -187,5 +212,5 @@ export function startStyleSync(): void {
     }
   });
   // On transient errors EventSource reconnects on its own using the server's
-  // `retry:` hint; no manual handling needed. Closing only happens on page unload.
+  // `retry:` hint; no manual handling needed. Closing is `pagehide`'s job, above.
 }

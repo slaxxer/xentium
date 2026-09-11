@@ -1,46 +1,55 @@
 # Changelog
 
-## A Layout Editor you can work in, and a theme each reader chooses for themselves
+## Badges you award, a profile rebuilt to its design, and rails that breathe
 
 ### Added
 
-- **The Layout Editor has three panes.** The tree, the preview, and a Block Settings
-  panel that floats beside the selection instead of pinning to one side — the side is
-  chosen from how much the panel would cover, with a threshold so it does not flip on
-  every click.
-- **A block CATALOGUE.** Adding a block is a searchable, categorised picker with an
-  illustration and a sentence per type saying what it is for, in place of a flat
-  select. Plugins may name their own glyph (`editorMeta.icon`) — the one case a core
-  icon map cannot cover.
-- **Per-visitor themes.** A reader can wear any installed theme — its colours AND its
-  layouts — while everyone else keeps the site's own. The choice is a cookie: no
-  account, no request, and nothing changed for anyone else.
-- **`GET /api/themes/choices`**, the public half of the theme library: name, version,
-  description and screenshot. The vendor, the manifest and the install record stay in
-  the admin's inventory.
-- **A theme picker in the brand row** — an icon and a dialog, a prop on `branding`
-  rather than a block of its own. It draws nothing below two installed themes.
-- **Export writes a theme's `description`.** It is what the picker shows under the
-  name and what a marketplace listing reads.
+- **Badges.** A catalogue in `ACP → Users → Badges`, granted on a member's own page
+  in Users, with two permissions so handing out a badge can be delegated without
+  handing over the catalogue. A badge is **held, not accumulated**: granting it twice
+  is the same badge. Its mark is a curated glyph, tinted by the badge's colour.
+- **Badges you earn.** A badge can carry thresholds — articles, comments, likes,
+  followers — and a scheduled sweep grants it to whoever meets **all** of them. Off by
+  default: a badge an admin creates is a badge an admin hands out. The metrics are a
+  registry a plugin extends, which is how the forum offers posts and threads **only
+  while it is installed**; a threshold belonging to a disabled plugin is skipped and
+  starts counting again when it comes back. Nothing is ever taken away.
+- **Badges tell you.** Earning one, or being given one, arrives in the notification
+  bell under a single "Badges" preference. Quiet when there is nothing to say: a
+  re-grant that only corrects the reason, or an admin granting one to themselves.
+- **One component draws badges everywhere.** The profile, the article author card and
+  the forum's post card all use it; a plugin adopts awards with one line and no query
+  change. Requests are batched, so a thread of twenty cards asks once.
+- **Recent visitors.** Who has looked at a profile lately, with an all-time view total
+  that counts guests. Pruned on a schedule, because a record of who looked at whom is
+  a longer memory than the feature needs.
+- **Member cover images**, with the rank gate the design calls for — "Unlocked at
+  Contributor" is real, and "animated covers" is a file type a rank grants.
+- **Sample data in the layout editor**, so a rail can be arranged on a site where
+  nobody has followers or a rank yet.
 
 ### Changed
 
-- **The preview's chips say different things.** Hover names the block's TYPE — the word
-  a `.nvtheme` and the docs use — and the selected chip carries its actions, because by
-  then the question is answered.
-- **The footer band reaches the window edges.** `.nv-region`'s centred column moves onto
-  the block's own `.nv-foot__inner`, exactly as the header already does it.
-- **Reinstalling a theme id busts its CSS and layout caches**, which are keyed by id
-  alone and would otherwise outlive the payload they were built from.
+- **The profile page matches its design 1:1** — the cover band, an overlapped
+  squircle avatar, the name and its pills on one row, stat tiles, pill tabs and
+  article cards with a thumbnail, a read-time chip and an excerpt.
+- **Rank progress is one component**, shared by the profile and the home rail. Home
+  gains the rung chips and the "next rank unlocks" list it never had, and the two
+  endpoints that had drifted apart now answer with the same shape.
+- **The rank ladder is retired.** Rank progress is the one rank block, and it can be
+  placed on any page rather than only the profile.
+- **Per-rank profile image limits are enforced.** They had been stored since Phase 7,
+  settable in no UI and read by no upload route.
 
 ### Fixed
 
-- **The reader's chosen theme could be undone by the staleness machinery.** The themed
-  CSS response carries no `X-Style-Version` and no revalidation — a stamp let the
-  reconciler read the visitor as stale and pull them back to the site's theme on the
-  next stream tick.
-- **A theme switch changed the colours but not the layouts.** The theme is in the
-  layouts QUERY KEY as well as the URL now, and `refreshStyle` re-fetches the same half
-  that was loaded — draft, a visitor's theme, or the site's own.
-- **Compare mode removed.** It was built, and had nothing to say that the two staging
-  areas did not already say plainly.
+- **The layout editor appeared to freeze.** Every document opened a style-sync stream
+  and nothing closed it; the editor's preview re-opens one on every template switch,
+  and once six were open the browser could not talk to the origin at all, so every
+  request queued forever.
+- **One fixed gap around every page.** The space under the header came from a placed
+  block, the space above the footer from nothing, and each page added its own on top —
+  so the seam measured 64, 88 or 96 depending on the route.
+- **Rail cards had no gap between them** and read as one tall card with rules across it.
+- The profile body was capped narrower than the cards inside it; its bio and stats
+  were indented by the avatar column instead of spanning the card.

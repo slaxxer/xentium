@@ -243,3 +243,47 @@
   .up-strip { grid-template-columns: repeat(2, 1fr); }
   .up-cols { grid-template-columns: 1fr; }
 }
+
+/* ── Badges on a member ────────────────────────────────────────────────────
+   Two kinds in one row, told apart rather than mixed: a granted badge carries a
+   revoke button, a worn one names the group it comes with and has none — the way
+   to remove it is to remove the membership. */
+.up-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.up-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 8px 5px 6px;
+  border: 1px solid var(--c-border);
+  border-radius: 999px;
+  background: var(--c-bg-hover);
+
+  /* Earned rather than handed over. Dashed says "the system decided this" without
+     needing a sentence. */
+  &--earned {
+    background: transparent;
+    border-style: dashed;
+  }
+
+  &__name { font-weight: 600; }
+  &__src  { color: var(--c-fg-subtle); font-size: 11px; }
+
+  &__x {
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+
+    &:hover { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 16%, transparent); }
+  }
+}

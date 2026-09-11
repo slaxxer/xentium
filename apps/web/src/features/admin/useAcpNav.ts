@@ -30,6 +30,9 @@ export const ACP_NAV: NavItem[] = [
       { label: "nav.userList", to: "/admin/users" },
       { label: "nav.groups", to: "/admin/groups" },
       { label: "nav.profileFields", to: "/admin/profile-fields" },
+      // Under Users, not Access control: a badge is something a user HOLDS, and
+      // beside Progression it would sit next to the other, derived meaning of the word.
+      { label: "nav.badges", to: "/admin/badges" },
     ],
   },
   {

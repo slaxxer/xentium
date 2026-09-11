@@ -140,6 +140,9 @@ export const userService = {
       namePreference,
       previousUsernames,
       avatar: resolveAvatar(user.avatar),
+      // The member's OWN cover. Null falls back to whatever the `profileCover` block
+      // draws — an admin's band, or the palette gradient.
+      coverImage: resolveAvatar(user.coverImage),
       bio: user.bio,
       joinedDate: user.createdAt,
       groups: filterHiddenBadges(groups, user.hiddenBadges)

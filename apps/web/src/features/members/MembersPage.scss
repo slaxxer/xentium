@@ -3,7 +3,7 @@
    wrapper keeps only the page's vertical rhythm. Leaving its old max-width and
    horizontal padding here double-inset every page — 26px + the region's 24px. */
 .mp-wrap {
-  padding-block: 32px 48px;
+  /* ⚠ No vertical padding — see `.app-main`. This page used to add 32/48. */
   font-family: var(--font-body);
   font-weight: 600;
   color: var(--c-fg);

@@ -36,6 +36,7 @@ const MOD_PERMS = [
   CorePermissions.PROFILE_COMMENT_DELETE_ANY,
   CorePermissions.PAGE_MANAGE,
   CorePermissions.PAGE_PUBLISH,
+  CorePermissions.BADGE_ASSIGN,
 ];
 
 const GRANTS: Record<string, string[]> = {
@@ -61,6 +62,7 @@ const GRANTS: Record<string, string[]> = {
     CorePermissions.PROFILE_COMMENT_DELETE_OWN,
     CorePermissions.PROFILE_COMMENT_DELETE_WALL,
     CorePermissions.PROFILE_COMMENT_DELETE_ANY,
+    CorePermissions.BADGE_ASSIGN,
   ],
   // Deviation from §33 strict reading: the mockup shows "Write" button to all
   // logged-in users, so Member also gets article authoring on their own content.

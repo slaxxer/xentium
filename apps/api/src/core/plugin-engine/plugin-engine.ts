@@ -330,6 +330,11 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { progressionCriteriaRegistry } = await import("../progression-registry/progression-criteria-registry.js");
   progressionCriteriaRegistry.deregister(pluginId);
 
+  // ⚠ Its badge metrics stop being offered and stop being evaluated — but a threshold
+  // already stored against one stays in the badge, and counts again on re-enable.
+  const { badgeCriteriaRegistry } = await import("../badge-registry/badge-criteria-registry.js");
+  badgeCriteriaRegistry.deregister(pluginId);
+
   // Deregister NEC codes
   const { necRegistry } = await import("../nec-registry/nec-registry.js");
   necRegistry.deregister(pluginId);
