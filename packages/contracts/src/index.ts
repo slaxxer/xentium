@@ -9,6 +9,7 @@ export * from './tokens.js';
 export * from './pages.js';
 export * from './users.js';
 export * from './badges.js';
+export * from './icons.js';
 export * from './layout.js';
 
 export type ThemeMode = 'light' | 'dark';

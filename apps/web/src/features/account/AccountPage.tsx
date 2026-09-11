@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Navigate, useSearchParams } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faUser,

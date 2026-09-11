@@ -17,7 +17,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
 import type { TemplateKey } from "@nodevo/contracts";
 import { listPlaceableBlocks } from "../../../layout/blockRegistry";

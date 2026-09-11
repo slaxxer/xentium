@@ -1,4 +1,4 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "./Icon";
 import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import type { CSSProperties, ReactNode } from "react";
 

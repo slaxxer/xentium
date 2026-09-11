@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../hooks/useAuth";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faSave, faChevronLeft, faBan, faShield, faRightFromBracket, faKey,
   faNewspaper, faComment, faArrowsRotate, faNetworkWired,

@@ -18,19 +18,21 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTrash, faPencil } from "@fortawesome/free-solid-svg-icons";
-import { BADGE_ICON_NAMES, type BadgeIconName, type BadgeMetricInfo, type BadgeRow } from "@nodevo/contracts";
+import { type BadgeMetricInfo, type BadgeRow } from "@nodevo/contracts";
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
-import { badgeIcon } from "../../../lib/badgeIcons";
+import { FontAwesomeIcon } from "../../../components/Icon";
+import { parseIconToken } from "@nodevo/contracts";
+import { TokenIcon } from "../../../components/TokenIcon";
 import { AcpIcon } from "./acpIcons";
 import "./BadgesPage.scss";
+import { IconPicker } from "../../../components/IconPicker";
 
 /** The mark as the ACP draws it — the same glyph the site draws. */
 function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "faIcon" | "color">; size?: number }) {
-  const icon  = badgeIcon(badge.faIcon);
+  const icon  = parseIconToken(badge.faIcon);
   const color = badge.color ?? "var(--c-accent)";
   return (
     // ⚠ `fontSize` sits on the BOX and is what sizes the glyph, so one number scales
@@ -39,7 +41,7 @@ function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "faIcon" | "color">;
       className="bdg-mark"
       style={{ width: size, height: size, fontSize: size * 0.5, "--badge-color": color } as React.CSSProperties}
     >
-      {icon ? <FontAwesomeIcon icon={icon} /> : <span className="bdg-mark__dot" />}
+      {icon ? <TokenIcon token={badge.faIcon} /> : <span className="bdg-mark__dot" />}
     </span>
   );
 }
@@ -48,7 +50,7 @@ function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "faIcon" | "color">;
 
 interface Draft {
   key: string; name: string; description: string;
-  faIcon: BadgeIconName | null; color: string; displayOrder: number;
+  faIcon: string | null; color: string; displayOrder: number;
   autoAward: boolean; criteria: Record<string, number>;
 }
 
@@ -67,7 +69,7 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
   const [draft, setDraft] = useState<Draft>(badge
     ? {
         key: badge.key, name: badge.name, description: badge.description ?? "",
-        faIcon: (badge.faIcon as BadgeIconName | null) ?? null,
+        faIcon: badge.faIcon ?? null,
         color: badge.color ?? "#f4b942", displayOrder: badge.displayOrder,
         autoAward: badge.autoAward, criteria: { ...badge.criteria },
       }
@@ -191,19 +193,10 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
         <div className="set-extra">
           <p className="bdg-section-label">{t("badges.glyphTitle")}</p>
           <p className="bdg-hint">{t("badges.glyphHint")}</p>
-          <div className="bdg-glyphs">
-            {BADGE_ICON_NAMES.map((n) => {
-              const def = badgeIcon(n);
-              return (
-                <button key={n} type="button"
-                  className={`bdg-glyph${draft.faIcon === n ? " is-active" : ""}`}
-                  title={n}
-                  onClick={() => set({ faIcon: n })}>
-                  {def && <FontAwesomeIcon icon={def} />}
-                </button>
-              );
-            })}
-          </div>
+          {/* ⚠ The picker reads the LEGACY `faStar` values badges already store and
+              writes tokens back, so no migration is needed over rows an admin may
+              have hand-edited. A badge left alone keeps working untouched. */}
+          <IconPicker value={draft.faIcon} onChange={(tok) => set({ faIcon: tok })} />
 
           {/* ── The reward system, per badge ───────────────────────────────────
               Off by default. On, the badge is granted by the sweep to anyone meeting

@@ -25,7 +25,7 @@
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faPalette, faXmark, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { setViewerTheme, viewerThemeId } from "../../lib/viewerTheme";

@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link, useParams } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { pagesApi } from "../../lib/pagesApi";
 import { useAuth } from "../../hooks/useAuth";

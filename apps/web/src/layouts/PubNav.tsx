@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../components/Icon";
 import {
   faSun,
   faMoon,

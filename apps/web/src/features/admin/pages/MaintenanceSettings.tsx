@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPowerOff, faSquareCheck, faPlus, faXmark,
   faLink, faHashtag, faAt, faCodeBranch, faComments, faPaperPlane,

@@ -12,10 +12,10 @@
  * Renders NOTHING when the user holds no badges — no empty row, no placeholder. A
  * card must look untouched on a site that has never granted one.
  */
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useTranslation } from "react-i18next";
 import type { AwardedBadge } from "@nodevo/contracts";
-import { badgeIcon } from "../lib/badgeIcons";
+import { parseIconToken } from "@nodevo/contracts";
+import { TokenIcon } from "./TokenIcon";
 import { useUserBadges } from "../lib/userBadges";
 import "./UserBadges.scss";
 
@@ -31,7 +31,7 @@ export interface UserBadgesProps {
 /** One badge: its glyph, or a dot when the catalogue entry has none. */
 export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: "sm" | "md" }) {
   const { t } = useTranslation("common");
-  const icon  = badgeIcon(badge.faIcon);
+  const icon  = parseIconToken(badge.faIcon);
   const color = badge.color ?? "var(--c-accent)";
 
   // The note is the admin's reason and belongs in the tooltip under the name; the
@@ -45,7 +45,10 @@ export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: 
       title={tip}
       aria-label={t("badges.held", { name: badge.name })}
     >
-      {icon ? <FontAwesomeIcon icon={icon} /> : <span className="nv-badge__dot" />}
+      {/* ⚠ The dot is for a badge with NO icon at all, not for one whose icon the
+          site cannot draw — `TokenIcon` handles its own fallbacks, and swapping in a
+          dot behind its back would hide a kit problem from the admin who caused it. */}
+      {icon ? <TokenIcon token={badge.faIcon} /> : <span className="nv-badge__dot" />}
     </span>
   );
 }

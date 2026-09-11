@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faUsers, faNewspaper, faComments, faFlag, faUserPlus, faBan, faUnlock,

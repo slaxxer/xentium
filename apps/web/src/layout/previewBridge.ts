@@ -7,7 +7,9 @@
  *
  *   preview → editor   nv:select   an admin clicked a block
  *                      nv:move     an admin dragged a block to a new position
- *   editor  → preview  nv:highlight  the tree selection changed
+ *                      nv:iconPick an admin clicked ONE icon, while icon mode is on
+ *   editor  → preview  nv:iconMode   turn icon picking on or off
+ *                      nv:highlight  the tree selection changed
  *                      nv:tokens     staged variant tokens, so a colour edit is
  *                                    visible before it is published
  *
@@ -41,6 +43,13 @@ import type { AudienceView, LayoutDocument, TemplateKey } from "@nodevo/contract
 import { acceptsChild } from "./blockRegistry";
 import { shortcutFor } from "./editorShortcuts";
 import { setLivePreviewDocument, setPreviewAudience } from "./useLayout";
+
+/**
+ * ⚠ Icon mode HIJACKS the click, so it is off by default and the editor turns it on
+ * explicitly. Clicking an icon otherwise has to keep selecting its block — that is
+ * how an admin reaches the block a navbar icon belongs to.
+ */
+let iconMode = false;
 
 const OVERLAY_ID = "nv-preview-overlay";
 const TOKENS_ID = "nv-preview-tokens";
@@ -81,8 +90,26 @@ type Msg =
    */
   | { source: "nv-preview"; type: "duplicate"; id: string }
   | { source: "nv-preview"; type: "remove"; id: string }
+  /**
+   * This document's bridge is listening.
+   *
+   * ⚠ The editor pushes state on the iframe's `load` event, which fires BEFORE the
+   * React app inside has mounted and attached this listener — so everything sent
+   * then is dropped. The document survives only because it is re-pushed whenever it
+   * changes; anything pushed once, like icon mode, was simply lost. Announcing
+   * readiness is what makes the hand-off reliable for all of it.
+   */
+  | { source: "nv-preview"; type: "ready" }
   /** An empty region was clicked — open the add-block picker for it. */
-  | { source: "nv-preview"; type: "addTo"; region: string; templateKey?: string };
+  | { source: "nv-preview"; type: "addTo"; region: string; templateKey?: string }
+  /**
+   * An ICON was clicked, while icon mode is on.
+   *
+   * `slot` is `"<icon-name>#<n>"` within `id` — the nth icon of that name that block
+   * drew. That is what makes ONE icon addressable rather than every icon of that
+   * name, and it is stored on the block so it publishes with the layout draft.
+   */
+  | { source: "nv-preview"; type: "iconPick"; id: string; slot: string; templateKey?: string };
 
 const post = (msg: Msg) => window.parent?.postMessage(msg, window.location.origin);
 
@@ -351,6 +378,26 @@ export function installPreviewBridge(): () => void {
       return;
     }
 
+    // ⚠ Before the block walk: an icon sits INSIDE a block, so resolving the block
+    // first would always win and icon mode would never fire.
+    if (iconMode) {
+      const ic = (e.target as Element | null)?.closest?.("[data-nv-icon]") as HTMLElement | null;
+      const marker = ic?.dataset.nvIcon;
+      if (marker) {
+        const [blockId, slot] = marker.split("::");
+        if (blockId && slot) {
+          e.preventDefault();
+          e.stopPropagation();
+          const owner = ic.closest("[data-nv-block]") as HTMLElement | null;
+          post({
+            source: "nv-preview", type: "iconPick", id: blockId, slot,
+            templateKey: owner?.dataset.nvTemplate || undefined,
+          });
+          return;
+        }
+      }
+    }
+
     const w = wrapperFrom(e.target);
     if (!w?.dataset.nvBlock) return;
     // Selecting must not also follow a link or submit something in the preview.
@@ -463,6 +510,18 @@ export function installPreviewBridge(): () => void {
       redraw();
     }
 
+    /**
+     * Icon mode on or off.
+     *
+     * ⚠ Also paints a class on `<html>`, so the page can show that icons are the
+     * thing being clicked. Without it an admin clicking an icon and getting the
+     * block selected instead has no way to tell which mode they are in.
+     */
+    if (data.type === "iconMode") {
+      iconMode = (e.data as { on?: boolean }).on === true;
+      document.documentElement.classList.toggle("nv-icon-mode", iconMode);
+    }
+
     if (data.type === "highlight") {
       selectedId = data.id ?? null;
       const d = e.data as { label?: string; removable?: boolean };
@@ -537,6 +596,9 @@ export function installPreviewBridge(): () => void {
   document.addEventListener("dragend", endDrag);
   document.addEventListener("keydown", onKeyDown);
   window.addEventListener("message", onMessage);
+  // ⚠ AFTER the listener is attached, never before: this is the whole point of the
+  // handshake. The editor answers by pushing everything it holds.
+  post({ source: "nv-preview", type: "ready" });
   window.addEventListener("scroll", redraw, true);
   window.addEventListener("resize", redraw);
 

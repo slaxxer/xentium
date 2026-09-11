@@ -1,17 +1,24 @@
 import { z } from "zod";
-import { BADGE_ICON_NAMES } from "@nodevo/contracts";
+import { parseIconToken } from "@nodevo/contracts";
 
 /** A hex colour, or nothing. Same shape the group badge colour accepts. */
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Expected a hex colour").nullable();
 
 /**
- * ⚠ One of the CURATED names, not any FontAwesome string.
+ * An ICON TOKEN — `"star"`, or `"jelly-regular:star"` to pin a style.
  *
- * The frontend maps exactly these to icon definitions with explicit imports, so a
- * name outside the list renders as a silent gap on every card that draws the badge.
- * Refused at the door instead.
+ * ⚠ Was an enum of the 48 curated names. It is deliberately open now: a site with a
+ * FontAwesome kit can draw far more than core bundles, and refusing those at the
+ * door would make the kit useless exactly where an admin most wants it. What is NOT
+ * open is the shape — `parseIconToken` closes the charset, because this string ends
+ * up in a class attribute.
+ *
+ * ⚠ Legacy `"faStar"` still validates and is stored as written. The reader
+ * normalises it, so badges created before tokens existed need no migration.
  */
-const faIconSchema = z.enum(BADGE_ICON_NAMES).nullable();
+const faIconSchema = z.string()
+  .refine((v) => parseIconToken(v) !== null, "Not a valid icon")
+  .nullable();
 
 export const badgeIdParam = z.object({ id: z.string().min(1) });
 

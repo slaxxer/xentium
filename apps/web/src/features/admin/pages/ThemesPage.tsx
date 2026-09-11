@@ -15,7 +15,7 @@ import { useRef, useState } from "react";
 import { blocksThisSiteCannotDraw } from "../../../layout/themeFootprint";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { faDownload, faUpload, faPalette, faTriangleExclamation, faEye, faRotateLeft, faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { api, apiStream } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
