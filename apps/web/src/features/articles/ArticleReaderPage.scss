@@ -321,6 +321,17 @@
     color: var(--c-fg);
     margin-bottom: 4px;
   }
+  /**
+   * Awards (ADR-0009), on their own row.
+   *
+   * ⚠ `display: block`, because `UserBadges` renders a `<span>` and the author name
+   * above it is not a block-level flex parent — inline, the first badge sat flush
+   * against the last letter of the username.
+   */
+  &__author-awards {
+    display: block;
+    margin: 6px 0 8px;
+  }
   &__author-bio {
     font-size: 13px;
     color: var(--c-fg-muted);

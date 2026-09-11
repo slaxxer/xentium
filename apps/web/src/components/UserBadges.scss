@@ -1,0 +1,65 @@
+/**
+ * A badge is a 32px picture at most, so the marks are sized in tokens rather than
+ * scaled from the image — an uploaded icon is drawn at its own size inside the box
+ * and a glyph fills it.
+ *
+ * ⚠ `--badge-color` is set per badge as an inline custom property, not a hardcoded
+ * colour: the pill's tint, its border and the glyph all derive from that one value,
+ * so a badge follows the admin's choice without any per-badge CSS.
+ */
+.nv-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nv-badge {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--badge-color, var(--c-accent));
+  background: color-mix(in srgb, var(--badge-color, var(--c-accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color, var(--c-accent)) 34%, transparent);
+  overflow: hidden;
+
+  img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; }
+
+  &--sm { width: 22px; height: 22px; font-size: 11px; }
+  &--md { width: 32px; height: 32px; font-size: 15px; }
+
+  /* The overflow count. A pill rather than a circle, because a number needs the
+     width and a two-digit "+12" in a 22px circle is unreadable. */
+  &--more {
+    width: auto;
+    min-width: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 10.5px;
+    color: var(--c-fg-muted);
+    background: var(--c-surface);
+    border-color: var(--c-border);
+  }
+}
+
+/* A badge with neither an upload nor a glyph still has to occupy its space —
+   otherwise a catalogue entry that is mid-edit makes the row jump. */
+.nv-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* An award not yet earned. Dashed and drained of colour so the grid reads as
+   "these are the ones you could have" rather than as more of the same. */
+.nv-badge--locked {
+  color: var(--c-fg-subtle);
+  background: var(--c-surface);
+  border-style: dashed;
+  border-color: var(--c-border);
+  font-size: 11px;
+  font-weight: 800;
+}

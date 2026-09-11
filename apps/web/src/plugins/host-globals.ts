@@ -21,6 +21,11 @@ import * as webLayoutWidgetOutlet from "@web/plugins/LayoutWidgetOutlet";
 import * as webAuthStore from "@web/lib/authStore";
 import * as webUserAvatar from "@web/components/UserAvatar";
 import * as webUsername from "@web/components/Username";
+// Badges (ADR-0009). Exposed so a PLUGIN's user card adopts awards with one line
+// and no payload change of its own — the component fetches (batched) and draws
+// them itself. The alternative is every card selecting badge rows in its own
+// query, which for the forum means editing raw SQL in a paid plugin.
+import * as webUserBadges from "@web/components/UserBadges";
 import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
 import * as webUseAutosave from "@web/hooks/useAutosave";
@@ -68,6 +73,7 @@ const HOST = {
   webAuthStore,
   webUserAvatar,
   webUsername,
+  webUserBadges,
   webMiniEditor,
   webForumEditor,
   webUseAutosave,

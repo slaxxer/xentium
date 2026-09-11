@@ -27,6 +27,14 @@ export const UPLOAD_LIMITS = {
     maxBytes: 512 * KB,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   },
+  // A badge is 32x32 on the page (enforced as DIMENSIONS by `requireMaxDimensions`,
+  // which a byte ceiling cannot express). The bytes are bounded far below the group
+  // icon's anyway: at this size only an animated GIF has any reason to be large, and
+  // a badge is drawn many times per page — beside every author in a thread.
+  BADGE_ICON: {
+    maxBytes: 128 * KB,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+  },
   NAVBAR_LOGO: {
     maxBytes: 2 * MB,
     allowedMimeTypes: ["image/png", "image/svg+xml", "image/webp"],

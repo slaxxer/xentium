@@ -2,7 +2,7 @@
  * system.purge-orphaned-uploads — delete upload files nothing references.
  *
  * Nothing in the codebase deletes an upload except the appearance logo swap
- * (`appearance.routes.ts`), so replaced avatars, group icons and the entire
+ * (`appearance.routes.ts`), so replaced avatars, group and badge icons and the entire
  * upload directory of a hard-deleted article or page stay on disk forever. This
  * is the one action that reclaims them.
  *
@@ -118,9 +118,10 @@ async function refsInLayouts(): Promise<string[]> {
  * anything that might be a reference is treated as one.
  */
 async function collectReferenced(): Promise<Set<string>> {
-  const [users, groups, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
+  const [users, groups, badges, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
     prisma.user.findMany({ where: { avatar: { not: null } }, select: { avatar: true } }),
     prisma.group.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
+    prisma.badge.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
     prisma.setting.findMany({ where: { key: { startsWith: "appearance.logo." } }, select: { value: true } }),
     prisma.article.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
     prisma.page.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
@@ -142,6 +143,7 @@ async function collectReferenced(): Promise<Set<string>> {
 
   users.forEach((u) => add(u.avatar));
   groups.forEach((g) => add(g.icon));
+  badges.forEach((b) => add(b.icon));
   logos.forEach((s) => add(s.value));
   articles.forEach((a) => add(a.featuredImage));
   pages.forEach((p) => add(p.featuredImage));
@@ -230,7 +232,7 @@ registerScheduledAction({
   key:   "system.purge-orphaned-uploads",
   label: "Purge orphaned uploads",
   description:
-    "Deletes files in the core upload folders (avatars, groups, themes, articles, pages, layouts) that no record points at " +
+    "Deletes files in the core upload folders (avatars, groups, badges, themes, articles, pages, layouts) that no record points at " +
     "any more — replaced avatars and group icons, and the leftovers of deleted articles and pages. Inline images " +
     "referenced from page/article bodies and files belonging to soft-deleted records are kept, and plugin upload " +
     "folders are never touched. Always dry-run this first: deleted files cannot be recovered.",

@@ -118,6 +118,7 @@ model User {
   styleHistories   StyleHistory[]
   invitesCreated   InviteCode[]    @relation("InviteCreated")
   invitesUsed      InviteCode[]    @relation("InviteUsed")
+  badges           UserBadge[]
 
   @@map("ncf_users")
 }
@@ -187,6 +188,58 @@ model GroupProgression {
 
   @@index([isProgressionGroup, ladderPosition])
   @@map("ncf_group_progression")
+}
+
+// ── Badges (§badges, ADR-0009) — awards an admin grants ──────────────────────
+//
+// A THIRD thing called a badge, and deliberately not the other two: a GROUP badge
+// is membership rendered as a pill (Group.displayOrder, User.hiddenBadges), and a
+// RANK badge is the ladder rung's label (GroupProgression.badgeLabel). This one is
+// an award — granted by hand, held by a user, and never derived from anything.
+
+model Badge {
+  id          String  @id @default(uuid())
+  /// Stable identifier for seeds, themes and plugins. The name is editable; this is not.
+  key         String  @unique
+  name        String
+  description String?
+
+  /// Uploaded icon, relative ("badges/x.png"). WINS over faIcon when both are set,
+  /// exactly as Group.icon wins over its FontAwesome fallback.
+  icon        String?
+  /// FontAwesome icon name (e.g. "faStar"), tinted with `color`.
+  faIcon      String? @map("fa_icon")
+  /// Tint for the glyph and the pill. Null falls back to the accent token.
+  color       String?
+
+  /// Badge precedence on a card; lower sorts first. Same convention as Group.
+  displayOrder Int     @default(100) @map("display_order")
+  isSystem     Boolean @default(false) @map("is_system")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  users UserBadge[]
+
+  @@map("ncf_badges")
+}
+
+model UserBadge {
+  userId      String   @map("user_id")
+  badgeId     String   @map("badge_id")
+  user        User     @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  awardedAt   DateTime @default(now()) @map("awarded_at")
+  /// Who granted it. Null once that admin is deleted — the award outlives them.
+  awardedById String?  @map("awarded_by_id")
+  /// Why, in the admin's words. Shown on the badge's tooltip when present.
+  note        String?
+
+  /// A badge is HELD, not accumulated: granting one twice is the same badge.
+  @@id([userId, badgeId])
+  @@index([badgeId])
+  @@map("ncf_user_badges")
 }
 
 model Permission {
