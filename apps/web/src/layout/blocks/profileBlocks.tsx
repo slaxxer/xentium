@@ -27,12 +27,30 @@
  * prop that selects data — the props are presentational only.
  */
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faLock, faUserSlash, faUserCheck } from "@fortawesome/free-solid-svg-icons";
+import {
+  faLock, faUserSlash, faUserCheck, faChevronRight, faEye,
+  faImage, faXmark, faCloudArrowUp,
+} from "@fortawesome/free-solid-svg-icons";
+import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { blockPropSchemas } from "@nodevo/contracts";
 import { Username } from "../../components/Username";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { registerBlock, type BlockProps } from "../blockRegistry";
+import { sectionBackground } from "./coreBlocks";
+import { BadgeMark } from "../../components/UserBadges";
+import { useBadgeCatalogue, useUserBadges } from "../../lib/userBadges";
+import { useProfileVisitors } from "../../lib/profileVisitors";
+import {
+  previewSample, SAMPLE_BADGES, SAMPLE_FOLLOWERS, SAMPLE_VISITORS,
+} from "../previewSample";
+import { RankProgress, useRankFor } from "../../features/progression/rank";
+import { timeAgo } from "../../lib/time";
+import { api } from "../../lib/api";
+import { toast } from "../../lib/toast";
+import { apiErrorMessage } from "../../lib/swal";
 import {
   InformationTab,
   ProfileArticlesTab,
@@ -64,10 +82,10 @@ registerBlock({
   type:   "profileAvatar",
   schema: blockPropSchemas.profileAvatar,
   editorMeta: { label: "Avatar", category: "data", ...ON_PROFILE },
-  component: ({ props, context }: Ctx<{ size: string }>) => {
+  component: ({ props, context }: Ctx<{ size: string; overlap: boolean }>) => {
     const { profile } = context;
     return (
-      <div className={`profile-av profile-av--${props.size}`}>
+      <div className={`profile-av profile-av--${props.size}${props.overlap ? " profile-av--overlap" : ""}`}>
         {profile.avatar
           ? <img src={profile.avatar} alt={profile.username} />
           : <span>{profile.username.charAt(0).toUpperCase()}</span>}
@@ -87,56 +105,58 @@ registerBlock({
     const { profile } = context;
     const usesFullName = profile.namePreference === "fullName" && !!profile.displayName;
 
+    /**
+     * ⚠ ONE meta line, joined with a separator — `@handle · Member since August 2026`.
+     * The pieces were three stacked paragraphs, which pushed the pills a whole
+     * block further down and broke the card's proportions against the mockup.
+     */
+    const meta = [
+      props.showHandle && usesFullName ? `@${profile.username}` : null,
+      props.showJoined
+        ? t("memberSince", {
+            date: new Date(profile.joinedDate)
+              .toLocaleDateString(undefined, { year: "numeric", month: "long" }),
+          })
+        : null,
+    ].filter(Boolean);
+
     return (
       <div className="profile-identity">
-        <h1 className="profile-name">
-          <Username
-            username={usesFullName ? profile.displayName! : profile.username}
-            badgeColor={profile.groups[0]?.badgeColor}
-          />
-        </h1>
+        {/* The name and every pill share one wrapping row: the mockup reads the
+            rank beside the name, not underneath it. */}
+        <div className="profile-titlerow">
+          <h1 className="profile-name">
+            <Username
+              username={usesFullName ? profile.displayName! : profile.username}
+              badgeColor={profile.groups[0]?.badgeColor}
+            />
+          </h1>
 
-        {props.showHandle && usesFullName && (
-          <p className="profile-handle">@{profile.username}</p>
-        )}
+          {/* A ban notice is NOT covered by `showBadges`: it is a moderation state,
+              not decoration, and an admin must not be able to hide it by unticking a
+              badge option. */}
+          {profile.isBanned ? (
+            <span className="profile-badge profile-badge--banned">
+              <FontAwesomeIcon icon={faLock} />
+              {profile.isPermanentBan ? t("permanentlyBanned") : t("banned")}
+            </span>
+          ) : props.showBadges && profile.groups.map((g) => {
+            const color = g.badgeColor ?? "var(--c-accent)";
+            return (
+              <span key={g.id} className="profile-badge"
+                style={{ background: `${color}20`, color, borderColor: `${color}40` }}>
+                {g.badgeLabel ?? g.name}
+              </span>
+            );
+          })}
+        </div>
+
+        {meta.length > 0 && <p className="profile-meta">{meta.join(" · ")}</p>}
 
         {props.showFormerly && profile.previousUsernames.length > 0 && (
           <p className="profile-formerly">
             {t("formerlyKnownAs", { names: profile.previousUsernames.map((p) => p.username).join(", ") })}
           </p>
-        )}
-
-        {props.showJoined && (
-          <p className="profile-joined">
-            {t("memberSince", {
-              date: new Date(profile.joinedDate)
-                .toLocaleDateString(undefined, { year: "numeric", month: "long" }),
-            })}
-          </p>
-        )}
-
-        {/* A ban notice is NOT covered by `showBadges`: it is a moderation state,
-            not decoration, and an admin must not be able to hide it by unticking a
-            badge option. */}
-        {profile.isBanned ? (
-          <div className="profile-badges">
-            <span className="profile-badge profile-badge--banned">
-              <FontAwesomeIcon icon={faLock} />
-              {profile.isPermanentBan ? t("permanentlyBanned") : t("banned")}
-            </span>
-          </div>
-        ) : props.showBadges && profile.groups.length > 0 && (
-          <div className="profile-badges">
-            {profile.groups.map((g) => {
-              const color = g.badgeColor ?? "var(--c-accent)";
-              return (
-                <span key={g.id} className="profile-badge"
-                  style={{ background: `${color}20`, color, borderColor: `${color}40` }}>
-                  {g.badgeLabel ?? g.name}
-                </span>
-              );
-            })}
-          </div>
         )}
       </div>
     );
@@ -219,6 +239,364 @@ registerBlock({
   ),
 });
 
+/**
+ * THE COVER — the band behind the top of a profile.
+ *
+ * A `section` would very nearly do this, and deliberately does not: a cover is the
+ * one band whose whole job is to sit UNDER the avatar and the name, so the pieces
+ * over it need something that reliably exists to overlap. Its background is composed
+ * by the same helper `section` and `header` use, so the panel an admin gets is the
+ * one they already know.
+ *
+ * ⚠ It draws a gradient from the site's palette when nothing is set, rather than
+ * nothing at all. An empty cover is a band of dead space that reads as broken, and
+ * a member who has uploaded no image is the normal case.
+ */
+/**
+ * The owner's controls on their own cover.
+ *
+ * ⚠ A separate component, rendered ONLY when the profile is the viewer's own. It
+ * holds the mutation hooks, and a hook cannot be conditional — inside the band block
+ * itself, `useQueryClient` would run for every guest looking at any profile, making a
+ * presentational band depend on mutation infrastructure it will never use.
+ *
+ * It covers the whole band so that dropping a file anywhere on the cover works,
+ * rather than only onto a small rectangle.
+ */
+function CoverTools({ profile, progression }: {
+  profile: { username: string; coverImage: string | null };
+  progression: ProfileContext["progression"];
+}) {
+  const { t } = useTranslation("profiles");
+  const qc = useQueryClient();
+  const fileInput = useRef<HTMLInputElement | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  // ⚠ NOT gated on `progression.enabled`. The upload route enforces via
+  // `getUserLimits`, which ignores the global progression toggle — so the gate is
+  // reported even when the ladder is switched off, and reading `enabled` here would
+  // offer an upload the server refuses.
+  const mayUpload = progression?.canUploadCover !== false;
+  const unlocksAt = progression?.coverUnlocksAt ?? null;
+
+  const refresh = () => qc.invalidateQueries({ queryKey: ["profile", profile.username] });
+
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      const fd = new FormData();
+      fd.append("file", file);
+      return api.post<{ url: string }>("/account/cover", fd);
+    },
+    onSuccess: () => { void refresh(); toast.success(t("cover.saved")); },
+    onError:   (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  const remove = useMutation({
+    mutationFn: () => api.delete("/account/cover"),
+    onSuccess:  () => { void refresh(); },
+    onError:    (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  const take = (file: File | undefined) => { if (file) upload.mutate(file); };
+
+  return (
+    <div
+      className={`profile-cover__own${dragging ? " is-dragging" : ""}`}
+      onDragOver={mayUpload ? (e) => { e.preventDefault(); setDragging(true); } : undefined}
+      onDragLeave={() => setDragging(false)}
+      onDrop={mayUpload
+        ? (e) => { e.preventDefault(); setDragging(false); take(e.dataTransfer.files?.[0]); }
+        : undefined}
+    >
+      <input ref={fileInput} type="file" hidden
+        accept="image/jpeg,image/png,image/webp,image/gif"
+        onChange={(e) => take(e.target.files?.[0] ?? undefined)} />
+
+      {profile.coverImage ? (
+        <div className="profile-cover__tools">
+          <button type="button" className="profile-cover__btn"
+            onClick={() => fileInput.current?.click()} disabled={upload.isPending}>
+            <FontAwesomeIcon icon={faImage} /> {t("cover.change")}
+          </button>
+          <button type="button" className="profile-cover__btn"
+            onClick={() => remove.mutate()} disabled={remove.isPending}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
+        </div>
+      ) : (
+        /* The empty state is a DROPZONE, as drawn — an empty band with no invitation
+           is the one thing a member cannot act on. */
+        <div className="profile-cover__drop">
+          <FontAwesomeIcon icon={faCloudArrowUp} className="profile-cover__drop-icon" />
+          <div className="profile-cover__drop-title">
+            {mayUpload ? t("cover.dropTitle") : t("cover.lockedTitle")}
+          </div>
+          <div className="profile-cover__drop-spec">{t("cover.spec")}</div>
+          <div className="profile-cover__drop-actions">
+            {mayUpload ? (
+              <button type="button" className="profile-cover__cta"
+                onClick={() => fileInput.current?.click()} disabled={upload.isPending}>
+                <FontAwesomeIcon icon={faImage} /> {t("cover.upload")}
+              </button>
+            ) : (
+              <span className="profile-cover__lock">
+                <FontAwesomeIcon icon={faLock} />
+                {unlocksAt ? t("cover.unlocksAt", { rank: unlocksAt }) : t("cover.unavailable")}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+registerBlock({
+  type:   "profileCover",
+  schema: blockPropSchemas.profileCover,
+  editorMeta: { label: "Cover band", category: "structure", ...ON_PROFILE, wide: true },
+  component: ({ props, context }: Ctx<{
+    height: number; backgroundImage: string; backgroundGradient: string[]; backgroundAngle: number;
+  }>) => {
+    const { profile } = context;
+
+    /**
+     * ⚠ THREE layers, in this order: the member's own cover, then the band an admin
+     * placed on the block, then the palette gradient. They are different things —
+     * the block's `backgroundImage` is one image for EVERY profile on the site, and
+     * a member's cover is theirs — so a member setting one must not be mistaken for
+     * an admin changing the site.
+     */
+    const own        = profile.coverImage;
+    const background = own ? `url(${own})` : sectionBackground(props);
+
+    return (
+      <div
+        className={`profile-cover${background ? " profile-cover--bg" : ""}`}
+        style={{ height: `${props.height ?? 220}px`, ...(background ? { backgroundImage: background } : {}) }}
+      >
+        {profile.isOwn && <CoverTools profile={profile} progression={context.progression} />}
+      </div>
+    );
+  },
+});
+
+/**
+ * RANK PROGRESS.
+ *
+ * ⚠ A thin wrapper. The rendering and the fetching live in
+ * `features/progression/rank.tsx`, shared with the home rail's `homeProgression` —
+ * there used to be two implementations of one concept, against two endpoints whose
+ * shapes had already drifted.
+ *
+ * ⚠ NOT restricted to the profile. `useRankSubject` reads the profile from context
+ * when there is one and falls back to the viewer, so an admin can put this anywhere
+ * and it shows the reader their own standing.
+ */
+registerBlock({
+  type:   "profileRank",
+  schema: blockPropSchemas.profileRank,
+  editorMeta: { label: "Rank progress", category: "data" },
+  component: ({ props, context }: Ctx<{ showUnlocks: boolean }>) => {
+    return <RankProgress data={useRankFor(context)} showUnlocks={props.showUnlocks} />;
+  },
+});
+
+/**
+ * THE AWARDS this member holds — and the ones they have not.
+ *
+ * ⚠ It draws its own data rather than reading `context`, because the SAME component
+ * draws on an article author card and inside the forum's post card — surfaces with
+ * no profile context at all. One implementation, batched into one request per page;
+ * see `lib/userBadges.ts`.
+ *
+ * ⚠ The LOCKED marks are the point of the rail version. The mockup shows what is
+ * still to earn beside what has been earned — a wall of four badges says nothing
+ * about whether that is a lot. That needs the catalogue, which is why
+ * `/user-badges/catalogue` is public.
+ *
+ * Self-gating: a site that has never created a badge renders nothing at all.
+ */
+registerBlock({
+  type:   "profileBadges",
+  schema: blockPropSchemas.profileBadges,
+  editorMeta: { label: "Badges", category: "data", ...ON_PROFILE },
+  component: ({ props, context }: Ctx<{ max: number; size: "sm" | "md" }>) => {
+    const { t } = useTranslation("profiles");
+    const { data: realEarned }    = useUserBadges(context.profile.id);
+    const { data: realCatalogue } = useBadgeCatalogue();
+
+    /**
+     * ⚠ The catalogue and the awards are sampled TOGETHER or not at all. A sampled
+     * catalogue beside real awards means no id can ever match, so every sample badge
+     * draws locked and the count reads "0 of 8" — a grid that says the opposite of
+     * what it is there to show.
+     */
+    const sampled   = realCatalogue?.length ? undefined : previewSample(SAMPLE_BADGES);
+    const catalogue = realCatalogue?.length ? realCatalogue : sampled;
+    if (!catalogue?.length) return null;
+
+    const earned = sampled ? sampled.slice(0, 4) : realEarned;
+    const held   = new Set((earned ?? []).map((b) => b.id));
+    // Earned first, in card order, then the rest — the mockup fills the grid from
+    // the top left with what has actually been won.
+    const ordered = [
+      ...catalogue.filter((b) => held.has(b.id)),
+      ...catalogue.filter((b) => !held.has(b.id)),
+    ];
+    const shown  = ordered.slice(0, props.max);
+    const hidden = ordered.length - shown.length;
+
+    return (
+      <div className="profile-awards">
+        <div className="profile-rail__head">
+          <span className="profile-rail__title">{t("badges.title")}</span>
+          <span className="profile-awards__count">
+            {t("badges.count", { held: held.size, total: catalogue.length })}
+          </span>
+        </div>
+
+        <div className="profile-awards__grid">
+          {shown.map((b) => {
+            const has  = held.has(b.id);
+            const note = (earned ?? []).find((e) => e.id === b.id)?.note;
+            return (
+              <div key={b.id} className="profile-awards__cell"
+                title={[b.name, has ? (note ?? b.description) : t("badges.locked")].filter(Boolean).join(" — ")}>
+                {has
+                  ? <BadgeMark badge={{ ...b, awardedAt: "", note: note ?? null }} size={props.size} />
+                  : (
+                    <span className={`nv-badge nv-badge--${props.size} nv-badge--locked`}>
+                      <FontAwesomeIcon icon={faLock} />
+                    </span>
+                  )}
+                <span className={`profile-awards__label${has ? "" : " is-locked"}`}>{b.name}</span>
+              </div>
+            );
+          })}
+
+          {hidden > 0 && (
+            <div className="profile-awards__cell">
+              <span className={`nv-badge nv-badge--${props.size} nv-badge--locked`}>+{hidden}</span>
+              <span className="profile-awards__label is-locked">{t("badges.seeAll")}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+});
+
+/** A strip of followers, with the true total from the profile's own counter. */
+registerBlock({
+  type:   "profileFollowers",
+  schema: blockPropSchemas.profileFollowers,
+  editorMeta: { label: "Followers strip", category: "data", ...ON_PROFILE },
+  component: ({ props, context }: Ctx<{ max: number }>) => {
+    const { t } = useTranslation("profiles");
+    const { profile, setTab } = context;
+    // ⚠ Sample only on the EMPTY branch, and only for staff in the editor — the real
+    // data always wins. See `previewSample`.
+    const real      = context.followers?.items.length ? context.followers : null;
+    const sample    = real ? undefined : previewSample(SAMPLE_FOLLOWERS);
+    const followers = real ?? sample;
+    if (!followers?.items.length) return null;
+
+    /**
+     * ⚠ The COUNT has to come from whichever source drew the avatars. For real data
+     * that is the profile's own counter, not the strip's length — the strip is five
+     * faces and the number is how many there really are. For a sample it must be the
+     * sample's, or the editor shows five avatars beside a "0", which is a worse lie
+     * than showing nothing.
+     */
+    const total = sample ? sample.total : profile.followerCount;
+
+    return (
+      <button type="button" className="profile-strip" onClick={() => setTab("followers")}>
+        {/* Title with the chevron the mockup uses to say the card is a link. */}
+        <span className="profile-rail__head">
+          <span className="profile-rail__title">{t("stat.followers")}</span>
+          <FontAwesomeIcon icon={faChevronRight} className="profile-strip__more" />
+        </span>
+        <span className="profile-strip__row">
+          <span className="profile-strip__avatars">
+            {followers.items.slice(0, props.max ?? 5).map((u) => (
+              <span key={u.id} className="profile-strip__av" title={u.username}>
+                {u.avatar
+                  ? <img src={u.avatar} alt="" />
+                  : <em>{u.username.charAt(0).toUpperCase()}</em>}
+              </span>
+            ))}
+          </span>
+          {/* ⚠ The PROFILE's counter, not the length of this strip — the strip is
+              five avatars and the number is how many there really are. */}
+          <span className="profile-strip__count">{total.toLocaleString()}</span>
+        </span>
+      </button>
+    );
+  },
+});
+
+/**
+ * RECENT VISITORS — who has looked at this profile lately.
+ *
+ * ⚠ Public, by the site's decision: the card sits in the rail every visitor sees, and
+ * it names members only. A guest leaves no name, so a guest moves the total and
+ * nothing else.
+ *
+ * Self-gating like the rest of the rail: a profile nobody has visited draws nothing
+ * rather than an empty card with a zero in it.
+ */
+registerBlock({
+  type:   "profileVisitors",
+  schema: blockPropSchemas.profileVisitors,
+  editorMeta: { label: "Recent visitors", category: "data", ...ON_PROFILE },
+  component: ({ props, context }: Ctx<{ max: number }>) => {
+    const { t } = useTranslation("profiles");
+    const { data: real } = useProfileVisitors(context.profile.id, props.max ?? 5);
+    const data = real?.items.length ? real : previewSample(SAMPLE_VISITORS);
+    if (!data?.items.length) return null;
+
+    // "+N" counts the named visitors this card is NOT showing — not the all-time
+    // total, which includes guests and would make the badge meaningless.
+    const hidden = Math.max(0, data.visitors - data.items.length);
+
+    return (
+      <div className="profile-strip profile-strip--static">
+        <span className="profile-rail__head">
+          <span className="profile-rail__title">{t("visitors.title")}</span>
+          <span className="profile-visitors__views">
+            <FontAwesomeIcon icon={faEye} />
+            {data.totalViews.toLocaleString()}
+          </span>
+        </span>
+
+        <span className="profile-strip__row">
+          <span className="profile-strip__avatars">
+            {data.items.map((u) => (
+              <span key={u.id} className="profile-strip__av" title={u.username}>
+                {u.avatar
+                  ? <img src={u.avatar} alt="" />
+                  : <em>{u.username.charAt(0).toUpperCase()}</em>}
+              </span>
+            ))}
+            {hidden > 0 && <span className="profile-strip__av profile-strip__av--more">+{hidden}</span>}
+          </span>
+        </span>
+
+        <p className="profile-strip__caption">
+          {t("visitors.summary", { count: data.thisWeek })}
+          {/* `timeAgo` is the one relative-time formatter in the app — localised
+              through the `time` block of the common namespace.
+              ⚠ NOT compact: compact drops the "ago" and the mockup's line reads
+              "last: 4m ago". A bare "4m" beside a date is ambiguous. */}
+          {data.lastAt && ` · ${t("visitors.last", { ago: timeAgo(data.lastAt) })}`}
+        </p>
+      </div>
+    );
+  },
+});
+
 // ── Tabs and their bodies ───────────────────────────────────────────────────
 // Two blocks, not one, even though they share state: the host owns `tab`, so the
 // switcher and the body can sit in different regions and still agree. That is the
@@ -228,17 +606,28 @@ registerBlock({
   type:   "profileTabs",
   schema: blockPropSchemas.profileTabs,
   editorMeta: { label: "Profile tabs", category: "data", ...ON_PROFILE, wide: true },
-  component: ({ context }: Ctx) => (
-    <div className="profile-tabs">
-      {context.tabs.map((item) => (
-        <button key={item.id}
-          className={`profile-tab${context.tab === item.id ? " profile-tab--active" : ""}`}
-          onClick={() => context.setTab(item.id)}>
-          {item.label}
-        </button>
-      ))}
-    </div>
-  ),
+  component: ({ context }: Ctx) => {
+    const { t } = useTranslation("profiles");
+    // ⚠ "New Article" lives on the TAB ROW, as the mockup draws it, which means it
+    // belongs to this block rather than to the articles tab beneath it. The two are
+    // separately movable blocks, so a negative margin pulling one onto the other's
+    // line breaks the moment an admin puts something between them.
+    const canWrite = context.profile.isOwn && context.tab === "articles";
+    return (
+      <div className="profile-tabs">
+        {context.tabs.map((item) => (
+          <button key={item.id}
+            className={`profile-tab${context.tab === item.id ? " profile-tab--active" : ""}`}
+            onClick={() => context.setTab(item.id)}>
+            {item.label}
+          </button>
+        ))}
+        {canWrite && (
+          <Link to="/articles/new" className="profile-tabs__new">{t("newArticle")}</Link>
+        )}
+      </div>
+    );
+  },
 });
 
 registerBlock({

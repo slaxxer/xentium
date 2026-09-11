@@ -94,5 +94,8 @@
     "siteBadge": "Sitio",
     "note": "Tu elección, en este dispositivo. No cambia nada para los demás.",
     "activeBadge": "Activo"
+  },
+  "badges": {
+    "held": "Insignia {{name}}"
   }
 }

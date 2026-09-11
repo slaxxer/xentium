@@ -55,8 +55,17 @@ export const progressionController = {
     res.json(await progressionService.getUserLimits(userId));
   }) as RequestHandler,
 
+  /**
+   * The caller's own standing.
+   *
+   * ⚠ Answers with the SAME shape as `GET /users/:id/progression`. It used to return
+   * the leaner `getUserProgression`, so one endpoint carried `ladder`/`unlocks` and
+   * the other did not — two shapes for one concept, which is what let the home rail
+   * and the profile rail drift into two components. `getProfileProgression` is a
+   * strict superset, so every existing caller keeps the fields it already read.
+   */
   getMyProgression: (async (req, res) => {
     const userId = req.userId!;
-    res.json(await progressionService.getUserProgression(userId));
+    res.json(await progressionService.getProfileProgression(userId));
   }) as RequestHandler,
 };

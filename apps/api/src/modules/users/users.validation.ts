@@ -34,3 +34,14 @@ export const searchQuerySchema = z.object({
   q: z.string().min(1).max(50),
   limit: z.coerce.number().int().min(1).max(10).default(5),
 });
+
+/** The visitors card is addressed by user id, like every other per-profile route. */
+export const visitorParamsSchema = z.object({ id: z.string().min(1) });
+
+/**
+ * ⚠ Bounded at 24. The card shows five avatars and a "+N"; an unbounded limit on a
+ * public endpoint is a way to ask for every member who ever looked at someone.
+ */
+export const visitorQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(24).default(5),
+});

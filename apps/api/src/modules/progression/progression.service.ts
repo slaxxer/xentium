@@ -27,6 +27,24 @@ async function loadGlobalSettings() {
   };
 }
 
+/** The limits a rung raises, as key/value pairs the frontend words. */
+function describeUnlocks(
+  r: {
+    maxArticleLength: number | null; maxDailyArticles: number | null;
+    maxCommentLength: number | null; maxDailyComments: number | null;
+    maxAttachments: number | null;
+  } | null,
+): { key: string; value: number }[] {
+  if (!r) return [];
+  return [
+    { key: "articleLength",  value: r.maxArticleLength },
+    { key: "dailyArticles",  value: r.maxDailyArticles },
+    { key: "commentLength",  value: r.maxCommentLength },
+    { key: "dailyComments",  value: r.maxDailyComments },
+    { key: "attachments",    value: r.maxAttachments },
+  ].filter((x): x is { key: string; value: number } => x.value != null && x.value > 0);
+}
+
 export const progressionService = {
   // ── Per-group config ───────────────────────────────────────────────────────
 
@@ -162,6 +180,9 @@ export const progressionService = {
       maxAttachments:           prog?.maxAttachments            ?? null,
       maxProfileImageBytes:     prog?.maxProfileImageBytes      ?? null,
       allowedProfileImageTypes: prog?.allowedProfileImageTypes  ?? [],
+      // ⚠ `?? true` — a member in no progression group is unrestricted, and a site
+      // with no ladder must not have covers switched off by accident.
+      canUploadCover:           prog?.canUploadCover            ?? true,
       ladderPosition:           prog?.ladderPosition            ?? null,
       badgeLabel:               prog?.badgeLabel                ?? null,
       badgeColor:               prog?.badgeColor                ?? null,
@@ -178,6 +199,111 @@ export const progressionService = {
    * threshold logic (§38) so the UI shows the same numbers that drive promotion.
    * Returns current badge, the next rung, per-metric have/need, and an overall %.
    */
+  /**
+   * Everything a PROFILE's rank rail shows, for any user, composed from what is
+   * already computed elsewhere.
+   *
+   * Three questions, one round trip, because they are one card on the page: where
+   * this member is on the ladder and how far to the next rung (`getUserProgression`),
+   * what the WHOLE ladder looks like with the rungs they have passed marked, and what
+   * the next rung would actually give them.
+   *
+   * ⚠ PUBLIC. It says what a member has achieved and what the site's ladder is —
+   * both already visible in their badge and in the ACP's own ladder — and nothing
+   * about who they are. It carries no counts the profile does not already publish.
+   *
+   * ⚠ Returns `enabled: false` and nothing else when progression is switched off, so
+   * the rail can disappear entirely rather than render an empty ladder.
+   */
+  async getProfileProgression(userId: string) {
+    const settings = await loadGlobalSettings();
+
+    /**
+     * ⚠ The cover gate is resolved BEFORE the `enabled` check, and deliberately.
+     *
+     * `getUserLimits` — which is what the upload route actually enforces — does not
+     * consult the global progression toggle at all. If this returned early with the
+     * rail's `{ enabled: false }` and nothing else, the profile would offer an upload
+     * that the server then refused, on any site with the ladder switched off and a
+     * group still carrying `canUploadCover: false`.
+     *
+     * The UI must ask the same question the server answers. Whether a DISABLED
+     * progression system ought to enforce per-group limits at all is a real question,
+     * but it is the same question for article and comment limits and is not this
+     * feature's to decide.
+     */
+    const coverGate = await this.resolveCoverGate(userId);
+
+    if (!settings.enabled) return { enabled: false as const, ...coverGate };
+
+    const [progression, rungs] = await Promise.all([
+      this.getUserProgression(userId),
+      // ⚠ Still fetched, but only to find the NEXT rung for `unlocks`. The whole
+      // ladder used to travel in the payload for a block that no longer exists.
+      prisma.groupProgression.findMany({
+        where:   { isProgressionGroup: true },
+        orderBy: { ladderPosition: "asc" },
+      }),
+    ]);
+
+    const currentPos = progression.current?.ladderPosition ?? 0;
+
+    return {
+      enabled: true as const,
+      showProgressBar: settings.showProgressBar,
+      ...progression,
+      /**
+       * What the NEXT rung grants. Machine-readable pairs rather than sentences:
+       * the API is locale-agnostic (§60), so the numbers travel and the wording is
+       * the frontend's. Absent limits are omitted — `null` means unlimited, which
+       * is not something to advertise as an unlock.
+       */
+      unlocks: describeUnlocks(rungs.find((r) => (r.ladderPosition ?? 0) > currentPos) ?? null),
+
+      /**
+       * Whether this member may set a cover, and the rung that grants it.
+       *
+       * ⚠ Both, not just the boolean. "You cannot do this" is a dead end; the design
+       * says "Unlocked at Contributor", which needs the NAME of the lowest rung that
+       * allows it — not the next rung up, which may not be the one that unlocks it.
+       *
+       * `null` for `coverUnlocksAt` when no rung on the ladder allows covers at all,
+       * so the UI can say "not available" instead of naming a rank that will never
+       * arrive.
+       */
+      ...coverGate,
+    };
+  },
+
+  /**
+   * Whether this member may set a cover, and the rung that grants it.
+   *
+   * ⚠ Mirrors `getUserLimits` exactly — the member's OWN rung, `?? true` when they
+   * are on no rung. Anything cleverer ("any rung at or below allows it") would tell
+   * a member they may upload and then have the server refuse them.
+   *
+   * `coverUnlocksAt` is the LOWEST rung that allows covers, not the next rung up:
+   * the design says "Unlocked at Contributor", which needs the name of the rung that
+   * actually grants it. Null when no rung does, so the UI can say "not available"
+   * rather than naming a rank that will never arrive.
+   */
+  async resolveCoverGate(userId: string) {
+    const [limits, rungs] = await Promise.all([
+      this.getUserLimits(userId),
+      prisma.groupProgression.findMany({
+        where:   { isProgressionGroup: true, canUploadCover: true },
+        orderBy: { ladderPosition: "asc" },
+        take:    1,
+        include: { group: { select: { name: true } } },
+      }),
+    ]);
+    const rung = rungs[0];
+    return {
+      canUploadCover: limits.canUploadCover,
+      coverUnlocksAt: rung ? (rung.badgeLabel ?? rung.group.name) : null,
+    };
+  },
+
   async getUserProgression(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },

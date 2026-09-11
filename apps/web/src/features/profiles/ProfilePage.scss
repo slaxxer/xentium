@@ -1,13 +1,15 @@
-/* 900px is a deliberate reading measure, narrower than the region — so the max-width
-   stays and only the horizontal padding goes, which the region now provides. */
 .profile-page {
-  max-width: 900px;
+  /* ⚠ The site's own content width, not a narrower one of its own. The profile was
+     capped at 900px from before it had a rail; against the mockup that squeezed the
+     body into a column narrower than the article cards it holds. */
+  max-width: var(--content-max);
   margin: 0 auto;
-  padding-block: var(--sp-10) var(--sp-8);
+  /* ⚠ No vertical padding — see `.app-main`. */
 
-  @media (max-width: 640px) {
-    padding-block: var(--sp-6) var(--sp-4);
-  }
+  /* The mockup's 300px rail. Scoped HERE rather than raised globally: `--rail-width`
+     is a Style Editor token every other page's rail reads, and this design decision
+     is about the profile. */
+  --rail-width: 300px;
 }
 
 /* ── Card ───────────────────────────────────────────── */
@@ -20,6 +22,18 @@
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
   margin-bottom: var(--sp-6);
+  box-shadow: 0 6px 24px rgb(30 40 90 / 0.08);
+
+  /* ⚠ Directly under a cover, the two are ONE shape: the card gives up its top
+     radius and its top border so the seam disappears. Selected on the sibling
+     rather than a prop, because whether a cover is above it is the DOCUMENT's
+     business — an admin who deletes the cover block gets the rounded card back
+     with nothing else to change. */
+  .nv-b--profileCover + .nv-block & {
+    border-top: 0;
+    border-radius: 0 0 var(--card-radius) var(--card-radius);
+    padding-top: 0;
+  }
 
   /* `md` is the padding this card always had, so the shipped default is identical. */
   &--pad-none { padding: 0; }
@@ -29,10 +43,12 @@
 }
 
 /* ── Avatar ─────────────────────────────────────────── */
-/* Sizes itself rather than relying on a parent's flex, since it is now movable —
-   `lg` is the 130px it always was. */
+/* Sizes itself rather than relying on a parent's flex, since it is now movable.
+   `lg` is the mockup's 120px. */
 .profile-av {
-  border-radius: 50%;
+  /* ⚠ A SQUIRCLE, not a circle — 30% is what the mockup draws, and it is the one
+     shape on the page that is neither round nor the card's radius. */
+  border-radius: 30%;
   background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent));
   display: flex;
   align-items: center;
@@ -44,7 +60,25 @@
 
   &--sm { width: 64px;  height: 64px;  font-size: 1rem; }
   &--md { width: 96px;  height: 96px;  font-size: 1.4rem; }
-  &--lg { width: 130px; height: 130px; font-size: 1.75rem; }
+  &--lg { width: 120px; height: 120px; font-size: 2.2rem; }
+
+  /* Lifted over the band above it, with a ring in the page's own background so it
+     reads as sitting ON the cover rather than punched through it.
+     ⚠ Half the avatar's height, per size — a single value would leave the small one
+     floating and the large one buried. */
+  &--overlap {
+    position: relative;
+    z-index: 3;
+    /* A RING in the card's own colour, not a border: a border eats into the box and
+       would shrink the avatar below the size the admin picked. */
+    box-shadow: 0 0 0 5px var(--card-bg), 0 6px 24px rgb(30 40 90 / 0.14);
+
+    /* ⚠ Per size. A single value leaves the small one floating and buries the
+       large one. `lg` is the mockup's -72 against its 120px avatar. */
+    &.profile-av--sm { margin-top: -38px; }
+    &.profile-av--md { margin-top: -56px; }
+    &.profile-av--lg { margin-top: -72px; }
+  }
 
   img {
     width: 100%;
@@ -68,10 +102,12 @@
 }
 
 .profile-name {
-  font-size: var(--fs-2xl);
+  /* The mockup's 1.75rem sits between --fs-2xl (1.5) and --fs-3xl (1.875); clamping
+     between the two keeps the name on the scale rather than inventing a size. */
+  font-size: clamp(var(--fs-2xl), 1.75rem, var(--fs-3xl));
   font-weight: 800;
   color: var(--c-fg);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .profile-handle {
@@ -85,6 +121,24 @@
   font-size: var(--fs-xs);
   color: var(--c-fg-subtle);
   font-style: italic;
+  margin-top: 3px;
+}
+
+/* The name and its pills on one wrapping row — the mockup reads the rank beside
+   the name, not underneath it. `baseline` so a pill sits on the name's baseline
+   rather than floating at its cap height. */
+.profile-titlerow {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--sp-2) 10px;
+}
+
+/* `@handle · Member since …` — one line, replacing three stacked paragraphs. */
+.profile-meta {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--c-fg-subtle);
   margin-top: 3px;
 }
 
@@ -197,29 +251,50 @@
 .profile-bio {
   font-size: var(--fs-sm);
   color: var(--c-fg-muted);
-  max-width: 500px;
+  /* The mockup's measure. Wider than the 500px the old card used, because the card
+     itself is wider now — at 500 the bio broke well before the stats below it. */
+  max-width: 620px;
   line-height: 1.65;
-  margin-bottom: var(--sp-4);
+  margin-top: var(--sp-4);
+  margin-bottom: 0;
 }
 
 /* ── Stats row ──────────────────────────────────────── */
+/* TILES, not a row of numbers. Each count is its own surface, so a stat reads as a
+   thing you can look at (and often click) rather than as a caption. */
 .profile-stats {
+  /* ⚠ FLEX, not the old auto-fit grid. The mockup gives every tile an equal share
+     of one row; auto-fit sizes them by a minimum instead, so four tiles on a wide
+     card left a ragged gap at the end. `wrap` keeps it honest when a plugin
+     contributes extra counters — core ships four, the forum adds two. */
   display: flex;
-  gap: var(--sp-6);
-
-  @media (max-width: 540px) {
-    justify-content: center;
-  }
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--c-border);
 }
 
 .profile-stat {
+  /* ⚠ A small basis, not the tile's drawn width. Core ships four counters and the
+     forum contributes two more; at `1 1 120px` the sixth wrapped onto a line of its
+     own and left a full-width tile hanging under five. */
+  flex: 1 1 84px;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   gap: 2px;
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  /* No border in the mockup — the tile is a filled well, and a border around a
+     filled shape on a white card reads as a second box. */
+  border: 1px solid transparent;
+  background: var(--c-bg-hover);
+
+  &--clickable:hover { border-color: var(--c-accent); }
 
   &__value {
-    font-size: 1.125rem;
+    font-size: 1.375rem;
     font-weight: 800;
     color: var(--c-fg);
     line-height: 1;
@@ -234,28 +309,56 @@
 /* ── Tabs ───────────────────────────────────────────── */
 .profile-tabs {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: var(--sp-2);
-  margin-bottom: var(--sp-6);
+  margin-bottom: var(--sp-5);
+
+  /* Pushed to the far end of the row, exactly as the mockup's spacer does it. */
+  &__new {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    padding: 9px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: opacity 0.15s;
+    &:hover { opacity: 0.87; }
+  }
 }
 
+/* Pills, per the mockup: an inactive tab is a raised card, the active one is a
+   solid slug in the page's strongest foreground. Not the accent — the accent is
+   already spent on the rank, the New Article button and every link on the page,
+   and a fourth use of it stops meaning "this one". */
 .profile-tab {
-  padding: var(--sp-2) var(--sp-4);
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 13px;
   font-weight: 500;
-  color: var(--c-fg-muted);
+  color: var(--c-fg);
+  background: var(--card-bg);
+  box-shadow: 0 6px 24px rgb(30 40 90 / 0.08);
   border: 1px solid transparent;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 
   &:hover {
-    color: var(--c-fg);
     background: var(--c-accent-soft);
+    color: var(--c-accent);
   }
 
   &--active {
-    background: var(--c-accent-soft);
-    border-color: var(--c-accent-glow);
-    color: var(--c-accent);
+    background: var(--c-fg);
+    color: var(--c-bg);
+    font-weight: 600;
+    box-shadow: none;
+
+    &:hover { background: var(--c-fg); color: var(--c-bg); }
   }
 }
 
@@ -336,12 +439,15 @@
 }
 
 /* ── Clickable stat ─────────────────────────────────── */
+/* ⚠ NO padding and NO negative margin. Both were here to give a stat that was BARE
+   TEXT a hover target of its own — pad it out, pull it back, nothing moves. A stat
+   is a tile now, with its own padding and border, and those two declarations
+   overrode the tile's padding and dragged it 8px outside its own grid cell: the
+   tiles overlapped each other and spilled past the card. The tile is the target;
+   this only says it can be clicked. */
 .profile-stat--clickable {
   cursor: pointer;
-  border-radius: var(--radius-sm);
-  padding: var(--sp-2);
-  margin: calc(-1 * var(--sp-2));
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 
   &:hover { background: var(--c-accent-soft); }
 }
@@ -574,27 +680,6 @@
 
 /* ── Articles tab ───────────────────────────────────────── */
 .profile-articles {
-  &__head {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: var(--sp-4);
-  }
-
-  &__new {
-    display: inline-flex;
-    align-items: center;
-    background: var(--btn-bg);
-    color: var(--btn-fg);
-    padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    font-weight: 700;
-    text-decoration: none;
-    transition: opacity 0.15s;
-    margin-bottom: var(--sp-4);
-    &:hover { opacity: 0.87; }
-  }
-
   &__section { margin-bottom: var(--sp-6); }
 
   &__section-head {
@@ -627,15 +712,16 @@
     gap: 10px;
   }
 
+  /* The mockup's horizontal card: a fixed thumb, then everything else. */
   &__row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--sp-4);
     background: var(--card-bg);
     border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    padding: 18px 22px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 6px 24px rgb(30 40 90 / 0.08);
+    padding: var(--sp-4);
     text-decoration: none;
     color: inherit;
     transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
@@ -647,24 +733,74 @@
     }
   }
 
+  &__thumb {
+    position: relative;
+    width: 150px;
+    height: 104px;
+    flex-shrink: 0;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent) 55%, var(--c-accent2));
+    overflow: hidden;
+
+    &--img {
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+  }
+
+  /* Read time, on the thumb. Black at low alpha rather than a token: it sits over
+     an arbitrary photograph, so it must not follow the palette into invisibility. */
+  &__read {
+    position: absolute;
+    left: 8px;
+    bottom: 8px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    background: rgb(0 0 0 / 0.32);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  &__titlerow {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__excerpt {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--c-fg-muted);
+    line-height: 1.5;
+    margin-top: 6px;
+    /* Two lines, then an ellipsis — the mockup's cards are all the same height and
+       a long excerpt is what breaks that. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
   &__body {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
   }
 
   &__title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 700;
     color: var(--c-fg);
+    margin: 0;
     em { color: var(--c-fg-subtle); font-weight: 500; }
   }
 
   &__meta {
     font-size: 12px;
     color: var(--c-fg-subtle);
+    margin-top: 8px;
   }
 
   &__badge {
@@ -775,3 +911,298 @@
     &:disabled { opacity: 0.4; cursor: not-allowed; }
   }
 }
+
+
+/* ── the cover band ────────────────────────────────────────────────────────── */
+/* Sits UNDER the avatar and the name, which is the one thing that makes it a cover
+   rather than a `section`. */
+.profile-cover {
+  position: relative;
+  width: 100%;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  overflow: hidden;
+  /* A member who has uploaded nothing is the normal case, so the default is a band
+     drawn from the site's own palette — an empty one reads as broken. */
+  background: linear-gradient(120deg, var(--c-accent), var(--c-accent2));
+
+  /* The mockup's two passes over the band: a soft highlight thrown from the top
+     left, and a vignette that darkens the edges so the card below reads as sitting
+     ON the cover rather than butting against a flat rectangle.
+     ⚠ Both are white/black at low alpha rather than palette colours — they are
+     LIGHT, not hue, and must not shift when the site's accent does. */
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  &::before {
+    background: radial-gradient(120% 140% at 12% 8%, rgb(255 255 255 / 0.28), transparent 55%);
+  }
+
+  &::after {
+    border-radius: inherit;
+    box-shadow: inset 0 0 20px 20px rgb(0 0 0 / 0.28);
+    z-index: 2;
+  }
+
+  &--bg {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+  }
+
+  /* The owner's layer, covering the whole band so a file can be dropped anywhere on
+     it rather than onto a small rectangle.
+     ⚠ ABOVE the ::after vignette (z-index 2), or the controls would be dimmed by the
+     very overlay that makes the band read as a cover. */
+  &__own {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+  }
+
+  /* Dragging a file over it: the whole band lights up. */
+  &__own.is-dragging {
+    background: rgb(255 255 255 / 0.22);
+    border-radius: inherit;
+  }
+
+  &__tools {
+    position: absolute;
+    right: 20px;
+    top: 20px;
+    z-index: 3;
+    display: flex;
+    gap: 8px;
+  }
+
+  /* White on a dark scrim rather than palette tokens: these sit on an arbitrary
+     photograph, where a themed colour can vanish completely. */
+  &__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 16px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: rgb(12 13 24 / 0.42);
+    backdrop-filter: blur(8px);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover:not(:disabled) { background: rgb(12 13 24 / 0.62); }
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+
+  &__drop {
+    position: absolute;
+    inset: 22px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: 2px dashed rgb(255 255 255 / 0.55);
+    border-radius: var(--radius-lg);
+    text-align: center;
+  }
+
+  &__drop-icon  { font-size: 26px; color: rgb(255 255 255 / 0.92); }
+  &__drop-title { font-size: 15px; font-weight: 700; color: #fff; }
+  &__drop-spec  { font-size: 12px; font-weight: 500; color: rgb(255 255 255 / 0.82); }
+
+  &__drop-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+  }
+
+  /* The one control that inverts — a solid white button on the band, so the primary
+     action is the brightest thing on it. */
+  &__cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 18px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: #fff;
+    color: var(--c-accent);
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+
+    &:hover:not(:disabled) { opacity: 0.9; }
+    &:disabled { opacity: 0.6; cursor: default; }
+  }
+
+  /* "Unlocked at Contributor" — a statement, not a control, so it is a pill. */
+  &__lock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    border-radius: 999px;
+    background: rgb(12 13 24 / 0.24);
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+}
+
+/* ── the rail ──────────────────────────────────────────────────────────────── */
+
+/* ⚠ `.profile-rank` is NOT here — it moved to `features/progression/rank.scss` with
+   its component, because the home rail draws it too and this sheet only loads on the
+   profile page. */
+.profile-awards,
+.profile-strip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border-color);
+  background: var(--card-bg);
+  font: inherit;
+}
+
+
+
+.profile-strip {
+  cursor: pointer;
+
+  &:hover { border-color: var(--c-accent); }
+
+  /* ⚠ The visitors card goes nowhere — there is no "all visitors" page — so it must
+     not offer a pointer or a hover border that promise one. */
+  &--static {
+    cursor: default;
+    &:hover { border-color: var(--card-border-color); }
+  }
+
+  /* ⚠ NOT space-between. The mockup sets the count immediately after the last
+     avatar; pushed to the far edge it reads as a separate figure rather than as
+     the size of the group it labels. */
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: var(--sp-3);
+  }
+
+  /* Overlapped avatars: the strip is a hint at who follows, not a list of them. */
+  &__avatars { display: flex; }
+
+  &__av {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    /* A ring, not a border — a border would shrink the avatar inside its own box
+       and the overlap maths is measured from the full 34. */
+    box-shadow: 0 0 0 2px var(--card-bg);
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    font-size: 13px;
+    font-weight: 800;
+
+    & + & { margin-left: -8px; }
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+    em  { font-style: normal; }
+  }
+
+  &__count {
+    margin-left: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--c-fg);
+  }
+
+  &__more { font-size: 10px; color: var(--c-fg-subtle); }
+
+  /* "18 visitors this week · last: 4m ago" */
+  &__caption {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    margin: 10px 0 0;
+  }
+
+  /* The overflow bubble at the end of the row. Flat and outlined rather than
+     tinted, so it reads as a count and not as one more person. */
+  &__av--more {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    color: var(--c-fg-muted);
+    font-size: 11px;
+  }
+}
+
+/**
+ * THE AWARDS block (ADR-0009).
+ *
+ * ⚠ Its own class, NOT `.profile-badges` — that one is the GROUP badge row inside
+ * `.profile-identity`, and borrowing it made this block inherit `display: flex`, so
+ * the heading and the awards sat on one line. A block placed in `main` cannot
+ * borrow a class scoped to a card it does not live in.
+ */
+.profile-visitors__views {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--c-fg-subtle);
+}
+
+.profile-awards {
+  /* A rail card in its own right — the mockup gives badges the same white panel the
+     rank and the ladder get. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+
+  &__count {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--c-fg-subtle);
+  }
+
+  /* Four across, as drawn. `auto-fit` rather than a fixed four so the same card
+     survives being dragged into a wider region. */
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+    gap: var(--sp-2);
+  }
+
+  &__cell {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+
+  &__label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    text-align: center;
+    line-height: 1.25;
+
+    &.is-locked { color: var(--c-fg-subtle); }
+  }
+}
+
+/* The rail's card header — a title with something on the far right. */

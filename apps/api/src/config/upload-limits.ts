@@ -31,6 +31,14 @@ export const UPLOAD_LIMITS = {
   // which a byte ceiling cannot express). The bytes are bounded far below the group
   // icon's anyway: at this size only an animated GIF has any reason to be large, and
   // a badge is drawn many times per page — beside every author in a thread.
+  // A member's own profile cover. 2 MB is what the design tells them on the
+  // dropzone, and the number a member reads must be the number the server enforces.
+  // GIF is allowed HERE so that "animated covers" can be granted per rank through
+  // `allowedProfileImageTypes` — a type the route refuses could never be unlocked.
+  PROFILE_COVER: {
+    maxBytes: 2 * MB,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  },
   BADGE_ICON: {
     maxBytes: 128 * KB,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],

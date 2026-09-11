@@ -60,5 +60,51 @@
   "tombstoneBy": " por {{mod}}",
   "tombstoneReason": " · Motivo: {{reason}}",
   "banned": "Banido",
-  "permanentlyBanned": "Banido permanentemente"
+  "permanentlyBanned": "Banido permanentemente",
+  "rank": {
+    "progress": "Progresso de nível",
+    "atTop": "No topo — não há mais nada a subir.",
+    "keepGoing": "Continua a publicar para chegar ao próximo nível.",
+    "remaining": "Mais {{count}} {{metric}} até {{rank}}",
+    "remaining_one": "Mais {{count}} {{metric}} até {{rank}}",
+    "unlocks": "{{rank}} desbloqueia",
+    "metric": {
+      "articles": "artigos",
+      "comments": "comentários",
+      "likes": "gostos",
+      "days": "dias",
+      "posts": "publicações",
+      "threads": "tópicos"
+    },
+    "unlock": {
+      "articleLength": "artigos de {{value}} caracteres",
+      "dailyArticles": "{{count}} artigos por dia",
+      "commentLength": "comentários de {{value}} caracteres",
+      "dailyComments": "{{count}} comentários por dia",
+      "attachments": "{{count}} anexos por publicação"
+    }
+  },
+  "badges": {
+    "title": "Emblemas",
+    "count": "{{held}} de {{total}}",
+    "locked": "Ainda não obtido",
+    "seeAll": "Ver todos"
+  },
+  "likeCount": "{{n}} gostos",
+  "visitors": {
+    "title": "Visitantes recentes",
+    "summary_one": "{{count}} visitante esta semana",
+    "summary_other": "{{count}} visitantes esta semana",
+    "last": "último: {{ago}}"
+  },
+  "cover": {
+    "dropTitle": "Larga uma imagem de cabeçalho, ou procura",
+    "lockedTitle": "As capas são uma vantagem de patente",
+    "spec": "1600 × 400 · JPG, PNG, WebP · até 2 MB",
+    "upload": "Carregar capa",
+    "change": "Mudar capa",
+    "saved": "Capa atualizada",
+    "unlocksAt": "Desbloqueia em {{rank}}",
+    "unavailable": "Indisponível neste site"
+  }
 }
