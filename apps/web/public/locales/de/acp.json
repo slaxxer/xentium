@@ -1588,7 +1588,16 @@
     "profileFields": "Profilfelder",
     "pfField": "Feld",
     "pfValue": "Wert",
-    "notSet": "— nicht gesetzt"
+    "notSet": "— nicht gesetzt",
+    "badges": "Abzeichen",
+    "noBadges": "Noch keine Abzeichen.",
+    "badgeGranted": "Abzeichen vergeben",
+    "badgeRevoke": "Abzeichen zurücknehmen",
+    "badgeGrantHint": "Vergebene Abzeichen bleiben, bis du sie zurücknimmst.",
+    "badgeGrantPick": "Abzeichen vergeben…",
+    "badgeGrantNone": "Keine Abzeichen mehr zu vergeben",
+    "badgeEarned": "verdient",
+    "badgeEarnedHint": "Automatisch vergeben, weil die Anforderungen erfüllt sind. Ein Zurücknehmen hält nur bis zum nächsten Durchlauf, solange die Anforderungen erfüllt bleiben."
   },
   "styleEditor": {
     "rowBg": "Hintergrund",
@@ -2202,7 +2211,7 @@
   "badges": {
     "eyebrow": "Community",
     "title": "Abzeichen",
-    "subtitle": "Auszeichnungen, die du selbst vergibst – und wer sie trägt.",
+    "subtitle": "Was diese Seite vergeben kann. Wer was trägt, steht auf der Seite des Mitglieds.",
     "sections": "Abzeichen",
     "secCatalogue": "Katalog",
     "secAwarding": "Vergabe",
@@ -2224,15 +2233,10 @@
     "fieldOrder": "Reihenfolge",
     "fieldOrderDesc": "Kleiner zuerst – wie bei Gruppen-Abzeichen.",
     "glyphTitle": "Symbol",
-    "glyphHint": "Wird verwendet, wenn kein Bild hochgeladen ist.",
-    "uploadTitle": "Bild",
-    "uploadHint": "PNG, JPEG, GIF oder WebP, höchstens 32×32 Pixel. Ein Bild ersetzt das Symbol. Animierte GIFs bleiben animiert.",
-    "chooseFile": "Bild hochladen",
-    "removeFile": "Bild entfernen",
+    "glyphHint": "Das Zeichen, mit dem dieses Abzeichen gezeichnet wird, getönt in der Farbe oben.",
     "saved": "Abzeichen gespeichert",
     "created": "Abzeichen angelegt",
     "deleted": "Abzeichen gelöscht",
-    "iconSaved": "Bild hochgeladen",
     "awardTitle": "Abzeichen vergeben",
     "awardSub": "Vergib ein Abzeichen an ein Mitglied – oder nimm es zurück.",
     "awardNoneYet": "Lege zuerst ein Abzeichen an – es gibt noch nichts zu vergeben.",
@@ -2255,6 +2259,18 @@
     "save": "Speichern",
     "cancel": "Abbrechen",
     "edit": "Bearbeiten",
-    "delete": "Löschen"
+    "delete": "Löschen",
+    "rewardTitle": "Belohnungssystem",
+    "rewardToggle": "Dieses Abzeichen automatisch verdienen",
+    "rewardNote": "Aus vergibst du dieses Abzeichen selbst. An erhält es jeder, der alle Anforderungen unten erfüllt – und behält es dann.",
+    "rewardEmpty": "Keine Anforderungen gesetzt – so kann es noch niemand verdienen.",
+    "metric": {
+      "articles": "Artikel",
+      "comments": "Kommentare",
+      "likes": "Erhaltene Likes",
+      "followers": "Follower",
+      "forum.posts": "Forenbeiträge",
+      "forum.threads": "Themen"
+    }
   }
 }

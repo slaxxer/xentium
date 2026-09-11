@@ -1,11 +1,32 @@
 import type { RequestHandler } from "express";
 import { badgesService } from "./badges.service.js";
+import { badgeCriteriaRegistry } from "../../core/badge-registry/badge-criteria-registry.js";
+
+/** Core metrics are unnamespaced; a plugin's are `<plugin>.<metric>`. */
+function pluginOf(key: string): string | null {
+  const dot = key.indexOf(".");
+  return dot === -1 ? null : key.slice(0, dot);
+}
 import {
   awardSchema, badgeIdParam, badgesForUsersQuery,
   createBadgeSchema, revokeParams, updateBadgeSchema,
 } from "./badges.validation.js";
 
 export const badgesController = {
+  /**
+   * What a badge can be earned FOR, right now.
+   *
+   * ⚠ Read from the live registry rather than a fixed list, so the forum's metrics
+   * appear only while the forum is enabled — which is exactly what the admin was
+   * promised. A threshold already stored against a disabled plugin stays in the
+   * badge untouched; it simply is not offered or evaluated until the plugin returns.
+   */
+  metrics: (async (_req, res) => {
+    res.json(badgeCriteriaRegistry.getAll().map((m) => ({
+      key: m.key, label: m.label, plugin: pluginOf(m.key),
+    })));
+  }) as RequestHandler,
+
   list: (async (_req, res) => {
     res.json(await badgesService.list());
   }) as RequestHandler,
@@ -25,20 +46,6 @@ export const badgesController = {
     const { id } = badgeIdParam.parse(req.params);
     await badgesService.remove(id);
     res.status(204).end();
-  }) as RequestHandler,
-
-  uploadIcon: (async (req, res) => {
-    const { id } = badgeIdParam.parse(req.params);
-    const file = req.file!;
-    // `detectedExt` is the magic-byte-derived extension, not whatever the browser
-    // claimed — the same rule every other upload route follows.
-    const url = await badgesService.uploadIcon(id, file.buffer, `x.${file.detectedExt ?? "png"}`);
-    res.json({ icon: url });
-  }) as RequestHandler,
-
-  removeIcon: (async (req, res) => {
-    const { id } = badgeIdParam.parse(req.params);
-    res.json(await badgesService.removeIcon(id));
   }) as RequestHandler,
 
   holders: (async (req, res) => {

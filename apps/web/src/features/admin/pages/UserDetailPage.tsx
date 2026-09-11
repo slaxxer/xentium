@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
+import type { AwardedBadge, BadgeRow } from "@nodevo/contracts";
+import { BadgeMark } from "../../../components/UserBadges";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../hooks/useAuth";
@@ -10,6 +12,7 @@ import {
   faSave, faChevronLeft, faBan, faShield, faRightFromBracket, faKey,
   faNewspaper, faComment, faArrowsRotate, faNetworkWired,
   faAddressCard, faUserGroup, faTableList, faShieldHalved, faTriangleExclamation,
+  faAward, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { Username } from "../../../components/Username";
 import { UserAvatar } from "../../../components/UserAvatar";
@@ -236,6 +239,95 @@ function SecurityActivity({ userId }: { userId: string }) {
           </div>
         </>
       )}
+    </section>
+  );
+}
+
+/**
+ * Which badges this member has, and the one place an admin changes that.
+ *
+ * ⚠ Shows how each one was come by. Both kinds are real awards and both can be taken
+ * back here — the difference is only who decided: an admin handed it over, or the
+ * reward sweep granted it because the member met the badge's thresholds.
+ *
+ * ⚠ Revoking an EARNED badge is not permanent if the member still meets the
+ * thresholds: the next sweep grants it again. Say so, rather than let an admin think
+ * a revoke failed.
+ */
+function UserBadgesCard({ userId }: { userId: string }) {
+  const { t } = useTranslation("acp");
+  const qc = useQueryClient();
+
+  const held = useQuery<AwardedBadge[]>({
+    queryKey: ["admin-user-badges", userId],
+    queryFn:  () => api.get(`/user-badges/${userId}`),
+  });
+  const catalogue = useQuery<BadgeRow[]>({
+    queryKey: ["admin-badges"],
+    queryFn:  () => api.get("/admin/badges"),
+  });
+
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["admin-user-badges", userId] });
+    // The member's cards elsewhere are keyed by user id.
+    void qc.invalidateQueries({ queryKey: ["user-badges", userId] });
+  };
+
+  const grant = useMutation({
+    mutationFn: (badgeId: string) => api.post(`/admin/badges/${badgeId}/award`, { userId }),
+    onSuccess: () => { refresh(); swalToast(t("userDetail.badgeGranted"), "success"); },
+    onError:   (e) => swalToast(apiErrorMessage(e)),
+  });
+  const revoke = useMutation({
+    mutationFn: (badgeId: string) => api.delete(`/admin/badges/${badgeId}/award/${userId}`),
+    onSuccess: () => { refresh(); },
+    onError:   (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const rows = held.data ?? [];
+  const heldIds = new Set(rows.map((b) => b.id));
+  const grantable = (catalogue.data ?? []).filter((b) => !heldIds.has(b.id));
+
+  return (
+    <section className="up-card">
+      <div className="up-card__head">
+        <div className="ic"><FontAwesomeIcon icon={faAward} /></div>
+        <h3>{t("userDetail.badges")}</h3>
+        <span className="count">{rows.length}</span>
+      </div>
+      <div className="up-card__body">
+        <div className="up-badges">
+          {rows.map((b) => (
+            <span key={b.id} className={`up-badge${b.source === "earned" ? " up-badge--earned" : ""}`}
+              title={b.source === "earned"
+                ? t("userDetail.badgeEarnedHint")
+                : (b.note ?? b.description ?? b.name)}>
+              <BadgeMark badge={b} size="sm" />
+              <span className="up-badge__name">{b.name}</span>
+              {b.source === "earned" && (
+                <span className="up-badge__src">{t("userDetail.badgeEarned")}</span>
+              )}
+              <button type="button" className="up-badge__x" title={t("userDetail.badgeRevoke")}
+                onClick={() => revoke.mutate(b.id)} disabled={revoke.isPending}>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
+            </span>
+          ))}
+          {rows.length === 0 && <span className="up-empty">{t("userDetail.noBadges")}</span>}
+        </div>
+
+        <div className="up-groups__foot">
+          <span>{t("userDetail.badgeGrantHint")}</span>
+          <select className="acp-input" style={{ maxWidth: 260 }} value=""
+            disabled={grant.isPending || grantable.length === 0}
+            onChange={(e) => { if (e.target.value) grant.mutate(e.target.value); }}>
+            <option value="">
+              {grantable.length ? t("userDetail.badgeGrantPick") : t("userDetail.badgeGrantNone")}
+            </option>
+            {grantable.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+        </div>
+      </div>
     </section>
   );
 }
@@ -556,6 +648,12 @@ export function UserDetailPage() {
           </div>
         </section>
       </div>
+
+      {/* BADGES — granting lives HERE, beside the member it concerns, rather than on
+          the Badges page. That page is the CATALOGUE: what the site can award. Who
+          holds what is a fact about a person, and an admin looking at a person is
+          where they want to change it. */}
+      <UserBadgesCard userId={user.id} />
 
       {/* PROFILE FIELDS */}
       {user.profileFields.length > 0 && (

@@ -464,7 +464,9 @@ registerBlock({
               <div key={b.id} className="profile-awards__cell"
                 title={[b.name, has ? (note ?? b.description) : t("badges.locked")].filter(Boolean).join(" — ")}>
                 {has
-                  ? <BadgeMark badge={{ ...b, awardedAt: "", note: note ?? null }} size={props.size} />
+                  ? <BadgeMark
+                      badge={{ ...b, awardedAt: "", note: note ?? null, source: "manual" }}
+                      size={props.size} />
                   : (
                     <span className={`nv-badge nv-badge--${props.size} nv-badge--locked`}>
                       <FontAwesomeIcon icon={faLock} />

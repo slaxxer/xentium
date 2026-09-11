@@ -142,6 +142,16 @@ export interface ProgressionCriteria {
   metrics?(userId: string, groupId: string): Promise<ProgressionMetric[]>;
 }
 
+/** Something a badge can be earned for, contributed by a plugin. */
+export interface BadgeCriteria {
+  /** Namespaced with the plugin's own prefix, e.g. `forum.posts`. */
+  key: string;
+  /** Doubles as a translation key and as the fallback text — keep it readable. */
+  label: string;
+  /** The member's current value. Core holds the threshold and does the comparing. */
+  valueFor(userId: string): Promise<number>;
+}
+
 /** One numeric threshold's progress, as shown in the progression UI. */
 export interface ProgressionMetric {
   key:   string;                     // unique within the plugin, e.g. "forum.posts"
@@ -352,6 +362,18 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    *  settings dialog via the web-side `groupConfigPanel` slot, and autosaves —
    *  see `docs/plugin-acp-autosave.md`. */
   registerProgressionCriteria(criteria: ProgressionCriteria): void;
+  /**
+   * Something a BADGE can be earned for — e.g. the forum's posts and threads.
+   *
+   * ⚠ Different from `registerProgressionCriteria`, which answers yes/no against a
+   * ladder GROUP's own thresholds. A badge keeps its thresholds on the badge, so all
+   * a plugin does here is report the member's current NUMBER and let core compare.
+   *
+   * Registered in `onEnable` and dropped on disable: while the plugin is off the
+   * metric is not offered to admins and not evaluated, and any threshold already
+   * stored against it is left untouched and starts counting again on re-enable.
+   */
+  registerBadgeCriteria(metric: BadgeCriteria): void;
 
   /** Open one of this plugin's own pages to the layout editor (ADR-0005).
    *  Throws on a declaration core will not accept, failing the enable rather

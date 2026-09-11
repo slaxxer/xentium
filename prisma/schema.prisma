@@ -224,9 +224,6 @@ model Badge {
   name        String
   description String?
 
-  /// Uploaded icon, relative ("badges/x.png"). WINS over faIcon when both are set,
-  /// exactly as Group.icon wins over its FontAwesome fallback.
-  icon        String?
   /// FontAwesome icon name (e.g. "faStar"), tinted with `color`.
   faIcon      String? @map("fa_icon")
   /// Tint for the glyph and the pill. Null falls back to the accent token.
@@ -235,6 +232,20 @@ model Badge {
   /// Badge precedence on a card; lower sorts first. Same convention as Group.
   displayOrder Int     @default(100) @map("display_order")
   isSystem     Boolean @default(false) @map("is_system")
+
+  /// Whether this badge is EARNED against thresholds, or purely given by hand.
+  /// ⚠ Off by default: a badge an admin creates is a badge an admin hands out, and
+  /// switching this on for every new badge would make the give-away case — the
+  /// simpler and commoner one — the harder one to reach.
+  autoAward Boolean @default(false) @map("auto_award")
+
+  /// The thresholds, when `autoAward` is on: `{ "articles": 10, "forum.posts": 50 }`.
+  /// ⚠ JSON rather than columns because the keys are EXTENSIBLE — a plugin
+  /// contributes its own metrics (the forum's posts and threads) and core cannot
+  /// have a column for something it has never heard of. Keys come from the badge
+  /// criteria registry; a key whose plugin is gone is simply not evaluated.
+  /// ⚠ ALL thresholds must be met, not any: a list of requirements reads that way.
+  criteria Json @default("{}")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
@@ -251,6 +262,10 @@ model UserBadge {
   badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   awardedAt   DateTime @default(now()) @map("awarded_at")
+  /// Granted by the reward sweep rather than by a person.
+  /// ⚠ Never taken back automatically. Earning it was a fact about a moment; undoing
+  /// it because a like was deleted would punish a member for someone else's action.
+  auto        Boolean  @default(false)
   /// Who granted it. Null once that admin is deleted — the award outlives them.
   awardedById String?  @map("awarded_by_id")
   /// Why, in the admin's words. Shown on the badge's tooltip when present.

@@ -72,7 +72,7 @@ const boolObj = (keys: string[]) =>
   z.object(Object.fromEntries(keys.map((k) => [k, z.boolean()])));
 
 export const notificationPreferencesSchema = z.object({
-  inApp: boolObj(["new_follower", "profile_activity", "mentions", "article_activity", "progression"]),
+  inApp: boolObj(["new_follower", "profile_activity", "mentions", "article_activity", "progression", "badges"]),
   email: boolObj(["new_follower", "profile_activity", "mentions"]),
 });
 

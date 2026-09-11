@@ -13,8 +13,6 @@
 import { Router } from "express";
 import { CorePermissions } from "@nodevo/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { uploadSingle } from "../../shared/middleware/upload.js";
-import { requireMaxDimensions } from "../../shared/middleware/imageDimensions.js";
 import { badgesController } from "./badges.controller.js";
 
 export const badgesAdminRouter: Router = Router();
@@ -22,18 +20,12 @@ export const badgesAdminRouter: Router = Router();
 const manage = requirePermission(CorePermissions.BADGE_MANAGE);
 const assign = requirePermission(CorePermissions.BADGE_ASSIGN);
 
+// ⚠ Before `/:id`, or "metrics" is read as a badge id.
+badgesAdminRouter.get("/metrics", manage, badgesController.metrics);
 badgesAdminRouter.get("/",     manage, badgesController.list);
 badgesAdminRouter.post("/",    manage, badgesController.create);
 badgesAdminRouter.patch("/:id",  manage, badgesController.update);
 badgesAdminRouter.delete("/:id", manage, badgesController.remove);
-
-// ⚠ 32x32 is enforced HERE, after the magic-byte check inside `uploadSingle` has
-// established what the file really is. A byte ceiling cannot express it: a
-// 2000x2000 PNG can weigh less than the limit and still be wrong for a badge slot.
-badgesAdminRouter.post("/:id/icon", manage,
-  uploadSingle("BADGE_ICON", "file"), requireMaxDimensions(32, 32),
-  badgesController.uploadIcon);
-badgesAdminRouter.delete("/:id/icon", manage, badgesController.removeIcon);
 
 badgesAdminRouter.get("/:id/holders", assign, badgesController.holders);
 badgesAdminRouter.post("/:id/award",  assign, badgesController.award);

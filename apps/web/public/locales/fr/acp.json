@@ -1588,7 +1588,16 @@
     "profileFields": "Champs de profil",
     "pfField": "Champ",
     "pfValue": "Valeur",
-    "notSet": "— non défini"
+    "notSet": "— non défini",
+    "badges": "Badges",
+    "noBadges": "Aucun badge pour l'instant.",
+    "badgeGranted": "Badge attribué",
+    "badgeRevoke": "Reprendre ce badge",
+    "badgeGrantHint": "Les badges attribués restent jusqu'à ce que vous les repreniez.",
+    "badgeGrantPick": "Attribuer un badge…",
+    "badgeGrantNone": "Plus aucun badge à attribuer",
+    "badgeEarned": "obtenu",
+    "badgeEarnedHint": "Attribué automatiquement pour avoir rempli les conditions. Le reprendre ne dure que jusqu'au prochain passage si elles sont toujours remplies."
   },
   "styleEditor": {
     "rowBg": "Arrière-plan",
@@ -2202,7 +2211,7 @@
   "badges": {
     "eyebrow": "Communauté",
     "title": "Badges",
-    "subtitle": "Des récompenses que vous attribuez vous-même, et qui les porte.",
+    "subtitle": "Ce que ce site peut attribuer. Qui porte quoi se trouve sur la page du membre.",
     "sections": "Badges",
     "secCatalogue": "Catalogue",
     "secAwarding": "Attribution",
@@ -2224,15 +2233,10 @@
     "fieldOrder": "Ordre",
     "fieldOrderDesc": "Le plus petit passe en premier, comme pour les badges de groupe.",
     "glyphTitle": "Symbole",
-    "glyphHint": "Utilisé lorsqu'aucune image n'est envoyée.",
-    "uploadTitle": "Image",
-    "uploadHint": "PNG, JPEG, GIF ou WebP, 32×32 pixels au maximum. Une image remplace le symbole. Les GIF animés restent animés.",
-    "chooseFile": "Envoyer une image",
-    "removeFile": "Retirer l'image",
+    "glyphHint": "Le symbole avec lequel ce badge est dessiné, teinté par la couleur ci-dessus.",
     "saved": "Badge enregistré",
     "created": "Badge créé",
     "deleted": "Badge supprimé",
-    "iconSaved": "Image envoyée",
     "awardTitle": "Attribuer un badge",
     "awardSub": "Attribuez un badge à un membre, ou reprenez-le.",
     "awardNoneYet": "Créez d'abord un badge — il n'y a rien à attribuer.",
@@ -2255,6 +2259,18 @@
     "save": "Enregistrer",
     "cancel": "Annuler",
     "edit": "Modifier",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "rewardTitle": "Système de récompense",
+    "rewardToggle": "Obtenir ce badge automatiquement",
+    "rewardNote": "Désactivé, vous attribuez ce badge vous-même. Activé, il revient à quiconque remplit toutes les conditions ci-dessous, et n'est plus retiré.",
+    "rewardEmpty": "Aucune condition définie : personne ne peut encore l'obtenir.",
+    "metric": {
+      "articles": "Articles",
+      "comments": "Commentaires",
+      "likes": "J'aime reçus",
+      "followers": "Abonnés",
+      "forum.posts": "Messages du forum",
+      "forum.threads": "Sujets du forum"
+    }
   }
 }

@@ -350,6 +350,7 @@ export const accountService = {
     mentions:         "mention.*",     // mention.profile_comment  (was "mention" — broken)
     article_activity: "article.*",     // article.comment_liked
     progression:      "progression.*", // progression.promoted
+    badges:           "badge.*",       // badge.earned  (the nightly award sweep)
   } as Record<string, string>,
 
   async getNotificationPreferences(userId: string) {
@@ -363,6 +364,7 @@ export const accountService = {
         mentions:         byPattern.get(m.mentions!)?.inAppEnabled         ?? true,
         article_activity: byPattern.get(m.article_activity!)?.inAppEnabled ?? true,
         progression:      byPattern.get(m.progression!)?.inAppEnabled      ?? true,
+        badges:           byPattern.get(m.badges!)?.inAppEnabled           ?? true,
       },
       email: {
         new_follower:     byPattern.get(m.new_follower!)?.emailEnabled     ?? false,
@@ -375,7 +377,7 @@ export const accountService = {
   async updateNotificationPreferences(
     userId: string,
     prefs: {
-      inApp: Record<"new_follower"|"profile_activity"|"mentions"|"article_activity"|"progression", boolean>;
+      inApp: Record<"new_follower"|"profile_activity"|"mentions"|"article_activity"|"progression"|"badges", boolean>;
       email: Record<"new_follower"|"profile_activity"|"mentions", boolean>;
     },
   ) {
@@ -386,6 +388,8 @@ export const accountService = {
       [m.mentions!]:         { inApp: prefs.inApp.mentions,         email: prefs.email.mentions },
       [m.article_activity!]: { inApp: prefs.inApp.article_activity, email: false },
       [m.progression!]:      { inApp: prefs.inApp.progression,      email: false },
+      // No email column: a badge is a thing you find on your profile, not post.
+      [m.badges!]:           { inApp: prefs.inApp.badges,           email: false },
     };
     await prisma.$transaction(
       Object.entries(updates).map(([typePattern, { inApp, email }]) =>
