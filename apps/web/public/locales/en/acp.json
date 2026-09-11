@@ -1866,7 +1866,16 @@
     "profileFields": "Profile Fields",
     "pfField": "Field",
     "pfValue": "Value",
-    "notSet": "— not set"
+    "notSet": "— not set",
+    "badges": "Badges",
+    "noBadges": "No badges yet.",
+    "badgeGranted": "Badge granted",
+    "badgeRevoke": "Take this badge back",
+    "badgeGrantHint": "Granted badges stay until you take them back.",
+    "badgeGrantPick": "Grant a badge…",
+    "badgeGrantNone": "No badges left to grant",
+    "badgeEarned": "earned",
+    "badgeEarnedHint": "Granted automatically for meeting this badge's requirements. Revoking it only lasts until the next sweep if they still qualify."
   },
   "styleEditor": {
     "rowBg": "Background",
@@ -2480,7 +2489,7 @@
   "badges": {
     "eyebrow": "Community",
     "title": "Badges",
-    "subtitle": "Awards you grant by hand, and who holds them.",
+    "subtitle": "What this site can award. Who holds what is on each member's page.",
     "sections": "Badges",
     "secCatalogue": "Catalogue",
     "secAwarding": "Awarding",
@@ -2502,15 +2511,10 @@
     "fieldOrder": "Order",
     "fieldOrderDesc": "Lower sorts first, the same way group badges do.",
     "glyphTitle": "Glyph",
-    "glyphHint": "Used when no image is uploaded.",
-    "uploadTitle": "Image",
-    "uploadHint": "PNG, JPEG, GIF or WebP, at most 32×32 pixels. An image replaces the glyph. Animated GIFs keep animating.",
-    "chooseFile": "Upload image",
-    "removeFile": "Remove image",
+    "glyphHint": "The mark this badge is drawn with, tinted by the colour above.",
     "saved": "Badge saved",
     "created": "Badge created",
     "deleted": "Badge deleted",
-    "iconSaved": "Image uploaded",
     "awardTitle": "Award a badge",
     "awardSub": "Grant a badge to a member, or take one back.",
     "awardNoneYet": "Create a badge first — there is nothing to award yet.",
@@ -2533,6 +2537,18 @@
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "rewardTitle": "Reward system",
+    "rewardToggle": "Earn this badge automatically",
+    "rewardNote": "Off, you hand this badge out yourself. On, it is granted to anyone who meets every requirement below — and never taken away again.",
+    "rewardEmpty": "No requirements set, so nobody can earn this yet.",
+    "metric": {
+      "articles": "Articles",
+      "comments": "Comments",
+      "likes": "Likes received",
+      "followers": "Followers",
+      "forum.posts": "Forum posts",
+      "forum.threads": "Forum threads"
+    }
   }
 }

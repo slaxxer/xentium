@@ -10,35 +10,34 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const db = {
   badge:     { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() },
-  userBadge: { findMany: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
+  userBadge: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn(), deleteMany: vi.fn() },
   user:      { findUnique: vi.fn() },
 };
+const dispatch = vi.fn();
 vi.mock("../../infrastructure/db.js", () => ({ prisma: db }));
-vi.mock("../../infrastructure/storage/LocalStorageProvider.js", () => ({
-  storage: {
-    save:      vi.fn(async (dir: string, name: string) => `${dir}/${name}`),
-    publicUrl: (rel: string) => `/uploads/${rel}`,
-  },
+vi.mock("../notifications/notification.service.js", () => ({
+  notificationService: { dispatch: (...a: unknown[]) => dispatch(...a) },
 }));
 
 const { badgesService } = await import("./badges.service.js");
 
 const CAT: {
   id: string; key: string; name: string; description: string | null;
-  icon: string | null; faIcon: string | null; color: string | null;
+  faIcon: string | null; color: string | null;
   displayOrder: number; isSystem: boolean;
 } = {
   id: "b1", key: "early", name: "Early supporter", description: "Was here first",
-  icon: null, faIcon: "faStar", color: "#f4b942", displayOrder: 100, isSystem: false,
+  faIcon: "faStar", color: "#f4b942", displayOrder: 100, isSystem: false,
 };
 
-function held(badge = CAT, userId = "u1") {
-  return { userId, awardedAt: new Date("2026-01-02T03:04:05.000Z"), note: null, badge };
+function held(badge = CAT, userId = "u1", auto = false) {
+  return { userId, awardedAt: new Date("2026-01-02T03:04:05.000Z"), note: null, auto, badge };
 }
 
 beforeEach(() => {
   for (const model of Object.values(db)) for (const fn of Object.values(model)) fn.mockReset();
-  db.badge.findUnique.mockResolvedValue({ id: "b1", isSystem: false });
+  dispatch.mockReset().mockResolvedValue(undefined);
+  db.badge.findUnique.mockResolvedValue({ id: "b1", name: "Early supporter", isSystem: false });
 });
 
 describe("the catalogue", () => {
@@ -54,15 +53,11 @@ describe("the catalogue", () => {
       .toEqual([{ displayOrder: "asc" }, { name: "asc" }]);
   });
 
-  it("turns a stored icon path into a URL, and leaves a missing one null", async () => {
-    db.badge.findMany.mockResolvedValue([
-      { ...CAT, icon: "badges/b1.png", _count: { users: 3 } },
-      { ...CAT, id: "b2", icon: null, _count: { users: 0 } },
-    ]);
-    const [withIcon, without] = await badgesService.list() as [any, any];
-    expect(withIcon.icon).toBe("/uploads/badges/b1.png");
-    expect(withIcon.holders).toBe(3);
-    expect(without.icon).toBeNull();
+  it("carries the holder count through to the row", async () => {
+    db.badge.findMany.mockResolvedValue([{ ...CAT, _count: { users: 3 } }]);
+    const [row] = await badgesService.list() as [any];
+    expect(row.holders).toBe(3);
+    expect(row.faIcon).toBe("faStar");
   });
 
   it("refuses a duplicate key rather than creating a second badge", async () => {
@@ -82,19 +77,13 @@ describe("the catalogue", () => {
     await badgesService.remove("b1");
     expect(db.badge.delete).toHaveBeenCalledWith({ where: { id: "b1" } });
   });
-
-  /** Dropping the file falls back to the glyph; it does not blank the badge. */
-  it("clears only the icon when the upload is removed", async () => {
-    db.badge.update.mockResolvedValue({ ...CAT, icon: null });
-    await badgesService.removeIcon("b1");
-    expect(db.badge.update.mock.calls[0]![0].data).toEqual({ icon: null });
-  });
 });
 
 describe("awarding", () => {
   beforeEach(() => {
-    db.user.findUnique.mockResolvedValue({ id: "u1" });
+    db.user.findUnique.mockResolvedValue({ id: "u1", username: "ann" });
     db.userBadge.findMany.mockResolvedValue([]);
+    db.userBadge.findUnique.mockResolvedValue(null);   // not held yet
   });
 
   /**
@@ -121,6 +110,52 @@ describe("awarding", () => {
     await expect(badgesService.award("u1", "nope", "admin1")).rejects.toThrow();
   });
 
+  /**
+   * A badge handed over in silence is one the member may never notice.
+   *
+   * ⚠ `badge.granted`, not `badge.earned` — both match the one "badge.*" preference,
+   * but the stored type still says how it was come by.
+   */
+  it("tells the member, linking their own profile", async () => {
+    await badgesService.award("u1", "b1", "admin1");
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    expect(dispatch.mock.calls[0]![0]).toMatchObject({
+      userId: "u1", type: "badge.granted", link: "/u/ann",
+    });
+    expect(dispatch.mock.calls[0]![0].title).toContain("Early supporter");
+  });
+
+  /** The reason is already public on the card, and it is the part they care about. */
+  it("passes the admin's reason along as the body", async () => {
+    await badgesService.award("u1", "b1", "admin1", "  For the bug hunt  ");
+    expect(dispatch.mock.calls[0]![0].body).toBe("For the bug hunt");
+  });
+
+  /**
+   * ⚠ THE POINT of reading before the upsert. Re-granting is how an admin corrects a
+   * note; pinging the member for every typo fix is how a bell stops being worth
+   * opening.
+   */
+  it("says nothing when the badge was already held", async () => {
+    db.userBadge.findUnique.mockResolvedValue({ userId: "u1" });
+    await badgesService.award("u1", "b1", "admin1", "Corrected reason");
+    expect(db.userBadge.upsert).toHaveBeenCalledTimes(1);   // still updates the note
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  /** An admin who just granted themselves a badge in the ACP already knows. */
+  it("does not notify an admin who granted it to themselves", async () => {
+    await badgesService.award("u1", "b1", "u1");
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  /** ⚠ Telling is the courtesy; granting is the job, and it must not fail with it. */
+  it("grants anyway when the notification fails", async () => {
+    dispatch.mockRejectedValue(new Error("redis is down"));
+    await expect(badgesService.award("u1", "b1", "admin1")).resolves.toBeDefined();
+    expect(db.userBadge.upsert).toHaveBeenCalledTimes(1);
+  });
+
   /** Revoking something never granted is not an error — the end state is the same. */
   it("revokes without caring whether it was held", async () => {
     await badgesService.revoke("u1", "b1");
@@ -129,13 +164,21 @@ describe("awarding", () => {
 });
 
 describe("what a card reads", () => {
+  /** ⚠ Both are real awards; the difference is only who decided. */
+  it("says whether an award was earned or handed over", async () => {
+    db.userBadge.findMany.mockResolvedValue([held(CAT, "u1", true)]);
+    const [b] = await badgesService.forUser("u1") as [any];
+    expect(b.source).toBe("earned");
+  });
+
   it("shapes an award for the card, dates as ISO strings", async () => {
-    db.userBadge.findMany.mockResolvedValue([held({ ...CAT, icon: "badges/b1.png" })]);
+    db.userBadge.findMany.mockResolvedValue([held(CAT)]);
     const [b] = await badgesService.forUser("u1") as [any];
     expect(b).toEqual({
       id: "b1", key: "early", name: "Early supporter", description: "Was here first",
-      icon: "/uploads/badges/b1.png", faIcon: "faStar", color: "#f4b942",
+      faIcon: "faStar", color: "#f4b942",
       awardedAt: "2026-01-02T03:04:05.000Z", note: null,
+      source: "manual",
     });
   });
 
@@ -146,11 +189,7 @@ describe("what a card reads", () => {
       .toEqual([{ badge: { displayOrder: "asc" } }, { badge: { name: "asc" } }]);
   });
 
-  /**
-   * ⚠ Every id asked about is present, holding an empty array when it holds nothing.
-   * A caller must be able to tell "this user has no badges" from "I did not ask" —
-   * otherwise a card cannot know whether to keep waiting.
-   */
+
   it("answers for every id, including the ones holding nothing", async () => {
     db.userBadge.findMany.mockResolvedValue([held(CAT, "u1")]);
     const out = await badgesService.forUsers(["u1", "u2", "u3"]);

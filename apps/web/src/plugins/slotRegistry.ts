@@ -226,7 +226,12 @@ class SlotRegistry {
   private groupConfigPanels: GroupConfigPanelSlot[]   = [];
 
   // Core notification prefixes that always show the system (gear) icon
-  private readonly coreSystemPrefixes = ["progression.", "license.", "system."];
+  /**
+   * ⚠ A type NOT listed here draws a `UserAvatar` made from whatever is in `title` —
+   * which for a sender-less notification means initials cut out of a sentence. Every
+   * type the site itself sends, rather than another member, belongs in this list.
+   */
+  private readonly coreSystemPrefixes = ["progression.", "license.", "system.", "badge."];
 
   // Ownership tracking: maps slotKey → pluginId so deregister works for
   // bare-word ids (e.g. "approvals", "forum") that don't share a prefix with the pluginId.

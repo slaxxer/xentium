@@ -1,7 +1,8 @@
 /**
- * A badge is a 32px picture at most, so the marks are sized in tokens rather than
- * scaled from the image — an uploaded icon is drawn at its own size inside the box
- * and a glyph fills it.
+ * A badge is a GLYPH in a tinted circle. Uploads were removed deliberately: a
+ * 32x32 image and a FontAwesome glyph never sat at the same size in a mixed row,
+ * and a catalogue where every mark is drawn the same way is worth more than the
+ * freedom to upload one.
  *
  * ⚠ `--badge-color` is set per badge as an inline custom property, not a hardcoded
  * colour: the pill's tint, its border and the glyph all derive from that one value,
@@ -24,10 +25,24 @@
   border: 1px solid color-mix(in srgb, var(--badge-color, var(--c-accent)) 34%, transparent);
   overflow: hidden;
 
-  img { display: block; width: auto; height: auto; max-width: 100%; max-height: 100%; }
+  /**
+   * ⚠ The mark has its OWN measure rather than riding on `font-size`.
+   *
+   * A glyph is an SVG sized in `em`, so it inherited whatever `font-size` a variant
+   * happened to set — and `--locked` sets 11px for its "+N" TEXT, which quietly
+   * shrank every padlock sitting next to a 15px earned glyph in the same row.
+   * `--badge-mark` separates the two jobs: text keeps `font-size`, marks do not.
+   *
+   * ⚠ HEIGHT only. A FontAwesome icon's width follows its own aspect, so pinning
+   * width too would squash a wide glyph — and height is what the eye lines up.
+   */
+  svg {
+    height: var(--badge-mark);
+    width: auto;
+  }
 
-  &--sm { width: 22px; height: 22px; font-size: 11px; }
-  &--md { width: 32px; height: 32px; font-size: 15px; }
+  &--sm { width: 22px; height: 22px; font-size: 11px;   --badge-mark: 11px; }
+  &--md { width: 32px; height: 32px; font-size: 15px;   --badge-mark: 15px; }
 
   /* The overflow count. A pill rather than a circle, because a number needs the
      width and a two-digit "+12" in a 22px circle is unreadable. */
@@ -60,6 +75,10 @@
   background: var(--c-surface);
   border-style: dashed;
   border-color: var(--c-border);
+
+  /* ⚠ For the "+N" TEXT this variant also draws, nothing else. It used to shrink
+     the padlock too, because a glyph is measured in `em`; `--badge-mark` above is
+     what keeps a locked mark the same size as an earned one. */
   font-size: 11px;
   font-weight: 800;
 }

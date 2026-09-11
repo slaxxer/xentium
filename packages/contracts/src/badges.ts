@@ -49,29 +49,48 @@ export interface BadgeRow {
   key:          string;
   name:         string;
   description:  string | null;
-  /** Public URL of the uploaded icon. WINS over `faIcon` when both are set. */
-  icon:         string | null;
   faIcon:       string | null;
   color:        string | null;
   displayOrder: number;
   isSystem:     boolean;
+  /** Earned against thresholds rather than handed out. */
+  autoAward:    boolean;
+  /** `{ "articles": 10, "forum.posts": 50 }` — ALL must be met. */
+  criteria:     Record<string, number>;
   /** How many users hold it. Only the admin listing carries this. */
   holders?:     number;
 }
 
-/** A badge as a user card draws it — the catalogue fields plus when it was given. */
+/**
+ * How a member came by a badge.
+ *
+ * Both are real awards and both are kept until an admin revokes them — the
+ * difference is only who decided. `manual` was handed over by a person; `earned`
+ * was granted by the reward sweep because the member met the badge's thresholds.
+ * Worth distinguishing so an admin looking at a member can tell at a glance which
+ * ones they gave.
+ */
+export type BadgeSource = "manual" | "earned";
+
+/** A badge as a user card draws it — the catalogue fields plus how it was come by. */
 export interface AwardedBadge {
   id:          string;
   key:         string;
   name:        string;
   description: string | null;
-  icon:        string | null;
   faIcon:      string | null;
   color:       string | null;
   awardedAt:   string;
   /** The admin's reason, when they gave one. Shown in the badge's tooltip. */
   note:        string | null;
+  source:      BadgeSource;
 }
 
-/** The maximum edge, in pixels, of an uploaded badge icon. */
-export const BADGE_ICON_MAX_PX = 32;
+
+/** A thing a badge can be earned for, as the ACP offers it. */
+export interface BadgeMetricInfo {
+  key:   string;
+  label: string;
+  /** The plugin that contributes it, or null for one of core's own. */
+  plugin: string | null;
+}

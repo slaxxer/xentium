@@ -19,8 +19,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash, faPencil, faXmark, faUpload } from "@fortawesome/free-solid-svg-icons";
-import { BADGE_ICON_NAMES, type BadgeIconName, type BadgeRow } from "@nodevo/contracts";
+import { faTrash, faPencil } from "@fortawesome/free-solid-svg-icons";
+import { BADGE_ICON_NAMES, type BadgeIconName, type BadgeMetricInfo, type BadgeRow } from "@nodevo/contracts";
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -28,19 +28,18 @@ import { badgeIcon } from "../../../lib/badgeIcons";
 import { AcpIcon } from "./acpIcons";
 import "./BadgesPage.scss";
 
-type Section = "catalogue" | "awarding";
-
-/** The mark as the ACP draws it — the same precedence the site uses. */
-function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "icon" | "faIcon" | "color">; size?: number }) {
+/** The mark as the ACP draws it — the same glyph the site draws. */
+function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "faIcon" | "color">; size?: number }) {
   const icon  = badgeIcon(badge.faIcon);
   const color = badge.color ?? "var(--c-accent)";
   return (
-    <span className="bdg-mark" style={{ width: size, height: size, "--badge-color": color } as React.CSSProperties}>
-      {badge.icon
-        ? <img src={badge.icon} alt="" />
-        : icon
-          ? <FontAwesomeIcon icon={icon} style={{ fontSize: size * 0.5 }} />
-          : <span className="bdg-mark__dot" />}
+    // ⚠ `fontSize` sits on the BOX and is what sizes the glyph, so one number scales
+    // the whole mark — the list draws it at 32 and the modal header at 44.
+    <span
+      className="bdg-mark"
+      style={{ width: size, height: size, fontSize: size * 0.5, "--badge-color": color } as React.CSSProperties}
+    >
+      {icon ? <FontAwesomeIcon icon={icon} /> : <span className="bdg-mark__dot" />}
     </span>
   );
 }
@@ -50,9 +49,15 @@ function Mark({ badge, size = 32 }: { badge: Pick<BadgeRow, "icon" | "faIcon" | 
 interface Draft {
   key: string; name: string; description: string;
   faIcon: BadgeIconName | null; color: string; displayOrder: number;
+  autoAward: boolean; criteria: Record<string, number>;
 }
 
-const EMPTY: Draft = { key: "", name: "", description: "", faIcon: "faStar", color: "#f4b942", displayOrder: 100 };
+const EMPTY: Draft = {
+  key: "", name: "", description: "", faIcon: "faStar", color: "#f4b942", displayOrder: 100,
+  // ⚠ Off. A badge an admin creates is a badge an admin hands out; the give-away case
+  // is the commoner one and must not sit behind a switch.
+  autoAward: false, criteria: {},
+};
 
 function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () => void }) {
   const { t } = useTranslation("acp");
@@ -64,9 +69,21 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
         key: badge.key, name: badge.name, description: badge.description ?? "",
         faIcon: (badge.faIcon as BadgeIconName | null) ?? null,
         color: badge.color ?? "#f4b942", displayOrder: badge.displayOrder,
+        autoAward: badge.autoAward, criteria: { ...badge.criteria },
       }
     : EMPTY);
-  const [iconUrl, setIconUrl] = useState<string | null>(badge?.icon ?? null);
+
+  /**
+   * What this site can measure, asked at open time.
+   *
+   * ⚠ From the live registry, so the forum's posts and threads appear only while the
+   * forum is enabled. A threshold already stored against a disabled plugin is left
+   * alone — it is simply not shown or evaluated until the plugin is back.
+   */
+  const metrics = useQuery<BadgeMetricInfo[]>({
+    queryKey: ["admin-badge-metrics"],
+    queryFn:  () => api.get("/admin/badges/metrics"),
+  });
   const set = (patch: Partial<Draft>) => setDraft((d) => ({ ...d, ...patch }));
 
   const save = useMutation({
@@ -77,10 +94,16 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
         faIcon: draft.faIcon,
         color: draft.color,
         displayOrder: draft.displayOrder,
+        autoAward: draft.autoAward,
+        // ⚠ Zeroes are stripped, not stored: a blank field means "not a requirement",
+        // and a stored 0 would read as a threshold everybody already meets.
+        criteria: Object.fromEntries(
+          Object.entries(draft.criteria).filter(([, v]) => Number(v) > 0),
+        ),
       };
-      return isEdit
-        ? api.patch(`/admin/badges/${badge!.id}`, body)
-        : api.post("/admin/badges", { ...body, key: draft.key });
+      if (isEdit) return api.patch(`/admin/badges/${badge!.id}`, body);
+
+      return api.post<BadgeRow>("/admin/badges", { ...body, key: draft.key });
     },
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ["admin-badges"] });
@@ -90,36 +113,8 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
-  /**
-   * ⚠ The upload needs an id, so it only exists in EDIT. A badge is created first
-   * and given its picture second — the alternative is holding a file in memory
-   * through a create that may fail, and then owning an orphan if it succeeds
-   * halfway.
-   */
-  const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const fd = new FormData();
-      fd.append("file", file);
-      return api.post<{ icon: string }>(`/admin/badges/${badge!.id}/icon`, fd);
-    },
-    onSuccess: (r) => {
-      setIconUrl(r.icon);
-      void qc.invalidateQueries({ queryKey: ["admin-badges"] });
-      toast.success(t("badges.iconSaved"));
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
-
-  const dropIcon = useMutation({
-    mutationFn: () => api.delete(`/admin/badges/${badge!.id}/icon`),
-    onSuccess: () => {
-      setIconUrl(null);
-      void qc.invalidateQueries({ queryKey: ["admin-badges"] });
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
-
-  const preview = { icon: iconUrl, faIcon: draft.faIcon, color: draft.color };
+  // The header mark follows the glyph and colour being edited, live.
+  const preview = { faIcon: draft.faIcon, color: draft.color };
 
   return (
     <div className="acp-modal-overlay" onClick={onClose}>
@@ -210,28 +205,43 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
             })}
           </div>
 
-          {isEdit && (
-            <>
-              <p className="bdg-section-label">{t("badges.uploadTitle")}</p>
-              {/* ⚠ 32×32 is the RULE, not a suggestion — the route refuses anything
-                  larger, so the admin is told the number before they pick a file. */}
-              <p className="bdg-hint">{t("badges.uploadHint")}</p>
-              <div className="bdg-upload">
-                <label className="btn-ghost btn-sm">
-                  <FontAwesomeIcon icon={faUpload} />
-                  <span>{t("badges.chooseFile")}</span>
-                  <input type="file" accept="image/png,image/jpeg,image/gif,image/webp" hidden
-                    onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); }} />
+          {/* ── The reward system, per badge ───────────────────────────────────
+              Off by default. On, the badge is granted by the sweep to anyone meeting
+              EVERY threshold below; off, it is only ever handed over by an admin. */}
+          <p className="bdg-section-label">{t("badges.rewardTitle")}</p>
+          <label className="bdg-switch">
+            <input type="checkbox" checked={draft.autoAward}
+              onChange={(e) => set({ autoAward: e.target.checked })} />
+            <span>{t("badges.rewardToggle")}</span>
+          </label>
+          <p className="bdg-hint">{t("badges.rewardNote")}</p>
+
+          {draft.autoAward && (
+            <div className="bdg-criteria">
+              {(metrics.data ?? []).map((m) => (
+                <label key={m.key} className="bdg-criterion">
+                  <span className="bdg-criterion__label">
+                    {t(`badges.metric.${m.key}`, { defaultValue: m.label })}
+                    {/* ⚠ Say which plugin a metric comes from. An admin needs to know
+                        that disabling it stops this threshold counting. */}
+                    {m.plugin && <em className="bdg-criterion__from">{m.plugin}</em>}
+                  </span>
+                  <input className="acp-input" type="number" min={0} placeholder="—"
+                    value={draft.criteria[m.key] ?? ""}
+                    onChange={(e) => {
+                      const n = e.target.value === "" ? 0 : Number(e.target.value);
+                      set({ criteria: { ...draft.criteria, [m.key]: n } });
+                    }} />
                 </label>
-                {iconUrl && (
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => dropIcon.mutate()}>
-                    <FontAwesomeIcon icon={faXmark} />
-                    <span>{t("badges.removeFile")}</span>
-                  </button>
-                )}
-              </div>
-            </>
+              ))}
+              {/* ⚠ A badge switched on with nothing filled in is earnable by nobody —
+                  say so, rather than let an admin think it is live. */}
+              {Object.values(draft.criteria).every((v) => !v) && (
+                <p className="bdg-hint bdg-hint--warn">{t("badges.rewardEmpty")}</p>
+              )}
+            </div>
           )}
+
         </div>
 
         <div className="bdg-modal__foot">
@@ -247,165 +257,11 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
   );
 }
 
-// ── Awarding ────────────────────────────────────────────────────────────────
-
-interface Holder { id: string; username: string; avatar: string | null; awardedAt: string; note: string | null }
-
-function Awarding({ badges }: { badges: BadgeRow[] }) {
-  const { t } = useTranslation("acp");
-  const qc = useQueryClient();
-  const [badgeId, setBadgeId] = useState(badges[0]?.id ?? "");
-  const [search, setSearch]   = useState("");
-  const [note, setNote]       = useState("");
-
-  const holders = useQuery<Holder[]>({
-    queryKey: ["badge-holders", badgeId],
-    queryFn:  () => api.get(`/admin/badges/${badgeId}/holders`),
-    enabled:  !!badgeId,
-  });
-
-  /** The ACP's own user search. Only runs once there is something to search for. */
-  const found = useQuery<{ data: { id: string; username: string; avatar: string | null }[] }>({
-    queryKey: ["badge-user-search", search],
-    queryFn:  () => api.get(`/admin/users?search=${encodeURIComponent(search)}&limit=8`),
-    enabled:  search.trim().length >= 2,
-  });
-
-  const award = useMutation({
-    mutationFn: (userId: string) => api.post(`/admin/badges/${badgeId}/award`, { userId, note: note || null }),
-    onSuccess: (_r, userId) => {
-      void qc.invalidateQueries({ queryKey: ["badge-holders", badgeId] });
-      void qc.invalidateQueries({ queryKey: ["admin-badges"] });
-      // The card cache is keyed per user, so exactly one key goes stale.
-      void qc.invalidateQueries({ queryKey: ["user-badges", userId] });
-      setSearch(""); setNote("");
-      toast.success(t("badges.awarded"));
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
-
-  const revoke = useMutation({
-    mutationFn: (userId: string) => api.delete(`/admin/badges/${badgeId}/award/${userId}`),
-    onSuccess: (_r, userId) => {
-      void qc.invalidateQueries({ queryKey: ["badge-holders", badgeId] });
-      void qc.invalidateQueries({ queryKey: ["admin-badges"] });
-      void qc.invalidateQueries({ queryKey: ["user-badges", userId] });
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
-
-  if (!badges.length) {
-    return (
-      <section className="set-card">
-        <div className="set-card__head">
-          <div className="set-card__icon"><AcpIcon name="userPlus" size={18} /></div>
-          <div className="set-card__titles">
-            <h3>{t("badges.awardTitle")}</h3>
-            <p>{t("badges.awardNoneYet")}</p>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  const held = new Set(holders.data?.map((h) => h.id) ?? []);
-
-  return (
-    <section className="set-card">
-      <div className="set-card__head">
-        <div className="set-card__icon"><AcpIcon name="userPlus" size={18} /></div>
-        <div className="set-card__titles">
-          <h3>{t("badges.awardTitle")}</h3>
-          <p>{t("badges.awardSub")}</p>
-        </div>
-      </div>
-
-      <div className="set-rows">
-        <div className="set-row">
-          <div>
-            <div className="set-row__label">{t("badges.awardWhich")}</div>
-            <div className="set-row__desc">{t("badges.awardWhichDesc")}</div>
-          </div>
-          <div className="set-row__control">
-            <select className="acp-input" value={badgeId} onChange={(e) => setBadgeId(e.target.value)}>
-              {badges.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-        </div>
-
-        <div className="set-row">
-          <div>
-            <div className="set-row__label">{t("badges.awardNote")}</div>
-            <div className="set-row__desc">{t("badges.awardNoteDesc")}</div>
-          </div>
-          <div className="set-row__control">
-            <input className="acp-input" value={note} maxLength={200}
-              placeholder={t("badges.awardNotePlaceholder")}
-              onChange={(e) => setNote(e.target.value)} />
-          </div>
-        </div>
-
-        <div className="set-row">
-          <div>
-            <div className="set-row__label">{t("badges.awardTo")}</div>
-            <div className="set-row__desc">{t("badges.awardToDesc")}</div>
-          </div>
-          <div className="set-row__control">
-            <input className="acp-input" value={search} placeholder={t("badges.awardSearch")}
-              onChange={(e) => setSearch(e.target.value)} />
-          </div>
-        </div>
-      </div>
-
-      {search.trim().length >= 2 && (
-        <div className="set-extra">
-          <div className="bdg-results">
-            {(found.data?.data ?? []).map((u) => (
-              <button key={u.id} type="button" className="bdg-result"
-                disabled={held.has(u.id) || award.isPending}
-                onClick={() => award.mutate(u.id)}>
-                <span className="bdg-result__name">{u.username}</span>
-                <span className="bdg-result__act">
-                  {held.has(u.id) ? t("badges.alreadyHas") : t("badges.grant")}
-                </span>
-              </button>
-            ))}
-            {found.isSuccess && (found.data?.data.length ?? 0) === 0 && (
-              <p className="bdg-hint">{t("badges.noUsers")}</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      <div className="set-extra">
-        <p className="bdg-section-label">{t("badges.holders", { count: holders.data?.length ?? 0 })}</p>
-        {holders.data?.length
-          ? (
-            <div className="bdg-holders">
-              {holders.data.map((h) => (
-                <div key={h.id} className="bdg-holder">
-                  <span className="bdg-holder__name">{h.username}</span>
-                  {h.note && <span className="bdg-holder__note">{h.note}</span>}
-                  <button type="button" className="bdg-holder__revoke" title={t("badges.revoke")}
-                    onClick={() => revoke.mutate(h.id)}>
-                    <FontAwesomeIcon icon={faXmark} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )
-          : <p className="bdg-hint">{t("badges.noHolders")}</p>}
-      </div>
-    </section>
-  );
-}
-
 // ── The page ────────────────────────────────────────────────────────────────
 
 export function BadgesPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [section, setSection] = useState<Section>("catalogue");
   const [editing, setEditing] = useState<BadgeRow | null>(null);
   const [creating, setCreating] = useState(false);
 
@@ -438,64 +294,52 @@ export function BadgesPage() {
         </div>
       </div>
 
-      <div className="set-layout">
-        <nav className="set-secnav">
-          <p className="set-secnav__label">{t("badges.sections")}</p>
-          <button className={section === "catalogue" ? "is-active" : ""} onClick={() => setSection("catalogue")}>
-            <AcpIcon name="zap" size={16} /><span>{t("badges.secCatalogue")}</span>
-          </button>
-          <button className={section === "awarding" ? "is-active" : ""} onClick={() => setSection("awarding")}>
-            <AcpIcon name="userPlus" size={16} /><span>{t("badges.secAwarding")}</span>
-          </button>
-        </nav>
+      {/* ⚠ No `.set-layout` here. That grid is `216px 1fr` for a page with a section
+          nav down the side; this page has one thing on it since awarding moved to the
+          member, and leaving the grid in place squeezed the card into the 216px
+          column meant for the nav. */}
+      <div className="set-content">
+        <section className="set-card">
+          <div className="set-card__head">
+            <div className="set-card__icon"><AcpIcon name="zap" size={18} /></div>
+            <div className="set-card__titles">
+              <h3>{t("badges.catalogueTitle")}</h3>
+              <p>{t("badges.catalogueSub")}</p>
+            </div>
+            <button type="button" className="btn-primary btn-sm"
+              style={{ marginLeft: "auto" }} onClick={() => setCreating(true)}>
+              <AcpIcon name="plus" size={14} /><span>{t("badges.new")}</span>
+            </button>
+          </div>
 
-        <div className="set-content">
-          {section === "catalogue" ? (
-            <section className="set-card">
-              <div className="set-card__head">
-                <div className="set-card__icon"><AcpIcon name="zap" size={18} /></div>
-                <div className="set-card__titles">
-                  <h3>{t("badges.catalogueTitle")}</h3>
-                  <p>{t("badges.catalogueSub")}</p>
+          <div className="set-extra">
+            {rows.length === 0 && <p className="bdg-hint">{t("badges.empty")}</p>}
+            <div className="bdg-list">
+              {rows.map((b) => (
+                <div key={b.id} className="bdg-row">
+                  <Mark badge={b} />
+                  <div className="bdg-row__id">
+                    <span className="bdg-row__name">{b.name}</span>
+                    <span className="bdg-row__key">{b.key}</span>
+                  </div>
+                  {b.description && <span className="bdg-row__desc">{b.description}</span>}
+                  <span className="bdg-row__holders">{t("badges.holdersShort", { count: b.holders ?? 0 })}</span>
+                  <button type="button" className="bdg-row__act" title={t("badges.edit")}
+                    onClick={() => setEditing(b)}>
+                    <FontAwesomeIcon icon={faPencil} />
+                  </button>
+                  {/* A system badge has no delete: something else expects its key. */}
+                  {!b.isSystem && (
+                    <button type="button" className="bdg-row__act bdg-row__act--danger" title={t("badges.delete")}
+                      onClick={() => remove.mutate(b.id)}>
+                      <FontAwesomeIcon icon={faTrash} />
+                    </button>
+                  )}
                 </div>
-                <button type="button" className="btn-primary btn-sm"
-                  style={{ marginLeft: "auto" }} onClick={() => setCreating(true)}>
-                  <AcpIcon name="plus" size={14} /><span>{t("badges.new")}</span>
-                </button>
-              </div>
-
-              <div className="set-extra">
-                {rows.length === 0 && <p className="bdg-hint">{t("badges.empty")}</p>}
-                <div className="bdg-list">
-                  {rows.map((b) => (
-                    <div key={b.id} className="bdg-row">
-                      <Mark badge={b} />
-                      <div className="bdg-row__id">
-                        <span className="bdg-row__name">{b.name}</span>
-                        <span className="bdg-row__key">{b.key}</span>
-                      </div>
-                      {b.description && <span className="bdg-row__desc">{b.description}</span>}
-                      <span className="bdg-row__holders">{t("badges.holdersShort", { count: b.holders ?? 0 })}</span>
-                      <button type="button" className="bdg-row__act" title={t("badges.edit")}
-                        onClick={() => setEditing(b)}>
-                        <FontAwesomeIcon icon={faPencil} />
-                      </button>
-                      {/* A system badge has no delete: something else expects its key. */}
-                      {!b.isSystem && (
-                        <button type="button" className="bdg-row__act bdg-row__act--danger" title={t("badges.delete")}
-                          onClick={() => remove.mutate(b.id)}>
-                          <FontAwesomeIcon icon={faTrash} />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </section>
-          ) : (
-            <Awarding badges={rows} />
-          )}
-        </div>
+              ))}
+            </div>
+          </div>
+      </section>
       </div>
 
       {creating && <BadgeModal badge={null} onClose={() => setCreating(false)} />}

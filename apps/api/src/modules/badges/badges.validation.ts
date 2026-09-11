@@ -15,6 +15,19 @@ const faIconSchema = z.enum(BADGE_ICON_NAMES).nullable();
 
 export const badgeIdParam = z.object({ id: z.string().min(1) });
 
+/**
+ * The thresholds, keyed by metric.
+ *
+ * ⚠ Keys are NOT validated against the registry. A plugin that is temporarily
+ * disabled must not make its thresholds unsaveable — and an admin editing a badge's
+ * name would then be blocked by a key they never touched. The registry decides what
+ * COUNTS at sweep time; this only decides what is storable.
+ */
+const criteriaSchema = z.record(
+  z.string().min(1).max(60),
+  z.number().int().min(0).max(1_000_000),
+);
+
 export const createBadgeSchema = z.object({
   key:          z.string().regex(/^[a-z0-9_-]+$/, "Lowercase letters, digits, - and _ only").min(2).max(40),
   name:         z.string().min(2).max(60),
@@ -22,6 +35,8 @@ export const createBadgeSchema = z.object({
   faIcon:       faIconSchema.optional(),
   color:        colorSchema.optional(),
   displayOrder: z.number().int().min(0).max(9999).optional(),
+  autoAward:    z.boolean().optional(),
+  criteria:     criteriaSchema.optional(),
 });
 
 /** The key is absent on purpose — it is the stable identifier seeds and plugins
@@ -32,6 +47,8 @@ export const updateBadgeSchema = z.object({
   faIcon:       faIconSchema.optional(),
   color:        colorSchema.optional(),
   displayOrder: z.number().int().min(0).max(9999).optional(),
+  autoAward:    z.boolean().optional(),
+  criteria:     criteriaSchema.optional(),
 });
 
 export const awardSchema = z.object({

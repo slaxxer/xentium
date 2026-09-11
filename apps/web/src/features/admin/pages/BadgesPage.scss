@@ -17,7 +17,9 @@
   background: color-mix(in srgb, var(--badge-color, var(--c-accent)) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--badge-color, var(--c-accent)) 34%, transparent);
 
-  img { display: block; max-width: 100%; max-height: 100%; }
+  /* The glyph is sized from the box's own `font-size` — see `Mark`. Height only:
+     a FontAwesome icon's width follows its aspect and must not be squashed. */
+  svg { height: 1em; width: auto; }
 }
 
 .bdg-mark__dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
@@ -136,8 +138,6 @@
   }
 }
 
-.bdg-upload { display: flex; gap: var(--sp-2); align-items: center; }
-
 /* ── Awarding ───────────────────────────────────────────────────────────── */
 
 .bdg-results { display: flex; flex-direction: column; gap: 4px; }
@@ -188,3 +188,48 @@
 
   &:hover { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 16%, transparent); }
 }
+
+/* ── The reward system ─────────────────────────────────────────────────────
+   Only visible once the switch is on: an admin handing a badge out by hand should
+   never have to read past a block of thresholds that do not apply to them. */
+.bdg-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bdg-criteria {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-2) var(--sp-4);
+  margin: var(--sp-3) 0 var(--sp-4);
+}
+
+.bdg-criterion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+
+  input { max-width: 96px; }
+
+  &__label { display: inline-flex; align-items: baseline; gap: 6px; }
+
+  /* Which plugin a metric comes from — because disabling it stops the threshold
+     counting, and an admin should not have to discover that afterwards. */
+  &__from {
+    font-style: normal;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    padding: 1px 6px;
+  }
+}
+
+.bdg-hint--warn { color: var(--c-warn, var(--c-fg-muted)); }

@@ -1588,7 +1588,16 @@
     "profileFields": "Campos de perfil",
     "pfField": "Campo",
     "pfValue": "Valor",
-    "notSet": "— sin definir"
+    "notSet": "— sin definir",
+    "badges": "Insignias",
+    "noBadges": "Todavía no hay insignias.",
+    "badgeGranted": "Insignia concedida",
+    "badgeRevoke": "Retirar esta insignia",
+    "badgeGrantHint": "Las insignias concedidas permanecen hasta que las retires.",
+    "badgeGrantPick": "Conceder una insignia…",
+    "badgeGrantNone": "No quedan insignias por conceder",
+    "badgeEarned": "conseguida",
+    "badgeEarnedHint": "Concedida automáticamente por cumplir los requisitos. Retirarla solo dura hasta la próxima pasada si se siguen cumpliendo."
   },
   "styleEditor": {
     "rowBg": "Fondo",
@@ -2202,7 +2211,7 @@
   "badges": {
     "eyebrow": "Comunidad",
     "title": "Insignias",
-    "subtitle": "Premios que concedes a mano, y quién los tiene.",
+    "subtitle": "Lo que este sitio puede conceder. Quién tiene qué está en la página de cada miembro.",
     "sections": "Insignias",
     "secCatalogue": "Catálogo",
     "secAwarding": "Concesión",
@@ -2224,15 +2233,10 @@
     "fieldOrder": "Orden",
     "fieldOrderDesc": "Menor va primero, igual que las insignias de grupo.",
     "glyphTitle": "Símbolo",
-    "glyphHint": "Se usa cuando no hay imagen subida.",
-    "uploadTitle": "Imagen",
-    "uploadHint": "PNG, JPEG, GIF o WebP, como mucho 32×32 píxeles. Una imagen sustituye al símbolo. Los GIF animados siguen animándose.",
-    "chooseFile": "Subir imagen",
-    "removeFile": "Quitar imagen",
+    "glyphHint": "La marca con la que se dibuja esta insignia, con el color de arriba.",
     "saved": "Insignia guardada",
     "created": "Insignia creada",
     "deleted": "Insignia eliminada",
-    "iconSaved": "Imagen subida",
     "awardTitle": "Conceder una insignia",
     "awardSub": "Concede una insignia a un miembro, o retírala.",
     "awardNoneYet": "Crea primero una insignia — todavía no hay nada que conceder.",
@@ -2255,6 +2259,18 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "edit": "Editar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "rewardTitle": "Sistema de recompensas",
+    "rewardToggle": "Conseguir esta insignia automáticamente",
+    "rewardNote": "Apagado, la concedes tú. Encendido, la recibe quien cumpla todos los requisitos de abajo, y ya no se retira.",
+    "rewardEmpty": "Sin requisitos, así que aún nadie puede conseguirla.",
+    "metric": {
+      "articles": "Artículos",
+      "comments": "Comentarios",
+      "likes": "Me gusta recibidos",
+      "followers": "Seguidores",
+      "forum.posts": "Mensajes del foro",
+      "forum.threads": "Temas del foro"
+    }
   }
 }

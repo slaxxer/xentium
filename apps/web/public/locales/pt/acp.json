@@ -1588,7 +1588,16 @@
     "profileFields": "Campos de perfil",
     "pfField": "Campo",
     "pfValue": "Valor",
-    "notSet": "— não definido"
+    "notSet": "— não definido",
+    "badges": "Emblemas",
+    "noBadges": "Ainda sem emblemas.",
+    "badgeGranted": "Emblema concedido",
+    "badgeRevoke": "Retirar este emblema",
+    "badgeGrantHint": "Os emblemas concedidos ficam até os retirares.",
+    "badgeGrantPick": "Conceder um emblema…",
+    "badgeGrantNone": "Não há emblemas por conceder",
+    "badgeEarned": "conquistado",
+    "badgeEarnedHint": "Concedido automaticamente por cumprir os requisitos. Retirá-lo só dura até à próxima passagem se continuar a cumpri-los."
   },
   "styleEditor": {
     "rowBg": "Fundo",
@@ -2202,7 +2211,7 @@
   "badges": {
     "eyebrow": "Comunidade",
     "title": "Emblemas",
-    "subtitle": "Prémios que concedes à mão, e quem os tem.",
+    "subtitle": "O que este site pode conceder. Quem tem o quê está na página de cada membro.",
     "sections": "Emblemas",
     "secCatalogue": "Catálogo",
     "secAwarding": "Concessão",
@@ -2224,15 +2233,10 @@
     "fieldOrder": "Ordem",
     "fieldOrderDesc": "O menor vem primeiro, tal como nos emblemas de grupo.",
     "glyphTitle": "Símbolo",
-    "glyphHint": "Usado quando não há imagem carregada.",
-    "uploadTitle": "Imagem",
-    "uploadHint": "PNG, JPEG, GIF ou WebP, no máximo 32×32 pixels. Uma imagem substitui o símbolo. Os GIF animados continuam a animar.",
-    "chooseFile": "Carregar imagem",
-    "removeFile": "Remover imagem",
+    "glyphHint": "A marca com que este emblema é desenhado, tingida com a cor acima.",
     "saved": "Emblema guardado",
     "created": "Emblema criado",
     "deleted": "Emblema eliminado",
-    "iconSaved": "Imagem carregada",
     "awardTitle": "Conceder um emblema",
     "awardSub": "Concede um emblema a um membro, ou retira-o.",
     "awardNoneYet": "Cria primeiro um emblema — ainda não há nada para conceder.",
@@ -2255,6 +2259,18 @@
     "save": "Guardar",
     "cancel": "Cancelar",
     "edit": "Editar",
-    "delete": "Eliminar"
+    "delete": "Eliminar",
+    "rewardTitle": "Sistema de recompensas",
+    "rewardToggle": "Conquistar este emblema automaticamente",
+    "rewardNote": "Desligado, concedes o emblema tu. Ligado, recebe-o quem cumprir todos os requisitos abaixo — e não volta a ser retirado.",
+    "rewardEmpty": "Sem requisitos definidos, por isso ainda ninguém o pode conquistar.",
+    "metric": {
+      "articles": "Artigos",
+      "comments": "Comentários",
+      "likes": "Gostos recebidos",
+      "followers": "Seguidores",
+      "forum.posts": "Mensagens do fórum",
+      "forum.threads": "Tópicos do fórum"
+    }
   }
 }

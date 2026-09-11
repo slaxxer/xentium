@@ -28,7 +28,7 @@ export interface UserBadgesProps {
   className?: string;
 }
 
-/** One badge: the uploaded image if there is one, else the glyph, else a dot. */
+/** One badge: its glyph, or a dot when the catalogue entry has none. */
 export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: "sm" | "md" }) {
   const { t } = useTranslation("common");
   const icon  = badgeIcon(badge.faIcon);
@@ -45,14 +45,7 @@ export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: 
       title={tip}
       aria-label={t("badges.held", { name: badge.name })}
     >
-      {/* ⚠ The upload WINS over the glyph, the same precedence a group icon has.
-          The image is bounded to 32x32 at the route, so it needs no scaling here —
-          which is what keeps an animated GIF animating. */}
-      {badge.icon
-        ? <img src={badge.icon} alt="" loading="lazy" />
-        : icon
-          ? <FontAwesomeIcon icon={icon} />
-          : <span className="nv-badge__dot" />}
+      {icon ? <FontAwesomeIcon icon={icon} /> : <span className="nv-badge__dot" />}
     </span>
   );
 }

@@ -84,6 +84,10 @@
       "progression": {
         "label": "Subidas de nivel",
         "desc": "Cuando subes a un nuevo nivel"
+      },
+      "badges": {
+        "label": "Insignias",
+        "desc": "Cuando consigues una nueva insignia"
       }
     }
   },
