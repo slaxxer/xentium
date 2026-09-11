@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { accountService } from "./account.service.js";
+import { assertProfileImageAllowed } from "./profileImageLimits.js";
 import {
   updateProfileSchema,
   changeUsernameSchema,
@@ -19,9 +20,29 @@ export const accountController = {
   uploadAvatar: (async (req, res) => {
     const userId = req.userId!;
     const file = req.file!;
+    // ⚠ The per-rank limits (§38) that nothing consulted until now.
+    await assertProfileImageAllowed(userId, {
+      mimeType: file.mimetype, bytes: file.size, kind: "avatar",
+    });
     const ext = file.detectedExt ?? "jpg";
     const url = await accountService.uploadAvatar(userId, file.buffer, ext);
     res.json({ url });
+  }),
+
+  uploadCover: (async (req, res) => {
+    const userId = req.userId!;
+    const file = req.file!;
+    await assertProfileImageAllowed(userId, {
+      mimeType: file.mimetype, bytes: file.size, kind: "cover",
+    });
+    const ext = file.detectedExt ?? "jpg";
+    const url = await accountService.uploadCover(userId, file.buffer, ext);
+    res.json({ url });
+  }),
+
+  removeCover: (async (req, res) => {
+    await accountService.removeCover(req.userId!);
+    res.status(204).end();
   }),
 
   updateProfile: (async (req, res) => {

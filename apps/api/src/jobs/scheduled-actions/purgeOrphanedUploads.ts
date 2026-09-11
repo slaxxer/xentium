@@ -118,8 +118,9 @@ async function refsInLayouts(): Promise<string[]> {
  * anything that might be a reference is treated as one.
  */
 async function collectReferenced(): Promise<Set<string>> {
-  const [users, groups, badges, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
+  const [users, covers, groups, badges, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
     prisma.user.findMany({ where: { avatar: { not: null } }, select: { avatar: true } }),
+    prisma.user.findMany({ where: { coverImage: { not: null } }, select: { coverImage: true } }),
     prisma.group.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
     prisma.badge.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
     prisma.setting.findMany({ where: { key: { startsWith: "appearance.logo." } }, select: { value: true } }),
@@ -142,6 +143,7 @@ async function collectReferenced(): Promise<Set<string>> {
   };
 
   users.forEach((u) => add(u.avatar));
+  covers.forEach((u) => add(u.coverImage));
   groups.forEach((g) => add(g.icon));
   badges.forEach((b) => add(b.icon));
   logos.forEach((s) => add(s.value));
@@ -232,7 +234,7 @@ registerScheduledAction({
   key:   "system.purge-orphaned-uploads",
   label: "Purge orphaned uploads",
   description:
-    "Deletes files in the core upload folders (avatars, groups, badges, themes, articles, pages, layouts) that no record points at " +
+    "Deletes files in the core upload folders (avatars, covers, groups, badges, themes, articles, pages, layouts) that no record points at " +
     "any more — replaced avatars and group icons, and the leftovers of deleted articles and pages. Inline images " +
     "referenced from page/article bodies and files belonging to soft-deleted records are kept, and plugin upload " +
     "folders are never touched. Always dry-run this first: deleted files cannot be recovered.",

@@ -60,5 +60,51 @@
   "tombstoneBy": " von {{mod}}",
   "tombstoneReason": " · Grund: {{reason}}",
   "banned": "Gesperrt",
-  "permanentlyBanned": "Dauerhaft gesperrt"
+  "permanentlyBanned": "Dauerhaft gesperrt",
+  "rank": {
+    "progress": "Rangfortschritt",
+    "atTop": "Oben angekommen — nichts mehr zu erklimmen.",
+    "keepGoing": "Poste weiter, um den nächsten Rang zu erreichen.",
+    "remaining": "Noch {{count}} {{metric}} bis {{rank}}",
+    "remaining_one": "Noch {{count}} {{metric}} bis {{rank}}",
+    "unlocks": "{{rank}} schaltet frei",
+    "metric": {
+      "articles": "Artikel",
+      "comments": "Kommentare",
+      "likes": "Likes",
+      "days": "Tage",
+      "posts": "Beiträge",
+      "threads": "Themen"
+    },
+    "unlock": {
+      "articleLength": "Artikel mit {{value}} Zeichen",
+      "dailyArticles": "{{count}} Artikel pro Tag",
+      "commentLength": "Kommentare mit {{value}} Zeichen",
+      "dailyComments": "{{count}} Kommentare pro Tag",
+      "attachments": "{{count}} Anhänge pro Beitrag"
+    }
+  },
+  "badges": {
+    "title": "Abzeichen",
+    "count": "{{held}} von {{total}}",
+    "locked": "Noch nicht erhalten",
+    "seeAll": "Alle ansehen"
+  },
+  "likeCount": "{{n}} Likes",
+  "visitors": {
+    "title": "Letzte Besucher",
+    "summary_one": "{{count}} Besucher diese Woche",
+    "summary_other": "{{count}} Besucher diese Woche",
+    "last": "zuletzt: {{ago}}"
+  },
+  "cover": {
+    "dropTitle": "Headerbild hierher ziehen oder auswählen",
+    "lockedTitle": "Titelbilder sind ein Rang-Privileg",
+    "spec": "1600 × 400 · JPG, PNG, WebP · bis zu 2 MB",
+    "upload": "Titelbild hochladen",
+    "change": "Titelbild ändern",
+    "saved": "Titelbild aktualisiert",
+    "unlocksAt": "Freigeschaltet ab {{rank}}",
+    "unavailable": "Auf dieser Seite nicht verfügbar"
+  }
 }

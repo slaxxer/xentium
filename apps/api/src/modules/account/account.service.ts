@@ -32,6 +32,28 @@ export const accountService = {
     return storage.publicUrl(relPath);
   },
 
+  /**
+   * A member's own cover.
+   *
+   * Named after the user id, so setting a new one REPLACES the old file rather than
+   * leaving it behind — a cover is singular, and the purge job should never have to
+   * clean up after the normal case.
+   *
+   * ⚠ The extension comes from the magic-byte check, so changing format (png → gif)
+   * leaves the previous file orphaned under a different extension. That IS the purge
+   * job's case, and it collects `coverImage` now, so the old one goes.
+   */
+  async uploadCover(userId: string, fileBuffer: Buffer, ext: string): Promise<string> {
+    const relPath = await storage.save("covers", `${userId}.${ext}`, fileBuffer);
+    await prisma.user.update({ where: { id: userId }, data: { coverImage: relPath } });
+    return storage.publicUrl(relPath);
+  },
+
+  /** Drop the cover and fall back to whatever the layout's block draws. */
+  async removeCover(userId: string): Promise<void> {
+    await prisma.user.update({ where: { id: userId }, data: { coverImage: null } });
+  },
+
   async updateProfile(userId: string, data: {
     bio?: string; dobDisplay?: "hidden" | "age" | "birthday"; preferredLocale?: string | null;
   }) {

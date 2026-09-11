@@ -80,6 +80,14 @@ model User {
   dobDisplay         String    @default("age") @map("dob_display")  // 'hidden' | 'age' | 'date'
   preferredLocale    String?   @map("preferred_locale")  // null = follow resolution chain (§60.4)
   hiddenBadges       String[]  @default([]) @map("hidden_badges")  // Group IDs the user hides from their badge stack, systemwide
+  /// The member's own cover image, relative ("covers/<id>.jpg"). Distinct from the
+  /// `profileCover` BLOCK's background, which an admin sets for every profile — this
+  /// one is personal and wins over it.
+  coverImage         String?   @map("cover_image")
+  /// All-time profile views, GUESTS INCLUDED — deduped per IP the way articles are.
+  /// Deliberately not `count(ncf_profile_views)`: that table holds only named
+  /// visitors and is pruned, so counting it would make the total shrink over time.
+  profileViewCount   Int       @default(0) @map("profile_view_count")
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -119,6 +127,8 @@ model User {
   invitesCreated   InviteCode[]    @relation("InviteCreated")
   invitesUsed      InviteCode[]    @relation("InviteUsed")
   badges           UserBadge[]
+  profileViews     ProfileView[] @relation("ProfileViewed")
+  profileViewsMade ProfileView[] @relation("ProfileViewer")
 
   @@map("ncf_users")
 }
@@ -166,9 +176,19 @@ model GroupProgression {
   maxDailyComments         Int?     @map("max_daily_comments")
   maxAttachments           Int?     @map("max_attachments")       // reserved for Phase 14+
 
-  // Profile image limits (§38)
+  // Profile image limits (§38). Apply to BOTH the avatar and the cover.
+  // ⚠ Stored since Phase 7 and enforced nowhere until 2026-09-10 — an admin could
+  // set them and nothing read them. `assertProfileImageAllowed` is now the one
+  // chokepoint both upload routes go through.
   maxProfileImageBytes     Int?     @map("max_profile_image_bytes")
+  /// MIME types this rung may upload. EMPTY = no per-rank restriction; the global
+  /// `UPLOAD_LIMITS` ceiling still applies. Putting `image/gif` here at a senior
+  /// rung is what "animated cover images unlock at Veteran" means.
   allowedProfileImageTypes String[] @default([]) @map("allowed_profile_image_types")
+  /// Whether this rung may set a cover image at all.
+  /// ⚠ Defaults TRUE: covers did not exist before this flag, so defaulting false
+  /// would silently withhold a new feature from every existing group.
+  canUploadCover           Boolean  @default(true) @map("can_upload_cover")
 
   // Badge
   badgeLabel               String?  @map("badge_label")
@@ -240,6 +260,35 @@ model UserBadge {
   @@id([userId, badgeId])
   @@index([badgeId])
   @@map("ncf_user_badges")
+}
+
+// ── Profile views (§profile-visitors) ────────────────────────────────────────
+//
+// Who looked at whose profile. One row PER PAIR, refreshed on a revisit rather
+// than appended to — the card shows "who has been here lately", and a row per page
+// load would make that a list of one person who refreshed.
+//
+// ⚠ Only a logged-in, non-owner visit writes a row. A guest has no identity to
+// record, so a guest bumps `User.profileViewCount` and nothing else, and looking at
+// your own profile counts as neither.
+
+model ProfileView {
+  /// Whose profile was looked at.
+  profileId String   @map("profile_id")
+  /// Who looked.
+  viewerId  String   @map("viewer_id")
+  profile   User     @relation("ProfileViewed",  fields: [profileId], references: [id], onDelete: Cascade)
+  viewer    User     @relation("ProfileViewer",  fields: [viewerId],  references: [id], onDelete: Cascade)
+
+  /// The LAST time they looked, not the first — the card is ordered by it.
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+  /// How many separate visits, for a site that wants to say "seen 12 times".
+  visits    Int      @default(1)
+
+  @@id([profileId, viewerId])
+  /// The card's only query: this profile's visitors, most recent first.
+  @@index([profileId, viewedAt(sort: Desc)])
+  @@map("ncf_profile_views")
 }
 
 model Permission {

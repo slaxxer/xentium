@@ -61,5 +61,51 @@
   "tombstoneReason": " · Reason: {{reason}}",
   "banned": "Banned",
   "permanentlyBanned": "Permanently banned",
-  "formerlyKnownAs": "Previously known as {{names}}"
+  "formerlyKnownAs": "Previously known as {{names}}",
+  "rank": {
+    "progress": "Rank progress",
+    "atTop": "Top of the ladder — nothing left to climb.",
+    "keepGoing": "Keep posting to reach the next rank.",
+    "remaining": "{{count}} more {{metric}} until {{rank}}",
+    "remaining_one": "{{count}} more {{metric}} until {{rank}}",
+    "unlocks": "{{rank}} unlocks",
+    "metric": {
+      "articles": "articles",
+      "comments": "comments",
+      "likes": "likes",
+      "days": "days",
+      "posts": "posts",
+      "threads": "threads"
+    },
+    "unlock": {
+      "articleLength": "{{value}}-character articles",
+      "dailyArticles": "{{count}} articles per day",
+      "commentLength": "{{value}}-character comments",
+      "dailyComments": "{{count}} comments per day",
+      "attachments": "{{count}} attachments per post"
+    }
+  },
+  "badges": {
+    "title": "Badges",
+    "count": "{{held}} of {{total}}",
+    "locked": "Not earned yet",
+    "seeAll": "See all"
+  },
+  "likeCount": "{{n}} likes",
+  "visitors": {
+    "title": "Recent visitors",
+    "summary_one": "{{count}} visitor this week",
+    "summary_other": "{{count}} visitors this week",
+    "last": "last: {{ago}}"
+  },
+  "cover": {
+    "dropTitle": "Drop a header image, or browse",
+    "lockedTitle": "Cover images are a rank perk",
+    "spec": "1600 × 400 · JPG, PNG, WebP · up to 2 MB",
+    "upload": "Upload cover",
+    "change": "Change cover",
+    "saved": "Cover updated",
+    "unlocksAt": "Unlocked at {{rank}}",
+    "unavailable": "Not available on this site"
+  }
 }

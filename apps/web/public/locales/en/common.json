@@ -154,5 +154,8 @@
     "siteBadge": "Site",
     "note": "Your choice, on this device. It changes nothing for anyone else.",
     "activeBadge": "Active"
+  },
+  "badges": {
+    "held": "{{name}} badge"
   }
 }

@@ -32,6 +32,28 @@ usersRouter.get("/search", requireAuth, usersController.searchUsers);
 // Public profile (lookup by username) — optional auth so viewerId resolves isOwn correctly
 usersRouter.get("/:username", optionalAuth, usersController.getPublicProfile);
 
+/**
+ * A member's standing on the ladder, for their profile's rank rail.
+ *
+ * PUBLIC and unauthenticated: it says where a member stands, what the site's ladder
+ * is, and what the next rung grants — all of which the badge beside their name and
+ * the ACP's own ladder already state. It publishes no count the profile does not.
+ *
+ * ⚠ Lives here rather than under `/progression` because it is addressed BY USER, and
+ * `/progression` is the admin's ladder surface. `/me/limits` is the only other
+ * non-admin progression route and it answers about the caller, not about a profile.
+ */
+usersRouter.get("/:id/progression", usersController.getProgression);
+
+/**
+ * Who has looked at this profile lately.
+ *
+ * PUBLIC, matching the card's place in the profile rail every visitor sees. It names
+ * members only — a guest leaves no name to show — and carries nothing the profile
+ * page does not already publish.
+ */
+usersRouter.get("/:id/visitors", usersController.getVisitors);
+
 // Followers / Following (by id) — optionalAuth so the owner can always see
 // their own lists even when set to private (§37).
 usersRouter.get("/:id/followers", optionalAuth, usersController.getFollowers);

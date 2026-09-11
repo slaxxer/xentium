@@ -1199,6 +1199,58 @@ export const blockPropSchemas = {
   profileAvatar: z.object({
     size: z.enum(['sm', 'md', 'lg']).default('lg')
       .meta({ title: 'Avatar size' }),
+    /**
+     * Pull the avatar up over the band above it.
+     *
+     * Only means anything directly under a `profileCover`; anywhere else it is a
+     * negative margin against whatever happens to be above, which is why it is off
+     * by default rather than assumed.
+     */
+    overlap: z.boolean().default(false).meta({
+      title:       'Overlap the cover',
+      description: 'Lifts the avatar over the band above it. For use under a cover.',
+    }),
+  }),
+
+  /** The band behind the top of the profile. */
+  profileCover: z.object({
+    height: z.number().int().min(80).max(600).default(220).meta({
+      title:       'Height (px)',
+      description: 'The band behind the profile header.',
+    }),
+    /** Image and gradient, exactly as `section` and `header` carry them. */
+    backgroundImage: z.string().max(500).default('').meta({
+      title: 'Background image', description: 'Upload path or URL. Drawn over the gradient.', asset: true,
+    }),
+    backgroundGradient: z.array(z.string().max(60)).max(3).default([]).meta({ title: 'Gradient' }),
+    backgroundAngle: z.number().int().min(0).max(360).default(180).meta({ title: 'Direction' }),
+  }),
+
+  /** Where this member stands on the ladder, and what the next rung grants. */
+  profileRank: z.object({
+    showUnlocks: z.boolean().default(true).meta({
+      title:       'Show what the next rank unlocks',
+      description: 'The limits the next rung raises. Hidden when there is no next rung.',
+    }),
+  }),
+
+  /** The awards this member holds (ADR-0009). */
+  profileBadges: z.object({
+    max: z.number().int().min(1).max(50).default(12).meta({
+      title:       'Badges to show',
+      description: 'Beyond this many, the rest collapse into a count.',
+    }),
+    size: z.enum(['sm', 'md']).default('md').meta({ title: 'Badge size' }),
+  }),
+
+  /** Who has looked at this profile lately. */
+  profileVisitors: z.object({
+    max: z.number().int().min(3).max(12).default(5).meta({ title: 'Avatars to show' }),
+  }),
+
+  /** A strip of followers beside the page. */
+  profileFollowers: z.object({
+    max: z.number().int().min(3).max(12).default(5).meta({ title: 'Avatars to show' }),
   }),
 
   profileIdentity: z.object({
@@ -1505,31 +1557,48 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     templateKey: 'profile', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       main: [
+        // The band, then the card that overlaps it. Two blocks rather than one so an
+        // admin can drop the cover entirely and get the old flat header back.
+        node('pr-cover', 'profileCover', {
+          height: 220, backgroundImage: '', backgroundGradient: [], backgroundAngle: 180,
+        }),
         { ...node('pr-card', 'profileCard', { padding: 'md' }), children: [
+          // The head row: avatar, then who this is, then what a viewer can do.
           { ...node('pr-row', 'columns', { gap: 'md' }), children: [
             { ...node('pr-avcol', 'column', { width: 'auto' }), children: [
-              node('pr-av', 'profileAvatar', { size: 'lg' }),
+              node('pr-av', 'profileAvatar', { size: 'lg', overlap: true }),
             ] },
-            { ...node('pr-infocol', 'column', { width: '1' }), children: [
-              { ...node('pr-titlerow', 'columns', { gap: 'sm' }), children: [
-                { ...node('pr-idcol', 'column', { width: '1' }), children: [
-                  node('pr-id', 'profileIdentity', {
-                    showHandle: true, showJoined: true, showBadges: true, showFormerly: true,
-                  }),
-                ] },
-                { ...node('pr-actcol', 'column', { width: 'auto' }), children: [
-                  node('pr-act', 'profileActions'),
-                ] },
-              ] },
-              node('pr-bio',   'profileBio'),
-              node('pr-stats', 'profileStats'),
+            { ...node('pr-idcol', 'column', { width: '1' }), children: [
+              node('pr-id', 'profileIdentity', {
+                showHandle: true, showJoined: true, showBadges: true, showFormerly: true,
+              }),
+            ] },
+            { ...node('pr-actcol', 'column', { width: 'auto' }), children: [
+              node('pr-act', 'profileActions'),
             ] },
           ] },
+          // ⚠ Bio and stats are siblings of that row, NOT children of the identity
+          // column. Nested there they started where the avatar ends, so the tiles
+          // were indented by 120px and never reached the card's left edge.
+          node('pr-bio',   'profileBio'),
+          node('pr-stats', 'profileStats'),
         ] },
         node('pr-tabs',    'profileTabs'),
         node('pr-content', 'profileContent'),
       ],
-      aside: [],
+      /**
+       * The rank rail.
+       *
+       * Every block here draws NOTHING on a site with progression switched off or no
+       * ladder configured, and the rail collapses to give the body its width back —
+       * so shipping them by default costs a site that does not rank people nothing.
+       */
+      aside: [
+        node('pr-rank',   'profileRank',   { showUnlocks: true }),
+        node('pr-badges', 'profileBadges', { max: 8, size: 'md' }),
+        node('pr-follow', 'profileFollowers', { max: 5 }),
+        node('pr-visitors', 'profileVisitors', { max: 5 }),
+      ],
     },
   },
   // The head row and the rail/list row, rebuilt as weighted columns — the same

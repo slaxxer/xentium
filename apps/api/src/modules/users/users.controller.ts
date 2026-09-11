@@ -3,6 +3,8 @@
 import type { RequestHandler } from "express";
 import { CorePermissions } from "@nodevo/contracts";
 import { userService } from "./users.service.js";
+import { progressionService } from "../progression/progression.service.js";
+import { getProfileVisitors, recordProfileView } from "./profileViews.js";
 import { permissionsService } from "../permissions/permissions.service.js";
 import { prisma } from "../../infrastructure/db.js";
 import {
@@ -13,6 +15,8 @@ import {
   deleteCommentParamsSchema,
   paginationSchema,
   searchQuerySchema,
+  visitorParamsSchema,
+  visitorQuerySchema,
 } from "./users.validation.js";
 
 export const usersController = {
@@ -20,8 +24,27 @@ export const usersController = {
     const { username } = getProfileParamsSchema.parse(req.params);
     const viewerId = req.userId;
     const profile = await userService.getPublicProfile(username, viewerId);
+
+    // ⚠ NOT awaited, and it swallows its own errors: recording a visit is a side
+    // effect of reading a profile, and must never delay the response or turn a GET
+    // into a 500 because Redis blinked.
+    void recordProfileView(profile.id, viewerId, req.ip);
+
     res.json(profile);
   }),
+
+  /**
+   * Who has looked at this profile lately.
+   *
+   * Public, as the site's own decision: the card sits in the profile rail that every
+   * visitor sees. It names only members — a guest has no identity to record — and
+   * exposes nothing beyond the username and avatar the profile page already shows.
+   */
+  getVisitors: (async (req, res) => {
+    const { id } = visitorParamsSchema.parse(req.params);
+    const { limit } = visitorQuerySchema.parse(req.query);
+    res.json(await getProfileVisitors(id, limit));
+  }) as RequestHandler,
 
   follow: (async (req, res) => {
     const { id: followingId } = followParamsSchema.parse(req.params);
@@ -83,6 +106,12 @@ export const usersController = {
     const isModerator = await permissionsService.userHasPermission(userId, CorePermissions.PROFILE_COMMENT_DELETE_ANY);
     await userService.deleteProfileComment(commentId, userId, isModerator);
     res.status(204).send();
+  }),
+
+  /** A member's ladder standing, for the profile's rank rail. Public. */
+  getProgression: (async (req, res) => {
+    const { id } = followParamsSchema.parse(req.params);
+    res.json(await progressionService.getProfileProgression(id));
   }),
 
   getFollowers: (async (req, res) => {
