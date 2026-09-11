@@ -1,14 +1,14 @@
 # Last codebase update — 2026-09-11
 
-Six pieces, all verified in a running browser rather than only under test:
-**badges**, the **profile redesign at 1:1**, **recent visitors**, **cover uploads**,
-**one rank component**, and a set of **layout fixes** that came out of looking at the
-result.
+Seven pieces, all verified in a running browser rather than only under test:
+**badges** (catalogue, rewards, notifications), the **profile redesign at 1:1**,
+**recent visitors**, **cover uploads**, **one rank component**, and a set of
+**layout fixes** that came out of looking at the result.
 
-`pnpm backbone:check` green — typecheck 30/30, lint 0 errors, API **355** tests,
+`pnpm backbone:check` green — typecheck 30/30, lint 0 errors, API **378** tests,
 web **681**, build clean.
 
-⚠ Three migrations, applied by hand and NOT by `prisma migrate dev` — plugin tables
+⚠ Five migrations, applied by hand and NOT by `prisma migrate dev` — plugin tables
 live outside the Prisma schema, so `migrate dev` reads drift and offers to reset the
 database. Write the SQL, then `prisma migrate deploy`.
 
@@ -22,12 +22,37 @@ database. Write the SQL, then `prisma migrate deploy`.
 | Area | Note |
 | --- | --- |
 | `modules/badges/` | service, controller, routes; public batch + catalogue reads |
-| `shared/middleware/imageDimensions.ts` | ⚠ 32×32 is a DIMENSION rule; `image-size` is a new API dep |
+| `core/badge-registry/` | the extension point — plugins add metrics, core compares |
+| `jobs/scheduled-actions/awardBadges.ts` | the sweep; `system.award-badges`, 15-min floor |
 | `components/UserBadges.tsx` | the ONE renderer, a host global so plugins adopt it in one line |
 | `lib/userBadges.ts` | microtask batching — a page of cards is one request |
 | `lib/badgeIcons.ts` | ⚠ explicit imports; `import * as` would pull the whole pack |
-| `BadgesPage.tsx` | ACP → Users → Badges |
-| purge job | ⚠ teaches the sweep about `badges/`, or every icon is an orphan |
+| `BadgesPage.tsx` | ACP → Users → Badges: the catalogue only |
+| `UserDetailPage.tsx` | where an admin actually grants one |
+
+**Rewards.** `autoAward` + `criteria` (JSON, because the keys are extensible). ALL
+thresholds must be met.
+
+⚠ Two ways to over-grant, both closed and both tested: **empty criteria** (`[].every()`
+is true) and criteria whose keys **all** belong to absent plugins. Either would have put
+a badge on every member of the site.
+
+⚠ `User` has **no `deletedAt`** — the sweep filters on `isActive` alone. A mocked test
+asserting `deletedAt: null` agreed with the bug all the way to a failed job.
+
+**Notifications.** `badge.earned` (sweep) and `badge.granted` (by hand), both matched by
+the `badge.*` preference pattern.
+
+⚠ A type absent from `slotRegistry.coreSystemPrefixes` draws a `UserAvatar` built from
+its **title string**. A sender-less notification would have rendered initials cut out of
+a sentence — nothing in the suite covers that path.
+
+**Glyphs only.** Uploads were removed after the fact: column, routes, `BADGE_ICON`
+limits, **both** upload-dir allowlists, and the purge job's knowledge of the folder.
+
+⚠ `--badge-mark` sizes the mark instead of `font-size`. A glyph is an SVG measured in
+`em`, so `--locked`'s type rules for its "+N" pill were shrinking every padlock next to
+an earned badge.
 
 ## Profile — the redesign, visitors, covers
 
@@ -41,7 +66,8 @@ rule and so drawing no panel.
   write no row, a 15-minute Redis window keeps a reload out of Postgres, and the call
   swallows its own errors.
 - **Covers** — `profileImageLimits.ts` is the one chokepoint for BOTH the avatar and
-  the cover. ⚠ `maxProfileImageBytes` / `allowedProfileImageTypes` had been dead since
+  the cover. ⚠ `shared/middleware/imageDimensions.ts` enforces a DIMENSION ceiling a
+  byte limit cannot express; `image-size` is a new API dependency. ⚠ `maxProfileImageBytes` / `allowedProfileImageTypes` had been dead since
   Phase 7: no UI set them, no route read them. An empty type list means NO per-rank
   restriction, not "nothing allowed".
 
