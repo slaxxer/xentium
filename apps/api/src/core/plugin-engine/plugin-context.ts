@@ -1,7 +1,9 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration, LayoutTemplateDeclaration } from "@nodevo/plugin-sdk";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+} from "@nodevo/plugin-sdk";
 import { registerTemplate } from "@nodevo/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
+import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";
 import { pluginRouter } from "./plugin-router.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
@@ -142,6 +144,11 @@ export class PluginContextImpl implements PluginContext {
   registerStatSource(source: StatSource): void {
     statRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin stat source registered");
+  }
+
+  registerBadgeCriteria(metric: BadgeCriteria): void {
+    badgeCriteriaRegistry.register(this.pluginId, metric);
+    logger.info({ pluginId: this.pluginId, metric: metric.key }, "Plugin badge criteria registered");
   }
 
   registerProgressionCriteria(criteria: ProgressionCriteria): void {

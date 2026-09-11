@@ -60,5 +60,51 @@
   "tombstoneBy": " por {{mod}}",
   "tombstoneReason": " · Motivo: {{reason}}",
   "banned": "Bloqueado",
-  "permanentlyBanned": "Bloqueado permanentemente"
+  "permanentlyBanned": "Bloqueado permanentemente",
+  "rank": {
+    "progress": "Progreso de rango",
+    "atTop": "En lo más alto: no queda nada por subir.",
+    "keepGoing": "Sigue publicando para alcanzar el siguiente rango.",
+    "remaining": "{{count}} {{metric}} más hasta {{rank}}",
+    "remaining_one": "{{count}} {{metric}} más hasta {{rank}}",
+    "unlocks": "{{rank}} desbloquea",
+    "metric": {
+      "articles": "artículos",
+      "comments": "comentarios",
+      "likes": "me gusta",
+      "days": "días",
+      "posts": "publicaciones",
+      "threads": "temas"
+    },
+    "unlock": {
+      "articleLength": "artículos de {{value}} caracteres",
+      "dailyArticles": "{{count}} artículos al día",
+      "commentLength": "comentarios de {{value}} caracteres",
+      "dailyComments": "{{count}} comentarios al día",
+      "attachments": "{{count}} adjuntos por publicación"
+    }
+  },
+  "badges": {
+    "title": "Insignias",
+    "count": "{{held}} de {{total}}",
+    "locked": "Aún no conseguida",
+    "seeAll": "Ver todas"
+  },
+  "likeCount": "{{n}} me gusta",
+  "visitors": {
+    "title": "Visitantes recientes",
+    "summary_one": "{{count}} visitante esta semana",
+    "summary_other": "{{count}} visitantes esta semana",
+    "last": "última: {{ago}}"
+  },
+  "cover": {
+    "dropTitle": "Suelta una imagen de cabecera, o examina",
+    "lockedTitle": "Las portadas son una ventaja de rango",
+    "spec": "1600 × 400 · JPG, PNG, WebP · hasta 2 MB",
+    "upload": "Subir portada",
+    "change": "Cambiar portada",
+    "saved": "Portada actualizada",
+    "unlocksAt": "Se desbloquea en {{rank}}",
+    "unavailable": "No disponible en este sitio"
+  }
 }

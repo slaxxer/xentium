@@ -27,6 +27,8 @@ export interface PublicProfile {
   namePreference: "username" | "fullName";
   previousUsernames: Array<{ username: string; changedAt: string }>;
   avatar: string | null;
+  /** The member's OWN cover. Null falls back to the `profileCover` block's band. */
+  coverImage: string | null;
   bio: string | null;
   joinedDate: string;
   groups: Array<{ id: string; name: string; icon: string | null; badgeColor: string | null; badgeLabel: string | null }>;
@@ -89,10 +91,32 @@ export interface ProfileContext {
   tabs: { id: string; label: string }[];
   stats: ProfileStatRow[];
   infoFields: PublicProfileField[];
+  /** Where this member stands on the ladder, for the rank rail. Null while loading,
+   *  and `enabled: false` on a site that has switched progression off. */
+  progression: ProfileProgression | null;
+  /** A handful of followers for the rail's strip, plus the true total. */
+  followers: { items: { id: string; username: string; avatar: string | null }[]; total: number } | null;
   onFollow: () => void;
   onBlockToggle: () => void;
   followPending: boolean;
   blockPending: boolean;
+}
+
+/** What `/users/:id/progression` answers with. */
+export interface ProfileProgression {
+  enabled: boolean;
+  /** Whether this member's rung may set a cover, and the rung that grants it. */
+  canUploadCover?: boolean;
+  coverUnlocksAt?: string | null;
+  showProgressBar?: boolean;
+  current?: { badgeLabel: string | null; badgeColor: string | null; ladderPosition: number | null } | null;
+  next?: { badgeLabel: string | null; badgeColor: string | null; ladderPosition: number | null } | null;
+  atTop?: boolean;
+  percent?: number;
+  primary?: { label: string; have: number; need: number; remaining: number } | null;
+  ladder?: { id: string; name: string; badgeColor: string | null; position: number; earned: boolean;
+             requirement: { key: string; value: number } | null }[];
+  unlocks?: { key: string; value: number }[];
 }
 
 const STATIC_TAB_IDS = ["articles", "wall", "followers", "following", "information"] as const;
@@ -168,17 +192,32 @@ function ArticleRow({ a }: { a: ArticleListItem }) {
 
   return (
     <Link to={`/articles/${a.slug}`} className="profile-articles__row">
+      {/* ⚠ The thumb is always drawn, image or not. An article with no featured
+          image falls back to a gradient from the site's palette rather than a gap —
+          otherwise a list of unillustrated posts loses the row's shape entirely. */}
+      <div
+        className={`profile-articles__thumb${a.featuredImage ? " profile-articles__thumb--img" : ""}`}
+        style={a.featuredImage ? { backgroundImage: `url(${a.featuredImage})` } : undefined}
+      >
+        <span className="profile-articles__read">{t("minRead", { n: a.readTime })}</span>
+      </div>
+
       <div className="profile-articles__body">
-        <div className="profile-articles__title">
-          {a.title || <em>{t("untitled")}</em>}
+        <div className="profile-articles__titlerow">
+          <h3 className="profile-articles__title">
+            {a.title || <em>{t("untitled")}</em>}
+          </h3>
+          {a.category && (
+            <span className="profile-articles__badge">{a.category.name}</span>
+          )}
         </div>
+
+        {a.excerpt && <p className="profile-articles__excerpt">{a.excerpt}</p>}
+
         <div className="profile-articles__meta">
-          {dateLabel} · {t("minRead", { n: a.readTime })} · {t("views", { v: views.toLocaleString() })}
+          {dateLabel} · {t("views", { v: (a.viewCount ?? views).toLocaleString() })} · {t("likeCount", { n: a.likeCount })}
         </div>
       </div>
-      {a.category && (
-        <span className="profile-articles__badge">{a.category.name}</span>
-      )}
     </Link>
   );
 }
@@ -203,12 +242,6 @@ export function ProfileArticlesTab({ profile }: { profile: PublicProfile }) {
 
   return (
     <div className="profile-articles">
-      {profile.isOwn && (
-        <div className="profile-articles__head">
-          <Link to="/articles/new" className="profile-articles__new">{t("newArticle")}</Link>
-        </div>
-      )}
-
       {query.isLoading && <p className="profile-empty">{t("loadingArticles")}</p>}
 
       {!query.isLoading && items.length === 0 && (
@@ -519,6 +552,32 @@ export function ProfilePage() {
     enabled: !!profile?.id && tab === "information",
   });
 
+  /**
+   * The rank rail's data. One request, and only once a profile has resolved — it is
+   * addressed by id, and the page is reached by username.
+   */
+  const { data: progression = null } = useQuery<ProfileProgression>({
+    queryKey: ["profile-progression", profile?.id],
+    queryFn:  () => api.get(`/users/${profile!.id}/progression`),
+    enabled:  !!profile?.id,
+    staleTime: 60_000,
+  });
+
+  /**
+   * A few followers for the rail, NOT the followers tab's list.
+   *
+   * ⚠ Five, not a page of twenty: this is a strip of avatars beside the page, and the
+   * tab beneath it is what a reader clicks when they actually want the list. The
+   * `total` still comes from the profile's own counter, so the number never disagrees
+   * with the stat tile above it.
+   */
+  const { data: followersPreview = null } = useQuery<{ items: { id: string; username: string; avatar: string | null }[]; total: number }>({
+    queryKey: ["profile-followers-preview", profile?.id],
+    queryFn:  () => api.get(`/users/${profile!.id}/followers?page=1&limit=5`),
+    enabled:  !!profile?.id,
+    staleTime: 60_000,
+  });
+
   const pluginTabs = slotRegistry.getProfileTabs();
   const TABS = [
     ...STATIC_TAB_IDS.map((id) => ({ id, label: t(`tabs.${id}`) })),
@@ -626,6 +685,8 @@ export function ProfilePage() {
     tabs: TABS,
     stats,
     infoFields,
+    progression,
+    followers: followersPreview,
     onFollow: () => followMutation.mutate(profile.viewerIsFollowing),
     onBlockToggle: () => { void handleBlockToggle(); },
     followPending: followMutation.isPending,

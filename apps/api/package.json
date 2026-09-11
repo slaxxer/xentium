@@ -36,6 +36,7 @@
     "express-rate-limit": "catalog:",
     "file-type": "^22.0.1",
     "helmet": "catalog:",
+    "image-size": "^2.0.2",
     "ioredis": "catalog:",
     "jose": "catalog:",
     "multer": "catalog:",

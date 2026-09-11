@@ -13,6 +13,12 @@ export const CorePermissions = {
   // Progression system (§38)
   PROGRESSION_MANAGE: "progression.manage",
 
+  // Badges (ADR-0009). Two keys, not one: granting a badge is a routine thing a
+  // moderator does to a member, while editing the catalogue changes what the site
+  // recognises at all — a site can hand out the first without handing over the second.
+  BADGE_MANAGE: "badge.manage",
+  BADGE_ASSIGN: "badge.assign",
+
   // Articles (§33, §46, §47)
   ARTICLE_CREATE: "article.create",
   ARTICLE_EDIT_OWN: "article.edit.own",

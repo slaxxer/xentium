@@ -27,6 +27,14 @@ export const UPLOAD_LIMITS = {
     maxBytes: 512 * KB,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   },
+  // A member's own profile cover. 2 MB is what the design tells them on the
+  // dropzone, and the number a member reads must be the number the server enforces.
+  // GIF is allowed HERE so that "animated covers" can be granted per rank through
+  // `allowedProfileImageTypes` — a type the route refuses could never be unlocked.
+  PROFILE_COVER: {
+    maxBytes: 2 * MB,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+  },
   NAVBAR_LOGO: {
     maxBytes: 2 * MB,
     allowedMimeTypes: ["image/png", "image/svg+xml", "image/webp"],

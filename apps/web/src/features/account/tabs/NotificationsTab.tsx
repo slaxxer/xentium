@@ -35,7 +35,7 @@ function NotifToggle({ label, desc, checked, onChange, disabled }: NotifTogglePr
 
 const IN_APP_ITEMS = [
   { id: "new_follower" }, { id: "profile_activity" }, { id: "mentions" },
-  { id: "article_activity" }, { id: "progression" },
+  { id: "article_activity" }, { id: "progression" }, { id: "badges" },
 ] as const;
 
 const EMAIL_ITEMS = [
@@ -51,7 +51,7 @@ interface NotifPrefs {
 }
 
 const DEFAULTS: NotifPrefs = {
-  inApp: { new_follower: true, profile_activity: true, mentions: true, article_activity: true, progression: true },
+  inApp: { new_follower: true, profile_activity: true, mentions: true, article_activity: true, progression: true, badges: true },
   email: { new_follower: false, profile_activity: false, mentions: false },
 };
 

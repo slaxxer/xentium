@@ -508,6 +508,24 @@
   flex: 1;
   width: 100%;
   background: var(--content-bg);   // content region scope root (ADR 0003); = --c-bg by default
+
+  /**
+   * THE gap between the chrome and the page — one number, the same top and bottom.
+   *
+   * ⚠ It was neither before. The space under the header came from a `spacer` BLOCK
+   * an admin had placed in `chrome.header`, and the space above the footer came from
+   * nothing at all; every page then added its own on top (home 22/40, members 32/48,
+   * profile 24/32), so the seam measured 64, 88 or 96 depending on the route and
+   * vanished entirely the moment someone rearranged the header.
+   *
+   * ⚠ PADDING, not margin, and on `.app-main` specifically: the gap is then INSIDE
+   * the content region and carries `--content-bg`. As a margin it would fall outside
+   * and show the layout's background instead — a stripe of the wrong colour above
+   * and below every page on any site that themes its content region (ADR-0003).
+   *
+   * An admin who wants more still drops a `spacer` in; it adds to this.
+   */
+  padding-block: var(--sp-8);
 }
 
 /* ── Footer ─────────────────────────────────────────── */

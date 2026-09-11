@@ -80,6 +80,14 @@ model User {
   dobDisplay         String    @default("age") @map("dob_display")  // 'hidden' | 'age' | 'date'
   preferredLocale    String?   @map("preferred_locale")  // null = follow resolution chain (§60.4)
   hiddenBadges       String[]  @default([]) @map("hidden_badges")  // Group IDs the user hides from their badge stack, systemwide
+  /// The member's own cover image, relative ("covers/<id>.jpg"). Distinct from the
+  /// `profileCover` BLOCK's background, which an admin sets for every profile — this
+  /// one is personal and wins over it.
+  coverImage         String?   @map("cover_image")
+  /// All-time profile views, GUESTS INCLUDED — deduped per IP the way articles are.
+  /// Deliberately not `count(ncf_profile_views)`: that table holds only named
+  /// visitors and is pruned, so counting it would make the total shrink over time.
+  profileViewCount   Int       @default(0) @map("profile_view_count")
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -118,6 +126,9 @@ model User {
   styleHistories   StyleHistory[]
   invitesCreated   InviteCode[]    @relation("InviteCreated")
   invitesUsed      InviteCode[]    @relation("InviteUsed")
+  badges           UserBadge[]
+  profileViews     ProfileView[] @relation("ProfileViewed")
+  profileViewsMade ProfileView[] @relation("ProfileViewer")
 
   @@map("ncf_users")
 }
@@ -165,9 +176,19 @@ model GroupProgression {
   maxDailyComments         Int?     @map("max_daily_comments")
   maxAttachments           Int?     @map("max_attachments")       // reserved for Phase 14+
 
-  // Profile image limits (§38)
+  // Profile image limits (§38). Apply to BOTH the avatar and the cover.
+  // ⚠ Stored since Phase 7 and enforced nowhere until 2026-09-10 — an admin could
+  // set them and nothing read them. `assertProfileImageAllowed` is now the one
+  // chokepoint both upload routes go through.
   maxProfileImageBytes     Int?     @map("max_profile_image_bytes")
+  /// MIME types this rung may upload. EMPTY = no per-rank restriction; the global
+  /// `UPLOAD_LIMITS` ceiling still applies. Putting `image/gif` here at a senior
+  /// rung is what "animated cover images unlock at Veteran" means.
   allowedProfileImageTypes String[] @default([]) @map("allowed_profile_image_types")
+  /// Whether this rung may set a cover image at all.
+  /// ⚠ Defaults TRUE: covers did not exist before this flag, so defaulting false
+  /// would silently withhold a new feature from every existing group.
+  canUploadCover           Boolean  @default(true) @map("can_upload_cover")
 
   // Badge
   badgeLabel               String?  @map("badge_label")
@@ -187,6 +208,102 @@ model GroupProgression {
 
   @@index([isProgressionGroup, ladderPosition])
   @@map("ncf_group_progression")
+}
+
+// ── Badges (§badges, ADR-0009) — awards an admin grants ──────────────────────
+//
+// A THIRD thing called a badge, and deliberately not the other two: a GROUP badge
+// is membership rendered as a pill (Group.displayOrder, User.hiddenBadges), and a
+// RANK badge is the ladder rung's label (GroupProgression.badgeLabel). This one is
+// an award — granted by hand, held by a user, and never derived from anything.
+
+model Badge {
+  id          String  @id @default(uuid())
+  /// Stable identifier for seeds, themes and plugins. The name is editable; this is not.
+  key         String  @unique
+  name        String
+  description String?
+
+  /// FontAwesome icon name (e.g. "faStar"), tinted with `color`.
+  faIcon      String? @map("fa_icon")
+  /// Tint for the glyph and the pill. Null falls back to the accent token.
+  color       String?
+
+  /// Badge precedence on a card; lower sorts first. Same convention as Group.
+  displayOrder Int     @default(100) @map("display_order")
+  isSystem     Boolean @default(false) @map("is_system")
+
+  /// Whether this badge is EARNED against thresholds, or purely given by hand.
+  /// ⚠ Off by default: a badge an admin creates is a badge an admin hands out, and
+  /// switching this on for every new badge would make the give-away case — the
+  /// simpler and commoner one — the harder one to reach.
+  autoAward Boolean @default(false) @map("auto_award")
+
+  /// The thresholds, when `autoAward` is on: `{ "articles": 10, "forum.posts": 50 }`.
+  /// ⚠ JSON rather than columns because the keys are EXTENSIBLE — a plugin
+  /// contributes its own metrics (the forum's posts and threads) and core cannot
+  /// have a column for something it has never heard of. Keys come from the badge
+  /// criteria registry; a key whose plugin is gone is simply not evaluated.
+  /// ⚠ ALL thresholds must be met, not any: a list of requirements reads that way.
+  criteria Json @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt      @map("updated_at")
+
+  users UserBadge[]
+
+  @@map("ncf_badges")
+}
+
+model UserBadge {
+  userId      String   @map("user_id")
+  badgeId     String   @map("badge_id")
+  user        User     @relation(fields: [userId],  references: [id], onDelete: Cascade)
+  badge       Badge    @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  awardedAt   DateTime @default(now()) @map("awarded_at")
+  /// Granted by the reward sweep rather than by a person.
+  /// ⚠ Never taken back automatically. Earning it was a fact about a moment; undoing
+  /// it because a like was deleted would punish a member for someone else's action.
+  auto        Boolean  @default(false)
+  /// Who granted it. Null once that admin is deleted — the award outlives them.
+  awardedById String?  @map("awarded_by_id")
+  /// Why, in the admin's words. Shown on the badge's tooltip when present.
+  note        String?
+
+  /// A badge is HELD, not accumulated: granting one twice is the same badge.
+  @@id([userId, badgeId])
+  @@index([badgeId])
+  @@map("ncf_user_badges")
+}
+
+// ── Profile views (§profile-visitors) ────────────────────────────────────────
+//
+// Who looked at whose profile. One row PER PAIR, refreshed on a revisit rather
+// than appended to — the card shows "who has been here lately", and a row per page
+// load would make that a list of one person who refreshed.
+//
+// ⚠ Only a logged-in, non-owner visit writes a row. A guest has no identity to
+// record, so a guest bumps `User.profileViewCount` and nothing else, and looking at
+// your own profile counts as neither.
+
+model ProfileView {
+  /// Whose profile was looked at.
+  profileId String   @map("profile_id")
+  /// Who looked.
+  viewerId  String   @map("viewer_id")
+  profile   User     @relation("ProfileViewed",  fields: [profileId], references: [id], onDelete: Cascade)
+  viewer    User     @relation("ProfileViewer",  fields: [viewerId],  references: [id], onDelete: Cascade)
+
+  /// The LAST time they looked, not the first — the card is ordered by it.
+  viewedAt  DateTime @default(now()) @map("viewed_at")
+  /// How many separate visits, for a site that wants to say "seen 12 times".
+  visits    Int      @default(1)
+
+  @@id([profileId, viewerId])
+  /// The card's only query: this profile's visitors, most recent first.
+  @@index([profileId, viewedAt(sort: Desc)])
+  @@map("ncf_profile_views")
 }
 
 model Permission {

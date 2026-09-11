@@ -21,6 +21,7 @@ export const updateGroupProgressionSchema = z.object({
   // Profile image limits
   maxProfileImageBytes:     z.number().int().min(0).nullable().optional(),
   allowedProfileImageTypes: z.array(z.string()).optional(),
+  canUploadCover:           z.boolean().optional(),
 
   // Badge
   badgeLabel:               z.string().max(40).nullable().optional(),

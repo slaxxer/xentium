@@ -55,6 +55,24 @@
     min-width: 0;
     position: sticky;
     top: calc(var(--nav-height) + var(--sp-4));
+
+    /* ⚠ The rail SPACES ITS OWN CARDS, and it has to be the rail that does it.
+       Every block is wrapped in a `display: contents` element, so the cards
+       themselves are the region's children in the box tree — and a card carries
+       padding but no margin, by design, because a block must not decide how far it
+       sits from a sibling it knows nothing about. Stacked as plain blocks they
+       touched: four rail cards read as one tall card with rules across it.
+
+       ⚠ `gap`, not `margin-bottom` on the cards: a block that draws nothing leaves a
+       `display: contents` wrapper that generates no box at all, so it contributes no
+       gap. A margin would have to be cancelled on the last child and would still
+       leave a hole wherever a silent block sat.
+
+       ⚠ The MAIN region deliberately gets none of this — its blocks space themselves
+       with their own `margin-bottom`, and a gap here would double every one of them. */
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
   }
 
   /* A rail that DRAWS NOTHING takes no space, and the body gets the width back.

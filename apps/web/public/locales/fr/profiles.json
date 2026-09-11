@@ -60,5 +60,51 @@
   "tombstoneBy": " par {{mod}}",
   "tombstoneReason": " · Motif : {{reason}}",
   "banned": "Banni",
-  "permanentlyBanned": "Banni définitivement"
+  "permanentlyBanned": "Banni définitivement",
+  "rank": {
+    "progress": "Progression de rang",
+    "atTop": "Au sommet — plus rien à gravir.",
+    "keepGoing": "Continuez à publier pour atteindre le rang suivant.",
+    "remaining": "Encore {{count}} {{metric}} jusqu'à {{rank}}",
+    "remaining_one": "Encore {{count}} {{metric}} jusqu'à {{rank}}",
+    "unlocks": "{{rank}} débloque",
+    "metric": {
+      "articles": "articles",
+      "comments": "commentaires",
+      "likes": "j'aime",
+      "days": "jours",
+      "posts": "messages",
+      "threads": "sujets"
+    },
+    "unlock": {
+      "articleLength": "articles de {{value}} caractères",
+      "dailyArticles": "{{count}} articles par jour",
+      "commentLength": "commentaires de {{value}} caractères",
+      "dailyComments": "{{count}} commentaires par jour",
+      "attachments": "{{count}} pièces jointes par message"
+    }
+  },
+  "badges": {
+    "title": "Badges",
+    "count": "{{held}} sur {{total}}",
+    "locked": "Pas encore obtenu",
+    "seeAll": "Tout voir"
+  },
+  "likeCount": "{{n}} j'aime",
+  "visitors": {
+    "title": "Visiteurs récents",
+    "summary_one": "{{count}} visiteur cette semaine",
+    "summary_other": "{{count}} visiteurs cette semaine",
+    "last": "dernier : {{ago}}"
+  },
+  "cover": {
+    "dropTitle": "Déposez une image d'en-tête, ou parcourez",
+    "lockedTitle": "Les bannières sont un avantage de rang",
+    "spec": "1600 × 400 · JPG, PNG, WebP · jusqu'à 2 Mo",
+    "upload": "Envoyer une bannière",
+    "change": "Changer la bannière",
+    "saved": "Bannière mise à jour",
+    "unlocksAt": "Débloqué au rang {{rank}}",
+    "unavailable": "Indisponible sur ce site"
+  }
 }

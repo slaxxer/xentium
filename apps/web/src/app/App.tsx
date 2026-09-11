@@ -41,6 +41,7 @@ import { UserListPage }      from "../features/admin/pages/UserListPage";
 import { UserDetailPage }    from "../features/admin/pages/UserDetailPage";
 import { ProfileFieldsPage } from "../features/admin/pages/ProfileFieldsPage";
 import { GroupsPage }        from "../features/admin/pages/GroupsPage";
+import { BadgesPage }        from "../features/admin/pages/BadgesPage";
 import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
 import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
 import { ArticlesPage }      from "../features/admin/pages/ArticlesPage";
@@ -133,8 +134,24 @@ function useCustomTokens(installed: boolean) {
      * stylesheet a publish would produce.
      */
     void loadTokenCss({ draft: isDraftLayout() });
-    // Keep every open client in sync with theme changes within a few seconds.
-    startStyleSync();
+
+    /**
+     * Keep every open client in sync with theme changes — EXCEPT the layout editor's
+     * own preview.
+     *
+     * ⚠ The preview re-navigates on every template switch, and each document opened
+     * its own EventSource. The dev proxy does not close the upstream socket when the
+     * client goes away, so the streams accumulated; at SIX — the browser's HTTP/1.1
+     * limit per origin — the page could open no further connection and EVERY request
+     * from it queued forever. The editor then looked frozen: the picker moved, and
+     * the document it asked for never arrived.
+     *
+     * The preview needs no stream anyway. The editor pushes the document and the
+     * pending tokens into it over the `nv:` postMessage bridge, which is more
+     * immediate than a publish-driven version bump and is the whole point of a
+     * preview: it shows what is STAGED, not what is live.
+     */
+    if (!isLayoutPreview()) startStyleSync();
     // A layout publish bumps the same style version (ADR-0005), so page
     // structure refreshes over the existing stream instead of a second one.
     return onStyleVersionChange(() => {
@@ -267,6 +284,7 @@ function buildRouter() {
           { path: "users/:id",        element: <UserDetailPage /> },
           { path: "profile-fields",   element: <ProfileFieldsPage /> },
           { path: "groups",           element: <GroupsPage /> },
+          { path: "badges",           element: <BadgesPage /> },
           { path: "permissions",      element: <PermissionsPage /> },
           { path: "progression",      element: <ProgressionPage /> },
           { path: "articles",         element: <ArticlesPage /> },

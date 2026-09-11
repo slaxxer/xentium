@@ -2,6 +2,7 @@ import { Router } from "express";
 import { accountController } from "./account.controller.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { uploadSingle } from "../../shared/middleware/upload.js";
+import { requireMaxDimensions } from "../../shared/middleware/imageDimensions.js";
 
 export const accountRouter: Router = Router();
 
@@ -10,6 +11,14 @@ accountRouter.use(requireAuth);
 
 accountRouter.patch("/profile", accountController.updateProfile);
 accountRouter.post("/avatar", ...uploadSingle("AVATAR", "file"), accountController.uploadAvatar);
+
+// A member's own cover band. ⚠ Dimensions bounded generously rather than exactly:
+// the design ASKS for 1600x400, but a cover is decorative and refusing a 1500x380
+// crop over a spec would be pedantry. The ceiling exists to stop a 6000px original
+// being served to every visitor of the profile.
+accountRouter.post("/cover", ...uploadSingle("PROFILE_COVER", "file"),
+  requireMaxDimensions(3200, 1200), accountController.uploadCover);
+accountRouter.delete("/cover", accountController.removeCover);
 accountRouter.patch("/username", accountController.changeUsername);
 accountRouter.post("/email", accountController.requestEmailChange);
 accountRouter.post("/email/verify-code", accountController.verifyEmailCode);

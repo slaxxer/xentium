@@ -1,0 +1,84 @@
+/**
+ * A badge is a GLYPH in a tinted circle. Uploads were removed deliberately: a
+ * 32x32 image and a FontAwesome glyph never sat at the same size in a mixed row,
+ * and a catalogue where every mark is drawn the same way is worth more than the
+ * freedom to upload one.
+ *
+ * ⚠ `--badge-color` is set per badge as an inline custom property, not a hardcoded
+ * colour: the pill's tint, its border and the glyph all derive from that one value,
+ * so a badge follows the admin's choice without any per-badge CSS.
+ */
+.nv-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.nv-badge {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  color: var(--badge-color, var(--c-accent));
+  background: color-mix(in srgb, var(--badge-color, var(--c-accent)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--badge-color, var(--c-accent)) 34%, transparent);
+  overflow: hidden;
+
+  /**
+   * ⚠ The mark has its OWN measure rather than riding on `font-size`.
+   *
+   * A glyph is an SVG sized in `em`, so it inherited whatever `font-size` a variant
+   * happened to set — and `--locked` sets 11px for its "+N" TEXT, which quietly
+   * shrank every padlock sitting next to a 15px earned glyph in the same row.
+   * `--badge-mark` separates the two jobs: text keeps `font-size`, marks do not.
+   *
+   * ⚠ HEIGHT only. A FontAwesome icon's width follows its own aspect, so pinning
+   * width too would squash a wide glyph — and height is what the eye lines up.
+   */
+  svg {
+    height: var(--badge-mark);
+    width: auto;
+  }
+
+  &--sm { width: 22px; height: 22px; font-size: 11px;   --badge-mark: 11px; }
+  &--md { width: 32px; height: 32px; font-size: 15px;   --badge-mark: 15px; }
+
+  /* The overflow count. A pill rather than a circle, because a number needs the
+     width and a two-digit "+12" in a 22px circle is unreadable. */
+  &--more {
+    width: auto;
+    min-width: 22px;
+    padding: 0 6px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 10.5px;
+    color: var(--c-fg-muted);
+    background: var(--c-surface);
+    border-color: var(--c-border);
+  }
+}
+
+/* A badge with neither an upload nor a glyph still has to occupy its space —
+   otherwise a catalogue entry that is mid-edit makes the row jump. */
+.nv-badge__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* An award not yet earned. Dashed and drained of colour so the grid reads as
+   "these are the ones you could have" rather than as more of the same. */
+.nv-badge--locked {
+  color: var(--c-fg-subtle);
+  background: var(--c-surface);
+  border-style: dashed;
+  border-color: var(--c-border);
+
+  /* ⚠ For the "+N" TEXT this variant also draws, nothing else. It used to shrink
+     the padlock too, because a glyph is measured in `em`; `--badge-mark` above is
+     what keeps a locked mark the same size as an earned one. */
+  font-size: 11px;
+  font-weight: 800;
+}

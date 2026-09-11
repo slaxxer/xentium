@@ -94,5 +94,8 @@
     "siteBadge": "Website",
     "note": "Deine Wahl, auf diesem Gerät. Für alle anderen ändert sich nichts.",
     "activeBadge": "Aktiv"
+  },
+  "badges": {
+    "held": "Abzeichen {{name}}"
   }
 }

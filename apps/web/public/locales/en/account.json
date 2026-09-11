@@ -84,6 +84,10 @@
       "progression": {
         "label": "Level-ups",
         "desc": "When you get promoted to a new level"
+      },
+      "badges": {
+        "label": "Badges",
+        "desc": "When you earn a new badge"
       }
     }
   },
