@@ -107,7 +107,7 @@ Xentium reads a single **`.env` at the repo root** — but you normally never wr
 
 | Variable | Notes |
 |---|---|
-| `DATABASE_URL` | e.g. `postgresql://nodevo:nodevo@localhost:5432/nodevo` (matches the Docker defaults) |
+| `DATABASE_URL` | e.g. `postgresql://xentium:xentium@localhost:5432/xentium` (matches the Docker defaults) |
 | `COOKIE_SECRET` | ≥ 16 chars — signs cookies |
 | `JWT_SECRET` | ≥ 32 chars — signs HS256 access tokens |
 | `DUMMY_ARGON2_HASH` | a throwaway argon2 hash used to equalize login timing (prevents account enumeration) |
@@ -143,7 +143,7 @@ pnpm --filter @xentium/api exec node --input-type=commonjs \
 A complete dev `.env`:
 
 ```dotenv
-DATABASE_URL="postgresql://nodevo:nodevo@localhost:5432/nodevo"
+DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"
 REDIS_URL="redis://localhost:6379"
 APP_URL="http://localhost:5173"
 COOKIE_SECRET="<openssl rand -hex 16>"

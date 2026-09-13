@@ -41,31 +41,35 @@ silent security change, in exchange for a string no user reads.
   keypair it registered. It moves with the marketplace, as a keyed migration.
 - **`REDIS_KEY_PREFIX`**. A cold prefix silently un-revokes every revoked
   session — the revocation list lives under it.
-- **The dev database role, name and docker volumes.** The existing volume owns
-  role `nodevo`; renaming the volume starts an empty database.
+- **`nodevo.secretbox.v1`** remains the only name in the running system, and the
+  docker volumes, role and database are now `xentium` — renamed by starting from
+  an empty database, which is the only way a volume rename can go.
 - ⚠ The DDL ledger `xcf_plugin_migrations` and the import map’s `xentium_id`
   column were renamed too (migration `20260913150000_rename_nodevo_id_column`);
   no database object carries the old name any more.
 
-## Compatibility, and when to drop it
+## Compatibility: what was kept, and what is gone
 
-Three aliases exist so nothing already deployed breaks. All three go after
-`1.0.0-alpha`:
+The three aliases that carried the old spellings are **removed** — every
+first-party plugin has been rebuilt and every installation is being reinstalled
+from empty, so nothing reads them any more:
 
-1. `window.__NODEVO_HOST__` still points at the host object. **Every plugin UMD
-   bundle in the wild reads it by that name** — without the alias, every plugin's
-   UI blanks until it is rebuilt.
-2. `ctx.errors.NodevoError` still resolves to `XentiumError`, for plugin server
-   bundles built against the old host.
-3. Core sends BOTH sets of signed headers, and the marketplace accepts either.
-   The header names are not part of the canonical signing string, so the two
-   hosts can be deployed in any order.
+- `window.__NODEVO_HOST__` (the host object is `__XENTIUM_HOST__` only),
+- `ctx.errors.NodevoError`,
+- the dual-sent `X-Nodevo-*` signed headers.
 
-And one that outlives them: `legacyPluginIds.ts` lets a **new** plugin id answer
-to its **old** one when an entitlement is matched, because an entitlement issued
-before the rename names the old product id. One direction only — nothing makes
-an old id valid on its own, and a third-party plugin that happens to use a
-`nodevo-` prefix is never assumed to be ours.
+⚠ **Removing the dual-send makes deploy order matter.** A marketplace that has
+not been updated reads only `x-nodevo-*` and will reject every signed request
+from a renamed instance. **Deploy the marketplace first.** Its reader still
+accepts either spelling, so the reverse order — an old instance against a new
+marketplace — stays safe.
+
+One alias survives on purpose: `legacyPluginIds.ts`, which lets a new plugin id
+answer to its old one when an entitlement is matched. An entitlement issued
+before the rename names the old product id, so this must live until the
+marketplace catalogue has renamed its products — otherwise every paid plugin
+fails its own licence check. One direction only: nothing makes an old id valid
+on its own, and no `nodevo-` prefix is assumed to be ours.
 
 ## Upgrading an existing install
 
