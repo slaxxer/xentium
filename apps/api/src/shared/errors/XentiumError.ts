@@ -6,4 +6,4 @@
  * code should import from `@nodevo/errors` directly; this shim goes away once
  * they have all been moved.
  */
-export { NodevoError } from "@nodevo/errors";
+export { XentiumError } from "@nodevo/errors";

@@ -10,7 +10,7 @@
  */
 
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../errors/NodevoError.js";
+import { XentiumError } from "../errors/XentiumError.js";
 import { NEC } from "@nodevo/contracts";
 
 /** Resolve the effective progression limits for a user. */
@@ -45,7 +45,7 @@ export async function getEffectiveProgressionGroupId(
 }
 
 function throwTooLong(max: number, actual: number): never {
-  throw new NodevoError({
+  throw new XentiumError({
     code: NEC.PERM_CONTENT_TOO_LONG,
     httpStatus: 422,
     message: `Content too long for your current level. Maximum is ${max.toLocaleString()} characters (yours: ${actual.toLocaleString()}).`,
@@ -102,7 +102,7 @@ export async function enforceDailyArticleLimit(userId: string): Promise<void> {
   });
 
   if (todayCount >= prog.maxDailyArticles) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.PERM_DAILY_LIMIT,
       httpStatus: 422,
       message: `Daily article limit reached. Your current level allows ${prog.maxDailyArticles} article${prog.maxDailyArticles !== 1 ? "s" : ""} per day.`,
@@ -130,7 +130,7 @@ export async function enforceDailyCommentLimit(userId: string): Promise<void> {
   });
 
   if (todayCount >= prog.maxDailyComments) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.PERM_DAILY_LIMIT,
       httpStatus: 422,
       message: `Daily comment limit reached. Your current level allows ${prog.maxDailyComments} comment${prog.maxDailyComments !== 1 ? "s" : ""} per day.`,

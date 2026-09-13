@@ -2,7 +2,7 @@ import { z, type ZodType } from "zod";
 import type { ScheduledTask } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import {
   previewRuns,
@@ -26,7 +26,7 @@ const FALLBACK_CRON = "0 4 * * *";
 function resolveAction(actionKey: string) {
   const action = getAction(actionKey);
   if (!action) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.API_VALIDATION, httpStatus: 422,
       message: `Unknown action "${actionKey}".`,
     });
@@ -39,7 +39,7 @@ function validateParams(actionKey: string, params: unknown) {
   const action = resolveAction(actionKey);
   const parsed = action.params.safeParse(params ?? {});
   if (!parsed.success) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.API_VALIDATION, httpStatus: 422,
       message: `Invalid parameters for "${action.label}": ${parsed.error.issues.map(i => i.message).join("; ")}`,
     });
@@ -142,7 +142,7 @@ export const scheduledTaskService = {
 
   async get(id: string) {
     const task = await prisma.scheduledTask.findUnique({ where: { id } });
-    if (!task) throw NodevoError.notFound("Scheduled task not found");
+    if (!task) throw XentiumError.notFound("Scheduled task not found");
     return shapeTask(task);
   },
 
@@ -175,7 +175,7 @@ export const scheduledTaskService = {
 
   async update(id: string, input: UpdateTaskInput) {
     const existing = await prisma.scheduledTask.findUnique({ where: { id } });
-    if (!existing) throw NodevoError.notFound("Scheduled task not found");
+    if (!existing) throw XentiumError.notFound("Scheduled task not found");
 
     const actionKey = input.actionKey ?? existing.actionKey;
     const params    = input.params !== undefined || input.actionKey !== undefined
@@ -206,7 +206,7 @@ export const scheduledTaskService = {
 
   async remove(id: string) {
     const existing = await prisma.scheduledTask.findUnique({ where: { id } });
-    if (!existing) throw NodevoError.notFound("Scheduled task not found");
+    if (!existing) throw XentiumError.notFound("Scheduled task not found");
     // Scheduler first: a surviving scheduler with no row is the failure mode
     // that fires forever, whereas a row with no scheduler is simply inert.
     await queues.scheduledTask.removeJobScheduler(schedulerIdFor(id)).catch(() => {});
@@ -217,7 +217,7 @@ export const scheduledTaskService = {
    *  run only — carried in the payload, so it cannot race a scheduled run. */
   async runNow(id: string, dryRun?: boolean) {
     const task = await prisma.scheduledTask.findUnique({ where: { id } });
-    if (!task) throw NodevoError.notFound("Scheduled task not found");
+    if (!task) throw XentiumError.notFound("Scheduled task not found");
     await queues.scheduledTask.add("scheduled-task", { taskId: id, ...(dryRun !== undefined && { dryRun }) });
     return { ok: true };
   },

@@ -1,6 +1,6 @@
 import { buildPaginationMeta } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
@@ -151,7 +151,7 @@ export const moderationService = {
     assignedTo?: string | null;
   }) {
     const report = await prisma.moderationReport.findUnique({ where: { id } });
-    if (!report) throw NodevoError.notFound("Report not found");
+    if (!report) throw XentiumError.notFound("Report not found");
 
     const updated = await prisma.moderationReport.update({
       where: { id },
@@ -185,13 +185,13 @@ export const moderationService = {
       where:   { id: data.userId },
       include: { groups: { include: { group: { select: { key: true, name: true } } } } },
     });
-    if (!user) throw NodevoError.notFound("User not found");
-    if (data.userId === data.issuedById) throw NodevoError.forbidden("Cannot warn yourself");
+    if (!user) throw XentiumError.notFound("User not found");
+    if (data.userId === data.issuedById) throw XentiumError.forbidden("Cannot warn yourself");
 
     const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
     const staffGroup = user.groups.find((ug) => STAFF_KEYS.has(ug.group.key));
     if (staffGroup) {
-      throw NodevoError.forbidden(`You cannot warn a ${staffGroup.group.name} member`);
+      throw XentiumError.forbidden(`You cannot warn a ${staffGroup.group.name} member`);
     }
 
     const warning = await prisma.moderationWarning.create({
@@ -229,8 +229,8 @@ export const moderationService = {
 
   async pardonWarning(id: string, adminId: string) {
     const warning = await prisma.moderationWarning.findUnique({ where: { id } });
-    if (!warning) throw NodevoError.notFound("Warning not found");
-    if (warning.status !== "active") throw NodevoError.forbidden("Warning is not active");
+    if (!warning) throw XentiumError.notFound("Warning not found");
+    if (warning.status !== "active") throw XentiumError.forbidden("Warning is not active");
 
     await prisma.moderationWarning.update({
       where: { id },
@@ -318,7 +318,7 @@ export const moderationService = {
 
   async updateCase(id: string, actorId: string, status: "reviewed" | "dismissed") {
     const existing = await prisma.moderationCase.findUnique({ where: { id } });
-    if (!existing) throw NodevoError.notFound("Case not found");
+    if (!existing) throw XentiumError.notFound("Case not found");
 
     const updated = await prisma.moderationCase.update({
       where: { id },
@@ -374,7 +374,7 @@ export const moderationService = {
     const BAN_REASON  = "Multi-account policy violation — multiple accounts detected on the same device";
 
     const existing = await prisma.moderationCase.findUnique({ where: { id: caseId } });
-    if (!existing) throw NodevoError.notFound("Case not found");
+    if (!existing) throw XentiumError.notFound("Case not found");
 
     const users = await prisma.user.findMany({
       where:   { id: { in: existing.linkedUserIds } },
@@ -498,7 +498,7 @@ export const moderationService = {
 
   async moderatorDeleteArticleComment(commentId: string, actorId: string, reason: string) {
     const comment = await prisma.articleComment.findUnique({ where: { id: commentId } });
-    if (!comment || comment.deletedAt) throw NodevoError.notFound("Comment not found");
+    if (!comment || comment.deletedAt) throw XentiumError.notFound("Comment not found");
 
     await prisma.$transaction(async (tx) => {
       await tx.articleComment.update({
@@ -530,7 +530,7 @@ export const moderationService = {
 
   async moderatorDeleteProfileComment(commentId: string, actorId: string, reason: string) {
     const comment = await prisma.profileComment.findUnique({ where: { id: commentId } });
-    if (!comment || comment.deletedAt) throw NodevoError.notFound("Comment not found");
+    if (!comment || comment.deletedAt) throw XentiumError.notFound("Comment not found");
 
     await prisma.profileComment.update({
       where: { id: commentId },
@@ -834,15 +834,15 @@ export const moderationService = {
       where:   { id: data.userId },
       include: { groups: { include: { group: { select: { key: true, name: true } } } } },
     });
-    if (!user) throw NodevoError.notFound("User not found");
-    if (data.userId === data.issuedById) throw NodevoError.forbidden("Cannot ban yourself");
+    if (!user) throw XentiumError.notFound("User not found");
+    if (data.userId === data.issuedById) throw XentiumError.forbidden("Cannot ban yourself");
 
     const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
     const staffGroup = user.groups.find((ug) => STAFF_KEYS.has(ug.group.key));
-    if (staffGroup) throw NodevoError.forbidden(`You cannot ban a ${staffGroup.group.name} member`);
+    if (staffGroup) throw XentiumError.forbidden(`You cannot ban a ${staffGroup.group.name} member`);
 
     const alreadyBanned = await prisma.moderationBan.findFirst({ where: { userId: data.userId, status: "active" } });
-    if (alreadyBanned) throw NodevoError.forbidden("User is already banned");
+    if (alreadyBanned) throw XentiumError.forbidden("User is already banned");
 
     await prisma.$transaction(async (tx) => {
       await tx.moderationBan.create({
@@ -891,7 +891,7 @@ export const moderationService = {
         },
       },
     });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
 
     // Warnings and bans are loaded lazily per-tab by the canvas (getUserWarnings /
     // getUserBans). The profile only needs the active ban to render the "Currently
@@ -1002,12 +1002,12 @@ export const moderationService = {
       prisma.user.findUnique({ where: { id: userId }, select: { id: true, ...groupSelect } }),
       prisma.user.findUnique({ where: { id: actorId }, select: { id: true, ...groupSelect } }),
     ]);
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
 
     const rank = (u: { groups: { group: { displayOrder: number } }[] }) =>
       u.groups.length ? Math.min(...u.groups.map((ug) => ug.group.displayOrder)) : Infinity;
     if (actor && rank(user) < rank(actor)) {
-      throw NodevoError.forbidden("You cannot log out a higher-ranked user");
+      throw XentiumError.forbidden("You cannot log out a higher-ranked user");
     }
 
     const { count } = await prisma.session.updateMany({
@@ -1031,7 +1031,7 @@ export const moderationService = {
 
   async liftBanById(banId: string, liftedById: string) {
     const ban = await prisma.moderationBan.findUnique({ where: { id: banId } });
-    if (!ban || ban.status !== "active") throw NodevoError.notFound("Active ban not found");
+    if (!ban || ban.status !== "active") throw XentiumError.notFound("Active ban not found");
 
     await prisma.$transaction(async (tx) => {
       await tx.moderationBan.update({ where: { id: banId }, data: { status: "lifted", liftedAt: new Date(), liftedBy: liftedById } });

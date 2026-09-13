@@ -19,11 +19,11 @@ export function NotFoundPage() {
     <main className="nf">
       <div className="nf__ghost" aria-hidden="true">404</div>
 
-      <a className="nf__brand" href="/" aria-label="Nodevo home">
+      <a className="nf__brand" href="/" aria-label="Xentium home">
         <span className="nf__logomark" aria-hidden="true">
           <FontAwesomeIcon icon={faComments} />
         </span>
-        <span className="nf__wordmark">Nodevo</span>
+        <span className="nf__wordmark">Xentium</span>
       </a>
 
       <div className="nf__content">

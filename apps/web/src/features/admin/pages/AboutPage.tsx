@@ -163,7 +163,7 @@ export function AboutPage() {
           <div className="ab-hero__glow" />
           <div className="ab-hero__mark"><AcpIcon name="zap" size={32} stroke={2} /></div>
           <div className="ab-hero__id">
-            <h2>Nodevo</h2>
+            <h2>Xentium</h2>
             <p className="ab-hero__meta">
               <b>v{health?.version ?? "…"}</b> · {t("about.tagline")}
             </p>

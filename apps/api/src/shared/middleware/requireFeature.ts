@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { NodevoError } from "../errors/NodevoError.js";
+import { XentiumError } from "../errors/XentiumError.js";
 import { NEC } from "@nodevo/contracts";
 import { isFeatureEnabled, type FeatureKey } from "../../modules/site/site.service.js";
 
@@ -11,7 +11,7 @@ export function requireFeature(feature: FeatureKey): RequestHandler {
       .then((on) =>
         on
           ? next()
-          : next(new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Not found" })),
+          : next(new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Not found" })),
       )
       .catch(next);
   };

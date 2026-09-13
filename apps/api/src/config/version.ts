@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
  * The canonical platform version — single source of truth is the api
  * package.json (kept in lockstep across all workspace packages by
  * `node scripts/set-version.mjs <version>`). Surfaced in /api/health and
- * ACP → About, and compared against plugin manifests' min/maxNodevoVersion.
+ * ACP → About, and compared against plugin manifests' min/maxXentiumVersion.
  *
  * Versioning policy (SemVer): prerelease identifiers mark cuts, not commits —
  * `1.0.0-alpha.0` means "working toward alpha.1". Bump + tag only when a

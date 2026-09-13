@@ -239,7 +239,7 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
       ) : (
         <>
           <span className="pub-nav__logomark" aria-hidden><FontAwesomeIcon icon={faCircleNodes} /></span>
-          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "nodevo"}</span>}
+          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "xentium"}</span>}
         </>
       )}
     </NavLink>

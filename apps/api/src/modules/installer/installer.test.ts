@@ -41,8 +41,8 @@ async function resetDb() {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
 }
 
-const ADMIN = { email: "admin@nodevo.test", username: "root", password: "correct horse battery" };
-const SITE = { siteName: "Nodevo Test", siteUrl: "https://test.local", locale: "en" };
+const ADMIN = { email: "admin@xentium.test", username: "root", password: "correct horse battery" };
+const SITE = { siteName: "Xentium Test", siteUrl: "https://test.local", locale: "en" };
 
 let app: Express;
 

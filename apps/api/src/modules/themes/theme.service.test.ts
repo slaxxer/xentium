@@ -348,7 +348,7 @@ describe("export", () => {
 function pack(files: Record<string, string | Buffer>, manifest?: Record<string, unknown>): Buffer {
   const zip = new AdmZip();
   zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({
-    ...META, minNodevoVersion: "1.0", ...manifest,
+    ...META, minXentiumVersion: "1.0", ...manifest,
   })));
   for (const [name, body] of Object.entries(files)) {
     zip.addFile(name, typeof body === "string" ? Buffer.from(body) : body);
@@ -596,7 +596,7 @@ describe("style variants", () => {
 describe("theme inheritance", () => {
   const pkg = (extra?: Record<string, unknown>) => {
     const zip = new AdmZip();
-    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minNodevoVersion: "1.0", ...extra })));
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0", ...extra })));
     for (const key of ["home", "members"] as CoreTemplateKey[]) {
       zip.addFile(`${THEME_PATHS.layouts}${key}.json`,
         Buffer.from(JSON.stringify(DEFAULT_LAYOUTS[key])));
@@ -660,7 +660,7 @@ describe("theme inheritance", () => {
  * The two were never really two formats: a style pack is `manifest.json` plus a
  * `:root`-only light/dark pair, which is a strict subset of a theme package. What
  * actually differed was the paperwork — a theme manifest requires `id`, `vendor`,
- * `version` and `minNodevoVersion`, and a style pack carried only `name` — so the
+ * `version` and `minXentiumVersion`, and a style pack carried only `name` — so the
  * "strict superset" this file has claimed since it was written was true of the files
  * and false of the manifest. One ingestion path now, which is the point.
  */
@@ -780,12 +780,12 @@ describe("rejections are actionable", () => {
     expect(err.message).toContain("id:");
     expect(err.message).toContain("vendor:");
     expect(err.message).toContain("version:");
-    expect(err.message).toContain("minNodevoVersion:");
+    expect(err.message).toContain("minXentiumVersion:");
   });
 
   it("names the file when a layout is the problem", async () => {
     const zip = new AdmZip();
-    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minNodevoVersion: "1.0" })));
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0" })));
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify({ templateKey: "home" , regions: { main: [{ id: "x" }] } })));
     const err = await rejectionOf(themeService.importTheme(zip.toBuffer(), "user-1"));
     expect(err.message).toContain("layouts/home.json");

@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { userRepository } from "./users.repository.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
@@ -57,7 +57,7 @@ async function assertFollowListVisible(
   });
   const settings = (row?.settings ?? {}) as Record<string, unknown>;
   if (settings[key] === false) {
-    throw new NodevoError({ code: "NEC-USER-4014", httpStatus: 403, message: "This list is private" });
+    throw new XentiumError({ code: "NEC-USER-4014", httpStatus: 403, message: "This list is private" });
   }
 }
 
@@ -78,7 +78,7 @@ async function getDobLabelForUser(userId: string, dobDisplay: string): Promise<s
 export const userService = {
   async getPublicProfile(username: string, viewerId?: string) {
     const user = await userRepository.findByUsername(username);
-    if (!user) throw new NodevoError({ code: 'NEC-USER-1001', httpStatus: 404, message: 'User not found' });
+    if (!user) throw new XentiumError({ code: 'NEC-USER-1001', httpStatus: 404, message: 'User not found' });
 
     const groups = await prisma.userGroup.findMany({
       where: { userId: user.id },
@@ -174,7 +174,7 @@ export const userService = {
 
   async followUser(followerId: string, followingId: string) {
     if (followerId === followingId) {
-      throw new NodevoError({ code: 'NEC-USER-4001', httpStatus: 400, message: 'Cannot follow yourself' });
+      throw new XentiumError({ code: 'NEC-USER-4001', httpStatus: 400, message: 'Cannot follow yourself' });
     }
     const already = await userRepository.isFollowing(followerId, followingId);
     if (already) return;
@@ -211,7 +211,7 @@ export const userService = {
 
   async createProfileComment(profileUserId: string, authorId: string, body: string) {
     if (profileUserId === authorId) {
-      throw new NodevoError({ code: 'NEC-USER-4002', httpStatus: 400, message: 'Cannot comment on your own profile' });
+      throw new XentiumError({ code: 'NEC-USER-4002', httpStatus: 400, message: 'Cannot comment on your own profile' });
     }
     const comment = await userRepository.createProfileComment({ profileUserId, authorId, body });
 
@@ -271,9 +271,9 @@ export const userService = {
 
   async updateProfileComment(commentId: string, body: string, userId: string) {
     const comment = await userRepository.getProfileCommentById(commentId);
-    if (!comment) throw new NodevoError({ code: 'NEC-USER-4003', httpStatus: 404, message: 'Comment not found' });
+    if (!comment) throw new XentiumError({ code: 'NEC-USER-4003', httpStatus: 404, message: 'Comment not found' });
     if (comment.authorId !== userId) {
-      throw new NodevoError({ code: 'NEC-USER-4004', httpStatus: 403, message: "Cannot edit another user's comment" });
+      throw new XentiumError({ code: 'NEC-USER-4004', httpStatus: 403, message: "Cannot edit another user's comment" });
     }
     // Check edit window (optional, can be done in service)
     return userRepository.updateProfileComment(commentId, body, userId);
@@ -281,11 +281,11 @@ export const userService = {
 
   async deleteProfileComment(commentId: string, userId: string, isModerator = false) {
     const comment = await userRepository.getProfileCommentById(commentId);
-    if (!comment) throw new NodevoError({ code: 'NEC-USER-4003', httpStatus: 404, message: 'Comment not found' });
+    if (!comment) throw new XentiumError({ code: 'NEC-USER-4003', httpStatus: 404, message: 'Comment not found' });
     const isOwner = comment.authorId === userId;
     const isProfileOwner = comment.profileUserId === userId;
     if (!isOwner && !isProfileOwner && !isModerator) {
-      throw new NodevoError({ code: 'NEC-USER-4005', httpStatus: 403, message: 'Not authorized to delete this comment' });
+      throw new XentiumError({ code: 'NEC-USER-4005', httpStatus: 403, message: 'Not authorized to delete this comment' });
     }
     const deletedBy = isModerator ? userId : isOwner ? userId : comment.profileUserId;
     return userRepository.softDeleteProfileComment(commentId, deletedBy);
@@ -303,7 +303,7 @@ export const userService = {
 
   async blockUser(blockerId: string, blockedId: string) {
     if (blockerId === blockedId) {
-      throw new NodevoError({ code: 'NEC-USER-4006', httpStatus: 400, message: 'Cannot block yourself' });
+      throw new XentiumError({ code: 'NEC-USER-4006', httpStatus: 400, message: 'Cannot block yourself' });
     }
     const already = await userRepository.isBlocking(blockerId, blockedId);
     if (already) return;
@@ -371,7 +371,7 @@ export const userService = {
       select: { id: true, authorId: true, profileUserId: true, deletedAt: true },
     });
     if (!comment || comment.deletedAt) {
-      throw new NodevoError({ code: 'NEC-USER-4007', httpStatus: 404, message: 'Comment not found' });
+      throw new XentiumError({ code: 'NEC-USER-4007', httpStatus: 404, message: 'Comment not found' });
     }
 
     let isNew = false;

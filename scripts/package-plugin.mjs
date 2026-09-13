@@ -1,4 +1,4 @@
-// Build and package a Nodevo plugin into a distributable .nvplugin (ZIP) file.
+// Build and package a Xentium plugin into a distributable .nvplugin (ZIP) file.
 //
 // Usage:
 //   node scripts/package-plugin.mjs [pluginDir] [outDir] [--no-build]

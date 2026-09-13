@@ -9,7 +9,7 @@ import type { Queue } from "bullmq";
 import { NEC } from "@nodevo/contracts";
 import { queues } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
-import { NodevoError } from "../shared/errors/NodevoError.js";
+import { XentiumError } from "../shared/errors/XentiumError.js";
 import { bustSettingsCache } from "../shared/utils/settings.js";
 
 export interface ScheduledJobDef {
@@ -146,13 +146,13 @@ export function previewRuns(pattern: string, tz: string | undefined, minInterval
   try {
     it = parser.parseExpression(pattern, { tz: tz || "UTC", currentDate: new Date() });
   } catch {
-    throw new NodevoError({ code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
+    throw new XentiumError({ code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
   }
   const runs: Date[] = [];
   for (let i = 0; i < count; i++) runs.push(it.next().toDate());
   const gapSec = (runs[1]!.getTime() - runs[0]!.getTime()) / 1000;
   if (gapSec < minIntervalSec) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422,
       message: `Schedule runs too frequently — minimum is once every ${Math.round(minIntervalSec / 60)} minutes.`,
     });
@@ -205,7 +205,7 @@ export async function applyJobSchedule(def: ScheduledJobDef, cfg: JobScheduleCon
  * code default.
  *
  * Every install ships the same `defaultCron`, so "0 2 * * *" on a job that calls
- * the license server means every Nodevo instance in the world contacts the
+ * the license server means every Xentium instance in the world contacts the
  * marketplace inside the same minute — two synchronised global spikes a day into
  * a service that is idle the rest of the time, forcing it to be provisioned for
  * peak rather than average. Spreading the default over the full day fixes that,

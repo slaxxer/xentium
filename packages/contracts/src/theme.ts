@@ -50,8 +50,8 @@ export const themeManifestSchema = z.object({
   vendor:  z.string().min(1),
 
   /** Mirrors the plugin manifest rather than inventing a second convention. */
-  minNodevoVersion: z.string().regex(/^\d+\.\d+/, 'minNodevoVersion must be semver'),
-  maxNodevoVersion: z.string().regex(/^\d+\./).optional(),
+  minXentiumVersion: z.string().regex(/^\d+\.\d+/, 'minXentiumVersion must be semver'),
+  maxXentiumVersion: z.string().regex(/^\d+\./).optional(),
   description:      z.string().max(500).optional(),
 
   /** The layout schema authored against — surfaced, not enforced: an unknown block is

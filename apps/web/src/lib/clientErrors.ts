@@ -102,7 +102,7 @@ export function describeError(error: unknown, opts: DescribeOptions = {}): Clien
  */
 export function formatReport(r: ClientErrorReport): string {
   const lines = [
-    `Nodevo client error ${r.reference}`,
+    `Xentium client error ${r.reference}`,
     `Time:    ${new Date(r.at).toISOString()}`,
     `Route:   ${r.route || "(unknown)"}`,
     `Kind:    ${r.kind}`,
@@ -122,5 +122,5 @@ export function formatReport(r: ClientErrorReport): string {
  * outcome, so this is worth the noise.
  */
 export function logClientError(report: ClientErrorReport, error: unknown): void {
-  console.error(`[nodevo] ${report.reference} (${report.kind}) at ${report.route}:`, error);
+  console.error(`[xentium] ${report.reference} (${report.kind}) at ${report.route}:`, error);
 }

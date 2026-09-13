@@ -1,5 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "@nodevo/contracts";
 import { getSetting } from "../../shared/utils/settings.js";
 import {
@@ -14,7 +14,7 @@ import { sendEmail, verifySmtp, isEmailConfigured } from "../../infrastructure/e
 
 /** Sample values so a test send and the ACP preview show something realistic. */
 async function sampleVars(): Promise<Record<string, string>> {
-  const siteName = await getSetting<string>("site.name", "Nodevo");
+  const siteName = await getSetting<string>("site.name", "Xentium");
   const siteUrl = await getSetting<string>("site.url", "");
   return {
     site_name: siteName,
@@ -55,7 +55,7 @@ export const emailAdminService = {
 
   async getTemplate(key: EmailTemplateKey) {
     const def = EMAIL_TEMPLATE_DEFAULTS[key];
-    if (!def) throw new NodevoError({ code: NEC.EMAIL_TEMPLATE_UNKNOWN, httpStatus: 404, message: "Unknown template" });
+    if (!def) throw new XentiumError({ code: NEC.EMAIL_TEMPLATE_UNKNOWN, httpStatus: 404, message: "Unknown template" });
     const eff = await getEffectiveTemplate(key);
     return { key, ...eff, placeholders: def.placeholders, defaultSubject: def.subject, defaultBody: def.body };
   },
@@ -87,7 +87,7 @@ export const emailAdminService = {
 
   async sendTest(to: string, key: EmailTemplateKey) {
     if (!(await isEmailConfigured())) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.EMAIL_NOT_CONFIGURED,
         httpStatus: 400,
         message: "No SMTP host configured.",
@@ -96,7 +96,7 @@ export const emailAdminService = {
     // Surface a bad host/port as a clear error instead of a generic send failure.
     const check = await verifySmtp();
     if (!check.ok) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.EMAIL_SEND_FAILED,
         httpStatus: 502,
         message: `SMTP connection failed: ${check.error ?? "unknown"}`,
@@ -106,7 +106,7 @@ export const emailAdminService = {
     try {
       await sendEmail(to, subject, html);
     } catch (e) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.EMAIL_SEND_FAILED,
         httpStatus: 502,
         message: e instanceof Error ? e.message : "Send failed",

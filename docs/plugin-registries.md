@@ -261,7 +261,7 @@ See **`docs/security-detection.md`**. A plugin claims a core baseline pattern to
 
 ## What core gives you back
 
-`ctx.host` carries `prisma`, `queues`, `env`, `logger`, `errors` (`NodevoError`, `NEC`),
+`ctx.host` carries `prisma`, `queues`, `env`, `logger`, `errors` (`XentiumError`, `NEC`),
 `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`), `utils`
 (`resolveAvatar`, `sanitizeRichText`, `cron`), `progression.getEffectiveGroupId`,
 `notificationService` and `security`.

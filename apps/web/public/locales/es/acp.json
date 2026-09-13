@@ -189,9 +189,9 @@
       }
     },
     "placeholders": {
-      "siteName": "Mi sitio Nodevo",
+      "siteName": "Mi sitio Xentium",
       "siteUrl": "https://misitio.com",
-      "siteDescription": "Una plataforma impulsada por Nodevo",
+      "siteDescription": "Una plataforma impulsada por Xentium",
       "smtpHost": "smtp.ejemplo.com",
       "fromAddress": "no-reply@ejemplo.com",
       "smtpUser": "no-reply@example.com",
@@ -539,7 +539,7 @@
         "msg": "Manifiesto de plugin no válido",
         "desc": "Al paquete de plugin subido le faltan campos obligatorios en manifest.json.",
         "cause": "El plugin se compiló con un SDK obsoleto o tiene un manifiesto malformado.",
-        "fix": "Comprueba manifest.json contra el esquema de manifiesto actual. Campos obligatorios: id, name, version, vendor, minNodevoVersion."
+        "fix": "Comprueba manifest.json contra el esquema de manifiesto actual. Campos obligatorios: id, name, version, vendor, minXentiumVersion."
       },
       "NEC-PLUGIN-2002": {
         "msg": "Paquete de plugin no válido",
@@ -592,7 +592,7 @@
       "NEC-PLUGIN-2013": {
         "msg": "Nombre de tabla reservado o con prefijo incorrecto",
         "desc": "Una migración de plugin intenta crear, modificar o eliminar un objeto de base de datos que es un objeto reservado del núcleo o que no coincide con el prefijo de tabla declarado por el plugin.",
-        "cause": "La migración nombra un objeto que empieza por ncf_, nodevo_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
+        "cause": "La migración nombra un objeto que empieza por ncf_, xentium_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
         "fix": "Asigna a cada tabla, índice, secuencia, tipo, función y disparador el prefijo propio del plugin y nunca toques objetos del núcleo."
       },
       "NEC-PLUGIN-2020": {
@@ -603,9 +603,9 @@
       },
       "NEC-PLUGIN-2030": {
         "msg": "Plugin incompatible",
-        "desc": "El rango de versiones de Nodevo que admite el plugin no incluye esta versión de la plataforma.",
-        "cause": "El minNodevoVersion del manifiesto es más reciente que esta instalación, o maxNodevoVersion es más antiguo.",
-        "fix": "Actualiza Nodevo, o instala una versión del plugin compilada para esta versión de la plataforma."
+        "desc": "El rango de versiones de Xentium que admite el plugin no incluye esta versión de la plataforma.",
+        "cause": "El minXentiumVersion del manifiesto es más reciente que esta instalación, o maxXentiumVersion es más antiguo.",
+        "fix": "Actualiza Xentium, o instala una versión del plugin compilada para esta versión de la plataforma."
       },
       "NEC-CORE-8001": {
         "msg": "Tema no encontrado",
@@ -1661,7 +1661,7 @@
     "publishing": "Publicando…",
     "publishNow": "Publicar ahora",
     "logoText": "Texto del logo (reserva cuando no hay imagen)",
-    "logoPlaceholder": "nodevo",
+    "logoPlaceholder": "xentium",
     "save": "Guardar",
     "navbarLogo": "Logo de la barra",
     "navbarLogoHint": "PNG, SVG o WebP · máx. 2 MB · recomendado 160×40 px",
@@ -1788,7 +1788,7 @@
     "iconKit": "Kit de FontAwesome Pro",
     "iconKitHint": "Pega el id de tu kit o su URL completa https://kit.fontawesome.com/…. Déjalo vacío para usar los iconos gratuitos incluidos.",
     "iconKitPlaceholder": "a1b2c3d4e5",
-    "iconKitLicence": "Usa tu propia suscripción de FontAwesome, solo en este sitio. Nodevo incluye el conjunto gratuito; un kit añade los iconos Pro que cubre tu licencia.",
+    "iconKitLicence": "Usa tu propia suscripción de FontAwesome, solo en este sitio. Xentium incluye el conjunto gratuito; un kit añade los iconos Pro que cubre tu licencia.",
     "toastIconKit": "Kit de iconos guardado. Recarga para ver los iconos Pro.",
     "iconKitInvalid": "Eso no es un kit de FontAwesome. Pega el id del kit de tu cuenta de FontAwesome, o la URL completa https://kit.fontawesome.com/….",
     "iconStyle": "Estilo de iconos",
@@ -2108,7 +2108,7 @@
     "customized": "Personalizada",
     "reset": "Restablecer",
     "resetTitle": "¿Restablecer esta plantilla?",
-    "resetConfirm": "La plantilla volverá a la versión incluida con Nodevo. Tus cambios se descartarán.",
+    "resetConfirm": "La plantilla volverá a la versión incluida con Xentium. Tus cambios se descartarán.",
     "resetDone": "Plantilla restablecida al valor predeterminado.",
     "sendTest": "Enviar prueba",
     "testPlaceholder": "tu@ejemplo.com",

@@ -16,7 +16,7 @@ import { necRegistry } from "../nec-registry/nec-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { queues } from "../../infrastructure/queue.js";
 import { env } from "../../config/env.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
@@ -32,7 +32,9 @@ const host: PluginHost = {
   queues,
   env,
   logger,
-  errors:     { NodevoError, NEC },
+  // NodevoError is the pre-rename alias — bundles built against the old host
+  // read it by that name. Removed after 1.0.0-alpha.
+  errors:     { XentiumError, NodevoError: XentiumError, NEC },
   middleware: {
     requireAuth,
     optionalAuth,

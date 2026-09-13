@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { validateMigrationSql } from "./sqlValidator.js";
-import { NodevoError, NEC } from "@nodevo/errors";
+import { XentiumError, NEC } from "@nodevo/errors";
 
-/** Assert the call throws a NodevoError carrying the given NEC code. */
+/** Assert the call throws a XentiumError carrying the given NEC code. */
 function expectNec(fn: () => void, code: string): void {
   try {
     fn();
   } catch (err) {
-    expect(err).toBeInstanceOf(NodevoError);
-    expect((err as NodevoError).code).toBe(code);
+    expect(err).toBeInstanceOf(XentiumError);
+    expect((err as XentiumError).code).toBe(code);
     return;
   }
   throw new Error(`expected a throw with code ${code}, but nothing was thrown`);
@@ -42,7 +42,11 @@ describe("validateMigrationSql — reserved namespace (always enforced)", () => 
     expectNec(() => validateMigrationSql(`ALTER TABLE ncf_users ADD COLUMN evil text;`, "f"), NEC.PLUGIN_TABLE_NAMING);
   });
 
-  it("blocks DROP TABLE of core bookkeeping (nodevo_)", () => {
+  it("blocks DROP TABLE of core bookkeeping (xentium_, the post-rename prefix)", () => {
+    expectNec(() => validateMigrationSql(`DROP TABLE xentium_plugin_migrations;`, "f"), NEC.PLUGIN_TABLE_NAMING);
+  });
+
+  it("blocks DROP TABLE of core bookkeeping (nodevo_, the pre-rename prefix)", () => {
     expectNec(() => validateMigrationSql(`DROP TABLE nodevo_plugin_migrations;`, "f"), NEC.PLUGIN_TABLE_NAMING);
   });
 

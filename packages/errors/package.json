@@ -35,9 +35,9 @@
     "@nodevo/contracts": "workspace:*",
     "zod": "catalog:"
   },
-  "description": "NodevoError, the NEC code registry, and the Express error middleware.",
+  "description": "XentiumError, the NEC code registry, and the Express error middleware.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

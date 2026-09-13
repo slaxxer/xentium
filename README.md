@@ -1,6 +1,6 @@
 <div align="center">
 
-# Nodevo
+# Xentium
 
 **An open-source, extensible CMS & community platform.**
 
@@ -14,7 +14,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 ## Table of contents
 
-- [What is Nodevo](#what-is-nodevo)
+- [What is Xentium](#what-is-xentium)
 - [Tech stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Quick start](#quick-start)
@@ -33,9 +33,9 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 ---
 
-## What is Nodevo
+## What is Xentium
 
-Nodevo is a **production-shaped, open-source community platform** you can run out of the box as an article/CMS site and extend with plugins. The core is fully usable on its own — premium official add-ons (forum, messaging, …) live in **plugins**, never in core.
+Xentium is a **production-shaped, open-source community platform** you can run out of the box as an article/CMS site and extend with plugins. The core is fully usable on its own — premium official add-ons (forum, messaging, …) live in **plugins**, never in core.
 
 **Core features**
 
@@ -77,21 +77,21 @@ That's it — no config files to write. The install wizard collects your databas
 ```bash
 # 1. Clone and install
 git clone https://github.com/slaxxer/nodevo.git
-cd nodevo
+cd xentium
 corepack enable          # ensures the pinned pnpm version
 pnpm install
 
 # 2. Launch everything (Postgres + Redis containers, Prisma client, api + worker + web)
-./nodevo.sh
+./xentium.sh
 ```
 
 Then open **http://localhost:5173** — you'll be redirected to the **install wizard**, which handles everything else in the browser: it collects your database credentials, **generates all secrets and writes the `.env` file itself**, applies the schema and creates your admin account. No hand-edited config, no restart.
 
-> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `nodevo`, user `nodevo`, password `nodevo`.
+> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `xentium`, user `xentium`, password `xentium`.
 
 > Already have a `.env` (an existing install, CI, or a restored config)? The wizard detects it and the database step becomes a plain connection test — nothing is overwritten.
 
-> `./nodevo.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./nodevo.sh down` to stop them.
+> `./xentium.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./xentium.sh down` to stop them.
 
 **Default ports:** API → `http://localhost:4000`, web → `http://localhost:5173`, Postgres → `5432`, Redis → `6379`.
 
@@ -99,9 +99,9 @@ Then open **http://localhost:5173** — you'll be redirected to the **install wi
 
 ## Environment configuration
 
-Nodevo reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
+Xentium reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
 
-**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Nodevo boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
+**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Xentium boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
 
 ### Required
 
@@ -120,7 +120,7 @@ Nodevo reads a single **`.env` at the repo root** — but you normally never wri
 | `PORT` | `4000` |
 | `APP_URL` | `http://localhost:5173` |
 | `REDIS_URL` | `redis://localhost:6379` |
-| `REDIS_KEY_PREFIX` | `nodevo:` |
+| `REDIS_KEY_PREFIX` | `xentium:` |
 | `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` when unset (the wizard generates a dedicated one) |
 | `UPLOAD_DIR` | `./var/uploads` (resolved from the API process CWD) |
 | `BOOTSTRAP_OFFICIAL_PLUGINS` | `false` — when `true`, auto-installs first-party plugins from `plugins/official/` at startup; otherwise install them on demand in the ACP |
@@ -159,7 +159,7 @@ On first launch an **install guard** blocks every route except the installer and
 
 1. **Welcome**
 2. **Environment check** — on a fresh clone: Node version, `.env` writability, data directory. With a preconfigured `.env`: Node / PostgreSQL / Redis / disk / config.
-3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Nodevo verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
+3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Xentium verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
 4. **Site config** — site name, URL, default language, timezone
 5. **Admin account** — create the first administrator
 6. **Finalize** — `prisma migrate deploy` applies the schema, core groups/permissions/system profile fields are seeded, and a `site.id` is written to settings
@@ -177,8 +177,8 @@ Once complete, the installer **locks itself out** — the guard lifts and the wi
 
 ```bash
 # Dev
-./nodevo.sh                 # infra (Postgres+Redis) + api + worker + web
-./nodevo.sh down            # stop infra containers
+./xentium.sh                 # infra (Postgres+Redis) + api + worker + web
+./xentium.sh down            # stop infra containers
 pnpm dev:apps            # api + worker + web only (infra already up)
 pnpm backbone:up         # start just the infra containers
 pnpm backbone:down       # stop them
@@ -226,7 +226,7 @@ pnpm --filter @nodevo/api exec vitest run src/modules/auth/auth.test.ts
 ## Project structure
 
 ```
-nodevo/
+xentium/
 ├─ apps/
 │  ├─ api/                  Express API + BullMQ worker
 │  │  └─ src/
@@ -243,9 +243,9 @@ nodevo/
 │  └─ web/                  Vite + React frontend
 │     └─ src/               app, pages, features, components, layouts, hooks,
 │                           lib, plugins (slot/theme registries), styles
-├─ packages/               (@nodevo/* — ↑ marks the five published to npm)
+├─ packages/               (@xentium/* — ↑ marks the five published to npm)
 │  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, NEC, …)
-│  ├─ errors/             ↑ NodevoError, NEC registry, Express error middleware
+│  ├─ errors/             ↑ XentiumError, NEC registry, Express error middleware
 │  ├─ server-kit/         ↑ Settings, pagination, secrets, rate limiting, uploads, storage
 │  ├─ auth/               ↑ Token service, password hashing, revocation, request guards
 │  ├─ plugin-engine/      ↑ Manifest validation, migration SQL guard, registry, router
@@ -270,8 +270,8 @@ nodevo/
 
 ## Framework packages (npm)
 
-Nodevo is a framework with the Nodevo CMS as its first application. The framework
-layer is published to npm under the [`@nodevo`](https://www.npmjs.com/org/nodevo)
+Xentium is a framework with the Xentium CMS as its first application. The framework
+layer is published to npm under the [`@xentium`](https://www.npmjs.com/org/nodevo)
 scope — public, MIT — so anything can be built on it, not just this CMS.
 
 These are the same packages core runs on. There is no separate "public API"
@@ -280,7 +280,7 @@ that lags behind what we use ourselves.
 | Package | What it gives you |
 | --- | --- |
 | [`@nodevo/contracts`](https://www.npmjs.com/package/@nodevo/contracts) | Shared types, permission keys, pagination, and the NEC error-code registry |
-| [`@nodevo/errors`](https://www.npmjs.com/package/@nodevo/errors) | `NodevoError`, the NEC registry, and the Express error middleware |
+| [`@nodevo/errors`](https://www.npmjs.com/package/@nodevo/errors) | `XentiumError`, the NEC registry, and the Express error middleware |
 | [`@nodevo/server-kit`](https://www.npmjs.com/package/@nodevo/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
 | [`@nodevo/auth`](https://www.npmjs.com/package/@nodevo/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
 | [`@nodevo/plugin-engine`](https://www.npmjs.com/package/@nodevo/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
@@ -409,7 +409,7 @@ None of these can take a site down:
 A `.nvtheme` is a zip of layout documents, tokens and assets — **never code**:
 
 ```
-manifest.json            id, name, version, vendor, minNodevoVersion
+manifest.json            id, name, version, vendor, minXentiumVersion
 layouts/<template>.json  one document per template
 styles/light.css         :root custom properties only
 styles/dark.css
@@ -444,7 +444,7 @@ find yourself writing `(req as any)` or a local `AuthedRequest`, stop — the ty
 exists.
 
 ```ts
-// A complete controller. Throws (incl. NodevoError) reach errorMiddleware on their own.
+// A complete controller. Throws (incl. XentiumError) reach errorMiddleware on their own.
 export async function getThing(req: Request, res: Response) {
   const { id } = paramsSchema.parse(req.params);       // Zod on EVERY input
   res.json(await thingService.get(id, req.userId));
@@ -461,7 +461,7 @@ export async function getThing(req: Request, res: Response) {
 | `memoTtl.ts` — `memoTtl` / `TtlCache` | in-process caching of anything hot | Backs the settings cache and the `/appearance/css` memo; reach for it before inventing a cache. |
 
 On the web side the equivalent load-bearing primitives are `lib/toast.ts`
-(`toast.success/info/warning/error` — Nodevo's own toast system: stacking, dedup ×N,
+(`toast.success/info/warning/error` — Xentium's own toast system: stacking, dedup ×N,
 per-category durations, hover-pause; themed by the Style Editor's Feedback colours) and
 `lib/dialog.ts` (`openDialog` — promise-based confirm/alert). `lib/swal.ts` is a legacy-named
 facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` directly.
@@ -469,7 +469,7 @@ facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` di
 ### Errors, validation, data
 
 - Every endpoint validates **body, params, and query** with Zod before any logic;
-  `ZodError` → `NEC-API-4001` centrally. Errors are `NodevoError` with `NEC-<DOMAIN>-<CODE>`;
+  `ZodError` → `NEC-API-4001` centrally. Errors are `XentiumError` with `NEC-<DOMAIN>-<CODE>`;
   stack traces never reach clients.
 - Core tables are `ncf_<snake_case>`; soft delete via `deletedAt` (queries default to
   excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
@@ -489,13 +489,13 @@ notes: [`docs/security-detection.md`](docs/security-detection.md).
 The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes that both
 load plugins and read the same registries. If you touch job code or anything a plugin
 registers into, remember the **worker** needs a restart to pick it up — in dev,
-`./nodevo.sh` runs both.
+`./xentium.sh` runs both.
 
 ---
 
 ## Plugin development guide
 
-Plugins are how you extend Nodevo without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, NEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
+Plugins are how you extend Xentium without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, NEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
 
 See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@nodevo/plugin-sdk`.
 
@@ -521,7 +521,7 @@ my-plugin/
   "name": "My Plugin",
   "version": "1.0.0",
   "vendor": "Acme",
-  "minNodevoVersion": "1.0",
+  "minXentiumVersion": "1.0",
   "licenseRequired": false,
   "tablePrefix": "myplugin_",
   "permissions": ["myplugin.thing.create"],
@@ -554,7 +554,7 @@ with the noted `NEC-PLUGIN-*` code, so design to them from the start.
   table, index, sequence, type, function, and trigger your migrations create —
   or alter/drop/index — begins with it. Regardless of whether you declare one,
   no plugin migration may ever touch a reserved core object (names beginning
-  `ncf_`, `nodevo_`, `_prisma`, `pg_`, or `information_schema`) → both violations
+  `ncf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
   raise `NEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
   a prefix is optional but strongly recommended — all four official plugins do.
 - **Applied migrations are immutable.** Once a migration has run, its checksum is
@@ -646,7 +646,7 @@ Everything your plugin needs is injected — you never import core internals:
 | `prisma` | the host Prisma client (use raw SQL for your own tables) |
 | `queues` | BullMQ queues — enqueue jobs; the core worker processes them |
 | `middleware` | `requireAuth`, `optionalAuth`, `enforcePostLength` |
-| `errors` | `NodevoError`, `NEC` |
+| `errors` | `XentiumError`, `NEC` |
 | `utils` | shared helpers (e.g. `resolveAvatar`) |
 | `notificationService` | dispatch notifications (or use `ctx.notify(...)`) |
 | `env`, `logger` | validated config + Pino logger |
@@ -657,7 +657,7 @@ The host has **no knowledge of your tables, ids, or routes**. Want your content 
 
 ### ACP admin UI — config surfaces autosave
 
-Nodevo ACP **config** pages have no Save button: they persist on change and show a status
+Xentium ACP **config** pages have no Save button: they persist on change and show a status
 indicator instead. Your plugin's admin UI must follow the same convention or it will feel
 foreign inside the ACP. Externalize the two host bridges in your `vite.config.ts`:
 
@@ -685,7 +685,7 @@ autosave a half-typed credential — give it a Set/Remove), and **destructive ac
 
 1. Put your plugin under `plugins/community-examples/<name>/` (or `plugins/official/<name>/`) — both are pnpm workspace members.
 2. For HMR on the web side during `vite dev`, add your web entry to the dev registry in `apps/web/src/plugins/dev-plugins.ts` (this edit stays local).
-3. Start the stack with `./nodevo.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
+3. Start the stack with `./xentium.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
 
 ### Packaging & distribution
 
@@ -719,7 +719,7 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 
 ## Migrating from another platform
 
-Nodevo ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Nodevo database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
+Xentium ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Xentium database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
 
 ### Available adapters
 
@@ -749,14 +749,14 @@ pnpm --filter @nodevo/migrate-phpbb migrate -- \
   --db "postgresql://…" --dry-run
 ```
 
-The target must be an **installed** Nodevo instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
+The target must be an **installed** Xentium instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
 
 ### What carries over
 
-- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Nodevo's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
+- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Xentium's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
 - **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level). Forum platforms: the full node tree, threads (locked/pinned/view counts) and posts with their BBCode converted.
-- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Nodevo's rules, and all like/follower counters are recomputed.
-- **Not migrated** — themes/styling (Nodevo has its own appearance system), source-platform plugins, private messages, guest comments (Nodevo comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
+- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Xentium's rules, and all like/follower counters are recomputed.
+- **Not migrated** — themes/styling (Xentium has its own appearance system), source-platform plugins, private messages, guest comments (Xentium comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
 
 ---
 

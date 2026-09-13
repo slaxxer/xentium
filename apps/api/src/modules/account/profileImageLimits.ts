@@ -11,7 +11,7 @@
  * allowing 10 MB cannot get past a 2 MB route limit, because multer has already
  * refused the request before this runs.
  */
-import { NodevoError } from "@nodevo/errors";
+import { XentiumError } from "@nodevo/errors";
 import { NEC } from "@nodevo/contracts";
 import { progressionService } from "../progression/progression.service.js";
 
@@ -37,7 +37,7 @@ export async function assertProfileImageAllowed(
   const limits = await progressionService.getUserLimits(userId);
 
   if (file.kind === "cover" && limits.canUploadCover === false) {
-    throw new NodevoError({
+    throw new XentiumError({
       code:       NEC.API_FORBIDDEN,
       httpStatus: 403,
       message:    "Your rank cannot set a cover image yet",
@@ -47,7 +47,7 @@ export async function assertProfileImageAllowed(
   }
 
   if (limits.maxProfileImageBytes != null && file.bytes > limits.maxProfileImageBytes) {
-    throw new NodevoError({
+    throw new XentiumError({
       code:       NEC.STORE_FILE_TOO_LARGE,
       httpStatus: 413,
       message:    `Image is ${file.bytes} bytes; your rank allows ${limits.maxProfileImageBytes}`,
@@ -59,7 +59,7 @@ export async function assertProfileImageAllowed(
   // simply never been configured must not refuse every image.
   const allowed = limits.allowedProfileImageTypes ?? [];
   if (allowed.length > 0 && !allowed.includes(file.mimeType)) {
-    throw new NodevoError({
+    throw new XentiumError({
       code:       NEC.STORE_TYPE_NOT_PERMITTED,
       httpStatus: 415,
       message:    `Your rank cannot upload ${file.mimeType}`,

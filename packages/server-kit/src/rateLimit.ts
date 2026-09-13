@@ -16,7 +16,7 @@ export interface RateLimiterDeps {
   redis: RateLimitRedis;
   /**
    * Namespaces the counter keys. Applications sharing one Redis MUST supply
-   * distinct prefixes, or they share rate-limit budgets — Nodevo's own pass
+   * distinct prefixes, or they share rate-limit budgets — Xentium's own pass
    * their `rkey` helper.
    */
   keyPrefix: (name: string) => string;

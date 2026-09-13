@@ -256,9 +256,9 @@
       "members": "Members"
     },
     "placeholders": {
-      "siteName": "My Nodevo Site",
+      "siteName": "My Xentium Site",
       "siteUrl": "https://mysite.com",
-      "siteDescription": "A Nodevo-powered platform",
+      "siteDescription": "A Xentium-powered platform",
       "smtpHost": "smtp.example.com",
       "fromAddress": "no-reply@example.com",
       "smtpUser": "no-reply@example.com",
@@ -710,7 +710,7 @@
         "msg": "Invalid Plugin Manifest",
         "desc": "The uploaded plugin package is missing required manifest.json fields.",
         "cause": "Plugin was built with an outdated SDK or has a malformed manifest.",
-        "fix": "Check manifest.json against the current plugin manifest schema. Required fields: id, name, version, vendor, minNodevoVersion."
+        "fix": "Check manifest.json against the current plugin manifest schema. Required fields: id, name, version, vendor, minXentiumVersion."
       },
       "NEC-PLUGIN-2002": {
         "msg": "Invalid Plugin Package",
@@ -763,7 +763,7 @@
       "NEC-PLUGIN-2013": {
         "msg": "Reserved or Mis-Prefixed Table Name",
         "desc": "A plugin migration tries to create, alter, or drop a database object that is either a reserved core object or does not match the plugin's declared table prefix.",
-        "cause": "The migration names an object beginning ncf_, nodevo_, _prisma, pg_, or information_schema, or (when the plugin declares a tablePrefix) an object that omits that prefix.",
+        "cause": "The migration names an object beginning ncf_, xentium_, _prisma, pg_, or information_schema, or (when the plugin declares a tablePrefix) an object that omits that prefix.",
         "fix": "Namespace every table, index, sequence, type, function, and trigger with the plugin's own prefix, and never touch core-owned objects."
       },
       "NEC-PLUGIN-2020": {
@@ -774,9 +774,9 @@
       },
       "NEC-PLUGIN-2030": {
         "msg": "Plugin Incompatible",
-        "desc": "The plugin's supported Nodevo version range does not include this platform version.",
-        "cause": "The manifest's minNodevoVersion is newer than this installation, or maxNodevoVersion is older.",
-        "fix": "Update Nodevo, or install a plugin version built for this platform version."
+        "desc": "The plugin's supported Xentium version range does not include this platform version.",
+        "cause": "The manifest's minXentiumVersion is newer than this installation, or maxXentiumVersion is older.",
+        "fix": "Update Xentium, or install a plugin version built for this platform version."
       },
       "NEC-CORE-8001": {
         "msg": "Theme Not Found",
@@ -1939,7 +1939,7 @@
     "publishing": "Publishing…",
     "publishNow": "Publish now",
     "logoText": "Logo Text (fallback when no image is set)",
-    "logoPlaceholder": "nodevo",
+    "logoPlaceholder": "xentium",
     "save": "Save",
     "navbarLogo": "Navbar Logo",
     "navbarLogoHint": "PNG, SVG or WebP · max 2 MB · recommended 160×40 px",
@@ -2066,7 +2066,7 @@
     "iconKit": "FontAwesome Pro kit",
     "iconKitHint": "Paste your kit id, or its full https://kit.fontawesome.com/… URL. Leave empty to use the bundled free icons.",
     "iconKitPlaceholder": "a1b2c3d4e5",
-    "iconKitLicence": "Uses your own FontAwesome subscription, on this site only. Nodevo ships the free set; a kit adds the Pro icons your licence covers.",
+    "iconKitLicence": "Uses your own FontAwesome subscription, on this site only. Xentium ships the free set; a kit adds the Pro icons your licence covers.",
     "toastIconKit": "Icon kit saved. Reload to see Pro icons.",
     "iconKitInvalid": "That is not a FontAwesome kit. Paste the kit id from your FontAwesome account, or the full https://kit.fontawesome.com/… URL.",
     "iconStyle": "Icon style",
@@ -2386,7 +2386,7 @@
     "customized": "Customised",
     "reset": "Reset to default",
     "resetTitle": "Reset this template?",
-    "resetConfirm": "The template goes back to the version shipped with Nodevo. Your edits are discarded.",
+    "resetConfirm": "The template goes back to the version shipped with Xentium. Your edits are discarded.",
     "resetDone": "Template reset to the shipped default.",
     "sendTest": "Send test",
     "testPlaceholder": "you@example.com",

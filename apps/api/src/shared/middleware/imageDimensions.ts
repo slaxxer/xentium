@@ -14,7 +14,7 @@
  */
 import type { RequestHandler } from "express";
 import { imageSize } from "image-size";
-import { NodevoError } from "../errors/NodevoError.js";
+import { XentiumError } from "../errors/XentiumError.js";
 import { NEC } from "@nodevo/contracts";
 
 export function requireMaxDimensions(maxWidth: number, maxHeight: number): RequestHandler {
@@ -30,7 +30,7 @@ export function requireMaxDimensions(maxWidth: number, maxHeight: number): Reque
       // A buffer whose type was detected but whose header will not parse. Refused
       // rather than waved through: the whole point of this gate is that nothing
       // unbounded reaches the page.
-      return next(new NodevoError({
+      return next(new XentiumError({
         code:       NEC.STORE_MIME_MISMATCH,
         httpStatus: 415,
         message:    "Could not read the image's dimensions",
@@ -38,7 +38,7 @@ export function requireMaxDimensions(maxWidth: number, maxHeight: number): Reque
     }
 
     if (!width || !height) {
-      return next(new NodevoError({
+      return next(new XentiumError({
         code:       NEC.STORE_MIME_MISMATCH,
         httpStatus: 415,
         message:    "Could not read the image's dimensions",
@@ -46,7 +46,7 @@ export function requireMaxDimensions(maxWidth: number, maxHeight: number): Reque
     }
 
     if (width > maxWidth || height > maxHeight) {
-      return next(new NodevoError({
+      return next(new XentiumError({
         code:       NEC.STORE_IMAGE_TOO_LARGE,
         httpStatus: 422,
         // The numbers travel in `details` because the API is locale-agnostic (§60) —

@@ -9,7 +9,7 @@ import type { DeployEnvironment } from "@nodevo/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 
 /**
@@ -72,7 +72,7 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
 export async function getSiteId(): Promise<string> {
   const row = await prisma.install.findFirst({ select: { siteId: true } });
   if (!row?.siteId) {
-    throw new NodevoError({
+    throw new XentiumError({
       code:       NEC.LICENSE_SITE_ID_MISSING,
       httpStatus: 503,
       message:    "This instance has no install identity yet. Finish the installer before connecting a marketplace account.",

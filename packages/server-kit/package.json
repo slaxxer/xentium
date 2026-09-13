@@ -38,9 +38,9 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "description": "Server utilities for Nodevo-framework applications: settings, pagination, secrets, rate limiting, uploads, storage.",
+  "description": "Server utilities for Xentium-framework applications: settings, pagination, secrets, rate limiting, uploads, storage.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

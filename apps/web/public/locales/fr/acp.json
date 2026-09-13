@@ -189,9 +189,9 @@
       }
     },
     "placeholders": {
-      "siteName": "Mon site Nodevo",
+      "siteName": "Mon site Xentium",
       "siteUrl": "https://monsite.com",
-      "siteDescription": "Une plateforme propulsée par Nodevo",
+      "siteDescription": "Une plateforme propulsée par Xentium",
       "smtpHost": "smtp.exemple.com",
       "fromAddress": "no-reply@exemple.com",
       "smtpUser": "no-reply@example.com",
@@ -539,7 +539,7 @@
         "msg": "Manifeste de plugin invalide",
         "desc": "Le paquet de plugin téléversé n'a pas tous les champs requis dans manifest.json.",
         "cause": "Le plugin a été compilé avec un SDK obsolète ou son manifeste est malformé.",
-        "fix": "Vérifiez manifest.json par rapport au schéma de manifeste actuel. Champs requis : id, name, version, vendor, minNodevoVersion."
+        "fix": "Vérifiez manifest.json par rapport au schéma de manifeste actuel. Champs requis : id, name, version, vendor, minXentiumVersion."
       },
       "NEC-PLUGIN-2002": {
         "msg": "Paquet de plugin invalide",
@@ -592,7 +592,7 @@
       "NEC-PLUGIN-2013": {
         "msg": "Nom de table réservé ou mal préfixé",
         "desc": "Une migration de plugin tente de créer, modifier ou supprimer un objet de base de données qui est soit un objet réservé du cœur, soit un objet ne correspondant pas au préfixe de table déclaré par le plugin.",
-        "cause": "La migration nomme un objet commençant par ncf_, nodevo_, _prisma, pg_ ou information_schema, ou (lorsque le plugin déclare un tablePrefix) un objet qui omet ce préfixe.",
+        "cause": "La migration nomme un objet commençant par ncf_, xentium_, _prisma, pg_ ou information_schema, ou (lorsque le plugin déclare un tablePrefix) un objet qui omet ce préfixe.",
         "fix": "Préfixez chaque table, index, séquence, type, fonction et déclencheur avec le préfixe propre au plugin, et ne touchez jamais aux objets du cœur."
       },
       "NEC-PLUGIN-2020": {
@@ -603,9 +603,9 @@
       },
       "NEC-PLUGIN-2030": {
         "msg": "Plugin incompatible",
-        "desc": "La plage de versions Nodevo prise en charge par le plugin n'inclut pas cette version de la plateforme.",
-        "cause": "Le minNodevoVersion du manifeste est plus récent que cette installation, ou maxNodevoVersion est plus ancien.",
-        "fix": "Mettez à jour Nodevo, ou installez une version du plugin compilée pour cette version de la plateforme."
+        "desc": "La plage de versions Xentium prise en charge par le plugin n'inclut pas cette version de la plateforme.",
+        "cause": "Le minXentiumVersion du manifeste est plus récent que cette installation, ou maxXentiumVersion est plus ancien.",
+        "fix": "Mettez à jour Xentium, ou installez une version du plugin compilée pour cette version de la plateforme."
       },
       "NEC-CORE-8001": {
         "msg": "Thème introuvable",
@@ -1661,7 +1661,7 @@
     "publishing": "Publication…",
     "publishNow": "Publier maintenant",
     "logoText": "Texte du logo (repli quand aucune image)",
-    "logoPlaceholder": "nodevo",
+    "logoPlaceholder": "xentium",
     "save": "Enregistrer",
     "navbarLogo": "Logo de la barre",
     "navbarLogoHint": "PNG, SVG ou WebP · max 2 Mo · recommandé 160×40 px",
@@ -1788,7 +1788,7 @@
     "iconKit": "Kit FontAwesome Pro",
     "iconKitHint": "Collez l'identifiant de votre kit, ou son URL complète https://kit.fontawesome.com/…. Laissez vide pour utiliser les icônes gratuites fournies.",
     "iconKitPlaceholder": "a1b2c3d4e5",
-    "iconKitLicence": "Utilise votre propre abonnement FontAwesome, sur ce site uniquement. Nodevo fournit le jeu gratuit ; un kit ajoute les icônes Pro que couvre votre licence.",
+    "iconKitLicence": "Utilise votre propre abonnement FontAwesome, sur ce site uniquement. Xentium fournit le jeu gratuit ; un kit ajoute les icônes Pro que couvre votre licence.",
     "toastIconKit": "Kit d'icônes enregistré. Rechargez pour voir les icônes Pro.",
     "iconKitInvalid": "Ce n'est pas un kit FontAwesome. Collez l'identifiant du kit depuis votre compte FontAwesome, ou l'URL complète https://kit.fontawesome.com/….",
     "iconStyle": "Style d'icônes",
@@ -2108,7 +2108,7 @@
     "customized": "Personnalisé",
     "reset": "Réinitialiser",
     "resetTitle": "Réinitialiser ce modèle ?",
-    "resetConfirm": "Le modèle reviendra à la version fournie avec Nodevo. Vos modifications seront perdues.",
+    "resetConfirm": "Le modèle reviendra à la version fournie avec Xentium. Vos modifications seront perdues.",
     "resetDone": "Modèle réinitialisé à la version par défaut.",
     "sendTest": "Envoyer un test",
     "testPlaceholder": "vous@exemple.fr",

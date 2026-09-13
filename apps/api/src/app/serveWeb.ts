@@ -35,7 +35,7 @@ export function injectSeoMeta(
   }
 
   const hrefAttr = escapeAttr(href);
-  const nameAttr = escapeAttr(opts.siteName || "Nodevo");
+  const nameAttr = escapeAttr(opts.siteName || "Xentium");
   const tags = [
     `<link rel="canonical" href="${hrefAttr}" />`,
     `<meta property="og:url" content="${hrefAttr}" />`,
@@ -46,7 +46,7 @@ export function injectSeoMeta(
   ].join("\n    ");
 
   // Swap the static <title> to the configured site name so unfurlers that read
-  // <title> get the real name rather than the build-time "Nodevo" placeholder.
+  // <title> get the real name rather than the build-time "Xentium" placeholder.
   const titled = html.replace(/<title>[^<]*<\/title>/i, `<title>${nameAttr}</title>`);
   return titled.replace(/<\/head>/i, `    ${tags}\n  </head>`);
 }
@@ -93,9 +93,9 @@ export function mountWebApp(app: Express): void {
   app.get(SPA_PATH, (req: Request, res: Response) => {
     void (async () => {
       try {
-        const s = await getSettings({ "site.url": "", "site.name": "Nodevo" });
+        const s = await getSettings({ "site.url": "", "site.name": "Xentium" });
         const base = typeof s["site.url"] === "string" ? s["site.url"] : "";
-        const siteName = typeof s["site.name"] === "string" ? s["site.name"] : "Nodevo";
+        const siteName = typeof s["site.name"] === "string" ? s["site.name"] : "Xentium";
         const html = injectSeoMeta(template, { base, siteName, pathname: req.path });
         res.setHeader("Content-Type", "text/html; charset=utf-8");
         res.setHeader("Cache-Control", "no-cache"); // per-request canonical; keep fresh

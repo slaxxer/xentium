@@ -234,7 +234,7 @@ const DEFAULTS: Record<string, unknown> = {
   "beta.enabled":                       false,
   "beta.admin_key":                     "",
   "beta.public_routes":                 [],
-  "site.name":                          "My Nodevo Site",
+  "site.name":                          "My Xentium Site",
   "site.url":                           "",
   "site.description":                   "",
   "site.locale":                        "en",

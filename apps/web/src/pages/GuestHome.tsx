@@ -73,7 +73,7 @@ export interface GuestConfig {
 export const DEFAULT_CONFIG: GuestConfig = {
   hero: {
     badge: "builders online now",
-    title: "Where people who build with nodevo hang out.",
+    title: "Where people who build with xentium hang out.",
     subtitle: "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
     ctaPrimary: "Join the conversation",
     ctaSecondary: "Browse as guest",
@@ -279,7 +279,7 @@ export function Rail({
     <aside className="grail">
       <div className="gcard gjoin">
         <div className="gcard__pad">
-          <h3>Join nodevo</h3>
+          <h3>Join xentium</h3>
           <p>It's free. Post, reply, like what you read and get notified when people respond.</p>
           <button className="btn btn--primary btn--block" onClick={onRegister}>Create free account</button>
           <div className="gjoin__alt">Already a member? <a onClick={onLogin}>Log in</a></div>

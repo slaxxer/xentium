@@ -1,6 +1,6 @@
 # Security Detection — the §15 Anti-Abuse Foundation
 
-How Nodevo core detects suspicious account activity and turns it into moderator
+How Xentium core detects suspicious account activity and turns it into moderator
 review cases, and how plugins extend or replace that detection.
 
 **Last verified:** 2026-07-11 against `apps/api/src/core/security/` and

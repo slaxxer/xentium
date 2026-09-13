@@ -1,8 +1,8 @@
 # @nodevo/errors
 
-**Errors for the Nodevo framework.**
+**Errors for the Xentium framework.**
 
-`NodevoError`, the NEC code registry, and the Express error middleware that
+`XentiumError`, the NEC code registry, and the Express error middleware that
 turns anything thrown during a request into one response shape:
 
 ```json
@@ -27,6 +27,6 @@ consumer.
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo). Nodevo is a framework with the Nodevo CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/nodevo). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

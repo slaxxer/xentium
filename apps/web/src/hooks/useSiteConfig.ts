@@ -7,7 +7,7 @@ export interface SiteConfig {
   features: Record<FeatureKey, boolean>;
   landing: string;
   availableLandings: { value: string; label: string }[];
-  /** Display name set during install (defaults to "Nodevo"). */
+  /** Display name set during install (defaults to "Xentium"). */
   siteName: string;
   /** Canonical base URL set during install (e.g. "https://forum.example.com"); "" if unset. */
   siteUrl: string;

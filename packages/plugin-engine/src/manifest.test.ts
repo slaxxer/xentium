@@ -18,8 +18,8 @@ const base = {
   id: "nodevo-forum",
   name: "Forum",
   version: "1.1.0",
-  vendor: "Nodevo",
-  minNodevoVersion: "1.0",
+  vendor: "Xentium",
+  minXentiumVersion: "1.0",
 };
 
 describe("validateManifest", () => {
@@ -32,7 +32,7 @@ describe("validateManifest", () => {
   });
 
   it("refuses an id that is not kebab-case", () => {
-    expect(() => validateManifest({ ...base, id: "Nodevo_Forum" }, "1.0.0")).toThrow();
+    expect(() => validateManifest({ ...base, id: "Xentium_Forum" }, "1.0.0")).toThrow();
   });
 
   it("refuses a non-semver version", () => {
@@ -46,19 +46,19 @@ describe("validateManifest", () => {
   });
 
   it("refuses a plugin that needs a newer host", () => {
-    expect(() => validateManifest({ ...base, minNodevoVersion: "2.0" }, "1.0.0")).toThrow(
-      /requires Nodevo 2\.0\+/,
+    expect(() => validateManifest({ ...base, minXentiumVersion: "2.0" }, "1.0.0")).toThrow(
+      /requires Xentium 2\.0\+/,
     );
   });
 
   it("refuses a plugin whose ceiling is below the host", () => {
     expect(() =>
-      validateManifest({ ...base, maxNodevoVersion: "1.0" }, "2.1.0"),
-    ).toThrow(/supports Nodevo up to 1\.0/);
+      validateManifest({ ...base, maxXentiumVersion: "1.0" }, "2.1.0"),
+    ).toThrow(/supports Xentium up to 1\.0/);
   });
 
   it("reports incompatibility with the plugin NEC code", () => {
-    expect(() => validateManifest({ ...base, minNodevoVersion: "9.0" }, "1.0.0")).toThrow(
+    expect(() => validateManifest({ ...base, minXentiumVersion: "9.0" }, "1.0.0")).toThrow(
       expect.objectContaining({ code: "NEC-PLUGIN-2030", httpStatus: 422 }),
     );
   });
@@ -75,7 +75,7 @@ describe("validateManifest", () => {
 
   it("binds to one host version through the factory", () => {
     const validate = createManifestValidator("1.0.0");
-    expect(() => validate({ ...base, minNodevoVersion: "2.0" })).toThrow();
+    expect(() => validate({ ...base, minXentiumVersion: "2.0" })).toThrow();
     expect(validate(base).id).toBe("nodevo-forum");
   });
 

@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
 import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
 import { bustSettingsCache, getFreshSetting as readSetting } from "../../shared/utils/settings.js";
@@ -122,7 +122,7 @@ function assertParsableCss(css: string, theme: ThemeName): void {
   try {
     postcss.parse(css, PARSE_OPTS);
   } catch (err) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.API_VALIDATION,
       httpStatus: 400,
       message: `Custom CSS (${theme}) has a syntax error: ${err instanceof Error ? err.message : "invalid CSS"}`,

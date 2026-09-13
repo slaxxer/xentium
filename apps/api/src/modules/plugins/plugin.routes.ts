@@ -5,7 +5,7 @@ import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { getFreshSetting } from "../../shared/utils/settings.js";
 import { pluginService } from "./plugin.service.js";
@@ -24,7 +24,7 @@ const uploadGuard: RequestHandler = (_req, _res, next) => {
   getFreshSetting<boolean>("plugins.allow_upload", false)
     .then((allowed) => {
       if (allowed === true) return next();
-      next(new NodevoError({
+      next(new XentiumError({
         code:       NEC.PLUGIN_UPLOAD_DISABLED,
         httpStatus: 403,
         message:    "Manual plugin uploads are disabled. Install plugins from the marketplace, or enable uploads in ACP → Extensions → Installed.",

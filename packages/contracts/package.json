@@ -23,9 +23,9 @@
   "dependencies": {
     "zod": "catalog:"
   },
-  "description": "Shared types, constants and NEC error codes for the Nodevo framework.",
+  "description": "Shared types, constants and NEC error codes for the Xentium framework.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

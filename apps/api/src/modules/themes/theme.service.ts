@@ -47,7 +47,7 @@ import {
 import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
@@ -86,7 +86,7 @@ const MAX_TEXT_ENTRY = 2_000_000;
  * a specific, nameable reason, and that reason is the whole value of the response.
  */
 const themeError = (message: string) =>
-  new NodevoError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
+  new XentiumError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
 
 /**
  * Zod issues, with the FIELD each one is about.
@@ -146,7 +146,7 @@ const renderTokens = (map: TokenMap): string => {
  * `styles/light.css` + `styles/dark.css`, which is a strict SUBSET of what a theme
  * carries — the docblock at the top of this file has claimed as much since the format
  * was written. What actually differed was the manifest: a theme requires `id`,
- * `vendor`, `version` and `minNodevoVersion`; a style pack required only `name`. So
+ * `vendor`, `version` and `minXentiumVersion`; a style pack required only `name`. So
  * the superset claim was true of the files and false of the paperwork, and a `.nvstyle`
  * would have been rejected here.
  *
@@ -156,7 +156,7 @@ const renderTokens = (map: TokenMap): string => {
  * given an invented id.
  *
  * `id` is derived from the name so two different packs do not collide on one row, and
- * `minNodevoVersion` is THIS version because a style pack never declared compatibility
+ * `minXentiumVersion` is THIS version because a style pack never declared compatibility
  * and refusing it on a field it could not have set would be nonsense.
  */
 function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
@@ -164,7 +164,7 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
   const m = raw as Record<string, unknown>;
 
   // Already a theme manifest — nothing to adopt.
-  if (m.id && m.vendor && m.version && m.minNodevoVersion) return raw;
+  if (m.id && m.vendor && m.version && m.minXentiumVersion) return raw;
 
   const hasThemeParts = zip.getEntries().some((e) =>
     e.entryName.startsWith(THEME_PATHS.layouts) || e.entryName === THEME_PATHS.tokens);
@@ -180,16 +180,16 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
     id:      m.id      ?? (slug || "imported-style"),
     vendor:  m.vendor  ?? "community",
     version: m.version ?? "1.0.0",
-    minNodevoVersion: m.minNodevoVersion ?? NODEVO_VERSION,
+    minXentiumVersion: m.minXentiumVersion ?? NODEVO_VERSION,
   };
 }
 
 function assertCompatible(m: ThemeManifestInput) {
-  if (compareBaseVersions(NODEVO_VERSION, m.minNodevoVersion) < 0) {
-    throw themeError(`Theme "${m.id}" requires Nodevo ${m.minNodevoVersion}+ (this is ${NODEVO_VERSION})`);
+  if (compareBaseVersions(NODEVO_VERSION, m.minXentiumVersion) < 0) {
+    throw themeError(`Theme "${m.id}" requires Xentium ${m.minXentiumVersion}+ (this is ${NODEVO_VERSION})`);
   }
-  if (m.maxNodevoVersion && compareBaseVersions(NODEVO_VERSION, m.maxNodevoVersion) > 0) {
-    throw themeError(`Theme "${m.id}" supports Nodevo up to ${m.maxNodevoVersion} (this is ${NODEVO_VERSION})`);
+  if (m.maxXentiumVersion && compareBaseVersions(NODEVO_VERSION, m.maxXentiumVersion) > 0) {
+    throw themeError(`Theme "${m.id}" supports Xentium up to ${m.maxXentiumVersion} (this is ${NODEVO_VERSION})`);
   }
 }
 
@@ -390,7 +390,7 @@ export const themeService = {
 
     const manifest: ThemeManifestInput = themeManifestSchema.parse({
       ...meta,
-      minNodevoVersion: NODEVO_VERSION,
+      minXentiumVersion: NODEVO_VERSION,
       schemaVersion:    LAYOUT_SCHEMA_VERSION,
       packageVersion:   THEME_PACKAGE_VERSION,
       ...(screenshotName ? { screenshot: `${THEME_PATHS.assets}${screenshotName}` } : {}),
@@ -1014,7 +1014,7 @@ export const themeService = {
   async activateTheme(id: string, userId: string) {
     const row = await prisma.theme.findUnique({ where: { id } });
     if (!row) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.API_NOT_FOUND, httpStatus: 404,
         message: `No theme "${id}" is installed here.`,
       });
@@ -1044,7 +1044,7 @@ export const themeService = {
     const row = await prisma.theme.findUnique({ where: { id }, select: { active: true, name: true } });
     if (!row) return;
     if (row.active) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.API_CONFLICT, httpStatus: 409,
         message: `"${row.name}" is the active theme. Switch to another one before removing it.`,
       });

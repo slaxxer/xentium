@@ -10,8 +10,8 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-nodevo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodevo}
-      POSTGRES_DB: ${POSTGRES_DB:-nodevo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-xentium}
+      POSTGRES_DB: ${POSTGRES_DB:-xentium}
     volumes: ["nodevo_pg:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nodevo}"]

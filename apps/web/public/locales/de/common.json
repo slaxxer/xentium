@@ -50,7 +50,7 @@
   "guestHome": {
     "hero": {
       "badge": "Entwickler online",
-      "title": "Wo sich Menschen treffen, die mit Nodevo bauen.",
+      "title": "Wo sich Menschen treffen, die mit Xentium bauen.",
       "subtitle": "Stelle Fragen, zeige, was du gebaut hast, gestalte die Roadmap mit und lerne von {members} Machern. Lesen ist für alle offen.",
       "ctaPrimary": "Mitmachen",
       "ctaSecondary": "Als Gast stöbern"
@@ -84,7 +84,7 @@
     "metaTime": "Zeit",
     "metaMessage": "Meldung",
     "hint": "Wenn das öfter passiert, schick die Referenz oben an eine Administratorin oder einen Administrator — der kopierte Bericht enthält alles, was zur Analyse nötig ist.",
-    "footLabel": "Anwendungsfehler · Nodevo"
+    "footLabel": "Anwendungsfehler · Xentium"
   },
   "themeChooser": {
     "open": "Theme wählen",

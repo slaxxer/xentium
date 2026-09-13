@@ -3,7 +3,7 @@
  * Lockstep version bump: writes the given SemVer to every workspace
  * package.json (root, apps, packages, e2e). The platform has ONE version —
  * plugins version themselves independently and target it via
- * minNodevoVersion in their manifest.
+ * minXentiumVersion in their manifest.
  *
  *   node scripts/set-version.mjs 1.0.0-alpha.1
  *
@@ -34,7 +34,7 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
  * because nothing fails — the packages just disagree.
  *
  * Plugins are excluded on purpose: they version themselves and target the
- * platform through `minNodevoVersion` in their manifest.
+ * platform through `minXentiumVersion` in their manifest.
  */
 const manifests = [
   "package.json",

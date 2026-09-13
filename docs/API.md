@@ -1,6 +1,6 @@
-# Nodevo API Reference
+# Xentium API Reference
 
-REST API for the Nodevo core. This documents the **core** surface as mounted in
+REST API for the Xentium core. This documents the **core** surface as mounted in
 `apps/api/src/app/app.ts`. Official plugins (e.g. the Forum) register their own routes at
 runtime under `/api/p/<pluginId>/*` and are documented by the plugin, not here.
 

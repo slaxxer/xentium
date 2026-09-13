@@ -20,7 +20,7 @@ ALTER TABLE "migration_runs" ADD COLUMN "summary" JSONB;
 ALTER TABLE "migration_runs" ADD COLUMN "errors" JSONB;
 ALTER TABLE "migration_runs" ADD COLUMN "report_path" TEXT;
 
--- Source-entity -> Nodevo-entity mapping written during platform migrations:
+-- Source-entity -> Xentium-entity mapping written during platform migrations:
 -- makes re-runs resumable (skip imported source ids) and resolves references.
 CREATE TABLE "import_map" (
   "id" TEXT NOT NULL,

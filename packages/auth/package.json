@@ -34,7 +34,7 @@
   },
   "description": "Authentication primitives: token minting and verification, password hashing, access-token revocation, request guards.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

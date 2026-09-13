@@ -216,7 +216,7 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
 
       {variant === "full" && (
         <footer className="nv-err__foot">
-          <span>{t("errorPage.footLabel", { defaultValue: "Application error · Nodevo" })}</span>
+          <span>{t("errorPage.footLabel", { defaultValue: "Application error · Xentium" })}</span>
         </footer>
       )}
     </div>

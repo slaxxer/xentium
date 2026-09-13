@@ -8,5 +8,5 @@ export default defineConfig({
   sourcemap: true,
   // Bundle the workspace packages — they ship raw TS (main: src/index.ts), which
   // production Node can't type-strip from node_modules. npm deps stay external.
-  noExternal: [/^@nodevo\//],
+  noExternal: [/^@xentium\//],
 });

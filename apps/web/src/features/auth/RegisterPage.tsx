@@ -320,7 +320,7 @@ export function RegisterPage() {
 
           <div className="reg-wizard__brand">
             <div className="reg-wizard__logo-mark">N</div>
-            <span className="reg-wizard__wordmark">Nodevo</span>
+            <span className="reg-wizard__wordmark">Xentium</span>
           </div>
 
           <div className="reg-wizard__signin-hint">
@@ -536,7 +536,7 @@ export function RegisterPage() {
 
         <div className="reg-wizard__brand">
           <div className="reg-wizard__logo-mark">N</div>
-          <span className="reg-wizard__wordmark">Nodevo</span>
+          <span className="reg-wizard__wordmark">Xentium</span>
         </div>
 
         <Stepper step={step} done={done} />

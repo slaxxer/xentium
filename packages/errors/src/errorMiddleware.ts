@@ -1,7 +1,7 @@
 import type { ErrorRequestHandler, Request } from "express";
 import { ZodError } from "zod";
 import { NEC } from "@nodevo/contracts";
-import { NodevoError } from "./NodevoError.js";
+import { XentiumError } from "./XentiumError.js";
 
 export type ErrorSeverity = "info" | "warn" | "error" | "critical";
 
@@ -48,14 +48,14 @@ type AugmentedRequest = Request & {
 
 /**
  * The last handler in the chain. Turns anything thrown during a request into
- * the one response shape every Nodevo API speaks:
+ * the one response shape every Xentium API speaks:
  *
  *     { error: { code, message, details?, severity } }
  *
  * `code` is always an NEC string, so a client can branch on the code and
  * localize the message itself — which is why the API stays locale-agnostic.
  *
- * Three cases, in order: a NodevoError (deliberate, carries its own status), a
+ * Three cases, in order: a XentiumError (deliberate, carries its own status), a
  * ZodError (input validation, always 422), and anything else (500, message
  * hidden in production).
  */
@@ -84,7 +84,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
     const userId = r.userId ?? undefined;
     const where = { url: req.url, method: req.method };
 
-    if (err instanceof NodevoError) {
+    if (err instanceof XentiumError) {
       const severity: ErrorSeverity =
         err.httpStatus >= 500 ? "error" : err.httpStatus >= 400 ? "warn" : "info";
 

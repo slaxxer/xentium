@@ -32,7 +32,7 @@
   },
   "description": "Plugin manifest validation, the DDL-only migration SQL guard, and the plugin registry and router.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

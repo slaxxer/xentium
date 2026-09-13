@@ -19,9 +19,9 @@
     "@nodevo/contracts": "workspace:*",
     "@nodevo/plugin-kit": "workspace:*"
   },
-  "description": "The authoring contract for Nodevo CMS plugins.",
+  "description": "The authoring contract for Xentium CMS plugins.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

@@ -1,10 +1,10 @@
 /**
  * The §34 adapter contract, two-stage:
  *
- *   source platform ──(adapter.extract)──▶ intermediate model ──(core loader)──▶ Nodevo DB
+ *   source platform ──(adapter.extract)──▶ intermediate model ──(core loader)──▶ Xentium DB
  *
  * Adapters only know their source format (a WXR file, a MySQL schema, …) and
- * produce the platform-neutral intermediate model below. All Nodevo knowledge
+ * produce the platform-neutral intermediate model below. All Xentium knowledge
  * (tables, slugs, dedupe, import_map resumability, counters) lives in the
  * loader — so the heavy lifting is written and tested once, platform-free.
  */
@@ -53,7 +53,7 @@ export interface ImportedComment {
   sourceId: string;
   articleSourceId: string;
   authorSourceId: string;
-  /** Plain text (article comments are plain text in Nodevo, §33). */
+  /** Plain text (article comments are plain text in Xentium, §33). */
   bodyText: string;
   parentSourceId?: string;
   createdAt?: Date;
@@ -156,7 +156,7 @@ export interface MigrateAdapter {
   /** Adapter id — also the import_map `platform` key. e.g. "wordpress". */
   name: string;
   version: string;
-  /** Plugins that must be installed AND enabled on the target Nodevo instance
+  /** Plugins that must be installed AND enabled on the target Xentium instance
    *  (§34 preconditions) — e.g. ["nodevo-forum"] for forum-platform adapters.
    *  The run aborts before touching any data when one is missing: importing a
    *  forum board without the forum plugin would strand users with no content. */

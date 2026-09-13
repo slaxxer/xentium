@@ -1,4 +1,4 @@
-// Legacy-named facade over Nodevo's own feedback primitives (sweetalert2 is
+// Legacy-named facade over Xentium's own feedback primitives (sweetalert2 is
 // GONE): toasts → lib/toast.ts (<ToastHost/>), dialogs → lib/dialog.ts
 // (<DialogHost/>). The swal* names are kept so ~100 core call sites and every
 // plugin (which externalize this module to the host global) work unchanged.

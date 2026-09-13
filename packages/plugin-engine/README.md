@@ -1,6 +1,6 @@
 # @nodevo/plugin-engine
 
-**Plugin engine primitives for the Nodevo framework.**
+**Plugin engine primitives for the Xentium framework.**
 
 Manifest parsing and compatibility checking, the DDL-only SQL guard every
 plugin migration is held to, and the in-memory registry and router.
@@ -17,6 +17,6 @@ validateMigrationSql(sql, "001_init.up.sql");  // throws on any DML
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo). Nodevo is a framework with the Nodevo CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/nodevo). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

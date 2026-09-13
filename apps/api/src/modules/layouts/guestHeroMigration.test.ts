@@ -54,7 +54,7 @@ describe("nothing to carry", () => {
   });
 
   it("ignores a setting stored at the value the old page called default", async () => {
-    await setSetting("guesthome.hero_title", "Where people who build with nodevo hang out.");
+    await setSetting("guesthome.hero_title", "Where people who build with xentium hang out.");
     expect((await migrateGuestHeroToLayout()).status).toBe("nothing-to-carry");
     expect(await storedHome()).toBeNull();
   });

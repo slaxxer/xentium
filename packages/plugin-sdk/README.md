@@ -1,6 +1,6 @@
 # @nodevo/plugin-sdk
 
-**The authoring contract for Nodevo CMS plugins.**
+**The authoring contract for Xentium CMS plugins.**
 
 ```bash
 pnpm add @nodevo/plugin-sdk@alpha
@@ -34,13 +34,13 @@ second, unconnected instance.
 The application-agnostic half lives in
 [`@nodevo/plugin-kit`](https://www.npmjs.com/package/@nodevo/plugin-kit) and is
 re-exported here in full, so one import still gets you everything. The split
-exists so a plugin for a different Nodevo-framework application has something to
+exists so a plugin for a different Xentium-framework application has something to
 build against that does not assume a CMS.
 
 Full walkthrough: [Plugin development guide](https://github.com/slaxxer/nodevo#plugin-development-guide).
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo).
+Part of the [Xentium framework](https://github.com/slaxxer/nodevo).
 
 MIT © Slaxxer
