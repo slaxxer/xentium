@@ -271,7 +271,7 @@ xentium/
 ## Framework packages (npm)
 
 Xentium is a framework with the Xentium CMS as its first application. The framework
-layer is published to npm under the [`@xentium`](https://www.npmjs.com/org/nodevo)
+layer is published to npm under the [`@xentium`](https://www.npmjs.com/search?q=%40xentium)
 scope — public, MIT — so anything can be built on it, not just this CMS.
 
 These are the same packages core runs on. There is no separate "public API"
@@ -536,7 +536,7 @@ my-plugin/
 ### Migrations & database conventions
 
 Plugins own their schema through raw-SQL migrations, tracked **separately** from
-core (Prisma) in the `nodevo_plugin_migrations` table. Every rule below is
+core (Prisma) in the `xcf_plugin_migrations` table. Every rule below is
 enforced by the host on install/enable/update — a violation aborts the operation
 with the noted `XEC-PLUGIN-*` code, so design to them from the start.
 
@@ -736,7 +736,7 @@ Xentium ships **free, open-source migration tooling** as a standalone CLI — de
 # 1. Always start with a dry run — inspects, extracts and reports, writes NOTHING
 pnpm --filter @xentium/migrate-wp migrate -- \
   --file my-export.xml \
-  --db "postgresql://user:pass@localhost:5432/nodevo" \
+  --db "postgresql://user:pass@localhost:5432/xentium" \
   --dry-run
 
 # 2. The real run (interactive confirmation; --yes to skip)
