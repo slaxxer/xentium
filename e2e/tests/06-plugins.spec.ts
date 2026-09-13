@@ -10,7 +10,7 @@ import { ADMIN, uiLogin } from "./helpers";
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const NVPLUGIN = resolve(here, "../../dist/marketplace/xentium-forum-1.0.0.xtplugin");
+const XTPLUGIN = resolve(here, "../../dist/marketplace/xentium-forum-1.0.0.xtplugin");
 
 // Runs FIRST in this file so the entitlement it activates is present when the
 // next test enables the (licenseRequired) forum plugin — the dev entitlement
@@ -30,13 +30,13 @@ test("admin activates a license (dev self-signed entitlement)", async ({ page })
 });
 
 test("admin uploads, installs, and enables the forum plugin", async ({ page }) => {
-  expect(existsSync(NVPLUGIN), `missing ${NVPLUGIN} — run "pnpm plugin:package"`).toBeTruthy();
+  expect(existsSync(XTPLUGIN), `missing ${XTPLUGIN} — run "pnpm plugin:package"`).toBeTruthy();
 
   await uiLogin(page, ADMIN.email, ADMIN.password);
   await page.goto("/admin/upload");
 
   // Step 0 — pick the package and validate.
-  await page.locator('input[type="file"]').setInputFiles(NVPLUGIN);
+  await page.locator('input[type="file"]').setInputFiles(XTPLUGIN);
   await page.getByRole("button", { name: /Validate Plugin/ }).click();
 
   // Step 1 — validation results, then install.
