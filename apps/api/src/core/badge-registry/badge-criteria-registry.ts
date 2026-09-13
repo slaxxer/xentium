@@ -88,7 +88,7 @@ class BadgeCriteriaRegistry {
 export const badgeCriteriaRegistry = new BadgeCriteriaRegistry();
 
 /**
- * Core's own metrics — the four counters `ncf_users` already maintains, so a sweep
+ * Core's own metrics — the four counters `xcf_users` already maintains, so a sweep
  * costs one row read per member rather than four aggregate queries.
  */
 const coreCounter = (key: string, label: string, column: "articleCount" | "commentCount" | "likeCountReceived" | "followerCount"): BadgeMetric => ({

@@ -10,7 +10,7 @@
  * lines of `findMany`/`update`.
  */
 import { describe, it, expect } from "vitest";
-import type { LayoutDocument } from "@nodevo/contracts";
+import type { LayoutDocument } from "@xentium/contracts";
 import { __test } from "./regionConsolidationMigration.js";
 
 const { migrateChromeHeader, migrateByMove } = __test;

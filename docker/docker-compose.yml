@@ -1,23 +1,23 @@
-name: nodevo
+name: xentium
 
 services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: nodevo
-      POSTGRES_PASSWORD: nodevo
-      POSTGRES_DB: nodevo
+      POSTGRES_USER: xentium
+      POSTGRES_PASSWORD: xentium
+      POSTGRES_DB: xentium
     ports: ["5432:5432"]
-    volumes: ["nodevo_pg:/var/lib/postgresql/data"]
+    volumes: ["xentium_pg:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nodevo"]
+      test: ["CMD-SHELL", "pg_isready -U xentium"]
       interval: 5s
       timeout: 5s
       retries: 10
   redis:
     image: redis:7-alpine
     ports: ["6379:6379"]
-    volumes: ["nodevo_redis:/data"]
+    volumes: ["xentium_redis:/data"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -25,5 +25,5 @@ services:
       retries: 10
 
 volumes:
-  nodevo_pg:
-  nodevo_redis:
+  xentium_pg:
+  xentium_redis:

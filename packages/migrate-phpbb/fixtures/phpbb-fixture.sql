@@ -94,7 +94,7 @@ INSERT INTO phpbb_posts VALUES
    '1a2b3c4d', 1),
   -- s9e rich format (3.2+)
   (101, 10, 3, 1700050000, 1700060000,
-   '<r>Thanks <B><s>[b]</s>alice<e>[/b]</e></B>! See <URL url="https://nodevo.io"><s>[url=https://nodevo.io]</s>this<e>[/url]</e></URL> <E>:lol:</E><QUOTE author="alice"><s>[quote=alice]</s>Welcome!<e>[/quote]</e></QUOTE></r>',
+   '<r>Thanks <B><s>[b]</s>alice<e>[/b]</e></B>! See <URL url="https://xentium.org"><s>[url=https://xentium.org]</s>this<e>[/url]</e></URL> <E>:lol:</E><QUOTE author="alice"><s>[quote=alice]</s>Welcome!<e>[/quote]</e></QUOTE></r>',
    '', 1),
   -- s9e plain format
   (102, 10, 1, 1700070000, 0, '<t>Founder checking in.<br/>Carry on.</t>', '', 1),

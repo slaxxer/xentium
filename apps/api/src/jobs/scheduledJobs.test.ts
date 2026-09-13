@@ -2,7 +2,7 @@
  * Default-schedule jitter for the jobs that call the license server.
  *
  * Every install ships the same `defaultCron`, so an unjittered "30 2 * * *" means
- * every Nodevo instance in the world contacts the marketplace inside the same
+ * every Xentium instance in the world contacts the marketplace inside the same
  * minute. Three properties make the fix actually work, and each fails silently
  * if broken — hence this file:
  *

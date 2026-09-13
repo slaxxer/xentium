@@ -1,6 +1,6 @@
 <div align="center">
 
-# Nodevo
+# Xentium
 
 **An open-source, extensible CMS & community platform.**
 
@@ -14,7 +14,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 ## Table of contents
 
-- [What is Nodevo](#what-is-nodevo)
+- [What is Xentium](#what-is-xentium)
 - [Tech stack](#tech-stack)
 - [Prerequisites](#prerequisites)
 - [Quick start](#quick-start)
@@ -33,9 +33,9 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 ---
 
-## What is Nodevo
+## What is Xentium
 
-Nodevo is a **production-shaped, open-source community platform** you can run out of the box as an article/CMS site and extend with plugins. The core is fully usable on its own — premium official add-ons (forum, messaging, …) live in **plugins**, never in core.
+Xentium is a **production-shaped, open-source community platform** you can run out of the box as an article/CMS site and extend with plugins. The core is fully usable on its own — premium official add-ons (forum, messaging, …) live in **plugins**, never in core.
 
 **Core features**
 
@@ -43,7 +43,7 @@ Nodevo is a **production-shaped, open-source community platform** you can run ou
 - 📝 **Articles / CMS** — TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
 - 👤 **Users & social** — profiles, custom profile fields, follow/block, profile walls, a group-based progression ("levels are groups") engine.
 - 🛡️ **Moderation** — reports, warnings, bans, review cases fed by **built-in abuse-pattern detection** (rapid logins, multi-account, registration bursts, ban evasion — informational, never auto-acting), immutable log, threshold engine, and a floating ModCanvas tool.
-- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.nvtheme` packages (colours-only or full), font system, dynamic nav manager.
+- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.xttheme` packages (colours-only or full), font system, dynamic nav manager.
 - 🧱 **Layout editor** — compose what appears on each page, and on the navbar and footer, by arranging **blocks** in named regions. Drag in the tree or directly in a live preview; edits appear instantly, autosave as a draft, and go live on an explicit publish. A layout is **data, not code**, so a theme can never execute anything.
 - 🔔 **Notifications** — core service every module dispatches through (in-app + queued email).
 - 🧩 **Plugin engine** — install/enable/disable lifecycle, sandboxed migrations, dynamic routes/permissions/ACP pages, and registry-based extension points.
@@ -76,22 +76,22 @@ That's it — no config files to write. The install wizard collects your databas
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/slaxxer/nodevo.git
-cd nodevo
+git clone https://github.com/slaxxer/xentium.git
+cd xentium
 corepack enable          # ensures the pinned pnpm version
 pnpm install
 
 # 2. Launch everything (Postgres + Redis containers, Prisma client, api + worker + web)
-./nodevo.sh
+./xentium.sh
 ```
 
 Then open **http://localhost:5173** — you'll be redirected to the **install wizard**, which handles everything else in the browser: it collects your database credentials, **generates all secrets and writes the `.env` file itself**, applies the schema and creates your admin account. No hand-edited config, no restart.
 
-> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `nodevo`, user `nodevo`, password `nodevo`.
+> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `xentium`, user `xentium`, password `xentium`.
 
 > Already have a `.env` (an existing install, CI, or a restored config)? The wizard detects it and the database step becomes a plain connection test — nothing is overwritten.
 
-> `./nodevo.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./nodevo.sh down` to stop them.
+> `./xentium.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./xentium.sh down` to stop them.
 
 **Default ports:** API → `http://localhost:4000`, web → `http://localhost:5173`, Postgres → `5432`, Redis → `6379`.
 
@@ -99,15 +99,15 @@ Then open **http://localhost:5173** — you'll be redirected to the **install wi
 
 ## Environment configuration
 
-Nodevo reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
+Xentium reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
 
-**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Nodevo boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
+**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Xentium boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
 
 ### Required
 
 | Variable | Notes |
 |---|---|
-| `DATABASE_URL` | e.g. `postgresql://nodevo:nodevo@localhost:5432/nodevo` (matches the Docker defaults) |
+| `DATABASE_URL` | e.g. `postgresql://xentium:xentium@localhost:5432/xentium` (matches the Docker defaults) |
 | `COOKIE_SECRET` | ≥ 16 chars — signs cookies |
 | `JWT_SECRET` | ≥ 32 chars — signs HS256 access tokens |
 | `DUMMY_ARGON2_HASH` | a throwaway argon2 hash used to equalize login timing (prevents account enumeration) |
@@ -120,7 +120,7 @@ Nodevo reads a single **`.env` at the repo root** — but you normally never wri
 | `PORT` | `4000` |
 | `APP_URL` | `http://localhost:5173` |
 | `REDIS_URL` | `redis://localhost:6379` |
-| `REDIS_KEY_PREFIX` | `nodevo:` |
+| `REDIS_KEY_PREFIX` | `xentium:` |
 | `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` when unset (the wizard generates a dedicated one) |
 | `UPLOAD_DIR` | `./var/uploads` (resolved from the API process CWD) |
 | `BOOTSTRAP_OFFICIAL_PLUGINS` | `false` — when `true`, auto-installs first-party plugins from `plugins/official/` at startup; otherwise install them on demand in the ACP |
@@ -136,14 +136,14 @@ echo "COOKIE_SECRET=$(openssl rand -hex 16)"
 echo "JWT_SECRET=$(openssl rand -hex 32)"
 
 # DUMMY_ARGON2_HASH (any valid argon2 hash works)
-pnpm --filter @nodevo/api exec node --input-type=commonjs \
-  -e "require('argon2').hash('nodevo-dummy').then(h=>console.log('DUMMY_ARGON2_HASH='+h))"
+pnpm --filter @xentium/api exec node --input-type=commonjs \
+  -e "require('argon2').hash('xentium-dummy').then(h=>console.log('DUMMY_ARGON2_HASH='+h))"
 ```
 
 A complete dev `.env`:
 
 ```dotenv
-DATABASE_URL="postgresql://nodevo:nodevo@localhost:5432/nodevo"
+DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"
 REDIS_URL="redis://localhost:6379"
 APP_URL="http://localhost:5173"
 COOKIE_SECRET="<openssl rand -hex 16>"
@@ -159,7 +159,7 @@ On first launch an **install guard** blocks every route except the installer and
 
 1. **Welcome**
 2. **Environment check** — on a fresh clone: Node version, `.env` writability, data directory. With a preconfigured `.env`: Node / PostgreSQL / Redis / disk / config.
-3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Nodevo verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
+3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Xentium verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
 4. **Site config** — site name, URL, default language, timezone
 5. **Admin account** — create the first administrator
 6. **Finalize** — `prisma migrate deploy` applies the schema, core groups/permissions/system profile fields are seeded, and a `site.id` is written to settings
@@ -177,8 +177,8 @@ Once complete, the installer **locks itself out** — the guard lifts and the wi
 
 ```bash
 # Dev
-./nodevo.sh                 # infra (Postgres+Redis) + api + worker + web
-./nodevo.sh down            # stop infra containers
+./xentium.sh                 # infra (Postgres+Redis) + api + worker + web
+./xentium.sh down            # stop infra containers
 pnpm dev:apps            # api + worker + web only (infra already up)
 pnpm backbone:up         # start just the infra containers
 pnpm backbone:down       # stop them
@@ -201,7 +201,7 @@ pnpm e2e                 # reset DB, run the suite
 pnpm e2e:ui              # interactive runner
 
 # Plugins
-pnpm plugin:package      # build + package a plugin into a .nvplugin
+pnpm plugin:package      # build + package a plugin into a .xtplugin
 ```
 
 **The API test database.** `installer.test.ts` asserts the install wizard starting from an
@@ -218,7 +218,7 @@ bypasses the guard — only ever aim that at a database you are happy to lose.
 Run a single API test file:
 
 ```bash
-pnpm --filter @nodevo/api exec vitest run src/modules/auth/auth.test.ts
+pnpm --filter @xentium/api exec vitest run src/modules/auth/auth.test.ts
 ```
 
 ---
@@ -226,7 +226,7 @@ pnpm --filter @nodevo/api exec vitest run src/modules/auth/auth.test.ts
 ## Project structure
 
 ```
-nodevo/
+xentium/
 ├─ apps/
 │  ├─ api/                  Express API + BullMQ worker
 │  │  └─ src/
@@ -236,16 +236,16 @@ nodevo/
 │  │     │                  extension registries (search, home-feed, nec, acp-page)
 │  │     ├─ infrastructure/ db, redis, queue, storage, email, logging
 │  │     ├─ modules/        Feature modules (auth, users, articles, moderation, …)
-│  │     ├─ shared/         errors (NEC), middleware, http, utils
+│  │     ├─ shared/         errors (XEC), middleware, http, utils
 │  │     ├─ jobs/           BullMQ job handlers
 │  │     ├─ server.ts       HTTP entry point
 │  │     └─ worker.ts       BullMQ worker entry point
 │  └─ web/                  Vite + React frontend
 │     └─ src/               app, pages, features, components, layouts, hooks,
 │                           lib, plugins (slot/theme registries), styles
-├─ packages/               (@nodevo/* — ↑ marks the five published to npm)
-│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, NEC, …)
-│  ├─ errors/             ↑ NodevoError, NEC registry, Express error middleware
+├─ packages/               (@xentium/* — ↑ marks the five published to npm)
+│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, XEC, …)
+│  ├─ errors/             ↑ XentiumError, XEC registry, Express error middleware
 │  ├─ server-kit/         ↑ Settings, pagination, secrets, rate limiting, uploads, storage
 │  ├─ auth/               ↑ Token service, password hashing, revocation, request guards
 │  ├─ plugin-engine/      ↑ Manifest validation, migration SQL guard, registry, router
@@ -270,8 +270,8 @@ nodevo/
 
 ## Framework packages (npm)
 
-Nodevo is a framework with the Nodevo CMS as its first application. The framework
-layer is published to npm under the [`@nodevo`](https://www.npmjs.com/org/nodevo)
+Xentium is a framework with the Xentium CMS as its first application. The framework
+layer is published to npm under the [`@xentium`](https://www.npmjs.com/search?q=%40xentium)
 scope — public, MIT — so anything can be built on it, not just this CMS.
 
 These are the same packages core runs on. There is no separate "public API"
@@ -279,21 +279,21 @@ that lags behind what we use ourselves.
 
 | Package | What it gives you |
 | --- | --- |
-| [`@nodevo/contracts`](https://www.npmjs.com/package/@nodevo/contracts) | Shared types, permission keys, pagination, and the NEC error-code registry |
-| [`@nodevo/errors`](https://www.npmjs.com/package/@nodevo/errors) | `NodevoError`, the NEC registry, and the Express error middleware |
-| [`@nodevo/server-kit`](https://www.npmjs.com/package/@nodevo/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
-| [`@nodevo/auth`](https://www.npmjs.com/package/@nodevo/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
-| [`@nodevo/plugin-engine`](https://www.npmjs.com/package/@nodevo/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
+| [`@xentium/contracts`](https://www.npmjs.com/package/@xentium/contracts) | Shared types, permission keys, pagination, and the XEC error-code registry |
+| [`@xentium/errors`](https://www.npmjs.com/package/@xentium/errors) | `XentiumError`, the XEC registry, and the Express error middleware |
+| [`@xentium/server-kit`](https://www.npmjs.com/package/@xentium/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
+| [`@xentium/auth`](https://www.npmjs.com/package/@xentium/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
+| [`@xentium/plugin-engine`](https://www.npmjs.com/package/@xentium/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
 
 ```bash
-pnpm add @nodevo/errors @nodevo/server-kit
+pnpm add @xentium/errors @xentium/server-kit
 ```
 
 While the platform is in prerelease these publish under the `alpha` dist-tag, so
 pin explicitly:
 
 ```bash
-pnpm add @nodevo/errors@alpha
+pnpm add @xentium/errors@alpha
 ```
 
 Everything with a dependency is a **factory** — nothing reaches for a module
@@ -301,8 +301,8 @@ singleton, so an application injects its own database, secret, Redis client or
 filesystem root:
 
 ```ts
-import { createErrorMiddleware } from "@nodevo/errors";
-import { createSettings } from "@nodevo/server-kit";
+import { createErrorMiddleware } from "@xentium/errors";
+import { createSettings } from "@xentium/server-kit";
 
 app.use(createErrorMiddleware({ isProd, logger, persist }));
 
@@ -319,7 +319,7 @@ appearance, and everything else CMS-shaped stays in `apps/`, and is not publishe
 ### For plugin developers
 
 > [!IMPORTANT]
-> **`@nodevo/plugin-sdk` is not on npm yet.** It is the authoring contract you
+> **`@xentium/plugin-sdk` is not on npm yet.** It is the authoring contract you
 > need, and it is deliberately held back: ADR-0006 splits it into a generic half
 > and a CMS-shaped half, and that is a breaking change. Publishing a version we
 > already know is wrong would be worse than the wait.
@@ -329,11 +329,11 @@ appearance, and everything else CMS-shaped stays in `apps/`, and is not publishe
 > nothing ships at runtime either way.
 
 The rest of the framework is installable today and useful in a plugin now:
-`@nodevo/contracts` for permission keys and NEC codes, `@nodevo/errors` so your
+`@xentium/contracts` for permission keys and XEC codes, `@xentium/errors` so your
 plugin's failures come back in the same shape as core's.
 
-A plugin does **not** need `@nodevo/server-kit`, `@nodevo/auth` or
-`@nodevo/plugin-engine`. The host already runs those, and `ctx.host` hands you
+A plugin does **not** need `@xentium/server-kit`, `@xentium/auth` or
+`@xentium/plugin-engine`. The host already runs those, and `ctx.host` hands you
 what it has — `prisma`, `queues`, `logger`, the auth middleware. Installing your
 own copy gives you a second, unconnected instance.
 
@@ -344,7 +344,7 @@ Full authoring walkthrough below in [Plugin development guide](#plugin-developme
 ## Architecture in a nutshell
 
 - **Modular monolith, not microservices.** Two processes in production: `server.ts` (HTTP) and `worker.ts` (BullMQ).
-- **REST-first**, Zod-validated on every endpoint. Errors use typed **NEC codes** (`NEC-AUTH-1001`, …) via a central handler.
+- **REST-first**, Zod-validated on every endpoint. Errors use typed **XEC codes** (`XEC-AUTH-1001`, …) via a central handler.
 - **Auth** — RS256 access JWT (15-min, `Authorization: Bearer`, held in memory) + rotating refresh token (httpOnly, `SameSite=Strict` cookie).
 - **The core never knows a plugin exists.** Plugins contribute through **registries** — core iterates whatever's registered and never hardcodes plugin tables, ids, or routes. Search and the home feed both follow this exact pattern.
 
@@ -406,10 +406,10 @@ None of these can take a site down:
 
 ### Themes are data
 
-A `.nvtheme` is a zip of layout documents, tokens and assets — **never code**:
+A `.xttheme` is a zip of layout documents, tokens and assets — **never code**:
 
 ```
-manifest.json            id, name, version, vendor, minNodevoVersion
+manifest.json            id, name, version, vendor, minXentiumVersion
 layouts/<template>.json  one document per template
 styles/light.css         :root custom properties only
 styles/dark.css
@@ -444,7 +444,7 @@ find yourself writing `(req as any)` or a local `AuthedRequest`, stop — the ty
 exists.
 
 ```ts
-// A complete controller. Throws (incl. NodevoError) reach errorMiddleware on their own.
+// A complete controller. Throws (incl. XentiumError) reach errorMiddleware on their own.
 export async function getThing(req: Request, res: Response) {
   const { id } = paramsSchema.parse(req.params);       // Zod on EVERY input
   res.json(await thingService.get(id, req.userId));
@@ -456,12 +456,12 @@ export async function getThing(req: Request, res: Response) {
 | Utility (`apps/api/src/shared/utils/`) | Use it for | Rules |
 |---|---|---|
 | `settings.ts` — `getSetting` / `getSettings` / `getFreshSetting` / `bustSettingsCache` | every settings read | Reads are TTL-cached (15 s); batch multiple keys with `getSettings({key: default})`. **Every writer in the same process must call `bustSettingsCache(key)`.** Use `getFreshSetting` only where staleness is unacceptable (e.g. appearance tokens). |
-| `paginate.ts` — `paginate()` (meta via `buildPaginationMeta` from `@nodevo/contracts`) | every list endpoint | `buildPaginationMeta` is the **only** producer of `{page, limit, total, totalPages, hasPrev, hasNext}` — never hand-roll the meta object. |
-| `userRef.ts` — `USER_REF_SELECT` / `toUserRef` | naming a user in any response | The one way responses reference a user (`id`, `username`, badge color). The `UserRef` type lives in `@nodevo/contracts`. |
+| `paginate.ts` — `paginate()` (meta via `buildPaginationMeta` from `@xentium/contracts`) | every list endpoint | `buildPaginationMeta` is the **only** producer of `{page, limit, total, totalPages, hasPrev, hasNext}` — never hand-roll the meta object. |
+| `userRef.ts` — `USER_REF_SELECT` / `toUserRef` | naming a user in any response | The one way responses reference a user (`id`, `username`, badge color). The `UserRef` type lives in `@xentium/contracts`. |
 | `memoTtl.ts` — `memoTtl` / `TtlCache` | in-process caching of anything hot | Backs the settings cache and the `/appearance/css` memo; reach for it before inventing a cache. |
 
 On the web side the equivalent load-bearing primitives are `lib/toast.ts`
-(`toast.success/info/warning/error` — Nodevo's own toast system: stacking, dedup ×N,
+(`toast.success/info/warning/error` — Xentium's own toast system: stacking, dedup ×N,
 per-category durations, hover-pause; themed by the Style Editor's Feedback colours) and
 `lib/dialog.ts` (`openDialog` — promise-based confirm/alert). `lib/swal.ts` is a legacy-named
 facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` directly.
@@ -469,11 +469,11 @@ facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` di
 ### Errors, validation, data
 
 - Every endpoint validates **body, params, and query** with Zod before any logic;
-  `ZodError` → `NEC-API-4001` centrally. Errors are `NodevoError` with `NEC-<DOMAIN>-<CODE>`;
+  `ZodError` → `XEC-API-4001` centrally. Errors are `XentiumError` with `XEC-<DOMAIN>-<CODE>`;
   stack traces never reach clients.
-- Core tables are `ncf_<snake_case>`; soft delete via `deletedAt` (queries default to
+- Core tables are `xcf_<snake_case>`; soft delete via `deletedAt` (queries default to
   excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
-- The API is locale-agnostic (machine keys + NEC codes only); only emails/notifications are
+- The API is locale-agnostic (machine keys + XEC codes only); only emails/notifications are
   server-localized.
 
 ### Security detection
@@ -489,15 +489,15 @@ notes: [`docs/security-detection.md`](docs/security-detection.md).
 The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes that both
 load plugins and read the same registries. If you touch job code or anything a plugin
 registers into, remember the **worker** needs a restart to pick it up — in dev,
-`./nodevo.sh` runs both.
+`./xentium.sh` runs both.
 
 ---
 
 ## Plugin development guide
 
-Plugins are how you extend Nodevo without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, NEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
+Plugins are how you extend Xentium without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, XEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
 
-See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@nodevo/plugin-sdk`.
+See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@xentium/plugin-sdk`.
 
 ### Anatomy of a plugin
 
@@ -521,7 +521,7 @@ my-plugin/
   "name": "My Plugin",
   "version": "1.0.0",
   "vendor": "Acme",
-  "minNodevoVersion": "1.0",
+  "minXentiumVersion": "1.0",
   "licenseRequired": false,
   "tablePrefix": "myplugin_",
   "permissions": ["myplugin.thing.create"],
@@ -536,29 +536,29 @@ my-plugin/
 ### Migrations & database conventions
 
 Plugins own their schema through raw-SQL migrations, tracked **separately** from
-core (Prisma) in the `nodevo_plugin_migrations` table. Every rule below is
+core (Prisma) in the `xcf_plugin_migrations` table. Every rule below is
 enforced by the host on install/enable/update — a violation aborts the operation
-with the noted `NEC-PLUGIN-*` code, so design to them from the start.
+with the noted `XEC-PLUGIN-*` code, so design to them from the start.
 
 - **DDL only.** Migration files may contain only `CREATE` / `ALTER` / `DROP` of
   `TABLE`, `INDEX`, `SEQUENCE`, `TYPE`, `FUNCTION`, `TRIGGER` (plus
   `CREATE EXTENSION`). Any DML (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/
-  `COPY`/…) is rejected → `NEC-PLUGIN-2010`. Seed data belongs in your
+  `COPY`/…) is rejected → `XEC-PLUGIN-2010`. Seed data belongs in your
   `onEnable`, not a migration.
 - **Paired up/down.** Every `NNN_name.up.sql` must ship a matching
-  `NNN_name.down.sql` → `NEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
+  `NNN_name.down.sql` → `XEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
   so down migrations are safely re-runnable.
-- **Table naming.** Core tables use the `ncf_` prefix; a plugin's schema must
+- **Table naming.** Core tables use the `xcf_` prefix; a plugin's schema must
   stay in its own namespace. Declare a **`tablePrefix`** (short, snake_case,
   ending in `_` — e.g. `forum_`, `sb_`) and the runner enforces that **every**
   table, index, sequence, type, function, and trigger your migrations create —
   or alter/drop/index — begins with it. Regardless of whether you declare one,
   no plugin migration may ever touch a reserved core object (names beginning
-  `ncf_`, `nodevo_`, `_prisma`, `pg_`, or `information_schema`) → both violations
-  raise `NEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
+  `xcf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
+  raise `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
   a prefix is optional but strongly recommended — all four official plugins do.
 - **Applied migrations are immutable.** Once a migration has run, its checksum is
-  recorded; editing that file afterwards is rejected → `NEC-PLUGIN-2012`. Ship
+  recorded; editing that file afterwards is rejected → `XEC-PLUGIN-2012`. Ship
   schema changes as a **new** migration in the next version — never rewrite
   history.
 - **Updates are forward-only, matched by name.** On update the runner runs only
@@ -572,10 +572,10 @@ with the noted `NEC-PLUGIN-*` code, so design to them from the start.
 
 ### The server entry
 
-Your server entry exports a `PluginDefinition`. `onEnable(ctx)` is where you wire everything up; `onDisable` is optional (the engine auto-deregisters routes, registries, ACP pages, and NEC codes for you).
+Your server entry exports a `PluginDefinition`. `onEnable(ctx)` is where you wire everything up; `onDisable` is optional (the engine auto-deregisters routes, registries, ACP pages, and XEC codes for you).
 
 ```ts
-import type { PluginDefinition } from "@nodevo/plugin-sdk";
+import type { PluginDefinition } from "@xentium/plugin-sdk";
 import { createRouter } from "./router.js";
 import { searchThings } from "./service.js";
 
@@ -601,10 +601,10 @@ const plugin: PluginDefinition = {
     // config pages. Secrets (API keys) are the exception: explicit Set/Remove.
     ctx.registerAcpPage({ section: "My Plugin", label: "Things", path: "/admin/things" });
 
-    // Notification types (for the preference UI) + NEC error codes (for the Error Reference)
+    // Notification types (for the preference UI) + XEC error codes (for the Error Reference)
     ctx.registerNotificationTypes(["myplugin.thing_created"]);
     ctx.registerNecCodes([
-      { code: "NEC-MYPLUGIN-6001", msg: "Thing not found", sev: "Error",
+      { code: "XEC-MYPLUGIN-6001", msg: "Thing not found", sev: "Error",
         domain: "My Plugin", desc: "…", cause: "…", fix: "…" },
     ]);
 
@@ -646,7 +646,7 @@ Everything your plugin needs is injected — you never import core internals:
 | `prisma` | the host Prisma client (use raw SQL for your own tables) |
 | `queues` | BullMQ queues — enqueue jobs; the core worker processes them |
 | `middleware` | `requireAuth`, `optionalAuth`, `enforcePostLength` |
-| `errors` | `NodevoError`, `NEC` |
+| `errors` | `XentiumError`, `XEC` |
 | `utils` | shared helpers (e.g. `resolveAvatar`) |
 | `notificationService` | dispatch notifications (or use `ctx.notify(...)`) |
 | `env`, `logger` | validated config + Pino logger |
@@ -657,7 +657,7 @@ The host has **no knowledge of your tables, ids, or routes**. Want your content 
 
 ### ACP admin UI — config surfaces autosave
 
-Nodevo ACP **config** pages have no Save button: they persist on change and show a status
+Xentium ACP **config** pages have no Save button: they persist on change and show a status
 indicator instead. Your plugin's admin UI must follow the same convention or it will feel
 foreign inside the ACP. Externalize the two host bridges in your `vite.config.ts`:
 
@@ -685,15 +685,15 @@ autosave a half-typed credential — give it a Set/Remove), and **destructive ac
 
 1. Put your plugin under `plugins/community-examples/<name>/` (or `plugins/official/<name>/`) — both are pnpm workspace members.
 2. For HMR on the web side during `vite dev`, add your web entry to the dev registry in `apps/web/src/plugins/dev-plugins.ts` (this edit stays local).
-3. Start the stack with `./nodevo.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
+3. Start the stack with `./xentium.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
 
 ### Packaging & distribution
 
-Plugins ship as a **`.nvplugin`** archive (a ZIP of the manifest, compiled `server`/`web` bundles, and migrations):
+Plugins ship as a **`.xtplugin`** archive (a ZIP of the manifest, compiled `server`/`web` bundles, and migrations):
 
 ```bash
 node scripts/package-plugin.mjs [pluginDir] [outDir]
-# default: plugins/official/nodevo-forum → dist/marketplace/
+# default: plugins/official/xentium-forum → dist/marketplace/
 ```
 
 The host plugin engine extracts the archive to a temp dir (with zip-slip protection), validates the manifest and DDL-only migrations, runs them transactionally, then registers and enables the plugin. **Install and enable are always separate operations** — enabling activates routes/registrations; disabling stops them and preserves data.
@@ -707,8 +707,8 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 ```
 
 > **Registrations are in-memory.** Everything `onEnable` registers (routes, ACP pages,
-> content sources, security scans/claims, NEC codes) lives in the host process's registries
-> and is rebuilt at startup from the `ncf_installed_plugins` table. The lifecycle endpoints
+> content sources, security scans/claims, XEC codes) lives in the host process's registries
+> and is rebuilt at startup from the `xcf_installed_plugins` table. The lifecycle endpoints
 > keep memory and DB in sync — but if plugin state is changed **underneath a running
 > process** (manual row deletion, a DB reset in dev), the process keeps serving stale
 > registrations (e.g. a ghost ACP menu entry for a plugin that no longer exists) until it is
@@ -719,51 +719,51 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 
 ## Migrating from another platform
 
-Nodevo ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Nodevo database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
+Xentium ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Xentium database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
 
 ### Available adapters
 
 | Adapter | Source | Status |
 |---|---|---|
-| `@nodevo/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
-| `@nodevo/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `nodevo-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
-| `@nodevo/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `nodevo-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
+| `@xentium/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
+| `@xentium/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `xentium-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
+| `@xentium/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
 | vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
 
 ### Running a migration
 
 ```bash
 # 1. Always start with a dry run — inspects, extracts and reports, writes NOTHING
-pnpm --filter @nodevo/migrate-wp migrate -- \
+pnpm --filter @xentium/migrate-wp migrate -- \
   --file my-export.xml \
-  --db "postgresql://user:pass@localhost:5432/nodevo" \
+  --db "postgresql://user:pass@localhost:5432/xentium" \
   --dry-run
 
 # 2. The real run (interactive confirmation; --yes to skip)
-pnpm --filter @nodevo/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
+pnpm --filter @xentium/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
 
 # Forum platforms: point at the board's MySQL database instead of a file
-# (same flags for @nodevo/migrate-xenforo; --prefix overrides the table prefix)
-pnpm --filter @nodevo/migrate-phpbb migrate -- \
+# (same flags for @xentium/migrate-xenforo; --prefix overrides the table prefix)
+pnpm --filter @xentium/migrate-phpbb migrate -- \
   --source-db "mysql://user:pass@host:3306/phpbb" \
   --db "postgresql://…" --dry-run
 ```
 
-The target must be an **installed** Nodevo instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
+The target must be an **installed** Xentium instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
 
 ### What carries over
 
-- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Nodevo's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
+- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Xentium's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
 - **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level). Forum platforms: the full node tree, threads (locked/pinned/view counts) and posts with their BBCode converted.
-- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Nodevo's rules, and all like/follower counters are recomputed.
-- **Not migrated** — themes/styling (Nodevo has its own appearance system), source-platform plugins, private messages, guest comments (Nodevo comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
+- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Xentium's rules, and all like/follower counters are recomputed.
+- **Not migrated** — themes/styling (Xentium has its own appearance system), source-platform plugins, private messages, guest comments (Xentium comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
 
 ---
 
 ## Contributing
 
 1. Branch off `development`.
-2. Make your change; keep modules in their `routes → controller → service` shape (a `.repository` only when a query is shared or complex — see [Working on core](#working-on-core)) and put shared types in `@nodevo/contracts`.
+2. Make your change; keep modules in their `routes → controller → service` shape (a `.repository` only when a query is shared or complex — see [Working on core](#working-on-core)) and put shared types in `@xentium/contracts`.
 3. **`pnpm backbone:check`** must be green (typecheck + lint + test + build).
 4. Validate all input with Zod; enforce permission/license checks on the backend.
 5. Ship Prisma schema changes with a migration in the same PR.

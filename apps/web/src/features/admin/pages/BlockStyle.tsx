@@ -12,7 +12,7 @@
  * So the block picks a **variant** — a named look — and this panel edits *that look's
  * tokens*. Two blocks set to `accent` cannot drift apart, and someone who wants
  * different colours changes six tokens instead of forty blocks. The variant lives in
- * the layout document; the tokens live in the theme. Both travel in a `.nvtheme`.
+ * the layout document; the tokens live in the theme. Both travel in a `.xttheme`.
  *
  * ## Two different saves, on purpose
  *
@@ -43,7 +43,7 @@ import {
   variantScopeId,
   type BlockVariant,
   type ScopedTokenSet,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
@@ -62,10 +62,10 @@ const EMPTY_PATCH: Patch = { light: {}, dark: {} };
  * The probe is attached to `document.body` because a custom property declared on a
  * detached element resolves against nothing — `var(--c-card)` would come back empty.
  *
- * ⚠ …and body, in here, is `body.nv-acp`, which re-declares the whole palette so the
+ * ⚠ …and body, in here, is `body.xt-acp`, which re-declares the whole palette so the
  * admin panel does not follow the site's theme. Measuring straight against it would
  * report the ACP's colours as the SITE's — a themed site would be told its accent
- * panel is blurple. The probe therefore sits inside a `.nv-site-tokens` host, which
+ * panel is blurple. The probe therefore sits inside a `.xt-site-tokens` host, which
  * restores the defaults and receives the served stylesheet's global overrides, so
  * what is measured is what the site paints. The variant rules themselves need no
  * such help: they are emitted under `:root`, and reach any element in the document.
@@ -74,7 +74,7 @@ function resolveVariantTokens(variant: BlockVariant, cssVars: string[]): Record<
   const out: Record<string, string> = {};
   if (typeof document === "undefined") return out;
   const host = document.createElement("div");
-  host.className = "nv-site-tokens";
+  host.className = "xt-site-tokens";
   host.setAttribute("aria-hidden", "true");
   host.style.cssText = "position:absolute;left:-9999px;width:0;height:0;pointer-events:none";
   const probe = document.createElement("div");
@@ -240,11 +240,11 @@ export function BlockStyleFields({
           filters the obviously-wrong characters as you type so it cannot autosave a
           document the API will refuse. */}
       <div className="lay__style-class">
-        <label className="acp-label" htmlFor="nv-block-class">
+        <label className="acp-label" htmlFor="xt-block-class">
           {t("layoutEditor.classNameLabel")}
         </label>
         <input
-          id="nv-block-class"
+          id="xt-block-class"
           className="acp-input"
           value={className ?? ""}
           placeholder="nav-tile"
@@ -272,7 +272,7 @@ export function BlockStyleFields({
                aria-label={t("layoutEditor.style")}>
             <label className={`lay__variant-pill${!variant ? " is-on" : ""}`}>
               <input
-                type="radio" name="nv-block-variant"
+                type="radio" name="xt-block-variant"
                 checked={!variant}
                 onChange={() => onVariantChange(undefined)}
               />
@@ -281,7 +281,7 @@ export function BlockStyleFields({
             {BLOCK_VARIANTS.map((v) => (
               <label className={`lay__variant-pill${variant === v ? " is-on" : ""}`} key={v}>
                 <input
-                  type="radio" name="nv-block-variant"
+                  type="radio" name="xt-block-variant"
                   checked={variant === v}
                   onChange={() => onVariantChange(v)}
                 />

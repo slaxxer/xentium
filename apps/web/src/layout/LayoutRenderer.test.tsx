@@ -7,7 +7,7 @@
  * These two things are one contract: the renderer stamps parentage onto each
  * block's wrapper and the preview bridge navigates by it. Nesting broke exactly
  * this pair — the bridge used to find its drop parent with
- * `closest("[data-nv-region]")` and its siblings with `:scope > [data-nv-block]`,
+ * `closest("[data-xt-region]")` and its siblings with `:scope > [data-xt-block]`,
  * both of which keep working perfectly on a flat document and quietly resolve to
  * the wrong parent and an empty list once anything is nested.
  *
@@ -21,7 +21,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { cleanup, render } from "@testing-library/react";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { authStore } from "../lib/authStore";
 import { LayoutRegion, LayoutRenderer } from "./LayoutRenderer";
 import { setPreviewAudience } from "./useLayout";
@@ -76,8 +76,8 @@ const tree = () =>
     ],
   });
 
-const wrapper = (id: string) => document.querySelector(`[data-nv-block="${id}"]`) as HTMLElement;
-const ids = (els: HTMLElement[]) => els.map((el) => el.dataset.nvBlock).join(",");
+const wrapper = (id: string) => document.querySelector(`[data-xt-block="${id}"]`) as HTMLElement;
+const ids = (els: HTMLElement[]) => els.map((el) => el.dataset.xtBlock).join(",");
 
 describe("LayoutRenderer — preview addressing", () => {
   beforeEach(() => { render(<LayoutRegion document={tree()} region="main" />); });
@@ -89,26 +89,26 @@ describe("LayoutRenderer — preview addressing", () => {
   });
 
   it("stamps the containing block, not the containing region", () => {
-    expect(wrapper("box").dataset.nvParent).toBe("");       // region level
-    expect(wrapper("leafOut").dataset.nvParent).toBe("");
-    expect(wrapper("leafIn").dataset.nvParent).toBe("box");
-    expect(wrapper("row").dataset.nvParent).toBe("box");
-    expect(wrapper("cell").dataset.nvParent).toBe("row");
-    expect(wrapper("deep").dataset.nvParent).toBe("cell");
+    expect(wrapper("box").dataset.xtParent).toBe("");       // region level
+    expect(wrapper("leafOut").dataset.xtParent).toBe("");
+    expect(wrapper("leafIn").dataset.xtParent).toBe("box");
+    expect(wrapper("row").dataset.xtParent).toBe("box");
+    expect(wrapper("cell").dataset.xtParent).toBe("row");
+    expect(wrapper("deep").dataset.xtParent).toBe("cell");
   });
 
   it("carries the owning region down to every depth", () => {
     for (const id of ["box", "row", "cell", "deep"]) {
-      expect(wrapper(id).dataset.nvRegion, id).toBe("main");
+      expect(wrapper(id).dataset.xtRegion, id).toBe("main");
     }
   });
 
   it("marks containers and only containers", () => {
-    expect(wrapper("box").hasAttribute("data-nv-container")).toBe(true);
-    expect(wrapper("row").hasAttribute("data-nv-container")).toBe(true);
-    expect(wrapper("cell").hasAttribute("data-nv-container")).toBe(true);
-    expect(wrapper("leafIn").hasAttribute("data-nv-container")).toBe(false);
-    expect(wrapper("leafOut").hasAttribute("data-nv-container")).toBe(false);
+    expect(wrapper("box").hasAttribute("data-xt-container")).toBe(true);
+    expect(wrapper("row").hasAttribute("data-xt-container")).toBe(true);
+    expect(wrapper("cell").hasAttribute("data-xt-container")).toBe(true);
+    expect(wrapper("leafIn").hasAttribute("data-xt-container")).toBe(false);
+    expect(wrapper("leafOut").hasAttribute("data-xt-container")).toBe(false);
   });
 
   it("keeps the wrapper out of layout entirely", () => {
@@ -126,7 +126,7 @@ describe("LayoutRenderer — preview addressing", () => {
   });
 
   it("puts the container's element between it and its children", () => {
-    // The reason `:scope > [data-nv-block]` finds nothing and parentage has to be
+    // The reason `:scope > [data-xt-block]` finds nothing and parentage has to be
     // stamped rather than derived from the DOM shape.
     expect(wrapper("leafIn").parentElement).not.toBe(wrapper("box"));
     expect(wrapper("leafIn").parentElement!.className).toBe("box");
@@ -191,7 +191,7 @@ describe("previewBridge — drop parent resolution", () => {
   const from = (id: string) => wrapper(id);
 
   it("resolves a leaf's own container, not the outer region", () => {
-    // The original bug: `closest("[data-nv-region]")` returned the region here,
+    // The original bug: `closest("[data-xt-region]")` returned the region here,
     // so dragging inside a section reordered the region instead.
     const hit = resolveDropParent(from("leafIn"), "t.leaf", null);
     expect(hit?.parentId).toBe("box");
@@ -316,7 +316,7 @@ describe("LayoutRenderer — audiences", () => {
     render(<LayoutRegion document={doc({
       main: [restricted("g", { audience: "guests", groups: [] })],
     })} region="main" />);
-    expect(wrapper("g").dataset.nvRestricted).toBe("guests");
+    expect(wrapper("g").dataset.xtRestricted).toBe("guests");
   });
 
   it("enforces the arrangement the editor is showing, not the real viewer", () => {
@@ -353,7 +353,7 @@ describe("LayoutRenderer — audiences", () => {
 
   it("sets no flag on an unrestricted block", () => {
     render(<LayoutRegion document={tree()} region="main" />);
-    expect(wrapper("leafOut").hasAttribute("data-nv-restricted")).toBe(false);
+    expect(wrapper("leafOut").hasAttribute("data-xt-restricted")).toBe(false);
   });
 });
 
@@ -377,11 +377,11 @@ describe("LayoutRenderer — region order", () => {
     },
   };
 
-  // `:not([data-nv-block])` because block wrappers carry `data-nv-region` too —
+  // `:not([data-xt-block])` because block wrappers carry `data-xt-region` too —
   // the same distinction the preview bridge's DROP_PARENT selector has to make.
   const domOrder = () =>
-    [...document.querySelectorAll("[data-nv-region]:not([data-nv-block])")]
-      .map((el) => (el as HTMLElement).dataset.nvRegion);
+    [...document.querySelectorAll("[data-xt-region]:not([data-xt-block])")]
+      .map((el) => (el as HTMLElement).dataset.xtRegion);
 
   it("renders the template's declared order, not the document's key order", () => {
     render(<LayoutRenderer templateKey="members" document={jsonbOrder} />);
@@ -390,8 +390,8 @@ describe("LayoutRenderer — region order", () => {
 
   it("puts a body block before a rail block even when stored the other way", () => {
     render(<LayoutRenderer templateKey="members" document={jsonbOrder} />);
-    const ids = [...document.querySelectorAll("[data-nv-block]")]
-      .map((el) => (el as HTMLElement).dataset.nvBlock);
+    const ids = [...document.querySelectorAll("[data-xt-block]")]
+      .map((el) => (el as HTMLElement).dataset.xtBlock);
     expect(ids).toEqual(["m", "a"]);
   });
 
@@ -425,7 +425,7 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
     window.history.replaceState({}, "", "/");
     try {
       render(<LayoutRegion document={tree()} region="main" />);
-      expect(document.querySelectorAll("[data-nv-block]")).toHaveLength(0);
+      expect(document.querySelectorAll("[data-xt-block]")).toHaveLength(0);
       // leafIn, deep and leafOut still render — only the addressing is gone.
       expect(document.querySelectorAll(".leaf")).toHaveLength(3);
     } finally {
@@ -444,8 +444,8 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
     window.history.replaceState({}, "", "/");
     try {
       render(<LayoutRegion document={empty} region="main" />);
-      expect(document.querySelectorAll(".nv-region--empty")).toHaveLength(0);
-      expect(document.querySelectorAll("[data-nv-empty]")).toHaveLength(0);
+      expect(document.querySelectorAll(".xt-region--empty")).toHaveLength(0);
+      expect(document.querySelectorAll("[data-xt-empty]")).toHaveLength(0);
     } finally {
       window.history.replaceState({}, "", `/${search}`);
     }
@@ -454,12 +454,12 @@ describe("LayoutRenderer — the live site gets no addressing nodes", () => {
   it("DOES render one in the editor, carrying the region it would drop into", () => {
     const empty = { templateKey: "members", schemaVersion: 1, regions: {} } as never;
     render(<LayoutRegion document={empty} region="main" />);
-    const ph = document.querySelector(".nv-region--empty") as HTMLElement;
+    const ph = document.querySelector(".xt-region--empty") as HTMLElement;
     expect(ph).not.toBeNull();
-    // `data-nv-region` makes it a legal drop target for DROP_PARENT; `data-nv-empty`
+    // `data-xt-region` makes it a legal drop target for DROP_PARENT; `data-xt-empty`
     // is what the bridge reads to ask the editor to open the add picker.
-    expect(ph.dataset.nvRegion).toBe("main");
-    expect(ph.dataset.nvEmpty).toBe("main");
+    expect(ph.dataset.xtRegion).toBe("main");
+    expect(ph.dataset.xtEmpty).toBe("main");
   });
 });
 
@@ -491,7 +491,7 @@ describe("LayoutRenderer — regions are landmarks", () => {
     ]) {
       cleanup();
       render(<LayoutRegion document={withOne(region!, templateKey!)} region={region!} />);
-      expect(document.querySelector("[data-nv-region]")!.tagName).toBe(tag);
+      expect(document.querySelector("[data-xt-region]")!.tagName).toBe(tag);
     }
   });
 
@@ -499,13 +499,13 @@ describe("LayoutRenderer — regions are landmarks", () => {
     for (const region of ["header", "footer"]) {
       cleanup();
       render(<LayoutRegion document={withOne(region)} region={region} />);
-      expect(document.querySelector("[data-nv-region]")!.tagName).toBe("DIV");
+      expect(document.querySelector("[data-xt-region]")!.tagName).toBe("DIV");
     }
   });
 
   it("renders a page's aside as the complementary landmark it is", () => {
     render(<LayoutRegion document={withOne("aside")} region="aside" />);
-    expect(document.querySelector("[data-nv-region]")!.tagName).toBe("ASIDE");
+    expect(document.querySelector("[data-xt-region]")!.tagName).toBe("ASIDE");
   });
 
   /**
@@ -515,27 +515,27 @@ describe("LayoutRenderer — regions are landmarks", () => {
    */
   it("leaves main as a div, because the page already has the one <main>", () => {
     render(<LayoutRegion document={withOne("main")} region="main" />);
-    expect(document.querySelector("[data-nv-region]")!.tagName).toBe("DIV");
+    expect(document.querySelector("[data-xt-region]")!.tagName).toBe("DIV");
   });
 
   it("gives an empty region's placeholder the same element", () => {
     render(<LayoutRegion document={{ templateKey: "members", schemaVersion: 1, regions: {} } as never} region="aside" />);
-    expect(document.querySelector(".nv-region--empty")!.tagName).toBe("ASIDE");
+    expect(document.querySelector(".xt-region--empty")!.tagName).toBe("ASIDE");
   });
 
   /**
    * …and the same CLASS, which is what sizes it.
    *
-   * Without `nv-region--aside` the placeholder does not match
-   * `.nv-body-row > .nv-region--aside`, falls back to `flex: 0 1 auto`, and an EMPTY
+   * Without `xt-region--aside` the placeholder does not match
+   * `.xt-body-row > .xt-region--aside`, falls back to `flex: 0 1 auto`, and an EMPTY
    * rail took half the row: the body was squeezed to 583px of 1240, home's three
-   * tracks stopped fitting and `.nv-columns` wrapped. The editor showed a collapsed
+   * tracks stopped fitting and `.xt-columns` wrapped. The editor showed a collapsed
    * page the live site never had — an empty region renders nothing there, so only
    * the preview could be wrong.
    */
   it("gives it the region's own modifier, so the rail is a rail even when empty", () => {
     render(<LayoutRegion document={{ templateKey: "members", schemaVersion: 1, regions: {} } as never} region="aside" />);
-    const ph = document.querySelector(".nv-region--empty")!;
-    expect([...ph.classList]).toEqual(expect.arrayContaining(["nv-region", "nv-region--aside", "nv-region--empty"]));
+    const ph = document.querySelector(".xt-region--empty")!;
+    expect([...ph.classList]).toEqual(expect.arrayContaining(["xt-region", "xt-region--aside", "xt-region--empty"]));
   });
 });

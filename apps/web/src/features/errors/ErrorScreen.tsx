@@ -106,35 +106,35 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
   const ghost = report.status ? String(report.status) : isChunk ? "NEW" : "ERR";
 
   return (
-    <div className={`nv-err nv-err--${variant}${isChunk ? " nv-err--chunk" : ""}`} role="alert">
-      {variant === "full" && <div className="nv-err__ghost" aria-hidden="true">{ghost}</div>}
+    <div className={`xt-err xt-err--${variant}${isChunk ? " xt-err--chunk" : ""}`} role="alert">
+      {variant === "full" && <div className="xt-err__ghost" aria-hidden="true">{ghost}</div>}
 
-      <div className="nv-err__content">
-        <span className="nv-err__eyebrow">
+      <div className="xt-err__content">
+        <span className="xt-err__eyebrow">
           <FontAwesomeIcon icon={copy.icon} />
           {copy.eyebrow}
         </span>
 
-        <h1 className="nv-err__h1">{copy.title}</h1>
-        <p className="nv-err__lead">{copy.lead}</p>
+        <h1 className="xt-err__h1">{copy.title}</h1>
+        <p className="xt-err__lead">{copy.lead}</p>
 
         {countdown !== null && (
-          <p className="nv-err__countdown">
+          <p className="xt-err__countdown">
             <FontAwesomeIcon icon={faArrowsRotate} spin />
             {/* `secs`, not `count` — `count` would send i18next down the plural
                 lookup and miss the key entirely. */}
             {t("errorPage.reloadingIn", { secs: countdown, defaultValue: "Reloading automatically in {{secs}}s" })}
-            <button type="button" className="nv-err__link" onClick={() => setCountdown(null)}>
+            <button type="button" className="xt-err__link" onClick={() => setCountdown(null)}>
               {t("errorPage.cancelReload", { defaultValue: "Cancel" })}
             </button>
           </p>
         )}
 
-        <div className="nv-err__ref">
-          <span className="nv-err__ref-label">{t("errorPage.reference", { defaultValue: "Reference" })}</span>
-          <code className="nv-err__ref-code">{report.reference}</code>
-          {report.code && <code className="nv-err__ref-code nv-err__ref-code--nec">{report.code}</code>}
-          <button type="button" className="nv-err__copy" onClick={copyReport}>
+        <div className="xt-err__ref">
+          <span className="xt-err__ref-label">{t("errorPage.reference", { defaultValue: "Reference" })}</span>
+          <code className="xt-err__ref-code">{report.reference}</code>
+          {report.code && <code className="xt-err__ref-code xt-err__ref-code--nec">{report.code}</code>}
+          <button type="button" className="xt-err__copy" onClick={copyReport}>
             <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
             {copied
               ? t("errorPage.copied", { defaultValue: "Copied" })
@@ -142,21 +142,21 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
           </button>
         </div>
 
-        <div className="nv-err__actions">
+        <div className="xt-err__actions">
           {isChunk ? (
-            <button type="button" className="nv-err__btn nv-err__btn--primary" onClick={() => window.location.reload()}>
+            <button type="button" className="xt-err__btn xt-err__btn--primary" onClick={() => window.location.reload()}>
               <FontAwesomeIcon icon={faRotateRight} /> {t("errorPage.reloadNow", { defaultValue: "Reload now" })}
             </button>
           ) : (
             <>
               {onRetry && (
-                <button type="button" className="nv-err__btn nv-err__btn--primary" onClick={onRetry}>
+                <button type="button" className="xt-err__btn xt-err__btn--primary" onClick={onRetry}>
                   <FontAwesomeIcon icon={faArrowsRotate} /> {t("errorPage.retry", { defaultValue: "Try again" })}
                 </button>
               )}
               <button
                 type="button"
-                className={`nv-err__btn ${onRetry ? "nv-err__btn--ghost" : "nv-err__btn--primary"}`}
+                className={`xt-err__btn ${onRetry ? "xt-err__btn--ghost" : "xt-err__btn--primary"}`}
                 onClick={() => window.location.reload()}
               >
                 <FontAwesomeIcon icon={faRotateRight} /> {t("errorPage.reload", { defaultValue: "Reload page" })}
@@ -164,21 +164,21 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
             </>
           )}
 
-          <a className="nv-err__btn nv-err__btn--ghost" href="/">
+          <a className="xt-err__btn xt-err__btn--ghost" href="/">
             <FontAwesomeIcon icon={faHouse} /> {t("errorPage.home", { defaultValue: "Take me home" })}
           </a>
-          <button type="button" className="nv-err__btn nv-err__btn--ghost" onClick={goBack}>
+          <button type="button" className="xt-err__btn xt-err__btn--ghost" onClick={goBack}>
             <FontAwesomeIcon icon={faArrowLeft} /> {t("errorPage.back", { defaultValue: "Go back" })}
           </button>
         </div>
 
         {isAdmin && (
-          <div className="nv-err__admin">
-            <a className="nv-err__link" href="/admin/error-log">
+          <div className="xt-err__admin">
+            <a className="xt-err__link" href="/admin/error-log">
               <FontAwesomeIcon icon={faListUl} /> {t("errorPage.errorLog", { defaultValue: "Open Error Log" })}
             </a>
             {report.code && (
-              <a className="nv-err__link" href={`/admin/error-ref?code=${encodeURIComponent(report.code)}`}>
+              <a className="xt-err__link" href={`/admin/error-ref?code=${encodeURIComponent(report.code)}`}>
                 <FontAwesomeIcon icon={faBookOpen} /> {t("errorPage.errorRef", { defaultValue: "Look up this code" })}
               </a>
             )}
@@ -186,26 +186,26 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
         )}
 
         {showDetails ? (
-          <details className="nv-err__details">
+          <details className="xt-err__details">
             <summary>{t("errorPage.details", { defaultValue: "Technical details" })}</summary>
-            <p className="nv-err__details-hint">
+            <p className="xt-err__details-hint">
               {t("errorPage.detailsHint", { defaultValue: "Shown to administrators and in development builds only." })}
             </p>
-            <dl className="nv-err__meta">
+            <dl className="xt-err__meta">
               <dt>{t("errorPage.metaRoute", { defaultValue: "Route" })}</dt>
               <dd>{report.route || "—"}</dd>
               <dt>{t("errorPage.metaTime", { defaultValue: "Time" })}</dt>
               <dd>{new Date(report.at).toLocaleString()}</dd>
               <dt>{t("errorPage.metaMessage", { defaultValue: "Message" })}</dt>
-              <dd className="nv-err__meta-msg">{report.message}</dd>
+              <dd className="xt-err__meta-msg">{report.message}</dd>
             </dl>
-            {report.stack && <pre className="nv-err__trace">{report.stack}</pre>}
+            {report.stack && <pre className="xt-err__trace">{report.stack}</pre>}
             {report.componentStack && (
-              <pre className="nv-err__trace nv-err__trace--component">{report.componentStack.trim()}</pre>
+              <pre className="xt-err__trace xt-err__trace--component">{report.componentStack.trim()}</pre>
             )}
           </details>
         ) : (
-          <p className="nv-err__hint">
+          <p className="xt-err__hint">
             {t("errorPage.hint", {
               defaultValue:
                 "If this keeps happening, send the reference above to an administrator — copying the report attaches everything they need to trace it.",
@@ -215,8 +215,8 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
       </div>
 
       {variant === "full" && (
-        <footer className="nv-err__foot">
-          <span>{t("errorPage.footLabel", { defaultValue: "Application error · Nodevo" })}</span>
+        <footer className="xt-err__foot">
+          <span>{t("errorPage.footLabel", { defaultValue: "Application error · Xentium" })}</span>
         </footer>
       )}
     </div>

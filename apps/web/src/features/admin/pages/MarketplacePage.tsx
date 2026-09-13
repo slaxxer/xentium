@@ -39,7 +39,7 @@ interface MarketplacePlugin {
    *  daily, so it does not. */
   owned?:          boolean;
   /** A theme's dependency footprint, read off the package at ingest. See
-   *  `MarketplaceListing` in @nodevo/contracts. */
+   *  `MarketplaceListing` in @xentium/contracts. */
   usesTemplates?:  string[];
   usesBlocks?:     string[];
   /** Pages the MARKETPLACE has rendered of this theme, and where they live.
@@ -75,19 +75,19 @@ interface License {
 
 // Fallback icon/color map for plugins that don't register web metadata
 const ICON_MAP_FALLBACK: Record<string, IconDefinition> = {
-  "nodevo-messaging":    faEnvelope,
-  "nodevo-seo-tools":    faMagnifyingGlass,
-  "nodevo-analytics":    faChartBar,
-  "nodevo-advanced-mod": faShieldHalved,
-  "nodevo-2fa":          faShield,
+  "xentium-messaging":    faEnvelope,
+  "xentium-seo-tools":    faMagnifyingGlass,
+  "xentium-analytics":    faChartBar,
+  "xentium-advanced-mod": faShieldHalved,
+  "xentium-2fa":          faShield,
 };
 
 const COLOR_MAP_FALLBACK: Record<string, string> = {
-  "nodevo-messaging":    "var(--c-success)",
-  "nodevo-seo-tools":    "#f472b6",
-  "nodevo-analytics":    "#38bdf8",
-  "nodevo-advanced-mod": "var(--c-danger)",
-  "nodevo-2fa":          "var(--c-warn)",
+  "xentium-messaging":    "var(--c-success)",
+  "xentium-seo-tools":    "#f472b6",
+  "xentium-analytics":    "#38bdf8",
+  "xentium-advanced-mod": "var(--c-danger)",
+  "xentium-2fa":          "var(--c-warn)",
 };
 
 function getPluginIcon(pluginId: string): IconDefinition {

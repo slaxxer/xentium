@@ -1,6 +1,6 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 
 export interface ActivityEntry {
   category: "page_visit" | "acp_action";
@@ -62,7 +62,7 @@ export const activityService = {
   /** True if this user has visited `path` at or after `since`. Backs the ACP
    *  dialogs' "has the admin actually been to the page?" check — a visit is a
    *  real, per-user, device-independent acknowledgement (unlike a dismissed
-   *  dialog). Reads ncf_acp_visits (durable, bounded), NOT the prunable
+   *  dialog). Reads xcf_acp_visits (durable, bounded), NOT the prunable
    *  activity log — log retention must never un-acknowledge a dialog. */
   async hasVisitedSince(userId: string, path: string, since: Date): Promise<boolean> {
     const row = await prisma.acpVisit.findUnique({

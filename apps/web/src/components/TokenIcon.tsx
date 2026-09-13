@@ -21,7 +21,7 @@
  * are exactly where it matters.
  */
 import { FontAwesomeIcon as StyledIcon } from "./Icon";
-import { parseIconToken, iconStyleClasses } from "@nodevo/contracts";
+import { parseIconToken, iconStyleClasses } from "@xentium/contracts";
 import { bundledIcon } from "../lib/iconCatalogue";
 import { useIconStyle, useIconKitReady } from "../lib/iconKit";
 import { useIconScope } from "../lib/iconScope";

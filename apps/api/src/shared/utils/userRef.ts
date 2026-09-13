@@ -1,7 +1,7 @@
-import type { UserRef } from "@nodevo/contracts";
+import type { UserRef } from "@xentium/contracts";
 
 // The one way a response names a user: { id, username, badgeColor } (UserRef in
-// @nodevo/contracts). Spread badgeColorSelect into a user select (or use
+// @xentium/contracts). Spread badgeColorSelect into a user select (or use
 // USER_REF_SELECT outright), then map the row with toUserRef/extractBadgeColor.
 
 /** Deterministic "primary group first" ordering — lowest displayOrder wins.

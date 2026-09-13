@@ -16,7 +16,7 @@
  *    hardcoded component did, so the shipped defaults are byte-identical to what
  *    the site looked like before the layout system touched it.
  */
-import { blockPropSchemas, blockTypesIn } from "@nodevo/contracts";
+import { blockPropSchemas, blockTypesIn } from "@xentium/contracts";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";
@@ -46,7 +46,7 @@ const CHROME_FOOTER = ["chrome.footer"];
  *
  * ⚠ The children are rendered by the layout renderer, not by this component — it
  * receives them already wrapped, so a child's `align` cannot be read here. The row is
- * laid out in CSS from `[data-nv-align]`, which `RenderNode` stamps on the wrapper;
+ * laid out in CSS from `[data-xt-align]`, which `RenderNode` stamps on the wrapper;
  * that also keeps a plugin's block alignable without it knowing anything about us.
  */
 /**
@@ -60,7 +60,7 @@ const CHROME_FOOTER = ["chrome.footer"];
  * ⚠ `height` is a FLOOR (`min-height`). A translated site name, a bigger font from an
  * accessibility setting or a taller logo must push the band, never be clipped by it.
  *
- * ⚠ The inner column matches `.nv-region` and `.pub-nav__inner` exactly, which is
+ * ⚠ The inner column matches `.xt-region` and `.pub-nav__inner` exactly, which is
  * what puts the masthead logo directly above the navbar's own instead of a few pixels
  * off. Those numbers live in `chromeBlocks.scss` next to the rule that uses them.
  */
@@ -71,14 +71,14 @@ function SiteHeaderBlock({ props }: BlockProps<{
   const background = sectionBackground(props);
   return (
     <div
-      className={`nv-header${background ? " nv-header--bg" : ""}`}
+      className={`xt-header${background ? " xt-header--bg" : ""}`}
       style={{
         minHeight: `${props.height ?? 250}px`,
         ...(background ? { backgroundImage: background } : {}),
       }}
     >
       {props.showLogo !== false && (
-        <div className="nv-header__inner">
+        <div className="xt-header__inner">
           <NavLogo showWordmark={props.showWordmark !== false} />
         </div>
       )}
@@ -192,7 +192,7 @@ registerBlock({
  * block of its own, while the footer's band IS what holds its pieces. Painting them
  * onto it means they are its children, not its siblings.
  *
- * ⚠ The class is `.nv-foot` and must stay `.nv-foot` — it is `SCOPE_SELECTOR.footer`,
+ * ⚠ The class is `.xt-foot` and must stay `.xt-foot` — it is `SCOPE_SELECTOR.footer`,
  * so the Style Editor's entire Footer section is emitted under it. The background
  * here is drawn OVER `--footer-bg` (which that panel sets) rather than instead of it:
  * a footer with no gradient of its own keeps whatever the Style Editor gave it, so
@@ -204,9 +204,9 @@ function SiteFooterBlock({ props, children }: BlockProps<{
 }> ) {
   const background = sectionBackground(props);
   const classes = [
-    "nv-foot",
-    background ? "nv-foot--bg" : "",
-    props.showTopBorder === false ? "nv-foot--noline" : "",
+    "xt-foot",
+    background ? "xt-foot--bg" : "",
+    props.showTopBorder === false ? "xt-foot--noline" : "",
   ].filter(Boolean).join(" ");
   return (
     <div
@@ -217,10 +217,10 @@ function SiteFooterBlock({ props, children }: BlockProps<{
       }}
     >
       {/* ⚠ The band is FULL WIDTH and the column is inside it — the same shape as
-          `.nv-header` / `.nv-header__inner`. The band has to reach the edges of the
+          `.xt-header` / `.xt-header__inner`. The band has to reach the edges of the
           window for a background to mean anything, and its contents have to line up
           with the page above it; one element cannot do both. */}
-      <div className="nv-foot__inner">{children}</div>
+      <div className="xt-foot__inner">{children}</div>
     </div>
   );
 }

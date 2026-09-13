@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { NodevoError, NEC } from "@nodevo/errors";
+import { XentiumError, XEC } from "@xentium/errors";
 import { compareBaseVersions } from "./version.js";
 
 export const manifestSchema = z.object({
@@ -7,14 +7,14 @@ export const manifestSchema = z.object({
   name:               z.string().min(1),
   version:            z.string().regex(/^\d+\.\d+\.\d+/, "version must be semver"),
   vendor:             z.string().min(1),
-  minNodevoVersion:   z.string().regex(/^\d+\.\d+/, "minNodevoVersion must be semver"),
-  maxNodevoVersion:   z.string().regex(/^\d+\./, "maxNodevoVersion must be semver").optional(),
+  minXentiumVersion:   z.string().regex(/^\d+\.\d+/, "minXentiumVersion must be semver"),
+  maxXentiumVersion:   z.string().regex(/^\d+\./, "maxXentiumVersion must be semver").optional(),
   licenseRequired:    z.boolean().default(false),
   // Reserved DB namespace for this plugin's tables. When declared, the migration
   // runner enforces that every table/index/sequence/type/function/trigger the
   // plugin's migrations create (and every object they alter/drop/index) begins
   // with this prefix — keeping plugin schema namespaced and unable to collide
-  // with core (`ncf_`) or another plugin. Convention: short + snake, ending in
+  // with core (`xcf_`) or another plugin. Convention: short + snake, ending in
   // `_` (e.g. `forum_`, `sb_`, `amod_`). Optional for back-compat; the reserved-
   // namespace guard applies to every plugin regardless.
   tablePrefix:        z.string().regex(/^[a-z][a-z0-9]*_$/, "tablePrefix must be lowercase snake_case ending in '_'").optional(),
@@ -43,23 +43,23 @@ export function validateManifest(raw: unknown, hostVersion: string): PluginManif
 
 /**
  * Compatibility check (§10 lifecycle step 4): the plugin's declared
- * min/maxNodevoVersion window must contain the host version. Base versions
+ * min/maxXentiumVersion window must contain the host version. Base versions
  * only — a 1.0.0-alpha build accepts plugins targeting 1.0, and prerelease
  * identifiers never affect the comparison.
  */
 export function assertCompatible(manifest: PluginManifest, hostVersion: string): void {
-  if (compareBaseVersions(hostVersion, manifest.minNodevoVersion) < 0) {
-    throw new NodevoError({
-      code: NEC.PLUGIN_INCOMPATIBLE,
+  if (compareBaseVersions(hostVersion, manifest.minXentiumVersion) < 0) {
+    throw new XentiumError({
+      code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,
-      message: `Plugin "${manifest.id}" requires Nodevo ${manifest.minNodevoVersion}+ (this is ${hostVersion})`,
+      message: `Plugin "${manifest.id}" requires Xentium ${manifest.minXentiumVersion}+ (this is ${hostVersion})`,
     });
   }
-  if (manifest.maxNodevoVersion && compareBaseVersions(hostVersion, manifest.maxNodevoVersion) > 0) {
-    throw new NodevoError({
-      code: NEC.PLUGIN_INCOMPATIBLE,
+  if (manifest.maxXentiumVersion && compareBaseVersions(hostVersion, manifest.maxXentiumVersion) > 0) {
+    throw new XentiumError({
+      code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,
-      message: `Plugin "${manifest.id}" supports Nodevo up to ${manifest.maxNodevoVersion} (this is ${hostVersion})`,
+      message: `Plugin "${manifest.id}" supports Xentium up to ${manifest.maxXentiumVersion} (this is ${hostVersion})`,
     });
   }
 }

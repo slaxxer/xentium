@@ -36,7 +36,7 @@ export interface SecretBox {
 
 /**
  * Derives the encryption key once, at construction. `secret` is any
- * high-entropy application secret — Nodevo's own applications pass
+ * high-entropy application secret — Xentium's own applications pass
  * `COOKIE_SECRET`.
  */
 export function createSecretBox(secret: string): SecretBox {

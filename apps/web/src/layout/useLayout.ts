@@ -19,7 +19,7 @@ import {
   type AudienceView,
   type LayoutDocument,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../lib/api";
 import { viewerThemeParam } from "../lib/viewerTheme";
 /**

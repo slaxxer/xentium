@@ -15,16 +15,16 @@
     // typecheck, and it only surfaces on the first request that touches it.
     // (That is exactly how a new model reached production undefined.)
     // $TURBO_DEFAULT$ keeps the normal inputs and adds the generated client.
-    "@nodevo/api#build": {
+    "@xentium/api#build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
       "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
     },
-    "@nodevo/api#typecheck": {
+    "@xentium/api#typecheck": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
     },
-    "@nodevo/api#test": {
+    "@xentium/api#test": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", "src/generated/**"]
     }

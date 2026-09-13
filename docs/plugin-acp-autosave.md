@@ -36,13 +36,13 @@ plugin stylesheet mentions a font, it is a bug.
 
 # Plugin ACP autosave
 
-How a plugin's admin surfaces persist changes. Nodevo ACP **config** pages have no
+How a plugin's admin surfaces persist changes. Xentium ACP **config** pages have no
 Save button — they save on change, with a status indicator in the header. A plugin
 must follow the same convention so its pages don't feel foreign inside the ACP.
 
-Live examples: `nodevo-advanced-moderation` (`AdvModPage` — settings page with a
-secret field), `nodevo-forum` (`ForumSettingsPage`, `ForumGroupProgression`),
-`nodevo-shoutbox` (`ShoutboxAcpPage`, `ShoutboxGroupLimits`).
+Live examples: `xentium-advanced-moderation` (`AdvModPage` — settings page with a
+secret field), `xentium-forum` (`ForumSettingsPage`, `ForumGroupProgression`),
+`xentium-shoutbox` (`ShoutboxAcpPage`, `ShoutboxGroupLimits`).
 
 ## When autosave applies
 
@@ -177,7 +177,7 @@ the ladder grants nothing.
 ## What core provides
 
 - `apps/web/src/hooks/useAutosave.ts` → `useAutosave({ value, savedValue, onSave, delay? })`,
-  bridged as `window.__NODEVO_HOST__.webUseAutosave`.
+  bridged as `window.__XENTIUM_HOST__.webUseAutosave`.
 - `apps/web/src/components/AutosaveStatus.tsx` → `<AutosaveStatus saving />`,
   bridged as `webAutosaveStatus`.
 - `apps/web/src/plugins/slotRegistry.ts` → `registerGroupConfigPanel(slot)`.

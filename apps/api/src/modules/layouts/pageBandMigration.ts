@@ -30,7 +30,7 @@ import {
   regionsFor,
   type BlockNode,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { bustSettingsCache, getSetting } from "../../shared/utils/settings.js";
 import { logger } from "../../infrastructure/logging/logger.js";

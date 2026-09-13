@@ -12,7 +12,7 @@ import { securityScanRegistry } from "./security-scan-registry.js";
  *  skipped while an enabled plugin claims it via ctx.claimSecurityPatterns —
  *  the plugin ships an enhanced replacement (corroboration, scoring, tunable
  *  thresholds); disabling the plugin restores the baseline automatically.
- *  The moderator exception whitelist (ncf_reviewed_security_signals) is
+ *  The moderator exception whitelist (xcf_reviewed_security_signals) is
  *  respected for device-cookie and IP signals. */
 
 const WINDOW_10M = 10 * 60 * 1000;
@@ -51,9 +51,9 @@ async function multiAccountSuspicion(): Promise<void> {
   const since = new Date(Date.now() - WINDOW_24H);
   const shared = (await prisma.$queryRaw`
     SELECT "deviceCookieId" AS cookie, COUNT(DISTINCT "userId")::int AS count
-      FROM ncf_login_events
+      FROM xcf_login_events
      WHERE "deviceCookieId" IN (
-             SELECT DISTINCT "deviceCookieId" FROM ncf_login_events
+             SELECT DISTINCT "deviceCookieId" FROM xcf_login_events
               WHERE "createdAt" >= ${since} AND "deviceCookieId" IS NOT NULL AND success = true
            )
        AND "userId" IS NOT NULL AND success = true
@@ -129,9 +129,9 @@ async function banEvasionSuspicion(): Promise<void> {
   for (const ban of recentBans) {
     const banWindowEnd = new Date(ban.createdAt.getTime() + WINDOW_10M);
     const evasion = (await prisma.$queryRaw`
-      SELECT DISTINCT ip, "userId" AS user_id FROM ncf_login_events
+      SELECT DISTINCT ip, "userId" AS user_id FROM xcf_login_events
        WHERE event_type = 'register' AND "createdAt" BETWEEN ${ban.createdAt} AND ${banWindowEnd} AND "userId" != ${ban.userId}
-         AND ip IN (SELECT DISTINCT ip FROM ncf_login_events WHERE "userId" = ${ban.userId} AND ip IS NOT NULL)`) as { ip: string; user_id: string }[];
+         AND ip IN (SELECT DISTINCT ip FROM xcf_login_events WHERE "userId" = ${ban.userId} AND ip IS NOT NULL)`) as { ip: string; user_id: string }[];
     if (evasion.length > 0) {
       const newUserIds = [...new Set(evasion.map((r) => r.user_id))];
       await createModerationCase({

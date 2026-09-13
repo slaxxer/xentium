@@ -1,7 +1,7 @@
 /**
  * The theme's custom-CSS layer.
  *
- * Custom CSS was the one channel a `.nvtheme` did NOT layer. Importing a theme called
+ * Custom CSS was the one channel a `.xttheme` did NOT layer. Importing a theme called
  * `saveCustomCss` with the package's contents, which overwrote the admin's own
  * stylesheet outright — no baseline recorded (unlike a layout), nowhere else for it to
  * live (unlike a token), and applied live so it happened before anyone had looked. A

@@ -30,7 +30,7 @@ export interface BlockDefinition<P = any, C = any> {
   /**
    * Owning plugin. Set it and disabling the plugin removes the block; omit it
    * for core blocks. Ownership is explicit rather than derived from the type
-   * prefix because a plugin id (`nodevo-forum`) and its namespace (`forum.`)
+   * prefix because a plugin id (`xentium-forum`) and its namespace (`forum.`)
    * are not the same string.
    */
   pluginId?: string;

@@ -53,7 +53,7 @@ function mergeEnvContent(existing: string, updates: Record<string, string>): str
 
   if (pending.size > 0) {
     if (merged.length && merged[merged.length - 1]!.trim() !== "") merged.push("");
-    merged.push("# ── Written by the Nodevo install wizard ──");
+    merged.push("# ── Written by the Xentium install wizard ──");
     for (const [key, value] of pending) merged.push(`${key}=${value}`);
   }
 

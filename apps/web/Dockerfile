@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Production image for the Nodevo web app: build the Vite SPA, serve via nginx
+# Production image for the Xentium web app: build the Vite SPA, serve via nginx
 # (with /api + /uploads reverse-proxied to the api service). Build context = REPO ROOT.
 
 FROM node:22-alpine AS build
@@ -8,7 +8,7 @@ WORKDIR /app
 ENV CI=true
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @nodevo/web build
+RUN pnpm --filter @xentium/web build
 
 FROM nginx:1.27-alpine AS runner
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf

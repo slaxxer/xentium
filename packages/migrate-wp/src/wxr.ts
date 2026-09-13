@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
-import type { ExtractResult, ImportedComment, ImportError } from "@nodevo/migrate-core";
+import type { ExtractResult, ImportedComment, ImportError } from "@xentium/migrate-core";
 
 /**
  * WXR (WordPress eXtended RSS) extractor. Consumes the export *file* — no
@@ -162,7 +162,7 @@ export function parseWxr(filePath: string): WxrParsed {
       }
       const userId = txt(c["wp:comment_user_id"]);
       if (!userId || userId === "0") {
-        // Nodevo comments require an account (§33) — guests can't be imported.
+        // Xentium comments require an account (§33) — guests can't be imported.
         guestComments++;
         skipped.push({ entity: "comment", sourceId: commentId, reason: `guest comment by "${txt(c["wp:comment_author"])}"` });
         continue;

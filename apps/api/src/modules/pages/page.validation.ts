@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginatedRequestSchema } from "@nodevo/contracts";
+import { paginatedRequestSchema } from "@xentium/contracts";
 
 // TipTap body — a ProseMirror doc. Loosely validated (same rationale as
 // articles): the editor extends over time and the server treats it as opaque

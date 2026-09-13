@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
-import { CorePermissions, NEC } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { CorePermissions, XEC } from "@xentium/contracts";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
@@ -101,15 +101,15 @@ if (isDev) {
   adminRouter.get("/_debug/throw", adminGuard, (req, _res) => {
     const type = String(req.query.type ?? "critical");
     switch (type) {
-      case "nodevo500":
-        // A deliberate NodevoError with a 5xx status → severity 'error', halts.
-        throw new NodevoError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "Simulated NodevoError (500)" });
+      case "xentium500":
+        // A deliberate XentiumError with a 5xx status → severity 'error', halts.
+        throw new XentiumError({ code: XEC.API_INTERNAL, httpStatus: 500, message: "Simulated XentiumError (500)" });
       case "notfound":
         // 4xx → toast only, does NOT halt the site (contrast case).
-        throw NodevoError.notFound("Simulated 404 (should NOT halt the site)");
+        throw XentiumError.notFound("Simulated 404 (should NOT halt the site)");
       case "critical":
       default:
-        // Unhandled throw → caught by the catch-all → NEC-API-5000, severity 'critical'.
+        // Unhandled throw → caught by the catch-all → XEC-API-5000, severity 'critical'.
         throw new Error("Simulated critical backend error (unhandled throw)");
     }
   });
@@ -141,10 +141,10 @@ adminRouter.get("/registered-pages", adminGuard, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Plugin-registered NEC codes (used by ACP Error Reference page)
-adminRouter.get("/nec-codes", adminGuard, async (_req, res, next) => {
+// Plugin-registered XEC codes (used by ACP Error Reference page)
+adminRouter.get("/xec-codes", adminGuard, async (_req, res, next) => {
   try {
-    const { necRegistry } = await import("../../core/nec-registry/nec-registry.js");
+    const { necRegistry } = await import("../../core/xec-registry/xec-registry.js");
     res.json(necRegistry.getAll());
   } catch (err) { next(err); }
 });
@@ -178,6 +178,6 @@ adminRouter.use("/progression",  adminProgressionRouter);
 adminRouter.use("/tasks",        scheduledTaskRouter);
 // Page layout documents (ADR-0005) — same ADMIN_ACCESS gate as Appearance.
 adminRouter.use("/layouts",      adminLayoutRouter);
-// .nvtheme export/import — layouts + tokens as data, never code.
+// .xttheme export/import — layouts + tokens as data, never code.
 adminRouter.use("/themes",       themeRouter);
 adminRouter.use("/email",        adminEmailRouter);

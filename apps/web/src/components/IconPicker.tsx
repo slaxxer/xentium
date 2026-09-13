@@ -20,7 +20,7 @@ import { useTranslation } from "react-i18next";
 import {
   ICON_STYLE_DEFS, iconStyleDef, parseIconToken, formatIconToken,
   type IconStyleGroup,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { FontAwesomeIcon as RawIcon } from "@fortawesome/react-fontawesome";
 import { BUNDLED_ICON_NAMES, bundledIcon } from "../lib/iconCatalogue";
 import { useIconKitReady } from "../lib/iconKit";

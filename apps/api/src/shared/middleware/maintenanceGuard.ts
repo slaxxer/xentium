@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { NEC } from "@nodevo/contracts";
+import { XEC } from "@xentium/contracts";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { maintenanceService } from "../../modules/maintenance/maintenance.service.js";
 
@@ -38,7 +38,7 @@ export const maintenanceGuard: RequestHandler = async (req, res, next) => {
     }
 
     res.status(503).json({
-      error: { code: NEC.CORE_MAINTENANCE, message: "The site is under maintenance." },
+      error: { code: XEC.CORE_MAINTENANCE, message: "The site is under maintenance." },
       maintenance: true,
     });
   } catch {

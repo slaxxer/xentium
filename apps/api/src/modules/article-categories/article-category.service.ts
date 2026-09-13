@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "@xentium/contracts";
 import {
   slugify,
   uniqueSlug,
@@ -10,7 +10,7 @@ import {
   type ViewerContext,
   type VisibilityMode,
   type VisibilityNode,
-} from "@nodevo/sdk";
+} from "@xentium/sdk";
 import type { CreateCategoryInput, UpdateCategoryInput, ReorderInput } from "./article-category.validation.js";
 
 type CategoryRow = {
@@ -118,7 +118,7 @@ export const articleCategoryService = {
 
   async getById(id: string): Promise<CategoryRow> {
     const row = await prisma.articleCategory.findUnique({ where: { id } });
-    if (!row) throw new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
+    if (!row) throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
     return row;
   },
 
@@ -160,7 +160,7 @@ export const articleCategoryService = {
 
   async update(id: string, input: UpdateCategoryInput): Promise<CategoryRow> {
     const existing = await prisma.articleCategory.findUnique({ where: { id } });
-    if (!existing) throw new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
+    if (!existing) throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
 
     const willChangeName = input.name !== undefined && input.name !== existing.name;
     let nextSlug = existing.slug;
@@ -201,7 +201,7 @@ export const articleCategoryService = {
 
   async remove(id: string, opts: { reparentChildren: boolean }): Promise<void> {
     const existing = await prisma.articleCategory.findUnique({ where: { id } });
-    if (!existing) throw new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
+    if (!existing) throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "Category not found" });
 
     await prisma.$transaction(async (tx) => {
       if (opts.reparentChildren) {
@@ -245,8 +245,8 @@ export const articleCategoryService = {
         const seen = new Set<string>([id]);
         while (cursor) {
           if (seen.has(cursor)) {
-            throw new NodevoError({
-              code: NEC.API_VALIDATION,
+            throw new XentiumError({
+              code: XEC.API_VALIDATION,
               httpStatus: 400,
               message: `Cycle detected at node ${id}`,
             });

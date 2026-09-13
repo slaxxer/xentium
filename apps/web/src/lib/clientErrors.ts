@@ -21,11 +21,11 @@ export type ErrorKind =
 
 export interface ClientErrorReport {
   kind:            ErrorKind;
-  /** Short quotable id for this incident, e.g. `NV-M7K2P1-4QF`. */
+  /** Short quotable id for this incident, e.g. `XT-M7K2P1-4QF`. */
   reference:       string;
   message:         string;
   status?:         number;
-  /** NEC code when the API supplied one (`{ error: { code } }`). */
+  /** XEC code when the API supplied one (`{ error: { code } }`). */
   code?:           string;
   stack?:          string;
   componentStack?: string;
@@ -42,7 +42,7 @@ const RAND = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O/1/I — this gets read
 function makeReference(): string {
   let tail = "";
   for (let i = 0; i < 3; i++) tail += RAND[Math.floor(Math.random() * RAND.length)];
-  return `NV-${Date.now().toString(36).toUpperCase()}-${tail}`;
+  return `XT-${Date.now().toString(36).toUpperCase()}-${tail}`;
 }
 
 /** Best-effort message extraction from anything a `throw` can carry. */
@@ -71,7 +71,7 @@ export function describeError(error: unknown, opts: DescribeOptions = {}): Clien
 
   // The api client attaches `status` + the canonical `{ error: { code } }` body
   // to the Error it throws, so an API failure that escapes a component still
-  // reports its NEC code rather than "Failed to fetch".
+  // reports its XEC code rather than "Failed to fetch".
   const status = opts.status ?? (error as { status?: number } | null)?.status;
   const code   = (error as { detail?: { error?: { code?: string } } } | null)?.detail?.error?.code;
 
@@ -102,7 +102,7 @@ export function describeError(error: unknown, opts: DescribeOptions = {}): Clien
  */
 export function formatReport(r: ClientErrorReport): string {
   const lines = [
-    `Nodevo client error ${r.reference}`,
+    `Xentium client error ${r.reference}`,
     `Time:    ${new Date(r.at).toISOString()}`,
     `Route:   ${r.route || "(unknown)"}`,
     `Kind:    ${r.kind}`,
@@ -122,5 +122,5 @@ export function formatReport(r: ClientErrorReport): string {
  * outcome, so this is worth the noise.
  */
 export function logClientError(report: ClientErrorReport, error: unknown): void {
-  console.error(`[nodevo] ${report.reference} (${report.kind}) at ${report.route}:`, error);
+  console.error(`[xentium] ${report.reference} (${report.kind}) at ${report.route}:`, error);
 }

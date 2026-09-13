@@ -1,9 +1,9 @@
 import type { RequestHandler } from "express";
 import { adminService } from "./admin.service.js";
 import { z } from "zod";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { paginatedRequestSchema } from "@nodevo/contracts";
+import { paginatedRequestSchema } from "@xentium/contracts";
 import { marketplaceService } from "./marketplace.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
@@ -570,9 +570,9 @@ export const adminController = {
   updateJob: (async (req, res) => {
     const { key } = keyParamSchema.parse(req.params);
     const def = getJobDef(key);
-    if (!def) throw NodevoError.notFound("Unknown job");
+    if (!def) throw XentiumError.notFound("Unknown job");
     const config = jobConfigSchema.parse(req.body);
-    // applyJobSchedule validates the resolved pattern (throws NEC-QUEUE-5001 on a
+    // applyJobSchedule validates the resolved pattern (throws XEC-QUEUE-5001 on a
     // bad cron / too-frequent schedule) BEFORE we persist — so a rejected config
     // is never saved and the live scheduler is only touched on success.
     await applyJobSchedule(def, config);
@@ -583,7 +583,7 @@ export const adminController = {
   runJob: (async (req, res) => {
     const { key } = keyParamSchema.parse(req.params);
     const def = getJobDef(key);
-    if (!def) throw NodevoError.notFound("Unknown job");
+    if (!def) throw XentiumError.notFound("Unknown job");
     await def.queue.add(def.jobName, {});
     res.json({ ok: true });
   }) as RequestHandler,

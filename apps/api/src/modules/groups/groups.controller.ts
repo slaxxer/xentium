@@ -59,7 +59,7 @@ export const groupsController = {
   uploadIcon: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     if (!req.file) {
-      res.status(400).json({ code: "NEC-STORE-7000", message: "No file uploaded" });
+      res.status(400).json({ code: "XEC-STORE-7000", message: "No file uploaded" });
       return;
     }
     const url = await groupsService.uploadIcon(id, req.file.buffer, req.file.originalname);

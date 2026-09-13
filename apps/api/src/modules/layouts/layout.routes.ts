@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { uploadSingle } from "../../shared/middleware/upload.js";
 import { layoutController } from "./layout.controller.js";

@@ -2,10 +2,10 @@ import type { RequestHandler } from "express";
 import { prisma } from "../../infrastructure/db.js";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
-import type { PermissionKey } from "@nodevo/contracts";
+import type { PermissionKey } from "@xentium/contracts";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
-import { NodevoError } from "../errors/NodevoError.js";
-import { NEC } from "../errors/nec.js";
+import { XentiumError } from "../errors/XentiumError.js";
+import { XEC } from "../errors/xec.js";
 import { unauthenticatedError, invalidTokenError } from "./requireAuth.js";
 
 /**
@@ -27,8 +27,8 @@ async function authedUserId(authHeader: string | undefined): Promise<{ userId: s
 }
 
 function permissionDeniedError(keys: PermissionKey[]) {
-  return new NodevoError({
-    code: NEC.PERM_DENIED, httpStatus: 403,
+  return new XentiumError({
+    code: XEC.PERM_DENIED, httpStatus: 403,
     message: "You don't have permission to do that",
     details: { required: keys },
   });

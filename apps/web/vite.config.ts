@@ -10,7 +10,7 @@ import { resolve } from "node:path";
  */
 function seoMetaDev(): Plugin {
   return {
-    name: "nodevo-seo-meta-dev",
+    name: "xentium-seo-meta-dev",
     apply: "serve",
     transformIndexHtml: {
       order: "post",
@@ -25,7 +25,7 @@ function seoMetaDev(): Plugin {
           if (!base) return html;
           const pathname = (ctx.originalUrl ?? "/").split("?")[0];
           const href = new URL(pathname, base + "/").toString();
-          const name = cfg.siteName || "Nodevo";
+          const name = cfg.siteName || "Xentium";
           // Swap the static <title> to the site name (parity with the prod
           // serveWeb.ts path) so view-source shows the configured name. Escape
           // the raw string replace (Vite auto-escapes the tag attrs below).
@@ -66,5 +66,5 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": "http://localhost:4000", "/uploads": "http://localhost:4000" },
   },
-  optimizeDeps: { exclude: ["@nodevo/ui", "@nodevo/contracts", "@nodevo/sdk"] },
+  optimizeDeps: { exclude: ["@xentium/ui", "@xentium/contracts", "@xentium/sdk"] },
 });

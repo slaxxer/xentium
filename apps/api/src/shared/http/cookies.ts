@@ -1,7 +1,7 @@
 import type { Response } from "express";
 import { env } from "../../config/env.js";
 
-export const REFRESH_COOKIE_NAME = "nv_rt";
+export const REFRESH_COOKIE_NAME = "xt_rt";
 const prod = env.NODE_ENV === "production";
 
 export function setRefreshCookie(res: Response, token: string) {

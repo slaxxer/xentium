@@ -1,4 +1,4 @@
-name: nodevo-prod
+name: xentium-prod
 
 # Production stack: db, redis, one-shot migrate, api, worker, web.
 # Build context is the repo root; run from the repo root, e.g.:
@@ -9,12 +9,12 @@ services:
   postgres:
     image: postgres:17-alpine
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-nodevo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nodevo}
-      POSTGRES_DB: ${POSTGRES_DB:-nodevo}
-    volumes: ["nodevo_pg:/var/lib/postgresql/data"]
+      POSTGRES_USER: ${POSTGRES_USER:-xentium}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-xentium}
+      POSTGRES_DB: ${POSTGRES_DB:-xentium}
+    volumes: ["xentium_pg:/var/lib/postgresql/data"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nodevo}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-xentium}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -22,7 +22,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    volumes: ["nodevo_redis:/data"]
+    volumes: ["xentium_redis:/data"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -54,7 +54,7 @@ services:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
       migrate:  { condition: service_completed_successfully }
-    volumes: ["nodevo_uploads:/app/var/uploads"]
+    volumes: ["xentium_uploads:/app/var/uploads"]
     restart: unless-stopped
 
   worker:
@@ -70,7 +70,7 @@ services:
       postgres: { condition: service_healthy }
       redis:    { condition: service_healthy }
       migrate:  { condition: service_completed_successfully }
-    volumes: ["nodevo_uploads:/app/var/uploads"]
+    volumes: ["xentium_uploads:/app/var/uploads"]
     restart: unless-stopped
 
   web:
@@ -82,6 +82,6 @@ services:
     restart: unless-stopped
 
 volumes:
-  nodevo_pg:
-  nodevo_redis:
-  nodevo_uploads:
+  xentium_pg:
+  xentium_redis:
+  xentium_uploads:

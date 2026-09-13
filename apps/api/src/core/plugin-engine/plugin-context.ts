@@ -1,7 +1,7 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
-} from "@nodevo/plugin-sdk";
-import { registerTemplate } from "@nodevo/contracts";
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+} from "@xentium/plugin-sdk";
+import { registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";
@@ -12,12 +12,12 @@ import { authGuardRegistry, type AuthGuard } from "../auth-guard-registry/auth-g
 import { searchRegistry } from "../search-registry/search-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
 import { statRegistry } from "../stat-registry/stat-registry.js";
-import { necRegistry } from "../nec-registry/nec-registry.js";
+import { necRegistry } from "../xec-registry/xec-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { queues } from "../../infrastructure/queue.js";
 import { env } from "../../config/env.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentLimits.js";
@@ -32,7 +32,7 @@ const host: PluginHost = {
   queues,
   env,
   logger,
-  errors:     { NodevoError, NEC },
+  errors:     { XentiumError, XEC },
   middleware: {
     requireAuth,
     optionalAuth,
@@ -156,9 +156,9 @@ export class PluginContextImpl implements PluginContext {
     logger.info({ pluginId: this.pluginId, criteria: criteria.id }, "Plugin progression criteria registered");
   }
 
-  registerNecCodes(codes: NecCodeDeclaration[]): void {
+  registerNecCodes(codes: XecCodeDeclaration[]): void {
     necRegistry.register(this.pluginId, codes);
-    logger.info({ pluginId: this.pluginId, count: codes.length }, "Plugin NEC codes registered");
+    logger.info({ pluginId: this.pluginId, count: codes.length }, "Plugin XEC codes registered");
   }
 
   /**

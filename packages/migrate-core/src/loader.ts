@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import pg from "pg";
-import { uniqueSlug } from "@nodevo/sdk";
+import { uniqueSlug } from "@xentium/sdk";
 import { htmlToTipTap, htmlToText } from "./htmlToTipTap.js";
 import type {
   ExtractResult, ImportedArticle, ImportedBlock, ImportedCategory, ImportedComment,
@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 
 /**
- * Loads the platform-neutral intermediate model into a Nodevo database.
+ * Loads the platform-neutral intermediate model into a Xentium database.
  *
  * Written once, used by every adapter. Direct SQL (spec §34 sanctions direct
  * DB writes — REST is impractical for bulk imports); search vectors are
@@ -22,7 +22,7 @@ import type {
  * Failure model: per-row try/catch — one bad source row is reported and
  * skipped, never aborts the run (status becomes "partial").
  */
-export class NodevoLoader {
+export class XentiumLoader {
   private groupIdByKey = new Map<string, string>();
 
   constructor(
@@ -40,17 +40,17 @@ export class NodevoLoader {
 
   private async mapped(entity: string, sourceId: string): Promise<string | null> {
     const res = await this.pool.query(
-      `SELECT nodevo_id FROM ncf_import_map WHERE platform = $1 AND entity = $2 AND source_id = $3`,
+      `SELECT xentium_id FROM xcf_import_map WHERE platform = $1 AND entity = $2 AND source_id = $3`,
       [this.platform, entity, sourceId],
     );
-    return res.rows[0]?.nodevo_id ?? null;
+    return res.rows[0]?.xentium_id ?? null;
   }
 
-  private async remember(entity: string, sourceId: string, nodevoId: string): Promise<void> {
+  private async remember(entity: string, sourceId: string, xentiumId: string): Promise<void> {
     await this.pool.query(
-      `INSERT INTO ncf_import_map (id, run_id, platform, entity, source_id, nodevo_id)
+      `INSERT INTO xcf_import_map (id, run_id, platform, entity, source_id, xentium_id)
        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
-      [crypto.randomUUID(), this.runId, this.platform, entity, sourceId, nodevoId],
+      [crypto.randomUUID(), this.runId, this.platform, entity, sourceId, xentiumId],
     );
   }
 
@@ -64,15 +64,15 @@ export class NodevoLoader {
 
   // ── preconditions ──────────────────────────────────────────────────────────
 
-  /** The target must be an installed Nodevo database. */
+  /** The target must be an installed Xentium database. */
   async assertTargetReady(requiredPlugins: string[] = []): Promise<void> {
     const install = await this.pool
-      .query(`SELECT "completedAt" FROM ncf_installs LIMIT 1`)
+      .query(`SELECT "completedAt" FROM xcf_installs LIMIT 1`)
       .catch(() => null);
     if (!install?.rows[0]?.completedAt) {
-      throw new Error("Target is not an installed Nodevo database — complete the install wizard first.");
+      throw new Error("Target is not an installed Xentium database — complete the install wizard first.");
     }
-    const groups = await this.pool.query(`SELECT id, key FROM ncf_groups`);
+    const groups = await this.pool.query(`SELECT id, key FROM xcf_groups`);
     for (const row of groups.rows) this.groupIdByKey.set(row.key, row.id);
     if (!this.groupIdByKey.has("member")) {
       throw new Error('Target database has no "member" group — seeding incomplete?');
@@ -105,7 +105,7 @@ export class NodevoLoader {
 
     // Same email = same person: map to the existing account, import nothing.
     const existing = await this.pool.query(
-      `SELECT id FROM ncf_users WHERE lower(email) = lower($1)`,
+      `SELECT id FROM xcf_users WHERE lower(email) = lower($1)`,
       [user.email],
     );
     if (existing.rows[0]) {
@@ -122,7 +122,7 @@ export class NodevoLoader {
     const joined = user.joinedAt ?? new Date();
 
     await this.pool.query(
-      `INSERT INTO ncf_users (id, email, username, "passwordHash", password_scheme,
+      `INSERT INTO xcf_users (id, email, username, "passwordHash", password_scheme,
                            display_name, bio, "isActive", "createdAt", "updatedAt")
        VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, NOW())`,
       [id, user.email, username, passwordHash, scheme, user.displayName ?? null, user.bio ?? null, joined],
@@ -131,12 +131,12 @@ export class NodevoLoader {
     // Best-effort role mapping (§34, lossy by design). Unknown keys → member.
     const groupKey = user.role && this.groupIdByKey.has(user.role) ? user.role : "member";
     await this.pool.query(
-      `INSERT INTO ncf_user_groups ("userId", "groupId") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO xcf_user_groups ("userId", "groupId") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [id, this.groupIdByKey.get(groupKey)],
     );
     // Privacy row exists for every user (§37) — registration normally creates it.
     await this.pool.query(
-      `INSERT INTO ncf_user_privacy_settings (user_id, settings, updated_at)
+      `INSERT INTO xcf_user_privacy_settings (user_id, settings, updated_at)
        VALUES ($1, '{}', NOW()) ON CONFLICT DO NOTHING`,
       [id],
     );
@@ -152,7 +152,7 @@ export class NodevoLoader {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       const taken = await this.pool.query(
-        `SELECT 1 FROM ncf_users WHERE lower(username) = lower($1)`,
+        `SELECT 1 FROM xcf_users WHERE lower(username) = lower($1)`,
         [candidate],
       );
       if (!taken.rows[0]) return candidate;
@@ -192,12 +192,12 @@ export class NodevoLoader {
 
     const parentId = cat.parentSourceId ? await this.mapped("category", cat.parentSourceId) : null;
     const slug = await uniqueSlug(cat.name, async (s) => {
-      const r = await this.pool.query(`SELECT 1 FROM ncf_article_categories WHERE slug = $1`, [s]);
+      const r = await this.pool.query(`SELECT 1 FROM xcf_article_categories WHERE slug = $1`, [s]);
       return !!r.rows[0];
     });
     const id = crypto.randomUUID();
     await this.pool.query(
-      `INSERT INTO ncf_article_categories (id, parent_id, name, slug, description, position, created_at, updated_at)
+      `INSERT INTO xcf_article_categories (id, parent_id, name, slug, description, position, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, 0, NOW(), NOW())`,
       [id, parentId, cat.name, slug, cat.description ?? null],
     );
@@ -229,7 +229,7 @@ export class NodevoLoader {
       : null;
 
     const slug = await uniqueSlug(article.title, async (s) => {
-      const r = await this.pool.query(`SELECT 1 FROM ncf_articles WHERE slug = $1`, [s]);
+      const r = await this.pool.query(`SELECT 1 FROM xcf_articles WHERE slug = $1`, [s]);
       return !!r.rows[0];
     });
     const body = htmlToTipTap(article.contentHtml);
@@ -238,7 +238,7 @@ export class NodevoLoader {
     const id = crypto.randomUUID();
 
     await this.pool.query(
-      `INSERT INTO ncf_articles (id, author_id, category_id, title, slug, excerpt, body, body_plain,
+      `INSERT INTO xcf_articles (id, author_id, category_id, title, slug, excerpt, body, body_plain,
                              status, visibility, published_at, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'public', $10, $11, NOW())`,
       [
@@ -262,18 +262,18 @@ export class NodevoLoader {
   private async linkTag(articleId: string, name: string): Promise<void> {
     const clean = name.trim();
     if (!clean) return;
-    const existing = await this.pool.query(`SELECT id FROM ncf_tags WHERE lower(name) = lower($1)`, [clean]);
+    const existing = await this.pool.query(`SELECT id FROM xcf_tags WHERE lower(name) = lower($1)`, [clean]);
     let tagId: string = existing.rows[0]?.id;
     if (!tagId) {
       tagId = crypto.randomUUID();
       const slug = await uniqueSlug(clean, async (s) => {
-        const r = await this.pool.query(`SELECT 1 FROM ncf_tags WHERE slug = $1`, [s]);
+        const r = await this.pool.query(`SELECT 1 FROM xcf_tags WHERE slug = $1`, [s]);
         return !!r.rows[0];
       });
-      await this.pool.query(`INSERT INTO ncf_tags (id, name, slug) VALUES ($1, $2, $3)`, [tagId, clean, slug]);
+      await this.pool.query(`INSERT INTO xcf_tags (id, name, slug) VALUES ($1, $2, $3)`, [tagId, clean, slug]);
     }
     await this.pool.query(
-      `INSERT INTO ncf_article_tags (article_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      `INSERT INTO xcf_article_tags (article_id, tag_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [articleId, tagId],
     );
   }
@@ -281,7 +281,7 @@ export class NodevoLoader {
   // ── comments ───────────────────────────────────────────────────────────────
 
   async loadComments(comments: ImportedComment[]): Promise<void> {
-    // Nodevo threads one level deep (§33): replies-to-replies attach to the
+    // Xentium threads one level deep (§33): replies-to-replies attach to the
     // top-level ancestor. Track each inserted comment's parent to flatten.
     const inserted = new Map<string, { id: string; parentDbId: string | null }>();
     let done = 0;
@@ -320,7 +320,7 @@ export class NodevoLoader {
     const id = crypto.randomUUID();
     const created = comment.createdAt ?? new Date();
     await this.pool.query(
-      `INSERT INTO ncf_article_comments (id, article_id, author_id, parent_id, body, status, created_at, updated_at)
+      `INSERT INTO xcf_article_comments (id, article_id, author_id, parent_id, body, status, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, 'published', $6, NOW())`,
       [id, articleId, authorId, parentDbId, comment.bodyText, created],
     );
@@ -329,7 +329,7 @@ export class NodevoLoader {
     this.bump("comments");
   }
 
-  // ── forum (nodevo-forum plugin tables — gated by assertTargetReady) ───────
+  // ── forum (xentium-forum plugin tables — gated by assertTargetReady) ───────
 
   async loadForumNodes(nodes: ImportedForumNode[]): Promise<void> {
     const pending = [...nodes];
@@ -471,12 +471,12 @@ export class NodevoLoader {
       ) sub WHERE n.id = sub.node_id`);
     // Users: forum activity counters (§38).
     await this.pool.query(`
-      UPDATE ncf_users u SET post_count = sub.n
+      UPDATE xcf_users u SET post_count = sub.n
       FROM (SELECT author_id, COUNT(*)::int AS n FROM forum_posts
             WHERE deleted_at IS NULL GROUP BY author_id) sub
       WHERE u.id = sub.author_id`);
     await this.pool.query(`
-      UPDATE ncf_users u SET thread_count = sub.n
+      UPDATE xcf_users u SET thread_count = sub.n
       FROM (SELECT author_id, COUNT(*)::int AS n FROM forum_threads
             WHERE deleted_at IS NULL GROUP BY author_id) sub
       WHERE u.id = sub.author_id`);
@@ -493,7 +493,7 @@ export class NodevoLoader {
         if (!blockerId || !blockedId) throw new Error("user not imported");
         if (blockerId === blockedId) continue;
         const res = await this.pool.query(
-          `INSERT INTO ncf_user_blocks (id, blocker_id, blocked_id, created_at)
+          `INSERT INTO xcf_user_blocks (id, blocker_id, blocked_id, created_at)
            VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
           [crypto.randomUUID(), blockerId, blockedId, block.createdAt ?? new Date()],
         );
@@ -513,13 +513,13 @@ export class NodevoLoader {
         if (followerId === followingId) continue;
         // §36: a block in either direction kills the follow relationship.
         const blocked = await this.pool.query(
-          `SELECT 1 FROM ncf_user_blocks
+          `SELECT 1 FROM xcf_user_blocks
            WHERE (blocker_id = $1 AND blocked_id = $2) OR (blocker_id = $2 AND blocked_id = $1)`,
           [followerId, followingId],
         );
         if (blocked.rows[0]) continue;
         const res = await this.pool.query(
-          `INSERT INTO ncf_user_follows (id, follower_id, following_id, created_at)
+          `INSERT INTO xcf_user_follows (id, follower_id, following_id, created_at)
            VALUES ($1, $2, $3, $4) ON CONFLICT DO NOTHING`,
           [crypto.randomUUID(), followerId, followingId, follow.createdAt ?? new Date()],
         );
@@ -557,18 +557,18 @@ export class NodevoLoader {
       WHERE p.id = sub.post_id`);
     // Likes received on the user's posts (§38/§45).
     await this.pool.query(`
-      UPDATE ncf_users u SET like_count_received = sub.n
+      UPDATE xcf_users u SET like_count_received = sub.n
       FROM (SELECT p.author_id, COUNT(*)::int AS n
             FROM forum_post_likes l JOIN forum_posts p ON p.id = l.post_id
             WHERE p.deleted_at IS NULL GROUP BY p.author_id) sub
       WHERE u.id = sub.author_id`);
     await this.pool.query(`
-      UPDATE ncf_users u SET follower_count = COALESCE(sub.n, 0)
-      FROM (SELECT following_id, COUNT(*)::int AS n FROM ncf_user_follows GROUP BY following_id) sub
+      UPDATE xcf_users u SET follower_count = COALESCE(sub.n, 0)
+      FROM (SELECT following_id, COUNT(*)::int AS n FROM xcf_user_follows GROUP BY following_id) sub
       WHERE u.id = sub.following_id`);
     await this.pool.query(`
-      UPDATE ncf_users u SET following_count = COALESCE(sub.n, 0)
-      FROM (SELECT follower_id, COUNT(*)::int AS n FROM ncf_user_follows GROUP BY follower_id) sub
+      UPDATE xcf_users u SET following_count = COALESCE(sub.n, 0)
+      FROM (SELECT follower_id, COUNT(*)::int AS n FROM xcf_user_follows GROUP BY follower_id) sub
       WHERE u.id = sub.follower_id`);
   }
 
@@ -576,14 +576,14 @@ export class NodevoLoader {
 
   async recomputeCounters(): Promise<void> {
     await this.pool.query(`
-      UPDATE ncf_articles a SET comment_count = sub.n
+      UPDATE xcf_articles a SET comment_count = sub.n
       FROM (SELECT article_id, COUNT(*)::int AS n
-            FROM ncf_article_comments WHERE deleted_at IS NULL GROUP BY article_id) sub
+            FROM xcf_article_comments WHERE deleted_at IS NULL GROUP BY article_id) sub
       WHERE a.id = sub.article_id`);
     await this.pool.query(`
-      UPDATE ncf_users u SET article_count = sub.n
+      UPDATE xcf_users u SET article_count = sub.n
       FROM (SELECT author_id, COUNT(*)::int AS n
-            FROM ncf_articles WHERE deleted_at IS NULL AND status = 'published'
+            FROM xcf_articles WHERE deleted_at IS NULL AND status = 'published'
             GROUP BY author_id) sub
       WHERE u.id = sub.author_id`);
   }
@@ -626,7 +626,7 @@ export class NodevoLoader {
 export async function missingPlugins(pool: pg.Pool, required: string[]): Promise<string[]> {
   if (!required.length) return [];
   const res = await pool
-    .query(`SELECT id FROM ncf_installed_plugins WHERE status = 'enabled' AND id = ANY($1)`, [required])
+    .query(`SELECT id FROM xcf_installed_plugins WHERE status = 'enabled' AND id = ANY($1)`, [required])
     .catch(() => ({ rows: [] as Array<{ id: string }> }));
   const enabled = new Set(res.rows.map((r) => r.id));
   return required.filter((id) => !enabled.has(id));

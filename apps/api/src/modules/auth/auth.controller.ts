@@ -9,8 +9,8 @@ import { prisma } from "../../infrastructure/db.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 
 
@@ -89,11 +89,11 @@ export async function loginHandler(req: Request, res: Response) {
   // Failed logins are already tracked via login_events + lockout — persist:false
   // keeps the error_log free of routine credential noise.
   if (!result) {
-    throw new NodevoError({ code: NEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid credentials", persist: false });
+    throw new XentiumError({ code: XEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid credentials", persist: false });
   }
   if ("banned" in result) {
-    throw new NodevoError({
-      code: result.expiresAt ? NEC.AUTH_BANNED : NEC.AUTH_BANNED_PERMANENT,
+    throw new XentiumError({
+      code: result.expiresAt ? XEC.AUTH_BANNED : XEC.AUTH_BANNED_PERMANENT,
       httpStatus: 401,
       message: "Account suspended",
       details: { reason: result.reason, expiresAt: result.expiresAt },
@@ -108,7 +108,7 @@ export async function loginHandler(req: Request, res: Response) {
    * Core has verified WHO they are; whether the door is open is a policy, and it
    * belongs to whatever implements it. `isStaff` is passed rather than acted on:
    * core does not assume a policy exempts staff, the guard decides. A refusal
-   * throws with the guard's own NEC code, so the client sees why.
+   * throws with the guard's own XEC code, so the client sees why.
    */
   const guardReq = {
     ip:        req.ip ?? "",
@@ -128,12 +128,12 @@ export async function refreshHandler(req: Request, res: Response) {
   // Guest refresh attempts + expired sessions fire constantly — persist:false.
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
   if (!raw) {
-    throw new NodevoError({ code: NEC.AUTH_NO_SESSION, httpStatus: 401, message: "No active session", persist: false });
+    throw new XentiumError({ code: XEC.AUTH_NO_SESSION, httpStatus: 401, message: "No active session", persist: false });
   }
   const result = await rotateSession(raw, getRequestMeta(req, res));
   if (!result) {
     clearRefreshCookie(res);
-    throw new NodevoError({ code: NEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
+    throw new XentiumError({ code: XEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
   }
   setRefreshCookie(res, result.refreshToken);
   res.json({ accessToken: result.accessToken });
@@ -147,7 +147,7 @@ export async function requestPasswordResetHandler(req: Request, res: Response) {
   res.json({ ok: true });
 }
 
-/** Complete a password reset using the emailed token. Throws NEC-AUTH-1007 on bad/expired token. */
+/** Complete a password reset using the emailed token. Throws XEC-AUTH-1007 on bad/expired token. */
 export async function confirmPasswordResetHandler(req: Request, res: Response) {
   const parsed = confirmPasswordResetSchema.parse(req.body);
 
@@ -197,7 +197,7 @@ export async function meHandler(req: Request, res: Response) {
       },
     },
   });
-  if (!user) throw NodevoError.notFound("User not found");
+  if (!user) throw XentiumError.notFound("User not found");
   // `me` returns the user's FULL group membership — this payload is the client's
   // source of truth for role gating (ACP access, staff UI). Badge *visibility* is
   // a presentational choice: `hiddenBadges` is sent alongside so the client can

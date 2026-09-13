@@ -16,7 +16,7 @@
  * the block in the tree is most of the value gone.
  */
 import { useCallback, useRef, useState } from "react";
-import type { LayoutDocument } from "@nodevo/contracts";
+import type { LayoutDocument } from "@xentium/contracts";
 
 /** A point in the edit history: the document, and what was selected at the time. */
 export interface LayoutSnapshot {

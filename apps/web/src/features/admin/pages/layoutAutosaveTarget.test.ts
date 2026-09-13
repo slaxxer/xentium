@@ -15,7 +15,7 @@
  * document is written under, and that is the whole of it.
  */
 import { describe, expect, it } from "vitest";
-import type { LayoutDocument, TemplateKey } from "@nodevo/contracts";
+import type { LayoutDocument, TemplateKey } from "@xentium/contracts";
 
 /** The `onSave` guard: a document only saves under its own template. */
 const mayAutosave = (doc: LayoutDocument | null, editing: TemplateKey, conflict: boolean) =>

@@ -3,12 +3,12 @@
 > Companion to ADR-0005 (block layout composition). Read that first for the model;
 > this document is the authoring contract.
 
-Nodevo has exactly two kinds of extension, and no third:
+Xentium has exactly two kinds of extension, and no third:
 
 | | Contains | Trust | Distribution |
 |---|---|---|---|
-| **Theme** | Layout documents + tokens + assets. **Data only.** | None needed — validated against a schema | `.nvtheme` ([format](./theme-packages.md)) |
-| **Plugin** | Code: blocks, routes, server logic, migrations | Trusted, reviewed | `.nvplugin` |
+| **Theme** | Layout documents + tokens + assets. **Data only.** | None needed — validated against a schema | `.xttheme` ([format](./theme-packages.md)) |
+| **Plugin** | Code: blocks, routes, server logic, migrations | Trusted, reviewed | `.xtplugin` |
 
 A theme can never execute code. So "I need a component the catalogue doesn't have"
 is answered by **ship a plugin that registers a block** — which also gets you
@@ -45,7 +45,7 @@ function MyBlock({ props, context }: BlockProps<z.infer<typeof propsSchema>, unk
 
 registerBlock({
   type:       "myplugin.recentItems",  // NAMESPACED — see below
-  pluginId:   "nodevo-myplugin",       // enables removal when disabled
+  pluginId:   "xentium-myplugin",       // enables removal when disabled
   schema:     propsSchema,
   component:  MyBlock,
   editorMeta: { label: "Recent items", category: "plugin" },
@@ -65,7 +65,7 @@ key in every stored document on every site.
 
 **Set `pluginId`.** It is what lets `deregisterBlocksFor()` remove your blocks when
 the plugin is disabled. It is explicit rather than derived from the type prefix
-because a plugin id (`nodevo-forum`) and its namespace (`forum.`) are not the same
+because a plugin id (`xentium-forum`) and its namespace (`forum.`) are not the same
 string.
 
 **The schema is the editor.** The props form is generated from your Zod schema via
@@ -93,7 +93,7 @@ what they are.
 ```tsx
 registerBlock({
   type:      "myplugin.tabs",
-  pluginId:  "nodevo-myplugin",
+  pluginId:  "xentium-myplugin",
   schema:    tabsSchema,
   container: true,
   childTypes: ["myplugin.tab"],           // optional: what this will accept
@@ -103,7 +103,7 @@ registerBlock({
 
 registerBlock({
   type:      "myplugin.tab",
-  pluginId:  "nodevo-myplugin",
+  pluginId:  "xentium-myplugin",
   schema:    tabSchema,
   container: true,
   editorMeta: {
@@ -175,7 +175,7 @@ endpoint behind it from answering. If your block exposes something sensitive, ga
 the **endpoint** — `requirePermission` on your route, not an admin's layout choice.
 
 The editor shows a restricted block regardless of whether the admin is in the
-audience, marked `data-nv-restricted` in the preview and flagged in the tree, so
+audience, marked `data-xt-restricted` in the preview and flagged in the tree, so
 they never lose the ability to select it and undo.
 
 ## Style variants apply to your block for free
@@ -210,7 +210,7 @@ paints nothing:
 
 Do **not** add colour props to your block's schema. The Layout Editor's Style panel edits
 the variant's tokens, so a colour set there stays consistent across every block using that
-variant and travels inside a `.nvtheme`; a prop would be a per-block literal that breaks
+variant and travels inside a `.xttheme`; a prop would be a per-block literal that breaks
 dark mode and cannot be themed.
 
 ## Icons in your block
@@ -219,7 +219,7 @@ Two things happen to your block's icons for free, and one thing you have to not 
 
 **They follow the site's icon style.** Import `FontAwesomeIcon` from the module your
 vite config already externalises (`@fortawesome/react-fontawesome` →
-`__NODEVO_HOST__.FaReact`). Core swaps that export for its own wrapper, so a site using
+`__XENTIUM_HOST__.FaReact`). Core swaps that export for its own wrapper, so a site using
 a FontAwesome Pro kit draws your icons in its chosen style with no change on your side.
 
 ⚠ Bundling your own copy of that package silently opts out — your icons stay solid while
@@ -250,7 +250,7 @@ const schema = z.object({
 icon, then nothing:
 
 ```tsx
-// Externalise this like the rest — it is `__NODEVO_HOST__.webTokenIcon`.
+// Externalise this like the rest — it is `__XENTIUM_HOST__.webTokenIcon`.
 import { TokenIcon } from "@web/components/TokenIcon";
 
 component: ({ props }) => props.icon ? <TokenIcon token={props.icon} /> : null,
@@ -268,8 +268,8 @@ custom CSS. Like the variant it rides the `display: contents` wrapper, so your b
 gets it without registering anything, without a prop, and without the class ever landing
 on an element you position.
 
-Your block also gets **`nv-b--<your-type>`** on that wrapper, automatically. A dotted type
-is flattened for the selector, so `myplugin.stats` is `.nv-b--myplugin-stats`. That is the
+Your block also gets **`xt-b--<your-type>`** on that wrapper, automatically. A dotted type
+is flattened for the selector, so `myplugin.stats` is `.xt-b--myplugin-stats`. That is the
 hook a downloaded theme uses to skin your block, since a theme cannot add a handle to
 layouts it does not control.
 
@@ -278,7 +278,7 @@ Three consequences for you:
 - **Do not add a `className` prop of your own.** It already exists one level up, on the
   node, and a second one would be a permanent per-block surface duplicating it.
 - **Give your block's real elements stable, prefixed classes**, because that is what a
-  theme ends up selecting — `.nv-b--myplugin-stats .myplugin-stats__count`. Treat those
+  theme ends up selecting — `.xt-b--myplugin-stats .myplugin-stats__count`. Treat those
   class names as part of your block's public contract: renaming one breaks a theme exactly
   the way renaming a prop would. So is your block's TYPE, now that the class is derived
   from it.
@@ -332,12 +332,12 @@ adds nothing it could not do. What it adds is an admin's ability to arrange it.
 ### Declare it once, register it twice
 
 The server's registry decides what may be **saved** (it validates every draft and
-every `.nvtheme` import against your declared regions); the browser's decides what
+every `.xttheme` import against your declared regions); the browser's decides what
 **renders**. Share one declaration so the two cannot disagree:
 
 ```ts
 // shared/layoutTemplates.ts — imported by BOTH entries
-import type { LayoutTemplateDeclaration } from "@nodevo/plugin-sdk";
+import type { LayoutTemplateDeclaration } from "@xentium/plugin-sdk";
 
 export const MY_INDEX: LayoutTemplateDeclaration = {
   key:      "myplugin.index",     // namespaced; a bare word is refused
@@ -403,7 +403,7 @@ The same rule as a block, one level up. The template is deregistered, so the edi
 stops offering it and the public payload stops carrying it — but **the stored
 documents are kept**. Re-enabling restores the admin's arrangement in place.
 
-A `.nvtheme` that ships your template is skipped on a site without your plugin
+A `.xttheme` that ships your template is skipped on a site without your plugin
 (there are no declared regions to validate it against) and reported in the import's
 `unknownTemplates`, so the admin can enable your plugin and re-import.
 
@@ -416,7 +416,7 @@ supply one yet.
 
 ## Reference implementation
 
-`plugins/official/nodevo-forum/web/blocks/ForumCategoriesBlock.tsx` registers
+`plugins/official/xentium-forum/web/blocks/ForumCategoriesBlock.tsx` registers
 `forum.categories`, backed by `/forum/nodes` — an endpoint that applies its own
 `visibilityFilter` per viewer.
 

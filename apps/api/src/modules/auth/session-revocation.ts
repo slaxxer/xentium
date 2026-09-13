@@ -1,5 +1,5 @@
 /**
- * The CMS's binding of the framework revocation denylist (`@nodevo/auth`).
+ * The CMS's binding of the framework revocation denylist (`@xentium/auth`).
  *
  * The package owns the semantics; this file supplies the Redis client and the
  * key namespace. `ACCESS_TTL_SECONDS` is re-exported from the package, which is
@@ -8,7 +8,7 @@
  * request hot path. The framework package has neither dependency, so the copy
  * is gone.
  */
-import { createRevocationList, ACCESS_TTL_SECONDS } from "@nodevo/auth";
+import { createRevocationList, ACCESS_TTL_SECONDS } from "@xentium/auth";
 import { redis, rkey } from "../../infrastructure/redis.js";
 
 const list = createRevocationList({ redis, keyPrefix: rkey });

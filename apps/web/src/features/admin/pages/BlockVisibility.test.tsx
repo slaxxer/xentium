@@ -15,7 +15,7 @@ import { cleanup, render, screen, fireEvent, waitFor } from "@testing-library/re
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
-import type { BlockVisibility } from "@nodevo/contracts";
+import type { BlockVisibility } from "@xentium/contracts";
 
 const groupsFixture = [
   { id: "g-users", name: "Registered", key: "registered" },

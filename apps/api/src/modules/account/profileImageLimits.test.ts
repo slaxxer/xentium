@@ -35,7 +35,7 @@ describe("the byte ceiling", () => {
   it("refuses an image over the rank's limit", async () => {
     limits.mockResolvedValue({ ...NO_LADDER, maxProfileImageBytes: 500 });
     await expect(assertProfileImageAllowed("u1", file({ bytes: 501 }))).rejects.toMatchObject({
-      httpStatus: 413, code: "NEC-STORE-7001",
+      httpStatus: 413, code: "XEC-STORE-7001",
     });
   });
 
@@ -65,7 +65,7 @@ describe("the type list", () => {
   it("refuses a type the rank does not list", async () => {
     limits.mockResolvedValue({ ...NO_LADDER, allowedProfileImageTypes: ["image/png"] });
     await expect(assertProfileImageAllowed("u1", file({ mimeType: "image/gif" }))).rejects.toMatchObject({
-      httpStatus: 415, code: "NEC-STORE-7002",
+      httpStatus: 415, code: "XEC-STORE-7002",
     });
   });
 
@@ -80,7 +80,7 @@ describe("the cover gate", () => {
   it("refuses a cover when the rank may not set one", async () => {
     limits.mockResolvedValue({ ...NO_LADDER, canUploadCover: false, badgeLabel: "Newcomer" });
     await expect(assertProfileImageAllowed("u1", file({ kind: "cover" }))).rejects.toMatchObject({
-      httpStatus: 403, code: "NEC-API-4003",
+      httpStatus: 403, code: "XEC-API-4003",
     });
   });
 

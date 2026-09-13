@@ -7,7 +7,7 @@ import { faMagnifyingGlass, faCircleInfo } from "@fortawesome/free-solid-svg-ico
 import { api } from "../../../lib/api";
 import { Badge } from "../../../components/Badge";
 
-interface NecEntry {
+interface XecEntry {
   msg:    string;
   desc:   string;
   cause:  string;
@@ -17,78 +17,78 @@ interface NecEntry {
 }
 
 /**
- * Structural metadata for each core NEC code: severity (drives the badge colour)
+ * Structural metadata for each core XEC code: severity (drives the badge colour)
  * and domain (drives filtering). The human-readable text — msg/desc/cause/fix —
  * lives in the `acp` locale bundle under `errorRef.codes.<CODE>` and is resolved
  * per language at render time (see `coreCatalog` below). Plugin-registered codes
  * arrive fully-formed from the server and are merged in as-is.
  */
-const META: Record<string, { sev: NecEntry["sev"]; domain: string }> = {
+const META: Record<string, { sev: XecEntry["sev"]; domain: string }> = {
   // API
-  "NEC-API-4001": { sev:"Warning", domain:"API" },
-  "NEC-API-4003": { sev:"Warning", domain:"API" },
-  "NEC-API-4004": { sev:"Info", domain:"API" },
-  "NEC-API-4009": { sev:"Warning", domain:"API" },
-  "NEC-API-4290": { sev:"Warning", domain:"API" },
-  "NEC-API-5000": { sev:"Error", domain:"API" },
+  "XEC-API-4001": { sev:"Warning", domain:"API" },
+  "XEC-API-4003": { sev:"Warning", domain:"API" },
+  "XEC-API-4004": { sev:"Info", domain:"API" },
+  "XEC-API-4009": { sev:"Warning", domain:"API" },
+  "XEC-API-4290": { sev:"Warning", domain:"API" },
+  "XEC-API-5000": { sev:"Error", domain:"API" },
   // Auth
-  "NEC-AUTH-1001": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-1002": { sev:"Info", domain:"Auth" },
-  "NEC-AUTH-1003": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-1004": { sev:"Error", domain:"Auth" },
-  "NEC-AUTH-1005": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-1006": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-2001": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-2002": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-2003": { sev:"Warning", domain:"Auth" },
-  "NEC-AUTH-1007": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-1001": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-1002": { sev:"Info", domain:"Auth" },
+  "XEC-AUTH-1003": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-1004": { sev:"Error", domain:"Auth" },
+  "XEC-AUTH-1005": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-1006": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-2001": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-2002": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-2003": { sev:"Warning", domain:"Auth" },
+  "XEC-AUTH-1007": { sev:"Warning", domain:"Auth" },
   // Permissions
-  "NEC-PERM-1001": { sev:"Warning", domain:"Permissions" },
-  "NEC-PERM-1040": { sev:"Warning", domain:"Permissions" },
-  "NEC-PERM-1041": { sev:"Warning", domain:"Permissions" },
-  "NEC-PERM-1042": { sev:"Warning", domain:"Permissions" },
+  "XEC-PERM-1001": { sev:"Warning", domain:"Permissions" },
+  "XEC-PERM-1040": { sev:"Warning", domain:"Permissions" },
+  "XEC-PERM-1041": { sev:"Warning", domain:"Permissions" },
+  "XEC-PERM-1042": { sev:"Warning", domain:"Permissions" },
   // Articles
-  "NEC-ARTICLE-3001": { sev:"Info", domain:"Articles" },
-  "NEC-ARTICLE-3002": { sev:"Info", domain:"Articles" },
-  "NEC-ARTICLE-3003": { sev:"Warning", domain:"Articles" },
+  "XEC-ARTICLE-3001": { sev:"Info", domain:"Articles" },
+  "XEC-ARTICLE-3002": { sev:"Info", domain:"Articles" },
+  "XEC-ARTICLE-3003": { sev:"Warning", domain:"Articles" },
   // Storage
-  "NEC-STORE-7001": { sev:"Warning", domain:"Storage" },
-  "NEC-STORE-7002": { sev:"Warning", domain:"Storage" },
-  "NEC-STORE-7003": { sev:"Warning", domain:"Storage" },
-  "NEC-STORE-7004": { sev:"Error", domain:"Storage" },
+  "XEC-STORE-7001": { sev:"Warning", domain:"Storage" },
+  "XEC-STORE-7002": { sev:"Warning", domain:"Storage" },
+  "XEC-STORE-7003": { sev:"Warning", domain:"Storage" },
+  "XEC-STORE-7004": { sev:"Error", domain:"Storage" },
   // Plugin
-  "NEC-PLUGIN-2001": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2002": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2003": { sev:"Warning", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2004": { sev:"Warning", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2005": { sev:"Warning", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2006": { sev:"Info", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2010": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2011": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2012": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2013": { sev:"Error", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2020": { sev:"Info", domain:"Plugin Engine" },
-  "NEC-PLUGIN-2030": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2001": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2002": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2003": { sev:"Warning", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2004": { sev:"Warning", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2005": { sev:"Warning", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2006": { sev:"Info", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2010": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2011": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2012": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2013": { sev:"Error", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2020": { sev:"Info", domain:"Plugin Engine" },
+  "XEC-PLUGIN-2030": { sev:"Error", domain:"Plugin Engine" },
   // Core
-  "NEC-CORE-8001": { sev:"Error", domain:"Core" },
-  "NEC-CORE-8002": { sev:"Warning", domain:"Core" },
-  "NEC-CORE-8010": { sev:"Info", domain:"Core" },
+  "XEC-CORE-8001": { sev:"Error", domain:"Core" },
+  "XEC-CORE-8002": { sev:"Warning", domain:"Core" },
+  "XEC-CORE-8010": { sev:"Info", domain:"Core" },
   // Pages
-  "NEC-PAGE-3501": { sev:"Info", domain:"Page" },
-  "NEC-PAGE-3502": { sev:"Warning", domain:"Page" },
+  "XEC-PAGE-3501": { sev:"Info", domain:"Page" },
+  "XEC-PAGE-3502": { sev:"Warning", domain:"Page" },
   // Queue / background jobs
-  "NEC-QUEUE-5000": { sev:"Error", domain:"Queue" },
-  "NEC-QUEUE-5001": { sev:"Warning", domain:"Queue" },
+  "XEC-QUEUE-5000": { sev:"Error", domain:"Queue" },
+  "XEC-QUEUE-5001": { sev:"Warning", domain:"Queue" },
   // License / Marketplace
-  "NEC-LICENSE-9001": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9002": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9003": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9004": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9005": { sev:"Info", domain:"License" },
-  "NEC-LICENSE-9006": { sev:"Error", domain:"License" },
-  "NEC-LICENSE-9007": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9008": { sev:"Warning", domain:"License" },
-  "NEC-LICENSE-9009": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9001": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9002": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9003": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9004": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9005": { sev:"Info", domain:"License" },
+  "XEC-LICENSE-9006": { sev:"Error", domain:"License" },
+  "XEC-LICENSE-9007": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9008": { sev:"Warning", domain:"License" },
+  "XEC-LICENSE-9009": { sev:"Warning", domain:"License" },
 };
 
 const CORE_DOMAINS = ["API", "Auth", "Permissions", "Articles", "Page", "Storage", "Plugin Engine", "Core", "Queue", "License"];
@@ -105,15 +105,15 @@ export function ErrorReferencePage() {
   const [code,     setCode]     = useState("");
   const [filter,   setFilter]   = useState("");
   const [domain,   setDomain]   = useState("");
-  const [result,   setResult]   = useState<(NecEntry & { code: string }) | { notfound: true; code: string } | null>(null);
+  const [result,   setResult]   = useState<(XecEntry & { code: string }) | { notfound: true; code: string } | null>(null);
 
-  // Fetch plugin-registered NEC codes
-  const { data: rawPluginCodes } = useQuery<Record<string, NecEntry>[]>({
-    queryKey: ["admin-nec-codes"],
-    queryFn:  () => api.get<Record<string, NecEntry>[]>("/admin/nec-codes").catch(() => [] as Record<string, NecEntry>[]),
+  // Fetch plugin-registered XEC codes
+  const { data: rawPluginCodes } = useQuery<Record<string, XecEntry>[]>({
+    queryKey: ["admin-xec-codes"],
+    queryFn:  () => api.get<Record<string, XecEntry>[]>("/admin/xec-codes").catch(() => [] as Record<string, XecEntry>[]),
     staleTime: 300_000,
   });
-  const pluginCodes = (rawPluginCodes ?? []) as unknown as Array<NecEntry & { code: string }>;
+  const pluginCodes = (rawPluginCodes ?? []) as unknown as Array<XecEntry & { code: string }>;
 
   // Localized display for a severity / domain (plugin-provided values fall back
   // to their raw string when the bundle has no key for them).
@@ -121,7 +121,7 @@ export function ErrorReferencePage() {
   const domainLabel = (d: string) => t(`errorRef.domains.${d}`, { defaultValue: d });
 
   // Core catalog: structural META + per-language text from the acp bundle.
-  const coreCatalog: Record<string, NecEntry> = Object.fromEntries(
+  const coreCatalog: Record<string, XecEntry> = Object.fromEntries(
     Object.entries(META).map(([code, m]) => [code, {
       sev:    m.sev,
       domain: m.domain,
@@ -133,7 +133,7 @@ export function ErrorReferencePage() {
   );
 
   // Merge plugin codes into catalog for lookup and filtering
-  const fullCatalog: Record<string, NecEntry> = {
+  const fullCatalog: Record<string, XecEntry> = {
     ...coreCatalog,
     ...Object.fromEntries(pluginCodes.map((c) => [c.code, c])),
   };
@@ -146,7 +146,7 @@ export function ErrorReferencePage() {
     setResult(r ? { ...r, code: key } : { notfound: true, code: key });
   }
 
-  // Deep-link support: the fatal-error overlay sends the admin here with ?code=NEC-...
+  // Deep-link support: the fatal-error overlay sends the admin here with ?code=XEC-...
   // Auto-fill + auto-lookup once the (plugin-augmented) catalog is ready.
   const [searchParams] = useSearchParams();
   const paramCode = searchParams.get("code");

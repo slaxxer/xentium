@@ -1,4 +1,4 @@
-import { isKnownTemplate } from "@nodevo/contracts";
+import { isKnownTemplate } from "@xentium/contracts";
 import { getBlock } from "./blockRegistry";
 
 /**
@@ -24,7 +24,7 @@ export interface ThemeGaps {
 }
 
 /**
- * ⚠ Reports TYPES, never a plugin to go and buy. A plugin's id (`nodevo-forum`)
+ * ⚠ Reports TYPES, never a plugin to go and buy. A plugin's id (`xentium-forum`)
  * and its block namespace (`forum.`) are different strings by design, and the
  * mapping between them lives in that plugin's own registration — which this site
  * does not have, because not having it is the entire problem being reported.

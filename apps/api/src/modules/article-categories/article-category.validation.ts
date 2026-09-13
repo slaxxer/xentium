@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VISIBILITY_MODES } from "@nodevo/sdk";
+import { VISIBILITY_MODES } from "@xentium/sdk";
 
 export const visibilityModeSchema = z.enum(VISIBILITY_MODES);
 

@@ -1,5 +1,5 @@
 /* ============================================================================
-   NEBULA — Nodevo design tokens (three-tier: primitive → semantic → component).
+   NEBULA — Xentium design tokens (three-tier: primitive → semantic → component).
    Blurple + electric cyan over cool neutrals (Discord-grade). Names kept as
    --c-* (the codebase convention). Style Editor controls SEMANTIC tokens only;
    components never use a raw colour.
@@ -20,24 +20,24 @@
 :root { @include defaults.components; }
 
 /* ── The site's palette, restored inside a surface that does not follow it ─────
-   The ACP re-declares every token on `body.nv-acp` so the admin panel keeps its own
+   The ACP re-declares every token on `body.xt-acp` so the admin panel keeps its own
    look. Anything in there that must show the SITE's colours — the Layout Editor's
    variant probe measures what the site would paint — wraps itself in this class and
    gets the defaults back; the served stylesheet mirrors its `:root` overrides onto
    the same class, so what lands here is exactly what the site renders. */
-.nv-site-tokens {
+.xt-site-tokens {
   @include defaults.primitives;
   @include defaults.palette-light;
   @include defaults.components;
 }
-[data-theme="dark"] .nv-site-tokens { @include defaults.palette-dark; }
+[data-theme="dark"] .xt-site-tokens { @include defaults.palette-dark; }
 
 
 /* ── Tier 4 — style variants (ADR-0005) ────────────────────────────────────────
    A block variant is a NAMED TOKEN BUCKET, not per-block colour props: a document
    says "this panel is accent", these rules say what accent means, and the Style
-   Editor / a `.nvtheme` can override any of it per variant (scope `variant.accent`,
-   emitted by the API as `:root .nv-v--accent`, which outranks the class alone).
+   Editor / a `.xttheme` can override any of it per variant (scope `variant.accent`,
+   emitted by the API as `:root .xt-v--accent`, which outranks the class alone).
 
    Every value is expressed in PALETTE tokens, so a variant follows the site's colours
    and both themes for free — there is deliberately no per-theme block here.
@@ -54,7 +54,7 @@
    Setting only the former made `accent` on a profile card resolve to the colour it
    already had, which reads as the feature being broken. */
 
-.nv-v--surface {
+.xt-v--surface {
   --surface-bg:           var(--c-card);
   --surface-border:       var(--c-border);
   --surface-border-width: 1px;
@@ -62,7 +62,7 @@
   --surface-shadow:       var(--shadow-card);
 }
 
-.nv-v--muted {
+.xt-v--muted {
   --surface-bg:           var(--c-bg);
   --surface-border:       transparent;
   --surface-border-width: 0;
@@ -72,7 +72,7 @@
   --c-fg-muted:           var(--c-fg-subtle);
 }
 
-.nv-v--accent {
+.xt-v--accent {
   --surface-bg:           var(--c-accent-soft);
   --surface-border:       var(--c-accent-glow);
   --surface-border-width: 1px;
@@ -82,7 +82,7 @@
 
 /* The reset. Nested inside another variant this is how an admin opts a block back
    out — which is why it sets every token the others do rather than none. */
-.nv-v--plain {
+.xt-v--plain {
   --surface-bg:           transparent;
   --surface-border:       transparent;
   --surface-border-width: 0;
@@ -98,13 +98,13 @@
    made recolouring a variant appear to do nothing on a card, because the card was
    reading the token the admin had not touched.
 
-   An admin override lands with higher specificity (`:root .nv-v--accent`), and these
+   An admin override lands with higher specificity (`:root .xt-v--accent`), and these
    aliases resolve from this element's own cascaded value — so overriding `--surface-bg`
    moves the card with it, for free. */
-.nv-v--surface,
-.nv-v--muted,
-.nv-v--accent,
-.nv-v--plain {
+.xt-v--surface,
+.xt-v--muted,
+.xt-v--accent,
+.xt-v--plain {
   --card-bg:           var(--surface-bg);
   --card-border-color: var(--surface-border);
   --c-border:          var(--surface-border);

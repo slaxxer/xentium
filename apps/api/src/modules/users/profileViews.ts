@@ -3,9 +3,9 @@
  *
  * Two counters that answer different questions, deliberately kept apart:
  *
- * - `ncf_profile_views` holds NAMED visitors, one row per pair, refreshed on a
+ * - `xcf_profile_views` holds NAMED visitors, one row per pair, refreshed on a
  *   revisit. It is what the rail card lists, and it is pruned on a schedule.
- * - `ncf_users.profile_view_count` is the all-time total INCLUDING guests. It is a
+ * - `xcf_users.profile_view_count` is the all-time total INCLUDING guests. It is a
  *   column rather than a count over the table above, because that table is pruned —
  *   counting it would make a profile's total shrink over time.
  *

@@ -8,7 +8,7 @@ const repoRoot = resolve(here, "..");
 const WEB_URL = process.env.E2E_WEB_URL ?? "http://localhost:5173";
 
 /**
- * Nodevo e2e suite.
+ * Xentium e2e suite.
  *
  * The whole stack must be driven against a FRESH, uninstalled database so the
  * install-wizard spec can run. The DB reset happens in the root `pnpm e2e`
@@ -44,7 +44,7 @@ export default defineConfig({
 
   // Start api + worker + web. The DB is reset by the npm script first, so these
   // boot against a clean, uninstalled database. `reuseExistingServer` lets a
-  // developer keep `./nodevo.sh` running locally (the reset still applies).
+  // developer keep `./xentium.sh` running locally (the reset still applies).
   webServer: {
     command: "pnpm dev:apps",
     cwd: repoRoot,

@@ -57,7 +57,7 @@ export const SCOPE_SELECTOR: Record<ThemeScope, string> = {
   global:  ":root",
   navbar:  ".pub-nav",
   content: ".app-main",
-  footer:  ".nv-foot",
+  footer:  ".xt-foot",
   /*
    * Every rail on the site, however it was built.
    *
@@ -71,15 +71,15 @@ export const SCOPE_SELECTOR: Record<ThemeScope, string> = {
    * REGION is the page's one simple rail, and a `column` sized `sidebar`/`rail` is
    * what a page with two rails (or a rail on the left) uses instead.
    */
-  aside:   ".nv-region--aside, .nv-column--sidebar, .nv-column--rail",
+  aside:   ".xt-region--aside, .xt-column--sidebar, .xt-column--rail",
 
   // Variant scopes. Listed rather than generated so the mapping is greppable and the
   // `Record<ThemeScope, string>` type keeps them exhaustive — a new variant that is
   // added to `BLOCK_VARIANTS` and forgotten here fails to typecheck.
-  "variant.surface": ".nv-v--surface",
-  "variant.muted":   ".nv-v--muted",
-  "variant.accent":  ".nv-v--accent",
-  "variant.plain":   ".nv-v--plain",
+  "variant.surface": ".xt-v--surface",
+  "variant.muted":   ".xt-v--muted",
+  "variant.accent":  ".xt-v--accent",
+  "variant.plain":   ".xt-v--plain",
 };
 
 /** The scope id a block variant's overrides are stored under. */

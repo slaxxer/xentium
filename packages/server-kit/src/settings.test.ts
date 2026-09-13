@@ -32,7 +32,7 @@ function store(): SettingsStore {
 }
 
 beforeEach(() => {
-  rows = { "site.name": "Nodevo", "site.tagline": null, "flags.beta": true };
+  rows = { "site.name": "Xentium", "site.tagline": null, "flags.beta": true };
   getCalls = [];
   getManyCalls = [];
 });
@@ -40,7 +40,7 @@ beforeEach(() => {
 describe("createSettings", () => {
   it("reads a value and falls back to the default when unset", async () => {
     const s = createSettings(store());
-    await expect(s.getSetting("site.name", "fallback")).resolves.toBe("Nodevo");
+    await expect(s.getSetting("site.name", "fallback")).resolves.toBe("Xentium");
     await expect(s.getSetting("nope", "fallback")).resolves.toBe("fallback");
   });
 
@@ -69,7 +69,7 @@ describe("createSettings", () => {
     await s.getSetting("site.name", "");
     rows["site.name"] = "Renamed";
 
-    await expect(s.getSetting("site.name", "")).resolves.toBe("Nodevo");        // still cached
+    await expect(s.getSetting("site.name", "")).resolves.toBe("Xentium");        // still cached
     await expect(s.getFreshSetting("site.name", "")).resolves.toBe("Renamed");  // straight through
     await expect(s.getSetting("site.name", "")).resolves.toBe("Renamed");       // cache updated
   });
@@ -79,7 +79,7 @@ describe("createSettings", () => {
     await s.getSetting("site.name", "");
 
     const out = await s.getSettings({ "site.name": "", "flags.beta": false, "missing.key": "dflt" });
-    expect(out).toEqual({ "site.name": "Nodevo", "flags.beta": true, "missing.key": "dflt" });
+    expect(out).toEqual({ "site.name": "Xentium", "flags.beta": true, "missing.key": "dflt" });
     // "site.name" was already cached and must not be re-queried.
     expect(getManyCalls).toEqual([["flags.beta", "missing.key"]]);
   });

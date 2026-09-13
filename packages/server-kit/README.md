@@ -1,6 +1,6 @@
-# @nodevo/server-kit
+# @xentium/server-kit
 
-**Server utilities for the Nodevo framework.**
+**Server utilities for the Xentium framework.**
 
 Settings with an in-process TTL cache, the list-endpoint pagination pattern,
 encryption-at-rest for stored secrets, Redis-backed rate limiting, magic-byte
@@ -18,6 +18,6 @@ const settings = createSettings({
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo). Nodevo is a framework with the Nodevo CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/xentium). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

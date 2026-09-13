@@ -31,7 +31,7 @@ import {
   FONT_FAMILIES,
   fontRootDecls,
   fontBodyRule,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import {
   SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
   type Section,
@@ -41,9 +41,9 @@ import {
   type ShadowKind, type ShadowParts,
 } from "./shadowValue";
 import "./StyleEditorPage.scss";
-import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@nodevo/contracts";
+import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
 
-const CUSTOM_CSS_PREVIEW_ID = "nodevo-custom-css-preview";
+const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
 type Mode = "light" | "dark";
 type Tab = "tokens" | "branding" | "css" | "history";
@@ -56,7 +56,7 @@ interface StyleDraft {
 }
 
 // ── Defaults / display resolution ───────────────────────────────────────────────
-// Hearth core values — single shared copy in @nodevo/contracts (also used by the
+// Hearth core values — single shared copy in @xentium/contracts (also used by the
 // API), mirroring apps/web/src/styles/tokens.scss. These are the editor's *display*
 // defaults; a true Reset clears the server overrides so the app inherits tokens.scss.
 const DEFAULTS = HEARTH_DEFAULT_TOKENS;
@@ -151,7 +151,7 @@ type Origin = "own" | "global" | "theme" | "inherited";
  * The theme layer is why "Inherited" is honest on a site with a theme installed: the
  * served stylesheet is the theme merged under the admin's overrides, so a token the admin
  * has not touched shows the theme's colour — and clearing an override falls back to it
- * rather than to stock Nodevo.
+ * rather than to stock Xentium.
  */
 function inheritedValue(
   cssVar: string, mode: Mode, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
@@ -318,7 +318,7 @@ export function StyleEditorPage() {
   const saveIconKitMut = useMutation({
     mutationFn: () => {
       // ⚠ Checked here so the message can be specific. The server refuses the same
-      // shapes, but may only answer with a NEC code, which renders as the generic
+      // shapes, but may only answer with a XEC code, which renders as the generic
       // "check your input" — useless to an admin who pasted a real id from the
       // wrong place.
       if (iconKit.trim() && !looksLikeKit(iconKit)) {
@@ -533,7 +533,7 @@ export function StyleEditorPage() {
     }
     const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss[mode]) };
     const blocks: string[] = [];
-    // The font comes from the SAME builders the API serves with (@nodevo/contracts),
+    // The font comes from the SAME builders the API serves with (@xentium/contracts),
     // so the preview cannot render a font the site will not. It previously hand-rolled
     // its own stack, skipped the weight entirely, and sized the page with
     // `html { font-size }` — which rescales every rem, something production never does.
@@ -550,7 +550,7 @@ export function StyleEditorPage() {
       const decls = Object.entries(map).map(([k, v]) => `  ${k}: ${v} !important;`).join("\n");
       if (decls.trim()) blocks.push(`${sel} {\n${decls}\n}`);
     }
-    // Applied exactly as the served stylesheet applies it. NOT to `body.nv-acp`:
+    // Applied exactly as the served stylesheet applies it. NOT to `body.xt-acp`:
     // this CSS goes into the preview iframe, which is the SITE — the admin panel
     // deliberately keeps its own type and must not follow the site font.
     const bodyRule = fontBodyRule(font);
@@ -1287,12 +1287,12 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots,
       if (!doc || !doc.head) return;
       doc.documentElement.setAttribute("data-theme", mode);
 
-      let tok = doc.getElementById("nodevo-preview-tokens") as HTMLStyleElement | null;
-      if (!tok) { tok = doc.createElement("style"); tok.id = "nodevo-preview-tokens"; doc.head.appendChild(tok); }
+      let tok = doc.getElementById("xentium-preview-tokens") as HTMLStyleElement | null;
+      if (!tok) { tok = doc.createElement("style"); tok.id = "xentium-preview-tokens"; doc.head.appendChild(tok); }
       tok.textContent = `${css}\n${extraCss}`;
 
-      let ov = doc.getElementById("nodevo-preview-overlay") as HTMLStyleElement | null;
-      if (!ov) { ov = doc.createElement("style"); ov.id = "nodevo-preview-overlay"; doc.head.appendChild(ov); }
+      let ov = doc.getElementById("xentium-preview-overlay") as HTMLStyleElement | null;
+      if (!ov) { ov = doc.createElement("style"); ov.id = "xentium-preview-overlay"; doc.head.appendChild(ov); }
       ov.textContent = previewOverlayRules({ activeGroup, hotspots, previewState });
 
       if (activeGroup && activeGroup !== prevGroup.current) {

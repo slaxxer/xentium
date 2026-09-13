@@ -4,7 +4,7 @@ import "./lib/i18n";
 import { startIconKit } from "./lib/iconKit";
 import "./hooks/useFont"; // applies stored font to --ff-sans before first render
 import App from "./app/App";
-import "./plugins/host-globals"; // sets window.__NODEVO_HOST__ before any plugin bundle loads
+import "./plugins/host-globals"; // sets window.__XENTIUM_HOST__ before any plugin bundle loads
 import "./layout/blocks/coreBlocks";   // registers the core block catalogue before first render
 import "./layout/blocks/chromeBlocks"; // navbar + footer blocks (ADR-0005 Amendment 1)
 import "./layout/blocks/pageDetailBlocks";   // page.detail: image / title / body
@@ -42,7 +42,7 @@ import "@fortawesome/fontawesome-svg-core/styles.css";
 config.autoAddCss = false;
 
 // ── Runtime loader: fetch + execute an enabled plugin's compiled UMD bundle ───
-// Used in production. The bundle reads shared deps from window.__NODEVO_HOST__
+// Used in production. The bundle reads shared deps from window.__XENTIUM_HOST__
 // and registers into slotRegistry as a side effect.
 function loadPluginBundle(id: string, version?: string): Promise<void> {
   return new Promise((resolve) => {
@@ -66,7 +66,7 @@ async function bootstrap() {
 
   // Site default language for visitors with no explicit choice (§60.3) —
   // makes the admin's chosen language take effect on every device, not just
-  // the one that ran the installer (which has the wizard's nv_locale cookie).
+  // the one that ran the installer (which has the wizard's xt_locale cookie).
   const { applySiteDefaultLocale } = await import("./lib/i18n");
   await applySiteDefaultLocale();
 
@@ -98,7 +98,7 @@ async function bootstrap() {
     const { loadDevPlugins, DEV_PLUGIN_IDS } = await import("./plugins/dev-plugins");
     await loadDevPlugins(enabledIds);
     // Any enabled plugin without a build-time HMR entry (e.g. an uploaded
-    // .nvplugin) is runtime-loaded from its compiled bundle, exactly like prod.
+    // .xtplugin) is runtime-loaded from its compiled bundle, exactly like prod.
     for (const p of enabled) {
       if (!DEV_PLUGIN_IDS.includes(p.id)) await loadPluginBundle(p.id, p.version);
     }

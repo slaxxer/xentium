@@ -1,16 +1,16 @@
 import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@nodevo/contracts";
+import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@xentium/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { themeService } from "./theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
 
 /**
- * `.nvtheme` export / import (ADR-0005). Mounted under /api/admin so every
+ * `.xttheme` export / import (ADR-0005). Mounted under /api/admin so every
  * mutation is audited, gated on ADMIN_ACCESS like the rest of Appearance.
  */
 export const themeRouter: Router = Router();
@@ -51,7 +51,7 @@ const exportSchema = themeManifestSchema.pick({
   /**
    * Palette only — no layouts, and therefore no assets.
    *
-   * This is what `.nvstyle` existed for: handing someone a colour scheme without
+   * This is what `.xtstyle` existed for: handing someone a colour scheme without
    * shipping the arrangement of every page along with it. It is an OPTION on the one
    * format now rather than a second format with its own manifest and its own validator.
    *
@@ -131,7 +131,7 @@ themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async 
     const { tokensOnly, ...meta } = exportSchema.parse(req.body ?? {});
     const buffer = await themeService.exportTheme(meta, { tokensOnly, screenshot: req.file?.buffer });
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.nvtheme"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.xttheme"`);
     res.send(buffer);
   } catch (err) { next(err); }
 });
@@ -139,7 +139,7 @@ themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async 
 themeRouter.post("/import", guard, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) {
-      throw new NodevoError({ code: NEC.API_VALIDATION, httpStatus: 422, message: "No file uploaded" });
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 422, message: "No file uploaded" });
     }
     // Lands in the draft — a theme rewrites every page at once, which is exactly
     // the change that should be previewed before it goes live.

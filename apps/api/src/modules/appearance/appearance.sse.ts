@@ -5,7 +5,7 @@
 // `version` event only when the active theme actually changes (admin saved a style,
 // activated a pack, restored a snapshot). Steady state is zero requests per client.
 //
-// Cross-process fan-out: Nodevo runs multiple processes/instances (server + worker,
+// Cross-process fan-out: Xentium runs multiple processes/instances (server + worker,
 // and potentially several server replicas behind a load balancer). A theme save
 // happens on whichever server handled the request, but SSE clients may be connected
 // to a *different* instance. So the save PUBLISHes the new version to a Redis channel

@@ -23,7 +23,7 @@ import {
   type BlockNode,
   type BlockVariant,
   type BlockVisibility,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 export type Regions = Record<string, BlockNode[]>;
 

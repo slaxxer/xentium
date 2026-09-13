@@ -1,10 +1,10 @@
 // =============================================================================
-// Nodevo Installer — "Friendly" full-page wizard
+// Xentium Installer — "Friendly" full-page wizard
 // On-brand adaptation: redesign's layout/structure, mapped onto the app's
 // Hearth --c-* tokens + app fonts (Poppins via --ff-sans, JetBrains Mono).
 // Keeps the existing component logic + animations (env reveal, db test spin).
 // =============================================================================
-.nv-installer-page {
+.xt-installer-page {
   // ---- local tokens mapped from the design system ----
   --bg:            var(--c-bg);
   --surface:       var(--c-surface);
@@ -181,7 +181,7 @@
     display: flex;
     justify-content: center;
 
-    .step-panel { width: 100%; max-width: 800px; animation: nvInstFade 0.25s ease; }
+    .step-panel { width: 100%; max-width: 800px; animation: xtInstFade 0.25s ease; }
   }
 
   .step-title { font-weight: 800; font-size: 34px; letter-spacing: -0.02em; margin: 0 0 10px; }
@@ -247,7 +247,7 @@
       justify-content: center;
       flex-shrink: 0;
 
-      &.checking { background: var(--accent-soft); color: var(--accent); svg { animation: nvInstSpin 1s linear infinite; } }
+      &.checking { background: var(--accent-soft); color: var(--accent); svg { animation: xtInstSpin 1s linear infinite; } }
       &.pass     { background: var(--success-bg);  color: var(--success); }
       &.fail     { background: var(--error-bg);    color: var(--error); }
     }
@@ -508,7 +508,7 @@
     font-size: 14px;
     box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.45);
     z-index: 50;
-    animation: nvInstToast 0.25s ease;
+    animation: xtInstToast 0.25s ease;
   }
 
   // ===== Responsive =====
@@ -525,6 +525,6 @@
   }
 }
 
-@keyframes nvInstFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-@keyframes nvInstSpin { to { transform: rotate(360deg); } }
-@keyframes nvInstToast { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes xtInstFade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes xtInstSpin { to { transform: rotate(360deg); } }
+@keyframes xtInstToast { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }

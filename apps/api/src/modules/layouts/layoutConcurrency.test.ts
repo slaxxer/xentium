@@ -10,7 +10,7 @@
  * is the race it exists to close — so these drive the service rather than mocking it.
  */
 import { beforeEach, afterEach, describe, expect, it } from "vitest";
-import { DEFAULT_VARIANT, type LayoutDocument, type LayoutSelector } from "@nodevo/contracts";
+import { DEFAULT_VARIANT, type LayoutDocument, type LayoutSelector } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { layoutService } from "./layout.service.js";

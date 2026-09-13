@@ -1,14 +1,14 @@
 import { describe, it, expect } from "vitest";
 import { validateMigrationSql } from "./sqlValidator.js";
-import { NodevoError, NEC } from "@nodevo/errors";
+import { XentiumError, XEC } from "@xentium/errors";
 
-/** Assert the call throws a NodevoError carrying the given NEC code. */
+/** Assert the call throws a XentiumError carrying the given XEC code. */
 function expectNec(fn: () => void, code: string): void {
   try {
     fn();
   } catch (err) {
-    expect(err).toBeInstanceOf(NodevoError);
-    expect((err as NodevoError).code).toBe(code);
+    expect(err).toBeInstanceOf(XentiumError);
+    expect((err as XentiumError).code).toBe(code);
     return;
   }
   throw new Error(`expected a throw with code ${code}, but nothing was thrown`);
@@ -20,11 +20,11 @@ describe("validateMigrationSql — DDL-only allowlist (unchanged behaviour)", ()
   });
 
   it("rejects DML (INSERT)", () => {
-    expectNec(() => validateMigrationSql(`INSERT INTO sb_rooms VALUES ('x');`, "f"), NEC.PLUGIN_INVALID_MIGRATION);
+    expectNec(() => validateMigrationSql(`INSERT INTO sb_rooms VALUES ('x');`, "f"), XEC.PLUGIN_INVALID_MIGRATION);
   });
 
   it("rejects an unrecognised leading statement", () => {
-    expectNec(() => validateMigrationSql(`VACUUM sb_rooms;`, "f"), NEC.PLUGIN_INVALID_MIGRATION);
+    expectNec(() => validateMigrationSql(`VACUUM sb_rooms;`, "f"), XEC.PLUGIN_INVALID_MIGRATION);
   });
 
   it("empty / comment-only SQL is a no-op", () => {
@@ -34,28 +34,38 @@ describe("validateMigrationSql — DDL-only allowlist (unchanged behaviour)", ()
 });
 
 describe("validateMigrationSql — reserved namespace (always enforced)", () => {
-  it("blocks CREATE TABLE in the ncf_ core namespace", () => {
-    expectNec(() => validateMigrationSql(`CREATE TABLE ncf_users (id text);`, "f"), NEC.PLUGIN_TABLE_NAMING);
+  it("blocks the pre-rename xcf_ predecessor too (ncf_)", () => {
+    // A database installed before the Nodevo -> Xentium rename still carries
+    // ncf_ tables, so the prefix stays reserved whatever this install runs.
+    expectNec(() => validateMigrationSql(`DROP TABLE ncf_users;`, "f"), XEC.PLUGIN_TABLE_NAMING);
+  });
+
+  it("blocks CREATE TABLE in the xcf_ core namespace", () => {
+    expectNec(() => validateMigrationSql(`CREATE TABLE xcf_users (id text);`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("blocks ALTER TABLE on a core table", () => {
-    expectNec(() => validateMigrationSql(`ALTER TABLE ncf_users ADD COLUMN evil text;`, "f"), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`ALTER TABLE xcf_users ADD COLUMN evil text;`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
-  it("blocks DROP TABLE of core bookkeeping (nodevo_)", () => {
-    expectNec(() => validateMigrationSql(`DROP TABLE nodevo_plugin_migrations;`, "f"), NEC.PLUGIN_TABLE_NAMING);
+  it("blocks DROP TABLE of core bookkeeping (xentium_, the post-rename prefix)", () => {
+    expectNec(() => validateMigrationSql(`DROP TABLE xentium_plugin_migrations;`, "f"), XEC.PLUGIN_TABLE_NAMING);
+  });
+
+  it("blocks DROP TABLE of core bookkeeping (nodevo_, the pre-rename prefix)", () => {
+    expectNec(() => validateMigrationSql(`DROP TABLE nodevo_plugin_migrations;`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("blocks an index created ON a core table", () => {
-    expectNec(() => validateMigrationSql(`CREATE INDEX ncf_users_evil ON ncf_users(email);`, "f"), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`CREATE INDEX xcf_users_evil ON xcf_users(email);`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("blocks schema-qualified core targets", () => {
-    expectNec(() => validateMigrationSql(`CREATE TABLE public.ncf_users (id text);`, "f"), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`CREATE TABLE public.xcf_users (id text);`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("blocks Prisma's internal table", () => {
-    expectNec(() => validateMigrationSql(`DROP TABLE _prisma_migrations;`, "f"), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`DROP TABLE _prisma_migrations;`, "f"), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("allows a normal, non-reserved table when no prefix policy is declared", () => {
@@ -77,20 +87,20 @@ describe("validateMigrationSql — declared tablePrefix", () => {
   });
 
   it("rejects a created table missing the prefix", () => {
-    expectNec(() => validateMigrationSql(`CREATE TABLE rooms (id text);`, "f", policy), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`CREATE TABLE rooms (id text);`, "f", policy), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("rejects an index whose NAME lacks the prefix (even on a prefixed table)", () => {
-    expectNec(() => validateMigrationSql(`CREATE INDEX rooms_idx ON sb_rooms(id);`, "f", policy), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`CREATE INDEX rooms_idx ON sb_rooms(id);`, "f", policy), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("rejects indexing a table outside the plugin's namespace", () => {
-    expectNec(() => validateMigrationSql(`CREATE INDEX sb_x ON other_rooms(id);`, "f", policy), NEC.PLUGIN_TABLE_NAMING);
+    expectNec(() => validateMigrationSql(`CREATE INDEX sb_x ON other_rooms(id);`, "f", policy), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("a column DEFAULT literal that looks reserved does not trip the guard", () => {
-    // The literal 'ncf_x' is column data, not an object name.
-    expect(() => validateMigrationSql(`CREATE TABLE sb_rooms (kind text DEFAULT 'ncf_x');`, "f", policy)).not.toThrow();
+    // The literal 'xcf_x' is column data, not an object name.
+    expect(() => validateMigrationSql(`CREATE TABLE sb_rooms (kind text DEFAULT 'xcf_x');`, "f", policy)).not.toThrow();
   });
 });
 
@@ -113,8 +123,8 @@ describe("validateMigrationSql — functions, triggers, exemptions", () => {
   });
 
   it("blocks a trigger attached to a core table", () => {
-    const sql = `CREATE TRIGGER forum_spy BEFORE INSERT ON ncf_users FOR EACH ROW EXECUTE FUNCTION forum_thread_search_update();`;
-    expectNec(() => validateMigrationSql(sql, "f", policy), NEC.PLUGIN_TABLE_NAMING);
+    const sql = `CREATE TRIGGER forum_spy BEFORE INSERT ON xcf_users FOR EACH ROW EXECUTE FUNCTION forum_thread_search_update();`;
+    expectNec(() => validateMigrationSql(sql, "f", policy), XEC.PLUGIN_TABLE_NAMING);
   });
 
   it("CREATE EXTENSION is exempt from the prefix rule and does not trip pg_", () => {
@@ -125,6 +135,6 @@ describe("validateMigrationSql — functions, triggers, exemptions", () => {
     // The naming guard treats COMMENT as governing no plugin object; the failure
     // here comes from the pre-existing DDL allowlist (`COMMENT ON …` is not in
     // the supported set), NOT from a naming violation.
-    expectNec(() => validateMigrationSql(`COMMENT ON TABLE ncf_users IS 'x';`, "f", policy), NEC.PLUGIN_INVALID_MIGRATION);
+    expectNec(() => validateMigrationSql(`COMMENT ON TABLE xcf_users IS 'x';`, "f", policy), XEC.PLUGIN_INVALID_MIGRATION);
   });
 });

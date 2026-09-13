@@ -1,15 +1,15 @@
 /**
- * `.nvtheme` export / import (ADR-0005, step 5).
+ * `.xttheme` export / import (ADR-0005, step 5).
  *
  * A theme is DATA: layout documents plus token overrides plus assets. There is no
  * executable code in the package, so importing one cannot run anything — review
  * is reading JSON and a `:root`-only stylesheet. Code extension goes through
  * plugins, which is a separate, trusted path.
  *
- * The package is a strict superset of `.nvstyle`: same `styles/light.css` and
+ * The package is a strict superset of `.xtstyle`: same `styles/light.css` and
  * `styles/dark.css` under the same `:root`-only rule, plus a `layouts/` folder.
- * A `.nvstyle` is simply a theme with no layouts — and since 2026-08-15 that is not
- * just a resemblance: `.nvstyle` was ABSORBED, its separate upload endpoint and its
+ * A `.xtstyle` is simply a theme with no layouts — and since 2026-08-15 that is not
+ * just a resemblance: `.xtstyle` was ABSORBED, its separate upload endpoint and its
  * parallel `:root` validator deleted, and this importer takes both shapes
  * (`adoptStylePack`). Export with `tokensOnly` to produce the palette-only kind.
  *
@@ -43,13 +43,13 @@ import {
   validateBlockTree,
   type LayoutDocument,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
-import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
+import { XENTIUM_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
 import {
@@ -79,14 +79,14 @@ const MAX_TEXT_ENTRY = 2_000_000;
 /**
  * Every refusal from this module.
  *
- * Its OWN code, not the generic `API_VALIDATION`: the web client resolves a NEC code to
- * a localized string when one exists, and `NEC-API-4001` has one — "Please check your
+ * Its OWN code, not the generic `API_VALIDATION`: the web client resolves a XEC code to
+ * a localized string when one exists, and `XEC-API-4001` has one — "Please check your
  * input and try again." — which replaced messages like "layouts/home.json declares
  * template \"profile\"" with something an admin cannot act on. A package is rejected for
  * a specific, nameable reason, and that reason is the whole value of the response.
  */
 const themeError = (message: string) =>
-  new NodevoError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
+  new XentiumError({ code: XEC.CORE_THEME_INVALID, httpStatus: 422, message });
 
 /**
  * Zod issues, with the FIELD each one is about.
@@ -113,7 +113,7 @@ function readText(entry: AdmZip.IZipEntry, label: string): string {
   return entry.getData().toString("utf8");
 }
 
-/** `:root`-only custom properties, the same rule `.nvstyle` enforces. */
+/** `:root`-only custom properties, the same rule `.xtstyle` enforces. */
 function assertTokenCss(css: string, file: string) {
   const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "").trim();
   if (!stripped) return;
@@ -140,14 +140,14 @@ const renderTokens = (map: TokenMap): string => {
 };
 
 /**
- * Let a `.nvstyle` in through the theme importer.
+ * Let a `.xtstyle` in through the theme importer.
  *
- * The two formats were never siblings: `.nvstyle` is `manifest.json` +
+ * The two formats were never siblings: `.xtstyle` is `manifest.json` +
  * `styles/light.css` + `styles/dark.css`, which is a strict SUBSET of what a theme
  * carries — the docblock at the top of this file has claimed as much since the format
  * was written. What actually differed was the manifest: a theme requires `id`,
- * `vendor`, `version` and `minNodevoVersion`; a style pack required only `name`. So
- * the superset claim was true of the files and false of the paperwork, and a `.nvstyle`
+ * `vendor`, `version` and `minXentiumVersion`; a style pack required only `name`. So
+ * the superset claim was true of the files and false of the paperwork, and a `.xtstyle`
  * would have been rejected here.
  *
  * The missing fields are filled in, and ONLY for a package that is unmistakably a style
@@ -156,7 +156,7 @@ const renderTokens = (map: TokenMap): string => {
  * given an invented id.
  *
  * `id` is derived from the name so two different packs do not collide on one row, and
- * `minNodevoVersion` is THIS version because a style pack never declared compatibility
+ * `minXentiumVersion` is THIS version because a style pack never declared compatibility
  * and refusing it on a field it could not have set would be nonsense.
  */
 function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
@@ -164,7 +164,7 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
   const m = raw as Record<string, unknown>;
 
   // Already a theme manifest — nothing to adopt.
-  if (m.id && m.vendor && m.version && m.minNodevoVersion) return raw;
+  if (m.id && m.vendor && m.version && m.minXentiumVersion) return raw;
 
   const hasThemeParts = zip.getEntries().some((e) =>
     e.entryName.startsWith(THEME_PATHS.layouts) || e.entryName === THEME_PATHS.tokens);
@@ -180,16 +180,16 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
     id:      m.id      ?? (slug || "imported-style"),
     vendor:  m.vendor  ?? "community",
     version: m.version ?? "1.0.0",
-    minNodevoVersion: m.minNodevoVersion ?? NODEVO_VERSION,
+    minXentiumVersion: m.minXentiumVersion ?? XENTIUM_VERSION,
   };
 }
 
 function assertCompatible(m: ThemeManifestInput) {
-  if (compareBaseVersions(NODEVO_VERSION, m.minNodevoVersion) < 0) {
-    throw themeError(`Theme "${m.id}" requires Nodevo ${m.minNodevoVersion}+ (this is ${NODEVO_VERSION})`);
+  if (compareBaseVersions(XENTIUM_VERSION, m.minXentiumVersion) < 0) {
+    throw themeError(`Theme "${m.id}" requires Xentium ${m.minXentiumVersion}+ (this is ${XENTIUM_VERSION})`);
   }
-  if (m.maxNodevoVersion && compareBaseVersions(NODEVO_VERSION, m.maxNodevoVersion) > 0) {
-    throw themeError(`Theme "${m.id}" supports Nodevo up to ${m.maxNodevoVersion} (this is ${NODEVO_VERSION})`);
+  if (m.maxXentiumVersion && compareBaseVersions(XENTIUM_VERSION, m.maxXentiumVersion) > 0) {
+    throw themeError(`Theme "${m.id}" supports Xentium up to ${m.maxXentiumVersion} (this is ${XENTIUM_VERSION})`);
   }
 }
 
@@ -310,7 +310,7 @@ async function stageAssets(zip: AdmZip): Promise<StagedAsset[]> {
  * Open a package and read its manifest, without touching a single setting.
  *
  * Split out of `importTheme` so the marketplace download gate can ask "is this
- * really the theme I asked for?" the way it already asks a `.nvplugin` — the
+ * really the theme I asked for?" the way it already asks a `.xtplugin` — the
  * check that a package's manifest id matches the requested product. Doing that
  * by starting an import and rolling it back is not an option: an import is
  * all-or-nothing but it is not free, and the point is to refuse the bytes BEFORE
@@ -321,7 +321,7 @@ function readManifest(fileBuffer: Buffer): { zip: AdmZip; manifest: ThemeManifes
   try {
     zip = new AdmZip(fileBuffer);
   } catch {
-    throw themeError("Not a readable .nvtheme archive");
+    throw themeError("Not a readable .xttheme archive");
   }
 
   const manifestEntry = zip.getEntry(THEME_PATHS.manifest);
@@ -350,7 +350,7 @@ export const themeService = {
   },
 
   /**
-   * Build a `.nvtheme` from what is currently PUBLISHED — the site as visitors
+   * Build a `.xttheme` from what is currently PUBLISHED — the site as visitors
    * see it, not a half-finished draft.
    */
   async exportTheme(
@@ -390,7 +390,7 @@ export const themeService = {
 
     const manifest: ThemeManifestInput = themeManifestSchema.parse({
       ...meta,
-      minNodevoVersion: NODEVO_VERSION,
+      minXentiumVersion: XENTIUM_VERSION,
       schemaVersion:    LAYOUT_SCHEMA_VERSION,
       packageVersion:   THEME_PACKAGE_VERSION,
       ...(screenshotName ? { screenshot: `${THEME_PATHS.assets}${screenshotName}` } : {}),
@@ -437,7 +437,7 @@ export const themeService = {
     // Registered templates, so a theme exported from a site running the forum carries
     // the forum's pages too. On a site without that plugin the file is skipped at
     // import — the same "unknown thing is skipped, not fatal" rule as a block.
-    // A TOKENS-ONLY package: the palette and nothing else — what `.nvstyle` was for,
+    // A TOKENS-ONLY package: the palette and nothing else — what `.xtstyle` was for,
     // now expressed in the one format. Skipping the layouts also skips the assets,
     // since the only assets an export collects are the ones layouts reference.
     const exportable = opts.tokensOnly
@@ -479,8 +479,8 @@ export const themeService = {
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` is the lossless one: the FULL scoped set, including the region
     // scopes (ADR-0003) that the two CSS files cannot express and that this export
-    // silently dropped before. The CSS files stay so a `.nvtheme` remains a strict
-    // `.nvstyle` superset, and an importer prefers the JSON when both are present.
+    // silently dropped before. The CSS files stay so a `.xttheme` remains a strict
+    // `.xtstyle` superset, and an importer prefers the JSON when both are present.
     zip.addFile(THEME_PATHS.tokens, Buffer.from(JSON.stringify(tokens, null, 2), "utf8"));
     zip.addFile(THEME_PATHS.cssLight, Buffer.from(renderTokens(tokens.light?.global ?? {}), "utf8"));
     zip.addFile(THEME_PATHS.cssDark,  Buffer.from(renderTokens(tokens.dark?.global  ?? {}), "utf8"));
@@ -532,7 +532,7 @@ export const themeService = {
    * Validation is all-or-nothing: a package with one broken layout applies none
    * of itself, so an admin never ends up with half a theme and no clean way back.
    *
-   * Accepts a `.nvstyle` too — see `adoptStylePack`. One ingestion path for both,
+   * Accepts a `.xtstyle` too — see `adoptStylePack`. One ingestion path for both,
    * which is the point of having merged them.
    */
   /**
@@ -658,7 +658,7 @@ export const themeService = {
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` wins when present: it is the only file that can express the region
     // scopes. The CSS pair remains the fallback, which is what a hand-written
-    // `.nvstyle` ships and all this format could read before.
+    // `.xtstyle` ships and all this format could read before.
     let tokens: ScopedTokenSet | null = null;
     const tokensEntry = zip.getEntry(THEME_PATHS.tokens);
     if (tokensEntry) {
@@ -731,7 +731,7 @@ export const themeService = {
      * at where the files actually landed on THIS install.
      *
      * Built before anything is applied, and stored in the library, because it is what
-     * lets the theme be activated again later without the `.nvtheme` it came from.
+     * lets the theme be activated again later without the `.xttheme` it came from.
      * Storing the raw package instead would mean re-unpacking (and re-writing assets)
      * on every switch, and would leave the stored copy disagreeing with the files on
      * disk the moment either changed.
@@ -1014,8 +1014,8 @@ export const themeService = {
   async activateTheme(id: string, userId: string) {
     const row = await prisma.theme.findUnique({ where: { id } });
     if (!row) {
-      throw new NodevoError({
-        code: NEC.API_NOT_FOUND, httpStatus: 404,
+      throw new XentiumError({
+        code: XEC.API_NOT_FOUND, httpStatus: 404,
         message: `No theme "${id}" is installed here.`,
       });
     }
@@ -1044,8 +1044,8 @@ export const themeService = {
     const row = await prisma.theme.findUnique({ where: { id }, select: { active: true, name: true } });
     if (!row) return;
     if (row.active) {
-      throw new NodevoError({
-        code: NEC.API_CONFLICT, httpStatus: 409,
+      throw new XentiumError({
+        code: XEC.API_CONFLICT, httpStatus: 409,
         message: `"${row.name}" is the active theme. Switch to another one before removing it.`,
       });
     }

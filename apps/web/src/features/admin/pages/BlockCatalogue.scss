@@ -5,7 +5,7 @@
  * the overlay is the same one every other admin dialog uses. Only the sizing and the
  * inside are its own, because a catalogue is a grid and the shared modal is a form.
  */
-.nv-cat {
+.xt-cat {
   /* Wider and taller than a form dialog: three cards across is what makes a grid
      scannable, and one column of cards is just the rail again. */
   max-width: 880px;
@@ -218,12 +218,12 @@
 /* Primitives in token colours rather than a picture, so the drawings follow the
    ACP's palette in both themes. Never a screenshot: what a block really looks like
    depends on the site's tokens, its variant and its data. */
-.nv-art {
+.xt-art {
   display: flex;
   height: 100%;
   gap: 7px;
 
-  i, .nv-art__row { display: block; }
+  i, .xt-art__row { display: block; }
 
   &--stack { flex-direction: column; }
   &--text  { flex-direction: column; gap: 6px; justify-content: center; }
@@ -262,5 +262,5 @@
 
   /* The first cell of a grid carries the accent, so the shape reads as "a set of
      things, one of them yours" rather than four identical blanks. */
-  &--grid .nv-art__cell:first-child { background: var(--c-accent-soft); }
+  &--grid .xt-art__cell:first-child { background: var(--c-accent-soft); }
 }

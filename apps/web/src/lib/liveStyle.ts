@@ -1,7 +1,7 @@
 // Live theme sync — push transport (Server-Sent Events).
 //
 // The active appearance tokens are served as CSS from /api/appearance/css and
-// injected into a single <style id="nodevo-custom-tokens"> tag. That endpoint
+// injected into a single <style id="xentium-custom-tokens"> tag. That endpoint
 // revalidates rather than being held for a minute, so a page always PAINTS the
 // current theme; on its own, though, a change made after the page loaded would
 // never reach it.
@@ -17,7 +17,7 @@
 
 import { viewerThemeParam } from "./viewerTheme";
 
-const STYLE_ID = "nodevo-custom-tokens";
+const STYLE_ID = "xentium-custom-tokens";
 
 /** Inject (or replace) the global token <style> tag. */
 export function applyTokenCss(css: string): void {

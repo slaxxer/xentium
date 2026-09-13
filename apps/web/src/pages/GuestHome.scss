@@ -1,6 +1,6 @@
 /* ============================================================================
    Guest Home (public / logged-out) — Hearth.
-   Ported from nodevo-redesign/nodevo-guest-home. The design's own top nav,
+   Ported from nodevo-redesign/xentium-guest-home. The design's own top nav,
    footer and auth modal are intentionally dropped: AppLayout supplies PubNav +
    the real footer, and auth CTAs redirect to /register and /login.
    Design --color-* tokens mapped onto the codebase's --c-* tokens.

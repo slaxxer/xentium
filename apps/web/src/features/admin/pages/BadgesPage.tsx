@@ -26,7 +26,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   parseIconToken,
   type BadgeHolder, type BadgeHolderPreview, type BadgeMetricInfo, type BadgeRow,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";

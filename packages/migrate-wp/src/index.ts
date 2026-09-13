@@ -1,8 +1,8 @@
-import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@nodevo/migrate-core";
+import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { parseWxr } from "./wxr.js";
 
 /**
- * WordPress → Nodevo adapter (§34, Wave 1). Source is a WXR export file
+ * WordPress → Xentium adapter (§34, Wave 1). Source is a WXR export file
  * (Tools → Export → "All content" in wp-admin) — no WP install needed.
  */
 export const wordpressAdapter: MigrateAdapter = {
@@ -24,13 +24,13 @@ export const wordpressAdapter: MigrateAdapter = {
       "WXR exports contain no user roles — all users are imported into the Member group.",
     ];
     if (parsed.guestComments > 0) {
-      warnings.push(`${parsed.guestComments} guest comments cannot be imported (Nodevo comments require an account) — they are listed in the migration report.`);
+      warnings.push(`${parsed.guestComments} guest comments cannot be imported (Xentium comments require an account) — they are listed in the migration report.`);
     }
     if (parsed.otherTypes["attachment"]) {
       warnings.push(`${parsed.otherTypes["attachment"]} media attachments are referenced by URL and not downloaded in this version.`);
     }
     if (parsed.otherTypes["page"]) {
-      warnings.push(`${parsed.otherTypes["page"]} pages are skipped (Nodevo has no page entity in v1).`);
+      warnings.push(`${parsed.otherTypes["page"]} pages are skipped (Xentium has no page entity in v1).`);
     }
     return {
       platform: parsed.sourceInfo,

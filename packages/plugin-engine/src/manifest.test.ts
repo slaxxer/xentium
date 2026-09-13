@@ -7,7 +7,7 @@
  * is a total outage of extensibility that no other test would catch.
  *
  * `tablePrefix` matters too. It is what the migration runner enforces to keep a
- * plugin's schema namespaced and unable to collide with core's `ncf_` or another
+ * plugin's schema namespaced and unable to collide with core's `xcf_` or another
  * plugin's tables, so a loosened pattern here is a schema-collision bug later.
  */
 import { describe, expect, it } from "vitest";
@@ -15,24 +15,24 @@ import { validateManifest, assertCompatible, createManifestValidator } from "./m
 import { compareBaseVersions, baseVersion } from "./version.js";
 
 const base = {
-  id: "nodevo-forum",
+  id: "xentium-forum",
   name: "Forum",
   version: "1.1.0",
-  vendor: "Nodevo",
-  minNodevoVersion: "1.0",
+  vendor: "Xentium",
+  minXentiumVersion: "1.0",
 };
 
 describe("validateManifest", () => {
   it("parses a minimal manifest and applies defaults", () => {
     const m = validateManifest(base, "1.0.0");
-    expect(m).toMatchObject({ id: "nodevo-forum", licenseRequired: false });
+    expect(m).toMatchObject({ id: "xentium-forum", licenseRequired: false });
     expect(m.permissions).toEqual([]);
     expect(m.migrations).toEqual([]);
     expect(m.entrypoints).toEqual({});
   });
 
   it("refuses an id that is not kebab-case", () => {
-    expect(() => validateManifest({ ...base, id: "Nodevo_Forum" }, "1.0.0")).toThrow();
+    expect(() => validateManifest({ ...base, id: "Xentium_Forum" }, "1.0.0")).toThrow();
   });
 
   it("refuses a non-semver version", () => {
@@ -46,20 +46,20 @@ describe("validateManifest", () => {
   });
 
   it("refuses a plugin that needs a newer host", () => {
-    expect(() => validateManifest({ ...base, minNodevoVersion: "2.0" }, "1.0.0")).toThrow(
-      /requires Nodevo 2\.0\+/,
+    expect(() => validateManifest({ ...base, minXentiumVersion: "2.0" }, "1.0.0")).toThrow(
+      /requires Xentium 2\.0\+/,
     );
   });
 
   it("refuses a plugin whose ceiling is below the host", () => {
     expect(() =>
-      validateManifest({ ...base, maxNodevoVersion: "1.0" }, "2.1.0"),
-    ).toThrow(/supports Nodevo up to 1\.0/);
+      validateManifest({ ...base, maxXentiumVersion: "1.0" }, "2.1.0"),
+    ).toThrow(/supports Xentium up to 1\.0/);
   });
 
-  it("reports incompatibility with the plugin NEC code", () => {
-    expect(() => validateManifest({ ...base, minNodevoVersion: "9.0" }, "1.0.0")).toThrow(
-      expect.objectContaining({ code: "NEC-PLUGIN-2030", httpStatus: 422 }),
+  it("reports incompatibility with the plugin XEC code", () => {
+    expect(() => validateManifest({ ...base, minXentiumVersion: "9.0" }, "1.0.0")).toThrow(
+      expect.objectContaining({ code: "XEC-PLUGIN-2030", httpStatus: 422 }),
     );
   });
 
@@ -75,8 +75,8 @@ describe("validateManifest", () => {
 
   it("binds to one host version through the factory", () => {
     const validate = createManifestValidator("1.0.0");
-    expect(() => validate({ ...base, minNodevoVersion: "2.0" })).toThrow();
-    expect(validate(base).id).toBe("nodevo-forum");
+    expect(() => validate({ ...base, minXentiumVersion: "2.0" })).toThrow();
+    expect(validate(base).id).toBe("xentium-forum");
   });
 
   it("checks compatibility independently of parsing", () => {

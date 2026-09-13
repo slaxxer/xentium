@@ -4,9 +4,9 @@
  * knows their schema. Mirrors home-feed-registry. A plugin registers via
  * `ctx.registerSearchSource(...)` in its onEnable, and is removed on disable.
  */
-import type { SearchSource } from "@nodevo/plugin-sdk";
+import type { SearchSource } from "@xentium/plugin-sdk";
 
-export type { SearchResultItem, SearchSource } from "@nodevo/plugin-sdk";
+export type { SearchResultItem, SearchSource } from "@xentium/plugin-sdk";
 
 interface Entry { pluginId: string; source: SearchSource }
 

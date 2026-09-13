@@ -1,6 +1,6 @@
 // Marketplace contracts (ADR 0001). The download gate — where paid plugins are
 // actually protected. Core talks to a `MarketplaceSource`, never hardcoding
-// nodevo.io: a community / self-hosted source implements the same interface and
+// xentium.org: a community / self-hosted source implements the same interface and
 // may return free, no-op entitlements.
 
 import type { PaginatedRequest, PaginatedResponse } from "./pagination.js";
@@ -39,7 +39,7 @@ export interface MarketplaceListing {
    * this and half of it did not appear" when the theme was just purchased. These
    * let the ACP say so BEFORE the money.
    *
-   * ⚠ Types and template keys, NOT plugin ids: a plugin's id (`nodevo-forum`) and
+   * ⚠ Types and template keys, NOT plugin ids: a plugin's id (`xentium-forum`) and
    * its block namespace (`forum.`) are deliberately different strings, and the
    * package carries neither the id nor the mapping. Only an instance that HAS the
    * plugin can resolve one to the other — which is exactly the instance that does
@@ -117,7 +117,7 @@ export interface AuthorizedDownload {
 }
 
 export interface MarketplaceSource {
-  readonly id:    string;        // "nodevo.io" | a self-hosted/community source
+  readonly id:    string;        // "xentium.org" | a self-hosted/community source
   readonly label: string;
 
   /** Store the server-side account credential (auth code → token in settings). */
@@ -136,7 +136,7 @@ export interface MarketplaceSource {
    * THE CHOKEPOINT. Asks the source "does this account own plugin P, and is there a
    * free production activation for domain D?" — and only then issues a fresh
    * domain-bound entitlement (and, in prod, an authenticated artifact URL).
-   * Throws NEC-LICENSE-9004 if the cap is hit, 9005 if no account is connected.
+   * Throws XEC-LICENSE-9004 if the cap is hit, 9005 if no account is connected.
    */
   authorizeDownload(req: DownloadRequest): Promise<AuthorizedDownload>;
 }

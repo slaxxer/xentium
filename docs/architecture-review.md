@@ -51,7 +51,7 @@ in `requireAuth`/`optionalAuth`. Bonus: same trick for multer's `detectedExt`
 
 ### 1.3 Pagination is hand-rolled two different ways
 
-- `buildPaginationMeta` exists in `@nodevo/contracts` and is used by ~7 services.
+- `buildPaginationMeta` exists in `@xentium/contracts` and is used by ~7 services.
 - **18 other call sites** hand-roll `{ page, limit, total, totalPages: Math.ceil(total / limit) }`
   (all of `admin.service.ts` and `moderation.service.ts`) — these omit
   `hasPrev`/`hasNext`, so the two shapes are silently divergent.
@@ -74,7 +74,7 @@ export async function paginate<T>(
 ```
 
 Collapses ~15 list methods to one line each and makes `buildPaginationMeta` the
-only meta producer. (Plugins can get the same helper via `@nodevo/sdk` later —
+only meta producer. (Plugins can get the same helper via `@xentium/sdk` later —
 forum/messaging paginate too.)
 
 ### 1.4 The "user reference" DTO is assembled by hand ~37 times
@@ -125,17 +125,17 @@ on `Express.Multer.File` so the casts disappear.
 
 ### 1.7 Two error conventions live side by side (known gotcha — now measurable)
 
-- 109 sites throw `NodevoError` → nested `{ error: { code, message, … } }` via
+- 109 sites throw `XentiumError` → nested `{ error: { code, message, … } }` via
   errorMiddleware. ✅ the documented convention.
 - `auth.controller.ts` alone uses `safeParse` + flat string errors that are
-  **not even NEC codes**: `invalid_input`, `invalid_credentials`,
+  **not even XEC codes**: `invalid_input`, `invalid_credentials`,
   `account_banned`, `no_session`, `session_expired`, `user_not_found`.
 
 The frontend must know both shapes (`err.detail.error?.code` vs
 `err.detail.error`), which has already caused bugs.
 
 **Suggestion:** pre-alpha is the last cheap moment to unify. Migrate auth to
-thrown `NodevoError` with NEC-AUTH codes; delete the dual-shape handling in
+thrown `XentiumError` with XEC-AUTH codes; delete the dual-shape handling in
 `apps/web/src/lib/api.ts`. If any flat code is load-bearing for the SPA
 (banned payload), carry it in `details`.
 
@@ -276,7 +276,7 @@ Pairs naturally with a `useAcpList` hook (page/filter state + queryKey +
 209 raw `api.*` calls live inside feature components; only `pagesApi` /
 `articlesApi` exist as typed modules. Each page re-declares its own response
 interfaces (e.g. `ErrorLogPage`'s local `meta: { page; limit; total; totalPages }`)
-even though `PaginatedResponse<T>` already exists in `@nodevo/contracts`.
+even though `PaginatedResponse<T>` already exists in `@xentium/contracts`.
 
 **Suggestion:** don't boil the ocean — adopt two rules for new/touched code:
 1. Feature-level `api.ts` per slice (the endpoints + types), components import
@@ -312,15 +312,15 @@ badge-glow editor).
      feature api modules exist (warn-level).
    - `no-restricted-syntax`: new `function timeAgo` / local `Badge`
      declarations outside `lib/`/`components/`.
-2. **DB naming validator** (`ncf_`/plugin prefix) — already on the TODO list;
+2. **DB naming validator** (`xcf_`/plugin prefix) — already on the TODO list;
    a unit test over the Prisma DMMF + `nodevo_plugin_migrations` DDL is enough.
 3. **Decide the repository question (§1.8) and update CLAUDE.md** — a stated
    convention the code contradicts is worse than no convention.
 4. **"ACP variants live in the domain module"** rule (§1.5) — this is the one
    that prevents the next `admin.service.ts`.
 5. **New shared helpers land in the right layer**: web-only → `apps/web/lib`;
-   API-only → `apps/api/shared`; plugin-reusable → `@nodevo/sdk` /
-   `@nodevo/ui`; type/shape → `@nodevo/contracts`. Worth a one-liner in
+   API-only → `apps/api/shared`; plugin-reusable → `@xentium/sdk` /
+   `@xentium/ui`; type/shape → `@xentium/contracts`. Worth a one-liner in
    CLAUDE.md so helpers stop being born inside feature files.
 
 ---
@@ -331,7 +331,7 @@ badge-glow editor).
 |---|---|---|---|---|
 | 1 | Cached/batched settings service (§2.1) — kills the per-request DB query | High | S | ✅ done 2026-07-11 |
 | 2 | Express type augmentation + delete `wrap()`s (§1.1/1.2) | Med | S | ✅ done 2026-07-11 |
-| 3 | Unify auth error shape onto NEC/NodevoError (§1.7) | High (pre-release only gets harder) | M | ✅ done 2026-07-23 (see A5.1) |
+| 3 | Unify auth error shape onto XEC/XentiumError (§1.7) | High (pre-release only gets harder) | M | ✅ done 2026-07-23 (see A5.1) |
 | 4 | `paginate()` helper + `buildPaginationMeta` everywhere (§1.3) | Med | S | ✅ done 2026-07-11 |
 | 5 | `UserRef` select/mapper (§1.4) | Med | S | ✅ done 2026-07-11 |
 | 6 | De-duplicate admin ⇄ moderation services (§1.5) | High (correctness drift risk) | M | ✅ done 2026-07-23 (see A6 #7) |
@@ -374,7 +374,7 @@ keeps only Zod parsing + the NDJSON stream plumbing.
 ### A1.2 Dialog acknowledgment state is stored in telemetry (NEW, subtle)
 
 The per-admin update/license dialogs use `activityService.hasVisitedSince()` over
-`ncf_activity_log` page-visit rows as their source of truth (admin.controller.ts:546,
+`xcf_activity_log` page-visit rows as their source of truth (admin.controller.ts:546,
 :588). Durable UX state is coupled to an unbounded log table that *needs* a retention
 job (A4.1). The moment retention lands, pruning silently un-acknowledges dialogs: an
 update pending longer than the retention window (`setSince` months old) re-nudges
@@ -393,7 +393,7 @@ nondeterministic (Postgres row order). CLAUDE.md says "users belong to one group
 docs, schema, and code disagree three ways.
 
 **Suggestion:** pick one — enforce single-group at the write path, or define a
-primary-group ordering (e.g. `position` on `ncf_user_groups`) and use it everywhere
+primary-group ordering (e.g. `position` on `xcf_user_groups`) and use it everywhere
 `groups[0]` appears today.
 
 ### A1.4 Paid plugin source is unversioned (still the single biggest project risk)
@@ -405,7 +405,7 @@ needs its own repo (or one private plugins monorepo) + backup.
 ### A1.5 Settings table as a KV blob store for marketplace state
 
 `marketplace.updates`, `marketplace.paid_plugin_ids`, and the account token live as
-JSON strings in `ncf_settings` — the token in plaintext (encryption-at-rest already
+JSON strings in `xcf_settings` — the token in plaintext (encryption-at-rest already
 on the TODO). These are caches/credentials with different lifecycles than site
 settings; every consumer re-parses JSON with ad-hoc shape checks
 (`readReconciledUpdates` does its own defensive parse). Workable, but contain it:
@@ -420,7 +420,7 @@ one typed accessor module per blob, and encrypt the token.
   with every one-sided patch.
 - **`semverCompare` exists twice** (NEW): admin.controller.ts:210 and
   plugin-engine.ts:135 — same hand-rolled function. Belongs in `shared/utils` (or
-  `@nodevo/sdk` for plugin reuse).
+  `@xentium/sdk` for plugin reuse).
 - **`timeAgo` grew from 9 to 10 copies** (item 7, *worsening*): the two pages added
   since the audit (`ReviewCasesPage.tsx`, `CasesSection.tsx`) each grew their own
   copy — the missing `lib/time.ts` actively breeds duplicates. Several still
@@ -460,7 +460,7 @@ constant-size result regardless of traffic.
 
 ## A4. Scalability risks
 
-### A4.1 `ncf_activity_log` has NO retention job and now logs every ACP page view ⚠
+### A4.1 `xcf_activity_log` has NO retention job and now logs every ACP page view ⚠
 
 PR #48 deliberately widened logging to all ACP navigations. The scheduled-jobs
 registry has security/ban/warning/license/update/appearance jobs — **nothing prunes
@@ -492,24 +492,24 @@ entries lapse via TTL) removes the fan-out entirely.
 
 ### A5.1 Error contract is now effectively THREE shapes (item 3, worsening)
 
-- `auth.controller.ts` still returns flat non-NEC strings (`invalid_input`,
+- `auth.controller.ts` still returns flat non-XEC strings (`invalid_input`,
   `account_banned`, … lines 63–199).
 - `requirePermission` adds flat `unauthenticated`/`forbidden`/`invalid_token`.
 - NEW: the marketplace endpoints introduced a third shape — `ArtifactError` →
-  `{message}` with raw 400/502 (admin.controller.ts:204, :684), no NEC codes.
+  `{message}` with raw 400/502 (admin.controller.ts:204, :684), no XEC codes.
 
 Every new client surface must know all three. The original warning was "pre-alpha is
 the last cheap moment" — that moment is closing.
 
-**✅ RESOLVED 2026-07-23** — everything now flows through NodevoError/errorMiddleware
+**✅ RESOLVED 2026-07-23** — everything now flows through XentiumError/errorMiddleware
 in the canonical `{error:{code,message,details,severity}}` shape: auth.controller
-throws coded NodevoErrors (banned payload in `details`, Zod `parse()` → 422
-NEC-API-4001), requireAuth/requirePermission throw NEC-AUTH-1008/1009 +
-NEC-PERM-1001, ArtifactError extends NodevoError with NEC-MARKETPLACE-91xx codes
+throws coded XentiumErrors (banned payload in `details`, Zod `parse()` → 422
+XEC-API-4001), requireAuth/requirePermission throw XEC-AUTH-1008/1009 +
+XEC-PERM-1001, ArtifactError extends XentiumError with XEC-MARKETPLACE-91xx codes
 (the install endpoint's `{message}`-flattening catch removed — plugin-engine
-NodevoErrors keep their real statuses now). New `persist:false` flag keeps
+XentiumErrors keep their real statuses now). New `persist:false` flag keeps
 expected high-frequency 401s (token expiry, guest refresh, failed credentials)
-out of error_log. Web dual-shape readers deleted; latently-broken NEC comparisons
+out of error_log. Web dual-shape readers deleted; latently-broken XEC comparisons
 in ResetPasswordPage/BetaGatePage/RegisterPage fixed. Intentionally excluded:
 installer/setup surface (pre-install lifecycle, self-removes — still flat).
 
@@ -537,9 +537,9 @@ AcpLayout.tsx:87 with independently-declared queryFns and differing options.
 
 | # | Item | Impact | Effort | Notes |
 |---|---|---|---|---|
-| 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `ncf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
+| 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `xcf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
 | 2 | Extract marketplace/update logic from admin.controller into a service (A1.1) | High | M | ✅ done 2026-07-21 — `modules/admin/marketplace.service.ts`; controller 817→543 lines, dynamic imports 24→0 |
-| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | ✅ done 2026-07-23 — one NEC/NodevoError shape; installer surface excluded by design |
+| 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | ✅ done 2026-07-23 — one XEC/XentiumError shape; installer surface excluded by design |
 | 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |
 | 5 | Version-control `plugins/official/` (A1.4) | High | XS | One bad `rm -rf` from losing the revenue line |
 | 6 | Dashboard analytics → SQL GROUP BY (A3.1) | Med | S | |

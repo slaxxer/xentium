@@ -80,7 +80,7 @@ export function ThemeChooser() {
     <>
       <button
         type="button"
-        className="nv-themepick__open"
+        className="xt-themepick__open"
         aria-haspopup="dialog"
         title={t("themeChooser.open", { defaultValue: "Choose a theme" })}
         aria-label={t("themeChooser.open", { defaultValue: "Choose a theme" })}
@@ -90,22 +90,22 @@ export function ThemeChooser() {
       </button>
 
       {open && (
-        <div className="nv-themedlg" onClick={() => setOpen(false)}>
+        <div className="xt-themedlg" onClick={() => setOpen(false)}>
           <div
-            className="nv-themedlg__panel"
+            className="xt-themedlg__panel"
             role="dialog"
             aria-modal="true"
             aria-label={t("themeChooser.title", { defaultValue: "Themes" })}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="nv-themedlg__head">
+            <div className="xt-themedlg__head">
               <div>
                 <h2>{t("themeChooser.title", { defaultValue: "Themes" })}</h2>
                 <p>{t("themeChooser.note", {
                   defaultValue: "Your choice, on this device. It changes nothing for anyone else.",
                 })}</p>
               </div>
-              <button type="button" className="nv-themedlg__x"
+              <button type="button" className="xt-themedlg__x"
                 onClick={() => setOpen(false)}
                 title={t("themeChooser.close", { defaultValue: "Close" })}
                 aria-label={t("themeChooser.close", { defaultValue: "Close" })}>
@@ -113,14 +113,14 @@ export function ThemeChooser() {
               </button>
             </div>
 
-            <div className="nv-themedlg__list">
+            <div className="xt-themedlg__list">
               {themes.map((theme) => {
                 const worn = theme.id === wearing;
                 return (
                   <button
                     key={theme.id}
                     type="button"
-                    className={`nv-themecard${worn ? " is-worn" : ""}`}
+                    className={`xt-themecard${worn ? " is-worn" : ""}`}
                     aria-current={worn}
                     // ⚠ The SITE's theme clears the cookie rather than storing its id.
                     // Storing it would pin the reader to today's active theme, and
@@ -129,13 +129,13 @@ export function ThemeChooser() {
                     // would not follow the site.
                     onClick={() => choose(theme.active ? null : theme.id)}
                   >
-                    <span className="nv-themecard__shot">
+                    <span className="xt-themecard__shot">
                       {theme.screenshot
                         ? <img src={theme.screenshot} alt="" loading="lazy" />
-                        : <span className="nv-themecard__noshot"><FontAwesomeIcon icon={faPalette} /></span>}
+                        : <span className="xt-themecard__noshot"><FontAwesomeIcon icon={faPalette} /></span>}
                     </span>
-                    <span className="nv-themecard__body">
-                      <span className="nv-themecard__name">
+                    <span className="xt-themecard__body">
+                      <span className="xt-themecard__name">
                         {theme.name}
                         {/* TWO different facts, and a reader can be looking at either.
                             "Active" is what THIS READER is wearing; "Site" is what the
@@ -143,12 +143,12 @@ export function ThemeChooser() {
                             picks something else, which is exactly when telling them
                             apart starts to matter. */}
                         {worn && (
-                          <span className="nv-themecard__badge nv-themecard__badge--active">
+                          <span className="xt-themecard__badge xt-themecard__badge--active">
                             {t("themeChooser.activeBadge", { defaultValue: "Active" })}
                           </span>
                         )}
                         {theme.active && (
-                          <span className="nv-themecard__badge">
+                          <span className="xt-themecard__badge">
                             {t("themeChooser.siteBadge", { defaultValue: "Site" })}
                           </span>
                         )}
@@ -157,13 +157,13 @@ export function ThemeChooser() {
                           the reader: a theme without a description has nothing to say
                           about itself, and the thumbnail is doing the work anyway. */}
                       {theme.description && (
-                        <span className="nv-themecard__desc">{theme.description}</span>
+                        <span className="xt-themecard__desc">{theme.description}</span>
                       )}
                     </span>
                     {/* The tick sits at the END of the row rather than over the
                         thumbnail — at this size it would cover most of the picture. */}
                     {worn && (
-                      <span className="nv-themecard__worn" title={t("themeChooser.inUse", { defaultValue: "In use" })}>
+                      <span className="xt-themecard__worn" title={t("themeChooser.inUse", { defaultValue: "In use" })}>
                         <FontAwesomeIcon icon={faCheck} />
                       </span>
                     )}

@@ -7,7 +7,7 @@ import type { AdapterSource, MigrateAdapter, MigrationReporter } from "./types.j
 /**
  * Shared CLI driver — each adapter package's bin is a two-liner calling this.
  *
- *   nodevo-migrate-wp --file export.xml --db postgresql://… [--dry-run] [--yes]
+ *   xentium-migrate-wp --file export.xml --db postgresql://… [--dry-run] [--yes]
  *
  * Flow mirrors §34: inspect → show counts/warnings/preconditions → confirm →
  * run → summary. `--dry-run` extracts and reports without writing anything.
@@ -23,7 +23,7 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
   const targetDb = str(args.db) ?? process.env.DATABASE_URL;
 
   if ((!source.file && !source.db) || !targetDb) {
-    console.log(`Usage: nodevo-migrate-${adapter.name} [--file <export>] [--source-db <url>] [--prefix <table prefix>] --db <nodevo postgres url> [--dry-run] [--yes]`);
+    console.log(`Usage: xentium-migrate-${adapter.name} [--file <export>] [--source-db <url>] [--prefix <table prefix>] --db <xentium postgres url> [--dry-run] [--yes]`);
     process.exitCode = 1;
     return;
   }

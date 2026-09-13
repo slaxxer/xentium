@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
  * The canonical platform version — single source of truth is the api
  * package.json (kept in lockstep across all workspace packages by
  * `node scripts/set-version.mjs <version>`). Surfaced in /api/health and
- * ACP → About, and compared against plugin manifests' min/maxNodevoVersion.
+ * ACP → About, and compared against plugin manifests' min/maxXentiumVersion.
  *
  * Versioning policy (SemVer): prerelease identifiers mark cuts, not commits —
  * `1.0.0-alpha.0` means "working toward alpha.1". Bump + tag only when a
@@ -27,14 +27,14 @@ function readVersion(): string {
       // wrong layout — try the next candidate
     }
   }
-  throw new Error("NODEVO_VERSION: could not locate the api package.json");
+  throw new Error("XENTIUM_VERSION: could not locate the api package.json");
 }
 
-export const NODEVO_VERSION: string = readVersion();
+export const XENTIUM_VERSION: string = readVersion();
 
 /**
- * Base-version comparison moved to `@nodevo/plugin-engine` (ADR-0006) — it is
+ * Base-version comparison moved to `@xentium/plugin-engine` (ADR-0006) — it is
  * pure, and the plugin compatibility check is its only consumer. Re-exported
  * here so existing imports keep working.
  */
-export { baseVersion, compareBaseVersions } from "@nodevo/plugin-engine";
+export { baseVersion, compareBaseVersions } from "@xentium/plugin-engine";

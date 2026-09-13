@@ -1,11 +1,11 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
-import { NEC } from "@nodevo/contracts";
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
-import { uniqueSlug } from "@nodevo/sdk";
-import { PAGE_SLOTS, pageSlotSettingKey, type PageSlot } from "@nodevo/contracts";
+import { XEC } from "@xentium/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
+import { uniqueSlug } from "@xentium/sdk";
+import { PAGE_SLOTS, pageSlotSettingKey, type PageSlot } from "@xentium/contracts";
 import { pageRepository, pageInclude, type PageWithIncludes } from "./page.repository.js";
 import type { CreatePageInput, UpdatePageInput, ListPagesQuery } from "./page.validation.js";
 import type { PageDetail, PageListItem } from "./page.types.js";
@@ -56,8 +56,8 @@ export const pageService = {
   async getBySlug(slug: string, viewerId: string | undefined): Promise<PageDetail> {
     const page = await pageRepository.findBySlug(slug);
     if (!page || !canViewPage(page, viewerId)) {
-      throw new NodevoError({
-        code: NEC.PAGE_NOT_FOUND,
+      throw new XentiumError({
+        code: XEC.PAGE_NOT_FOUND,
         httpStatus: 404,
         message: "Page not found",
       });
@@ -79,7 +79,7 @@ export const pageService = {
   async getById(id: string): Promise<PageDetail> {
     const page = await pageRepository.findById(id);
     if (!page) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
     return shapeDetail(page);
   },
@@ -103,7 +103,7 @@ export const pageService = {
   async update(id: string, input: UpdatePageInput): Promise<PageDetail> {
     const existing = await pageRepository.findById(id);
     if (!existing) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
 
     const willChangeTitle = input.title !== undefined && input.title !== existing.title;
@@ -140,7 +140,7 @@ export const pageService = {
   async publish(id: string): Promise<PageDetail> {
     const existing = await pageRepository.findById(id);
     if (!existing) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
     const wasPublished = existing.status === "published";
     const updated = await prisma.$transaction(async (tx) => {
@@ -159,7 +159,7 @@ export const pageService = {
   async unpublish(id: string): Promise<PageDetail> {
     const existing = await pageRepository.findById(id);
     if (!existing) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
     const updated = await prisma.$transaction(async (tx) => {
       const result = await tx.page.update({
@@ -184,7 +184,7 @@ export const pageService = {
   async setFeaturedImage(id: string, relPath: string): Promise<PageDetail> {
     const existing = await pageRepository.findById(id);
     if (!existing) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
     const updated = await prisma.page.update({
       where: { id },
@@ -201,7 +201,7 @@ export const pageService = {
   async addToNav(id: string, placement: "navbar" | "footer"): Promise<{ navItemId: string }> {
     const page = await pageRepository.findById(id);
     if (!page) {
-      throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+      throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
     }
     const existing = await prisma.navItem.findFirst({ where: { pageId: id }, select: { id: true } });
     if (existing) {
@@ -248,7 +248,7 @@ export const pageService = {
     if (pageId) {
       const exists = await prisma.page.findUnique({ where: { id: pageId }, select: { id: true } });
       if (!exists) {
-        throw new NodevoError({ code: NEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
+        throw new XentiumError({ code: XEC.PAGE_NOT_FOUND, httpStatus: 404, message: "Page not found" });
       }
     }
     const key = pageSlotSettingKey(slot);

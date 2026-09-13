@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { uploadSingle } from "../../shared/middleware/upload.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { pagesController } from "./page.controller.js";
 
 // Public reader — mounted at /api/pages. optionalAuth so 'members' visibility

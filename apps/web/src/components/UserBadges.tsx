@@ -13,8 +13,8 @@
  * card must look untouched on a site that has never granted one.
  */
 import { useTranslation } from "react-i18next";
-import type { AwardedBadge } from "@nodevo/contracts";
-import { parseIconToken } from "@nodevo/contracts";
+import type { AwardedBadge } from "@xentium/contracts";
+import { parseIconToken } from "@xentium/contracts";
 import { TokenIcon } from "./TokenIcon";
 import { useUserBadges } from "../lib/userBadges";
 import "./UserBadges.scss";
@@ -40,7 +40,7 @@ export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: 
 
   return (
     <span
-      className={`nv-badge nv-badge--${size}`}
+      className={`xt-badge xt-badge--${size}`}
       style={{ "--badge-color": color } as React.CSSProperties}
       title={tip}
       aria-label={t("badges.held", { name: badge.name })}
@@ -48,7 +48,7 @@ export function BadgeMark({ badge, size = "sm" }: { badge: AwardedBadge; size?: 
       {/* ⚠ The dot is for a badge with NO icon at all, not for one whose icon the
           site cannot draw — `TokenIcon` handles its own fallbacks, and swapping in a
           dot behind its back would hide a kit problem from the admin who caused it. */}
-      {icon ? <TokenIcon token={badge.faIcon} /> : <span className="nv-badge__dot" />}
+      {icon ? <TokenIcon token={badge.faIcon} /> : <span className="xt-badge__dot" />}
     </span>
   );
 }
@@ -61,10 +61,10 @@ export function UserBadges({ userId, max, size = "sm", className }: UserBadgesPr
   const hidden = badges.length - shown.length;
 
   return (
-    <span className={`nv-badges${className ? ` ${className}` : ""}`}>
+    <span className={`xt-badges${className ? ` ${className}` : ""}`}>
       {shown.map((b) => <BadgeMark key={b.id} badge={b} size={size} />)}
       {hidden > 0 && (
-        <span className={`nv-badge nv-badge--more nv-badge--${size}`} title={badges.slice(max).map((b) => b.name).join(", ")}>
+        <span className={`xt-badge xt-badge--more xt-badge--${size}`} title={badges.slice(max).map((b) => b.name).join(", ")}>
           +{hidden}
         </span>
       )}

@@ -5,7 +5,7 @@
 // refresh job — NOT per request. Running plugins are never bricked by expiry
 // (§11): an expired-but-in-grace entitlement still resolves to a usable state.
 
-/** Where a Nodevo instance is running. Drives whether domain-binding is enforced. */
+/** Where a Xentium instance is running. Drives whether domain-binding is enforced. */
 export type DeployEnvironment = "production" | "staging" | "development";
 
 /**

@@ -2,7 +2,7 @@
  * `getSiteId` — the install identity every license-server call is made under.
  *
  * This exists as a regression guard, not for coverage. The function used to
- * return the literal string "dev-site" when `ncf_installs` had no row, and that
+ * return the literal string "dev-site" when `xcf_installs` had no row, and that
  * fallback is a SHARED identity: every affected install reports as the same
  * site, so activations, per-domain caps and audit trails from all of them
  * collapse into one bucket on the marketplace. Once entitlements bind to the
@@ -15,7 +15,7 @@
  * anomaly in the marketplace's numbers months later.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@nodevo/contracts";
+import { XEC } from "@xentium/contracts";
 
 const install: { siteId: string | null } = { siteId: null };
 
@@ -48,11 +48,11 @@ describe("getSiteId", () => {
   });
 
   it("carries the coded error so the ACP error reference can explain it", async () => {
-    await expect(getSiteId()).rejects.toMatchObject({ code: NEC.LICENSE_SITE_ID_MISSING });
+    await expect(getSiteId()).rejects.toMatchObject({ code: XEC.LICENSE_SITE_ID_MISSING });
   });
 
   it("throws when the row exists but carries no siteId", async () => {
     install.siteId = "";
-    await expect(getSiteId()).rejects.toMatchObject({ code: NEC.LICENSE_SITE_ID_MISSING });
+    await expect(getSiteId()).rejects.toMatchObject({ code: XEC.LICENSE_SITE_ID_MISSING });
   });
 });

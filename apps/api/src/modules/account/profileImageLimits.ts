@@ -2,7 +2,7 @@
  * Per-rank limits on the images a member may put on their own profile.
  *
  * ⚠ THE ONE CHOKEPOINT. `maxProfileImageBytes` and `allowedProfileImageTypes` have
- * been in `ncf_group_progression` since Phase 7 (§38) and were enforced NOWHERE —
+ * been in `xcf_group_progression` since Phase 7 (§38) and were enforced NOWHERE —
  * stored, validated on the way in, resolved by `getUserLimits`, and never once read
  * by an upload route. Both the avatar and the cover go through here now, so a rank's
  * limits mean the same thing wherever a member uploads.
@@ -11,8 +11,8 @@
  * allowing 10 MB cannot get past a 2 MB route limit, because multer has already
  * refused the request before this runs.
  */
-import { NodevoError } from "@nodevo/errors";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "@xentium/errors";
+import { XEC } from "@xentium/contracts";
 import { progressionService } from "../progression/progression.service.js";
 
 export interface ProfileImageCheck {
@@ -37,8 +37,8 @@ export async function assertProfileImageAllowed(
   const limits = await progressionService.getUserLimits(userId);
 
   if (file.kind === "cover" && limits.canUploadCover === false) {
-    throw new NodevoError({
-      code:       NEC.API_FORBIDDEN,
+    throw new XentiumError({
+      code:       XEC.API_FORBIDDEN,
       httpStatus: 403,
       message:    "Your rank cannot set a cover image yet",
       // The frontend words the sentence (§60); it needs to know WHICH rung unlocks it.
@@ -47,8 +47,8 @@ export async function assertProfileImageAllowed(
   }
 
   if (limits.maxProfileImageBytes != null && file.bytes > limits.maxProfileImageBytes) {
-    throw new NodevoError({
-      code:       NEC.STORE_FILE_TOO_LARGE,
+    throw new XentiumError({
+      code:       XEC.STORE_FILE_TOO_LARGE,
       httpStatus: 413,
       message:    `Image is ${file.bytes} bytes; your rank allows ${limits.maxProfileImageBytes}`,
       details:    { bytes: file.bytes, maxBytes: limits.maxProfileImageBytes, reason: "rank" },
@@ -59,8 +59,8 @@ export async function assertProfileImageAllowed(
   // simply never been configured must not refuse every image.
   const allowed = limits.allowedProfileImageTypes ?? [];
   if (allowed.length > 0 && !allowed.includes(file.mimeType)) {
-    throw new NodevoError({
-      code:       NEC.STORE_TYPE_NOT_PERMITTED,
+    throw new XentiumError({
+      code:       XEC.STORE_TYPE_NOT_PERMITTED,
       httpStatus: 415,
       message:    `Your rank cannot upload ${file.mimeType}`,
       details:    { detected: file.mimeType, allowed, reason: "rank" },

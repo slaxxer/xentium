@@ -7,8 +7,8 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faPencil, faTrash, faChevronDown, faChevronRight, faGripVertical,
 } from "@fortawesome/free-solid-svg-icons";
-import { GroupAccessPicker } from "@nodevo/ui";
-import type { GroupAccessValue, GroupItem } from "@nodevo/ui";
+import { GroupAccessPicker } from "@xentium/ui";
+import type { GroupAccessValue, GroupItem } from "@xentium/ui";
 
 interface CategoryInput {
   name: string;

@@ -27,7 +27,7 @@
 import { createContext, useCallback, useContext, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { blockPropSchemas, type LocalizedText } from "@nodevo/contracts";
+import { blockPropSchemas, type LocalizedText } from "@xentium/contracts";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
 import { articleCategoriesApi, articlesApi } from "../../lib/articlesApi";

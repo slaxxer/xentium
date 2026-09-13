@@ -1,6 +1,6 @@
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 
@@ -42,13 +42,13 @@ export const groupsService = {
         progression: { select: BADGE_PROGRESSION_SELECT },
       },
     });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
     return group;
   },
 
   async create(data: { name: string; key: string; showInTeam?: boolean }) {
     const exists = await prisma.group.findUnique({ where: { key: data.key } });
-    if (exists) throw NodevoError.conflict("A group with that key already exists");
+    if (exists) throw XentiumError.conflict("A group with that key already exists");
     return prisma.group.create({
       data: { name: data.name, key: data.key, isSystem: false, showInTeam: data.showInTeam ?? false },
       include: { _count: { select: { users: true, permissions: true } } },
@@ -57,7 +57,7 @@ export const groupsService = {
 
   async update(id: string, data: { name?: string; showInTeam?: boolean }) {
     const group = await prisma.group.findUnique({ where: { id } });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
     return prisma.group.update({
       where: { id },
       data: { name: data.name, showInTeam: data.showInTeam },
@@ -67,8 +67,8 @@ export const groupsService = {
 
   async remove(id: string) {
     const group = await prisma.group.findUnique({ where: { id } });
-    if (!group) throw NodevoError.notFound("Group not found");
-    if (group.isSystem) throw NodevoError.forbidden("Cannot delete a system group");
+    if (!group) throw XentiumError.notFound("Group not found");
+    if (group.isSystem) throw XentiumError.forbidden("Cannot delete a system group");
 
     // Invalidate caches before the group is deleted (members lose FK access after delete)
     await permissionCache.invalidateForGroup(id);
@@ -89,7 +89,7 @@ export const groupsService = {
 
   async uploadIcon(groupId: string, buffer: Buffer, originalname: string): Promise<string> {
     const group = await prisma.group.findUnique({ where: { id: groupId } });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
     const ext      = path.extname(originalname).toLowerCase() || ".png";
     const filename = `${groupId}${ext}`;
     const relPath  = await storage.save("groups", filename, buffer);
@@ -99,7 +99,7 @@ export const groupsService = {
 
   async setPermissions(groupId: string, permissionKeys: string[]) {
     const group = await prisma.group.findUnique({ where: { id: groupId } });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
     const perms = await prisma.permission.findMany({
       where: { key: { in: permissionKeys } },
     });

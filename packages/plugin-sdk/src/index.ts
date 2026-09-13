@@ -1,14 +1,14 @@
 /**
- * @nodevo/plugin-sdk
+ * @xentium/plugin-sdk
  *
- * The authoring contract for Nodevo CMS plugins. Import this in your plugin's
+ * The authoring contract for Xentium CMS plugins. Import this in your plugin's
  * server entry point.
  *
  * ── What changed, and what did not ─────────────────────────────────────────
  *
  * The application-agnostic half of this contract now lives in
- * `@nodevo/plugin-kit` — manifest, definition, host bridge and the base context
- * — so that a plugin for a DIFFERENT Nodevo-framework application (the
+ * `@xentium/plugin-kit` — manifest, definition, host bridge and the base context
+ * — so that a plugin for a DIFFERENT Xentium-framework application (the
  * marketplace, for one) has something to build against that does not assume a
  * CMS.
  *
@@ -29,16 +29,16 @@ import type {
   PluginContext as BasePluginContext,
   PluginDefinition as BasePluginDefinition,
   PluginHost as BasePluginHost,
-} from "@nodevo/plugin-kit";
+} from "@xentium/plugin-kit";
 
 // Everything application-agnostic, re-exported so one import still suffices.
 export type {
   PluginRouter,
   PluginManifest,
   PermissionDeclaration,
-  NecCodeDeclaration,
+  XecCodeDeclaration,
   NotifyOptions,
-} from "@nodevo/plugin-kit";
+} from "@xentium/plugin-kit";
 
 // ── CMS declarations ─────────────────────────────────────────────────────────
 
@@ -255,8 +255,8 @@ export interface RegistrationStatusPatch {
  * question "is this person allowed in right now", which is a POLICY: a private
  * beta, an allow-list, a paid seat. Implement only the moments you care about.
  *
- * Refuse by THROWING a `NodevoError`. A guard never returns a boolean, because a
- * refusal carries the NEC code and the message the client shows, and those
+ * Refuse by THROWING a `XentiumError`. A guard never returns a boolean, because a
+ * refusal carries the XEC code and the message the client shows, and those
  * belong to whoever knows why the answer was no.
  *
  * `beforeLogin` and `beforeRegister` propagate their error — that is the point.
@@ -292,7 +292,7 @@ export interface AuthGuard {
 // ── Host bridge ──────────────────────────────────────────────────────────────
 
 /**
- * The CMS's host bridge: everything `@nodevo/plugin-kit` guarantees (prisma,
+ * The CMS's host bridge: everything `@xentium/plugin-kit` guarantees (prisma,
  * queues, env, logger, errors, middleware, cron), plus what only a community
  * platform can offer.
  */

@@ -229,7 +229,7 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
       {branding?.navbarUrl ? (
         /* Sized by CSS, not inline: the same block now sits in the nav strip AND in
            a masthead band, and a hardcoded 32px made a 250px band render a logo the
-           size of a favicon. `--nv-logo-h` lets the context say how big, which is
+           size of a favicon. `--xt-logo-h` lets the context say how big, which is
            also the codebase's own rule about visual values living in tokens. */
         <img
           className="pub-nav__logo-img"
@@ -239,7 +239,7 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
       ) : (
         <>
           <span className="pub-nav__logomark" aria-hidden><FontAwesomeIcon icon={faCircleNodes} /></span>
-          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "nodevo"}</span>}
+          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "xentium"}</span>}
         </>
       )}
     </NavLink>

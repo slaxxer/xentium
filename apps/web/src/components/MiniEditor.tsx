@@ -2,7 +2,7 @@
  * `MiniEditor` — now a thin adapter over `Composer`.
  *
  * ⚠ THE NAME AND THE PROPS ARE THE CONTRACT. This module is a host global
- * (`__NODEVO_HOST__.webMiniEditor`) that BUILT plugin bundles import — the messaging
+ * (`__XENTIUM_HOST__.webMiniEditor`) that BUILT plugin bundles import — the messaging
  * plugin's conversation and new-message pages among them. A shipped bundle cannot be
  * edited from this repo, so the export keeps its name, its props and its handle, and
  * every one of those surfaces gets the redesigned editor with no plugin rebuild.

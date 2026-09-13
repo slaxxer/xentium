@@ -5,7 +5,7 @@ import { verifyPassword, hashPassword } from "./auth.password.js";
 import { verifyLegacyPassword, isLegacyScheme } from "./auth.legacyPassword.js";
 import { createSession } from "./auth.tokens.js";
 import { revokeUserAccessTokens } from "./session-revocation.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
@@ -13,7 +13,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
- *  own (a beta plugin needs `nv_beta`). Core never inspects them itself. */
+ *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string; cookies?: Record<string, string> };
 
 const DUMMY_HASH = process.env.DUMMY_ARGON2_HASH!;
@@ -50,7 +50,7 @@ async function resolveLoginUser(identifier: string) {
 
 // Failed-login lockout (§43). Rolling Redis counter keyed by identifier: after
 // `max` failures it stays set for `duration` minutes, blocking further attempts
-// (the DB audit log in ncf_login_events is written separately, on every try).
+// (the DB audit log in xcf_login_events is written separately, on every try).
 const lockKey = (identifier: string) => rkey("authfail", identifier.trim().toLowerCase());
 
 async function getLockout(): Promise<{ enabled: boolean; max: number; durationSec: number }> {
@@ -62,7 +62,7 @@ async function getLockout(): Promise<{ enabled: boolean; max: number; durationSe
   return { enabled: enabled !== false, max: Math.max(1, Number(max) || 5), durationSec: Math.max(1, Number(minutes) || 10) * 60 };
 }
 
-/** Throw NEC-AUTH-1040 if the identifier is currently locked out. Includes the
+/** Throw XEC-AUTH-1040 if the identifier is currently locked out. Includes the
  *  attempted account + source IP as error details so the error log records who
  *  was being targeted and from where. */
 async function assertNotLockedOut(identifier: string, cfg: { enabled: boolean; max: number; durationSec: number }, ip?: string) {
@@ -72,8 +72,8 @@ async function assertNotLockedOut(identifier: string, cfg: { enabled: boolean; m
   if (count >= cfg.max) {
     const ttl = await redis.ttl(key);
     const minutes = Math.max(1, Math.ceil((ttl > 0 ? ttl : cfg.durationSec) / 60));
-    throw new NodevoError({
-      code: "NEC-AUTH-1040",
+    throw new XentiumError({
+      code: "XEC-AUTH-1040",
       httpStatus: 429,
       message: `Too many failed login attempts. Try again in about ${minutes} minute${minutes === 1 ? "" : "s"}.`,
       details: { username: identifier, ip: ip ?? null, failedAttempts: count },
@@ -193,7 +193,7 @@ export async function sendRegistrationCode(email: string): Promise<void> {
   // Check email not already taken
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    throw new NodevoError({ code: "NEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+    throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
   }
 
   const code = generateCode();
@@ -251,15 +251,15 @@ export async function register(
     // Normal mode: check registration_mode setting
     const mode = await getSetting("auth.registration_mode", "open");
     if (mode === "closed") {
-      throw new NodevoError({ code: "NEC-AUTH-2010", httpStatus: 403, message: "Registration is currently disabled" });
+      throw new XentiumError({ code: "XEC-AUTH-2010", httpStatus: 403, message: "Registration is currently disabled" });
     }
     if (mode === "invite") {
       if (!inviteCode) {
-        throw new NodevoError({ code: "NEC-AUTH-1020", httpStatus: 403, message: "An invite code is required to register" });
+        throw new XentiumError({ code: "XEC-AUTH-1020", httpStatus: 403, message: "An invite code is required to register" });
       }
       const invite = await prisma.inviteCode.findUnique({ where: { code: inviteCode.toUpperCase().trim() } });
       if (!invite || (invite.expiresAt && invite.expiresAt < new Date()) || invite.useCount >= invite.maxUses) {
-        throw new NodevoError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invalid or expired invite code" });
+        throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invalid or expired invite code" });
       }
     }
   }
@@ -269,7 +269,7 @@ export async function register(
   if (!(isDev && emailCode === "000000")) {
     const stored = await redis.get(rkey("regcode", email));
     if (!stored || stored !== emailCode) {
-      throw new NodevoError({ code: "NEC-AUTH-2003", httpStatus: 400, message: "Invalid or expired verification code" });
+      throw new XentiumError({ code: "XEC-AUTH-2003", httpStatus: 400, message: "Invalid or expired verification code" });
     }
   }
 
@@ -279,10 +279,10 @@ export async function register(
     prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } } }),
   ]);
   if (existingEmail) {
-    throw new NodevoError({ code: "NEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+    throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
   }
   if (existingUsername) {
-    throw new NodevoError({ code: "NEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
+    throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
   }
 
   // Optional display / full name (registration.collect_name). Only stored when
@@ -290,7 +290,7 @@ export async function register(
   const collectName = (await getSetting("registration.collect_name", false)) === true;
   const cleanName   = collectName ? (name ?? "").trim().slice(0, 80) : "";
   if (collectName && (await getSetting("registration.name_required", false)) === true && !cleanName) {
-    throw new NodevoError({ code: "NEC-AUTH-2004", httpStatus: 400, message: "Your name is required to register" });
+    throw new XentiumError({ code: "XEC-AUTH-2004", httpStatus: 400, message: "Your name is required to register" });
   }
 
   // Use the admin-configured default group (falls back to "member" if not set)
@@ -416,8 +416,8 @@ export async function confirmPasswordReset(
     where: { tokenHash: hashToken(token) },
   });
   if (!row || row.usedAt || row.expiresAt < new Date()) {
-    throw new NodevoError({
-      code: "NEC-AUTH-1007",
+    throw new XentiumError({
+      code: "XEC-AUTH-1007",
       httpStatus: 400,
       message: "This password reset link is invalid or has expired",
     });

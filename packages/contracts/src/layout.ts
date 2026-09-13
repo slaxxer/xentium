@@ -210,7 +210,7 @@ export type RegionName = (typeof TEMPLATE_REGIONS)[CoreTemplateKey][number];
 // core's, instead of that page being the one part of the site the layout editor
 // cannot touch.
 //
-// Themes stay locked out. A `.nvtheme` is data: it may carry a document FOR a
+// Themes stay locked out. A `.xttheme` is data: it may carry a document FOR a
 // registered template, and a document for one nobody registered is skipped, never
 // stored as a new template. So the enum is still closed to the untrusted half.
 //
@@ -219,7 +219,7 @@ export type RegionName = (typeof TEMPLATE_REGIONS)[CoreTemplateKey][number];
 // and registers it in both — from its server entry via `ctx.registerLayoutTemplate`,
 // and from its web entry via the host's `@web/layout/templateRegistry`.
 // ⚠ A plugin bundle must go through the HOST global for the web half. Importing
-// `@nodevo/contracts` directly bundles a SECOND copy of this module, whose registry
+// `@xentium/contracts` directly bundles a SECOND copy of this module, whose registry
 // the renderer never reads.
 
 /** A template: its regions, what it ships in them, and who owns it. */
@@ -264,7 +264,7 @@ const templates = new Map<string, TemplateDefinition>();
  *
  * The dot is required so a plugin cannot claim a bare word core might later want,
  * and the whole key is bounded and lowercase-ish because it reaches a URL path, a
- * unique index and a file name inside a `.nvtheme`.
+ * unique index and a file name inside a `.xttheme`.
  */
 export const PLUGIN_TEMPLATE_KEY_RE = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*\.[a-z][a-zA-Z0-9]*$/;
 
@@ -492,11 +492,11 @@ export interface BlockNode {
    * Stamped on the SAME `display: contents` wrapper the variant uses, which is what
    * makes it safe on any block, including a plugin's: the block's own element stays the
    * one its flex or grid parent sizes. The consequence is that the handle is something
-   * you style THROUGH, not on — `.nav-tile > *` or `.nav-tile .nv-image` paint, while
+   * you style THROUGH, not on — `.nav-tile > *` or `.nav-tile .xt-image` paint, while
    * `.nav-tile { background: … }` cannot, because the wrapper generates no box.
    * Descendant and `:hover` selectors work normally.
    *
-   * This exists because `data-nv-block` is not a contract: ids are opaque and a
+   * This exists because `data-xt-block` is not a contract: ids are opaque and a
    * rebuilt block gets a new one, so custom CSS had no stable target.
    */
   className?: string;
@@ -522,7 +522,7 @@ export interface BlockNode {
 /**
  * How deep nesting may go, counting a region's own blocks as depth 1.
  *
- * Bounded because an imported `.nvtheme` is a second way into storage, and an
+ * Bounded because an imported `.xttheme` is a second way into storage, and an
  * arbitrarily deep document is a render bomb rather than a layout.
  *
  * Raised from 5 to 8 when the profile card was decomposed: a real card is
@@ -684,7 +684,7 @@ export function audienceInView(
 // hardcoded visual values, always a token.
 //
 // So a variant is a NAMED TOKEN BUCKET, nothing more. `accent` is a scope
-// (`variant.accent`, emitted under `.nv-v--accent` — see `tokens.ts`) whose overrides
+// (`variant.accent`, emitted under `.xt-v--accent` — see `tokens.ts`) whose overrides
 // re-scope ordinary semantic tokens for the block and everything inside it. A document
 // says "this panel is accent"; the theme says what accent means. Someone who prefers
 // different colours edits four tokens instead of forty blocks.
@@ -709,7 +709,7 @@ export const blockVariantSchema = z.enum(BLOCK_VARIANTS);
  * no box — so the block's own element remains the one its flex or grid parent sizes.
  * A real wrapper box would silently break the navbar and every column track.
  */
-export const variantClass = (variant: BlockVariant): string => `nv-v--${variant}`;
+export const variantClass = (variant: BlockVariant): string => `xt-v--${variant}`;
 
 /**
  * A block's custom class handle.
@@ -719,9 +719,9 @@ export const variantClass = (variant: BlockVariant): string => `nv-v--${variant}
  * is written into a class attribute AND is the thing a theme's stylesheet selects on,
  * so anything that could terminate a selector or an attribute is refused outright.
  *
- * `nv-` is RESERVED. Core's own classes live under that prefix and step into the
+ * `xt-` is RESERVED. Core's own classes live under that prefix and step into the
  * documented class contract themes style against; letting a document mint one would
- * let a stored layout impersonate a core class — or a variant (`nv-v--accent`) it was
+ * let a stored layout impersonate a core class — or a variant (`xt-v--accent`) it was
  * never given.
  */
 const CLASS_TOKEN = /^[A-Za-z][A-Za-z0-9_-]*$/;
@@ -735,12 +735,12 @@ export const blockClassNameSchema = z
       return (
         tokens.length > 0 &&
         tokens.length <= 4 &&
-        tokens.every((t) => CLASS_TOKEN.test(t) && !t.toLowerCase().startsWith('nv-'))
+        tokens.every((t) => CLASS_TOKEN.test(t) && !t.toLowerCase().startsWith('xt-'))
       );
     },
     {
       message:
-        'className must be 1-4 CSS identifiers, letters/digits/-/_ only, and may not start with the reserved `nv-` prefix',
+        'className must be 1-4 CSS identifiers, letters/digits/-/_ only, and may not start with the reserved `xt-` prefix',
     },
   );
 
@@ -760,14 +760,14 @@ export const blockClassNameSchema = z
  *
  * ⚠ **This is a compatibility contract.** The class is derived from the registry key, so
  * renaming a block type renames its class and breaks any theme that targeted it — the
- * same commitment as renaming a prop, and the reason `nv-` is reserved against
+ * same commitment as renaming a prop, and the reason `xt-` is reserved against
  * `className`.
  *
  * A plugin type is namespaced with a dot (`forum.recentThreads`), which is not usable in
  * a selector unescaped, so separators are flattened to `-`.
  */
 export const blockTypeClass = (type: string): string =>
-  `nv-b--${type.replace(/[^A-Za-z0-9_-]+/g, '-')}`;
+  `xt-b--${type.replace(/[^A-Za-z0-9_-]+/g, '-')}`;
 
 export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
   z.object({
@@ -820,7 +820,7 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
  *
  * ⚠ STRICT on purpose. These values are handed to the renderer and composed into a
  * `linear-gradient(...)`, and a document is untrusted input twice over — an admin
- * types one, and a purchased `.nvtheme` ships others. An unbounded string would let
+ * types one, and a purchased `.xttheme` ships others. An unbounded string would let
  * a package smuggle `url(https://tracker/…)` or a second declaration into whatever
  * it is interpolated into. Hex, `rgb()/rgba()`, `hsl()/hsla()` and `var(--token)`
  * cover every colour anyone needs and nothing else parses.
@@ -880,7 +880,7 @@ export interface LayoutDraftResponse {
  * Relative paths and http/https/mailto only. The scheme check is a DENY of the
  * script-bearing ones rather than an allow-list of shapes, because the useful values
  * here are mostly relative (`/forum`, `../page`) and an allow-list of URL shapes would
- * reject them. A `.nvtheme` from a stranger is a way into this field, so `javascript:`
+ * reject them. A `.xttheme` from a stranger is a way into this field, so `javascript:`
  * must never survive validation and be handed to an `href`.
  */
 /**
@@ -943,7 +943,7 @@ export const blockPropSchemas = {
      * Gradient stops, in order. Empty = no gradient; ONE colour paints a flat fill.
      *
      * Capped at three because a gradient is a background, not an illustration — and
-     * the cap is the schema's, so a hand-written document or a `.nvtheme` cannot
+     * the cap is the schema's, so a hand-written document or a `.xttheme` cannot
      * exceed what the editor offers.
      */
     backgroundGradient: z.array(cssColorSchema).max(3).default([]),
@@ -1162,7 +1162,7 @@ export const blockPropSchemas = {
      * An upload path (`themes/assets/hero.jpg`) or an absolute URL. Empty keeps the
      * token-driven gradient the panel ships with.
      *
-     * ⚠ A path into `/uploads` is SITE content, not theme content — a `.nvtheme`
+     * ⚠ A path into `/uploads` is SITE content, not theme content — a `.xttheme`
      * carries no assets yet, so exporting a layout that references one produces a
      * broken link on the importing site. See `docs/plugin-blocks.md`.
      */
@@ -1359,7 +1359,7 @@ export const blockPropSchemas = {
     }),
 
     /** Upload path or absolute URL, drawn OVER the gradient. `asset: true` is what
-     *  makes it travel in a `.nvtheme` — see `section.backgroundImage`. */
+     *  makes it travel in a `.xttheme` — see `section.backgroundImage`. */
     backgroundImage: z.string().max(500).default('').meta({
       title:       'Background image',
       description: 'Upload path or URL. Drawn over the gradient. Leave empty for none.',
@@ -1421,7 +1421,7 @@ export const blockPropSchemas = {
    * region holding four leaves and an admin who clicked "the footer" found nothing
    * there. The header had been a block for a release; this is the other half.
    *
-   * ⚠ It renders `.nv-foot`, which is `SCOPE_SELECTOR.footer` — the Style Editor's
+   * ⚠ It renders `.xt-foot`, which is `SCOPE_SELECTOR.footer` — the Style Editor's
    * whole Footer section is emitted under that class. Renaming it here silently
    * empties that panel.
    */
@@ -1706,7 +1706,7 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   // The site footer: ONE band block holding the four pieces, mirroring the header's
   // `[band, navbar]`. Deleting the band means "no footer chrome" and the pieces can
   // be dragged out of it to say exactly that; the shipped arrangement is what the
-  // hardcoded `.nv-foot` wrapper rendered before it was a block.
+  // hardcoded `.xt-foot` wrapper rendered before it was a block.
   'chrome.footer': {
     templateKey: 'chrome.footer', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
@@ -1745,7 +1745,7 @@ export function parseLayoutDocument(
 // shape cannot express, and they are checked on write rather than on read: a
 // document that breaks them is not a page to degrade gracefully, it is a document
 // that should never have been stored. The editor cannot produce one — the point of
-// checking is that a hand-written or third-party `.nvtheme` can.
+// checking is that a hand-written or third-party `.xttheme` can.
 
 const CORE_CONTAINERS = new Set<string>(CORE_CONTAINER_TYPES);
 

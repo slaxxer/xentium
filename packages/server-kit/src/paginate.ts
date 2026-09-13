@@ -1,4 +1,4 @@
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 
 /** The standard list-endpoint query: fetch one page + total count in parallel,
  *  meta via buildPaginationMeta (the ONLY producer of pagination meta). The

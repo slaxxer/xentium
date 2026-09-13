@@ -1,6 +1,6 @@
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no O, 0, I, 1 — avoids confusion
@@ -43,23 +43,23 @@ export const inviteService = {
 
   async revoke(id: string) {
     const code = await prisma.inviteCode.findUnique({ where: { id } });
-    if (!code) throw NodevoError.notFound("Invite code not found");
-    if (code.useCount > 0) throw NodevoError.conflict("Cannot revoke a code that has already been used");
+    if (!code) throw XentiumError.notFound("Invite code not found");
+    if (code.useCount > 0) throw XentiumError.conflict("Cannot revoke a code that has already been used");
     await prisma.inviteCode.delete({ where: { id } });
   },
 
-  /** Validate and consume an invite code during registration. Throws NEC-AUTH errors on failure. */
+  /** Validate and consume an invite code during registration. Throws XEC-AUTH errors on failure. */
   async consume(code: string, userId: string): Promise<void> {
     const invite = await prisma.inviteCode.findUnique({ where: { code: code.toUpperCase().trim() } });
 
     if (!invite) {
-      throw new NodevoError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invalid invite code" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invalid invite code" });
     }
     if (invite.expiresAt && invite.expiresAt < new Date()) {
-      throw new NodevoError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invite code has expired" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invite code has expired" });
     }
     if (invite.useCount >= invite.maxUses) {
-      throw new NodevoError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invite code has already been used" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invite code has already been used" });
     }
 
     await prisma.inviteCode.update({

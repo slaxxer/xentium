@@ -1,6 +1,6 @@
 # Icons, and FontAwesome Pro
 
-Nodevo bundles the **FontAwesome Free** solid set and always will. Core's own chrome
+Xentium bundles the **FontAwesome Free** solid set and always will. Core's own chrome
 draws with no network call and no third-party script: if a kit fails to load, is
 blocked, or was never configured, the application looks and behaves exactly as it
 does today.
@@ -10,7 +10,7 @@ subscription gets Pro icons on their own instance.
 
 ## Why not just bundle Pro
 
-A FontAwesome Pro licence covers the sites and apps **its owner operates**. Nodevo is
+A FontAwesome Pro licence covers the sites and apps **its owner operates**. Xentium is
 installed by strangers on their own servers, so every install is a different operator.
 
 `apps/web` builds to a `dist` that each instance deploys. Bundling Pro icons at build
@@ -25,7 +25,7 @@ token at *build* time, and admins install a prebuilt artifact.
 A kit is the mechanism that works, because it is fetched **at runtime** with the
 admin's own kit id, and FontAwesome domain-locks it to their site.
 
-> If Nodevo ever wants to ship Pro to everybody, that is a redistribution/OEM
+> If Xentium ever wants to ship Pro to everybody, that is a redistribution/OEM
 > conversation with FontAwesome's sales team, not an engineering problem. Until then,
 > per-instance kits are the only correct model.
 
@@ -85,7 +85,7 @@ The wrapper falls back to the bundled icon whenever it cannot confidently act:
 - the `icon` prop is an array, a string, or anything without a usable `iconName`.
 
 **Plugins need no change.** They externalise `@fortawesome/react-fontawesome` to
-`__NODEVO_HOST__.FaReact`, and `host-globals.ts` swaps `FontAwesomeIcon` in that
+`__XENTIUM_HOST__.FaReact`, and `host-globals.ts` swaps `FontAwesomeIcon` in that
 namespace for this wrapper. One line, and every plugin follows the site style.
 
 `AppIcon` is the other entry point, for when the icon name is **data** — an admin's

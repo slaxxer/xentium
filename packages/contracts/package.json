@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/contracts",
+  "name": "@xentium/contracts",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,22 +16,22 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
     "zod": "catalog:"
   },
-  "description": "Shared types, constants and NEC error codes for the Nodevo framework.",
+  "description": "Shared types, constants and XEC error codes for the Xentium framework.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/contracts"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/contracts#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/contracts#readme",
   "engines": {
     "node": ">=22.12"
   },

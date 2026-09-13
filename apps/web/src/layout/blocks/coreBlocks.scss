@@ -11,8 +11,8 @@
    stays exactly where it was: 1240 − 2×24 = 1192 > 1100. A block that wants to
    break out uses `section` with `width: full`. */
 
-.nv-region,
-.nv-body-row {
+.xt-region,
+.xt-body-row {
   width: 100%;
   max-width: var(--content-max);
   margin-inline: auto;
@@ -30,12 +30,12 @@
    tracks: two centred columns side by side would each be inset by their own
    padding, and a `section width: full` inside the body would break out of the wrong
    box. */
-.nv-body-row {
+.xt-body-row {
   display: flex;
   align-items: flex-start;
   gap: var(--sp-6);
 
-  > .nv-region {
+  > .xt-region {
     max-width: none;
     margin-inline: 0;
     padding-inline: 0;
@@ -43,14 +43,14 @@
 
   /* `min-width: 0` or a wide child (a table, a long word, a grid of cards) refuses
      to shrink and pushes the rail off the page — the flexbox default is `auto`. */
-  > .nv-region--main  { flex: 1 1 auto; min-width: 0; }
+  > .xt-region--main  { flex: 1 1 auto; min-width: 0; }
 
   /* The rail STICKS, the way `column.sticky` does — same offset, so a rail built
      either way behaves the same. It is not a prop here because a region has no
      props, and it is not a prop for the good reason too: a rail that scrolls away
      while a long body keeps going is the behaviour nobody asks for. `flex-start`
      comes from the row, which is what lets a sticky flex item work at all. */
-  > .nv-region--aside {
+  > .xt-region--aside {
     flex: 0 0 var(--rail-width);
     min-width: 0;
     position: sticky;
@@ -87,12 +87,12 @@
      `:has()` asks the question `:empty` was meant to ask — is there a wrapper with
      anything in it.
 
-     ⚠ NOT in the editor (`:root:not([data-nv-editor])`, stamped by `previewBridge`).
+     ⚠ NOT in the editor (`:root:not([data-xt-editor])`, stamped by `previewBridge`).
      Collapsing there would mean dropping a block into the rail and watching the rail
      disappear — which is exactly what a plugin block that draws nothing for the
      admin looks like. The editor keeps the track and labels the silent block
-     instead; see `[data-nv-block]:empty` below. */
-  :root:not([data-nv-editor]) & > .nv-region--aside:not(.nv-region--empty):not(:has(.nv-block:not(:empty))) {
+     instead; see `[data-xt-block]:empty` below. */
+  :root:not([data-xt-editor]) & > .xt-region--aside:not(.xt-region--empty):not(:has(.xt-block:not(:empty))) {
     display: none;
   }
 
@@ -104,7 +104,7 @@
 
     /* Stacked, the rail is a band under the body — and a band that sticks would
        pin itself over the content below it. */
-    > .nv-region--aside { flex: 0 0 auto; width: 100%; position: static; }
+    > .xt-region--aside { flex: 0 0 auto; width: 100%; position: static; }
   }
 }
 
@@ -116,7 +116,7 @@
    Deliberately quiet: a dashed outline naming the region, tall enough to hit
    comfortably and short enough that a template with three empty regions does not
    turn into a wall of placeholders. */
-.nv-region--empty {
+.xt-region--empty {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -144,7 +144,7 @@
 
 /* ── section ─────────────────────────────────────────────────────────────── */
 
-.nv-section {
+.xt-section {
   width: 100%;
   margin-inline: auto;
 
@@ -183,7 +183,7 @@
     display: flex;
     align-items: center;
 
-    > .nv-section__inner { flex: 1; min-width: 0; }
+    > .xt-section__inner { flex: 1; min-width: 0; }
   }
 
   /* ── the content column ──────────────────────────────────────────────────
@@ -193,7 +193,7 @@
 
   /* `full` is the one that spans, so it is the one whose content has to be put
      back in the page's rail. These numbers are not chosen here — they MATCH
-     `.nv-region` and `.pub-nav__inner` exactly, which is what makes a masthead
+     `.xt-region` and `.pub-nav__inner` exactly, which is what makes a masthead
      logo land directly above the navbar logo instead of a few pixels off.
 
      ⚠ Declared after `--pad-*` on purpose: the pad classes set the `padding`
@@ -202,7 +202,7 @@
   &--full {
     padding-inline: 0;
 
-    > .nv-section__inner {
+    > .xt-section__inner {
       max-width: var(--content-max);
       margin-inline: auto;
       padding-inline: var(--sp-6);
@@ -219,7 +219,7 @@
 /* Flex rather than grid, because a track's share is a per-COLUMN property
    (`column.width`) and a grid parent cannot read its children's props to build
    `grid-template-columns`. Flex puts the sizing on the item, where the prop is. */
-.nv-columns {
+.xt-columns {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -243,11 +243,11 @@
 
        DESCENDANT, not `>`. A block that carries a style variant or a CSS handle is
        rendered inside a `display: contents` wrapper, and selectors match the DOM, not
-       the box tree — so `> .nv-column` silently stopped matching any column an admin
+       the box tree — so `> .xt-column` silently stopped matching any column an admin
        had styled, and those columns kept sticking over the content on a phone. Every
-       `.nv-column` lives in a `.nv-columns` that is stacking at this width anyway,
+       `.xt-column` lives in a `.xt-columns` that is stacking at this width anyway,
        including nested ones, so the descendant form is also the more correct rule. */
-    .nv-column { flex: 1 1 auto; width: 100%; position: static; }
+    .xt-column { flex: 1 1 auto; width: 100%; position: static; }
   }
 }
 
@@ -257,7 +257,7 @@
    row out sideways.
    `--auto` fits its content, which is what an avatar or a button group wants; the
    numbers are relative weights, so `2` beside `1` is a two-thirds split. */
-.nv-column {
+.xt-column {
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -269,13 +269,13 @@
      reserved 230px and showed a gap, and the feed beside it stopped at 666px of a
      920px row.
 
-     ⚠ `.nv-block`, never `[data-nv-block]`: the attribute is stamped in the EDITOR
+     ⚠ `.xt-block`, never `[data-xt-block]`: the attribute is stamped in the EDITOR
      only, so a rule written against it matches nothing on the real page and
-     collapses every track on it. ⚠ And NOT `> .nv-block`: a column's children are
+     collapses every track on it. ⚠ And NOT `> .xt-block`: a column's children are
      `display: contents` wrappers and a combinator aimed across one silently stops
      matching (`classContract` pins that rule). The descendant form is also the
      right question — a block nested in a `section` inside the column is content. */
-  :root:not([data-nv-editor]) &:not(:has(.nv-block:not(:empty))) { display: none; }
+  :root:not([data-xt-editor]) &:not(:has(.xt-block:not(:empty))) { display: none; }
 
   &--auto    { flex: 0 0 auto; }
   /* The site's two named rail widths, so a rail is an ordinary track rather than a
@@ -304,7 +304,7 @@
 
 /* ── spacer ──────────────────────────────────────────────────────────────── */
 
-.nv-spacer {
+.xt-spacer {
   &--sm { height: var(--sp-3); }
   &--md { height: var(--sp-6); }
   &--lg { height: var(--sp-10); }
@@ -315,7 +315,7 @@
 /* Matches what `.mp-eyebrow` looked like on the members page, which this replaces —
    accent-coloured, so it reads as a label rather than muted small print. */
 
-.nv-eyebrow {
+.xt-eyebrow {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 12px;
@@ -328,7 +328,7 @@
 
 /* ── heading ─────────────────────────────────────────────────────────────── */
 
-.nv-heading {
+.xt-heading {
   margin-bottom: var(--sp-4);
 
   &--center { text-align: center; }
@@ -361,7 +361,7 @@
 
 /* ── image ───────────────────────────────────────────────────────────────── */
 
-.nv-image {
+.xt-image {
   margin: 0;
 
   img {
@@ -390,7 +390,7 @@
 
 /* ── rich text ───────────────────────────────────────────────────────────── */
 
-.nv-richtext {
+.xt-richtext {
   color: var(--c-fg);
 }
 
@@ -399,7 +399,7 @@
    the live site. Drawn as separate overlays rather than by styling the blocks, so
    the preview's own layout and styling stay byte-identical to production. */
 
-.nv-preview-overlay {
+.xt-preview-overlay {
   position: absolute;
   display: none;
   pointer-events: none;   /* never intercepts the clicks it is describing */
@@ -415,11 +415,11 @@
   }
 }
 
-/* Two chips in one element. HOVER names the block's TYPE — the word a `.nvtheme`
+/* Two chips in one element. HOVER names the block's TYPE — the word a `.xttheme`
    and the docs use — so pointing at the page answers "what block is that". SELECTED
    names it the way the tree does and carries its actions, because by then that
    question is answered. */
-.nv-preview-label {
+.xt-preview-label {
   position: absolute;
   display: none;
   align-items: center;
@@ -447,12 +447,12 @@
 
 /* "· members only" — the preview draws a restricted block like any other, so this
    is the only place on the page the condition is visible. */
-.nv-preview-label__note { opacity: 0.72; font-weight: 500; }
+.xt-preview-label__note { opacity: 0.72; font-weight: 500; }
 
 /* The chip's own buttons. The ONLY part of the overlay that takes pointer events,
    and only while selected — everything else must never intercept a click meant for
    the page beneath it. */
-.nv-preview-label__act {
+.xt-preview-label__act {
   display: grid;
   place-items: center;
   width: 17px;
@@ -469,7 +469,7 @@
   &:hover { background: rgb(255 255 255 / 0.4); }
 }
 
-.nv-preview-dropline {
+.xt-preview-dropline {
   position: absolute;
   display: none;
   pointer-events: none;
@@ -484,8 +484,8 @@
 /* Only ever rendered inside /__theme-preview: on the live site an unavailable or
    failed block renders nothing at all. */
 
-.nv-block-missing,
-.nv-block-error {
+.xt-block-missing,
+.xt-block-error {
   padding: var(--sp-3) var(--sp-4);
   border: 1px dashed var(--c-border-hi);
   border-radius: var(--radius-md);
@@ -494,14 +494,14 @@
   text-align: center;
 }
 
-.nv-block-error {
+.xt-block-error {
   border-color: var(--c-danger);
   color: var(--c-danger);
   background: var(--c-danger-soft);
 }
 
 /* ── EDITOR ONLY: a block that drew nothing ─────────────────────────────────
-   `data-nv-block` is stamped in the preview and nowhere else, so this cannot reach
+   `data-xt-block` is stamped in the preview and nowhere else, so this cannot reach
    a visitor's page.
 
    A block can render nothing and still be exactly where the admin put it: a plugin
@@ -514,8 +514,8 @@
    drawn: the live-site collapse rules keep seeing an empty wrapper. And a
    `display: contents` element generates no box of its own but its pseudo-elements
    do, which is what lets a wrapper with no children show anything at all. */
-[data-nv-block]:empty::after {
-  content: attr(data-nv-type) " — nothing to draw here";
+[data-xt-block]:empty::after {
+  content: attr(data-xt-type) " — nothing to draw here";
   display: block;
   /* Deliberately small. It appears wherever a block is silent — including inside the
      navbar, where a card-sized notice would push the strip apart and misrepresent the
@@ -535,7 +535,7 @@
 
 /* An optional glyph before a heading's text. Sized from the heading itself so it
    scales with the level rather than needing a rule per level. */
-.nv-heading__icon {
+.xt-heading__icon {
   margin-right: 0.45em;
   color: var(--c-accent);
 }
@@ -547,15 +547,15 @@
  * admin clicking an icon and selecting its block instead cannot tell which mode they
  * are in. The outline is drawn on hover only, so the preview still reads as the page.
  */
-.nv-icon-mode {
-  [data-nv-icon] {
+.xt-icon-mode {
+  [data-xt-icon] {
     cursor: pointer;
     border-radius: var(--radius-sm);
     outline: 1px dashed color-mix(in srgb, var(--c-accent) 55%, transparent);
     outline-offset: 2px;
   }
 
-  [data-nv-icon]:hover {
+  [data-xt-icon]:hover {
     outline: 2px solid var(--c-accent);
     background: color-mix(in srgb, var(--c-accent) 16%, transparent);
   }

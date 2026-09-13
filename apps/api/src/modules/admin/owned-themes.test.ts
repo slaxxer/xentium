@@ -113,10 +113,10 @@ describe("an owned theme row", () => {
 
   it("leaves plugin rows reading the plugin table exactly as before", async () => {
     world.owned = [{
-      ...themeLicence("nodevo-forum", "2.0.0"),
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum", vendor: "v", summary: null, latestVersion: "2.0.0", latestReleasedAt: null },
+      ...themeLicence("xentium-forum", "2.0.0"),
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum", vendor: "v", summary: null, latestVersion: "2.0.0", latestReleasedAt: null },
     }];
-    world.installedPlugins = [{ id: "nodevo-forum", installedVersion: "1.9.0", status: "enabled" }];
+    world.installedPlugins = [{ id: "xentium-forum", installedVersion: "1.9.0", status: "enabled" }];
     world.installedTheme = { id: "aurora-dark", version: "1.0.0" };
 
     const row = (await marketplaceService.listOwned()).licenses[0]!;

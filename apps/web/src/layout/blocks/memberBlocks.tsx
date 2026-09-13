@@ -17,7 +17,7 @@
  * stranding it.
  */
 import { useTranslation } from "react-i18next";
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import {
   DirRow,

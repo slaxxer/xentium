@@ -1,7 +1,7 @@
 /**
  * system.trim-article-revisions — keep only the newest N revisions per article.
  *
- * ncf_article_revisions stores a full copy of the title and the ProseMirror body
+ * xcf_article_revisions stores a full copy of the title and the ProseMirror body
  * on every save, and nothing ever removes one. An article edited daily for a year
  * carries 365 full copies of itself. The tail of that history is worth very
  * little — nobody restores the 200th-newest draft — but it is the bulk of the
@@ -9,7 +9,7 @@
  *
  * Non-destructive in the way that matters: the newest `keep` revisions are always
  * retained, so undo depth is bounded, never removed. The current article body
- * lives in ncf_articles and is not a revision, so trimming to keep=1 still cannot
+ * lives in xcf_articles and is not a revision, so trimming to keep=1 still cannot
  * lose the live content.
  */
 import { z } from "zod";
@@ -31,7 +31,7 @@ type Params = z.infer<typeof paramsSchema>;
 const OVER_LIMIT = (keep: number) => `
   SELECT id FROM (
     SELECT id, row_number() OVER (PARTITION BY article_id ORDER BY created_at DESC) AS rn
-      FROM ncf_article_revisions
+      FROM xcf_article_revisions
   ) ranked
   WHERE rn > ${keep}`;
 
@@ -56,7 +56,7 @@ export async function runTrimArticleRevisions(
   }
 
   const deleted = await prisma.$executeRawUnsafe(
-    `DELETE FROM ncf_article_revisions WHERE id IN (${sql})`,
+    `DELETE FROM xcf_article_revisions WHERE id IN (${sql})`,
   );
   return {
     changed: deleted,

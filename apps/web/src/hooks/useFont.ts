@@ -12,7 +12,7 @@ export type FontValue = typeof FONTS[number]["value"];
 /** "default" = no personal override — the site font (Style Editor) shows through. */
 export type FontChoice = FontValue | "default";
 
-const KEY = "nv_font";
+const KEY = "xt_font";
 
 function getStored(): FontChoice {
   try {

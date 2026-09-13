@@ -25,7 +25,7 @@ import {
   DEFAULT_VARIANT,
   type BlockNode,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { bustSettingsCache, getSettings } from "../../shared/utils/settings.js";
 import { logger } from "../../infrastructure/logging/logger.js";
@@ -46,7 +46,7 @@ async function markDone(): Promise<void> {
 /** The settings the old ACP page wrote, with the values it treated as defaults. */
 const LEGACY_DEFAULTS = {
   "guesthome.hero_badge":      "builders online now",
-  "guesthome.hero_title":      "Where people who build with nodevo hang out.",
+  "guesthome.hero_title":      "Where people who build with xentium hang out.",
   "guesthome.hero_subtitle":   "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
   "guesthome.cta_primary":     "Join the conversation",
   "guesthome.cta_secondary":   "Browse as guest",

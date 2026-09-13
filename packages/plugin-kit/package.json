@@ -1,19 +1,19 @@
 {
-  "name": "@nodevo/plugin-kit",
+  "name": "@xentium/plugin-kit",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "description": "The application-agnostic half of the Nodevo plugin authoring contract: manifest, definition, host bridge and context shape.",
+  "description": "The application-agnostic half of the Xentium plugin authoring contract: manifest, definition, host bridge and context shape.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/plugin-kit"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/plugin-kit#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/plugin-kit#readme",
   "engines": {
     "node": ">=22.12"
   },
@@ -42,7 +42,7 @@
     }
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

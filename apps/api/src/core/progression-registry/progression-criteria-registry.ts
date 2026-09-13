@@ -7,9 +7,9 @@
  * `ctx.registerProgressionCriteria(...)` in onEnable; removed on disable, so
  * criteria from a disabled/uninstalled plugin simply stop counting.
  */
-import type { ProgressionCriteria, ProgressionMetric } from "@nodevo/plugin-sdk";
+import type { ProgressionCriteria, ProgressionMetric } from "@xentium/plugin-sdk";
 
-export type { ProgressionCriteria, ProgressionMetric } from "@nodevo/plugin-sdk";
+export type { ProgressionCriteria, ProgressionMetric } from "@xentium/plugin-sdk";
 
 interface Entry { pluginId: string; criteria: ProgressionCriteria }
 

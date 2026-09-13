@@ -5,7 +5,7 @@
  *
  * The load-bearing claims: a stale-bundle failure is recognised as such (it
  * gets the reload flow, not the "something crashed" flow), and an API error
- * that escapes a component keeps its NEC code so the admin link can point at
+ * that escapes a component keeps its XEC code so the admin link can point at
  * the right reference entry.
  */
 import { describe, expect, it } from "vitest";
@@ -30,15 +30,15 @@ describe("describeError", () => {
     expect(r.stack).toContain("TypeError");
   });
 
-  it("keeps the status and NEC code the api client attached", () => {
+  it("keeps the status and XEC code the api client attached", () => {
     const err = Object.assign(new Error("Group not found"), {
       status: 404,
-      detail: { error: { code: "NEC-PERM-1001", message: "Group not found" } },
+      detail: { error: { code: "XEC-PERM-1001", message: "Group not found" } },
     });
     const r = describeError(err);
     expect(r.kind).toBe("http");
     expect(r.status).toBe(404);
-    expect(r.code).toBe("NEC-PERM-1001");
+    expect(r.code).toBe("XEC-PERM-1001");
   });
 
   it("takes status/statusText from a router ErrorResponse", () => {
@@ -56,7 +56,7 @@ describe("describeError", () => {
   it("mints a distinct, quotable reference per incident", () => {
     const a = describeError(new Error("x"));
     const b = describeError(new Error("x"));
-    expect(a.reference).toMatch(/^NV-[0-9A-Z]+-[A-Z2-9]{3}$/);
+    expect(a.reference).toMatch(/^XT-[0-9A-Z]+-[A-Z2-9]{3}$/);
     expect(a.reference).not.toBe(b.reference);
   });
 });
@@ -65,14 +65,14 @@ describe("formatReport", () => {
   it("puts everything a maintainer needs in the copied text", () => {
     const err = Object.assign(new Error("Group not found"), {
       status: 404,
-      detail: { error: { code: "NEC-PERM-1001" } },
+      detail: { error: { code: "XEC-PERM-1001" } },
     });
     const report = { ...describeError(err), componentStack: "\n    at GroupsPage" };
     const text = formatReport(report);
 
     expect(text).toContain(report.reference);
     expect(text).toContain("Status:  404");
-    expect(text).toContain("NEC-PERM-1001");
+    expect(text).toContain("XEC-PERM-1001");
     expect(text).toContain("Group not found");
     expect(text).toContain("at GroupsPage");
   });

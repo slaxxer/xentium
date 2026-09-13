@@ -1,15 +1,15 @@
-import type { NecCode } from "@nodevo/contracts";
+import type { XecCode } from "@xentium/contracts";
 
 /**
- * The one error type every Nodevo application throws.
+ * The one error type every Xentium application throws.
  *
- * A NodevoError carries what a client needs (an NEC code and an HTTP status)
+ * A XentiumError carries what a client needs (an XEC code and an HTTP status)
  * without leaking what it must not see (a stack trace). Anything that escapes
  * as a plain `Error` is treated as a 500 by the middleware, which is the
  * intended fallback, not a shortcut to rely on.
  */
-export class NodevoError extends Error {
-  readonly code: NecCode;
+export class XentiumError extends Error {
+  readonly code: XecCode;
   readonly httpStatus: number;
   readonly details?: unknown;
   /** Set false for expected high-frequency rejections (token expiry, guest
@@ -17,14 +17,14 @@ export class NodevoError extends Error {
   readonly persist: boolean;
 
   constructor(opts: {
-    code: NecCode;
+    code: XecCode;
     httpStatus: number;
     message: string;
     details?: unknown;
     persist?: boolean;
   }) {
     super(opts.message);
-    this.name = "NodevoError";
+    this.name = "XentiumError";
     this.code = opts.code;
     this.httpStatus = opts.httpStatus;
     this.details = opts.details;
@@ -32,14 +32,14 @@ export class NodevoError extends Error {
   }
 
   static notFound(message = "Not found") {
-    return new NodevoError({ code: "NEC-API-4004", httpStatus: 404, message });
+    return new XentiumError({ code: "XEC-API-4004", httpStatus: 404, message });
   }
 
   static conflict(message = "Conflict") {
-    return new NodevoError({ code: "NEC-API-4009", httpStatus: 409, message });
+    return new XentiumError({ code: "XEC-API-4009", httpStatus: 409, message });
   }
 
   static forbidden(message = "Forbidden") {
-    return new NodevoError({ code: "NEC-API-4003", httpStatus: 403, message });
+    return new XentiumError({ code: "XEC-API-4003", httpStatus: 403, message });
   }
 }

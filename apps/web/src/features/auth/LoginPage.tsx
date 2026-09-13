@@ -84,7 +84,7 @@ export function LoginPage() {
       const errObj = err?.detail?.error;
       const code = errObj?.code;
 
-      if (code === "NEC-AUTH-1003" || code === "NEC-AUTH-1004") {
+      if (code === "XEC-AUTH-1003" || code === "XEC-AUTH-1004") {
         const reason    = (errObj?.details?.reason as string) ?? "Account suspended";
         const expiresAt = errObj?.details?.expiresAt as string | null;
         const expiry    = expiresAt
@@ -94,7 +94,7 @@ export function LoginPage() {
           title:    expiry ? t("login.bannedUntil", { date: expiry }) : t("login.bannedPermanent"),
           duration: 7000,
         });
-      } else if (code === "NEC-AUTH-1032") {
+      } else if (code === "XEC-AUTH-1032") {
         // An auth guard refused. The message is the guard's own — core no longer
         // carries copy for policies it does not implement.
         openDialog({
@@ -102,14 +102,14 @@ export function LoginPage() {
           title: t("login.accessDenied"),
           body:  errObj?.message ?? err?.message ?? t("login.accessDenied"),
         });
-      } else if (code === "NEC-AUTH-1030") {
+      } else if (code === "XEC-AUTH-1030") {
         swalToast(errObj?.message ?? err?.message ?? t("login.accessDenied"), "warning");
-      } else if (code === "NEC-AUTH-1040") {
+      } else if (code === "XEC-AUTH-1040") {
         // Failed-login lockout — surface the server message (carries the retry window).
         swalToast(errObj?.message ?? err?.message ?? t("login.lockedOut"), "warning");
       } else {
         swalToast(
-          code === "NEC-AUTH-1001" ? t("login.invalidCredentials")
+          code === "XEC-AUTH-1001" ? t("login.invalidCredentials")
           : requiresPin                  ? t("pin.wrong")
           : t("login.signInFailed"),
         );
@@ -125,7 +125,7 @@ export function LoginPage() {
       <div className="aurora-split__brand">
         <Link to="/" className="aurora-split__logo">
           <div className="aurora-split__logo-mark"><span /></div>
-          <span className="aurora-split__wordmark">nodevo</span>
+          <span className="aurora-split__wordmark">xentium</span>
         </Link>
         <h2 className="aurora-split__tagline">{t("login.panelTagline")}</h2>
         <p className="aurora-split__subtitle">

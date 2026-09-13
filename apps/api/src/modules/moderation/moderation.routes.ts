@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission, requireAnyPermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { moderationController } from "./moderation.controller.js";
 
 export const moderationRouter: Router = Router();

@@ -10,17 +10,17 @@ import { ADMIN } from "./helpers";
  * Skips itself unless the stack is actually in setup mode, so the regular
  * `pnpm e2e` run (preconfigured .env, spec 01) is unaffected. To exercise it:
  *   1. move the repo-root .env away
- *   2. create an empty database (e.g. nodevo_fresh)
+ *   2. create an empty database (e.g. xentium_fresh)
  *   3. start the stack, then: npx playwright test tests/00-setup-mode.spec.ts
  * Credentials for the form come from E2E_SETUP_DB_* env vars (defaults match
- * the dev docker compose: nodevo/nodevo on localhost:5432, db nodevo_fresh).
+ * the dev docker compose: the dev compose credentials on localhost:5432, db xentium_fresh).
  */
 const DB = {
   host: process.env.E2E_SETUP_DB_HOST ?? "localhost",
   port: process.env.E2E_SETUP_DB_PORT ?? "5432",
-  database: process.env.E2E_SETUP_DB_NAME ?? "nodevo_fresh",
-  user: process.env.E2E_SETUP_DB_USER ?? "nodevo",
-  password: process.env.E2E_SETUP_DB_PASSWORD ?? "nodevo",
+  database: process.env.E2E_SETUP_DB_NAME ?? "xentium_fresh",
+  user: process.env.E2E_SETUP_DB_USER ?? "xentium",
+  password: process.env.E2E_SETUP_DB_PASSWORD ?? "xentium",
 };
 
 test("setup mode collects DB credentials, writes .env and hot-swaps", async ({ page, request }) => {

@@ -1,5 +1,5 @@
 // Exposes the host's shared singletons + internals to runtime-loaded plugin
-// UMD bundles via `window.__NODEVO_HOST__`. Plugin web bundles externalize these
+// UMD bundles via `window.__XENTIUM_HOST__`. Plugin web bundles externalize these
 // specifiers and read them from this object (see each plugin's vite.config.ts and
 // the runtime loader in main.tsx). This guarantees a single React/Router/Query
 // instance shared between host and plugins.
@@ -108,10 +108,10 @@ const HOST = {
 
 declare global {
   interface Window {
-    __NODEVO_HOST__?: typeof HOST;
+    __XENTIUM_HOST__?: typeof HOST;
   }
 }
 
-window.__NODEVO_HOST__ = HOST;
+window.__XENTIUM_HOST__ = HOST;
 
 export {};

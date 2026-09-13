@@ -279,7 +279,7 @@
 
 /* ── responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 980px) {
-  /* `.nv-columns` wraps its own tracks, so the rail just stops being fixed-width
+  /* `.xt-columns` wraps its own tracks, so the rail just stops being fixed-width
      and unsticks — the row itself is the layout document's business now. */
   .mp-rail { position: static; width: 100%; }
   .mp-stats { grid-template-columns: repeat(2, 1fr); }

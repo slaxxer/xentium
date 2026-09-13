@@ -6,10 +6,10 @@
 import { createHash } from "node:crypto";
 import parser from "cron-parser";
 import type { Queue } from "bullmq";
-import { NEC } from "@nodevo/contracts";
+import { XEC } from "@xentium/contracts";
 import { queues } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
-import { NodevoError } from "../shared/errors/NodevoError.js";
+import { XentiumError } from "../shared/errors/XentiumError.js";
 import { bustSettingsCache } from "../shared/utils/settings.js";
 
 export interface ScheduledJobDef {
@@ -138,7 +138,7 @@ export function resolveCronPattern(cfg: CronShape, fallbackCron: string): string
 
 /**
  * Validate a cron pattern and return the next N run times. Throws
- * NEC-QUEUE-5001 on a bad expression or a schedule that fires faster than
+ * XEC-QUEUE-5001 on a bad expression or a schedule that fires faster than
  * the job's min interval.
  */
 export function previewRuns(pattern: string, tz: string | undefined, minIntervalSec: number, count = 3): string[] {
@@ -146,14 +146,14 @@ export function previewRuns(pattern: string, tz: string | undefined, minInterval
   try {
     it = parser.parseExpression(pattern, { tz: tz || "UTC", currentDate: new Date() });
   } catch {
-    throw new NodevoError({ code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
+    throw new XentiumError({ code: XEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
   }
   const runs: Date[] = [];
   for (let i = 0; i < count; i++) runs.push(it.next().toDate());
   const gapSec = (runs[1]!.getTime() - runs[0]!.getTime()) / 1000;
   if (gapSec < minIntervalSec) {
-    throw new NodevoError({
-      code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422,
+    throw new XentiumError({
+      code: XEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422,
       message: `Schedule runs too frequently — minimum is once every ${Math.round(minIntervalSec / 60)} minutes.`,
     });
   }
@@ -205,7 +205,7 @@ export async function applyJobSchedule(def: ScheduledJobDef, cfg: JobScheduleCon
  * code default.
  *
  * Every install ships the same `defaultCron`, so "0 2 * * *" on a job that calls
- * the license server means every Nodevo instance in the world contacts the
+ * the license server means every Xentium instance in the world contacts the
  * marketplace inside the same minute — two synchronised global spikes a day into
  * a service that is idle the rest of the time, forcing it to be provisioned for
  * peak rather than average. Spreading the default over the full day fixes that,

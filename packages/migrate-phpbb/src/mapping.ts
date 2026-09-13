@@ -1,6 +1,6 @@
 import type {
   ImportedForumNode, ImportedPost, ImportedThread, ImportedUser,
-} from "@nodevo/migrate-core";
+} from "@xentium/migrate-core";
 import { convertPostText } from "./postText.js";
 
 /**

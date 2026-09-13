@@ -4,9 +4,9 @@ import { z } from "zod";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
-import { CorePermissions } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { CorePermissions } from "@xentium/contracts";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { getFreshSetting } from "../../shared/utils/settings.js";
 import { pluginService } from "./plugin.service.js";
 
@@ -17,15 +17,15 @@ const adminGuard    = requirePermission(CorePermissions.ADMIN_PLUGINS);
 const uploadLimiter  = makeRateLimiter("plugin-upload", 60 * 60_000, isDev ? 1000 : 20); // §26: 20/hr
 const upload       = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Manual .nvplugin uploads are OFF by default: the marketplace is the sanctioned
+// Manual .xtplugin uploads are OFF by default: the marketplace is the sanctioned
 // install channel. An admin can enable them (ACP → Extensions → Installed). Read
 // fresh so toggling takes effect immediately. Marketplace installs are never gated.
 const uploadGuard: RequestHandler = (_req, _res, next) => {
   getFreshSetting<boolean>("plugins.allow_upload", false)
     .then((allowed) => {
       if (allowed === true) return next();
-      next(new NodevoError({
-        code:       NEC.PLUGIN_UPLOAD_DISABLED,
+      next(new XentiumError({
+        code:       XEC.PLUGIN_UPLOAD_DISABLED,
         httpStatus: 403,
         message:    "Manual plugin uploads are disabled. Install plugins from the marketplace, or enable uploads in ACP → Extensions → Installed.",
       }));

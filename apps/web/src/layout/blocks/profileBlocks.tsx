@@ -35,7 +35,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { Username } from "../../components/Username";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { registerBlock, type BlockProps } from "../blockRegistry";
@@ -468,7 +468,7 @@ registerBlock({
                       badge={{ ...b, awardedAt: "", note: note ?? null, source: "manual" }}
                       size={props.size} />
                   : (
-                    <span className={`nv-badge nv-badge--${props.size} nv-badge--locked`}>
+                    <span className={`xt-badge xt-badge--${props.size} xt-badge--locked`}>
                       <FontAwesomeIcon icon={faLock} />
                     </span>
                   )}
@@ -479,7 +479,7 @@ registerBlock({
 
           {hidden > 0 && (
             <div className="profile-awards__cell">
-              <span className={`nv-badge nv-badge--${props.size} nv-badge--locked`}>+{hidden}</span>
+              <span className={`xt-badge xt-badge--${props.size} xt-badge--locked`}>+{hidden}</span>
               <span className="profile-awards__label is-locked">{t("badges.seeAll")}</span>
             </div>
           )}

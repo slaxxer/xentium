@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
-import type { AwardedBadge, BadgeRow } from "@nodevo/contracts";
+import type { AwardedBadge, BadgeRow } from "@xentium/contracts";
 import { BadgeMark } from "../../../components/UserBadges";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";

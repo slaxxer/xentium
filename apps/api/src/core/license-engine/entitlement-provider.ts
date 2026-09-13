@@ -2,7 +2,7 @@
 // domain-aware verification behind the shared `EntitlementProvider` contract.
 // Called on plugin enable and by the daily refresh job — never per request.
 
-import type { EntitlementProvider, EntitlementStatus } from "@nodevo/contracts";
+import type { EntitlementProvider, EntitlementStatus } from "@xentium/contracts";
 import { getEntitlementStatus, refreshLicense } from "./license-engine.js";
 
 export const entitlementProvider: EntitlementProvider = {

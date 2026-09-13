@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from "express";
-import { NEC } from "@nodevo/contracts";
-import { NodevoError } from "@nodevo/errors";
+import { XEC } from "@xentium/contracts";
+import { XentiumError } from "@xentium/errors";
 import type { AccessClaims } from "./tokens.js";
 
 /**
@@ -23,7 +23,7 @@ export interface AuthMiddlewareDeps {
     issuedAtMs: number | undefined,
   ): Promise<boolean>;
   /**
-   * Fire-and-forget hook after a successful `requireAuth` — Nodevo's CMS uses it
+   * Fire-and-forget hook after a successful `requireAuth` — Xentium's CMS uses it
    * for online-presence tracking. It must not throw and is never awaited.
    */
   onAuthenticated?(userId: string, req: Request): void;
@@ -31,13 +31,13 @@ export interface AuthMiddlewareDeps {
 
 /**
  * Expected high-frequency rejections — guests hitting a protected route, and the
- * 15-minute token expiry every client rides into. Canonical NEC shape, but
+ * 15-minute token expiry every client rides into. Canonical XEC shape, but
  * `persist: false` keeps them out of the error log, where they would otherwise
  * drown everything worth reading.
  */
 export function unauthenticatedError() {
-  return new NodevoError({
-    code: NEC.AUTH_UNAUTHENTICATED,
+  return new XentiumError({
+    code: XEC.AUTH_UNAUTHENTICATED,
     httpStatus: 401,
     message: "Authentication required",
     persist: false,
@@ -45,8 +45,8 @@ export function unauthenticatedError() {
 }
 
 export function invalidTokenError() {
-  return new NodevoError({
-    code: NEC.AUTH_TOKEN_INVALID,
+  return new XentiumError({
+    code: XEC.AUTH_TOKEN_INVALID,
     httpStatus: 401,
     message: "Invalid or expired token",
     persist: false,

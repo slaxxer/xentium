@@ -15,7 +15,7 @@ import {
   ICON_STYLE_DEFS, ICON_STYLES, DEFAULT_ICON_STYLE,
   isIconStyle, iconStyleClasses, iconStyleDef,
   parseIconToken, formatIconToken,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 describe("the table", () => {
   it("has unique ids", () => {

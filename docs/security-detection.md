@@ -1,6 +1,6 @@
 # Security Detection — the §15 Anti-Abuse Foundation
 
-How Nodevo core detects suspicious account activity and turns it into moderator
+How Xentium core detects suspicious account activity and turns it into moderator
 review cases, and how plugins extend or replace that detection.
 
 **Last verified:** 2026-07-11 against `apps/api/src/core/security/` and
@@ -19,12 +19,12 @@ review cases, and how plugins extend or replace that detection.
 ## Pipeline
 
 ```
-ncf_login_events  ──▶  security-analysis job (BullMQ, every 30 min, runs in the WORKER)
+xcf_login_events  ──▶  security-analysis job (BullMQ, every 30 min, runs in the WORKER)
                          ├─ runCorePatterns()        core baselines (minus claimed ones)
                          └─ securityScanRegistry.runAll()   plugin-registered scans
                                    │
                                    ▼
-                    createModerationCase()  →  ncf_moderation_cases (open)
+                    createModerationCase()  →  xcf_moderation_cases (open)
                     24h dedup (same type + linked users)
                     notifies every holder of moderation.cases.manage (mod.new_case)
 ```
@@ -50,9 +50,9 @@ Notes:
   editable in **ACP → Moderation → Settings → Detection Patterns**.
 - **Bounded scanning**: the multi-account query only examines device cookies
   with successful-login activity in the last 24 h, so cost does not grow with
-  the full `ncf_login_events` history; the 24 h case dedup absorbs repeats.
+  the full `xcf_login_events` history; the 24 h case dedup absorbs repeats.
 - **Exception whitelist**: "Allow" on a case writes the signal (device cookie
-  or IP) to `ncf_reviewed_security_signals` with the cleared user ids. Patterns
+  or IP) to `xcf_reviewed_security_signals` with the cleared user ids. Patterns
   skip whitelisted signals — but still open a case if a **new** account appears
   beyond the granted exception.
 - Each pattern runs isolated: a throw is logged and never aborts the others.

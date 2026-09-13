@@ -8,7 +8,7 @@
  */
 import { Children } from "react";
 import { useTranslation } from "react-i18next";
-import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@nodevo/contracts";
+import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@xentium/contracts";
 import { LayoutWidgetOutlet } from "../../plugins/LayoutWidgetOutlet";
 import { ArticleContent } from "../../features/articles/components/ArticleContent";
 import { registerBlock, type BlockProps } from "../blockRegistry";
@@ -42,7 +42,7 @@ function useText(value: LocalizedText | undefined): string {
  *
  * ⚠ The values are already schema-validated (`cssColorSchema`, and an asset path or
  * URL) — this composes them, it does not sanitise them. A document is untrusted
- * input, so the guarantee has to live in the schema where a `.nvtheme` import hits
+ * input, so the guarantee has to live in the schema where a `.xttheme` import hits
  * it too, not in a renderer a plugin could bypass.
  */
 export function sectionBackground(props: {
@@ -71,11 +71,11 @@ function SectionBlock({ props, children }: BlockProps<{
   const background = sectionBackground(props);
   const tall = (props.minHeight ?? 0) > 0;
   const classes = [
-    "nv-section",
-    `nv-section--${props.width}`,
-    `nv-section--pad-${props.padding}`,
-    background ? "nv-section--bg" : "",
-    tall ? "nv-section--tall" : "",
+    "xt-section",
+    `xt-section--${props.width}`,
+    `xt-section--pad-${props.padding}`,
+    background ? "xt-section--bg" : "",
+    tall ? "xt-section--tall" : "",
   ].filter(Boolean).join(" ");
 
   return (
@@ -97,7 +97,7 @@ function SectionBlock({ props, children }: BlockProps<{
        * the DOM shape does not change with the width prop; it only takes on a
        * max-width when the section is full.
        */}
-      <div className="nv-section__inner">{children}</div>
+      <div className="xt-section__inner">{children}</div>
     </section>
   );
 }
@@ -126,7 +126,7 @@ registerBlock({
     // tracks up to four, and a document can arrive from an imported theme.
     const tracks = Math.min(Math.max(Children.count(children), 1), 4);
     return (
-      <div className={`nv-columns nv-columns--${tracks} nv-columns--gap-${props.gap}`}>
+      <div className={`xt-columns xt-columns--${tracks} xt-columns--gap-${props.gap}`}>
         {children}
       </div>
     );
@@ -143,7 +143,7 @@ registerBlock({
   // The track carries its own share, because a flex/grid parent cannot read its
   // children's props to size them.
   component: ({ props, children }) => (
-    <div className={`nv-column nv-column--${props.width}${props.sticky ? " is-sticky" : ""}`}>
+    <div className={`xt-column xt-column--${props.width}${props.sticky ? " is-sticky" : ""}`}>
       {children}
     </div>
   ),
@@ -153,7 +153,7 @@ registerBlock({
   type:      "spacer",
   schema:    blockPropSchemas.spacer,
   editorMeta: { label: "Spacer", category: "structure" },
-  component: ({ props }) => <div className={`nv-spacer nv-spacer--${props.size}`} aria-hidden="true" />,
+  component: ({ props }) => <div className={`xt-spacer xt-spacer--${props.size}`} aria-hidden="true" />,
 });
 
 // ── Content ─────────────────────────────────────────────────────────────────
@@ -163,12 +163,12 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
   const eyebrow = useText(props.eyebrow);
   const Tag = (`h${props.level}`) as "h1" | "h2" | "h3";
   return (
-    <header className={`nv-heading nv-heading--${props.align}`}>
-      {eyebrow && <div className="nv-heading__eyebrow">{eyebrow}</div>}
-      <Tag className="nv-heading__title">
+    <header className={`xt-heading xt-heading--${props.align}`}>
+      {eyebrow && <div className="xt-heading__eyebrow">{eyebrow}</div>}
+      <Tag className="xt-heading__title">
         {/* ⚠ `TokenIcon` renders nothing at all when the prop is absent or cannot be
             drawn, so a heading without one is unchanged down to the markup. */}
-        {props.icon && <TokenIcon token={props.icon} className="nv-heading__icon" />}
+        {props.icon && <TokenIcon token={props.icon} className="xt-heading__icon" />}
         {text}
       </Tag>
     </header>
@@ -178,7 +178,7 @@ function HeadingBlock({ props }: BlockProps<{ text: LocalizedText; eyebrow?: Loc
 function EyebrowBlock({ props }: BlockProps<{ text: LocalizedText; align: "start" | "center" }>) {
   const text = useText(props.text);
   if (!text) return null;
-  return <div className={`nv-eyebrow nv-eyebrow--${props.align}`}>{text}</div>;
+  return <div className={`xt-eyebrow xt-eyebrow--${props.align}`}>{text}</div>;
 }
 
 registerBlock({
@@ -201,7 +201,7 @@ registerBlock({
   editorMeta: { label: "Rich text", category: "content" },
   // Same stored shape and renderer as `articles.body`, so a layout's prose and
   // an article's prose can never drift in how marks are rendered.
-  component: ({ props }) => <div className="nv-richtext"><ArticleContent body={props.content} /></div>,
+  component: ({ props }) => <div className="xt-richtext"><ArticleContent body={props.content} /></div>,
 });
 
 /**
@@ -221,14 +221,14 @@ function ImageBlock({
   const src = resolveImageSource(props.source);
   const img = <img src={src} alt={alt} loading="lazy" />;
   return (
-    <figure className={`nv-image nv-image--${props.ratio.replace(":", "x")}`}>
+    <figure className={`xt-image xt-image--${props.ratio.replace(":", "x")}`}>
       {/* A linked image is how an image navbar is built: `columns` → `column` →
           `image{source, href, className}` per tile, with the look in custom CSS.
           `rel` is unconditional rather than computed from the origin — it costs
           nothing on an internal link and is the failure that matters on an
           external one. The scheme was already refused by `linkHrefSchema`. */}
       {props.href
-        ? <a className="nv-image__link" href={props.href} rel="noopener noreferrer">{img}</a>
+        ? <a className="xt-image__link" href={props.href} rel="noopener noreferrer">{img}</a>
         : img}
     </figure>
   );

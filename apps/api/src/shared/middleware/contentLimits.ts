@@ -2,7 +2,7 @@
  * Content limit helpers — Phase 7 (§38)
  *
  * Reads the author's effective limits from group_progression and throws
- * NEC-PERM-1040 / NEC-PERM-1041 when a limit is exceeded.
+ * XEC-PERM-1040 / XEC-PERM-1041 when a limit is exceeded.
  *
  * These cover CORE content only — articles and article comments. Plugin content
  * (forum posts, shoutbox messages, …) is limited by the plugin that owns it,
@@ -10,8 +10,8 @@
  */
 
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../errors/NodevoError.js";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "../errors/XentiumError.js";
+import { XEC } from "@xentium/contracts";
 
 /** Resolve the effective progression limits for a user. */
 async function getEffectiveLimits(userId: string) {
@@ -45,15 +45,15 @@ export async function getEffectiveProgressionGroupId(
 }
 
 function throwTooLong(max: number, actual: number): never {
-  throw new NodevoError({
-    code: NEC.PERM_CONTENT_TOO_LONG,
+  throw new XentiumError({
+    code: XEC.PERM_CONTENT_TOO_LONG,
     httpStatus: 422,
     message: `Content too long for your current level. Maximum is ${max.toLocaleString()} characters (yours: ${actual.toLocaleString()}).`,
   });
 }
 
 /**
- * Throw NEC-PERM-1040 when `bodyPlain` exceeds the user's `max_article_length`.
+ * Throw XEC-PERM-1040 when `bodyPlain` exceeds the user's `max_article_length`.
  * Call before persisting the body on create or update.
  */
 export async function enforceArticleLength(
@@ -68,7 +68,7 @@ export async function enforceArticleLength(
 }
 
 /**
- * Throw NEC-PERM-1040 when `body` exceeds the user's `max_comment_length`.
+ * Throw XEC-PERM-1040 when `body` exceeds the user's `max_comment_length`.
  * Call before persisting an article comment on create or update.
  */
 export async function enforceCommentLength(
@@ -83,7 +83,7 @@ export async function enforceCommentLength(
 }
 
 /**
- * Throw NEC-PERM-1041 when the user has already hit `max_daily_articles` today.
+ * Throw XEC-PERM-1041 when the user has already hit `max_daily_articles` today.
  * Call before creating a new article.
  */
 export async function enforceDailyArticleLimit(userId: string): Promise<void> {
@@ -102,8 +102,8 @@ export async function enforceDailyArticleLimit(userId: string): Promise<void> {
   });
 
   if (todayCount >= prog.maxDailyArticles) {
-    throw new NodevoError({
-      code: NEC.PERM_DAILY_LIMIT,
+    throw new XentiumError({
+      code: XEC.PERM_DAILY_LIMIT,
       httpStatus: 422,
       message: `Daily article limit reached. Your current level allows ${prog.maxDailyArticles} article${prog.maxDailyArticles !== 1 ? "s" : ""} per day.`,
     });
@@ -111,7 +111,7 @@ export async function enforceDailyArticleLimit(userId: string): Promise<void> {
 }
 
 /**
- * Throw NEC-PERM-1041 when the user has already hit `max_daily_comments` today.
+ * Throw XEC-PERM-1041 when the user has already hit `max_daily_comments` today.
  * Call before creating a new article comment.
  */
 export async function enforceDailyCommentLimit(userId: string): Promise<void> {
@@ -130,8 +130,8 @@ export async function enforceDailyCommentLimit(userId: string): Promise<void> {
   });
 
   if (todayCount >= prog.maxDailyComments) {
-    throw new NodevoError({
-      code: NEC.PERM_DAILY_LIMIT,
+    throw new XentiumError({
+      code: XEC.PERM_DAILY_LIMIT,
       httpStatus: 422,
       message: `Daily comment limit reached. Your current level allows ${prog.maxDailyComments} comment${prog.maxDailyComments !== 1 ? "s" : ""} per day.`,
     });

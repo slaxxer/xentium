@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/auth",
+  "name": "@xentium/auth",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,8 +16,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*",
     "argon2": "catalog:",
     "bcryptjs": "^3.0.3",
     "jose": "catalog:"
@@ -26,7 +26,7 @@
     "express": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",
@@ -34,13 +34,13 @@
   },
   "description": "Authentication primitives: token minting and verification, password hashing, access-token revocation, request guards.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/auth"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/auth#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/auth#readme",
   "engines": {
     "node": ">=22.12"
   },

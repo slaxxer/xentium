@@ -1,7 +1,7 @@
 /**
  * system.prune-notifications — age out the notification feed.
  *
- * ncf_notifications gains a row per event per recipient and has no cleanup path.
+ * xcf_notifications gains a row per event per recipient and has no cleanup path.
  * It is not a log — it is user-facing content — which is why this is a catalogue
  * action an admin composes rather than a fixed window in the log-retention job:
  * whether notifications are a transient feed or an archive people scroll back
