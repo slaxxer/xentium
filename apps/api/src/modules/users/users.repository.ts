@@ -448,15 +448,33 @@ export const userRepository = {
   },
 
   async searchByUsernamePrefixes(query: string, limit: number, excludeId?: string) {
-    return prisma.user.findMany({
+    const rows = await prisma.user.findMany({
       where: {
         username: { startsWith: query, mode: "insensitive" },
         isActive: true,
         ...(excludeId ? { id: { not: excludeId } } : {}),
       },
-      select: { id: true, username: true, avatar: true },
+      select: {
+        id: true, username: true, avatar: true,
+        /**
+         * The primary group's NAME, for the composer's mention list — two similar
+         * usernames are told apart by "Administrator" beside one of them.
+         *
+         * ⚠ `primaryGroupOrder`, like every other read of `groups[0]`: without it
+         * which group a multi-group member shows is Postgres row-order roulette.
+         */
+        groups: {
+          orderBy: primaryGroupOrder,
+          take: 1,
+          select: { group: { select: { name: true } } },
+        },
+      },
       orderBy: { username: "asc" },
       take: limit,
-    }).then(withResolvedAvatarList);
+    });
+    return withResolvedAvatarList(rows).map(({ groups, ...u }) => ({
+      ...u,
+      role: groups[0]?.group.name ?? null,
+    }));
   },
 };

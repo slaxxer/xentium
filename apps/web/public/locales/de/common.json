@@ -97,5 +97,88 @@
   },
   "badges": {
     "held": "Abzeichen {{name}}"
+  },
+  "composer": {
+    "placeholder": "Schreib etwas…",
+    "post": "Absenden",
+    "posting": "Wird gesendet…",
+    "send": "Senden",
+    "write": "Schreiben",
+    "preview": "Vorschau",
+    "previewEmpty": "Noch nichts zum Vorschauen.",
+    "writingAs": "Du schreibst als",
+    "replyingTo": "Antwort an",
+    "more": "Weitere Werkzeuge",
+    "formatting": "Formatierung",
+    "enterSends": "↵ sendet · ⇧↵ neue Zeile",
+    "chars_one": "1 Zeichen",
+    "chars_other": "{{count}} Zeichen",
+    "blockLabel": "Block",
+    "block": {
+      "paragraph": "Text",
+      "h1": "Überschrift 1",
+      "h2": "Überschrift 2",
+      "h3": "Überschrift 3",
+      "quote": "Zitat",
+      "code": "Codeblock"
+    },
+    "blockGlyph": {
+      "paragraph": "T",
+      "h1": "H1",
+      "h2": "H2",
+      "h3": "H3",
+      "quote": "❝",
+      "code": "{ }"
+    },
+    "group": {
+      "marks": "Auszeichnung",
+      "blocks": "Blöcke",
+      "align": "Ausrichtung",
+      "insert": "Einfügen"
+    },
+    "trayFoot": "Jedes Werkzeug behält sein Markdown-Kürzel – das brauchst du selten.",
+    "attachUnavailable": "Anhänge sind hier nicht möglich",
+    "linkUrl": "Linkadresse",
+    "linkNewTab": "In neuem Tab öffnen",
+    "linkApply": "Übernehmen",
+    "linkRemove": "Entfernen",
+    "emojiSearch": "Emoji suchen",
+    "emojiGroup": {
+      "common": "Häufig benutzt",
+      "faces": "Gesichter",
+      "hands": "Hände",
+      "things": "Objekte"
+    },
+    "tool": {
+      "bold": "Fett",
+      "italic": "Kursiv",
+      "underline": "Unterstrichen",
+      "strike": "Durchgestrichen",
+      "highlight": "Hervorheben",
+      "subscript": "Tiefgestellt",
+      "superscript": "Hochgestellt",
+      "bulletList": "Aufzählung",
+      "orderedList": "Nummerierte Liste",
+      "taskList": "Aufgabenliste",
+      "blockquote": "Zitat",
+      "codeBlock": "Codeblock",
+      "inlineCode": "Code im Text",
+      "divider": "Trennlinie",
+      "alignLeft": "Linksbündig",
+      "alignCenter": "Zentriert",
+      "alignRight": "Rechtsbündig",
+      "alignJustify": "Blocksatz",
+      "link": "Link",
+      "attach": "Datei anhängen",
+      "emoji": "Emoji",
+      "mention": "Jemanden erwähnen",
+      "undo": "Rückgängig",
+      "redo": "Wiederholen"
+    },
+    "hintMention": "zum Erwähnen",
+    "hintPost": "zum Absenden",
+    "hintDrop": "Dateien überall ablegen",
+    "words_one": "1 Wort",
+    "words_other": "{{count}} Wörter"
   }
 }

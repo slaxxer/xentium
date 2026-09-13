@@ -83,7 +83,8 @@ export const accountController = {
 
   getSessions: (async (req, res) => {
     const userId = req.userId!;
-    const sessions = await accountService.getSessions(userId);
+    // `req.sessionId` is the caller's own session — the list marks it `current`.
+    const sessions = await accountService.getSessions(userId, req.sessionId);
     res.json(sessions);
   }),
 

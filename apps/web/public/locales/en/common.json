@@ -157,5 +157,88 @@
   },
   "badges": {
     "held": "{{name}} badge"
+  },
+  "composer": {
+    "placeholder": "Write something…",
+    "post": "Post",
+    "posting": "Posting…",
+    "send": "Send",
+    "write": "Write",
+    "preview": "Preview",
+    "previewEmpty": "Nothing to preview yet.",
+    "writingAs": "Writing as",
+    "replyingTo": "Replying to",
+    "more": "More tools",
+    "formatting": "Formatting",
+    "enterSends": "↵ sends · ⇧↵ newline",
+    "chars_one": "1 character",
+    "chars_other": "{{count}} characters",
+    "blockLabel": "Block",
+    "block": {
+      "paragraph": "Text",
+      "h1": "Heading 1",
+      "h2": "Heading 2",
+      "h3": "Heading 3",
+      "quote": "Quote",
+      "code": "Code block"
+    },
+    "blockGlyph": {
+      "paragraph": "T",
+      "h1": "H1",
+      "h2": "H2",
+      "h3": "H3",
+      "quote": "❝",
+      "code": "{ }"
+    },
+    "group": {
+      "marks": "Marks",
+      "blocks": "Blocks",
+      "align": "Align",
+      "insert": "Insert"
+    },
+    "trayFoot": "Every tool keeps its markdown shortcut, so you rarely need this.",
+    "attachUnavailable": "Attachments aren't available here",
+    "linkUrl": "Link address",
+    "linkNewTab": "Open in new tab",
+    "linkApply": "Apply",
+    "linkRemove": "Remove",
+    "emojiSearch": "Search emoji",
+    "emojiGroup": {
+      "common": "Frequently used",
+      "faces": "Faces",
+      "hands": "Hands",
+      "things": "Objects"
+    },
+    "tool": {
+      "bold": "Bold",
+      "italic": "Italic",
+      "underline": "Underline",
+      "strike": "Strikethrough",
+      "highlight": "Highlight",
+      "subscript": "Subscript",
+      "superscript": "Superscript",
+      "bulletList": "Bullet list",
+      "orderedList": "Numbered list",
+      "taskList": "Task list",
+      "blockquote": "Quote",
+      "codeBlock": "Code block",
+      "inlineCode": "Inline code",
+      "divider": "Divider",
+      "alignLeft": "Align left",
+      "alignCenter": "Align centre",
+      "alignRight": "Align right",
+      "alignJustify": "Justify",
+      "link": "Link",
+      "attach": "Attach a file",
+      "emoji": "Emoji",
+      "mention": "Mention someone",
+      "undo": "Undo",
+      "redo": "Redo"
+    },
+    "hintMention": "to mention",
+    "hintPost": "to post",
+    "hintDrop": "drop files anywhere",
+    "words_one": "1 word",
+    "words_other": "{{count}} words"
   }
 }

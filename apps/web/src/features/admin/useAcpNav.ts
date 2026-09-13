@@ -63,6 +63,7 @@ export const ACP_NAV: NavItem[] = [
     children: [
       { label: "nav.styleEditor", to: "/admin/style-editor" },
       { label: "nav.layoutEditor", to: "/admin/layout-editor" },
+      { label: "nav.composer", to: "/admin/composer" },
       { label: "nav.themes", to: "/admin/themes" },
       // `style-history` retired 2026-08-26: the Style Editor's History tab is the
       // same list, beside the editor the snapshots came from. The route redirects.

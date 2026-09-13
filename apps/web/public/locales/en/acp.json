@@ -37,7 +37,8 @@
     "migrationHistory": "Migration History",
     "about": "About",
     "email": "Email",
-    "badges": "Badges"
+    "badges": "Badges",
+    "composer": "Composer"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -2510,15 +2511,7 @@
     "eyebrow": "Community",
     "title": "Badges",
     "subtitle": "What this site can award. Who holds what is on each member's page.",
-    "sections": "Badges",
-    "secCatalogue": "Catalogue",
-    "secAwarding": "Awarding",
-    "catalogueTitle": "Badge catalogue",
-    "catalogueSub": "What this site can award. A badge is drawn on every card its holder appears on.",
     "new": "New badge",
-    "empty": "No badges yet. Create one to start awarding them.",
-    "createTitle": "New badge",
-    "editTitle": "Edit badge",
     "namePreview": "Untitled badge",
     "fieldName": "Name",
     "fieldNameDesc": "What the badge is called, on cards and in tooltips.",
@@ -2535,32 +2528,13 @@
     "saved": "Badge saved",
     "created": "Badge created",
     "deleted": "Badge deleted",
-    "awardTitle": "Award a badge",
-    "awardSub": "Grant a badge to a member, or take one back.",
-    "awardNoneYet": "Create a badge first — there is nothing to award yet.",
-    "awardWhich": "Badge",
-    "awardWhichDesc": "Which badge to grant.",
-    "awardNote": "Reason",
-    "awardNoteDesc": "Optional. Shown in the badge's tooltip instead of its description.",
-    "awardNotePlaceholder": "For the 2026 bug hunt",
-    "awardTo": "Member",
-    "awardToDesc": "Search by username. Granting is immediate.",
-    "awardSearch": "Search members…",
-    "grant": "Grant",
-    "alreadyHas": "Already has it",
-    "noUsers": "No members match that search.",
-    "awarded": "Badge awarded",
     "revoke": "Take this badge back",
     "noHolders": "Nobody holds this badge yet.",
-    "holders": "Holders ({{count}})",
-    "holdersShort": "{{count}} held",
-    "save": "Save",
+    "save": "Save changes",
     "cancel": "Cancel",
     "edit": "Edit",
     "delete": "Delete",
-    "rewardTitle": "Reward system",
     "rewardToggle": "Earn this badge automatically",
-    "rewardNote": "Off, you hand this badge out yourself. On, it is granted to anyone who meets every requirement below — and never taken away again.",
     "rewardEmpty": "No requirements set, so nobody can earn this yet.",
     "metric": {
       "articles": "Articles",
@@ -2569,7 +2543,99 @@
       "followers": "Followers",
       "forum.posts": "Forum posts",
       "forum.threads": "Forum threads"
-    }
+    },
+    "statBadges": "badges",
+    "statAwarded": "awarded",
+    "searchPlaceholder": "Search name or key",
+    "sort": "Sort",
+    "filter": {
+      "all": "All",
+      "auto": "Automatic",
+      "manual": "By hand"
+    },
+    "sortBy": {
+      "order": "Order",
+      "name": "Name",
+      "holders": "Holders"
+    },
+    "group": {
+      "auto": "Earned automatically",
+      "manual": "Handed out by hand"
+    },
+    "groupNote": {
+      "auto": "Granted by the half-hourly sweep to anyone who meets every requirement.",
+      "manual": "You give these on a member's page. Nothing grants them on its own."
+    },
+    "empty": {
+      "auto": "Nothing is earned automatically yet",
+      "manual": "No hand-given badges"
+    },
+    "emptyNote": {
+      "auto": "Turn on the reward system inside a badge to have it granted on thresholds like articles or likes.",
+      "manual": "Create one for the awards you want to decide yourself — a thank-you, a one-off, a staff pick."
+    },
+    "emptyAct": {
+      "auto": "New automatic badge",
+      "manual": "New badge"
+    },
+    "emptyFiltered": "No badge here matches that search.",
+    "system": "System",
+    "noDescription": "No description",
+    "autoSub": "Automatic · {{list}}",
+    "rewardEmptyShort": "Automatic · no requirements set",
+    "showHolders": "Show holders",
+    "close": "Close",
+    "holdersLoading": "Loading holders…",
+    "holdersShort_one": "1 holder",
+    "holdersShort_other": "{{count}} holders",
+    "wayAuto": "earned automatically",
+    "wayManual": "given by hand",
+    "heldEarned": "Earned automatically",
+    "heldGiven": "Given by an admin",
+    "heldGivenFor": "Given by an admin · “{{note}}”",
+    "drawerFoot": "Awarding happens on a member's page — find the member and give the badge there. Taking one back here is immediate.",
+    "revoked": "Badge taken back",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteBody_one": "One member holds it. Deleting the badge takes that award with it, and nothing here can put it back.",
+    "deleteBody_other": "{{count}} members hold it. Deleting the badge takes every one of those awards with it, and nothing here can put them back.",
+    "tab": {
+      "details": "Details",
+      "appearance": "Appearance",
+      "reward": "Reward system"
+    },
+    "pane": {
+      "details": "Details",
+      "appearance": "Appearance",
+      "reward": "Reward system"
+    },
+    "paneNote": {
+      "details": "What the badge is called and how it sorts. The key is what seeds and plugins name it by.",
+      "appearance": "A badge is a glyph in a tinted circle — this is the one place its look is decided.",
+      "reward": "Off, you hand this badge out yourself. On, the sweep grants it to anyone who qualifies."
+    },
+    "on": "On",
+    "railNew": "The key is locked once the badge is created — everything else stays editable.",
+    "railHolders_one": "One member holds this badge today.",
+    "railHolders_other": "{{count}} members hold this badge today.",
+    "namePlaceholder": "First post",
+    "keyPreview": "no-key-yet",
+    "descPlaceholder": "Posted for the first time",
+    "rewardOn": "Granted by the sweep, and never taken away again.",
+    "rewardOff": "Leave it off and this badge is only ever given by an admin.",
+    "requirements": "Requirements",
+    "requirementsNote": "Every filled-in threshold must be met.",
+    "rewardSummary": "Requires {{list}}.",
+    "and": " and ",
+    "create": "Create badge",
+    "footEdit": "Changes apply the next time the badge is drawn.",
+    "footNew": "The key cannot be changed later.",
+    "unit": {
+      "articles": "articles",
+      "comments": "comments",
+      "likes": "likes",
+      "followers": "followers"
+    },
+    "deleteBodyNone": "Nobody holds it, so deleting it takes nothing with it. It cannot be undone."
   },
   "iconPicker": {
     "namePlaceholder": "star",
@@ -2581,5 +2647,24 @@
     "bundled": "Bundled icons",
     "noMatches": "No bundled icon matches.",
     "needsName": "Choose an icon first — a style on its own has nothing to apply to."
+  },
+  "composer": {
+    "eyebrow": "Appearance",
+    "title": "Composer",
+    "subtitle": "Which tools members get when they write, and where each one sits.",
+    "toolsTitle": "Tools",
+    "toolsSub": "{{count}} in the action bar. Everything else is one click away in the overflow tray.",
+    "barPreview": "Action bar",
+    "barEmpty": "Nothing in the bar — members get the tray only.",
+    "place": {
+      "bar": "Bar",
+      "overflow": "Tray",
+      "off": "Off"
+    },
+    "behaviourTitle": "Behaviour",
+    "behaviourSub": "How the composer acts on every surface.",
+    "mentions": "Mentions everywhere",
+    "mentionsDesc": "Typing @ suggests members in comments, threads, replies and private messages.",
+    "notSupported": "Attachments depend on the surface: the forum provides an upload path, article comments, the profile wall and private messages do not, so the paperclip is disabled there. There is no GIF service configured, so that picker is not offered at all."
   }
 }

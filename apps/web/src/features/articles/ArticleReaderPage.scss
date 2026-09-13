@@ -348,25 +348,9 @@
     margin: 0 0 20px;
   }
 
-  &__compose {
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-    background: var(--card-bg);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    padding: 18px;
-    margin-bottom: 20px;
-  }
-  &__compose-body { flex: 1; }
-  &__compose-editor {
-    margin-bottom: 10px;
-  }
-  &__compose-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 6px;
-  }
+  /* The comment composer brings its own avatar, spacing and Post button now
+     (`variant="inline"`), so the page adds only its width. */
+  &__composer { margin-bottom: var(--sp-6); }
 
   &__signin {
     text-align: center;

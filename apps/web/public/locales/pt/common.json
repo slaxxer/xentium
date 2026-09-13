@@ -97,5 +97,88 @@
   },
   "badges": {
     "held": "Emblema {{name}}"
+  },
+  "composer": {
+    "placeholder": "Escreve algo…",
+    "post": "Publicar",
+    "posting": "A publicar…",
+    "send": "Enviar",
+    "write": "Escrever",
+    "preview": "Pré-visualizar",
+    "previewEmpty": "Ainda não há nada para pré-visualizar.",
+    "writingAs": "Escreves como",
+    "replyingTo": "A responder a",
+    "more": "Mais ferramentas",
+    "formatting": "Formatação",
+    "enterSends": "↵ envia · ⇧↵ nova linha",
+    "chars_one": "1 caractere",
+    "chars_other": "{{count}} caracteres",
+    "blockLabel": "Bloco",
+    "block": {
+      "paragraph": "Texto",
+      "h1": "Título 1",
+      "h2": "Título 2",
+      "h3": "Título 3",
+      "quote": "Citação",
+      "code": "Bloco de código"
+    },
+    "blockGlyph": {
+      "paragraph": "T",
+      "h1": "H1",
+      "h2": "H2",
+      "h3": "H3",
+      "quote": "❝",
+      "code": "{ }"
+    },
+    "group": {
+      "marks": "Marcas",
+      "blocks": "Blocos",
+      "align": "Alinhamento",
+      "insert": "Inserir"
+    },
+    "trayFoot": "Cada ferramenta mantém o seu atalho markdown, por isso raramente precisas disto.",
+    "attachUnavailable": "Aqui não é possível anexar ficheiros",
+    "linkUrl": "Endereço da ligação",
+    "linkNewTab": "Abrir num novo separador",
+    "linkApply": "Aplicar",
+    "linkRemove": "Remover",
+    "emojiSearch": "Procurar emoji",
+    "emojiGroup": {
+      "common": "Mais usados",
+      "faces": "Caras",
+      "hands": "Mãos",
+      "things": "Objetos"
+    },
+    "tool": {
+      "bold": "Negrito",
+      "italic": "Itálico",
+      "underline": "Sublinhado",
+      "strike": "Riscado",
+      "highlight": "Destacar",
+      "subscript": "Subscrito",
+      "superscript": "Sobrescrito",
+      "bulletList": "Lista com marcas",
+      "orderedList": "Lista numerada",
+      "taskList": "Lista de tarefas",
+      "blockquote": "Citação",
+      "codeBlock": "Bloco de código",
+      "inlineCode": "Código em linha",
+      "divider": "Separador",
+      "alignLeft": "Alinhar à esquerda",
+      "alignCenter": "Centrar",
+      "alignRight": "Alinhar à direita",
+      "alignJustify": "Justificar",
+      "link": "Ligação",
+      "attach": "Anexar um ficheiro",
+      "emoji": "Emoji",
+      "mention": "Mencionar alguém",
+      "undo": "Desfazer",
+      "redo": "Refazer"
+    },
+    "hintMention": "para mencionar",
+    "hintPost": "para publicar",
+    "hintDrop": "larga ficheiros em qualquer lugar",
+    "words_one": "1 palavra",
+    "words_other": "{{count}} palavras"
   }
 }

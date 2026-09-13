@@ -13,7 +13,7 @@ import {
   articlesApi,
   type ArticleListItem,
 } from "../../lib/articlesApi";
-import { MiniEditor, type MiniEditorHandle } from "../../components/MiniEditor";
+import { Composer, type ComposerHandle } from "../../components/composer/Composer";
 import { Username } from "../../components/Username";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import "./ProfilePage.scss";
@@ -382,7 +382,7 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
   const { user: authUser, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [commentBody, setCommentBody] = useState("");
-  const commentEditorRef = useRef<MiniEditorHandle>(null);
+  const commentEditorRef = useRef<ComposerHandle>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["profile-comments", profile.id],
@@ -428,26 +428,19 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
       <h3 className="profile-wall__title">{t("wallTitle")}</h3>
 
       {canComment && (
-        <div className="profile-wall__compose">
-          <Avatar user={authUser!} size={36} />
-          <div className="profile-wall__compose-inner">
-            <MiniEditor
-              ref={commentEditorRef}
-              onChange={setCommentBody}
-              placeholder={t("wallPlaceholder", { username: profile.username })}
-              disabled={postMutation.isPending}
-              onSubmit={handleSubmit}
-            />
-            <button
-              type="button"
-              className="btn-primary btn-sm"
-              onClick={handleSubmit}
-              disabled={!commentBody.trim() || postMutation.isPending}
-            >
-              {postMutation.isPending ? t("posting") : t("post")}
-            </button>
-          </div>
-        </div>
+        /* The inline composer, as on article comments: one row until it is used,
+           and it brings its own avatar and Post button. */
+        <Composer
+          ref={commentEditorRef}
+          variant="inline"
+          onChange={setCommentBody}
+          placeholder={t("wallPlaceholder", { username: profile.username })}
+          disabled={postMutation.isPending}
+          busy={postMutation.isPending}
+          submitLabel={t("post")}
+          onSubmit={handleSubmit}
+          className="profile-wall__composer"
+        />
       )}
 
       {isLoading ? (
