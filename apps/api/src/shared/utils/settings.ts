@@ -2,7 +2,7 @@
  * The CMS's binding of the framework settings reader (`@xentium/server-kit`).
  *
  * The package owns the TTL cache and the missing-vs-null distinction; this file
- * supplies the one thing it cannot know — that settings live in `ncf_settings`,
+ * supplies the one thing it cannot know — that settings live in `xcf_settings`,
  * reached through this application's Prisma client.
  *
  * Writers in this process MUST still call `bustSettingsCache`; other processes

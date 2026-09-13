@@ -106,7 +106,7 @@ and slugs are a site's content, not a theme's: carried elsewhere they would eith
 or hijack a same-named page the author never saw.
 
 > ⚠ Two different things are called a *variant*. A **layout variant** is one instance of a
-> template — the layout for one specific page — and it keys a row in `ncf_layouts`. A
+> template — the layout for one specific page — and it keys a row in `xcf_layouts`. A
 > **style variant** (below) is a named look a block opts into. They never appear in the
 > same position: the first is part of a layout SELECTOR, the second a field on a BLOCK.
 

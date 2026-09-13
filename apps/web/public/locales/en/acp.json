@@ -763,7 +763,7 @@
       "XEC-PLUGIN-2013": {
         "msg": "Reserved or Mis-Prefixed Table Name",
         "desc": "A plugin migration tries to create, alter, or drop a database object that is either a reserved core object or does not match the plugin's declared table prefix.",
-        "cause": "The migration names an object beginning ncf_, xentium_, _prisma, pg_, or information_schema, or (when the plugin declares a tablePrefix) an object that omits that prefix.",
+        "cause": "The migration names an object beginning xcf_, xentium_, _prisma, pg_, or information_schema, or (when the plugin declares a tablePrefix) an object that omits that prefix.",
         "fix": "Namespace every table, index, sequence, type, function, and trigger with the plugin's own prefix, and never touch core-owned objects."
       },
       "XEC-PLUGIN-2020": {
@@ -877,8 +877,8 @@
       "XEC-LICENSE-9010": {
         "msg": "Install Identity Missing",
         "desc": "This instance has no install record, so it has no identity to license.",
-        "cause": "The installer never finished, or the ncf_installs row was deleted from the database.",
-        "fix": "Complete the installer. If the install is otherwise healthy, restore the ncf_installs row from a backup — its siteId is what every license is bound to."
+        "cause": "The installer never finished, or the xcf_installs row was deleted from the database.",
+        "fix": "Complete the installer. If the install is otherwise healthy, restore the xcf_installs row from a backup — its siteId is what every license is bound to."
       }
     }
   },

@@ -10,7 +10,9 @@
  * migration (against tables that already exist) and lose the enable state.
  *
  * Idempotent, transactional, and DRY-RUN by default — pass --apply to write.
- * Run it with the API stopped, after deploying the renamed core.
+ * Run it with the API stopped, AFTER deploying the renamed core and applying
+ * its migrations: it addresses the `xcf_` tables, and the prefix only becomes
+ * xcf_ when 20260913140000_rename_ncf_to_xcf runs.
  *
  *   node --env-file=.env scripts/rename-plugin-ids.mjs            # report only
  *   node --env-file=.env scripts/rename-plugin-ids.mjs --apply
@@ -65,62 +67,62 @@ try {
   for (const [oldId, newId] of Object.entries(RENAMES)) {
     // Nothing to do for a plugin this install never had.
     const { rows: [installed] } = await client.query(
-      `SELECT id, installed_version, package_path FROM ncf_installed_plugins WHERE id = $1`, [oldId],
+      `SELECT id, installed_version, package_path FROM xcf_installed_plugins WHERE id = $1`, [oldId],
     );
 
     if (installed) {
       const newPath = installed.package_path?.replace(`${oldId}-`, `${newId}-`) ?? null;
       const r = await client.query(
-        `UPDATE ncf_installed_plugins SET id = $2, package_path = $3 WHERE id = $1`,
+        `UPDATE xcf_installed_plugins SET id = $2, package_path = $3 WHERE id = $1`,
         [oldId, newId, newPath],
       );
-      note(`ncf_installed_plugins  ${oldId} -> ${newId}`, r.rowCount);
+      note(`xcf_installed_plugins  ${oldId} -> ${newId}`, r.rowCount);
     }
 
     // The applied-migration ledger. `id` is "{pluginId}_{ver}_{name}", so the
     // prefix has to move with plugin_id or the runner re-applies everything.
     const m = await client.query(
-      `UPDATE ncf_plugin_migrations
+      `UPDATE xcf_plugin_migrations
           SET plugin_id = $2,
               id        = $2 || substring(id from length($1) + 1)
         WHERE plugin_id = $1`,
       [oldId, newId],
     );
-    note(`ncf_plugin_migrations  ${oldId} -> ${newId}`, m.rowCount);
+    note(`xcf_plugin_migrations  ${oldId} -> ${newId}`, m.rowCount);
 
     const menu = await client.query(
-      `UPDATE ncf_nav_items SET plugin_id = $2 WHERE plugin_id = $1`, [oldId, newId],
+      `UPDATE xcf_nav_items SET plugin_id = $2 WHERE plugin_id = $1`, [oldId, newId],
     );
-    note(`ncf_nav_items.plugin_id  ${oldId} -> ${newId}`, menu.rowCount);
+    note(`xcf_nav_items.plugin_id  ${oldId} -> ${newId}`, menu.rowCount);
 
     // Layout documents name the owning plugin inside the JSON (slot blocks and
     // pluginSlot props). Replace the QUOTED id so a substring never matches.
     const lay = await client.query(
-      `UPDATE ncf_layouts
+      `UPDATE xcf_layouts
           SET document = replace(document::text, $1, $2)::jsonb
         WHERE document::text LIKE '%' || $3 || '%'`,
       [`"${oldId}"`, `"${newId}"`, oldId],
     );
-    note(`ncf_layouts documents mentioning ${oldId}`, lay.rowCount);
+    note(`xcf_layouts documents mentioning ${oldId}`, lay.rowCount);
 
     // Settings: the paid-id cache and anything a plugin keyed by its own id.
     const setVal = await client.query(
-      `UPDATE ncf_settings
+      `UPDATE xcf_settings
           SET value = replace(value::text, $1, $2)::jsonb
         WHERE value::text LIKE '%' || $3 || '%'`,
       [`"${oldId}"`, `"${newId}"`, oldId],
     );
-    note(`ncf_settings values mentioning ${oldId}`, setVal.rowCount);
+    note(`xcf_settings values mentioning ${oldId}`, setVal.rowCount);
 
     const setKey = await client.query(
-      `UPDATE ncf_settings SET key = $2 || substring(key from length($1) + 1)
+      `UPDATE xcf_settings SET key = $2 || substring(key from length($1) + 1)
         WHERE key LIKE $1 || '.%'
           AND NOT EXISTS (
-            SELECT 1 FROM ncf_settings s2
-             WHERE s2.key = $2 || substring(ncf_settings.key from length($1) + 1))`,
+            SELECT 1 FROM xcf_settings s2
+             WHERE s2.key = $2 || substring(xcf_settings.key from length($1) + 1))`,
       [oldId, newId],
     );
-    note(`ncf_settings keys prefixed ${oldId}.`, setKey.rowCount);
+    note(`xcf_settings keys prefixed ${oldId}.`, setKey.rowCount);
 
     // On disk: the package archive and the extracted directory.
     // EVERY archive, not just the installed version: the store keeps the older

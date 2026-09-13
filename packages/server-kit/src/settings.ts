@@ -2,7 +2,7 @@ import { TtlCache } from "./memoTtl.js";
 
 /**
  * Where settings actually live. An application supplies this — the package must
- * not know the table's name, let alone that it is called `ncf_settings`.
+ * not know the table's name, let alone that it is called `xcf_settings`.
  *
  * Two reads rather than one because the batch path exists specifically to
  * resolve many keys in a single query; collapsing it into repeated `get` calls

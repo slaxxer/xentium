@@ -14,7 +14,7 @@ export const manifestSchema = z.object({
   // runner enforces that every table/index/sequence/type/function/trigger the
   // plugin's migrations create (and every object they alter/drop/index) begins
   // with this prefix — keeping plugin schema namespaced and unable to collide
-  // with core (`ncf_`) or another plugin. Convention: short + snake, ending in
+  // with core (`xcf_`) or another plugin. Convention: short + snake, ending in
   // `_` (e.g. `forum_`, `sb_`, `amod_`). Optional for back-compat; the reserved-
   // namespace guard applies to every plugin regardless.
   tablePrefix:        z.string().regex(/^[a-z][a-z0-9]*_$/, "tablePrefix must be lowercase snake_case ending in '_'").optional(),

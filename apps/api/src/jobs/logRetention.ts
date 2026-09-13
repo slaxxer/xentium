@@ -27,7 +27,7 @@ function cutoff(days: number): Date {
  * shorter window than the ACP-action audit trail), error log, login events,
  * scheduled-task run history, dead auth sessions and spent auth tokens.
  *
- * Dialog acknowledgments are NOT affected: they live in ncf_acp_visits (durable
+ * Dialog acknowledgments are NOT affected: they live in xcf_acp_visits (durable
  * last-visit marks, bounded to users × paths), precisely so this job can prune
  * page_visit telemetry freely. Login-event retention must stay comfortably above
  * the security scanners' correlation windows (multi-account/impossible-travel
@@ -94,7 +94,7 @@ export async function processLogRetention(): Promise<void> {
   // Only rows that can no longer authenticate anything are eligible — revoked,
   // or past their own expiry. Every reader of this table already filters to
   // live sessions (`revokedAt: null, expiresAt > now`), and the security
-  // scanners correlate device/IP through ncf_login_events, not through here, so
+  // scanners correlate device/IP through xcf_login_events, not through here, so
   // pruning dead rows costs no forensic history.
   if (sessionDays > 0) {
     const { count } = await prisma.session.deleteMany({

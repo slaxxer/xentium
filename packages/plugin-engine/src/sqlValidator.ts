@@ -8,11 +8,12 @@ const ALLOWED_DDL =
 const DISALLOWED = /^\s*(INSERT|UPDATE|DELETE|SELECT|TRUNCATE|COPY|MERGE|CALL|EXEC|GRANT|REVOKE|LOCK)\b/i;
 
 // Namespaces a plugin migration may never create/alter/drop into: core tables
-// (`ncf_`), core-owned bookkeeping (`nodevo_` and `xentium_` — the pre- and
+// (`xcf_`, and `ncf_` which a database predating the rename still uses),
+// core-owned bookkeeping (`nodevo_` and `xentium_` — the pre- and
 // post-rename prefixes; existing databases still carry nodevo_ objects),
 // Prisma's internal tables, and Postgres system catalogs. Enforced for EVERY
 // plugin, whether or not it declares a tablePrefix.
-const RESERVED_NAME = /^(ncf_|nodevo_|xentium_|_prisma|pg_|information_schema)/i;
+const RESERVED_NAME = /^(xcf_|ncf_|nodevo_|xentium_|_prisma|pg_|information_schema)/i;
 
 /**
  * Naming policy for a plugin's migrations. `tablePrefix` (when the manifest
@@ -210,7 +211,7 @@ export function validateMigrationSql(sql: string, filename: string, policy?: Mig
         throw new XentiumError({
           code:       XEC.PLUGIN_TABLE_NAMING,
           httpStatus: 422,
-          message:    `${filename} targets the reserved object "${name}". Plugin migrations may not create, alter, or drop core objects (names beginning ncf_, nodevo_, xentium_, _prisma, pg_, or information_schema).`,
+          message:    `${filename} targets the reserved object "${name}". Plugin migrations may not create, alter, or drop core objects (names beginning xcf_, ncf_, nodevo_, xentium_, _prisma, pg_, or information_schema).`,
         });
       }
       if (prefix && !name.startsWith(prefix)) {

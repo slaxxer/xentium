@@ -15,17 +15,24 @@ order an existing install has to be upgraded in.
 | Browser host object | `window.__NODEVO_HOST__` → `window.__XENTIUM_HOST__` |
 | Signed marketplace headers | `X-Nodevo-*` → `X-Xentium-*` |
 | Official plugin ids | `nodevo-forum` → `xentium-forum`, and the other four |
+| Error codes | `NEC-<DOMAIN>-<CODE>` → `XEC-…` (106 of them) |
+| Core table prefix | `ncf_` → `xcf_` (57 tables, migration `20260913140000_rename_ncf_to_xcf`) |
 
 ## What was NOT renamed, and why
 
 These look like branding and are not. Each one costs a migration, a break, or a
 silent security change, in exchange for a string no user reads.
 
-- **`ncf_` table prefix** (57 tables), **`XEC-` error codes** (106), **`nv_`
-  cookies**, **`nv-` CSS classes**, **`.nvplugin` / `.nvtheme` / `.nvstyle`**.
-  Renaming the CSS prefix breaks every theme package and plugin stylesheet in
-  the wild; renaming the cookies signs everyone out; renaming the codes breaks a
-  documented API contract and every plugin matching on one.
+- **`nv_` cookies**, **`nv-` CSS classes** (~700 occurrences), and the
+  **`.nvplugin` / `.nvtheme` / `.nvstyle`** extensions. Renaming the CSS prefix
+  breaks every theme package and plugin stylesheet in the wild for a string
+  nobody reads; renaming the cookies signs everyone out.
+- ⚠ **`ncf_` and `NEC-` were on this list and are now renamed** (`xcf_`,
+  `XEC-`). Both objections were about installations holding data and third
+  parties holding plugins, and a pre-alpha reinstall is the one window where
+  neither is true — a table prefix becomes a find-and-replace instead of a data
+  migration. **`ncf_` remains RESERVED** to plugin migrations beside `xcf_`,
+  because a database predating the rename still carries those tables.
 - **`nodevo.secretbox.v1`**, the scrypt salt. It is frozen by design: change it
   and every stored secret becomes undecryptable.
 - **`SOURCE_ID = "nodevo.io"`**. It composes the live settings keys

@@ -2,7 +2,7 @@
  * `getSiteId` — the install identity every license-server call is made under.
  *
  * This exists as a regression guard, not for coverage. The function used to
- * return the literal string "dev-site" when `ncf_installs` had no row, and that
+ * return the literal string "dev-site" when `xcf_installs` had no row, and that
  * fallback is a SHARED identity: every affected install reports as the same
  * site, so activations, per-domain caps and audit trails from all of them
  * collapse into one bucket on the marketplace. Once entitlements bind to the

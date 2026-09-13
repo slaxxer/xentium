@@ -690,7 +690,7 @@ export const layoutService = {
   SCHEMA_VERSION: LAYOUT_SCHEMA_VERSION,
 };
 
-/** One `ncf_layouts` row, captured verbatim. */
+/** One `xcf_layouts` row, captured verbatim. */
 export interface LayoutRowSnapshot {
   templateKey: string;
   variant:     string;

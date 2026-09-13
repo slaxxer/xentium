@@ -592,7 +592,7 @@
       "XEC-PLUGIN-2013": {
         "msg": "Nom de table réservé ou mal préfixé",
         "desc": "Une migration de plugin tente de créer, modifier ou supprimer un objet de base de données qui est soit un objet réservé du cœur, soit un objet ne correspondant pas au préfixe de table déclaré par le plugin.",
-        "cause": "La migration nomme un objet commençant par ncf_, xentium_, _prisma, pg_ ou information_schema, ou (lorsque le plugin déclare un tablePrefix) un objet qui omet ce préfixe.",
+        "cause": "La migration nomme un objet commençant par xcf_, xentium_, _prisma, pg_ ou information_schema, ou (lorsque le plugin déclare un tablePrefix) un objet qui omet ce préfixe.",
         "fix": "Préfixez chaque table, index, séquence, type, fonction et déclencheur avec le préfixe propre au plugin, et ne touchez jamais aux objets du cœur."
       },
       "XEC-PLUGIN-2020": {
@@ -706,8 +706,8 @@
       "XEC-LICENSE-9010": {
         "msg": "Identité d'installation manquante",
         "desc": "Cette instance n'a aucun enregistrement d'installation, donc aucune identité à licencier.",
-        "cause": "L'installateur n'a jamais été terminé, ou la ligne ncf_installs a été supprimée de la base de données.",
-        "fix": "Terminez l'installateur. Si l'installation est saine par ailleurs, restaurez la ligne ncf_installs depuis une sauvegarde — son siteId est ce à quoi chaque licence est liée."
+        "cause": "L'installateur n'a jamais été terminé, ou la ligne xcf_installs a été supprimée de la base de données.",
+        "fix": "Terminez l'installateur. Si l'installation est saine par ailleurs, restaurez la ligne xcf_installs depuis une sauvegarde — son siteId est ce à quoi chaque licence est liée."
       }
     }
   },

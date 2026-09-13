@@ -108,7 +108,7 @@ async function refsInLayouts(): Promise<string[]> {
   const roots = ROOTS.join("|");
   const rows = await prisma.$queryRawUnsafe<{ ref: string }[]>(
     `SELECT DISTINCT (regexp_matches("document"::text, '(?:/uploads/)?((?:${roots})/[^"''\\ )>]+)', 'g'))[1] AS ref
-       FROM "ncf_layouts"`,
+       FROM "xcf_layouts"`,
   );
   return rows.map((r) => r.ref);
 }
@@ -125,8 +125,8 @@ async function collectReferenced(): Promise<Set<string>> {
     prisma.setting.findMany({ where: { key: { startsWith: "appearance.logo." } }, select: { value: true } }),
     prisma.article.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
     prisma.page.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
-    refsInJson("ncf_articles", "body"),
-    refsInJson("ncf_pages", "body"),
+    refsInJson("xcf_articles", "body"),
+    refsInJson("xcf_pages", "body"),
     // Section backgrounds and every other asset prop a block carries. These live
     // ONLY in the document — no column points at them — so without this the files
     // have no reference anywhere and the sweep treats them all as orphans.

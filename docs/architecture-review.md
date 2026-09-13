@@ -312,7 +312,7 @@ badge-glow editor).
      feature api modules exist (warn-level).
    - `no-restricted-syntax`: new `function timeAgo` / local `Badge`
      declarations outside `lib/`/`components/`.
-2. **DB naming validator** (`ncf_`/plugin prefix) — already on the TODO list;
+2. **DB naming validator** (`xcf_`/plugin prefix) — already on the TODO list;
    a unit test over the Prisma DMMF + `nodevo_plugin_migrations` DDL is enough.
 3. **Decide the repository question (§1.8) and update CLAUDE.md** — a stated
    convention the code contradicts is worse than no convention.
@@ -374,7 +374,7 @@ keeps only Zod parsing + the NDJSON stream plumbing.
 ### A1.2 Dialog acknowledgment state is stored in telemetry (NEW, subtle)
 
 The per-admin update/license dialogs use `activityService.hasVisitedSince()` over
-`ncf_activity_log` page-visit rows as their source of truth (admin.controller.ts:546,
+`xcf_activity_log` page-visit rows as their source of truth (admin.controller.ts:546,
 :588). Durable UX state is coupled to an unbounded log table that *needs* a retention
 job (A4.1). The moment retention lands, pruning silently un-acknowledges dialogs: an
 update pending longer than the retention window (`setSince` months old) re-nudges
@@ -393,7 +393,7 @@ nondeterministic (Postgres row order). CLAUDE.md says "users belong to one group
 docs, schema, and code disagree three ways.
 
 **Suggestion:** pick one — enforce single-group at the write path, or define a
-primary-group ordering (e.g. `position` on `ncf_user_groups`) and use it everywhere
+primary-group ordering (e.g. `position` on `xcf_user_groups`) and use it everywhere
 `groups[0]` appears today.
 
 ### A1.4 Paid plugin source is unversioned (still the single biggest project risk)
@@ -405,7 +405,7 @@ needs its own repo (or one private plugins monorepo) + backup.
 ### A1.5 Settings table as a KV blob store for marketplace state
 
 `marketplace.updates`, `marketplace.paid_plugin_ids`, and the account token live as
-JSON strings in `ncf_settings` — the token in plaintext (encryption-at-rest already
+JSON strings in `xcf_settings` — the token in plaintext (encryption-at-rest already
 on the TODO). These are caches/credentials with different lifecycles than site
 settings; every consumer re-parses JSON with ad-hoc shape checks
 (`readReconciledUpdates` does its own defensive parse). Workable, but contain it:
@@ -460,7 +460,7 @@ constant-size result regardless of traffic.
 
 ## A4. Scalability risks
 
-### A4.1 `ncf_activity_log` has NO retention job and now logs every ACP page view ⚠
+### A4.1 `xcf_activity_log` has NO retention job and now logs every ACP page view ⚠
 
 PR #48 deliberately widened logging to all ACP navigations. The scheduled-jobs
 registry has security/ban/warning/license/update/appearance jobs — **nothing prunes
@@ -537,7 +537,7 @@ AcpLayout.tsx:87 with independently-declared queryFns and differing options.
 
 | # | Item | Impact | Effort | Notes |
 |---|---|---|---|---|
-| 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `ncf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
+| 1 | Retention jobs (activity/error/login logs) + move dialog-ack out of the activity log (A4.1 + A1.2) | High | M | ✅ done 2026-07-21 — `xcf_acp_visits` (durable, backfilled) + `log-retention` job w/ `retention.*` settings; E2E: acks survive pruning |
 | 2 | Extract marketplace/update logic from admin.controller into a service (A1.1) | High | M | ✅ done 2026-07-21 — `modules/admin/marketplace.service.ts`; controller 817→543 lines, dynamic imports 24→0 |
 | 3 | Unify the error contract — now 3 shapes (A5.1, original item 3) | High | M | ✅ done 2026-07-23 — one XEC/XentiumError shape; installer surface excluded by design |
 | 4 | Resolve group-model ambiguity — `groups[0]` nondeterminism (A1.3) | Med | S | Cheap now, support tickets later |

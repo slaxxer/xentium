@@ -471,7 +471,7 @@ facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` di
 - Every endpoint validates **body, params, and query** with Zod before any logic;
   `ZodError` → `XEC-API-4001` centrally. Errors are `XentiumError` with `XEC-<DOMAIN>-<CODE>`;
   stack traces never reach clients.
-- Core tables are `ncf_<snake_case>`; soft delete via `deletedAt` (queries default to
+- Core tables are `xcf_<snake_case>`; soft delete via `deletedAt` (queries default to
   excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
 - The API is locale-agnostic (machine keys + XEC codes only); only emails/notifications are
   server-localized.
@@ -548,13 +548,13 @@ with the noted `XEC-PLUGIN-*` code, so design to them from the start.
 - **Paired up/down.** Every `NNN_name.up.sql` must ship a matching
   `NNN_name.down.sql` → `XEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
   so down migrations are safely re-runnable.
-- **Table naming.** Core tables use the `ncf_` prefix; a plugin's schema must
+- **Table naming.** Core tables use the `xcf_` prefix; a plugin's schema must
   stay in its own namespace. Declare a **`tablePrefix`** (short, snake_case,
   ending in `_` — e.g. `forum_`, `sb_`) and the runner enforces that **every**
   table, index, sequence, type, function, and trigger your migrations create —
   or alter/drop/index — begins with it. Regardless of whether you declare one,
   no plugin migration may ever touch a reserved core object (names beginning
-  `ncf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
+  `xcf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
   raise `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
   a prefix is optional but strongly recommended — all four official plugins do.
 - **Applied migrations are immutable.** Once a migration has run, its checksum is
@@ -708,7 +708,7 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 
 > **Registrations are in-memory.** Everything `onEnable` registers (routes, ACP pages,
 > content sources, security scans/claims, XEC codes) lives in the host process's registries
-> and is rebuilt at startup from the `ncf_installed_plugins` table. The lifecycle endpoints
+> and is rebuilt at startup from the `xcf_installed_plugins` table. The lifecycle endpoints
 > keep memory and DB in sync — but if plugin state is changed **underneath a running
 > process** (manual row deletion, a DB reset in dev), the process keeps serving stale
 > registrations (e.g. a ghost ACP menu entry for a plugin that no longer exists) until it is

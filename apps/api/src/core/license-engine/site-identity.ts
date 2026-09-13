@@ -56,7 +56,7 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
 
 /**
  * This install's UUID, minted by the installer's finalize step into
- * ncf_installs.siteId. The single source for anything talking to the
+ * xcf_installs.siteId. The single source for anything talking to the
  * marketplace.
  *
  * THROWS when there is no install row. It used to fall back to the literal

@@ -62,7 +62,7 @@ await client.connect();
 try {
   for (const [id, { full, manifest, zip }] of archives) {
     const { rows: [row] } = await client.query(
-      `SELECT id, installed_version, status FROM ncf_installed_plugins WHERE id = $1`, [id],
+      `SELECT id, installed_version, status FROM xcf_installed_plugins WHERE id = $1`, [id],
     );
     if (!row) {
       console.log(`  skip  ${id} — not installed here (install it the normal way first)`);
@@ -82,7 +82,7 @@ try {
     await fs.mkdir(extractDir, { recursive: true });
     zip.extractAllTo(extractDir, true);
     await client.query(
-      `UPDATE ncf_installed_plugins
+      `UPDATE xcf_installed_plugins
           SET installed_version = $2, manifest = $3::jsonb, package_path = $4, name = $5, vendor = $6
         WHERE id = $1`,
       [id, manifest.version, JSON.stringify(manifest), pkgPath, manifest.name, manifest.vendor],

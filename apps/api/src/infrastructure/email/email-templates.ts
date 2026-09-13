@@ -4,7 +4,7 @@ import { getSetting } from "../../shared/utils/settings.js";
 /**
  * Outbound mail templates.
  *
- * Defaults live here in code; a row in `ncf_email_templates` overrides one key.
+ * Defaults live here in code; a row in `xcf_email_templates` overrides one key.
  * Absence of a row is valid and means "use the shipped default" — which is also
  * what Reset restores, by deleting the row rather than writing the default back.
  * That way a template an admin never touched keeps tracking future improvements
