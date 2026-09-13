@@ -15,7 +15,7 @@ itself. Write changes down on both sides before making them.**
 - **Instance side:** `apps/api/src/core/license-engine/protocol-client.ts` (transport),
   `marketplace-source.ts` (the conversations), `site-identity.ts` (who am I).
 - **Base URL:** `env.LICENSE_SERVER_URL`, which **includes the version prefix**
-  (`https://marketplace.nodelab.codes/api/v1`). It is part of what every signature covers.
+  (`https://plugin.xentium.org/api/v1`). It is part of what every signature covers.
 - **Implementing another marketplace?** Core talks to a `MarketplaceSource` interface and
   never hardcodes a host. A community or self-hosted source may implement the same
   interface and return free, no-op entitlements.
