@@ -177,7 +177,7 @@ the ladder grants nothing.
 ## What core provides
 
 - `apps/web/src/hooks/useAutosave.ts` → `useAutosave({ value, savedValue, onSave, delay? })`,
-  bridged as `window.__NODEVO_HOST__.webUseAutosave`.
+  bridged as `window.__XENTIUM_HOST__.webUseAutosave`.
 - `apps/web/src/components/AutosaveStatus.tsx` → `<AutosaveStatus saving />`,
   bridged as `webAutosaveStatus`.
 - `apps/web/src/plugins/slotRegistry.ts` → `registerGroupConfigPanel(slot)`.

@@ -27,10 +27,10 @@ function readVersion(): string {
       // wrong layout — try the next candidate
     }
   }
-  throw new Error("NODEVO_VERSION: could not locate the api package.json");
+  throw new Error("XENTIUM_VERSION: could not locate the api package.json");
 }
 
-export const NODEVO_VERSION: string = readVersion();
+export const XENTIUM_VERSION: string = readVersion();
 
 /**
  * Base-version comparison moved to `@xentium/plugin-engine` (ADR-0006) — it is

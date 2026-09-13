@@ -75,7 +75,7 @@ keys work with the `ns:` prefix, e.g. `t("common:actions.cancel")`.
 ## What core provides
 - `apps/web/src/plugins/pluginI18n.ts` → `registerPluginTranslations(resources)`
   (`resources` = `{ [lng]: { [ns]: { …keys } } }`), bridged as
-  `window.__NODEVO_HOST__.webPluginI18n`.
+  `window.__XENTIUM_HOST__.webPluginI18n`.
 - `react-i18next` itself is bridged (`ReactI18next`) so the plugin shares the host
   i18next instance + its loaded namespaces.
 

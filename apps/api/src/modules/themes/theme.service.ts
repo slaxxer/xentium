@@ -49,7 +49,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
-import { NODEVO_VERSION, compareBaseVersions } from "../../config/version.js";
+import { XENTIUM_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
 import {
@@ -180,16 +180,16 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
     id:      m.id      ?? (slug || "imported-style"),
     vendor:  m.vendor  ?? "community",
     version: m.version ?? "1.0.0",
-    minXentiumVersion: m.minXentiumVersion ?? NODEVO_VERSION,
+    minXentiumVersion: m.minXentiumVersion ?? XENTIUM_VERSION,
   };
 }
 
 function assertCompatible(m: ThemeManifestInput) {
-  if (compareBaseVersions(NODEVO_VERSION, m.minXentiumVersion) < 0) {
-    throw themeError(`Theme "${m.id}" requires Xentium ${m.minXentiumVersion}+ (this is ${NODEVO_VERSION})`);
+  if (compareBaseVersions(XENTIUM_VERSION, m.minXentiumVersion) < 0) {
+    throw themeError(`Theme "${m.id}" requires Xentium ${m.minXentiumVersion}+ (this is ${XENTIUM_VERSION})`);
   }
-  if (m.maxXentiumVersion && compareBaseVersions(NODEVO_VERSION, m.maxXentiumVersion) > 0) {
-    throw themeError(`Theme "${m.id}" supports Xentium up to ${m.maxXentiumVersion} (this is ${NODEVO_VERSION})`);
+  if (m.maxXentiumVersion && compareBaseVersions(XENTIUM_VERSION, m.maxXentiumVersion) > 0) {
+    throw themeError(`Theme "${m.id}" supports Xentium up to ${m.maxXentiumVersion} (this is ${XENTIUM_VERSION})`);
   }
 }
 
@@ -390,7 +390,7 @@ export const themeService = {
 
     const manifest: ThemeManifestInput = themeManifestSchema.parse({
       ...meta,
-      minXentiumVersion: NODEVO_VERSION,
+      minXentiumVersion: XENTIUM_VERSION,
       schemaVersion:    LAYOUT_SCHEMA_VERSION,
       packageVersion:   THEME_PACKAGE_VERSION,
       ...(screenshotName ? { screenshot: `${THEME_PATHS.assets}${screenshotName}` } : {}),

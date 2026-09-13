@@ -219,7 +219,7 @@ Two things happen to your block's icons for free, and one thing you have to not 
 
 **They follow the site's icon style.** Import `FontAwesomeIcon` from the module your
 vite config already externalises (`@fortawesome/react-fontawesome` →
-`__NODEVO_HOST__.FaReact`). Core swaps that export for its own wrapper, so a site using
+`__XENTIUM_HOST__.FaReact`). Core swaps that export for its own wrapper, so a site using
 a FontAwesome Pro kit draws your icons in its chosen style with no change on your side.
 
 ⚠ Bundling your own copy of that package silently opts out — your icons stay solid while
@@ -250,7 +250,7 @@ const schema = z.object({
 icon, then nothing:
 
 ```tsx
-// Externalise this like the rest — it is `__NODEVO_HOST__.webTokenIcon`.
+// Externalise this like the rest — it is `__XENTIUM_HOST__.webTokenIcon`.
 import { TokenIcon } from "@web/components/TokenIcon";
 
 component: ({ props }) => props.icon ? <TokenIcon token={props.icon} /> : null,
