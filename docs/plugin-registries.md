@@ -177,7 +177,7 @@ mirrors into placeable blocks for you.
 ### Icons
 
 ⚠ **Import `FontAwesomeIcon` from the externalised module** — every plugin already does,
-via `__NODEVO_HOST__.FaReact`. Core swaps that one export for its own wrapper, so your
+via `__XENTIUM_HOST__.FaReact`. Core swaps that one export for its own wrapper, so your
 icons follow the site's icon style with no change and no rebuild on your side.
 
 A plugin that *bundles* its own copy of `@fortawesome/react-fontawesome` silently opts

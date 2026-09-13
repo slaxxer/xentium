@@ -68,7 +68,7 @@ them from **ACP → Extensions → Upload**. Package for distribution with
 
 Plugins never patch core — they **register** into it. Authoring contracts live in
 `@xentium/plugin-sdk`; the web host bridges shared singletons through
-`window.__NODEVO_HOST__` so a plugin's UMD bundle reuses the host's React, router,
+`window.__XENTIUM_HOST__` so a plugin's UMD bundle reuses the host's React, router,
 and i18next rather than shipping its own.
 
 - **Translated UI strings** — bundle `web/locales/<lng>/<ns>.json` (en, de, es, fr,

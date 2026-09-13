@@ -85,7 +85,7 @@ The wrapper falls back to the bundled icon whenever it cannot confidently act:
 - the `icon` prop is an array, a string, or anything without a usable `iconName`.
 
 **Plugins need no change.** They externalise `@fortawesome/react-fontawesome` to
-`__NODEVO_HOST__.FaReact`, and `host-globals.ts` swaps `FontAwesomeIcon` in that
+`__XENTIUM_HOST__.FaReact`, and `host-globals.ts` swaps `FontAwesomeIcon` in that
 namespace for this wrapper. One line, and every plugin follows the site style.
 
 `AppIcon` is the other entry point, for when the icon name is **data** — an admin's

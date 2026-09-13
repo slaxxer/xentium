@@ -224,9 +224,16 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
     const canonical = [method, url.pathname, timestamp, bodyHash].join("\n");
     const signature = crypto.sign(null, Buffer.from(canonical, "utf8"), crypto.createPrivateKey(privateKeyPem));
 
-    headers["X-Nodevo-Site"]      = siteId;
-    headers["X-Nodevo-Timestamp"] = timestamp;
-    headers["X-Nodevo-Signature"] = signature.toString("base64");
+    // The header NAMES are not part of the canonical string, so the rename is a
+    // pure transport change and both spellings may travel together. Core sends
+    // X-Xentium-* and keeps X-Nodevo-* until every marketplace has been deployed
+    // with a reader for the new names; drop the old three after 1.0.0-alpha.
+    headers["X-Xentium-Site"]      = siteId;
+    headers["X-Xentium-Timestamp"] = timestamp;
+    headers["X-Xentium-Signature"] = signature.toString("base64");
+    headers["X-Nodevo-Site"]       = siteId;
+    headers["X-Nodevo-Timestamp"]  = timestamp;
+    headers["X-Nodevo-Signature"]  = signature.toString("base64");
   }
 
   const res = await fetch(url, {

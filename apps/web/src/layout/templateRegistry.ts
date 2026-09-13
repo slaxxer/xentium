@@ -8,7 +8,7 @@
  * one reason worth stating plainly:
  *
  * ⚠ A plugin bundle must register through here, not by importing `@xentium/contracts`
- * itself. Plugin bundles externalize `@web/*` onto `window.__NODEVO_HOST__` and bundle
+ * itself. Plugin bundles externalize `@web/*` onto `window.__XENTIUM_HOST__` and bundle
  * everything else. Importing contracts directly gives the plugin its OWN copy of the
  * module — its own Map — and the renderer, which reads the host's copy, would never
  * see the template. It would fail silently and look like a rendering bug.
