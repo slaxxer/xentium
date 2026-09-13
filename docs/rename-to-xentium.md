@@ -78,7 +78,17 @@ In this order. Steps 2 and 3 are the ones that lose data if skipped.
    against tables that already exist), nav-item ownership, layout documents,
    settings, and every archive plus the extracted directory in the plugin store.
 3. **Install the plugin packages built under the new ids.** A plugin's own
-   bundle still carries its old id until it is rebuilt and repackaged.
+   bundle still carries its old id until it is rebuilt and repackaged. On a
+   development box, after the step above:
+
+   ```bash
+   node --env-file=.env scripts/dev-install-packaged.mjs --apply
+   ```
+
+   It exists because the normal paths refuse this on purpose: `updatePlugin` is
+   forward-only, so an install running 1.4.3 can never be moved to a freshly
+   reset 1.0.0. Order matters — archives are matched by manifest id, and
+   `plugins/packaged/` still holds the pre-rename artifacts.
 4. Start the services and confirm each plugin is enabled and its pages render.
 
 ## Still outside this repo
@@ -88,7 +98,9 @@ In this order. Steps 2 and 3 are the ones that lose data if skipped.
 - **The GitHub repository**, and the `repository` fields and doc links that name
   it. GitHub redirects the old path, so this can happen at any time.
 - **The marketplace catalogue**: product ids for the five official plugins, and
-  the artifacts served for them.
+  the artifacts served for them. All five are reset to **1.0.0** — the public
+  series starts there, and each plugin's CHANGELOG says so above its
+  development history.
 - **`nodevo.io`** in the ACP's licence copy — a domain, not a string. Point it
   wherever the marketplace actually lives before changing the words.
 - **Ops names**: deploy directory, systemd units, nginx site, database role and
