@@ -7,7 +7,7 @@ import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { productIdAliases } from "./legacyPluginIds.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { getAccountToken, protocolFetch } from "./protocol-client.js";
 import { getSiteDomain, getSiteId, resolveEnvironment } from "./site-identity.js";
 
@@ -78,7 +78,7 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
  */
 async function fetchEntitlementJwt(): Promise<string> {
   throw new XentiumError({
-    code:       NEC.LICENSE_SERVER_REJECTED,
+    code:       XEC.LICENSE_SERVER_REJECTED,
     httpStatus: 410,
     message:    "Manual license keys can no longer be refreshed. Connect your marketplace account in ACP → Extensions → License.",
   });
@@ -388,7 +388,7 @@ export async function assertPluginEnableAllowed(pluginId: string, pluginName: st
     });
     if (!record?.licenseRequired) return;
     throw new XentiumError({
-      code:       NEC.LICENSE_SOURCE_UNREACHABLE,
+      code:       XEC.LICENSE_SOURCE_UNREACHABLE,
       httpStatus: 503,
       message:    `"${pluginName}" declares that it needs a licence, and the marketplace could not be reached to check. Connect this install to a marketplace account and try again.`,
     });
@@ -474,7 +474,7 @@ async function themeRefusal(
 
   if (!(await getAccountToken())) {
     return new XentiumError({
-      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+      code:       XEC.LICENSE_ACCOUNT_REQUIRED,
       httpStatus: 402,
       message:    `"${themeName}" is a paid theme. Connect your marketplace account in ACP → Extensions → Licence and every licence you own applies to this install.`,
     });
@@ -482,14 +482,14 @@ async function themeRefusal(
 
   if (licence) {
     return new XentiumError({
-      code:       NEC.LICENSE_EXPIRED,
+      code:       XEC.LICENSE_EXPIRED,
       httpStatus: 402,
       message:    `Your "${themeName}" licence is ${licence.status}. Renew it at ${url("/account/licences")} to download it again — a theme you already installed keeps working.`,
     });
   }
 
   return new XentiumError({
-    code:       NEC.LICENSE_NOT_FOUND,
+    code:       XEC.LICENSE_NOT_FOUND,
     httpStatus: 402,
     message:    `Your marketplace account does not own "${themeName}". It is available at ${url(`/themes/${themeId}`)}.`,
   });
@@ -511,14 +511,14 @@ async function themeRefusal(
 async function explainEnableRefusal(pluginId: string, pluginName: string): Promise<XentiumError> {
   const { marketplaceWebUrl } = await import("./protocol-client.js");
   const generic = new XentiumError({
-    code:       NEC.LICENSE_NOT_FOUND,
+    code:       XEC.LICENSE_NOT_FOUND,
     httpStatus: 402,
     message:    `"${pluginName}" needs a licence from your marketplace account, and this install does not have one yet.`,
   });
 
   if (!(await getAccountToken())) {
     return new XentiumError({
-      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+      code:       XEC.LICENSE_ACCOUNT_REQUIRED,
       httpStatus: 402,
       message:    `"${pluginName}" is a paid plugin. Connect your marketplace account in ACP → Extensions → Licence and every licence you own activates for this install.`,
     });
@@ -535,7 +535,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
   const licence = owned.find((l) => l.product.kind === "plugin" && l.product.id === pluginId);
   if (!licence) {
     return new XentiumError({
-      code:       NEC.LICENSE_NOT_FOUND,
+      code:       XEC.LICENSE_NOT_FOUND,
       httpStatus: 402,
       message:    `Your marketplace account does not own "${pluginName}". It is available at ${marketplaceWebUrl(`/plugins/${pluginId}`)}.`,
     });
@@ -545,7 +545,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
   // admin can fix without buying anything, and the one the old message hid.
   if (!licence.activeHere && licence.seats !== null && licence.seatsUsed >= licence.seats) {
     return new XentiumError({
-      code:       NEC.LICENSE_CAP_REACHED,
+      code:       XEC.LICENSE_CAP_REACHED,
       httpStatus: 402,
       message:    `All ${licence.seats} seat${licence.seats === 1 ? "" : "s"} of your "${pluginName}" licence are in use on other installs. Free one at ${marketplaceWebUrl("/account/licences")} and enable it again.`,
     });
@@ -553,7 +553,7 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
 
   if (licence.status === "expired" || licence.status === "revoked") {
     return new XentiumError({
-      code:       NEC.LICENSE_EXPIRED,
+      code:       XEC.LICENSE_EXPIRED,
       httpStatus: 402,
       message:    `Your "${pluginName}" licence is ${licence.status}. Renew it at ${marketplaceWebUrl("/account/licences")} to enable the plugin again.`,
     });

@@ -20,7 +20,7 @@ import type {
   PaginatedResponse,
   ProductKind,
 } from "@xentium/contracts";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
@@ -129,7 +129,7 @@ class XentiumMarketplaceSource implements MarketplaceSource {
    */
   async connect(authCode: string): Promise<MarketplaceConnection> {
     if (!authCode.trim()) {
-      throw new XentiumError({ code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "An authorization code is required." });
+      throw new XentiumError({ code: XEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400, message: "An authorization code is required." });
     }
 
     // getSiteId throws when the installer never finished — deliberately, and

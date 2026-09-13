@@ -35,7 +35,7 @@
     "@xentium/contracts": "workspace:*",
     "zod": "catalog:"
   },
-  "description": "XentiumError, the NEC code registry, and the Express error middleware.",
+  "description": "XentiumError, the XEC code registry, and the Express error middleware.",
   "license": "MIT",
   "author": "Xentium",
   "repository": {

@@ -40,7 +40,7 @@ describe("LocalStorageProvider", () => {
 
   it("refuses a subdirectory that is not on the allowlist", async () => {
     await expect(storage.save("secrets", "id_rsa", Buffer.from("x"))).rejects.toMatchObject({
-      code: "NEC-API-4003",
+      code: "XEC-API-4003",
     });
   });
 
@@ -48,14 +48,14 @@ describe("LocalStorageProvider", () => {
     // "avatars-evil" starts with "avatars" as a STRING but is a different
     // directory — the check is on path segments, not string prefixes.
     await expect(storage.save("avatars-evil", "x.png", Buffer.from("x"))).rejects.toMatchObject({
-      code: "NEC-API-4003",
+      code: "XEC-API-4003",
     });
   });
 
   it("blocks traversal out of the base", async () => {
     await expect(
       storage.save(path.join("avatars", "..", ".."), "escaped.txt", Buffer.from("x")),
-    ).rejects.toMatchObject({ code: "NEC-API-4003" });
+    ).rejects.toMatchObject({ code: "XEC-API-4003" });
 
     await expect(
       storage.save("avatars", path.join("..", "..", "escaped.txt"), Buffer.from("x")),

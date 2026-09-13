@@ -48,7 +48,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { XENTIUM_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
@@ -79,14 +79,14 @@ const MAX_TEXT_ENTRY = 2_000_000;
 /**
  * Every refusal from this module.
  *
- * Its OWN code, not the generic `API_VALIDATION`: the web client resolves a NEC code to
- * a localized string when one exists, and `NEC-API-4001` has one — "Please check your
+ * Its OWN code, not the generic `API_VALIDATION`: the web client resolves a XEC code to
+ * a localized string when one exists, and `XEC-API-4001` has one — "Please check your
  * input and try again." — which replaced messages like "layouts/home.json declares
  * template \"profile\"" with something an admin cannot act on. A package is rejected for
  * a specific, nameable reason, and that reason is the whole value of the response.
  */
 const themeError = (message: string) =>
-  new XentiumError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
+  new XentiumError({ code: XEC.CORE_THEME_INVALID, httpStatus: 422, message });
 
 /**
  * Zod issues, with the FIELD each one is about.
@@ -1015,7 +1015,7 @@ export const themeService = {
     const row = await prisma.theme.findUnique({ where: { id } });
     if (!row) {
       throw new XentiumError({
-        code: NEC.API_NOT_FOUND, httpStatus: 404,
+        code: XEC.API_NOT_FOUND, httpStatus: 404,
         message: `No theme "${id}" is installed here.`,
       });
     }
@@ -1045,7 +1045,7 @@ export const themeService = {
     if (!row) return;
     if (row.active) {
       throw new XentiumError({
-        code: NEC.API_CONFLICT, httpStatus: 409,
+        code: XEC.API_CONFLICT, httpStatus: 409,
         message: `"${row.name}" is the active theme. Switch to another one before removing it.`,
       });
     }

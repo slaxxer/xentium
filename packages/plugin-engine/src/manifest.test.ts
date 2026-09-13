@@ -57,9 +57,9 @@ describe("validateManifest", () => {
     ).toThrow(/supports Xentium up to 1\.0/);
   });
 
-  it("reports incompatibility with the plugin NEC code", () => {
+  it("reports incompatibility with the plugin XEC code", () => {
     expect(() => validateManifest({ ...base, minXentiumVersion: "9.0" }, "1.0.0")).toThrow(
-      expect.objectContaining({ code: "NEC-PLUGIN-2030", httpStatus: 422 }),
+      expect.objectContaining({ code: "XEC-PLUGIN-2030", httpStatus: 422 }),
     );
   });
 

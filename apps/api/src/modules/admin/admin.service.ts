@@ -1020,7 +1020,7 @@ export const adminService = {
     const { page, limit, severity, domain } = opts;
     const where: any = {};
     if (severity) where.severity = severity;
-    if (domain)   where.code = { startsWith: `NEC-${domain.toUpperCase()}-` };
+    if (domain)   where.code = { startsWith: `XEC-${domain.toUpperCase()}-` };
     return paginate(page, limit,
       (skip, take) => prisma.errorLog.findMany({ where, orderBy: { createdAt: "desc" }, skip, take }),
       () => prisma.errorLog.count({ where }),

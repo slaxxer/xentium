@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { notificationService } from "../notifications/notification.service.js";
 import type { AwardedBadge, BadgeHolder, BadgeRow } from "./badges.types.js";
@@ -125,7 +125,7 @@ export const badgesService = {
     const badge = await this.mustExist(id);
     if (badge.isSystem) {
       throw new XentiumError({
-        code: NEC.API_VALIDATION, httpStatus: 400,
+        code: XEC.API_VALIDATION, httpStatus: 400,
         message: "A system badge cannot be deleted",
       });
     }

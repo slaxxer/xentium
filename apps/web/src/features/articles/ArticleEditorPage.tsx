@@ -384,7 +384,7 @@ export function ArticleEditorPage() {
       : publishMut.isPending ? t("editor.publishing") : t("editor.publish");
 
   // Editing an article you don't own and aren't staff for — bounce to the
-  // reader. The backend would refuse the save anyway (NEC-PERM-1001); this
+  // reader. The backend would refuse the save anyway (XEC-PERM-1001); this
   // just stops you from seeing the editor chrome.
   if (isEdit && existingQuery.data && !canEditThisArticle) {
     return <Navigate to={`/articles/${existingQuery.data.slug}`} replace />;

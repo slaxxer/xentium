@@ -37,7 +37,7 @@ import {
 } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { memoTtl } from "../../shared/utils/memoTtl.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 
@@ -163,7 +163,7 @@ function isUniqueViolation(e: unknown): boolean {
  */
 async function staleWrite(selector: LayoutSelector): Promise<XentiumError> {
   return new XentiumError({
-    code: NEC.API_CONFLICT,
+    code: XEC.API_CONFLICT,
     httpStatus: 409,
     message: "This layout changed since you opened it.",
     details: { version: await draftVersion(selector) },
@@ -181,7 +181,7 @@ async function staleWrite(selector: LayoutSelector): Promise<XentiumError> {
 function assertTemplateKnown(templateKey: TemplateKey) {
   if (!isKnownTemplate(templateKey)) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `Unknown template "${templateKey}". A plugin template needs its plugin enabled.`,
     });
   }
@@ -192,7 +192,7 @@ function assertVariantAllowed({ templateKey, variant }: LayoutSelector) {
   if (variant === DEFAULT_VARIANT) return;
   if (!templateAcceptsVariants(templateKey)) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `"${templateKey}" does not support per-instance layouts.`,
     });
   }
@@ -204,7 +204,7 @@ function assertRegionsValid(doc: LayoutDocument) {
   const unknown = Object.keys(doc.regions).filter((r) => !declared.has(r));
   if (unknown.length > 0) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `Unknown region(s) for "${doc.templateKey}": ${unknown.join(", ")}`,
     });
   }
@@ -218,7 +218,7 @@ function assertRegionsValid(doc: LayoutDocument) {
   });
   if (treeProblems.length > 0) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `Invalid block tree in "${doc.templateKey}": ${treeProblems.join(" ")}`,
     });
   }
@@ -229,7 +229,7 @@ function assertRegionsValid(doc: LayoutDocument) {
   const missing = missingRequiredBlocks(doc.templateKey, doc);
   if (missing.length > 0) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `"${doc.templateKey}" cannot be saved without: ${missing.join(", ")}`,
     });
   }
@@ -384,13 +384,13 @@ export const layoutService = {
     const parsed = layoutDocumentSchema.safeParse(raw);
     if (!parsed.success) {
       throw new XentiumError({
-        code: NEC.API_VALIDATION, httpStatus: 422,
+        code: XEC.API_VALIDATION, httpStatus: 422,
         message: `Invalid layout document: ${parsed.error.issues.map((i) => i.message).join("; ")}`,
       });
     }
     if (parsed.data.templateKey !== selector.templateKey) {
       throw new XentiumError({
-        code: NEC.API_VALIDATION, httpStatus: 422,
+        code: XEC.API_VALIDATION, httpStatus: 422,
         message: `Document is for "${parsed.data.templateKey}", not "${selector.templateKey}".`,
       });
     }

@@ -12,7 +12,7 @@ import { logger } from "../../infrastructure/logging/logger.js";
  * about betas that no site without one could remove.
  *
  * A guard THROWS to refuse. It never returns a boolean: the refusal carries the
- * NEC code and the message the client shows, and those belong to the plugin that
+ * XEC code and the message the client shows, and those belong to the plugin that
  * knows why it said no.
  *
  * Every hook is optional — a guard implements only the moments it cares about.
@@ -93,7 +93,7 @@ class AuthGuardRegistry {
   }
 
   /** Any guard may refuse. The FIRST throw wins and propagates untouched, so the
-   *  client gets that plugin's NEC code rather than a core-flavoured wrapper. */
+   *  client gets that plugin's XEC code rather than a core-flavoured wrapper. */
   async beforeLogin(req: AuthGuardRequest & { userId: string; isStaff: boolean }): Promise<void> {
     for (const g of this.all()) await g.beforeLogin?.(req);
   }

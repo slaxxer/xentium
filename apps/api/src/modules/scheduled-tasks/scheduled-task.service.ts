@@ -3,7 +3,7 @@ import type { ScheduledTask } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import {
   previewRuns,
   resolveCronPattern,
@@ -27,20 +27,20 @@ function resolveAction(actionKey: string) {
   const action = getAction(actionKey);
   if (!action) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `Unknown action "${actionKey}".`,
     });
   }
   return action;
 }
 
-/** Validate params against the action's own schema (NEC-API-4001 on failure). */
+/** Validate params against the action's own schema (XEC-API-4001 on failure). */
 function validateParams(actionKey: string, params: unknown) {
   const action = resolveAction(actionKey);
   const parsed = action.params.safeParse(params ?? {});
   if (!parsed.success) {
     throw new XentiumError({
-      code: NEC.API_VALIDATION, httpStatus: 422,
+      code: XEC.API_VALIDATION, httpStatus: 422,
       message: `Invalid parameters for "${action.label}": ${parsed.error.issues.map(i => i.message).join("; ")}`,
     });
   }
@@ -54,7 +54,7 @@ function minIntervalFor(actionKey: string): number {
 
 /**
  * Push a task's schedule into BullMQ. Idempotent; validates the resolved cron
- * (throws NEC-QUEUE-5001) BEFORE upserting, so a rejected schedule never
+ * (throws XEC-QUEUE-5001) BEFORE upserting, so a rejected schedule never
  * reaches Redis. Also called by the boot reconcile.
  */
 export async function applyTaskSchedule(task: ScheduledTask): Promise<void> {

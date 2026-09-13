@@ -23,7 +23,7 @@
  * have.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 
 const world = {
   freshness:   "fresh" as "fresh" | "stale" | "never",
@@ -186,7 +186,7 @@ describe("the refusals it is allowed to make", () => {
   it("names the theme and where to buy it when the account owns nothing", async () => {
     world.owned = [];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
     expect(err?.httpStatus).toBe(402);
     expect(err?.message).toContain("Aurora Dark");
     expect(err?.message).toContain("https://marketplace.example/themes/aurora-dark");
@@ -195,14 +195,14 @@ describe("the refusals it is allowed to make", () => {
   it("asks an unconnected install to connect its account, not to buy again", async () => {
     world.token = null;
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_ACCOUNT_REQUIRED);
+    expect(err?.code).toBe(XEC.LICENSE_ACCOUNT_REQUIRED);
     expect(err?.message).toMatch(/Connect your marketplace account/);
   });
 
   it("says renew — and that what is installed keeps working — for a lapsed licence", async () => {
     world.owned = [licence({ status: "expired" })];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_EXPIRED);
+    expect(err?.code).toBe(XEC.LICENSE_EXPIRED);
     expect(err?.message).toMatch(/keeps working/);
   });
 

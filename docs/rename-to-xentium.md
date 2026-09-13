@@ -21,7 +21,7 @@ order an existing install has to be upgraded in.
 These look like branding and are not. Each one costs a migration, a break, or a
 silent security change, in exchange for a string no user reads.
 
-- **`ncf_` table prefix** (57 tables), **`NEC-` error codes** (106), **`nv_`
+- **`ncf_` table prefix** (57 tables), **`XEC-` error codes** (106), **`nv_`
   cookies**, **`nv-` CSS classes**, **`.nvplugin` / `.nvtheme` / `.nvstyle`**.
   Renaming the CSS prefix breaks every theme package and plugin stylesheet in
   the wild; renaming the cookies signs everyone out; renaming the codes breaks a

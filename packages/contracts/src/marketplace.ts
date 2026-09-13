@@ -136,7 +136,7 @@ export interface MarketplaceSource {
    * THE CHOKEPOINT. Asks the source "does this account own plugin P, and is there a
    * free production activation for domain D?" — and only then issues a fresh
    * domain-bound entitlement (and, in prod, an authenticated artifact URL).
-   * Throws NEC-LICENSE-9004 if the cap is hit, 9005 if no account is connected.
+   * Throws XEC-LICENSE-9004 if the cap is hit, 9005 if no account is connected.
    */
   authorizeDownload(req: DownloadRequest): Promise<AuthorizedDownload>;
 }

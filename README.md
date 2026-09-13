@@ -236,7 +236,7 @@ xentium/
 │  │     │                  extension registries (search, home-feed, nec, acp-page)
 │  │     ├─ infrastructure/ db, redis, queue, storage, email, logging
 │  │     ├─ modules/        Feature modules (auth, users, articles, moderation, …)
-│  │     ├─ shared/         errors (NEC), middleware, http, utils
+│  │     ├─ shared/         errors (XEC), middleware, http, utils
 │  │     ├─ jobs/           BullMQ job handlers
 │  │     ├─ server.ts       HTTP entry point
 │  │     └─ worker.ts       BullMQ worker entry point
@@ -244,8 +244,8 @@ xentium/
 │     └─ src/               app, pages, features, components, layouts, hooks,
 │                           lib, plugins (slot/theme registries), styles
 ├─ packages/               (@xentium/* — ↑ marks the five published to npm)
-│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, NEC, …)
-│  ├─ errors/             ↑ XentiumError, NEC registry, Express error middleware
+│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, XEC, …)
+│  ├─ errors/             ↑ XentiumError, XEC registry, Express error middleware
 │  ├─ server-kit/         ↑ Settings, pagination, secrets, rate limiting, uploads, storage
 │  ├─ auth/               ↑ Token service, password hashing, revocation, request guards
 │  ├─ plugin-engine/      ↑ Manifest validation, migration SQL guard, registry, router
@@ -279,8 +279,8 @@ that lags behind what we use ourselves.
 
 | Package | What it gives you |
 | --- | --- |
-| [`@xentium/contracts`](https://www.npmjs.com/package/@xentium/contracts) | Shared types, permission keys, pagination, and the NEC error-code registry |
-| [`@xentium/errors`](https://www.npmjs.com/package/@xentium/errors) | `XentiumError`, the NEC registry, and the Express error middleware |
+| [`@xentium/contracts`](https://www.npmjs.com/package/@xentium/contracts) | Shared types, permission keys, pagination, and the XEC error-code registry |
+| [`@xentium/errors`](https://www.npmjs.com/package/@xentium/errors) | `XentiumError`, the XEC registry, and the Express error middleware |
 | [`@xentium/server-kit`](https://www.npmjs.com/package/@xentium/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
 | [`@xentium/auth`](https://www.npmjs.com/package/@xentium/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
 | [`@xentium/plugin-engine`](https://www.npmjs.com/package/@xentium/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
@@ -329,7 +329,7 @@ appearance, and everything else CMS-shaped stays in `apps/`, and is not publishe
 > nothing ships at runtime either way.
 
 The rest of the framework is installable today and useful in a plugin now:
-`@xentium/contracts` for permission keys and NEC codes, `@xentium/errors` so your
+`@xentium/contracts` for permission keys and XEC codes, `@xentium/errors` so your
 plugin's failures come back in the same shape as core's.
 
 A plugin does **not** need `@xentium/server-kit`, `@xentium/auth` or
@@ -344,7 +344,7 @@ Full authoring walkthrough below in [Plugin development guide](#plugin-developme
 ## Architecture in a nutshell
 
 - **Modular monolith, not microservices.** Two processes in production: `server.ts` (HTTP) and `worker.ts` (BullMQ).
-- **REST-first**, Zod-validated on every endpoint. Errors use typed **NEC codes** (`NEC-AUTH-1001`, …) via a central handler.
+- **REST-first**, Zod-validated on every endpoint. Errors use typed **XEC codes** (`XEC-AUTH-1001`, …) via a central handler.
 - **Auth** — RS256 access JWT (15-min, `Authorization: Bearer`, held in memory) + rotating refresh token (httpOnly, `SameSite=Strict` cookie).
 - **The core never knows a plugin exists.** Plugins contribute through **registries** — core iterates whatever's registered and never hardcodes plugin tables, ids, or routes. Search and the home feed both follow this exact pattern.
 
@@ -469,11 +469,11 @@ facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` di
 ### Errors, validation, data
 
 - Every endpoint validates **body, params, and query** with Zod before any logic;
-  `ZodError` → `NEC-API-4001` centrally. Errors are `XentiumError` with `NEC-<DOMAIN>-<CODE>`;
+  `ZodError` → `XEC-API-4001` centrally. Errors are `XentiumError` with `XEC-<DOMAIN>-<CODE>`;
   stack traces never reach clients.
 - Core tables are `ncf_<snake_case>`; soft delete via `deletedAt` (queries default to
   excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
-- The API is locale-agnostic (machine keys + NEC codes only); only emails/notifications are
+- The API is locale-agnostic (machine keys + XEC codes only); only emails/notifications are
   server-localized.
 
 ### Security detection
@@ -495,7 +495,7 @@ registers into, remember the **worker** needs a restart to pick it up — in dev
 
 ## Plugin development guide
 
-Plugins are how you extend Xentium without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, NEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
+Plugins are how you extend Xentium without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, XEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
 
 See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@xentium/plugin-sdk`.
 
@@ -538,15 +538,15 @@ my-plugin/
 Plugins own their schema through raw-SQL migrations, tracked **separately** from
 core (Prisma) in the `nodevo_plugin_migrations` table. Every rule below is
 enforced by the host on install/enable/update — a violation aborts the operation
-with the noted `NEC-PLUGIN-*` code, so design to them from the start.
+with the noted `XEC-PLUGIN-*` code, so design to them from the start.
 
 - **DDL only.** Migration files may contain only `CREATE` / `ALTER` / `DROP` of
   `TABLE`, `INDEX`, `SEQUENCE`, `TYPE`, `FUNCTION`, `TRIGGER` (plus
   `CREATE EXTENSION`). Any DML (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/
-  `COPY`/…) is rejected → `NEC-PLUGIN-2010`. Seed data belongs in your
+  `COPY`/…) is rejected → `XEC-PLUGIN-2010`. Seed data belongs in your
   `onEnable`, not a migration.
 - **Paired up/down.** Every `NNN_name.up.sql` must ship a matching
-  `NNN_name.down.sql` → `NEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
+  `NNN_name.down.sql` → `XEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
   so down migrations are safely re-runnable.
 - **Table naming.** Core tables use the `ncf_` prefix; a plugin's schema must
   stay in its own namespace. Declare a **`tablePrefix`** (short, snake_case,
@@ -555,10 +555,10 @@ with the noted `NEC-PLUGIN-*` code, so design to them from the start.
   or alter/drop/index — begins with it. Regardless of whether you declare one,
   no plugin migration may ever touch a reserved core object (names beginning
   `ncf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
-  raise `NEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
+  raise `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
   a prefix is optional but strongly recommended — all four official plugins do.
 - **Applied migrations are immutable.** Once a migration has run, its checksum is
-  recorded; editing that file afterwards is rejected → `NEC-PLUGIN-2012`. Ship
+  recorded; editing that file afterwards is rejected → `XEC-PLUGIN-2012`. Ship
   schema changes as a **new** migration in the next version — never rewrite
   history.
 - **Updates are forward-only, matched by name.** On update the runner runs only
@@ -572,7 +572,7 @@ with the noted `NEC-PLUGIN-*` code, so design to them from the start.
 
 ### The server entry
 
-Your server entry exports a `PluginDefinition`. `onEnable(ctx)` is where you wire everything up; `onDisable` is optional (the engine auto-deregisters routes, registries, ACP pages, and NEC codes for you).
+Your server entry exports a `PluginDefinition`. `onEnable(ctx)` is where you wire everything up; `onDisable` is optional (the engine auto-deregisters routes, registries, ACP pages, and XEC codes for you).
 
 ```ts
 import type { PluginDefinition } from "@xentium/plugin-sdk";
@@ -601,10 +601,10 @@ const plugin: PluginDefinition = {
     // config pages. Secrets (API keys) are the exception: explicit Set/Remove.
     ctx.registerAcpPage({ section: "My Plugin", label: "Things", path: "/admin/things" });
 
-    // Notification types (for the preference UI) + NEC error codes (for the Error Reference)
+    // Notification types (for the preference UI) + XEC error codes (for the Error Reference)
     ctx.registerNotificationTypes(["myplugin.thing_created"]);
     ctx.registerNecCodes([
-      { code: "NEC-MYPLUGIN-6001", msg: "Thing not found", sev: "Error",
+      { code: "XEC-MYPLUGIN-6001", msg: "Thing not found", sev: "Error",
         domain: "My Plugin", desc: "…", cause: "…", fix: "…" },
     ]);
 
@@ -646,7 +646,7 @@ Everything your plugin needs is injected — you never import core internals:
 | `prisma` | the host Prisma client (use raw SQL for your own tables) |
 | `queues` | BullMQ queues — enqueue jobs; the core worker processes them |
 | `middleware` | `requireAuth`, `optionalAuth`, `enforcePostLength` |
-| `errors` | `XentiumError`, `NEC` |
+| `errors` | `XentiumError`, `XEC` |
 | `utils` | shared helpers (e.g. `resolveAvatar`) |
 | `notificationService` | dispatch notifications (or use `ctx.notify(...)`) |
 | `env`, `logger` | validated config + Pino logger |
@@ -707,7 +707,7 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 ```
 
 > **Registrations are in-memory.** Everything `onEnable` registers (routes, ACP pages,
-> content sources, security scans/claims, NEC codes) lives in the host process's registries
+> content sources, security scans/claims, XEC codes) lives in the host process's registries
 > and is rebuilt at startup from the `ncf_installed_plugins` table. The lifecycle endpoints
 > keep memory and DB in sync — but if plugin state is changed **underneath a running
 > process** (manual row deletion, a DB reset in dev), the process keeps serving stale

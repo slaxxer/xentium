@@ -39,7 +39,7 @@ ctx.registerRoutes(r);
 ```
 
 ⚠ Core injects an **enabled check** in front of it: while your plugin is disabled every
-one of its routes answers `404 NEC-PLUGIN-2020`, without your code running. A route
+one of its routes answers `404 XEC-PLUGIN-2020`, without your code running. A route
 cannot outlive the plugin that registered it — so never point core UI at a plugin route
 without handling its absence.
 
@@ -194,12 +194,12 @@ Your error codes, so the ACP's error reference can explain them.
 
 ```ts
 ctx.registerNecCodes([{
-  code: "NEC-FORUM-6001", msg: "Thread locked", sev: "Warning",
+  code: "XEC-FORUM-6001", msg: "Thread locked", sev: "Warning",
   domain: "Forum", desc: "…", cause: "…", fix: "…",
 }]);
 ```
 
-⚠ Namespace the domain with your plugin. `NEC-API-*` and the other core domains are
+⚠ Namespace the domain with your plugin. `XEC-API-*` and the other core domains are
 core's.
 
 ### `ctx.notify(opts)`
@@ -261,7 +261,7 @@ See **`docs/security-detection.md`**. A plugin claims a core baseline pattern to
 
 ## What core gives you back
 
-`ctx.host` carries `prisma`, `queues`, `env`, `logger`, `errors` (`XentiumError`, `NEC`),
+`ctx.host` carries `prisma`, `queues`, `env`, `logger`, `errors` (`XentiumError`, `XEC`),
 `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`), `utils`
 (`resolveAvatar`, `sanitizeRichText`, `cron`), `progression.getEffectiveGroupId`,
 `notificationService` and `security`.

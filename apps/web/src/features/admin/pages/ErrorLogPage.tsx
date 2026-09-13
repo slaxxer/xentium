@@ -103,7 +103,7 @@ export function ErrorLogPage() {
             <div style={{ display:"flex", gap:6, alignItems:"center", marginRight:6 }}>
               <span style={{ fontSize:11, color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
               <button type="button" className="btn-ghost btn-sm" title="Throw an unhandled 500 (critical) — trips the fatal halt" onClick={() => simulate("critical")}>500</button>
-              <button type="button" className="btn-ghost btn-sm" title="Throw a XentiumError 500 — trips the fatal halt" onClick={() => simulate("xentium500")}>NEC 500</button>
+              <button type="button" className="btn-ghost btn-sm" title="Throw a XentiumError 500 — trips the fatal halt" onClick={() => simulate("xentium500")}>XEC 500</button>
               <button type="button" className="btn-ghost btn-sm" title="Throw a 404 — toast only, no halt" onClick={() => simulate("notfound")}>404</button>
             </div>
           )}

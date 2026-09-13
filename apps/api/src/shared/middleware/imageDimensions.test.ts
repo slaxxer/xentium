@@ -44,7 +44,7 @@ describe("requireMaxDimensions", () => {
   it("refuses an image that is too wide", () => {
     const err = run(png(64, 32)).mock.calls[0]![0] as any;
     expect(err).toBeInstanceOf(XentiumError);
-    expect(err.code).toBe("NEC-STORE-7005");
+    expect(err.code).toBe("XEC-STORE-7005");
     expect(err.httpStatus).toBe(422);
   });
 

@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { XentiumError } from "../errors/XentiumError.js";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { isFeatureEnabled, type FeatureKey } from "../../modules/site/site.service.js";
 
 /** Hard-gates a route group behind a core feature flag. When the feature is
@@ -11,7 +11,7 @@ export function requireFeature(feature: FeatureKey): RequestHandler {
       .then((on) =>
         on
           ? next()
-          : next(new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "Not found" })),
+          : next(new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "Not found" })),
       )
       .catch(next);
   };

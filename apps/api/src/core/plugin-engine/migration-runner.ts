@@ -4,7 +4,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { validateMigrationSql, splitSqlStatements } from "./sql-validator.js";
 import type { PluginManifest } from "./manifest-validator.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 function checksum(sql: string): string {
   return crypto.createHash("sha256").update(sql).digest("hex");
@@ -25,7 +25,7 @@ export async function runUpMigrations(
   for (const name of migrations) {
     const entryPath = `migrations/${name}.up.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql  = entry.getData().toString("utf8");
     const hash = checksum(sql);
@@ -35,7 +35,7 @@ export async function runUpMigrations(
     const existing = await prisma.xentiumPluginMigration.findUnique({ where: { id: mid } });
     if (existing) {
       if (existing.checksum !== hash) {
-        throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_CHECKSUM, httpStatus: 409, message: `Migration ${name} has been modified since it was applied (checksum mismatch).` });
+        throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_CHECKSUM, httpStatus: 409, message: `Migration ${name} has been modified since it was applied (checksum mismatch).` });
       }
       continue;
     }
@@ -85,7 +85,7 @@ export async function runNewUpMigrations(
 
     const entryPath = `migrations/${name}.up.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
     validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
@@ -120,7 +120,7 @@ export async function runDownMigrations(
 
     const entryPath = `migrations/${name}.down.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
     validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
@@ -180,10 +180,10 @@ export async function forceCleanupSchema(
 export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): void {
   for (const name of manifest.migrations) {
     if (!zip.getEntry(`migrations/${name}.up.sql`)) {
-      throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
+      throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
     }
     if (!zip.getEntry(`migrations/${name}.down.sql`)) {
-      throw new XentiumError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
+      throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
     }
     // Pre-validate SQL (DDL-only + naming)
     const policy = { tablePrefix: manifest.tablePrefix };

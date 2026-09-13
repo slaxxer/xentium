@@ -2,11 +2,11 @@
 
 **Shared contracts for the Xentium framework.**
 
-Types, constants and the NEC error-code registry shared by every
+Types, constants and the XEC error-code registry shared by every
 Xentium-framework application and by the browser.
 
 Deliberately dependency-light and runtime-free where possible: the frontend
-imports the same NEC codes the server emits, which is what lets the API stay
+imports the same XEC codes the server emits, which is what lets the API stay
 locale-agnostic — a client branches on the code and localizes the message
 itself.
 

@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 import { uniqueSlug, slugify } from "@xentium/sdk";
 import { tiptapToPlain } from "../../shared/utils/tiptapPlain.js";
@@ -163,7 +163,7 @@ export const articleService = {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
@@ -171,7 +171,7 @@ export const articleService = {
 
     if (existing.authorId !== viewerId && !viewerCanEditAny) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot edit this article",
       });
@@ -250,7 +250,7 @@ export const articleService = {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
@@ -305,14 +305,14 @@ export const articleService = {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (!viewerCanEditAny) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot unpublish",
       });
@@ -329,14 +329,14 @@ export const articleService = {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (existing.authorId !== viewerId && !viewerCanDeleteAny) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot delete this article",
       });
@@ -355,7 +355,7 @@ export const articleService = {
     const article = await articleRepository.findBySlug(slug);
     if (!article || !canViewArticle(article, viewerId, viewerCanEditAny)) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
@@ -409,14 +409,14 @@ export const articleService = {
     const article = await articleRepository.findById(articleId);
     if (!article) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (article.authorId !== viewerId && !viewerCanEditAny) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot view revisions",
       });
@@ -433,14 +433,14 @@ export const articleService = {
     const existing = await articleRepository.findById(articleId);
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (existing.authorId !== viewerId && !viewerCanEditAny) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot edit this article",
       });

@@ -36,7 +36,7 @@ export type {
   PluginRouter,
   PluginManifest,
   PermissionDeclaration,
-  NecCodeDeclaration,
+  XecCodeDeclaration,
   NotifyOptions,
 } from "@xentium/plugin-kit";
 
@@ -256,7 +256,7 @@ export interface RegistrationStatusPatch {
  * beta, an allow-list, a paid seat. Implement only the moments you care about.
  *
  * Refuse by THROWING a `XentiumError`. A guard never returns a boolean, because a
- * refusal carries the NEC code and the message the client shows, and those
+ * refusal carries the XEC code and the message the client shows, and those
  * belong to whoever knows why the answer was no.
  *
  * `beforeLogin` and `beforeRegister` propagate their error — that is the point.

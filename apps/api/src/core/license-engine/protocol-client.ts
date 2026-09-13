@@ -24,7 +24,7 @@ import { logger } from "../../infrastructure/logging/logger.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC, type NecCode } from "../../shared/errors/nec.js";
+import { XEC, type XecCode } from "../../shared/errors/xec.js";
 import { getSiteId } from "./site-identity.js";
 
 /** The one marketplace source id core ships with. */
@@ -130,33 +130,33 @@ export function marketplaceWebUrl(path = "/"): string {
  * "no free seat" and "that code expired" are things an admin can act on, and
  * flattening them into one generic failure is how support tickets are made.
  */
-const KNOWN_CODES = new Set<string>(Object.values(NEC));
+const KNOWN_CODES = new Set<string>(Object.values(XEC));
 
 async function protocolError(res: Response): Promise<XentiumError> {
   const body = await res.json().catch(() => ({})) as { error?: { message?: string; code?: string }; message?: string };
   const message = body.error?.message ?? body.message ?? `Marketplace returned ${res.status}`;
 
   if (res.status >= 500) {
-    return new XentiumError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message });
+    return new XentiumError({ code: XEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message });
   }
 
-  // Both halves speak NEC, so prefer the code the marketplace NAMED over one
+  // Both halves speak XEC, so prefer the code the marketplace NAMED over one
   // guessed from the status. A 403 is "lapsed updates" or "you are signing for
   // another install" depending on the call, and flattening them loses the one
   // thing the ACP's error reference can explain. Unknown codes fall through:
   // a newer marketplace must not be able to inject an unrecognised one.
   const named = body.error?.code;
   if (named && KNOWN_CODES.has(named)) {
-    return new XentiumError({ code: named as NecCode, httpStatus: res.status, message });
+    return new XentiumError({ code: named as XecCode, httpStatus: res.status, message });
   }
 
-  const code: NecCode =
-      res.status === 401 ? NEC.LICENSE_ACCOUNT_REQUIRED
-    : res.status === 403 ? NEC.LICENSE_TOKEN_INVALID
-    : res.status === 402 ? NEC.LICENSE_CAP_REACHED
-    : res.status === 409 ? NEC.LICENSE_DOMAIN_MISMATCH
-    : res.status === 404 ? NEC.LICENSE_NOT_FOUND
-    : NEC.LICENSE_SERVER_REJECTED;
+  const code: XecCode =
+      res.status === 401 ? XEC.LICENSE_ACCOUNT_REQUIRED
+    : res.status === 403 ? XEC.LICENSE_TOKEN_INVALID
+    : res.status === 402 ? XEC.LICENSE_CAP_REACHED
+    : res.status === 409 ? XEC.LICENSE_DOMAIN_MISMATCH
+    : res.status === 404 ? XEC.LICENSE_NOT_FOUND
+    : XEC.LICENSE_SERVER_REJECTED;
 
   return new XentiumError({ code, httpStatus: res.status, message });
 }
@@ -211,7 +211,7 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
   const token = signed || optionalToken ? await getAccountToken() : null;
   if (signed && !optionalToken && !token) {
     throw new XentiumError({
-      code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400,
+      code: XEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400,
       message: "No marketplace account is connected. Connect one in ACP → Extensions → License.",
     });
   }
@@ -245,7 +245,7 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
 
   if (!res) {
     throw new XentiumError({
-      code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503,
+      code: XEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503,
       message: "Could not reach the marketplace.",
     });
   }

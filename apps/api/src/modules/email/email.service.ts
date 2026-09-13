@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { getSetting } from "../../shared/utils/settings.js";
 import {
   EMAIL_TEMPLATE_DEFAULTS,
@@ -55,7 +55,7 @@ export const emailAdminService = {
 
   async getTemplate(key: EmailTemplateKey) {
     const def = EMAIL_TEMPLATE_DEFAULTS[key];
-    if (!def) throw new XentiumError({ code: NEC.EMAIL_TEMPLATE_UNKNOWN, httpStatus: 404, message: "Unknown template" });
+    if (!def) throw new XentiumError({ code: XEC.EMAIL_TEMPLATE_UNKNOWN, httpStatus: 404, message: "Unknown template" });
     const eff = await getEffectiveTemplate(key);
     return { key, ...eff, placeholders: def.placeholders, defaultSubject: def.subject, defaultBody: def.body };
   },
@@ -88,7 +88,7 @@ export const emailAdminService = {
   async sendTest(to: string, key: EmailTemplateKey) {
     if (!(await isEmailConfigured())) {
       throw new XentiumError({
-        code: NEC.EMAIL_NOT_CONFIGURED,
+        code: XEC.EMAIL_NOT_CONFIGURED,
         httpStatus: 400,
         message: "No SMTP host configured.",
       });
@@ -97,7 +97,7 @@ export const emailAdminService = {
     const check = await verifySmtp();
     if (!check.ok) {
       throw new XentiumError({
-        code: NEC.EMAIL_SEND_FAILED,
+        code: XEC.EMAIL_SEND_FAILED,
         httpStatus: 502,
         message: `SMTP connection failed: ${check.error ?? "unknown"}`,
       });
@@ -107,7 +107,7 @@ export const emailAdminService = {
       await sendEmail(to, subject, html);
     } catch (e) {
       throw new XentiumError({
-        code: NEC.EMAIL_SEND_FAILED,
+        code: XEC.EMAIL_SEND_FAILED,
         httpStatus: 502,
         message: e instanceof Error ? e.message : "Send failed",
       });

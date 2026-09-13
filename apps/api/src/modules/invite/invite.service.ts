@@ -48,18 +48,18 @@ export const inviteService = {
     await prisma.inviteCode.delete({ where: { id } });
   },
 
-  /** Validate and consume an invite code during registration. Throws NEC-AUTH errors on failure. */
+  /** Validate and consume an invite code during registration. Throws XEC-AUTH errors on failure. */
   async consume(code: string, userId: string): Promise<void> {
     const invite = await prisma.inviteCode.findUnique({ where: { code: code.toUpperCase().trim() } });
 
     if (!invite) {
-      throw new XentiumError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invalid invite code" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invalid invite code" });
     }
     if (invite.expiresAt && invite.expiresAt < new Date()) {
-      throw new XentiumError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invite code has expired" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invite code has expired" });
     }
     if (invite.useCount >= invite.maxUses) {
-      throw new XentiumError({ code: "NEC-AUTH-1021", httpStatus: 400, message: "Invite code has already been used" });
+      throw new XentiumError({ code: "XEC-AUTH-1021", httpStatus: 400, message: "Invite code has already been used" });
     }
 
     await prisma.inviteCode.update({

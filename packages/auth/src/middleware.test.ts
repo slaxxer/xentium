@@ -56,19 +56,19 @@ describe("requireAuth", () => {
   it("rejects a missing token without persisting the error", async () => {
     const { thrown, next } = await run(build().requireAuth);
     expect(next).not.toHaveBeenCalled();
-    expect(thrown).toMatchObject({ code: "NEC-AUTH-1008", httpStatus: 401, persist: false });
+    expect(thrown).toMatchObject({ code: "XEC-AUTH-1008", httpStatus: 401, persist: false });
   });
 
   it("rejects an unverifiable token without persisting", async () => {
     const mw = build({ verify: async () => { throw new Error("bad signature"); } }).requireAuth;
     const { thrown } = await run(mw, "Bearer nope");
-    expect(thrown).toMatchObject({ code: "NEC-AUTH-1009", httpStatus: 401, persist: false });
+    expect(thrown).toMatchObject({ code: "XEC-AUTH-1009", httpStatus: 401, persist: false });
   });
 
   it("rejects a VALID token whose session or user has been revoked", async () => {
     const { thrown, next } = await run(build({ revoked: true }).requireAuth, "Bearer token");
     expect(next).not.toHaveBeenCalled();
-    expect(thrown).toMatchObject({ code: "NEC-AUTH-1009" });
+    expect(thrown).toMatchObject({ code: "XEC-AUTH-1009" });
   });
 
   it("fires the presence hook without awaiting it", async () => {

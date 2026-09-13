@@ -1,7 +1,7 @@
 import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 import type { RequestHandler } from "express";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 
 /**
  * The one Redis call the limiter store makes. Declared structurally so the
@@ -40,7 +40,7 @@ export const byUserId: Options["keyGenerator"] = (req) =>
 
 /**
  * Redis-backed rate limiting with a shared store, so limits hold across every
- * process rather than per-instance. Responds with NEC-API-4290 and standard
+ * process rather than per-instance. Responds with XEC-API-4290 and standard
  * `draft-7` headers.
  *
  * Returns a factory rather than a limiter: an application builds as many as it
@@ -63,7 +63,7 @@ export function createRateLimiterFactory(deps: RateLimiterDeps) {
         prefix: keyPrefix(name) + ":",
       }),
       handler: (_req, res) =>
-        res.status(429).json({ error: { code: NEC.API_RATE_LIMIT, message: "Rate limit exceeded" } }),
+        res.status(429).json({ error: { code: XEC.API_RATE_LIMIT, message: "Rate limit exceeded" } }),
     });
   };
 }

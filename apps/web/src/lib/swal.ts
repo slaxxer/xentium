@@ -10,9 +10,9 @@ import { openDialog } from "./dialog";
 
 /**
  * Resolve a user-facing message from an API error. Prefers a localized message
- * keyed by the NEC error code (errors namespace); otherwise falls back to the
+ * keyed by the XEC error code (errors namespace); otherwise falls back to the
  * server-provided message, then the caller's fallback. No caller changes needed —
- * any error with a known NEC code is translated automatically.
+ * any error with a known XEC code is translated automatically.
  */
 export function apiErrorMessage(
   e: unknown,

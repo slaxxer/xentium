@@ -12,7 +12,7 @@
  * refused the request before this runs.
  */
 import { XentiumError } from "@xentium/errors";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { progressionService } from "../progression/progression.service.js";
 
 export interface ProfileImageCheck {
@@ -38,7 +38,7 @@ export async function assertProfileImageAllowed(
 
   if (file.kind === "cover" && limits.canUploadCover === false) {
     throw new XentiumError({
-      code:       NEC.API_FORBIDDEN,
+      code:       XEC.API_FORBIDDEN,
       httpStatus: 403,
       message:    "Your rank cannot set a cover image yet",
       // The frontend words the sentence (§60); it needs to know WHICH rung unlocks it.
@@ -48,7 +48,7 @@ export async function assertProfileImageAllowed(
 
   if (limits.maxProfileImageBytes != null && file.bytes > limits.maxProfileImageBytes) {
     throw new XentiumError({
-      code:       NEC.STORE_FILE_TOO_LARGE,
+      code:       XEC.STORE_FILE_TOO_LARGE,
       httpStatus: 413,
       message:    `Image is ${file.bytes} bytes; your rank allows ${limits.maxProfileImageBytes}`,
       details:    { bytes: file.bytes, maxBytes: limits.maxProfileImageBytes, reason: "rank" },
@@ -60,7 +60,7 @@ export async function assertProfileImageAllowed(
   const allowed = limits.allowedProfileImageTypes ?? [];
   if (allowed.length > 0 && !allowed.includes(file.mimeType)) {
     throw new XentiumError({
-      code:       NEC.STORE_TYPE_NOT_PERMITTED,
+      code:       XEC.STORE_TYPE_NOT_PERMITTED,
       httpStatus: 415,
       message:    `Your rank cannot upload ${file.mimeType}`,
       details:    { detected: file.mimeType, allowed, reason: "rank" },

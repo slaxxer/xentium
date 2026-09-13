@@ -185,7 +185,7 @@ separating them turns the endpoint into a way to enumerate unpublished releases.
 The **updates window** is the deliberate exception. A release published after
 `updatesUntil` is refused with a **403 naming the date and version**, because the customer
 *does* own the product and "renew to get 3.2" is something they can act on. Both halves
-speak NEC codes, so the instance prefers the code the marketplace named over one guessed
+speak XEC codes, so the instance prefers the code the marketplace named over one guessed
 from the status — but only codes it recognises, so a newer marketplace cannot inject an
 unknown one.
 
@@ -276,6 +276,6 @@ instance has to ask a second question rather than read it off the activation res
 that ever changes, the instance's explanation is where it will show up.
 
 An install with no `ncf_installs` row cannot connect at all — `getSiteId()` throws
-(NEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
+(XEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
 collapses every affected install into one bucket on the marketplace and, under install
 binding, becomes a licence bypass.

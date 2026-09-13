@@ -109,10 +109,10 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
     // they keep surfacing as inline toasts via the normal throw path.
     // Maintenance mode also returns 503 but is an intentional state — let the
     // MaintenanceGate render its own screen instead of the fatal overlay.
-    const isMaintenance = errObj?.code === "NEC-CORE-8010" || (detail as any)?.maintenance === true;
+    const isMaintenance = errObj?.code === "XEC-CORE-8010" || (detail as any)?.maintenance === true;
     if (res.status >= 500 && !isMaintenance) {
       fatalErrorStore.trigger({
-        code:     errObj?.code ?? `NEC-API-${res.status}`,
+        code:     errObj?.code ?? `XEC-API-${res.status}`,
         message:  errObj?.message ?? "An unexpected server error occurred.",
         severity: errObj?.severity ?? "critical",
         status:   res.status,

@@ -1,6 +1,6 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { XentiumError } from "@xentium/errors";
 import type { StorageProvider } from "./StorageProvider.js";
 
@@ -39,7 +39,7 @@ export class LocalStorageProvider implements StorageProvider {
     const ok = this.allowed.some((d) => subdir === d || subdir.startsWith(d + path.sep));
     if (!ok) {
       throw new XentiumError({
-        code: NEC.API_FORBIDDEN,
+        code: XEC.API_FORBIDDEN,
         httpStatus: 403,
         message: `Disallowed upload dir: ${subdir}`,
       });
@@ -48,7 +48,7 @@ export class LocalStorageProvider implements StorageProvider {
     const rel = path.relative(this.base, target);
     if (rel.startsWith("..") || path.isAbsolute(rel)) {
       throw new XentiumError({
-        code: NEC.API_FORBIDDEN,
+        code: XEC.API_FORBIDDEN,
         httpStatus: 403,
         message: "Path traversal blocked",
       });

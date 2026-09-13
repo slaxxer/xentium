@@ -18,7 +18,7 @@ import { appearanceService } from "../appearance/appearance.service.js";
 import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC, type NecCode } from "../../shared/errors/nec.js";
+import { XEC, type XecCode } from "../../shared/errors/xec.js";
 import { countGrants, licenseAttention } from "./licenseAttention.js";
 
 /** One coarse step in the install/update progress stream (0..100 overall). */
@@ -30,7 +30,7 @@ const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 /** Download/verify failure — a coded XentiumError so it flows through
  *  errorMiddleware in the canonical `{error:{code,…}}` shape. */
 export class ArtifactError extends XentiumError {
-  constructor(message: string, httpStatus: number, code: NecCode = NEC.MARKETPLACE_DOWNLOAD_FAILED) {
+  constructor(message: string, httpStatus: number, code: XecCode = XEC.MARKETPLACE_DOWNLOAD_FAILED) {
     super({ code, httpStatus, message });
     this.name = "ArtifactError";
   }
@@ -60,7 +60,7 @@ async function downloadAndVerifyArtifact(
   });
   if (!authorized.downloadUrl) {
     // Dev catalogue / community sources have no hosted artifact — manual upload path.
-    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400, NEC.MARKETPLACE_NO_ARTIFACT);
+    throw new ArtifactError("This source has no downloadable artifact. Upload the package manually.", 400, XEC.MARKETPLACE_NO_ARTIFACT);
   }
 
   onProgress?.({ phase: "downloading", percent: 10 });
@@ -81,7 +81,7 @@ async function downloadAndVerifyArtifact(
     received += value.length;
     if (received > MAX_ARTIFACT_BYTES) {
       await reader.cancel().catch(() => {});
-      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
+      throw new ArtifactError("Artifact exceeds the 50 MB package limit.", 502, XEC.MARKETPLACE_ARTIFACT_INVALID);
     }
     onProgress?.({
       phase:   "downloading",
@@ -95,7 +95,7 @@ async function downloadAndVerifyArtifact(
   if (authorized.sha256) {
     const digest = createHash("sha256").update(buffer).digest("hex");
     if (digest !== authorized.sha256) {
-      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
+      throw new ArtifactError("Artifact integrity check failed (sha256 mismatch). Nothing was installed.", 502, XEC.MARKETPLACE_ARTIFACT_INVALID);
     }
   }
 
@@ -106,7 +106,7 @@ async function downloadAndVerifyArtifact(
     ? themeService.validateOnly(buffer)
     : await pluginService.validateOnly(buffer);
   if (info.id !== productId) {
-    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested ${kind}.`, 502, NEC.MARKETPLACE_ARTIFACT_INVALID);
+    throw new ArtifactError(`Package manifest id "${info.id}" does not match the requested ${kind}.`, 502, XEC.MARKETPLACE_ARTIFACT_INVALID);
   }
 
   return buffer;
@@ -300,7 +300,7 @@ export const marketplaceService = {
     if (!held || held.expiresAt < Date.now()) {
       linkSecrets.delete(linkId);
       throw new XentiumError({
-        code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 404,
+        code: XEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 404,
         message: "That connection attempt is no longer in progress. Start a new one.",
       });
     }
@@ -435,7 +435,7 @@ export const marketplaceService = {
     onProgress?.({ phase: "finalizing", percent: 95 });
     // A just-bought plugin isn't in the STORED entitlement JWT yet (it only
     // refreshes monthly) — refresh now so Enable works immediately instead
-    // of failing NEC-LICENSE-9001 until the daily job. Best-effort.
+    // of failing XEC-LICENSE-9001 until the daily job. Best-effort.
     await refreshLicense().catch(() => {});
     // Refresh the update cache so a newly-installed (older) build surfaces its
     // available update right away, instead of waiting for the daily job.

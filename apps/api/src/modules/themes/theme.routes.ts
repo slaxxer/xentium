@@ -4,7 +4,7 @@ import { z } from "zod";
 import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@xentium/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { themeService } from "./theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
@@ -139,7 +139,7 @@ themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async 
 themeRouter.post("/import", guard, upload.single("file"), async (req, res, next) => {
   try {
     if (!req.file) {
-      throw new XentiumError({ code: NEC.API_VALIDATION, httpStatus: 422, message: "No file uploaded" });
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 422, message: "No file uploaded" });
     }
     // Lands in the draft — a theme rewrites every page at once, which is exactly
     // the change that should be previewed before it goes live.
