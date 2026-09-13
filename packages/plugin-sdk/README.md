@@ -37,10 +37,10 @@ re-exported here in full, so one import still gets you everything. The split
 exists so a plugin for a different Xentium-framework application has something to
 build against that does not assume a CMS.
 
-Full walkthrough: [Plugin development guide](https://github.com/slaxxer/nodevo#plugin-development-guide).
+Full walkthrough: [Plugin development guide](https://github.com/slaxxer/xentium#plugin-development-guide).
 
 ---
 
-Part of the [Xentium framework](https://github.com/slaxxer/nodevo).
+Part of the [Xentium framework](https://github.com/slaxxer/xentium).
 
 MIT © Slaxxer

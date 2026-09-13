@@ -20,6 +20,6 @@ const { requireAuth, optionalAuth } = createAuthMiddleware({
 
 ---
 
-Part of the [Xentium framework](https://github.com/slaxxer/nodevo). Xentium is a framework with the Xentium CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/xentium). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

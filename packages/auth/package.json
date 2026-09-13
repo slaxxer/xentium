@@ -37,10 +37,10 @@
   "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/auth"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/auth#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/auth#readme",
   "engines": {
     "node": ">=22.12"
   },

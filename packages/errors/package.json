@@ -40,10 +40,10 @@
   "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/errors"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/errors#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/errors#readme",
   "engines": {
     "node": ">=22.12"
   },

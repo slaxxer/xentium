@@ -24,10 +24,10 @@
   "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/plugin-sdk"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/plugin-sdk#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/plugin-sdk#readme",
   "engines": {
     "node": ">=22.12"
   },
