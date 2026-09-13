@@ -35,7 +35,8 @@
     "migrationHistory": "Histórico de migrações",
     "about": "Sobre",
     "email": "E-mail",
-    "badges": "Emblemas"
+    "badges": "Emblemas",
+    "composer": "Editor"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -2232,15 +2233,7 @@
     "eyebrow": "Comunidade",
     "title": "Emblemas",
     "subtitle": "O que este site pode conceder. Quem tem o quê está na página de cada membro.",
-    "sections": "Emblemas",
-    "secCatalogue": "Catálogo",
-    "secAwarding": "Concessão",
-    "catalogueTitle": "Catálogo de emblemas",
-    "catalogueSub": "O que este site pode conceder. Um emblema aparece em cada cartão de quem o tem.",
     "new": "Novo emblema",
-    "empty": "Ainda não há emblemas. Cria um para começares a concedê-los.",
-    "createTitle": "Novo emblema",
-    "editTitle": "Editar emblema",
     "namePreview": "Emblema sem título",
     "fieldName": "Nome",
     "fieldNameDesc": "Como o emblema se chama nos cartões e nas dicas.",
@@ -2257,32 +2250,13 @@
     "saved": "Emblema guardado",
     "created": "Emblema criado",
     "deleted": "Emblema eliminado",
-    "awardTitle": "Conceder um emblema",
-    "awardSub": "Concede um emblema a um membro, ou retira-o.",
-    "awardNoneYet": "Cria primeiro um emblema — ainda não há nada para conceder.",
-    "awardWhich": "Emblema",
-    "awardWhichDesc": "Que emblema conceder.",
-    "awardNote": "Motivo",
-    "awardNoteDesc": "Opcional. Aparece na dica em vez da descrição.",
-    "awardNotePlaceholder": "Pela caça aos erros de 2026",
-    "awardTo": "Membro",
-    "awardToDesc": "Procura por nome de utilizador. A concessão é imediata.",
-    "awardSearch": "Procurar membros…",
-    "grant": "Conceder",
-    "alreadyHas": "Já o tem",
-    "noUsers": "Nenhum membro corresponde.",
-    "awarded": "Emblema concedido",
     "revoke": "Retirar este emblema",
     "noHolders": "Ainda ninguém tem este emblema.",
-    "holders": "Detentores ({{count}})",
-    "holdersShort": "{{count}} concedidos",
-    "save": "Guardar",
+    "save": "Guardar alterações",
     "cancel": "Cancelar",
     "edit": "Editar",
     "delete": "Eliminar",
-    "rewardTitle": "Sistema de recompensas",
     "rewardToggle": "Conquistar este emblema automaticamente",
-    "rewardNote": "Desligado, concedes o emblema tu. Ligado, recebe-o quem cumprir todos os requisitos abaixo — e não volta a ser retirado.",
     "rewardEmpty": "Sem requisitos definidos, por isso ainda ninguém o pode conquistar.",
     "metric": {
       "articles": "Artigos",
@@ -2291,7 +2265,99 @@
       "followers": "Seguidores",
       "forum.posts": "Mensagens do fórum",
       "forum.threads": "Tópicos do fórum"
-    }
+    },
+    "statBadges": "emblemas",
+    "statAwarded": "concedidos",
+    "searchPlaceholder": "Procurar nome ou chave",
+    "sort": "Ordenar",
+    "filter": {
+      "all": "Todos",
+      "auto": "Automáticos",
+      "manual": "À mão"
+    },
+    "sortBy": {
+      "order": "Ordem",
+      "name": "Nome",
+      "holders": "Detentores"
+    },
+    "group": {
+      "auto": "Conquistados automaticamente",
+      "manual": "Concedidos à mão"
+    },
+    "groupNote": {
+      "auto": "A passagem de meia em meia hora concede-os a quem cumprir todos os requisitos.",
+      "manual": "Estes dás tu na página do membro. Nada os concede por si."
+    },
+    "empty": {
+      "auto": "Ainda não há nada conquistado automaticamente",
+      "manual": "Nenhum emblema dado à mão"
+    },
+    "emptyNote": {
+      "auto": "Liga o sistema de recompensas dentro de um emblema para que seja concedido a partir de limites como artigos ou gostos.",
+      "manual": "Cria um para o que queres decidir tu: um agradecimento, um caso único, uma escolha da equipa."
+    },
+    "emptyAct": {
+      "auto": "Novo emblema automático",
+      "manual": "Novo emblema"
+    },
+    "emptyFiltered": "Nenhum emblema corresponde a essa procura.",
+    "system": "Sistema",
+    "noDescription": "Sem descrição",
+    "autoSub": "Automático · {{list}}",
+    "rewardEmptyShort": "Automático · sem requisitos definidos",
+    "showHolders": "Ver quem o tem",
+    "close": "Fechar",
+    "holdersLoading": "A carregar detentores…",
+    "holdersShort_one": "1 detentor",
+    "holdersShort_other": "{{count}} detentores",
+    "wayAuto": "conquistado automaticamente",
+    "wayManual": "dado à mão",
+    "heldEarned": "Conquistado automaticamente",
+    "heldGiven": "Dado por um administrador",
+    "heldGivenFor": "Dado por um administrador · «{{note}}»",
+    "drawerFoot": "Conceder faz-se na página do membro: procura o membro e dá-lhe o emblema aí. Retirar aqui tem efeito imediato.",
+    "revoked": "Emblema retirado",
+    "deleteTitle": "Eliminar «{{name}}»?",
+    "deleteBody_one": "Um membro tem-no. Eliminar o emblema leva essa concessão com ele, e aqui não há como a devolver.",
+    "deleteBody_other": "{{count}} membros têm-no. Eliminar o emblema leva todas essas concessões com ele, e aqui não há como as devolver.",
+    "tab": {
+      "details": "Detalhes",
+      "appearance": "Aspeto",
+      "reward": "Sistema de recompensas"
+    },
+    "pane": {
+      "details": "Detalhes",
+      "appearance": "Aspeto",
+      "reward": "Sistema de recompensas"
+    },
+    "paneNote": {
+      "details": "Como o emblema se chama e como ordena. A chave é o nome por que os seeds e os plugins o tratam.",
+      "appearance": "Um emblema é um símbolo num círculo tingido — é aqui, e só aqui, que se decide o seu aspeto.",
+      "reward": "Desligado, dás este emblema tu. Ligado, a passagem concede-o a quem cumprir os requisitos."
+    },
+    "on": "Ligado",
+    "railNew": "A chave fica fixa depois de criado o emblema — o resto continua editável.",
+    "railHolders_one": "Hoje tem-no um membro.",
+    "railHolders_other": "Hoje têm-no {{count}} membros.",
+    "namePlaceholder": "Primeira publicação",
+    "keyPreview": "ainda-sem-chave",
+    "descPlaceholder": "Publicou pela primeira vez",
+    "rewardOn": "Concedido pela passagem, e nunca mais retirado.",
+    "rewardOff": "Deixa desligado e este emblema só será dado por um administrador.",
+    "requirements": "Requisitos",
+    "requirementsNote": "Todos os limites preenchidos têm de ser cumpridos.",
+    "rewardSummary": "Exige {{list}}.",
+    "and": " e ",
+    "create": "Criar emblema",
+    "footEdit": "As alterações aplicam-se na próxima vez que o emblema for desenhado.",
+    "footNew": "A chave não poderá ser alterada mais tarde.",
+    "unit": {
+      "articles": "artigos",
+      "comments": "comentários",
+      "likes": "gostos",
+      "followers": "seguidores"
+    },
+    "deleteBodyNone": "Ninguém o tem, por isso eliminá-lo não leva nenhuma concessão. Não pode ser desfeito."
   },
   "iconPicker": {
     "namePlaceholder": "star",
@@ -2303,5 +2369,24 @@
     "bundled": "Ícones incluídos",
     "noMatches": "Nenhum ícone corresponde.",
     "needsName": "Escolha primeiro um ícone — um estilo sozinho não tem a que se aplicar."
+  },
+  "composer": {
+    "eyebrow": "Aspeto",
+    "title": "Editor",
+    "subtitle": "Que ferramentas os membros têm ao escrever, e onde fica cada uma.",
+    "toolsTitle": "Ferramentas",
+    "toolsSub": "{{count}} na barra. Tudo o resto fica a um clique no menu.",
+    "barPreview": "Barra",
+    "barEmpty": "Nada na barra — os membros só terão o menu.",
+    "place": {
+      "bar": "Barra",
+      "overflow": "Menu",
+      "off": "Desligado"
+    },
+    "behaviourTitle": "Comportamento",
+    "behaviourSub": "Como o editor se comporta em todas as superfícies.",
+    "mentions": "Menções em todo o lado",
+    "mentionsDesc": "Escrever @ sugere membros em comentários, tópicos, respostas e mensagens privadas.",
+    "notSupported": "Os anexos dependem da superfície: o fórum tem um caminho de envio; os comentários de artigos, o mural e as mensagens privadas não — aí o clipe está desativado. Não há serviço de GIF configurado, por isso esse seletor não é oferecido."
   }
 }

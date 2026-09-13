@@ -371,8 +371,11 @@
   + .set-row { border-top: none; }
 }
 
-/* Master switch banner */
-.mnt-banner {
+/* ── Banner: one switch with a title, a description and an icon ─────────────
+   Introduced by the maintenance card and now shared — the badges page turns the
+   reward system on with exactly this shape. Generic name so the third page does
+   not copy it again. */
+.acp-banner {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -443,8 +446,11 @@
   &:disabled { cursor: default; opacity: 0.85; }
 }
 
-/* Segmented picker (progress mode) */
-.mnt-seg {
+/* ── Segmented picker ───────────────────────────────────────────────────────
+   One choice out of a few, inline. `.acp-seg--auto` sizes each button to its own
+   label instead of splitting the row evenly, for a toolbar rather than a row
+   control. */
+.acp-seg {
   display: flex; gap: 3px; padding: 3px; width: 100%;
   background: var(--seg-bg, var(--c-bg)); border: 1px solid var(--c-border); border-radius: var(--radius-md);
 
@@ -465,6 +471,12 @@
 
   &__row { display: flex; align-items: center; gap: 8px; }
   &__row .inp { flex: 1; min-width: 0; }
+}
+
+.acp-seg--auto {
+  width: auto;
+  background: var(--c-surface);
+  button { flex: 0 0 auto; padding: 6px 13px; }
 }
 
 .inp--sm { height: 38px; padding: 0 12px; border-radius: 11px; font-size: 13.5px; }

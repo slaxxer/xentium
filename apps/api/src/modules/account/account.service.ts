@@ -161,12 +161,21 @@ export const accountService = {
     await Promise.all(others.map((s) => revokeSessionAccessToken(s.id)));
   },
 
-  async getSessions(userId: string) {
-    return prisma.session.findMany({
+  /**
+   * The member's live sessions, newest use first.
+   *
+   * ⚠ `currentSessionId` marks the one making the request. The account page needs to
+   * say "this device" rather than offer to revoke the session the reader is using —
+   * and only the server knows which row that is, since the id lives in the caller's
+   * own token rather than in anything the browser can read back reliably.
+   */
+  async getSessions(userId: string, currentSessionId?: string) {
+    const rows = await prisma.session.findMany({
       where: { userId, revokedAt: null, expiresAt: { gt: new Date() } },
       orderBy: { lastUsedAt: "desc" },
       select: { id: true, ip: true, userAgent: true, createdAt: true, lastUsedAt: true, expiresAt: true },
     });
+    return rows.map((s) => ({ ...s, current: s.id === currentSessionId }));
   },
 
   async revokeSession(userId: string, sessionId: string) {

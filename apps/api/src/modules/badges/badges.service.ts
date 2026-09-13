@@ -3,7 +3,7 @@ import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "@nodevo/contracts";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { notificationService } from "../notifications/notification.service.js";
-import type { AwardedBadge, BadgeRow } from "./badges.types.js";
+import type { AwardedBadge, BadgeHolder, BadgeRow } from "./badges.types.js";
 
 /**
  * ⚠ `displayOrder` then `name`, everywhere a badge is listed.
@@ -54,10 +54,31 @@ export const badgesService = {
   async list(): Promise<BadgeRow[]> {
     const rows = await prisma.badge.findMany({
       orderBy: [...BADGE_ORDER],
-      select: { ...ADMIN_SELECT, _count: { select: { users: true } } },
+      select: {
+        ...ADMIN_SELECT,
+        _count: { select: { users: true } },
+        /**
+         * ⚠ Three holders, for the faces on the listing's holders button. A count
+         * cannot draw a face, and the panel that has the full list is not open yet.
+         * One extra relation query for the WHOLE page, not one per badge — which is
+         * why this is a `select` here rather than a fetch per row in the browser.
+         */
+        users: {
+          take:    3,
+          orderBy: { awardedAt: "desc" },
+          select:  { user: { select: { id: true, username: true, avatar: true } } },
+        },
+      },
     });
-    return rows.map(({ _count, criteria, ...b }) => ({
-      ...b, criteria: asCriteria(criteria), holders: _count.users,
+    return rows.map(({ _count, users = [], criteria, ...b }) => ({
+      ...b,
+      criteria: asCriteria(criteria),
+      holders:  _count.users,
+      holderPreview: users.map((u) => ({
+        id:       u.user.id,
+        username: u.user.username,
+        avatar:   u.user.avatar ? storage.publicUrl(u.user.avatar) : null,
+      })),
     }));
   },
 
@@ -237,14 +258,16 @@ export const badgesService = {
   },
 
   /** Who holds one badge — the other direction, for the catalogue's detail view. */
-  async holders(badgeId: string, limit = 50) {
+  async holders(badgeId: string, limit = 50): Promise<BadgeHolder[]> {
     await this.mustExist(badgeId);
     const rows = await prisma.userBadge.findMany({
       where:   { badgeId },
       orderBy: { awardedAt: "desc" },
       take:    limit,
       select:  {
-        awardedAt: true, note: true,
+        // ⚠ `auto` comes along: the panel says how each holder came by the badge,
+        // and "no note" does not mean "not given by a person".
+        awardedAt: true, note: true, auto: true,
         user: { select: { id: true, username: true, avatar: true } },
       },
     });
@@ -254,6 +277,7 @@ export const badgesService = {
       avatar:    r.user.avatar ? storage.publicUrl(r.user.avatar) : null,
       awardedAt: r.awardedAt.toISOString(),
       note:      r.note,
+      auto:      r.auto,
     }));
   },
 

@@ -1,12 +1,37 @@
-import { useState, useEffect, useRef } from "react";
+/**
+ * Profile — everything a visitor sees about you, beside a preview of the result.
+ *
+ * ⚠ ONE save for the whole tab, not one per card. The bio, the links and the custom
+ * fields were three forms with three buttons and three toasts, so filling in a
+ * profile meant pressing Save three times and being told three times; miss one and
+ * the work was gone. The save bar counts changed fields across all of them and
+ * writes them together.
+ *
+ * ⚠ The photo is NOT part of that. An upload is an act, not a value — it is sent
+ * the moment a file is chosen, because a picked file that waits for a Save is a file
+ * people believe they already uploaded.
+ *
+ * ⚠ The preview is the real thing, drawn from the real account: the cover, the
+ * avatar, the group badge, the join date and the counts all come from the server, so
+ * it cannot flatter. Only the bio and the links follow what is being typed, because
+ * those are the values on this page.
+ */
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { FontAwesomeIcon } from "../../../components/Icon";
+import {
+  faArrowUpFromBracket, faEye, faPuzzlePiece, faGlobe, faLink, faCodeBranch, faComments,
+} from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { useAuth } from "../../../hooks/useAuth";
 import { authStore } from "../../../lib/authStore";
 import { api } from "../../../lib/api";
-import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { AccordionSection } from "../../../components/AccordionSection";
+import { toast } from "../../../lib/toast";
+import { apiErrorMessage } from "../../../lib/swal";
 import { slotRegistry } from "../../../plugins/slotRegistry";
+import { AccountCard, AccountRow } from "../components/AccountCard";
+import { SaveBar } from "../components/SaveBar";
 
 interface FieldDef {
   id: string;
@@ -25,14 +50,34 @@ interface ProfileFieldEntry {
 
 const PRIVACY_OPTIONS = ["public", "members", "nobody"] as const;
 
+/**
+ * The three links get their own card, and their own glyphs.
+ *
+ * ⚠ Free SOLID icons, not brand marks: `@fortawesome/free-brands-svg-icons` is not a
+ * dependency of this app, and pulling a whole icon pack in for two logos is not
+ * worth the bundle. A site running a FontAwesome Pro kit gets the real marks
+ * everywhere else through `TokenIcon`.
+ */
 const LINK_KEYS = ["website", "github", "discord"];
+const LINK_ICONS: Record<string, IconDefinition> = {
+  website: faGlobe, github: faCodeBranch, discord: faComments,
+};
 
-export function ProfileTab() {
+interface Entry { value: string; privacy: string }
+type Values = Record<string, Entry>;
+
+/** Bytes as a member reads them — the rank limit is stored in bytes. */
+function readableSize(bytes: number): string {
+  return bytes >= 1_048_576
+    ? `${Math.round((bytes / 1_048_576) * 10) / 10} MB`
+    : `${Math.round(bytes / 1024)} KB`;
+}
+
+export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
   const { t } = useTranslation("account");
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [bio, setBio] = useState(user?.bio ?? "");
+  const qc = useQueryClient();
+  const fileInput = useRef<HTMLInputElement>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
 
   const { data: profileFields = [] } = useQuery<ProfileFieldEntry[]>({
@@ -40,18 +85,66 @@ export function ProfileTab() {
     queryFn: () => api.get("/account/profile-fields"),
   });
 
-  const [fieldValues, setFieldValues] = useState<Record<string, { value: string; privacy: string }>>({});
+  /** What this member's rank actually allows — the Photo hint states it. */
+  const { data: limits } = useQuery<{ maxProfileImageBytes: number | null; allowedProfileImageTypes: string[] }>({
+    queryKey: ["my-limits"],
+    queryFn:  () => api.get("/users/me/limits"),
+  });
 
+  /** The public profile, for the preview's cover and counts. Same key the profile
+   *  page uses, and the one this tab already invalidates after a save. */
+  const { data: publicProfile } = useQuery<{ coverImage: string | null }>({
+    queryKey: ["profile", user?.username],
+    queryFn:  () => api.get(`/users/${user!.username}`),
+    enabled:  !!user?.username,
+  });
+
+  // ── The form ──────────────────────────────────────────────────────────────
+
+  const saved = useMemo(() => ({
+    bio: user?.bio ?? "",
+    values: Object.fromEntries(
+      profileFields.map((e) => [e.field.id, { value: e.value, privacy: e.privacy }]),
+    ) as Values,
+  }), [user?.bio, profileFields]);
+
+  const [bio, setBio]       = useState(saved.bio);
+  const [values, setValues] = useState<Values>(saved.values);
+  const [touched, setTouched] = useState(false);
+  const [saving, setSaving]   = useState(false);
+
+  /**
+   * ⚠ Re-baseline only while UNTOUCHED. The fields and the user land at different
+   * times, so the form has to follow the server until someone types — and must
+   * never be overwritten afterwards, which is what a plain `useEffect` on the data
+   * would do the moment an unrelated query refetched.
+   */
   useEffect(() => {
-    const fields = profileFields.filter((e) => e.field.key !== "date_of_birth");
-    if (fields.length > 0) {
-      setFieldValues(
-        Object.fromEntries(
-          profileFields.map((e) => [e.field.id, { value: e.value, privacy: e.privacy }]),
-        ),
-      );
+    if (touched) return;
+    setBio(saved.bio);
+    setValues(saved.values);
+  }, [saved, touched]);
+
+  const linkFields  = profileFields.filter((e) => LINK_KEYS.includes(e.field.key));
+  const otherFields = profileFields.filter((e) => !LINK_KEYS.includes(e.field.key));
+
+  const entry = (id: string): Entry => values[id] ?? saved.values[id] ?? { value: "", privacy: "public" };
+  const setEntry = (id: string, patch: Partial<Entry>) => {
+    setTouched(true);
+    setValues((prev) => ({ ...prev, [id]: { ...entry(id), ...patch } }));
+  };
+
+  /** Changed FIELDS — bio counts as one, and a field counts once whether its value
+   *  or its visibility moved. */
+  const dirty = useMemo(() => {
+    let n = bio !== saved.bio ? 1 : 0;
+    for (const [id, e] of Object.entries(values)) {
+      const was = saved.values[id];
+      if (!was) continue;
+      if (e.value !== was.value || e.privacy !== was.privacy) n++;
     }
-  }, [profileFields]);
+    return n;
+  }, [bio, values, saved]);
 
   const avatarMutation = useMutation({
     mutationFn: (file: File) => {
@@ -63,244 +156,271 @@ export function ProfileTab() {
       if (authStore.user && authStore.token) {
         authStore.set(authStore.token, { ...authStore.user, avatar: data.url });
       }
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.username] });
-      swalToast(t("profile.photoUpdated"), "success");
+      void qc.invalidateQueries({ queryKey: ["profile", user?.username] });
+      toast.success(t("profile.photoUpdated"));
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("profile.uploadFailed"))),
+    onError: (e) => {
+      setAvatarPreview(null);   // the picked file was refused; stop showing it
+      toast.error(apiErrorMessage(e, t("profile.uploadFailed")));
+    },
   });
 
-  const bioMutation = useMutation({
-    mutationFn: (data: { bio: string }) => api.patch<{ bio: string }>("/account/profile", data),
-    onSuccess: (updated) => {
-      authStore.set(authStore.token!, { ...authStore.user!, bio: updated.bio });
-      queryClient.invalidateQueries({ queryKey: ["profile", user?.username] });
-      swalToast(t("profile.bioSaved"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e, t("profile.saveError"))),
-  });
-
-  const fieldsMutation = useMutation({
-    mutationFn: (values: Array<{ fieldId: string; value: string; privacy: string }>) =>
-      api.patch("/account/profile-fields", { values }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account-profile-fields"] });
-      swalToast(t("profile.profileInfoSaved"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e, t("profile.saveError"))),
-  });
-
-  const linksMutation = useMutation({
-    mutationFn: (values: Array<{ fieldId: string; value: string; privacy: string }>) =>
-      api.patch("/account/profile-fields", { values }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["account-profile-fields"] });
-      swalToast(t("profile.linksSaved"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e, t("profile.saveError"))),
-  });
-
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+  function pickFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    const preview = URL.createObjectURL(file);
-    setAvatarPreview(preview);
+    setAvatarPreview(URL.createObjectURL(file));
     avatarMutation.mutate(file);
   }
 
-  function handleBioSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    bioMutation.mutate({ bio });
+  async function save() {
+    setSaving(true);
+    try {
+      const fieldWrites = Object.entries(values)
+        .filter(([id, e]) => {
+          const was = saved.values[id];
+          return was && (e.value !== was.value || e.privacy !== was.privacy);
+        })
+        .map(([fieldId, e]) => ({ fieldId, value: e.value, privacy: e.privacy }));
+
+      // ⚠ Only what CHANGED is sent. Writing every field back would stamp a
+      // privacy value onto fields the member never opened.
+      await Promise.all([
+        bio !== saved.bio
+          ? api.patch<{ bio: string }>("/account/profile", { bio })
+          : Promise.resolve(null),
+        fieldWrites.length > 0
+          ? api.patch("/account/profile-fields", { values: fieldWrites })
+          : Promise.resolve(null),
+      ]);
+
+      if (bio !== saved.bio && authStore.user && authStore.token) {
+        authStore.set(authStore.token, { ...authStore.user, bio });
+      }
+      void qc.invalidateQueries({ queryKey: ["account-profile-fields"] });
+      void qc.invalidateQueries({ queryKey: ["profile", user?.username] });
+      setTouched(false);
+      toast.success(t("profile.saved"));
+    } catch (e) {
+      toast.error(apiErrorMessage(e, t("profile.saveError")));
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function handleLinksSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const values = linkFields.map((entry) => ({
-      fieldId: entry.field.id,
-      value: fieldValues[entry.field.id]?.value ?? entry.value,
-      privacy: fieldValues[entry.field.id]?.privacy ?? entry.privacy,
-    }));
-    linksMutation.mutate(values);
-  }
+  // ── Pieces of the preview ─────────────────────────────────────────────────
 
-  function handleFieldsSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const values = otherFields.map((entry) => ({
-      fieldId: entry.field.id,
-      value: fieldValues[entry.field.id]?.value ?? entry.value,
-      privacy: fieldValues[entry.field.id]?.privacy ?? entry.privacy,
-    }));
-    fieldsMutation.mutate(values);
-  }
+  const initials  = user?.username ? user.username.slice(0, 2).toUpperCase() : "?";
+  const avatarSrc = avatarPreview ?? user?.avatar ?? null;
+  const linksVisibility = (linkFields[0]?.privacy ?? "public") as typeof PRIVACY_OPTIONS[number];
 
-  function setFieldValue(fieldId: string, value: string) {
-    setFieldValues((prev) => ({
-      ...prev,
-      [fieldId]: { value, privacy: prev[fieldId]?.privacy ?? "public" },
-    }));
-  }
-
-  function setFieldPrivacy(fieldId: string, privacy: string) {
-    setFieldValues((prev) => ({
-      ...prev,
-      [fieldId]: { value: prev[fieldId]?.value ?? "", privacy },
-    }));
-  }
-
-  const initials = user?.username ? user.username.slice(0, 2).toUpperCase() : "?";
-  const avatarSrc = avatarPreview ?? (user?.avatar ? user.avatar : null);
-  const allVisibleFields = profileFields.filter((e) => e.field.key !== "date_of_birth");
-  const linkFields = allVisibleFields.filter((e) => LINK_KEYS.includes(e.field.key));
-  const otherFields = allVisibleFields.filter((e) => !LINK_KEYS.includes(e.field.key));
+  const photoHint = limits?.maxProfileImageBytes
+    ? t("profile.avatarHintLimit", { size: readableSize(limits.maxProfileImageBytes) })
+    : t("profile.avatarHint");
 
   return (
-    <section className="account-section">
-      <h2 className="account-section__title">{t("profile.title")}</h2>
-
-      <div className="security-accordion-list">
-        <AccordionSection title={t("profile.avatar")} defaultOpen={true}>
-          <div className="security-accordion__content">
-            <div className="account-avatar-section" style={{ marginBottom: 0, paddingBottom: 0, border: "none" }}>
-              <div className="account-avatar">
-                {avatarSrc ? (
-                  <img
-                    src={avatarSrc}
-                    alt={user?.username}
-                    style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
-              <div className="account-avatar-info">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/gif,image/webp"
-                  style={{ display: "none" }}
-                  onChange={handleFileChange}
-                />
-                <button
-                  type="button"
-                  className="btn-ghost btn-sm"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarMutation.isPending}
-                >
-                  {avatarMutation.isPending ? t("profile.uploading") : t("profile.changePhoto")}
-                </button>
-                <p className="account-avatar-hint">{t("profile.avatarHint")}</p>
-              </div>
+    <div className="acct-profile">
+      <div className="acct-profile__main">
+        <AccountCard title={t("profile.photo")} desc={t("profile.photoDesc")}>
+          <div className="acct-photo">
+            <span className="acct-photo__avatar">
+              {avatarSrc ? <img src={avatarSrc} alt={user?.username ?? ""} /> : initials}
+            </span>
+            <div className="acct-photo__side">
+              <input
+                ref={fileInput}
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                hidden
+                onChange={pickFile}
+              />
+              <button
+                type="button"
+                className="acct-btn acct-btn--primary"
+                onClick={() => fileInput.current?.click()}
+                disabled={avatarMutation.isPending}
+              >
+                <FontAwesomeIcon className="acct-ic" icon={faArrowUpFromBracket} />
+                {avatarMutation.isPending ? t("profile.uploading") : t("profile.uploadPhoto")}
+              </button>
+              {/* ⚠ No "Remove" button. There is no endpoint that clears an avatar —
+                  a button that cannot do its job is worse than its absence. */}
+              <span className="account-hint">{photoHint}</span>
             </div>
           </div>
-        </AccordionSection>
+        </AccountCard>
 
-        <AccordionSection title={t("profile.bioSection")}>
-          <div className="security-accordion__content">
-            <form className="account-form" onSubmit={handleBioSubmit}>
-              <div className="account-field">
-                <label className="account-label" htmlFor="bio">{t("profile.bioLabel")}</label>
-                <textarea
-                  id="bio"
-                  className="account-input account-input--textarea"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  maxLength={500}
-                  rows={4}
-                  placeholder={t("profile.bioPlaceholder")}
-                />
-                <p className="account-hint">{bio.length}/500</p>
-              </div>
-              <div className="account-actions">
-                <button type="submit" className="btn-primary" disabled={bioMutation.isPending}>
-                  {bioMutation.isPending ? t("profile.saving") : t("profile.saveBio")}
-                </button>
-              </div>
-            </form>
+        <AccountCard title={t("profile.bioSection")} desc={t("profile.bioDesc")}>
+          <textarea
+            className="account-input account-input--textarea"
+            value={bio}
+            onChange={(e) => { setTouched(true); setBio(e.target.value); }}
+            maxLength={500}
+            rows={4}
+            placeholder={t("profile.bioPlaceholder")}
+            aria-label={t("profile.bioLabel")}
+          />
+          <div className="acct-undertext">
+            <span className="account-hint">{t("profile.bioPlainOnly")}</span>
+            <span className="acct-counter">{bio.length}/500</span>
           </div>
-        </AccordionSection>
+        </AccountCard>
 
-        {slotRegistry.getAccountSections().map((s) => (
-          <AccordionSection key={s.id} title={s.label}>
-            <div className="security-accordion__content">
-              <s.component />
-            </div>
-          </AccordionSection>
-        ))}
-
-        <AccordionSection title={t("profile.links")}>
-          <div className="security-accordion__content">
-            <form onSubmit={handleLinksSubmit}>
-              {linkFields.map((entry) => {
-                const f = entry.field;
-                const current = fieldValues[f.id] ?? { value: entry.value, privacy: entry.privacy };
-                return (
-                  <div key={f.id} className="account-field">
-                    <label className="account-label" htmlFor={`lf-${f.id}`}>{f.label}</label>
+        {linkFields.length > 0 && (
+          <AccountCard
+            title={t("profile.links")}
+            desc={t("profile.linksDesc")}
+            aside={
+              // Says what the setting IS, and goes to where it is changed — the
+              // links' visibility lives with every other visibility choice.
+              <button type="button" className="acct-chiplink" onClick={() => onGoTo?.("privacy")}>
+                <FontAwesomeIcon className="acct-ic" icon={faEye} />
+                {t(`profile.linksVisible.${linksVisibility}`)}
+              </button>
+            }
+          >
+            {linkFields.map((e) => (
+              <AccountRow
+                key={e.field.id}
+                variant="link"
+                htmlFor={`lf-${e.field.id}`}
+                label={e.field.label}
+                control={
+                  <span className="acct-inputwrap">
+                    <FontAwesomeIcon className="acct-ic" icon={LINK_ICONS[e.field.key] ?? faLink} />
                     <input
-                      id={`lf-${f.id}`}
+                      id={`lf-${e.field.id}`}
                       className="account-input"
-                      type={f.type === "url" ? "url" : "text"}
-                      value={current.value}
-                      onChange={(e) => setFieldValue(f.id, e.target.value)}
-                      placeholder={f.placeholder ?? ""}
+                      type={e.field.type === "url" ? "url" : "text"}
+                      value={entry(e.field.id).value}
+                      placeholder={e.field.placeholder ?? ""}
+                      onChange={(ev) => setEntry(e.field.id, { value: ev.target.value })}
                     />
-                  </div>
-                );
-              })}
-              <p className="account-hint" style={{ marginBottom: "var(--sp-4)" }}>
-                {t("profile.linksHint")}
-              </p>
-              <div className="account-actions">
-                <button type="submit" className="btn-primary" disabled={linksMutation.isPending}>
-                  {linksMutation.isPending ? t("profile.saving") : t("profile.saveLinks")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </AccordionSection>
+                  </span>
+                }
+              />
+            ))}
+          </AccountCard>
+        )}
 
         {otherFields.length > 0 && (
-          <AccordionSection title={t("profile.profileInfo")}>
-            <div className="security-accordion__content">
-              <form onSubmit={handleFieldsSubmit}>
-                {otherFields.map((entry) => {
-                  const f = entry.field;
-                  const current = fieldValues[f.id] ?? { value: entry.value, privacy: entry.privacy };
-                  return (
-                    <div key={f.id} className="account-field account-field--with-privacy">
-                      <label className="account-label" htmlFor={`pf-${f.id}`}>{f.label}</label>
-                      <div className="account-field-row">
-                        <input
-                          id={`pf-${f.id}`}
-                          className="account-input"
-                          type={f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
-                          value={current.value}
-                          onChange={(e) => setFieldValue(f.id, e.target.value)}
-                          placeholder={f.placeholder ?? ""}
-                        />
-                        <select
-                          className="account-select account-select--privacy"
-                          value={current.privacy}
-                          onChange={(e) => setFieldPrivacy(f.id, e.target.value)}
-                          aria-label={t("profile.fieldVisibility", { label: f.label })}
-                        >
-                          {PRIVACY_OPTIONS.map((o) => (
-                            <option key={o} value={o}>{t(`profile.privacyOpt.${o}`)}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div className="account-actions">
-                  <button type="submit" className="btn-primary" disabled={fieldsMutation.isPending}>
-                    {fieldsMutation.isPending ? t("profile.saving") : t("profile.saveProfileInfo")}
-                  </button>
+          <AccountCard title={t("profile.profileInfo")} desc={t("profile.profileInfoDesc")}>
+            {otherFields.map((e) => {
+              const f = e.field;
+              const cur = entry(f.id);
+              /* ⚠ The birthday is one of these fields, not a special case: it is
+                 stored as `date_of_birth` with its own privacy, so it belongs in
+                 the list with the rest. Only its INPUT differs. */
+              const isDob = f.key === "date_of_birth";
+              return (
+                <div key={f.id} className="acct-row acct-row--field">
+                  <label className="acct-row__label" htmlFor={`pf-${f.id}`}>{f.label}</label>
+                  <input
+                    id={`pf-${f.id}`}
+                    className="account-input"
+                    type={isDob ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
+                    value={cur.value}
+                    placeholder={f.placeholder ?? ""}
+                    onChange={(ev) => setEntry(f.id, { value: ev.target.value })}
+                  />
+                  <select
+                    className="account-select"
+                    value={cur.privacy}
+                    aria-label={t("profile.fieldVisibility", { label: f.label })}
+                    onChange={(ev) => setEntry(f.id, { privacy: ev.target.value })}
+                  >
+                    {PRIVACY_OPTIONS.map((o) => (
+                      <option key={o} value={o}>{t(`profile.privacyOpt.${o}`)}</option>
+                    ))}
+                  </select>
                 </div>
-              </form>
-            </div>
-          </AccordionSection>
+              );
+            })}
+          </AccountCard>
         )}
+
+        {/* A plugin's account section — the forum's signature is the reference one.
+            ⚠ It carries its OWN save button inside, so the chip says where it comes
+            from and the save bar below leaves it alone. */}
+        {slotRegistry.getAccountSections().map((s) => (
+          <AccountCard
+            key={s.id}
+            title={s.label}
+            aside={<span className="acct-tag"><FontAwesomeIcon className="acct-ic" icon={faPuzzlePiece} />{t("profile.pluginTag")}</span>}
+          >
+            <s.component />
+          </AccountCard>
+        ))}
+
+        <SaveBar
+          dirty={dirty}
+          saving={saving}
+          onSave={() => void save()}
+          onDiscard={() => { setTouched(false); setBio(saved.bio); setValues(saved.values); }}
+        />
       </div>
-    </section>
+
+      <aside className="acct-preview">
+        <div className="acct-preview__card">
+          <div className="acct-preview__head">
+            <span>{t("profile.previewTitle")}</span>
+            <span className="acct-preview__live"><i />{t("profile.previewPublic")}</span>
+          </div>
+          <div
+            className="acct-preview__cover"
+            style={publicProfile?.coverImage
+              ? { backgroundImage: `url(${publicProfile.coverImage})` }
+              : undefined}
+          />
+          <div className="acct-preview__body">
+            <span className="acct-preview__avatar">
+              {avatarSrc ? <img src={avatarSrc} alt="" /> : initials}
+            </span>
+            <div className="acct-preview__name">
+              <strong>{user?.displayName || user?.username}</strong>
+              {user?.visibleGroups?.[0] && (
+                <span
+                  className="acct-preview__group"
+                  style={{ "--badge-color": user.visibleGroups[0].badgeColor ?? "var(--c-accent)" } as React.CSSProperties}
+                >
+                  {user.visibleGroups[0].badgeLabel ?? user.visibleGroups[0].name}
+                </span>
+              )}
+            </div>
+            <span className="acct-preview__handle">
+              @{user?.username}
+              {user?.createdAt && ` · ${t("profile.joined", {
+                date: new Date(user.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+              })}`}
+            </span>
+            <p className={`acct-preview__bio${bio.trim() ? "" : " is-empty"}`}>
+              {bio.trim() || t("profile.previewNoBio")}
+            </p>
+
+            {/* ⚠ Only links that HAVE a value, and only while they are visible to
+                someone — the preview claims to be the public view, so a hidden
+                link appearing here would be the one lie it must not tell. */}
+            {linksVisibility !== "nobody" && (
+              <div className="acct-preview__links">
+                {linkFields
+                  .filter((e) => entry(e.field.id).value.trim())
+                  .map((e) => (
+                    <span key={e.field.id} className="acct-preview__link">
+                      <FontAwesomeIcon className="acct-ic" icon={LINK_ICONS[e.field.key] ?? faLink} />
+                      {entry(e.field.id).value.replace(/^https?:\/\//, "")}
+                    </span>
+                  ))}
+              </div>
+            )}
+
+            <div className="acct-preview__stats">
+              <span><strong>{user?.followerCount ?? 0}</strong>{t("profile.statFollowers")}</span>
+              <span><strong>{user?.followingCount ?? 0}</strong>{t("profile.statFollowing")}</span>
+              <span><strong>{user?.postCount ?? 0}</strong>{t("profile.statPosts")}</span>
+            </div>
+          </div>
+        </div>
+        <p className="account-hint">{t("profile.previewNote")}</p>
+      </aside>
+    </div>
   );
 }

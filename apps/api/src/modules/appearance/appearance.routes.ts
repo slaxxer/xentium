@@ -3,7 +3,8 @@ import { z } from "zod";
 import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema,
-         DEFAULT_ICON_STYLE, isIconStyle } from "@nodevo/contracts";
+         DEFAULT_ICON_STYLE, isIconStyle,
+         COMPOSER_TOOL_IDS, COMPOSER_DEFAULT_CONFIG, resolveComposerConfig } from "@nodevo/contracts";
 import { appearanceService } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
@@ -11,10 +12,16 @@ import { prisma } from "../../infrastructure/db.js";
 import { NodevoError } from "../../shared/errors/NodevoError.js";
 import { NEC } from "../../shared/errors/nec.js";
 import { parseKitUrl } from "./iconKit.js";
-import { bustSettingsCache } from "../../shared/utils/settings.js";
+import { bustSettingsCache, getSetting } from "../../shared/utils/settings.js";
 
 export const appearanceRouter: Router = Router();
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
+
+/** ⚠ A settings row is free text. Bad JSON must fall back to the default config,
+ *  not 500 the endpoint every editor on the site waits for. */
+function safeJson(raw: string): unknown {
+  try { return JSON.parse(raw); } catch { return null; }
+}
 
 // Public — serves the active token overrides as CSS for injection in the frontend.
 // `?source=draft` renders the unpublished draft instead (used by the Style Editor's
@@ -390,6 +397,51 @@ appearanceRouter.put("/branding/icon-kit", adminGuard, async (req, res, next) =>
     });
     bustSettingsCache("appearance.icons.kit");
     res.json({ iconKitUrl: url || null });
+  } catch (err) { next(err); }
+});
+
+/**
+ * The composer's tool set.
+ *
+ * ⚠ The GET is PUBLIC and unauthenticated, like `/css` and `/branding`: every member
+ * who can write a comment needs it before their editor can draw a toolbar, and a
+ * guest reading a thread renders the same page shell.
+ *
+ * ⚠ It answers a RESOLVED config, never the raw row — the value is a settings blob
+ * that survives backup restores and hand edits, and the editor must not be handed a
+ * bar it cannot render. See `resolveComposerConfig`.
+ */
+appearanceRouter.get("/composer", async (_req, res, next) => {
+  try {
+    const row = await getSetting<string>("composer.config", "");
+    /**
+     * ⚠ NO row means the shipped default — the six tools of the redesign — not an
+     * empty resolve. `resolveComposerConfig(null)` answers "nothing in the bar",
+     * which is a legitimate ANSWER for an admin who emptied it deliberately and a
+     * broken editor for a site that never opened this page.
+     */
+    res.json(row ? resolveComposerConfig(safeJson(row)).config : COMPOSER_DEFAULT_CONFIG);
+  } catch (err) { next(err); }
+});
+
+appearanceRouter.put("/composer", adminGuard, async (req, res, next) => {
+  try {
+    const body = z.object({
+      bar:      z.array(z.enum(COMPOSER_TOOL_IDS)).max(COMPOSER_TOOL_IDS.length),
+      off:      z.array(z.enum(COMPOSER_TOOL_IDS)).max(COMPOSER_TOOL_IDS.length),
+      mentions: z.boolean(),
+    }).parse(req.body);
+
+    // Stored through the resolver, so the row on disk is already canonical:
+    // de-duplicated, unknown ids dropped, and `off` beating `bar`.
+    const { config } = resolveComposerConfig(body);
+    await prisma.setting.upsert({
+      where:  { key: "composer.config" },
+      update: { value: JSON.stringify(config) },
+      create: { key: "composer.config", value: JSON.stringify(config) },
+    });
+    bustSettingsCache("composer.config");
+    res.json(config);
   } catch (err) { next(err); }
 });
 

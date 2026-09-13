@@ -35,7 +35,8 @@
     "migrationHistory": "Migrationsverlauf",
     "about": "Über",
     "email": "E-Mail",
-    "badges": "Abzeichen"
+    "badges": "Abzeichen",
+    "composer": "Editor"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -2232,15 +2233,7 @@
     "eyebrow": "Community",
     "title": "Abzeichen",
     "subtitle": "Was diese Seite vergeben kann. Wer was trägt, steht auf der Seite des Mitglieds.",
-    "sections": "Abzeichen",
-    "secCatalogue": "Katalog",
-    "secAwarding": "Vergabe",
-    "catalogueTitle": "Abzeichen-Katalog",
-    "catalogueSub": "Was diese Seite vergeben kann. Ein Abzeichen erscheint auf jeder Karte seines Trägers.",
     "new": "Neues Abzeichen",
-    "empty": "Noch keine Abzeichen. Lege eines an, um damit zu beginnen.",
-    "createTitle": "Neues Abzeichen",
-    "editTitle": "Abzeichen bearbeiten",
     "namePreview": "Unbenanntes Abzeichen",
     "fieldName": "Name",
     "fieldNameDesc": "Wie das Abzeichen auf Karten und in Tooltips heißt.",
@@ -2257,32 +2250,13 @@
     "saved": "Abzeichen gespeichert",
     "created": "Abzeichen angelegt",
     "deleted": "Abzeichen gelöscht",
-    "awardTitle": "Abzeichen vergeben",
-    "awardSub": "Vergib ein Abzeichen an ein Mitglied – oder nimm es zurück.",
-    "awardNoneYet": "Lege zuerst ein Abzeichen an – es gibt noch nichts zu vergeben.",
-    "awardWhich": "Abzeichen",
-    "awardWhichDesc": "Welches Abzeichen vergeben wird.",
-    "awardNote": "Begründung",
-    "awardNoteDesc": "Optional. Erscheint im Tooltip anstelle der Beschreibung.",
-    "awardNotePlaceholder": "Für die Fehlerjagd 2026",
-    "awardTo": "Mitglied",
-    "awardToDesc": "Nach Benutzername suchen. Die Vergabe erfolgt sofort.",
-    "awardSearch": "Mitglieder suchen…",
-    "grant": "Vergeben",
-    "alreadyHas": "Hat es bereits",
-    "noUsers": "Keine Mitglieder gefunden.",
-    "awarded": "Abzeichen vergeben",
     "revoke": "Abzeichen zurücknehmen",
     "noHolders": "Noch niemand trägt dieses Abzeichen.",
-    "holders": "Träger ({{count}})",
-    "holdersShort": "{{count}}× vergeben",
-    "save": "Speichern",
+    "save": "Änderungen speichern",
     "cancel": "Abbrechen",
     "edit": "Bearbeiten",
     "delete": "Löschen",
-    "rewardTitle": "Belohnungssystem",
     "rewardToggle": "Dieses Abzeichen automatisch verdienen",
-    "rewardNote": "Aus vergibst du dieses Abzeichen selbst. An erhält es jeder, der alle Anforderungen unten erfüllt – und behält es dann.",
     "rewardEmpty": "Keine Anforderungen gesetzt – so kann es noch niemand verdienen.",
     "metric": {
       "articles": "Artikel",
@@ -2291,7 +2265,99 @@
       "followers": "Follower",
       "forum.posts": "Forenbeiträge",
       "forum.threads": "Themen"
-    }
+    },
+    "statBadges": "Abzeichen",
+    "statAwarded": "vergeben",
+    "searchPlaceholder": "Name oder Schlüssel suchen",
+    "sort": "Sortierung",
+    "filter": {
+      "all": "Alle",
+      "auto": "Automatisch",
+      "manual": "Von Hand"
+    },
+    "sortBy": {
+      "order": "Reihenfolge",
+      "name": "Name",
+      "holders": "Träger"
+    },
+    "group": {
+      "auto": "Automatisch verdient",
+      "manual": "Von Hand vergeben"
+    },
+    "groupNote": {
+      "auto": "Wird halbstündlich an jeden vergeben, der alle Anforderungen erfüllt.",
+      "manual": "Diese vergibst du auf der Seite des Mitglieds. Von allein kommt niemand daran."
+    },
+    "empty": {
+      "auto": "Noch wird nichts automatisch verdient",
+      "manual": "Keine handvergebenen Abzeichen"
+    },
+    "emptyNote": {
+      "auto": "Schalte in einem Abzeichen das Belohnungssystem ein, damit es ab bestimmten Schwellen – Artikel, Likes – vergeben wird.",
+      "manual": "Lege eines an für alles, was du selbst entscheiden willst: ein Dankeschön, eine Einzelvergabe, eine Auszeichnung des Teams."
+    },
+    "emptyAct": {
+      "auto": "Neues automatisches Abzeichen",
+      "manual": "Neues Abzeichen"
+    },
+    "emptyFiltered": "Kein Abzeichen passt zu dieser Suche.",
+    "system": "System",
+    "noDescription": "Keine Beschreibung",
+    "autoSub": "Automatisch · {{list}}",
+    "rewardEmptyShort": "Automatisch · keine Anforderungen gesetzt",
+    "showHolders": "Träger anzeigen",
+    "close": "Schließen",
+    "holdersLoading": "Träger werden geladen…",
+    "holdersShort_one": "1 Träger",
+    "holdersShort_other": "{{count}} Träger",
+    "wayAuto": "automatisch verdient",
+    "wayManual": "von Hand vergeben",
+    "heldEarned": "Automatisch verdient",
+    "heldGiven": "Von einem Admin vergeben",
+    "heldGivenFor": "Von einem Admin vergeben · „{{note}}“",
+    "drawerFoot": "Vergeben wird auf der Seite des Mitglieds – dort suchst du das Mitglied und gibst ihm das Abzeichen. Zurücknehmen wirkt hier sofort.",
+    "revoked": "Abzeichen zurückgenommen",
+    "deleteTitle": "„{{name}}“ löschen?",
+    "deleteBody_one": "Ein Mitglied trägt es. Mit dem Abzeichen verschwindet auch diese Vergabe – zurückholen lässt sie sich hier nicht.",
+    "deleteBody_other": "{{count}} Mitglieder tragen es. Mit dem Abzeichen verschwindet jede dieser Vergaben – zurückholen lassen sie sich hier nicht.",
+    "tab": {
+      "details": "Details",
+      "appearance": "Aussehen",
+      "reward": "Belohnungssystem"
+    },
+    "pane": {
+      "details": "Details",
+      "appearance": "Aussehen",
+      "reward": "Belohnungssystem"
+    },
+    "paneNote": {
+      "details": "Wie das Abzeichen heißt und wie es sortiert. Der Schlüssel ist der Name, unter dem Seeds und Plugins es kennen.",
+      "appearance": "Ein Abzeichen ist ein Symbol in einem getönten Kreis – hier wird sein Aussehen entschieden, sonst nirgends.",
+      "reward": "Aus vergibst du dieses Abzeichen selbst. An vergibt es der Lauf an jeden, der die Anforderungen erfüllt."
+    },
+    "on": "An",
+    "railNew": "Der Schlüssel ist nach dem Anlegen fest – alles andere bleibt änderbar.",
+    "railHolders_one": "Ein Mitglied trägt dieses Abzeichen derzeit.",
+    "railHolders_other": "{{count}} Mitglieder tragen dieses Abzeichen derzeit.",
+    "namePlaceholder": "Erster Beitrag",
+    "keyPreview": "noch-kein-schluessel",
+    "descPlaceholder": "Hat zum ersten Mal etwas geschrieben",
+    "rewardOn": "Wird vom Lauf vergeben und danach nie wieder entzogen.",
+    "rewardOff": "Bleibt es aus, vergibt dieses Abzeichen nur ein Admin.",
+    "requirements": "Anforderungen",
+    "requirementsNote": "Jede ausgefüllte Schwelle muss erfüllt sein.",
+    "rewardSummary": "Erfordert {{list}}.",
+    "and": " und ",
+    "create": "Abzeichen anlegen",
+    "footEdit": "Änderungen gelten, sobald das Abzeichen das nächste Mal gezeichnet wird.",
+    "footNew": "Der Schlüssel lässt sich später nicht ändern.",
+    "unit": {
+      "articles": "Artikel",
+      "comments": "Kommentare",
+      "likes": "Likes",
+      "followers": "Follower"
+    },
+    "deleteBodyNone": "Niemand trägt es, es geht also keine Vergabe verloren. Rückgängig machen lässt sich das nicht."
   },
   "iconPicker": {
     "namePlaceholder": "star",
@@ -2303,5 +2369,24 @@
     "bundled": "Mitgelieferte Icons",
     "noMatches": "Kein passendes Icon.",
     "needsName": "Wähle zuerst ein Icon — ein Stil allein hat nichts, worauf er wirken kann."
+  },
+  "composer": {
+    "eyebrow": "Aussehen",
+    "title": "Editor",
+    "subtitle": "Welche Werkzeuge Mitglieder beim Schreiben bekommen – und wo sie liegen.",
+    "toolsTitle": "Werkzeuge",
+    "toolsSub": "{{count}} in der Leiste. Alles andere liegt einen Klick entfernt im Ausklappmenü.",
+    "barPreview": "Leiste",
+    "barEmpty": "Nichts in der Leiste – Mitglieder haben nur das Ausklappmenü.",
+    "place": {
+      "bar": "Leiste",
+      "overflow": "Menü",
+      "off": "Aus"
+    },
+    "behaviourTitle": "Verhalten",
+    "behaviourSub": "Wie sich der Editor überall verhält.",
+    "mentions": "Erwähnungen überall",
+    "mentionsDesc": "Ein @ schlägt Mitglieder vor – in Kommentaren, Themen, Antworten und Nachrichten.",
+    "notSupported": "Anhänge hängen von der Oberfläche ab: das Forum bietet einen Upload, Artikelkommentare, die Pinnwand und Nachrichten nicht – dort ist die Klammer deaktiviert. Ein GIF-Dienst ist nicht eingerichtet, deshalb wird dieser Reiter gar nicht angeboten."
   }
 }

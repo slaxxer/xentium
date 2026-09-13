@@ -9,6 +9,7 @@
     "build": "rm -rf dist && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint src",
+    "test": "vitest run",
     "prepublishOnly": "pnpm build"
   },
   "exports": {
@@ -16,7 +17,8 @@
   },
   "devDependencies": {
     "@nodevo/config": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   },
   "dependencies": {
     "zod": "catalog:"

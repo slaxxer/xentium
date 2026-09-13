@@ -27,8 +27,17 @@ import * as webUsername from "@web/components/Username";
 // them itself. The alternative is every card selecting badge rows in its own
 // query, which for the forum means editing raw SQL in a paid plugin.
 import * as webUserBadges from "@web/components/UserBadges";
+// An icon stored as DATA — a block prop an admin picked, a badge glyph. Exposed
+// because a plugin block that declares `format: "icon"` gets the editor's picker
+// for free but has nothing to DRAW the token with: resolving pinned style →
+// site style → bundled fallback is this component's job, not the plugin's.
+import * as webTokenIcon from "@web/components/TokenIcon";
 import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
+// The composer itself, for a plugin page that wants a variant or the tools on top
+// (the forum's thread composer does). `webMiniEditor` / `webForumEditor` stay as the
+// adapters shipped bundles already import.
+import * as webComposer from "@web/components/composer/Composer";
 import * as webUseAutosave from "@web/hooks/useAutosave";
 import * as webAutosaveStatus from "@web/components/AutosaveStatus";
 // The canonical autosave indicator. `webAutosaveStatus` is an alias for it and
@@ -81,8 +90,10 @@ const HOST = {
   webUserAvatar,
   webUsername,
   webUserBadges,
+  webTokenIcon,
   webMiniEditor,
   webForumEditor,
+  webComposer,
   webUseAutosave,
   webAutosaveStatus,
   webSaveChip,

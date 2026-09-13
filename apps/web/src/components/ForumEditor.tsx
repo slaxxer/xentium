@@ -1,207 +1,71 @@
 /**
- * ForumEditor — shared rich-text editor used across all forum surfaces:
- *   Thread creation · Thread replies · Quick edit · Full editor
+ * `ForumEditor` — now a thin adapter over `Composer`.
  *
- * Toolbar groups mirror TipTap's Simple Editor example plus extras.
+ * ⚠ THE NAME AND THE PROPS ARE THE CONTRACT. This module is a host global
+ * (`__NODEVO_HOST__.webForumEditor`) that BUILT plugin bundles import — the forum
+ * plugin's new-thread, thread-reply and post-edit pages. A shipped bundle cannot be
+ * edited from this repo, so the export keeps its name, its props and its four-method
+ * handle, and all three surfaces get the redesigned editor with no plugin rebuild.
+ *
+ * ⚠ `canAttach` is TRUE here, because the forum does have an attachment endpoint —
+ * but only once the post exists (`POST /posts/:id/attachments`), so the forum's own
+ * page keeps owning the upload and the composer's paperclip only asks it to start.
+ * A caller that passes no `onAttach` gets a disabled paperclip with a reason.
  */
-import { useEffect, useImperativeHandle, useRef, useState, forwardRef } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import TextAlign from "@tiptap/extension-text-align";
-import TaskList from "@tiptap/extension-task-list";
-import TaskItem from "@tiptap/extension-task-item";
-import Link from "@tiptap/extension-link";
-import Highlight from "@tiptap/extension-highlight";
-import Subscript from "@tiptap/extension-subscript";
-import Superscript from "@tiptap/extension-superscript";
-import Placeholder from "@tiptap/extension-placeholder";
-import "./ForumEditor.scss";
-
-// ── Public handle ─────────────────────────────────────────────────────────────
+import { forwardRef, useImperativeHandle, useRef } from "react";
+import { Composer, type ComposerHandle } from "./composer/Composer";
 
 export interface ForumEditorHandle {
-  getHTML: () => string;
-  isEmpty: () => boolean;
+  getHTML:    () => string;
+  isEmpty:    () => boolean;
   setContent: (html: string) => void;
-  clear: () => void;
+  clear:      () => void;
 }
-
-// ── Toolbar helpers ───────────────────────────────────────────────────────────
-
-interface ToolBtn {
-  icon: string;
-  title: string;
-  action: (e: Editor) => void;
-  active?: (e: Editor) => boolean;
-  style?: React.CSSProperties;
-}
-
-const SEP = null;
-
-function makeTools(_e: Editor): Array<ToolBtn | null> {
-  return [
-    // History
-    { icon: "↩", title: "Undo", action: (ed) => ed.chain().focus().undo().run() },
-    { icon: "↪", title: "Redo", action: (ed) => ed.chain().focus().redo().run() },
-    SEP,
-    // Headings
-    { icon: "H1", title: "Heading 1", action: (ed) => ed.chain().focus().toggleHeading({ level: 1 }).run(), active: (ed) => ed.isActive("heading", { level: 1 }) },
-    { icon: "H2", title: "Heading 2", action: (ed) => ed.chain().focus().toggleHeading({ level: 2 }).run(), active: (ed) => ed.isActive("heading", { level: 2 }) },
-    { icon: "H3", title: "Heading 3", action: (ed) => ed.chain().focus().toggleHeading({ level: 3 }).run(), active: (ed) => ed.isActive("heading", { level: 3 }) },
-    SEP,
-    // Inline formatting
-    { icon: "B",  title: "Bold",      action: (ed) => ed.chain().focus().toggleBold().run(),          active: (ed) => ed.isActive("bold"),      style: { fontWeight: 900 } },
-    { icon: "I",  title: "Italic",    action: (ed) => ed.chain().focus().toggleItalic().run(),         active: (ed) => ed.isActive("italic"),    style: { fontStyle: "italic" } },
-    { icon: "U",  title: "Underline", action: (ed) => ed.chain().focus().toggleUnderline().run(),     active: (ed) => ed.isActive("underline"), style: { textDecoration: "underline" } },
-    { icon: "S",  title: "Strike",    action: (ed) => ed.chain().focus().toggleStrike().run(),         active: (ed) => ed.isActive("strike"),    style: { textDecoration: "line-through" } },
-    { icon: "▪",  title: "Highlight", action: (ed) => ed.chain().focus().toggleHighlight().run(),     active: (ed) => ed.isActive("highlight") },
-    { icon: "x₂", title: "Subscript",   action: (ed) => ed.chain().focus().toggleSubscript().run(),   active: (ed) => ed.isActive("subscript") },
-    { icon: "x²", title: "Superscript", action: (ed) => ed.chain().focus().toggleSuperscript().run(), active: (ed) => ed.isActive("superscript") },
-    SEP,
-    // Alignment
-    { icon: "⫧",  title: "Align left",    action: (ed) => ed.chain().focus().setTextAlign("left").run(),    active: (ed) => ed.isActive({ textAlign: "left" }) },
-    { icon: "≡",  title: "Align center",  action: (ed) => ed.chain().focus().setTextAlign("center").run(),  active: (ed) => ed.isActive({ textAlign: "center" }) },
-    { icon: "⫨",  title: "Align right",   action: (ed) => ed.chain().focus().setTextAlign("right").run(),   active: (ed) => ed.isActive({ textAlign: "right" }) },
-    { icon: "☰",  title: "Justify",       action: (ed) => ed.chain().focus().setTextAlign("justify").run(), active: (ed) => ed.isActive({ textAlign: "justify" }) },
-    SEP,
-    // Lists
-    { icon: "•≡", title: "Bullet list",  action: (ed) => ed.chain().focus().toggleBulletList().run(),  active: (ed) => ed.isActive("bulletList") },
-    { icon: "1.", title: "Ordered list", action: (ed) => ed.chain().focus().toggleOrderedList().run(), active: (ed) => ed.isActive("orderedList") },
-    { icon: "☑",  title: "Task list",    action: (ed) => ed.chain().focus().toggleTaskList().run(),    active: (ed) => ed.isActive("taskList") },
-    SEP,
-    // Blocks
-    { icon: "❝",  title: "Blockquote",  action: (ed) => ed.chain().focus().toggleBlockquote().run(), active: (ed) => ed.isActive("blockquote") },
-    { icon: "<>", title: "Code block",   action: (ed) => ed.chain().focus().toggleCodeBlock().run(),   active: (ed) => ed.isActive("codeBlock"),  style: { fontFamily: "monospace" } },
-    { icon: "`",  title: "Inline code",  action: (ed) => ed.chain().focus().toggleCode().run(),        active: (ed) => ed.isActive("code"),       style: { fontFamily: "monospace" } },
-    { icon: "—",  title: "Divider",      action: (ed) => ed.chain().focus().setHorizontalRule().run() },
-    SEP,
-    // Link
-    { icon: "🔗", title: "Link", action: (ed) => {
-        const prev = ed.getAttributes("link").href as string | undefined;
-        const url = window.prompt("Enter URL:", prev ?? "https://");
-        if (url === null) return;
-        if (!url) { ed.chain().focus().unsetLink().run(); return; }
-        ed.chain().focus().setLink({ href: url, target: "_blank" }).run();
-      }, active: (ed) => ed.isActive("link") },
-  ];
-}
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 interface ForumEditorProps {
-  onChange?: (html: string) => void;
+  onChange?:   (html: string) => void;
   placeholder?: string;
   initialHtml?: string;
-  disabled?: boolean;
-  minHeight?: number;
-  onSubmit?: () => void;
+  disabled?:   boolean;
+  minHeight?:  number;
+  onSubmit?:   () => void;
+  /** New in the redesign, and optional: a caller that has an upload path says so. */
+  onAttach?:   () => void;
+  /** New in the redesign: the quote strip, instead of markup pasted into the body. */
+  replyTo?:    { name: string; excerpt?: string } | null;
+  onDismissReply?: () => void;
 }
 
 export const ForumEditor = forwardRef<ForumEditorHandle, ForumEditorProps>(
-  ({ onChange, placeholder, initialHtml, disabled, minHeight = 160, onSubmit }, ref) => {
-    const prevInitial = useRef<string | undefined>(undefined);
-    const [hasContent, setHasContent] = useState(!!initialHtml);
-
-    const editor = useEditor({
-      extensions: [
-        StarterKit,
-        Underline,
-        TextAlign.configure({ types: ["heading", "paragraph"] }),
-        TaskList,
-        TaskItem.configure({ nested: true }),
-        Link.configure({ openOnClick: false, autolink: true }),
-        Highlight,
-        Subscript,
-        Superscript,
-        Placeholder.configure({ placeholder: placeholder ?? "Write something…" }),
-      ],
-      content: initialHtml ?? "",
-      editable: !disabled,
-      onUpdate: ({ editor: ed }) => {
-        const html = ed.isEmpty ? "" : ed.getHTML();
-        onChange?.(html);
-      },
-      editorProps: {
-        handleKeyDown(_view, event) {
-          if ((event.ctrlKey || event.metaKey) && event.key === "Enter" && onSubmit) {
-            onSubmit();
-            return true;
-          }
-          return false;
-        },
-      },
-    });
-
-    // Sync initialHtml when it changes (e.g. quote inserted)
-    useEffect(() => {
-      if (!editor || initialHtml === prevInitial.current) return;
-      prevInitial.current = initialHtml;
-      if (initialHtml) {
-        editor.commands.setContent(initialHtml);
-        setHasContent(true);
-        onChange?.(editor.getHTML());
-      }
-    }, [editor, initialHtml, onChange]);
-
-    useEffect(() => {
-      if (!editor) return;
-      editor.setEditable(!disabled);
-    }, [editor, disabled]);
+  ({ onChange, placeholder, initialHtml, disabled, minHeight = 160, onSubmit,
+     onAttach, replyTo, onDismissReply }, ref) => {
+    const inner = useRef<ComposerHandle>(null);
 
     useImperativeHandle(ref, () => ({
-      getHTML: () => (editor?.isEmpty ? "" : editor?.getHTML() ?? ""),
-      isEmpty: () => editor?.isEmpty ?? true,
-      setContent: (html: string) => {
-        editor?.commands.setContent(html);
-        setHasContent(!!html);
-        onChange?.(html);
-      },
-      clear: () => {
-        editor?.commands.clearContent(true);
-        setHasContent(false);
-        onChange?.("");
-      },
+      getHTML:    () => inner.current?.getHTML() ?? "",
+      isEmpty:    () => inner.current?.isEmpty() ?? true,
+      setContent: (html) => inner.current?.setContent(html),
+      clear:      () => inner.current?.clear(),
     }));
 
-    const tools = editor ? makeTools(editor) : [];
-
     return (
-      <div className={`forum-editor${disabled ? " forum-editor--disabled" : ""}`}>
-        {/* ── Toolbar ──────────────────────────────────────────────────── */}
-        <div className="forum-editor__toolbar">
-          {tools.map((t, i) =>
-            t === null ? (
-              <div key={`sep-${i}`} className="forum-editor__sep" />
-            ) : (
-              <button
-                key={t.title}
-                type="button"
-                title={t.title}
-                className={`forum-editor__btn${editor && t.active?.(editor) ? " is-active" : ""}`}
-                style={t.style}
-                onMouseDown={(e) => {
-                  e.preventDefault();
-                  if (editor && !disabled) t.action(editor);
-                }}
-                disabled={!editor || disabled}
-              >
-                {t.icon}
-              </button>
-            ),
-          )}
-        </div>
-
-        {/* ── Content ──────────────────────────────────────────────────── */}
-        <div className="forum-editor__body" style={{ minHeight }}>
-          {!hasContent && editor?.isEmpty && placeholder && (
-            <div className="forum-editor__placeholder" aria-hidden>{placeholder}</div>
-          )}
-          <EditorContent editor={editor} />
-        </div>
-      </div>
+      <Composer
+        ref={inner}
+        variant="panel"
+        onChange={onChange}
+        placeholder={placeholder}
+        initialHtml={initialHtml}
+        disabled={disabled}
+        minHeight={minHeight}
+        onSubmit={onSubmit}
+        replyTo={replyTo}
+        onDismissReply={onDismissReply}
+        onAttach={onAttach}
+        canAttach={!!onAttach}
+        /* Every forum surface draws its own Post / Save button already. */
+        submitInBar={false}
+      />
     );
   },
 );
-
 ForumEditor.displayName = "ForumEditor";

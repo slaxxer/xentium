@@ -35,7 +35,8 @@
     "migrationHistory": "Historique des migrations",
     "about": "À propos",
     "email": "E-mail",
-    "badges": "Badges"
+    "badges": "Badges",
+    "composer": "Éditeur"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",
@@ -2232,15 +2233,7 @@
     "eyebrow": "Communauté",
     "title": "Badges",
     "subtitle": "Ce que ce site peut attribuer. Qui porte quoi se trouve sur la page du membre.",
-    "sections": "Badges",
-    "secCatalogue": "Catalogue",
-    "secAwarding": "Attribution",
-    "catalogueTitle": "Catalogue des badges",
-    "catalogueSub": "Ce que ce site peut attribuer. Un badge s'affiche sur chaque carte de celui qui le porte.",
     "new": "Nouveau badge",
-    "empty": "Aucun badge pour l'instant. Créez-en un pour commencer.",
-    "createTitle": "Nouveau badge",
-    "editTitle": "Modifier le badge",
     "namePreview": "Badge sans titre",
     "fieldName": "Nom",
     "fieldNameDesc": "Le nom du badge, sur les cartes et dans les infobulles.",
@@ -2257,32 +2250,13 @@
     "saved": "Badge enregistré",
     "created": "Badge créé",
     "deleted": "Badge supprimé",
-    "awardTitle": "Attribuer un badge",
-    "awardSub": "Attribuez un badge à un membre, ou reprenez-le.",
-    "awardNoneYet": "Créez d'abord un badge — il n'y a rien à attribuer.",
-    "awardWhich": "Badge",
-    "awardWhichDesc": "Le badge à attribuer.",
-    "awardNote": "Motif",
-    "awardNoteDesc": "Facultatif. Apparaît dans l'infobulle à la place de la description.",
-    "awardNotePlaceholder": "Pour la chasse aux bugs 2026",
-    "awardTo": "Membre",
-    "awardToDesc": "Cherchez par nom d'utilisateur. L'attribution est immédiate.",
-    "awardSearch": "Chercher des membres…",
-    "grant": "Attribuer",
-    "alreadyHas": "Le possède déjà",
-    "noUsers": "Aucun membre ne correspond.",
-    "awarded": "Badge attribué",
     "revoke": "Reprendre ce badge",
     "noHolders": "Personne ne porte encore ce badge.",
-    "holders": "Porteurs ({{count}})",
-    "holdersShort": "{{count}} attribué(s)",
-    "save": "Enregistrer",
+    "save": "Enregistrer les modifications",
     "cancel": "Annuler",
     "edit": "Modifier",
     "delete": "Supprimer",
-    "rewardTitle": "Système de récompense",
     "rewardToggle": "Obtenir ce badge automatiquement",
-    "rewardNote": "Désactivé, vous attribuez ce badge vous-même. Activé, il revient à quiconque remplit toutes les conditions ci-dessous, et n'est plus retiré.",
     "rewardEmpty": "Aucune condition définie : personne ne peut encore l'obtenir.",
     "metric": {
       "articles": "Articles",
@@ -2291,7 +2265,99 @@
       "followers": "Abonnés",
       "forum.posts": "Messages du forum",
       "forum.threads": "Sujets du forum"
-    }
+    },
+    "statBadges": "badges",
+    "statAwarded": "attribués",
+    "searchPlaceholder": "Chercher un nom ou une clé",
+    "sort": "Tri",
+    "filter": {
+      "all": "Tous",
+      "auto": "Automatiques",
+      "manual": "À la main"
+    },
+    "sortBy": {
+      "order": "Ordre",
+      "name": "Nom",
+      "holders": "Porteurs"
+    },
+    "group": {
+      "auto": "Obtenus automatiquement",
+      "manual": "Attribués à la main"
+    },
+    "groupNote": {
+      "auto": "Le passage toutes les demi-heures les attribue à quiconque remplit toutes les conditions.",
+      "manual": "Ceux-là, vous les donnez depuis la page du membre. Rien ne les attribue tout seul."
+    },
+    "empty": {
+      "auto": "Rien n'est encore obtenu automatiquement",
+      "manual": "Aucun badge donné à la main"
+    },
+    "emptyNote": {
+      "auto": "Activez le système de récompense dans un badge pour qu'il soit attribué à partir de seuils : articles, j'aime…",
+      "manual": "Créez-en un pour ce que vous voulez décider vous-même : un remerciement, un cas unique, un choix de l'équipe."
+    },
+    "emptyAct": {
+      "auto": "Nouveau badge automatique",
+      "manual": "Nouveau badge"
+    },
+    "emptyFiltered": "Aucun badge ne correspond à cette recherche.",
+    "system": "Système",
+    "noDescription": "Aucune description",
+    "autoSub": "Automatique · {{list}}",
+    "rewardEmptyShort": "Automatique · aucune condition définie",
+    "showHolders": "Voir les porteurs",
+    "close": "Fermer",
+    "holdersLoading": "Chargement des porteurs…",
+    "holdersShort_one": "1 porteur",
+    "holdersShort_other": "{{count}} porteurs",
+    "wayAuto": "obtenu automatiquement",
+    "wayManual": "donné à la main",
+    "heldEarned": "Obtenu automatiquement",
+    "heldGiven": "Donné par un administrateur",
+    "heldGivenFor": "Donné par un administrateur · « {{note}} »",
+    "drawerFoot": "L'attribution se fait sur la page du membre : trouvez le membre et donnez-lui le badge là-bas. Le reprendre ici prend effet immédiatement.",
+    "revoked": "Badge repris",
+    "deleteTitle": "Supprimer « {{name}} » ?",
+    "deleteBody_one": "Un membre le porte. Supprimer le badge emporte cette attribution avec lui, et rien ici ne peut la rendre.",
+    "deleteBody_other": "{{count}} membres le portent. Supprimer le badge emporte toutes ces attributions avec lui, et rien ici ne peut les rendre.",
+    "tab": {
+      "details": "Détails",
+      "appearance": "Apparence",
+      "reward": "Système de récompense"
+    },
+    "pane": {
+      "details": "Détails",
+      "appearance": "Apparence",
+      "reward": "Système de récompense"
+    },
+    "paneNote": {
+      "details": "Le nom du badge et son rang de tri. La clé est le nom sous lequel les seeds et les plugins le désignent.",
+      "appearance": "Un badge est un symbole dans un cercle teinté — c'est ici, et nulle part ailleurs, que son allure se décide.",
+      "reward": "Désactivé, vous donnez ce badge vous-même. Activé, le passage l'attribue à qui remplit les conditions."
+    },
+    "on": "Activé",
+    "railNew": "La clé est figée dès la création du badge — tout le reste reste modifiable.",
+    "railHolders_one": "Un membre porte ce badge aujourd'hui.",
+    "railHolders_other": "{{count}} membres portent ce badge aujourd'hui.",
+    "namePlaceholder": "Premier message",
+    "keyPreview": "pas-encore-de-cle",
+    "descPlaceholder": "A publié pour la première fois",
+    "rewardOn": "Attribué par le passage, et plus jamais retiré.",
+    "rewardOff": "Laissez-le désactivé et ce badge ne sera donné que par un administrateur.",
+    "requirements": "Conditions",
+    "requirementsNote": "Toutes les conditions renseignées doivent être remplies.",
+    "rewardSummary": "Exige {{list}}.",
+    "and": " et ",
+    "create": "Créer le badge",
+    "footEdit": "Les modifications s'appliquent au prochain affichage du badge.",
+    "footNew": "La clé ne pourra plus être modifiée.",
+    "unit": {
+      "articles": "articles",
+      "comments": "commentaires",
+      "likes": "j'aime",
+      "followers": "abonnés"
+    },
+    "deleteBodyNone": "Personne ne le porte : le supprimer n'emporte aucune attribution. C'est définitif."
   },
   "iconPicker": {
     "namePlaceholder": "star",
@@ -2303,5 +2369,24 @@
     "bundled": "Icônes fournies",
     "noMatches": "Aucune icône ne correspond.",
     "needsName": "Choisissez d'abord une icône : un style seul n'a rien à quoi s'appliquer."
+  },
+  "composer": {
+    "eyebrow": "Apparence",
+    "title": "Éditeur",
+    "subtitle": "Quels outils les membres ont pour écrire, et où chacun se trouve.",
+    "toolsTitle": "Outils",
+    "toolsSub": "{{count}} dans la barre. Tout le reste est à un clic dans le menu.",
+    "barPreview": "Barre d'action",
+    "barEmpty": "Rien dans la barre — les membres n'auront que le menu.",
+    "place": {
+      "bar": "Barre",
+      "overflow": "Menu",
+      "off": "Désactivé"
+    },
+    "behaviourTitle": "Comportement",
+    "behaviourSub": "Le comportement de l'éditeur sur toutes les surfaces.",
+    "mentions": "Mentions partout",
+    "mentionsDesc": "Taper @ propose des membres dans les commentaires, sujets, réponses et messages privés.",
+    "notSupported": "Les pièces jointes dépendent de la surface : le forum fournit un envoi, les commentaires d'articles, le mur et les messages privés non — le trombone y est donc désactivé. Aucun service GIF n'est configuré, ce sélecteur n'est pas proposé."
   }
 }
