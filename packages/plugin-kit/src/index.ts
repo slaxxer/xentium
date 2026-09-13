@@ -102,11 +102,6 @@ export interface PluginHost {
   logger: any;
   errors: {
     XentiumError: any;
-    /**
-     * @deprecated Pre-rename alias for `XentiumError`, kept so plugin bundles built
-     * against the Nodevo host keep working. Removed after 1.0.0-alpha.
-     */
-    NodevoError: any;
     XEC: any;
   };
   middleware: {

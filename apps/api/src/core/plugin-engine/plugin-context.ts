@@ -32,9 +32,7 @@ const host: PluginHost = {
   queues,
   env,
   logger,
-  // NodevoError is the pre-rename alias — bundles built against the old host
-  // read it by that name. Removed after 1.0.0-alpha.
-  errors:     { XentiumError, NodevoError: XentiumError, XEC },
+  errors:     { XentiumError, XEC },
   middleware: {
     requireAuth,
     optionalAuth,
