@@ -23,7 +23,7 @@ import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC, type NecCode } from "../../shared/errors/nec.js";
 import { getSiteId } from "./site-identity.js";
 
@@ -123,7 +123,7 @@ export function marketplaceWebUrl(path = "/"): string {
 }
 
 /**
- * Map a marketplace response to a coded NodevoError.
+ * Map a marketplace response to a coded XentiumError.
  *
  * 5xx is unreachable-class (grace applies, nothing is refused); 4xx is an
  * explicit refusal whose message names the reason, and is surfaced as-is —
@@ -132,12 +132,12 @@ export function marketplaceWebUrl(path = "/"): string {
  */
 const KNOWN_CODES = new Set<string>(Object.values(NEC));
 
-async function protocolError(res: Response): Promise<NodevoError> {
+async function protocolError(res: Response): Promise<XentiumError> {
   const body = await res.json().catch(() => ({})) as { error?: { message?: string; code?: string }; message?: string };
   const message = body.error?.message ?? body.message ?? `Marketplace returned ${res.status}`;
 
   if (res.status >= 500) {
-    return new NodevoError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message });
+    return new XentiumError({ code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503, message });
   }
 
   // Both halves speak NEC, so prefer the code the marketplace NAMED over one
@@ -147,7 +147,7 @@ async function protocolError(res: Response): Promise<NodevoError> {
   // a newer marketplace must not be able to inject an unrecognised one.
   const named = body.error?.code;
   if (named && KNOWN_CODES.has(named)) {
-    return new NodevoError({ code: named as NecCode, httpStatus: res.status, message });
+    return new XentiumError({ code: named as NecCode, httpStatus: res.status, message });
   }
 
   const code: NecCode =
@@ -158,7 +158,7 @@ async function protocolError(res: Response): Promise<NodevoError> {
     : res.status === 404 ? NEC.LICENSE_NOT_FOUND
     : NEC.LICENSE_SERVER_REJECTED;
 
-  return new NodevoError({ code, httpStatus: res.status, message });
+  return new XentiumError({ code, httpStatus: res.status, message });
 }
 
 interface ProtocolRequest {
@@ -210,7 +210,7 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
 
   const token = signed || optionalToken ? await getAccountToken() : null;
   if (signed && !optionalToken && !token) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 400,
       message: "No marketplace account is connected. Connect one in ACP → Extensions → License.",
     });
@@ -237,7 +237,7 @@ export async function protocolFetch<T>(req: ProtocolRequest): Promise<T> {
   }).catch(() => null);
 
   if (!res) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: NEC.LICENSE_SOURCE_UNREACHABLE, httpStatus: 503,
       message: "Could not reach the marketplace.",
     });

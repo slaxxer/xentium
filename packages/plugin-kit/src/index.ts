@@ -8,16 +8,16 @@
  *
  * What is NOT here, and never will be: anything that presumes what the host
  * serves. Search sources, home feeds, progression ladders, layout templates and
- * ACP pages are all Nodevo CMS concepts and live in `@nodevo/plugin-sdk`, which
+ * ACP pages are all Xentium CMS concepts and live in `@nodevo/plugin-sdk`, which
  * extends everything below.
  *
  * ── Which package should a plugin import? ──────────────────────────────────
  *
  * Almost always `@nodevo/plugin-sdk`. It re-exports this one in full and adds
- * the CMS surface, so a Nodevo CMS plugin gets everything from a single import.
+ * the CMS surface, so a Xentium CMS plugin gets everything from a single import.
  *
  * Import THIS package directly only when writing a plugin for a different
- * Nodevo-framework application — the marketplace, say — or when writing tooling
+ * Xentium-framework application — the marketplace, say — or when writing tooling
  * that handles plugins for any host.
  */
 
@@ -40,8 +40,8 @@ export interface PluginManifest {
   name:             string;
   version:          string;        // semver
   vendor:           string;
-  minNodevoVersion: string;
-  maxNodevoVersion?: string;
+  minXentiumVersion: string;
+  maxXentiumVersion?: string;
   licenseRequired:  boolean;
   /** When set, every DB object this plugin's migrations touch MUST carry it. */
   tablePrefix?:     string;
@@ -101,6 +101,11 @@ export interface PluginHost {
   /** Structured logger. */
   logger: any;
   errors: {
+    XentiumError: any;
+    /**
+     * @deprecated Pre-rename alias for `XentiumError`, kept so plugin bundles built
+     * against the Nodevo host keep working. Removed after 1.0.0-alpha.
+     */
     NodevoError: any;
     NEC: any;
   };
@@ -132,7 +137,7 @@ export interface PluginHost {
 /**
  * What every host hands a plugin at enable time.
  *
- * Generic over the host bridge so an application can widen it: the Nodevo CMS
+ * Generic over the host bridge so an application can widen it: the Xentium CMS
  * passes a host carrying progression and moderation primitives, and its
  * `PluginContext` reflects that without this package knowing either exists.
  */

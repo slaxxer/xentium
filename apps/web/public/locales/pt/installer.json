@@ -1,6 +1,6 @@
 {
   "welcome": {
-    "title": "Bem-vindo ao Nodevo",
+    "title": "Bem-vindo ao Xentium",
     "subtitle": "Uma plataforma de fórum moderna e extremamente rápida. Este assistente irá guiá-lo pela instalação em poucos minutos.",
     "features": {
       "discussions": {
@@ -23,7 +23,7 @@
   },
   "environment": {
     "title": "Verificação do ambiente",
-    "subtitle": "Verificando se o seu servidor atende aos requisitos para executar o Nodevo.",
+    "subtitle": "Verificando se o seu servidor atende aos requisitos para executar o Xentium.",
     "rows": {
       "node": "Node.js",
       "postgres": "PostgreSQL",
@@ -43,12 +43,12 @@
   },
   "database": {
     "title": "Conexão com o banco de dados",
-    "subtitle": "O Nodevo se conecta usando a <code>DATABASE_URL</code> configurada no seu servidor. Verifique se ela está acessível antes de continuar.",
+    "subtitle": "O Xentium se conecta usando a <code>DATABASE_URL</code> configurada no seu servidor. Verifique se ela está acessível antes de continuar.",
     "postgres": "PostgreSQL",
     "not_tested": "Não testado ainda",
     "test_button": "Testar conexão",
     "testing": "Conectando...",
-    "setup_subtitle": "Informe os dados de conexão do seu banco de dados PostgreSQL. O Nodevo os verifica, gera todos os segredos e grava a configuração para você.",
+    "setup_subtitle": "Informe os dados de conexão do seu banco de dados PostgreSQL. O Xentium os verifica, gera todos os segredos e grava a configuração para você.",
     "host": "Host",
     "port": "Porta",
     "db_name": "Nome do banco de dados",
@@ -113,7 +113,7 @@
   "buttons": {
     "back": "Voltar",
     "next": "Próximo",
-    "install": "Instalar Nodevo",
+    "install": "Instalar Xentium",
     "installing": "Instalando...",
     "retry": "Verificar tudo novamente"
   },

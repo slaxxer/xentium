@@ -1,6 +1,6 @@
 # @nodevo/auth
 
-**Authentication primitives for the Nodevo framework.**
+**Authentication primitives for the Xentium framework.**
 
 Token minting and verification, argon2 password hashing (plus verification of
 migrated bcrypt and phpass hashes), the access-token revocation denylist, and
@@ -20,6 +20,6 @@ const { requireAuth, optionalAuth } = createAuthMiddleware({
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo). Nodevo is a framework with the Nodevo CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/nodevo). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

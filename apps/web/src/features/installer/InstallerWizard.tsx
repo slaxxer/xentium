@@ -127,7 +127,7 @@ export function InstallerWizard() {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [site, setSite] = useState({
-    siteName: "Nodevo",
+    siteName: "Xentium",
     siteUrl: "https://localhost",
     locale: "en",
     timezone: "UTC",
@@ -382,7 +382,7 @@ export function InstallerWizard() {
                 <path d="M5 19V5l14 14V5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <span>Nodevo</span>
+            <span>Xentium</span>
           </div>
           <div className="header-actions">
             <div className="language-switcher">
@@ -580,7 +580,7 @@ export function InstallerWizard() {
                 <input
                   value={dbForm.database}
                   onChange={(e) => setDbForm({ ...dbForm, database: e.target.value })}
-                  placeholder="nodevo"
+                  placeholder="xentium"
                   disabled={dbTesting}
                 />
               </div>

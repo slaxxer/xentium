@@ -17,7 +17,7 @@ import { themeService } from "../themes/theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { activityService } from "../activity/activity.service.js";
 import { adminService } from "./admin.service.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC, type NecCode } from "../../shared/errors/nec.js";
 import { countGrants, licenseAttention } from "./licenseAttention.js";
 
@@ -27,9 +27,9 @@ export type ProgressFn = (p: UpdateProgress) => void;
 
 const MAX_ARTIFACT_BYTES = 50 * 1024 * 1024;
 
-/** Download/verify failure — a coded NodevoError so it flows through
+/** Download/verify failure — a coded XentiumError so it flows through
  *  errorMiddleware in the canonical `{error:{code,…}}` shape. */
-export class ArtifactError extends NodevoError {
+export class ArtifactError extends XentiumError {
   constructor(message: string, httpStatus: number, code: NecCode = NEC.MARKETPLACE_DOWNLOAD_FAILED) {
     super({ code, httpStatus, message });
     this.name = "ArtifactError";
@@ -299,7 +299,7 @@ export const marketplaceService = {
     const held = linkSecrets.get(linkId);
     if (!held || held.expiresAt < Date.now()) {
       linkSecrets.delete(linkId);
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.LICENSE_ACCOUNT_REQUIRED, httpStatus: 404,
         message: "That connection attempt is no longer in progress. Start a new one.",
       });
@@ -414,7 +414,7 @@ export const marketplaceService = {
    * Direct install (§16.2): authorize at the chokepoint, fetch the artifact
    * server-side (the account token never reaches the browser), verify its sha256,
    * then run the SAME intake as a manual upload. Lands installed but DISABLED —
-   * enabling stays an explicit admin action. All failures are coded NodevoErrors
+   * enabling stays an explicit admin action. All failures are coded XentiumErrors
    * (ArtifactError for the download phase) — errorMiddleware shapes them.
    */
   async installFromMarketplace(pluginId: string, version: string, userId: string, onProgress?: ProgressFn) {
@@ -422,7 +422,7 @@ export const marketplaceService = {
     try {
       buffer = await downloadAndVerifyArtifact(pluginId, version, "plugin", onProgress);
     } catch (err) {
-      if (err instanceof NodevoError) throw err;
+      if (err instanceof XentiumError) throw err;
       throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
     }
 
@@ -470,7 +470,7 @@ export const marketplaceService = {
     try {
       buffer = await downloadAndVerifyArtifact(themeId, version, "theme", onProgress);
     } catch (err) {
-      if (err instanceof NodevoError) throw err;
+      if (err instanceof XentiumError) throw err;
       throw new ArtifactError(err instanceof Error ? err.message : "Artifact download failed.", 502);
     }
 

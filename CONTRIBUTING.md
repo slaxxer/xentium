@@ -1,6 +1,6 @@
-# Contributing to Nodevo
+# Contributing to Xentium
 
-Thanks for helping build Nodevo! This page is the short version — the
+Thanks for helping build Xentium! This page is the short version — the
 [README](./README.md) has full setup, architecture, and the plugin development
 guide.
 
@@ -12,7 +12,7 @@ See **[README → Quick start](./README.md#quick-start)**. In short:
 corepack enable && pnpm install
 cp .env.example .env        # fill in the secrets (README → Environment configuration)
 pnpm db:generate
-./nodevo.sh                    # infra + api + worker + web → http://localhost:5173
+./xentium.sh                    # infra + api + worker + web → http://localhost:5173
 ```
 
 ## Workflow

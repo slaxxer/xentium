@@ -2,7 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { Prisma } from "../../generated/prisma/client.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { paginate } from "../../shared/utils/paginate.js";
 import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/utils/userRef.js";
@@ -35,12 +35,12 @@ async function assertActionableUser(userId: string, actorId: string) {
     where:  { id: userId },
     select: { id: true, email: true, groups: { select: { group: { select: { key: true } } } } },
   });
-  if (!user) throw NodevoError.notFound("User not found");
+  if (!user) throw XentiumError.notFound("User not found");
   if (actorId === userId) {
-    throw NodevoError.forbidden("You cannot perform this action on your own account");
+    throw XentiumError.forbidden("You cannot perform this action on your own account");
   }
   if (user.groups.some((ug) => ug.group.key === "admin")) {
-    throw NodevoError.forbidden("Administrator accounts cannot be managed via the admin panel");
+    throw XentiumError.forbidden("Administrator accounts cannot be managed via the admin panel");
   }
   return user;
 }
@@ -299,7 +299,7 @@ export const adminService = {
         _count: { select: { articles: true, articleComments: true, sessions: true } },
       },
     });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
 
     const [fields, values, loginEvents] = await Promise.all([
       prisma.userProfileField.findMany({ orderBy: { position: "asc" } }),
@@ -352,7 +352,7 @@ export const adminService = {
 
   async setUserGroups(userId: string, groupIds: string[]) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
     await prisma.$transaction(async (tx) => {
       await tx.userGroup.deleteMany({ where: { userId } });
       if (groupIds.length > 0) {
@@ -367,9 +367,9 @@ export const adminService = {
 
   async setUserActive(userId: string, isActive: boolean, requestingUserId?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
     if (requestingUserId && requestingUserId === userId) {
-      throw NodevoError.forbidden("You cannot deactivate your own account");
+      throw XentiumError.forbidden("You cannot deactivate your own account");
     }
     const updated = await prisma.$transaction(async (tx) => {
       const row = await tx.user.update({ where: { id: userId }, data: { isActive } });
@@ -402,13 +402,13 @@ export const adminService = {
       where: { id: opts.userId },
       include: { groups: { include: { group: { select: { key: true } } } } },
     });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
     if (opts.issuedById === opts.userId) {
-      throw NodevoError.forbidden("You cannot ban yourself");
+      throw XentiumError.forbidden("You cannot ban yourself");
     }
     const isAdmin = user.groups.some((ug) => ug.group.key === "admin");
     if (isAdmin) {
-      throw NodevoError.forbidden("Administrator accounts cannot be banned");
+      throw XentiumError.forbidden("Administrator accounts cannot be banned");
     }
 
     await prisma.$transaction(async (tx) => {
@@ -464,7 +464,7 @@ export const adminService = {
       where: { userId, status: "active" },
       orderBy: { createdAt: "desc" },
     });
-    if (!activeBan) throw NodevoError.notFound("No active ban found for this user");
+    if (!activeBan) throw XentiumError.notFound("No active ban found for this user");
 
     await prisma.$transaction(async (tx) => {
       await tx.moderationBan.update({
@@ -562,7 +562,7 @@ export const adminService = {
     showOnProfile: boolean;
   }) {
     const exists = await prisma.userProfileField.findUnique({ where: { key: data.key } });
-    if (exists) throw NodevoError.conflict("A field with that key already exists");
+    if (exists) throw XentiumError.conflict("A field with that key already exists");
     const max = await prisma.userProfileField.aggregate({ _max: { position: true } });
     return prisma.userProfileField.create({
       data: { ...data, position: (max._max.position ?? 0) + 1 },
@@ -578,14 +578,14 @@ export const adminService = {
     dobDisplayFormat?: string;
   }) {
     const field = await prisma.userProfileField.findUnique({ where: { id } });
-    if (!field) throw NodevoError.notFound("Profile field not found");
+    if (!field) throw XentiumError.notFound("Profile field not found");
     return prisma.userProfileField.update({ where: { id }, data });
   },
 
   async deleteProfileField(id: string) {
     const field = await prisma.userProfileField.findUnique({ where: { id } });
-    if (!field) throw NodevoError.notFound("Profile field not found");
-    if (field.isSystem) throw NodevoError.forbidden("Cannot delete a system profile field");
+    if (!field) throw XentiumError.notFound("Profile field not found");
+    if (field.isSystem) throw XentiumError.forbidden("Cannot delete a system profile field");
     await prisma.userProfileField.delete({ where: { id } });
   },
 
@@ -604,7 +604,7 @@ export const adminService = {
 
   // Default values for structured admin settings (§60, §26, CLAUDE.md)
   SETTING_DEFAULTS: {
-    "site.name":                           "My Nodevo Site",
+    "site.name":                           "My Xentium Site",
     "site.url":                            "",
     "site.description":                    "",
     "site.locale":                         "en",
@@ -797,7 +797,7 @@ export const adminService = {
 
   async softDeleteArticle(id: string) {
     const article = await prisma.article.findUnique({ where: { id } });
-    if (!article) throw NodevoError.notFound("Article not found");
+    if (!article) throw XentiumError.notFound("Article not found");
     await prisma.article.update({ where: { id }, data: { deletedAt: new Date() } });
   },
 
@@ -860,7 +860,7 @@ export const adminService = {
 
   async revokeException(caseId: string, actorId: string) {
     const existing = await prisma.moderationCase.findUnique({ where: { id: caseId } });
-    if (!existing) throw NodevoError.notFound("Case not found");
+    if (!existing) throw XentiumError.notFound("Case not found");
 
     // Remove all whitelist entries for this case
     const deleted = await prisma.reviewedSecuritySignal.deleteMany({ where: { caseId } });
@@ -1072,7 +1072,7 @@ export const adminService = {
     label: string; url: string; isActive: boolean; openInNewTab: boolean; visibility: string;
   }>) {
     const item = await prisma.navItem.findUnique({ where: { id } });
-    if (!item) throw NodevoError.notFound("Nav item not found");
+    if (!item) throw XentiumError.notFound("Nav item not found");
     return prisma.navItem.update({ where: { id }, data });
   },
 
@@ -1087,7 +1087,7 @@ export const adminService = {
   async deleteNavItem(id: string) {
     const item = await prisma.navItem.findUnique({ where: { id } });
     if (!item) return;
-    if (item.isSystem) throw NodevoError.forbidden("Core nav links cannot be deleted — deactivate them instead");
+    if (item.isSystem) throw XentiumError.forbidden("Core nav links cannot be deleted — deactivate them instead");
     await prisma.navItem.delete({ where: { id } });
   },
 

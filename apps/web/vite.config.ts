@@ -25,7 +25,7 @@ function seoMetaDev(): Plugin {
           if (!base) return html;
           const pathname = (ctx.originalUrl ?? "/").split("?")[0];
           const href = new URL(pathname, base + "/").toString();
-          const name = cfg.siteName || "Nodevo";
+          const name = cfg.siteName || "Xentium";
           // Swap the static <title> to the site name (parity with the prod
           // serveWeb.ts path) so view-source shows the configured name. Escape
           // the raw string replace (Vite auto-escapes the tag attrs below).

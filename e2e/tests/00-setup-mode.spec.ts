@@ -13,14 +13,14 @@ import { ADMIN } from "./helpers";
  *   2. create an empty database (e.g. nodevo_fresh)
  *   3. start the stack, then: npx playwright test tests/00-setup-mode.spec.ts
  * Credentials for the form come from E2E_SETUP_DB_* env vars (defaults match
- * the dev docker compose: nodevo/nodevo on localhost:5432, db nodevo_fresh).
+ * the dev docker compose: xentium/nodevo on localhost:5432, db nodevo_fresh).
  */
 const DB = {
   host: process.env.E2E_SETUP_DB_HOST ?? "localhost",
   port: process.env.E2E_SETUP_DB_PORT ?? "5432",
   database: process.env.E2E_SETUP_DB_NAME ?? "nodevo_fresh",
-  user: process.env.E2E_SETUP_DB_USER ?? "nodevo",
-  password: process.env.E2E_SETUP_DB_PASSWORD ?? "nodevo",
+  user: process.env.E2E_SETUP_DB_USER ?? "xentium",
+  password: process.env.E2E_SETUP_DB_PASSWORD ?? "xentium",
 };
 
 test("setup mode collects DB credentials, writes .env and hot-swaps", async ({ page, request }) => {

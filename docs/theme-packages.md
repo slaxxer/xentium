@@ -27,7 +27,7 @@ separate upload endpoint, its parallel validator and its ACP page are gone. Two
 ingestion paths for untrusted CSS was one more than a site needs.
 
 What differed was never the files but the paperwork: a theme manifest requires `id`,
-`vendor`, `version` and `minNodevoVersion`; a style pack carried only `name`. Those are
+`vendor`, `version` and `minXentiumVersion`; a style pack carried only `name`. Those are
 filled in on import — `id` derived from the name, `vendor` defaulted to `community` —
 and **only for a package that is unmistakably a style pack**: no `layouts/`, no
 `tokens.json`, and a stylesheet present. A real theme with a malformed manifest still
@@ -45,8 +45,8 @@ reference. The result is a `.nvtheme` that changes nothing but the palette.
   "name": "Midnight",
   "version": "1.2.0",            // semver
   "vendor": "Someone",
-  "minNodevoVersion": "1.0",     // refused below this
-  "maxNodevoVersion": "2.0",     // optional
+  "minXentiumVersion": "1.0",     // refused below this
+  "maxXentiumVersion": "2.0",     // optional
   "description": "…",            // optional, ≤500 chars
 
   "schemaVersion": 1,            // layout schema authored against
@@ -219,7 +219,7 @@ your customisations, which is the trade XenForo and WoltLab both leave you with.
 in their own layer on top. The served stylesheet is theme ⊕ admin, so if you recoloured
 one accent and the theme's 1.1 changes twenty tokens, you get the nineteen and keep yours.
 In the Style Editor a token you have not touched shows the theme's value as *Inherited*,
-and **Reset** on an overridden token falls back to the theme rather than to stock Nodevo.
+and **Reset** on an overridden token falls back to the theme rather than to stock Xentium.
 `Reset appearance` clears your overrides and leaves the theme installed.
 
 **Layouts inherit per template.** A block tree cannot be merged sensibly — a three-way

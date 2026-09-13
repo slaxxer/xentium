@@ -45,7 +45,7 @@ export function ResetPasswordPage() {
       <div className="aurora-split__brand">
         <Link to="/" className="aurora-split__logo">
           <div className="aurora-split__logo-mark"><span /></div>
-          <span className="aurora-split__wordmark">nodevo</span>
+          <span className="aurora-split__wordmark">xentium</span>
         </Link>
         <h2 className="aurora-split__tagline">{t("reset.tagline")}</h2>
         <p className="aurora-split__subtitle">

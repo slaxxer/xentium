@@ -9,7 +9,7 @@ import type {
 } from "./types.js";
 
 /**
- * Loads the platform-neutral intermediate model into a Nodevo database.
+ * Loads the platform-neutral intermediate model into a Xentium database.
  *
  * Written once, used by every adapter. Direct SQL (spec §34 sanctions direct
  * DB writes — REST is impractical for bulk imports); search vectors are
@@ -22,7 +22,7 @@ import type {
  * Failure model: per-row try/catch — one bad source row is reported and
  * skipped, never aborts the run (status becomes "partial").
  */
-export class NodevoLoader {
+export class XentiumLoader {
   private groupIdByKey = new Map<string, string>();
 
   constructor(
@@ -46,11 +46,11 @@ export class NodevoLoader {
     return res.rows[0]?.nodevo_id ?? null;
   }
 
-  private async remember(entity: string, sourceId: string, nodevoId: string): Promise<void> {
+  private async remember(entity: string, sourceId: string, xentiumId: string): Promise<void> {
     await this.pool.query(
       `INSERT INTO ncf_import_map (id, run_id, platform, entity, source_id, nodevo_id)
        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
-      [crypto.randomUUID(), this.runId, this.platform, entity, sourceId, nodevoId],
+      [crypto.randomUUID(), this.runId, this.platform, entity, sourceId, xentiumId],
     );
   }
 
@@ -64,13 +64,13 @@ export class NodevoLoader {
 
   // ── preconditions ──────────────────────────────────────────────────────────
 
-  /** The target must be an installed Nodevo database. */
+  /** The target must be an installed Xentium database. */
   async assertTargetReady(requiredPlugins: string[] = []): Promise<void> {
     const install = await this.pool
       .query(`SELECT "completedAt" FROM ncf_installs LIMIT 1`)
       .catch(() => null);
     if (!install?.rows[0]?.completedAt) {
-      throw new Error("Target is not an installed Nodevo database — complete the install wizard first.");
+      throw new Error("Target is not an installed Xentium database — complete the install wizard first.");
     }
     const groups = await this.pool.query(`SELECT id, key FROM ncf_groups`);
     for (const row of groups.rows) this.groupIdByKey.set(row.key, row.id);
@@ -281,7 +281,7 @@ export class NodevoLoader {
   // ── comments ───────────────────────────────────────────────────────────────
 
   async loadComments(comments: ImportedComment[]): Promise<void> {
-    // Nodevo threads one level deep (§33): replies-to-replies attach to the
+    // Xentium threads one level deep (§33): replies-to-replies attach to the
     // top-level ancestor. Track each inserted comment's parent to flatten.
     const inserted = new Map<string, { id: string; parentDbId: string | null }>();
     let done = 0;

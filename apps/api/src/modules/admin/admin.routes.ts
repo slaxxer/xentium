@@ -2,7 +2,7 @@ import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions, NEC } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
@@ -101,12 +101,12 @@ if (isDev) {
   adminRouter.get("/_debug/throw", adminGuard, (req, _res) => {
     const type = String(req.query.type ?? "critical");
     switch (type) {
-      case "nodevo500":
-        // A deliberate NodevoError with a 5xx status → severity 'error', halts.
-        throw new NodevoError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "Simulated NodevoError (500)" });
+      case "xentium500":
+        // A deliberate XentiumError with a 5xx status → severity 'error', halts.
+        throw new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "Simulated XentiumError (500)" });
       case "notfound":
         // 4xx → toast only, does NOT halt the site (contrast case).
-        throw NodevoError.notFound("Simulated 404 (should NOT halt the site)");
+        throw XentiumError.notFound("Simulated 404 (should NOT halt the site)");
       case "critical":
       default:
         // Unhandled throw → caught by the catch-all → NEC-API-5000, severity 'critical'.

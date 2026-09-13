@@ -1,6 +1,6 @@
 # @nodevo/plugin-kit
 
-**The application-agnostic half of the Nodevo plugin contract.**
+**The application-agnostic half of the Xentium plugin contract.**
 
 Manifest, definition, host bridge and the base context — the shapes a plugin and
 its host agree on, with nothing in them that assumes a CMS.
@@ -8,12 +8,12 @@ its host agree on, with nothing in them that assumes a CMS.
 ## Which package do you want?
 
 **Almost certainly [`@nodevo/plugin-sdk`](https://www.npmjs.com/package/@nodevo/plugin-sdk).**
-It re-exports this package in full and adds the Nodevo CMS surface (search
+It re-exports this package in full and adds the Xentium CMS surface (search
 sources, home feeds, progression, layout templates, ACP pages), so a CMS plugin
 gets everything from one import.
 
 Reach for this package directly only when writing a plugin for a *different*
-Nodevo-framework application, or tooling that handles plugins for any host.
+Xentium-framework application, or tooling that handles plugins for any host.
 
 ```ts
 import type { PluginDefinition, PluginContext } from "@nodevo/plugin-kit";
@@ -35,6 +35,6 @@ this package knowing they exist.
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo).
+Part of the [Xentium framework](https://github.com/slaxxer/nodevo).
 
 MIT © Slaxxer

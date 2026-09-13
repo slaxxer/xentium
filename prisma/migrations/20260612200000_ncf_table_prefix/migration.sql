@@ -1,5 +1,5 @@
 -- Strict core table naming: every core table is ncf_<snake_case>
--- (nodevo community framework). The ncf_ namespace is reserved for core;
+-- (xentium community framework). The ncf_ namespace is reserved for core;
 -- plugin tables keep their <pluginid>_ prefix (e.g. forum_*).
 -- Indexes, constraints and triggers follow their tables on RENAME.
 

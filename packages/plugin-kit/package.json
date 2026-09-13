@@ -5,9 +5,9 @@
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
-  "description": "The application-agnostic half of the Nodevo plugin authoring contract: manifest, definition, host bridge and context shape.",
+  "description": "The application-agnostic half of the Xentium plugin authoring contract: manifest, definition, host bridge and context shape.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/slaxxer/nodevo.git",

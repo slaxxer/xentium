@@ -1,6 +1,6 @@
 # The marketplace protocol (v1)
 
-How a Nodevo install talks to a marketplace. This is the **outbound** contract — the
+How a Xentium install talks to a marketplace. This is the **outbound** contract — the
 inbound ACP routes that sit in front of it are in [`API.md`](./API.md).
 
 Everything here is a **published contract**. The signing half lives in the marketplace and
@@ -105,7 +105,7 @@ the public key carried in the request itself.
 
 The alternative to an admin copying a connect code between two browser tabs, and the
 default path in the ACP since 2026-08-28. Shaped like the **OAuth device grant**, and for
-the same reason: a Nodevo install cannot receive a browser redirect it can prove came from
+the same reason: a Xentium install cannot receive a browser redirect it can prove came from
 the marketplace — it has no registered origin, and most of them are on hostnames the
 marketplace has never seen. So nothing is redirected back. The install **polls**, which
 removes the `redirect_uri` surface entirely: there is no URL for an attacker to substitute,

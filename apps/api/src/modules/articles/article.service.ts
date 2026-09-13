@@ -1,6 +1,6 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "@nodevo/contracts";
 import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
 import { uniqueSlug, slugify } from "@nodevo/sdk";
@@ -162,7 +162,7 @@ export const articleService = {
   ): Promise<ArticleDetail> {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
@@ -170,7 +170,7 @@ export const articleService = {
     }
 
     if (existing.authorId !== viewerId && !viewerCanEditAny) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot edit this article",
@@ -249,7 +249,7 @@ export const articleService = {
   async publish(id: string, viewerId: string): Promise<ArticleDetail> {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
@@ -304,14 +304,14 @@ export const articleService = {
   async unpublish(id: string, viewerCanEditAny: boolean): Promise<ArticleDetail> {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (!viewerCanEditAny) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot unpublish",
@@ -328,14 +328,14 @@ export const articleService = {
   async softDelete(id: string, viewerId: string, viewerCanDeleteAny: boolean): Promise<void> {
     const existing = await articleRepository.findById(id);
     if (!existing || existing.deletedAt) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (existing.authorId !== viewerId && !viewerCanDeleteAny) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot delete this article",
@@ -354,7 +354,7 @@ export const articleService = {
   ): Promise<ArticleDetail> {
     const article = await articleRepository.findBySlug(slug);
     if (!article || !canViewArticle(article, viewerId, viewerCanEditAny)) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
@@ -408,14 +408,14 @@ export const articleService = {
   async listRevisions(articleId: string, viewerId: string, viewerCanEditAny: boolean) {
     const article = await articleRepository.findById(articleId);
     if (!article) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (article.authorId !== viewerId && !viewerCanEditAny) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot view revisions",
@@ -432,14 +432,14 @@ export const articleService = {
   ): Promise<ArticleDetail> {
     const existing = await articleRepository.findById(articleId);
     if (!existing || existing.deletedAt) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (existing.authorId !== viewerId && !viewerCanEditAny) {
-      throw new NodevoError({
+      throw new XentiumError({
         code: NEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot edit this article",

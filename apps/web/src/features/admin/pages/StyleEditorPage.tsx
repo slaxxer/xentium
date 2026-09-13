@@ -151,7 +151,7 @@ type Origin = "own" | "global" | "theme" | "inherited";
  * The theme layer is why "Inherited" is honest on a site with a theme installed: the
  * served stylesheet is the theme merged under the admin's overrides, so a token the admin
  * has not touched shows the theme's colour — and clearing an override falls back to it
- * rather than to stock Nodevo.
+ * rather than to stock Xentium.
  */
 function inheritedValue(
   cssVar: string, mode: Mode, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,

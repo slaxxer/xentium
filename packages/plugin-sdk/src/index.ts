@@ -1,14 +1,14 @@
 /**
  * @nodevo/plugin-sdk
  *
- * The authoring contract for Nodevo CMS plugins. Import this in your plugin's
+ * The authoring contract for Xentium CMS plugins. Import this in your plugin's
  * server entry point.
  *
  * ── What changed, and what did not ─────────────────────────────────────────
  *
  * The application-agnostic half of this contract now lives in
  * `@nodevo/plugin-kit` — manifest, definition, host bridge and the base context
- * — so that a plugin for a DIFFERENT Nodevo-framework application (the
+ * — so that a plugin for a DIFFERENT Xentium-framework application (the
  * marketplace, for one) has something to build against that does not assume a
  * CMS.
  *
@@ -255,7 +255,7 @@ export interface RegistrationStatusPatch {
  * question "is this person allowed in right now", which is a POLICY: a private
  * beta, an allow-list, a paid seat. Implement only the moments you care about.
  *
- * Refuse by THROWING a `NodevoError`. A guard never returns a boolean, because a
+ * Refuse by THROWING a `XentiumError`. A guard never returns a boolean, because a
  * refusal carries the NEC code and the message the client shows, and those
  * belong to whoever knows why the answer was no.
  *

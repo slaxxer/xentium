@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Production image for the Nodevo web app: build the Vite SPA, serve via nginx
+# Production image for the Xentium web app: build the Vite SPA, serve via nginx
 # (with /api + /uploads reverse-proxied to the api service). Build context = REPO ROOT.
 
 FROM node:22-alpine AS build

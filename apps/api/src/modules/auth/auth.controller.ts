@@ -9,7 +9,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";
 
 
@@ -89,10 +89,10 @@ export async function loginHandler(req: Request, res: Response) {
   // Failed logins are already tracked via login_events + lockout — persist:false
   // keeps the error_log free of routine credential noise.
   if (!result) {
-    throw new NodevoError({ code: NEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid credentials", persist: false });
+    throw new XentiumError({ code: NEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid credentials", persist: false });
   }
   if ("banned" in result) {
-    throw new NodevoError({
+    throw new XentiumError({
       code: result.expiresAt ? NEC.AUTH_BANNED : NEC.AUTH_BANNED_PERMANENT,
       httpStatus: 401,
       message: "Account suspended",
@@ -128,12 +128,12 @@ export async function refreshHandler(req: Request, res: Response) {
   // Guest refresh attempts + expired sessions fire constantly — persist:false.
   const raw = req.cookies?.[REFRESH_COOKIE_NAME];
   if (!raw) {
-    throw new NodevoError({ code: NEC.AUTH_NO_SESSION, httpStatus: 401, message: "No active session", persist: false });
+    throw new XentiumError({ code: NEC.AUTH_NO_SESSION, httpStatus: 401, message: "No active session", persist: false });
   }
   const result = await rotateSession(raw, getRequestMeta(req, res));
   if (!result) {
     clearRefreshCookie(res);
-    throw new NodevoError({ code: NEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
+    throw new XentiumError({ code: NEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
   }
   setRefreshCookie(res, result.refreshToken);
   res.json({ accessToken: result.accessToken });
@@ -197,7 +197,7 @@ export async function meHandler(req: Request, res: Response) {
       },
     },
   });
-  if (!user) throw NodevoError.notFound("User not found");
+  if (!user) throw XentiumError.notFound("User not found");
   // `me` returns the user's FULL group membership — this payload is the client's
   // source of truth for role gating (ACP access, staff UI). Badge *visibility* is
   // a presentational choice: `hiddenBadges` is sent alongside so the client can

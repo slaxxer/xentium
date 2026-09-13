@@ -7,7 +7,7 @@ import path from 'node:path';
 import { env, isProd } from '../config/env.js';
 import { NODEVO_VERSION } from '../config/version.js';
 import { errorMiddleware } from '../shared/errors/errorMiddleware.js';
-import { NodevoError } from '../shared/errors/NodevoError.js';
+import { XentiumError } from '../shared/errors/XentiumError.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { installGuard } from "../shared/middleware/installGuard.js";
 import { usersRouter } from '../modules/users/users.routes.js';
@@ -82,11 +82,11 @@ export function createApp(): Express {
   //    other `themes/*` dirs (e.g. private `themes/packs`).
   app.use('/uploads', (req, res, next) => {
     const rel = path.normalize(req.path).replace(/^[/\\]+/, '');
-    if (rel.includes('..')) return next(NodevoError.notFound());
+    if (rel.includes('..')) return next(XentiumError.notFound());
     const ok = ALLOWED_UPLOAD_DIRS.some(
       (d) => rel === d || rel.startsWith(d + '/') || rel.startsWith(d + path.sep),
     );
-    if (!ok) return next(NodevoError.notFound());
+    if (!ok) return next(XentiumError.notFound());
     next();
   });
 
@@ -255,7 +255,7 @@ export function createApp(): Express {
   });
 
   // 5. 404 + error middleware LAST
-  app.use((_req, _res, next) => next(NodevoError.notFound()));
+  app.use((_req, _res, next) => next(XentiumError.notFound()));
   app.use(errorMiddleware);
 
   return app;

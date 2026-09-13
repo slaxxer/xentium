@@ -2,7 +2,7 @@
   "name": "@nodevo/migrate-wp",
   "version": "1.0.0-alpha.1",
   "private": true,
-  "description": "WordPress → Nodevo migration adapter (§34, Wave 1). Consumes a WXR export file — no WordPress installation or database access needed.",
+  "description": "WordPress → Xentium migration adapter (§34, Wave 1). Consumes a WXR export file — no WordPress installation or database access needed.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

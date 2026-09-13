@@ -33,7 +33,7 @@ model MigrationRun {
   @@map("ncf_migration_runs")
 }
 
-// Source-entity → Nodevo-entity mapping written during platform migrations.
+// Source-entity → Xentium-entity mapping written during platform migrations.
 // Makes re-runs resumable/idempotent (skip already-imported source ids) and
 // lets adapters resolve cross-references (post → author) mid-run.
 model ImportMapEntry {
@@ -42,11 +42,11 @@ model ImportMapEntry {
   platform  String // "wordpress" | "xenforo" | "phpbb" | ...
   entity    String // "user" | "article" | "comment" | "category" | "thread" | "post" | "attachment"
   sourceId  String   @map("source_id")
-  nodevoId  String   @map("nodevo_id")
+  xentiumId  String   @map("nodevo_id")
   createdAt DateTime @default(now())
 
   @@unique([platform, entity, sourceId])
-  @@index([nodevoId])
+  @@index([xentiumId])
   @@map("ncf_import_map")
 }
 
@@ -1079,7 +1079,7 @@ model AcpVisit {
 
 // ── Phase 14: Plugin migrations ───────────────────────────────────────────────
 
-model NodevoPluginMigration {
+model XentiumPluginMigration {
   id        String   @id                      // "{pluginId}_{ver}_{name}"
   pluginId  String   @map("plugin_id")
   pluginVer String   @map("plugin_ver")

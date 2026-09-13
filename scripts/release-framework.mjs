@@ -78,7 +78,7 @@ const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).ver
 const prerelease = /-([0-9A-Za-z-]+)/.exec(version)?.[1];
 const tag = prerelease ?? "latest";
 
-console.log(`Publishing @nodevo/* ${version} with tag "${tag}"${dryRun ? " (dry run)" : ""}\n`);
+console.log(`Publishing @xentium/* ${version} with tag "${tag}"${dryRun ? " (dry run)" : ""}\n`);
 
 // ── 3. Refuse a version that is already on the registry ─────────────────────
 // npm rejects it anyway, but partway through a multi-package publish — leaving
@@ -87,9 +87,9 @@ const alreadyPublished = [];
 for (const name of PACKAGES) {
   try {
     const versions = JSON.parse(
-      run("npm", ["view", `@nodevo/${name}`, "versions", "--json"], { stdio: ["ignore", "pipe", "ignore"] }),
+      run("npm", ["view", `@xentium/${name}`, "versions", "--json"], { stdio: ["ignore", "pipe", "ignore"] }),
     );
-    if ([].concat(versions).includes(version)) alreadyPublished.push(`@nodevo/${name}`);
+    if ([].concat(versions).includes(version)) alreadyPublished.push(`@xentium/${name}`);
   } catch {
     // Not published at all yet — which is fine, and expected the first time.
   }
@@ -106,7 +106,7 @@ if (alreadyPublished.length > 0) {
 // `prepublishOnly` builds each package too; doing it up front means a compile
 // error stops the run BEFORE anything is published rather than midway.
 console.log("Building…");
-const filters = PACKAGES.flatMap((n) => ["--filter", `@nodevo/${n}`]);
+const filters = PACKAGES.flatMap((n) => ["--filter", `@xentium/${n}`]);
 run("pnpm", [...filters, "build"], { stdio: "inherit" });
 
 console.log("\nPublishing…");
@@ -130,6 +130,6 @@ run(
 if (dryRun) {
   console.log("\nDry run — nothing was published.");
 } else {
-  console.log(`\nPublished @nodevo/* ${version} (tag: ${tag}).`);
-  console.log("Consumers outside this repo pick it up with: pnpm update @nodevo/*");
+  console.log(`\nPublished @xentium/* ${version} (tag: ${tag}).`);
+  console.log("Consumers outside this repo pick it up with: pnpm update @xentium/*");
 }

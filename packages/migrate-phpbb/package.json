@@ -2,7 +2,7 @@
   "name": "@nodevo/migrate-phpbb",
   "version": "1.0.0-alpha.1",
   "private": true,
-  "description": "phpBB 3.1+ → Nodevo migration adapter (§34, Wave 1). Connects directly to the phpBB MySQL database. Requires the nodevo-forum plugin on the target.",
+  "description": "phpBB 3.1+ → Xentium migration adapter (§34, Wave 1). Connects directly to the phpBB MySQL database. Requires the nodevo-forum plugin on the target.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",

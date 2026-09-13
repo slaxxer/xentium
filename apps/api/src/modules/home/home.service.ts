@@ -3,7 +3,7 @@ import { homeFeedRegistry } from "../../core/home-feed-registry/home-feed-regist
 
 const GUEST_DEFAULTS = {
   badge:        "builders online now",
-  title:        "Where people who build with nodevo hang out.",
+  title:        "Where people who build with xentium hang out.",
   subtitle:     "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
   ctaPrimary:   "Join the conversation",
   ctaSecondary: "Browse as guest",

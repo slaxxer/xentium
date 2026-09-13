@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# Production image for the Nodevo API. Build context = REPO ROOT.
+# Production image for the Xentium API. Build context = REPO ROOT.
 # Runs the HTTP server by default; override the command to run the worker
 # (`node dist/worker.js`). A separate `migrate` stage runs `prisma migrate deploy`.
 

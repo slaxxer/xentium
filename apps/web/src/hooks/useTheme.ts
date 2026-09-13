@@ -3,7 +3,7 @@ import { useEffect, useSyncExternalStore } from "react";
 export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
-const KEY = "nodevo.theme";
+const KEY = "xentium.theme";
 
 function getStored(): ThemePreference {
   try { return (localStorage.getItem(KEY) as ThemePreference) || "system"; }

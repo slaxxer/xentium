@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import multer from "multer";
 import { fileTypeFromBuffer } from "file-type";
 import { NEC } from "@nodevo/contracts";
-import { NodevoError } from "@nodevo/errors";
+import { XentiumError } from "@nodevo/errors";
 
 /**
  * One upload ceiling. An application owns its own table of these — the package
@@ -34,7 +34,7 @@ export function uploadSingle(limit: UploadLimit, fieldName: string): RequestHand
       if (!err) return next();
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
         return next(
-          new NodevoError({
+          new XentiumError({
             code: NEC.STORE_FILE_TOO_LARGE,
             httpStatus: 413,
             message: `File exceeds ${limit.maxBytes} bytes`,
@@ -52,7 +52,7 @@ export function uploadSingle(limit: UploadLimit, fieldName: string): RequestHand
 
     if (!file) {
       return next(
-        new NodevoError({
+        new XentiumError({
           code: NEC.API_VALIDATION,
           httpStatus: 400,
           message: `Missing file field "${fieldName}"`,
@@ -63,7 +63,7 @@ export function uploadSingle(limit: UploadLimit, fieldName: string): RequestHand
     const detected = await fileTypeFromBuffer(file.buffer);
     if (!detected) {
       return next(
-        new NodevoError({
+        new XentiumError({
           code: NEC.STORE_MIME_MISMATCH,
           httpStatus: 415,
           message: "Could not detect file type from contents",
@@ -73,7 +73,7 @@ export function uploadSingle(limit: UploadLimit, fieldName: string): RequestHand
 
     if (!(limit.allowedMimeTypes as readonly string[]).includes(detected.mime)) {
       return next(
-        new NodevoError({
+        new XentiumError({
           code: NEC.STORE_TYPE_NOT_PERMITTED,
           httpStatus: 415,
           message: `File type ${detected.mime} not permitted`,

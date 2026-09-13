@@ -7,7 +7,7 @@ config({ path: path.resolve(process.cwd(), '../../.env') });
 const schema = z.object({
   // Safe-by-default: an instance that never sets NODE_ENV runs as production
   // (strict rate limits, hidden error details, no dev auth backdoor, licensing
-  // domain rules). Development is an explicit opt-in — ./nodevo.sh exports it
+  // domain rules). Development is an explicit opt-in — ./xentium.sh exports it
   // and the dev checkout's .env carries NODE_ENV=development.
   NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   PORT: z.coerce.number().int().positive().default(4000),
@@ -27,7 +27,7 @@ const schema = z.object({
   // injection). Unset → resolves to <REPO_ROOT>/apps/web/dist. When no build
   // exists (dev), the API skips web serving and Vite owns the frontend.
   WEB_DIST: z.string().optional(),
-  // The Nodevo marketplace every install talks to. Defaults to the hosted one so
+  // The Xentium marketplace every install talks to. Defaults to the hosted one so
   // a fresh install works out of the box; override per deployment to point at a
   // different marketplace. The base INCLUDES the protocol version (`/api/v1`),
   // which is also what every request signature covers — see protocol-client.

@@ -36,7 +36,7 @@ plugin stylesheet mentions a font, it is a bug.
 
 # Plugin ACP autosave
 
-How a plugin's admin surfaces persist changes. Nodevo ACP **config** pages have no
+How a plugin's admin surfaces persist changes. Xentium ACP **config** pages have no
 Save button — they save on change, with a status indicator in the header. A plugin
 must follow the same convention so its pages don't feel foreign inside the ACP.
 

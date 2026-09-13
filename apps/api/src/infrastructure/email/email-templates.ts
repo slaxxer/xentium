@@ -200,7 +200,7 @@ export async function renderEmailTemplate(
  */
 export async function siteVars(): Promise<{ site_name: string; site_url: string }> {
   return {
-    site_name: await getSetting<string>("site.name", "Nodevo"),
+    site_name: await getSetting<string>("site.name", "Xentium"),
     site_url: (await getSetting<string>("site.url", "")).replace(/\/$/, ""),
   };
 }

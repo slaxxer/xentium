@@ -79,7 +79,7 @@ const ICON_MAP_FALLBACK: Record<string, IconDefinition> = {
   "nodevo-seo-tools":    faMagnifyingGlass,
   "nodevo-analytics":    faChartBar,
   "nodevo-advanced-mod": faShieldHalved,
-  "nodevo-2fa":          faShield,
+  "xentium-2fa":          faShield,
 };
 
 const COLOR_MAP_FALLBACK: Record<string, string> = {
@@ -87,7 +87,7 @@ const COLOR_MAP_FALLBACK: Record<string, string> = {
   "nodevo-seo-tools":    "#f472b6",
   "nodevo-analytics":    "#38bdf8",
   "nodevo-advanced-mod": "var(--c-danger)",
-  "nodevo-2fa":          "var(--c-warn)",
+  "xentium-2fa":          "var(--c-warn)",
 };
 
 function getPluginIcon(pluginId: string): IconDefinition {

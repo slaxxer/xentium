@@ -3,7 +3,7 @@
 > Companion to ADR-0005 (block layout composition). Read that first for the model;
 > this document is the authoring contract.
 
-Nodevo has exactly two kinds of extension, and no third:
+Xentium has exactly two kinds of extension, and no third:
 
 | | Contains | Trust | Distribution |
 |---|---|---|---|

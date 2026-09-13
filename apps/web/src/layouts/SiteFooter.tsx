@@ -169,9 +169,9 @@ export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
   return (
     <>
       <div className="nv-bar">
-        <Link className="nv-brand" to="/" aria-label="Nodevo home">
+        <Link className="nv-brand" to="/" aria-label="Xentium home">
           <span className="nv-logomark"><FontAwesomeIcon icon={faUsers} /></span>
-          <span className="nv-wordmark">Nodevo</span>
+          <span className="nv-wordmark">Xentium</span>
         </Link>
         {footerLinks.length > 0 && (
           <nav className="nv-links nv-links--grow">

@@ -1,7 +1,7 @@
 /**
  * The error response shape is a public contract.
  *
- * Every Nodevo client — the ACP, the frontend, a plugin's own UI — branches on
+ * Every Xentium client — the ACP, the frontend, a plugin's own UI — branches on
  * `error.code` and localizes the message itself, which is the whole reason the
  * API stays locale-agnostic. So the shape is pinned here rather than left to be
  * discovered by whatever breaks first.
@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { NEC } from "@nodevo/contracts";
-import { NodevoError } from "./NodevoError.js";
+import { XentiumError } from "./XentiumError.js";
 import { createErrorMiddleware, type ErrorLogEntry } from "./errorMiddleware.js";
 
 function invoke(
@@ -42,9 +42,9 @@ function invoke(
 }
 
 describe("createErrorMiddleware", () => {
-  it("renders a NodevoError with its own status and code", () => {
+  it("renders a XentiumError with its own status and code", () => {
     const { status, body } = invoke(
-      new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
+      new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
     );
     expect(status).toBe(404);
     expect(body).toEqual({
@@ -53,15 +53,15 @@ describe("createErrorMiddleware", () => {
   });
 
   it("grades severity off the status", () => {
-    expect(invoke(new NodevoError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" })).body.error.severity)
+    expect(invoke(new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" })).body.error.severity)
       .toBe("error");
-    expect(invoke(new NodevoError({ code: NEC.API_FORBIDDEN, httpStatus: 403, message: "x" })).body.error.severity)
+    expect(invoke(new XentiumError({ code: NEC.API_FORBIDDEN, httpStatus: 403, message: "x" })).body.error.severity)
       .toBe("warn");
   });
 
   it("honours persist:false so high-frequency rejections do not fill the log", () => {
     const { entries } = invoke(
-      new NodevoError({ code: NEC.AUTH_TOKEN_INVALID, httpStatus: 401, message: "expired", persist: false }),
+      new XentiumError({ code: NEC.AUTH_TOKEN_INVALID, httpStatus: 401, message: "expired", persist: false }),
     );
     expect(entries).toHaveLength(0);
   });
@@ -84,14 +84,14 @@ describe("createErrorMiddleware", () => {
     // req.id arrives as a NUMBER from the request-id middleware while the log
     // column is a string — the coercion that kept the Error Log empty when it
     // was missing.
-    const { entries } = invoke(new NodevoError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" }));
+    const { entries } = invoke(new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" }));
     expect(entries[0]!.requestId).toBe("42");
   });
 
   it("works with no persist function at all", () => {
     // An application with no error-log table is a legitimate consumer.
     const { status, body } = invoke(
-      new NodevoError({ code: NEC.API_CONFLICT, httpStatus: 409, message: "dup" }),
+      new XentiumError({ code: NEC.API_CONFLICT, httpStatus: 409, message: "dup" }),
       { persist: undefined },
     );
     expect(status).toBe(409);
@@ -100,7 +100,7 @@ describe("createErrorMiddleware", () => {
 
   it("does not let a failing persist replace the error being reported", () => {
     const { status, body, logger } = invoke(
-      new NodevoError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
+      new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
       { persist: () => { throw new Error("log table is gone"); } },
     );
     expect(status).toBe(404);

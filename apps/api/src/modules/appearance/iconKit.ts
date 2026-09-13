@@ -14,7 +14,7 @@
  * this into a script loader.
  *
  * Why a kit at all, rather than bundling Pro icons: a Pro licence covers the sites
- * its owner operates, and Nodevo is installed by strangers on their own servers.
+ * its owner operates, and Xentium is installed by strangers on their own servers.
  * Bundling Pro artwork into the build would copy licensed assets into every install.
  * A kit is loaded at RUNTIME with the admin's own id, domain-locked by FontAwesome
  * to their site, so each instance brings its own licence. See `docs/icon-kits.md`.

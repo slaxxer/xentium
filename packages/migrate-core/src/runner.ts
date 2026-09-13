@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import pg from "pg";
-import { NodevoLoader, missingPlugins } from "./loader.js";
+import { XentiumLoader, missingPlugins } from "./loader.js";
 import type { AdapterSource, MigrateAdapter, MigrationReporter, MigrationSummary } from "./types.js";
 
 export interface RunOptions {
-  /** Target Nodevo PostgreSQL connection string. */
+  /** Target Xentium PostgreSQL connection string. */
   targetDb: string;
   /** Inspect + extract + report, write nothing (the safe community-beta mode). */
   dryRun?: boolean;
@@ -62,7 +62,7 @@ export async function runMigration(
       [runId, adapter.name, adapter.version, extract.sourceInfo, startedAt],
     );
 
-    const loader = new NodevoLoader(pool, adapter.name, runId, reporter);
+    const loader = new XentiumLoader(pool, adapter.name, runId, reporter);
     try {
       await loader.loadAll(extract, adapter.requiredPlugins ?? []);
     } catch (err) {

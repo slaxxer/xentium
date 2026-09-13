@@ -25,7 +25,7 @@ export const siteService = {
       "features.home.enabled":      true,
       "features.members.enabled":   true,
       "site.landing":               "home",
-      "site.name":                  "Nodevo",
+      "site.name":                  "Xentium",
       "site.url":                   "",
       "auth.login_method":          "email",
       "registration.collect_name":  false,
@@ -78,7 +78,7 @@ export const siteService = {
    *  briefly since the footer renders on every page; uptime is always fresh (the
    *  client re-syncs and ticks it locally between fetches). */
   async getFooter() {
-    const siteName = await getSetting<string>("site.name", "Nodevo");
+    const siteName = await getSetting<string>("site.name", "Xentium");
     const stats = await getCachedFooterStats();
     return {
       siteName,

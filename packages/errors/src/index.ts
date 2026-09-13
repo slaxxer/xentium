@@ -1,12 +1,12 @@
 /**
- * @nodevo/errors — the error vocabulary shared by every Nodevo-framework
+ * @nodevo/errors — the error vocabulary shared by every Xentium-framework
  * application (ADR-0006).
  *
  * NEC codes themselves stay in `@nodevo/contracts`: the browser needs them to
  * localize messages, and this package is server-side. They are re-exported here
  * so error-handling code has a single import.
  */
-export { NodevoError } from "./NodevoError.js";
+export { XentiumError } from "./XentiumError.js";
 export { createErrorMiddleware } from "./errorMiddleware.js";
 export type {
   ErrorLogEntry,

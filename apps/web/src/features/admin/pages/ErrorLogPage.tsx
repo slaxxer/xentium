@@ -74,7 +74,7 @@ export function ErrorLogPage() {
   // Dev-only: trigger a real backend error to verify error_log persistence and
   // the fatal-halt overlay. 5xx types trip the full-screen halt; "notfound" (4xx)
   // stays a toast — the deliberate contrast. Mirrors GET /admin/_debug/throw (dev-only).
-  const simulate = async (type: "critical" | "nodevo500" | "notfound") => {
+  const simulate = async (type: "critical" | "xentium500" | "notfound") => {
     try {
       await api.get(`/admin/_debug/throw?type=${type}`);
     } catch (e) {
@@ -103,7 +103,7 @@ export function ErrorLogPage() {
             <div style={{ display:"flex", gap:6, alignItems:"center", marginRight:6 }}>
               <span style={{ fontSize:11, color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
               <button type="button" className="btn-ghost btn-sm" title="Throw an unhandled 500 (critical) — trips the fatal halt" onClick={() => simulate("critical")}>500</button>
-              <button type="button" className="btn-ghost btn-sm" title="Throw a NodevoError 500 — trips the fatal halt" onClick={() => simulate("nodevo500")}>NEC 500</button>
+              <button type="button" className="btn-ghost btn-sm" title="Throw a XentiumError 500 — trips the fatal halt" onClick={() => simulate("xentium500")}>NEC 500</button>
               <button type="button" className="btn-ghost btn-sm" title="Throw a 404 — toast only, no halt" onClick={() => simulate("notfound")}>404</button>
             </div>
           )}

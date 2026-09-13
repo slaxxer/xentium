@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from "express";
 import { NEC } from "@nodevo/contracts";
-import { NodevoError } from "@nodevo/errors";
+import { XentiumError } from "@nodevo/errors";
 import type { AccessClaims } from "./tokens.js";
 
 /**
@@ -23,7 +23,7 @@ export interface AuthMiddlewareDeps {
     issuedAtMs: number | undefined,
   ): Promise<boolean>;
   /**
-   * Fire-and-forget hook after a successful `requireAuth` — Nodevo's CMS uses it
+   * Fire-and-forget hook after a successful `requireAuth` — Xentium's CMS uses it
    * for online-presence tracking. It must not throw and is never awaited.
    */
   onAuthenticated?(userId: string, req: Request): void;
@@ -36,7 +36,7 @@ export interface AuthMiddlewareDeps {
  * drown everything worth reading.
  */
 export function unauthenticatedError() {
-  return new NodevoError({
+  return new XentiumError({
     code: NEC.AUTH_UNAUTHENTICATED,
     httpStatus: 401,
     message: "Authentication required",
@@ -45,7 +45,7 @@ export function unauthenticatedError() {
 }
 
 export function invalidTokenError() {
-  return new NodevoError({
+  return new XentiumError({
     code: NEC.AUTH_TOKEN_INVALID,
     httpStatus: 401,
     message: "Invalid or expired token",

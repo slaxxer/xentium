@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
 import { requireMaxDimensions } from "./imageDimensions.js";
-import { NodevoError } from "@nodevo/errors";
+import { XentiumError } from "@nodevo/errors";
 
 /** A real PNG header: 8-byte signature + an IHDR carrying width and height. */
 function png(width: number, height: number): Buffer {
@@ -43,13 +43,13 @@ describe("requireMaxDimensions", () => {
 
   it("refuses an image that is too wide", () => {
     const err = run(png(64, 32)).mock.calls[0]![0] as any;
-    expect(err).toBeInstanceOf(NodevoError);
+    expect(err).toBeInstanceOf(XentiumError);
     expect(err.code).toBe("NEC-STORE-7005");
     expect(err.httpStatus).toBe(422);
   });
 
   it("refuses an image that is too tall", () => {
-    expect(run(png(32, 64)).mock.calls[0]![0] as any).toBeInstanceOf(NodevoError);
+    expect(run(png(32, 64)).mock.calls[0]![0] as any).toBeInstanceOf(XentiumError);
   });
 
   /**
@@ -64,7 +64,7 @@ describe("requireMaxDimensions", () => {
   /** Detected as an image by magic bytes, but the header will not parse. */
   it("refuses a buffer whose dimensions cannot be read", () => {
     const err = run(Buffer.from("not an image at all")).mock.calls[0]![0] as any;
-    expect(err).toBeInstanceOf(NodevoError);
+    expect(err).toBeInstanceOf(XentiumError);
   });
 
   /** No file is `uploadSingle`'s error to raise, not this one's. */
