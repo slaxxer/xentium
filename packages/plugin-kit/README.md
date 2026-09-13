@@ -35,6 +35,6 @@ this package knowing they exist.
 
 ---
 
-Part of the [Xentium framework](https://github.com/slaxxer/nodevo).
+Part of the [Xentium framework](https://github.com/slaxxer/xentium).
 
 MIT © Slaxxer

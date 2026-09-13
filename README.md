@@ -76,7 +76,7 @@ That's it — no config files to write. The install wizard collects your databas
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/slaxxer/nodevo.git
+git clone https://github.com/slaxxer/xentium.git
 cd xentium
 corepack enable          # ensures the pinned pnpm version
 pnpm install

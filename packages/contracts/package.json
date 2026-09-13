@@ -28,10 +28,10 @@
   "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/contracts"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/contracts#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/contracts#readme",
   "engines": {
     "node": ">=22.12"
   },

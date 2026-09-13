@@ -7,7 +7,7 @@
 #  |_| \_|\___/|____/|_____| \_/  \___/
 #
 #  Xentium — open-source CMS & community platform
-#  Copyright (c) 2026 Xentium · https://github.com/slaxxer/nodevo
+#  Copyright (c) 2026 Xentium · https://github.com/slaxxer/xentium
 #  Released under the MIT License — see LICENSE
 #
 # Launcher:
