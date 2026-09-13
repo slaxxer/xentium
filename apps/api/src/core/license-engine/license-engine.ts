@@ -1,12 +1,13 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as jose from "jose";
-import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@nodevo/contracts";
+import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { productIdAliases } from "./legacyPluginIds.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { getAccountToken, protocolFetch } from "./protocol-client.js";
 import { getSiteDomain, getSiteId, resolveEnvironment } from "./site-identity.js";
 
@@ -76,8 +77,8 @@ export async function verifyEntitlementJwt(jwt: string): Promise<EntitlementPayl
  * needs to be told to connect an account, not to watch a licence quietly rot.
  */
 async function fetchEntitlementJwt(): Promise<string> {
-  throw new NodevoError({
-    code:       NEC.LICENSE_SERVER_REJECTED,
+  throw new XentiumError({
+    code:       XEC.LICENSE_SERVER_REJECTED,
     httpStatus: 410,
     message:    "Manual license keys can no longer be refreshed. Connect your marketplace account in ACP → Extensions → License.",
   });
@@ -275,7 +276,10 @@ export async function getEntitlementStatus(pluginId: string, kind: ProductKind =
     // Grants are objects — matching against the array itself silently fails
     // for every plugin, and "you do not own this" is not a failure mode that
     // announces itself.
-    if (!claims.entitlements.some((e) => e.id === `${kind}.${pluginId}`)) {
+    // Both spellings of the id count — see legacyPluginIds.ts. An entitlement
+    // issued before the Nodevo → Xentium rename names the old product id.
+    const ids = productIdAliases(pluginId);
+    if (!claims.entitlements.some((e) => ids.some((id) => e.id === `${kind}.${id}`))) {
       return { ...base, state: "missing" };
     }
     // Production-only domain enforcement (ADR 0001 §5).
@@ -309,7 +313,7 @@ export async function isPluginEntitled(pluginId: string): Promise<boolean> {
  * requires a license if the marketplace sells THAT id as paid (cached set in
  * `marketplace.paid_plugin_ids`, refreshed from the catalogue). This deliberately
  * ignores the package's own `licenseRequired` manifest flag, which an uploaded
- * .nvplugin controls — so a paid plugin repackaged as "free" is still gated.
+ * .xtplugin controls — so a paid plugin repackaged as "free" is still gated.
  * Ids the marketplace doesn't sell (genuine third-party plugins) aren't gated:
  * they aren't your product and couldn't be entitled through your account anyway.
  */
@@ -335,7 +339,8 @@ export async function themeRequiresLicense(themeId: string): Promise<boolean> {
 async function idIsPaid(productId: string, key: string): Promise<boolean> {
   const { getSetting } = await import("../../shared/utils/settings.js");
   const paidIds = await getSetting<string[]>(key, []);
-  return Array.isArray(paidIds) && paidIds.includes(productId);
+  if (!Array.isArray(paidIds)) return false;
+  return productIdAliases(productId).some((id) => paidIds.includes(id));
 }
 
 /**
@@ -382,8 +387,8 @@ export async function assertPluginEnableAllowed(pluginId: string, pluginName: st
       select: { licenseRequired: true },
     });
     if (!record?.licenseRequired) return;
-    throw new NodevoError({
-      code:       NEC.LICENSE_SOURCE_UNREACHABLE,
+    throw new XentiumError({
+      code:       XEC.LICENSE_SOURCE_UNREACHABLE,
       httpStatus: 503,
       message:    `"${pluginName}" declares that it needs a licence, and the marketplace could not be reached to check. Connect this install to a marketplace account and try again.`,
     });
@@ -407,7 +412,7 @@ export async function assertPluginEnableAllowed(pluginId: string, pluginName: st
  * ever be checked again once the file is here: a theme is data, it has no code to
  * run a check, and the pages it arranged are already arranged. So this runs at
  * DOWNLOAD time and nowhere else, and a theme that got in by any other route
- * (a manual `.nvtheme` upload, a restore) is deliberately not touched. The
+ * (a manual `.xttheme` upload, a restore) is deliberately not touched. The
  * redistribution that follows from that is known and accepted (ADR-0001 / §53).
  *
  * The authoritative refusal is the marketplace's — it will not hand over an
@@ -464,27 +469,27 @@ async function themeRefusal(
   themeId:   string,
   themeName: string,
   licence:   { status: string } | undefined,
-): Promise<NodevoError> {
+): Promise<XentiumError> {
   const { marketplaceWebUrl: url } = await import("./protocol-client.js");
 
   if (!(await getAccountToken())) {
-    return new NodevoError({
-      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+    return new XentiumError({
+      code:       XEC.LICENSE_ACCOUNT_REQUIRED,
       httpStatus: 402,
       message:    `"${themeName}" is a paid theme. Connect your marketplace account in ACP → Extensions → Licence and every licence you own applies to this install.`,
     });
   }
 
   if (licence) {
-    return new NodevoError({
-      code:       NEC.LICENSE_EXPIRED,
+    return new XentiumError({
+      code:       XEC.LICENSE_EXPIRED,
       httpStatus: 402,
       message:    `Your "${themeName}" licence is ${licence.status}. Renew it at ${url("/account/licences")} to download it again — a theme you already installed keeps working.`,
     });
   }
 
-  return new NodevoError({
-    code:       NEC.LICENSE_NOT_FOUND,
+  return new XentiumError({
+    code:       XEC.LICENSE_NOT_FOUND,
     httpStatus: 402,
     message:    `Your marketplace account does not own "${themeName}". It is available at ${url(`/themes/${themeId}`)}.`,
   });
@@ -503,17 +508,17 @@ async function themeRefusal(
  * a vaguer message is better than a wrong one, and being offline is not proof
  * of anything about ownership.
  */
-async function explainEnableRefusal(pluginId: string, pluginName: string): Promise<NodevoError> {
+async function explainEnableRefusal(pluginId: string, pluginName: string): Promise<XentiumError> {
   const { marketplaceWebUrl } = await import("./protocol-client.js");
-  const generic = new NodevoError({
-    code:       NEC.LICENSE_NOT_FOUND,
+  const generic = new XentiumError({
+    code:       XEC.LICENSE_NOT_FOUND,
     httpStatus: 402,
     message:    `"${pluginName}" needs a licence from your marketplace account, and this install does not have one yet.`,
   });
 
   if (!(await getAccountToken())) {
-    return new NodevoError({
-      code:       NEC.LICENSE_ACCOUNT_REQUIRED,
+    return new XentiumError({
+      code:       XEC.LICENSE_ACCOUNT_REQUIRED,
       httpStatus: 402,
       message:    `"${pluginName}" is a paid plugin. Connect your marketplace account in ACP → Extensions → Licence and every licence you own activates for this install.`,
     });
@@ -529,8 +534,8 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
 
   const licence = owned.find((l) => l.product.kind === "plugin" && l.product.id === pluginId);
   if (!licence) {
-    return new NodevoError({
-      code:       NEC.LICENSE_NOT_FOUND,
+    return new XentiumError({
+      code:       XEC.LICENSE_NOT_FOUND,
       httpStatus: 402,
       message:    `Your marketplace account does not own "${pluginName}". It is available at ${marketplaceWebUrl(`/plugins/${pluginId}`)}.`,
     });
@@ -539,16 +544,16 @@ async function explainEnableRefusal(pluginId: string, pluginName: string): Promi
   // Owned, not bound here, and every seat spent elsewhere: the one refusal the
   // admin can fix without buying anything, and the one the old message hid.
   if (!licence.activeHere && licence.seats !== null && licence.seatsUsed >= licence.seats) {
-    return new NodevoError({
-      code:       NEC.LICENSE_CAP_REACHED,
+    return new XentiumError({
+      code:       XEC.LICENSE_CAP_REACHED,
       httpStatus: 402,
       message:    `All ${licence.seats} seat${licence.seats === 1 ? "" : "s"} of your "${pluginName}" licence are in use on other installs. Free one at ${marketplaceWebUrl("/account/licences")} and enable it again.`,
     });
   }
 
   if (licence.status === "expired" || licence.status === "revoked") {
-    return new NodevoError({
-      code:       NEC.LICENSE_EXPIRED,
+    return new XentiumError({
+      code:       XEC.LICENSE_EXPIRED,
       httpStatus: 402,
       message:    `Your "${pluginName}" licence is ${licence.status}. Renew it at ${marketplaceWebUrl("/account/licences")} to enable the plugin again.`,
     });

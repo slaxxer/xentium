@@ -320,7 +320,7 @@ export function RegisterPage() {
 
           <div className="reg-wizard__brand">
             <div className="reg-wizard__logo-mark">N</div>
-            <span className="reg-wizard__wordmark">Nodevo</span>
+            <span className="reg-wizard__wordmark">Xentium</span>
           </div>
 
           <div className="reg-wizard__signin-hint">
@@ -479,19 +479,19 @@ export function RegisterPage() {
       await applyLogin(res.accessToken);
     } catch (err: any) {
       const code = err?.detail?.error?.code;
-      if (code === "NEC-AUTH-1020") {
+      if (code === "XEC-AUTH-1020") {
         swalToast(t("register.inviteRequiredErr"));
         setStep(1);
-      } else if (code === "NEC-AUTH-1021") {
+      } else if (code === "XEC-AUTH-1021") {
         swalToast(t("register.inviteInvalid"));
         setStep(1);
-      } else if (code === "NEC-AUTH-2003") {
+      } else if (code === "XEC-AUTH-2003") {
         swalToast(t("register.codeWrong"));
-      } else if (code === "NEC-AUTH-2001") {
+      } else if (code === "XEC-AUTH-2001") {
         swalToast(t("register.emailTakenShort"));
         setEmailAvail("taken");
         setStep(1);
-      } else if (code === "NEC-AUTH-2002") {
+      } else if (code === "XEC-AUTH-2002") {
         swalToast(t("register.usernameTaken"));
         setUsernameAvail("taken");
         setStep(1);
@@ -536,7 +536,7 @@ export function RegisterPage() {
 
         <div className="reg-wizard__brand">
           <div className="reg-wizard__logo-mark">N</div>
-          <span className="reg-wizard__wordmark">Nodevo</span>
+          <span className="reg-wizard__wordmark">Xentium</span>
         </div>
 
         <Stepper step={step} done={done} />

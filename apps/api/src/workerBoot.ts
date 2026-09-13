@@ -75,7 +75,7 @@ async function boot() {
   startWorkers();
   await scheduleJobs();
 
-  // Converge Redis schedulers with the ncf_scheduled_tasks rows: drop orphans
+  // Converge Redis schedulers with the xcf_scheduled_tasks rows: drop orphans
   // (a task deleted while the worker was down keeps firing otherwise) and
   // re-assert every enabled task. After plugin init for the same reason the
   // workers are — a half-initialized process draws wrong conclusions.

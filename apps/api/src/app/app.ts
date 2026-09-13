@@ -5,9 +5,9 @@ import cookieParser from 'cookie-parser';
 import pinoHttp from 'pino-http';
 import path from 'node:path';
 import { env, isProd } from '../config/env.js';
-import { NODEVO_VERSION } from '../config/version.js';
+import { XENTIUM_VERSION } from '../config/version.js';
 import { errorMiddleware } from '../shared/errors/errorMiddleware.js';
-import { NodevoError } from '../shared/errors/NodevoError.js';
+import { XentiumError } from '../shared/errors/XentiumError.js';
 import { authRouter } from '../modules/auth/auth.routes.js';
 import { installGuard } from "../shared/middleware/installGuard.js";
 import { usersRouter } from '../modules/users/users.routes.js';
@@ -82,11 +82,11 @@ export function createApp(): Express {
   //    other `themes/*` dirs (e.g. private `themes/packs`).
   app.use('/uploads', (req, res, next) => {
     const rel = path.normalize(req.path).replace(/^[/\\]+/, '');
-    if (rel.includes('..')) return next(NodevoError.notFound());
+    if (rel.includes('..')) return next(XentiumError.notFound());
     const ok = ALLOWED_UPLOAD_DIRS.some(
       (d) => rel === d || rel.startsWith(d + '/') || rel.startsWith(d + path.sep),
     );
-    if (!ok) return next(NodevoError.notFound());
+    if (!ok) return next(XentiumError.notFound());
     next();
   });
 
@@ -102,7 +102,7 @@ export function createApp(): Express {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
       }
-      // Theme assets arrive inside an imported .nvtheme — an untrusted archive. Their
+      // Theme assets arrive inside an imported .xttheme — an untrusted archive. Their
       // type IS magic-byte-verified on import, but SVG has no magic bytes and can carry
       // script, so navigating straight to one must not execute it. No attachment
       // disposition here: unlike an attachment these have to render in <img> and CSS
@@ -116,7 +116,7 @@ export function createApp(): Express {
 
   // 4. Install guard + routes
   app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', version: NODEVO_VERSION, uptime: process.uptime(), env: env.NODE_ENV });
+    res.json({ status: 'ok', version: XENTIUM_VERSION, uptime: process.uptime(), env: env.NODE_ENV });
   });
 
   // Public — frontend uses this to decide which plugin JS bundles to activate
@@ -136,7 +136,7 @@ export function createApp(): Express {
   });
 
   // Public — the site default language (§60.3 resolution chain). Visitors with
-  // no explicit language choice (no nv_locale cookie, no account preference)
+  // no explicit language choice (no xt_locale cookie, no account preference)
   // render the UI in this locale. Pre-install / unset → null and clients keep
   // their local detection.
   app.get('/api/meta/site-locale', async (_req, res) => {
@@ -149,7 +149,7 @@ export function createApp(): Express {
   });
 
   // Public — serves an enabled plugin's compiled web bundle (runtime UI loading).
-  // The host loads this via <script> after setting window.__NODEVO_HOST__.
+  // The host loads this via <script> after setting window.__XENTIUM_HOST__.
   app.get('/api/meta/plugin-web/:pluginId', async (req, res) => {
     try {
       const pluginId = req.params.pluginId;
@@ -255,7 +255,7 @@ export function createApp(): Express {
   });
 
   // 5. 404 + error middleware LAST
-  app.use((_req, _res, next) => next(NodevoError.notFound()));
+  app.use((_req, _res, next) => next(XentiumError.notFound()));
   app.use(errorMiddleware);
 
   return app;

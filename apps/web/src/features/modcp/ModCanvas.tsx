@@ -558,7 +558,7 @@ export function ModCanvas() {
             {/* Footer */}
             <footer className="mc-foot">
               <span>Press <kbd>Shift</kbd>+<kbd>M</kbd> to toggle</span>
-              <span>Nodevo v1 · mod console</span>
+              <span>Xentium v1 · mod console</span>
             </footer>
           </div>
         </div>

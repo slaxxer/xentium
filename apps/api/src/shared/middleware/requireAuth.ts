@@ -1,11 +1,11 @@
 /**
- * The CMS's binding of the framework request guards (`@nodevo/auth`).
+ * The CMS's binding of the framework request guards (`@xentium/auth`).
  *
  * The package owns Bearer parsing, verification, the revocation check and the
- * NEC error shapes. This file supplies the verifier, the denylist, and the one
+ * XEC error shapes. This file supplies the verifier, the denylist, and the one
  * thing that is purely this application's: online-presence tracking.
  */
-import { createAuthMiddleware, unauthenticatedError, invalidTokenError } from "@nodevo/auth";
+import { createAuthMiddleware, unauthenticatedError, invalidTokenError } from "@xentium/auth";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
 import { redis, rkey } from "../../infrastructure/redis.js";

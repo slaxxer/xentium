@@ -23,10 +23,10 @@ const STACK: { key: string; value: string }[] = [
 ];
 
 const RESOURCES: { key: string; icon: string; href: string }[] = [
-  { key: "docs",        icon: "book",      href: "https://nodevo.io/docs" },
+  { key: "docs",        icon: "book",      href: "https://xentium.org/docs" },
   { key: "github",      icon: "github",    href: "https://github.com/nodevo/nodevo" },
-  { key: "changelog",   icon: "changelog", href: "https://nodevo.io/changelog" },
-  { key: "marketplace", icon: "bag",       href: "https://nodevo.io/plugins" },
+  { key: "changelog",   icon: "changelog", href: "https://xentium.org/changelog" },
+  { key: "marketplace", icon: "bag",       href: "https://xentium.org/plugins" },
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -163,7 +163,7 @@ export function AboutPage() {
           <div className="ab-hero__glow" />
           <div className="ab-hero__mark"><AcpIcon name="zap" size={32} stroke={2} /></div>
           <div className="ab-hero__id">
-            <h2>Nodevo</h2>
+            <h2>Xentium</h2>
             <p className="ab-hero__meta">
               <b>v{health?.version ?? "…"}</b> · {t("about.tagline")}
             </p>

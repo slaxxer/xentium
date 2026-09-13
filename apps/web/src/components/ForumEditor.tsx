@@ -2,7 +2,7 @@
  * `ForumEditor` — now a thin adapter over `Composer`.
  *
  * ⚠ THE NAME AND THE PROPS ARE THE CONTRACT. This module is a host global
- * (`__NODEVO_HOST__.webForumEditor`) that BUILT plugin bundles import — the forum
+ * (`__XENTIUM_HOST__.webForumEditor`) that BUILT plugin bundles import — the forum
  * plugin's new-thread, thread-reply and post-edit pages. A shipped bundle cannot be
  * edited from this repo, so the export keeps its name, its props and its four-method
  * handle, and all three surfaces get the redesigned editor with no plugin rebuild.

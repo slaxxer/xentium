@@ -1,5 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { progressionCriteriaRegistry } from "../../core/progression-registry/progression-criteria-registry.js";
 import type {
@@ -51,7 +51,7 @@ export const progressionService = {
   /** Get or create (with defaults) the progression config for a group. */
   async getGroupProgression(groupId: string) {
     const group = await prisma.group.findUnique({ where: { id: groupId } });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
 
     const existing = await prisma.groupProgression.findUnique({ where: { groupId } });
     if (existing) return existing;
@@ -63,7 +63,7 @@ export const progressionService = {
   /** Upsert the progression config for a group. */
   async updateGroupProgression(groupId: string, data: UpdateGroupProgressionInput) {
     const group = await prisma.group.findUnique({ where: { id: groupId } });
-    if (!group) throw NodevoError.notFound("Group not found");
+    if (!group) throw XentiumError.notFound("Group not found");
 
     return prisma.groupProgression.upsert({
       where: { groupId },

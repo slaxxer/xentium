@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "../../../hooks/useAuth";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faGlobe, faLock, faImage } from "@fortawesome/free-solid-svg-icons";
-import { PAGE_SLOTS, type PageSlot } from "@nodevo/contracts";
+import { PAGE_SLOTS, type PageSlot } from "@xentium/contracts";
 import {
   useArticleEditor,
   ArticleEditorToolbar,

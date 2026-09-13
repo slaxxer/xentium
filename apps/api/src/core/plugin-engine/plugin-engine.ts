@@ -11,8 +11,8 @@ import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { assertPluginEnableAllowed } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js";
@@ -76,7 +76,7 @@ async function ensurePluginDir(): Promise<void> {
 }
 
 function packagePath(pluginId: string, version: string): string {
-  return path.join(PLUGIN_STORE, `${pluginId}-${version}.nvplugin`);
+  return path.join(PLUGIN_STORE, `${pluginId}-${version}.xtplugin`);
 }
 
 /** Directory a plugin's package is extracted to (server bundle + web assets). */
@@ -84,42 +84,42 @@ export function extractedDir(pluginId: string): string {
   return path.join(PLUGIN_STORE, pluginId);
 }
 
-/** Validate a .nvplugin ZIP buffer. Returns the parsed manifest. */
+/** Validate a .xtplugin ZIP buffer. Returns the parsed manifest. */
 export async function validatePackage(buffer: Buffer): Promise<{ manifest: PluginManifest; zip: AdmZip }> {
   let zip: AdmZip;
   try {
     zip = new AdmZip(buffer);
   } catch {
-    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Package is not a valid ZIP archive." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Package is not a valid ZIP archive." });
   }
 
   // Zip-slip: reject any entry with a path traversal
   for (const entry of zip.getEntries()) {
     if (entry.entryName.includes("..")) {
-      throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: `Unsafe path in package: ${entry.entryName}` });
+      throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: `Unsafe path in package: ${entry.entryName}` });
     }
   }
 
   const manifestEntry = zip.getEntry("manifest.json");
   if (!manifestEntry) {
-    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Missing manifest.json in plugin package." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Missing manifest.json in plugin package." });
   }
 
   let raw: unknown;
   try {
     raw = JSON.parse(manifestEntry.getData().toString("utf8"));
   } catch {
-    throw new NodevoError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "manifest.json is not valid JSON." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "manifest.json is not valid JSON." });
   }
 
   let manifest: PluginManifest;
   try {
     manifest = validateManifest(raw);
   } catch (err: any) {
-    // validateManifest throws coded NodevoErrors (2001/2030) — pass them through
+    // validateManifest throws coded XentiumErrors (2001/2030) — pass them through
     // instead of flattening them into an uncoded 5000.
-    if (err instanceof NodevoError) throw err;
-    throw new NodevoError({ code: NEC.PLUGIN_INVALID_MANIFEST, httpStatus: 422, message: `Invalid manifest.json: ${err.message ?? err}` });
+    if (err instanceof XentiumError) throw err;
+    throw new XentiumError({ code: XEC.PLUGIN_INVALID_MANIFEST, httpStatus: 422, message: `Invalid manifest.json: ${err.message ?? err}` });
   }
 
   // Validate migration pairs before touching anything
@@ -135,7 +135,7 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   // Check if already installed
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (existing) {
-    throw new NodevoError({ code: NEC.PLUGIN_ALREADY_INSTALLED, httpStatus: 409, message: `Plugin "${manifest.name}" (${manifest.id}) is already installed.` });
+    throw new XentiumError({ code: XEC.PLUGIN_ALREADY_INSTALLED, httpStatus: 409, message: `Plugin "${manifest.name}" (${manifest.id}) is already installed.` });
   }
 
   await ensurePluginDir();
@@ -157,7 +157,7 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   // owns no live data for this plugin, so it's safe to clear any leftovers first.
   // On a clean DB this is a harmless no-op (down migrations use DROP ... IF EXISTS).
   if (manifest.migrations.length) {
-    const tracked = await prisma.nodevoPluginMigration.count({ where: { pluginId: manifest.id } });
+    const tracked = await prisma.xentiumPluginMigration.count({ where: { pluginId: manifest.id } });
     if (tracked === 0) {
       await forceCleanupSchema(zip, manifest);
     }
@@ -202,10 +202,10 @@ export async function updatePlugin(
 
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (!existing) {
-    throw new NodevoError({ code: NEC.PLUGIN_NOT_FOUND, httpStatus: 404, message: `Plugin "${manifest.id}" is not installed — nothing to update.` });
+    throw new XentiumError({ code: XEC.PLUGIN_NOT_FOUND, httpStatus: 404, message: `Plugin "${manifest.id}" is not installed — nothing to update.` });
   }
   if (compareSemver(manifest.version, existing.installedVersion) <= 0) {
-    throw new NodevoError({ code: NEC.PLUGIN_VERSION_NOT_NEWER, httpStatus: 409, message: `Package version ${manifest.version} is not newer than the installed ${existing.installedVersion}. Updates are forward-only.` });
+    throw new XentiumError({ code: XEC.PLUGIN_VERSION_NOT_NEWER, httpStatus: 409, message: `Package version ${manifest.version} is not newer than the installed ${existing.installedVersion}. Updates are forward-only.` });
   }
 
   const wasEnabled = existing.status === "enabled";
@@ -335,8 +335,8 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { badgeCriteriaRegistry } = await import("../badge-registry/badge-criteria-registry.js");
   badgeCriteriaRegistry.deregister(pluginId);
 
-  // Deregister NEC codes
-  const { necRegistry } = await import("../nec-registry/nec-registry.js");
+  // Deregister XEC codes
+  const { necRegistry } = await import("../xec-registry/xec-registry.js");
   necRegistry.deregister(pluginId);
 
   // Deregister any plugin security scans
@@ -357,7 +357,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
    * published map is memoized per template key, and a disabled plugin's template
    * must stop being served immediately rather than up to 30 seconds later.
    */
-  const { deregisterTemplatesFor } = await import("@nodevo/contracts");
+  const { deregisterTemplatesFor } = await import("@xentium/contracts");
   const droppedTemplates = deregisterTemplatesFor(pluginId);
   if (droppedTemplates.length) {
     const { layoutService } = await import("../../modules/layouts/layout.service.js");
@@ -402,7 +402,7 @@ export async function uninstallPlugin(pluginId: string, removeData: boolean): Pr
     }
     // Always purge residual migration tracking so a future reinstall starts clean
     // even if a down migration above failed mid-way.
-    await prisma.nodevoPluginMigration.deleteMany({ where: { pluginId } });
+    await prisma.xentiumPluginMigration.deleteMany({ where: { pluginId } });
   }
 
   // Delete package file + extracted dir

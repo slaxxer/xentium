@@ -1,14 +1,14 @@
 /**
  * The CMS's session flow, built on the framework token primitives
- * (`@nodevo/auth`).
+ * (`@xentium/auth`).
  *
  * The package mints and verifies tokens and hashes refresh tokens. Everything
- * below is application logic and stays here: sessions live in `ncf_sessions`,
+ * below is application logic and stays here: sessions live in `xcf_sessions`,
  * "banned" and "deactivated" are this application's states, login events feed
  * its security analysis, and the device-cookie plumbing is its own. A framework
  * package may not know what a user is (ADR-0006), and all of this does.
  */
-import { createTokenService } from "@nodevo/auth";
+import { createTokenService } from "@xentium/auth";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
 import { revokeSessionAccessToken } from "./session-revocation.js";

@@ -25,7 +25,7 @@ import {
   type AudienceView,
   type BlockNode,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { getBlock } from "../../../layout/blockRegistry";
 
 /** Where a dragged block would land. `parentId: null` is the region's own list. */
@@ -209,7 +209,7 @@ export function TreeNode({
           {/* The TYPE, under the name. A label is what a block is called and a type is
               what it IS — the two diverge exactly where it matters (`forum.categories`
               is "Forum categories" until a second plugin ships one), and the type is
-              also what `docs/plugin-blocks.md` and a `.nvtheme` speak in. */}
+              also what `docs/plugin-blocks.md` and a `.xttheme` speak in. */}
           <code className="lay__node-type">{node.type}</code>
           {/* The preview does not hide a restricted block — an admin who limited
               one to a group they are not in would otherwise lose the ability to

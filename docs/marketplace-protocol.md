@@ -1,6 +1,6 @@
 # The marketplace protocol (v1)
 
-How a Nodevo install talks to a marketplace. This is the **outbound** contract — the
+How a Xentium install talks to a marketplace. This is the **outbound** contract — the
 inbound ACP routes that sit in front of it are in [`API.md`](./API.md).
 
 Everything here is a **published contract**. The signing half lives in the marketplace and
@@ -105,7 +105,7 @@ the public key carried in the request itself.
 
 The alternative to an admin copying a connect code between two browser tabs, and the
 default path in the ACP since 2026-08-28. Shaped like the **OAuth device grant**, and for
-the same reason: a Nodevo install cannot receive a browser redirect it can prove came from
+the same reason: a Xentium install cannot receive a browser redirect it can prove came from
 the marketplace — it has no registered origin, and most of them are on hostnames the
 marketplace has never seen. So nothing is redirected back. The install **polls**, which
 removes the `redirect_uri` surface entirely: there is no URL for an attacker to substitute,
@@ -185,7 +185,7 @@ separating them turns the endpoint into a way to enumerate unpublished releases.
 The **updates window** is the deliberate exception. A release published after
 `updatesUntil` is refused with a **403 naming the date and version**, because the customer
 *does* own the product and "renew to get 3.2" is something they can act on. Both halves
-speak NEC codes, so the instance prefers the code the marketplace named over one guessed
+speak XEC codes, so the instance prefers the code the marketplace named over one guessed
 from the status — but only codes it recognises, so a newer marketplace cannot inject an
 unknown one.
 
@@ -193,7 +193,7 @@ unknown one.
 
 ## The entitlement JWT
 
-RS256. The verifying key ships in `@nodevo/sdk`; `LICENSE_PUBLIC_KEY` overrides it, which is
+RS256. The verifying key ships in `@xentium/sdk`; `LICENSE_PUBLIC_KEY` overrides it, which is
 how a local dev instance verifies against a local marketplace's dev keypair.
 
 ```ts
@@ -275,7 +275,7 @@ that was already active.
 instance has to ask a second question rather than read it off the activation response. If
 that ever changes, the instance's explanation is where it will show up.
 
-An install with no `ncf_installs` row cannot connect at all — `getSiteId()` throws
-(NEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
+An install with no `xcf_installs` row cannot connect at all — `getSiteId()` throws
+(XEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
 collapses every affected install into one bucket on the marketplace and, under install
 binding, becomes a licence bypass.

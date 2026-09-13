@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
 #
-#   _   _  ___  ____  _____ _   _  ___
-#  | \ | |/ _ \|  _ \| ____| | | |/ _ \
-#  |  \| | | | | | | |  _| | | | | | | |
-#  | |\  | |_| | |_| | |___| \ V /| |_| |
-#  |_| \_|\___/|____/|_____| \_/  \___/
+#   __  __     ______     __   __     ______   __     __  __     __    __
+#  /\_\_\_\   /\  ___\   /\ "-.\ \   /\__  _\ /\ \   /\ \/\ \   /\ "-./  \
+#  \/_/\_\/_  \ \  __\   \ \ \-.  \  \/_/\ \/ \ \ \  \ \ \_\ \  \ \ \-./\ \
+#    /\_\/\_\  \ \_____\  \ \_\\"\_\    \ \_\  \ \_\  \ \_____\  \ \_\ \ \_\
+#    \/_/\/_/   \/_____/   \/_/ \/_/     \/_/   \/_/   \/_____/   \/_/  \/_/
 #
-#  Nodevo — open-source CMS & community platform
-#  Copyright (c) 2026 Nodevo · https://github.com/slaxxer/nodevo
+#  Xentium — open-source CMS & community platform
+#  Copyright (c) 2026 Xentium · https://github.com/slaxxer/xentium
 #  Released under the MIT License — see LICENSE
 #
 # Launcher:
-#   ./nodevo.sh        -> bring up Postgres+Redis (wait for healthy), then run api + worker + web
-#   ./nodevo.sh down   -> stop the infrastructure containers
+#   ./xentium.sh        -> bring up Postgres+Redis (wait for healthy), then run api + worker + web
+#   ./xentium.sh down   -> stop the infrastructure containers
 #
 # Ctrl+C stops the three app processes. Infra containers stay up for fast restarts;
-# use `./nodevo.sh down` when you want to shut them down completely.
+# use `./xentium.sh down` when you want to shut them down completely.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

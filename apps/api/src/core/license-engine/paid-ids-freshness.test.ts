@@ -41,7 +41,7 @@ vi.mock("../../infrastructure/db.js", () => ({
 }));
 
 vi.mock("./protocol-client.js", () => ({
-  SOURCE_ID: "nodevo.io",
+  SOURCE_ID: "xentium.org",
   K_REF: "ref", K_AT: "at",
   clearIdentity: async () => {},
   getAccountToken: async () => "tok",
@@ -68,7 +68,7 @@ const minutesAgo = (n: number) => new Date(Date.now() - n * 60_000);
 beforeEach(() => {
   world.row = null;
   world.reachable = true;
-  world.pages = [{ data: [{ id: "nodevo-forum", licenseRequired: true }], meta: { totalPages: 1 } }];
+  world.pages = [{ data: [{ id: "xentium-forum", licenseRequired: true }], meta: { totalPages: 1 } }];
   upsert.mockClear();
   protocolFetch.mockClear();
   protocolFetch.mockImplementation(catalogue);

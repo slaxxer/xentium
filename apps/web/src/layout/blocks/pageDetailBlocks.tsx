@@ -12,7 +12,7 @@
  * None of them fetch. `PageReaderPage` is the host container: it owns the query and
  * the staff check, and passes the resolved page down as context.
  */
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { ArticleContent } from "../../features/articles/components/ArticleContent";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 

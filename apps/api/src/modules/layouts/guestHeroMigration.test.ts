@@ -8,7 +8,7 @@
  * write anything on a site that had nothing to carry, and never run twice.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_VARIANT, blockTypesIn, type BlockNode } from "@nodevo/contracts";
+import { DEFAULT_VARIANT, blockTypesIn, type BlockNode } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
@@ -54,7 +54,7 @@ describe("nothing to carry", () => {
   });
 
   it("ignores a setting stored at the value the old page called default", async () => {
-    await setSetting("guesthome.hero_title", "Where people who build with nodevo hang out.");
+    await setSetting("guesthome.hero_title", "Where people who build with xentium hang out.");
     expect((await migrateGuestHeroToLayout()).status).toBe("nothing-to-carry");
     expect(await storedHome()).toBeNull();
   });

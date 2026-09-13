@@ -13,7 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   COMPOSER_DEFAULT_CONFIG, resolveComposerConfig,
   type ComposerConfig, type ResolvedComposerTool,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../lib/api";
 
 export const COMPOSER_CONFIG_KEY = ["composer-config"] as const;

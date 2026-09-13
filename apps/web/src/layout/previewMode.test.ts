@@ -121,10 +121,10 @@ describe("the template being edited", () => {
 describe("the editor marker", () => {
   it("is stamped while the bridge is installed, and removed with it", async () => {
     const { installPreviewBridge } = await import("./previewBridge");
-    expect(document.documentElement.dataset.nvEditor).toBeUndefined();
+    expect(document.documentElement.dataset.xtEditor).toBeUndefined();
     const teardown = installPreviewBridge();
-    expect(document.documentElement.dataset.nvEditor).toBe("1");
+    expect(document.documentElement.dataset.xtEditor).toBe("1");
     teardown();
-    expect(document.documentElement.dataset.nvEditor).toBeUndefined();
+    expect(document.documentElement.dataset.xtEditor).toBeUndefined();
   });
 });

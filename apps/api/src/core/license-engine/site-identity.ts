@@ -5,12 +5,12 @@
 // without importing the engine that imports the client. Everything here is
 // dependency-light on purpose — prisma, settings, env, nothing else.
 
-import type { DeployEnvironment } from "@nodevo/contracts";
+import type { DeployEnvironment } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 /**
  * The host this instance reports. The admin-configured canonical URL
@@ -56,7 +56,7 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
 
 /**
  * This install's UUID, minted by the installer's finalize step into
- * ncf_installs.siteId. The single source for anything talking to the
+ * xcf_installs.siteId. The single source for anything talking to the
  * marketplace.
  *
  * THROWS when there is no install row. It used to fall back to the literal
@@ -72,8 +72,8 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
 export async function getSiteId(): Promise<string> {
   const row = await prisma.install.findFirst({ select: { siteId: true } });
   if (!row?.siteId) {
-    throw new NodevoError({
-      code:       NEC.LICENSE_SITE_ID_MISSING,
+    throw new XentiumError({
+      code:       XEC.LICENSE_SITE_ID_MISSING,
       httpStatus: 503,
       message:    "This instance has no install identity yet. Finish the installer before connecting a marketplace account.",
     });

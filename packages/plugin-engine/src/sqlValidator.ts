@@ -1,4 +1,4 @@
-import { NodevoError, NEC } from "@nodevo/errors";
+import { XentiumError, XEC } from "@xentium/errors";
 // Validates that a plugin migration SQL file contains only DDL statements.
 // Rejects any DML (INSERT/UPDATE/DELETE/SELECT/TRUNCATE/COPY) or anything else.
 // Returns true if valid, throws with a descriptive message if not.
@@ -8,10 +8,12 @@ const ALLOWED_DDL =
 const DISALLOWED = /^\s*(INSERT|UPDATE|DELETE|SELECT|TRUNCATE|COPY|MERGE|CALL|EXEC|GRANT|REVOKE|LOCK)\b/i;
 
 // Namespaces a plugin migration may never create/alter/drop into: core tables
-// (`ncf_`), core-owned bookkeeping (`nodevo_` e.g. nodevo_plugin_migrations),
+// (`xcf_`, and `ncf_` which a database predating the rename still uses),
+// core-owned bookkeeping (`nodevo_` and `xentium_` — the pre- and
+// post-rename prefixes; existing databases still carry nodevo_ objects),
 // Prisma's internal tables, and Postgres system catalogs. Enforced for EVERY
 // plugin, whether or not it declares a tablePrefix.
-const RESERVED_NAME = /^(ncf_|nodevo_|_prisma|pg_|information_schema)/i;
+const RESERVED_NAME = /^(xcf_|ncf_|nodevo_|xentium_|_prisma|pg_|information_schema)/i;
 
 /**
  * Naming policy for a plugin's migrations. `tablePrefix` (when the manifest
@@ -189,15 +191,15 @@ export function validateMigrationSql(sql: string, filename: string, policy?: Mig
     const stmt = leadingKeyword(rawStmt);
     if (!stmt) continue; // comment-only / empty
     if (DISALLOWED.test(stmt)) {
-      throw new NodevoError({
-        code:       NEC.PLUGIN_INVALID_MIGRATION,
+      throw new XentiumError({
+        code:       XEC.PLUGIN_INVALID_MIGRATION,
         httpStatus: 422,
         message:    `${filename} contains a disallowed statement: "${stmt.slice(0, 60)}…". Only DDL (CREATE/ALTER/DROP TABLE/INDEX/FUNCTION/TRIGGER) is permitted in plugin migrations.`,
       });
     }
     if (!ALLOWED_DDL.test(stmt)) {
-      throw new NodevoError({
-        code:       NEC.PLUGIN_INVALID_MIGRATION,
+      throw new XentiumError({
+        code:       XEC.PLUGIN_INVALID_MIGRATION,
         httpStatus: 422,
         message:    `${filename} contains an unrecognised statement: "${stmt.slice(0, 60)}…". Only DDL statements are permitted.`,
       });
@@ -206,15 +208,15 @@ export function validateMigrationSql(sql: string, filename: string, policy?: Mig
     // Naming guards — a plugin's schema must stay in its own namespace.
     for (const name of extractGovernedNames(stmt)) {
       if (RESERVED_NAME.test(name)) {
-        throw new NodevoError({
-          code:       NEC.PLUGIN_TABLE_NAMING,
+        throw new XentiumError({
+          code:       XEC.PLUGIN_TABLE_NAMING,
           httpStatus: 422,
-          message:    `${filename} targets the reserved object "${name}". Plugin migrations may not create, alter, or drop core objects (names beginning ncf_, nodevo_, _prisma, pg_, or information_schema).`,
+          message:    `${filename} targets the reserved object "${name}". Plugin migrations may not create, alter, or drop core objects (names beginning xcf_, ncf_, nodevo_, xentium_, _prisma, pg_, or information_schema).`,
         });
       }
       if (prefix && !name.startsWith(prefix)) {
-        throw new NodevoError({
-          code:       NEC.PLUGIN_TABLE_NAMING,
+        throw new XentiumError({
+          code:       XEC.PLUGIN_TABLE_NAMING,
           httpStatus: 422,
           message:    `${filename} declares object "${name}", which does not start with this plugin's tablePrefix "${prefix}". Every table, index, sequence, type, function, and trigger a plugin creates must be prefixed "${prefix}".`,
         });

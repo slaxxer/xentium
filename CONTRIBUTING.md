@@ -1,6 +1,6 @@
-# Contributing to Nodevo
+# Contributing to Xentium
 
-Thanks for helping build Nodevo! This page is the short version — the
+Thanks for helping build Xentium! This page is the short version — the
 [README](./README.md) has full setup, architecture, and the plugin development
 guide.
 
@@ -12,7 +12,7 @@ See **[README → Quick start](./README.md#quick-start)**. In short:
 corepack enable && pnpm install
 cp .env.example .env        # fill in the secrets (README → Environment configuration)
 pnpm db:generate
-./nodevo.sh                    # infra + api + worker + web → http://localhost:5173
+./xentium.sh                    # infra + api + worker + web → http://localhost:5173
 ```
 
 ## Workflow
@@ -32,7 +32,7 @@ These are enforced in review (and most are in the PR template):
   UI checks are cosmetic only.
 - **Keep the module shape** — `routes → controller → service → repository`, plus
   `validation`, `types`, `tests`. Shared types/DTOs/permission keys go in
-  `@nodevo/contracts`; shared runtime helpers in `@nodevo/sdk`.
+  `@xentium/contracts`; shared runtime helpers in `@xentium/sdk`.
 - **Don't blur core and plugins** — official add-ons live in a **plugin**, never in
   core. Core must stay fully usable with no premium plugin installed.
 - **Core never hardcodes a plugin** — no plugin table names, ids, or routes in core.
@@ -45,7 +45,7 @@ These are enforced in review (and most are in the PR template):
 
 All visual values are **CSS custom properties** — **never hardcode a colour, radius,
 or shadow**; always reference a token. Three tiers (defined in
-`apps/web/src/styles/tokens.scss`, contract in `@nodevo/contracts` → `TOKEN_REGISTRY`):
+`apps/web/src/styles/tokens.scss`, contract in `@xentium/contracts` → `TOKEN_REGISTRY`):
 semantic `--c-*` → region `--nav-*`/`--footer-*`/… → component `--btn-*`/`--card-*`/…,
 each defaulting to its semantic base so palette edits cascade.
 
@@ -62,13 +62,13 @@ The full guide is in **[README → Plugin development guide](./README.md#plugin-
 Put work-in-progress plugins under `plugins/community-examples/<name>/` (a pnpm
 workspace member), wire HMR via `apps/web/src/plugins/dev-plugins.ts`, and install
 them from **ACP → Extensions → Upload**. Package for distribution with
-`pnpm plugin:package` (produces a `.nvplugin`).
+`pnpm plugin:package` (produces a `.xtplugin`).
 
 ### Plugin foundation (extension points)
 
 Plugins never patch core — they **register** into it. Authoring contracts live in
-`@nodevo/plugin-sdk`; the web host bridges shared singletons through
-`window.__NODEVO_HOST__` so a plugin's UMD bundle reuses the host's React, router,
+`@xentium/plugin-sdk`; the web host bridges shared singletons through
+`window.__XENTIUM_HOST__` so a plugin's UMD bundle reuses the host's React, router,
 and i18next rather than shipping its own.
 
 - **Translated UI strings** — bundle `web/locales/<lng>/<ns>.json` (en, de, es, fr,
@@ -80,7 +80,7 @@ and i18next rather than shipping its own.
   `registerRoute`, `registerAcpPage`, `registerModCanvasSection`,
   `registerUserDetailPanel`, `registerIpEnrichment`, etc. Core iterates whatever's
   registered; slots are auto-deregistered when the plugin disables.
-- **Server hooks** (`@nodevo/plugin-sdk` → `PluginContext` / `PluginHost`) —
+- **Server hooks** (`@xentium/plugin-sdk` → `PluginContext` / `PluginHost`) —
   `ctx.registerRoutes` / `registerPermissions` / `registerNecCodes`, and
   `ctx.registerSecurityScan(fn)` for periodic detection run by the core
   security-analysis job. Core moderation primitives are exposed on
@@ -94,4 +94,4 @@ plugin.
 ## Reporting issues
 
 Open a GitHub issue with steps to reproduce, expected vs actual behavior, and the
-relevant **NEC error code** if one was shown — it pins down the failing domain fast.
+relevant **XEC error code** if one was shown — it pins down the failing domain fast.

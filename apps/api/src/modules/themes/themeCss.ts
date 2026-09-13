@@ -1,5 +1,5 @@
 /**
- * Custom CSS that arrives inside a `.nvtheme`.
+ * Custom CSS that arrives inside a `.xttheme`.
  *
  * The console's CSS is written by an admin — the same person who can change anything
  * else about the site — so it is checked for parseability and otherwise left alone. A
@@ -26,12 +26,12 @@
  * or reach another server.
  */
 import postcss from "postcss";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 /** Same code as the rest of the theme module: a package refused for a nameable reason. */
 const cssError = (message: string) =>
-  new NodevoError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
+  new XentiumError({ code: XEC.CORE_THEME_INVALID, httpStatus: 422, message });
 
 /** Where an imported theme's files are served from. */
 const UPLOADS_PREFIX = "/uploads/";

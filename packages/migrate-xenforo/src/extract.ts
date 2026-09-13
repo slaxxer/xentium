@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import type { ExtractResult, ImportError, MigrationReporter } from "@nodevo/migrate-core";
+import type { ExtractResult, ImportError, MigrationReporter } from "@xentium/migrate-core";
 import {
   decodeVersionId, mapNode, mapPost, mapThread, mapUser,
   type XfNodeRow, type XfPostRow, type XfThreadRow, type XfUserRow,
@@ -96,7 +96,7 @@ export async function extractXenforo(
 
     // ── social graph: reactions → likes, follows, ignores → blocks ─────────
     // XF 2.1+ stores reactions in xf_reaction_content (all reaction types
-    // collapse to a Nodevo like — lossy, declared in inspect warnings);
+    // collapse to a Xentium like — lossy, declared in inspect warnings);
     // XF 2.0 used xf_liked_content. Missing tables are skipped gracefully.
     const postLikes: Array<{ postSourceId: string; userSourceId: string; createdAt?: Date }> = [];
     try {

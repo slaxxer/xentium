@@ -14,7 +14,7 @@
  *    cookie and a cookie outlives an uninstall.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_VARIANT, type LayoutDocument } from "@nodevo/contracts";
+import { DEFAULT_VARIANT, type LayoutDocument } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { bustThemeLayouts, layoutService } from "./layout.service.js";

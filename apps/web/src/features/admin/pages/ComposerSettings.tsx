@@ -17,7 +17,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   COMPOSER_DEFAULT_CONFIG, COMPOSER_TOOL_IDS, resolveComposerConfig,
   type ComposerConfig, type ComposerPlacement, type ComposerToolId,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";

@@ -1,5 +1,5 @@
 /**
- * `.nvtheme` export / import.
+ * `.xttheme` export / import.
  *
  * The thing worth testing is the ROUND TRIP: a package built on one install has to
  * produce the same look on another, and the only part of a layout document that does
@@ -28,9 +28,9 @@ import {
   type LayoutDocument,
   type CoreTemplateKey,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
-const UPLOAD_DIR = fsSync.mkdtempSync(path.join(os.tmpdir(), "nv-theme-"));
+const UPLOAD_DIR = fsSync.mkdtempSync(path.join(os.tmpdir(), "xt-theme-"));
 process.env.UPLOAD_DIR = UPLOAD_DIR;
 afterAll(async () => { await fs.rm(UPLOAD_DIR, { recursive: true, force: true }); });
 
@@ -126,7 +126,7 @@ const rollbackProbe: Record<string, any> = {};
 /** What a theme application actually PUBLISHED — the live half. */
 const livePublished = new Map<string, LayoutDocument>();
 
-/** An in-memory stand-in for `ncf_themes`. Only the operations the service uses. */
+/** An in-memory stand-in for `xcf_themes`. Only the operations the service uses. */
 const library = { rows: new Map<string, any>() };
 
 vi.mock("../../infrastructure/db.js", () => ({
@@ -264,7 +264,7 @@ describe("export", () => {
 
     const tokens = JSON.parse(zip.getEntry(THEME_PATHS.tokens)!.getData().toString());
     expect(tokens.light["chrome.header"]["--c-bg"]).toBe("#111");
-    // `:root` CSS can only hold the global scope; it stays for `.nvstyle` readers.
+    // `:root` CSS can only hold the global scope; it stays for `.xtstyle` readers.
     const css = zip.getEntry(THEME_PATHS.cssLight)!.getData().toString();
     expect(css).toContain("--c-bg: #fff;");
     expect(css).not.toContain("#111");
@@ -348,7 +348,7 @@ describe("export", () => {
 function pack(files: Record<string, string | Buffer>, manifest?: Record<string, unknown>): Buffer {
   const zip = new AdmZip();
   zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({
-    ...META, minNodevoVersion: "1.0", ...manifest,
+    ...META, minXentiumVersion: "1.0", ...manifest,
   })));
   for (const [name, body] of Object.entries(files)) {
     zip.addFile(name, typeof body === "string" ? Buffer.from(body) : body);
@@ -512,7 +512,7 @@ describe("import", () => {
  */
 describe("plugin templates in a package", () => {
   const KEY = "testplug.index";
-  const PLUGIN = "nodevo-testplug";
+  const PLUGIN = "xentium-testplug";
   const DOC = {
     templateKey: KEY,
     schemaVersion: 1,
@@ -596,7 +596,7 @@ describe("style variants", () => {
 describe("theme inheritance", () => {
   const pkg = (extra?: Record<string, unknown>) => {
     const zip = new AdmZip();
-    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minNodevoVersion: "1.0", ...extra })));
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0", ...extra })));
     for (const key of ["home", "members"] as CoreTemplateKey[]) {
       zip.addFile(`${THEME_PATHS.layouts}${key}.json`,
         Buffer.from(JSON.stringify(DEFAULT_LAYOUTS[key])));
@@ -655,16 +655,16 @@ describe("theme inheritance", () => {
 });
 
 /**
- * `.nvstyle` absorbed into `.nvtheme` (2026-08-15).
+ * `.xtstyle` absorbed into `.xttheme` (2026-08-15).
  *
  * The two were never really two formats: a style pack is `manifest.json` plus a
  * `:root`-only light/dark pair, which is a strict subset of a theme package. What
  * actually differed was the paperwork — a theme manifest requires `id`, `vendor`,
- * `version` and `minNodevoVersion`, and a style pack carried only `name` — so the
+ * `version` and `minXentiumVersion`, and a style pack carried only `name` — so the
  * "strict superset" this file has claimed since it was written was true of the files
  * and false of the manifest. One ingestion path now, which is the point.
  */
-describe("importing a legacy .nvstyle", () => {
+describe("importing a legacy .xtstyle", () => {
   /** Exactly what the old `installStylePack` accepted: name only, no theme fields. */
   function stylePack(manifest: Record<string, unknown> = { name: "Ocean" }): Buffer {
     const zip = new AdmZip();
@@ -764,12 +764,12 @@ describe("rejections are actionable", () => {
     return zip.toBuffer();
   };
 
-  it("carries its OWN NEC code, not the generic validation one", async () => {
-    // `NEC-API-4001` has a localized string ("Please check your input and try again"),
+  it("carries its OWN XEC code, not the generic validation one", async () => {
+    // `XEC-API-4001` has a localized string ("Please check your input and try again"),
     // and the web client prefers a localized string over the server's message — so
     // borrowing that code silently replaced every specific reason with a generic one.
     await expect(themeService.importTheme(brokenTheme(), "user-1"))
-      .rejects.toMatchObject({ code: "NEC-CORE-8002", httpStatus: 422 });
+      .rejects.toMatchObject({ code: "XEC-CORE-8002", httpStatus: 422 });
   });
 
   it("names the fields that are wrong, not just that something is", async () => {
@@ -780,12 +780,12 @@ describe("rejections are actionable", () => {
     expect(err.message).toContain("id:");
     expect(err.message).toContain("vendor:");
     expect(err.message).toContain("version:");
-    expect(err.message).toContain("minNodevoVersion:");
+    expect(err.message).toContain("minXentiumVersion:");
   });
 
   it("names the file when a layout is the problem", async () => {
     const zip = new AdmZip();
-    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minNodevoVersion: "1.0" })));
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0" })));
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify({ templateKey: "home" , regions: { main: [{ id: "x" }] } })));
     const err = await rejectionOf(themeService.importTheme(zip.toBuffer(), "user-1"));
     expect(err.message).toContain("layouts/home.json");
@@ -991,7 +991,7 @@ describe("undoing an import", () => {
  * A site can have many themes installed and exactly one active, the same way plugins
  * work (§10/§54). Before this, a single settings key held ONE manifest, so importing
  * a second theme destroyed the first: an admin could not put two side by side and
- * choose, and going back meant finding the original `.nvtheme` again.
+ * choose, and going back meant finding the original `.xttheme` again.
  */
 describe("the library", () => {
   beforeEach(() => {

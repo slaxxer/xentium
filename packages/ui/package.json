@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/ui",
+  "name": "@xentium/ui",
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
@@ -11,13 +11,13 @@
     "lint": "eslint src"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
     "typescript": "catalog:"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
+    "@xentium/contracts": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
   }

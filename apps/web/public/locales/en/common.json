@@ -6,7 +6,7 @@
     "lead": "The link you followed may be broken, or the page has packed up and moved. Let's get you somewhere real.",
     "home": "Take me home",
     "back": "Go back",
-    "footLabel": "Error 404 · Nodevo"
+    "footLabel": "Error 404 · Xentium"
   },
   "errorPage": {
     "eyebrow": "Unexpected error",
@@ -36,7 +36,7 @@
     "metaTime": "Time",
     "metaMessage": "Message",
     "hint": "If this keeps happening, send the reference above to an administrator — copying the report attaches everything they need to trace it.",
-    "footLabel": "Application error · Nodevo"
+    "footLabel": "Application error · Xentium"
   },
   "maintenance": {
     "badge": "Maintenance in progress",
@@ -140,7 +140,7 @@
   "guestHome": {
     "hero": {
       "badge": "builders online now",
-      "title": "Where people who build with nodevo hang out.",
+      "title": "Where people who build with xentium hang out.",
       "subtitle": "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
       "ctaPrimary": "Join the conversation",
       "ctaSecondary": "Browse as guest"

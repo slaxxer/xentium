@@ -1,5 +1,5 @@
 /**
- * The `.nvtheme` package format (ADR-0005).
+ * The `.xttheme` package format (ADR-0005).
  *
  * A theme is DATA — layout documents, design tokens, custom CSS and assets. It never
  * executes, so reviewing one is reading JSON and a `:root`-only stylesheet.
@@ -19,7 +19,7 @@ export const THEME_PATHS = {
   manifest: 'manifest.json',
   /** Full scoped token set — the lossless one. */
   tokens: 'tokens.json',
-  /** Global tokens as `:root` CSS. Kept so a `.nvtheme` is still a `.nvstyle` superset. */
+  /** Global tokens as `:root` CSS. Kept so a `.xttheme` is still a `.xtstyle` superset. */
   cssLight: 'styles/light.css',
   cssDark: 'styles/dark.css',
   /** The admin's own stylesheet, scoped at build time on the importing site. */
@@ -50,8 +50,8 @@ export const themeManifestSchema = z.object({
   vendor:  z.string().min(1),
 
   /** Mirrors the plugin manifest rather than inventing a second convention. */
-  minNodevoVersion: z.string().regex(/^\d+\.\d+/, 'minNodevoVersion must be semver'),
-  maxNodevoVersion: z.string().regex(/^\d+\./).optional(),
+  minXentiumVersion: z.string().regex(/^\d+\.\d+/, 'minXentiumVersion must be semver'),
+  maxXentiumVersion: z.string().regex(/^\d+\./).optional(),
   description:      z.string().max(500).optional(),
 
   /** The layout schema authored against — surfaced, not enforced: an unknown block is

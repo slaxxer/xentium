@@ -16,7 +16,7 @@ let base: string;
 let storage: LocalStorageProvider;
 
 beforeEach(async () => {
-  base = await fs.mkdtemp(path.join(os.tmpdir(), "nodevo-storage-"));
+  base = await fs.mkdtemp(path.join(os.tmpdir(), "xentium-storage-"));
   storage = new LocalStorageProvider({ baseDir: base, allowedSubdirs: ["avatars", "themes"] });
 });
 
@@ -33,14 +33,14 @@ describe("LocalStorageProvider", () => {
   });
 
   it("allows a nested path under an allowed root", async () => {
-    // `themes/<id>` is how .nvtheme assets land.
+    // `themes/<id>` is how .xttheme assets land.
     const rel = await storage.save(path.join("themes", "aperture"), "hero.jpg", Buffer.from("x"));
     expect(rel).toBe("themes/aperture/hero.jpg");
   });
 
   it("refuses a subdirectory that is not on the allowlist", async () => {
     await expect(storage.save("secrets", "id_rsa", Buffer.from("x"))).rejects.toMatchObject({
-      code: "NEC-API-4003",
+      code: "XEC-API-4003",
     });
   });
 
@@ -48,14 +48,14 @@ describe("LocalStorageProvider", () => {
     // "avatars-evil" starts with "avatars" as a STRING but is a different
     // directory — the check is on path segments, not string prefixes.
     await expect(storage.save("avatars-evil", "x.png", Buffer.from("x"))).rejects.toMatchObject({
-      code: "NEC-API-4003",
+      code: "XEC-API-4003",
     });
   });
 
   it("blocks traversal out of the base", async () => {
     await expect(
       storage.save(path.join("avatars", "..", ".."), "escaped.txt", Buffer.from("x")),
-    ).rejects.toMatchObject({ code: "NEC-API-4003" });
+    ).rejects.toMatchObject({ code: "XEC-API-4003" });
 
     await expect(
       storage.save("avatars", path.join("..", "..", "escaped.txt"), Buffer.from("x")),

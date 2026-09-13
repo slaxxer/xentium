@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/api",
+  "name": "@xentium/api",
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
@@ -15,13 +15,13 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nodevo/auth": "workspace:*",
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*",
-    "@nodevo/plugin-engine": "workspace:*",
-    "@nodevo/plugin-sdk": "workspace:*",
-    "@nodevo/sdk": "workspace:*",
-    "@nodevo/server-kit": "workspace:*",
+    "@xentium/auth": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*",
+    "@xentium/plugin-engine": "workspace:*",
+    "@xentium/plugin-sdk": "workspace:*",
+    "@xentium/sdk": "workspace:*",
+    "@xentium/server-kit": "workspace:*",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "catalog:",
     "adm-zip": "^0.6.0",
@@ -50,7 +50,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/cookie-parser": "^1",
     "@types/cors": "^2",
     "@types/express": "^5",

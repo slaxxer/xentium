@@ -1,19 +1,19 @@
 import mysql from "mysql2/promise";
-import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@nodevo/migrate-core";
+import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { extractPhpbb, phpbbVersion } from "./extract.js";
 
 const DEFAULT_PREFIX = "phpbb_";
 
 /**
- * phpBB → Nodevo adapter (§34, Wave 1). Source is a direct MySQL connection
- * to the phpBB database; the target must have the nodevo-forum plugin
+ * phpBB → Xentium adapter (§34, Wave 1). Source is a direct MySQL connection
+ * to the phpBB database; the target must have the xentium-forum plugin
  * installed AND enabled — a forum board without the forum plugin would be a
  * member list with no content, so the run refuses outright.
  */
 export const phpbbAdapter: MigrateAdapter = {
   name: "phpbb",
   version: "1.0.0-alpha.0",
-  requiredPlugins: ["nodevo-forum"],
+  requiredPlugins: ["xentium-forum"],
 
   async inspect(source: AdapterSource): Promise<MigrationInspection> {
     if (!source.db) {
@@ -40,7 +40,7 @@ export const phpbbAdapter: MigrateAdapter = {
         posts:   await count(`SELECT COUNT(*) n FROM ${prefix}posts WHERE post_visibility = 1`),
       };
       const warnings = [
-        "phpBB's per-forum permission overrides cannot be represented in Nodevo's flat RBAC — founders map to Administrator, global moderators to Moderator, everyone else to Member (§34, lossy by design).",
+        "phpBB's per-forum permission overrides cannot be represented in Xentium's flat RBAC — founders map to Administrator, global moderators to Moderator, everyone else to Member (§34, lossy by design).",
         "Users keep their passwords: phpBB bcrypt/phpass hashes are verified on first login and upgraded to argon2.",
         "Attachments, private messages and per-forum moderators are not migrated in this version.",
         "phpBB has no post likes or follows. Zebra foes become blocks; the friend flag is a private buddy list and is deliberately not converted into public follows.",

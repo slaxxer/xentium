@@ -1,10 +1,10 @@
-import type { NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { XecCodeDeclaration } from "@xentium/plugin-sdk";
 
-class NecRegistry {
-  private codes       = new Map<string, NecCodeDeclaration>();
+class XecRegistry {
+  private codes       = new Map<string, XecCodeDeclaration>();
   private pluginCodes = new Map<string, string[]>(); // pluginId → registered code keys
 
-  register(pluginId: string, declarations: NecCodeDeclaration[]): void {
+  register(pluginId: string, declarations: XecCodeDeclaration[]): void {
     const keys: string[] = [];
     for (const d of declarations) {
       this.codes.set(d.code, d);
@@ -21,9 +21,9 @@ class NecRegistry {
     this.pluginCodes.delete(pluginId);
   }
 
-  getAll(): NecCodeDeclaration[] {
+  getAll(): XecCodeDeclaration[] {
     return [...this.codes.values()];
   }
 }
 
-export const necRegistry = new NecRegistry();
+export const necRegistry = new XecRegistry();

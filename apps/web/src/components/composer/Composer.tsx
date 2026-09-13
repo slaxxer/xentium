@@ -38,7 +38,7 @@ import { FontAwesomeIcon } from "../Icon";
 import {
   faEllipsis, faPaperPlane, faReply, faXmark, faFont, faAt, faPaperclip,
 } from "@fortawesome/free-solid-svg-icons";
-import type { ComposerToolId } from "@nodevo/contracts";
+import type { ComposerToolId } from "@xentium/contracts";
 import { useAuth } from "../../hooks/useAuth";
 import { COMPOSER_TOOLS } from "./composerTools";
 import { buildMentionSuggestion } from "./mentions";

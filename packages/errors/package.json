@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/errors",
+  "name": "@xentium/errors",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -25,25 +25,25 @@
     }
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
+    "@xentium/contracts": "workspace:*",
     "zod": "catalog:"
   },
-  "description": "NodevoError, the NEC code registry, and the Express error middleware.",
+  "description": "XentiumError, the XEC code registry, and the Express error middleware.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/errors"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/errors#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/errors#readme",
   "engines": {
     "node": ">=22.12"
   },

@@ -1,19 +1,19 @@
-# @nodevo/errors
+# @xentium/errors
 
-**Errors for the Nodevo framework.**
+**Errors for the Xentium framework.**
 
-`NodevoError`, the NEC code registry, and the Express error middleware that
+`XentiumError`, the XEC code registry, and the Express error middleware that
 turns anything thrown during a request into one response shape:
 
 ```json
-{ "error": { "code": "NEC-API-4004", "message": "Not found", "severity": "warn" } }
+{ "error": { "code": "XEC-API-4004", "message": "Not found", "severity": "warn" } }
 ```
 
 The middleware is a factory — an application injects whether it is production,
 where a log line goes, and where an error record is stored:
 
 ```ts
-import { createErrorMiddleware } from "@nodevo/errors";
+import { createErrorMiddleware } from "@xentium/errors";
 
 app.use(createErrorMiddleware({
   isProd,
@@ -27,6 +27,6 @@ consumer.
 
 ---
 
-Part of the [Nodevo framework](https://github.com/slaxxer/nodevo). Nodevo is a framework with the Nodevo CMS as its first application.
+Part of the [Xentium framework](https://github.com/slaxxer/xentium). Xentium is a framework with the Xentium CMS as its first application.
 
 MIT © Slaxxer

@@ -50,7 +50,7 @@
   "guestHome": {
     "hero": {
       "badge": "creadores en línea",
-      "title": "Donde se reúne la gente que construye con Nodevo.",
+      "title": "Donde se reúne la gente que construye con Xentium.",
       "subtitle": "Haz preguntas, muestra lo que has creado, da forma a la hoja de ruta y aprende de {members} creadores. Leer está abierto a todos.",
       "ctaPrimary": "Únete a la conversación",
       "ctaSecondary": "Explorar como invitado"
@@ -84,7 +84,7 @@
     "metaTime": "Hora",
     "metaMessage": "Mensaje",
     "hint": "Si vuelve a ocurrir, envía la referencia de arriba a un administrador — el informe copiado incluye todo lo necesario para rastrearlo.",
-    "footLabel": "Error de la aplicación · Nodevo"
+    "footLabel": "Error de la aplicación · Xentium"
   },
   "themeChooser": {
     "open": "Elegir un tema",

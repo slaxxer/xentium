@@ -20,7 +20,7 @@ import {
   parseLayoutDocument,
   regionsFor,
   validateBlockTree,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import {
   acceptsChild,
   registerBlock,
@@ -209,7 +209,7 @@ describe("blockRegistry", () => {
  * The rules a document's SHAPE cannot express. Checked on write, because a
  * document that breaks one is not a page to degrade gracefully — it is a document
  * that should never have been stored. The editor cannot produce one; the point of
- * the check is that a hand-written or third-party `.nvtheme` can.
+ * the check is that a hand-written or third-party `.xttheme` can.
  */
 describe("validateBlockTree", () => {
   const node = (id: string, type: string, children?: unknown[]) =>

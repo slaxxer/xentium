@@ -1,5 +1,5 @@
 /**
- * @nodevo/auth — the authentication PRIMITIVES shared by every Nodevo-framework
+ * @xentium/auth — the authentication PRIMITIVES shared by every Xentium-framework
  * application (ADR-0006): token minting and verification, password hashing,
  * the access-token revocation denylist, and the two request guards.
  *

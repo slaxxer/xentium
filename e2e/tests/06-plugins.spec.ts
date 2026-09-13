@@ -6,11 +6,11 @@ import { ADMIN, uiLogin } from "./helpers";
 
 /**
  * Extensions: license activation + the plugin install pipeline, via the ACP.
- * The forum `.nvplugin` package must be built first (`pnpm plugin:package`).
+ * The forum `.xtplugin` package must be built first (`pnpm plugin:package`).
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const NVPLUGIN = resolve(here, "../../dist/marketplace/nodevo-forum-1.0.0.nvplugin");
+const XTPLUGIN = resolve(here, "../../dist/marketplace/xentium-forum-1.0.0.xtplugin");
 
 // Runs FIRST in this file so the entitlement it activates is present when the
 // next test enables the (licenseRequired) forum plugin — the dev entitlement
@@ -26,21 +26,21 @@ test("admin activates a license (dev self-signed entitlement)", async ({ page })
   // The dev license self-signs an entitlement granting the forum plugin.
   // The page renders entitlement chips with the "plugin." prefix stripped.
   await expect(page.getByText("Active", { exact: false })).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("nodevo-forum")).toBeVisible();
+  await expect(page.getByText("xentium-forum")).toBeVisible();
 });
 
 test("admin uploads, installs, and enables the forum plugin", async ({ page }) => {
-  expect(existsSync(NVPLUGIN), `missing ${NVPLUGIN} — run "pnpm plugin:package"`).toBeTruthy();
+  expect(existsSync(XTPLUGIN), `missing ${XTPLUGIN} — run "pnpm plugin:package"`).toBeTruthy();
 
   await uiLogin(page, ADMIN.email, ADMIN.password);
   await page.goto("/admin/upload");
 
   // Step 0 — pick the package and validate.
-  await page.locator('input[type="file"]').setInputFiles(NVPLUGIN);
+  await page.locator('input[type="file"]').setInputFiles(XTPLUGIN);
   await page.getByRole("button", { name: /Validate Plugin/ }).click();
 
   // Step 1 — validation results, then install.
-  await expect(page.getByText("nodevo-forum")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("xentium-forum")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Install Plugin" }).click();
 
   // Step 2 — done.

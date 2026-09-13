@@ -3,8 +3,8 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { validateMigrationSql, splitSqlStatements } from "./sql-validator.js";
 import type { PluginManifest } from "./manifest-validator.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 function checksum(sql: string): string {
   return crypto.createHash("sha256").update(sql).digest("hex");
@@ -25,17 +25,17 @@ export async function runUpMigrations(
   for (const name of migrations) {
     const entryPath = `migrations/${name}.up.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql  = entry.getData().toString("utf8");
     const hash = checksum(sql);
     const mid  = migrationId(pluginId, pluginVer, name);
 
     // Skip if already applied
-    const existing = await prisma.nodevoPluginMigration.findUnique({ where: { id: mid } });
+    const existing = await prisma.xentiumPluginMigration.findUnique({ where: { id: mid } });
     if (existing) {
       if (existing.checksum !== hash) {
-        throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_CHECKSUM, httpStatus: 409, message: `Migration ${name} has been modified since it was applied (checksum mismatch).` });
+        throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_CHECKSUM, httpStatus: 409, message: `Migration ${name} has been modified since it was applied (checksum mismatch).` });
       }
       continue;
     }
@@ -50,7 +50,7 @@ export async function runUpMigrations(
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
-      await tx.nodevoPluginMigration.create({
+      await tx.xentiumPluginMigration.create({
         data: { id: mid, pluginId, pluginVer, name, checksum: hash, direction: "up" },
       });
     });
@@ -74,7 +74,7 @@ export async function runNewUpMigrations(
   const { id: pluginId, version: pluginVer, migrations } = manifest;
   if (!migrations.length) return;
 
-  const applied = await prisma.nodevoPluginMigration.findMany({
+  const applied = await prisma.xentiumPluginMigration.findMany({
     where:  { pluginId },
     select: { name: true },
   });
@@ -85,7 +85,7 @@ export async function runNewUpMigrations(
 
     const entryPath = `migrations/${name}.up.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
     validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
@@ -95,7 +95,7 @@ export async function runNewUpMigrations(
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
-      await tx.nodevoPluginMigration.create({
+      await tx.xentiumPluginMigration.create({
         data: { id: migrationId(pluginId, pluginVer, name), pluginId, pluginVer, name, checksum: checksum(sql), direction: "up" },
       });
     });
@@ -115,12 +115,12 @@ export async function runDownMigrations(
 
   for (const name of reversed) {
     const mid = migrationId(pluginId, pluginVer, name);
-    const applied = await prisma.nodevoPluginMigration.findUnique({ where: { id: mid } });
+    const applied = await prisma.xentiumPluginMigration.findUnique({ where: { id: mid } });
     if (!applied) continue;
 
     const entryPath = `migrations/${name}.down.sql`;
     const entry     = zip.getEntry(entryPath);
-    if (!entry) throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
+    if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
     validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
@@ -130,7 +130,7 @@ export async function runDownMigrations(
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
-      await tx.nodevoPluginMigration.delete({ where: { id: mid } });
+      await tx.xentiumPluginMigration.delete({ where: { id: mid } });
     });
   }
 }
@@ -180,10 +180,10 @@ export async function forceCleanupSchema(
 export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): void {
   for (const name of manifest.migrations) {
     if (!zip.getEntry(`migrations/${name}.up.sql`)) {
-      throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
+      throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
     }
     if (!zip.getEntry(`migrations/${name}.down.sql`)) {
-      throw new NodevoError({ code: NEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
+      throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing down migration: migrations/${name}.down.sql — every up migration must have a matching down migration.` });
     }
     // Pre-validate SQL (DDL-only + naming)
     const policy = { tablePrefix: manifest.tablePrefix };

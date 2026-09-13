@@ -1,8 +1,8 @@
 {
-  "name": "@nodevo/migrate-phpbb",
+  "name": "@xentium/migrate-phpbb",
   "version": "1.0.0-alpha.1",
   "private": true,
-  "description": "phpBB 3.1+ → Nodevo migration adapter (§34, Wave 1). Connects directly to the phpBB MySQL database. Requires the nodevo-forum plugin on the target.",
+  "description": "phpBB 3.1+ → Xentium migration adapter (§34, Wave 1). Connects directly to the phpBB MySQL database. Requires the xentium-forum plugin on the target.",
   "type": "module",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
@@ -14,12 +14,12 @@
     "migrate": "tsx src/run.ts"
   },
   "dependencies": {
-    "@nodevo/migrate-core": "workspace:*",
+    "@xentium/migrate-core": "workspace:*",
     "htmlparser2": "^10.1.0",
     "mysql2": "^3.16.0"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "tsx": "^4.22.3",
     "typescript": "catalog:",
     "vitest": "catalog:"

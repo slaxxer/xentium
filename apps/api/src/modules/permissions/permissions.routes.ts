@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { permissionsController } from "./permissions.controller.js";
 
 export const permissionsRouter: Router = Router();

@@ -36,14 +36,14 @@
  * header's rule nested beside it matched nothing at all — the band stayed 1192px
  * wide in a 3387px window and the fix looked correct in the file.
  *
- * `.nv-region` is a centred content column, which is right for a page's regions and
+ * `.xt-region` is a centred content column, which is right for a page's regions and
  * wrong for site chrome: a footer's background has to reach the edges of the window.
- * The column moves onto the block's own `.nv-foot__inner`, exactly as the header
- * puts it on `.nv-header__inner`.
+ * The column moves onto the block's own `.xt-foot__inner`, exactly as the header
+ * puts it on `.xt-header__inner`.
  *
  * The `<footer>` element and its contentinfo landmark survive; only the box goes.
  */
-.app-layout > .nv-region--footer {
+.app-layout > .xt-region--footer {
   display: contents;
 }
 
@@ -53,7 +53,7 @@
   /**
    * The header REGION is dissolved too, for both of the reasons its wrapper is.
    *
-   * `.nv-region` is a centred content column — right for a page's regions, wrong for
+   * `.xt-region` is a centred content column — right for a page's regions, wrong for
    * site chrome, which spans the viewport and lets the navbar's own `__inner` do the
    * centring. Left as a column, the whole header rendered inside a 1240px box with
    * the masthead's background stopping at its edges.
@@ -65,7 +65,7 @@
    *
    * The `<header>` element and its landmark survive; only the box goes.
    */
-  > .nv-region--header {
+  > .xt-region--header {
     display: contents;
   }
 
@@ -88,18 +88,18 @@
 
 .pub-nav__logo-img {
   display: block;
-  height: var(--nv-logo-h, 32px);
-  max-width: var(--nv-logo-max, 160px);
+  height: var(--xt-logo-h, 32px);
+  max-width: var(--xt-logo-max, 160px);
   width: auto;
   object-fit: contain;
 }
 
 /* A masthead's logo is the masthead's, not the nav strip's — the nav's 32px stays
    the default and a section in the header asks for bigger. An admin who wants another
-   size gives the block a `className` and sets `--nv-logo-h` in the CSS console. */
-.nv-section--tall {
-  --nv-logo-h:   64px;
-  --nv-logo-max: 320px;
+   size gives the block a `className` and sets `--xt-logo-h` in the CSS console. */
+.xt-section--tall {
+  --xt-logo-h:   64px;
+  --xt-logo-max: 320px;
 }
 
 /* ── Public Navbar ─────────────────────────────────── */
@@ -142,11 +142,11 @@
        non-right one". `:first-of-type` cannot express this: every wrapper is a
        `div`, so it matches the first child of the row regardless of alignment,
        which is the logo. */
-    > :not([data-nv-align="right"]) + [data-nv-align="right"] > * {
+    > :not([data-xt-align="right"]) + [data-xt-align="right"] > * {
       margin-inline-start: auto;
     }
 
-    > [data-nv-align="center"] > * { margin-inline: auto; }
+    > [data-xt-align="center"] > * { margin-inline: auto; }
   }
 
   /* Composable zones (ADR-0005 Amendment 1). The navbar's arrangement comes from
@@ -161,7 +161,7 @@
     gap: var(--sp-3);
     min-width: 0;
 
-    > .nv-region {
+    > .xt-region {
       display: contents;
     }
 
@@ -170,7 +170,7 @@
        a bare word floating between the nav items. Sized down to a chip, because a
        nav zone is 68px tall and the standalone placeholder's 56px would push the
        strip out of shape. */
-    > .nv-region--empty {
+    > .xt-region--empty {
       display: inline-flex;
       min-height: 0;
       margin-block: 0;

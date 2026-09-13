@@ -189,9 +189,9 @@
       }
     },
     "placeholders": {
-      "siteName": "Mi sitio Nodevo",
+      "siteName": "Mi sitio Xentium",
       "siteUrl": "https://misitio.com",
-      "siteDescription": "Una plataforma impulsada por Nodevo",
+      "siteDescription": "Una plataforma impulsada por Xentium",
       "smtpHost": "smtp.ejemplo.com",
       "fromAddress": "no-reply@ejemplo.com",
       "smtpUser": "no-reply@example.com",
@@ -304,7 +304,7 @@
     "title": "Historial de migraciones",
     "loading": "Cargando…",
     "emptyTitle": "No se ha ejecutado ninguna migración",
-    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @nodevo/migrate importa una comunidad desde otra plataforma.",
+    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @xentium/migrate importa una comunidad desde otra plataforma.",
     "success": "Correcto",
     "failed": "Fallido",
     "hide": "▲ Ocultar",
@@ -343,7 +343,7 @@
   "errorRef": {
     "title": "Referencia de errores",
     "lookupTitle": "Buscar un código",
-    "lookupPlaceholder": "p. ej. NEC-AUTH-1001",
+    "lookupPlaceholder": "p. ej. XEC-AUTH-1001",
     "lookupBtn": "Buscar",
     "notFoundTitle": "Código no encontrado",
     "notFoundBody": "No se encontró documentación para «{{code}}»",
@@ -373,341 +373,341 @@
       "License": "Licencia"
     },
     "codes": {
-      "NEC-API-4001": {
+      "XEC-API-4001": {
         "msg": "Validación fallida",
         "desc": "El cuerpo de la petición, los parámetros de consulta o los parámetros de ruta no pasaron la validación de Zod.",
         "cause": "Campos malformados o ausentes en la petición.",
         "fix": "Comprueba que todos los campos obligatorios están presentes y coinciden con los tipos esperados."
       },
-      "NEC-API-4003": {
+      "XEC-API-4003": {
         "msg": "Prohibido",
         "desc": "El usuario autenticado no tiene permiso para realizar esta acción.",
         "cause": "Falta la clave de permiso para el recurso solicitado.",
         "fix": "Asegúrate de que el grupo del usuario tiene asignado el permiso necesario en ACP → Control de acceso → Permisos."
       },
-      "NEC-API-4004": {
+      "XEC-API-4004": {
         "msg": "No encontrado",
         "desc": "El recurso solicitado no existe.",
         "cause": "ID no válido en la URL, o el recurso fue eliminado.",
         "fix": "Verifica el ID del recurso. Si se eliminó recientemente, es un comportamiento esperado."
       },
-      "NEC-API-4009": {
+      "XEC-API-4009": {
         "msg": "Conflicto",
         "desc": "La petición entra en conflicto con el estado actual del recurso.",
         "cause": "Otra persona modificó el recurso, o la acción ya se realizó (p. ej., una creación duplicada).",
         "fix": "Recarga la página para obtener el estado actual y vuelve a intentar la acción."
       },
-      "NEC-API-4290": {
+      "XEC-API-4290": {
         "msg": "Límite de peticiones superado",
         "desc": "Demasiadas peticiones desde esta IP o usuario en la ventana de tiempo configurada.",
         "cause": "Tráfico automatizado, bots o una ráfaga de peticiones legítimas.",
         "fix": "Espera el período indicado en la cabecera Retry-After de la respuesta y vuelve a intentarlo."
       },
-      "NEC-API-5000": {
+      "XEC-API-5000": {
         "msg": "Error interno del servidor",
         "desc": "Se produjo un error inesperado en el servidor.",
         "cause": "Excepción no controlada en el código de la aplicación. Revisa el Registro de errores para ver la traza.",
         "fix": "Revisa ACP → Sistema → Registro de errores. Informa al mantenedor si persiste."
       },
-      "NEC-AUTH-1001": {
+      "XEC-AUTH-1001": {
         "msg": "Credenciales no válidas",
         "desc": "Inicio de sesión fallido: ninguna cuenta coincide con las credenciales proporcionadas.",
         "cause": "Correo o contraseña incorrectos.",
         "fix": "Comprueba las credenciales. Usa «Olvidé mi contraseña» si es necesario."
       },
-      "NEC-AUTH-1002": {
+      "XEC-AUTH-1002": {
         "msg": "Sesión caducada",
         "desc": "El token de acceso caducó y no se pudo renovar.",
         "cause": "El token de renovación caducó o fue revocado.",
         "fix": "Inicia sesión de nuevo para comenzar una nueva sesión."
       },
-      "NEC-AUTH-1003": {
+      "XEC-AUTH-1003": {
         "msg": "Cuenta suspendida (temporal)",
         "desc": "La cuenta está suspendida temporalmente.",
         "cause": "Un moderador o el motor de umbrales emitió una suspensión temporal.",
         "fix": "Espera a que expire la suspensión, o apela a un moderador."
       },
-      "NEC-AUTH-1004": {
+      "XEC-AUTH-1004": {
         "msg": "Cuenta suspendida (permanente)",
         "desc": "La cuenta está suspendida de forma permanente.",
         "cause": "Un moderador emitió una suspensión permanente.",
         "fix": "Contacta con un administrador del sitio para apelar."
       },
-      "NEC-AUTH-1005": {
+      "XEC-AUTH-1005": {
         "msg": "Correo sin verificar",
         "desc": "Esta acción requiere una dirección de correo verificada.",
         "cause": "El usuario se registró pero no ha hecho clic en el enlace de verificación.",
         "fix": "Envía un nuevo correo de verificación desde Ajustes de cuenta → Seguridad."
       },
-      "NEC-AUTH-1006": {
+      "XEC-AUTH-1006": {
         "msg": "Incumplimiento de la política de contraseñas",
         "desc": "La contraseña elegida no cumple los requisitos de contraseña del sitio.",
         "cause": "La contraseña es demasiado corta o le faltan tipos de caracteres obligatorios.",
         "fix": "Elige una contraseña que cumpla la política mostrada en ACP → Sistema → Ajustes → Auth."
       },
-      "NEC-AUTH-2001": {
+      "XEC-AUTH-2001": {
         "msg": "Correo ya en uso",
         "desc": "Registro fallido: la dirección de correo ya está registrada.",
         "cause": "Ya existe una cuenta con este correo.",
         "fix": "Usa otro correo, o inicia sesión si esta cuenta es tuya."
       },
-      "NEC-AUTH-2002": {
+      "XEC-AUTH-2002": {
         "msg": "Nombre de usuario ya en uso",
         "desc": "Registro o cambio de nombre fallido: el nombre de usuario ya está en uso.",
         "cause": "Otro usuario tiene este nombre, o aparece en el historial de nombres de usuario.",
         "fix": "Elige otro nombre de usuario."
       },
-      "NEC-AUTH-2003": {
+      "XEC-AUTH-2003": {
         "msg": "Código de correo no válido o caducado",
         "desc": "El token de verificación de correo o de restablecimiento de contraseña no es válido o ha caducado.",
         "cause": "El token ya se usó, caducó (15 min para restablecer, 24 h para verificar) o fue manipulado.",
         "fix": "Solicita un nuevo correo desde el formulario correspondiente."
       },
-      "NEC-AUTH-1007": {
+      "XEC-AUTH-1007": {
         "msg": "Token de restablecimiento no válido o caducado",
         "desc": "El token de restablecimiento de contraseña no es válido, ya se usó o ha caducado.",
         "cause": "Los enlaces de restablecimiento son de un solo uso y caducan 15 minutos después de emitirse.",
         "fix": "Solicita un nuevo enlace desde la página «Olvidé mi contraseña»."
       },
-      "NEC-PERM-1001": {
+      "XEC-PERM-1001": {
         "msg": "Permiso denegado",
         "desc": "Al usuario le falta la clave de permiso específica requerida para esta acción.",
         "cause": "La asignación de grupo o la matriz de permisos no incluye esta clave.",
         "fix": "Concede el permiso necesario al grupo del usuario en ACP → Control de acceso → Permisos."
       },
-      "NEC-PERM-1040": {
+      "XEC-PERM-1040": {
         "msg": "Contenido demasiado largo",
         "desc": "El cuerpo de la publicación o del artículo supera la longitud máxima para el nivel de este usuario.",
         "cause": "La configuración de progresión del grupo restringe la longitud del contenido en este nivel.",
         "fix": "Acorta el contenido, o ajusta la longitud máxima de publicación del grupo en ACP → Control de acceso → Grupos → Progresión."
       },
-      "NEC-PERM-1041": {
+      "XEC-PERM-1041": {
         "msg": "Límite diario de publicaciones alcanzado",
         "desc": "El usuario ha alcanzado su límite diario de publicaciones.",
         "cause": "La configuración de progresión del grupo establece un tope diario de publicaciones.",
         "fix": "Espera hasta la medianoche (UTC), o aumenta el límite en ACP → Control de acceso → Grupos → Progresión."
       },
-      "NEC-PERM-1042": {
+      "XEC-PERM-1042": {
         "msg": "Límite de adjuntos superado",
         "desc": "Demasiados adjuntos en esta publicación.",
         "cause": "La configuración de progresión del grupo restringe el número de adjuntos.",
         "fix": "Reduce los adjuntos, o aumenta el límite en la configuración de progresión del grupo."
       },
-      "NEC-ARTICLE-3001": {
+      "XEC-ARTICLE-3001": {
         "msg": "Artículo no encontrado",
         "desc": "El artículo solicitado no existe o fue eliminado.",
         "cause": "Slug o ID no válidos, o el artículo fue eliminado de forma reversible.",
         "fix": "Verifica la URL. Si se eliminó recientemente, es un comportamiento esperado."
       },
-      "NEC-ARTICLE-3002": {
+      "XEC-ARTICLE-3002": {
         "msg": "Artículo no publicado",
         "desc": "El artículo existe pero no está en estado publicado.",
         "cause": "El artículo es un borrador o está en revisión.",
         "fix": "Publica el artículo desde el editor, o comprueba el estado en ACP → Contenido → Artículos."
       },
-      "NEC-ARTICLE-3003": {
+      "XEC-ARTICLE-3003": {
         "msg": "Slug de artículo en uso",
         "desc": "El slug de URL elegido ya lo usa otro artículo.",
         "cause": "Título duplicado o slug establecido manualmente.",
         "fix": "Cambia el título o define un slug único en el editor de artículos."
       },
-      "NEC-STORE-7001": {
+      "XEC-STORE-7001": {
         "msg": "Archivo demasiado grande",
         "desc": "El archivo subido supera el tamaño máximo permitido para este tipo de subida.",
         "cause": "El tamaño del archivo supera el límite definido en la configuración UPLOAD_LIMITS.",
         "fix": "Comprime o redimensiona el archivo, o aumenta el límite en la configuración del servidor."
       },
-      "NEC-STORE-7002": {
+      "XEC-STORE-7002": {
         "msg": "Tipo de archivo no permitido",
         "desc": "El tipo de archivo no está permitido para esta ranura de subida o nivel de usuario.",
         "cause": "Falló la comprobación del tipo MIME, o la configuración de progresión del grupo restringe este tipo.",
         "fix": "Usa un tipo de archivo permitido. Los administradores pueden ajustar las restricciones de tipo por grupo en la configuración de Progresión."
       },
-      "NEC-STORE-7003": {
+      "XEC-STORE-7003": {
         "msg": "Tipo MIME no coincidente",
         "desc": "Los bytes mágicos del archivo no coinciden con el Content-Type declarado.",
         "cause": "El archivo fue renombrado para aparentar otro tipo.",
         "fix": "Sube el archivo correcto. No renombres archivos para eludir las comprobaciones de tipo."
       },
-      "NEC-STORE-7004": {
+      "XEC-STORE-7004": {
         "msg": "Ruta prohibida",
         "desc": "La ruta de almacenamiento solicitada está fuera de los directorios públicos permitidos.",
         "cause": "Intento de acceder directamente a una ruta de almacenamiento privada (plugins/, themes/packs/, temp/).",
         "fix": "Accede a los archivos de plugins o de paquetes de estilo a través de sus endpoints de API autenticados."
       },
-      "NEC-PLUGIN-2001": {
+      "XEC-PLUGIN-2001": {
         "msg": "Manifiesto de plugin no válido",
         "desc": "Al paquete de plugin subido le faltan campos obligatorios en manifest.json.",
         "cause": "El plugin se compiló con un SDK obsoleto o tiene un manifiesto malformado.",
-        "fix": "Comprueba manifest.json contra el esquema de manifiesto actual. Campos obligatorios: id, name, version, vendor, minNodevoVersion."
+        "fix": "Comprueba manifest.json contra el esquema de manifiesto actual. Campos obligatorios: id, name, version, vendor, minXentiumVersion."
       },
-      "NEC-PLUGIN-2002": {
+      "XEC-PLUGIN-2002": {
         "msg": "Paquete de plugin no válido",
-        "desc": "El archivo .nvplugin subido no es un paquete de plugin válido.",
+        "desc": "El archivo .xtplugin subido no es un paquete de plugin válido.",
         "cause": "No es un archivo ZIP, contiene una entrada insegura (path traversal), o manifest.json falta o no es JSON válido.",
         "fix": "Vuelve a descargar el paquete desde su origen. Si lo compilaste tú, reconstrúyelo con el empaquetador del SDK de plugins."
       },
-      "NEC-PLUGIN-2003": {
+      "XEC-PLUGIN-2003": {
         "msg": "Plugin ya instalado",
         "desc": "Ya hay instalado un plugin con este id en este sitio.",
         "cause": "El paquete se subió dos veces, o se intentó una actualización por el flujo de instalación.",
         "fix": "Desinstala primero el plugin existente, o usa el flujo de actualización en ACP → Extensiones → Instaladas."
       },
-      "NEC-PLUGIN-2004": {
+      "XEC-PLUGIN-2004": {
         "msg": "Plugin no instalado",
         "desc": "Una actualización o acción de gestión apuntó a un plugin que no está instalado en este sitio.",
         "cause": "El plugin fue desinstalado, o la petición indicó un id de plugin incorrecto.",
         "fix": "Instala primero el plugin desde ACP → Extensiones → Mercado y vuelve a intentarlo."
       },
-      "NEC-PLUGIN-2005": {
+      "XEC-PLUGIN-2005": {
         "msg": "La actualización no es más reciente",
         "desc": "La versión del paquete de actualización no es más reciente que la versión instalada.",
         "cause": "Las actualizaciones solo avanzan; la versión del paquete es igual o anterior a la instalada.",
         "fix": "No se requiere ninguna acción: la versión instalada ya está al día."
       },
-      "NEC-PLUGIN-2006": {
+      "XEC-PLUGIN-2006": {
         "msg": "Subidas desactivadas",
-        "desc": "Las subidas manuales de .nvplugin están desactivadas en este sitio.",
+        "desc": "Las subidas manuales de .xtplugin están desactivadas en este sitio.",
         "cause": "El mercado es el canal de instalación autorizado; las subidas manuales están desactivadas por defecto.",
         "fix": "Instala desde ACP → Extensiones → Mercado, o activa las subidas manuales en ACP → Extensiones → Instaladas."
       },
-      "NEC-PLUGIN-2010": {
+      "XEC-PLUGIN-2010": {
         "msg": "SQL de migración no válido",
         "desc": "Un archivo de migración del plugin contiene sentencias SQL que no son DDL.",
         "cause": "Los archivos de migración del plugin incluyen INSERT/UPDATE/DELETE/SELECT; solo se permite DDL.",
         "fix": "Contacta con el proveedor del plugin. Los archivos de migración solo pueden usar sentencias CREATE/ALTER/DROP TABLE/INDEX."
       },
-      "NEC-PLUGIN-2011": {
+      "XEC-PLUGIN-2011": {
         "msg": "Falta un archivo de migración",
         "desc": "Una migración listada en el manifiesto no tiene su archivo .up.sql / .down.sql correspondiente en el paquete.",
         "cause": "El paquete se construyó incompleto: cada migración up debe incluir su migración down correspondiente.",
         "fix": "Contacta con el proveedor del plugin para obtener una compilación empaquetada correctamente."
       },
-      "NEC-PLUGIN-2012": {
+      "XEC-PLUGIN-2012": {
         "msg": "Suma de verificación de migración no coincidente",
         "desc": "Un archivo de migración ya aplicado difiere del registrado en el momento de la instalación.",
         "cause": "El paquete del plugin incluye una versión modificada de una migración que este sitio ya ejecutó.",
         "fix": "No edites migraciones aplicadas. El proveedor debe publicar los cambios de esquema como una migración NUEVA en la siguiente versión."
       },
-      "NEC-PLUGIN-2013": {
+      "XEC-PLUGIN-2013": {
         "msg": "Nombre de tabla reservado o con prefijo incorrecto",
         "desc": "Una migración de plugin intenta crear, modificar o eliminar un objeto de base de datos que es un objeto reservado del núcleo o que no coincide con el prefijo de tabla declarado por el plugin.",
-        "cause": "La migración nombra un objeto que empieza por ncf_, nodevo_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
+        "cause": "La migración nombra un objeto que empieza por xcf_, xentium_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
         "fix": "Asigna a cada tabla, índice, secuencia, tipo, función y disparador el prefijo propio del plugin y nunca toques objetos del núcleo."
       },
-      "NEC-PLUGIN-2020": {
+      "XEC-PLUGIN-2020": {
         "msg": "Plugin no disponible",
         "desc": "La ruta del plugin solicitada no está disponible.",
         "cause": "El plugin está instalado pero actualmente desactivado.",
         "fix": "Activa el plugin en ACP → Extensiones → Instaladas."
       },
-      "NEC-PLUGIN-2030": {
+      "XEC-PLUGIN-2030": {
         "msg": "Plugin incompatible",
-        "desc": "El rango de versiones de Nodevo que admite el plugin no incluye esta versión de la plataforma.",
-        "cause": "El minNodevoVersion del manifiesto es más reciente que esta instalación, o maxNodevoVersion es más antiguo.",
-        "fix": "Actualiza Nodevo, o instala una versión del plugin compilada para esta versión de la plataforma."
+        "desc": "El rango de versiones de Xentium que admite el plugin no incluye esta versión de la plataforma.",
+        "cause": "El minXentiumVersion del manifiesto es más reciente que esta instalación, o maxXentiumVersion es más antiguo.",
+        "fix": "Actualiza Xentium, o instala una versión del plugin compilada para esta versión de la plataforma."
       },
-      "NEC-CORE-8001": {
+      "XEC-CORE-8001": {
         "msg": "Tema no encontrado",
         "desc": "El tema solicitado no está registrado en el ThemeRegistry.",
         "cause": "El ID del tema no coincide con ningún tema registrado.",
         "fix": "Vuelve a activar el tema o sube su paquete de nuevo."
       },
-      "NEC-CORE-8002": {
+      "XEC-CORE-8002": {
         "msg": "Paquete de tema no válido",
-        "desc": "El .nvtheme subido no pasó la validación: el mensaje indica el archivo y la regla incumplida.",
+        "desc": "El .xttheme subido no pasó la validación: el mensaje indica el archivo y la regla incumplida.",
         "cause": "Un manifest.json ausente o mal formado, un diseño que no es un documento válido, una hoja de estilos con reglas que no son propiedades personalizadas de :root, o un recurso de un tipo no permitido.",
         "fix": "Lee el mensaje: indica el archivo causante. La validación es todo o nada, así que no se aplicó nada y el sitio no ha cambiado."
       },
-      "NEC-CORE-8010": {
+      "XEC-CORE-8010": {
         "msg": "Sitio en mantenimiento",
         "desc": "El sitio está en modo mantenimiento y el solicitante no pertenece al grupo autorizado a saltárselo. Es un estado intencionado, no un fallo: cada petición bloqueada devuelve este código, por lo que NO se escribe en el Registro de errores (lo inundaría). Activar/desactivar el mantenimiento queda registrado en el Registro de actividad.",
         "cause": "Un administrador activó el modo mantenimiento (ACP → Sistema → Ajustes → Mantenimiento). Solo el grupo autorizado configurado y los administradores pueden saltárselo.",
         "fix": "Para restaurar el sitio, desactiva el modo mantenimiento en ACP → Sistema → Ajustes. El personal puede iniciar sesión en la pantalla de mantenimiento para saltárselo."
       },
-      "NEC-PAGE-3501": {
+      "XEC-PAGE-3501": {
         "msg": "Página no encontrada",
         "desc": "La página personalizada solicitada no existe.",
         "cause": "El slug de la página es incorrecto, o la página fue eliminada o despublicada.",
         "fix": "Comprueba el slug en ACP → Contenido → Páginas, o crea la página."
       },
-      "NEC-PAGE-3502": {
+      "XEC-PAGE-3502": {
         "msg": "Slug de página en uso",
         "desc": "Otra página ya usa este slug.",
         "cause": "Los slugs deben ser únicos; el slug elegido colisiona con una página existente.",
         "fix": "Elige otro slug para la página en ACP → Contenido → Páginas."
       },
-      "NEC-QUEUE-5000": {
+      "XEC-QUEUE-5000": {
         "msg": "Trabajo en segundo plano fallido",
         "desc": "Un trabajo en segundo plano (BullMQ) lanzó un error y falló tras agotar todos los reintentos. Es un código envoltorio: indica que un trabajo murió, no por qué.",
-        "cause": "La causa real está en los campos de ESTA entrada del Registro de errores: lee el mensaje (p. ej., un error de Prisma/SQL, un fallo de red o un bug del trabajo) y el contexto (queue, jobName, jobId). El código NEC es solo la categoría.",
+        "cause": "La causa real está en los campos de ESTA entrada del Registro de errores: lee el mensaje (p. ej., un error de Prisma/SQL, un fallo de red o un bug del trabajo) y el contexto (queue, jobName, jobId). El código XEC es solo la categoría.",
         "fix": "Abre la entrada correspondiente del Registro de errores, lee su mensaje + contexto y corrige la causa subyacente. Reinicia el proceso worker para que recoja la corrección; el trabajo se vuelve a ejecutar en su siguiente programación. Si el mensaje apunta a un bug de la aplicación, repórtalo textualmente al mantenedor."
       },
-      "NEC-QUEUE-5001": {
+      "XEC-QUEUE-5001": {
         "msg": "Programación de trabajo no válida",
         "desc": "Una programación enviada en ACP → Sistema → Tareas programadas fue rechazada.",
         "cause": "La expresión cron era incorrecta, o la programación se dispararía más a menudo que el intervalo mínimo del trabajo.",
         "fix": "Usa una expresión cron válida de 5 campos, o elige un intervalo menos frecuente. La programación rechazada no se guarda."
       },
-      "NEC-LICENSE-9001": {
+      "XEC-LICENSE-9001": {
         "msg": "Licencia no encontrada",
         "desc": "No existe un derecho de uso válido para este plugin.",
         "cause": "El plugin requiere licencia pero no hay ninguna activada para este sitio.",
         "fix": "Activa una licencia en ACP → Extensiones → Licencia, o conecta una cuenta del mercado."
       },
-      "NEC-LICENSE-9002": {
+      "XEC-LICENSE-9002": {
         "msg": "Licencia caducada",
         "desc": "El derecho de uso pasó su caducidad y el período de gracia terminó.",
         "cause": "La licencia venció y la ventana de gracia sin conexión de 30 días finalizó.",
         "fix": "Renueva o actualiza la licencia en ACP → Extensiones → Licencia. Los plugins ya activados siguen funcionando."
       },
-      "NEC-LICENSE-9003": {
+      "XEC-LICENSE-9003": {
         "msg": "Dominio de licencia no coincidente",
         "desc": "El derecho de uso está vinculado a un dominio distinto al de este sitio (solo producción).",
         "cause": "El host de la URL canónica del sitio (site.url) difiere del dominio para el que se activó la licencia.",
         "fix": "Vuelve a vincular la licencia a este dominio, o actívala en el dominio correcto."
       },
-      "NEC-LICENSE-9004": {
+      "XEC-LICENSE-9004": {
         "msg": "Límite de activaciones alcanzado",
         "desc": "La puerta de descarga no encontró ninguna ranura de activación de producción libre para esta compra.",
         "cause": "Todos los dominios de producción licenciados de esta compra ya están en uso.",
-        "fix": "Libera una ranura, o compra un dominio adicional en nodevo.io."
+        "fix": "Libera una ranura, o compra un dominio adicional en xentium.org."
       },
-      "NEC-LICENSE-9005": {
+      "XEC-LICENSE-9005": {
         "msg": "Se requiere cuenta del mercado",
         "desc": "Esta acción necesita una cuenta del mercado conectada.",
-        "cause": "No hay ninguna cuenta de nodevo.io conectada para este sitio.",
+        "cause": "No hay ninguna cuenta de xentium.org conectada para este sitio.",
         "fix": "Conecta una cuenta en ACP → Extensiones → Mercado, o usa una clave de licencia manual."
       },
-      "NEC-LICENSE-9006": {
+      "XEC-LICENSE-9006": {
         "msg": "Token de derecho de uso no válido",
         "desc": "El JWT de derecho de uso almacenado no superó la verificación RS256.",
         "cause": "El token fue manipulado, o la clave pública verificadora no coincide con el emisor.",
-        "fix": "Reactiva la licencia. En producción, confirma que la clave pública de licencia incluida coincide con la clave de firma de nodevo.io."
+        "fix": "Reactiva la licencia. En producción, confirma que la clave pública de licencia incluida coincide con la clave de firma de xentium.org."
       },
-      "NEC-LICENSE-9007": {
+      "XEC-LICENSE-9007": {
         "msg": "Mercado inaccesible",
         "desc": "No se pudo contactar con el servidor del mercado / de licencias.",
         "cause": "Fallo de red o el servidor de licencias está caído. Aplica el período de gracia de 30 días.",
         "fix": "Comprueba la conectividad. Los plugins en ejecución no se ven afectados durante la ventana de gracia; reinténtalo más tarde."
       },
-      "NEC-LICENSE-9008": {
+      "XEC-LICENSE-9008": {
         "msg": "Licencia ya activa",
         "desc": "La activación fue rechazada porque este sitio ya tiene una licencia activa.",
         "cause": "Se introdujo una segunda clave (o se ejecutó la autoactivación de cuenta) mientras hay una licencia activa.",
         "fix": "Desactiva primero la licencia actual en ACP → Extensiones → Licencia y luego activa la nueva."
       },
-      "NEC-LICENSE-9009": {
+      "XEC-LICENSE-9009": {
         "msg": "El servidor de licencias rechazó la petición",
         "desc": "El servidor de licencias rechazó la petición; el mensaje incluye el motivo exacto.",
         "cause": "Clave desconocida o revocada, período de licencia finalizado, sin ranura de dominio libre, o la licencia está vinculada a otro dominio.",
         "fix": "Lee el mensaje: renueva el período, libera o añade una ranura de dominio, o contacta con el soporte del mercado para mover la vinculación."
       },
-      "NEC-LICENSE-9010": {
+      "XEC-LICENSE-9010": {
         "msg": "Falta la identidad de la instalación",
         "desc": "Esta instancia no tiene registro de instalación, por lo que carece de identidad para licenciarse.",
-        "cause": "El instalador nunca se completó, o la fila de ncf_installs se eliminó de la base de datos.",
-        "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila ncf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
+        "cause": "El instalador nunca se completó, o la fila de xcf_installs se eliminó de la base de datos.",
+        "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila xcf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
       }
     }
   },
@@ -1067,7 +1067,7 @@
     "uploadBtn": "Subir plugin",
     "loading": "Cargando…",
     "emptyTitle": "No hay plugins instalados",
-    "emptyHint": "Sube un paquete .nvplugin para empezar.",
+    "emptyHint": "Sube un paquete .xtplugin para empezar.",
     "licensed": "Con licencia",
     "meta": "{{id}} · de {{vendor}} · instalado el {{date}}",
     "status": {
@@ -1087,7 +1087,7 @@
     "removeDataText": "Esto también eliminará las tablas del plugin y todos sus datos. No se puede deshacer.",
     "removeDataConfirm": "Sí, eliminar datos",
     "allowUpload": "Permitir subidas manuales",
-    "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .nvplugin, además del marketplace. Desactivado por defecto.",
+    "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .xtplugin, además del marketplace. Desactivado por defecto.",
     "emptyBrowseMarketplace": "Explorar el marketplace",
     "loadFailed": "Error al cargar",
     "loadFailedTitle": "Este plugin está activado pero no se pudo cargar — sus rutas y páginas no están activas.",
@@ -1100,11 +1100,11 @@
       "validate": "Validar",
       "install": "Instalar"
     },
-    "drop": "Suelta tu archivo .nvplugin aquí",
+    "drop": "Suelta tu archivo .xtplugin aquí",
     "orClick": "o haz clic para explorar",
     "browse": "Explorar archivo",
     "reqTitle": "Requisitos",
-    "req1": "El archivo debe ser un paquete .nvplugin válido (ZIP)",
+    "req1": "El archivo debe ser un paquete .xtplugin válido (ZIP)",
     "req2": "Debe incluir un manifest.json con id, name, version, vendor",
     "req3": "Los archivos de migración solo pueden usar sentencias DDL",
     "req4": "Cada .up.sql debe tener su .down.sql correspondiente",
@@ -1134,7 +1134,7 @@
     "processingValidate": "Subiendo y validando el paquete…",
     "processingInstall": "Instalando el plugin y ejecutando migraciones…",
     "sideHowTitle": "Cómo funciona",
-    "sideStep1": "Arrastra o elige un archivo .nvplugin.",
+    "sideStep1": "Arrastra o elige un archivo .xtplugin.",
     "sideStep2": "Comprobamos el manifiesto, los permisos y las migraciones.",
     "sideStep3": "Se descomprimen los archivos y el plugin queda listo para activar.",
     "sideSafetyTitle": "Antes de instalar",
@@ -1143,7 +1143,7 @@
     "sideMarketText": "Explora e instala plugins oficiales con una licencia activa.",
     "sideMarketLink": "Abrir el Marketplace",
     "disabledTitle": "Las subidas manuales están desactivadas",
-    "disabledHint": "Los plugins se instalan desde el marketplace de forma predeterminada. Un administrador puede activar las subidas manuales de .nvplugin en la página Instalados.",
+    "disabledHint": "Los plugins se instalan desde el marketplace de forma predeterminada. Un administrador puede activar las subidas manuales de .xtplugin en la página Instalados.",
     "disabledGoMarketplace": "Explorar el marketplace"
   },
   "marketplace": {
@@ -1162,7 +1162,7 @@
     "goManage": "Instalado — gestionar",
     "install": "Instalar",
     "activateToInstall": "Activa la licencia para instalar",
-    "buy": "Comprar → nodevo.io",
+    "buy": "Comprar → xentium.org",
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — actívalo cuando quieras.",
     "installFailed": "Error al instalar: {{message}}",
@@ -1661,7 +1661,7 @@
     "publishing": "Publicando…",
     "publishNow": "Publicar ahora",
     "logoText": "Texto del logo (reserva cuando no hay imagen)",
-    "logoPlaceholder": "nodevo",
+    "logoPlaceholder": "xentium",
     "save": "Guardar",
     "navbarLogo": "Logo de la barra",
     "navbarLogoHint": "PNG, SVG o WebP · máx. 2 MB · recomendado 160×40 px",
@@ -1788,7 +1788,7 @@
     "iconKit": "Kit de FontAwesome Pro",
     "iconKitHint": "Pega el id de tu kit o su URL completa https://kit.fontawesome.com/…. Déjalo vacío para usar los iconos gratuitos incluidos.",
     "iconKitPlaceholder": "a1b2c3d4e5",
-    "iconKitLicence": "Usa tu propia suscripción de FontAwesome, solo en este sitio. Nodevo incluye el conjunto gratuito; un kit añade los iconos Pro que cubre tu licencia.",
+    "iconKitLicence": "Usa tu propia suscripción de FontAwesome, solo en este sitio. Xentium incluye el conjunto gratuito; un kit añade los iconos Pro que cubre tu licencia.",
     "toastIconKit": "Kit de iconos guardado. Recarga para ver los iconos Pro.",
     "iconKitInvalid": "Eso no es un kit de FontAwesome. Pega el id del kit de tu cuenta de FontAwesome, o la URL completa https://kit.fontawesome.com/….",
     "iconStyle": "Estilo de iconos",
@@ -2108,7 +2108,7 @@
     "customized": "Personalizada",
     "reset": "Restablecer",
     "resetTitle": "¿Restablecer esta plantilla?",
-    "resetConfirm": "La plantilla volverá a la versión incluida con Nodevo. Tus cambios se descartarán.",
+    "resetConfirm": "La plantilla volverá a la versión incluida con Xentium. Tus cambios se descartarán.",
     "resetDone": "Plantilla restablecida al valor predeterminado.",
     "sendTest": "Enviar prueba",
     "testPlaceholder": "tu@ejemplo.com",
@@ -2144,7 +2144,7 @@
     "importTitle": "Instalar un tema",
     "importBtn": "Elegir archivo…",
     "importing": "Instalando…",
-    "importHint": "Acepta .nvtheme y .nvstyle. El tema se aplica en cuanto se instala; tus páginas personalizadas se conservan.",
+    "importHint": "Acepta .xttheme y .xtstyle. El tema se aplica en cuanto se instala; tus páginas personalizadas se conservan.",
     "reportTitle": "Resultado de la importación",
     "reportTemplates": "{{count}} plantilla(s) aplicada(s).",
     "reportKept": "{{count}} plantilla(s) conservada(s) tal como las tenías.",

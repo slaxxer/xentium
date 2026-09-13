@@ -80,7 +80,7 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
       <div className="mt__wrap">
         <div className="mt__brand">
           <span className="mt__logomark"><FontAwesomeIcon icon={faComments} /></span>
-          <span className="mt__wordmark">{siteConfig?.siteName || "Nodevo"}</span>
+          <span className="mt__wordmark">{siteConfig?.siteName || "Xentium"}</span>
         </div>
 
         <section className="mt-card">

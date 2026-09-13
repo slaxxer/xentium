@@ -45,7 +45,7 @@ import {
   type LayoutSelector,
   type CoreTemplateKey,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { pagesApi } from "../../../lib/pagesApi";
 import { articlesApi } from "../../../lib/articlesApi";
@@ -97,7 +97,7 @@ import { IconPicker } from "../../../components/IconPicker";
  *
  * Not a viewport emulation — no touch, no user agent, no device pixel ratio. It is
  * the ONE thing the site's own CSS reads, which is what makes the collapse an admin
- * is checking for happen: `.nv-body-row` stacks at 1024, `.nv-columns` wraps when its
+ * is checking for happen: `.xt-body-row` stacks at 1024, `.xt-columns` wraps when its
  * tracks stop fitting, the navbar folds at 640.
  */
 /**
@@ -675,7 +675,7 @@ export function LayoutEditorPage() {
         slot?: string;
       };
 
-      if (msg?.source !== "nv-preview") return;
+      if (msg?.source !== "xt-preview") return;
 
       /**
        * Clicking a block OPENS its document.
@@ -782,18 +782,18 @@ export function LayoutEditorPage() {
     if (!win) return;
     if (doc) {
       win.postMessage(
-        { source: "nv-editor", type: "document", templateKey, variant, document: doc },
+        { source: "xt-editor", type: "document", templateKey, variant, document: doc },
         window.location.origin,
       );
     }
-    win.postMessage({ source: "nv-editor", type: "audience", audience: forAudience }, window.location.origin);
-    win.postMessage({ source: "nv-editor", type: "iconMode", on: iconModeRef.current }, window.location.origin);
-    win.postMessage({ source: "nv-editor", type: "tokens", css: styleCss }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "audience", audience: forAudience }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "iconMode", on: iconModeRef.current }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "tokens", css: styleCss }, window.location.origin);
     // The preview draws a restricted block like any other — the chip is the only
     // place the condition shows — so it needs the words for it.
     win.postMessage(
       {
-        source: "nv-editor", type: "labels",
+        source: "xt-editor", type: "labels",
         audience: {
           guests:  t("layoutEditor.audience.guests"),
           members: t("layoutEditor.audience.members"),
@@ -822,7 +822,7 @@ export function LayoutEditorPage() {
 
   useEffect(() => {
     previewRef.current?.contentWindow?.postMessage(
-      { source: "nv-editor", type: "tokens", css: styleCss },
+      { source: "xt-editor", type: "tokens", css: styleCss },
       window.location.origin,
     );
   }, [styleCss]);
@@ -830,7 +830,7 @@ export function LayoutEditorPage() {
   /** Push the chosen audience into the preview whenever it changes. */
   useEffect(() => {
     previewRef.current?.contentWindow?.postMessage(
-      { source: "nv-editor", type: "audience", audience },
+      { source: "xt-editor", type: "audience", audience },
       window.location.origin,
     );
   }, [audience]);
@@ -847,7 +847,7 @@ export function LayoutEditorPage() {
     const node = selectedId ? findNode(docRef.current?.regions ?? {}, selectedId)?.node : null;
     previewRef.current?.contentWindow?.postMessage(
       {
-        source: "nv-editor", type: "highlight", id: selectedId,
+        source: "xt-editor", type: "highlight", id: selectedId,
         label: node ? getBlock(node.type)?.editorMeta?.label ?? node.type : null,
         // ⚠ Asked of the registry directly, not of the `required` set below: this
         // effect is declared above it, and reading it here would be a use before
@@ -866,7 +866,7 @@ export function LayoutEditorPage() {
   useEffect(() => {
     if (!doc) return;
     previewRef.current?.contentWindow?.postMessage(
-      { source: "nv-editor", type: "document", templateKey, variant, document: doc },
+      { source: "xt-editor", type: "document", templateKey, variant, document: doc },
       window.location.origin,
     );
   }, [doc, templateKey, variant]);
@@ -1927,7 +1927,7 @@ export function LayoutEditorPage() {
                 setIconMode(on);
                 if (!on) setIconPick(null);
                 previewRef.current?.contentWindow?.postMessage(
-                  { source: "nv-editor", type: "iconMode", on }, window.location.origin,
+                  { source: "xt-editor", type: "iconMode", on }, window.location.origin,
                 );
               }}>
               <FontAwesomeIcon icon={faIcons} /> {t("layoutEditor.iconMode")}

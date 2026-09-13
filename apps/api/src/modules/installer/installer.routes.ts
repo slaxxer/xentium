@@ -12,7 +12,7 @@ installerRouter.use(rateLimit({
   standardHeaders: "draft-7",
   legacyHeaders: false,
   handler: (_req, res) =>
-    res.status(429).json({ error: { code: "NEC-API-4290", message: "Rate limit exceeded" } }),
+    res.status(429).json({ error: { code: "XEC-API-4290", message: "Rate limit exceeded" } }),
 }));
 
 // Installer responses must never be cached — a reset or completed install must reflect immediately.

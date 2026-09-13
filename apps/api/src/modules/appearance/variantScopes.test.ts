@@ -8,7 +8,7 @@
  *     colours, so it cannot be left to the generic scope path untested.
  *  2. An UNKNOWN scope must emit nothing. `selectorFor` used to fall back to the theme
  *     root for a scope it did not recognise, which silently promoted the bucket to a
- *     global override: a `.nvtheme` naming a scope from a newer build would have
+ *     global override: a `.xttheme` naming a scope from a newer build would have
  *     recoloured the whole site rather than one variant.
  *
  * The settings reader and the SSE publisher are mocked because none of that is about
@@ -16,7 +16,7 @@
  * font settings.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ScopedTokenSet } from "@nodevo/contracts";
+import type { ScopedTokenSet } from "@xentium/contracts";
 
 // `buildCSS` folds in the admin custom CSS, which is compiled once and cached in a
 // setting — hence the one prisma call this needs.
@@ -52,7 +52,7 @@ describe("variant scopes reach the page", () => {
     const css = await appearanceService.buildCSS(
       tokens({ "variant.accent": { "--surface-bg": "#ff0000" } }),
     );
-    expect(css).toContain(':root .nv-v--accent, [data-theme="light"] .nv-v--accent');
+    expect(css).toContain(':root .xt-v--accent, [data-theme="light"] .xt-v--accent');
     expect(css).toContain("--surface-bg: #ff0000;");
   });
 
@@ -61,8 +61,8 @@ describe("variant scopes reach the page", () => {
       light: {},
       dark:  { "variant.muted": { "--c-fg": "#eeeeee" } },
     });
-    expect(css).toContain('[data-theme="dark"] .nv-v--muted');
-    expect(css).not.toContain(':root .nv-v--muted');
+    expect(css).toContain('[data-theme="dark"] .xt-v--muted');
+    expect(css).not.toContain(':root .xt-v--muted');
   });
 
   it("keeps global first, so a variant can override it", async () => {
@@ -80,7 +80,7 @@ describe("variant scopes reach the page", () => {
       "variant.plain":   { "--surface-bg": "#000004" },
     }));
     for (const v of ["surface", "muted", "accent", "plain"]) {
-      expect(css).toContain(`.nv-v--${v}`);
+      expect(css).toContain(`.xt-v--${v}`);
     }
   });
 

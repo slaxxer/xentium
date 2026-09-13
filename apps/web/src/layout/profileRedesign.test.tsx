@@ -16,7 +16,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DEFAULT_LAYOUTS } from "@nodevo/contracts";
+import { DEFAULT_LAYOUTS } from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
 import type { ProfileContext, ProfileProgression } from "../features/profiles/ProfilePage";
 

@@ -10,7 +10,7 @@
      every route. This page used to add 22/40 on top of it. */
 }
 
-/* `.hf-left` / `.hf-right` are gone — `.nv-column` already gives the flex column and
+/* `.hf-left` / `.hf-right` are gone — `.xt-column` already gives the flex column and
    the gap, and `column.sticky` gives the rest. */
 
 /* shared rail card */
@@ -430,7 +430,7 @@
 }
 
 /* ── responsive ───────────────────────────────────────── */
-/* The rails are `columns` tracks now, and `.nv-columns` wraps and then stacks them
+/* The rails are `columns` tracks now, and `.xt-columns` wraps and then stacks them
    on its own — so there is nothing here to re-grid. Hiding a rail outright is no
    longer core's call either: an admin who wants it gone removes the blocks. */
 @media (max-width: 760px) {

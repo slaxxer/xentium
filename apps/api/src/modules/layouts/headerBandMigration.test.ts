@@ -11,7 +11,7 @@
  * masthead, and silently dropping what it holds.
  */
 import { describe, expect, it } from "vitest";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { migrateHeaderBand } from "./headerBandMigration.js";
 
 const doc = (header: BlockNode[]): LayoutDocument =>

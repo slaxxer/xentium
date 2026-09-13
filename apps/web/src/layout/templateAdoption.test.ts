@@ -26,7 +26,7 @@ import {
   regionsFor,
   validateBlockTree,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { getBlock } from "./blockRegistry";
 
 // The full catalogue, exactly as main.tsx registers it.

@@ -14,8 +14,8 @@
  */
 import type { RequestHandler } from "express";
 import { imageSize } from "image-size";
-import { NodevoError } from "../errors/NodevoError.js";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "../errors/XentiumError.js";
+import { XEC } from "@xentium/contracts";
 
 export function requireMaxDimensions(maxWidth: number, maxHeight: number): RequestHandler {
   return (req, _res, next) => {
@@ -30,24 +30,24 @@ export function requireMaxDimensions(maxWidth: number, maxHeight: number): Reque
       // A buffer whose type was detected but whose header will not parse. Refused
       // rather than waved through: the whole point of this gate is that nothing
       // unbounded reaches the page.
-      return next(new NodevoError({
-        code:       NEC.STORE_MIME_MISMATCH,
+      return next(new XentiumError({
+        code:       XEC.STORE_MIME_MISMATCH,
         httpStatus: 415,
         message:    "Could not read the image's dimensions",
       }));
     }
 
     if (!width || !height) {
-      return next(new NodevoError({
-        code:       NEC.STORE_MIME_MISMATCH,
+      return next(new XentiumError({
+        code:       XEC.STORE_MIME_MISMATCH,
         httpStatus: 415,
         message:    "Could not read the image's dimensions",
       }));
     }
 
     if (width > maxWidth || height > maxHeight) {
-      return next(new NodevoError({
-        code:       NEC.STORE_IMAGE_TOO_LARGE,
+      return next(new XentiumError({
+        code:       XEC.STORE_IMAGE_TOO_LARGE,
         httpStatus: 422,
         // The numbers travel in `details` because the API is locale-agnostic (§60) —
         // the frontend words the sentence the admin actually reads.

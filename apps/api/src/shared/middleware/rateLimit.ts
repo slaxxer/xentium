@@ -1,14 +1,14 @@
 /**
- * The CMS's binding of the framework rate limiter (`@nodevo/server-kit`).
+ * The CMS's binding of the framework rate limiter (`@xentium/server-kit`).
  *
- * The factory is framework — a Redis-backed store, NEC-API-4290, draft-7
+ * The factory is framework — a Redis-backed store, XEC-API-4290, draft-7
  * headers. `globalApiLimiter` is NOT: its skip list names this application's
  * routes, which is exactly the kind of knowledge a framework package may not
  * hold (ADR-0006).
  */
 import { createHash } from "node:crypto";
 import type { Options } from "express-rate-limit";
-import { createRateLimiterFactory, byUserId, ipKeyGenerator } from "@nodevo/server-kit";
+import { createRateLimiterFactory, byUserId, ipKeyGenerator } from "@xentium/server-kit";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { isProd } from "../../config/env.js";
 

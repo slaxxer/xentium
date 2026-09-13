@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "@xentium/contracts";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { notificationService } from "../notifications/notification.service.js";
 import type { AwardedBadge, BadgeHolder, BadgeRow } from "./badges.types.js";
@@ -88,7 +88,7 @@ export const badgesService = {
     autoAward?: boolean; criteria?: Record<string, number>;
   }): Promise<BadgeRow> {
     const existing = await prisma.badge.findUnique({ where: { key: data.key } });
-    if (existing) throw NodevoError.conflict(`A badge with the key "${data.key}" already exists`);
+    if (existing) throw XentiumError.conflict(`A badge with the key "${data.key}" already exists`);
 
     const row = await prisma.badge.create({
       data: {
@@ -124,8 +124,8 @@ export const badgesService = {
   async remove(id: string): Promise<void> {
     const badge = await this.mustExist(id);
     if (badge.isSystem) {
-      throw new NodevoError({
-        code: NEC.API_VALIDATION, httpStatus: 400,
+      throw new XentiumError({
+        code: XEC.API_VALIDATION, httpStatus: 400,
         message: "A system badge cannot be deleted",
       });
     }
@@ -146,7 +146,7 @@ export const badgesService = {
     const user = await prisma.user.findUnique({
       where: { id: userId }, select: { id: true, username: true },
     });
-    if (!user) throw NodevoError.notFound("User not found");
+    if (!user) throw XentiumError.notFound("User not found");
 
     /**
      * ⚠ Was it ALREADY held? The upsert cannot say afterwards, and the answer is what
@@ -285,7 +285,7 @@ export const badgesService = {
     const badge = await prisma.badge.findUnique({
       where: { id }, select: { id: true, name: true, isSystem: true },
     });
-    if (!badge) throw NodevoError.notFound("Badge not found");
+    if (!badge) throw XentiumError.notFound("Badge not found");
     return badge;
   },
 };

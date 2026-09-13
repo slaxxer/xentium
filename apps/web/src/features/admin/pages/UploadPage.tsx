@@ -185,7 +185,7 @@ export function UploadPage() {
               </button>
             </div>
 
-            <input ref={fileRef} type="file" accept=".nvplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
+            <input ref={fileRef} type="file" accept=".xtplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
             {error && (
               <div style={{ marginTop:12, padding:"12px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>

@@ -310,7 +310,7 @@ function buildRouter() {
           // rather than 404'd, because the old path is in admins' history and docs.
           { path: "guest-home",       element: <Navigate to="/admin/layout-editor" replace /> },
           { path: "themes",           element: <ThemesPage /> },
-          // `styles` retired 2026-08-15: `.nvstyle` was merged into `.nvtheme`, so the
+          // `styles` retired 2026-08-15: `.xtstyle` was merged into `.xttheme`, so the
           // pack library and its table are gone. Themes is where the format lives now,
           // so a bookmark lands on its successor rather than on a 404.
           { path: "styles",           element: <Navigate to="/admin/themes" replace /> },

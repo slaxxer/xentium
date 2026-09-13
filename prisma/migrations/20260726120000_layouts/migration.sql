@@ -1,6 +1,6 @@
 -- Block layout composition (ADR-0005). At most two rows per template: the draft
 -- an admin is editing and the published one the site serves. Absence is valid —
--- a template with no row renders the code default from @nodevo/contracts, which
+-- a template with no row renders the code default from @xentium/contracts, which
 -- is also what "Reset to default" restores by deleting rows.
 CREATE TABLE "ncf_layouts" (
   "id"             TEXT NOT NULL,

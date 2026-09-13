@@ -3,7 +3,7 @@
  *
  * ## Why not `GroupAccessPicker`
  *
- * `@nodevo/ui`'s picker is the shared way to express §39 visibility and it was the
+ * `@xentium/ui`'s picker is the shared way to express §39 visibility and it was the
  * obvious candidate, but its `GroupAccessValue` does not fit a layout block:
  *
  *  - its `level` mode needs the viewer's progression level, and `AuthUser` does not
@@ -29,7 +29,7 @@ import {
   BLOCK_AUDIENCES,
   type BlockAudience,
   type BlockVisibility,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 
 interface GroupOption { id: string; name: string; key: string }
@@ -73,7 +73,7 @@ export function BlockVisibilityFields({
         <label className="lay__vis-row" key={audience}>
           <input
             type="radio"
-            name="nv-block-audience"
+            name="xt-block-audience"
             value={audience}
             checked={current.audience === audience}
             onChange={() => setAudience(audience)}

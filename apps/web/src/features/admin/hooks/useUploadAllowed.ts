@@ -4,7 +4,7 @@ import { api } from "../../../lib/api";
 const KEY = ["acp-setting", "plugins.allow_upload"] as const;
 
 /**
- * Whether manual .nvplugin uploads are enabled (`plugins.allow_upload`, default
+ * Whether manual .xtplugin uploads are enabled (`plugins.allow_upload`, default
  * off). Drives the Upload nav item, the Upload page guard, and the toggle on the
  * Installed page. Shared query key so all three stay in sync.
  */

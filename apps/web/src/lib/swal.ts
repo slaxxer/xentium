@@ -1,4 +1,4 @@
-// Legacy-named facade over Nodevo's own feedback primitives (sweetalert2 is
+// Legacy-named facade over Xentium's own feedback primitives (sweetalert2 is
 // GONE): toasts → lib/toast.ts (<ToastHost/>), dialogs → lib/dialog.ts
 // (<DialogHost/>). The swal* names are kept so ~100 core call sites and every
 // plugin (which externalize this module to the host global) work unchanged.
@@ -10,9 +10,9 @@ import { openDialog } from "./dialog";
 
 /**
  * Resolve a user-facing message from an API error. Prefers a localized message
- * keyed by the NEC error code (errors namespace); otherwise falls back to the
+ * keyed by the XEC error code (errors namespace); otherwise falls back to the
  * server-provided message, then the caller's fallback. No caller changes needed —
- * any error with a known NEC code is translated automatically.
+ * any error with a known XEC code is translated automatically.
  */
 export function apiErrorMessage(
   e: unknown,

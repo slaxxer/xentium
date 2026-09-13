@@ -14,7 +14,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { LayoutRenderer } from "./LayoutRenderer";
 import "./blocks/coreBlocks";
 
@@ -34,10 +34,10 @@ describe("the body row", () => {
         document={doc({ header: [], main: [heading("m", "Body")], aside: [heading("a", "Rail")], footer: [] })}
       />,
     );
-    const row = container.querySelector(".nv-body-row");
+    const row = container.querySelector(".xt-body-row");
     expect(row).not.toBeNull();
-    expect(row!.querySelector(".nv-region--main")).not.toBeNull();
-    expect(row!.querySelector(".nv-region--aside")).not.toBeNull();
+    expect(row!.querySelector(".xt-region--main")).not.toBeNull();
+    expect(row!.querySelector(".xt-region--aside")).not.toBeNull();
   });
 
   it("renders the body BEFORE the rail whatever order the template lists", () => {
@@ -50,9 +50,9 @@ describe("the body row", () => {
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
     );
-    const kids = [...container.querySelector(".nv-body-row")!.children];
-    expect(kids.map((el) => el.className.split(" ").find((c) => c.startsWith("nv-region--"))))
-      .toEqual(["nv-region--main", "nv-region--aside"]);
+    const kids = [...container.querySelector(".xt-body-row")!.children];
+    expect(kids.map((el) => el.className.split(" ").find((c) => c.startsWith("xt-region--"))))
+      .toEqual(["xt-region--main", "xt-region--aside"]);
   });
 
   it("still emits the aside LANDMARK, not a div in a row", () => {
@@ -62,7 +62,7 @@ describe("the body row", () => {
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
     );
-    expect(container.querySelector(".nv-body-row > aside")).not.toBeNull();
+    expect(container.querySelector(".xt-body-row > aside")).not.toBeNull();
   });
 
   it("leaves an empty rail out of the document entirely on the live site", () => {
@@ -74,8 +74,8 @@ describe("the body row", () => {
         document={doc({ main: [heading("m", "Body")], aside: [] })}
       />,
     );
-    expect(container.querySelector(".nv-region--aside")).toBeNull();
-    expect(container.querySelector(".nv-body-row")!.children).toHaveLength(1);
+    expect(container.querySelector(".xt-region--aside")).toBeNull();
+    expect(container.querySelector(".xt-body-row")!.children).toHaveLength(1);
   });
 
   it("does not build a row for a template with no aside", () => {
@@ -88,7 +88,7 @@ describe("the body row", () => {
                     regions: { header: [heading("h", "Site") ] } } as LayoutDocument}
       />,
     );
-    expect(container.querySelector(".nv-body-row")).toBeNull();
+    expect(container.querySelector(".xt-body-row")).toBeNull();
   });
 
   it("is the whole page — a page has no bands above or below it any more", () => {
@@ -106,11 +106,11 @@ describe("the body row", () => {
         })}
       />,
     );
-    expect(container.querySelector(".nv-region--header")).toBeNull();
-    expect(container.querySelector(".nv-region--footer")).toBeNull();
-    expect([...container.querySelectorAll(".nv-body-row > .nv-region")]
-      .map((el) => el.className.split(" ").find((c) => c.startsWith("nv-region--"))))
-      .toEqual(["nv-region--main", "nv-region--aside"]);
+    expect(container.querySelector(".xt-region--header")).toBeNull();
+    expect(container.querySelector(".xt-region--footer")).toBeNull();
+    expect([...container.querySelectorAll(".xt-body-row > .xt-region")]
+      .map((el) => el.className.split(" ").find((c) => c.startsWith("xt-region--"))))
+      .toEqual(["xt-region--main", "xt-region--aside"]);
   });
 });
 
@@ -132,8 +132,8 @@ describe("whose header it is", () => {
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
     );
-    expect(container.querySelector("header.nv-region--header")).toBeNull();
-    expect(container.querySelector("footer.nv-region--footer")).toBeNull();
+    expect(container.querySelector("header.xt-region--header")).toBeNull();
+    expect(container.querySelector("footer.xt-region--footer")).toBeNull();
   });
 
   it("gives the site's header and footer theirs", () => {
@@ -144,7 +144,7 @@ describe("whose header it is", () => {
                     regions: { header: [heading("nav", "Navbar")] } } as LayoutDocument}
       />,
     );
-    expect(header.container.querySelector("header.nv-region--header")).not.toBeNull();
+    expect(header.container.querySelector("header.xt-region--header")).not.toBeNull();
     cleanup();
 
     const footer = render(
@@ -154,6 +154,6 @@ describe("whose header it is", () => {
                     regions: { footer: [heading("legal", "Legal")] } } as LayoutDocument}
       />,
     );
-    expect(footer.container.querySelector("footer.nv-region--footer")).not.toBeNull();
+    expect(footer.container.querySelector("footer.xt-region--footer")).not.toBeNull();
   });
 });

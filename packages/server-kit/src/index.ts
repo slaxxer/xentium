@@ -1,5 +1,5 @@
 /**
- * @nodevo/server-kit — the server-side utilities every Nodevo-framework
+ * @xentium/server-kit — the server-side utilities every Xentium-framework
  * application needs, and none of the domain it serves (ADR-0006).
  *
  * Everything with a dependency is a factory: an application injects its own

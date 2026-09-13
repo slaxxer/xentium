@@ -6,7 +6,7 @@
 // Bulk listing queries should filter at the SQL level (§54) using the same
 // rule shape. This function is for single-node request-level checks.
 //
-// Exposed via @nodevo/sdk so plugins (e.g. the forum node tree) reuse the
+// Exposed via @xentium/sdk so plugins (e.g. the forum node tree) reuse the
 // exact same access logic instead of reimplementing it.
 
 export const VISIBILITY_MODES = ["public", "members", "level", "groups"] as const;

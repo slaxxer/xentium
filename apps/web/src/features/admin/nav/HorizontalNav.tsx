@@ -84,7 +84,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
         <div className="hnav__brand">
           <div className="acp-logomark"><AcpIcon name="dashboard" size={18} /></div>
           <div>
-            <div className="hnav__name">nodevo</div>
+            <div className="hnav__name">xentium</div>
             <div className="hnav__tag">{t("sidebar.adminPanel")}</div>
           </div>
         </div>

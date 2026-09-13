@@ -20,14 +20,14 @@
  * ## The rails
  *
  * `.hf-left` / `.hf-right` were sticky flex columns sized by a
- * `var(--sidebar-width) 1fr 300px` grid. `.nv-column` already gave the flex and the
+ * `var(--sidebar-width) 1fr 300px` grid. `.xt-column` already gave the flex and the
  * gap, so all that was missing was width and stickiness — now `column.width:
  * sidebar | rail` and `column.sticky`, which is why the rails are ordinary tracks
  * rather than bespoke wrappers.
  */
 import type { ReactNode } from "react";
 import type { ZodType } from "zod";
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { registerBlock } from "../blockRegistry";
 import { RankProgress, useRankFor } from "../../features/progression/rank";
 import {

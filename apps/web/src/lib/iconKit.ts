@@ -1,13 +1,13 @@
 /**
  * The site's FontAwesome kit, and the style it draws in.
  *
- * Nodevo bundles the FREE solid set and always will: with no kit, or a kit that
+ * Xentium bundles the FREE solid set and always will: with no kit, or a kit that
  * fails to load, every icon in the app still draws from the bundle. A kit is
  * additive — it is how an admin with their own Pro subscription gets Pro icons and
  * Pro styles on their own instance.
  *
  * ⚠ Each instance brings its OWN licence. A Pro licence covers the sites its owner
- * operates, and Nodevo is installed by strangers on their own servers, so Pro
+ * operates, and Xentium is installed by strangers on their own servers, so Pro
  * artwork can never be bundled into the build — that would copy licensed assets into
  * every install. A kit is fetched at runtime with the admin's own id and is
  * domain-locked by FontAwesome to their site. Full rationale: `docs/icon-kits.md`.
@@ -19,12 +19,12 @@
  * to re-render it, which reads as "the setting did nothing".
  */
 import { useSyncExternalStore } from "react";
-import { DEFAULT_ICON_STYLE, isIconStyle, iconStyleClasses } from "@nodevo/contracts";
+import { DEFAULT_ICON_STYLE, isIconStyle, iconStyleClasses } from "@xentium/contracts";
 
 /** Mirrors the server's allowlist. See `modules/appearance/iconKit.ts`. */
 const KIT_URL = /^https:\/\/kit\.fontawesome\.com\/[a-z0-9]{6,32}\.js$/;
 
-const CACHE_KEY = "nodevo.iconKit";
+const CACHE_KEY = "xentium.iconKit";
 
 /** Is this a kit, as the server will judge it? Mirrors `modules/appearance/iconKit.ts`. */
 export function looksLikeKit(raw: string): boolean {

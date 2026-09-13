@@ -6,7 +6,7 @@ import i18n from "../lib/i18n";
  * A plugin ships its own locale JSON (one namespace, all bundled languages),
  * imports them in its web entry, and registers them into the host i18next
  * instance via this helper — exposed to plugins through the host bridge
- * (`window.__NODEVO_HOST__.webPluginI18n`). Because the bundles are added before
+ * (`window.__XENTIUM_HOST__.webPluginI18n`). Because the bundles are added before
  * the plugin's UI renders, `useTranslation("<pluginNs>")` resolves immediately
  * with no `/locales` HTTP fetch (so no 404 for a namespace core doesn't own).
  *

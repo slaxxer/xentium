@@ -7,7 +7,7 @@ import { useSyncExternalStore } from "react";
  * is a reload — recovery is intentional, not a soft dismiss.
  */
 export interface FatalError {
-  code: string;       // NEC code, e.g. "NEC-API-5000"
+  code: string;       // XEC code, e.g. "XEC-API-5000"
   message: string;    // human-ish message from the server (generic in prod)
   severity: string;   // "error" | "critical"
   status: number;     // HTTP status

@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
-import { NodevoError } from "../../shared/errors/NodevoError.js";
+import { HEARTH_DEFAULT_TOKENS, XEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
+import { XentiumError } from "../../shared/errors/XentiumError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
 import { bustSettingsCache, getFreshSetting as readSetting } from "../../shared/utils/settings.js";
@@ -9,7 +9,7 @@ import { publishStyleVersion } from "./appearance.sse.js";
 
 export type ThemeName = "light" | "dark";
 
-// ScopedTokens / ScopedTokenSet now live in @nodevo/contracts (shared with the
+// ScopedTokens / ScopedTokenSet now live in @xentium/contracts (shared with the
 // Style Editor). Re-exported below for existing importers of this module.
 export type { ScopedTokens, ScopedTokenSet };
 
@@ -60,8 +60,8 @@ const THEME_SCOPE: Record<ThemeName, string> = {
 // ⚠ The site's CSS stops at the admin panel. Custom CSS is the SITE's design, and
 // the ACP is not part of it — an `a { color }` or a `body { background }` written
 // for the site was landing on the admin panel too, the same complaint the palette
-// pin answers (`body.nv-acp`, apps/web/src/styles/_tokenDefaults.scss). So every
-// rule is anchored under `body:not(.nv-acp)`: the ACP puts that class on <body>
+// pin answers (`body.xt-acp`, apps/web/src/styles/_tokenDefaults.scss). So every
+// rule is anchored under `body:not(.xt-acp)`: the ACP puts that class on <body>
 // while it is mounted and takes it off on the way out.
 //
 // ⚠ `:root` / `html` rules are the exception and stay document-wide, because a rule
@@ -69,7 +69,7 @@ const THEME_SCOPE: Record<ThemeName, string> = {
 // and an unsupported selector would silently drop the admin's ENTIRE stylesheet
 // rather than one rule. In practice those rules declare TOKENS, which the ACP
 // re-declares over anyway — what remains is html-level paint.
-const SITE_BODY = "body:not(.nv-acp)";
+const SITE_BODY = "body:not(.xt-acp)";
 
 // Apply the theme scope to one selector. Selectors that target the root element
 // (`:root` / `html`) get the scope MERGED onto them (compound) so a custom
@@ -122,8 +122,8 @@ function assertParsableCss(css: string, theme: ThemeName): void {
   try {
     postcss.parse(css, PARSE_OPTS);
   } catch (err) {
-    throw new NodevoError({
-      code: NEC.API_VALIDATION,
+    throw new XentiumError({
+      code: XEC.API_VALIDATION,
       httpStatus: 400,
       message: `Custom CSS (${theme}) has a syntax error: ${err instanceof Error ? err.message : "invalid CSS"}`,
     });
@@ -143,7 +143,7 @@ const DRAFT_DARK_KEY  = "appearance.tokens.draft.dark";
 const DRAFT_BY_KEY    = "appearance.tokens.draft.by"; // user id who last edited the draft
 
 // ── Theme layer (inheritance) ────────────────────────────────────────────────
-// What an imported `.nvtheme` shipped, kept SEPARATE from the admin's own overrides.
+// What an imported `.xttheme` shipped, kept SEPARATE from the admin's own overrides.
 // That separation is the whole of token inheritance: the served stylesheet is the theme
 // merged UNDER the admin's edits, so re-importing a newer version of the theme replaces
 // this layer and every tweak the admin made survives — per token, not per file.
@@ -202,7 +202,7 @@ function compileCustomCss(
     .join("\n\n");
 }
 
-// Editable semantic token defaults — single shared copy in @nodevo/contracts,
+// Editable semantic token defaults — single shared copy in @xentium/contracts,
 // also consumed by the web Style Editor. tokens.scss stays the rendering truth.
 export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 
@@ -705,7 +705,7 @@ export const appearanceService = {
   },
 
   /**
-   * Stage a theme's tokens. Called by a `.nvtheme` import and by nothing else.
+   * Stage a theme's tokens. Called by a `.xttheme` import and by nothing else.
    *
    * Two properties, both deliberate. It writes the THEME layer, never the admin's — that
    * separation is what makes an update non-destructive, per token. And it writes the
@@ -975,21 +975,21 @@ export const appearanceService = {
     /**
      * The same global overrides, mirrored onto the opt-in class.
      *
-     * The ACP re-declares the whole palette on `body.nv-acp` so the admin panel does
+     * The ACP re-declares the whole palette on `body.xt-acp` so the admin panel does
      * not follow the site's theme — which also cuts off the few places in there that
      * must show what the SITE looks like (the Layout Editor's variant probe measures
-     * exactly that). `.nv-site-tokens` is how such a surface asks for the site's
+     * exactly that). `.xt-site-tokens` is how such a surface asks for the site's
      * palette back, and it only means that if these overrides reach it too: the
      * bundled defaults alone would show the site as it was before anyone themed it.
      */
     const siteMirrorFor = (theme: ThemeName) =>
-      theme === "light" ? [".nv-site-tokens"] : ['[data-theme="dark"] .nv-site-tokens'];
+      theme === "light" ? [".xt-site-tokens"] : ['[data-theme="dark"] .xt-site-tokens'];
 
     // global → the theme root; a region scope → that region's selector under the
     // theme root, so a re-scoped component token only cascades inside the region.
     // Returns null for a scope this build does not know, and the caller SKIPS it.
     // Returning the theme root instead — which this did — silently promoted an
-    // unrecognised bucket to a global override: a `.nvtheme` naming a scope from a
+    // unrecognised bucket to a global override: a `.xttheme` naming a scope from a
     // newer build would have recoloured the whole site.
     const selectorFor = (theme: ThemeName, scope: string): string | null => {
       const prefixes = prefixesFor(theme);
@@ -1005,9 +1005,9 @@ export const appearanceService = {
       return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
     };
 
-    // Shared with the Style Editor's live preview (@nodevo/contracts) so the preview
+    // Shared with the Style Editor's live preview (@xentium/contracts) so the preview
     // cannot render a different font from the one this serves. The ACP re-pins all
-    // four properties on `body.nv-acp`; a user's profile font overrides via inline
+    // four properties on `body.xt-acp`; a user's profile font overrides via inline
     // :root vars.
     const fontExtras = fontRootDecls({ family, weight, size });
 

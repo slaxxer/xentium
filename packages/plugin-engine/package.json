@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/plugin-engine",
+  "name": "@xentium/plugin-engine",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,15 +16,15 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "express": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",
@@ -32,13 +32,13 @@
   },
   "description": "Plugin manifest validation, the DDL-only migration SQL guard, and the plugin registry and router.",
   "license": "MIT",
-  "author": "Nodevo",
+  "author": "Xentium",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/slaxxer/nodevo.git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
     "directory": "packages/plugin-engine"
   },
-  "homepage": "https://github.com/slaxxer/nodevo/tree/main/packages/plugin-engine#readme",
+  "homepage": "https://github.com/slaxxer/xentium/tree/main/packages/plugin-engine#readme",
   "engines": {
     "node": ">=22.12"
   },

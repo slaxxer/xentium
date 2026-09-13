@@ -1,11 +1,11 @@
 /**
  * The CMS's storage provider, built from the framework implementation
- * (`@nodevo/server-kit`).
+ * (`@xentium/server-kit`).
  *
  * The package enforces the allowlist and blocks traversal; this file names the
  * directories, because `avatars` / `articles` / `themes` are CMS concepts.
  * `themes` covers both `themes/logo` (the site logo) and `themes/<theme-id>`
- * (assets unpacked from an imported .nvtheme). `layouts` holds imagery a block
+ * (assets unpacked from an imported .xttheme). `layouts` holds imagery a block
  * references — a `section` background, today. `badges` holds award icons (ADR-0009),
  * bounded to 32x32 at the route that writes them. `covers` holds members' own profile
  * covers — one file per user, replaced in place.
@@ -20,7 +20,7 @@
  * writable without being public — so adding one here does not make it reachable,
  * and adding it there does not make it writable. A new directory usually needs both.
  */
-import { LocalStorageProvider, type StorageProvider } from "@nodevo/server-kit";
+import { LocalStorageProvider, type StorageProvider } from "@xentium/server-kit";
 import { env } from "../../config/env.js";
 
 /**

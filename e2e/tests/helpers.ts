@@ -2,20 +2,20 @@ import { expect, type APIRequestContext, type Page } from "@playwright/test";
 
 /** Accounts used across the suite. The admin is created by 01-install. */
 export const ADMIN = {
-  email: "admin@nodevo.test",
+  email: "admin@xentium.test",
   username: "admin",
   password: "AdminPass1!",
 };
 
 export const MEMBER = {
-  email: "member1@nodevo.test",
+  email: "member1@xentium.test",
   username: "member1",
   password: "MemberPass1!",
 };
 
 /** A second member, registered on demand via the API by the social specs. */
 export const MEMBER2 = {
-  email: "member2@nodevo.test",
+  email: "member2@xentium.test",
   username: "member2",
   password: "MemberPass2!",
 };

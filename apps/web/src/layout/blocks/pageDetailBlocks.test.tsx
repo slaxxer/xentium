@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import { DEFAULT_LAYOUTS } from "@nodevo/contracts";
+import { DEFAULT_LAYOUTS } from "@xentium/contracts";
 import { LayoutRenderer } from "../LayoutRenderer";
 import type { PageDetailContext } from "./pageDetailBlocks";
 import "./pageDetailBlocks";
@@ -69,9 +69,9 @@ describe("the shipped default reproduces the old page markup", () => {
 
   it("places everything in main, leaving the other regions empty", () => {
     renderDefault(page());
-    expect(document.querySelector(".nv-region--main")).toBeTruthy();
+    expect(document.querySelector(".xt-region--main")).toBeTruthy();
     for (const region of ["header", "aside", "footer"]) {
-      expect(document.querySelector(`.nv-region--${region}`), region).toBeNull();
+      expect(document.querySelector(`.xt-region--${region}`), region).toBeNull();
     }
   });
 });

@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import crypto from "node:crypto";
 import { env } from "../../config/env.js";
 
-const DEVICE_COOKIE = "nv_did";
+const DEVICE_COOKIE = "xt_did";
 
 /** Normalize a client IP for storage: strip the IPv4-mapped IPv6 prefix so a
  *  dual-stack socket records `127.0.0.1` instead of `::ffff:127.0.0.1`. Keeps
@@ -25,7 +25,7 @@ export function getRequestMeta(req: Request, res: Response) {
     });
   }
   // `cookies` is carried so AUTH GUARDS can read their own (a beta plugin needs
-  // `nv_beta`). Signed only — an unsigned cookie is attacker-controlled, and a
+  // `xt_beta`). Signed only — an unsigned cookie is attacker-controlled, and a
   // gate that trusted one could be walked straight through.
   return {
     ip:             normalizeIp(req.ip),

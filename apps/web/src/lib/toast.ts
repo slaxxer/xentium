@@ -1,4 +1,4 @@
-// Nodevo's own toast system (replaces sweetalert2 toasts — ADR: own the pixels,
+// Xentium's own toast system (replaces sweetalert2 toasts — ADR: own the pixels,
 // obey the token system). Framework-free store; <ToastHost/> (app root) renders
 // it via useSyncExternalStore. Categories: success / info / warning / error,
 // plus plugin-registered custom categories (registerToastCategory). Behaviour:

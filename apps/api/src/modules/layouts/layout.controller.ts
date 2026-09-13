@@ -5,7 +5,7 @@ import {
   listTemplates,
   templateAcceptsVariants,
   type LayoutSelector,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { layoutService } from "./layout.service.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import {
@@ -90,7 +90,7 @@ export const layoutController = {
     if (!doc) {
       // Not an error worth a 500, and not silent either: there is simply nothing to
       // inherit from, which the editor should say rather than appear to have acted.
-      res.status(404).json({ error: { code: "NEC-API-4404", message: "No installed theme ships this template." } });
+      res.status(404).json({ error: { code: "XEC-API-4404", message: "No installed theme ships this template." } });
       return;
     }
     res.json(doc);

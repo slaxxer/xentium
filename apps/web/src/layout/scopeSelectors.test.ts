@@ -19,7 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { SCOPE_SELECTOR, type ThemeScope } from "@nodevo/contracts";
+import { SCOPE_SELECTOR, type ThemeScope } from "@xentium/contracts";
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -64,7 +64,7 @@ const classesOf = (selector: string): string[] =>
  * Is this class name still emitted anywhere?
  *
  * A modifier is rarely written whole: the renderer composes it
- * (`nv-column--${props.width}`) and the stylesheet nests it (`&--sidebar`). So a
+ * (`xt-column--${props.width}`) and the stylesheet nests it (`&--sidebar`). So a
  * BEM class counts as present when its base and its modifier are both there. A
  * class with no modifier — `.hf-left`, the one this test was written for — has to
  * appear literally, which is the case that matters.
@@ -92,8 +92,8 @@ describe("SCOPE_SELECTOR", () => {
     // `sidebar`/`rail` is what a page with two rails, or one on the left, uses
     // instead. A scope that knew only one of them would style a rail or not
     // depending on how it happened to be built.
-    expect(SCOPE_SELECTOR.aside).toContain(".nv-region--aside");
-    expect(SCOPE_SELECTOR.aside).toContain(".nv-column--rail");
-    expect(SCOPE_SELECTOR.aside).toContain(".nv-column--sidebar");
+    expect(SCOPE_SELECTOR.aside).toContain(".xt-region--aside");
+    expect(SCOPE_SELECTOR.aside).toContain(".xt-column--rail");
+    expect(SCOPE_SELECTOR.aside).toContain(".xt-column--sidebar");
   });
 });

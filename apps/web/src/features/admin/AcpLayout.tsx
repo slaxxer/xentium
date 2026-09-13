@@ -188,8 +188,8 @@ export function AcpLayout() {
   // only. Body-level class so app-root overlays (dialogs, toasts) follow while
   // an ACP route is mounted (rule in AcpLayout.scss).
   useEffect(() => {
-    document.body.classList.add("nv-acp");
-    return () => document.body.classList.remove("nv-acp");
+    document.body.classList.add("xt-acp");
+    return () => document.body.classList.remove("xt-acp");
   }, []);
 
   return (

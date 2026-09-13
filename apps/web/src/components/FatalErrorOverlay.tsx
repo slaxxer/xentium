@@ -8,7 +8,7 @@ import "./FatalErrorOverlay.scss";
  * WoltLab-style fatal halt. Rendered once at the app root; when a server-class
  * error (HTTP >= 500) trips the fatal store, this takes over the whole screen
  * and blocks all interaction. Recovery is a deliberate reload — the admin is
- * expected to copy the NEC code and look it up in ACP → Error Reference.
+ * expected to copy the XEC code and look it up in ACP → Error Reference.
  */
 export function FatalErrorOverlay() {
   const fatal = useFatalError();

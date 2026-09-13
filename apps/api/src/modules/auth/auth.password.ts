@@ -1,3 +1,3 @@
-/** Moved to `@nodevo/auth` (ADR-0006). Re-exported from the original path so
+/** Moved to `@xentium/auth` (ADR-0006). Re-exported from the original path so
  *  existing imports keep working. */
-export { hashPassword, verifyPassword } from "@nodevo/auth";
+export { hashPassword, verifyPassword } from "@xentium/auth";

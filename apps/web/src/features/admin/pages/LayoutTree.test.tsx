@@ -13,7 +13,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { z } from "zod";
 import { cleanup, render, fireEvent, screen } from "@testing-library/react";
-import type { BlockNode } from "@nodevo/contracts";
+import type { BlockNode } from "@xentium/contracts";
 import { deregisterBlock, registerBlock } from "../../../layout/blockRegistry";
 import { BlockList, type TreeCtx } from "./LayoutTree";
 

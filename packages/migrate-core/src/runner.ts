@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import pg from "pg";
-import { NodevoLoader, missingPlugins } from "./loader.js";
+import { XentiumLoader, missingPlugins } from "./loader.js";
 import type { AdapterSource, MigrateAdapter, MigrationReporter, MigrationSummary } from "./types.js";
 
 export interface RunOptions {
-  /** Target Nodevo PostgreSQL connection string. */
+  /** Target Xentium PostgreSQL connection string. */
   targetDb: string;
   /** Inspect + extract + report, write nothing (the safe community-beta mode). */
   dryRun?: boolean;
@@ -57,19 +57,19 @@ export async function runMigration(
 
     const runId = crypto.randomUUID();
     await pool.query(
-      `INSERT INTO ncf_migration_runs (id, adapter, adapter_ver, source_info, status, started_at)
+      `INSERT INTO xcf_migration_runs (id, adapter, adapter_ver, source_info, status, started_at)
        VALUES ($1, $2, $3, $4, 'running', $5)`,
       [runId, adapter.name, adapter.version, extract.sourceInfo, startedAt],
     );
 
-    const loader = new NodevoLoader(pool, adapter.name, runId, reporter);
+    const loader = new XentiumLoader(pool, adapter.name, runId, reporter);
     try {
       await loader.loadAll(extract, adapter.requiredPlugins ?? []);
     } catch (err) {
       // Hard failure (lost DB, bad target, …): the log row must not stay
       // "running" forever — mark it failed before rethrowing.
       await pool.query(
-        `UPDATE ncf_migration_runs
+        `UPDATE xcf_migration_runs
          SET status = 'failed', completed_at = NOW(), errors = $2
          WHERE id = $1`,
         [runId, JSON.stringify([{ entity: "run", sourceId: "-", reason: (err as Error).message }])],
@@ -81,7 +81,7 @@ export async function runMigration(
     const durationMs = Date.now() - startedAt.getTime();
     const status = errors.length ? "partial" : "completed";
     await pool.query(
-      `UPDATE ncf_migration_runs
+      `UPDATE xcf_migration_runs
        SET status = $2, completed_at = NOW(), "durationMs" = $3, summary = $4, errors = $5
        WHERE id = $1`,
       [runId, status, durationMs, JSON.stringify(loader.counts), JSON.stringify(errors.slice(0, 500))],

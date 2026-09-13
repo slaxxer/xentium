@@ -136,33 +136,33 @@ importers:
 
   apps/api:
     dependencies:
-      '@nodevo/auth':
-        specifier: workspace:*
-        version: link:../../packages/auth
-      '@nodevo/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@nodevo/errors':
-        specifier: workspace:*
-        version: link:../../packages/errors
-      '@nodevo/plugin-engine':
-        specifier: workspace:*
-        version: link:../../packages/plugin-engine
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../packages/plugin-sdk
-      '@nodevo/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
-      '@nodevo/server-kit':
-        specifier: workspace:*
-        version: link:../../packages/server-kit
       '@prisma/adapter-pg':
         specifier: ^7.8.0
         version: 7.8.0
       '@prisma/client':
         specifier: 'catalog:'
         version: 7.8.0(prisma@7.8.0(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3))(typescript@6.0.3)
+      '@xentium/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
+      '@xentium/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@xentium/errors':
+        specifier: workspace:*
+        version: link:../../packages/errors
+      '@xentium/plugin-engine':
+        specifier: workspace:*
+        version: link:../../packages/plugin-engine
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../packages/plugin-sdk
+      '@xentium/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@xentium/server-kit':
+        specifier: workspace:*
+        version: link:../../packages/server-kit
       adm-zip:
         specifier: ^0.6.0
         version: 0.6.0
@@ -236,9 +236,6 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@types/cookie-parser':
         specifier: ^1
         version: 1.4.10(@types/express@5.0.6)
@@ -266,6 +263,9 @@ importers:
       '@types/supertest':
         specifier: ^6
         version: 6.0.3
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       pino-pretty:
         specifier: ^13
         version: 13.1.3
@@ -317,15 +317,6 @@ importers:
       '@hookform/resolvers':
         specifier: 'catalog:'
         version: 5.4.0(react-hook-form@7.76.0(react@19.2.6))
-      '@nodevo/contracts':
-        specifier: workspace:*
-        version: link:../../packages/contracts
-      '@nodevo/sdk':
-        specifier: workspace:*
-        version: link:../../packages/sdk
-      '@nodevo/ui':
-        specifier: workspace:*
-        version: link:../../packages/ui
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.100.11(react@19.2.6)
@@ -386,6 +377,15 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.23.6
         version: 3.23.6
+      '@xentium/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@xentium/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@xentium/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       i18next:
         specifier: ^26.2.0
         version: 26.2.0(typescript@6.0.3)
@@ -417,9 +417,6 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../../packages/config
       '@testing-library/dom':
         specifier: ^10.4.1
         version: 10.4.1
@@ -435,6 +432,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../../packages/config
       jsdom:
         specifier: ^30.0.1
         version: 30.0.1(@noble/hashes@1.8.0)
@@ -459,10 +459,10 @@ importers:
 
   packages/auth:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@nodevo/errors':
+      '@xentium/errors':
         specifier: workspace:*
         version: link:../errors
       argon2:
@@ -475,12 +475,12 @@ importers:
         specifier: 'catalog:'
         version: 6.2.3
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/express':
         specifier: ^5
         version: 5.0.6
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -499,7 +499,7 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -511,19 +511,19 @@ importers:
 
   packages/errors:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
       zod:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/express':
         specifier: ^5
         version: 5.0.6
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -536,7 +536,7 @@ importers:
 
   packages/migrate-core:
     dependencies:
-      '@nodevo/sdk':
+      '@xentium/sdk':
         specifier: workspace:*
         version: link:../sdk
       htmlparser2:
@@ -546,12 +546,12 @@ importers:
         specifier: ^8.21.0
         version: 8.21.0
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/pg':
         specifier: ^8.16.0
         version: 8.20.0
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -561,7 +561,7 @@ importers:
 
   packages/migrate-phpbb:
     dependencies:
-      '@nodevo/migrate-core':
+      '@xentium/migrate-core':
         specifier: workspace:*
         version: link:../migrate-core
       htmlparser2:
@@ -571,7 +571,7 @@ importers:
         specifier: ^3.16.0
         version: 3.22.5(@types/node@24.12.4)
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       tsx:
@@ -586,14 +586,14 @@ importers:
 
   packages/migrate-wp:
     dependencies:
-      '@nodevo/migrate-core':
+      '@xentium/migrate-core':
         specifier: workspace:*
         version: link:../migrate-core
       fast-xml-parser:
         specifier: ^5.3.1
         version: 5.8.0
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       tsx:
@@ -608,14 +608,14 @@ importers:
 
   packages/migrate-xenforo:
     dependencies:
-      '@nodevo/migrate-core':
+      '@xentium/migrate-core':
         specifier: workspace:*
         version: link:../migrate-core
       mysql2:
         specifier: ^3.16.0
         version: 3.22.5(@types/node@24.12.4)
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       tsx:
@@ -630,22 +630,22 @@ importers:
 
   packages/plugin-engine:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@nodevo/errors':
+      '@xentium/errors':
         specifier: workspace:*
         version: link:../errors
       zod:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/express':
         specifier: ^5
         version: 5.0.6
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -658,7 +658,7 @@ importers:
 
   packages/plugin-kit:
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -667,14 +667,14 @@ importers:
 
   packages/plugin-sdk:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@nodevo/plugin-kit':
+      '@xentium/plugin-kit':
         specifier: workspace:*
         version: link:../plugin-kit
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -683,11 +683,11 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
     devDependencies:
-      '@nodevo/config':
+      '@xentium/config':
         specifier: workspace:*
         version: link:../config
       typescript:
@@ -696,22 +696,22 @@ importers:
 
   packages/server-kit:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
-      '@nodevo/errors':
+      '@xentium/errors':
         specifier: workspace:*
         version: link:../errors
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/express':
         specifier: ^5
         version: 5.0.6
       '@types/multer':
         specifier: ^2
         version: 2.1.0
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -736,7 +736,7 @@ importers:
 
   packages/ui:
     dependencies:
-      '@nodevo/contracts':
+      '@xentium/contracts':
         specifier: workspace:*
         version: link:../contracts
       react:
@@ -746,20 +746,20 @@ importers:
         specifier: 'catalog:'
         version: 19.2.6(react@19.2.6)
     devDependencies:
-      '@nodevo/config':
-        specifier: workspace:*
-        version: link:../config
       '@types/react':
         specifier: ^19.2.15
         version: 19.2.15
       '@types/react-dom':
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/config':
+        specifier: workspace:*
+        version: link:../config
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
 
-  plugins/official/nodevo-advanced-moderation:
+  plugins/official/xentium-advanced-moderation:
     dependencies:
       '@fortawesome/fontawesome-svg-core':
         specifier: '*'
@@ -770,9 +770,6 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: '*'
         version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
       '@tanstack/react-query':
         specifier: ^5
         version: 5.100.11(react@19.2.6)
@@ -782,6 +779,9 @@ importers:
       '@types/react-dom':
         specifier: '*'
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -806,7 +806,7 @@ importers:
         version: 24.12.4
       '@vitejs/plugin-react':
         specifier: 'catalog:'
-        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
+        version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
       i18next:
         specifier: ^26.2.0
         version: 26.2.0(typescript@6.0.3)
@@ -824,12 +824,12 @@ importers:
         version: 6.0.3
       vite:
         specifier: 'catalog:'
-        version: 8.1.5(@types/node@24.12.4)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
+        version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
       vitest:
         specifier: 'catalog:'
         version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
 
-  plugins/official/nodevo-forum:
+  plugins/official/xentium-forum:
     dependencies:
       '@fortawesome/fontawesome-svg-core':
         specifier: '*'
@@ -840,9 +840,6 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: '*'
         version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
       '@tanstack/react-query':
         specifier: ^5
         version: 5.100.11(react@19.2.6)
@@ -852,6 +849,9 @@ importers:
       '@types/react-dom':
         specifier: '*'
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -899,14 +899,11 @@ importers:
         specifier: 'catalog:'
         version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
 
-  plugins/official/nodevo-launch:
+  plugins/official/xentium-launch:
     dependencies:
       '@fortawesome/react-fontawesome':
         specifier: '*'
         version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
       '@tanstack/react-query':
         specifier: ^5
         version: 5.100.11(react@19.2.6)
@@ -916,6 +913,9 @@ importers:
       '@types/react-dom':
         specifier: '*'
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -935,9 +935,6 @@ importers:
       '@fortawesome/free-solid-svg-icons':
         specifier: '*'
         version: 7.2.0
-      '@nodevo/contracts':
-        specifier: workspace:*
-        version: link:../../../packages/contracts
       '@types/express':
         specifier: ^5
         version: 5.0.6
@@ -947,6 +944,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
+      '@xentium/contracts':
+        specifier: workspace:*
+        version: link:../../../packages/contracts
       react-i18next:
         specifier: ^17.0.8
         version: 17.0.8(i18next@26.2.0(typescript@6.0.3))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(typescript@6.0.3)
@@ -963,7 +963,7 @@ importers:
         specifier: 'catalog:'
         version: 3.2.7(@types/node@24.12.4)(jiti@2.7.0)(jsdom@30.0.1(@noble/hashes@1.8.0))(lightningcss@1.32.0)(sass@1.100.0)(tsx@4.22.3)
 
-  plugins/official/nodevo-messaging:
+  plugins/official/xentium-messaging:
     dependencies:
       '@fortawesome/fontawesome-svg-core':
         specifier: '*'
@@ -974,9 +974,6 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: '*'
         version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
       '@tanstack/react-query':
         specifier: ^5
         version: 5.100.11(react@19.2.6)
@@ -986,6 +983,9 @@ importers:
       '@types/react-dom':
         specifier: '*'
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -1027,7 +1027,7 @@ importers:
         specifier: 'catalog:'
         version: 8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
 
-  plugins/official/nodevo-shoutbox:
+  plugins/official/xentium-shoutbox:
     dependencies:
       '@fortawesome/fontawesome-svg-core':
         specifier: '*'
@@ -1038,12 +1038,6 @@ importers:
       '@fortawesome/react-fontawesome':
         specifier: '*'
         version: 3.3.1(@fortawesome/fontawesome-svg-core@7.2.0)(react@19.2.6)
-      '@nodevo/plugin-sdk':
-        specifier: workspace:*
-        version: link:../../../packages/plugin-sdk
-      '@nodevo/sdk':
-        specifier: workspace:*
-        version: link:../../../packages/sdk
       '@tanstack/react-query':
         specifier: ^5
         version: 5.100.11(react@19.2.6)
@@ -1053,6 +1047,12 @@ importers:
       '@types/react-dom':
         specifier: '*'
         version: 19.2.3(@types/react@19.2.15)
+      '@xentium/plugin-sdk':
+        specifier: workspace:*
+        version: link:../../../packages/plugin-sdk
+      '@xentium/sdk':
+        specifier: workspace:*
+        version: link:../../../packages/sdk
       express:
         specifier: 'catalog:'
         version: 5.2.1
@@ -1069,9 +1069,6 @@ importers:
         specifier: 'catalog:'
         version: 4.4.3
     devDependencies:
-      '@nodevo/ui':
-        specifier: workspace:*
-        version: link:../../../packages/ui
       '@types/express':
         specifier: ^5
         version: 5.0.6
@@ -1081,6 +1078,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 'catalog:'
         version: 5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))
+      '@xentium/ui':
+        specifier: workspace:*
+        version: link:../../../packages/ui
       i18next:
         specifier: ^26.2.0
         version: 26.2.0(typescript@6.0.3)
@@ -6299,18 +6299,6 @@ snapshots:
       '@typescript-eslint/types': 8.59.4
       eslint-visitor-keys: 5.0.1
 
-  '@vitejs/plugin-react@5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))':
-    dependencies:
-      '@babel/core': 7.29.0
-      '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.29.0)
-      '@babel/plugin-transform-react-jsx-source': 7.27.1(@babel/core@7.29.0)
-      '@rolldown/pluginutils': 1.0.0-rc.3
-      '@types/babel__core': 7.20.5
-      react-refresh: 0.18.0
-      vite: 8.1.5(@types/node@24.12.4)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3)
-    transitivePeerDependencies:
-      - supports-color
-
   '@vitejs/plugin-react@5.2.0(vite@8.1.5(@types/node@24.12.4)(esbuild@0.28.0)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3))':
     dependencies:
       '@babel/core': 7.29.0
@@ -8396,21 +8384,6 @@ snapshots:
       fsevents: 2.3.3
       jiti: 2.7.0
       lightningcss: 1.32.0
-      sass: 1.100.0
-      tsx: 4.22.3
-
-  vite@8.1.5(@types/node@24.12.4)(esbuild@0.27.7)(jiti@2.7.0)(sass@1.100.0)(tsx@4.22.3):
-    dependencies:
-      lightningcss: 1.32.0
-      picomatch: 4.0.5
-      postcss: 8.5.26
-      rolldown: 1.1.5
-      tinyglobby: 0.2.17
-    optionalDependencies:
-      '@types/node': 24.12.4
-      esbuild: 0.27.7
-      fsevents: 2.3.3
-      jiti: 2.7.0
       sass: 1.100.0
       tsx: 4.22.3
 

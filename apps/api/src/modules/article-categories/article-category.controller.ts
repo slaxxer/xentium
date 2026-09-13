@@ -8,7 +8,7 @@ import {
   updateCategorySchema,
 } from "./article-category.validation.js";
 import { prisma } from "../../infrastructure/db.js";
-import type { ViewerContext } from "@nodevo/sdk";
+import type { ViewerContext } from "@xentium/sdk";
 
 async function resolveViewer(userId: string | undefined): Promise<ViewerContext | null> {
   if (!userId) return { userId: undefined, groupIds: [] };

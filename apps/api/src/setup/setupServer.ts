@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { setupConfigSchema, InstallStep } from "@nodevo/contracts";
+import { setupConfigSchema, InstallStep } from "@xentium/contracts";
 import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
 
 /**
@@ -185,7 +185,7 @@ export async function startSetupServer(options: SetupServerOptions): Promise<voi
 
   // Any other API call during setup mode is unambiguous about why it fails.
   app.use("/api", (_req, res) => {
-    res.status(503).json({ error: "setup_required", code: "NEC-INSTALL-SETUP" });
+    res.status(503).json({ error: "setup_required", code: "XEC-INSTALL-SETUP" });
   });
 
   const port = Number(process.env.PORT ?? 4000);
