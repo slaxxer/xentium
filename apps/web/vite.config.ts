@@ -10,7 +10,7 @@ import { resolve } from "node:path";
  */
 function seoMetaDev(): Plugin {
   return {
-    name: "nodevo-seo-meta-dev",
+    name: "xentium-seo-meta-dev",
     apply: "serve",
     transformIndexHtml: {
       order: "post",

@@ -15,7 +15,7 @@ import { validateManifest, assertCompatible, createManifestValidator } from "./m
 import { compareBaseVersions, baseVersion } from "./version.js";
 
 const base = {
-  id: "nodevo-forum",
+  id: "xentium-forum",
   name: "Forum",
   version: "1.1.0",
   vendor: "Xentium",
@@ -25,7 +25,7 @@ const base = {
 describe("validateManifest", () => {
   it("parses a minimal manifest and applies defaults", () => {
     const m = validateManifest(base, "1.0.0");
-    expect(m).toMatchObject({ id: "nodevo-forum", licenseRequired: false });
+    expect(m).toMatchObject({ id: "xentium-forum", licenseRequired: false });
     expect(m.permissions).toEqual([]);
     expect(m.migrations).toEqual([]);
     expect(m.entrypoints).toEqual({});
@@ -76,7 +76,7 @@ describe("validateManifest", () => {
   it("binds to one host version through the factory", () => {
     const validate = createManifestValidator("1.0.0");
     expect(() => validate({ ...base, minXentiumVersion: "2.0" })).toThrow();
-    expect(validate(base).id).toBe("nodevo-forum");
+    expect(validate(base).id).toBe("xentium-forum");
   });
 
   it("checks compatibility independently of parsing", () => {

@@ -6,14 +6,14 @@ const DEFAULT_PREFIX = "phpbb_";
 
 /**
  * phpBB → Xentium adapter (§34, Wave 1). Source is a direct MySQL connection
- * to the phpBB database; the target must have the nodevo-forum plugin
+ * to the phpBB database; the target must have the xentium-forum plugin
  * installed AND enabled — a forum board without the forum plugin would be a
  * member list with no content, so the run refuses outright.
  */
 export const phpbbAdapter: MigrateAdapter = {
   name: "phpbb",
   version: "1.0.0-alpha.0",
-  requiredPlugins: ["nodevo-forum"],
+  requiredPlugins: ["xentium-forum"],
 
   async inspect(source: AdapterSource): Promise<MigrationInspection> {
     if (!source.db) {

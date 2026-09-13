@@ -59,7 +59,7 @@ export interface ImportedComment {
   createdAt?: Date;
 }
 
-// ── Forum entities (loaded only when the nodevo-forum plugin is enabled on
+// ── Forum entities (loaded only when the xentium-forum plugin is enabled on
 //    the target — adapters that produce these must declare it in
 //    `requiredPlugins`; the run aborts cleanly otherwise) ───────────────────
 
@@ -157,7 +157,7 @@ export interface MigrateAdapter {
   name: string;
   version: string;
   /** Plugins that must be installed AND enabled on the target Xentium instance
-   *  (§34 preconditions) — e.g. ["nodevo-forum"] for forum-platform adapters.
+   *  (§34 preconditions) — e.g. ["xentium-forum"] for forum-platform adapters.
    *  The run aborts before touching any data when one is missing: importing a
    *  forum board without the forum plugin would strand users with no content. */
   requiredPlugins?: string[];

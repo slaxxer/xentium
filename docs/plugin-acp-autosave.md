@@ -40,9 +40,9 @@ How a plugin's admin surfaces persist changes. Xentium ACP **config** pages have
 Save button — they save on change, with a status indicator in the header. A plugin
 must follow the same convention so its pages don't feel foreign inside the ACP.
 
-Live examples: `nodevo-advanced-moderation` (`AdvModPage` — settings page with a
-secret field), `nodevo-forum` (`ForumSettingsPage`, `ForumGroupProgression`),
-`nodevo-shoutbox` (`ShoutboxAcpPage`, `ShoutboxGroupLimits`).
+Live examples: `xentium-advanced-moderation` (`AdvModPage` — settings page with a
+secret field), `xentium-forum` (`ForumSettingsPage`, `ForumGroupProgression`),
+`xentium-shoutbox` (`ShoutboxAcpPage`, `ShoutboxGroupLimits`).
 
 ## When autosave applies
 

@@ -329,7 +329,7 @@ export class XentiumLoader {
     this.bump("comments");
   }
 
-  // ── forum (nodevo-forum plugin tables — gated by assertTargetReady) ───────
+  // ── forum (xentium-forum plugin tables — gated by assertTargetReady) ───────
 
   async loadForumNodes(nodes: ImportedForumNode[]): Promise<void> {
     const pending = [...nodes];

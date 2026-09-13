@@ -45,7 +45,7 @@ function MyBlock({ props, context }: BlockProps<z.infer<typeof propsSchema>, unk
 
 registerBlock({
   type:       "myplugin.recentItems",  // NAMESPACED — see below
-  pluginId:   "nodevo-myplugin",       // enables removal when disabled
+  pluginId:   "xentium-myplugin",       // enables removal when disabled
   schema:     propsSchema,
   component:  MyBlock,
   editorMeta: { label: "Recent items", category: "plugin" },
@@ -65,7 +65,7 @@ key in every stored document on every site.
 
 **Set `pluginId`.** It is what lets `deregisterBlocksFor()` remove your blocks when
 the plugin is disabled. It is explicit rather than derived from the type prefix
-because a plugin id (`nodevo-forum`) and its namespace (`forum.`) are not the same
+because a plugin id (`xentium-forum`) and its namespace (`forum.`) are not the same
 string.
 
 **The schema is the editor.** The props form is generated from your Zod schema via
@@ -93,7 +93,7 @@ what they are.
 ```tsx
 registerBlock({
   type:      "myplugin.tabs",
-  pluginId:  "nodevo-myplugin",
+  pluginId:  "xentium-myplugin",
   schema:    tabsSchema,
   container: true,
   childTypes: ["myplugin.tab"],           // optional: what this will accept
@@ -103,7 +103,7 @@ registerBlock({
 
 registerBlock({
   type:      "myplugin.tab",
-  pluginId:  "nodevo-myplugin",
+  pluginId:  "xentium-myplugin",
   schema:    tabSchema,
   container: true,
   editorMeta: {
@@ -416,7 +416,7 @@ supply one yet.
 
 ## Reference implementation
 
-`plugins/official/nodevo-forum/web/blocks/ForumCategoriesBlock.tsx` registers
+`plugins/official/xentium-forum/web/blocks/ForumCategoriesBlock.tsx` registers
 `forum.categories`, backed by `/forum/nodes` — an endpoint that applies its own
 `visibilityFilter` per viewer.
 

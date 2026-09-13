@@ -2,7 +2,7 @@
 
 How an official/community plugin ships its own translated UI strings in all
 bundled languages (en, de, es, fr, pt). Built June 2026 — see the
-`nodevo-advanced-moderation` plugin for a live example (namespace `advmod`).
+`xentium-advanced-moderation` plugin for a live example (namespace `advmod`).
 
 ## Model
 

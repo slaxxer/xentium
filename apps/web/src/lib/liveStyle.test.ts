@@ -42,7 +42,7 @@ function announce(version: number): void {
 }
 
 function injected(): string {
-  return document.getElementById("nodevo-custom-tokens")?.textContent ?? "";
+  return document.getElementById("xentium-custom-tokens")?.textContent ?? "";
 }
 
 async function settle(): Promise<void> {

@@ -512,7 +512,7 @@ describe("import", () => {
  */
 describe("plugin templates in a package", () => {
   const KEY = "testplug.index";
-  const PLUGIN = "nodevo-testplug";
+  const PLUGIN = "xentium-testplug";
   const DOC = {
     templateKey: KEY,
     schemaVersion: 1,

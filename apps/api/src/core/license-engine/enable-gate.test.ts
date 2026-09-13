@@ -74,7 +74,7 @@ vi.mock("../../infrastructure/db.js", () => ({
 const { assertPluginEnableAllowed } = await import("./license-engine.js");
 
 /** The refusal, or `null` when the gate allowed the enable. */
-async function refusalFor(id = "nodevo-forum", name = "Forum") {
+async function refusalFor(id = "xentium-forum", name = "Forum") {
   try {
     await assertPluginEnableAllowed(id, name);
     return null;
@@ -136,7 +136,7 @@ describe("when the set has never been fetched", () => {
 });
 
 describe("refusing a paid plugin, accurately", () => {
-  beforeEach(() => { world.paidIds = ["nodevo-forum"]; });
+  beforeEach(() => { world.paidIds = ["xentium-forum"]; });
 
   it("asks for an account when none is connected", async () => {
     const err = await refusalFor();
@@ -149,7 +149,7 @@ describe("refusing a paid plugin, accurately", () => {
     world.token = "tok";
     const err = await refusalFor();
     expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
-    expect(err?.message).toContain("https://marketplace.example/plugins/nodevo-forum");
+    expect(err?.message).toContain("https://marketplace.example/plugins/xentium-forum");
   });
 
   it("names seat exhaustion instead of telling the admin to activate", async () => {
@@ -158,7 +158,7 @@ describe("refusing a paid plugin, accurately", () => {
     // never mentioned and the old code could not tell apart from "not owned".
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum" },
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "active", seats: 3, seatsUsed: 3, activeHere: false,
     }];
     const err = await refusalFor();
@@ -171,7 +171,7 @@ describe("refusing a paid plugin, accurately", () => {
   it("pluralises a single seat correctly", async () => {
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum" },
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "active", seats: 1, seatsUsed: 1, activeHere: false,
     }];
     expect((await refusalFor())?.message).toMatch(/All 1 seat of/);
@@ -182,7 +182,7 @@ describe("refusing a paid plugin, accurately", () => {
     // here is something else and must not be reported as a full licence.
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum" },
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "active", seats: null, seatsUsed: 9, activeHere: false,
     }];
     const err = await refusalFor();
@@ -193,7 +193,7 @@ describe("refusing a paid plugin, accurately", () => {
   it("does not blame seats when this install already holds one", async () => {
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum" },
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "active", seats: 2, seatsUsed: 2, activeHere: true,
     }];
     expect((await refusalFor())?.code).toBe(NEC.LICENSE_NOT_FOUND);
@@ -202,7 +202,7 @@ describe("refusing a paid plugin, accurately", () => {
   it("reports an expired licence as expired", async () => {
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "plugin", name: "Forum" },
+      product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "expired", seats: 1, seatsUsed: 0, activeHere: false,
     }];
     const err = await refusalFor();
@@ -215,7 +215,7 @@ describe("refusing a paid plugin, accurately", () => {
     // theme licence answer for a plugin.
     world.token = "tok";
     world.owned = [{
-      product: { id: "nodevo-forum", kind: "theme", name: "Forum" },
+      product: { id: "xentium-forum", kind: "theme", name: "Forum" },
       status: "active", seats: 3, seatsUsed: 3, activeHere: false,
     }];
     const err = await refusalFor();

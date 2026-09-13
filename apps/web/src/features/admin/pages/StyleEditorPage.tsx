@@ -43,7 +43,7 @@ import {
 import "./StyleEditorPage.scss";
 import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
 
-const CUSTOM_CSS_PREVIEW_ID = "nodevo-custom-css-preview";
+const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
 type Mode = "light" | "dark";
 type Tab = "tokens" | "branding" | "css" | "history";
@@ -1287,12 +1287,12 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots,
       if (!doc || !doc.head) return;
       doc.documentElement.setAttribute("data-theme", mode);
 
-      let tok = doc.getElementById("nodevo-preview-tokens") as HTMLStyleElement | null;
-      if (!tok) { tok = doc.createElement("style"); tok.id = "nodevo-preview-tokens"; doc.head.appendChild(tok); }
+      let tok = doc.getElementById("xentium-preview-tokens") as HTMLStyleElement | null;
+      if (!tok) { tok = doc.createElement("style"); tok.id = "xentium-preview-tokens"; doc.head.appendChild(tok); }
       tok.textContent = `${css}\n${extraCss}`;
 
-      let ov = doc.getElementById("nodevo-preview-overlay") as HTMLStyleElement | null;
-      if (!ov) { ov = doc.createElement("style"); ov.id = "nodevo-preview-overlay"; doc.head.appendChild(ov); }
+      let ov = doc.getElementById("xentium-preview-overlay") as HTMLStyleElement | null;
+      if (!ov) { ov = doc.createElement("style"); ov.id = "xentium-preview-overlay"; doc.head.appendChild(ov); }
       ov.textContent = previewOverlayRules({ activeGroup, hotspots, previewState });
 
       if (activeGroup && activeGroup !== prevGroup.current) {

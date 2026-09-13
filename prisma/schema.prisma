@@ -888,7 +888,7 @@ model ModerationLog {
 }
 
 model InstalledPlugin {
-  id               String    @id  // plugin manifest id e.g. "nodevo-forum"
+  id               String    @id  // plugin manifest id e.g. "xentium-forum"
   name             String
   vendor           String
   installedVersion String    @map("installed_version")
@@ -987,7 +987,7 @@ model InviteCode {
 }
 
 // BetaCode / BetaAccessLog lived here. The beta gate is a plugin now
-// (`nodevo-launch`), which owns `launch_codes` and `launch_access_log`; its
+// (`xentium-launch`), which owns `launch_codes` and `launch_access_log`; its
 // install migration copies any rows these tables still held. Core keeps no
 // schema for a feature it no longer has an opinion about.
 
