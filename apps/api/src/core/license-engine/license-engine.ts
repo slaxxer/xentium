@@ -6,7 +6,6 @@ import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { productIdAliases } from "./legacyPluginIds.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { getAccountToken, protocolFetch } from "./protocol-client.js";
 import { getSiteDomain, getSiteId, resolveEnvironment } from "./site-identity.js";
@@ -276,10 +275,7 @@ export async function getEntitlementStatus(pluginId: string, kind: ProductKind =
     // Grants are objects — matching against the array itself silently fails
     // for every plugin, and "you do not own this" is not a failure mode that
     // announces itself.
-    // Both spellings of the id count — see legacyPluginIds.ts. An entitlement
-    // issued before the Nodevo → Xentium rename names the old product id.
-    const ids = productIdAliases(pluginId);
-    if (!claims.entitlements.some((e) => ids.some((id) => e.id === `${kind}.${id}`))) {
+    if (!claims.entitlements.some((e) => e.id === `${kind}.${pluginId}`)) {
       return { ...base, state: "missing" };
     }
     // Production-only domain enforcement (ADR 0001 §5).
@@ -339,8 +335,7 @@ export async function themeRequiresLicense(themeId: string): Promise<boolean> {
 async function idIsPaid(productId: string, key: string): Promise<boolean> {
   const { getSetting } = await import("../../shared/utils/settings.js");
   const paidIds = await getSetting<string[]>(key, []);
-  if (!Array.isArray(paidIds)) return false;
-  return productIdAliases(productId).some((id) => paidIds.includes(id));
+  return Array.isArray(paidIds) && paidIds.includes(productId);
 }
 
 /**
