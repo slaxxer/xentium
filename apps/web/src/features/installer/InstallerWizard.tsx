@@ -146,7 +146,7 @@ export function InstallerWizard() {
 
   // Language initialisation from cookie
   useEffect(() => {
-    const savedLang = getCookie("nv_locale");
+    const savedLang = getCookie("xt_locale");
     const lang = savedLang && ["en", "es", "fr", "de", "pt"].includes(savedLang) ? savedLang : "en";
     i18n.changeLanguage(lang);
     setSite((prev) => ({ ...prev, locale: lang }));
@@ -263,7 +263,7 @@ export function InstallerWizard() {
   function handleLanguageChange(newLocale: string) {
     setSite((prev) => ({ ...prev, locale: newLocale }));
     i18n.changeLanguage(newLocale);
-    setCookie("nv_locale", newLocale, 365);
+    setCookie("xt_locale", newLocale, 365);
   }
 
   function handleTimezoneChange(newTimezone: string) {
@@ -366,7 +366,7 @@ export function InstallerWizard() {
   ];
 
   return (
-    <div className="nv-installer-page">
+    <div className="xt-installer-page">
       <div className="wizard-container">
         <header className="wizard-header">
           <div className="wizard-logo">

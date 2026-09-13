@@ -42,7 +42,7 @@ import { memoTtl } from "../../shared/utils/memoTtl.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 
 /**
- * `theme` is the INHERITANCE layer: what an imported `.nvtheme` shipped for a template.
+ * `theme` is the INHERITANCE layer: what an imported `.xttheme` shipped for a template.
  *
  * It is deliberately NOT in the render path — resolution stays exactly two steps
  * (variant → template default → code default), which is the rule ADR-0005 exists to
@@ -211,7 +211,7 @@ function assertRegionsValid(doc: LayoutDocument) {
   // Structural rules the document SHAPE cannot express: nesting depth, duplicate
   // ids, children on a block that cannot hold them, a `column` outside its row, and
   // an audience on a block the template requires. The editor cannot produce any of
-  // these — the check exists because a `.nvtheme` import is a second way into this
+  // these — the check exists because a `.xttheme` import is a second way into this
   // table, and an unbounded document is a render bomb rather than a layout.
   const treeProblems = validateBlockTree(doc.regions, {
     requiredTypes: requiredBlocksFor(doc.templateKey),
@@ -225,7 +225,7 @@ function assertRegionsValid(doc: LayoutDocument) {
   // Chrome renders on every page, so a header with no way into the site and no
   // way to sign in is a locked door. Required blocks may move between regions;
   // they may not disappear. Enforced here as well as in the editor, because a
-  // .nvtheme import is another way in.
+  // .xttheme import is another way in.
   const missing = missingRequiredBlocks(doc.templateKey, doc);
   if (missing.length > 0) {
     throw new XentiumError({

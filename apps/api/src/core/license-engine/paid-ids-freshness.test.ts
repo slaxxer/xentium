@@ -41,7 +41,7 @@ vi.mock("../../infrastructure/db.js", () => ({
 }));
 
 vi.mock("./protocol-client.js", () => ({
-  SOURCE_ID: "nodevo.io",
+  SOURCE_ID: "xentium.org",
   K_REF: "ref", K_AT: "at",
   clearIdentity: async () => {},
   getAccountToken: async () => "tok",

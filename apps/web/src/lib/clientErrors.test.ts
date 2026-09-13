@@ -56,7 +56,7 @@ describe("describeError", () => {
   it("mints a distinct, quotable reference per incident", () => {
     const a = describeError(new Error("x"));
     const b = describeError(new Error("x"));
-    expect(a.reference).toMatch(/^NV-[0-9A-Z]+-[A-Z2-9]{3}$/);
+    expect(a.reference).toMatch(/^XT-[0-9A-Z]+-[A-Z2-9]{3}$/);
     expect(a.reference).not.toBe(b.reference);
   });
 });

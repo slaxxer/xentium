@@ -83,7 +83,7 @@ INSERT INTO xf_thread VALUES
 
 INSERT INTO xf_post VALUES
   (100, 10, 2, 1700000000, 0,
-   'Welcome! [B]Bold[/B] start, a [URL=''https://nodevo.io'']link[/URL] and a quote:\n[QUOTE="bob, post: 99, member: 3"]quoted text[/QUOTE]\n[LIST]\n[*]first\n[*]second\n[/LIST]',
+   'Welcome! [B]Bold[/B] start, a [URL=''https://xentium.org'']link[/URL] and a quote:\n[QUOTE="bob, post: 99, member: 3"]quoted text[/QUOTE]\n[LIST]\n[*]first\n[*]second\n[/LIST]',
    'visible'),
   (101, 10, 3, 1700050000, 1700060000,
    'Thanks [USER=2]@alice[/USER]! Check [MEDIA=youtube]dQw4w9WgXcQ[/MEDIA] and [ATTACH]55[/ATTACH] 1 &lt; 2',

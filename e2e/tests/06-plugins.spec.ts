@@ -6,11 +6,11 @@ import { ADMIN, uiLogin } from "./helpers";
 
 /**
  * Extensions: license activation + the plugin install pipeline, via the ACP.
- * The forum `.nvplugin` package must be built first (`pnpm plugin:package`).
+ * The forum `.xtplugin` package must be built first (`pnpm plugin:package`).
  */
 
 const here = dirname(fileURLToPath(import.meta.url));
-const NVPLUGIN = resolve(here, "../../dist/marketplace/xentium-forum-1.0.0.nvplugin");
+const NVPLUGIN = resolve(here, "../../dist/marketplace/xentium-forum-1.0.0.xtplugin");
 
 // Runs FIRST in this file so the entitlement it activates is present when the
 // next test enables the (licenseRequired) forum plugin — the dev entitlement

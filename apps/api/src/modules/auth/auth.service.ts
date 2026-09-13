@@ -13,7 +13,7 @@ import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
- *  own (a beta plugin needs `nv_beta`). Core never inspects them itself. */
+ *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string; cookies?: Record<string, string> };
 
 const DUMMY_HASH = process.env.DUMMY_ARGON2_HASH!;

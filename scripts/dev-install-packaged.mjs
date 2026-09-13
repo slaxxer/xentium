@@ -9,7 +9,7 @@
  * right for a real site and wrong for a dev box that is following the rename.
  *
  * It mirrors `installPlugin`: the archive is written to the store as
- * `<id>-<version>.nvplugin`, extracted over `<store>/<id>`, and the row's
+ * `<id>-<version>.xtplugin`, extracted over `<store>/<id>`, and the row's
  * version, manifest and package path are updated. It does NOT run migrations —
  * a version reset applies no new DDL, and the ledger skips by NAME — and it
  * never changes a plugin's enabled/disabled status.
@@ -45,7 +45,7 @@ if (!process.env.DATABASE_URL) {
 // built last, not whatever sorts highest.
 const archives = new Map();
 for (const name of await fs.readdir(PACKAGED)) {
-  if (!name.endsWith(".nvplugin")) continue;
+  if (!name.endsWith(".xtplugin")) continue;
   const full = path.join(PACKAGED, name);
   const zip = new AdmZip(full);
   const entry = zip.getEntry("manifest.json");
@@ -68,7 +68,7 @@ try {
       console.log(`  skip  ${id} — not installed here (install it the normal way first)`);
       continue;
     }
-    const pkgPath = path.join(STORE, `${id}-${manifest.version}.nvplugin`);
+    const pkgPath = path.join(STORE, `${id}-${manifest.version}.xtplugin`);
     const extractDir = path.join(STORE, id);
     console.log(`  ${id}  ${row.installed_version} -> ${manifest.version}  (${row.status}, unchanged)`);
     console.log(`        ${path.basename(full)} -> ${pkgPath}`);

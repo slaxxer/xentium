@@ -7,11 +7,11 @@
 // palette on `:root`, so before this every Style Editor edit and every installed
 // theme repainted the ADMIN PANEL too — a site in orange gave you an orange ACP.
 // The admin panel is not part of the site's design; it re-declares these on
-// `body.nv-acp`, which outranks `:root`, and so keeps its own look whatever the
+// `body.xt-acp`, which outranks `:root`, and so keeps its own look whatever the
 // site wears. Same reasoning as the font pin that was already there.
 //
 // A surface that DOES want the site's colours inside the ACP opts back in with
-// `.nv-site-tokens` (see tokens.scss) — the Layout Editor's variant probe is the
+// `.xt-site-tokens` (see tokens.scss) — the Layout Editor's variant probe is the
 // one caller.
 
 // Tier 1 — primitives (never referenced directly by components).
@@ -191,7 +191,7 @@
   /* Typography. The admin's Style Editor font applies SITE-WIDE (body AND
      headings: --ff-sans + --font-display both follow it via the served CSS);
      a user's profile font choice overrides it for that user. The ACP always
-     re-pins both to Poppins (body.nv-acp in AcpLayout.scss). */
+     re-pins both to Poppins (body.xt-acp in AcpLayout.scss). */
   --font-poppins: "Poppins", system-ui, sans-serif;
   --font-display: var(--font-poppins);
   --font-body:    var(--font-poppins);   /* Poppins until the admin/user picks another */

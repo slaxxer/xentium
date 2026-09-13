@@ -66,7 +66,7 @@ async function bootstrap() {
 
   // Site default language for visitors with no explicit choice (§60.3) —
   // makes the admin's chosen language take effect on every device, not just
-  // the one that ran the installer (which has the wizard's nv_locale cookie).
+  // the one that ran the installer (which has the wizard's xt_locale cookie).
   const { applySiteDefaultLocale } = await import("./lib/i18n");
   await applySiteDefaultLocale();
 
@@ -98,7 +98,7 @@ async function bootstrap() {
     const { loadDevPlugins, DEV_PLUGIN_IDS } = await import("./plugins/dev-plugins");
     await loadDevPlugins(enabledIds);
     // Any enabled plugin without a build-time HMR entry (e.g. an uploaded
-    // .nvplugin) is runtime-loaded from its compiled bundle, exactly like prod.
+    // .xtplugin) is runtime-loaded from its compiled bundle, exactly like prod.
     for (const p of enabled) {
       if (!DEV_PLUGIN_IDS.includes(p.id)) await loadPluginBundle(p.id, p.version);
     }

@@ -51,10 +51,10 @@ import { setLivePreviewDocument, setPreviewAudience } from "./useLayout";
  */
 let iconMode = false;
 
-const OVERLAY_ID = "nv-preview-overlay";
-const TOKENS_ID = "nv-preview-tokens";
-const LABEL_ID = "nv-preview-label";
-const LINE_ID = "nv-preview-dropline";
+const OVERLAY_ID = "xt-preview-overlay";
+const TOKENS_ID = "xt-preview-tokens";
+const LABEL_ID = "xt-preview-label";
+const LINE_ID = "xt-preview-dropline";
 
 type Msg =
   /**
@@ -63,9 +63,9 @@ type Msg =
    * its body — clicking one of their blocks opens THAT document in the editor
    * instead of addressing an id the open one does not contain.
    */
-  | { source: "nv-preview"; type: "select"; id: string; templateKey?: string }
+  | { source: "xt-preview"; type: "select"; id: string; templateKey?: string }
   | {
-      source: "nv-preview";
+      source: "xt-preview";
       type: "move";
       id: string;
       region: string;
@@ -74,22 +74,22 @@ type Msg =
       index: number;
     }
   /** A keystroke this document swallowed that belongs to the editor around it. */
-  | { source: "nv-preview"; type: "shortcut"; action: "undo" | "redo" }
+  | { source: "xt-preview"; type: "shortcut"; action: "undo" | "redo" }
   /**
    * Where the SELECTED block sits, so the floating inspector can move out of its way.
    *
    * In this frame's own pixels — the editor knows the scale it draws the frame at and
    * the panel's width, and neither is knowable from in here.
    */
-  | { source: "nv-preview"; type: "bounds"; id: string; left: number; right: number }
+  | { source: "xt-preview"; type: "bounds"; id: string; left: number; right: number }
   /**
    * The selected block's own actions, taken from the chip on the page.
    *
    * The tree has carried these all along; the canvas has not, so acting on a block
    * you can SEE meant finding its row first. Both end in the same editor call.
    */
-  | { source: "nv-preview"; type: "duplicate"; id: string }
-  | { source: "nv-preview"; type: "remove"; id: string }
+  | { source: "xt-preview"; type: "duplicate"; id: string }
+  | { source: "xt-preview"; type: "remove"; id: string }
   /**
    * This document's bridge is listening.
    *
@@ -99,9 +99,9 @@ type Msg =
    * changes; anything pushed once, like icon mode, was simply lost. Announcing
    * readiness is what makes the hand-off reliable for all of it.
    */
-  | { source: "nv-preview"; type: "ready" }
+  | { source: "xt-preview"; type: "ready" }
   /** An empty region was clicked — open the add-block picker for it. */
-  | { source: "nv-preview"; type: "addTo"; region: string; templateKey?: string }
+  | { source: "xt-preview"; type: "addTo"; region: string; templateKey?: string }
   /**
    * An ICON was clicked, while icon mode is on.
    *
@@ -109,12 +109,12 @@ type Msg =
    * drew. That is what makes ONE icon addressable rather than every icon of that
    * name, and it is stored on the block so it publishes with the layout draft.
    */
-  | { source: "nv-preview"; type: "iconPick"; id: string; slot: string; templateKey?: string };
+  | { source: "xt-preview"; type: "iconPick"; id: string; slot: string; templateKey?: string };
 
 const post = (msg: Msg) => window.parent?.postMessage(msg, window.location.origin);
 
 /** Nearest legal drop parent: a container wrapper, or a region's own element. */
-const DROP_PARENT = "[data-nv-container],[data-nv-region]:not([data-nv-block])";
+const DROP_PARENT = "[data-xt-container],[data-xt-region]:not([data-xt-block])";
 
 /** The block's first real element — the `display: contents` wrapper has no box. */
 function boxOf(wrapper: Element): DOMRect | null {
@@ -126,31 +126,31 @@ function boxOf(wrapper: Element): DOMRect | null {
 
 /** Every block wrapper, in document order — which is also tree order. */
 const allWrappers = (): HTMLElement[] =>
-  [...document.querySelectorAll("[data-nv-block]")] as HTMLElement[];
+  [...document.querySelectorAll("[data-xt-block]")] as HTMLElement[];
 
 // `childrenOf` and `resolveDropParent` are exported for their tests, which run
 // them against DOM the real renderer produced. They are the two functions nesting
-// broke — the old versions used `closest("[data-nv-region]")` and `:scope >`,
+// broke — the old versions used `closest("[data-xt-region]")` and `:scope >`,
 // which silently resolve to the wrong parent and an empty sibling list the moment
 // anything is nested — so they are worth pinning down directly.
 
 /** Looked up by scanning rather than by selector: a block id comes from a stored
  *  document, so it is not guaranteed to be safe to interpolate into one. */
 const wrapperById = (id: string): HTMLElement | null =>
-  allWrappers().find((el) => el.dataset.nvBlock === id) ?? null;
+  allWrappers().find((el) => el.dataset.xtBlock === id) ?? null;
 
 /**
  * A drop parent's direct children.
  *
- * Parentage is read from `data-nv-parent`, which the renderer stamps, because a
+ * Parentage is read from `data-xt-parent`, which the renderer stamps, because a
  * container's real element sits between its wrapper and its children's wrappers —
- * so `:scope > [data-nv-block]` matches nothing once anything is nested.
+ * so `:scope > [data-xt-block]` matches nothing once anything is nested.
  */
 export const childrenOf = (parentId: string | null, region: string): HTMLElement[] =>
   allWrappers().filter((el) =>
     parentId == null
-      ? el.dataset.nvParent === "" && el.dataset.nvRegion === region
-      : el.dataset.nvParent === parentId,
+      ? el.dataset.xtParent === "" && el.dataset.xtRegion === region
+      : el.dataset.xtParent === parentId,
   );
 
 export interface DropParent { parentId: string | null; region: string; el: HTMLElement }
@@ -172,12 +172,12 @@ export function resolveDropParent(
   while (el) {
     const cand = el.closest(DROP_PARENT) as HTMLElement | null;
     if (!cand) return null;
-    const parentId = cand.dataset.nvBlock ?? null;
+    const parentId = cand.dataset.xtBlock ?? null;
     // `acceptsChild` keys off the block TYPE; the id would look up nothing in the
     // registry and silently reject every container. A region candidate carries no
     // type, which is exactly the null the region case wants.
-    const parentType = cand.dataset.nvType ?? null;
-    const region = cand.dataset.nvRegion;
+    const parentType = cand.dataset.xtType ?? null;
+    const region = cand.dataset.xtRegion;
     const selfOrInside = !!dragged && (dragged === cand || dragged.contains(cand));
     if (region && !selfOrInside && acceptsChild(parentType, draggedType)) {
       return { parentId, region, el: cand };
@@ -199,9 +199,9 @@ function ensure(id: string, className: string): HTMLElement {
 }
 
 export function installPreviewBridge(): () => void {
-  const overlay = ensure(OVERLAY_ID, "nv-preview-overlay");
-  const label = ensure(LABEL_ID, "nv-preview-label");
-  const line = ensure(LINE_ID, "nv-preview-dropline");
+  const overlay = ensure(OVERLAY_ID, "xt-preview-overlay");
+  const label = ensure(LABEL_ID, "xt-preview-label");
+  const line = ensure(LINE_ID, "xt-preview-dropline");
 
   let hovered: HTMLElement | null = null;
   let selectedId: string | null = null;
@@ -230,7 +230,7 @@ export function installPreviewBridge(): () => void {
   let drop: { region: string; parentId: string | null; index: number } | null = null;
 
   const wrapperFrom = (target: EventTarget | null): HTMLElement | null =>
-    (target as Element | null)?.closest?.("[data-nv-block]") as HTMLElement | null;
+    (target as Element | null)?.closest?.("[data-xt-block]") as HTMLElement | null;
 
   function frame(wrapper: HTMLElement | null, selected: boolean) {
     if (!wrapper) { overlay.style.display = "none"; label.style.display = "none"; return; }
@@ -255,7 +255,7 @@ export function installPreviewBridge(): () => void {
    * The chip above a block: what it is, and — once selected — what can be done to it.
    *
    * Two different chips on purpose. HOVER says what a thing IS, in the vocabulary a
-   * `.nvtheme` and `docs/plugin-blocks.md` use, so pointing at the page answers "what
+   * `.xttheme` and `docs/plugin-blocks.md` use, so pointing at the page answers "what
    * block is that". SELECTED says what it is CALLED and carries its actions, because
    * by then the question has been answered and the next one is what to do with it.
    *
@@ -275,17 +275,17 @@ export function installPreviewBridge(): () => void {
     if (!selected) {
       label.style.pointerEvents = "none";
       const type = document.createElement("span");
-      type.textContent = wrapper.dataset.nvType ?? "block";
+      type.textContent = wrapper.dataset.xtType ?? "block";
       label.append(type);
       // Says the block is conditional at the place the condition is invisible: the
       // preview deliberately still draws a restricted block, so nothing else on the
       // page distinguishes it from one everybody sees.
-      // ⚠ `data-nv-restricted` — the renderer's own name for it, and it carries the
-      // audience as its value. There is no `data-nv-audience`.
-      const audience = wrapper.dataset.nvRestricted;
+      // ⚠ `data-xt-restricted` — the renderer's own name for it, and it carries the
+      // audience as its value. There is no `data-xt-audience`.
+      const audience = wrapper.dataset.xtRestricted;
       if (audience) {
         const note = document.createElement("span");
-        note.className = "nv-preview-label__note";
+        note.className = "xt-preview-label__note";
         note.textContent = ` · ${audienceLabels[audience] ?? audience}`;
         label.append(note);
       }
@@ -294,23 +294,23 @@ export function installPreviewBridge(): () => void {
 
     label.style.pointerEvents = "auto";
     const name = document.createElement("span");
-    name.textContent = selectedLabel ?? wrapper.dataset.nvType ?? "block";
+    name.textContent = selectedLabel ?? wrapper.dataset.xtType ?? "block";
     label.append(name);
 
-    const id = wrapper.dataset.nvBlock;
+    const id = wrapper.dataset.xtBlock;
     if (!id) return;
 
     const action = (kind: "duplicate" | "remove", glyph: string) => {
       const b = document.createElement("button");
       b.type = "button";
-      b.className = "nv-preview-label__act";
+      b.className = "xt-preview-label__act";
       b.textContent = glyph;
       b.title = kind;
       b.addEventListener("click", (e) => {
         // The chip sits ON the block; without this the click would also select it.
         e.preventDefault();
         e.stopPropagation();
-        post({ source: "nv-preview", type: kind, id });
+        post({ source: "xt-preview", type: kind, id });
       });
       return b;
     };
@@ -345,7 +345,7 @@ export function installPreviewBridge(): () => void {
     if (reportedFor === selectedId) return;
     reportedFor = selectedId;
     post({
-      source: "nv-preview", type: "bounds", id: selectedId,
+      source: "xt-preview", type: "bounds", id: selectedId,
       left: rect.left + window.scrollX, right: rect.right + window.scrollX,
     });
   }
@@ -358,7 +358,7 @@ export function installPreviewBridge(): () => void {
     // Draggable only where a drag can land: moving a block rewrites the tree the
     // editor is holding, and the header's blocks live in another document until the
     // admin opens it (one click on the block does exactly that).
-    if (w?.dataset.nvDrag) w.setAttribute("draggable", "true");
+    if (w?.dataset.xtDrag) w.setAttribute("draggable", "true");
     redraw();
   };
   const onLeave = () => { hovered = null; redraw(); };
@@ -367,13 +367,13 @@ export function installPreviewBridge(): () => void {
   const onClick = (e: MouseEvent) => {
     // An empty region's placeholder has no block to select — clicking it means
     // "put something here", which is the only thing it could mean.
-    const empty = (e.target as Element | null)?.closest?.("[data-nv-empty]") as HTMLElement | null;
-    if (empty?.dataset.nvEmpty) {
+    const empty = (e.target as Element | null)?.closest?.("[data-xt-empty]") as HTMLElement | null;
+    if (empty?.dataset.xtEmpty) {
       e.preventDefault();
       e.stopPropagation();
       post({
-        source: "nv-preview", type: "addTo", region: empty.dataset.nvEmpty,
-        templateKey: empty.dataset.nvTemplate || undefined,
+        source: "xt-preview", type: "addTo", region: empty.dataset.xtEmpty,
+        templateKey: empty.dataset.xtTemplate || undefined,
       });
       return;
     }
@@ -381,17 +381,17 @@ export function installPreviewBridge(): () => void {
     // ⚠ Before the block walk: an icon sits INSIDE a block, so resolving the block
     // first would always win and icon mode would never fire.
     if (iconMode) {
-      const ic = (e.target as Element | null)?.closest?.("[data-nv-icon]") as HTMLElement | null;
-      const marker = ic?.dataset.nvIcon;
+      const ic = (e.target as Element | null)?.closest?.("[data-xt-icon]") as HTMLElement | null;
+      const marker = ic?.dataset.xtIcon;
       if (marker) {
         const [blockId, slot] = marker.split("::");
         if (blockId && slot) {
           e.preventDefault();
           e.stopPropagation();
-          const owner = ic.closest("[data-nv-block]") as HTMLElement | null;
+          const owner = ic.closest("[data-xt-block]") as HTMLElement | null;
           post({
-            source: "nv-preview", type: "iconPick", id: blockId, slot,
-            templateKey: owner?.dataset.nvTemplate || undefined,
+            source: "xt-preview", type: "iconPick", id: blockId, slot,
+            templateKey: owner?.dataset.xtTemplate || undefined,
           });
           return;
         }
@@ -399,17 +399,17 @@ export function installPreviewBridge(): () => void {
     }
 
     const w = wrapperFrom(e.target);
-    if (!w?.dataset.nvBlock) return;
+    if (!w?.dataset.xtBlock) return;
     // Selecting must not also follow a link or submit something in the preview.
     e.preventDefault();
     e.stopPropagation();
-    selectedId = w.dataset.nvBlock;
+    selectedId = w.dataset.xtBlock;
     // The block's own document travels with the id. Clicking the masthead band or a
     // navbar item is how an admin edits the HEADER — the editor opens that document
     // and selects the block, rather than looking for an id it does not have.
     post({
-      source: "nv-preview", type: "select", id: selectedId,
-      templateKey: w.dataset.nvTemplate || undefined,
+      source: "xt-preview", type: "select", id: selectedId,
+      templateKey: w.dataset.xtTemplate || undefined,
     });
     redraw();
   };
@@ -417,8 +417,8 @@ export function installPreviewBridge(): () => void {
   // ── drag within the preview ──────────────────────────────────────────────
   const onDragStart = (e: DragEvent) => {
     const w = wrapperFrom(e.target);
-    if (!w?.dataset.nvBlock) return;
-    dragId = w.dataset.nvBlock;
+    if (!w?.dataset.xtBlock) return;
+    dragId = w.dataset.xtBlock;
     e.dataTransfer?.setData("text/plain", dragId);
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
   };
@@ -426,7 +426,7 @@ export function installPreviewBridge(): () => void {
   const onDragOver = (e: DragEvent) => {
     if (!dragId) return;
     const dragged = wrapperById(dragId);
-    const target = resolveDropParent(e.target as Element | null, dragged?.dataset.nvType ?? "", dragged);
+    const target = resolveDropParent(e.target as Element | null, dragged?.dataset.xtType ?? "", dragged);
     if (!target) { line.style.display = "none"; return; }
 
     e.preventDefault();
@@ -473,7 +473,7 @@ export function installPreviewBridge(): () => void {
     if (!dragId || !drop) return;
     e.preventDefault();
     post({
-      source: "nv-preview", type: "move", id: dragId,
+      source: "xt-preview", type: "move", id: dragId,
       region: drop.region, parentId: drop.parentId, index: drop.index,
     });
     endDrag();
@@ -497,14 +497,14 @@ export function installPreviewBridge(): () => void {
     const action = shortcutFor(e);
     if (!action) return;
     e.preventDefault();
-    post({ source: "nv-preview", type: "shortcut", action });
+    post({ source: "xt-preview", type: "shortcut", action });
   };
 
   // ── editor → preview ─────────────────────────────────────────────────────
   const onMessage = (e: MessageEvent) => {
     if (e.origin !== window.location.origin) return; // never trust a foreign frame
     const data = e.data as { source?: string; type?: string; id?: string | null };
-    if (data?.source !== "nv-editor") return;
+    if (data?.source !== "xt-editor") return;
     if (data.type === "labels") {
       audienceLabels = (e.data as { audience?: Record<string, string> }).audience ?? {};
       redraw();
@@ -519,7 +519,7 @@ export function installPreviewBridge(): () => void {
      */
     if (data.type === "iconMode") {
       iconMode = (e.data as { on?: boolean }).on === true;
-      document.documentElement.classList.toggle("nv-icon-mode", iconMode);
+      document.documentElement.classList.toggle("xt-icon-mode", iconMode);
     }
 
     if (data.type === "highlight") {
@@ -588,7 +588,7 @@ export function installPreviewBridge(): () => void {
    * Stamped by the BRIDGE because the bridge is the editor's presence in this
    * document: it is installed only in the preview, and removed with it.
    */
-  document.documentElement.dataset.nvEditor = "1";
+  document.documentElement.dataset.xtEditor = "1";
 
   document.addEventListener("dragstart", onDragStart, true);
   document.addEventListener("dragover", onDragOver);
@@ -598,7 +598,7 @@ export function installPreviewBridge(): () => void {
   window.addEventListener("message", onMessage);
   // ⚠ AFTER the listener is attached, never before: this is the whole point of the
   // handshake. The editor answers by pushing everything it holds.
-  post({ source: "nv-preview", type: "ready" });
+  post({ source: "xt-preview", type: "ready" });
   window.addEventListener("scroll", redraw, true);
   window.addEventListener("resize", redraw);
 
@@ -615,6 +615,6 @@ export function installPreviewBridge(): () => void {
     window.removeEventListener("scroll", redraw, true);
     window.removeEventListener("resize", redraw);
     overlay.remove(); label.remove(); line.remove();
-    delete document.documentElement.dataset.nvEditor;
+    delete document.documentElement.dataset.xtEditor;
   };
 }

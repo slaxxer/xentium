@@ -70,10 +70,10 @@ const open = (over: Partial<Parameters<typeof BlockCatalogue>[0]> = {}) => {
 };
 
 const names = () =>
-  [...document.querySelectorAll(".nv-cat__name")].map((n) => n.firstChild?.textContent);
+  [...document.querySelectorAll(".xt-cat__name")].map((n) => n.firstChild?.textContent);
 const search = () => screen.getByRole("textbox");
 const tab = (label: string) =>
-  [...document.querySelectorAll(".nv-cat__tabs button")]
+  [...document.querySelectorAll(".xt-cat__tabs button")]
     .find((b) => b.textContent?.startsWith(label)) as HTMLButtonElement;
 
 describe("what the catalogue offers", () => {
@@ -98,7 +98,7 @@ describe("what the catalogue offers", () => {
 
   it("adds the block and closes, in that order", () => {
     const { onPick, onClose } = open();
-    fireEvent.click(screen.getByText("Leaf", { selector: ".nv-cat__name" }).closest("button")!);
+    fireEvent.click(screen.getByText("Leaf", { selector: ".xt-cat__name" }).closest("button")!);
     expect(onPick).toHaveBeenCalledWith("t.leaf");
     expect(onClose).toHaveBeenCalled();
   });
@@ -112,7 +112,7 @@ describe("finding a block", () => {
   });
 
   it("filters by type, for an author who knows it", () => {
-    // Nothing is LABELLED "t.alpha"; a `.nvtheme` and the docs speak in types.
+    // Nothing is LABELLED "t.alpha"; a `.xttheme` and the docs speak in types.
     open();
     fireEvent.change(search(), { target: { value: "t.alpha" } });
     expect(names()).toEqual(["Alpha text"]);
@@ -159,7 +159,7 @@ describe("leaving without adding", () => {
 
   it("closes on a click outside, but not on one inside", () => {
     const { onClose } = open();
-    fireEvent.click(document.querySelector(".nv-cat")!);
+    fireEvent.click(document.querySelector(".xt-cat")!);
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.click(document.querySelector(".acp-modal-overlay")!);
     expect(onClose).toHaveBeenCalled();

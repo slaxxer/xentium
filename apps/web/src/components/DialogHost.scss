@@ -1,6 +1,6 @@
 /* Confirm/alert dialog (lib/dialog.ts) — Hearth-styled swal replacement. */
 
-.nv-dialog-overlay {
+.xt-dialog-overlay {
   position: fixed;
   inset: 0;
   z-index: 9990;   /* below toasts (10000) so confirmations can still toast */
@@ -9,10 +9,10 @@
   padding: 20px;
   background: color-mix(in srgb, var(--c-bg) 62%, transparent);
   backdrop-filter: blur(3px);
-  animation: nv-dialog-fade 0.15s ease-out;
+  animation: xt-dialog-fade 0.15s ease-out;
 }
 
-.nv-dialog {
+.xt-dialog {
   --_dlg-c: var(--c-info);
   width: min(420px, 100%);
   padding: 26px 26px 22px;
@@ -26,7 +26,7 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-pop);
-  animation: nv-dialog-in 0.18s ease-out;
+  animation: xt-dialog-in 0.18s ease-out;
 
   &--question { --_dlg-c: var(--c-accent); }
   &--success  { --_dlg-c: var(--c-success); }
@@ -40,21 +40,21 @@
     width: min(540px, 100%);
     text-align: left;
 
-    .nv-dialog__head {
+    .xt-dialog__head {
       display: flex;
       align-items: center;
       gap: 12px;
       margin-bottom: 14px;
     }
-    .nv-dialog__icon {
+    .xt-dialog__icon {
       width: 42px;
       height: 42px;
       margin: 0;
       font-size: 19px;
       flex-shrink: 0;
     }
-    .nv-dialog__title { margin: 0; flex: 1; min-width: 0; }
-    .nv-dialog__actions { justify-content: flex-end; }
+    .xt-dialog__title { margin: 0; flex: 1; min-width: 0; }
+    .xt-dialog__actions { justify-content: flex-end; }
   }
 
   &__badge {
@@ -214,15 +214,15 @@
   }
 }
 
-@keyframes nv-dialog-fade {
+@keyframes xt-dialog-fade {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-@keyframes nv-dialog-in {
+@keyframes xt-dialog-in {
   from { opacity: 0; transform: scale(0.96); }
   to   { opacity: 1; transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nv-dialog-overlay, .nv-dialog { animation: none; }
+  .xt-dialog-overlay, .xt-dialog { animation: none; }
 }

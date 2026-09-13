@@ -15,7 +15,7 @@ export * from './composer.js';
 
 export type ThemeMode = 'light' | 'dark';
 
-// The real `.nvtheme` manifest. Replaces a three-field interface that used to sit
+// The real `.xttheme` manifest. Replaces a three-field interface that used to sit
 // here and described nothing ever written to disk — its only consumer was a
 // never-used ThemeRegistry, now deleted.
 export * from './theme.js';

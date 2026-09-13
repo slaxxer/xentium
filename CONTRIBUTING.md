@@ -62,7 +62,7 @@ The full guide is in **[README → Plugin development guide](./README.md#plugin-
 Put work-in-progress plugins under `plugins/community-examples/<name>/` (a pnpm
 workspace member), wire HMR via `apps/web/src/plugins/dev-plugins.ts`, and install
 them from **ACP → Extensions → Upload**. Package for distribution with
-`pnpm plugin:package` (produces a `.nvplugin`).
+`pnpm plugin:package` (produces a `.xtplugin`).
 
 ### Plugin foundation (extension points)
 

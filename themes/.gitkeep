@@ -1,2 +1,2 @@
-Reserved for v2 .nvstyle / .nvtheme packs. Empty in v1.
+Reserved for v2 .xtstyle / .xttheme packs. Empty in v1.
 v1 tokens live in apps/web/src/styles/tokens.scss; fonts via @fontsource (see CLAUDE.md §13/§24).

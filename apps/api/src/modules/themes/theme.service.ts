@@ -1,15 +1,15 @@
 /**
- * `.nvtheme` export / import (ADR-0005, step 5).
+ * `.xttheme` export / import (ADR-0005, step 5).
  *
  * A theme is DATA: layout documents plus token overrides plus assets. There is no
  * executable code in the package, so importing one cannot run anything — review
  * is reading JSON and a `:root`-only stylesheet. Code extension goes through
  * plugins, which is a separate, trusted path.
  *
- * The package is a strict superset of `.nvstyle`: same `styles/light.css` and
+ * The package is a strict superset of `.xtstyle`: same `styles/light.css` and
  * `styles/dark.css` under the same `:root`-only rule, plus a `layouts/` folder.
- * A `.nvstyle` is simply a theme with no layouts — and since 2026-08-15 that is not
- * just a resemblance: `.nvstyle` was ABSORBED, its separate upload endpoint and its
+ * A `.xtstyle` is simply a theme with no layouts — and since 2026-08-15 that is not
+ * just a resemblance: `.xtstyle` was ABSORBED, its separate upload endpoint and its
  * parallel `:root` validator deleted, and this importer takes both shapes
  * (`adoptStylePack`). Export with `tokensOnly` to produce the palette-only kind.
  *
@@ -113,7 +113,7 @@ function readText(entry: AdmZip.IZipEntry, label: string): string {
   return entry.getData().toString("utf8");
 }
 
-/** `:root`-only custom properties, the same rule `.nvstyle` enforces. */
+/** `:root`-only custom properties, the same rule `.xtstyle` enforces. */
 function assertTokenCss(css: string, file: string) {
   const stripped = css.replace(/\/\*[\s\S]*?\*\//g, "").trim();
   if (!stripped) return;
@@ -140,14 +140,14 @@ const renderTokens = (map: TokenMap): string => {
 };
 
 /**
- * Let a `.nvstyle` in through the theme importer.
+ * Let a `.xtstyle` in through the theme importer.
  *
- * The two formats were never siblings: `.nvstyle` is `manifest.json` +
+ * The two formats were never siblings: `.xtstyle` is `manifest.json` +
  * `styles/light.css` + `styles/dark.css`, which is a strict SUBSET of what a theme
  * carries — the docblock at the top of this file has claimed as much since the format
  * was written. What actually differed was the manifest: a theme requires `id`,
  * `vendor`, `version` and `minXentiumVersion`; a style pack required only `name`. So
- * the superset claim was true of the files and false of the paperwork, and a `.nvstyle`
+ * the superset claim was true of the files and false of the paperwork, and a `.xtstyle`
  * would have been rejected here.
  *
  * The missing fields are filled in, and ONLY for a package that is unmistakably a style
@@ -310,7 +310,7 @@ async function stageAssets(zip: AdmZip): Promise<StagedAsset[]> {
  * Open a package and read its manifest, without touching a single setting.
  *
  * Split out of `importTheme` so the marketplace download gate can ask "is this
- * really the theme I asked for?" the way it already asks a `.nvplugin` — the
+ * really the theme I asked for?" the way it already asks a `.xtplugin` — the
  * check that a package's manifest id matches the requested product. Doing that
  * by starting an import and rolling it back is not an option: an import is
  * all-or-nothing but it is not free, and the point is to refuse the bytes BEFORE
@@ -321,7 +321,7 @@ function readManifest(fileBuffer: Buffer): { zip: AdmZip; manifest: ThemeManifes
   try {
     zip = new AdmZip(fileBuffer);
   } catch {
-    throw themeError("Not a readable .nvtheme archive");
+    throw themeError("Not a readable .xttheme archive");
   }
 
   const manifestEntry = zip.getEntry(THEME_PATHS.manifest);
@@ -350,7 +350,7 @@ export const themeService = {
   },
 
   /**
-   * Build a `.nvtheme` from what is currently PUBLISHED — the site as visitors
+   * Build a `.xttheme` from what is currently PUBLISHED — the site as visitors
    * see it, not a half-finished draft.
    */
   async exportTheme(
@@ -437,7 +437,7 @@ export const themeService = {
     // Registered templates, so a theme exported from a site running the forum carries
     // the forum's pages too. On a site without that plugin the file is skipped at
     // import — the same "unknown thing is skipped, not fatal" rule as a block.
-    // A TOKENS-ONLY package: the palette and nothing else — what `.nvstyle` was for,
+    // A TOKENS-ONLY package: the palette and nothing else — what `.xtstyle` was for,
     // now expressed in the one format. Skipping the layouts also skips the assets,
     // since the only assets an export collects are the ones layouts reference.
     const exportable = opts.tokensOnly
@@ -479,8 +479,8 @@ export const themeService = {
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` is the lossless one: the FULL scoped set, including the region
     // scopes (ADR-0003) that the two CSS files cannot express and that this export
-    // silently dropped before. The CSS files stay so a `.nvtheme` remains a strict
-    // `.nvstyle` superset, and an importer prefers the JSON when both are present.
+    // silently dropped before. The CSS files stay so a `.xttheme` remains a strict
+    // `.xtstyle` superset, and an importer prefers the JSON when both are present.
     zip.addFile(THEME_PATHS.tokens, Buffer.from(JSON.stringify(tokens, null, 2), "utf8"));
     zip.addFile(THEME_PATHS.cssLight, Buffer.from(renderTokens(tokens.light?.global ?? {}), "utf8"));
     zip.addFile(THEME_PATHS.cssDark,  Buffer.from(renderTokens(tokens.dark?.global  ?? {}), "utf8"));
@@ -532,7 +532,7 @@ export const themeService = {
    * Validation is all-or-nothing: a package with one broken layout applies none
    * of itself, so an admin never ends up with half a theme and no clean way back.
    *
-   * Accepts a `.nvstyle` too — see `adoptStylePack`. One ingestion path for both,
+   * Accepts a `.xtstyle` too — see `adoptStylePack`. One ingestion path for both,
    * which is the point of having merged them.
    */
   /**
@@ -658,7 +658,7 @@ export const themeService = {
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` wins when present: it is the only file that can express the region
     // scopes. The CSS pair remains the fallback, which is what a hand-written
-    // `.nvstyle` ships and all this format could read before.
+    // `.xtstyle` ships and all this format could read before.
     let tokens: ScopedTokenSet | null = null;
     const tokensEntry = zip.getEntry(THEME_PATHS.tokens);
     if (tokensEntry) {
@@ -731,7 +731,7 @@ export const themeService = {
      * at where the files actually landed on THIS install.
      *
      * Built before anything is applied, and stored in the library, because it is what
-     * lets the theme be activated again later without the `.nvtheme` it came from.
+     * lets the theme be activated again later without the `.xttheme` it came from.
      * Storing the raw package instead would mean re-unpacking (and re-writing assets)
      * on every switch, and would leave the stored copy disagreeing with the files on
      * disk the moment either changed.

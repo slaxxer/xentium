@@ -1,6 +1,6 @@
 // Marketplace contracts (ADR 0001). The download gate — where paid plugins are
 // actually protected. Core talks to a `MarketplaceSource`, never hardcoding
-// nodevo.io: a community / self-hosted source implements the same interface and
+// xentium.org: a community / self-hosted source implements the same interface and
 // may return free, no-op entitlements.
 
 import type { PaginatedRequest, PaginatedResponse } from "./pagination.js";
@@ -117,7 +117,7 @@ export interface AuthorizedDownload {
 }
 
 export interface MarketplaceSource {
-  readonly id:    string;        // "nodevo.io" | a self-hosted/community source
+  readonly id:    string;        // "xentium.org" | a self-hosted/community source
   readonly label: string;
 
   /** Store the server-side account credential (auth code → token in settings). */

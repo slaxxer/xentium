@@ -7,8 +7,8 @@ Xentium has exactly two kinds of extension, and no third:
 
 | | Contains | Trust | Distribution |
 |---|---|---|---|
-| **Theme** | Layout documents + tokens + assets. **Data only.** | None needed — validated against a schema | `.nvtheme` ([format](./theme-packages.md)) |
-| **Plugin** | Code: blocks, routes, server logic, migrations | Trusted, reviewed | `.nvplugin` |
+| **Theme** | Layout documents + tokens + assets. **Data only.** | None needed — validated against a schema | `.xttheme` ([format](./theme-packages.md)) |
+| **Plugin** | Code: blocks, routes, server logic, migrations | Trusted, reviewed | `.xtplugin` |
 
 A theme can never execute code. So "I need a component the catalogue doesn't have"
 is answered by **ship a plugin that registers a block** — which also gets you
@@ -175,7 +175,7 @@ endpoint behind it from answering. If your block exposes something sensitive, ga
 the **endpoint** — `requirePermission` on your route, not an admin's layout choice.
 
 The editor shows a restricted block regardless of whether the admin is in the
-audience, marked `data-nv-restricted` in the preview and flagged in the tree, so
+audience, marked `data-xt-restricted` in the preview and flagged in the tree, so
 they never lose the ability to select it and undo.
 
 ## Style variants apply to your block for free
@@ -210,7 +210,7 @@ paints nothing:
 
 Do **not** add colour props to your block's schema. The Layout Editor's Style panel edits
 the variant's tokens, so a colour set there stays consistent across every block using that
-variant and travels inside a `.nvtheme`; a prop would be a per-block literal that breaks
+variant and travels inside a `.xttheme`; a prop would be a per-block literal that breaks
 dark mode and cannot be themed.
 
 ## Icons in your block
@@ -268,8 +268,8 @@ custom CSS. Like the variant it rides the `display: contents` wrapper, so your b
 gets it without registering anything, without a prop, and without the class ever landing
 on an element you position.
 
-Your block also gets **`nv-b--<your-type>`** on that wrapper, automatically. A dotted type
-is flattened for the selector, so `myplugin.stats` is `.nv-b--myplugin-stats`. That is the
+Your block also gets **`xt-b--<your-type>`** on that wrapper, automatically. A dotted type
+is flattened for the selector, so `myplugin.stats` is `.xt-b--myplugin-stats`. That is the
 hook a downloaded theme uses to skin your block, since a theme cannot add a handle to
 layouts it does not control.
 
@@ -278,7 +278,7 @@ Three consequences for you:
 - **Do not add a `className` prop of your own.** It already exists one level up, on the
   node, and a second one would be a permanent per-block surface duplicating it.
 - **Give your block's real elements stable, prefixed classes**, because that is what a
-  theme ends up selecting — `.nv-b--myplugin-stats .myplugin-stats__count`. Treat those
+  theme ends up selecting — `.xt-b--myplugin-stats .myplugin-stats__count`. Treat those
   class names as part of your block's public contract: renaming one breaks a theme exactly
   the way renaming a prop would. So is your block's TYPE, now that the class is derived
   from it.
@@ -332,7 +332,7 @@ adds nothing it could not do. What it adds is an admin's ability to arrange it.
 ### Declare it once, register it twice
 
 The server's registry decides what may be **saved** (it validates every draft and
-every `.nvtheme` import against your declared regions); the browser's decides what
+every `.xttheme` import against your declared regions); the browser's decides what
 **renders**. Share one declaration so the two cannot disagree:
 
 ```ts
@@ -403,7 +403,7 @@ The same rule as a block, one level up. The template is deregistered, so the edi
 stops offering it and the public payload stops carrying it — but **the stored
 documents are kept**. Re-enabling restores the admin's arrangement in place.
 
-A `.nvtheme` that ships your template is skipped on a site without your plugin
+A `.xttheme` that ships your template is skipped on a site without your plugin
 (there are no declared regions to validate it against) and reported in the import's
 `unknownTemplates`, so the admin can enable your plugin and re-import.
 

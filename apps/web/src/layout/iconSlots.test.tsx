@@ -22,7 +22,7 @@ vi.mock("./previewMode", () => ({ isEditorPreview: () => true }));
 afterEach(cleanup);
 
 const slots = (c: HTMLElement) =>
-  [...c.querySelectorAll("[data-nv-icon]")].map((e) => (e as HTMLElement).dataset.nvIcon);
+  [...c.querySelectorAll("[data-xt-icon]")].map((e) => (e as HTMLElement).dataset.xtIcon);
 
 function Block({ overrides }: { overrides?: Record<string, string> }) {
   return (
@@ -95,7 +95,7 @@ describe("outside a block", () => {
   /** Core chrome that is not part of any layout draws exactly as it always did. */
   it("marks nothing and overrides nothing", () => {
     const { container } = render(<FontAwesomeIcon icon={faGear} />);
-    expect(container.querySelector("[data-nv-icon]")).toBeNull();
+    expect(container.querySelector("[data-xt-icon]")).toBeNull();
     expect(container.querySelector("svg")).toBeTruthy();
   });
 });

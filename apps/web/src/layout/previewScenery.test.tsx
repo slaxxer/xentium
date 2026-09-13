@@ -38,17 +38,17 @@ describe("the open document", () => {
         document={doc("chrome.header", { header: [heading("logo")] })}
       />,
     );
-    const block = container.querySelector('[data-nv-block="logo"]')!;
+    const block = container.querySelector('[data-xt-block="logo"]')!;
     expect(block).not.toBeNull();
-    expect(block.getAttribute("data-nv-template")).toBe("chrome.header");
-    expect(block.getAttribute("data-nv-drag")).toBe("1");
+    expect(block.getAttribute("data-xt-template")).toBe("chrome.header");
+    expect(block.getAttribute("data-xt-drag")).toBe("1");
   });
 
   it("draws a placeholder for its own empty region", () => {
     const { container } = render(
       <LayoutRenderer templateKey="chrome.header" document={doc("chrome.header", { header: [] })} />,
     );
-    expect(container.querySelector("[data-nv-empty]")).not.toBeNull();
+    expect(container.querySelector("[data-xt-empty]")).not.toBeNull();
   });
 });
 
@@ -57,23 +57,23 @@ describe("the rest of the page", () => {
     // This is what makes clicking the masthead — or anything else on the page — open
     // the document that owns it.
     const { container } = render(<LayoutRenderer templateKey="home" document={page()} />);
-    const block = container.querySelector('[data-nv-block="feed"]')!;
+    const block = container.querySelector('[data-xt-block="feed"]')!;
     expect(block).not.toBeNull();
-    expect(block.getAttribute("data-nv-template")).toBe("home");
+    expect(block.getAttribute("data-xt-template")).toBe("home");
   });
 
   it("is NOT draggable — a move rewrites the tree the editor is holding", () => {
     const { container } = render(<LayoutRenderer templateKey="home" document={page()} />);
-    expect(container.querySelector('[data-nv-block="feed"]')!.getAttribute("data-nv-drag")).toBeNull();
+    expect(container.querySelector('[data-xt-block="feed"]')!.getAttribute("data-xt-drag")).toBeNull();
   });
 
   it("offers no drop target for a region the open template does not have", () => {
     const { container } = render(<LayoutRenderer templateKey="home" document={page()} />);
-    expect(container.querySelector("[data-nv-empty]")).toBeNull();
+    expect(container.querySelector("[data-xt-empty]")).toBeNull();
   });
 
   it("stamps the owning document on the region too, so a hover resolves the same way", () => {
     const { container } = render(<LayoutRenderer templateKey="home" document={page()} />);
-    expect(container.querySelector(".nv-region--main")!.getAttribute("data-nv-template")).toBe("home");
+    expect(container.querySelector(".xt-region--main")!.getAttribute("data-xt-template")).toBe("home");
   });
 });

@@ -102,7 +102,7 @@ function BadgeVisibility() {
   );
 }
 
-const LS_OTHERS_KEY = "nv_pref_others";
+const LS_OTHERS_KEY = "xt_pref_others";
 
 function loadOthers(): OtherToggles {
   const fallback = { reduceMotion: false, compactView: false, autoPlayMedia: true };

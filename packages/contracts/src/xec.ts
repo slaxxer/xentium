@@ -65,7 +65,7 @@ export const XEC = {
   PLUGIN_ALREADY_INSTALLED: "XEC-PLUGIN-2003",
   PLUGIN_NOT_FOUND: "XEC-PLUGIN-2004",         // update/manage a plugin that isn't installed
   PLUGIN_VERSION_NOT_NEWER: "XEC-PLUGIN-2005", // update package version ≤ installed (forward-only)
-  PLUGIN_UPLOAD_DISABLED: "XEC-PLUGIN-2006",   // manual .nvplugin upload is switched off by the admin
+  PLUGIN_UPLOAD_DISABLED: "XEC-PLUGIN-2006",   // manual .xtplugin upload is switched off by the admin
   PLUGIN_INVALID_MIGRATION: "XEC-PLUGIN-2010",
   PLUGIN_MIGRATION_MISSING: "XEC-PLUGIN-2011", // up/down migration file absent from the package
   PLUGIN_MIGRATION_CHECKSUM: "XEC-PLUGIN-2012",// applied migration modified since install
@@ -106,7 +106,7 @@ export const XEC = {
 
   // Core
   CORE_THEME_NOT_FOUND: "XEC-CORE-8001",
-  // An uploaded `.nvtheme` failed validation. Deliberately NOT given a localized
+  // An uploaded `.xttheme` failed validation. Deliberately NOT given a localized
   // string in the `errors` namespace: the server composes a message naming the file
   // and the rule, and `apiErrorMessage` prefers a localized string when one exists —
   // so a generic code here would replace the only useful part of the response.

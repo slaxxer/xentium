@@ -1,7 +1,7 @@
 /**
  * A stored footer's pieces move INSIDE the `footer` block.
  *
- * The footer's band used to be a hardcoded `<div class="nv-foot">` in `SiteFooter`,
+ * The footer's band used to be a hardcoded `<div class="xt-foot">` in `SiteFooter`,
  * with `chrome.footer` holding the four pieces as loose leaves. The band is a block
  * now and `SiteFooter` no longer wraps anything, so a document that still keeps its
  * pieces at region level renders them unpainted — and gives an admin who clicks "the

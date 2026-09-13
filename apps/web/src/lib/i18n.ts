@@ -14,7 +14,7 @@ export const SUPPORTED_LOCALES = [
 
 export type LocaleCode = (typeof SUPPORTED_LOCALES)[number]["code"];
 export const LOCALE_CODES = SUPPORTED_LOCALES.map((l) => l.code) as LocaleCode[];
-export const LOCALE_COOKIE = "nv_locale";
+export const LOCALE_COOKIE = "xt_locale";
 
 /** Frontend namespaces (§60.5). `installer` predates the rest. */
 export const NAMESPACES = [
@@ -35,7 +35,7 @@ i18n
     load: "languageOnly",
     // §60.3 resolution chain (client mirror): an authenticated user's
     // preferred_locale is applied imperatively after login (see useAuth);
-    // an explicit device choice lives in the nv_locale cookie; with neither,
+    // an explicit device choice lives in the xt_locale cookie; with neither,
     // the SITE DEFAULT applies (fetched in main.tsx bootstrap from
     // /api/meta/site-locale — it outranks the browser language so an admin's
     // chosen language genuinely takes effect site-wide for new visitors).
@@ -64,7 +64,7 @@ export function setLocale(code: LocaleCode) {
   document.cookie = `${LOCALE_COOKIE}=${code}; path=/; max-age=${365 * 24 * 60 * 60}; samesite=lax`;
 }
 
-/** Whether this device has an explicit language choice (nv_locale cookie). */
+/** Whether this device has an explicit language choice (xt_locale cookie). */
 export function hasExplicitLocale(): boolean {
   return document.cookie.split("; ").some((c) => c.startsWith(`${LOCALE_COOKIE}=`));
 }

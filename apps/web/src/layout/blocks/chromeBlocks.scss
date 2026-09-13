@@ -7,7 +7,7 @@
    site name or a bigger accessibility font pushes the band instead of being
    clipped by it. The background is composed by `sectionBackground()` (image over
    gradient), the same helper `section` uses, so both panels behave identically. */
-.nv-header {
+.xt-header {
   width: 100%;
   display: flex;
   align-items: center;
@@ -18,7 +18,7 @@
     background-repeat: no-repeat;
   }
 
-  /* ⚠ These numbers MATCH `.nv-region` and `.pub-nav__inner` exactly, which is what
+  /* ⚠ These numbers MATCH `.xt-region` and `.pub-nav__inner` exactly, which is what
      puts the masthead logo directly above the navbar's own instead of a few pixels
      off. Changing one without the others is the bug this comment exists to prevent. */
   &__inner {
@@ -33,7 +33,7 @@
   /* A masthead logo is the big one — the nav strip's is the small one. Set here
      rather than on the block, because it is a property of THIS context: the same
      `logo` markup renders at 32px in the navbar. */
-  .pub-nav__logo { --nv-logo-h: 56px; }
+  .pub-nav__logo { --xt-logo-h: 56px; }
 
   .pub-nav__wordmark { font-size: var(--fs-2xl); }
 }
@@ -42,18 +42,18 @@
    The footer is a BLOCK now (`chrome.footer` ships one holding the four pieces),
    so the band it paints lives here beside the header's.
 
-   `.nv-foot` itself keeps its colours in `SiteFooter.scss`, which is also where the
+   `.xt-foot` itself keeps its colours in `SiteFooter.scss`, which is also where the
    rest of the footer's internals are: this file owns only what the BLOCK adds —
    its optional background, its floor, and the line it can switch off. Splitting it
    the other way would move `SCOPE_SELECTOR.footer`'s target away from the styles
    the Style Editor's Footer panel is written against. */
-.nv-foot {
-  /* The band spans the window. `.nv-region--footer` is `display: contents` in
+.xt-foot {
+  /* The band spans the window. `.xt-region--footer` is `display: contents` in
      `AppLayout.scss`, so nothing above this constrains it any more. */
   width: 100%;
 
 
-  /* ⚠ The SAME numbers as `.nv-header__inner`, `.nv-region` and `.pub-nav__inner`.
+  /* ⚠ The SAME numbers as `.xt-header__inner`, `.xt-region` and `.pub-nav__inner`.
      The footer's contents have to line up with the page above them, and the four
      rules are the four places that decides. Changing one without the others is the
      bug the header's own copy of this comment exists to prevent. */

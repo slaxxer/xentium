@@ -27,7 +27,7 @@ export type ScopedTokenSet = { light: ScopedTokens; dark: ScopedTokens };
 // the shape is validated at the door rather than trusted: a value containing `}` would
 // close the block early and everything after it becomes arbitrary CSS. Applies to all
 // three ways in — the Style Editor, the Layout Editor's variant panel, and a
-// `.nvtheme` import.
+// `.xttheme` import.
 
 export const tokenMapSchema = z.record(
   z.string().regex(/^--[\w-]+$/, 'token names must be CSS custom properties'),
@@ -126,7 +126,7 @@ export interface SiteFont {
  * The custom properties the site font sets, for a `:root` block.
  *
  * The family is site-wide — body (`--ff-sans`) AND headings (`--font-display`).
- * The ACP re-pins all four on `body.nv-acp`, which is what keeps the admin panel on
+ * The ACP re-pins all four on `body.xt-acp`, which is what keeps the admin panel on
  * its own type regardless of what the site is set to.
  */
 export function fontRootDecls(font: SiteFont): string[] {

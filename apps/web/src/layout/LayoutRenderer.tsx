@@ -79,7 +79,7 @@ export const useRenderedDocument = (): LayoutDocument | null => useContext(Layou
  * and footer around them, and those are as much part of the page as its body — the
  * masthead band and the navbar ARE the header. So every block stays addressable,
  * whichever document it comes from; clicking one that belongs to another document
- * switches the editor to it (the bridge sends the template along, see `data-nv-template`).
+ * switches the editor to it (the bridge sends the template along, see `data-xt-template`).
  *
  * What this decides is narrower: whose EMPTY REGIONS get a drop target, and whose
  * blocks may be dragged. Both act on the open document's tree, so offering them for
@@ -143,7 +143,7 @@ class BlockBoundary extends Component<BoundaryProps, BoundaryState> {
   render() {
     if (this.state.failed) {
       return isEditorPreview()
-        ? <div className="nv-block-error">Block “{this.props.blockType}” failed to render.</div>
+        ? <div className="xt-block-error">Block “{this.props.blockType}” failed to render.</div>
         : null;
     }
     return this.props.children;
@@ -193,7 +193,7 @@ function RenderNode({
   // re-enabling the plugin restores it exactly where the admin put it.
   if (!def) {
     return isEditorPreview()
-      ? <div className="nv-block-missing">Block “{node.type}” is unavailable.</div>
+      ? <div className="xt-block-missing">Block “{node.type}” is unavailable.</div>
       : null;
   }
 
@@ -243,7 +243,7 @@ function RenderNode({
    * blocks and silently ignored by every plugin block a theme wants to skin, and the
    * uniform target is the whole point of giving custom CSS something to select.
    *
-   * So the handle is styled THROUGH — `.nav-tile > *`, `.nav-tile .nv-image` — since
+   * So the handle is styled THROUGH — `.nav-tile > *`, `.nav-tile .xt-image` — since
    * the wrapper paints nothing. Descendant and `:hover` selectors behave normally,
    * because `:hover` matches an ancestor of the hovered box whether or not that
    * ancestor generates one.
@@ -267,15 +267,15 @@ function RenderNode({
    * `~`. Guarded by `classContract.test.tsx`.
    */
   /*
-   * `nv-block` FIRST — the one class every block wrapper carries, whatever its type.
+   * `xt-block` FIRST — the one class every block wrapper carries, whatever its type.
    *
-   * `nv-b--<type>` names WHICH block this is; `nv-block` says only "a block lives
+   * `xt-b--<type>` names WHICH block this is; `xt-block` says only "a block lives
    * here", which is the question a layout rule asks: a `column` or a rail collapses
    * when nothing inside it drew anything, and that test has to work on the live site.
-   * `data-nv-block` cannot answer it — the renderer stamps that in the EDITOR only,
+   * `data-xt-block` cannot answer it — the renderer stamps that in the EDITOR only,
    * so a rule written against it would collapse every track on the real page.
    */
-  const wrapperClass = ['nv-block', blockTypeClass(node.type), variant, custom]
+  const wrapperClass = ['xt-block', blockTypeClass(node.type), variant, custom]
     .filter(Boolean).join(' ');
 
   /**
@@ -284,47 +284,47 @@ function RenderNode({
    * On the wrapper rather than passed to the block for the same reason `variant` and
    * `className` are: a navbar is exactly where a plugin's block wants to be
    * placeable, and a prop threaded through 52 components would be honoured by core
-   * and ignored by everything else. `navbar`'s CSS reads `[data-nv-align]`.
+   * and ignored by everything else. `navbar`'s CSS reads `[data-xt-align]`.
    *
    * Absent when unset — the attribute is never written empty, so "no alignment" and
    * "aligned to the start" stay the same thing in the DOM as they are in the document.
    */
-  const align = node.align ? { "data-nv-align": node.align } : {};
+  const align = node.align ? { "data-xt-align": node.align } : {};
 
   // In the editor preview each block ALSO needs identity in the DOM so hovering,
   // selecting and dragging can address it — the data attributes below. For EVERY
   // document on screen, not just the open one: the header and footer are part of the
   // page an admin is looking at, and clicking one of their blocks is how you get to
-  // edit it. `data-nv-template` is what lets the bridge say which document to open.
+  // edit it. `data-xt-template` is what lets the bridge say which document to open.
   if (!isEditorPreview()) {
     return <div className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
   }
   return (
     <div
       className={wrapperClass}
-      data-nv-block={node.id}
-      data-nv-type={node.type}
+      data-xt-block={node.id}
+      data-xt-type={node.type}
       {...align}
       // Parentage is stamped rather than derived: a container's real element sits
       // BETWEEN its wrapper and its children's wrappers, so `:scope >` finds
       // nothing and an ancestor walk has to know which elements to skip. A flat
-      // `[data-nv-parent="id"]` query is exact at any depth.
-      data-nv-parent={parentId ?? ""}
-      data-nv-region={region}
+      // `[data-xt-parent="id"]` query is exact at any depth.
+      data-xt-parent={parentId ?? ""}
+      data-xt-region={region}
       // Which DOCUMENT this block lives in. A page's preview also renders the site
       // header and footer, and a click on one of those has to open THAT document
       // rather than address an id the open one does not contain.
-      data-nv-template={doc?.templateKey ?? ""}
+      data-xt-template={doc?.templateKey ?? ""}
       // Dragging moves a block within the tree the editor is holding, so it is
       // offered only for the open document. Selecting is not: that is how you get
       // to the header in the first place.
-      {...(isOpenDocument ? { "data-nv-drag": "1" } : {})}
+      {...(isOpenDocument ? { "data-xt-drag": "1" } : {})}
       // Marks a legal drop parent for the bridge. Only set when the block can
       // actually hold children, so hovering a leaf resolves to its region.
-      {...(def.container ? { "data-nv-container": "1" } : {})}
+      {...(def.container ? { "data-xt-container": "1" } : {})}
       // Shown in the preview even when the audience excludes the admin looking at
       // it, so the flag is how anything downstream can tell it is conditional.
-      {...(restricted ? { "data-nv-restricted": node.visibility!.audience } : {})}
+      {...(restricted ? { "data-xt-restricted": node.visibility!.audience } : {})}
       style={CONTENTS}
     >
       {rendered}
@@ -400,7 +400,7 @@ export function LayoutRegion({
    * an admin could see in the tree, could not see on the page, and had nowhere to
    * click. Every empty region had the same gap; the band just made it obvious.
    *
-   * The placeholder carries `data-nv-region`, so it is already a legal drop target
+   * The placeholder carries `data-xt-region`, so it is already a legal drop target
    * (`DROP_PARENT`), and clicking it asks the editor to open the add-block picker
    * for this region.
    */
@@ -418,18 +418,18 @@ export function LayoutRegion({
         /*
          * The region's OWN modifier as well, and that is not cosmetic.
          *
-         * Without `nv-region--aside` the placeholder does not match
-         * `.nv-body-row > .nv-region--aside`, so it falls back to `flex: 0 1 auto`
+         * Without `xt-region--aside` the placeholder does not match
+         * `.xt-body-row > .xt-region--aside`, so it falls back to `flex: 0 1 auto`
          * and an EMPTY rail took half the row: the body was squeezed to 583px of a
-         * 1240px row, home's three tracks no longer fitted, and `.nv-columns`
+         * 1240px row, home's three tracks no longer fitted, and `.xt-columns`
          * wrapped. The editor showed a collapsed page that the live site never had —
          * because on the site an empty region renders nothing at all, so only the
          * preview could be wrong.
          */
-        className={`nv-region nv-region--${region} nv-region--empty`}
-        data-nv-region={region}
-        data-nv-template={doc.templateKey}
-        data-nv-empty={region}
+        className={`xt-region xt-region--${region} xt-region--empty`}
+        data-xt-region={region}
+        data-xt-template={doc.templateKey}
+        data-xt-empty={region}
       >
         <span>{humaniseRegion(region)}</span>
       </Empty>
@@ -443,9 +443,9 @@ export function LayoutRegion({
   return (
     <LayoutDocumentContext.Provider value={doc}>
       <Tag
-        className={`nv-region nv-region--${region}`}
-        data-nv-region={region}
-        data-nv-template={doc.templateKey}
+        className={`xt-region xt-region--${region}`}
+        data-xt-region={region}
+        data-xt-template={doc.templateKey}
       >
         {nodes.map((node) => (
           <RenderNode
@@ -513,7 +513,7 @@ export function LayoutRenderer({ templateKey, context, document: raw, regions }:
         if (row && region === "aside") return null;   // rendered inside the row
         if (row && region === "main") {
           return (
-            <div className="nv-body-row" key="body-row">
+            <div className="xt-body-row" key="body-row">
               <LayoutRegion document={doc} region="main" context={context} />
               <LayoutRegion document={doc} region="aside" context={context} />
             </div>

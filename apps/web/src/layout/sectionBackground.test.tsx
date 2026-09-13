@@ -7,7 +7,7 @@
  * Two things are worth pinning. The COMPOSITION order, because CSS paints the first
  * layer on top and getting it backwards hides the image behind the gradient with no
  * error anywhere. And the SCHEMA's refusals, because a document is untrusted input
- * twice over: an admin types a colour, and a purchased `.nvtheme` ships others.
+ * twice over: an admin types a colour, and a purchased `.xttheme` ships others.
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { cleanup, render } from "@testing-library/react";
@@ -98,7 +98,7 @@ describe("what the schema admits", () => {
    * again. Fold this into a nested object and it silently stops being collected, and
    * every theme's masthead arrives as a path into the exporting machine's disk.
    */
-  it("declares the image as an ASSET, so it travels inside a .nvtheme", () => {
+  it("declares the image as an ASSET, so it travels inside a .xttheme", () => {
     expect(assetPropsOf("section")).toContain("backgroundImage");
   });
 });
@@ -128,7 +128,7 @@ describe("section height and the content column", () => {
       }] },
     } as never;
     const { container } = render(<LayoutRegion document={doc} region="main" />);
-    return container.querySelector("section.nv-section")!;
+    return container.querySelector("section.xt-section")!;
   };
 
   /**
@@ -139,13 +139,13 @@ describe("section height and the content column", () => {
   it("always renders the inner content column, whatever the width", () => {
     for (const width of ["full", "wide", "normal", "narrow"]) {
       cleanup();
-      expect(renderSection({ width }).querySelector(".nv-section__inner")).not.toBeNull();
+      expect(renderSection({ width }).querySelector(".xt-section__inner")).not.toBeNull();
     }
   });
 
   it("takes a minimum height and marks itself tall, so its content is centred", () => {
     const el = renderSection({ minHeight: 250 });
-    expect(el.classList.contains("nv-section--tall")).toBe(true);
+    expect(el.classList.contains("xt-section--tall")).toBe(true);
     expect((el as HTMLElement).style.minHeight).toBe("250px");
   });
 
@@ -153,7 +153,7 @@ describe("section height and the content column", () => {
    *  untouched section on the site would become a flex container. */
   it("emits nothing at all for the default height", () => {
     const el = renderSection({ minHeight: 0 });
-    expect(el.classList.contains("nv-section--tall")).toBe(false);
+    expect(el.classList.contains("xt-section--tall")).toBe(false);
     expect((el as HTMLElement).style.minHeight).toBe("");
   });
 

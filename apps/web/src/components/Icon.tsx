@@ -59,7 +59,7 @@ export function FontAwesomeIcon(props: FontAwesomeIconProps) {
   // The editor needs to address this exact icon; the live site does not, and stamping
   // a data attribute on every icon of a real page would be noise.
   const mark = isEditorPreview() && slot
-    ? { "data-nv-icon": `${slotScope!.blockId}::${slot.key}` }
+    ? { "data-xt-icon": `${slotScope!.blockId}::${slot.key}` }
     : {};
 
   /**

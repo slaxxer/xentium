@@ -28,7 +28,7 @@ import { XEC, type XecCode } from "../../shared/errors/xec.js";
 import { getSiteId } from "./site-identity.js";
 
 /** The one marketplace source id core ships with. */
-export const SOURCE_ID = "nodevo.io";
+export const SOURCE_ID = "xentium.org";
 
 // Settings keys for the server-side connection. NONE of these are ever exposed
 // to the browser — the ACP asks the API about the connection, never for it.

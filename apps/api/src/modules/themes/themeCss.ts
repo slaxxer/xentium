@@ -1,5 +1,5 @@
 /**
- * Custom CSS that arrives inside a `.nvtheme`.
+ * Custom CSS that arrives inside a `.xttheme`.
  *
  * The console's CSS is written by an admin — the same person who can change anything
  * else about the site — so it is checked for parseability and otherwise left alone. A

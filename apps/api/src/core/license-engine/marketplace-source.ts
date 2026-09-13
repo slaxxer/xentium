@@ -448,6 +448,6 @@ class XentiumMarketplaceSource implements MarketplaceSource {
 }
 
 // Concrete type (not the MarketplaceSource interface) so callers can reach the
-// nodevo.io-specific extras — the paid-id cache and the ownership listing —
+// xentium.org-specific extras — the paid-id cache and the ownership listing —
 // which aren't part of the generic source contract.
 export const marketplaceSource = new XentiumMarketplaceSource();

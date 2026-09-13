@@ -26,22 +26,22 @@ const row = (id: string, cols: BlockNode[], gap = "md"): BlockNode =>
 const doc = (nodes: BlockNode[]): LayoutDocument =>
   ({ templateKey: "home", schemaVersion: 1, regions: { main: nodes } });
 
-const gridClass = () => (document.querySelector(".nv-columns") as HTMLElement).className;
+const gridClass = () => (document.querySelector(".xt-columns") as HTMLElement).className;
 
 describe("columns — tracks follow the children", () => {
   it("renders two tracks for two columns", () => {
     render(<LayoutRegion document={doc([row("r", [col("a"), col("b")])])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--2");
+    expect(gridClass()).toContain("xt-columns--2");
   });
 
   it("renders three tracks for three columns", () => {
     render(<LayoutRegion document={doc([row("r", [col("a"), col("b"), col("c")])])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--3");
+    expect(gridClass()).toContain("xt-columns--3");
   });
 
   it("renders four tracks for four columns", () => {
     render(<LayoutRegion document={doc([row("r", [col("a"), col("b"), col("c"), col("d")])])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--4");
+    expect(gridClass()).toContain("xt-columns--4");
   });
 
   it("clamps beyond the tracks CSS defines, instead of emitting a dead class", () => {
@@ -49,17 +49,17 @@ describe("columns — tracks follow the children", () => {
     // the component rather than trusted to the editor.
     const many = ["a", "b", "c", "d", "e", "f"].map((id) => col(id));
     render(<LayoutRegion document={doc([row("r", many)])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--4");
+    expect(gridClass()).toContain("xt-columns--4");
   });
 
   it("stays a one-track grid when emptied, rather than collapsing to nothing", () => {
     render(<LayoutRegion document={doc([{ id: "r", type: "columns", props: { gap: "md" } }])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--1");
+    expect(gridClass()).toContain("xt-columns--1");
   });
 
   it("keeps gap an admin choice", () => {
     render(<LayoutRegion document={doc([row("r", [col("a"), col("b")], "lg")])} region="main" />);
-    expect(gridClass()).toContain("nv-columns--gap-lg");
+    expect(gridClass()).toContain("xt-columns--gap-lg");
   });
 
   it("renders each column as a track holding its own children", () => {
@@ -67,7 +67,7 @@ describe("columns — tracks follow the children", () => {
       col("a", [{ id: "h", type: "heading", props: { text: "Inside", level: 2 } }]),
       col("b"),
     ])])} region="main" />);
-    const tracks = document.querySelectorAll(".nv-column");
+    const tracks = document.querySelectorAll(".xt-column");
     expect(tracks).toHaveLength(2);
     expect(tracks[0]!.textContent).toContain("Inside");
     expect(tracks[1]!.textContent).toBe("");
@@ -79,9 +79,9 @@ describe("section", () => {
     render(<LayoutRegion document={doc([
       { id: "s", type: "section", props: { width: "narrow", padding: "lg" }, children: [] },
     ])} region="main" />);
-    const el = document.querySelector(".nv-section") as HTMLElement;
-    expect(el.className).toContain("nv-section--narrow");
-    expect(el.className).toContain("nv-section--pad-lg");
+    const el = document.querySelector(".xt-section") as HTMLElement;
+    expect(el.className).toContain("xt-section--narrow");
+    expect(el.className).toContain("xt-section--pad-lg");
     expect(el.style.cssText).toBe("");
   });
 
@@ -90,7 +90,7 @@ describe("section", () => {
       id: "s", type: "section", props: { width: "normal", padding: "md" },
       children: [{ id: "h", type: "heading", props: { text: "Nested", level: 3 } }],
     }])} region="main" />);
-    const section = document.querySelector(".nv-section") as HTMLElement;
+    const section = document.querySelector(".xt-section") as HTMLElement;
     expect(section.textContent).toContain("Nested");
     expect(section.querySelector("h3")).toBeTruthy();
   });
