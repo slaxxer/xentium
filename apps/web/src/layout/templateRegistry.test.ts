@@ -23,7 +23,7 @@ import {
   templateKeys,
 } from "@xentium/contracts";
 
-const PLUGIN = "nodevo-testplug";
+const PLUGIN = "xentium-testplug";
 
 /** A minimal valid declaration; each test overrides the part it is about. */
 const decl = (over: Record<string, unknown> = {}) => ({
@@ -115,7 +115,7 @@ describe("what a plugin may register", () => {
   it("REFUSES another plugin's template key", () => {
     registerTemplate(decl());
     expect(() => registerTemplate(decl({ pluginId: "other-plugin" })))
-      .toThrow(/already registered by nodevo-testplug/);
+      .toThrow(/already registered by xentium-testplug/);
   });
 
   it("ALLOWS a plugin to re-register its own template — every enable does", () => {

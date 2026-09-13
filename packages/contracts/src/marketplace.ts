@@ -39,7 +39,7 @@ export interface MarketplaceListing {
    * this and half of it did not appear" when the theme was just purchased. These
    * let the ACP say so BEFORE the money.
    *
-   * ⚠ Types and template keys, NOT plugin ids: a plugin's id (`nodevo-forum`) and
+   * ⚠ Types and template keys, NOT plugin ids: a plugin's id (`xentium-forum`) and
    * its block namespace (`forum.`) are deliberately different strings, and the
    * package carries neither the id nor the mapping. Only an instance that HAS the
    * plugin can resolve one to the other — which is exactly the instance that does

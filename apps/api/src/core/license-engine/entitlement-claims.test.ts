@@ -64,7 +64,7 @@ describe("entitlement claims", () => {
       id: "lic_1",
       entitlementJwt: await issue([
         { id: "plugin.layout-blocks-pro", updatesUntil: 1813365624 },
-        { id: "plugin.nodevo-messaging" },
+        { id: "plugin.xentium-messaging" },
       ]),
       activatedAt: new Date(),
       refreshAfter: new Date(),
@@ -72,7 +72,7 @@ describe("entitlement claims", () => {
     };
 
     await expect(getEntitlementStatus("layout-blocks-pro")).resolves.toMatchObject({ state: "valid" });
-    await expect(getEntitlementStatus("nodevo-messaging")).resolves.toMatchObject({ state: "valid" });
+    await expect(getEntitlementStatus("xentium-messaging")).resolves.toMatchObject({ state: "valid" });
   });
 
   it("still reports missing for a plugin no grant covers", async () => {
@@ -84,7 +84,7 @@ describe("entitlement claims", () => {
       domain: "kern.studio",
     };
 
-    await expect(getEntitlementStatus("nodevo-analytics")).resolves.toMatchObject({ state: "missing" });
+    await expect(getEntitlementStatus("xentium-analytics")).resolves.toMatchObject({ state: "missing" });
   });
 
   it("does not match a grant by prefix or substring", async () => {

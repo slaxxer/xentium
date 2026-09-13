@@ -33,7 +33,7 @@ const TAB  = "testplug.tab";
 
 beforeEach(() => {
   // Register as a plugin would, so ownership is recorded the same way.
-  slotRegistry.registerPluginMeta({ pluginId: "nodevo-testplug" } as never);
+  slotRegistry.registerPluginMeta({ pluginId: "xentium-testplug" } as never);
   slotRegistry.registerHeaderWidget({ id: BELL, component: () => <i className="bell" /> });
   slotRegistry.registerLayoutWidget({
     id: RAIL,
@@ -53,8 +53,8 @@ afterEach(() => {
   // BOTH registries: `slotRegistry` is what the aggregate outlets iterate, so leaving
   // registrations behind would stack duplicate widgets across tests and make the
   // de-duplication assertions below lie.
-  slotRegistry.deregister("nodevo-testplug");
-  deregisterBlocksFor("nodevo-testplug");
+  slotRegistry.deregister("xentium-testplug");
+  deregisterBlocksFor("xentium-testplug");
 });
 
 describe("a block is derived per contribution", () => {
@@ -106,13 +106,13 @@ describe("scoping", () => {
 
 describe("ownership survives, and so does the admin's document", () => {
   it("stamps the contributing plugin", () => {
-    expect(getBlock(slotBlockType("headerWidget", BELL))!.pluginId).toBe("nodevo-testplug");
+    expect(getBlock(slotBlockType("headerWidget", BELL))!.pluginId).toBe("xentium-testplug");
   });
 
   it("disabling the plugin removes its derived blocks", () => {
     // The node stays in the document — an unknown type is skipped and kept — so
     // re-enabling restores it where the admin put it.
-    deregisterBlocksFor("nodevo-testplug");
+    deregisterBlocksFor("xentium-testplug");
     expect(getBlock(slotBlockType("headerWidget", BELL))).toBeUndefined();
     expect(getBlock(slotBlockType("layoutWidget", RAIL))).toBeUndefined();
     expect(getBlock(slotBlockType("profileTab", TAB))).toBeUndefined();

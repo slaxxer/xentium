@@ -36,7 +36,7 @@ export interface PluginRouter {
 // ── Manifest ─────────────────────────────────────────────────────────────────
 
 export interface PluginManifest {
-  id:               string;        // kebab-case, unique e.g. "nodevo-forum"
+  id:               string;        // kebab-case, unique e.g. "xentium-forum"
   name:             string;
   version:          string;        // semver
   vendor:           string;

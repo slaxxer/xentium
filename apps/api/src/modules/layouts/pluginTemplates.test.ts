@@ -19,7 +19,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { layoutService } from "./layout.service.js";
 
-const PLUGIN = "nodevo-testplug";
+const PLUGIN = "xentium-testplug";
 const KEY = "testplug.index";
 const USER = null as unknown as string; // `updatedById` is nullable; no user needed here
 

@@ -6,13 +6,13 @@ const DEFAULT_PREFIX = "xf_";
 
 /**
  * XenForo 2.x → Xentium adapter (§34, Wave 1). Direct MySQL source; the
- * nodevo-forum plugin must be enabled on the target (hard precondition —
+ * xentium-forum plugin must be enabled on the target (hard precondition —
  * a forum board without the forum plugin would have no content).
  */
 export const xenforoAdapter: MigrateAdapter = {
   name: "xenforo",
   version: "1.0.0-alpha.0",
-  requiredPlugins: ["nodevo-forum"],
+  requiredPlugins: ["xentium-forum"],
 
   async inspect(source: AdapterSource): Promise<MigrationInspection> {
     if (!source.db) {

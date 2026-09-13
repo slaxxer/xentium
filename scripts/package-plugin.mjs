@@ -3,7 +3,7 @@
 // Usage:
 //   node scripts/package-plugin.mjs [pluginDir] [outDir] [--no-build]
 //
-//   pluginDir   plugin source dir (default: plugins/official/nodevo-forum)
+//   pluginDir   plugin source dir (default: plugins/official/xentium-forum)
 //   outDir      output dir        (default: dist/marketplace)
 //   --no-build  skip running the plugin's build (use existing dist output)
 //
@@ -45,7 +45,7 @@ function collectFiles(dir, baseDir, out = []) {
 function main() {
   const args = process.argv.slice(2).filter((a) => !a.startsWith("--"));
   const noBuild = process.argv.includes("--no-build");
-  const pluginDir = resolveArg(args[0], "plugins/official/nodevo-forum");
+  const pluginDir = resolveArg(args[0], "plugins/official/xentium-forum");
   const outDir = resolveArg(args[1], "dist/marketplace");
 
   const manifestPath = path.join(pluginDir, "manifest.json");

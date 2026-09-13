@@ -1,4 +1,4 @@
-name: nodevo-prod
+name: xentium-prod
 
 # Production stack: db, redis, one-shot migrate, api, worker, web.
 # Build context is the repo root; run from the repo root, e.g.:

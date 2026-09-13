@@ -74,7 +74,7 @@ describe("absent is not the same answer as empty", () => {
 
 describe("what it refuses to guess", () => {
   /**
-   * A plugin's id (`nodevo-forum`) and its block namespace (`forum.`) are
+   * A plugin's id (`xentium-forum`) and its block namespace (`forum.`) are
    * different strings on purpose — `BlockDefinition.pluginId` exists precisely
    * because one cannot be derived from the other. The mapping lives inside the
    * plugin's own registration, which a site missing that plugin does not have,
@@ -83,7 +83,7 @@ describe("what it refuses to guess", () => {
   it("reports the type, never an invented plugin id", () => {
     const gaps = themeGaps({ usesTemplates: [], usesBlocks: ["forum.recentThreads"] });
     expect(gaps!.blocks).toEqual(["forum.recentThreads"]);
-    expect(JSON.stringify(gaps)).not.toContain("nodevo-forum");
+    expect(JSON.stringify(gaps)).not.toContain("xentium-forum");
   });
 
   it("does not credit a namespace for a block it does not actually have", () => {

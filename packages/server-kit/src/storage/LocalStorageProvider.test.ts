@@ -16,7 +16,7 @@ let base: string;
 let storage: LocalStorageProvider;
 
 beforeEach(async () => {
-  base = await fs.mkdtemp(path.join(os.tmpdir(), "nodevo-storage-"));
+  base = await fs.mkdtemp(path.join(os.tmpdir(), "xentium-storage-"));
   storage = new LocalStorageProvider({ baseDir: base, allowedSubdirs: ["avatars", "themes"] });
 });
 

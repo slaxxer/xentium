@@ -137,7 +137,7 @@ echo "JWT_SECRET=$(openssl rand -hex 32)"
 
 # DUMMY_ARGON2_HASH (any valid argon2 hash works)
 pnpm --filter @xentium/api exec node --input-type=commonjs \
-  -e "require('argon2').hash('nodevo-dummy').then(h=>console.log('DUMMY_ARGON2_HASH='+h))"
+  -e "require('argon2').hash('xentium-dummy').then(h=>console.log('DUMMY_ARGON2_HASH='+h))"
 ```
 
 A complete dev `.env`:
@@ -693,7 +693,7 @@ Plugins ship as a **`.nvplugin`** archive (a ZIP of the manifest, compiled `serv
 
 ```bash
 node scripts/package-plugin.mjs [pluginDir] [outDir]
-# default: plugins/official/nodevo-forum → dist/marketplace/
+# default: plugins/official/xentium-forum → dist/marketplace/
 ```
 
 The host plugin engine extracts the archive to a temp dir (with zip-slip protection), validates the manifest and DDL-only migrations, runs them transactionally, then registers and enables the plugin. **Install and enable are always separate operations** — enabling activates routes/registrations; disabling stops them and preserves data.
@@ -726,8 +726,8 @@ Xentium ships **free, open-source migration tooling** as a standalone CLI — de
 | Adapter | Source | Status |
 |---|---|---|
 | `@xentium/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
-| `@xentium/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `nodevo-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
-| `@xentium/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `nodevo-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
+| `@xentium/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `xentium-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
+| `@xentium/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
 | vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
 
 ### Running a migration
