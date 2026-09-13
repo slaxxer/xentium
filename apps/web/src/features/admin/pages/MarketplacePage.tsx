@@ -39,7 +39,7 @@ interface MarketplacePlugin {
    *  daily, so it does not. */
   owned?:          boolean;
   /** A theme's dependency footprint, read off the package at ingest. See
-   *  `MarketplaceListing` in @nodevo/contracts. */
+   *  `MarketplaceListing` in @xentium/contracts. */
   usesTemplates?:  string[];
   usesBlocks?:     string[];
   /** Pages the MARKETPLACE has rendered of this theme, and where they live.

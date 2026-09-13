@@ -8,7 +8,7 @@ WORKDIR /app
 ENV CI=true
 COPY . .
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @nodevo/web build
+RUN pnpm --filter @xentium/web build
 
 FROM nginx:1.27-alpine AS runner
 COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf

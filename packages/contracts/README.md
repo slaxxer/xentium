@@ -1,4 +1,4 @@
-# @nodevo/contracts
+# @xentium/contracts
 
 **Shared contracts for the Xentium framework.**
 

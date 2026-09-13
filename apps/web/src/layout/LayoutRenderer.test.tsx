@@ -21,7 +21,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 import { cleanup, render } from "@testing-library/react";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { authStore } from "../lib/authStore";
 import { LayoutRegion, LayoutRenderer } from "./LayoutRenderer";
 import { setPreviewAudience } from "./useLayout";

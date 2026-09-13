@@ -2,7 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { inviteService } from "./invite.service.js";
 
 export const inviteRouter: Router = Router();

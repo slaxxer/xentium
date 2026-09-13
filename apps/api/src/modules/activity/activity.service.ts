@@ -1,6 +1,6 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 
 export interface ActivityEntry {
   category: "page_visit" | "acp_action";

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
-import type { ExtractResult, ImportedComment, ImportError } from "@nodevo/migrate-core";
+import type { ExtractResult, ImportedComment, ImportError } from "@xentium/migrate-core";
 
 /**
  * WXR (WordPress eXtended RSS) extractor. Consumes the export *file* — no

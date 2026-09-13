@@ -91,7 +91,7 @@ export function assertDisposableDatabase(url = process.env.DATABASE_URL): void {
     `Refusing to wipe database "${name ?? "<unknown>"}" — it is not a test database.\n\n` +
     `The API suite truncates every table, so it only runs against a database whose\n` +
     `name ends in "${TEST_DB_SUFFIX}". This normally happens automatically:\n` +
-    `\`pnpm --filter @nodevo/api test\` derives <yourdb>${TEST_DB_SUFFIX}, creates it if\n` +
+    `\`pnpm --filter @xentium/api test\` derives <yourdb>${TEST_DB_SUFFIX}, creates it if\n` +
     `missing, and migrates it.\n\n` +
     `If you are running vitest in a way that bypasses that setup, either set\n` +
     `TEST_DATABASE_URL to a throwaway database, or — if you genuinely mean to destroy\n` +

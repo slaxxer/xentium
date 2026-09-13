@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { TOKEN_REGISTRY, HEARTH_DEFAULT_TOKENS } from "@nodevo/contracts";
+import { TOKEN_REGISTRY, HEARTH_DEFAULT_TOKENS } from "@xentium/contracts";
 import { SECTIONS, BOARD, SCOPE_OPTIONS, PALETTE_ROWS, TEXT_ROWS, FEEDBACK_ROWS, tokenLabel } from "./styleTokens";
 import { BASE_FALLBACK, previewOverlayRules } from "./StyleEditorPage";
 

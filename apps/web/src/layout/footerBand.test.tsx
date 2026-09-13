@@ -18,7 +18,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   DEFAULT_LAYOUTS, SCOPE_SELECTOR,
   type BlockNode, type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
 import "./blocks/coreBlocks";
 import "./blocks/chromeBlocks";

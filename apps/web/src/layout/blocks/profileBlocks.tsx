@@ -35,7 +35,7 @@ import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { Username } from "../../components/Username";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { registerBlock, type BlockProps } from "../blockRegistry";

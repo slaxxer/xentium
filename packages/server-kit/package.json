@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/server-kit",
+  "name": "@xentium/server-kit",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,8 +16,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*"
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*"
   },
   "peerDependencies": {
     "express": "catalog:",
@@ -27,7 +27,7 @@
     "rate-limit-redis": "^5.0.0"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "@types/multer": "^2",
     "express": "catalog:",

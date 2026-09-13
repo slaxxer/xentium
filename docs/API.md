@@ -46,7 +46,7 @@ the installer. After install, `/api/install/*` returns `410 Gone`.
 
 ### Pagination
 
-List endpoints accept the standard contract (`@nodevo/contracts`):
+List endpoints accept the standard contract (`@xentium/contracts`):
 
 ```
 ?page=1        1-based, default 1
@@ -300,7 +300,7 @@ emitting a class nothing defines blanks every icon on the page). See `docs/icon-
 ### Theming tokens & scoped CSS
 
 All visual values are CSS custom properties resolved at runtime — three tiers, defined in
-`apps/web/src/styles/tokens.scss`, with the contract in `@nodevo/contracts` → `TOKEN_REGISTRY`:
+`apps/web/src/styles/tokens.scss`, with the contract in `@xentium/contracts` → `TOKEN_REGISTRY`:
 
 | Tier | Prefix | Examples |
 |---|---|---|

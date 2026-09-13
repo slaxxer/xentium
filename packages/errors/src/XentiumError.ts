@@ -1,4 +1,4 @@
-import type { NecCode } from "@nodevo/contracts";
+import type { NecCode } from "@xentium/contracts";
 
 /**
  * The one error type every Xentium application throws.

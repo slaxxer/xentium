@@ -7,7 +7,7 @@
  * Appearance area, not two.
  *
  * Absence is a valid, expected state. A template with no row renders
- * DEFAULT_LAYOUTS from @nodevo/contracts, so a fresh install, a failed
+ * DEFAULT_LAYOUTS from @xentium/contracts, so a fresh install, a failed
  * validation and a reset all converge on the same renderable page.
  *
  * ## Variants
@@ -34,7 +34,7 @@ import {
   type LayoutDraftResponse,
   type LayoutSelector,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";

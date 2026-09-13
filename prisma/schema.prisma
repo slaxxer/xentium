@@ -13,7 +13,7 @@ datasource db {
 
 // One row per migration run (§34): core schema deploys (adapter = "core",
 // written by the installer/runMigrations) AND platform-migration CLI runs
-// (adapter = "wordpress" | "xenforo" | …, written by @nodevo/migrate).
+// (adapter = "wordpress" | "xenforo" | …, written by @xentium/migrate).
 model MigrationRun {
   id          String    @id @default(uuid())
   adapter     String    @default("core")
@@ -1116,7 +1116,7 @@ model ReviewedSecuritySignal {
 // model rather than inventing a second staging path.
 //
 // No row is required: a template with nothing stored renders DEFAULT_LAYOUTS
-// from @nodevo/contracts, which is also what "Reset to default" restores by
+// from @xentium/contracts, which is also what "Reset to default" restores by
 // deleting rows. A template is never without a renderable document.
 model Layout {
   id            String   @id @default(cuid())

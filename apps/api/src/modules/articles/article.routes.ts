@@ -3,7 +3,7 @@ import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { uploadSingle } from "../../shared/middleware/upload.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { articlesController } from "./article.controller.js";
 import { commentsController } from "./comment.controller.js";
 

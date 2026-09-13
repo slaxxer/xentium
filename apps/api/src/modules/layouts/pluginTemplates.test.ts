@@ -14,7 +14,7 @@ import {
   deregisterTemplatesFor,
   registerTemplate,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { layoutService } from "./layout.service.js";

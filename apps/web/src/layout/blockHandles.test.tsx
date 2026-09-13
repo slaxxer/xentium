@@ -18,7 +18,7 @@ import {
   linkHrefSchema,
   type BlockNode,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
 import { updateBlockClassName } from "./blockTree";
 import "./blocks/coreBlocks";

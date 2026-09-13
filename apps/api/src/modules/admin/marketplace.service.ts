@@ -3,7 +3,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { compareSemver } from "../../shared/utils/semver.js";
-import type { ProductKind } from "@nodevo/contracts";
+import type { ProductKind } from "@xentium/contracts";
 import type { MarketplaceListQuery } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceSource } from "../../core/license-engine/marketplace-source.js";
 import { marketplaceWebUrl } from "../../core/license-engine/protocol-client.js";

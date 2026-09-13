@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
 import { Pager } from "../../../components/Pager";
-import type { PaginatedResponse } from "@nodevo/contracts";
+import type { PaginatedResponse } from "@xentium/contracts";
 
 interface ActivityRow {
   id: string;

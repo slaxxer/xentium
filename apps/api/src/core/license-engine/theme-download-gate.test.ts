@@ -23,7 +23,7 @@
  * have.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 const world = {
   freshness:   "fresh" as "fresh" | "stale" | "never",

@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { BADGE_ICON_NAMES } from "@nodevo/contracts";
+import { BADGE_ICON_NAMES } from "@xentium/contracts";
 import { BADGE_ICONS, badgeIcon } from "./badgeIcons";
 
 /**
- * ⚠ The reason this file exists. The curated names live in `@nodevo/contracts` (the
+ * ⚠ The reason this file exists. The curated names live in `@xentium/contracts` (the
  * server validates against them) and the icon definitions live in the web app (the
  * server cannot import a React icon pack). Two lists that must agree, in two
  * packages — exactly the shape that drifts silently, because a name added to one

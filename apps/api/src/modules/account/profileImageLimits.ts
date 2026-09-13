@@ -11,8 +11,8 @@
  * allowing 10 MB cannot get past a 2 MB route limit, because multer has already
  * refused the request before this runs.
  */
-import { XentiumError } from "@nodevo/errors";
-import { NEC } from "@nodevo/contracts";
+import { XentiumError } from "@xentium/errors";
+import { NEC } from "@xentium/contracts";
 import { progressionService } from "../progression/progression.service.js";
 
 export interface ProfileImageCheck {

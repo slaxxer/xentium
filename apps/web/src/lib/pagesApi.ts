@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { PaginatedResponse } from "@nodevo/contracts";
+import type { PaginatedResponse } from "@xentium/contracts";
 
 export type PageStatus = "draft" | "published";
 export type PageVisibility = "public" | "members";

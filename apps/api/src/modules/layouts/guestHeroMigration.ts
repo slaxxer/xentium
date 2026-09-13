@@ -25,7 +25,7 @@ import {
   DEFAULT_VARIANT,
   type BlockNode,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { bustSettingsCache, getSettings } from "../../shared/utils/settings.js";
 import { logger } from "../../infrastructure/logging/logger.js";

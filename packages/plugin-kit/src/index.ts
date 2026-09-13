@@ -1,19 +1,19 @@
 /**
- * @nodevo/plugin-kit — the application-agnostic half of the plugin contract.
+ * @xentium/plugin-kit — the application-agnostic half of the plugin contract.
  *
- * The plugin ENGINE (`@nodevo/plugin-engine`) is framework: it validates
+ * The plugin ENGINE (`@xentium/plugin-engine`) is framework: it validates
  * manifests, runs migrations, mounts routers, and knows nothing about what the
  * host application is for. This package is the matching contract — the shapes a
  * plugin and its host agree on, with nothing in them that assumes a CMS.
  *
  * What is NOT here, and never will be: anything that presumes what the host
  * serves. Search sources, home feeds, progression ladders, layout templates and
- * ACP pages are all Xentium CMS concepts and live in `@nodevo/plugin-sdk`, which
+ * ACP pages are all Xentium CMS concepts and live in `@xentium/plugin-sdk`, which
  * extends everything below.
  *
  * ── Which package should a plugin import? ──────────────────────────────────
  *
- * Almost always `@nodevo/plugin-sdk`. It re-exports this one in full and adds
+ * Almost always `@xentium/plugin-sdk`. It re-exports this one in full and adds
  * the CMS surface, so a Xentium CMS plugin gets everything from a single import.
  *
  * Import THIS package directly only when writing a plugin for a different

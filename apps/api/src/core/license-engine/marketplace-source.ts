@@ -9,7 +9,7 @@
 // instead of to its hostname. The transport lives in protocol-client.ts; this
 // file is only the six conversations we have with it.
 
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@xentium/contracts";
 import type {
   AuthorizedDownload,
   DownloadRequest,
@@ -19,8 +19,8 @@ import type {
   PaginatedRequest,
   PaginatedResponse,
   ProductKind,
-} from "@nodevo/contracts";
-import { NEC } from "@nodevo/contracts";
+} from "@xentium/contracts";
+import { NEC } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";

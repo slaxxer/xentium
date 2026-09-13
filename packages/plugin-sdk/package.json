@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/plugin-sdk",
+  "name": "@xentium/plugin-sdk",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -13,11 +13,11 @@
   },
   "devDependencies": {
     "typescript": "catalog:",
-    "@nodevo/config": "workspace:*"
+    "@xentium/config": "workspace:*"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/plugin-kit": "workspace:*"
+    "@xentium/contracts": "workspace:*",
+    "@xentium/plugin-kit": "workspace:*"
   },
   "description": "The authoring contract for Xentium CMS plugins.",
   "license": "MIT",

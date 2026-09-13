@@ -16,7 +16,7 @@ import { faCheck, faLink } from "@fortawesome/free-solid-svg-icons";
 import {
   COMPOSER_TOOLS, COMPOSER_BLOCKS, currentBlock, type ComposerBlockId,
 } from "./composerTools";
-import type { ComposerToolId, ResolvedComposerTool } from "@nodevo/contracts";
+import type { ComposerToolId, ResolvedComposerTool } from "@xentium/contracts";
 
 /** Escape, or a click anywhere outside, closes it. */
 function useDismiss(onClose: () => void) {

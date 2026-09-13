@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faRotateLeft } from "@fortawesome/free-solid-svg-icons";
-import type { ScopedTokenSet, ScopedTokens } from "@nodevo/contracts";
+import type { ScopedTokenSet, ScopedTokens } from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { refreshTokenCss } from "../../../lib/liveStyle";

@@ -11,7 +11,7 @@ import {
   VARIANT_TOKEN_ROWS,
   type ThemeScope,
   type TokenGroup,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 /** A palette row — a semantic token that is NOT in TOKEN_REGISTRY (it IS the base). */
 export interface ColorRow { l: string; cssVar: string }

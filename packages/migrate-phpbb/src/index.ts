@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@nodevo/migrate-core";
+import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { extractPhpbb, phpbbVersion } from "./extract.js";
 
 const DEFAULT_PREFIX = "phpbb_";

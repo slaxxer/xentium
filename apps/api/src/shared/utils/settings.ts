@@ -1,5 +1,5 @@
 /**
- * The CMS's binding of the framework settings reader (`@nodevo/server-kit`).
+ * The CMS's binding of the framework settings reader (`@xentium/server-kit`).
  *
  * The package owns the TTL cache and the missing-vs-null distinction; this file
  * supplies the one thing it cannot know — that settings live in `ncf_settings`,
@@ -9,7 +9,7 @@
  * converge within the TTL. Reads where staleness is unacceptable use
  * `getFreshSetting`.
  */
-import { createSettings } from "@nodevo/server-kit";
+import { createSettings } from "@xentium/server-kit";
 import { prisma } from "../../infrastructure/db.js";
 
 const settings = createSettings({

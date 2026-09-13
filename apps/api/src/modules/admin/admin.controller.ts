@@ -3,7 +3,7 @@ import { adminService } from "./admin.service.js";
 import { z } from "zod";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { paginatedRequestSchema } from "@nodevo/contracts";
+import { paginatedRequestSchema } from "@xentium/contracts";
 import { marketplaceService } from "./marketplace.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";

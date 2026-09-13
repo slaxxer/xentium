@@ -51,7 +51,7 @@ in `requireAuth`/`optionalAuth`. Bonus: same trick for multer's `detectedExt`
 
 ### 1.3 Pagination is hand-rolled two different ways
 
-- `buildPaginationMeta` exists in `@nodevo/contracts` and is used by ~7 services.
+- `buildPaginationMeta` exists in `@xentium/contracts` and is used by ~7 services.
 - **18 other call sites** hand-roll `{ page, limit, total, totalPages: Math.ceil(total / limit) }`
   (all of `admin.service.ts` and `moderation.service.ts`) — these omit
   `hasPrev`/`hasNext`, so the two shapes are silently divergent.
@@ -74,7 +74,7 @@ export async function paginate<T>(
 ```
 
 Collapses ~15 list methods to one line each and makes `buildPaginationMeta` the
-only meta producer. (Plugins can get the same helper via `@nodevo/sdk` later —
+only meta producer. (Plugins can get the same helper via `@xentium/sdk` later —
 forum/messaging paginate too.)
 
 ### 1.4 The "user reference" DTO is assembled by hand ~37 times
@@ -276,7 +276,7 @@ Pairs naturally with a `useAcpList` hook (page/filter state + queryKey +
 209 raw `api.*` calls live inside feature components; only `pagesApi` /
 `articlesApi` exist as typed modules. Each page re-declares its own response
 interfaces (e.g. `ErrorLogPage`'s local `meta: { page; limit; total; totalPages }`)
-even though `PaginatedResponse<T>` already exists in `@nodevo/contracts`.
+even though `PaginatedResponse<T>` already exists in `@xentium/contracts`.
 
 **Suggestion:** don't boil the ocean — adopt two rules for new/touched code:
 1. Feature-level `api.ts` per slice (the endpoints + types), components import
@@ -319,8 +319,8 @@ badge-glow editor).
 4. **"ACP variants live in the domain module"** rule (§1.5) — this is the one
    that prevents the next `admin.service.ts`.
 5. **New shared helpers land in the right layer**: web-only → `apps/web/lib`;
-   API-only → `apps/api/shared`; plugin-reusable → `@nodevo/sdk` /
-   `@nodevo/ui`; type/shape → `@nodevo/contracts`. Worth a one-liner in
+   API-only → `apps/api/shared`; plugin-reusable → `@xentium/sdk` /
+   `@xentium/ui`; type/shape → `@xentium/contracts`. Worth a one-liner in
    CLAUDE.md so helpers stop being born inside feature files.
 
 ---
@@ -420,7 +420,7 @@ one typed accessor module per blob, and encrypt the token.
   with every one-sided patch.
 - **`semverCompare` exists twice** (NEW): admin.controller.ts:210 and
   plugin-engine.ts:135 — same hand-rolled function. Belongs in `shared/utils` (or
-  `@nodevo/sdk` for plugin reuse).
+  `@xentium/sdk` for plugin reuse).
 - **`timeAgo` grew from 9 to 10 copies** (item 7, *worsening*): the two pages added
   since the audit (`ReviewCasesPage.tsx`, `CasesSection.tsx`) each grew their own
   copy — the missing `lib/time.ts` actively breeds duplicates. Several still

@@ -16,7 +16,7 @@
  *    hardcoded component did, so the shipped defaults are byte-identical to what
  *    the site looked like before the layout system touched it.
  */
-import { blockPropSchemas, blockTypesIn } from "@nodevo/contracts";
+import { blockPropSchemas, blockTypesIn } from "@xentium/contracts";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";

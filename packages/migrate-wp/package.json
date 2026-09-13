@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/migrate-wp",
+  "name": "@xentium/migrate-wp",
   "version": "1.0.0-alpha.1",
   "private": true,
   "description": "WordPress → Xentium migration adapter (§34, Wave 1). Consumes a WXR export file — no WordPress installation or database access needed.",
@@ -14,11 +14,11 @@
     "migrate": "tsx src/run.ts"
   },
   "dependencies": {
-    "@nodevo/migrate-core": "workspace:*",
+    "@xentium/migrate-core": "workspace:*",
     "fast-xml-parser": "^5.3.1"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "tsx": "^4.22.3",
     "typescript": "catalog:",
     "vitest": "catalog:"

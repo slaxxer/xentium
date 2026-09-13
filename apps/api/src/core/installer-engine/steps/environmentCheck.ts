@@ -3,7 +3,7 @@ import { promises as fs } from "node:fs";
 import Redis from "ioredis";
 import { env } from "../../../config/env.js";
 import { prisma } from "../../../infrastructure/db.js";
-import type { EnvironmentCheckDto } from "@nodevo/contracts";
+import type { EnvironmentCheckDto } from "@xentium/contracts";
 
 const MIN_NODE_MAJOR = 20;
 const MIN_FREE_BYTES = 500 * 1024 * 1024;

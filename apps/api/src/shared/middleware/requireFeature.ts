@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { XentiumError } from "../errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { isFeatureEnabled, type FeatureKey } from "../../modules/site/site.service.js";
 
 /** Hard-gates a route group behind a core feature flag. When the feature is

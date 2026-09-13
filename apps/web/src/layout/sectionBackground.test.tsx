@@ -11,7 +11,7 @@
  */
 import { describe, it, expect, afterEach } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import { blockPropSchemas, assetPropsOf, regionsFor, DEFAULT_LAYOUTS, parseLayoutDocument } from "@nodevo/contracts";
+import { blockPropSchemas, assetPropsOf, regionsFor, DEFAULT_LAYOUTS, parseLayoutDocument } from "@xentium/contracts";
 import { sectionBackground } from "./blocks/coreBlocks";
 import { LayoutRegion } from "./LayoutRenderer";
 

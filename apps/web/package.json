@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/web",
+  "name": "@xentium/web",
   "version": "1.0.0-alpha.1",
   "private": true,
   "type": "module",
@@ -22,9 +22,9 @@
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/react-fontawesome": "^3.3.1",
     "@hookform/resolvers": "catalog:",
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/sdk": "workspace:*",
-    "@nodevo/ui": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/sdk": "workspace:*",
+    "@xentium/ui": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "@tiptap/extension-color": "^3.23.6",
     "@tiptap/extension-highlight": "^3.23.6",
@@ -57,7 +57,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19",

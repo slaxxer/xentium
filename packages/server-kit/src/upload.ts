@@ -1,8 +1,8 @@
 import type { RequestHandler } from "express";
 import multer from "multer";
 import { fileTypeFromBuffer } from "file-type";
-import { NEC } from "@nodevo/contracts";
-import { XentiumError } from "@nodevo/errors";
+import { NEC } from "@xentium/contracts";
+import { XentiumError } from "@xentium/errors";
 
 /**
  * One upload ceiling. An application owns its own table of these — the package

@@ -337,7 +337,7 @@ every `.nvtheme` import against your declared regions); the browser's decides wh
 
 ```ts
 // shared/layoutTemplates.ts — imported by BOTH entries
-import type { LayoutTemplateDeclaration } from "@nodevo/plugin-sdk";
+import type { LayoutTemplateDeclaration } from "@xentium/plugin-sdk";
 
 export const MY_INDEX: LayoutTemplateDeclaration = {
   key:      "myplugin.index",     // namespaced; a bare word is refused

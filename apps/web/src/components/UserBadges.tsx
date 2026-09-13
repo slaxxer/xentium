@@ -13,8 +13,8 @@
  * card must look untouched on a site that has never granted one.
  */
 import { useTranslation } from "react-i18next";
-import type { AwardedBadge } from "@nodevo/contracts";
-import { parseIconToken } from "@nodevo/contracts";
+import type { AwardedBadge } from "@xentium/contracts";
+import { parseIconToken } from "@xentium/contracts";
 import { TokenIcon } from "./TokenIcon";
 import { useUserBadges } from "../lib/userBadges";
 import "./UserBadges.scss";

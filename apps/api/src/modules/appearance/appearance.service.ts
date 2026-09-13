@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@nodevo/contracts";
+import { HEARTH_DEFAULT_TOKENS, NEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
@@ -9,7 +9,7 @@ import { publishStyleVersion } from "./appearance.sse.js";
 
 export type ThemeName = "light" | "dark";
 
-// ScopedTokens / ScopedTokenSet now live in @nodevo/contracts (shared with the
+// ScopedTokens / ScopedTokenSet now live in @xentium/contracts (shared with the
 // Style Editor). Re-exported below for existing importers of this module.
 export type { ScopedTokens, ScopedTokenSet };
 
@@ -202,7 +202,7 @@ function compileCustomCss(
     .join("\n\n");
 }
 
-// Editable semantic token defaults — single shared copy in @nodevo/contracts,
+// Editable semantic token defaults — single shared copy in @xentium/contracts,
 // also consumed by the web Style Editor. tokens.scss stays the rendering truth.
 export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 
@@ -1005,7 +1005,7 @@ export const appearanceService = {
       return prefixes.flatMap((p) => parts.map((d) => `${p} ${d}`)).join(", ");
     };
 
-    // Shared with the Style Editor's live preview (@nodevo/contracts) so the preview
+    // Shared with the Style Editor's live preview (@xentium/contracts) so the preview
     // cannot render a different font from the one this serves. The ACP re-pins all
     // four properties on `body.nv-acp`; a user's profile font overrides via inline
     // :root vars.

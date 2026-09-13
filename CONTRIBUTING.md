@@ -32,7 +32,7 @@ These are enforced in review (and most are in the PR template):
   UI checks are cosmetic only.
 - **Keep the module shape** — `routes → controller → service → repository`, plus
   `validation`, `types`, `tests`. Shared types/DTOs/permission keys go in
-  `@nodevo/contracts`; shared runtime helpers in `@nodevo/sdk`.
+  `@xentium/contracts`; shared runtime helpers in `@xentium/sdk`.
 - **Don't blur core and plugins** — official add-ons live in a **plugin**, never in
   core. Core must stay fully usable with no premium plugin installed.
 - **Core never hardcodes a plugin** — no plugin table names, ids, or routes in core.
@@ -45,7 +45,7 @@ These are enforced in review (and most are in the PR template):
 
 All visual values are **CSS custom properties** — **never hardcode a colour, radius,
 or shadow**; always reference a token. Three tiers (defined in
-`apps/web/src/styles/tokens.scss`, contract in `@nodevo/contracts` → `TOKEN_REGISTRY`):
+`apps/web/src/styles/tokens.scss`, contract in `@xentium/contracts` → `TOKEN_REGISTRY`):
 semantic `--c-*` → region `--nav-*`/`--footer-*`/… → component `--btn-*`/`--card-*`/…,
 each defaulting to its semantic base so palette edits cascade.
 
@@ -67,7 +67,7 @@ them from **ACP → Extensions → Upload**. Package for distribution with
 ### Plugin foundation (extension points)
 
 Plugins never patch core — they **register** into it. Authoring contracts live in
-`@nodevo/plugin-sdk`; the web host bridges shared singletons through
+`@xentium/plugin-sdk`; the web host bridges shared singletons through
 `window.__NODEVO_HOST__` so a plugin's UMD bundle reuses the host's React, router,
 and i18next rather than shipping its own.
 
@@ -80,7 +80,7 @@ and i18next rather than shipping its own.
   `registerRoute`, `registerAcpPage`, `registerModCanvasSection`,
   `registerUserDetailPanel`, `registerIpEnrichment`, etc. Core iterates whatever's
   registered; slots are auto-deregistered when the plugin disables.
-- **Server hooks** (`@nodevo/plugin-sdk` → `PluginContext` / `PluginHost`) —
+- **Server hooks** (`@xentium/plugin-sdk` → `PluginContext` / `PluginHost`) —
   `ctx.registerRoutes` / `registerPermissions` / `registerNecCodes`, and
   `ctx.registerSecurityScan(fn)` for periodic detection run by the core
   security-analysis job. Core moderation primitives are exposed on

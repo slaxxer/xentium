@@ -193,7 +193,7 @@ unknown one.
 
 ## The entitlement JWT
 
-RS256. The verifying key ships in `@nodevo/sdk`; `LICENSE_PUBLIC_KEY` overrides it, which is
+RS256. The verifying key ships in `@xentium/sdk`; `LICENSE_PUBLIC_KEY` overrides it, which is
 how a local dev instance verifies against a local marketplace's dev keypair.
 
 ```ts

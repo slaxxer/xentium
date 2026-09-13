@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import type { ExtractResult, ImportError, MigrationReporter } from "@nodevo/migrate-core";
+import type { ExtractResult, ImportError, MigrationReporter } from "@xentium/migrate-core";
 import {
   mapForum, mapPost, mapTopic, mapUser, USER_TYPE_BOT,
   type PhpbbForumRow, type PhpbbPostRow, type PhpbbTopicRow, type PhpbbUserRow,

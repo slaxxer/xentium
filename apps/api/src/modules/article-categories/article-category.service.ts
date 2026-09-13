@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import {
   slugify,
   uniqueSlug,
@@ -10,7 +10,7 @@ import {
   type ViewerContext,
   type VisibilityMode,
   type VisibilityNode,
-} from "@nodevo/sdk";
+} from "@xentium/sdk";
 import type { CreateCategoryInput, UpdateCategoryInput, ReorderInput } from "./article-category.validation.js";
 
 type CategoryRow = {

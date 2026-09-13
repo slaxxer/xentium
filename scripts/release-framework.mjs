@@ -28,9 +28,9 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /**
  * What gets published, in dependency order.
  *
- * NOT here: `@nodevo/config` (the shared tsconfig — a devDependency nobody
- * consuming needs), `@nodevo/ui` (React components for the CMS, not framework),
- * and `@nodevo/sdk` (core runtime helpers plus the licence public key, which is
+ * NOT here: `@xentium/config` (the shared tsconfig — a devDependency nobody
+ * consuming needs), `@xentium/ui` (React components for the CMS, not framework),
+ * and `@xentium/sdk` (core runtime helpers plus the licence public key, which is
  * a CMS concern).
  */
 const PACKAGES = ["contracts", "errors", "server-kit", "auth", "plugin-engine", "plugin-kit", "plugin-sdk"];
@@ -73,7 +73,7 @@ if (dirty && !dryRun) {
 // ── 2. One version, read from the repo ──────────────────────────────────────
 const version = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8")).version;
 
-// Prerelease identifier becomes the dist-tag, so `npm install @nodevo/errors`
+// Prerelease identifier becomes the dist-tag, so `npm install @xentium/errors`
 // keeps resolving the last STABLE release rather than an alpha.
 const prerelease = /-([0-9A-Za-z-]+)/.exec(version)?.[1];
 const tag = prerelease ?? "latest";

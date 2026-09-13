@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/plugin-engine",
+  "name": "@xentium/plugin-engine",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,15 +16,15 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "express": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",

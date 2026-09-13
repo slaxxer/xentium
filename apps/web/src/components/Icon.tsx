@@ -20,7 +20,7 @@ import { useIconStyle } from "../lib/iconKit";
 import { useIconScope } from "../lib/iconScope";
 import { useIconSlotScope, useIconSlot } from "../layout/iconSlots";
 import { bundledIcon } from "../lib/iconCatalogue";
-import { parseIconToken, iconStyleClasses } from "@nodevo/contracts";
+import { parseIconToken, iconStyleClasses } from "@xentium/contracts";
 import { isEditorPreview } from "../layout/previewMode";
 
 /** Props we translate into kit classes. Everything else falls back to the free set. */

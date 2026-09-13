@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { parseIconToken } from "@nodevo/contracts";
+import { parseIconToken } from "@xentium/contracts";
 
 /** A hex colour, or nothing. Same shape the group badge colour accepts. */
 const colorSchema = z.string().regex(/^#[0-9a-fA-F]{3,8}$/, "Expected a hex colour").nullable();

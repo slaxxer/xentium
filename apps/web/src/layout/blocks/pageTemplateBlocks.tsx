@@ -31,7 +31,7 @@
  * A block with a data-selecting prop — a group id, a category filter — would be the
  * thing that rule forbids, and none of these have one.
  */
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { registerBlock } from "../blockRegistry";
 import { ArticleReaderContent } from "../../features/articles/ArticleReaderPage";
 

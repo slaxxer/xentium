@@ -14,7 +14,7 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { api } from "./api";
-import type { AwardedBadge } from "@nodevo/contracts";
+import type { AwardedBadge } from "@xentium/contracts";
 
 const MAX_IDS_PER_REQUEST = 100;
 

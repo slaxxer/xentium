@@ -21,7 +21,7 @@ import {
   requiredBlocksFor,
   templateKeySchema,
   templateKeys,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 const PLUGIN = "nodevo-testplug";
 

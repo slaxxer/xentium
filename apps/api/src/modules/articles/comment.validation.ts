@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginatedRequestSchema } from "@nodevo/contracts";
+import { paginatedRequestSchema } from "@xentium/contracts";
 
 export const createCommentSchema = z.object({
   body: z.string().trim().min(1).max(4000),

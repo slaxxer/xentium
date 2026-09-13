@@ -304,7 +304,7 @@
     "title": "Historial de migraciones",
     "loading": "Cargando…",
     "emptyTitle": "No se ha ejecutado ninguna migración",
-    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @nodevo/migrate importa una comunidad desde otra plataforma.",
+    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @xentium/migrate importa una comunidad desde otra plataforma.",
     "success": "Correcto",
     "failed": "Fallido",
     "hide": "▲ Ocultar",

@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/plugin-kit",
+  "name": "@xentium/plugin-kit",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -42,7 +42,7 @@
     }
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "typescript": "catalog:"
   }
 }

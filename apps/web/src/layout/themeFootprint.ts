@@ -1,4 +1,4 @@
-import { isKnownTemplate } from "@nodevo/contracts";
+import { isKnownTemplate } from "@xentium/contracts";
 import { getBlock } from "./blockRegistry";
 
 /**

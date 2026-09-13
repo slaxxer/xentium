@@ -18,7 +18,7 @@ import {
   faAlignLeft, faAlignCenter, faAlignRight, faAlignJustify,
   faLink, faPaperclip, faFaceSmile, faAt, faRotateLeft, faRotateRight,
 } from "@fortawesome/free-solid-svg-icons";
-import type { ComposerToolId } from "@nodevo/contracts";
+import type { ComposerToolId } from "@xentium/contracts";
 
 export interface ComposerTool {
   icon:  IconDefinition;

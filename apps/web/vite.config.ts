@@ -66,5 +66,5 @@ export default defineConfig({
     port: 5173,
     proxy: { "/api": "http://localhost:4000", "/uploads": "http://localhost:4000" },
   },
-  optimizeDeps: { exclude: ["@nodevo/ui", "@nodevo/contracts", "@nodevo/sdk"] },
+  optimizeDeps: { exclude: ["@xentium/ui", "@xentium/contracts", "@xentium/sdk"] },
 });

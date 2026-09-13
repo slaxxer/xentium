@@ -5,7 +5,7 @@ import {
   listTemplates,
   templateAcceptsVariants,
   type LayoutSelector,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { layoutService } from "./layout.service.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import {

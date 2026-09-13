@@ -31,7 +31,7 @@ import {
   FONT_FAMILIES,
   fontRootDecls,
   fontBodyRule,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import {
   SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
   type Section,
@@ -41,7 +41,7 @@ import {
   type ShadowKind, type ShadowParts,
 } from "./shadowValue";
 import "./StyleEditorPage.scss";
-import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@nodevo/contracts";
+import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
 
 const CUSTOM_CSS_PREVIEW_ID = "nodevo-custom-css-preview";
 
@@ -56,7 +56,7 @@ interface StyleDraft {
 }
 
 // ── Defaults / display resolution ───────────────────────────────────────────────
-// Hearth core values — single shared copy in @nodevo/contracts (also used by the
+// Hearth core values — single shared copy in @xentium/contracts (also used by the
 // API), mirroring apps/web/src/styles/tokens.scss. These are the editor's *display*
 // defaults; a true Reset clears the server overrides so the app inherits tokens.scss.
 const DEFAULTS = HEARTH_DEFAULT_TOKENS;
@@ -533,7 +533,7 @@ export function StyleEditorPage() {
     }
     const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss[mode]) };
     const blocks: string[] = [];
-    // The font comes from the SAME builders the API serves with (@nodevo/contracts),
+    // The font comes from the SAME builders the API serves with (@xentium/contracts),
     // so the preview cannot render a font the site will not. It previously hand-rolled
     // its own stack, skipped the weight entirely, and sized the page with
     // `html { font-size }` — which rescales every rem, something production never does.

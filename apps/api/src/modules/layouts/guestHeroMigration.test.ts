@@ -8,7 +8,7 @@
  * write anything on a site that had nothing to carry, and never run twice.
  */
 import { beforeEach, describe, expect, it } from "vitest";
-import { DEFAULT_VARIANT, blockTypesIn, type BlockNode } from "@nodevo/contracts";
+import { DEFAULT_VARIANT, blockTypesIn, type BlockNode } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";

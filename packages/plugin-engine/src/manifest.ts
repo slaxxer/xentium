@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { XentiumError, NEC } from "@nodevo/errors";
+import { XentiumError, NEC } from "@xentium/errors";
 import { compareBaseVersions } from "./version.js";
 
 export const manifestSchema = z.object({

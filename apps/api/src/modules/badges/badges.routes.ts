@@ -11,7 +11,7 @@
  * article author card, a forum post. It exposes nothing the profile page does not.
  */
 import { Router } from "express";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { badgesController } from "./badges.controller.js";
 

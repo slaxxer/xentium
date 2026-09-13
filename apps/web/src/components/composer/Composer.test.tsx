@@ -11,7 +11,7 @@ import { createRef } from "react";
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { act, cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { COMPOSER_DEFAULT_CONFIG } from "@nodevo/contracts";
+import { COMPOSER_DEFAULT_CONFIG } from "@xentium/contracts";
 import { Composer, type ComposerHandle } from "./Composer";
 
 /** i18n is not initialised in a unit test — `t()` returns the key, which is fine:

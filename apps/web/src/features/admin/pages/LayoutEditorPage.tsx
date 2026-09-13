@@ -45,7 +45,7 @@ import {
   type LayoutSelector,
   type CoreTemplateKey,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { pagesApi } from "../../../lib/pagesApi";
 import { articlesApi } from "../../../lib/articlesApi";

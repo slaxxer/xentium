@@ -357,7 +357,7 @@ export async function disablePlugin(pluginId: string): Promise<void> {
    * published map is memoized per template key, and a disabled plugin's template
    * must stop being served immediately rather than up to 30 seconds later.
    */
-  const { deregisterTemplatesFor } = await import("@nodevo/contracts");
+  const { deregisterTemplatesFor } = await import("@xentium/contracts");
   const droppedTemplates = deregisterTemplatesFor(pluginId);
   if (droppedTemplates.length) {
     const { layoutService } = await import("../../modules/layouts/layout.service.js");

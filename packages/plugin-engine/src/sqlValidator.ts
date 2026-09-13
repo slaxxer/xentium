@@ -1,4 +1,4 @@
-import { XentiumError, NEC } from "@nodevo/errors";
+import { XentiumError, NEC } from "@xentium/errors";
 // Validates that a plugin migration SQL file contains only DDL statements.
 // Rejects any DML (INSERT/UPDATE/DELETE/SELECT/TRUNCATE/COPY) or anything else.
 // Returns true if valid, throws with a descriptive message if not.

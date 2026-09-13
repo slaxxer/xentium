@@ -5,7 +5,7 @@
 // without importing the engine that imports the client. Everything here is
 // dependency-light on purpose — prisma, settings, env, nothing else.
 
-import type { DeployEnvironment } from "@nodevo/contracts";
+import type { DeployEnvironment } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { getSetting } from "../../shared/utils/settings.js";

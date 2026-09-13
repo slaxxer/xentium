@@ -1,4 +1,4 @@
-# @nodevo/errors
+# @xentium/errors
 
 **Errors for the Xentium framework.**
 
@@ -13,7 +13,7 @@ The middleware is a factory — an application injects whether it is production,
 where a log line goes, and where an error record is stored:
 
 ```ts
-import { createErrorMiddleware } from "@nodevo/errors";
+import { createErrorMiddleware } from "@xentium/errors";
 
 app.use(createErrorMiddleware({
   isProd,

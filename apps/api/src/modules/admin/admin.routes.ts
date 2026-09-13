@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
-import { CorePermissions, NEC } from "@nodevo/contracts";
+import { CorePermissions, NEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";

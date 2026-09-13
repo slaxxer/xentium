@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { verifyAccess } from "../../modules/auth/auth.tokens.js";
 import { maintenanceService } from "../../modules/maintenance/maintenance.service.js";
 

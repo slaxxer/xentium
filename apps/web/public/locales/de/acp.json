@@ -304,7 +304,7 @@
     "title": "Migrationsverlauf",
     "loading": "Wird geladen…",
     "emptyTitle": "Es wurden noch keine Migrationen ausgeführt",
-    "emptyHint": "Wird aufgezeichnet, wenn der Installer Datenbankmigrationen anwendet oder die @nodevo/migrate-CLI eine Community von einer anderen Plattform importiert.",
+    "emptyHint": "Wird aufgezeichnet, wenn der Installer Datenbankmigrationen anwendet oder die @xentium/migrate-CLI eine Community von einer anderen Plattform importiert.",
     "success": "Erfolgreich",
     "failed": "Fehlgeschlagen",
     "hide": "▲ Verbergen",

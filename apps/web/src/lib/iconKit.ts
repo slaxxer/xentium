@@ -19,7 +19,7 @@
  * to re-render it, which reads as "the setting did nothing".
  */
 import { useSyncExternalStore } from "react";
-import { DEFAULT_ICON_STYLE, isIconStyle, iconStyleClasses } from "@nodevo/contracts";
+import { DEFAULT_ICON_STYLE, isIconStyle, iconStyleClasses } from "@xentium/contracts";
 
 /** Mirrors the server's allowlist. See `modules/appearance/iconKit.ts`. */
 const KIT_URL = /^https:\/\/kit\.fontawesome\.com\/[a-z0-9]{6,32}\.js$/;

@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { getSetting } from "../../shared/utils/settings.js";
 import {
   EMAIL_TEMPLATE_DEFAULTS,

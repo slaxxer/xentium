@@ -1,6 +1,6 @@
 import type { Request, RequestHandler } from "express";
-import { NEC } from "@nodevo/contracts";
-import { XentiumError } from "@nodevo/errors";
+import { NEC } from "@xentium/contracts";
+import { XentiumError } from "@xentium/errors";
 import type { AccessClaims } from "./tokens.js";
 
 /**
