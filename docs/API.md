@@ -134,6 +134,7 @@ All **Auth**.
 |---|---|---|
 | PATCH | `/profile` | Update display name / bio. |
 | POST | `/avatar` | Upload avatar (`multipart`, field `file`). |
+| POST / DELETE | `/cover` | Upload / remove the profile cover (`multipart`, field `file`). ⚠ Byte size AND permitted types come from the member's earned rank — see `profileImageLimits.ts`; an empty type list means "no per-rank restriction", not "nothing allowed". |
 | PATCH | `/username` | Change username (cooldown enforced). |
 | POST | `/email` | Request an email change (sends a code). |
 | POST | `/email/verify-code` | Confirm the email change. |
@@ -220,6 +221,39 @@ All **Auth**.
 | POST | `/read-all` | Mark all read. |
 | PATCH | `/:id/read` | Mark one read. |
 
+## Badges — `/api/user-badges` (public) · `/api/admin/badges` (ACP)
+
+What a site recognises is public; who holds what is answered per user.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/user-badges/batch?ids=a,b,c` | Public | Badges for many users in ONE request (bounded at 100 ids). ⚠ The card renderer batches through this; a thread of twenty author cards must not be twenty requests. |
+| GET | `/user-badges/catalogue` | Public | Every badge the site can award — what the profile draws unearned ones from. Carries no holder data. |
+| GET | `/user-badges/:id` | Public | One user's badges, in card order. |
+| GET / POST | `/admin/badges` | `badge.manage` | List / create catalogue entries. |
+| PATCH / DELETE | `/admin/badges/:id` | `badge.manage` | Edit / delete. ⚠ Deleting takes every award with it (`onDelete: Cascade`); a system badge is refused. |
+| GET | `/admin/badges/metrics` | `badge.manage` | What this site can measure right now — core's counters plus every metric a **currently enabled** plugin contributes. |
+| GET | `/admin/badges/:id/holders` | `badge.assign` | Who holds it. |
+| POST | `/admin/badges/:id/award` | `badge.assign` | Grant to a user (`{ userId, note? }`). ⚠ An upsert: granting twice is the same badge and the second grant corrects the note. |
+| DELETE | `/admin/badges/:id/award/:userId` | `badge.assign` | Revoke. |
+
+⚠ Two permissions on purpose: `badge.manage` edits what the site recognises, `badge.assign`
+hands one out. A site can delegate the second without the first.
+
+⚠ `faIcon` stores an **icon token** (`"star"`, or `"jelly-regular:star"` to pin a style).
+Legacy camelCase (`"faStar"`) still validates and is read as `star`.
+
+## Profile views — `/api/users/:id/visitors`
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/users/:id/visitors` | Public | Recent named visitors (`limit`, bounded at 24) + the all-time view total. ⚠ The param is a user **id**, unlike `GET /users/:username`, which the profile page reads first. |
+
+⚠ The view is RECORDED by `GET /users/:username` — a write on a read path, and not
+awaited. Self-views are skipped, guests bump the counter but write no row, and a Redis
+window keeps a reload out of Postgres. It swallows its own errors: recording who looked
+must never fail the page being looked at.
+
 ## Moderation — `/api/moderation`
 
 Each route is gated by its specific `moderation.*` permission.
@@ -256,6 +290,12 @@ scans or replace baselines via the SDK. Full pipeline: [security-detection.md](s
 | GET | `/branding` | Public | Resolved logo URLs + site name. |
 | POST | `/branding/:variant` (`multipart`) · DELETE `/branding/:variant` | Admin | Logo upload / reset (`variant` = `navbar` \| `icon`). |
 | PUT | `/branding/text` | Admin | Toggle site-name text in nav. |
+| PUT | `/branding/icon-kit` | Admin | Set / clear the site's **FontAwesome kit** (`{ kit }` — a kit id or its full URL; empty clears). ⚠ Its own endpoint, not the generic settings PUT: the value becomes a `<script src>` on every page, so the host is an allowlist and the URL is rebuilt rather than stored as typed. |
+| PUT | `/branding/icon-style` | Admin | Set the site-wide icon style (`{ style }`, e.g. `duotone-solid`). Validated against the shared table — a style the app cannot turn into classes would blank every icon. `solid` is the only style that draws without a kit. |
+
+⚠ `GET /branding` also returns `iconKitUrl` (re-validated on the way out — a settings row
+can arrive from a restored backup) and `iconStyle` (normalised to `solid` if unknown, because
+emitting a class nothing defines blanks every icon on the page). See `docs/icon-kits.md`.
 
 ### Theming tokens & scoped CSS
 

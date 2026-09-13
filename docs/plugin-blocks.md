@@ -213,6 +213,54 @@ the variant's tokens, so a colour set there stays consistent across every block 
 variant and travels inside a `.nvtheme`; a prop would be a per-block literal that breaks
 dark mode and cannot be themed.
 
+## Icons in your block
+
+Two things happen to your block's icons for free, and one thing you have to not break.
+
+**They follow the site's icon style.** Import `FontAwesomeIcon` from the module your
+vite config already externalises (`@fortawesome/react-fontawesome` →
+`__NODEVO_HOST__.FaReact`). Core swaps that export for its own wrapper, so a site using
+a FontAwesome Pro kit draws your icons in its chosen style with no change on your side.
+
+⚠ Bundling your own copy of that package silently opts out — your icons stay solid while
+the rest of the page changes. Keep it external.
+
+**An admin can replace any one of them.** In the layout editor, Icons mode makes every
+icon on the page clickable, and the replacement is stored on the block node
+(`iconOverrides`, keyed `"<icon-name>#<n>"` — the nth icon of that name your block drew,
+in render order). You do nothing; it applies inside the wrapper.
+
+⚠ The key is POSITIONAL. If you later change how many icons of the **same name** your
+block renders, an existing override can land on a neighbour. Adding an icon of a
+*different* name is always safe — numbering is per name.
+
+### An icon as a PROP
+
+When the icon is the admin's choice rather than your design, declare it and the editor
+renders a picker:
+
+```ts
+const schema = z.object({
+  icon: z.string().optional().meta({ title: "Icon", format: "icon" }),
+});
+```
+
+`format: "icon"` is a hint `SchemaFields` honours — nothing to register. Render it with
+`TokenIcon`, which resolves the pinned style, then the site's, then the bundled free
+icon, then nothing:
+
+```tsx
+// Externalise this like the rest — it is `__NODEVO_HOST__.webTokenIcon`.
+import { TokenIcon } from "@web/components/TokenIcon";
+
+component: ({ props }) => props.icon ? <TokenIcon token={props.icon} /> : null,
+```
+
+⚠ Keep it **optional and undefaulted**. Absent means no icon; a default would put one on
+every instance ever created, and the document compares by value.
+
+Full detail: `docs/icon-kits.md`.
+
 ## So does the admin's CSS handle
 
 Beside the variant an admin may give any block a **`className`** — their own handle for
