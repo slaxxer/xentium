@@ -2,8 +2,8 @@
  * system.purge-deleted-content — hard-delete content that has been soft-deleted
  * for longer than a window.
  *
- * Soft deletes are never reclaimed today: `deleted_at` rows sit in ncf_articles,
- * ncf_article_comments and ncf_profile_comments forever. This is the action that
+ * Soft deletes are never reclaimed today: `deleted_at` rows sit in xcf_articles,
+ * xcf_article_comments and xcf_profile_comments forever. This is the action that
  * finishes the job — and it is the most destructive one in the catalogue, because
  * a hard delete cascades.
  *
@@ -58,17 +58,17 @@ async function eligibleCommentTrees(cutoff: Date): Promise<{ roots: string[]; no
   const [row] = await prisma.$queryRaw<{ roots: string[] | null; nodes: bigint }[]>`
     WITH RECURSIVE tree AS (
       SELECT id AS root, id AS node
-        FROM ncf_article_comments
+        FROM xcf_article_comments
        WHERE deleted_at IS NOT NULL AND deleted_at < ${cutoff}
       UNION ALL
       SELECT t.root, c.id
-        FROM ncf_article_comments c
+        FROM xcf_article_comments c
         JOIN tree t ON c.parent_id = t.node
     ),
     eligible AS (
       SELECT t.root
         FROM tree t
-        JOIN ncf_article_comments c ON c.id = t.node
+        JOIN xcf_article_comments c ON c.id = t.node
        GROUP BY t.root
       HAVING bool_and(c.deleted_at IS NOT NULL AND c.deleted_at < ${cutoff})
     )

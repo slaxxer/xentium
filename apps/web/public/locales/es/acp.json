@@ -592,7 +592,7 @@
       "XEC-PLUGIN-2013": {
         "msg": "Nombre de tabla reservado o con prefijo incorrecto",
         "desc": "Una migración de plugin intenta crear, modificar o eliminar un objeto de base de datos que es un objeto reservado del núcleo o que no coincide con el prefijo de tabla declarado por el plugin.",
-        "cause": "La migración nombra un objeto que empieza por ncf_, xentium_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
+        "cause": "La migración nombra un objeto que empieza por xcf_, xentium_, _prisma, pg_ o information_schema, o (cuando el plugin declara un tablePrefix) un objeto que omite ese prefijo.",
         "fix": "Asigna a cada tabla, índice, secuencia, tipo, función y disparador el prefijo propio del plugin y nunca toques objetos del núcleo."
       },
       "XEC-PLUGIN-2020": {
@@ -706,8 +706,8 @@
       "XEC-LICENSE-9010": {
         "msg": "Falta la identidad de la instalación",
         "desc": "Esta instancia no tiene registro de instalación, por lo que carece de identidad para licenciarse.",
-        "cause": "El instalador nunca se completó, o la fila de ncf_installs se eliminó de la base de datos.",
-        "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila ncf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
+        "cause": "El instalador nunca se completó, o la fila de xcf_installs se eliminó de la base de datos.",
+        "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila xcf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
       }
     }
   },

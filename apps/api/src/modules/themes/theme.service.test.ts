@@ -126,7 +126,7 @@ const rollbackProbe: Record<string, any> = {};
 /** What a theme application actually PUBLISHED — the live half. */
 const livePublished = new Map<string, LayoutDocument>();
 
-/** An in-memory stand-in for `ncf_themes`. Only the operations the service uses. */
+/** An in-memory stand-in for `xcf_themes`. Only the operations the service uses. */
 const library = { rows: new Map<string, any>() };
 
 vi.mock("../../infrastructure/db.js", () => ({

@@ -275,7 +275,7 @@ that was already active.
 instance has to ask a second question rather than read it off the activation response. If
 that ever changes, the instance's explanation is where it will show up.
 
-An install with no `ncf_installs` row cannot connect at all — `getSiteId()` throws
+An install with no `xcf_installs` row cannot connect at all — `getSiteId()` throws
 (XEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
 collapses every affected install into one bucket on the marketplace and, under install
 binding, becomes a licence bypass.

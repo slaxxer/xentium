@@ -1,7 +1,7 @@
 /**
  * system.prune-profile-views — age out the profile visitor lists.
  *
- * `ncf_profile_views` gains a row the first time each member looks at each profile,
+ * `xcf_profile_views` gains a row the first time each member looks at each profile,
  * and nothing removes it. On a busy site that is (members × profiles they visit),
  * which grows without bound while the card that reads it only ever shows the newest
  * handful.
@@ -11,7 +11,7 @@
  * feature needs. A site can still choose to keep it — 0 keeps everything — but the
  * default is a window, not eternity.
  *
- * ⚠ The all-time total on `ncf_users.profile_view_count` is NOT touched. It is a
+ * ⚠ The all-time total on `xcf_users.profile_view_count` is NOT touched. It is a
  * counter, not a log; if this job reduced it, a profile's view count would fall over
  * time and a member would watch their own number shrink.
  */

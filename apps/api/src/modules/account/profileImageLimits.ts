@@ -2,7 +2,7 @@
  * Per-rank limits on the images a member may put on their own profile.
  *
  * ⚠ THE ONE CHOKEPOINT. `maxProfileImageBytes` and `allowedProfileImageTypes` have
- * been in `ncf_group_progression` since Phase 7 (§38) and were enforced NOWHERE —
+ * been in `xcf_group_progression` since Phase 7 (§38) and were enforced NOWHERE —
  * stored, validated on the way in, resolved by `getUserLimits`, and never once read
  * by an upload route. Both the avatar and the cover go through here now, so a rank's
  * limits mean the same thing wherever a member uploads.

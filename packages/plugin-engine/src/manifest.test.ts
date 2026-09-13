@@ -7,7 +7,7 @@
  * is a total outage of extensibility that no other test would catch.
  *
  * `tablePrefix` matters too. It is what the migration runner enforces to keep a
- * plugin's schema namespaced and unable to collide with core's `ncf_` or another
+ * plugin's schema namespaced and unable to collide with core's `xcf_` or another
  * plugin's tables, so a loosened pattern here is a schema-collision bug later.
  */
 import { describe, expect, it } from "vitest";

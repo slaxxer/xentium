@@ -69,7 +69,7 @@ export const XEC = {
   PLUGIN_INVALID_MIGRATION: "XEC-PLUGIN-2010",
   PLUGIN_MIGRATION_MISSING: "XEC-PLUGIN-2011", // up/down migration file absent from the package
   PLUGIN_MIGRATION_CHECKSUM: "XEC-PLUGIN-2012",// applied migration modified since install
-  PLUGIN_TABLE_NAMING: "XEC-PLUGIN-2013",      // migration object touches a reserved (ncf_/xentium_) name or violates the plugin's declared tablePrefix
+  PLUGIN_TABLE_NAMING: "XEC-PLUGIN-2013",      // migration object touches a reserved (xcf_/xentium_) name or violates the plugin's declared tablePrefix
   PLUGIN_DISABLED: "XEC-PLUGIN-2020",
   PLUGIN_INCOMPATIBLE: "XEC-PLUGIN-2030",
 
@@ -97,7 +97,7 @@ export const XEC = {
   LICENSE_SOURCE_UNREACHABLE:"XEC-LICENSE-9007",  // marketplace unreachable — grace applies
   LICENSE_ALREADY_ACTIVE:    "XEC-LICENSE-9008",  // activate refused: a license is already active
   LICENSE_SERVER_REJECTED:   "XEC-LICENSE-9009",  // license server refused (4xx) — message carries the reason
-  LICENSE_SITE_ID_MISSING:   "XEC-LICENSE-9010",  // no ncf_installs row — this instance has no identity to license
+  LICENSE_SITE_ID_MISSING:   "XEC-LICENSE-9010",  // no xcf_installs row — this instance has no identity to license
 
   // Marketplace artifact intake (XEC-MARKETPLACE-91xx) — download-gate failures
   MARKETPLACE_NO_ARTIFACT: "XEC-MARKETPLACE-9101",      // source has no downloadable artifact

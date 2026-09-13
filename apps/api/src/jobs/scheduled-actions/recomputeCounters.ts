@@ -13,7 +13,7 @@
  * rows and writes only where the stored value differs.
  *
  * NOT recomputed — deliberately:
- *  - `post_count` / `thread_count` on ncf_users are FORUM-populated. Core does
+ *  - `post_count` / `thread_count` on xcf_users are FORUM-populated. Core does
  *    not know forum schema and the forum owns its own scheduling, so the forum
  *    ships its own repair. Recomputing them here would zero them.
  *  - `view_count` on articles is telemetry, not derivable from any source table.
@@ -43,58 +43,58 @@ interface CounterRepair {
 
 const REPAIRS: CounterRepair[] = [
   {
-    label: "users.article_count", table: "ncf_users", column: "article_count",
-    correct: `(SELECT COUNT(*) FROM ncf_articles a
+    label: "users.article_count", table: "xcf_users", column: "article_count",
+    correct: `(SELECT COUNT(*) FROM xcf_articles a
                 WHERE a.author_id = t.id AND a.deleted_at IS NULL AND a.status = 'published')`,
   },
   {
-    label: "users.comment_count", table: "ncf_users", column: "comment_count",
-    correct: `(SELECT COUNT(*) FROM ncf_article_comments c
+    label: "users.comment_count", table: "xcf_users", column: "comment_count",
+    correct: `(SELECT COUNT(*) FROM xcf_article_comments c
                 WHERE c.author_id = t.id AND c.deleted_at IS NULL AND c.status = 'published')`,
   },
   {
     // Three independent sources feed this one at write time: likes on the user's
     // articles, on their article comments, and on their profile comments.
-    label: "users.like_count_received", table: "ncf_users", column: "like_count_received",
+    label: "users.like_count_received", table: "xcf_users", column: "like_count_received",
     correct: `(
-      (SELECT COUNT(*) FROM ncf_article_likes al
-         JOIN ncf_articles a ON a.id = al.article_id
+      (SELECT COUNT(*) FROM xcf_article_likes al
+         JOIN xcf_articles a ON a.id = al.article_id
         WHERE a.author_id = t.id AND a.deleted_at IS NULL)
-    + (SELECT COUNT(*) FROM ncf_article_comment_likes cl
-         JOIN ncf_article_comments c ON c.id = cl.comment_id
+    + (SELECT COUNT(*) FROM xcf_article_comment_likes cl
+         JOIN xcf_article_comments c ON c.id = cl.comment_id
         WHERE c.author_id = t.id AND c.deleted_at IS NULL)
-    + (SELECT COUNT(*) FROM ncf_profile_comment_likes pl
-         JOIN ncf_profile_comments p ON p.id = pl.comment_id
+    + (SELECT COUNT(*) FROM xcf_profile_comment_likes pl
+         JOIN xcf_profile_comments p ON p.id = pl.comment_id
         WHERE p.author_id = t.id AND p.deleted_at IS NULL)
     )`,
   },
   {
-    label: "users.follower_count", table: "ncf_users", column: "follower_count",
-    correct: `(SELECT COUNT(*) FROM ncf_user_follows f WHERE f.following_id = t.id)`,
+    label: "users.follower_count", table: "xcf_users", column: "follower_count",
+    correct: `(SELECT COUNT(*) FROM xcf_user_follows f WHERE f.following_id = t.id)`,
   },
   {
-    label: "users.following_count", table: "ncf_users", column: "following_count",
-    correct: `(SELECT COUNT(*) FROM ncf_user_follows f WHERE f.follower_id = t.id)`,
+    label: "users.following_count", table: "xcf_users", column: "following_count",
+    correct: `(SELECT COUNT(*) FROM xcf_user_follows f WHERE f.follower_id = t.id)`,
   },
   {
-    label: "articles.comment_count", table: "ncf_articles", column: "comment_count",
-    correct: `(SELECT COUNT(*) FROM ncf_article_comments c
+    label: "articles.comment_count", table: "xcf_articles", column: "comment_count",
+    correct: `(SELECT COUNT(*) FROM xcf_article_comments c
                 WHERE c.article_id = t.id AND c.deleted_at IS NULL AND c.status = 'published')`,
   },
   {
-    label: "articles.like_count", table: "ncf_articles", column: "like_count",
-    correct: `(SELECT COUNT(*) FROM ncf_article_likes al WHERE al.article_id = t.id)`,
+    label: "articles.like_count", table: "xcf_articles", column: "like_count",
+    correct: `(SELECT COUNT(*) FROM xcf_article_likes al WHERE al.article_id = t.id)`,
   },
   {
-    label: "articles.dislike_count", table: "ncf_articles", column: "dislike_count",
-    correct: `(SELECT COUNT(*) FROM ncf_article_dislikes ad WHERE ad.article_id = t.id)`,
+    label: "articles.dislike_count", table: "xcf_articles", column: "dislike_count",
+    correct: `(SELECT COUNT(*) FROM xcf_article_dislikes ad WHERE ad.article_id = t.id)`,
   },
-  // NOTE: ncf_article_comments has NO like_count column — article-comment likes
+  // NOTE: xcf_article_comments has NO like_count column — article-comment likes
   // are counted live from the join table (`_count: { likes: true }`). Nothing to
   // repair there, which is the ideal case: a counter that cannot drift.
   {
-    label: "profile_comments.like_count", table: "ncf_profile_comments", column: "like_count",
-    correct: `(SELECT COUNT(*) FROM ncf_profile_comment_likes pl WHERE pl.comment_id = t.id)`,
+    label: "profile_comments.like_count", table: "xcf_profile_comments", column: "like_count",
+    correct: `(SELECT COUNT(*) FROM xcf_profile_comment_likes pl WHERE pl.comment_id = t.id)`,
   },
 ];
 

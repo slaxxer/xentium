@@ -13,7 +13,7 @@ import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { OwnedLicenses, rowIsLive, type OwnedLicense } from "../components/OwnedLicenses";
 import "./LicensePage.scss";
 
-/** The install's stored entitlement DOCUMENT (`ncf_entitlements`), not a licence.
+/** The install's stored entitlement DOCUMENT (`xcf_entitlements`), not a licence.
  *  The marketplace issues one on every activation, including for an account that
  *  owns nothing — which is why the hero below reads its GRANTS rather than its
  *  existence. */

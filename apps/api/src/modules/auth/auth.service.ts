@@ -50,7 +50,7 @@ async function resolveLoginUser(identifier: string) {
 
 // Failed-login lockout (§43). Rolling Redis counter keyed by identifier: after
 // `max` failures it stays set for `duration` minutes, blocking further attempts
-// (the DB audit log in ncf_login_events is written separately, on every try).
+// (the DB audit log in xcf_login_events is written separately, on every try).
 const lockKey = (identifier: string) => rkey("authfail", identifier.trim().toLowerCase());
 
 async function getLockout(): Promise<{ enabled: boolean; max: number; durationSec: number }> {

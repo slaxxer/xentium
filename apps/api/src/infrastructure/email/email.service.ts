@@ -109,5 +109,5 @@ export async function sendEmail(to: string, subject: string, html: string): Prom
 }
 
 // Template bodies now live in email-templates.ts, where an admin override in
-// ncf_email_templates can replace them. Keeping a second hardcoded copy here is
+// xcf_email_templates can replace them. Keeping a second hardcoded copy here is
 // exactly the two-sources-of-truth split that made the ACP mail settings dead.
