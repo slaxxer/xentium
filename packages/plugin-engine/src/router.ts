@@ -27,7 +27,7 @@ export class PluginRouter {
     // Injected guard — returns 404 if plugin is not currently enabled
     guarded.use((_req, res, next) => {
       if (!pluginRegistry.isEnabled(pluginId)) {
-        return res.status(404).json({ code: "NEC-PLUGIN-2020", message: "Plugin not available" });
+        return res.status(404).json({ code: "XEC-PLUGIN-2020", message: "Plugin not available" });
       }
       next();
     });

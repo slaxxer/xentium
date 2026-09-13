@@ -318,7 +318,7 @@ export function StyleEditorPage() {
   const saveIconKitMut = useMutation({
     mutationFn: () => {
       // ⚠ Checked here so the message can be specific. The server refuses the same
-      // shapes, but may only answer with a NEC code, which renders as the generic
+      // shapes, but may only answer with a XEC code, which renders as the generic
       // "check your input" — useless to an admin who pasted a real id from the
       // wrong place.
       if (iconKit.trim() && !looksLikeKit(iconKit)) {

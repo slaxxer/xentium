@@ -30,7 +30,7 @@ export function ResetPasswordPage() {
     } catch (err: any) {
       const code = err?.detail?.error?.code;
       swalToast(
-        code === "NEC-AUTH-1007"
+        code === "XEC-AUTH-1007"
           ? t("reset.expired")
           : t("reset.error"),
       );

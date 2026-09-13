@@ -6,7 +6,7 @@ import { requirePermission } from "../../shared/middleware/requirePermission.js"
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { getFreshSetting } from "../../shared/utils/settings.js";
 import { pluginService } from "./plugin.service.js";
 
@@ -25,7 +25,7 @@ const uploadGuard: RequestHandler = (_req, _res, next) => {
     .then((allowed) => {
       if (allowed === true) return next();
       next(new XentiumError({
-        code:       NEC.PLUGIN_UPLOAD_DISABLED,
+        code:       XEC.PLUGIN_UPLOAD_DISABLED,
         httpStatus: 403,
         message:    "Manual plugin uploads are disabled. Install plugins from the marketplace, or enable uploads in ACP → Extensions → Installed.",
       }));

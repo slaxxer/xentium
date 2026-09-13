@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { XentiumError, NEC } from "@xentium/errors";
+import { XentiumError, XEC } from "@xentium/errors";
 import { compareBaseVersions } from "./version.js";
 
 export const manifestSchema = z.object({
@@ -50,14 +50,14 @@ export function validateManifest(raw: unknown, hostVersion: string): PluginManif
 export function assertCompatible(manifest: PluginManifest, hostVersion: string): void {
   if (compareBaseVersions(hostVersion, manifest.minXentiumVersion) < 0) {
     throw new XentiumError({
-      code: NEC.PLUGIN_INCOMPATIBLE,
+      code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,
       message: `Plugin "${manifest.id}" requires Xentium ${manifest.minXentiumVersion}+ (this is ${hostVersion})`,
     });
   }
   if (manifest.maxXentiumVersion && compareBaseVersions(hostVersion, manifest.maxXentiumVersion) > 0) {
     throw new XentiumError({
-      code: NEC.PLUGIN_INCOMPATIBLE,
+      code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,
       message: `Plugin "${manifest.id}" supports Xentium up to ${manifest.maxXentiumVersion} (this is ${hostVersion})`,
     });

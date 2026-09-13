@@ -41,7 +41,7 @@ token in JS; the access token is held in memory only.
 ### Install guard
 
 Until the site is installed (`settings['site.id']` unset), every route **except**
-`/api/install/*` and `/api/health` returns `NEC-INSTALL-*` and the client is redirected to
+`/api/install/*` and `/api/health` returns `XEC-INSTALL-*` and the client is redirected to
 the installer. After install, `/api/install/*` returns `410 Gone`.
 
 ### Pagination
@@ -66,20 +66,20 @@ and return:
 
 ### Error envelope
 
-Every error returns a consistent shape with an HTTP status and a NEC code:
+Every error returns a consistent shape with an HTTP status and a XEC code:
 
 ```jsonc
-{ "error": { "code": "NEC-API-4003", "message": "Forbidden", "details": { /* optional */ } } }
+{ "error": { "code": "XEC-API-4003", "message": "Forbidden", "details": { /* optional */ } } }
 ```
 
 | Condition | Status | Code |
 |---|---|---|
-| Zod validation failed | `422` | `NEC-API-4001` (`details` = field issues) |
-| Forbidden (missing permission) | `403` | `NEC-API-4003` |
-| Not found | `404` | `NEC-API-4004` |
-| Conflict | `409` | `NEC-API-4009` |
-| Rate limit exceeded | `429` | `NEC-API-4290` (with `Retry-After`) |
-| Unhandled server error | `500` | `NEC-API-5000` (message hidden in prod) |
+| Zod validation failed | `422` | `XEC-API-4001` (`details` = field issues) |
+| Forbidden (missing permission) | `403` | `XEC-API-4003` |
+| Not found | `404` | `XEC-API-4004` |
+| Conflict | `409` | `XEC-API-4009` |
+| Rate limit exceeded | `429` | `XEC-API-4290` (with `Retry-After`) |
+| Unhandled server error | `500` | `XEC-API-5000` (message hidden in prod) |
 
 Full code catalog: ACP → System → Error Reference, or `packages/contracts/src/nec.ts`.
 
@@ -89,7 +89,7 @@ Redis-backed (`§26`). Notable limiters: `auth/login` 10/15m, `auth/register` 5/
 `auth/password-reset` 3/h, `auth/refresh` 20/m, `users/:id/follow` 30/m (per user),
 `users/:id/profile-comments` 10/5m (per user), `plugins/upload` 20/h,
 `admin/license/activate` 5/h, plus a coarse global per-IP API limiter in production.
-All emit `429 NEC-API-4290`.
+All emit `429 XEC-API-4290`.
 
 ---
 
@@ -370,7 +370,7 @@ All **Admin**.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| * | `/api/p/:pluginId/*` | per plugin | Routes registered by an enabled plugin. A guard returns `404 NEC-PLUGIN-2020` when the plugin is disabled. |
+| * | `/api/p/:pluginId/*` | per plugin | Routes registered by an enabled plugin. A guard returns `404 XEC-PLUGIN-2020` when the plugin is disabled. |
 
 A plugin's **admin** endpoints under this prefix back ACP config surfaces, and those
 surfaces **autosave** — so expect a debounced write per edit rather than one save-button
@@ -493,7 +493,7 @@ has no draft. Format reference: `docs/theme-packages.md`.
 | GET | `/error-log` · DELETE `/error-log` | Error log (filterable) / clear. |
 | GET | `/migration-history` | `migration_runs` table. |
 | GET | `/style-history` | Style snapshots. |
-| GET | `/nec-codes` | NEC code catalog (for the Error Reference page). |
+| GET | `/xec-codes` | XEC code catalog (for the Error Reference page). |
 | GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | Frontend nav manager. |
 
 ### Beta / invites (deployment gating)

@@ -27,11 +27,11 @@
  */
 import postcss from "postcss";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 /** Same code as the rest of the theme module: a package refused for a nameable reason. */
 const cssError = (message: string) =>
-  new XentiumError({ code: NEC.CORE_THEME_INVALID, httpStatus: 422, message });
+  new XentiumError({ code: XEC.CORE_THEME_INVALID, httpStatus: 422, message });
 
 /** Where an imported theme's files are served from. */
 const UPLOADS_PREFIX = "/uploads/";

@@ -764,12 +764,12 @@ describe("rejections are actionable", () => {
     return zip.toBuffer();
   };
 
-  it("carries its OWN NEC code, not the generic validation one", async () => {
-    // `NEC-API-4001` has a localized string ("Please check your input and try again"),
+  it("carries its OWN XEC code, not the generic validation one", async () => {
+    // `XEC-API-4001` has a localized string ("Please check your input and try again"),
     // and the web client prefers a localized string over the server's message — so
     // borrowing that code silently replaced every specific reason with a generic one.
     await expect(themeService.importTheme(brokenTheme(), "user-1"))
-      .rejects.toMatchObject({ code: "NEC-CORE-8002", httpStatus: 422 });
+      .rejects.toMatchObject({ code: "XEC-CORE-8002", httpStatus: 422 });
   });
 
   it("names the fields that are wrong, not just that something is", async () => {

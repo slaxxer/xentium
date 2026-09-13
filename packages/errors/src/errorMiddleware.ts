@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, Request } from "express";
 import { ZodError } from "zod";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { XentiumError } from "./XentiumError.js";
 
 export type ErrorSeverity = "info" | "warn" | "error" | "critical";
@@ -52,7 +52,7 @@ type AugmentedRequest = Request & {
  *
  *     { error: { code, message, details?, severity } }
  *
- * `code` is always an NEC string, so a client can branch on the code and
+ * `code` is always an XEC string, so a client can branch on the code and
  * localize the message itself — which is why the API stays locale-agnostic.
  *
  * Three cases, in order: a XentiumError (deliberate, carries its own status), a
@@ -114,7 +114,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
       r.log?.warn?.({ url: req.url }, "validation_failed");
 
       record({
-        code: NEC.API_VALIDATION,
+        code: XEC.API_VALIDATION,
         message: "Validation failed",
         severity: "warn",
         context: { ...where, issues: err.flatten() },
@@ -124,7 +124,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
 
       return res.status(422).json({
         error: {
-          code: NEC.API_VALIDATION,
+          code: XEC.API_VALIDATION,
           message: "Validation failed",
           details: err.format(),
           severity: "warn",
@@ -135,7 +135,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
     r.log?.error?.({ err }, "request_failed");
 
     record({
-      code: NEC.API_INTERNAL,
+      code: XEC.API_INTERNAL,
       message: (err as Error)?.message ?? "Internal server error",
       severity: "critical",
       context: { ...where, stack: (err as Error)?.stack?.split("\n").slice(0, 5) },
@@ -145,7 +145,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
 
     return res.status(500).json({
       error: {
-        code: NEC.API_INTERNAL,
+        code: XEC.API_INTERNAL,
         // Never leak an internal message to a client in production.
         message: isProd ? "Internal server error" : String((err as Error)?.message ?? err),
         severity: "critical",

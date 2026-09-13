@@ -10,7 +10,7 @@ import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { parseKitUrl } from "./iconKit.js";
 import { bustSettingsCache, getSetting } from "../../shared/utils/settings.js";
 
@@ -319,12 +319,12 @@ appearanceRouter.post("/branding/:variant", adminGuard, upload.single("file"), a
     const { variant } = z.object({ variant: z.enum(BRANDING_VARIANTS) }).parse(req.params);
     const file = req.file;
     if (!file) {
-      throw new XentiumError({ code: NEC.API_VALIDATION, httpStatus: 400, message: "No file uploaded" });
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 400, message: "No file uploaded" });
     }
 
     const mime = file.mimetype;
     if (!ALLOWED_MIME[variant].includes(mime)) {
-      throw new XentiumError({ code: NEC.STORE_TYPE_NOT_PERMITTED, httpStatus: 400, message: `File type ${mime} not allowed for ${variant}` });
+      throw new XentiumError({ code: XEC.STORE_TYPE_NOT_PERMITTED, httpStatus: 400, message: `File type ${mime} not allowed for ${variant}` });
     }
 
     const ext      = EXT[mime] ?? "bin";
@@ -386,7 +386,7 @@ appearanceRouter.put("/branding/icon-kit", adminGuard, async (req, res, next) =>
     const url = kit.trim() ? parseKitUrl(kit) : "";
     if (url === null) {
       throw new XentiumError({
-        code: NEC.API_VALIDATION, httpStatus: 400,
+        code: XEC.API_VALIDATION, httpStatus: 400,
         message: "Not a FontAwesome kit. Paste the kit id, or its https://kit.fontawesome.com/... URL.",
       });
     }

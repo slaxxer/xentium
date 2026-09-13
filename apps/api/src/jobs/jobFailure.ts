@@ -2,7 +2,7 @@ import type { Job, Worker } from "bullmq";
 import { prisma } from "../infrastructure/db.js";
 import { logger } from "../infrastructure/logging/logger.js";
 import { notificationService } from "../modules/notifications/notification.service.js";
-import { NEC } from "../shared/errors/nec.js";
+import { XEC } from "../shared/errors/xec.js";
 
 // Queues whose final failure pages admins (§55). Others are logged + retained.
 // "update-check" carries the license refresh since the two merged (2026-08-22),
@@ -13,7 +13,7 @@ const CRITICAL_QUEUES = new Set(["email-notification", "update-check"]);
 /**
  * Attaches reliability handlers to a BullMQ worker:
  *  - logs every failure (distinguishing retryable vs final attempt);
- *  - on the FINAL attempt, persists a record to `error_log` (NEC-QUEUE-5000) —
+ *  - on the FINAL attempt, persists a record to `error_log` (XEC-QUEUE-5000) —
  *    this, together with BullMQ's retained failed-set (removeOnFail age), is the
  *    dead-letter / inspection surface (ACP → System → Error Log);
  *  - for critical queues, dispatches a `system.job_failure` notification to all admins.
@@ -44,7 +44,7 @@ async function onFinalFailure(queueName: string, job: Job | undefined, err: Erro
   // Persist to error_log for ACP inspection (fire-and-forget).
   prisma.errorLog.create({
     data: {
-      code:     NEC.QUEUE_JOB_FAILED,
+      code:     XEC.QUEUE_JOB_FAILED,
       message:  `Job "${job?.name ?? queueName}" failed after exhausting retries: ${err?.message ?? "unknown error"}`,
       severity: CRITICAL_QUEUES.has(queueName) ? "critical" : "error",
       context:  { queue: queueName, jobId: job?.id, jobName: job?.name, data: job?.data ?? null },

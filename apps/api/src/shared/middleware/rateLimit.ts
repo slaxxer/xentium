@@ -1,7 +1,7 @@
 /**
  * The CMS's binding of the framework rate limiter (`@xentium/server-kit`).
  *
- * The factory is framework — a Redis-backed store, NEC-API-4290, draft-7
+ * The factory is framework — a Redis-backed store, XEC-API-4290, draft-7
  * headers. `globalApiLimiter` is NOT: its skip list names this application's
  * routes, which is exactly the kind of knowledge a framework package may not
  * hold (ADR-0006).

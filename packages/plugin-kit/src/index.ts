@@ -62,8 +62,8 @@ export interface PermissionDeclaration {
   defaults?: string[];             // group keys granted this on first install
 }
 
-export interface NecCodeDeclaration {
-  code:   string;  // e.g. "NEC-FORUM-6001"
+export interface XecCodeDeclaration {
+  code:   string;  // e.g. "XEC-FORUM-6001"
   msg:    string;
   sev:    "Info" | "Warning" | "Error" | "Critical";
   domain: string;
@@ -107,7 +107,7 @@ export interface PluginHost {
      * against the Nodevo host keep working. Removed after 1.0.0-alpha.
      */
     NodevoError: any;
-    NEC: any;
+    XEC: any;
   };
   middleware: {
     requireAuth: any;
@@ -154,8 +154,8 @@ export interface PluginContext<Host extends PluginHost = PluginHost> {
   /** Declare permission keys. */
   registerPermissions(perms: PermissionDeclaration[]): Promise<void>;
 
-  /** Declare NEC error codes, for the host's error reference. */
-  registerNecCodes(codes: NecCodeDeclaration[]): void;
+  /** Declare XEC error codes, for the host's error reference. */
+  registerNecCodes(codes: XecCodeDeclaration[]): void;
 
   /** Dispatch a notification through the host. */
   notify(opts: NotifyOptions): Promise<void>;

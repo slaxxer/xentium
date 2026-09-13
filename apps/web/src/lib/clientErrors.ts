@@ -25,7 +25,7 @@ export interface ClientErrorReport {
   reference:       string;
   message:         string;
   status?:         number;
-  /** NEC code when the API supplied one (`{ error: { code } }`). */
+  /** XEC code when the API supplied one (`{ error: { code } }`). */
   code?:           string;
   stack?:          string;
   componentStack?: string;
@@ -71,7 +71,7 @@ export function describeError(error: unknown, opts: DescribeOptions = {}): Clien
 
   // The api client attaches `status` + the canonical `{ error: { code } }` body
   // to the Error it throws, so an API failure that escapes a component still
-  // reports its NEC code rather than "Failed to fetch".
+  // reports its XEC code rather than "Failed to fetch".
   const status = opts.status ?? (error as { status?: number } | null)?.status;
   const code   = (error as { detail?: { error?: { code?: string } } } | null)?.detail?.error?.code;
 

@@ -10,7 +10,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { env, isProd } from "../../config/env.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 
 /**
  * The host this instance reports. The admin-configured canonical URL
@@ -73,7 +73,7 @@ export async function getSiteId(): Promise<string> {
   const row = await prisma.install.findFirst({ select: { siteId: true } });
   if (!row?.siteId) {
     throw new XentiumError({
-      code:       NEC.LICENSE_SITE_ID_MISSING,
+      code:       XEC.LICENSE_SITE_ID_MISSING,
       httpStatus: 503,
       message:    "This instance has no install identity yet. Finish the installer before connecting a marketplace account.",
     });

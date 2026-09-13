@@ -94,4 +94,4 @@ plugin.
 ## Reporting issues
 
 Open a GitHub issue with steps to reproduce, expected vs actual behavior, and the
-relevant **NEC error code** if one was shown — it pins down the failing domain fast.
+relevant **XEC error code** if one was shown — it pins down the failing domain fast.

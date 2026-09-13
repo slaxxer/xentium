@@ -23,7 +23,7 @@
   "dependencies": {
     "zod": "catalog:"
   },
-  "description": "Shared types, constants and NEC error codes for the Xentium framework.",
+  "description": "Shared types, constants and XEC error codes for the Xentium framework.",
   "license": "MIT",
   "author": "Xentium",
   "repository": {

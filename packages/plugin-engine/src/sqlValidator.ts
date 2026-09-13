@@ -1,4 +1,4 @@
-import { XentiumError, NEC } from "@xentium/errors";
+import { XentiumError, XEC } from "@xentium/errors";
 // Validates that a plugin migration SQL file contains only DDL statements.
 // Rejects any DML (INSERT/UPDATE/DELETE/SELECT/TRUNCATE/COPY) or anything else.
 // Returns true if valid, throws with a descriptive message if not.
@@ -191,14 +191,14 @@ export function validateMigrationSql(sql: string, filename: string, policy?: Mig
     if (!stmt) continue; // comment-only / empty
     if (DISALLOWED.test(stmt)) {
       throw new XentiumError({
-        code:       NEC.PLUGIN_INVALID_MIGRATION,
+        code:       XEC.PLUGIN_INVALID_MIGRATION,
         httpStatus: 422,
         message:    `${filename} contains a disallowed statement: "${stmt.slice(0, 60)}…". Only DDL (CREATE/ALTER/DROP TABLE/INDEX/FUNCTION/TRIGGER) is permitted in plugin migrations.`,
       });
     }
     if (!ALLOWED_DDL.test(stmt)) {
       throw new XentiumError({
-        code:       NEC.PLUGIN_INVALID_MIGRATION,
+        code:       XEC.PLUGIN_INVALID_MIGRATION,
         httpStatus: 422,
         message:    `${filename} contains an unrecognised statement: "${stmt.slice(0, 60)}…". Only DDL statements are permitted.`,
       });
@@ -208,14 +208,14 @@ export function validateMigrationSql(sql: string, filename: string, policy?: Mig
     for (const name of extractGovernedNames(stmt)) {
       if (RESERVED_NAME.test(name)) {
         throw new XentiumError({
-          code:       NEC.PLUGIN_TABLE_NAMING,
+          code:       XEC.PLUGIN_TABLE_NAMING,
           httpStatus: 422,
           message:    `${filename} targets the reserved object "${name}". Plugin migrations may not create, alter, or drop core objects (names beginning ncf_, nodevo_, xentium_, _prisma, pg_, or information_schema).`,
         });
       }
       if (prefix && !name.startsWith(prefix)) {
         throw new XentiumError({
-          code:       NEC.PLUGIN_TABLE_NAMING,
+          code:       XEC.PLUGIN_TABLE_NAMING,
           httpStatus: 422,
           message:    `${filename} declares object "${name}", which does not start with this plugin's tablePrefix "${prefix}". Every table, index, sequence, type, function, and trigger a plugin creates must be prefixed "${prefix}".`,
         });

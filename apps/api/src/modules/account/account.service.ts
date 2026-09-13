@@ -73,7 +73,7 @@ export const accountService = {
 
   async changeUsername(userId: string, newUsername: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const cooldownDays = await getUsernameCooldownDays();
     if (cooldownDays > 0 && user.usernameChangedAt) {
@@ -81,7 +81,7 @@ export const accountService = {
       nextAllowed.setDate(nextAllowed.getDate() + cooldownDays);
       if (new Date() < nextAllowed) {
         throw new XentiumError({
-          code: "NEC-USER-4010",
+          code: "XEC-USER-4010",
           httpStatus: 422,
           message: `Username can only be changed every ${cooldownDays} days`,
           details: { nextAllowedAt: nextAllowed.toISOString() },
@@ -93,7 +93,7 @@ export const accountService = {
       where: { username: { equals: newUsername, mode: "insensitive" }, id: { not: userId } },
     });
     if (existing) {
-      throw new XentiumError({ code: "NEC-USER-4011", httpStatus: 409, message: "Username is already taken" });
+      throw new XentiumError({ code: "XEC-USER-4011", httpStatus: 409, message: "Username is already taken" });
     }
 
     // Also check username history to prevent impersonation
@@ -101,7 +101,7 @@ export const accountService = {
       where: { oldUsername: { equals: newUsername, mode: "insensitive" } },
     });
     if (inHistory && inHistory.userId !== userId) {
-      throw new XentiumError({ code: "NEC-USER-4012", httpStatus: 409, message: "Username is already taken" });
+      throw new XentiumError({ code: "XEC-USER-4012", httpStatus: 409, message: "Username is already taken" });
     }
 
     await prisma.$transaction([
@@ -124,11 +124,11 @@ export const accountService = {
 
   async changePassword(userId: string, currentPassword: string, newPassword: string, currentSessionId?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const valid = await verifyPassword(user.passwordHash, currentPassword).catch(() => false);
     if (!valid) {
-      throw new XentiumError({ code: "NEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
+      throw new XentiumError({ code: "XEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
     }
 
     const newHash = await hashPassword(newPassword);
@@ -180,7 +180,7 @@ export const accountService = {
 
   async revokeSession(userId: string, sessionId: string) {
     const session = await prisma.session.findFirst({ where: { id: sessionId, userId } });
-    if (!session) throw new XentiumError({ code: "NEC-USER-4013", httpStatus: 404, message: "Session not found" });
+    if (!session) throw new XentiumError({ code: "XEC-USER-4013", httpStatus: 404, message: "Session not found" });
     await prisma.session.update({ where: { id: sessionId }, data: { revokedAt: new Date() } });
     // Immediate revocation (BUGS.md #4): kill this session's in-flight access token.
     await revokeSessionAccessToken(sessionId);
@@ -239,11 +239,11 @@ export const accountService = {
 
   async setLoginPin(userId: string, currentPassword: string, pin: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const valid = await verifyPassword(user.passwordHash, currentPassword).catch(() => false);
     if (!valid) {
-      throw new XentiumError({ code: "NEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
+      throw new XentiumError({ code: "XEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
     }
 
     const pinHash = await hashPassword(pin);
@@ -255,11 +255,11 @@ export const accountService = {
 
   async disableLoginPin(userId: string, currentPassword: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const valid = await verifyPassword(user.passwordHash, currentPassword).catch(() => false);
     if (!valid) {
-      throw new XentiumError({ code: "NEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
+      throw new XentiumError({ code: "XEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
     }
 
     await prisma.user.update({
@@ -270,18 +270,18 @@ export const accountService = {
 
   async requestEmailChange(userId: string, currentPassword: string, newEmail: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const valid = await verifyPassword(user.passwordHash, currentPassword).catch(() => false);
     if (!valid) {
-      throw new XentiumError({ code: "NEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
+      throw new XentiumError({ code: "XEC-AUTH-1001", httpStatus: 401, message: "Current password is incorrect" });
     }
 
     const existing = await prisma.user.findFirst({
       where: { email: { equals: newEmail, mode: "insensitive" }, id: { not: userId } },
     });
     if (existing) {
-      throw new XentiumError({ code: "NEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+      throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
     }
 
     await prisma.emailChangeToken.deleteMany({ where: { userId } });
@@ -313,7 +313,7 @@ export const accountService = {
     });
 
     if (!record || record.usedAt || record.expiresAt < new Date()) {
-      throw new XentiumError({ code: "NEC-AUTH-2003", httpStatus: 400, message: "Invalid or expired code" });
+      throw new XentiumError({ code: "XEC-AUTH-2003", httpStatus: 400, message: "Invalid or expired code" });
     }
 
     await prisma.$transaction([
@@ -422,7 +422,7 @@ export const accountService = {
       where: { id: userId },
       select: { hiddenBadges: true },
     });
-    if (!user) throw new XentiumError({ code: "NEC-USER-1001", httpStatus: 404, message: "User not found" });
+    if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
     const memberships = await prisma.userGroup.findMany({
       where: { userId },

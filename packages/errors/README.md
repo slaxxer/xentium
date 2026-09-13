@@ -2,11 +2,11 @@
 
 **Errors for the Xentium framework.**
 
-`XentiumError`, the NEC code registry, and the Express error middleware that
+`XentiumError`, the XEC code registry, and the Express error middleware that
 turns anything thrown during a request into one response shape:
 
 ```json
-{ "error": { "code": "NEC-API-4004", "message": "Not found", "severity": "warn" } }
+{ "error": { "code": "XEC-API-4004", "message": "Not found", "severity": "warn" } }
 ```
 
 The middleware is a factory — an application injects whether it is production,

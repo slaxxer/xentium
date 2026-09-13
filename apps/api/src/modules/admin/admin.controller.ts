@@ -572,7 +572,7 @@ export const adminController = {
     const def = getJobDef(key);
     if (!def) throw XentiumError.notFound("Unknown job");
     const config = jobConfigSchema.parse(req.body);
-    // applyJobSchedule validates the resolved pattern (throws NEC-QUEUE-5001 on a
+    // applyJobSchedule validates the resolved pattern (throws XEC-QUEUE-5001 on a
     // bad cron / too-frequent schedule) BEFORE we persist — so a rejected config
     // is never saved and the live scheduler is only touched on success.
     await applyJobSchedule(def, config);

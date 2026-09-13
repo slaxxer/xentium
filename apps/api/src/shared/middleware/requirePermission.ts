@@ -5,7 +5,7 @@ import { isAccessTokenRevoked } from "../../modules/auth/session-revocation.js";
 import type { PermissionKey } from "@xentium/contracts";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { XentiumError } from "../errors/XentiumError.js";
-import { NEC } from "../errors/nec.js";
+import { XEC } from "../errors/xec.js";
 import { unauthenticatedError, invalidTokenError } from "./requireAuth.js";
 
 /**
@@ -28,7 +28,7 @@ async function authedUserId(authHeader: string | undefined): Promise<{ userId: s
 
 function permissionDeniedError(keys: PermissionKey[]) {
   return new XentiumError({
-    code: NEC.PERM_DENIED, httpStatus: 403,
+    code: XEC.PERM_DENIED, httpStatus: 403,
     message: "You don't have permission to do that",
     details: { required: keys },
   });

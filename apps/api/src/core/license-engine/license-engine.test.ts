@@ -15,7 +15,7 @@
  * anomaly in the marketplace's numbers months later.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 
 const install: { siteId: string | null } = { siteId: null };
 
@@ -48,11 +48,11 @@ describe("getSiteId", () => {
   });
 
   it("carries the coded error so the ACP error reference can explain it", async () => {
-    await expect(getSiteId()).rejects.toMatchObject({ code: NEC.LICENSE_SITE_ID_MISSING });
+    await expect(getSiteId()).rejects.toMatchObject({ code: XEC.LICENSE_SITE_ID_MISSING });
   });
 
   it("throws when the row exists but carries no siteId", async () => {
     install.siteId = "";
-    await expect(getSiteId()).rejects.toMatchObject({ code: NEC.LICENSE_SITE_ID_MISSING });
+    await expect(getSiteId()).rejects.toMatchObject({ code: XEC.LICENSE_SITE_ID_MISSING });
   });
 });

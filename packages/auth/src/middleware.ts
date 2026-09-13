@@ -1,5 +1,5 @@
 import type { Request, RequestHandler } from "express";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { XentiumError } from "@xentium/errors";
 import type { AccessClaims } from "./tokens.js";
 
@@ -31,13 +31,13 @@ export interface AuthMiddlewareDeps {
 
 /**
  * Expected high-frequency rejections — guests hitting a protected route, and the
- * 15-minute token expiry every client rides into. Canonical NEC shape, but
+ * 15-minute token expiry every client rides into. Canonical XEC shape, but
  * `persist: false` keeps them out of the error log, where they would otherwise
  * drown everything worth reading.
  */
 export function unauthenticatedError() {
   return new XentiumError({
-    code: NEC.AUTH_UNAUTHENTICATED,
+    code: XEC.AUTH_UNAUTHENTICATED,
     httpStatus: 401,
     message: "Authentication required",
     persist: false,
@@ -46,7 +46,7 @@ export function unauthenticatedError() {
 
 export function invalidTokenError() {
   return new XentiumError({
-    code: NEC.AUTH_TOKEN_INVALID,
+    code: XEC.AUTH_TOKEN_INVALID,
     httpStatus: 401,
     message: "Invalid or expired token",
     persist: false,

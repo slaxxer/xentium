@@ -12,7 +12,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { XentiumError } from "./XentiumError.js";
 import { createErrorMiddleware, type ErrorLogEntry } from "./errorMiddleware.js";
 
@@ -44,24 +44,24 @@ function invoke(
 describe("createErrorMiddleware", () => {
   it("renders a XentiumError with its own status and code", () => {
     const { status, body } = invoke(
-      new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
+      new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
     );
     expect(status).toBe(404);
     expect(body).toEqual({
-      error: { code: "NEC-API-4004", message: "No such thing", details: undefined, severity: "warn" },
+      error: { code: "XEC-API-4004", message: "No such thing", details: undefined, severity: "warn" },
     });
   });
 
   it("grades severity off the status", () => {
-    expect(invoke(new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" })).body.error.severity)
+    expect(invoke(new XentiumError({ code: XEC.API_INTERNAL, httpStatus: 500, message: "x" })).body.error.severity)
       .toBe("error");
-    expect(invoke(new XentiumError({ code: NEC.API_FORBIDDEN, httpStatus: 403, message: "x" })).body.error.severity)
+    expect(invoke(new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "x" })).body.error.severity)
       .toBe("warn");
   });
 
   it("honours persist:false so high-frequency rejections do not fill the log", () => {
     const { entries } = invoke(
-      new XentiumError({ code: NEC.AUTH_TOKEN_INVALID, httpStatus: 401, message: "expired", persist: false }),
+      new XentiumError({ code: XEC.AUTH_TOKEN_INVALID, httpStatus: 401, message: "expired", persist: false }),
     );
     expect(entries).toHaveLength(0);
   });
@@ -70,7 +70,7 @@ describe("createErrorMiddleware", () => {
     const parsed = z.object({ name: z.string() }).safeParse({});
     const { status, body, entries } = invoke((parsed as { error: unknown }).error);
     expect(status).toBe(422);
-    expect(body.error.code).toBe(NEC.API_VALIDATION);
+    expect(body.error.code).toBe(XEC.API_VALIDATION);
     expect(entries[0]!.severity).toBe("warn");
   });
 
@@ -84,30 +84,30 @@ describe("createErrorMiddleware", () => {
     // req.id arrives as a NUMBER from the request-id middleware while the log
     // column is a string — the coercion that kept the Error Log empty when it
     // was missing.
-    const { entries } = invoke(new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "x" }));
+    const { entries } = invoke(new XentiumError({ code: XEC.API_INTERNAL, httpStatus: 500, message: "x" }));
     expect(entries[0]!.requestId).toBe("42");
   });
 
   it("works with no persist function at all", () => {
     // An application with no error-log table is a legitimate consumer.
     const { status, body } = invoke(
-      new XentiumError({ code: NEC.API_CONFLICT, httpStatus: 409, message: "dup" }),
+      new XentiumError({ code: XEC.API_CONFLICT, httpStatus: 409, message: "dup" }),
       { persist: undefined },
     );
     expect(status).toBe(409);
-    expect(body.error.code).toBe("NEC-API-4009");
+    expect(body.error.code).toBe("XEC-API-4009");
   });
 
   it("does not let a failing persist replace the error being reported", () => {
     const { status, body, logger } = invoke(
-      new XentiumError({ code: NEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
+      new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "No such thing" }),
       { persist: () => { throw new Error("log table is gone"); } },
     );
     expect(status).toBe(404);
     expect(body.error.message).toBe("No such thing");
     // …but the failure is surfaced rather than swallowed.
     expect(logger.error).toHaveBeenCalledWith(
-      expect.objectContaining({ code: "NEC-API-4004" }),
+      expect.objectContaining({ code: "XEC-API-4004" }),
       "error_log_persist_failed",
     );
   });

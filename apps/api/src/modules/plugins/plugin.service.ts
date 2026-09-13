@@ -15,7 +15,7 @@ import { pluginRegistry } from "../../core/plugin-engine/plugin-registry.js";
 // mutations are serialized through one promise chain; the engine's internals stay
 // lock-free (updatePlugin calls disable/enable directly), so only these service
 // entry points take the lock. Losers of a race fail cleanly afterwards (e.g.
-// NEC-PLUGIN-2005 version-not-newer on a duplicate update).
+// XEC-PLUGIN-2005 version-not-newer on a duplicate update).
 let lifecycleChain: Promise<unknown> = Promise.resolve();
 function withLifecycleLock<T>(fn: () => Promise<T>): Promise<T> {
   const run = lifecycleChain.then(fn); // chain never rejects (see below)

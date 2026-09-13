@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
-import { CorePermissions, NEC } from "@xentium/contracts";
+import { CorePermissions, XEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
@@ -103,13 +103,13 @@ if (isDev) {
     switch (type) {
       case "xentium500":
         // A deliberate XentiumError with a 5xx status → severity 'error', halts.
-        throw new XentiumError({ code: NEC.API_INTERNAL, httpStatus: 500, message: "Simulated XentiumError (500)" });
+        throw new XentiumError({ code: XEC.API_INTERNAL, httpStatus: 500, message: "Simulated XentiumError (500)" });
       case "notfound":
         // 4xx → toast only, does NOT halt the site (contrast case).
         throw XentiumError.notFound("Simulated 404 (should NOT halt the site)");
       case "critical":
       default:
-        // Unhandled throw → caught by the catch-all → NEC-API-5000, severity 'critical'.
+        // Unhandled throw → caught by the catch-all → XEC-API-5000, severity 'critical'.
         throw new Error("Simulated critical backend error (unhandled throw)");
     }
   });
@@ -141,10 +141,10 @@ adminRouter.get("/registered-pages", adminGuard, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Plugin-registered NEC codes (used by ACP Error Reference page)
-adminRouter.get("/nec-codes", adminGuard, async (_req, res, next) => {
+// Plugin-registered XEC codes (used by ACP Error Reference page)
+adminRouter.get("/xec-codes", adminGuard, async (_req, res, next) => {
   try {
-    const { necRegistry } = await import("../../core/nec-registry/nec-registry.js");
+    const { necRegistry } = await import("../../core/xec-registry/xec-registry.js");
     res.json(necRegistry.getAll());
   } catch (err) { next(err); }
 });

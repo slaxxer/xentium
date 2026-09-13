@@ -1,7 +1,7 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
@@ -152,7 +152,7 @@ export const commentService = {
 
     if (!allowComments) {
       throw new XentiumError({
-        code: NEC.API_FORBIDDEN,
+        code: XEC.API_FORBIDDEN,
         httpStatus: 403,
         message: "Comments are currently disabled",
       });
@@ -170,14 +170,14 @@ export const commentService = {
     });
     if (!article || article.deletedAt) {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_FOUND,
+        code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
         message: "Article not found",
       });
     }
     if (article.status !== "published") {
       throw new XentiumError({
-        code: NEC.ARTICLE_NOT_PUBLISHED,
+        code: XEC.ARTICLE_NOT_PUBLISHED,
         httpStatus: 400,
         message: "Article is not published",
       });
@@ -190,7 +190,7 @@ export const commentService = {
       });
       if (!parent || parent.articleId !== articleId || parent.deletedAt) {
         throw new XentiumError({
-          code: NEC.API_NOT_FOUND,
+          code: XEC.API_NOT_FOUND,
           httpStatus: 404,
           message: "Parent comment not found",
         });
@@ -198,7 +198,7 @@ export const commentService = {
       if (parent.parentId !== null) {
         // §33 — threaded one level only
         throw new XentiumError({
-          code: NEC.API_VALIDATION,
+          code: XEC.API_VALIDATION,
           httpStatus: 400,
           message: "Replies are limited to one level",
         });
@@ -243,14 +243,14 @@ export const commentService = {
     });
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.API_NOT_FOUND,
+        code: XEC.API_NOT_FOUND,
         httpStatus: 404,
         message: "Comment not found",
       });
     }
     if (existing.authorId !== viewerId) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot edit this comment",
       });
@@ -259,7 +259,7 @@ export const commentService = {
     const editWindow = await getEditWindowMs();
     if (Date.now() - existing.createdAt.getTime() > editWindow) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Edit window has closed",
       });
@@ -287,7 +287,7 @@ export const commentService = {
     });
     if (!existing || existing.deletedAt) {
       throw new XentiumError({
-        code: NEC.API_NOT_FOUND,
+        code: XEC.API_NOT_FOUND,
         httpStatus: 404,
         message: "Comment not found",
       });
@@ -296,14 +296,14 @@ export const commentService = {
     const isOwn = existing.authorId === viewerId;
     if (!isOwn && !canModerate) {
       throw new XentiumError({
-        code: NEC.PERM_DENIED,
+        code: XEC.PERM_DENIED,
         httpStatus: 403,
         message: "Cannot delete this comment",
       });
     }
     if (!isOwn && !reason) {
       throw new XentiumError({
-        code: NEC.API_VALIDATION,
+        code: XEC.API_VALIDATION,
         httpStatus: 400,
         message: "Reason required for moderator deletion",
       });
@@ -340,10 +340,10 @@ export const articleLikeService = {
       select: { id: true, deletedAt: true, status: true, authorId: true },
     });
     if (!article || article.deletedAt || article.status !== "published") {
-      throw new XentiumError({ code: NEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
     }
     if (article.authorId === userId) {
-      throw new XentiumError({ code: NEC.API_VALIDATION, httpStatus: 400, message: "Cannot like your own article" });
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 400, message: "Cannot like your own article" });
     }
 
     const counts = await prisma.$transaction(async (tx) => {
@@ -376,7 +376,7 @@ export const articleLikeService = {
   async unlike(articleId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
     const article = await prisma.article.findUnique({ where: { id: articleId }, select: { id: true, authorId: true } });
     if (!article) {
-      throw new XentiumError({ code: NEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
     }
 
     const counts = await prisma.$transaction(async (tx) => {
@@ -405,7 +405,7 @@ export const commentLikeService = {
     });
     if (!comment || comment.deletedAt) {
       throw new XentiumError({
-        code: NEC.API_NOT_FOUND,
+        code: XEC.API_NOT_FOUND,
         httpStatus: 404,
         message: "Comment not found",
       });
@@ -476,10 +476,10 @@ export const articleDislikeService = {
       select: { id: true, deletedAt: true, status: true, authorId: true },
     });
     if (!article || article.deletedAt || article.status !== "published") {
-      throw new XentiumError({ code: NEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
     }
     if (article.authorId === userId) {
-      throw new XentiumError({ code: NEC.API_VALIDATION, httpStatus: 400, message: "Cannot dislike your own article" });
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 400, message: "Cannot dislike your own article" });
     }
 
     const counts = await prisma.$transaction(async (tx) => {
@@ -513,7 +513,7 @@ export const articleDislikeService = {
   async undislike(articleId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
     const article = await prisma.article.findUnique({ where: { id: articleId }, select: { id: true } });
     if (!article) {
-      throw new XentiumError({ code: NEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
     }
 
     const counts = await prisma.$transaction(async (tx) => {

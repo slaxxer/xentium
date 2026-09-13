@@ -6,7 +6,7 @@
 import { createHash } from "node:crypto";
 import parser from "cron-parser";
 import type { Queue } from "bullmq";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 import { queues } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
 import { XentiumError } from "../shared/errors/XentiumError.js";
@@ -138,7 +138,7 @@ export function resolveCronPattern(cfg: CronShape, fallbackCron: string): string
 
 /**
  * Validate a cron pattern and return the next N run times. Throws
- * NEC-QUEUE-5001 on a bad expression or a schedule that fires faster than
+ * XEC-QUEUE-5001 on a bad expression or a schedule that fires faster than
  * the job's min interval.
  */
 export function previewRuns(pattern: string, tz: string | undefined, minIntervalSec: number, count = 3): string[] {
@@ -146,14 +146,14 @@ export function previewRuns(pattern: string, tz: string | undefined, minInterval
   try {
     it = parser.parseExpression(pattern, { tz: tz || "UTC", currentDate: new Date() });
   } catch {
-    throw new XentiumError({ code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
+    throw new XentiumError({ code: XEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422, message: "Invalid cron expression." });
   }
   const runs: Date[] = [];
   for (let i = 0; i < count; i++) runs.push(it.next().toDate());
   const gapSec = (runs[1]!.getTime() - runs[0]!.getTime()) / 1000;
   if (gapSec < minIntervalSec) {
     throw new XentiumError({
-      code: NEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422,
+      code: XEC.QUEUE_INVALID_SCHEDULE, httpStatus: 422,
       message: `Schedule runs too frequently — minimum is once every ${Math.round(minIntervalSec / 60)} minutes.`,
     });
   }

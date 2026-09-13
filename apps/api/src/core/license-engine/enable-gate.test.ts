@@ -17,7 +17,7 @@
  * message IS the feature here: a 402 that names the wrong remedy is the bug.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@xentium/contracts";
+import { XEC } from "@xentium/contracts";
 
 // ── the world the gate reads ────────────────────────────────────────────────
 
@@ -130,7 +130,7 @@ describe("when the set has never been fetched", () => {
     // trusting a `false` would reopen the repackage-as-free hole.
     world.manifestLicenseRequired = true;
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_SOURCE_UNREACHABLE);
+    expect(err?.code).toBe(XEC.LICENSE_SOURCE_UNREACHABLE);
     expect(err?.message).toMatch(/could not be reached/i);
   });
 });
@@ -140,7 +140,7 @@ describe("refusing a paid plugin, accurately", () => {
 
   it("asks for an account when none is connected", async () => {
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_ACCOUNT_REQUIRED);
+    expect(err?.code).toBe(XEC.LICENSE_ACCOUNT_REQUIRED);
     expect(err?.message).toMatch(/Connect your marketplace account/i);
     expect(listOwned).not.toHaveBeenCalled();
   });
@@ -148,7 +148,7 @@ describe("refusing a paid plugin, accurately", () => {
   it("says the account does not own it, and where to buy it", async () => {
     world.token = "tok";
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
     expect(err?.message).toContain("https://marketplace.example/plugins/xentium-forum");
   });
 
@@ -162,7 +162,7 @@ describe("refusing a paid plugin, accurately", () => {
       status: "active", seats: 3, seatsUsed: 3, activeHere: false,
     }];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_CAP_REACHED);
+    expect(err?.code).toBe(XEC.LICENSE_CAP_REACHED);
     expect(err?.message).toMatch(/All 3 seats/);
     expect(err?.message).toContain("https://marketplace.example/account/licences");
     expect(err?.message).not.toMatch(/Activate a licen[cs]e/i);
@@ -186,7 +186,7 @@ describe("refusing a paid plugin, accurately", () => {
       status: "active", seats: null, seatsUsed: 9, activeHere: false,
     }];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
     expect(err?.message).not.toMatch(/seat/i);
   });
 
@@ -196,7 +196,7 @@ describe("refusing a paid plugin, accurately", () => {
       product: { id: "xentium-forum", kind: "plugin", name: "Forum" },
       status: "active", seats: 2, seatsUsed: 2, activeHere: true,
     }];
-    expect((await refusalFor())?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect((await refusalFor())?.code).toBe(XEC.LICENSE_NOT_FOUND);
   });
 
   it("reports an expired licence as expired", async () => {
@@ -206,7 +206,7 @@ describe("refusing a paid plugin, accurately", () => {
       status: "expired", seats: 1, seatsUsed: 0, activeHere: false,
     }];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_EXPIRED);
+    expect(err?.code).toBe(XEC.LICENSE_EXPIRED);
     expect(err?.message).toMatch(/Renew/i);
   });
 
@@ -219,7 +219,7 @@ describe("refusing a paid plugin, accurately", () => {
       status: "active", seats: 3, seatsUsed: 3, activeHere: false,
     }];
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
     expect(err?.message).toMatch(/does not own/i);
   });
 
@@ -229,7 +229,7 @@ describe("refusing a paid plugin, accurately", () => {
     world.token = "tok";
     world.ownedThrows = true;
     const err = await refusalFor();
-    expect(err?.code).toBe(NEC.LICENSE_NOT_FOUND);
+    expect(err?.code).toBe(XEC.LICENSE_NOT_FOUND);
     expect(err?.message).not.toMatch(/does not own/i);
   });
 });

@@ -12,7 +12,7 @@ import { logger } from "../../infrastructure/logging/logger.js";
 import { assertPluginEnableAllowed } from "../license-engine/license-engine.js";
 import { PluginContextImpl } from "./plugin-context.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "../../shared/errors/nec.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { compareSemver } from "../../shared/utils/semver.js";
 import { acpPageRegistry } from "./acp-page-registry.js";
 import { authGuardRegistry } from "../auth-guard-registry/auth-guard-registry.js";
@@ -90,26 +90,26 @@ export async function validatePackage(buffer: Buffer): Promise<{ manifest: Plugi
   try {
     zip = new AdmZip(buffer);
   } catch {
-    throw new XentiumError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Package is not a valid ZIP archive." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Package is not a valid ZIP archive." });
   }
 
   // Zip-slip: reject any entry with a path traversal
   for (const entry of zip.getEntries()) {
     if (entry.entryName.includes("..")) {
-      throw new XentiumError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: `Unsafe path in package: ${entry.entryName}` });
+      throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: `Unsafe path in package: ${entry.entryName}` });
     }
   }
 
   const manifestEntry = zip.getEntry("manifest.json");
   if (!manifestEntry) {
-    throw new XentiumError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Missing manifest.json in plugin package." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "Missing manifest.json in plugin package." });
   }
 
   let raw: unknown;
   try {
     raw = JSON.parse(manifestEntry.getData().toString("utf8"));
   } catch {
-    throw new XentiumError({ code: NEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "manifest.json is not valid JSON." });
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: "manifest.json is not valid JSON." });
   }
 
   let manifest: PluginManifest;
@@ -119,7 +119,7 @@ export async function validatePackage(buffer: Buffer): Promise<{ manifest: Plugi
     // validateManifest throws coded XentiumErrors (2001/2030) — pass them through
     // instead of flattening them into an uncoded 5000.
     if (err instanceof XentiumError) throw err;
-    throw new XentiumError({ code: NEC.PLUGIN_INVALID_MANIFEST, httpStatus: 422, message: `Invalid manifest.json: ${err.message ?? err}` });
+    throw new XentiumError({ code: XEC.PLUGIN_INVALID_MANIFEST, httpStatus: 422, message: `Invalid manifest.json: ${err.message ?? err}` });
   }
 
   // Validate migration pairs before touching anything
@@ -135,7 +135,7 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
   // Check if already installed
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (existing) {
-    throw new XentiumError({ code: NEC.PLUGIN_ALREADY_INSTALLED, httpStatus: 409, message: `Plugin "${manifest.name}" (${manifest.id}) is already installed.` });
+    throw new XentiumError({ code: XEC.PLUGIN_ALREADY_INSTALLED, httpStatus: 409, message: `Plugin "${manifest.name}" (${manifest.id}) is already installed.` });
   }
 
   await ensurePluginDir();
@@ -202,10 +202,10 @@ export async function updatePlugin(
 
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (!existing) {
-    throw new XentiumError({ code: NEC.PLUGIN_NOT_FOUND, httpStatus: 404, message: `Plugin "${manifest.id}" is not installed — nothing to update.` });
+    throw new XentiumError({ code: XEC.PLUGIN_NOT_FOUND, httpStatus: 404, message: `Plugin "${manifest.id}" is not installed — nothing to update.` });
   }
   if (compareSemver(manifest.version, existing.installedVersion) <= 0) {
-    throw new XentiumError({ code: NEC.PLUGIN_VERSION_NOT_NEWER, httpStatus: 409, message: `Package version ${manifest.version} is not newer than the installed ${existing.installedVersion}. Updates are forward-only.` });
+    throw new XentiumError({ code: XEC.PLUGIN_VERSION_NOT_NEWER, httpStatus: 409, message: `Package version ${manifest.version} is not newer than the installed ${existing.installedVersion}. Updates are forward-only.` });
   }
 
   const wasEnabled = existing.status === "enabled";
@@ -335,8 +335,8 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { badgeCriteriaRegistry } = await import("../badge-registry/badge-criteria-registry.js");
   badgeCriteriaRegistry.deregister(pluginId);
 
-  // Deregister NEC codes
-  const { necRegistry } = await import("../nec-registry/nec-registry.js");
+  // Deregister XEC codes
+  const { necRegistry } = await import("../xec-registry/xec-registry.js");
   necRegistry.deregister(pluginId);
 
   // Deregister any plugin security scans

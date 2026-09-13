@@ -343,7 +343,7 @@
   "errorRef": {
     "title": "Referência de erros",
     "lookupTitle": "Procurar um código",
-    "lookupPlaceholder": "p. ex. NEC-AUTH-1001",
+    "lookupPlaceholder": "p. ex. XEC-AUTH-1001",
     "lookupBtn": "Procurar",
     "notFoundTitle": "Código não encontrado",
     "notFoundBody": "Nenhuma documentação encontrada para «{{code}}»",
@@ -373,337 +373,337 @@
       "License": "Licença"
     },
     "codes": {
-      "NEC-API-4001": {
+      "XEC-API-4001": {
         "msg": "Falha na validação",
         "desc": "O corpo do pedido, os parâmetros de consulta ou os parâmetros de rota não passaram na validação do Zod.",
         "cause": "Campos malformados ou em falta no pedido.",
         "fix": "Verifica se todos os campos obrigatórios estão presentes e correspondem aos tipos esperados."
       },
-      "NEC-API-4003": {
+      "XEC-API-4003": {
         "msg": "Proibido",
         "desc": "O utilizador autenticado não tem permissão para realizar esta ação.",
         "cause": "Falta a chave de permissão para o recurso solicitado.",
         "fix": "Garante que o grupo do utilizador tem a permissão necessária atribuída em ACP → Controlo de acesso → Permissões."
       },
-      "NEC-API-4004": {
+      "XEC-API-4004": {
         "msg": "Não encontrado",
         "desc": "O recurso solicitado não existe.",
         "cause": "ID inválido no URL, ou o recurso foi eliminado.",
         "fix": "Verifica o ID do recurso. Se foi eliminado recentemente, é um comportamento esperado."
       },
-      "NEC-API-4009": {
+      "XEC-API-4009": {
         "msg": "Conflito",
         "desc": "O pedido entra em conflito com o estado atual do recurso.",
         "cause": "O recurso foi alterado por outra pessoa, ou a ação já foi realizada (p. ex. criação duplicada).",
         "fix": "Recarrega a página para obter o estado atual e volta a tentar a ação."
       },
-      "NEC-API-4290": {
+      "XEC-API-4290": {
         "msg": "Limite de pedidos excedido",
         "desc": "Demasiados pedidos deste IP ou utilizador na janela de tempo configurada.",
         "cause": "Tráfego automatizado, bots ou uma rajada de pedidos legítimos.",
         "fix": "Aguarda o período indicado no cabeçalho Retry-After da resposta e volta a tentar."
       },
-      "NEC-API-5000": {
+      "XEC-API-5000": {
         "msg": "Erro interno do servidor",
         "desc": "Ocorreu um erro inesperado no servidor.",
         "cause": "Exceção não tratada no código da aplicação. Consulta o Registo de erros para ver o rasto de execução.",
         "fix": "Consulta ACP → Sistema → Registo de erros. Reporta ao mantenedor se persistir."
       },
-      "NEC-AUTH-1001": {
+      "XEC-AUTH-1001": {
         "msg": "Credenciais inválidas",
         "desc": "Início de sessão falhou — nenhuma conta corresponde às credenciais fornecidas.",
         "cause": "Email ou palavra-passe incorretos.",
         "fix": "Verifica as credenciais. Usa «Esqueci-me da palavra-passe» se necessário."
       },
-      "NEC-AUTH-1002": {
+      "XEC-AUTH-1002": {
         "msg": "Sessão expirada",
         "desc": "O token de acesso expirou e não foi possível renová-lo.",
         "cause": "O token de renovação expirou ou foi revogado.",
         "fix": "Inicia sessão novamente para começar uma nova sessão."
       },
-      "NEC-AUTH-1003": {
+      "XEC-AUTH-1003": {
         "msg": "Conta banida (temporária)",
         "desc": "A conta está temporariamente banida.",
         "cause": "Um moderador ou o motor de limiares emitiu um banimento temporário.",
         "fix": "Aguarda que o banimento expire, ou recorre a um moderador."
       },
-      "NEC-AUTH-1004": {
+      "XEC-AUTH-1004": {
         "msg": "Conta banida (permanente)",
         "desc": "A conta está banida permanentemente.",
         "cause": "Um moderador emitiu um banimento permanente.",
         "fix": "Contacta um administrador do site para recorrer."
       },
-      "NEC-AUTH-1005": {
+      "XEC-AUTH-1005": {
         "msg": "Email não verificado",
         "desc": "Esta ação requer um endereço de email verificado.",
         "cause": "O utilizador registou-se mas não clicou no link de verificação.",
         "fix": "Envia um novo email de verificação em Definições da conta → Segurança."
       },
-      "NEC-AUTH-1006": {
+      "XEC-AUTH-1006": {
         "msg": "Violação da política de palavras-passe",
         "desc": "A palavra-passe escolhida não cumpre os requisitos de palavra-passe do site.",
         "cause": "A palavra-passe é demasiado curta ou faltam tipos de caracteres obrigatórios.",
         "fix": "Escolhe uma palavra-passe que cumpra a política mostrada em ACP → Sistema → Definições → Auth."
       },
-      "NEC-AUTH-2001": {
+      "XEC-AUTH-2001": {
         "msg": "Email já utilizado",
         "desc": "Registo falhou — o endereço de email já está registado.",
         "cause": "Já existe uma conta com este email.",
         "fix": "Usa outro email, ou inicia sessão se esta conta for tua."
       },
-      "NEC-AUTH-2002": {
+      "XEC-AUTH-2002": {
         "msg": "Nome de utilizador já utilizado",
         "desc": "Registo ou mudança de nome falhou — o nome de utilizador já está em uso.",
         "cause": "Outro utilizador tem este nome, ou ele aparece no histórico de nomes de utilizador.",
         "fix": "Escolhe outro nome de utilizador."
       },
-      "NEC-AUTH-2003": {
+      "XEC-AUTH-2003": {
         "msg": "Código de email inválido ou expirado",
         "desc": "O token de verificação de email ou de reposição de palavra-passe é inválido ou expirou.",
         "cause": "O token já foi usado, expirou (15 min para reposição, 24 h para verificação) ou foi adulterado.",
         "fix": "Solicita um novo email a partir do formulário correspondente."
       },
-      "NEC-AUTH-1007": {
+      "XEC-AUTH-1007": {
         "msg": "Token de reposição inválido ou expirado",
         "desc": "O token de reposição de palavra-passe é inválido, já foi usado ou expirou.",
         "cause": "Os links de reposição são de uso único e expiram 15 minutos após serem emitidos.",
         "fix": "Solicita um novo link na página «Esqueci-me da palavra-passe»."
       },
-      "NEC-PERM-1001": {
+      "XEC-PERM-1001": {
         "msg": "Permissão negada",
         "desc": "Falta ao utilizador a chave de permissão específica necessária para esta ação.",
         "cause": "A atribuição de grupo ou a matriz de permissões não inclui esta chave.",
         "fix": "Concede a permissão necessária ao grupo do utilizador em ACP → Controlo de acesso → Permissões."
       },
-      "NEC-PERM-1040": {
+      "XEC-PERM-1040": {
         "msg": "Conteúdo demasiado longo",
         "desc": "O corpo da publicação ou do artigo excede o comprimento máximo para o nível deste utilizador.",
         "cause": "A configuração de progressão do grupo restringe o comprimento do conteúdo neste nível.",
         "fix": "Encurta o conteúdo, ou ajusta o comprimento máximo de publicação do grupo em ACP → Controlo de acesso → Grupos → Progressão."
       },
-      "NEC-PERM-1041": {
+      "XEC-PERM-1041": {
         "msg": "Limite diário de publicações atingido",
         "desc": "O utilizador atingiu o seu limite diário de publicações.",
         "cause": "A configuração de progressão do grupo define um limite diário de publicações.",
         "fix": "Aguarda até à meia-noite (UTC), ou aumenta o limite em ACP → Controlo de acesso → Grupos → Progressão."
       },
-      "NEC-PERM-1042": {
+      "XEC-PERM-1042": {
         "msg": "Limite de anexos excedido",
         "desc": "Demasiados anexos nesta publicação.",
         "cause": "A configuração de progressão do grupo restringe o número de anexos.",
         "fix": "Reduz os anexos, ou aumenta o limite na configuração de progressão do grupo."
       },
-      "NEC-ARTICLE-3001": {
+      "XEC-ARTICLE-3001": {
         "msg": "Artigo não encontrado",
         "desc": "O artigo solicitado não existe ou foi eliminado.",
         "cause": "Slug ou ID inválido, ou o artigo foi eliminado de forma reversível.",
         "fix": "Verifica o URL. Se foi eliminado recentemente, é um comportamento esperado."
       },
-      "NEC-ARTICLE-3002": {
+      "XEC-ARTICLE-3002": {
         "msg": "Artigo não publicado",
         "desc": "O artigo existe mas não está no estado publicado.",
         "cause": "O artigo é um rascunho ou está em revisão.",
         "fix": "Publica o artigo a partir do editor, ou verifica o estado em ACP → Conteúdo → Artigos."
       },
-      "NEC-ARTICLE-3003": {
+      "XEC-ARTICLE-3003": {
         "msg": "Slug de artigo já utilizado",
         "desc": "O slug de URL escolhido já é usado por outro artigo.",
         "cause": "Título duplicado ou slug definido manualmente.",
         "fix": "Altera o título ou define um slug único no editor de artigos."
       },
-      "NEC-STORE-7001": {
+      "XEC-STORE-7001": {
         "msg": "Ficheiro demasiado grande",
         "desc": "O ficheiro carregado excede o tamanho máximo permitido para este tipo de carregamento.",
         "cause": "O tamanho do ficheiro excede o limite definido na configuração UPLOAD_LIMITS.",
         "fix": "Comprime ou redimensiona o ficheiro, ou aumenta o limite na configuração do servidor."
       },
-      "NEC-STORE-7002": {
+      "XEC-STORE-7002": {
         "msg": "Tipo de ficheiro não permitido",
         "desc": "O tipo de ficheiro não é permitido para esta ranhura de carregamento ou nível de utilizador.",
         "cause": "A verificação do tipo MIME falhou, ou a configuração de progressão do grupo restringe este tipo.",
         "fix": "Usa um tipo de ficheiro permitido. Os administradores podem ajustar as restrições de tipo por grupo na configuração de Progressão."
       },
-      "NEC-STORE-7003": {
+      "XEC-STORE-7003": {
         "msg": "Tipo MIME não corresponde",
         "desc": "Os bytes mágicos do ficheiro não correspondem ao Content-Type declarado.",
         "cause": "O ficheiro foi renomeado para aparentar ser outro tipo.",
         "fix": "Carrega o ficheiro correto. Não renomeies ficheiros para contornar as verificações de tipo."
       },
-      "NEC-STORE-7004": {
+      "XEC-STORE-7004": {
         "msg": "Caminho proibido",
         "desc": "O caminho de armazenamento solicitado está fora dos diretórios públicos permitidos.",
         "cause": "Tentativa de aceder diretamente a um caminho de armazenamento privado (plugins/, themes/packs/, temp/).",
         "fix": "Acede aos ficheiros de plugins ou de pacotes de estilo através dos respetivos endpoints de API autenticados."
       },
-      "NEC-PLUGIN-2001": {
+      "XEC-PLUGIN-2001": {
         "msg": "Manifesto de plugin inválido",
         "desc": "Ao pacote de plugin carregado faltam campos obrigatórios no manifest.json.",
         "cause": "O plugin foi compilado com um SDK desatualizado ou tem um manifesto malformado.",
         "fix": "Verifica o manifest.json em relação ao esquema de manifesto atual. Campos obrigatórios: id, name, version, vendor, minXentiumVersion."
       },
-      "NEC-PLUGIN-2002": {
+      "XEC-PLUGIN-2002": {
         "msg": "Pacote de plugin inválido",
         "desc": "O ficheiro .nvplugin carregado não é um pacote de plugin válido.",
         "cause": "Não é um arquivo ZIP, contém uma entrada insegura (travessia de caminho), ou o manifest.json está em falta / não é JSON válido.",
         "fix": "Volta a descarregar o pacote a partir da sua origem. Se o compilaste, reconstrói-o com o empacotador do SDK de plugins."
       },
-      "NEC-PLUGIN-2003": {
+      "XEC-PLUGIN-2003": {
         "msg": "Plugin já instalado",
         "desc": "Já está instalado um plugin com este id neste site.",
         "cause": "O pacote foi carregado duas vezes, ou tentou-se uma atualização pelo fluxo de instalação.",
         "fix": "Desinstala primeiro o plugin existente, ou usa o fluxo de atualização em ACP → Extensões → Instaladas."
       },
-      "NEC-PLUGIN-2004": {
+      "XEC-PLUGIN-2004": {
         "msg": "Plugin não instalado",
         "desc": "Uma atualização ou ação de gestão visou um plugin que não está instalado neste site.",
         "cause": "O plugin foi desinstalado, ou o pedido indicou o id de plugin errado.",
         "fix": "Instala primeiro o plugin em ACP → Extensões → Mercado e volta a tentar."
       },
-      "NEC-PLUGIN-2005": {
+      "XEC-PLUGIN-2005": {
         "msg": "Atualização não é mais recente",
         "desc": "A versão do pacote de atualização não é mais recente do que a versão instalada.",
         "cause": "As atualizações só avançam; a versão do pacote é igual ou anterior à instalada.",
         "fix": "Nenhuma ação necessária — a versão instalada já está atualizada."
       },
-      "NEC-PLUGIN-2006": {
+      "XEC-PLUGIN-2006": {
         "msg": "Carregamentos desativados",
         "desc": "Os carregamentos manuais de .nvplugin estão desativados neste site.",
         "cause": "O mercado é o canal de instalação autorizado; os carregamentos manuais estão desativados por predefinição.",
         "fix": "Instala a partir de ACP → Extensões → Mercado, ou ativa os carregamentos manuais em ACP → Extensões → Instaladas."
       },
-      "NEC-PLUGIN-2010": {
+      "XEC-PLUGIN-2010": {
         "msg": "SQL de migração inválido",
         "desc": "Um ficheiro de migração do plugin contém instruções SQL que não são DDL.",
         "cause": "Os ficheiros de migração do plugin incluem INSERT/UPDATE/DELETE/SELECT — só é permitido DDL.",
         "fix": "Contacta o fornecedor do plugin. Os ficheiros de migração só podem usar instruções CREATE/ALTER/DROP TABLE/INDEX."
       },
-      "NEC-PLUGIN-2011": {
+      "XEC-PLUGIN-2011": {
         "msg": "Ficheiro de migração em falta",
         "desc": "Uma migração listada no manifesto não tem o ficheiro .up.sql / .down.sql correspondente no pacote.",
         "cause": "O pacote foi construído de forma incompleta — cada migração up tem de incluir uma migração down correspondente.",
         "fix": "Contacta o fornecedor do plugin para obter uma versão corretamente empacotada."
       },
-      "NEC-PLUGIN-2012": {
+      "XEC-PLUGIN-2012": {
         "msg": "Soma de verificação de migração não corresponde",
         "desc": "Um ficheiro de migração já aplicado difere do registado no momento da instalação.",
         "cause": "O pacote do plugin inclui uma versão modificada de uma migração que este site já executou.",
         "fix": "Não edites migrações aplicadas. O fornecedor deve entregar as alterações de esquema como uma NOVA migração na versão seguinte."
       },
-      "NEC-PLUGIN-2013": {
+      "XEC-PLUGIN-2013": {
         "msg": "Nome de tabela reservado ou com prefixo incorreto",
         "desc": "Uma migração de plugin tenta criar, alterar ou eliminar um objeto de base de dados que é um objeto reservado do núcleo ou que não corresponde ao prefixo de tabela declarado pelo plugin.",
         "cause": "A migração nomeia um objeto que começa por ncf_, xentium_, _prisma, pg_ ou information_schema, ou (quando o plugin declara um tablePrefix) um objeto que omite esse prefixo.",
         "fix": "Atribui a cada tabela, índice, sequência, tipo, função e gatilho o prefixo próprio do plugin e nunca toques em objetos do núcleo."
       },
-      "NEC-PLUGIN-2020": {
+      "XEC-PLUGIN-2020": {
         "msg": "Plugin não disponível",
         "desc": "A rota de plugin solicitada não está disponível.",
         "cause": "O plugin está instalado mas atualmente desativado.",
         "fix": "Ativa o plugin em ACP → Extensões → Instaladas."
       },
-      "NEC-PLUGIN-2030": {
+      "XEC-PLUGIN-2030": {
         "msg": "Plugin incompatível",
         "desc": "O intervalo de versões do Xentium suportado pelo plugin não inclui esta versão da plataforma.",
         "cause": "O minXentiumVersion do manifesto é mais recente do que esta instalação, ou o maxXentiumVersion é mais antigo.",
         "fix": "Atualiza o Xentium, ou instala uma versão do plugin compilada para esta versão da plataforma."
       },
-      "NEC-CORE-8001": {
+      "XEC-CORE-8001": {
         "msg": "Tema não encontrado",
         "desc": "O tema solicitado não está registado no ThemeRegistry.",
         "cause": "O ID do tema não corresponde a nenhum tema registado.",
         "fix": "Volta a ativar o tema ou carrega novamente o seu pacote."
       },
-      "NEC-CORE-8002": {
+      "XEC-CORE-8002": {
         "msg": "Pacote de tema inválido",
         "desc": "O .nvtheme carregado falhou na validação — a mensagem indica o ficheiro e a regra quebrada.",
         "cause": "Um manifest.json em falta ou malformado, um esquema que não é um documento válido, uma folha de estilos com regras que não sejam propriedades personalizadas :root, ou um recurso de um tipo não permitido.",
         "fix": "Lê a mensagem: indica o ficheiro em causa. A validação é tudo ou nada, por isso nada foi aplicado e o site está inalterado."
       },
-      "NEC-CORE-8010": {
+      "XEC-CORE-8010": {
         "msg": "Site em manutenção",
         "desc": "O site está em modo de manutenção e o requisitante não pertence ao grupo autorizado a contorná-lo. É um estado intencional, não uma falha — cada pedido bloqueado devolve este código, pelo que NÃO é escrito no Registo de erros (isso inundá-lo-ia). Ativar/desativar a manutenção fica registado no Registo de atividade.",
         "cause": "Um administrador ativou o modo de manutenção (ACP → Sistema → Definições → Manutenção). Só o grupo autorizado configurado e os administradores podem contorná-lo.",
         "fix": "Para restaurar o site, desativa o modo de manutenção em ACP → Sistema → Definições. A equipa pode iniciar sessão no ecrã de manutenção para o contornar."
       },
-      "NEC-PAGE-3501": {
+      "XEC-PAGE-3501": {
         "msg": "Página não encontrada",
         "desc": "A página personalizada solicitada não existe.",
         "cause": "O slug da página está errado, ou a página foi eliminada/despublicada.",
         "fix": "Verifica o slug em ACP → Conteúdo → Páginas, ou cria a página."
       },
-      "NEC-PAGE-3502": {
+      "XEC-PAGE-3502": {
         "msg": "Slug de página já utilizado",
         "desc": "Outra página já usa este slug.",
         "cause": "Os slugs têm de ser únicos; o slug escolhido colide com uma página existente.",
         "fix": "Escolhe outro slug para a página em ACP → Conteúdo → Páginas."
       },
-      "NEC-QUEUE-5000": {
+      "XEC-QUEUE-5000": {
         "msg": "Tarefa em segundo plano falhou",
         "desc": "Uma tarefa em segundo plano (BullMQ) lançou um erro e falhou após esgotar todas as tentativas. É um código invólucro — indica que uma tarefa morreu, não porquê.",
-        "cause": "A causa real está nos campos DESTA entrada do Registo de erros: lê a mensagem (p. ex. um erro de Prisma/SQL, uma falha de rede ou um bug da tarefa) e o contexto (queue, jobName, jobId). O código NEC é apenas a categoria.",
+        "cause": "A causa real está nos campos DESTA entrada do Registo de erros: lê a mensagem (p. ex. um erro de Prisma/SQL, uma falha de rede ou um bug da tarefa) e o contexto (queue, jobName, jobId). O código XEC é apenas a categoria.",
         "fix": "Abre a entrada correspondente do Registo de erros, lê a sua mensagem + contexto, e corrige a causa subjacente. Reinicia o processo worker para que assuma a correção; a tarefa volta a executar no próximo agendamento. Se a mensagem apontar para um bug da aplicação, reporta-a textualmente ao mantenedor."
       },
-      "NEC-QUEUE-5001": {
+      "XEC-QUEUE-5001": {
         "msg": "Agendamento de tarefa inválido",
         "desc": "Um agendamento submetido em ACP → Sistema → Tarefas agendadas foi rejeitado.",
         "cause": "A expressão cron estava malformada, ou o agendamento dispararia com mais frequência do que o intervalo mínimo da tarefa.",
         "fix": "Usa uma expressão cron válida de 5 campos, ou escolhe um intervalo menos frequente. O agendamento rejeitado não é guardado."
       },
-      "NEC-LICENSE-9001": {
+      "XEC-LICENSE-9001": {
         "msg": "Licença não encontrada",
         "desc": "Não existe um direito de utilização válido para este plugin.",
         "cause": "O plugin requer uma licença mas nenhuma está ativada para este site.",
         "fix": "Ativa uma licença em ACP → Extensões → Licença, ou liga uma conta do mercado."
       },
-      "NEC-LICENSE-9002": {
+      "XEC-LICENSE-9002": {
         "msg": "Licença expirada",
         "desc": "O direito de utilização ultrapassou a expiração e o período de tolerância terminou.",
         "cause": "A licença caducou e a janela de tolerância offline de 30 dias terminou.",
         "fix": "Atualiza ou renova a licença em ACP → Extensões → Licença. Os plugins já ativados continuam a funcionar."
       },
-      "NEC-LICENSE-9003": {
+      "XEC-LICENSE-9003": {
         "msg": "Domínio de licença não corresponde",
         "desc": "O direito de utilização está associado a um domínio diferente do deste site (apenas produção).",
         "cause": "O host do URL canónico do site (site.url) difere do domínio para o qual a licença foi ativada.",
         "fix": "Volta a associar a licença a este domínio, ou ativa-a no domínio correto."
       },
-      "NEC-LICENSE-9004": {
+      "XEC-LICENSE-9004": {
         "msg": "Limite de ativações atingido",
         "desc": "O portal de descarga não encontrou nenhuma ranhura de ativação de produção livre para esta compra.",
         "cause": "Todos os domínios de produção licenciados desta compra já estão em uso.",
         "fix": "Liberta uma ranhura, ou compra um domínio adicional em nodevo.io."
       },
-      "NEC-LICENSE-9005": {
+      "XEC-LICENSE-9005": {
         "msg": "Conta do mercado necessária",
         "desc": "Esta ação precisa de uma conta do mercado ligada.",
         "cause": "Nenhuma conta nodevo.io está ligada para este site.",
         "fix": "Liga uma conta em ACP → Extensões → Mercado, ou usa uma chave de licença manual."
       },
-      "NEC-LICENSE-9006": {
+      "XEC-LICENSE-9006": {
         "msg": "Token de direito de utilização inválido",
         "desc": "O JWT de direito de utilização armazenado falhou na verificação RS256.",
         "cause": "O token foi adulterado, ou a chave pública de verificação não corresponde ao emissor.",
         "fix": "Volta a ativar a licença. Em produção, confirma que a chave pública de licença incluída corresponde à chave de assinatura de nodevo.io."
       },
-      "NEC-LICENSE-9007": {
+      "XEC-LICENSE-9007": {
         "msg": "Mercado inacessível",
         "desc": "Não foi possível contactar o servidor do mercado / de licenças.",
         "cause": "Falha de rede ou o servidor de licenças está em baixo. Aplica-se o período de tolerância de 30 dias.",
         "fix": "Verifica a conetividade. Os plugins em execução não são afetados durante a janela de tolerância; tenta novamente mais tarde."
       },
-      "NEC-LICENSE-9008": {
+      "XEC-LICENSE-9008": {
         "msg": "Licença já ativa",
         "desc": "A ativação foi recusada porque este site já tem uma licença ativa.",
         "cause": "Foi introduzida uma segunda chave (ou a autoativação de conta foi executada) enquanto há uma licença ativa.",
         "fix": "Desativa primeiro a licença atual em ACP → Extensões → Licença e depois ativa a nova."
       },
-      "NEC-LICENSE-9009": {
+      "XEC-LICENSE-9009": {
         "msg": "Servidor de licenças recusou",
         "desc": "O servidor de licenças rejeitou o pedido — a mensagem contém o motivo exato.",
         "cause": "Chave desconhecida ou revogada, período de licença terminado, sem ranhura de domínio livre, ou a licença está associada a outro domínio.",
         "fix": "Lê a mensagem: renova o período, liberta/adiciona uma ranhura de domínio, ou contacta o suporte do mercado para mover a associação."
       },
-      "NEC-LICENSE-9010": {
+      "XEC-LICENSE-9010": {
         "msg": "Identidade da instalação ausente",
         "desc": "Esta instância não tem registo de instalação, pelo que não tem identidade para licenciar.",
         "cause": "O instalador nunca foi concluído, ou a linha ncf_installs foi eliminada da base de dados.",
