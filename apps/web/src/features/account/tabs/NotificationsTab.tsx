@@ -1,37 +1,24 @@
+/**
+ * Notifications — one row per event, one column per channel.
+ *
+ * ⚠ It used to be TWO lists ("in-app" and "email"), each with its own copy of the
+ * same five events. Whether you get an email about mentions and whether you get a
+ * bell about mentions is one decision about mentions, and splitting it meant
+ * scrolling between two places to make it.
+ *
+ * ⚠ Not every event has an email channel, and the matrix says so with an em dash
+ * rather than a switch that would silently do nothing. The server is the authority
+ * on which ones do — `EMAIL_ITEMS` mirrors it.
+ *
+ * ⚠ A switch SAVES on click, as it always has. This tab has no save bar: see
+ * `SaveBar`.
+ */
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { AccordionSection } from "../../../components/AccordionSection";
-import { swalToast } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
 import { api } from "../../../lib/api";
-
-interface NotifToggleProps {
-  label:    string;
-  desc:     string;
-  checked:  boolean;
-  onChange: (v: boolean) => void;
-  disabled?: boolean;
-}
-
-function NotifToggle({ label, desc, checked, onChange, disabled }: NotifToggleProps) {
-  return (
-    <label className="account-toggle" style={{ opacity: disabled ? 0.5 : 1 }}>
-      <div className="account-toggle__text">
-        <span className="account-toggle__label">{label}</span>
-        <span className="account-toggle__desc">{desc}</span>
-      </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={disabled}
-        className={`account-toggle__btn${checked ? " account-toggle__btn--on" : ""}`}
-        onClick={() => onChange(!checked)}
-      >
-        <span className="account-toggle__knob" />
-      </button>
-    </label>
-  );
-}
+import { AccountCard, AccountSwitch } from "../components/AccountCard";
+import { SavedChip } from "../components/SaveBar";
 
 const IN_APP_ITEMS = [
   { id: "new_follower" }, { id: "profile_activity" }, { id: "mentions" },
@@ -45,15 +32,18 @@ const EMAIL_ITEMS = [
 type InAppId = typeof IN_APP_ITEMS[number]["id"];
 type EmailId = typeof EMAIL_ITEMS[number]["id"];
 
-interface NotifPrefs {
+export interface NotifPrefs {
   inApp: Record<InAppId, boolean>;
   email: Record<EmailId, boolean>;
 }
 
-const DEFAULTS: NotifPrefs = {
+/** Exported for the rail's "N on" badge, which reads the same cache. */
+export const NOTIF_DEFAULTS: NotifPrefs = {
   inApp: { new_follower: true, profile_activity: true, mentions: true, article_activity: true, progression: true, badges: true },
   email: { new_follower: false, profile_activity: false, mentions: false },
 };
+
+const EMAIL_IDS = new Set<string>(EMAIL_ITEMS.map((x) => x.id));
 
 export function NotificationsTab() {
   const { t } = useTranslation("account");
@@ -62,65 +52,71 @@ export function NotificationsTab() {
   const { data, isLoading } = useQuery<NotifPrefs>({
     queryKey: ["account-notif-prefs"],
     queryFn:  () => api.get("/account/notifications"),
-    placeholderData: DEFAULTS,
+    placeholderData: NOTIF_DEFAULTS,
   });
 
   const mutation = useMutation({
-    mutationFn: (prefs: NotifPrefs) => api.patch("/account/notifications", prefs),
-    onSuccess: (updated) => {
-      qc.setQueryData(["account-notif-prefs"], updated);
-      swalToast(t("notifications.saved"), "success");
+    mutationFn: (prefs: NotifPrefs) => api.patch<NotifPrefs>("/account/notifications", prefs),
+    onSuccess: (updated) => qc.setQueryData(["account-notif-prefs"], updated),
+    onError: () => {
+      // Put the switch back: the row must not show a state the server refused.
+      void qc.invalidateQueries({ queryKey: ["account-notif-prefs"] });
+      toast.error(t("notifications.saveError"));
     },
-    onError: () => swalToast(t("notifications.saveError")),
   });
 
-  const prefs = data ?? DEFAULTS;
+  const prefs = data ?? NOTIF_DEFAULTS;
 
-  function setInApp(id: InAppId, val: boolean) {
-    const next = { ...prefs, inApp: { ...prefs.inApp, [id]: val } };
+  const flip = (channel: "inApp" | "email", id: string, on: boolean) => {
+    const next = { ...prefs, [channel]: { ...prefs[channel], [id]: on } } as NotifPrefs;
+    // Optimistic: a switch that waits for a round-trip feels broken.
+    qc.setQueryData(["account-notif-prefs"], next);
     mutation.mutate(next);
-  }
-
-  function setEmail(id: EmailId, val: boolean) {
-    const next = { ...prefs, email: { ...prefs.email, [id]: val } };
-    mutation.mutate(next);
-  }
+  };
 
   return (
-    <section className="account-section">
-      <h2 className="account-section__title">{t("notifications.title")}</h2>
-
-      <div className="security-accordion-list" style={{ opacity: isLoading ? 0.5 : 1, transition: "opacity .2s" }}>
-        <AccordionSection title={t("notifications.inAppTitle")} defaultOpen={true}>
-          <div className="security-accordion__content">
-            {IN_APP_ITEMS.map((item) => (
-              <NotifToggle
-                key={item.id}
-                label={t(`notifications.items.${item.id}.label`)}
-                desc={t(`notifications.items.${item.id}.desc`)}
-                checked={prefs.inApp[item.id]}
-                disabled={mutation.isPending}
-                onChange={(v) => setInApp(item.id, v)}
-              />
-            ))}
+    <>
+      <AccountCard title={t("notifications.title")} desc={t("notifications.matrixDesc")}>
+        <div className="acct-matrix" style={{ opacity: isLoading ? 0.5 : 1 }}>
+          <div className="acct-matrix__head">
+            <span>{t("notifications.colEvent")}</span>
+            <span>{t("notifications.colInApp")}</span>
+            <span>{t("notifications.colEmail")}</span>
           </div>
-        </AccordionSection>
 
-        <AccordionSection title={t("notifications.emailTitle")}>
-          <div className="security-accordion__content">
-            {EMAIL_ITEMS.map((item) => (
-              <NotifToggle
-                key={item.id}
-                label={t(`notifications.items.${item.id}.label`)}
-                desc={t(`notifications.items.${item.id}.desc`)}
-                checked={prefs.email[item.id]}
-                disabled={mutation.isPending}
-                onChange={(v) => setEmail(item.id, v)}
-              />
-            ))}
-          </div>
-        </AccordionSection>
-      </div>
-    </section>
+          {IN_APP_ITEMS.map((item) => {
+            const hasEmail = EMAIL_IDS.has(item.id);
+            return (
+              <div key={item.id} className="acct-matrix__row">
+                <span className="acct-matrix__event">
+                  <span className="acct-row__label">{t(`notifications.items.${item.id}.label`)}</span>
+                  <span className="acct-row__desc">{t(`notifications.items.${item.id}.desc`)}</span>
+                </span>
+                <span className="acct-matrix__cell">
+                  <AccountSwitch
+                    on={prefs.inApp[item.id]}
+                    label={t("notifications.colInApp")}
+                    onToggle={() => flip("inApp", item.id, !prefs.inApp[item.id])}
+                  />
+                </span>
+                <span className="acct-matrix__cell">
+                  {hasEmail
+                    ? <AccountSwitch
+                        on={prefs.email[item.id as EmailId]}
+                        label={t("notifications.colEmail")}
+                        onToggle={() => flip("email", item.id, !prefs.email[item.id as EmailId])}
+                      />
+                    // ⚠ An em dash, not a disabled switch: this event has no email
+                    // channel at all, and a greyed switch reads as "off, for now".
+                    : <span className="acct-matrix__none" aria-label={t("notifications.noEmailChannel")}>—</span>}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </AccountCard>
+
+      <SavedChip />
+    </>
   );
 }

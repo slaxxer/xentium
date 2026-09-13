@@ -1,10 +1,23 @@
-.account-page {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: var(--sp-10) var(--sp-8);
+/**
+ * Account settings.
+ *
+ * ⚠ Two vocabularies live here on purpose. `acct-*` is the redesigned page: shell,
+ * rail, cards, rows, preview, save bar. `account-*` is the FORM vocabulary
+ * (`account-input`, `account-field`, `account-label`, `account-hint`,
+ * `account-toggle*`, `account-select`) — restyled, never renamed, because the
+ * shipped forum plugin's account and privacy sections render exactly those class
+ * names and a built bundle cannot be edited from here.
+ *
+ * Everything is a token: this page follows the SITE's palette, unlike the ACP.
+ */
 
-  @media (max-width: 640px) {
-    padding: var(--sp-6) var(--sp-4);
+.account-page {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: var(--sp-9) var(--sp-6) var(--sp-16);
+
+  @media (max-width: 720px) {
+    padding: var(--sp-6) var(--sp-4) var(--sp-10);
   }
 }
 
@@ -15,333 +28,403 @@
   color: var(--c-fg-muted);
 }
 
-/* ── Header ─────────────────────────────────────────── */
-.account-header {
-  margin-bottom: var(--sp-8);
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+
+.acct-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-7);
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--c-fg);
+  }
+
+  p {
+    margin: var(--sp-1) 0 0;
+    max-width: 62ch;
+    font-size: var(--fs-sm);
+    color: var(--c-fg-muted);
+  }
 }
 
-.account-title {
-  font-size: var(--fs-2xl);
-  font-weight: 800;
-  color: var(--c-fg);
-}
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
 
-.account-subtitle {
-  font-size: var(--fs-sm);
-  color: var(--c-fg-muted);
-  margin-top: var(--sp-1);
-}
-
-/* ── Layout ─────────────────────────────────────────── */
-.account-layout {
+.acct-layout {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 268px minmax(0, 1fr);
   gap: var(--sp-8);
   align-items: start;
 
-  @media (max-width: 640px) {
+  @media (max-width: 900px) {
     grid-template-columns: 1fr;
-    gap: var(--sp-4);
+    gap: var(--sp-5);
   }
 }
 
-/* ── Side nav ───────────────────────────────────────── */
-.account-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
+/* The rail is the navigation AND the search. Sticky, because the cards are long. */
+.acct-rail {
   position: sticky;
   top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
 
-  @media (max-width: 640px) {
-    flex-direction: row;
-    flex-wrap: wrap;
-    position: static;
-  }
+  @media (max-width: 900px) { position: static; }
 }
 
-.account-nav__item {
+.acct-search {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--c-fg-muted);
-  text-align: left;
-  transition: background 0.15s, color 0.15s;
-
-  &:hover { background: var(--c-accent-soft); color: var(--c-fg); }
-
-  &--active {
-    background: var(--c-accent-soft);
-    color: var(--c-accent);
-    font-weight: 600;
-  }
-}
-
-.account-nav__icon {
-  width: 14px !important;
-  height: 14px !important;
-  flex-shrink: 0;
-  opacity: 0.75;
-
-  .account-nav__item--active & { opacity: 1; }
-}
-
-/* ── Content area ───────────────────────────────────── */
-.account-section__title {
-  font-size: var(--fs-lg);
-  font-weight: 700;
-  color: var(--c-fg);
-  margin-bottom: var(--sp-6);
-}
-
-/* ── Card ───────────────────────────────────────────── */
-.account-card {
+  height: 38px;
+  padding: 0 var(--sp-3);
   background: var(--card-bg);
   border: 1px solid var(--c-border);
-  border-radius: var(--card-radius);
-  padding: var(--sp-6);
-  margin-bottom: var(--sp-4);
+  border-radius: var(--radius-md);
 
-  &--placeholder {
-    color: var(--c-fg-muted);
+  .acct-ic { color: var(--c-fg-subtle); font-size: 12px; flex: none; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    font: inherit;
     font-size: var(--fs-sm);
-  }
-
-  &__title {
-    font-size: var(--fs-base);
-    font-weight: 700;
     color: var(--c-fg);
-    margin-bottom: var(--sp-4);
-  }
+    outline: none;
 
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--sp-4);
+    &::placeholder { color: var(--c-fg-subtle); }
   }
 }
 
-/* ── Form elements ──────────────────────────────────── */
-.account-field {
-  margin-bottom: var(--sp-4);
-}
-
-.account-label {
-  display: block;
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  color: var(--c-fg-muted);
-  margin-bottom: var(--sp-2);
-}
-
-.account-value {
-  font-size: var(--fs-sm);
-  color: var(--c-fg);
-  padding: var(--sp-2) 0;
-}
-
-.account-input {
-  width: 100%;
-  padding: var(--sp-3) var(--sp-3);
-  background: var(--input-bg);
-  border: 1px solid var(--input-border-color);
-  border-radius: var(--input-radius);
-  color: var(--input-fg);
-  font-size: var(--fs-sm);
-  font-family: inherit;
-  transition: border-color 0.15s;
-
-  &:focus { outline: none; border-color: var(--input-border-focus); }
-
-  &[readonly] {
-    background: var(--c-bg);
-    color: var(--c-fg-muted);
-    cursor: default;
-    &:focus { border-color: var(--c-border); }
-  }
-
-  &--textarea {
-    resize: vertical;
-    min-height: 100px;
-  }
-}
-
-.account-select {
-  appearance: none;
-  width: 100%;
-  padding: var(--sp-2) var(--sp-3);
-  background: var(--input-bg);
-  border: 1px solid var(--input-border-color);
-  border-radius: var(--input-radius);
-  color: var(--input-fg);
-  font-size: var(--fs-sm);
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.15s;
-
-  &:focus { outline: none; border-color: var(--input-border-focus); }
-}
-
-.account-hint {
-  font-size: var(--fs-xs);
-  color: var(--c-fg-muted);
-  margin-top: var(--sp-1);
-}
-
-.account-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  margin-top: var(--sp-2);
-
-  &--inline {
-    margin-top: var(--sp-4);
-  }
-}
-
-.account-saved {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--fs-sm);
-  color: var(--c-success);
-  font-weight: 600;
-  animation: savedFadeIn 0.2s ease;
-
-  &::before {
-    content: "✓";
-    font-size: 13px;
-  }
-}
-
-@keyframes savedFadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.account-error {
-  font-size: var(--fs-sm);
-  color: var(--c-danger);
-}
-
-.account-inline-form {
-  display: flex;
-  gap: var(--sp-3);
-  margin-top: var(--sp-3);
-
-  .account-input { max-width: 240px; }
-}
-
-.account-form { max-width: 360px; }
-
-.account-field-row {
-  display: flex;
-  gap: var(--sp-2);
-  align-items: center;
-
-  .account-input { flex: 1; }
-}
-
-.account-select--privacy {
-  flex-shrink: 0;
-  width: auto;
-  min-width: 130px;
-}
-
-/* ── Sessions ───────────────────────────────────────── */
-.account-sessions {
+.acct-nav {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-}
+  gap: 3px;
 
-.account-session {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-4);
-  padding: var(--sp-3);
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-sm);
-
-  &__info { flex: 1; min-width: 0; }
-  &__ua {
-    display: block;
-    font-size: var(--fs-sm);
-    color: var(--c-fg);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  /* Narrow: the sections become a scrolling strip rather than a tall stack. */
+  @media (max-width: 900px) {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: var(--sp-1);
   }
-  &__meta {
+
+  &__empty {
+    margin: var(--sp-2) var(--sp-1);
     font-size: var(--fs-xs);
-    color: var(--c-fg-muted);
-    margin-top: 2px;
-    display: block;
+    color: var(--c-fg-subtle);
   }
-}
-
-/* ── Username history ───────────────────────────────── */
-.account-history {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
 
   &__item {
     display: flex;
     align-items: center;
-    gap: var(--sp-2);
+    gap: 11px;
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    font: inherit;
     font-size: var(--fs-sm);
-  }
-
-  &__old { color: var(--c-fg-muted); }
-  &__arrow { color: var(--c-fg-subtle); }
-  &__new { color: var(--c-fg); font-weight: 600; }
-  &__date {
-    margin-left: auto;
+    font-weight: 600;
     color: var(--c-fg-muted);
-    font-size: var(--fs-xs);
+    text-align: left;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s;
+
+    .acct-ic { width: 16px; font-size: 13px; flex: none; opacity: 0.7; }
+    /* ⚠ A CLASS, not `> span`. With a FontAwesome kit the icon renders as
+       `<span><i/></span>` (components/Icon.tsx), so `> span` also matched the icon's
+       wrapper and gave it `flex: 1`, shoving every label to the right. */
+    &__label { flex: 1; }
+
+    /* The one fact worth knowing about the section, without opening it. */
+    > em {
+      font-style: normal;
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--c-fg-muted);
+      background: var(--c-bg);
+      border: 1px solid var(--c-border);
+    }
+
+    &:hover { background: var(--c-accent-soft); color: var(--c-fg); }
+
+    &.is-on {
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+      font-weight: 700;
+      .acct-ic { opacity: 1; }
+    }
   }
 }
 
-/* ── Toggle ─────────────────────────────────────────── */
+.acct-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  min-width: 0;
+}
+
+/* ── Card ───────────────────────────────────────────────────────────────────── */
+
+.acct-card {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+
+  &--danger { border-color: color-mix(in srgb, var(--c-danger) 25%, transparent); }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-4);
+    padding: var(--sp-4) var(--sp-6);
+    border-bottom: 1px solid var(--c-rowline);
+    flex-wrap: wrap;
+  }
+
+  &__titles {
+    min-width: 0;
+
+    h2 {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--fs-base);
+      font-weight: 700;
+      color: var(--c-fg);
+    }
+
+    p {
+      margin: 2px 0 0;
+      font-size: var(--fs-xs);
+      color: var(--c-fg-muted);
+      line-height: 1.5;
+    }
+  }
+
+  &__aside { margin-inline-start: auto; flex: none; }
+  &__body  { padding: var(--sp-5) var(--sp-6); }
+}
+
+/* ── Row ────────────────────────────────────────────────────────────────────── */
+
+.acct-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  gap: var(--sp-4);
+  align-items: center;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--c-rowline);
+
+  &:first-child { padding-top: 0; }
+  &:last-child  { border-bottom: none; padding-bottom: 0; }
+
+  /* A select whose options are sentences needs the room. */
+  &--wide { grid-template-columns: minmax(0, 1fr) 220px; }
+
+  /* label | input — the links row: the field takes the rest of the width. */
+  &--link {
+    grid-template-columns: 150px minmax(0, 1fr);
+
+    @media (max-width: 620px) { grid-template-columns: 1fr; }
+  }
+
+  /* label | value | visibility — the profile-field row. */
+  &--field {
+    grid-template-columns: 150px minmax(0, 1fr) 148px;
+
+    @media (max-width: 620px) {
+      grid-template-columns: 1fr;
+      gap: var(--sp-2);
+    }
+  }
+
+  &__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+  &__label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-fg);
+  }
+
+  &__desc {
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+    line-height: 1.5;
+  }
+
+  &__control {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    min-width: 0;
+
+    > * { min-width: 0; }
+  }
+
+  @media (max-width: 620px) {
+    grid-template-columns: 1fr;
+    gap: var(--sp-2);
+
+    &__control { justify-content: flex-start; }
+  }
+}
+
+/* ── Form vocabulary (the plugin renders these names too) ───────────────────── */
+
+.account-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+}
+
+.account-label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+}
+
+.account-input,
+.account-select {
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--fs-sm);
+  color: var(--c-fg);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &::placeholder { color: var(--c-fg-subtle); }
+
+  &:focus {
+    border-color: var(--c-accent);
+    box-shadow: 0 0 0 3px var(--c-accent-soft);
+  }
+
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.account-select {
+  appearance: none;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.account-input--textarea {
+  min-height: 104px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* Centred and spaced, because it is read back a digit at a time. */
+.email-code-input {
+  max-width: 180px;
+  letter-spacing: 0.4em;
+  text-align: center;
+  font-weight: 700;
+}
+
+.account-hint {
+  margin: 0;
+  font-size: var(--fs-xs);
+  color: var(--c-fg-muted);
+  line-height: 1.5;
+
+  strong { color: var(--c-fg); font-weight: 700; }
+  .acct-ic { color: var(--c-fg-subtle); margin-inline-end: 6px; }
+}
+
+.acct-hint--warn { color: var(--c-warn); }
+
+.account-error {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-danger);
+}
+
+.acct-undertext {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-top: var(--sp-2);
+}
+
+.acct-counter { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-muted); }
+
+/* A glyph inside the field, for the link rows. */
+.acct-inputwrap {
+  position: relative;
+  display: block;
+  width: 100%;
+
+  /* ⚠ Absolute on the ICON itself, which may be an `<svg>` or a kit's `<i>` inside
+     a plain wrapper span. The span is not a containing block, so either way the
+     glyph resolves against this wrapper. */
+  .acct-ic {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--c-fg-subtle);
+    font-size: 13px;
+    pointer-events: none;
+  }
+
+  .account-input { padding-left: 38px; }
+}
+
+/* ── Switch (name kept: the forum plugin renders it) ────────────────────────── */
+
 .account-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  padding: var(--sp-3) 0;
-  border-bottom: 1px solid var(--c-border);
+  padding: 14px 0;
+  border-bottom: 1px solid var(--c-rowline);
   cursor: pointer;
 
-  &:last-child { border-bottom: none; }
+  &:last-child { border-bottom: none; padding-bottom: 0; }
 
-  &__text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  &__label { font-size: var(--fs-sm); color: var(--c-fg); }
-
-  &__desc { font-size: var(--fs-xs); color: var(--c-fg-muted); }
+  &__text  { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  &__label { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg); }
+  &__desc  { font-size: var(--fs-xs); color: var(--c-fg-muted); line-height: 1.5; }
 
   &__btn {
+    position: relative;
     width: 40px;
     height: 22px;
+    flex: none;
+    padding: 0;
+    border: none;
     border-radius: 11px;
     background: var(--c-border);
-    position: relative;
-    flex-shrink: 0;
+    cursor: pointer;
     transition: background 0.2s;
 
     &--on { background: var(--c-accent); }
+    &:disabled { opacity: 0.6; cursor: default; }
   }
 
   &__knob {
@@ -351,209 +434,640 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: var(--c-on-accent);
-    transition: transform 0.2s;
+    background: #fff;
+    box-shadow: var(--shadow-inset-knob);
+    transition: left 0.2s;
 
-    .account-toggle__btn--on & { transform: translateX(18px); }
+    .account-toggle__btn--on & { left: 21px; }
   }
 }
 
-/* ── Theme picker ───────────────────────────────────── */
-.account-theme-grid {
-  display: flex;
-  gap: var(--sp-3);
-}
+/* ── Buttons ────────────────────────────────────────────────────────────────── */
 
-.account-theme-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--sp-2);
-  padding: var(--sp-4);
-  border: 2px solid var(--c-border);
-  border-radius: var(--radius-md);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  color: var(--c-fg-muted);
-  transition: border-color 0.15s, color 0.15s;
-
-  &:hover { border-color: var(--c-accent-glow); color: var(--c-fg); }
-
-  &--active {
-    border-color: var(--c-accent);
-    color: var(--c-accent);
-    font-weight: 600;
-  }
-
-  &__swatch {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-
-    &--light { background: #f4f4fb; border: 1px solid #d0d0e0; }
-    &--dark  { background: #080812; }
-    &--system { background: linear-gradient(135deg, #f4f4fb 50%, #080812 50%); }
-  }
-}
-
-/* ── Shared btn helpers (also used by profile/wall) ─── */
-// .btn-primary / .btn-danger / .btn-ghost → styles/buttons.scss (shared, token-driven).
-
-// .btn-sm → styles/buttons.scss. This file had its own, one step taller than
-// the ACP's, and both were global.
-
-/* ── Avatar section ─────────────────────────────────── */
-.account-avatar-section {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-4);
-  margin-bottom: var(--sp-6);
-  padding-bottom: var(--sp-6);
-  border-bottom: 1px solid var(--c-border);
-}
-
-.account-avatar {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-  display: flex;
+.acct-btn {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--c-on-accent);
-  flex-shrink: 0;
-}
-
-.account-avatar-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.account-avatar-name {
-  font-size: var(--fs-base);
+  gap: var(--sp-2);
+  padding: 8px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  font: inherit;
+  font-size: var(--fs-sm);
   font-weight: 600;
-  color: var(--c-fg);
-  margin-bottom: var(--sp-1);
-}
-
-.account-avatar-hint {
-  font-size: var(--fs-xs);
   color: var(--c-fg-muted);
-  margin-top: var(--sp-1);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s, opacity 0.15s;
+
+  .acct-ic { font-size: 11px; }
+
+  &:hover {
+    color: var(--c-accent);
+    border-color: color-mix(in srgb, var(--c-accent) 22%, transparent);
+  }
+
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  &--primary {
+    background: var(--c-accent);
+    border-color: transparent;
+    color: #fff;
+
+    &:hover { color: #fff; border-color: transparent; opacity: 0.88; }
+  }
+
+  &--danger {
+    background: var(--c-danger);
+    border-color: transparent;
+    color: #fff;
+
+    &:hover { color: #fff; opacity: 0.88; }
+  }
+
+  /* Destructive, but not the primary thing on the card. */
+  &--danger-ghost {
+    color: var(--c-danger);
+    background: transparent;
+
+    &:hover {
+      color: var(--c-danger);
+      border-color: color-mix(in srgb, var(--c-danger) 40%, transparent);
+      background: var(--c-danger-soft);
+    }
+  }
+
+  &--sm { padding: 5px 12px; font-size: var(--fs-xs); }
 }
 
-/* ── Theme picker ───────────────────────────────────── */
-.account-theme-btn__icon {
-  font-size: 24px;
-  margin-bottom: var(--sp-1);
-  line-height: 1;
+.acct-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
 }
 
-/* ── Security accordion ─────────────────────────────── */
-.security-accordion-list {
+.acct-inline {
+  display: flex;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin: var(--sp-3) 0;
+
+  .account-input { flex: 1; min-width: 220px; max-width: 320px; }
+}
+
+/* A chip in a card header that is also a link to where the setting lives. */
+.acct-chiplink {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-bg);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+
+  &:hover { color: var(--c-accent); border-color: color-mix(in srgb, var(--c-accent) 22%, transparent); }
+}
+
+/* "Plugin", "This device" — a fact, not a control. */
+.acct-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-info);
+  background: color-mix(in srgb, var(--c-info) 14%, transparent);
+  white-space: nowrap;
+
+  .acct-ic { font-size: 10px; }
+
+  &--ok {
+    color: var(--c-success);
+    background: var(--c-success-soft);
+  }
+}
+
+/* ── Grids inside a card ────────────────────────────────────────────────────── */
+
+.acct-grid {
+  display: grid;
+  gap: var(--sp-4) var(--sp-5);
+  align-items: end;
+
+  &--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  &__full { grid-column: 1 / -1; }
+
+  @media (max-width: 680px) {
+    &--2, &--3 { grid-template-columns: 1fr; }
+  }
+}
+
+.acct-stack { display: flex; flex-direction: column; gap: var(--sp-6); }
+
+.acct-group {
+  &__label {
+    display: block;
+    margin-bottom: var(--sp-3);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+  }
+}
+
+/* ── Profile tab ────────────────────────────────────────────────────────────── */
+
+.acct-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--sp-5);
+  align-items: start;
+
+  /* The preview is the first thing to go: it is a mirror of the form beside it. */
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+
+  &__main {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-4);
+    min-width: 0;
+  }
+}
+
+.acct-photo {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  flex-wrap: wrap;
+
+  &__avatar {
+    width: 80px;
+    height: 80px;
+    flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    display: grid;
+    place-items: center;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 28px;
+    font-weight: 800;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__side { display: flex; flex-direction: column; gap: var(--sp-3); }
+}
+
+/* ── The live preview ───────────────────────────────────────────────────────── */
+
+.acct-preview {
+  position: sticky;
+  top: var(--sp-4);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-}
+  gap: var(--sp-2);
 
-.security-accordion {
-  background: var(--card-bg);
-  border: 1px solid var(--c-border);
-  border-radius: var(--card-radius);
-  overflow: hidden;
+  @media (max-width: 1100px) { position: static; }
 
-  &__header {
+  &__card {
+    background: var(--card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  &__head {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    padding: var(--sp-4) var(--sp-5);
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-
-    &:hover { background: var(--c-accent-soft); }
+    gap: var(--sp-2);
+    padding: 12px var(--sp-4);
+    border-bottom: 1px solid var(--c-rowline);
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
   }
 
-  &__title {
-    font-size: var(--fs-sm);
+  &__live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-transform: none;
+    letter-spacing: 0;
     font-weight: 600;
-    color: var(--c-fg);
-  }
-
-  &__chevron {
-    color: var(--c-fg-muted);
-    font-size: 11px;
-    transition: transform 0.2s;
-  }
-
-  &--open &__chevron {
-    transform: rotate(180deg);
-  }
-
-  &__body {
-    border-top: 1px solid var(--c-border);
-  }
-
-  &__content {
-    padding: var(--sp-5);
-  }
-}
-
-/* ── Banner ─────────────────────────────────────────── */
-.account-banner {
-  padding: var(--sp-3) var(--sp-4);
-  border-radius: var(--radius-sm);
-  font-size: var(--fs-sm);
-  font-weight: 500;
-  margin-bottom: var(--sp-4);
-
-  &--success {
-    background: rgba(52, 211, 153, 0.12);
     color: var(--c-success);
-    border: 1px solid rgba(52, 211, 153, 0.25);
+
+    i { width: 6px; height: 6px; border-radius: 50%; background: currentcolor; }
   }
-}
 
-/* ── Font picker ────────────────────────────────────── */
-.account-font-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--sp-2);
-}
+  /* The member's real cover; the palette gradient when they have none — which is
+     exactly what the `profileCover` block falls back to on the profile itself. */
+  &__cover {
+    height: 72px;
+    background: linear-gradient(140deg, var(--c-accent), var(--c-accent-2, var(--c-info)));
+    background-size: cover;
+    background-position: center;
+  }
 
-.account-font-btn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-1);
-  padding: var(--sp-3);
-  border: 2px solid var(--c-border);
-  border-radius: var(--radius-sm);
-  background: transparent;
-  cursor: pointer;
-  text-align: left;
-  transition: border-color 0.15s;
+  &__body { padding: 0 var(--sp-5) var(--sp-5); margin-top: -30px; }
 
-  &:hover { border-color: var(--c-accent-glow); }
-
-  &--active {
-    border-color: var(--c-accent);
+  &__avatar {
+    display: grid;
+    place-items: center;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
     background: var(--c-accent-soft);
+    box-shadow: 0 0 0 4px var(--card-bg);
+    color: var(--c-accent);
+    font-size: 22px;
+    font-weight: 800;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
   }
 
   &__name {
-    font-size: var(--fs-base);
-    font-weight: 700;
-    color: var(--c-fg);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    margin-top: 12px;
+    flex-wrap: wrap;
+
+    strong {
+      font-family: var(--font-display);
+      font-size: var(--fs-base);
+      font-weight: 700;
+      color: var(--c-fg);
+    }
   }
 
-  &__desc {
+  &__group {
+    padding: 1px 8px;
+    border-radius: var(--radius-pill);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--badge-color);
+    background: color-mix(in srgb, var(--badge-color) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--badge-color) 25%, transparent);
+  }
+
+  &__handle { display: block; font-size: var(--fs-xs); color: var(--c-fg-muted); }
+
+  &__bio {
+    margin: 12px 0 0;
     font-size: var(--fs-xs);
+    line-height: 1.65;
+    color: var(--c-fg-muted);
+
+    &.is-empty { color: var(--c-fg-subtle); font-style: italic; }
+  }
+
+  &__links { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 5px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .acct-ic { font-size: 11px; flex: none; }
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--c-rowline);
+
+    span {
+      display: flex;
+      flex-direction: column;
+      font-size: 11px;
+      color: var(--c-fg-subtle);
+    }
+
+    strong { font-size: var(--fs-sm); color: var(--c-fg); }
+  }
+}
+
+/* ── Notifications matrix ───────────────────────────────────────────────────── */
+
+.acct-matrix {
+  transition: opacity 0.2s;
+
+  &__head,
+  &__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px 110px;
+    gap: 0 var(--sp-4);
+    align-items: center;
+  }
+
+  &__head {
+    padding: 10px var(--sp-3);
+    margin: 0 calc(var(--sp-3) * -1) var(--sp-2);
+    border-radius: var(--radius-sm);
+    background: var(--c-bg);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+
+    span + span { text-align: center; }
+  }
+
+  &__row {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--c-rowline);
+
+    &:last-child { border-bottom: none; padding-bottom: 0; }
+  }
+
+  &__event { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  &__cell  { display: flex; justify-content: center; }
+  &__none  { color: var(--c-fg-subtle); }
+
+  /* Narrow: the channel columns shrink before the event label does. */
+  @media (max-width: 620px) {
+    &__head, &__row { grid-template-columns: minmax(0, 1fr) 64px 64px; gap: 0 var(--sp-2); }
+  }
+}
+
+/* ── Preferences ────────────────────────────────────────────────────────────── */
+
+.acct-themes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+.acct-fonts  { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+
+@media (max-width: 680px) {
+  .acct-themes, .acct-fonts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.acct-pickcard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover { border-color: color-mix(in srgb, var(--c-accent) 40%, transparent); }
+
+  &.is-on {
+    border-color: var(--c-accent);
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-weight: 700;
+  }
+
+  /* The font cards: a sample of the face, left-aligned. */
+  &--text {
+    align-items: flex-start;
+    gap: 3px;
+    padding: 12px 14px;
+    text-align: left;
+
+    strong { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); }
+    span   { font-size: var(--fs-xs); color: var(--c-fg-muted); font-family: var(--ff-sans); }
+
+    &.is-on strong { color: var(--c-accent); }
+  }
+}
+
+/* ⚠ The only literal colours in this file. A theme swatch has to show the palette
+   it SWITCHES TO — drawn in the current palette's tokens, "Dark" would look light
+   while you are in the light theme, which is precisely the thing being chosen. */
+.acct-themeswatch {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex: none;
+
+  &--light  { background: #f4f4fb; border: 1px solid #d0d0e0; }
+  &--dark   { background: #080812; }
+  &--system { background: linear-gradient(135deg, #f4f4fb 50%, #080812 50%); }
+}
+
+.acct-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+
+.acct-chip {
+  padding: 8px 16px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-pill);
+  background: var(--c-bg);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+
+  &:hover:not(:disabled) { color: var(--c-fg); }
+  &:disabled { opacity: 0.6; cursor: default; }
+
+  &.is-on {
+    border-color: var(--c-accent);
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-weight: 700;
+  }
+}
+
+/* ── Security ───────────────────────────────────────────────────────────────── */
+
+.acct-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+
+  @media (max-width: 780px) { grid-template-columns: 1fr; }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+    padding: var(--sp-4);
+    background: var(--card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+  }
+
+  &__chip {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+
+    &.is-ok   { background: var(--c-success-soft); color: var(--c-success); }
+    &.is-warn { background: color-mix(in srgb, var(--c-warn) 16%, transparent); color: var(--c-warn); }
+    &.is-info { background: var(--c-accent-soft); color: var(--c-accent); }
+  }
+
+  &__label { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-muted); }
+
+  &__value {
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--c-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* A quiet inset panel inside a card — the username history. */
+.acct-panel {
+  padding: 14px 16px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+
+  &__label {
+    display: block;
+    margin-bottom: var(--sp-2);
+    font-size: var(--fs-xs);
+    font-weight: 700;
     color: var(--c-fg-muted);
   }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-xs);
+
+    + .acct-panel__row { margin-top: 6px; }
+  }
+}
+
+.acct-was   { color: var(--c-fg-muted); }
+.acct-arrow { color: var(--c-fg-subtle); }
+.acct-now   { color: var(--c-fg); font-weight: 600; }
+.acct-when  { margin-inline-start: auto; color: var(--c-fg-muted); }
+
+.acct-sessions { display: flex; flex-direction: column; gap: var(--sp-2); }
+
+.acct-session {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 14px 16px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+
+  &__icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    border: 1px solid var(--c-border);
+    color: var(--c-fg-muted);
+    font-size: 13px;
+  }
+
+  &__id     { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+  &__device {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  &__meta   { font-size: var(--fs-xs); color: var(--c-fg-muted); }
+}
+
+.acct-foot { display: flex; align-items: center; }
+
+/* ── Save bar ───────────────────────────────────────────────────────────────── */
+
+.acct-savebar {
+  position: sticky;
+  bottom: var(--sp-4);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: 12px 16px 12px 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border-hi);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-pop);
+
+  &__state {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-fg);
+
+    /* Amber, not red: unsaved is a state, not an error. */
+    i { width: 8px; height: 8px; border-radius: 50%; background: var(--c-warn); flex: none; }
+  }
+
+  &__acts {
+    margin-inline-start: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+}
+
+.acct-savedchip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-success);
 }

@@ -1,18 +1,47 @@
+/**
+ * Security — the account's keys, and the devices holding them.
+ *
+ * ⚠ Every card here keeps its OWN button, and this tab has no save bar. Sending a
+ * verification code, changing a username, rotating a password and revoking a session
+ * are ACTS with consequences outside this page — three of them sign other sessions
+ * out. A bar that batched them behind one "Save changes" would make an irreversible
+ * act look like a form field.
+ *
+ * ⚠ The strip at the top answers "is anything wrong" before you read a single card.
+ * Every value in it is real: the PIN state and the session count come from the
+ * server, and nothing invents a "password last changed" date the API does not keep.
+ */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AccordionSection } from "../../../components/AccordionSection";
+import { FontAwesomeIcon } from "../../../components/Icon";
+import {
+  faKey, faLaptop, faMobileScreen, faEnvelope, faShieldHalved,
+} from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { Username } from "../../../components/Username";
 import { useAuth, applyLogout } from "../../../hooks/useAuth";
 import { authStore } from "../../../lib/authStore";
 import { api } from "../../../lib/api";
-import { swalToast, apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { apiErrorMessage } from "../../../lib/swal";
+import { AccountCard } from "../components/AccountCard";
 
 type PinMode = null | "enable" | "change" | "disable";
 
+interface Session {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  lastUsedAt: string;
+  /** The session this page is being read from. */
+  current?: boolean;
+}
+
 // ─── Email ───────────────────────────────────────────────────────────────────
 
-function ChangeEmailForm() {
+function ChangeEmailCard() {
   const { t } = useTranslation("account");
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -20,6 +49,7 @@ function ChangeEmailForm() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [code, setCode] = useState("");
+
   const requestMutation = useMutation({
     mutationFn: (data: { currentPassword: string; newEmail: string }) =>
       api.post<{ codeSent: boolean }>("/account/email", data),
@@ -27,7 +57,7 @@ function ChangeEmailForm() {
       setStep("verify");
       setCurrentPassword("");
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.emailFailed"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.emailFailed"))),
   });
 
   const verifyMutation = useMutation({
@@ -37,32 +67,32 @@ function ChangeEmailForm() {
       if (authStore.user && authStore.token) {
         authStore.set(authStore.token, { ...authStore.user, email: res.email });
       }
-      queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
-      swalToast(t("security.emailUpdated"), "success");
+      void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+      toast.success(t("security.emailUpdated"));
       setStep("request");
       setNewEmail("");
       setCode("");
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.invalidCode"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.invalidCode"))),
   });
 
   return (
-    <div className="security-accordion__content">
-      <p className="account-hint" style={{ marginBottom: "var(--sp-4)" }}>
-        {t("security.current")}: <strong>{user?.email}</strong>
-      </p>
-
+    <AccountCard
+      title={t("security.emailAddress")}
+      desc={t("security.emailCardDesc", { email: user?.email ?? "" })}
+    >
       {step === "request" ? (
         <form
-          className="account-form"
+          className="acct-grid acct-grid--2"
           onSubmit={(e) => {
             e.preventDefault();
             if (newEmail && currentPassword) requestMutation.mutate({ currentPassword, newEmail });
           }}
         >
           <div className="account-field">
-            <label className="account-label">{t("security.newEmail")}</label>
+            <label className="account-label" htmlFor="sec-email">{t("security.newEmail")}</label>
             <input
+              id="sec-email"
               className="account-input"
               type="email"
               value={newEmail}
@@ -72,8 +102,9 @@ function ChangeEmailForm() {
             />
           </div>
           <div className="account-field">
-            <label className="account-label">{t("security.currentPassword")}</label>
+            <label className="account-label" htmlFor="sec-email-pw">{t("security.currentPassword")}</label>
             <input
+              id="sec-email-pw"
               className="account-input"
               type="password"
               value={currentPassword}
@@ -81,30 +112,31 @@ function ChangeEmailForm() {
               required
             />
           </div>
-          <div className="account-actions">
+          <div className="acct-grid__full acct-actions">
             <button
-              className="btn-primary"
+              className="acct-btn acct-btn--primary"
               type="submit"
               disabled={requestMutation.isPending || !newEmail || !currentPassword}
             >
               {requestMutation.isPending ? t("security.sending") : t("security.sendCode")}
             </button>
+            {/* 30 minutes, which is what `requestEmailChange` actually stores. */}
+            <span className="account-hint">{t("security.codeExpiry")}</span>
           </div>
         </form>
       ) : (
         <form
-          className="account-form"
+          className="acct-grid acct-grid--2"
           onSubmit={(e) => {
             e.preventDefault();
             if (code.length === 6) verifyMutation.mutate({ code });
           }}
         >
-          <p className="account-hint" style={{ marginBottom: "var(--sp-4)" }}>
-            {t("security.codeSent", { email: newEmail })}
-          </p>
+          <p className="acct-grid__full account-hint">{t("security.codeSent", { email: newEmail })}</p>
           <div className="account-field">
-            <label className="account-label">{t("security.verifyCode")}</label>
+            <label className="account-label" htmlFor="sec-code">{t("security.verifyCode")}</label>
             <input
+              id="sec-code"
               className="account-input email-code-input"
               type="text"
               inputMode="numeric"
@@ -117,9 +149,9 @@ function ChangeEmailForm() {
               required
             />
           </div>
-          <div className="account-actions">
+          <div className="acct-grid__full acct-actions">
             <button
-              className="btn-primary"
+              className="acct-btn acct-btn--primary"
               type="submit"
               disabled={verifyMutation.isPending || code.length !== 6}
             >
@@ -127,7 +159,7 @@ function ChangeEmailForm() {
             </button>
             <button
               type="button"
-              className="btn-ghost"
+              className="acct-btn"
               onClick={() => { setStep("request"); setCode(""); }}
               disabled={verifyMutation.isPending}
             >
@@ -136,13 +168,20 @@ function ChangeEmailForm() {
           </div>
         </form>
       )}
-    </div>
+    </AccountCard>
   );
 }
 
 // ─── Username ─────────────────────────────────────────────────────────────────
 
-function ChangeUsernameForm() {
+interface HistoryEntry {
+  id: string;
+  oldUsername: string;
+  newUsername: string;
+  changedAt: string;
+}
+
+function ChangeUsernameCard() {
   const { t } = useTranslation("account");
   const { user } = useAuth();
   const [username, setUsername] = useState("");
@@ -152,18 +191,29 @@ function ChangeUsernameForm() {
     onSuccess: (res) => {
       authStore.set(authStore.token!, { ...authStore.user!, username: res.username });
       setUsername("");
-      swalToast(t("security.usernameUpdated"), "success");
+      toast.success(t("security.usernameUpdated"));
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.usernameFailed"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.usernameFailed"))),
+  });
+
+  /** ⚠ In the SAME card as the change form — the history is the answer to "can I
+   *  change it yet", which was previously an accordion away from the question. */
+  const { data: history } = useQuery({
+    queryKey: ["account", "username-history"],
+    queryFn: () => api.get<HistoryEntry[]>("/account/username-history"),
   });
 
   return (
-    <div className="security-accordion__content">
+    <AccountCard
+      title={t("security.changeUsername")}
+      desc={t("security.usernameCardDesc")}
+    >
       <p className="account-hint">
-        {t("security.current")}: <strong>@<Username username={user?.username ?? ""} badgeColor={user?.visibleGroups[0]?.badgeColor} /></strong>. {t("security.usernameCooldownNote")}
+        {t("security.current")}:{" "}
+        <strong>@<Username username={user?.username ?? ""} badgeColor={user?.visibleGroups[0]?.badgeColor} /></strong>
       </p>
       <form
-        className="account-inline-form"
+        className="acct-inline"
         onSubmit={(e) => {
           e.preventDefault();
           if (username.trim()) mutation.mutate(username.trim());
@@ -174,21 +224,36 @@ function ChangeUsernameForm() {
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder={t("security.newUsernamePlaceholder")}
+          aria-label={t("security.newUsernamePlaceholder")}
           minLength={3}
           maxLength={30}
           pattern="[a-zA-Z0-9_-]+"
         />
-        <button className="btn-primary" type="submit" disabled={!username.trim() || mutation.isPending}>
+        <button className="acct-btn acct-btn--primary" type="submit" disabled={!username.trim() || mutation.isPending}>
           {mutation.isPending ? t("security.changing") : t("security.change")}
         </button>
       </form>
-    </div>
+
+      <div className="acct-panel">
+        <span className="acct-panel__label">{t("security.usernameHistory")}</span>
+        {history?.length
+          ? history.map((h) => (
+              <div key={h.id} className="acct-panel__row">
+                <span className="acct-was">@{h.oldUsername}</span>
+                <span className="acct-arrow">→</span>
+                <span className="acct-now">@{h.newUsername}</span>
+                <span className="acct-when">{new Date(h.changedAt).toLocaleDateString()}</span>
+              </div>
+            ))
+          : <p className="account-hint">{t("security.noHistory")}</p>}
+      </div>
+    </AccountCard>
   );
 }
 
 // ─── Password ─────────────────────────────────────────────────────────────────
 
-function ChangePasswordForm() {
+function ChangePasswordCard() {
   const { t } = useTranslation("account");
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -199,9 +264,9 @@ function ChangePasswordForm() {
       api.post("/account/password", data),
     onSuccess: () => {
       setCurrent(""); setNext(""); setConfirm("");
-      swalToast(t("security.passwordChanged"), "success");
+      toast.success(t("security.passwordChanged"));
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.passwordFailed"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.passwordFailed"))),
   });
 
   function handleSubmit(e: React.FormEvent) {
@@ -211,57 +276,38 @@ function ChangePasswordForm() {
   }
 
   return (
-    <div className="security-accordion__content">
-      <form className="account-form" onSubmit={handleSubmit}>
+    <AccountCard title={t("security.changePasswordTitle")} desc={t("security.passwordCardDesc")}>
+      <form className="acct-grid acct-grid--3" onSubmit={handleSubmit}>
         <div className="account-field">
-          <label className="account-label">{t("security.currentPassword")}</label>
-          <input
-            className="account-input"
-            type="password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-            required
-          />
+          <label className="account-label" htmlFor="pw-cur">{t("security.currentPassword")}</label>
+          <input id="pw-cur" className="account-input" type="password" required
+            value={current} onChange={(e) => setCurrent(e.target.value)} />
         </div>
         <div className="account-field">
-          <label className="account-label">{t("security.newPassword")}</label>
-          <input
-            className="account-input"
-            type="password"
-            value={next}
-            onChange={(e) => setNext(e.target.value)}
-            minLength={8}
-            required
-          />
+          <label className="account-label" htmlFor="pw-new">{t("security.newPassword")}</label>
+          <input id="pw-new" className="account-input" type="password" minLength={8} required
+            value={next} onChange={(e) => setNext(e.target.value)} />
         </div>
         <div className="account-field">
-          <label className="account-label">{t("security.confirmNewPassword")}</label>
-          <input
-            className="account-input"
-            type="password"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            required
-          />
+          <label className="account-label" htmlFor="pw-conf">{t("security.confirmNewPassword")}</label>
+          <input id="pw-conf" className="account-input" type="password" required
+            value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           {confirm && next !== confirm && <p className="account-error">{t("security.passwordMismatch")}</p>}
         </div>
-        <div className="account-actions">
-          <button
-            className="btn-primary"
-            type="submit"
-            disabled={mutation.isPending || next !== confirm || !current}
-          >
+        <div className="acct-grid__full acct-actions">
+          <button className="acct-btn acct-btn--primary" type="submit"
+            disabled={mutation.isPending || next !== confirm || !current}>
             {mutation.isPending ? t("security.changing") : t("security.changePassword")}
           </button>
         </div>
       </form>
-    </div>
+    </AccountCard>
   );
 }
 
 // ─── PIN ──────────────────────────────────────────────────────────────────────
 
-function LoginPinForm() {
+function LoginPinCard() {
   const { t } = useTranslation("account");
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -281,19 +327,18 @@ function LoginPinForm() {
     if (authStore.user) {
       authStore.set(authStore.token!, { ...authStore.user, loginPinEnabled: nextEnabled });
     }
-    queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
+    void queryClient.invalidateQueries({ queryKey: ["auth", "me"] });
   }
 
   const setMutation = useMutation({
-    mutationFn: (data: { currentPassword: string; pin: string }) =>
-      api.post("/account/pin", data),
+    mutationFn: (data: { currentPassword: string; pin: string }) => api.post("/account/pin", data),
     onSuccess: () => {
       refreshUser(true);
       const message = mode === "change" ? t("security.pinChanged") : t("security.pinEnabled");
       reset();
-      swalToast(message, "success");
+      toast.success(message);
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.pinFailed"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.pinFailed"))),
   });
 
   const disableMutation = useMutation({
@@ -301,9 +346,9 @@ function LoginPinForm() {
     onSuccess: () => {
       refreshUser(false);
       reset();
-      swalToast(t("security.pinDisabled"), "success");
+      toast.success(t("security.pinDisabled"));
     },
-    onError: (e) => swalToast(apiErrorMessage(e, t("security.pinFailed"))),
+    onError: (e) => toast.error(apiErrorMessage(e, t("security.pinFailed"))),
   });
 
   function handleSubmit(e: React.FormEvent) {
@@ -319,24 +364,23 @@ function LoginPinForm() {
   const isPending = setMutation.isPending || disableMutation.isPending;
 
   return (
-    <div className="security-accordion__content">
-      <p className="account-hint">
-        {enabled ? t("security.pinEnabledDesc") : t("security.pinDisabledDesc")}
-      </p>
-
+    <AccountCard
+      title={t("security.loginPin")}
+      desc={enabled ? t("security.pinEnabledDesc") : t("security.pinDisabledDesc")}
+    >
       {mode === null && (
-        <div className="account-actions" style={{ marginTop: "var(--sp-4)" }}>
+        <div className="acct-actions">
           {enabled ? (
             <>
-              <button className="btn-primary" type="button" onClick={() => setMode("change")}>
+              <button className="acct-btn acct-btn--primary" type="button" onClick={() => setMode("change")}>
                 {t("security.changePin")}
               </button>
-              <button className="btn-ghost" type="button" onClick={() => setMode("disable")}>
+              <button className="acct-btn" type="button" onClick={() => setMode("disable")}>
                 {t("security.disablePin")}
               </button>
             </>
           ) : (
-            <button className="btn-primary" type="button" onClick={() => setMode("enable")}>
+            <button className="acct-btn acct-btn--primary" type="button" onClick={() => setMode("enable")}>
               {t("security.enablePin")}
             </button>
           )}
@@ -344,40 +388,35 @@ function LoginPinForm() {
       )}
 
       {mode !== null && (
-        <form className="account-form" onSubmit={handleSubmit} style={{ marginTop: "var(--sp-4)" }}>
+        <form className="acct-grid acct-grid--2" onSubmit={handleSubmit}>
           <div className="account-field">
-            <label className="account-label">{t("security.currentPassword")}</label>
-            <input
-              className="account-input"
-              type="password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              required
-              autoFocus
-            />
+            <label className="account-label" htmlFor="pin-pw">{t("security.currentPassword")}</label>
+            <input id="pin-pw" className="account-input" type="password" required autoFocus
+              value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
           </div>
 
           {mode !== "disable" && (
             <div className="account-field">
-              <label className="account-label">
+              <label className="account-label" htmlFor="pin-code">
                 {mode === "change" ? t("security.newPinLabel") : t("security.pinLabel")}
               </label>
               <input
+                id="pin-code"
                 className="account-input"
                 type="password"
                 inputMode="numeric"
                 pattern="\d{4}"
                 maxLength={4}
+                required
                 value={pin}
                 onChange={(e) => setPin(e.target.value.replace(/\D/g, "").slice(0, 4))}
-                required
               />
             </div>
           )}
 
-          <div className="account-actions">
+          <div className="acct-grid__full acct-actions">
             <button
-              className={mode === "disable" ? "btn-danger" : "btn-primary"}
+              className={`acct-btn ${mode === "disable" ? "acct-btn--danger" : "acct-btn--primary"}`}
               type="submit"
               disabled={isPending || !currentPassword || (mode !== "disable" && pin.length !== 4)}
             >
@@ -389,27 +428,65 @@ function LoginPinForm() {
                     ? t("security.changePin")
                     : t("security.enablePin")}
             </button>
-            <button className="btn-ghost" type="button" onClick={reset} disabled={isPending}>
+            <button className="acct-btn" type="button" onClick={reset} disabled={isPending}>
               {t("security.cancel")}
             </button>
           </div>
         </form>
       )}
-    </div>
+    </AccountCard>
   );
 }
 
 // ─── Sessions ─────────────────────────────────────────────────────────────────
 
-interface Session {
-  id: string;
-  ip: string | null;
-  userAgent: string | null;
-  createdAt: string;
-  lastUsedAt: string;
+/** Desktop or phone, from the UA string. DISPLAY ONLY — nothing is gated on it. */
+function deviceIcon(ua: string | null): IconDefinition {
+  return ua && /Mobi|Android|iPhone|iPad/i.test(ua) ? faMobileScreen : faLaptop;
 }
 
-function SessionsList() {
+/** "Chrome 141 · macOS" out of a user-agent, falling back to the raw string. */
+export function deviceName(ua: string | null, unknown: string): string {
+  if (!ua) return unknown;
+  /**
+   * ⚠ Most specific FIRST, and one test each — not one alternation.
+   *
+   * A regex alternation matches at the earliest POSITION, not by priority, and
+   * Edge's user-agent reads "… Chrome/140 … Edg/140": one pattern reported every
+   * Edge and every Opera as Chrome. Safari's own version lives in `Version/`; its
+   * `Safari/` number is the WebKit build.
+   */
+  const BROWSERS: [RegExp, string][] = [
+    [/Edg\/(\d+)/, "Edge"],
+    [/OPR\/(\d+)/, "Opera"],
+    [/Firefox\/(\d+)/, "Firefox"],
+    [/Chrome\/(\d+)/, "Chrome"],
+    [/Version\/(\d+).*Safari/, "Safari"],
+    [/Safari\/(\d+)/, "Safari"],
+  ];
+  let browser: [string, string] | null = null;
+  for (const [re, label] of BROWSERS) {
+    const m = ua.match(re);
+    if (m) { browser = [label, m[1]!]; break; }
+  }
+  /**
+   * ⚠ iOS BEFORE macOS. An iPhone's user-agent says "like Mac OS X", so testing for
+   * Mac first reports every iPhone and iPad as a Mac — which is the one thing a
+   * member looks at this list to tell apart. Android before Linux, for the same
+   * reason.
+   */
+  const os = /Windows/i.test(ua) ? "Windows"
+    : /(iPhone|iPad|iPod|iOS)/i.test(ua) ? "iOS"
+    : /Android/i.test(ua) ? "Android"
+    : /Mac OS X/i.test(ua) ? "macOS"
+    : /Linux/i.test(ua) ? "Linux"
+    : null;
+  const name = browser ? `${browser[0]} ${browser[1]}` : null;
+  if (!name && !os) return ua.slice(0, 60);
+  return [name, os].filter(Boolean).join(" · ");
+}
+
+function SessionsCard() {
   const { t } = useTranslation("account");
   const queryClient = useQueryClient();
   const { data: sessions, isLoading } = useQuery({
@@ -420,6 +497,7 @@ function SessionsList() {
   const revokeMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/account/sessions/${id}`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["account", "sessions"] }),
+    onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
   const signOutAllMutation = useMutation({
@@ -429,80 +507,46 @@ function SessionsList() {
     },
   });
 
-  if (isLoading) return <p className="account-hint">{t("security.loadingSessions")}</p>;
-
   return (
-    <div className="security-accordion__content">
-      <div className="account-card__header" style={{ marginBottom: "var(--sp-4)" }}>
-        <span />
-        <button className="btn-ghost btn-sm" type="button" onClick={() => signOutAllMutation.mutate()}>
+    <AccountCard
+      title={t("security.activeSessions")}
+      desc={t("security.sessionsDesc")}
+      aside={
+        <button className="acct-btn acct-btn--danger-ghost" type="button"
+          onClick={() => signOutAllMutation.mutate()}>
           {t("security.signOutEverywhere")}
         </button>
-      </div>
-      <div className="account-sessions">
+      }
+    >
+      {isLoading && <p className="account-hint">{t("security.loadingSessions")}</p>}
+      <div className="acct-sessions">
         {sessions?.map((s) => (
-          <div key={s.id} className="account-session">
-            <div className="account-session__info">
-              <span className="account-session__ua">
-                {s.userAgent ? s.userAgent.slice(0, 60) : t("security.unknownDevice")}
+          <div key={s.id} className="acct-session">
+            <span className="acct-session__icon">
+              <FontAwesomeIcon className="acct-ic" icon={deviceIcon(s.userAgent)} />
+            </span>
+            <span className="acct-session__id">
+              <span className="acct-session__device">
+                {deviceName(s.userAgent, t("security.unknownDevice"))}
               </span>
-              <span className="account-session__meta">
+              <span className="acct-session__meta">
                 {s.ip ?? t("security.unknownIp")} · {t("security.lastActive", { date: new Date(s.lastUsedAt).toLocaleDateString() })}
               </span>
-            </div>
-            <button
-              className="btn-ghost btn-sm"
-              type="button"
-              onClick={() => revokeMutation.mutate(s.id)}
-              disabled={revokeMutation.isPending}
-            >
-              {t("security.revoke")}
-            </button>
+            </span>
+            {/* ⚠ The current session offers no Revoke: it is the session reading this
+                page, and "sign out everywhere" in the header is the deliberate way
+                to end it. */}
+            {s.current
+              ? <span className="acct-tag acct-tag--ok">{t("security.thisDevice")}</span>
+              : <button className="acct-btn acct-btn--sm" type="button"
+                  onClick={() => revokeMutation.mutate(s.id)} disabled={revokeMutation.isPending}>
+                  {t("security.revoke")}
+                </button>}
           </div>
         ))}
         {sessions?.length === 0 && <p className="account-hint">{t("security.noSessions")}</p>}
       </div>
-    </div>
-  );
-}
-
-// ─── Username History ─────────────────────────────────────────────────────────
-
-interface HistoryEntry {
-  id: string;
-  oldUsername: string;
-  newUsername: string;
-  changedAt: string;
-}
-
-function UsernameHistoryList() {
-  const { t } = useTranslation("account");
-  const { data: history } = useQuery({
-    queryKey: ["account", "username-history"],
-    queryFn: () => api.get<HistoryEntry[]>("/account/username-history"),
-  });
-
-  if (!history?.length) {
-    return (
-      <div className="security-accordion__content">
-        <p className="account-hint">{t("security.noHistory")}</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="security-accordion__content">
-      <div className="account-history">
-        {history.map((h) => (
-          <div key={h.id} className="account-history__item">
-            <span className="account-history__old">@{h.oldUsername}</span>
-            <span className="account-history__arrow">→</span>
-            <span className="account-history__new">@{h.newUsername}</span>
-            <span className="account-history__date">{new Date(h.changedAt).toLocaleDateString()}</span>
-          </div>
-        ))}
-      </div>
-    </div>
+    </AccountCard>
   );
 }
 
@@ -510,35 +554,52 @@ function UsernameHistoryList() {
 
 export function SecurityTab() {
   const { t } = useTranslation("account");
+  const { user } = useAuth();
+  const { data: sessions } = useQuery({
+    queryKey: ["account", "sessions"],
+    queryFn: () => api.get<Session[]>("/account/sessions"),
+  });
+
+  /** The strip: three real facts, each with the card that changes it below. */
+  const status = [
+    {
+      id: "pin", icon: faKey, tone: user?.loginPinEnabled ? "ok" : "warn",
+      label: t("security.loginPin"),
+      value: user?.loginPinEnabled ? t("security.stateOn") : t("security.stateOff"),
+    },
+    {
+      id: "sessions", icon: faLaptop, tone: "info",
+      label: t("security.activeSessions"),
+      value: sessions ? t("security.deviceCount", { count: sessions.length }) : "—",
+    },
+    {
+      id: "email", icon: faEnvelope, tone: "ok",
+      label: t("security.emailAddress"),
+      value: user?.email ?? "—",
+    },
+  ];
+
   return (
-    <section className="account-section">
-      <h2 className="account-section__title">{t("security.title")}</h2>
-
-      <div className="security-accordion-list">
-        <AccordionSection title={t("security.emailAddress")} defaultOpen={true}>
-          <ChangeEmailForm />
-        </AccordionSection>
-
-        <AccordionSection title={t("security.changeUsername")}>
-          <ChangeUsernameForm />
-        </AccordionSection>
-
-        <AccordionSection title={t("security.changePasswordTitle")}>
-          <ChangePasswordForm />
-        </AccordionSection>
-
-        <AccordionSection title={t("security.loginPin")}>
-          <LoginPinForm />
-        </AccordionSection>
-
-        <AccordionSection title={t("security.activeSessions")}>
-          <SessionsList />
-        </AccordionSection>
-
-        <AccordionSection title={t("security.usernameHistory")}>
-          <UsernameHistoryList />
-        </AccordionSection>
+    <>
+      <div className="acct-status">
+        {status.map((s) => (
+          <div key={s.id} className="acct-status__card">
+            <span className={`acct-status__chip is-${s.tone}`}><FontAwesomeIcon className="acct-ic" icon={s.icon} /></span>
+            <span className="acct-status__label">{s.label}</span>
+            <span className="acct-status__value">{s.value}</span>
+          </div>
+        ))}
       </div>
-    </section>
+
+      <ChangeEmailCard />
+      <ChangeUsernameCard />
+      <ChangePasswordCard />
+      <LoginPinCard />
+      <SessionsCard />
+
+      <p className="account-hint acct-foot">
+        <FontAwesomeIcon className="acct-ic" icon={faShieldHalved} /> {t("security.footNote")}
+      </p>
+    </>
   );
 }

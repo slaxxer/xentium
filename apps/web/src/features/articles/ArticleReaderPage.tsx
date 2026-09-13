@@ -19,7 +19,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { swalToast, apiErrorMessage } from "../../lib/swal";
 import { ArticleContent } from "./components/ArticleContent";
-import { MiniEditor, type MiniEditorHandle } from "../../components/MiniEditor";
+import { Composer, type ComposerHandle } from "../../components/composer/Composer";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Avatar } from "../../components/Avatar";
 import { UserBadges } from "../../components/UserBadges";
@@ -212,7 +212,7 @@ export function ArticleReaderContent() {
   });
 
   const [commentBody, setCommentBody] = useState("");
-  const commentEditorRef = useRef<MiniEditorHandle>(null);
+  const commentEditorRef = useRef<ComposerHandle>(null);
   const commentMut = useMutation({
     mutationFn: () => articlesApi.postComment(articleQuery.data!.id, commentBody),
     onSuccess: () => {
@@ -464,28 +464,23 @@ export function ArticleReaderContent() {
         <h2 className="ard__comments-title">{t("reader.commentsTitle", { n: a.commentCount })}</h2>
 
         {authLoading ? null : isAuthed ? (
-          <div className="ard__compose">
-            <UserAvatar user={{ username: authUser!.username ?? authUser!.id, avatar: authUser!.avatar }} size={36} className="avatar" />
-            <div className="ard__compose-body">
-              <MiniEditor
-                ref={commentEditorRef}
-                onChange={setCommentBody}
-                placeholder={t("reader.commentPlaceholder")}
-                disabled={commentMut.isPending}
-                onSubmit={() => commentBody.trim() && commentMut.mutate()}
-                className="ard__compose-editor"
-              />
-              <div className="ard__compose-actions">
-                <button
-                  className="btn btn--sm"
-                  onClick={() => commentBody.trim() && commentMut.mutate()}
-                  disabled={!commentBody.trim() || commentMut.isPending}
-                >
-                  {t("reader.postComment")}
-                </button>
-              </div>
-            </div>
-          </div>
+          /**
+           * ⚠ The INLINE composer: collapsed to one row until someone means to use
+           * it. A comment box is a thing people scroll PAST to read the comments, and
+           * an open 210px editor above them was chrome in the way of the content.
+           * Its own avatar, its own Post button — the page adds neither now.
+           */
+          <Composer
+            ref={commentEditorRef}
+            variant="inline"
+            onChange={setCommentBody}
+            placeholder={t("reader.commentPlaceholder")}
+            disabled={commentMut.isPending}
+            busy={commentMut.isPending}
+            submitLabel={t("reader.postComment")}
+            onSubmit={() => commentBody.trim() && commentMut.mutate()}
+            className="ard__composer"
+          />
         ) : (
           <div className="ard__signin">
             {t("reader.signInToComment")} ·{" "}

@@ -1,0 +1,751 @@
+/**
+ * The Composer.
+ *
+ * ⚠ Every value is a token: this is a FRONTEND surface and follows the site's
+ * palette, its radii and its fonts. The one literal is the emoji grid's font size,
+ * because an emoji is a glyph and has no type scale.
+ *
+ * ⚠ The action bar is at the BOTTOM of the surface, so every popover opens UPWARDS
+ * (`bottom: 100%`). That single fact drives most of this file.
+ */
+
+.nvc {
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: visible;              /* popovers escape the shell */
+
+  &.is-disabled { opacity: 0.6; pointer-events: none; }
+
+  /* A page whose whole job is writing gets the larger radius. */
+  &--panel { border-radius: var(--radius-xl); }
+
+  /* Chat: a tighter shell, and it never grows a header. */
+  &--dock {
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+  }
+}
+
+/* ── Collapsed (inline, at rest) ─────────────────────────────────────────────
+   58px instead of 210px. The three affordances still advertise what it can do. */
+
+.nvc--collapsed {
+  display: flex;
+  /* Stated, not inherited: the open shell is a column and this is a row. */
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: text;
+  text-align: left;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: var(--c-border-hi); }
+}
+
+.nvc-collapsed {
+  &__av {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-weight: 700;
+    font-size: var(--fs-sm);
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__hint { flex: 1; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
+
+  &__tools { display: flex; gap: 2px; }
+
+  &__tool {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg-subtle);
+  }
+}
+
+/* ── Header (inline, open) ──────────────────────────────────────────────────── */
+
+.nvc-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--c-rowline);
+
+  &__av {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 11px;
+    font-weight: 700;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__as {
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+    strong { color: var(--c-fg); font-weight: 600; }
+  }
+}
+
+/* ── Reply context strip ───────────────────────────────────────────────────── */
+
+.nvc-reply {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  background: var(--c-accent-soft);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-accent) 22%, transparent);
+
+  .nvc-ic { color: var(--c-accent); font-size: 11px; flex: none; }
+
+  &__text {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    strong { color: var(--c-accent); font-weight: 600; }
+  }
+
+  &__x {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    flex: none;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+
+    &:hover { color: var(--c-accent); background: color-mix(in srgb, var(--c-accent) 15%, transparent); }
+  }
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────────── */
+
+.nvc-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+
+  .nvc--dock & { padding: 11px 14px; }
+
+  &__mode { position: absolute; right: 16px; top: 12px; z-index: 2; }
+}
+
+.nvc-content {
+  outline: none;
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--c-fg);
+
+  /* TipTap's own placeholder: ONE mechanism now. Both old editors carried a
+     hand-rolled absolutely-positioned div as well, and the two disagreed about
+     when a document counted as empty. */
+  p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+    color: var(--c-fg-subtle);
+  }
+
+  > * + * { margin-top: 0.7em; }
+
+  h1 { font-size: 1.5em; font-weight: 700; }
+  h2 { font-size: 1.3em; font-weight: 700; }
+  h3 { font-size: 1.1em; font-weight: 700; }
+
+  ul, ol { padding-left: 1.2em; }
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+
+  blockquote {
+    padding: 8px 14px;
+    border-left: 3px solid var(--c-accent);
+    background: var(--c-accent-soft);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--c-fg-muted);
+    font-style: italic;
+  }
+
+  pre {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    font-family: var(--ff-mono, monospace);
+    font-size: 0.9em;
+    overflow-x: auto;
+  }
+
+  code { font-family: var(--ff-mono, monospace); font-size: 0.9em; }
+
+  hr { border: none; border-top: 1px solid var(--c-border); margin: 1em 0; }
+
+  mark { background: color-mix(in srgb, var(--c-warn) 35%, transparent); color: inherit; }
+
+  ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+
+    li { display: flex; align-items: flex-start; gap: 8px; }
+    input { margin-top: 6px; }
+  }
+}
+
+/* A mention, in the editor and in the preview. */
+.nvc-mention {
+  color: var(--c-accent);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.nvc-preview {
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+  color: var(--c-fg);
+
+  &__empty { color: var(--c-fg-subtle); font-style: italic; }
+}
+
+/* ── The dock: action bar + its popovers ───────────────────────────────────── */
+
+.nvc-dock { position: relative; }
+
+/* ⚠ On TOP the popovers open DOWNWARDS — the one place the "always upwards" rule
+   flips, because above the bar is the page, not the editor. */
+.nvc-dock--top {
+  .nvc-pop { bottom: auto; top: calc(100% + 6px); }
+  .nvc-dock__pop { bottom: auto; top: 100%; }
+}
+
+/* The status strip that replaces the action bar's own metadata when the tools are
+   on top: what this surface can do, and how much has been written. */
+.nvc-stats {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: 10px 18px;
+  border-top: 1px solid var(--c-rowline);
+  background: color-mix(in srgb, var(--c-bg) 55%, var(--card-bg));
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+  font-size: var(--fs-xs);
+  color: var(--c-fg-subtle);
+
+  > span { display: inline-flex; align-items: center; gap: 7px; }
+
+  .nvc-ic { font-size: 10px; }
+
+  kbd {
+    font-family: var(--ff-mono, monospace);
+    font-size: 10px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+  }
+
+  /* Numbers last, and they never move the hints around as they grow. */
+  &__count {
+    margin-inline-start: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nvc--panel & { border-radius: 0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px); }
+}
+
+.nvc-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--c-rowline);
+  /* A hair cooler than the body, so the bar reads as chrome. */
+  background: color-mix(in srgb, var(--c-bg) 55%, var(--card-bg));
+  border-radius: 0 0 calc(var(--radius-lg) - 1px) calc(var(--radius-lg) - 1px);
+
+  .nvc--panel & { padding: 12px 20px; border-radius: 0 0 calc(var(--radius-xl) - 1px) calc(var(--radius-xl) - 1px); }
+  .nvc--dock &  { padding: 7px 9px; gap: 4px; }
+
+  /* On top it is a header, not a footer: the rule goes under it, and the rounded
+     corners belong to the other end of the card. */
+  &--top {
+    border-top: none;
+    border-bottom: 1px solid var(--c-rowline);
+    border-radius: 0;
+    flex-wrap: wrap;
+  }
+
+  &__gap { flex: 1; }
+  &__sep { width: 1px; height: 20px; flex: none; background: var(--c-border); margin: 0 4px; }
+
+  &__tool {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+
+    &:hover:not(:disabled) { background: var(--c-accent-soft); color: var(--c-accent); }
+
+    &.is-on {
+      background: var(--c-accent-soft);
+      color: var(--c-accent);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-accent) 22%, transparent);
+    }
+
+    /* Disabled means "not here" — the paperclip on a surface with no upload path. */
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  /* `Aa` — formatting, folded away until asked for. */
+  &__aa {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    flex: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+
+    &:hover { background: var(--c-accent-soft); color: var(--c-accent); }
+    &.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+  }
+
+  &__block {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    height: 34px;
+    flex: none;
+    padding: 0 10px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    background: var(--card-bg);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg);
+    cursor: pointer;
+
+    &:hover:not(:disabled), &.is-on { border-color: var(--c-accent); color: var(--c-accent); }
+    &:disabled { opacity: 0.5; cursor: not-allowed; }
+  }
+
+  &__meta {
+    font-size: var(--fs-xs);
+    color: var(--c-fg-subtle);
+    white-space: nowrap;
+
+    /* The keyboard hint is the first thing to go when the row runs out of room. */
+    &--hide-sm { @media (max-width: 620px) { display: none; } }
+  }
+
+  &__more { position: relative; }
+}
+
+/* The caret on the block picker: a shape, so it needs no icon. */
+.nvc-caret {
+  width: 0;
+  height: 0;
+  border-left: 3.5px solid transparent;
+  border-right: 3.5px solid transparent;
+  border-top: 4px solid currentcolor;
+  opacity: 0.55;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────────────── */
+
+.nvc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  height: 34px;
+  flex: none;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:hover:not(:disabled) { color: var(--c-fg); }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+
+  &--primary {
+    background: var(--c-accent);
+    color: #fff;
+    padding: 0 16px;
+
+    &:hover:not(:disabled) { color: #fff; opacity: 0.88; }
+  }
+
+  /* ⚠ The shortcut lives INSIDE the button. The old editors printed a dead
+     "Ctrl+Enter to post" string in the toolbar, nowhere near the button it
+     described. */
+  &__kbd {
+    font-family: var(--ff-mono, monospace);
+    font-size: 11px;
+    opacity: 0.7;
+
+    @media (max-width: 620px) { display: none; }
+  }
+}
+
+.nvc-send {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--c-accent);
+  color: #fff;
+  cursor: pointer;
+
+  &:hover:not(:disabled) { opacity: 0.88; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+/* ── Write / Preview ──────────────────────────────────────────────────────── */
+
+.nvc-modes {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+
+  &__btn {
+    height: 26px;
+    padding: 0 12px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    cursor: pointer;
+
+    &:hover { color: var(--c-accent); }
+    &.is-on { background: var(--card-bg); color: var(--c-fg); box-shadow: var(--shadow-sm); }
+  }
+}
+
+/* ── Popovers ─────────────────────────────────────────────────────────────── */
+
+.nvc-pop {
+  /* ⚠ UPWARDS. The bar is at the bottom of the surface; a menu that dropped down
+     would open off the end of the card. */
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 200px;
+  padding: 8px;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+
+  &--wide { min-width: 288px; }
+
+  &__label {
+    padding: 6px 10px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    width: 100%;
+    padding: 8px 10px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { background: var(--c-accent-soft); color: var(--c-fg); }
+    &.is-on { color: var(--c-accent); }
+  }
+
+  &__grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; }
+
+  &__cell {
+    display: grid;
+    place-items: center;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+
+    &:hover:not(:disabled) { background: var(--c-accent-soft); color: var(--c-accent); }
+    &.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
+    &:disabled { opacity: 0.4; cursor: not-allowed; }
+  }
+
+  &__foot {
+    margin: 8px 0 0;
+    padding: 8px 10px 2px;
+    border-top: 1px solid var(--c-rowline);
+    font-size: 11px;
+    color: var(--c-fg-subtle);
+    line-height: 1.5;
+  }
+
+  &__acts { display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-2); }
+}
+
+/* The popovers that hang off the dock rather than off one button. */
+.nvc-dock__pop { position: absolute; left: 12px; bottom: 100%; }
+
+.nvc-blockpick { position: relative; flex: none; }
+
+/* Glyph column in the block picker — a letter, not an icon, so the sizes read. */
+.nvc-blockglyph {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  flex: none;
+  font-weight: 800;
+  color: var(--c-fg-subtle);
+
+  &--h1 { font-size: 15px; }
+  &--h2 { font-size: 13px; }
+  &--h3 { font-size: 11px; }
+}
+
+/* ── Link editor ──────────────────────────────────────────────────────────── */
+
+.nvc-linkfield {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 38px;
+  margin: 0 2px 8px;
+  padding: 0 12px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-accent);
+  border-radius: var(--radius-sm);
+
+  .nvc-ic { color: var(--c-accent); font-size: 11px; flex: none; }
+
+  input {
+    flex: 1;
+    min-width: 0;
+    border: none;
+    background: none;
+    font: inherit;
+    font-size: var(--fs-xs);
+    color: var(--c-fg);
+    outline: none;
+  }
+}
+
+.nvc-linkopt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 2px 10px;
+  padding: 0 2px;
+  font-size: var(--fs-xs);
+  color: var(--c-fg-muted);
+  cursor: pointer;
+
+  /* The real checkbox stays in the DOM for keyboards and screen readers. */
+  input { position: absolute; opacity: 0; width: 0; height: 0; }
+
+  input:focus-visible + .nvc-check,
+  .nvc-check:hover { border-color: var(--c-accent); }
+}
+
+.nvc-check {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+  border: 1px solid var(--c-border-hi);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 8px;
+
+  &.is-on { background: var(--c-accent); border-color: var(--c-accent); }
+}
+
+/* ── Emoji ────────────────────────────────────────────────────────────────── */
+
+.nvc-emoji {
+  &__search {
+    width: calc(100% - 4px);
+    height: 32px;
+    margin: 2px 2px 6px;
+    padding: 0 10px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 9px;
+    font: inherit;
+    font-size: var(--fs-xs);
+    color: var(--c-fg);
+    outline: none;
+
+    &:focus { border-color: var(--c-accent); }
+  }
+
+  &__grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 2px; }
+
+  &__cell {
+    height: 32px;
+    border: none;
+    border-radius: 7px;
+    background: none;
+    /* An emoji is a glyph: it has no place on the type scale. */
+    font-size: 17px;
+    line-height: 1;
+    cursor: pointer;
+
+    &:hover { background: var(--c-accent-soft); }
+  }
+}
+
+/* ── Mentions (rendered into a body portal) ───────────────────────────────── */
+
+.nvc-mentions-portal { position: absolute; z-index: 1200; }
+
+.nvc-mentions {
+  min-width: 232px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-pop);
+
+  &__row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+
+    &.is-on, &:hover { background: var(--c-accent-soft); }
+  }
+
+  &__av {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    flex: none;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 10px;
+    font-weight: 800;
+
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+
+  &__name { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg); }
+  &__role { margin-left: auto; font-size: 11px; color: var(--c-fg-subtle); }
+}
+
+/* ── Phone ────────────────────────────────────────────────────────────────────
+   The design's "sheet": because the bar is ALREADY at the bottom, it needs no
+   repositioning above the keyboard — only bigger targets and a row that scrolls
+   instead of wrapping. */
+
+@media (max-width: 620px) {
+  .nvc-bar {
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar { display: none; }
+
+    &__tool, &__aa {
+      width: 44px;
+      height: 44px;
+      font-size: 15px;
+    }
+
+    &__gap { min-width: 4px; }
+
+    /* Sticks to the bar, so the primary action never scrolls out of reach. */
+    .nvc-btn--primary, .nvc-send {
+      position: sticky;
+      right: 0;
+      height: 40px;
+    }
+  }
+
+  .nvc-pop { left: auto; right: 0; max-width: calc(100vw - 32px); }
+  .nvc-pop__grid { grid-template-columns: repeat(4, 1fr); }
+  .nvc-emoji__grid { grid-template-columns: repeat(6, 1fr); }
+}
