@@ -1,5 +1,5 @@
 /**
- * @nodevo/plugin-sdk
+ * @xentium/plugin-sdk
  *
  * The authoring contract for Xentium CMS plugins. Import this in your plugin's
  * server entry point.
@@ -7,7 +7,7 @@
  * ── What changed, and what did not ─────────────────────────────────────────
  *
  * The application-agnostic half of this contract now lives in
- * `@nodevo/plugin-kit` — manifest, definition, host bridge and the base context
+ * `@xentium/plugin-kit` — manifest, definition, host bridge and the base context
  * — so that a plugin for a DIFFERENT Xentium-framework application (the
  * marketplace, for one) has something to build against that does not assume a
  * CMS.
@@ -29,7 +29,7 @@ import type {
   PluginContext as BasePluginContext,
   PluginDefinition as BasePluginDefinition,
   PluginHost as BasePluginHost,
-} from "@nodevo/plugin-kit";
+} from "@xentium/plugin-kit";
 
 // Everything application-agnostic, re-exported so one import still suffices.
 export type {
@@ -38,7 +38,7 @@ export type {
   PermissionDeclaration,
   NecCodeDeclaration,
   NotifyOptions,
-} from "@nodevo/plugin-kit";
+} from "@xentium/plugin-kit";
 
 // ── CMS declarations ─────────────────────────────────────────────────────────
 
@@ -292,7 +292,7 @@ export interface AuthGuard {
 // ── Host bridge ──────────────────────────────────────────────────────────────
 
 /**
- * The CMS's host bridge: everything `@nodevo/plugin-kit` guarantees (prisma,
+ * The CMS's host bridge: everything `@xentium/plugin-kit` guarantees (prisma,
  * queues, env, logger, errors, middleware, cron), plus what only a community
  * platform can offer.
  */

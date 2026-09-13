@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@nodevo/migrate-core";
+import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { extractXenforo, xfVersion } from "./extract.js";
 
 const DEFAULT_PREFIX = "xf_";

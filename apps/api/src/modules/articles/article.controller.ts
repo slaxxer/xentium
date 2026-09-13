@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { articleService } from "./article.service.js";
 import { trackArticleView } from "./article.views.js";
 import { getSetting } from "../../shared/utils/settings.js";

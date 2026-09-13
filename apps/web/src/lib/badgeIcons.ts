@@ -22,7 +22,7 @@ import {
   faClock, faCalendarCheck, faCompass, faAnchor, faMountain, faSeedling,
   faLeaf, faMugHot,
 } from "@fortawesome/free-solid-svg-icons";
-import type { BadgeIconName } from "@nodevo/contracts";
+import type { BadgeIconName } from "@xentium/contracts";
 
 export const BADGE_ICONS: Record<BadgeIconName, IconDefinition> = {
   faStar, faTrophy, faMedal, faAward, faCrown, faCertificate,

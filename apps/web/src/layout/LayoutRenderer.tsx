@@ -39,7 +39,7 @@ import {
   type BlockViewer,
   type LayoutDocument,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
 import { editingTemplate, isEditorPreview, isLayoutPreview, usePreviewAudience } from "./useLayout";

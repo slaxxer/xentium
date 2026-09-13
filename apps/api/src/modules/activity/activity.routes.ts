@@ -4,7 +4,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { normalizeIp } from "../../shared/http/requestMeta.js";
 import { activityService } from "./activity.service.js";
 

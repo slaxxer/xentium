@@ -12,7 +12,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import { DEFAULT_LAYOUTS } from "@nodevo/contracts";
+import { DEFAULT_LAYOUTS } from "@xentium/contracts";
 import { LayoutRenderer } from "../LayoutRenderer";
 import type { PageDetailContext } from "./pageDetailBlocks";
 import "./pageDetailBlocks";

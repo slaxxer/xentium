@@ -28,7 +28,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import { blockTypeClass, type BlockNode, type LayoutDocument } from "@nodevo/contracts";
+import { blockTypeClass, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
 import { listBlocks } from "./blockRegistry";
 import "./blocks/coreBlocks";

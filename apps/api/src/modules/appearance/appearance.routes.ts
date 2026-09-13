@@ -4,7 +4,7 @@ import multer from "multer";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema,
          DEFAULT_ICON_STYLE, isIconStyle,
-         COMPOSER_TOOL_IDS, COMPOSER_DEFAULT_CONFIG, resolveComposerConfig } from "@nodevo/contracts";
+         COMPOSER_TOOL_IDS, COMPOSER_DEFAULT_CONFIG, resolveComposerConfig } from "@xentium/contracts";
 import { appearanceService } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";

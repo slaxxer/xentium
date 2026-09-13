@@ -12,7 +12,7 @@
  */
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { XentiumError } from "./XentiumError.js";
 import { createErrorMiddleware, type ErrorLogEntry } from "./errorMiddleware.js";
 

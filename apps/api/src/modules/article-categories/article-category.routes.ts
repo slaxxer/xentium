@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { articleCategoryController } from "./article-category.controller.js";
 
 export const articleCategoriesRouter: Router = Router();

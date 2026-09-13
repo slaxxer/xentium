@@ -15,7 +15,7 @@
  * anomaly in the marketplace's numbers months later.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 const install: { siteId: string | null } = { siteId: null };
 

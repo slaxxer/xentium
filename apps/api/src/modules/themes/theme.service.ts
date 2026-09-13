@@ -43,7 +43,7 @@ import {
   validateBlockTree,
   type LayoutDocument,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";

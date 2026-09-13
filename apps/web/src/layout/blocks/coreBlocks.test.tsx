@@ -10,7 +10,7 @@
  */
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { LayoutRegion } from "../LayoutRenderer";
 import "./coreBlocks";
 import "./guestBlocks";

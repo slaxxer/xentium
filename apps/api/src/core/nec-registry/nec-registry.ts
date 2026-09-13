@@ -1,4 +1,4 @@
-import type { NecCodeDeclaration } from "@nodevo/plugin-sdk";
+import type { NecCodeDeclaration } from "@xentium/plugin-sdk";
 
 class NecRegistry {
   private codes       = new Map<string, NecCodeDeclaration>();

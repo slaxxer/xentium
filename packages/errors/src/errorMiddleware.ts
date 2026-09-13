@@ -1,6 +1,6 @@
 import type { ErrorRequestHandler, Request } from "express";
 import { ZodError } from "zod";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { XentiumError } from "./XentiumError.js";
 
 export type ErrorSeverity = "info" | "warn" | "error" | "critical";

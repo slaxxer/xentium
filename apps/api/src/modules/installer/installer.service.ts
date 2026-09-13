@@ -1,7 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { hashPassword } from "../auth/auth.password.js";
 import { createSession } from "../auth/auth.tokens.js";
-import { InstallStep, type InstallStatusDto } from "@nodevo/contracts";
+import { InstallStep, type InstallStatusDto } from "@xentium/contracts";
 import { environmentCheck } from "../../core/installer-engine/steps/environmentCheck.js";
 import { databaseCheck } from "../../core/installer-engine/steps/databaseCheck.js";
 import { runMigrations } from "../../core/installer-engine/steps/runMigrations.js";
@@ -9,7 +9,7 @@ import { seedCore } from "../../core/installer-engine/steps/seedCore.js";
 import { finalize } from "../../core/installer-engine/steps/finalize.js";
 import { ensureInstallRow, advanceTo, assertNotComplete, getInstall }
   from "../../core/installer-engine/installState.js";
-import type { SiteConfigInput, AdminAccountInput } from "@nodevo/contracts";
+import type { SiteConfigInput, AdminAccountInput } from "@xentium/contracts";
 
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
 

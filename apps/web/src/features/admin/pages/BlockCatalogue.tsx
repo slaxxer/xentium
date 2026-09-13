@@ -19,7 +19,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faMagnifyingGlass, faXmark } from "@fortawesome/free-solid-svg-icons";
-import type { TemplateKey } from "@nodevo/contracts";
+import type { TemplateKey } from "@xentium/contracts";
 import { listPlaceableBlocks } from "../../../layout/blockRegistry";
 import { BlockArt } from "../../../layout/blockArt";
 import "./BlockCatalogue.scss";

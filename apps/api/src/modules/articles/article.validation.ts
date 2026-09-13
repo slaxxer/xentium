@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { paginatedRequestSchema } from "@nodevo/contracts";
+import { paginatedRequestSchema } from "@xentium/contracts";
 
 // TipTap body: a ProseMirror doc. Loosely validated — must be an object with
 // `type` and an array `content`. Deep schema validation would be brittle as

@@ -1,4 +1,4 @@
-# @nodevo/server-kit
+# @xentium/server-kit
 
 **Server utilities for the Xentium framework.**
 

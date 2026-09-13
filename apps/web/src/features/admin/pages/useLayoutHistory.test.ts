@@ -11,7 +11,7 @@
  */
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
-import type { LayoutDocument } from "@nodevo/contracts";
+import type { LayoutDocument } from "@xentium/contracts";
 import { useLayoutHistory, type LayoutSnapshot } from "./useLayoutHistory";
 
 /** Documents are opaque to the hook — only identity matters, so a marker suffices. */

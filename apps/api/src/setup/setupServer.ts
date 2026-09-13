@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { setupConfigSchema, InstallStep } from "@nodevo/contracts";
+import { setupConfigSchema, InstallStep } from "@xentium/contracts";
 import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
 
 /**

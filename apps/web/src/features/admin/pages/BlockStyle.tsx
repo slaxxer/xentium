@@ -43,7 +43,7 @@ import {
   variantScopeId,
   type BlockVariant,
   type ScopedTokenSet,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";

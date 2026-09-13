@@ -1,5 +1,5 @@
 import mysql from "mysql2/promise";
-import type { ExtractResult, ImportError, MigrationReporter } from "@nodevo/migrate-core";
+import type { ExtractResult, ImportError, MigrationReporter } from "@xentium/migrate-core";
 import {
   decodeVersionId, mapNode, mapPost, mapThread, mapUser,
   type XfNodeRow, type XfPostRow, type XfThreadRow, type XfUserRow,

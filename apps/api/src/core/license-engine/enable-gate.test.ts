@@ -17,7 +17,7 @@
  * message IS the feature here: a 402 that names the wrong remedy is the bug.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 // ── the world the gate reads ────────────────────────────────────────────────
 

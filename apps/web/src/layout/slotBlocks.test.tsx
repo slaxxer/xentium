@@ -11,7 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
-import type { BlockNode } from "@nodevo/contracts";
+import type { BlockNode } from "@xentium/contracts";
 import { slotRegistry } from "../plugins/slotRegistry";
 import { LayoutRegion } from "./LayoutRenderer";
 import "./blocks/coreBlocks";   // pluginSlot lives here

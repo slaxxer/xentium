@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { NEC } from "@nodevo/contracts";
-import { XentiumError } from "@nodevo/errors";
+import { NEC } from "@xentium/contracts";
+import { XentiumError } from "@xentium/errors";
 import type { StorageProvider } from "./StorageProvider.js";
 
 export interface LocalStorageOptions {

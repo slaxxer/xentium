@@ -1,9 +1,9 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
-import { uniqueSlug, slugify } from "@nodevo/sdk";
+import { NEC } from "@xentium/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
+import { uniqueSlug, slugify } from "@xentium/sdk";
 import { tiptapToPlain } from "../../shared/utils/tiptapPlain.js";
 import { queues } from "../../infrastructure/queue.js";
 import { articleRepository, articleInclude, type ArticleWithIncludes } from "./article.repository.js";

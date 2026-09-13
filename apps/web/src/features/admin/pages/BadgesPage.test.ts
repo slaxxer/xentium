@@ -6,7 +6,7 @@
  * server's ordering survives the default.
  */
 import { describe, expect, it } from "vitest";
-import type { BadgeRow } from "@nodevo/contracts";
+import type { BadgeRow } from "@xentium/contracts";
 import { arrangeBadges } from "./BadgesPage";
 
 function badge(p: Partial<BadgeRow> & { key: string }): BadgeRow {

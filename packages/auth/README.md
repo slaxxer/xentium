@@ -1,4 +1,4 @@
-# @nodevo/auth
+# @xentium/auth
 
 **Authentication primitives for the Xentium framework.**
 

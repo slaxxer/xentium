@@ -8,7 +8,7 @@
  */
 import { Children } from "react";
 import { useTranslation } from "react-i18next";
-import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@nodevo/contracts";
+import { blockPropSchemas, blockTypesIn, type LocalizedText } from "@xentium/contracts";
 import { LayoutWidgetOutlet } from "../../plugins/LayoutWidgetOutlet";
 import { ArticleContent } from "../../features/articles/components/ArticleContent";
 import { registerBlock, type BlockProps } from "../blockRegistry";

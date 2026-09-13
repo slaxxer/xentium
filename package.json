@@ -1,5 +1,5 @@
 {
-  "name": "nodevo",
+  "name": "xentium",
   "version": "1.0.0-alpha.1",
   "private": true,
   "packageManager": "pnpm@10.30.2",
@@ -17,7 +17,7 @@
     "backbone:up": "docker compose --env-file .env -f docker/docker-compose.yml up -d",
     "backbone:down": "docker compose --env-file .env -f docker/docker-compose.yml down",
     "backbone:check": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
-    "dev:apps": "concurrently -k -n api,worker,web -c green,yellow,cyan \"pnpm --filter @nodevo/api dev\" \"pnpm --filter @nodevo/api dev:worker\" \"pnpm --filter @nodevo/web dev\"",
+    "dev:apps": "concurrently -k -n api,worker,web -c green,yellow,cyan \"pnpm --filter @xentium/api dev\" \"pnpm --filter @xentium/api dev:worker\" \"pnpm --filter @xentium/web dev\"",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset --force",
@@ -26,8 +26,8 @@
     "release:framework": "node scripts/release-framework.mjs",
     "release:framework:dry": "node scripts/release-framework.mjs --dry-run",
     "e2e:reset": "prisma migrate reset --force",
-    "e2e": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e",
-    "e2e:ui": "pnpm e2e:reset && pnpm --filter @nodevo/e2e run e2e:ui"
+    "e2e": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e",
+    "e2e:ui": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e:ui"
   },
   "devDependencies": {
     "@eslint/js": "^9",

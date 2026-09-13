@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_LAYOUTS, MAX_BLOCK_DEPTH,
   type BlockNode, type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { migrateFooterBand } from "./footerBandMigration.js";
 
 const doc = (footer: BlockNode[]): LayoutDocument =>

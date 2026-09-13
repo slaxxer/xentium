@@ -1,7 +1,7 @@
 // apps/api/src/modules/users/users.controller.ts
 
 import type { RequestHandler } from "express";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { userService } from "./users.service.js";
 import { progressionService } from "../progression/progression.service.js";
 import { getProfileVisitors, recordProfileView } from "./profileViews.js";

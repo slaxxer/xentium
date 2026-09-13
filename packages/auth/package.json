@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/auth",
+  "name": "@xentium/auth",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,8 +16,8 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
-    "@nodevo/errors": "workspace:*",
+    "@xentium/contracts": "workspace:*",
+    "@xentium/errors": "workspace:*",
     "argon2": "catalog:",
     "bcryptjs": "^3.0.3",
     "jose": "catalog:"
@@ -26,7 +26,7 @@
     "express": "catalog:"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",

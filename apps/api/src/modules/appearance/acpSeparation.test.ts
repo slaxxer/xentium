@@ -15,7 +15,7 @@
  *     colours back — without it the pin would make that surface lie.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ScopedTokenSet } from "@nodevo/contracts";
+import type { ScopedTokenSet } from "@xentium/contracts";
 
 vi.mock("../../infrastructure/db.js", () => ({
   prisma: { setting: { upsert: async () => ({}) }, $transaction: async () => [] },

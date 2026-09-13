@@ -28,7 +28,7 @@ import {
   type LayoutDocument,
   type CoreTemplateKey,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 const UPLOAD_DIR = fsSync.mkdtempSync(path.join(os.tmpdir(), "nv-theme-"));
 process.env.UPLOAD_DIR = UPLOAD_DIR;

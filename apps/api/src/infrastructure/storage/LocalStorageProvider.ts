@@ -1,6 +1,6 @@
 /**
  * The CMS's storage provider, built from the framework implementation
- * (`@nodevo/server-kit`).
+ * (`@xentium/server-kit`).
  *
  * The package enforces the allowlist and blocks traversal; this file names the
  * directories, because `avatars` / `articles` / `themes` are CMS concepts.
@@ -20,7 +20,7 @@
  * writable without being public — so adding one here does not make it reachable,
  * and adding it there does not make it writable. A new directory usually needs both.
  */
-import { LocalStorageProvider, type StorageProvider } from "@nodevo/server-kit";
+import { LocalStorageProvider, type StorageProvider } from "@xentium/server-kit";
 import { env } from "../../config/env.js";
 
 /**

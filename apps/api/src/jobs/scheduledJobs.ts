@@ -6,7 +6,7 @@
 import { createHash } from "node:crypto";
 import parser from "cron-parser";
 import type { Queue } from "bullmq";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { queues } from "../infrastructure/queue.js";
 import { prisma } from "../infrastructure/db.js";
 import { XentiumError } from "../shared/errors/XentiumError.js";

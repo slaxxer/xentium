@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import * as jose from "jose";
-import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@nodevo/contracts";
+import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";

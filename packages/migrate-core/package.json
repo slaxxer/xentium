@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/migrate-core",
+  "name": "@xentium/migrate-core",
   "version": "1.0.0-alpha.1",
   "private": true,
   "description": "Shared contract + loader for Xentium platform-migration adapters (§34). Adapters extract a source platform into the intermediate model; this package loads it into a Xentium database.",
@@ -13,12 +13,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@nodevo/sdk": "workspace:*",
+    "@xentium/sdk": "workspace:*",
     "htmlparser2": "^10.1.0",
     "pg": "^8.21.0"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/pg": "^8.16.0",
     "typescript": "catalog:",
     "vitest": "catalog:"

@@ -1,7 +1,7 @@
 import type { Router } from "express";
 import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, NecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
-} from "@nodevo/plugin-sdk";
-import { registerTemplate } from "@nodevo/contracts";
+} from "@xentium/plugin-sdk";
+import { registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";

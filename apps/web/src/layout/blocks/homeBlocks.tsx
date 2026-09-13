@@ -27,7 +27,7 @@
  */
 import type { ReactNode } from "react";
 import type { ZodType } from "zod";
-import { blockPropSchemas } from "@nodevo/contracts";
+import { blockPropSchemas } from "@xentium/contracts";
 import { registerBlock } from "../blockRegistry";
 import { RankProgress, useRankFor } from "../../features/progression/rank";
 import {

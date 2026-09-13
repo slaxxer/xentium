@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from "vitest";
 import type { Request, Response } from "express";
 import { requireMaxDimensions } from "./imageDimensions.js";
-import { XentiumError } from "@nodevo/errors";
+import { XentiumError } from "@xentium/errors";
 
 /** A real PNG header: 8-byte signature + an IHDR carrying width and height. */
 function png(width: number, height: number): Buffer {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fontRootDecls, fontBodyRule, FONT_FAMILIES, FONT_STACKS } from "@nodevo/contracts";
+import { fontRootDecls, fontBodyRule, FONT_FAMILIES, FONT_STACKS } from "@xentium/contracts";
 
 /**
  * The API's `buildCSS` and the Style Editor's live preview both build the site font

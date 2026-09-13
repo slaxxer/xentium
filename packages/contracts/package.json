@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/contracts",
+  "name": "@xentium/contracts",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -16,7 +16,7 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { z } from "zod";
-import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@nodevo/contracts";
+import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@xentium/contracts";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { NEC } from "../../shared/errors/nec.js";

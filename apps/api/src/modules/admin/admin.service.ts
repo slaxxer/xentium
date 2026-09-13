@@ -16,7 +16,7 @@ import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@xentium/contracts";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client

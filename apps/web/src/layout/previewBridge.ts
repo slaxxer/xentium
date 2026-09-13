@@ -39,7 +39,7 @@
  * interface while the preview is the fast one.
  */
 
-import type { AudienceView, LayoutDocument, TemplateKey } from "@nodevo/contracts";
+import type { AudienceView, LayoutDocument, TemplateKey } from "@xentium/contracts";
 import { acceptsChild } from "./blockRegistry";
 import { shortcutFor } from "./editorShortcuts";
 import { setLivePreviewDocument, setPreviewAudience } from "./useLayout";

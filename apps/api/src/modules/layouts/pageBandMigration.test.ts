@@ -7,7 +7,7 @@
  * indistinguishable from the block having been deleted.
  */
 import { describe, expect, it } from "vitest";
-import type { BlockNode, LayoutDocument } from "@nodevo/contracts";
+import type { BlockNode, LayoutDocument } from "@xentium/contracts";
 import { migratePageBands } from "./pageBandMigration.js";
 
 const block = (id: string): BlockNode => ({ id, type: "heading", props: { text: id, level: 2 } });

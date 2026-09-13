@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { permissionsService } from "../permissions/permissions.service.js";
 import {
   articleLikeService,

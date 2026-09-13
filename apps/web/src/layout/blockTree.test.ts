@@ -8,7 +8,7 @@
  * a subtree moved into a container carries its own height with it.
  */
 import { describe, it, expect } from "vitest";
-import type { BlockNode } from "@nodevo/contracts";
+import type { BlockNode } from "@xentium/contracts";
 import {
   canNestInto,
   cloneBlock,

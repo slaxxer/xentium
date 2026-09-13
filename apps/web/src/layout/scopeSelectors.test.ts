@@ -19,7 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { SCOPE_SELECTOR, type ThemeScope } from "@nodevo/contracts";
+import { SCOPE_SELECTOR, type ThemeScope } from "@xentium/contracts";
 
 const SRC = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 

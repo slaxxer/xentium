@@ -20,7 +20,7 @@ import {
   parseLayoutDocument,
   regionsFor,
   validateBlockTree,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import {
   acceptsChild,
   registerBlock,

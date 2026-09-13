@@ -25,7 +25,7 @@ import {
   type AudienceView,
   type BlockNode,
   type TemplateKey,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { getBlock } from "../../../layout/blockRegistry";
 
 /** Where a dragged block would land. `parentId: null` is the region's own list. */

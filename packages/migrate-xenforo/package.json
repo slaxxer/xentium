@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/migrate-xenforo",
+  "name": "@xentium/migrate-xenforo",
   "version": "1.0.0-alpha.1",
   "private": true,
   "description": "XenForo 2.x → Xentium migration adapter (§34, Wave 1). Connects directly to the XenForo MySQL database. Requires the nodevo-forum plugin on the target.",
@@ -14,11 +14,11 @@
     "migrate": "tsx src/run.ts"
   },
   "dependencies": {
-    "@nodevo/migrate-core": "workspace:*",
+    "@xentium/migrate-core": "workspace:*",
     "mysql2": "^3.16.0"
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "tsx": "^4.22.3",
     "typescript": "catalog:",
     "vitest": "catalog:"

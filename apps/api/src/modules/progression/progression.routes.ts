@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requirePermission } from "../../shared/middleware/requirePermission.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 import { progressionController } from "./progression.controller.js";
 
 // ── Admin progression router (mounted at /api/admin/progression) ──────────────

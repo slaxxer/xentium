@@ -1,5 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
-import { InstallStep } from "@nodevo/contracts";
+import { InstallStep } from "@xentium/contracts";
 
 /** Singleton row. Created the moment migrations succeed in the DATABASE step. */
 export async function getInstall() {

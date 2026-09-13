@@ -1,5 +1,5 @@
 import { prisma } from "../infrastructure/db.js";
-import { CorePermissions } from "@nodevo/contracts";
+import { CorePermissions } from "@xentium/contracts";
 
 const GROUPS = [
   { key: "admin",     name: "Administrator" },

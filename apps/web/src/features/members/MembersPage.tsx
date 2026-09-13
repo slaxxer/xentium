@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { TFunction } from "i18next";
 import { FontAwesomeIcon } from "../../components/Icon";
 import { faLock } from "@fortawesome/free-solid-svg-icons";
-import { blockTypesIn } from "@nodevo/contracts";
+import { blockTypesIn } from "@xentium/contracts";
 import { api } from "../../lib/api";
 import { Avatar } from "../../components/Avatar";
 import { Username } from "../../components/Username";

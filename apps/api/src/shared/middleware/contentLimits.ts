@@ -11,7 +11,7 @@
 
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 /** Resolve the effective progression limits for a user. */
 async function getEffectiveLimits(userId: string) {

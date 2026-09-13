@@ -219,7 +219,7 @@ export type RegionName = (typeof TEMPLATE_REGIONS)[CoreTemplateKey][number];
 // and registers it in both — from its server entry via `ctx.registerLayoutTemplate`,
 // and from its web entry via the host's `@web/layout/templateRegistry`.
 // ⚠ A plugin bundle must go through the HOST global for the web half. Importing
-// `@nodevo/contracts` directly bundles a SECOND copy of this module, whose registry
+// `@xentium/contracts` directly bundles a SECOND copy of this module, whose registry
 // the renderer never reads.
 
 /** A template: its regions, what it ships in them, and who owns it. */

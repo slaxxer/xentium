@@ -4,9 +4,9 @@
  * home-feed-registry / search-registry. A plugin registers via
  * `ctx.registerStatSource(...)` in its onEnable, and is removed on disable.
  */
-import type { StatSource, FooterStat } from "@nodevo/plugin-sdk";
+import type { StatSource, FooterStat } from "@xentium/plugin-sdk";
 
-export type { StatSource, FooterStat } from "@nodevo/plugin-sdk";
+export type { StatSource, FooterStat } from "@xentium/plugin-sdk";
 
 interface Entry { pluginId: string; source: StatSource }
 

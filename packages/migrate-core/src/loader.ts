@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import pg from "pg";
-import { uniqueSlug } from "@nodevo/sdk";
+import { uniqueSlug } from "@xentium/sdk";
 import { htmlToTipTap, htmlToText } from "./htmlToTipTap.js";
 import type {
   ExtractResult, ImportedArticle, ImportedBlock, ImportedCategory, ImportedComment,

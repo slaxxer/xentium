@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { DEFAULT_VARIANT, templateKeySchema, variantKeySchema } from "@nodevo/contracts";
+import { DEFAULT_VARIANT, templateKeySchema, variantKeySchema } from "@xentium/contracts";
 
 /**
  * The template a request addresses.

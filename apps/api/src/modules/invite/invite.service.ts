@@ -1,4 +1,4 @@
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 

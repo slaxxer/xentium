@@ -19,7 +19,7 @@ import {
   variantScopeId,
   type BlockNode,
   type LayoutDocument,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
 import { updateBlockVariant } from "./blockTree";
 import "./blocks/coreBlocks";

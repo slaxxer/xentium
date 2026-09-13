@@ -1,8 +1,8 @@
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
-import { buildPaginationMeta, type PaginatedResponse } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
+import { buildPaginationMeta, type PaginatedResponse } from "@xentium/contracts";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";

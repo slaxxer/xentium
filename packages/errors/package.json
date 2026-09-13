@@ -1,5 +1,5 @@
 {
-  "name": "@nodevo/errors",
+  "name": "@xentium/errors",
   "version": "1.0.0-alpha.1",
   "private": false,
   "type": "module",
@@ -25,14 +25,14 @@
     }
   },
   "devDependencies": {
-    "@nodevo/config": "workspace:*",
+    "@xentium/config": "workspace:*",
     "@types/express": "^5",
     "express": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@nodevo/contracts": "workspace:*",
+    "@xentium/contracts": "workspace:*",
     "zod": "catalog:"
   },
   "description": "XentiumError, the NEC code registry, and the Express error middleware.",

@@ -1,5 +1,5 @@
 /**
- * @nodevo/plugin-engine — the parts of the plugin system that know nothing
+ * @xentium/plugin-engine — the parts of the plugin system that know nothing
  * about the application hosting them (ADR-0006).
  *
  * WHAT IS HERE: manifest parsing and compatibility, the DDL-only SQL guard that

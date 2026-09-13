@@ -33,8 +33,8 @@ function readVersion(): string {
 export const NODEVO_VERSION: string = readVersion();
 
 /**
- * Base-version comparison moved to `@nodevo/plugin-engine` (ADR-0006) — it is
+ * Base-version comparison moved to `@xentium/plugin-engine` (ADR-0006) — it is
  * pure, and the plugin compatibility check is its only consumer. Re-exported
  * here so existing imports keep working.
  */
-export { baseVersion, compareBaseVersions } from "@nodevo/plugin-engine";
+export { baseVersion, compareBaseVersions } from "@xentium/plugin-engine";

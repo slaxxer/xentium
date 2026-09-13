@@ -6,7 +6,7 @@ import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 import { getSetting } from "../../shared/utils/settings.js";
-import { buildPaginationMeta } from "@nodevo/contracts";
+import { buildPaginationMeta } from "@xentium/contracts";
 
 function formatDobValue(value: string, format: string | null): string {
   const date = new Date(value);

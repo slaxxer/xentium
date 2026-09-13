@@ -5,4 +5,4 @@ export const databaseConfigSchema = z.object({
 
 
 
-export { siteConfigSchema, adminAccountSchema } from "@nodevo/contracts";
+export { siteConfigSchema, adminAccountSchema } from "@xentium/contracts";

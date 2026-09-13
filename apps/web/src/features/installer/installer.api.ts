@@ -5,7 +5,7 @@ import type {
   SetupConfigInput,
   SiteConfigInput,
   AdminAccountInput,
-} from "@nodevo/contracts";
+} from "@xentium/contracts";
 
 export const installerApi = {
   status: () => api.get<InstallStatusDto>("/install/status"),

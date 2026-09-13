@@ -16,7 +16,7 @@
  * font settings.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { ScopedTokenSet } from "@nodevo/contracts";
+import type { ScopedTokenSet } from "@xentium/contracts";
 
 // `buildCSS` folds in the admin custom CSS, which is compiled once and cached in a
 // setting — hence the one prisma call this needs.

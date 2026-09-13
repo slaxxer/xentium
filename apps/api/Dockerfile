@@ -16,10 +16,10 @@ ENV DATABASE_URL="postgresql://build:build@localhost:5432/build"
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm exec prisma generate
-RUN pnpm --filter @nodevo/api build
+RUN pnpm --filter @xentium/api build
 # Flatten just the API's production runtime (workspace + prod deps) into /prod.
 # --legacy: pnpm v10 otherwise requires inject-workspace-packages=true to deploy.
-RUN pnpm --filter @nodevo/api deploy --prod --legacy /prod
+RUN pnpm --filter @xentium/api deploy --prod --legacy /prod
 
 # ── One-shot migration runner (keeps the prisma CLI + schema/migrations) ───────
 FROM build AS migrate

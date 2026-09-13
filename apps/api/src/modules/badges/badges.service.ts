@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { notificationService } from "../notifications/notification.service.js";
 import type { AwardedBadge, BadgeHolder, BadgeRow } from "./badges.types.js";

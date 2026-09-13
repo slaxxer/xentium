@@ -4,9 +4,9 @@
  * Forum (and any future content plugin) registers via
  * `ctx.registerHomeFeedSource(...)` in its onEnable, and is removed on disable.
  */
-import type { HomeFeedSource } from "@nodevo/plugin-sdk";
+import type { HomeFeedSource } from "@xentium/plugin-sdk";
 
-export type { HomeFeedItem, HomeFeedSource } from "@nodevo/plugin-sdk";
+export type { HomeFeedItem, HomeFeedSource } from "@xentium/plugin-sdk";
 
 interface Entry { pluginId: string; source: HomeFeedSource }
 

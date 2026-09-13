@@ -15,7 +15,7 @@
 import type { RequestHandler } from "express";
 import { imageSize } from "image-size";
 import { XentiumError } from "../errors/XentiumError.js";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 export function requireMaxDimensions(maxWidth: number, maxHeight: number): RequestHandler {
   return (req, _res, next) => {

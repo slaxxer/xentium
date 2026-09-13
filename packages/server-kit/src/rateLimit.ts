@@ -1,7 +1,7 @@
 import rateLimit, { ipKeyGenerator, type Options } from "express-rate-limit";
 import { RedisStore } from "rate-limit-redis";
 import type { RequestHandler } from "express";
-import { NEC } from "@nodevo/contracts";
+import { NEC } from "@xentium/contracts";
 
 /**
  * The one Redis call the limiter store makes. Declared structurally so the

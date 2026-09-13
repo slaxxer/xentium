@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { validateMigrationSql } from "./sqlValidator.js";
-import { XentiumError, NEC } from "@nodevo/errors";
+import { XentiumError, NEC } from "@xentium/errors";
 
 /** Assert the call throws a XentiumError carrying the given NEC code. */
 function expectNec(fn: () => void, code: string): void {

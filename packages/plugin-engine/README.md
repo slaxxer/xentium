@@ -1,4 +1,4 @@
-# @nodevo/plugin-engine
+# @xentium/plugin-engine
 
 **Plugin engine primitives for the Xentium framework.**
 
