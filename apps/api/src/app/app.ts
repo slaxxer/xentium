@@ -102,7 +102,7 @@ export function createApp(): Express {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('Content-Security-Policy', "default-src 'none'; sandbox");
       }
-      // Theme assets arrive inside an imported .nvtheme — an untrusted archive. Their
+      // Theme assets arrive inside an imported .xttheme — an untrusted archive. Their
       // type IS magic-byte-verified on import, but SVG has no magic bytes and can carry
       // script, so navigating straight to one must not execute it. No attachment
       // disposition here: unlike an attachment these have to render in <img> and CSS
@@ -136,7 +136,7 @@ export function createApp(): Express {
   });
 
   // Public — the site default language (§60.3 resolution chain). Visitors with
-  // no explicit language choice (no nv_locale cookie, no account preference)
+  // no explicit language choice (no xt_locale cookie, no account preference)
   // render the UI in this locale. Pre-install / unset → null and clients keep
   // their local detection.
   app.get('/api/meta/site-locale', async (_req, res) => {

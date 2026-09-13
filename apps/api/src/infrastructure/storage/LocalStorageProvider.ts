@@ -5,7 +5,7 @@
  * The package enforces the allowlist and blocks traversal; this file names the
  * directories, because `avatars` / `articles` / `themes` are CMS concepts.
  * `themes` covers both `themes/logo` (the site logo) and `themes/<theme-id>`
- * (assets unpacked from an imported .nvtheme). `layouts` holds imagery a block
+ * (assets unpacked from an imported .xttheme). `layouts` holds imagery a block
  * references — a `section` background, today. `badges` holds award icons (ADR-0009),
  * bounded to 32x32 at the route that writes them. `covers` holds members' own profile
  * covers — one file per user, replaced in place.

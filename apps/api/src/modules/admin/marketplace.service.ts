@@ -446,7 +446,7 @@ export const marketplaceService = {
 
   /**
    * Install a THEME from the marketplace: the same chokepoint, the same transfer
-   * and the same checksum as a plugin — then the ordinary `.nvtheme` import
+   * and the same checksum as a plugin — then the ordinary `.xttheme` import
    * instead of the plugin intake.
    *
    * ⚠ It lands in the DRAFT, not live, because that is what importing a theme has

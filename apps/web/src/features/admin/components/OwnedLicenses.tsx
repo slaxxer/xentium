@@ -99,7 +99,7 @@ export function OwnedLicenses({
         "/admin/marketplace/install",
         // ⚠ `kind` is not optional here in practice. The endpoint defaults it to
         // "plugin", so an owned THEME installed from this panel ran the plugin
-        // intake over a `.nvtheme` and failed on the manifest — the row is the one
+        // intake over a `.xttheme` and failed on the manifest — the row is the one
         // place that knows which half of the catalogue it is looking at.
         { pluginId: l.product.id, version: l.product.latestVersion, kind: l.product.kind },
         {

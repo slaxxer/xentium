@@ -33,7 +33,7 @@ describe("LocalStorageProvider", () => {
   });
 
   it("allows a nested path under an allowed root", async () => {
-    // `themes/<id>` is how .nvtheme assets land.
+    // `themes/<id>` is how .xttheme assets land.
     const rel = await storage.save(path.join("themes", "aperture"), "hero.jpg", Buffer.from("x"));
     expect(rel).toBe("themes/aperture/hero.jpg");
   });

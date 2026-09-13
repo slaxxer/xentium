@@ -42,7 +42,7 @@ model ImportMapEntry {
   platform  String // "wordpress" | "xenforo" | "phpbb" | ...
   entity    String // "user" | "article" | "comment" | "category" | "thread" | "post" | "attachment"
   sourceId  String   @map("source_id")
-  xentiumId  String   @map("nodevo_id")
+  xentiumId  String   @map("xentium_id")
   createdAt DateTime @default(now())
 
   @@unique([platform, entity, sourceId])
@@ -383,7 +383,7 @@ model LoginEvent {
 /// the first. Before this table there was one settings key holding one manifest, so
 /// importing a theme silently destroyed whatever had been installed before it.
 ///
-/// The row carries the theme's applicable PAYLOAD, not the original `.nvtheme`: the
+/// The row carries the theme's applicable PAYLOAD, not the original `.xttheme`: the
 /// layout documents, tokens and stylesheets exactly as the importer resolved them,
 /// with every asset reference already rewritten to this install's upload paths. That
 /// is what lets a theme be re-activated later without the package it came from —

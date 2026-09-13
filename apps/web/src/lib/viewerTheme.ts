@@ -16,7 +16,7 @@
  * themes: an id naming nothing falls back to the site's own, so a tampered cookie is
  * worth nothing.
  */
-const COOKIE = "nv_theme";
+const COOKIE = "xt_theme";
 const MAX_AGE_DAYS = 365;
 
 /** Ids are slugs. Anything else is not a theme we installed, so it is not a choice. */

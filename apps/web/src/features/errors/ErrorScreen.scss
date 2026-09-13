@@ -1,7 +1,7 @@
 /* Crash screen — same editorial "Hearth" language as the 404 (.nf), in the
    danger register. Every value carries a literal fallback: the theme itself
    may be the thing that broke, and this screen still has to render. */
-.nv-err {
+.xt-err {
   position: relative;
   overflow: hidden;
   color: var(--c-fg, #eeeef8);

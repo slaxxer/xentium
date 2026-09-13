@@ -1,5 +1,5 @@
 /**
- * Export a `.nvtheme`, asked for in a dialog.
+ * Export a `.xttheme`, asked for in a dialog.
  *
  * The manifest is eight fields an admin fills in once per release, which is a form,
  * not a toolbar. It used to sit expanded inside the Layout Editor as a row of unlabelled

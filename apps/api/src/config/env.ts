@@ -14,7 +14,7 @@ const schema = z.object({
   APP_URL: z.string().url().default("http://localhost:5173"),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
-  REDIS_KEY_PREFIX: z.string().default("nodevo:"),
+  REDIS_KEY_PREFIX: z.string().default("xentium:"),
   COOKIE_SECRET: z.string().min(16),
   JWT_SECRET: z.string().min(32),
   // HMAC key for refresh / password-reset / email-verify token hashing (§43).

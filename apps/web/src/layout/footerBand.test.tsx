@@ -36,12 +36,12 @@ const withQuery = (ui: React.ReactNode) =>
   render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
 
 describe("the footer band", () => {
-  it("paints .nv-foot — the class the Style Editor's Footer panel is emitted under", () => {
+  it("paints .xt-foot — the class the Style Editor's Footer panel is emitted under", () => {
     // Not cosmetic: `SCOPE_SELECTOR.footer` IS this class, so renaming it silently
     // empties that whole panel.
     const { container } = render(<LayoutRegion document={doc([band()])} region="footer" />);
-    expect(container.querySelector(".nv-foot")).not.toBeNull();
-    expect(SCOPE_SELECTOR.footer).toBe(".nv-foot");
+    expect(container.querySelector(".xt-foot")).not.toBeNull();
+    expect(SCOPE_SELECTOR.footer).toBe(".xt-foot");
   });
 
   it("holds its pieces INSIDE the band, not beside it", () => {
@@ -49,21 +49,21 @@ describe("the footer band", () => {
       document={doc([band({}, [{ id: "b", type: "branding", props: { showUptime: false } }])])}
       region="footer"
     />);
-    expect(container.querySelector(".nv-foot .nv-b--branding")).not.toBeNull();
+    expect(container.querySelector(".xt-foot .xt-b--branding")).not.toBeNull();
   });
 
   it("draws a background only when the document asks for one", () => {
     // An existing site keeps `--footer-bg` from the Style Editor. A band that always
     // painted would override a colour the admin chose somewhere else entirely.
     const plain = render(<LayoutRegion document={doc([band()])} region="footer" />);
-    expect(plain.container.querySelector(".nv-foot--bg")).toBeNull();
+    expect(plain.container.querySelector(".xt-foot--bg")).toBeNull();
     cleanup();
 
     const painted = render(<LayoutRegion
       document={doc([band({ backgroundGradient: ["#101014", "#26263a"], backgroundAngle: 90 })])}
       region="footer"
     />);
-    const el = painted.container.querySelector<HTMLElement>(".nv-foot--bg");
+    const el = painted.container.querySelector<HTMLElement>(".xt-foot--bg");
     expect(el).not.toBeNull();
     expect(el!.style.backgroundImage).toContain("linear-gradient");
   });
@@ -71,7 +71,7 @@ describe("the footer band", () => {
   it("can drop the line above it, for a footer whose background already separates it", () => {
     const { container } = render(
       <LayoutRegion document={doc([band({ showTopBorder: false })])} region="footer" />);
-    expect(container.querySelector(".nv-foot--noline")).not.toBeNull();
+    expect(container.querySelector(".xt-foot--noline")).not.toBeNull();
   });
 
   it("is what the shipped default puts in the region, with the four pieces inside it", () => {
@@ -86,7 +86,7 @@ describe("the footer band", () => {
     // band to say "no footer chrome". They render unpainted rather than not at all.
     const { container } = withQuery(
       <LayoutRegion document={doc([{ id: "b", type: "branding", props: { showUptime: false } }])} region="footer" />);
-    expect(container.querySelector(".nv-b--branding")).not.toBeNull();
-    expect(container.querySelector(".nv-foot")).toBeNull();
+    expect(container.querySelector(".xt-b--branding")).not.toBeNull();
+    expect(container.querySelector(".xt-foot")).toBeNull();
   });
 });

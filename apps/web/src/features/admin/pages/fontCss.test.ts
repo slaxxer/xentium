@@ -48,7 +48,7 @@ describe("site font CSS", () => {
   });
 
   /**
-   * The rule targets `body`, and `body.nv-acp` IS a body — which is how the site's
+   * The rule targets `body`, and `body.xt-acp` IS a body — which is how the site's
    * size and weight leaked into the admin panel. The ACP opts out by re-pinning all
    * four custom properties (AcpLayout.scss), so the rule must keep addressing them
    * through variables rather than literal values.

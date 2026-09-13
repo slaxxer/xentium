@@ -17,7 +17,7 @@ const adminGuard    = requirePermission(CorePermissions.ADMIN_PLUGINS);
 const uploadLimiter  = makeRateLimiter("plugin-upload", 60 * 60_000, isDev ? 1000 : 20); // §26: 20/hr
 const upload       = multer({ storage: multer.memoryStorage(), limits: { fileSize: 50 * 1024 * 1024 } });
 
-// Manual .nvplugin uploads are OFF by default: the marketplace is the sanctioned
+// Manual .xtplugin uploads are OFF by default: the marketplace is the sanctioned
 // install channel. An admin can enable them (ACP → Extensions → Installed). Read
 // fresh so toggling takes effect immediately. Marketplace installs are never gated.
 const uploadGuard: RequestHandler = (_req, _res, next) => {

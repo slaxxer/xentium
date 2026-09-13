@@ -40,15 +40,15 @@ export class XentiumLoader {
 
   private async mapped(entity: string, sourceId: string): Promise<string | null> {
     const res = await this.pool.query(
-      `SELECT nodevo_id FROM xcf_import_map WHERE platform = $1 AND entity = $2 AND source_id = $3`,
+      `SELECT xentium_id FROM xcf_import_map WHERE platform = $1 AND entity = $2 AND source_id = $3`,
       [this.platform, entity, sourceId],
     );
-    return res.rows[0]?.nodevo_id ?? null;
+    return res.rows[0]?.xentium_id ?? null;
   }
 
   private async remember(entity: string, sourceId: string, xentiumId: string): Promise<void> {
     await this.pool.query(
-      `INSERT INTO xcf_import_map (id, run_id, platform, entity, source_id, nodevo_id)
+      `INSERT INTO xcf_import_map (id, run_id, platform, entity, source_id, xentium_id)
        VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
       [crypto.randomUUID(), this.runId, this.platform, entity, sourceId, xentiumId],
     );

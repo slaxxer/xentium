@@ -1,4 +1,4 @@
-// Build and package a Xentium plugin into a distributable .nvplugin (ZIP) file.
+// Build and package a Xentium plugin into a distributable .xtplugin (ZIP) file.
 //
 // Usage:
 //   node scripts/package-plugin.mjs [pluginDir] [outDir] [--no-build]
@@ -97,7 +97,7 @@ function main() {
   }
 
   fs.mkdirSync(outDir, { recursive: true });
-  const outFile = path.join(outDir, `${manifest.id}-${manifest.version}.nvplugin`);
+  const outFile = path.join(outDir, `${manifest.id}-${manifest.version}.xtplugin`);
   zip.writeZip(outFile);
 
   const sizeKb = (fs.statSync(outFile).size / 1024).toFixed(1);

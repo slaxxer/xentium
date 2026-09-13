@@ -8,14 +8,14 @@
  * colour: the pill's tint, its border and the glyph all derive from that one value,
  * so a badge follows the admin's choice without any per-badge CSS.
  */
-.nv-badges {
+.xt-badges {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   flex-wrap: wrap;
 }
 
-.nv-badge {
+.xt-badge {
   display: inline-grid;
   place-items: center;
   flex-shrink: 0;
@@ -61,7 +61,7 @@
 
 /* A badge with neither an upload nor a glyph still has to occupy its space —
    otherwise a catalogue entry that is mid-edit makes the row jump. */
-.nv-badge__dot {
+.xt-badge__dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
@@ -70,7 +70,7 @@
 
 /* An award not yet earned. Dashed and drained of colour so the grid reads as
    "these are the ones you could have" rather than as more of the same. */
-.nv-badge--locked {
+.xt-badge--locked {
   color: var(--c-fg-subtle);
   background: var(--c-surface);
   border-style: dashed;

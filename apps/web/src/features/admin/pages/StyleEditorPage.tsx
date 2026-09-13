@@ -550,7 +550,7 @@ export function StyleEditorPage() {
       const decls = Object.entries(map).map(([k, v]) => `  ${k}: ${v} !important;`).join("\n");
       if (decls.trim()) blocks.push(`${sel} {\n${decls}\n}`);
     }
-    // Applied exactly as the served stylesheet applies it. NOT to `body.nv-acp`:
+    // Applied exactly as the served stylesheet applies it. NOT to `body.xt-acp`:
     // this CSS goes into the preview iframe, which is the SITE — the admin panel
     // deliberately keeps its own type and must not follow the site font.
     const bodyRule = fontBodyRule(font);

@@ -2,7 +2,7 @@
    opens. A theme is a LOOK, so the choice is made from thumbnails rather than from a
    list of names. */
 
-.nv-themepick__open {
+.xt-themepick__open {
   display: inline-grid;
   place-items: center;
   width: 34px;
@@ -22,7 +22,7 @@
 /* ── the dialog ────────────────────────────────────────────────────────────── */
 /* Its own, not the ACP's `.acp-modal`: those styles are pinned to the admin panel
    and this renders on the public site, which wears the visitor's theme. */
-.nv-themedlg {
+.xt-themedlg {
   position: fixed;
   inset: 0;
   z-index: 900;
@@ -101,7 +101,7 @@
 /* ── a theme's card ────────────────────────────────────────────────────────── */
 /* A ROW: thumbnail, then what the theme is called and what it says about itself.
    Big enough to tell two themes apart, small enough that a list of them is a list. */
-.nv-themecard {
+.xt-themecard {
   display: flex;
   align-items: center;
   gap: 12px;

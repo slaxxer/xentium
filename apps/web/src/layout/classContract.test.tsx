@@ -11,7 +11,7 @@
  * Three separate promises, and they are guarded differently because they are different
  * kinds of thing:
  *
- *  1. **`nv-b--<type>` on every block.** Derived from the registry key, stamped by the
+ *  1. **`xt-b--<type>` on every block.** Derived from the registry key, stamped by the
  *     renderer, so it holds for core, plugin and future blocks alike. Guarded by
  *     enumerating the registry — a block cannot be added without it.
  *  2. **Root classes** for the blocks that own a root element. A short list; most blocks
@@ -19,7 +19,7 @@
  *  3. **No combinator may cross a block boundary.** Every block is wrapped in a
  *     `display: contents` element, and selectors match the DOM rather than the box tree,
  *     so `>`/`+`/`~` against a block's root silently stops matching. This is not
- *     hypothetical: `.nv-columns > .nv-column` shipped and broke the mobile collapse for
+ *     hypothetical: `.xt-columns > .xt-column` shipped and broke the mobile collapse for
  *     any column an admin had given a variant, leaving a sticky rail pinned over the
  *     content it was supposed to stack under.
  */
@@ -47,12 +47,12 @@ const doc = (nodes: BlockNode[]): LayoutDocument =>
 
 // ── 1. The type class ───────────────────────────────────────────────────────
 
-describe("nv-b--<type>", () => {
+describe("xt-b--<type>", () => {
   it("is a usable CSS identifier for a plugin's dotted type", () => {
     // `forum.recentThreads` cannot appear in a selector unescaped.
-    expect(blockTypeClass("forum.recentThreads")).toBe("nv-b--forum-recentThreads");
-    expect(blockTypeClass("heading")).toBe("nv-b--heading");
-    expect(blockTypeClass("slot.headerWidget.x")).toBe("nv-b--slot-headerWidget-x");
+    expect(blockTypeClass("forum.recentThreads")).toBe("xt-b--forum-recentThreads");
+    expect(blockTypeClass("heading")).toBe("xt-b--heading");
+    expect(blockTypeClass("slot.headerWidget.x")).toBe("xt-b--slot-headerWidget-x");
   });
 
   it("is stamped on EVERY registered block, on the live site", () => {
@@ -74,7 +74,7 @@ describe("nv-b--<type>", () => {
     render(<LayoutRegion document={doc([
       { id: "h", type: "heading", props: { text: "Hi", level: 2, align: "start" } },
     ])} region="main" />);
-    const el = document.querySelector(".nv-b--heading") as HTMLElement;
+    const el = document.querySelector(".xt-b--heading") as HTMLElement;
     expect(el.style.display).toBe("contents");
   });
 
@@ -83,11 +83,11 @@ describe("nv-b--<type>", () => {
       { id: "h", type: "heading", props: { text: "Hi", level: 2, align: "start" },
         variant: "accent", className: "nav-tile" },
     ])} region="main" />);
-    const el = document.querySelector(".nv-b--heading") as HTMLElement;
-    expect(el.classList.contains("nv-v--accent")).toBe(true);
+    const el = document.querySelector(".xt-b--heading") as HTMLElement;
+    expect(el.classList.contains("xt-v--accent")).toBe(true);
     expect(el.classList.contains("nav-tile")).toBe(true);
     // One wrapper, not three nested ones.
-    expect(el.querySelectorAll(".nv-b--heading, .nv-v--accent, .nav-tile")).toHaveLength(0);
+    expect(el.querySelectorAll(".xt-b--heading, .xt-v--accent, .nav-tile")).toHaveLength(0);
   });
 
   it("makes the live DOM match the editor preview's shape", () => {
@@ -97,9 +97,9 @@ describe("nv-b--<type>", () => {
       { id: "s", type: "section", props: { width: "normal", padding: "md" },
         children: [{ id: "h", type: "heading", props: { text: "Hi", level: 2, align: "start" } }] },
     ])} region="main" />);
-    const region = document.querySelector(".nv-region") as HTMLElement;
-    expect(region.firstElementChild!.classList.contains("nv-b--section")).toBe(true);
-    expect(document.querySelector(".nv-b--section .nv-section .nv-b--heading .nv-heading"))
+    const region = document.querySelector(".xt-region") as HTMLElement;
+    expect(region.firstElementChild!.classList.contains("xt-b--section")).toBe(true);
+    expect(document.querySelector(".xt-b--section .xt-section .xt-b--heading .xt-heading"))
       .not.toBeNull();
   });
 });
@@ -117,28 +117,28 @@ describe("nv-b--<type>", () => {
  * `docs/theme-packages.md` in the same commit.
  */
 const ROOT_CLASSES: Record<string, string> = {
-  section:     "nv-section",
-  columns:     "nv-columns",
-  column:      "nv-column",
-  spacer:      "nv-spacer",
-  heading:     "nv-heading",
-  richText:    "nv-richtext",
-  image:       "nv-image",
+  section:     "xt-section",
+  columns:     "xt-columns",
+  column:      "xt-column",
+  spacer:      "xt-spacer",
+  heading:     "xt-heading",
+  richText:    "xt-richtext",
+  image:       "xt-image",
   guestHero:   "ghero",
   guestBody:   "gbody",
   profileCard: "profile-card",
 };
 
 /**
- * `nv-block` — the class that says "a block drew here", on every wrapper.
+ * `xt-block` — the class that says "a block drew here", on every wrapper.
  *
  * A rail and a column collapse when nothing inside them rendered, and the test for
- * that is `:has(.nv-block:not(:empty))`. The renderer's OTHER handle,
- * `data-nv-block`, is stamped in the EDITOR only — a rule written against it matched
+ * that is `:has(.xt-block:not(:empty))`. The renderer's OTHER handle,
+ * `data-xt-block`, is stamped in the EDITOR only — a rule written against it matched
  * nothing on the real page and collapsed every track on it. So this class is a
  * layout dependency, not decoration.
  */
-describe("nv-block", () => {
+describe("xt-block", () => {
   it("is on every block wrapper, on the live site", () => {
     const nodes: BlockNode[] = [
       { id: "a", type: "heading", props: { text: "H", level: 2 } },
@@ -147,10 +147,10 @@ describe("nv-block", () => {
         children: [{ id: "d", type: "spacer", props: { size: "md" } }] },
     ];
     const { container } = render(<LayoutRegion document={doc(nodes)} region="main" />);
-    const wrappers = [...container.querySelectorAll("[class*='nv-b--']")];
+    const wrappers = [...container.querySelectorAll("[class*='xt-b--']")];
     expect(wrappers.length).toBeGreaterThan(3);
     for (const w of wrappers) {
-      expect([...w.classList], w.className).toContain("nv-block");
+      expect([...w.classList], w.className).toContain("xt-block");
     }
   });
 });
@@ -253,8 +253,8 @@ describe("site chrome", () => {
     // BOTH wrappers. The navbar is a block inside the header REGION now, so the
     // region's own element is a second box between the nav and the page — and one
     // box is enough to trap sticky. It also has to go for a second reason: a
-    // `.nv-region` is a centred content column, and site chrome spans the viewport.
+    // `.xt-region` is a centred content column, and site chrome spans the viewport.
     expect(body).toMatch(/display:\s*contents/);
-    expect(body).toMatch(/\.nv-region--header\s*\{\s*display:\s*contents/);
+    expect(body).toMatch(/\.xt-region--header\s*\{\s*display:\s*contents/);
   });
 });

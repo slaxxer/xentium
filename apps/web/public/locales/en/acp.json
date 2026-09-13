@@ -714,7 +714,7 @@
       },
       "XEC-PLUGIN-2002": {
         "msg": "Invalid Plugin Package",
-        "desc": "The uploaded .nvplugin file is not a valid plugin package.",
+        "desc": "The uploaded .xtplugin file is not a valid plugin package.",
         "cause": "Not a ZIP archive, an unsafe (path-traversal) entry, or manifest.json is missing / not valid JSON.",
         "fix": "Re-download the package from its source. If self-built, rebuild it with the plugin SDK packager."
       },
@@ -738,7 +738,7 @@
       },
       "XEC-PLUGIN-2006": {
         "msg": "Uploads Disabled",
-        "desc": "Manual .nvplugin uploads are switched off on this site.",
+        "desc": "Manual .xtplugin uploads are switched off on this site.",
         "cause": "The marketplace is the sanctioned install channel; manual uploads are off by default.",
         "fix": "Install from ACP → Extensions → Marketplace, or enable manual uploads on ACP → Extensions → Installed."
       },
@@ -786,7 +786,7 @@
       },
       "XEC-CORE-8002": {
         "msg": "Invalid Theme Package",
-        "desc": "The uploaded .nvtheme failed validation — the message names the file and the rule it broke.",
+        "desc": "The uploaded .xttheme failed validation — the message names the file and the rule it broke.",
         "cause": "A missing or malformed manifest.json, a layout that is not a valid document, a stylesheet containing rules other than :root custom properties, or an asset that is not an allowed type.",
         "fix": "Read the message: it names the offending file. Validation is all-or-nothing, so nothing was applied and the site is unchanged."
       },
@@ -842,19 +842,19 @@
         "msg": "Activation Cap Reached",
         "desc": "The download gate found no free production activation slot for this purchase.",
         "cause": "All licensed production domains for this purchase are already in use.",
-        "fix": "Free a slot, or buy an additional domain on nodevo.io."
+        "fix": "Free a slot, or buy an additional domain on xentium.org."
       },
       "XEC-LICENSE-9005": {
         "msg": "Marketplace Account Required",
         "desc": "This action needs a connected marketplace account.",
-        "cause": "No nodevo.io account is connected for this site.",
+        "cause": "No xentium.org account is connected for this site.",
         "fix": "Connect an account in ACP → Extensions → Marketplace, or use a manual license key."
       },
       "XEC-LICENSE-9006": {
         "msg": "Entitlement Token Invalid",
         "desc": "The stored entitlement JWT failed RS256 verification.",
         "cause": "The token was tampered with, or the verifying public key does not match the issuer.",
-        "fix": "Re-activate the license. In production, confirm the bundled license public key matches nodevo.io's signing key."
+        "fix": "Re-activate the license. In production, confirm the bundled license public key matches xentium.org's signing key."
       },
       "XEC-LICENSE-9007": {
         "msg": "Marketplace Unreachable",
@@ -1270,7 +1270,7 @@
     "uploadBtn": "Upload Plugin",
     "loading": "Loading…",
     "emptyTitle": "No plugins installed",
-    "emptyHint": "Upload a .nvplugin package to get started.",
+    "emptyHint": "Upload a .xtplugin package to get started.",
     "licensed": "Licensed",
     "meta": "{{id}} · by {{vendor}} · installed {{date}}",
     "status": {
@@ -1290,7 +1290,7 @@
     "removeDataText": "This will also drop the plugin's database tables and delete all its data. This cannot be undone.",
     "removeDataConfirm": "Yes, remove data",
     "allowUpload": "Allow manual uploads",
-    "allowUploadHint": "Let admins install plugins by uploading a .nvplugin file, in addition to the marketplace. Off by default.",
+    "allowUploadHint": "Let admins install plugins by uploading a .xtplugin file, in addition to the marketplace. Off by default.",
     "emptyBrowseMarketplace": "Browse the marketplace",
     "loadFailed": "Failed to load",
     "loadFailedTitle": "This plugin is enabled but failed to load — its routes and pages are not active.",
@@ -1303,11 +1303,11 @@
       "validate": "Validate",
       "install": "Install"
     },
-    "drop": "Drop your .nvplugin file here",
+    "drop": "Drop your .xtplugin file here",
     "orClick": "or click to browse",
     "browse": "Browse file",
     "reqTitle": "Requirements",
-    "req1": "File must be a valid .nvplugin package (ZIP)",
+    "req1": "File must be a valid .xtplugin package (ZIP)",
     "req2": "Must include a manifest.json with id, name, version, vendor",
     "req3": "Migration files must use DDL statements only",
     "req4": "Every .up.sql must have a matching .down.sql",
@@ -1337,7 +1337,7 @@
     "goInstalled": "Go to Installed",
     "installFailed": "Installation failed.",
     "sideHowTitle": "How it works",
-    "sideStep1": "Drop or pick a .nvplugin package.",
+    "sideStep1": "Drop or pick a .xtplugin package.",
     "sideStep2": "We check the manifest, permissions and migrations.",
     "sideStep3": "Files are unpacked and the plugin is ready to enable.",
     "sideSafetyTitle": "Before you install",
@@ -1346,7 +1346,7 @@
     "sideMarketText": "Browse and install official plugins with an active license.",
     "sideMarketLink": "Open the Marketplace",
     "disabledTitle": "Manual uploads are disabled",
-    "disabledHint": "Plugins install from the marketplace by default. An administrator can turn on manual .nvplugin uploads on the Installed page.",
+    "disabledHint": "Plugins install from the marketplace by default. An administrator can turn on manual .xtplugin uploads on the Installed page.",
     "disabledGoMarketplace": "Browse the marketplace"
   },
   "marketplace": {
@@ -1365,7 +1365,7 @@
     "goManage": "Installed — Go to manage",
     "install": "Install",
     "activateToInstall": "Activate license to install",
-    "buy": "Buy → nodevo.io",
+    "buy": "Buy → xentium.org",
     "installing": "Installing…",
     "installSuccess": "{{name}} installed — enable it when ready.",
     "installFailed": "Install failed: {{message}}",
@@ -2422,7 +2422,7 @@
     "importTitle": "Install a theme",
     "importBtn": "Choose file…",
     "importing": "Installing…",
-    "importHint": "Accepts .nvtheme and .nvstyle. The theme is applied as soon as it is installed; your own customised pages are kept.",
+    "importHint": "Accepts .xttheme and .xtstyle. The theme is applied as soon as it is installed; your own customised pages are kept.",
     "reportTitle": "Import result",
     "reportTemplates": "{{count}} template(s) applied.",
     "reportKept": "{{count}} template(s) kept as you had them.",

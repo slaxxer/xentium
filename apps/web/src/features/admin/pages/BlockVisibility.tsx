@@ -73,7 +73,7 @@ export function BlockVisibilityFields({
         <label className="lay__vis-row" key={audience}>
           <input
             type="radio"
-            name="nv-block-audience"
+            name="xt-block-audience"
             value={audience}
             checked={current.audience === audience}
             onChange={() => setAudience(audience)}

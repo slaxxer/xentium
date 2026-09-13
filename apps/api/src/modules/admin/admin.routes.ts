@@ -178,6 +178,6 @@ adminRouter.use("/progression",  adminProgressionRouter);
 adminRouter.use("/tasks",        scheduledTaskRouter);
 // Page layout documents (ADR-0005) — same ADMIN_ACCESS gate as Appearance.
 adminRouter.use("/layouts",      adminLayoutRouter);
-// .nvtheme export/import — layouts + tokens as data, never code.
+// .xttheme export/import — layouts + tokens as data, never code.
 adminRouter.use("/themes",       themeRouter);
 adminRouter.use("/email",        adminEmailRouter);

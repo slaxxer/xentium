@@ -318,7 +318,7 @@ All visual values are CSS custom properties resolved at runtime — three tiers,
   buttons) — no per-region token names.
 - **Style variants:** a scope may also be a named LOOK rather than a place —
   `variant.surface` / `variant.muted` / `variant.accent` / `variant.plain`, emitted under
-  `.nv-v--<name>`, which the renderer stamps on any block whose document says
+  `.xt-v--<name>`, which the renderer stamps on any block whose document says
   `"variant": "accent"` (ADR-0005). `section` paints from the `--surface-*` set; every variant
   aliases `--card-bg` and friends to it, so one background token moves both kinds of surface.
 - **Storage:** `PUT /tokens` takes a scope-keyed map per theme (`{ global: {…}, navbar: {…} }`);
@@ -360,7 +360,7 @@ All **Admin**.
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | Installed plugins + status. |
-| POST | `/validate` | Dry-run validate an uploaded `.nvplugin` (`multipart`, field `file`). |
+| POST | `/validate` | Dry-run validate an uploaded `.xtplugin` (`multipart`, field `file`). |
 | POST | `/upload` | Install (rate-limited; `multipart`). |
 | POST | `/:id/enable` | Enable (checks entitlement for licensed plugins). |
 | POST | `/:id/disable` | Disable (data preserved). |
@@ -465,9 +465,9 @@ Gated on `admin.access`, like the rest of Appearance. Every mutation is audited 
 | POST | `/layouts/:templateKey/discard` | Drop the draft, keep what is live. |
 | POST | `/layouts/:templateKey/reset` | Delete draft **and** published rows → back to the built-in default. Keeps the theme baseline. |
 | POST | `/layouts/:templateKey/revert-theme` | Stage the installed theme's version of this template as the draft. 404 when no theme ships it. |
-| POST | `/themes/export` | Build a `.nvtheme` from what is **published** — layouts, scoped tokens, custom CSS and every referenced image, with asset paths rewritten to package-relative. Body: `{ id, name, version, vendor, description?, license?, homepage?, authorUrl? }`. Responds `application/zip`. |
+| POST | `/themes/export` | Build a `.xttheme` from what is **published** — layouts, scoped tokens, custom CSS and every referenced image, with asset paths rewritten to package-relative. Body: `{ id, name, version, vendor, description?, license?, homepage?, authorUrl? }`. Responds `application/zip`. |
 | GET | `/themes/installed` | The installed theme's manifest + the templates its baseline covers. |
-| POST | `/themes/import` | Validate a `.nvtheme` (multipart `file`) and stage it as the **draft** — never live. All-or-nothing: one bad layout, asset or stylesheet applies none of it. Returns `{ manifest, templates, unknownTemplates, kept, replaced, tokensApplied, customCssApplied, assetsImported, unknownBlocks }`. |
+| POST | `/themes/import` | Validate a `.xttheme` (multipart `file`) and stage it as the **draft** — never live. All-or-nothing: one bad layout, asset or stylesheet applies none of it. Returns `{ manifest, templates, unknownTemplates, kept, replaced, tokensApplied, customCssApplied, assetsImported, unknownBlocks }`. |
 
 `unknownBlocks` is informational, not a failure — those blocks are kept in the document and render
 once the plugin providing them is enabled. `unknownTemplates` is the same idea one level up: layouts

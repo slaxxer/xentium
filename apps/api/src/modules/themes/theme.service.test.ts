@@ -1,5 +1,5 @@
 /**
- * `.nvtheme` export / import.
+ * `.xttheme` export / import.
  *
  * The thing worth testing is the ROUND TRIP: a package built on one install has to
  * produce the same look on another, and the only part of a layout document that does
@@ -30,7 +30,7 @@ import {
   type TemplateKey,
 } from "@xentium/contracts";
 
-const UPLOAD_DIR = fsSync.mkdtempSync(path.join(os.tmpdir(), "nv-theme-"));
+const UPLOAD_DIR = fsSync.mkdtempSync(path.join(os.tmpdir(), "xt-theme-"));
 process.env.UPLOAD_DIR = UPLOAD_DIR;
 afterAll(async () => { await fs.rm(UPLOAD_DIR, { recursive: true, force: true }); });
 
@@ -264,7 +264,7 @@ describe("export", () => {
 
     const tokens = JSON.parse(zip.getEntry(THEME_PATHS.tokens)!.getData().toString());
     expect(tokens.light["chrome.header"]["--c-bg"]).toBe("#111");
-    // `:root` CSS can only hold the global scope; it stays for `.nvstyle` readers.
+    // `:root` CSS can only hold the global scope; it stays for `.xtstyle` readers.
     const css = zip.getEntry(THEME_PATHS.cssLight)!.getData().toString();
     expect(css).toContain("--c-bg: #fff;");
     expect(css).not.toContain("#111");
@@ -655,7 +655,7 @@ describe("theme inheritance", () => {
 });
 
 /**
- * `.nvstyle` absorbed into `.nvtheme` (2026-08-15).
+ * `.xtstyle` absorbed into `.xttheme` (2026-08-15).
  *
  * The two were never really two formats: a style pack is `manifest.json` plus a
  * `:root`-only light/dark pair, which is a strict subset of a theme package. What
@@ -664,7 +664,7 @@ describe("theme inheritance", () => {
  * "strict superset" this file has claimed since it was written was true of the files
  * and false of the manifest. One ingestion path now, which is the point.
  */
-describe("importing a legacy .nvstyle", () => {
+describe("importing a legacy .xtstyle", () => {
   /** Exactly what the old `installStylePack` accepted: name only, no theme fields. */
   function stylePack(manifest: Record<string, unknown> = { name: "Ocean" }): Buffer {
     const zip = new AdmZip();
@@ -991,7 +991,7 @@ describe("undoing an import", () => {
  * A site can have many themes installed and exactly one active, the same way plugins
  * work (§10/§54). Before this, a single settings key held ONE manifest, so importing
  * a second theme destroyed the first: an admin could not put two side by side and
- * choose, and going back meant finding the original `.nvtheme` again.
+ * choose, and going back meant finding the original `.xttheme` again.
  */
 describe("the library", () => {
   beforeEach(() => {

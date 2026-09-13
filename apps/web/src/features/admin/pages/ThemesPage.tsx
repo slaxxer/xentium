@@ -187,7 +187,7 @@ export function ThemesPage() {
       const url = URL.createObjectURL(await res.blob());
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${meta.id}-${meta.version}.nvtheme`;
+      a.download = `${meta.id}-${meta.version}.xttheme`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success(t("themes.exported"));
@@ -340,8 +340,8 @@ export function ThemesPage() {
           <FontAwesomeIcon icon={faUpload} />{" "}
           {importMut.isPending ? t("themes.importing") : t("themes.importBtn")}
         </button>
-        {/* `.nvstyle` is accepted too — it is a theme with no layouts (2026-08-15). */}
-        <input ref={fileRef} type="file" accept=".nvtheme,.nvstyle,.zip" hidden
+        {/* `.xtstyle` is accepted too — it is a theme with no layouts (2026-08-15). */}
+        <input ref={fileRef} type="file" accept=".xttheme,.xtstyle,.zip" hidden
           onChange={(e) => {
             const f = e.target.files?.[0];
             if (f) importMut.mutate(f);

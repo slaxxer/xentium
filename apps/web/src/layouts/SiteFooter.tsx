@@ -56,24 +56,24 @@ export function FooterWhosOnline({ maxNames = MAX_NAMES }: { maxNames?: number }
   const nameColor = (c: string | null) => c ?? "var(--c-fg-muted)";
 
   return (
-    <div className="nv-foot__online">
-      <p className="nv-eyebrow">
-        <span className="nv-online-dot" aria-hidden="true" /> {t("footer.whosOnline")}
+    <div className="xt-foot__online">
+      <p className="xt-eyebrow">
+        <span className="xt-online-dot" aria-hidden="true" /> {t("footer.whosOnline")}
       </p>
-      <p className="nv-sentence">
+      <p className="xt-sentence">
         {t("footer.onlineSentence", { count: online?.total ?? 0 })}
       </p>
       {shown.length > 0 && (
-        <div className="nv-names">
+        <div className="xt-names">
           {shown.map((u, i) => (
             <Fragment key={u.username}>
-              <Link className="nv-on" to={`/u/${u.username}`} style={{ color: nameColor(u.badgeColor) }}>
+              <Link className="xt-on" to={`/u/${u.username}`} style={{ color: nameColor(u.badgeColor) }}>
                 <Username username={u.username} badgeColor={u.badgeColor} />
               </Link>
-              {i < shown.length - 1 && <span className="nv-sep">·</span>}
+              {i < shown.length - 1 && <span className="xt-sep">·</span>}
             </Fragment>
           ))}
-          {extra > 0 && <span className="nv-on nv-on--more"> · {t("footer.andMore", { count: extra })}</span>}
+          {extra > 0 && <span className="xt-on xt-on--more"> · {t("footer.andMore", { count: extra })}</span>}
         </div>
       )}
     </div>
@@ -90,14 +90,14 @@ export function FooterGroupLegend() {
   });
   if (legendGroups.length === 0) return null;
   return (
-    <div className="nv-legend">
-      <span className="nv-legend__lbl">{t("footer.legend")}</span>
+    <div className="xt-legend">
+      <span className="xt-legend__lbl">{t("footer.legend")}</span>
       {legendGroups.map((g) => {
         const color = g.badgeColor ?? "var(--c-fg-muted)";
         return (
           <span
             key={g.key}
-            className="nv-grp"
+            className="xt-grp"
             style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}
           >
             {g.name}
@@ -118,17 +118,17 @@ export function FooterBoardStats() {
   });
   const { data: meta } = useFooterMeta();
   return (
-    <div className="nv-stats">
-      <div className="nv-stat nv-stat--accent"><b>{(stats?.articles ?? 0).toLocaleString()}</b><span>{t("footer.totalArticles")}</span></div>
-      <div className="nv-stat"><b>{(stats?.members ?? 0).toLocaleString()}</b><span>{t("footer.members")}</span></div>
+    <div className="xt-stats">
+      <div className="xt-stat xt-stat--accent"><b>{(stats?.articles ?? 0).toLocaleString()}</b><span>{t("footer.totalArticles")}</span></div>
+      <div className="xt-stat"><b>{(stats?.members ?? 0).toLocaleString()}</b><span>{t("footer.members")}</span></div>
       {(meta?.stats ?? []).map((s) => (
-        <div key={s.id} className="nv-stat">
+        <div key={s.id} className="xt-stat">
           <b>{s.value.toLocaleString()}</b>
           <span>{t(`footer.stat.${s.id}`, { defaultValue: s.label })}</span>
         </div>
       ))}
       {stats?.newestMember && (
-        <div className="nv-stat">
+        <div className="xt-stat">
           <b><Link to={`/u/${stats.newestMember}`}>@{stats.newestMember}</Link></b>
           <span>{t("footer.newestMember")}</span>
         </div>
@@ -168,13 +168,13 @@ export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
 
   return (
     <>
-      <div className="nv-bar">
-        <Link className="nv-brand" to="/" aria-label="Xentium home">
-          <span className="nv-logomark"><FontAwesomeIcon icon={faUsers} /></span>
-          <span className="nv-wordmark">Xentium</span>
+      <div className="xt-bar">
+        <Link className="xt-brand" to="/" aria-label="Xentium home">
+          <span className="xt-logomark"><FontAwesomeIcon icon={faUsers} /></span>
+          <span className="xt-wordmark">Xentium</span>
         </Link>
         {footerLinks.length > 0 && (
-          <nav className="nv-links nv-links--grow">
+          <nav className="xt-links xt-links--grow">
             {footerLinks.map((item) =>
               item.url.startsWith("/") ? (
                 <Link key={item.id} to={item.url}>{item.label}</Link>
@@ -189,19 +189,19 @@ export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
         {/* The theme picker, at the RIGHT of the brand row. Part of `branding` rather
             than a block of its own: it belongs beside the site's mark and its links,
             and a second placeable control that does the same thing is two ways to
-            reach one setting. `nv-themepick` is pushed over by `margin-left: auto`,
+            reach one setting. `xt-themepick` is pushed over by `margin-left: auto`,
             which works whether or not there are footer links. */}
         {showThemeChooser && (
-          <span className="nv-themepick"><ThemeChooser /></span>
+          <span className="xt-themepick"><ThemeChooser /></span>
         )}
       </div>
 
-      <div className="nv-copyright">
-        <span className="nv-copyright__legal">© {new Date().getFullYear()} {meta?.siteName ?? ""}</span>
+      <div className="xt-copyright">
+        <span className="xt-copyright__legal">© {new Date().getFullYear()} {meta?.siteName ?? ""}</span>
         {showUptime && (
-          <span className="nv-copyright__meta">
+          <span className="xt-copyright__meta">
             <span title={t("footer.uptimeHint")}>{t("footer.uptime")}: <b>{meta ? formatUptime(liveUptime) : "—"}</b></span>
-            <span className="nv-sep">·</span>
+            <span className="xt-sep">·</span>
             <span title={t("footer.latencyHint")}>{t("footer.latency")}: <b>{meta ? `${meta.latencyMs} ms` : "—"}</b></span>
           </span>
         )}
@@ -235,7 +235,7 @@ export function SiteFooter() {
   // which is what a single ordered list already is. `LayoutRegion` emits the
   // `<footer>` landmark.
   //
-  // There is no `.nv-foot` wrapper here any more: the band is the `footer` BLOCK, the
+  // There is no `.xt-foot` wrapper here any more: the band is the `footer` BLOCK, the
   // way the masthead is the `header` block. A wrapper here would paint the band
   // whether or not the document asked for one — so "delete the footer chrome" would
   // leave its background behind, and the block's own background would draw inside a

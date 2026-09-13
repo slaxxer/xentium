@@ -1,11 +1,11 @@
-# `.nvtheme` — the theme package format
+# `.xttheme` — the theme package format
 
 > Companion to ADR-0005. `docs/plugin-blocks.md` covers the other half of the split:
-> a **theme is data, a plugin is code**. Nothing in a `.nvtheme` executes, which is why
+> a **theme is data, a plugin is code**. Nothing in a `.xttheme` executes, which is why
 > installing one needs no trust review — it is validated against a schema, and an
 > unknown block is skipped rather than run.
 
-A package is a zip. Rename it `.nvtheme`; nothing checks the extension.
+A package is a zip. Rename it `.xttheme`; nothing checks the extension.
 
 ```
 manifest.json            required
@@ -18,11 +18,11 @@ layouts/<template>.json  one document per template
 assets/                  images and fonts the documents reference
 ```
 
-## `.nvstyle` is this format now
+## `.xtstyle` is this format now
 
-A `.nvstyle` was a manifest plus a `:root`-only light/dark pair — a theme with no
+A `.xtstyle` was a manifest plus a `:root`-only light/dark pair — a theme with no
 `layouts/` and no `assets/`. The two were never really two formats, so as of
-**2026-08-15 they are one**: the theme importer accepts a `.nvstyle` unchanged, and the
+**2026-08-15 they are one**: the theme importer accepts a `.xtstyle` unchanged, and the
 separate upload endpoint, its parallel validator and its ACP page are gone. Two
 ingestion paths for untrusted CSS was one more than a site needs.
 
@@ -35,7 +35,7 @@ gets the strict error it deserves rather than an invented id.
 
 To produce one, export with **Colours only** (`tokensOnly`), which omits `layouts/` —
 and therefore `assets/`, since the only assets an export collects are the ones layouts
-reference. The result is a `.nvtheme` that changes nothing but the palette.
+reference. The result is a `.xttheme` that changes nothing but the palette.
 
 ## manifest.json
 
@@ -78,7 +78,7 @@ left in place.
 }
 ```
 
-The two `:root` stylesheets can only carry `global`, so they exist for `.nvstyle`
+The two `:root` stylesheets can only carry `global`, so they exist for `.xtstyle`
 compatibility. **When both are present `tokens.json` wins.** Token names must look like
 custom properties and values may not contain `{ } < > ;` — the values are emitted into a
 served stylesheet, and a stray brace would close the block early.
@@ -117,7 +117,7 @@ says what that variant looks like. Both halves are in the package:
 
 - the layout document carries `"variant": "accent"` on the block;
 - `tokens.json` carries the `variant.accent` scope, emitted by the receiving site as
-  `:root .nv-v--accent`.
+  `:root .xt-v--accent`.
 
 ```jsonc
 // layouts/home.json — the block picks a look
@@ -168,13 +168,13 @@ Three things decide how you write that CSS:
 - **Style *through* the handle, not on it.** It is stamped on the same
   `display: contents` wrapper the variant uses, so it generates no box:
   `.nav-tile { background: … }` paints nothing, while `.nav-tile > *`,
-  `.nav-tile img` and `.nav-tile .nv-image` all work. This is the price of the handle
+  `.nav-tile img` and `.nav-tile .xt-image` all work. This is the price of the handle
   being safe on **every** block — including a plugin's, which never had to opt in —
   and of never breaking the flex and grid parents that size the real element.
   Descendant and `:hover` selectors behave normally, because `:hover` matches an
   ancestor of the hovered box whether or not that ancestor generates one.
-- **`nv-` is reserved.** A handle is 1–4 CSS identifiers, letters/digits/`-`/`_`, and
-  may not begin with `nv-` — that prefix is core's own class contract, and a document
+- **`xt-` is reserved.** A handle is 1–4 CSS identifiers, letters/digits/`-`/`_`, and
+  may not begin with `xt-` — that prefix is core's own class contract, and a document
   that could mint one could impersonate a core class or hand itself a variant.
 - **`image.href` makes artwork a link**, which is what an image navbar needs:
   `navLinks` renders text, so before this there was no way to say "this tile goes to
@@ -261,41 +261,41 @@ A theme is CSS plus data — it cannot register a block or change a component �
 of design control it has runs through class names. Three things are promised, and it is
 worth knowing which is which, because they are not equally strong.
 
-**1. `nv-b--<type>` on every block.** Always present, on every instance, for core, plugin
+**1. `xt-b--<type>` on every block.** Always present, on every instance, for core, plugin
 and future blocks alike:
 
 ```css
-.nv-b--boardStats .stat-value { font-family: "Bebas Neue"; }
-.nv-b--profileCard            { --card-radius: 0; }
+.xt-b--boardStats .stat-value { font-family: "Bebas Neue"; }
+.xt-b--profileCard            { --card-radius: 0; }
 ```
 
 This is the hook a *downloaded* theme relies on. `className` is per instance and only an
 admin can set it, so a theme that does not control the site's layouts had nothing to aim
 at — and roughly fifty blocks render into their parent's markup and emit no class of their
 own at all. A plugin's dotted type is flattened for the selector:
-`forum.recentThreads` → `.nv-b--forum-recentThreads`.
+`forum.recentThreads` → `.xt-b--forum-recentThreads`.
 
 **2. Root classes**, for the blocks that own a root element:
 
 | Block | Root class | | Block | Root class |
 |---|---|---|---|---|
-| `section` | `.nv-section` | | `image` | `.nv-image` |
-| `columns` | `.nv-columns` | | `guestHero` | `.ghero` |
-| `column` | `.nv-column` | | `guestBody` | `.gbody` |
-| `spacer` | `.nv-spacer` | | `profileCard` | `.profile-card` |
-| `heading` | `.nv-heading` | | `richText` | `.nv-richtext` |
+| `section` | `.xt-section` | | `image` | `.xt-image` |
+| `columns` | `.xt-columns` | | `guestHero` | `.ghero` |
+| `column` | `.xt-column` | | `guestBody` | `.gbody` |
+| `spacer` | `.xt-spacer` | | `profileCard` | `.profile-card` |
+| `heading` | `.xt-heading` | | `richText` | `.xt-richtext` |
 
 **3. Everything else is current behaviour, not a promise.** The classes inside a block
 (`.ghero__title`, `.mp-list`, `.ac__excerpt`) are real and stable in practice, but they
 are not yet covered by the guard, and the prefixes are inconsistent because several blocks
 were decomposed out of existing pages and kept those pages' names. Target them through
-`nv-b--<type>` or your own handle so a rename cannot reach across your whole stylesheet.
+`xt-b--<type>` or your own handle so a rename cannot reach across your whole stylesheet.
 
 > ⚠ **Never use `>`, `+` or `~` against a block's root class from outside that block.**
 > Every block is rendered inside a `display: contents` wrapper. It generates no box, so it
 > cannot disturb a flex or grid parent — but selectors match the **DOM**, not the box
 > tree, so a combinator aimed across a block boundary silently matches nothing. Use a
-> descendant selector. (Core shipped `.nv-columns > .nv-column` and it stopped applying to
+> descendant selector. (Core shipped `.xt-columns > .xt-column` and it stopped applying to
 > any column an admin had styled, leaving a sticky rail pinned over the content it was
 > meant to stack under on a phone.)
 
@@ -319,7 +319,7 @@ site-absolute paths like `/uploads/branding/logo.png`, which are same-origin and
 reach off-site. A reference to a file the package does not carry is refused by name.
 
 Export is the mirror: the files your stylesheet references are copied into the package and
-the references rewritten package-relative, so a `.nvtheme` exported from a site running a
+the references rewritten package-relative, so a `.xttheme` exported from a site running a
 theme imports cleanly somewhere else.
 
 This does **not** make a stranger's CSS harmless — CSS can still lay a fixed-position

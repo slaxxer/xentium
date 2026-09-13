@@ -10,7 +10,7 @@ import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
 
 /**
- * `.nvtheme` export / import (ADR-0005). Mounted under /api/admin so every
+ * `.xttheme` export / import (ADR-0005). Mounted under /api/admin so every
  * mutation is audited, gated on ADMIN_ACCESS like the rest of Appearance.
  */
 export const themeRouter: Router = Router();
@@ -51,7 +51,7 @@ const exportSchema = themeManifestSchema.pick({
   /**
    * Palette only — no layouts, and therefore no assets.
    *
-   * This is what `.nvstyle` existed for: handing someone a colour scheme without
+   * This is what `.xtstyle` existed for: handing someone a colour scheme without
    * shipping the arrangement of every page along with it. It is an OPTION on the one
    * format now rather than a second format with its own manifest and its own validator.
    *
@@ -131,7 +131,7 @@ themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async 
     const { tokensOnly, ...meta } = exportSchema.parse(req.body ?? {});
     const buffer = await themeService.exportTheme(meta, { tokensOnly, screenshot: req.file?.buffer });
     res.setHeader("Content-Type", "application/zip");
-    res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.nvtheme"`);
+    res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.xttheme"`);
     res.send(buffer);
   } catch (err) { next(err); }
 });

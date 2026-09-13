@@ -268,4 +268,4 @@ See **`docs/security-detection.md`**. A plugin claims a core baseline pattern to
 
 ⚠ Use `host.prisma`, never your own client. Plugin tables live outside the Prisma schema
 and are migrated by the plugin migration runner (`<pluginid>_` prefix, tracked in
-`nodevo_plugin_migrations`) — a second client is a second connection pool.
+`xcf_plugin_migrations`) — a second client is a second connection pool.

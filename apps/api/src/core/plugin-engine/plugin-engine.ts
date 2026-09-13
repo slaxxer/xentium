@@ -76,7 +76,7 @@ async function ensurePluginDir(): Promise<void> {
 }
 
 function packagePath(pluginId: string, version: string): string {
-  return path.join(PLUGIN_STORE, `${pluginId}-${version}.nvplugin`);
+  return path.join(PLUGIN_STORE, `${pluginId}-${version}.xtplugin`);
 }
 
 /** Directory a plugin's package is extracted to (server bundle + web assets). */
@@ -84,7 +84,7 @@ export function extractedDir(pluginId: string): string {
   return path.join(PLUGIN_STORE, pluginId);
 }
 
-/** Validate a .nvplugin ZIP buffer. Returns the parsed manifest. */
+/** Validate a .xtplugin ZIP buffer. Returns the parsed manifest. */
 export async function validatePackage(buffer: Buffer): Promise<{ manifest: PluginManifest; zip: AdmZip }> {
   let zip: AdmZip;
   try {

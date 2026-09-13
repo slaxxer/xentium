@@ -96,16 +96,16 @@ export function shapeFor(type: string): BlockShape {
 export function BlockArt({ type }: { type: string }) {
   const shape = shapeFor(type);
   return (
-    <span className={`nv-art nv-art--${shape}`} aria-hidden="true">
-      {shape === "stack" && (<><i className="nv-art__bar" /><i className="nv-art__fill" /></>)}
-      {shape === "columns" && (<><i className="nv-art__wide" /><i className="nv-art__narrow" /></>)}
-      {shape === "text" && (<><i className="nv-art__line nv-art__line--head" /><i className="nv-art__line" /><i className="nv-art__line" /><i className="nv-art__line nv-art__line--short" /></>)}
-      {shape === "grid" && (<><i className="nv-art__cell" /><i className="nv-art__cell" /><i className="nv-art__cell" /><i className="nv-art__cell" /></>)}
+    <span className={`xt-art xt-art--${shape}`} aria-hidden="true">
+      {shape === "stack" && (<><i className="xt-art__bar" /><i className="xt-art__fill" /></>)}
+      {shape === "columns" && (<><i className="xt-art__wide" /><i className="xt-art__narrow" /></>)}
+      {shape === "text" && (<><i className="xt-art__line xt-art__line--head" /><i className="xt-art__line" /><i className="xt-art__line" /><i className="xt-art__line xt-art__line--short" /></>)}
+      {shape === "grid" && (<><i className="xt-art__cell" /><i className="xt-art__cell" /><i className="xt-art__cell" /><i className="xt-art__cell" /></>)}
       {shape === "list" && ([0, 1, 2].map((i) => (
-        <span className="nv-art__row" key={i}><i className="nv-art__dot" /><i className="nv-art__line" /></span>
+        <span className="xt-art__row" key={i}><i className="xt-art__dot" /><i className="xt-art__line" /></span>
       )))}
-      {shape === "media" && <i className="nv-art__media" />}
-      {shape === "chip" && (<><i className="nv-art__pill" /><i className="nv-art__pill nv-art__pill--dim" /></>)}
+      {shape === "media" && <i className="xt-art__media" />}
+      {shape === "chip" && (<><i className="xt-art__pill" /><i className="xt-art__pill xt-art__pill--dim" /></>)}
     </span>
   );
 }

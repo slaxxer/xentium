@@ -21,7 +21,7 @@ export type ErrorKind =
 
 export interface ClientErrorReport {
   kind:            ErrorKind;
-  /** Short quotable id for this incident, e.g. `NV-M7K2P1-4QF`. */
+  /** Short quotable id for this incident, e.g. `XT-M7K2P1-4QF`. */
   reference:       string;
   message:         string;
   status?:         number;
@@ -42,7 +42,7 @@ const RAND = "23456789ABCDEFGHJKMNPQRSTUVWXYZ"; // no 0/O/1/I — this gets read
 function makeReference(): string {
   let tail = "";
   for (let i = 0; i < 3; i++) tail += RAND[Math.floor(Math.random() * RAND.length)];
-  return `NV-${Date.now().toString(36).toUpperCase()}-${tail}`;
+  return `XT-${Date.now().toString(36).toUpperCase()}-${tail}`;
 }
 
 /** Best-effort message extraction from anything a `throw` can carry. */

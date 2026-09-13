@@ -42,7 +42,7 @@ describe("the variant field", () => {
   });
 
   it("rejects a variant it does not know", () => {
-    // A stored document — including one from a `.nvtheme` — must not be able to name a
+    // A stored document — including one from a `.xttheme` — must not be able to name a
     // look the renderer has no class for.
     expect(blockNodeSchema.safeParse({ ...heading(), variant: "neon" }).success).toBe(false);
   });
@@ -100,29 +100,29 @@ describe("updateBlockVariant", () => {
 describe("the rendered wrapper", () => {
   it("stamps the variant class on the LIVE site, not only in the preview", () => {
     render(<LayoutRegion document={doc([heading({ variant: "accent" })])} region="main" />);
-    const el = document.querySelector(".nv-v--accent") as HTMLElement;
+    const el = document.querySelector(".xt-v--accent") as HTMLElement;
     expect(el).toBeTruthy();
     expect(el.style.display).toBe("contents");
   });
 
   it("adds no VARIANT class when the block has no variant", () => {
     render(<LayoutRegion document={doc([heading()])} region="main" />);
-    expect(document.querySelector('[class*="nv-v--"]')).toBeNull();
+    expect(document.querySelector('[class*="xt-v--"]')).toBeNull();
     // There IS still a wrapper — it carries the block's type class, which every block
     // gets so a theme can target one without an admin adding a handle
     // (`classContract.test.tsx`). It stays `display: contents`, so nothing about the
     // variant's safety on a flex or grid parent changes.
-    const region = document.querySelector(".nv-region") as HTMLElement;
+    const region = document.querySelector(".xt-region") as HTMLElement;
     const wrapper = region.firstElementChild as HTMLElement;
-    expect(wrapper.classList.contains("nv-b--heading")).toBe(true);
+    expect(wrapper.classList.contains("xt-b--heading")).toBe(true);
     expect(wrapper.style.display).toBe("contents");
-    expect(wrapper.firstElementChild!.classList.contains("nv-heading")).toBe(true);
+    expect(wrapper.firstElementChild!.classList.contains("xt-heading")).toBe(true);
   });
 
   it("wraps the block itself, so the block's element stays inside", () => {
     render(<LayoutRegion document={doc([heading({ variant: "muted" })])} region="main" />);
-    const el = document.querySelector(".nv-v--muted") as HTMLElement;
-    expect(el.querySelector(".nv-heading")).toBeTruthy();
+    const el = document.querySelector(".xt-v--muted") as HTMLElement;
+    expect(el.querySelector(".xt-heading")).toBeTruthy();
   });
 
   it("applies to a container, whose children then inherit the bucket", () => {
@@ -131,10 +131,10 @@ describe("the rendered wrapper", () => {
       variant: "surface",
       children: [heading()],
     }])} region="main" />);
-    const el = document.querySelector(".nv-v--surface") as HTMLElement;
+    const el = document.querySelector(".xt-v--surface") as HTMLElement;
     // The section is INSIDE the wrapper — that is what makes custom properties reach
     // it and everything below it.
-    expect(el.querySelector(".nv-section .nv-heading")).toBeTruthy();
+    expect(el.querySelector(".xt-section .xt-heading")).toBeTruthy();
   });
 
   it("nests wrappers when a variant sits inside another — variants cascade", () => {
@@ -143,6 +143,6 @@ describe("the rendered wrapper", () => {
       variant: "accent",
       children: [heading({ variant: "plain" })],
     }])} region="main" />);
-    expect(document.querySelector(".nv-v--accent .nv-v--plain")).toBeTruthy();
+    expect(document.querySelector(".xt-v--accent .xt-v--plain")).toBeTruthy();
   });
 });

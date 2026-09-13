@@ -11,7 +11,7 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { setViewerTheme, viewerThemeId, viewerThemeParam } from "./viewerTheme";
 
-const clear = () => { document.cookie = "nv_theme=; path=/; max-age=0"; };
+const clear = () => { document.cookie = "xt_theme=; path=/; max-age=0"; };
 
 beforeEach(clear);
 
@@ -38,7 +38,7 @@ describe("choosing a theme", () => {
     // The cookie is the reader's to edit. Anything that is not slug-shaped is not
     // something we installed, so it is not a choice — the API would fall back
     // anyway, but a bad value must never reach a URL.
-    document.cookie = "nv_theme=" + encodeURIComponent("../../etc/passwd") + "; path=/";
+    document.cookie = "xt_theme=" + encodeURIComponent("../../etc/passwd") + "; path=/";
     expect(viewerThemeId()).toBeNull();
     expect(viewerThemeParam()).toBe("");
   });

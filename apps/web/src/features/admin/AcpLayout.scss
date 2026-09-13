@@ -10,19 +10,19 @@
 // tokens on `:root`, and the admin panel was reading them: installing a theme or
 // moving one slider in the Style Editor repainted the ACP as well, so a site in
 // orange gave you an orange admin panel. The site's design is the site's; the ACP
-// re-declares the DEFAULTS on `body.nv-acp` — element+class, which outranks the
+// re-declares the DEFAULTS on `body.xt-acp` — element+class, which outranks the
 // `:root` (and `[data-theme]`) the stylesheet writes — and keeps its own look.
 // Anything inside the ACP that must show the SITE's colours opts back in with
-// `.nv-site-tokens` (styles/tokens.scss).
+// `.xt-site-tokens` (styles/tokens.scss).
 //
 // ⚠ ALL FOUR font properties, not just the family. The served stylesheet applies
 // the site font as `body, input, textarea, select, button { font-family; font-size;
-// font-weight }`, and `body.nv-acp` IS a body — so pinning only the family let the
+// font-weight }`, and `body.xt-acp` IS a body — so pinning only the family let the
 // site's size and weight through, and setting the site to 13px/700 re-typeset the
 // admin panel. The variables are re-pinned here rather than the rule being narrowed
 // server-side, because the ACP is the only surface that opts out and it is the one
 // that knows it.
-body.nv-acp {
+body.xt-acp {
   @include defaults.primitives;
   @include defaults.palette-light;
   @include defaults.components;
@@ -37,7 +37,7 @@ body.nv-acp {
 // so this follows `data-theme` — it is the site's PALETTE the ACP opts out of, not
 // the reader's preference. Higher specificity than the block above, so it wins in
 // dark regardless of source order.
-[data-theme="dark"] body.nv-acp {
+[data-theme="dark"] body.xt-acp {
   @include defaults.palette-dark;
 }
 

@@ -43,7 +43,7 @@ Xentium is a **production-shaped, open-source community platform** you can run o
 - 📝 **Articles / CMS** — TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
 - 👤 **Users & social** — profiles, custom profile fields, follow/block, profile walls, a group-based progression ("levels are groups") engine.
 - 🛡️ **Moderation** — reports, warnings, bans, review cases fed by **built-in abuse-pattern detection** (rapid logins, multi-account, registration bursts, ban evasion — informational, never auto-acting), immutable log, threshold engine, and a floating ModCanvas tool.
-- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.nvtheme` packages (colours-only or full), font system, dynamic nav manager.
+- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.xttheme` packages (colours-only or full), font system, dynamic nav manager.
 - 🧱 **Layout editor** — compose what appears on each page, and on the navbar and footer, by arranging **blocks** in named regions. Drag in the tree or directly in a live preview; edits appear instantly, autosave as a draft, and go live on an explicit publish. A layout is **data, not code**, so a theme can never execute anything.
 - 🔔 **Notifications** — core service every module dispatches through (in-app + queued email).
 - 🧩 **Plugin engine** — install/enable/disable lifecycle, sandboxed migrations, dynamic routes/permissions/ACP pages, and registry-based extension points.
@@ -201,7 +201,7 @@ pnpm e2e                 # reset DB, run the suite
 pnpm e2e:ui              # interactive runner
 
 # Plugins
-pnpm plugin:package      # build + package a plugin into a .nvplugin
+pnpm plugin:package      # build + package a plugin into a .xtplugin
 ```
 
 **The API test database.** `installer.test.ts` asserts the install wizard starting from an
@@ -406,7 +406,7 @@ None of these can take a site down:
 
 ### Themes are data
 
-A `.nvtheme` is a zip of layout documents, tokens and assets — **never code**:
+A `.xttheme` is a zip of layout documents, tokens and assets — **never code**:
 
 ```
 manifest.json            id, name, version, vendor, minXentiumVersion
@@ -689,7 +689,7 @@ autosave a half-typed credential — give it a Set/Remove), and **destructive ac
 
 ### Packaging & distribution
 
-Plugins ship as a **`.nvplugin`** archive (a ZIP of the manifest, compiled `server`/`web` bundles, and migrations):
+Plugins ship as a **`.xtplugin`** archive (a ZIP of the manifest, compiled `server`/`web` bundles, and migrations):
 
 ```bash
 node scripts/package-plugin.mjs [pluginDir] [outDir]

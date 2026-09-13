@@ -23,10 +23,10 @@ const STACK: { key: string; value: string }[] = [
 ];
 
 const RESOURCES: { key: string; icon: string; href: string }[] = [
-  { key: "docs",        icon: "book",      href: "https://nodevo.io/docs" },
+  { key: "docs",        icon: "book",      href: "https://xentium.org/docs" },
   { key: "github",      icon: "github",    href: "https://github.com/nodevo/nodevo" },
-  { key: "changelog",   icon: "changelog", href: "https://nodevo.io/changelog" },
-  { key: "marketplace", icon: "bag",       href: "https://nodevo.io/plugins" },
+  { key: "changelog",   icon: "changelog", href: "https://xentium.org/changelog" },
+  { key: "marketplace", icon: "bag",       href: "https://xentium.org/plugins" },
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));

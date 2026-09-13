@@ -28,7 +28,7 @@ nodevo-redesign/
 # Official plugins live in their own repos — not committed to core
 plugins/official/
 
-# Packaged .nvplugin archives (build output for marketplace upload) — not committed
+# Packaged .xtplugin archives (build output for marketplace upload) — not committed
 plugins/packaged/
 
 # Runtime state (uploads, geoip, plugin extraction, …) — never commit; recreated on demand

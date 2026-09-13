@@ -313,7 +313,7 @@ export async function isPluginEntitled(pluginId: string): Promise<boolean> {
  * requires a license if the marketplace sells THAT id as paid (cached set in
  * `marketplace.paid_plugin_ids`, refreshed from the catalogue). This deliberately
  * ignores the package's own `licenseRequired` manifest flag, which an uploaded
- * .nvplugin controls — so a paid plugin repackaged as "free" is still gated.
+ * .xtplugin controls — so a paid plugin repackaged as "free" is still gated.
  * Ids the marketplace doesn't sell (genuine third-party plugins) aren't gated:
  * they aren't your product and couldn't be entitled through your account anyway.
  */
@@ -412,7 +412,7 @@ export async function assertPluginEnableAllowed(pluginId: string, pluginName: st
  * ever be checked again once the file is here: a theme is data, it has no code to
  * run a check, and the pages it arranged are already arranged. So this runs at
  * DOWNLOAD time and nowhere else, and a theme that got in by any other route
- * (a manual `.nvtheme` upload, a restore) is deliberately not touched. The
+ * (a manual `.xttheme` upload, a restore) is deliberately not touched. The
  * redistribution that follows from that is known and accepted (ADR-0001 / §53).
  *
  * The authoritative refusal is the marketplace's — it will not hand over an

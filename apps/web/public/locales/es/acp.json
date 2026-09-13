@@ -543,7 +543,7 @@
       },
       "XEC-PLUGIN-2002": {
         "msg": "Paquete de plugin no válido",
-        "desc": "El archivo .nvplugin subido no es un paquete de plugin válido.",
+        "desc": "El archivo .xtplugin subido no es un paquete de plugin válido.",
         "cause": "No es un archivo ZIP, contiene una entrada insegura (path traversal), o manifest.json falta o no es JSON válido.",
         "fix": "Vuelve a descargar el paquete desde su origen. Si lo compilaste tú, reconstrúyelo con el empaquetador del SDK de plugins."
       },
@@ -567,7 +567,7 @@
       },
       "XEC-PLUGIN-2006": {
         "msg": "Subidas desactivadas",
-        "desc": "Las subidas manuales de .nvplugin están desactivadas en este sitio.",
+        "desc": "Las subidas manuales de .xtplugin están desactivadas en este sitio.",
         "cause": "El mercado es el canal de instalación autorizado; las subidas manuales están desactivadas por defecto.",
         "fix": "Instala desde ACP → Extensiones → Mercado, o activa las subidas manuales en ACP → Extensiones → Instaladas."
       },
@@ -615,7 +615,7 @@
       },
       "XEC-CORE-8002": {
         "msg": "Paquete de tema no válido",
-        "desc": "El .nvtheme subido no pasó la validación: el mensaje indica el archivo y la regla incumplida.",
+        "desc": "El .xttheme subido no pasó la validación: el mensaje indica el archivo y la regla incumplida.",
         "cause": "Un manifest.json ausente o mal formado, un diseño que no es un documento válido, una hoja de estilos con reglas que no son propiedades personalizadas de :root, o un recurso de un tipo no permitido.",
         "fix": "Lee el mensaje: indica el archivo causante. La validación es todo o nada, así que no se aplicó nada y el sitio no ha cambiado."
       },
@@ -671,19 +671,19 @@
         "msg": "Límite de activaciones alcanzado",
         "desc": "La puerta de descarga no encontró ninguna ranura de activación de producción libre para esta compra.",
         "cause": "Todos los dominios de producción licenciados de esta compra ya están en uso.",
-        "fix": "Libera una ranura, o compra un dominio adicional en nodevo.io."
+        "fix": "Libera una ranura, o compra un dominio adicional en xentium.org."
       },
       "XEC-LICENSE-9005": {
         "msg": "Se requiere cuenta del mercado",
         "desc": "Esta acción necesita una cuenta del mercado conectada.",
-        "cause": "No hay ninguna cuenta de nodevo.io conectada para este sitio.",
+        "cause": "No hay ninguna cuenta de xentium.org conectada para este sitio.",
         "fix": "Conecta una cuenta en ACP → Extensiones → Mercado, o usa una clave de licencia manual."
       },
       "XEC-LICENSE-9006": {
         "msg": "Token de derecho de uso no válido",
         "desc": "El JWT de derecho de uso almacenado no superó la verificación RS256.",
         "cause": "El token fue manipulado, o la clave pública verificadora no coincide con el emisor.",
-        "fix": "Reactiva la licencia. En producción, confirma que la clave pública de licencia incluida coincide con la clave de firma de nodevo.io."
+        "fix": "Reactiva la licencia. En producción, confirma que la clave pública de licencia incluida coincide con la clave de firma de xentium.org."
       },
       "XEC-LICENSE-9007": {
         "msg": "Mercado inaccesible",
@@ -1067,7 +1067,7 @@
     "uploadBtn": "Subir plugin",
     "loading": "Cargando…",
     "emptyTitle": "No hay plugins instalados",
-    "emptyHint": "Sube un paquete .nvplugin para empezar.",
+    "emptyHint": "Sube un paquete .xtplugin para empezar.",
     "licensed": "Con licencia",
     "meta": "{{id}} · de {{vendor}} · instalado el {{date}}",
     "status": {
@@ -1087,7 +1087,7 @@
     "removeDataText": "Esto también eliminará las tablas del plugin y todos sus datos. No se puede deshacer.",
     "removeDataConfirm": "Sí, eliminar datos",
     "allowUpload": "Permitir subidas manuales",
-    "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .nvplugin, además del marketplace. Desactivado por defecto.",
+    "allowUploadHint": "Permite a los administradores instalar plugins subiendo un archivo .xtplugin, además del marketplace. Desactivado por defecto.",
     "emptyBrowseMarketplace": "Explorar el marketplace",
     "loadFailed": "Error al cargar",
     "loadFailedTitle": "Este plugin está activado pero no se pudo cargar — sus rutas y páginas no están activas.",
@@ -1100,11 +1100,11 @@
       "validate": "Validar",
       "install": "Instalar"
     },
-    "drop": "Suelta tu archivo .nvplugin aquí",
+    "drop": "Suelta tu archivo .xtplugin aquí",
     "orClick": "o haz clic para explorar",
     "browse": "Explorar archivo",
     "reqTitle": "Requisitos",
-    "req1": "El archivo debe ser un paquete .nvplugin válido (ZIP)",
+    "req1": "El archivo debe ser un paquete .xtplugin válido (ZIP)",
     "req2": "Debe incluir un manifest.json con id, name, version, vendor",
     "req3": "Los archivos de migración solo pueden usar sentencias DDL",
     "req4": "Cada .up.sql debe tener su .down.sql correspondiente",
@@ -1134,7 +1134,7 @@
     "processingValidate": "Subiendo y validando el paquete…",
     "processingInstall": "Instalando el plugin y ejecutando migraciones…",
     "sideHowTitle": "Cómo funciona",
-    "sideStep1": "Arrastra o elige un archivo .nvplugin.",
+    "sideStep1": "Arrastra o elige un archivo .xtplugin.",
     "sideStep2": "Comprobamos el manifiesto, los permisos y las migraciones.",
     "sideStep3": "Se descomprimen los archivos y el plugin queda listo para activar.",
     "sideSafetyTitle": "Antes de instalar",
@@ -1143,7 +1143,7 @@
     "sideMarketText": "Explora e instala plugins oficiales con una licencia activa.",
     "sideMarketLink": "Abrir el Marketplace",
     "disabledTitle": "Las subidas manuales están desactivadas",
-    "disabledHint": "Los plugins se instalan desde el marketplace de forma predeterminada. Un administrador puede activar las subidas manuales de .nvplugin en la página Instalados.",
+    "disabledHint": "Los plugins se instalan desde el marketplace de forma predeterminada. Un administrador puede activar las subidas manuales de .xtplugin en la página Instalados.",
     "disabledGoMarketplace": "Explorar el marketplace"
   },
   "marketplace": {
@@ -1162,7 +1162,7 @@
     "goManage": "Instalado — gestionar",
     "install": "Instalar",
     "activateToInstall": "Activa la licencia para instalar",
-    "buy": "Comprar → nodevo.io",
+    "buy": "Comprar → xentium.org",
     "installing": "Instalando…",
     "installSuccess": "{{name}} instalado — actívalo cuando quieras.",
     "installFailed": "Error al instalar: {{message}}",
@@ -2144,7 +2144,7 @@
     "importTitle": "Instalar un tema",
     "importBtn": "Elegir archivo…",
     "importing": "Instalando…",
-    "importHint": "Acepta .nvtheme y .nvstyle. El tema se aplica en cuanto se instala; tus páginas personalizadas se conservan.",
+    "importHint": "Acepta .xttheme y .xtstyle. El tema se aplica en cuanto se instala; tus páginas personalizadas se conservan.",
     "reportTitle": "Resultado de la importación",
     "reportTemplates": "{{count}} plantilla(s) aplicada(s).",
     "reportKept": "{{count}} plantilla(s) conservada(s) tal como las tenías.",

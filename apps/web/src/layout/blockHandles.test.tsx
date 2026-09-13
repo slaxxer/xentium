@@ -39,14 +39,14 @@ describe("blockClassNameSchema", () => {
     expect(blockClassNameSchema.safeParse("nav-tile is_primary").success).toBe(true);
   });
 
-  it("REFUSES the reserved `nv-` prefix", () => {
+  it("REFUSES the reserved `xt-` prefix", () => {
     // Core's own classes live there and are the contract a theme styles against. A
     // document that could mint one could impersonate a core class — or hand itself a
-    // variant (`nv-v--accent`) nobody granted it.
-    expect(blockClassNameSchema.safeParse("nv-card").success).toBe(false);
-    expect(blockClassNameSchema.safeParse("nv-v--accent").success).toBe(false);
-    expect(blockClassNameSchema.safeParse("NV-Card").success).toBe(false);
-    expect(blockClassNameSchema.safeParse("ok-one nv-card").success).toBe(false);
+    // variant (`xt-v--accent`) nobody granted it.
+    expect(blockClassNameSchema.safeParse("xt-card").success).toBe(false);
+    expect(blockClassNameSchema.safeParse("xt-v--accent").success).toBe(false);
+    expect(blockClassNameSchema.safeParse("XT-Card").success).toBe(false);
+    expect(blockClassNameSchema.safeParse("ok-one xt-card").success).toBe(false);
   });
 
   it("refuses anything that could terminate a selector or an attribute", () => {
@@ -70,7 +70,7 @@ describe("blockClassNameSchema", () => {
   it("is optional on a node, so documents written before it still parse", () => {
     expect(blockNodeSchema.safeParse(heading()).success).toBe(true);
     expect(blockNodeSchema.safeParse(heading({ className: "nav-tile" })).success).toBe(true);
-    expect(blockNodeSchema.safeParse({ ...heading(), className: "nv-x" }).success).toBe(false);
+    expect(blockNodeSchema.safeParse({ ...heading(), className: "xt-x" }).success).toBe(false);
   });
 });
 
@@ -116,7 +116,7 @@ describe("the rendered handle", () => {
     render(<LayoutRegion document={doc([heading({ className: "nav-tile" })])} region="main" />);
     const el = document.querySelector(".nav-tile") as HTMLElement;
     expect(el).toBeTruthy();
-    expect(el.querySelector(".nv-heading")).toBeTruthy();
+    expect(el.querySelector(".xt-heading")).toBeTruthy();
   });
 
   it("generates NO box — the block's own element stays the one its parent sizes", () => {
@@ -127,7 +127,7 @@ describe("the rendered handle", () => {
   it("shares ONE wrapper with the variant instead of nesting two", () => {
     render(<LayoutRegion
       document={doc([heading({ className: "nav-tile", variant: "accent" })])} region="main" />);
-    const el = document.querySelector(".nv-v--accent") as HTMLElement;
+    const el = document.querySelector(".xt-v--accent") as HTMLElement;
     expect(el.classList.contains("nav-tile")).toBe(true);
     expect(el.querySelector(".nav-tile")).toBeNull();
   });
@@ -136,12 +136,12 @@ describe("the rendered handle", () => {
     render(<LayoutRegion document={doc([heading()])} region="main" />);
     // The wrapper is unconditional now — it carries the block's type class — so the
     // assertion is about what is NOT on it, not about whether it exists.
-    const wrapper = (document.querySelector(".nv-region") as HTMLElement)
+    const wrapper = (document.querySelector(".xt-region") as HTMLElement)
       .firstElementChild as HTMLElement;
-    // `nv-block` is on every wrapper whatever the block is — it is what lets a rail
-    // or a column ask "did anything in here draw?"; `nv-b--heading` says which block.
-    expect(wrapper.className).toBe("nv-block nv-b--heading");
-    expect(wrapper.firstElementChild!.classList.contains("nv-heading")).toBe(true);
+    // `xt-block` is on every wrapper whatever the block is — it is what lets a rail
+    // or a column ask "did anything in here draw?"; `xt-b--heading` says which block.
+    expect(wrapper.className).toBe("xt-block xt-b--heading");
+    expect(wrapper.firstElementChild!.classList.contains("xt-heading")).toBe(true);
   });
 
   it("works on a leaf, which is the case it exists for", () => {
@@ -150,7 +150,7 @@ describe("the rendered handle", () => {
     render(<LayoutRegion document={doc([
       { id: "i", type: "image", props: { source: "a.png", ratio: "1:1" }, className: "nav-tile" },
     ])} region="main" />);
-    expect(document.querySelector(".nav-tile .nv-image img")).toBeTruthy();
+    expect(document.querySelector(".nav-tile .xt-image img")).toBeTruthy();
   });
 });
 
@@ -164,7 +164,7 @@ describe("linkHrefSchema", () => {
   });
 
   it("REFUSES script-bearing and data URLs, however they are disguised", () => {
-    // A `.nvtheme` from a stranger is a way into this field, so the refusal has to
+    // A `.xttheme` from a stranger is a way into this field, so the refusal has to
     // survive the whitespace and control characters an href tolerates.
     const disguised = [
       "javascript:alert(1)",
@@ -188,13 +188,13 @@ describe("the image block", () => {
 
   it("renders a bare image when no href is set", () => {
     render(<LayoutRegion document={doc([image({})])} region="main" />);
-    expect(document.querySelector(".nv-image a")).toBeNull();
-    expect(document.querySelector(".nv-image img")).toBeTruthy();
+    expect(document.querySelector(".xt-image a")).toBeNull();
+    expect(document.querySelector(".xt-image img")).toBeTruthy();
   });
 
   it("wraps the image in a link when one is — the image navbar case", () => {
     render(<LayoutRegion document={doc([image({ href: "/forum" })])} region="main" />);
-    const a = document.querySelector(".nv-image__link") as HTMLAnchorElement;
+    const a = document.querySelector(".xt-image__link") as HTMLAnchorElement;
     expect(a.getAttribute("href")).toBe("/forum");
     expect(a.getAttribute("rel")).toContain("noopener");
     expect(a.querySelector("img")).toBeTruthy();

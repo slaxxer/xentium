@@ -2,7 +2,7 @@
  * One-time carry-over of the footer onto the `footer` BLOCK.
  *
  * The footer's own appearance — its background, the hairline above it, the content
- * column — used to be a hardcoded `<div class="nv-foot">` in `SiteFooter.tsx`, with
+ * column — used to be a hardcoded `<div class="xt-foot">` in `SiteFooter.tsx`, with
  * `chrome.footer` holding the four pieces as loose leaves. So an admin who clicked
  * the footer in the Layout Editor found the pieces and never the thing they sit on,
  * while the header had been one block for a release.
@@ -10,7 +10,7 @@
  * The band is a block now, and it is a CONTAINER: the footer's pieces are painted ON
  * it, so they are its children. Existing documents therefore need their region
  * children moved INSIDE a band — a site whose footer is a stored document (any site
- * whose footer has ever been rearranged, plus every `.nvtheme` that shipped one)
+ * whose footer has ever been rearranged, plus every `.xttheme` that shipped one)
  * would otherwise keep an unpaintable footer for ever.
  *
  * The same three properties as the migrations beside it:

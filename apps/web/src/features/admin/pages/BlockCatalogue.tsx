@@ -87,14 +87,14 @@ export function BlockCatalogue({
   return (
     <div className="acp-modal-overlay" onClick={onClose}>
       <div
-        className="acp-modal nv-cat"
+        className="acp-modal xt-cat"
         role="dialog"
         aria-modal="true"
         aria-label={t("layoutEditor.catalogueTitle", { region: regionName })}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="nv-cat__head">
-          <div className="nv-cat__title">
+        <div className="xt-cat__head">
+          <div className="xt-cat__title">
             <h2>{t("layoutEditor.catalogueTitle", { region: regionName })}</h2>
             <p>{t("layoutEditor.catalogueNote")}</p>
           </div>
@@ -105,8 +105,8 @@ export function BlockCatalogue({
           </button>
         </div>
 
-        <div className="nv-cat__controls">
-          <div className="nv-cat__search">
+        <div className="xt-cat__controls">
+          <div className="xt-cat__search">
             <FontAwesomeIcon icon={faMagnifyingGlass} />
             <input
               ref={searchRef}
@@ -117,7 +117,7 @@ export function BlockCatalogue({
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
-          <div className="nv-cat__tabs" role="tablist">
+          <div className="xt-cat__tabs" role="tablist">
             {CATEGORIES.map((c) => (
               <button
                 key={c}
@@ -138,31 +138,31 @@ export function BlockCatalogue({
           </div>
         </div>
 
-        <div className="nv-cat__body">
+        <div className="xt-cat__body">
           {matches.length === 0 ? (
-            <div className="nv-cat__empty">
+            <div className="xt-cat__empty">
               <b>{query.trim()
                 ? t("layoutEditor.catalogueNoMatch", { query: query.trim() })
                 : t("layoutEditor.catalogueEmpty")}</b>
               <span>{t("layoutEditor.catalogueRetry")}</span>
             </div>
           ) : (
-            <div className="nv-cat__grid">
+            <div className="xt-cat__grid">
               {matches.map((block) => {
                 const desc = t(`layoutEditor.blockDesc.${block.type}`, { defaultValue: "" });
                 return (
                   <button
                     key={block.type}
                     type="button"
-                    className="nv-cat__card"
+                    className="xt-cat__card"
                     onClick={() => { onPick(block.type); onClose(); }}
                   >
-                    <span className="nv-cat__art"><BlockArt type={block.type} /></span>
-                    <span className="nv-cat__meta">
-                      <span className="nv-cat__name">
+                    <span className="xt-cat__art"><BlockArt type={block.type} /></span>
+                    <span className="xt-cat__meta">
+                      <span className="xt-cat__name">
                         {block.editorMeta!.label}
                         {block.pluginId && (
-                          <span className="nv-cat__badge">{t("layoutEditor.category.plugin")}</span>
+                          <span className="xt-cat__badge">{t("layoutEditor.category.plugin")}</span>
                         )}
                         {narrow && block.editorMeta!.wide && (
                           <span className="lay__picker-wide" title={t("layoutEditor.wideHint")}>
@@ -173,7 +173,7 @@ export function BlockCatalogue({
                       {/* Omitted rather than faked. Core describes the blocks it ships;
                           a plugin's block has no core string and gets its type instead,
                           which is at least true. */}
-                      {desc && <span className="nv-cat__desc">{desc}</span>}
+                      {desc && <span className="xt-cat__desc">{desc}</span>}
                       <code>{block.pluginId ? `${block.pluginId} · ${block.type}` : block.type}</code>
                     </span>
                   </button>

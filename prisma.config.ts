@@ -8,7 +8,7 @@ dotenv.config();
 // DATABASE_URL. Commands that do connect (migrate, studio) read the real URL
 // from the environment; with the placeholder they fail with a clear
 // connection error instead of a config-load crash.
-const PLACEHOLDER_URL = "postgresql://unconfigured:unconfigured@localhost:5432/nodevo_unconfigured";
+const PLACEHOLDER_URL = "postgresql://unconfigured:unconfigured@localhost:5432/xentium_unconfigured";
 
 export default defineConfig({
   schema: "./prisma/schema.prisma",

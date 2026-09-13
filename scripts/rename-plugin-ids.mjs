@@ -129,7 +129,7 @@ try {
     // ones, and an update rolling forward from a stale name would not find them.
     const archives = await fs.readdir(STORE).catch(() => []);
     const candidates = [
-      ...archives.filter((f) => f.startsWith(`${oldId}-`) && f.endsWith(".nvplugin"))
+      ...archives.filter((f) => f.startsWith(`${oldId}-`) && f.endsWith(".xtplugin"))
                  .map((f) => [path.join(STORE, f), path.join(STORE, `${newId}-${f.slice(oldId.length + 1)}`)]),
       [path.join(STORE, oldId), path.join(STORE, newId)],
     ];

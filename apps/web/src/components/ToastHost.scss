@@ -10,7 +10,7 @@
  * `--toast-*` overrides) theme toasts live.
  */
 
-.nv-toasts {
+.xt-toasts {
   position: fixed;
   left: 50%;
   bottom: 28px;
@@ -26,7 +26,7 @@
   pointer-events: none;
 }
 
-.nv-toast {
+.xt-toast {
   --_toast-c: var(--toast-info, var(--c-info));
   position: relative;
   display: flex;
@@ -44,7 +44,7 @@
   box-shadow: var(--shadow-pop);
   overflow: hidden;
   pointer-events: auto;
-  animation: nv-toast-in 0.25s ease-out;
+  animation: xt-toast-in 0.25s ease-out;
 
   &--success { --_toast-c: var(--toast-success, var(--c-success)); }
   &--warning { --_toast-c: var(--toast-warning, var(--c-warn)); }
@@ -107,7 +107,7 @@
     background: var(--_toast-c);
     opacity: 0.55;
     transform-origin: left;
-    animation-name: nv-toast-progress;
+    animation-name: xt-toast-progress;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
   }
@@ -115,15 +115,15 @@
 }
 
 /* Rises from below, because that is the edge it is anchored to. */
-@keyframes nv-toast-in {
+@keyframes xt-toast-in {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: none; }
 }
-@keyframes nv-toast-progress {
+@keyframes xt-toast-progress {
   from { transform: scaleX(1); }
   to   { transform: scaleX(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .nv-toast { animation: none; }
+  .xt-toast { animation: none; }
 }

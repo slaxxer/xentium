@@ -23,8 +23,8 @@ order an existing install has to be upgraded in.
 These look like branding and are not. Each one costs a migration, a break, or a
 silent security change, in exchange for a string no user reads.
 
-- **`nv_` cookies**, **`nv-` CSS classes** (~700 occurrences), and the
-  **`.nvplugin` / `.nvtheme` / `.nvstyle`** extensions. Renaming the CSS prefix
+- **`xt_` cookies**, **`xt-` CSS classes** (~700 occurrences), and the
+  **`.xtplugin` / `.xttheme` / `.xtstyle`** extensions. Renaming the CSS prefix
   breaks every theme package and plugin stylesheet in the wild for a string
   nobody reads; renaming the cookies signs everyone out.
 - ⚠ **`ncf_` and `NEC-` were on this list and are now renamed** (`xcf_`,
@@ -35,15 +35,17 @@ silent security change, in exchange for a string no user reads.
   because a database predating the rename still carries those tables.
 - **`nodevo.secretbox.v1`**, the scrypt salt. It is frozen by design: change it
   and every stored secret becomes undecryptable.
-- **`SOURCE_ID = "nodevo.io"`**. It composes the live settings keys
-  `marketplace.nodevo.io.{token,accountRef,privateKey,publicKey,connectedAt}`.
+- **`SOURCE_ID = "xentium.org"`**. It composes the live settings keys
+  `marketplace.xentium.org.{token,accountRef,privateKey,publicKey,connectedAt}`.
   Renaming it orphans a connected instance's marketplace account and the signing
   keypair it registered. It moves with the marketplace, as a keyed migration.
 - **`REDIS_KEY_PREFIX`**. A cold prefix silently un-revokes every revoked
   session — the revocation list lives under it.
 - **The dev database role, name and docker volumes.** The existing volume owns
   role `nodevo`; renaming the volume starts an empty database.
-- **`nodevo_plugin_migrations` / `nodevo_id`** — real database objects.
+- ⚠ The DDL ledger `xcf_plugin_migrations` and the import map’s `xentium_id`
+  column were renamed too (migration `20260913150000_rename_nodevo_id_column`);
+  no database object carries the old name any more.
 
 ## Compatibility, and when to drop it
 
@@ -108,7 +110,7 @@ In this order. Steps 2 and 3 are the ones that lose data if skipped.
   the artifacts served for them. All five are reset to **1.0.0** — the public
   series starts there, and each plugin's CHANGELOG says so above its
   development history.
-- **`nodevo.io`** in the ACP's licence copy — a domain, not a string. Point it
+- **`xentium.org`** in the ACP's licence copy — a domain, not a string. Point it
   wherever the marketplace actually lives before changing the words.
 - **Ops names**: deploy directory, systemd units, nginx site, database role and
   name. All cosmetic, all requiring a coordinated restart.
