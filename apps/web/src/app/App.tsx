@@ -57,6 +57,7 @@ import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
 import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
 import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
+import { ComposerSettings } from "../features/admin/pages/ComposerSettings";
 import { LayoutEditorPage } from "../features/admin/pages/LayoutEditorPage";
 import { ThemesPage }       from "../features/admin/pages/ThemesPage";
 import { NavigationPage }   from "../features/admin/pages/NavigationPage";
@@ -300,6 +301,7 @@ function buildRouter() {
           // Appearance
           { path: "style-editor",     element: <StyleEditorPage /> },
           { path: "layout-editor",    element: <LayoutEditorPage /> },
+          { path: "composer",         element: <ComposerSettings /> },
           // Retired 2026-08-26: the same list is the Style Editor's History tab.
           { path: "style-history",    element: <Navigate to="/admin/style-editor?tab=history" replace /> },
           { path: "navigation",       element: <NavigationPage /> },

@@ -11,6 +11,7 @@ export * from './users.js';
 export * from './badges.js';
 export * from './icons.js';
 export * from './layout.js';
+export * from './composer.js';
 
 export type ThemeMode = 'light' | 'dark';
 

@@ -101,11 +101,11 @@ export function MaintenanceSettings({ draft, set, groups }: Props) {
     <div className="set-rows mnt">
       {/* Master switch — the one control that changes what visitors see, so it
           leads the card rather than sitting in the row list. */}
-      <div className={`mnt-banner${enabled ? " is-on" : ""}`}>
-        <span className="mnt-banner__icon"><FontAwesomeIcon icon={faPowerOff} /></span>
+      <div className={`acp-banner${enabled ? " is-on" : ""}`}>
+        <span className="acp-banner__icon"><FontAwesomeIcon icon={faPowerOff} /></span>
         <div>
-          <div className="mnt-banner__title">{tr("master.label")}</div>
-          <div className="mnt-banner__desc">{tr("master.desc")}</div>
+          <div className="acp-banner__title">{tr("master.label")}</div>
+          <div className="acp-banner__desc">{tr("master.desc")}</div>
         </div>
         <Toggle on={enabled} onToggle={() => set("maintenance.enabled", !enabled)} />
       </div>
@@ -153,7 +153,7 @@ export function MaintenanceSettings({ draft, set, groups }: Props) {
 
       <Group title={tr("groups.progress")} />
       <Row label={tr("mode.label")} desc={tr("mode.desc")}>
-        <div className="mnt-seg">
+        <div className="acp-seg">
           {PROGRESS_MODES.map((m) => (
             <button
               key={m}

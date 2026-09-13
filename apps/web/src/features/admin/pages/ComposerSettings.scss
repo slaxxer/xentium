@@ -1,0 +1,110 @@
+/**
+ * ACP → Appearance → Composer.
+ *
+ * ⚠ ACP tokens only — the admin panel does not wear the site's design. The tool
+ * icons are drawn here at ACP scale; the composer's own styling lives with the
+ * composer, on the frontend, where it follows the site's palette instead.
+ */
+@use "./acpSystem.scss";
+
+/* The row members will actually get, in the order the admin built. */
+.cmp-preview {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 12px 14px;
+  margin-bottom: var(--sp-4);
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+
+  &__label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+
+    em { font-style: normal; font-size: var(--fs-xs); color: var(--c-warn); }
+  }
+
+  &__tool {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    color: var(--c-fg-muted);
+  }
+}
+
+.cmp-list { display: flex; flex-direction: column; gap: 4px; }
+
+.cmp-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+
+  /* The three states are told apart by weight and colour, not by position. */
+  &.is-bar {
+    background: var(--c-accent-soft);
+    border-color: color-mix(in srgb, var(--c-accent) 20%, transparent);
+    .cmp-row__ic   { color: var(--c-accent); }
+    .cmp-row__name { color: var(--c-fg); font-weight: 600; }
+  }
+
+  &.is-off {
+    .cmp-row__ic, .cmp-row__name { color: var(--c-fg-subtle); }
+    .cmp-row__name em { opacity: 0.6; }
+  }
+
+  &__ic {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    flex: none;
+    color: var(--c-fg-muted);
+  }
+
+  &__name {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--c-fg-muted);
+
+    em {
+      font-style: normal;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--c-fg-subtle);
+    }
+  }
+
+  &__seg { flex: none; }
+
+  @media (max-width: 680px) {
+    flex-wrap: wrap;
+    &__seg { width: 100%; }
+  }
+}
+
+.cmp-ic { font-size: 13px; }

@@ -35,7 +35,8 @@
     "migrationHistory": "Historial de migraciones",
     "about": "Acerca de",
     "email": "Correo",
-    "badges": "Insignias"
+    "badges": "Insignias",
+    "composer": "Editor"
   },
   "sidebar": {
     "adminPanel": "Panel de administración",
@@ -2232,15 +2233,7 @@
     "eyebrow": "Comunidad",
     "title": "Insignias",
     "subtitle": "Lo que este sitio puede conceder. Quién tiene qué está en la página de cada miembro.",
-    "sections": "Insignias",
-    "secCatalogue": "Catálogo",
-    "secAwarding": "Concesión",
-    "catalogueTitle": "Catálogo de insignias",
-    "catalogueSub": "Lo que este sitio puede conceder. Una insignia se dibuja en cada tarjeta de quien la tiene.",
     "new": "Nueva insignia",
-    "empty": "Aún no hay insignias. Crea una para empezar a concederlas.",
-    "createTitle": "Nueva insignia",
-    "editTitle": "Editar insignia",
     "namePreview": "Insignia sin título",
     "fieldName": "Nombre",
     "fieldNameDesc": "Cómo se llama la insignia en tarjetas y descripciones emergentes.",
@@ -2257,32 +2250,13 @@
     "saved": "Insignia guardada",
     "created": "Insignia creada",
     "deleted": "Insignia eliminada",
-    "awardTitle": "Conceder una insignia",
-    "awardSub": "Concede una insignia a un miembro, o retírala.",
-    "awardNoneYet": "Crea primero una insignia — todavía no hay nada que conceder.",
-    "awardWhich": "Insignia",
-    "awardWhichDesc": "Qué insignia conceder.",
-    "awardNote": "Motivo",
-    "awardNoteDesc": "Opcional. Aparece en la descripción emergente en lugar de la descripción.",
-    "awardNotePlaceholder": "Por la caza de errores de 2026",
-    "awardTo": "Miembro",
-    "awardToDesc": "Busca por nombre de usuario. La concesión es inmediata.",
-    "awardSearch": "Buscar miembros…",
-    "grant": "Conceder",
-    "alreadyHas": "Ya la tiene",
-    "noUsers": "Ningún miembro coincide.",
-    "awarded": "Insignia concedida",
     "revoke": "Retirar esta insignia",
     "noHolders": "Todavía nadie tiene esta insignia.",
-    "holders": "Poseedores ({{count}})",
-    "holdersShort": "{{count}} concedidas",
-    "save": "Guardar",
+    "save": "Guardar cambios",
     "cancel": "Cancelar",
     "edit": "Editar",
     "delete": "Eliminar",
-    "rewardTitle": "Sistema de recompensas",
     "rewardToggle": "Conseguir esta insignia automáticamente",
-    "rewardNote": "Apagado, la concedes tú. Encendido, la recibe quien cumpla todos los requisitos de abajo, y ya no se retira.",
     "rewardEmpty": "Sin requisitos, así que aún nadie puede conseguirla.",
     "metric": {
       "articles": "Artículos",
@@ -2291,7 +2265,99 @@
       "followers": "Seguidores",
       "forum.posts": "Mensajes del foro",
       "forum.threads": "Temas del foro"
-    }
+    },
+    "statBadges": "insignias",
+    "statAwarded": "concedidas",
+    "searchPlaceholder": "Buscar nombre o clave",
+    "sort": "Orden",
+    "filter": {
+      "all": "Todas",
+      "auto": "Automáticas",
+      "manual": "A mano"
+    },
+    "sortBy": {
+      "order": "Orden",
+      "name": "Nombre",
+      "holders": "Poseedores"
+    },
+    "group": {
+      "auto": "Se consiguen automáticamente",
+      "manual": "Se conceden a mano"
+    },
+    "groupNote": {
+      "auto": "El barrido de cada media hora las concede a quien cumpla todos los requisitos.",
+      "manual": "Estas las das tú en la página del miembro. Nada las concede por su cuenta."
+    },
+    "empty": {
+      "auto": "Todavía no se consigue nada automáticamente",
+      "manual": "Ninguna insignia concedida a mano"
+    },
+    "emptyNote": {
+      "auto": "Activa el sistema de recompensas dentro de una insignia para que se conceda al alcanzar umbrales como artículos o me gusta.",
+      "manual": "Crea una para lo que quieras decidir tú: un agradecimiento, algo puntual, una elección del equipo."
+    },
+    "emptyAct": {
+      "auto": "Nueva insignia automática",
+      "manual": "Nueva insignia"
+    },
+    "emptyFiltered": "Ninguna insignia coincide con esa búsqueda.",
+    "system": "Sistema",
+    "noDescription": "Sin descripción",
+    "autoSub": "Automática · {{list}}",
+    "rewardEmptyShort": "Automática · sin requisitos",
+    "showHolders": "Ver quién la tiene",
+    "close": "Cerrar",
+    "holdersLoading": "Cargando poseedores…",
+    "holdersShort_one": "1 poseedor",
+    "holdersShort_other": "{{count}} poseedores",
+    "wayAuto": "conseguida automáticamente",
+    "wayManual": "concedida a mano",
+    "heldEarned": "Conseguida automáticamente",
+    "heldGiven": "Concedida por un administrador",
+    "heldGivenFor": "Concedida por un administrador · «{{note}}»",
+    "drawerFoot": "Conceder se hace en la página del miembro: busca al miembro y dale la insignia allí. Retirarla aquí surte efecto de inmediato.",
+    "revoked": "Insignia retirada",
+    "deleteTitle": "¿Eliminar «{{name}}»?",
+    "deleteBody_one": "Un miembro la tiene. Al eliminar la insignia se va también esa concesión, y aquí no hay forma de devolverla.",
+    "deleteBody_other": "{{count}} miembros la tienen. Al eliminar la insignia se van todas esas concesiones, y aquí no hay forma de devolverlas.",
+    "tab": {
+      "details": "Detalles",
+      "appearance": "Aspecto",
+      "reward": "Sistema de recompensas"
+    },
+    "pane": {
+      "details": "Detalles",
+      "appearance": "Aspecto",
+      "reward": "Sistema de recompensas"
+    },
+    "paneNote": {
+      "details": "Cómo se llama la insignia y cómo se ordena. La clave es el nombre con que la conocen los seeds y los plugins.",
+      "appearance": "Una insignia es un símbolo en un círculo teñido: aquí, y solo aquí, se decide su aspecto.",
+      "reward": "Apagado, la concedes tú. Encendido, el barrido la da a quien cumpla los requisitos."
+    },
+    "on": "Activo",
+    "railNew": "La clave queda fija al crear la insignia; todo lo demás se puede seguir editando.",
+    "railHolders_one": "Hoy la tiene un miembro.",
+    "railHolders_other": "Hoy la tienen {{count}} miembros.",
+    "namePlaceholder": "Primera publicación",
+    "keyPreview": "sin-clave-aun",
+    "descPlaceholder": "Publicó por primera vez",
+    "rewardOn": "La concede el barrido, y ya no se retira.",
+    "rewardOff": "Déjalo apagado y esta insignia solo la dará un administrador.",
+    "requirements": "Requisitos",
+    "requirementsNote": "Hay que cumplir todos los umbrales rellenados.",
+    "rewardSummary": "Requiere {{list}}.",
+    "and": " y ",
+    "create": "Crear insignia",
+    "footEdit": "Los cambios se aplican la próxima vez que se dibuje la insignia.",
+    "footNew": "La clave no se podrá cambiar después.",
+    "unit": {
+      "articles": "artículos",
+      "comments": "comentarios",
+      "likes": "me gusta",
+      "followers": "seguidores"
+    },
+    "deleteBodyNone": "Nadie la tiene, así que al eliminarla no se pierde ninguna concesión. No se puede deshacer."
   },
   "iconPicker": {
     "namePlaceholder": "star",
@@ -2303,5 +2369,24 @@
     "bundled": "Iconos incluidos",
     "noMatches": "Ningún icono coincide.",
     "needsName": "Elige primero un icono: un estilo por sí solo no tiene a qué aplicarse."
+  },
+  "composer": {
+    "eyebrow": "Aspecto",
+    "title": "Editor",
+    "subtitle": "Qué herramientas tienen los miembros al escribir, y dónde está cada una.",
+    "toolsTitle": "Herramientas",
+    "toolsSub": "{{count}} en la barra. El resto está a un clic en el menú adicional.",
+    "barPreview": "Barra",
+    "barEmpty": "Nada en la barra: los miembros solo tendrán el menú.",
+    "place": {
+      "bar": "Barra",
+      "overflow": "Menú",
+      "off": "No"
+    },
+    "behaviourTitle": "Comportamiento",
+    "behaviourSub": "Cómo actúa el editor en todas las superficies.",
+    "mentions": "Menciones en todas partes",
+    "mentionsDesc": "Escribir @ sugiere miembros en comentarios, temas, respuestas y mensajes privados.",
+    "notSupported": "Los adjuntos dependen de la superficie: el foro ofrece una vía de subida; los comentarios de artículos, el muro y los mensajes privados no, así que allí el clip está desactivado. No hay servicio de GIF configurado, por lo que ese selector no se ofrece."
   }
 }

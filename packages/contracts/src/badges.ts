@@ -59,6 +59,16 @@ export interface BadgeRow {
   criteria:     Record<string, number>;
   /** How many users hold it. Only the admin listing carries this. */
   holders?:     number;
+  /** Up to three recent holders, for the faces on the admin listing's holders
+   *  button. Only the admin listing carries this. */
+  holderPreview?: BadgeHolderPreview[];
+}
+
+/** Just enough of a holder to draw them in an avatar stack. */
+export interface BadgeHolderPreview {
+  id:       string;
+  username: string;
+  avatar:   string | null;
 }
 
 /**
@@ -86,6 +96,22 @@ export interface AwardedBadge {
   source:      BadgeSource;
 }
 
+
+/**
+ * One holder of one badge, as the ACP's holders panel lists them.
+ *
+ * ⚠ `auto` is the difference between "the sweep granted this" and "a person decided
+ * to give it", and it is NOT derivable from `note`: an admin may hand a badge over
+ * without writing a reason, and that award is still theirs.
+ */
+export interface BadgeHolder {
+  id:        string;
+  username:  string;
+  avatar:    string | null;
+  awardedAt: string;
+  note:      string | null;
+  auto:      boolean;
+}
 
 /** A thing a badge can be earned for, as the ACP offers it. */
 export interface BadgeMetricInfo {
