@@ -54,7 +54,7 @@ vi.mock("../../shared/utils/settings.js", () => ({ getSetting: async (_k: string
 const { marketplaceService } = await import("./marketplace.service.js");
 
 const themeLicence = (id: string, latestVersion: string | null) => ({
-  keyRef: `NDV-${id}`, status: "active", seats: null, seatsUsed: 0, activeHere: true,
+  keyRef: `XEN-${id}`, status: "active", seats: null, seatsUsed: 0, activeHere: true,
   updatesUntil: null, purchasedAt: "2026-01-01",
   product: { id, kind: "theme", name: id, vendor: "v", summary: null, latestVersion, latestReleasedAt: null },
 });
