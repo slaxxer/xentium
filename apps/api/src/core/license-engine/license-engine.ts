@@ -46,7 +46,7 @@ async function getPublicKey() {
  */
 export interface EntitlementPayload {
   siteId:       string;
-  /** Display reference (`NDV-…`), never the key itself. */
+  /** Display reference (`XEN-…`), never the key itself. */
   licenseRef:   string;
   entitlements: EntitlementGrant[];
   /** Reported at issue — display and audit only, gates nothing since v2. */

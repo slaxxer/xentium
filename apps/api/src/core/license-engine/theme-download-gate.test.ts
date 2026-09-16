@@ -101,7 +101,7 @@ async function refusalFor(id = "aurora-dark", name = "Aurora Dark") {
 }
 
 const licence = (over: Record<string, unknown> = {}) => ({
-  keyRef: "NDV-1", status: "active", seats: 1, seatsUsed: 1, activeHere: false,
+  keyRef: "XEN-1", status: "active", seats: 1, seatsUsed: 1, activeHere: false,
   updatesUntil: null, purchasedAt: "2026-01-01",
   product: { id: "aurora-dark", kind: "theme", name: "Aurora Dark", vendor: "v", summary: null, latestVersion: "1.0.0", latestReleasedAt: null },
   ...over,
