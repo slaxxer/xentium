@@ -10,7 +10,8 @@
 // Produces an archive the host plugin-engine extracts and loads at runtime:
 //   manifest.json (root), migrations/<name>.up.sql + <name>.down.sql,
 //   compiled server bundle (server/dist), compiled web bundle (web/dist),
-//   and package.json. Manifest entrypoints are package-relative compiled paths.
+//   package.json, and any assets/ named by manifest.screenshots. Manifest
+//   entrypoints are package-relative compiled paths.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -80,6 +81,22 @@ function main() {
     }
   }
 
+  // Validate the declared screenshots, and fail rather than warn: a listing that
+  // silently ships four of its five pictures is a packaging bug nobody sees
+  // until it is in the shop. The `assets/` rule is the marketplace's — it refuses
+  // anything outside that directory — so breaking it here is a build error, not
+  // a surprise at ingest.
+  for (const rel of manifest.screenshots ?? []) {
+    if (!rel.startsWith("assets/") || rel.includes("..")) {
+      console.error(`✖ Screenshot must be a path under assets/: ${rel}`);
+      process.exit(1);
+    }
+    if (!fs.existsSync(path.join(pluginDir, rel))) {
+      console.error(`✖ Screenshot not found: ${rel}`);
+      process.exit(1);
+    }
+  }
+
   const zip = new AdmZip();
 
   // Only runtime artifacts: manifest, package.json, migrations, compiled bundles.
@@ -95,6 +112,12 @@ function main() {
       zip.addLocalFile(path.join(pluginDir, rel), path.posix.dirname(rel.split(path.sep).join("/")));
     }
   }
+  // Only the DECLARED screenshots, not everything in assets/ — the manifest's
+  // array is the running order the storefront shows, so a file nobody listed is
+  // a file nobody chose to sell with.
+  for (const rel of manifest.screenshots ?? []) {
+    zip.addLocalFile(path.join(pluginDir, rel), "assets");
+  }
 
   fs.mkdirSync(outDir, { recursive: true });
   const outFile = path.join(outDir, `${manifest.id}-${manifest.version}.xtplugin`);
@@ -106,7 +129,8 @@ function main() {
   console.log(`  migrations: ${(manifest.migrations ?? []).length}`);
   console.log(`  server:     ${manifest.entrypoints?.server ?? "—"}`);
   console.log(`  web:        ${manifest.entrypoints?.web ?? "—"}`);
-  console.log(`  license:    ${manifest.licenseRequired ? "required" : "free"}\n`);
+  console.log(`  license:    ${manifest.licenseRequired ? "required" : "free"}`);
+  console.log(`  screenshots:${(manifest.screenshots ?? []).length}\n`);
 }
 
 main();
