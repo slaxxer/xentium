@@ -43,7 +43,7 @@ async function issue(entitlements: unknown[], opts: { expiresIn?: number } = {})
   const expiresAt = now + (opts.expiresIn ?? 30 * 24 * 3600);
   return new SignJWT({
     siteId:       "9f1c8a04-1c2b-4d3e-9f10-abcdef012345",
-    licenseRef:   "NDV-LBP7-4K2M",
+    licenseRef:   "XEN-LBP7-4K2M",
     environment:  "development",
     entitlements,
     issuedAt:     now,
