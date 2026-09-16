@@ -18,6 +18,12 @@ export const manifestSchema = z.object({
   // `_` (e.g. `forum_`, `sb_`, `amod_`). Optional for back-compat; the reserved-
   // namespace guard applies to every plugin regardless.
   tablePrefix:        z.string().regex(/^[a-z][a-z0-9]*_$/, "tablePrefix must be lowercase snake_case ending in '_'").optional(),
+  // Storefront metadata, ignored by the host at every step — it is carried so a
+  // marketplace can extract the listing's gallery from the artifact it is
+  // already verifying, rather than from a second upload that can drift out of
+  // step with the bytes being sold. Each entry is a package-relative path under
+  // `assets/`; anything else is refused by whoever reads it.
+  screenshots:        z.array(z.string()).max(6).default([]),
   permissions:        z.array(z.string()).default([]),
   migrations:         z.array(z.string()).default([]),
   entrypoints: z.object({
