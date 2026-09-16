@@ -5,7 +5,7 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 function generateCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no O, 0, I, 1 — avoids confusion
   const rand = (n: number) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  return `NDVO-${rand(4)}-${rand(4)}`;
+  return `XEN-INV-${rand(4)}-${rand(4)}`;
 }
 
 export const inviteService = {

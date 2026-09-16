@@ -1,34 +1,56 @@
-# Last codebase update — 2026-09-16
+# Last codebase update — 2026-09-17
 
-Storefront presentation for the five first-party plugins, plus the plugin-side
-half of a listing gallery. Two repos; the marketplace carries most of it.
+Two repos. The CMS change is small; the marketplace gains a listing editor, the
+ability to correct a release's bytes, a forgot-password flow, and account
+controls on the customer page.
 
 ## xentium (this repo)
 
 | File | Why |
 |---|---|
-| `packages/plugin-engine/src/manifest.ts` | `screenshots: string[]` (max 6) on the manifest schema. Storefront metadata the host ignores at every step — it is carried so a marketplace can extract a listing's gallery from the artifact it already verifies, instead of from a second upload that drifts out of step with the bytes being sold. |
-| `scripts/package-plugin.mjs` | Packs the declared `assets/` into the archive, and FAILS the build on a screenshot that is missing or outside `assets/` — a listing that silently ships four of its five pictures is a packaging bug nobody sees until it is in the shop. |
-| `e2e/capture-shots.mjs` | New, and not part of the suite: drives a real logged-in browser over the dev instance and writes the gallery PNGs into each plugin's `assets/`. Viewport is 16:10 to match the storefront's frame exactly; one forced colour scheme, because a gallery that alternates light and dark reads as a mistake; `domcontentloaded` rather than `networkidle`, because the appearance live-sync stream never goes idle. |
+| `modules/invite/invite.service.ts` | Invite codes mint `XEN-INV-…`, not `NDVO-…`. |
+| `core/license-engine/license-engine.ts` | Doc comment: a display reference reads `XEN-`. |
+| 3 test files | The prefix assertions — the only place it was ever checked. |
 
-Also regenerated (all gitignored): `plugins/official/*/manifest.json` gained
-`screenshots`, `plugins/official/*/assets/*.png` are the ten new captures, and
-`plugins/packaged/*.xtplugin` were rebuilt at **1.0.0** with those assets inside.
-
-⚠ The repackaged 1.0.0 artifacts have different bytes from the 1.0.0 already
-ingested on plugins.xentium.org. `createRelease` refuses to replace a published
-version on purpose, so ingesting these needs either the draft releases removed
-first or a patch bump — see the session notes.
+Forward-only: nothing validates the prefix, so references already issued keep
+working and no data migration is needed.
 
 ## xentium-marketplace
 
-| File | Why |
-|---|---|
-| `prisma/schema.prisma` + `migrations/20260916182803_product_gallery` | `Product.screenshots String[]`. Distinct from a theme's single `screenshotPath`, which is the one picture its CARD leads with. |
-| `src/modules/catalog/ingest.service.ts` | `readPackagedImage` factored out of the theme extractor so one copy of the guards serves both, and `extractGallery` on top of it. Stale images are deleted, not orphaned. |
-| `src/modules/catalog/listing.routes.ts` | Gallery out as absolute URLs, nulls dropped. |
-| `src/modules/ops/ops.routes.ts` | `tags` on the product upsert body — it was settable nowhere. |
-| `web/src/pages/PluginDetail.tsx` + `Detail.scss` | A lead image and a thumbnail strip. `contain`, never `cover`: cropping is cropping the thing the picture was taken to show. |
-| `web/src/components/ListingCard.tsx` | A listing that CHOSE a colour and a glyph gets them; the hashed hue and the initial stay as the fallback. |
-| `scripts/ingest-official.ts` | Icon, accent and tags for the five; capitalised categories; `audited`; and it no longer resets an existing listing's price and state on a re-run. |
-| `src/modules/catalog/ingest.e2e.test.ts` | Four gallery cases: ordering, one bad image, a replacing release, and a release that ships none. |
+**Licence prefix.** `commerce.service.ts` (licence key, its display reference,
+order reference) and `portal.service.ts` (connect code) mint `XEN-`.
+
+**Replacing a release's bytes** — `ingest.service.ts`, `ops/actions.service.ts`,
+`ops/ops.routes.ts`. `createRelease` refuses to overwrite a published version and
+is right to: an install pins a version and verifies a checksum. But a catalogue
+is stocked *before* it has customers, where the same refusal turns "the packager
+forgot the screenshots" into a version bump that lies about what changed. The new
+path is an ops action, keeps the row, records both checksums in the audit log,
+and **refuses outright once a release has been downloaded** unless the operator
+acknowledges the count in writing. `deriveListingFromArtifact` was factored out of
+`createRelease` so replacing bytes refreshes the storefront the same way
+publishing does.
+
+**Listing editor** — `ops/ListingFields.tsx` (shared with the create page),
+`ops/OpsListing.tsx`, route `/ops/catalog/:id`, catalog rows now open it and the
+table gained a price column. Price, tags, icon, accent, trust tier, state and the
+rest were reachable by nothing after creation.
+
+**Forgot password** — `portal/password-reset.service.ts`, two portal endpoints, a
+per-IP limiter in `app.ts`, the `password.reset` template, and `Forgot`/`Reset`
+pages with a link from the sign-in form. One hour rather than twenty-four,
+consuming it revokes every session, and it verifies the address as a side effect.
+Both endpoints answer the same thing whatever happened — an honest answer is an
+account oracle.
+
+**Customer controls** — `ops/OpsCustomer.tsx` plus four ops actions: rank (refuses
+to remove the last staff account), send a reset link (staff never *set* a
+password), sign out everywhere, and ban (closes the door only — licences, orders
+and connected sites keep working). `Account.bannedAt`/`banReason` and a
+`PasswordReset` table, migration `20260916193820`.
+
+**`scripts/ingest-official.ts`** gained `--replace` and `--price <cents>`, which
+is how the five first-party listings were re-stocked with their screenshots and
+priced.
+
+Tests: 216 marketplace (19 files), 388 API, 762 web. Typecheck and lint clean.
