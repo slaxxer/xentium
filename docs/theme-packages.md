@@ -1,5 +1,9 @@
 # `.xttheme` — the theme package format
 
+> The format, byte by byte. For how themes, tokens and layers work on a running site —
+> installing vs switching, the theme ⊕ admin layers, the served stylesheet — read
+> [`style-system.md`](style-system.md) first.
+>
 > Companion to ADR-0005. `docs/plugin-blocks.md` covers the other half of the split:
 > a **theme is data, a plugin is code**. Nothing in a `.xttheme` executes, which is why
 > installing one needs no trust review — it is validated against a schema, and an
@@ -113,8 +117,8 @@ stylesheet, and a stray brace would close the block early.
 
 `styles/custom.css` is the escape hatch for a look tokens cannot express. It is *not*
 `:root`-restricted; the importing site scopes it at save time, exactly as the ACP's own
-custom-CSS console does. ⚠ It is the one part of a theme that applies **live** rather
-than to the draft — the console has no draft of its own — and the importer says so.
+custom-CSS console does. Like everything else in a theme it applies **live** — see
+*Import semantics*.
 
 ## Layouts
 
@@ -227,11 +231,20 @@ and rewrites the reference to `assets/<file>`; import unpacks them to
 
 ## Import semantics
 
-- Lands in the **draft**, never live — layouts, tokens and the stylesheet alike. A theme
-  rewrites every page at once, which is exactly the change to preview before committing.
-  One "Publish appearance" promotes the staged theme, and the layout draft publishes as
-  usual. (The stylesheet used to be the exception — applied live, and into the admin's own
-  keys. See *Inheritance* below.)
+- **Installing is not switching.** A new theme lands in the library inactive and the
+  admin is asked whether to switch to it; only an update to the theme the site is already
+  wearing is applied on import. See `style-system.md` §5.
+- **Switching applies live** — layouts, tokens and the stylesheet alike. Putting a theme on is one decision, not a batch of edits
+  waiting to be published; draft→publish is an editing affordance. The draft is written
+  too, so pending Style Editor edits preview against the theme actually on the site.
+- **The way back is the undo point**: `POST /admin/themes/discard` restores exactly what
+  the last import or switch replaced. ⚠ It is ONE level deep — a second import overwrites
+  it, so the state before the first is then only reachable by activating the old theme
+  from the library.
+- **A switch REPLACES the theme layer, never merges it.** A theme that ships no tokens or
+  no `styles/custom.css` clears the previous theme's, so its fonts and rules do not keep
+  painting a site that has moved on. (Layouts differ on purpose: a template the new theme
+  does not ship keeps whatever the site had.)
 - **All-or-nothing**: every layout, token, stylesheet and asset is validated before a
   single byte is written, so one bad file leaves the site untouched.
 - **Unknown blocks are kept, not dropped.** They are reported to the admin, skipped by
@@ -351,8 +364,8 @@ theme imports cleanly somewhere else.
 
 This does **not** make a stranger's CSS harmless — CSS can still lay a fixed-position
 element over a button, or restyle a control into something it is not. The answer to that
-is staging: the stylesheet now arrives in the draft with everything else, so an admin sees
-the site before a visitor does.
+is the preview before install (the marketplace renders a theme from its package) and the
+undo point after it.
 
 ## Building one
 

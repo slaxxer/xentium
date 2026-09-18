@@ -23,6 +23,7 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import { openThemeExportDialog } from "./ThemeExportDialog";
 import { openDialog } from "../../../lib/dialog";
+import { offerThemeSwitch } from "../hooks/themeSwitchPrompt";
 import "./ThemesPage.scss";
 
 interface InstalledTheme {
@@ -51,6 +52,11 @@ interface LibraryTheme {
 }
 
 interface ImportReport {
+  manifest: { id: string; name: string };
+  /** False unless this was an update to the theme already being worn — anything
+   *  else waits in the library until the admin answers the switch prompt. */
+  activated: boolean;
+  current: { id: string; name: string } | null;
   templates: string[];
   kept: string[];
   unknownBlocks: string[];
@@ -152,15 +158,20 @@ export function ThemesPage() {
       fd.append("file", file);
       return api.post<ImportReport>("/admin/themes/import", fd);
     },
-    onSuccess: (res) => {
+    onSuccess: async (res) => {
       setReport(res);
-      // Everything a theme touches: the layouts it wrote, what counts as customised,
-      // the tokens under the Style Editor, and the installed-theme record itself.
-      qc.invalidateQueries({ queryKey: ["acp-layout"] });
-      qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
-      qc.invalidateQueries({ queryKey: ["acp-layout-templates"] });
-      qc.invalidateQueries({ queryKey: ["acp-theme-installed"] });
-      qc.invalidateQueries({ queryKey: ["acp-tokens"] });
+      // The library changed either way; the site only if this was an update.
+      invalidateTheme();
+      // Installing is not switching — ask. A switch makes the report ("installed,
+      // not active") stale, so it goes; the activation toast says what happened.
+      const switched = await offerThemeSwitch(t, {
+        id: res.manifest.id, name: res.manifest.name,
+        activated: res.activated, current: res.current,
+      });
+      if (switched && !res.activated) {
+        setReport(null);
+        invalidateTheme();
+      }
     },
     // The message names the file and the rule it broke, so it is worth showing whole.
     onError: (e) => toast.error(apiErrorMessage(e)),
@@ -357,7 +368,9 @@ export function ThemesPage() {
           <div className="thm__report">
             <div className="thm__report-title">{t("themes.reportTitle")}</div>
             <ul>
-              <li>{t("themes.reportTemplates", { count: report.templates.length })}</li>
+              <li>{report.activated
+                ? t("themes.reportTemplates", { count: report.templates.length })
+                : t("themes.reportInLibrary", { name: report.manifest.name })}</li>
               {/* The inheritance result, and the one line an admin must not have to
                   guess at: which of their own layouts an update left alone. */}
               {report.kept.length > 0 && <li>{t("themes.reportKept", { count: report.kept.length })}</li>}
@@ -391,7 +404,7 @@ export function ThemesPage() {
                 </li>
               )}
             </ul>
-            <p className="thm__note">{t("themes.reportStaged")}</p>
+            {report.activated && <p className="thm__note">{t("themes.reportStaged")}</p>}
           </div>
         )}
       </div>
