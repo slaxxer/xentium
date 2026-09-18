@@ -10,11 +10,6 @@
     "theme": "Thème",
     "font": "Police",
     "language": "Langue",
-    "themes": {
-      "light": "Clair",
-      "dark": "Sombre",
-      "system": "Système"
-    },
     "reduceMotion": "Réduire les animations",
     "reduceMotionDesc": "Réduire les animations et les transitions",
     "compactView": "Vue compacte",

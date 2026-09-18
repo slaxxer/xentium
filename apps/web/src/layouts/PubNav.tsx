@@ -4,8 +4,6 @@ import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../components/Icon";
 import {
-  faSun,
-  faMoon,
   faGear,
   faChevronDown,
   faUser,
@@ -20,7 +18,6 @@ import { Username } from "../components/Username";
 import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
 // UserAvatar replaced by the Hearth Avatar throughout the nav
-import { useTheme } from "../hooks/useTheme";
 import { useAuth, applyLogout } from "../hooks/useAuth";
 import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
@@ -246,21 +243,6 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   );
 }
 
-/** Light/dark switch. */
-export function NavThemeToggle() {
-  const { t } = useTranslation("common");
-  const { theme, toggle } = useTheme();
-  return (
-    <button
-      className="pub-nav__icon-btn"
-      onClick={toggle}
-      aria-label={t("nav.toggleTheme")}
-      title={theme === "dark" ? t("nav.switchToLight") : t("nav.switchToDark")}
-    >
-      <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
-    </button>
-  );
-}
 
 /** Signed-in only — the block decides, not the admin. */
 export function NavNotifications() {

@@ -10,17 +10,37 @@ A package is a zip. Rename it `.xttheme`; nothing checks the extension.
 ```
 manifest.json            required
 tokens.json              full scope-keyed design tokens (the lossless copy)
-styles/light.css         global tokens as `:root` custom properties
-styles/dark.css
-styles/custom-light.css  the theme's own stylesheet (optional)
-styles/custom-dark.css
+styles/tokens.css        global tokens as `:root` custom properties
+styles/custom.css        the theme's own stylesheet (optional)
 layouts/<template>.json  one document per template
 assets/                  images and fonts the documents reference
 ```
 
+## ⚠ One look, one palette (package version 2)
+
+**A site has ONE look, and a theme IS that look.** There is no light/dark toggle and no
+`prefers-color-scheme` anywhere in the render path: an author decides whether they are
+building a dark theme or a light one, declares it in the manifest, and the site wears it.
+A reader who wants the other one picks a different theme from the footer chooser.
+
+So the paired files are gone. `tokens.json` is a single scope map rather than
+`{ light, dark }`, and each stylesheet is one file:
+
+| before (package version 1) | now |
+|---|---|
+| `tokens.json` → `{ light, dark }` | `tokens.json` → the scope map itself |
+| `styles/light.css` + `styles/dark.css` | `styles/tokens.css` |
+| `styles/custom-light.css` + `styles/custom-dark.css` | `styles/custom.css` |
+
+**A version-1 package still installs.** The importer reads every old name and keeps the
+**light** half — `:root` was already the light palette, and it is what a visitor rendered
+unless their OS asked otherwise. The dark half is *reported*, not dropped in silence: the
+import result carries `ignoredFiles`, and the ACP prints it. Nothing writes the old names
+any more.
+
 ## `.xtstyle` is this format now
 
-A `.xtstyle` was a manifest plus a `:root`-only light/dark pair — a theme with no
+A `.xtstyle` was a manifest plus a `:root`-only stylesheet — a theme with no
 `layouts/` and no `assets/`. The two were never really two formats, so as of
 **2026-08-15 they are one**: the theme importer accepts a `.xtstyle` unchanged, and the
 separate upload endpoint, its parallel validator and its ACP page are gone. Two
@@ -50,7 +70,11 @@ reference. The result is a `.xttheme` that changes nothing but the palette.
   "description": "…",            // optional, ≤500 chars
 
   "schemaVersion": 1,            // layout schema authored against
-  "packageVersion": 1,           // this package format
+  "packageVersion": 2,           // this package format — 2 = one look
+
+  // Whether you built a DARK theme or a LIGHT one. A fact about the theme, not a
+  // mode it offers. Defaults to "light" when absent.
+  "appearance": "dark",
 
   // Distribution metadata — what a marketplace listing needs.
   "license": "MIT",              // optional
@@ -64,26 +88,30 @@ reference. The result is a `.xttheme` that changes nothing but the palette.
 catalogue still imports, and the blocks this install cannot render are reported and
 left in place.
 
+`appearance` is **declared, never inferred.** Reading `--c-bg` and measuring its
+luminance works right up to a mid-grey, sepia or duotone palette — and a theme that sets
+its background only in `styles/custom.css` declares no background token at all. The
+marketplace prints it on the card, so getting it wrong is worse than saying nothing: a
+package that omits it gets no badge.
+
 ## Tokens
 
-`tokens.json` is the one to write. It is the full scope-keyed set (ADR-0003):
+`tokens.json` is the one to write. It is the full scope-keyed set (ADR-0003) — one map,
+because there is one look:
 
 ```jsonc
 {
-  "light": {
-    "global":        { "--c-accent": "#5865f2" },
-    "chrome.header": { "--c-bg": "#111827" }     // re-scoped for one region only
-  },
-  "dark": { "global": { "--c-accent": "#818cf8" } }
+  "global":        { "--c-accent": "#5865f2" },
+  "chrome.header": { "--c-bg": "#111827" }     // re-scoped for one region only
 }
 ```
 
-The two `:root` stylesheets can only carry `global`, so they exist for `.xtstyle`
-compatibility. **When both are present `tokens.json` wins.** Token names must look like
-custom properties and values may not contain `{ } < > ;` — the values are emitted into a
-served stylesheet, and a stray brace would close the block early.
+`styles/tokens.css` can only carry `global`, so it exists for `.xtstyle` compatibility.
+**When both are present `tokens.json` wins.** Token names must look like custom
+properties and values may not contain `{ } < > ;` — the values are emitted into a served
+stylesheet, and a stray brace would close the block early.
 
-`styles/custom-*.css` is the escape hatch for a look tokens cannot express. It is *not*
+`styles/custom.css` is the escape hatch for a look tokens cannot express. It is *not*
 `:root`-restricted; the importing site scopes it at save time, exactly as the ACP's own
 custom-CSS console does. ⚠ It is the one part of a theme that applies **live** rather
 than to the draft — the console has no draft of its own — and the importer says so.
@@ -124,13 +152,13 @@ says what that variant looks like. Both halves are in the package:
 { "id": "hero", "type": "section", "props": {}, "variant": "accent" }
 
 // tokens.json — the theme says what the look IS
-{ "light": { "variant.accent": { "--surface-bg": "#efe7ff", "--surface-border": "#d9c9ff" } } }
+{ "variant.accent": { "--surface-bg": "#efe7ff", "--surface-border": "#d9c9ff" } }
 ```
 
-This is deliberately not per-block colours. A variant keeps every block using it in step,
-survives a palette change, and works in both themes — because a variant's *default* is
-written in palette tokens (`--surface-bg: var(--c-card)`), so it follows the site it lands
-on until a theme overrides it.
+This is deliberately not per-block colours. A variant keeps every block using it in step
+and survives a palette change, because a variant's *default* is written in palette tokens
+(`--surface-bg: var(--c-card)`) — so it follows the site it lands on until a theme
+overrides it.
 
 Three rules worth knowing when authoring:
 
@@ -157,7 +185,7 @@ optional **`className`**: your own handle, which custom CSS can select on.
 ```
 
 ```css
-/* styles/custom-light.css */
+/* styles/custom.css */
 .nav-tile > *          { width: 120px; }
 .nav-tile img          { border-radius: 8px; transition: filter .15s; }
 .nav-tile:hover img    { filter: brightness(1.15); }
@@ -245,15 +273,14 @@ Every import records the new baseline either way, so:
 The import result names all of it: `templates` (applied), `kept` (yours, untouched),
 `replaced` (the version that was installed before).
 
-**The stylesheet inherits as a layer.** `styles/custom-*.css` lands in the theme's own
+**The stylesheet inherits as a layer.** `styles/custom.css` lands in the theme's own
 layer and is emitted **before** the admin's console CSS, so on two rules of equal
 specificity the admin still wins — the same relationship their tokens have with yours.
 `Reset appearance` clears the admin's stylesheet and leaves the theme's in place.
 
 > ⚠ Before 2026-08-29 an import called the admin's own `saveCustomCss`, so installing a
 > theme **destroyed whatever CSS the admin had written** — no baseline, nothing to
-> recover from, and applied live. A package carrying only `custom-light.css` blanked
-> their dark stylesheet too, because both keys were always written together.
+> recover from, and applied live.
 
 ## The class contract
 

@@ -47,6 +47,10 @@ const screenshotUpload = multer({
 const exportSchema = themeManifestSchema.pick({
   id: true, name: true, version: true, vendor: true, description: true,
   license: true, homepage: true, authorUrl: true,
+  // The exporting admin says whether this is a dark theme or a light one. It cannot be
+  // read off the tokens reliably, and it is the first thing a storefront card has to
+  // get right. Defaulted by the schema, so an old client's body still exports.
+  appearance: true,
 }).extend({
   /**
    * Palette only — no layouts, and therefore no assets.

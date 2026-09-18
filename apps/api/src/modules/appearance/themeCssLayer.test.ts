@@ -4,9 +4,7 @@
  * Custom CSS was the one channel a `.xttheme` did NOT layer. Importing a theme called
  * `saveCustomCss` with the package's contents, which overwrote the admin's own
  * stylesheet outright — no baseline recorded (unlike a layout), nowhere else for it to
- * live (unlike a token), and applied live so it happened before anyone had looked. A
- * package carrying only `custom-light.css` blanked the admin's DARK stylesheet too,
- * because both keys were always written together.
+ * live (unlike a token), and applied live so it happened before anyone had looked.
  *
  * These drive the real service against the disposable test database rather than mocking
  * it, because every claim here is about what is actually stored and in what ORDER it is
@@ -17,21 +15,22 @@ import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { appearanceService } from "./appearance.service.js";
 
-const ADMIN_LIGHT = "appearance.custom_css_light";
-const ADMIN_DARK  = "appearance.custom_css_dark";
-const THEME_LIGHT = "appearance.custom_css.theme.light";
-const THEME_DARK  = "appearance.custom_css.theme.dark";
-const THEME_DRAFT_LIGHT = "appearance.custom_css.theme.draft.light";
-const THEME_DRAFT_DARK  = "appearance.custom_css.theme.draft.dark";
+const ADMIN       = "appearance.custom_css";
+const THEME       = "appearance.custom_css.theme";
+const THEME_DRAFT = "appearance.custom_css.theme.draft";
 
-/** Every key these tests touch — wiped between them so none inherits state. */
+/** Every key these tests touch — wiped between them so none inherits state.
+ *  The pre-collapse names are in here too: every reader falls back to them, so one
+ *  left behind by another test would be indistinguishable from a live value. */
 const KEYS = [
-  ADMIN_LIGHT, ADMIN_DARK, "appearance.custom_css", "appearance.custom_css_compiled",
-  THEME_LIGHT, THEME_DARK, THEME_DRAFT_LIGHT, THEME_DRAFT_DARK,
-  "appearance.tokens.light", "appearance.tokens.dark",
-  "appearance.tokens.draft.light", "appearance.tokens.draft.dark", "appearance.tokens.draft.by",
-  "appearance.tokens.theme.light", "appearance.tokens.theme.dark",
-  "appearance.tokens.theme.draft.light", "appearance.tokens.theme.draft.dark",
+  ADMIN, "appearance.custom_css_light", "appearance.custom_css_dark",
+  "appearance.custom_css_compiled",
+  THEME, THEME_DRAFT,
+  "appearance.custom_css.theme.light", "appearance.custom_css.theme.draft.light",
+  "appearance.tokens", "appearance.tokens.light", "appearance.tokens.dark",
+  "appearance.tokens.draft", "appearance.tokens.draft.light", "appearance.tokens.draft.by",
+  "appearance.tokens.theme", "appearance.tokens.theme.light",
+  "appearance.tokens.theme.draft", "appearance.tokens.theme.draft.light",
 ];
 
 const wipe = async () => {
@@ -57,8 +56,8 @@ afterEach(wipe);
 
 describe("the served stylesheet", () => {
   it("emits the THEME layer before the admin's, so the admin wins a tie", async () => {
-    await put(THEME_LIGHT, ".x { color: red }");
-    await appearanceService.saveCustomCss({ light: ".x { color: blue }", dark: "" });
+    await put(THEME, ".x { color: red }");
+    await appearanceService.saveCustomCss(".x { color: blue }");
 
     const css = await appearanceService.buildCustomCss();
     expect(css).toContain("red");
@@ -73,13 +72,13 @@ describe("the served stylesheet", () => {
     // `saveCustomCss` writes the whole compiled blob, so compiling it against a blank
     // theme layer would silently uninstall a theme's CSS the first time an admin typed
     // in the console.
-    await put(THEME_LIGHT, ".from-theme { color: red }");
-    await appearanceService.saveCustomCss({ light: ".mine { color: blue }", dark: "" });
+    await put(THEME, ".from-theme { color: red }");
+    await appearanceService.saveCustomCss(".mine { color: blue }");
     expect(await appearanceService.buildCustomCss()).toContain(".from-theme");
   });
 
   it("serves the theme's stylesheet with no admin CSS at all", async () => {
-    await put(THEME_LIGHT, ".from-theme { color: red }");
+    await put(THEME, ".from-theme { color: red }");
     expect(await appearanceService.recompileCustomCss()).toContain(".from-theme");
   });
 });
@@ -98,7 +97,7 @@ describe("the served stylesheet", () => {
  */
 describe("applying a theme's stylesheet", () => {
   it("is live immediately, with no publish step", async () => {
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    await appearanceService.saveThemeCustomCss(".incoming { color: red }");
     expect(await appearanceService.buildCustomCss()).toContain(".incoming");
   });
 
@@ -106,18 +105,18 @@ describe("applying a theme's stylesheet", () => {
     // An admin with staged Style Editor edits previews `theme.draft ⊕ admin.draft`.
     // Leaving the draft layer on the old theme would show their staged work over a
     // theme that is no longer on the site.
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
-    expect((await appearanceService.getThemeDraftCustomCss()).light).toBe(".incoming { color: red }");
+    await appearanceService.saveThemeCustomCss(".incoming { color: red }");
+    expect(await appearanceService.getThemeDraftCustomCss()).toBe(".incoming { color: red }");
   });
 
   it("leaves nothing pending, because nothing is waiting to be published", async () => {
-    await appearanceService.saveThemeCustomCss({ light: ".incoming { color: red }", dark: "" });
+    await appearanceService.saveThemeCustomCss(".incoming { color: red }");
     expect((await appearanceService.getDraftStatus()).pending).toBe(false);
   });
 
   it("falls back to the live layer when nothing is staged", async () => {
-    await put(THEME_LIGHT, ".live { color: red }");
-    expect((await appearanceService.getThemeDraftCustomCss()).light).toBe(".live { color: red }");
+    await put(THEME, ".live { color: red }");
+    expect(await appearanceService.getThemeDraftCustomCss()).toBe(".live { color: red }");
   });
 
   it("still reports pending for a stylesheet that reached the draft another way", async () => {
@@ -125,7 +124,7 @@ describe("applying a theme's stylesheet", () => {
     // arrive without going through `saveThemeCustomCss` — restored by an undo, or
     // written by an older build. It must not be strandable.
     expect((await appearanceService.getDraftStatus()).pending).toBe(false);
-    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
+    await put(THEME_DRAFT, ".incoming { color: red }");
     expect((await appearanceService.getDraftStatus()).pending).toBe(true);
   });
 });
@@ -156,11 +155,11 @@ describe("publishing", () => {
    *  build), and publishing must promote it rather than strand it. */
   it("promotes a stylesheet that reached the draft layer some other way", async () => {
     const admin = await anAdmin();
-    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
+    await put(THEME_DRAFT, ".incoming { color: red }");
 
     expect(await appearanceService.publishDraft(admin, "test")).toBe(true);
 
-    expect((await appearanceService.getThemeCustomCss()).light).toBe(".incoming { color: red }");
+    expect(await appearanceService.getThemeCustomCss()).toBe(".incoming { color: red }");
     // The served blob is a cache of both layers; promoting without rebuilding it would
     // leave the site on the previous stylesheet until an admin happened to save theirs.
     expect(await appearanceService.buildCustomCss()).toContain(".incoming");
@@ -169,12 +168,12 @@ describe("publishing", () => {
 
   it("leaves the admin's stylesheet untouched across a publish", async () => {
     const admin = await anAdmin();
-    await appearanceService.saveCustomCss({ light: ".mine { color: blue }", dark: "" });
-    await put(THEME_DRAFT_LIGHT, ".incoming { color: red }");
+    await appearanceService.saveCustomCss(".mine { color: blue }");
+    await put(THEME_DRAFT, ".incoming { color: red }");
 
     await appearanceService.publishDraft(admin, "test");
 
-    expect((await appearanceService.getCustomCss()).light).toBe(".mine { color: blue }");
+    expect(await appearanceService.getCustomCss()).toBe(".mine { color: blue }");
     const css = await appearanceService.buildCustomCss();
     expect(css.indexOf(".incoming")).toBeLessThan(css.indexOf(".mine"));
   });
@@ -186,13 +185,13 @@ describe("resetAppearance", () => {
   it("drops MY stylesheet and keeps the theme's", async () => {
     // Same rule the token layer already follows: reset drops my edits, it does not
     // uninstall someone else's work.
-    await put(THEME_LIGHT, ".from-theme { color: red }");
-    await appearanceService.saveCustomCss({ light: ".mine { color: blue }", dark: "" });
+    await put(THEME, ".from-theme { color: red }");
+    await appearanceService.saveCustomCss(".mine { color: blue }");
 
     await appearanceService.resetAppearance();
 
-    expect((await appearanceService.getCustomCss()).light).toBe("");
-    expect((await appearanceService.getThemeCustomCss()).light).toBe(".from-theme { color: red }");
+    expect(await appearanceService.getCustomCss()).toBe("");
+    expect(await appearanceService.getThemeCustomCss()).toBe(".from-theme { color: red }");
     // And the served blob reflects that immediately, not on the next incidental save.
     const css = await appearanceService.buildCustomCss();
     expect(css).toContain(".from-theme");

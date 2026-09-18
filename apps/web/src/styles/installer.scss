@@ -113,23 +113,6 @@
         outline: none;
       }
     }
-
-    .theme-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px 14px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      background: var(--surface-2);
-      color: var(--text);
-      font-size: 14px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-
-      &:hover { border-color: var(--border-strong); }
-    }
   }
 
   // ===== Progress rail (numbered circles + labels) =====

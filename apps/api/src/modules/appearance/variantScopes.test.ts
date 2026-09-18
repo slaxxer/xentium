@@ -3,13 +3,13 @@
  *
  * Two things are worth pinning here, and the second is a bug this feature exposed:
  *
- *  1. A variant bucket has to reach the page under the variant's own class, in BOTH
- *     themes — that is the entire mechanism by which "this panel is accent" becomes
- *     colours, so it cannot be left to the generic scope path untested.
- *  2. An UNKNOWN scope must emit nothing. `selectorFor` used to fall back to the theme
- *     root for a scope it did not recognise, which silently promoted the bucket to a
- *     global override: a `.xttheme` naming a scope from a newer build would have
- *     recoloured the whole site rather than one variant.
+ *  1. A variant bucket has to reach the page under the variant's own class — that is
+ *     the entire mechanism by which "this panel is accent" becomes colours, so it
+ *     cannot be left to the generic scope path untested.
+ *  2. An UNKNOWN scope must emit nothing. `selectorFor` used to fall back to the
+ *     document root for a scope it did not recognise, which silently promoted the
+ *     bucket to a global override: a `.xttheme` naming a scope from a newer build
+ *     would have recoloured the whole site rather than one variant.
  *
  * The settings reader and the SSE publisher are mocked because none of that is about
  * the database — `buildCSS` is a pure function of the tokens it is handed plus three
@@ -42,27 +42,25 @@ vi.mock("../../shared/utils/settings.js", () => ({
 
 const { appearanceService } = await import("./appearance.service.js");
 
-const tokens = (light: Record<string, Record<string, string>>): ScopedTokenSet =>
-  ({ light, dark: {} });
+const tokens = (scoped: Record<string, Record<string, string>>): ScopedTokenSet => scoped;
 
 beforeEach(() => settings.clear());
 
 describe("variant scopes reach the page", () => {
-  it("emits a variant bucket under its own class, below the theme root", async () => {
+  it("emits a variant bucket under its own class, below the document root", async () => {
     const css = await appearanceService.buildCSS(
       tokens({ "variant.accent": { "--surface-bg": "#ff0000" } }),
     );
-    expect(css).toContain(':root .xt-v--accent, [data-theme="light"] .xt-v--accent');
+    expect(css).toContain(":root .xt-v--accent");
     expect(css).toContain("--surface-bg: #ff0000;");
   });
 
-  it("emits the dark theme's variant under the dark root, not the light one", async () => {
-    const css = await appearanceService.buildCSS({
-      light: {},
-      dark:  { "variant.muted": { "--c-fg": "#eeeeee" } },
-    });
-    expect(css).toContain('[data-theme="dark"] .xt-v--muted');
-    expect(css).not.toContain(':root .xt-v--muted');
+  it("emits no `[data-theme]` prefix — a site has one look, so there is one root", async () => {
+    const css = await appearanceService.buildCSS(
+      tokens({ "variant.muted": { "--c-fg": "#eeeeee" } }),
+    );
+    expect(css).toContain(":root .xt-v--muted");
+    expect(css).not.toContain("data-theme");
   });
 
   it("keeps global first, so a variant can override it", async () => {
@@ -84,7 +82,7 @@ describe("variant scopes reach the page", () => {
     }
   });
 
-  it("drops a scope it does not know, instead of leaking it to the theme root", async () => {
+  it("drops a scope it does not know, instead of leaking it to the document root", async () => {
     const css = await appearanceService.buildCSS(
       tokens({ "variant.neon": { "--c-bg": "#ff00ff" } }),
     );
@@ -108,61 +106,57 @@ describe("variant scopes reach the page", () => {
 // landed first, so the patch is applied server-side, to one bucket.
 
 describe("saveDraftScope", () => {
-  const DRAFT_LIGHT = "appearance.tokens.draft.light";
-  const DRAFT_DARK  = "appearance.tokens.draft.dark";
+  const DRAFT = "appearance.tokens.draft";
 
   it("adds a token without touching the rest of the draft", async () => {
-    settings.set(DRAFT_LIGHT, { global: { "--c-bg": "#111111" }, navbar: { "--nav-bg": "#222222" } });
-    settings.set(DRAFT_DARK, {});
+    settings.set(DRAFT, { global: { "--c-bg": "#111111" }, navbar: { "--nav-bg": "#222222" } });
 
     const next = await appearanceService.saveDraftScope(
-      "variant.accent", { light: { "--surface-bg": "#ff0000" } }, "user-1",
+      "variant.accent", { "--surface-bg": "#ff0000" }, "user-1",
     );
 
-    expect(next.light["variant.accent"]).toEqual({ "--surface-bg": "#ff0000" });
-    expect(next.light.global).toEqual({ "--c-bg": "#111111" });
-    expect(next.light.navbar).toEqual({ "--nav-bg": "#222222" });
-  });
-
-  it("patches light and dark independently", async () => {
-    settings.set(DRAFT_LIGHT, {});
-    settings.set(DRAFT_DARK, {});
-    const next = await appearanceService.saveDraftScope("variant.muted", {
-      light: { "--c-fg": "#000000" },
-      dark:  { "--c-fg": "#ffffff" },
-    }, "user-1");
-    expect(next.light["variant.muted"]!["--c-fg"]).toBe("#000000");
-    expect(next.dark["variant.muted"]!["--c-fg"]).toBe("#ffffff");
+    expect(next["variant.accent"]).toEqual({ "--surface-bg": "#ff0000" });
+    expect(next.global).toEqual({ "--c-bg": "#111111" });
+    expect(next.navbar).toEqual({ "--nav-bg": "#222222" });
   });
 
   it("clears one token with null, keeping its neighbours", async () => {
-    settings.set(DRAFT_LIGHT, { "variant.accent": { "--surface-bg": "#ff0000", "--c-fg": "#ffffff" } });
-    settings.set(DRAFT_DARK, {});
+    settings.set(DRAFT, { "variant.accent": { "--surface-bg": "#ff0000", "--c-fg": "#ffffff" } });
     const next = await appearanceService.saveDraftScope(
-      "variant.accent", { light: { "--surface-bg": null } }, "user-1",
+      "variant.accent", { "--surface-bg": null }, "user-1",
     );
-    expect(next.light["variant.accent"]).toEqual({ "--c-fg": "#ffffff" });
+    expect(next["variant.accent"]).toEqual({ "--c-fg": "#ffffff" });
   });
 
   it("DELETES an emptied bucket rather than storing `{}`", async () => {
     // Storage is sparse and "pending" is a stringify comparison, so a leftover empty
     // bucket would leave the draft looking changed forever.
-    settings.set(DRAFT_LIGHT, { "variant.plain": { "--surface-bg": "#ff0000" } });
-    settings.set(DRAFT_DARK, {});
+    settings.set(DRAFT, { "variant.plain": { "--surface-bg": "#ff0000" } });
     const next = await appearanceService.saveDraftScope(
-      "variant.plain", { light: { "--surface-bg": null } }, "user-1",
+      "variant.plain", { "--surface-bg": null }, "user-1",
     );
-    expect("variant.plain" in next.light).toBe(false);
+    expect("variant.plain" in next).toBe(false);
   });
 
   it("starts from the LIVE tokens when no draft exists yet", async () => {
     // Otherwise recolouring one variant would silently discard every published token.
-    settings.set("appearance.tokens.light", { global: { "--c-accent": "#abcdef" } });
+    settings.set("appearance.tokens", { global: { "--c-accent": "#abcdef" } });
     const next = await appearanceService.saveDraftScope(
-      "variant.accent", { light: { "--surface-bg": "#ff0000" } }, "user-1",
+      "variant.accent", { "--surface-bg": "#ff0000" }, "user-1",
     );
-    expect(next.light.global).toEqual({ "--c-accent": "#abcdef" });
-    expect(next.light["variant.accent"]).toEqual({ "--surface-bg": "#ff0000" });
+    expect(next.global).toEqual({ "--c-accent": "#abcdef" });
+    expect(next["variant.accent"]).toEqual({ "--surface-bg": "#ff0000" });
+  });
+
+  it("reads a PRE-COLLAPSE draft, so an upgraded site keeps its staged edits", async () => {
+    // The old shape was a `{light, dark}` pair of settings. The light half is the one a
+    // one-look site keeps, and it has to be readable or an in-flight draft vanishes on
+    // the deploy that collapsed the storage.
+    settings.set("appearance.tokens.draft.light", { global: { "--c-accent": "#legacy" } });
+    const next = await appearanceService.saveDraftScope(
+      "variant.accent", { "--surface-bg": "#ff0000" }, "user-1",
+    );
+    expect(next.global).toEqual({ "--c-accent": "#legacy" });
   });
 });
 
@@ -172,60 +166,59 @@ describe("saveDraftScope", () => {
 // value the admin set alone.
 
 describe("theme token layer", () => {
-  const THEME_LIGHT = "appearance.tokens.theme.light";
-  const LIVE_LIGHT  = "appearance.tokens.light";
+  const THEME = "appearance.tokens.theme";
+  const LIVE  = "appearance.tokens";
 
   it("serves the theme's value where the admin set nothing", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#theme0" } });
+    settings.set(THEME, { global: { "--c-accent": "#theme0" } });
     const eff = await appearanceService.getEffectiveTokens();
-    expect(eff.light.global!["--c-accent"]).toBe("#theme0");
+    expect(eff.global!["--c-accent"]).toBe("#theme0");
   });
 
   it("lets the ADMIN win, per token, keeping the theme's neighbours", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#theme0", "--c-bg": "#theme1" } });
-    settings.set(LIVE_LIGHT,  { global: { "--c-accent": "#admin0" } });
+    settings.set(THEME, { global: { "--c-accent": "#theme0", "--c-bg": "#theme1" } });
+    settings.set(LIVE,  { global: { "--c-accent": "#admin0" } });
     const eff = await appearanceService.getEffectiveTokens();
-    expect(eff.light.global).toEqual({ "--c-accent": "#admin0", "--c-bg": "#theme1" });
+    expect(eff.global).toEqual({ "--c-accent": "#admin0", "--c-bg": "#theme1" });
   });
 
   it("merges per SCOPE, so a variant the theme defines survives an unrelated edit", async () => {
-    settings.set(THEME_LIGHT, {
+    settings.set(THEME, {
       global: { "--c-bg": "#theme1" },
       "variant.accent": { "--surface-bg": "#theme2" },
     });
-    settings.set(LIVE_LIGHT, { global: { "--c-bg": "#admin1" } });
+    settings.set(LIVE, { global: { "--c-bg": "#admin1" } });
     const eff = await appearanceService.getEffectiveTokens();
-    expect(eff.light.global!["--c-bg"]).toBe("#admin1");
-    expect(eff.light["variant.accent"]!["--surface-bg"]).toBe("#theme2");
+    expect(eff.global!["--c-bg"]).toBe("#admin1");
+    expect(eff["variant.accent"]!["--surface-bg"]).toBe("#theme2");
   });
 
   it("keeps the admin layer readable on its own — the editor writes back what it reads", async () => {
     // Merging into `getTokens()` would turn every theme value into an admin override on
     // the next save, which silently destroys the inheritance.
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#theme0" } });
-    settings.set(LIVE_LIGHT,  { global: { "--c-bg": "#admin1" } });
+    settings.set(THEME, { global: { "--c-accent": "#theme0" } });
+    settings.set(LIVE,  { global: { "--c-bg": "#admin1" } });
     const admin = await appearanceService.getTokenOverrides();
-    expect(admin.light.global).toEqual({ "--c-bg": "#admin1" });
+    expect(admin.global).toEqual({ "--c-bg": "#admin1" });
   });
 
   it("reaches the served stylesheet", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#abcabc" } });
+    settings.set(THEME, { global: { "--c-accent": "#abcabc" } });
     const css = await appearanceService.buildCSS(await appearanceService.getEffectiveTokens());
     expect(css).toContain("#abcabc");
   });
 
   it("layers the DRAFT over the theme too, so the staged preview is truthful", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#theme0", "--c-bg": "#theme1" } });
-    settings.set("appearance.tokens.draft.light", { global: { "--c-accent": "#draft0" } });
-    settings.set("appearance.tokens.draft.dark", {});
+    settings.set(THEME, { global: { "--c-accent": "#theme0", "--c-bg": "#theme1" } });
+    settings.set("appearance.tokens.draft", { global: { "--c-accent": "#draft0" } });
     const eff = await appearanceService.getEffectiveDraftTokens();
-    expect(eff.light.global).toEqual({ "--c-accent": "#draft0", "--c-bg": "#theme1" });
+    expect(eff.global).toEqual({ "--c-accent": "#draft0", "--c-bg": "#theme1" });
   });
 
   it("stays sparse: a token nobody set is absent, not filled from defaults", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#theme0" } });
+    settings.set(THEME, { global: { "--c-accent": "#theme0" } });
     const eff = await appearanceService.getEffectiveTokens();
-    expect("--c-bg" in eff.light.global!).toBe(false);
+    expect("--c-bg" in eff.global!).toBe(false);
   });
 });
 
@@ -235,37 +228,37 @@ describe("theme token layer", () => {
 // "publish appearance" promotes both layers.
 
 describe("theme layer staging", () => {
-  const THEME_LIGHT = "appearance.tokens.theme.light";
-  const THEME_DRAFT_LIGHT = "appearance.tokens.theme.draft.light";
+  const THEME = "appearance.tokens.theme";
+  const THEME_DRAFT = "appearance.tokens.theme.draft";
 
   it("does not change the served stylesheet on import", async () => {
-    settings.set(THEME_DRAFT_LIGHT, { global: { "--c-accent": "#newtheme" } });
+    settings.set(THEME_DRAFT, { global: { "--c-accent": "#newtheme" } });
     const live = await appearanceService.getEffectiveTokens();
-    expect(live.light.global?.["--c-accent"]).toBeUndefined();
+    expect(live.global?.["--c-accent"]).toBeUndefined();
   });
 
   it("shows it in the staged preview", async () => {
-    settings.set(THEME_DRAFT_LIGHT, { global: { "--c-accent": "#newtheme" } });
+    settings.set(THEME_DRAFT, { global: { "--c-accent": "#newtheme" } });
     const draft = await appearanceService.getEffectiveDraftTokens();
-    expect(draft.light.global!["--c-accent"]).toBe("#newtheme");
+    expect(draft.global!["--c-accent"]).toBe("#newtheme");
   });
 
   it("reports PENDING from a theme import alone", async () => {
     // A fresh import touches no admin-layer token, so checking only that layer would say
     // "nothing to publish" and leave the admin unable to apply the theme they imported.
-    settings.set(THEME_DRAFT_LIGHT, { global: { "--c-accent": "#newtheme" } });
+    settings.set(THEME_DRAFT, { global: { "--c-accent": "#newtheme" } });
     expect(await appearanceService.getDraftStatus()).toEqual({ pending: true });
   });
 
   it("reports nothing pending when the staged theme equals the live one", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#same" } });
-    settings.set(THEME_DRAFT_LIGHT, { global: { "--c-accent": "#same" } });
+    settings.set(THEME, { global: { "--c-accent": "#same" } });
+    settings.set(THEME_DRAFT, { global: { "--c-accent": "#same" } });
     expect(await appearanceService.getDraftStatus()).toEqual({ pending: false });
   });
 
   it("falls back to the live theme layer when nothing is staged", async () => {
-    settings.set(THEME_LIGHT, { global: { "--c-accent": "#published" } });
+    settings.set(THEME, { global: { "--c-accent": "#published" } });
     const draft = await appearanceService.getThemeDraftTokens();
-    expect(draft.light.global!["--c-accent"]).toBe("#published");
+    expect(draft.global!["--c-accent"]).toBe("#published");
   });
 });

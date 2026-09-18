@@ -57,6 +57,10 @@ interface ImportReport {
   unknownTemplates: string[];
   assetsImported: number;
   customCssApplied: boolean;
+  /** Parts of a pre-collapse package a one-look site has nowhere to put — its dark
+   *  palette and its dark stylesheet. Said out loud, because "I imported a theme with a
+   *  dark mode and half of it vanished" deserves a sentence, not a mystery. */
+  ignoredFiles: string[];
 }
 
 export function ThemesPage() {
@@ -167,7 +171,7 @@ export function ThemesPage() {
     if (!meta) return;
     setExporting(true);
     try {
-      const { tokensOnly, screenshot, ...fields } = meta;
+      const { tokensOnly, screenshot, appearance, ...fields } = meta;
       // Multipart, because the package may carry a preview image — and multipart
       // has no types, so `tokensOnly` goes as the string the server's schema
       // explicitly accepts rather than as a value JS truthiness would misread.
@@ -177,6 +181,7 @@ export function ThemesPage() {
         // empty string where it wants a URL.
         if (v.trim() !== "") body.append(k, v);
       }
+      body.append("appearance", appearance);
       if (tokensOnly) body.append("tokensOnly", "true");
       if (screenshot) body.append("screenshot", screenshot);
       const res = await apiStream("/admin/themes/export", body);
@@ -360,6 +365,12 @@ export function ThemesPage() {
               {report.customCssApplied && (
                 <li className="thm__warn">
                   <FontAwesomeIcon icon={faTriangleExclamation} /> {t("themes.reportCustomCss")}
+                </li>
+              )}
+              {report.ignoredFiles.length > 0 && (
+                <li className="thm__warn">
+                  <FontAwesomeIcon icon={faTriangleExclamation} />{" "}
+                  {t("themes.ignoredFiles")} {report.ignoredFiles.join(", ")}
                 </li>
               )}
               {report.unknownTemplates.length > 0 && (
