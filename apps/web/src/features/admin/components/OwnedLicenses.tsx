@@ -10,6 +10,7 @@ import {
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { toast } from "../../../lib/toast";
 import { themeInstallMessage } from "../hooks/themeInstallResult";
+import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 
 /**
  * What this site's marketplace account owns, and where each licence stands here.
@@ -131,6 +132,7 @@ export function OwnedLicenses({
       toast.success(isThemeRow(l)
         ? themeInstallMessage(t, l.product.name, final)
         : t("marketplace.progressDone", { name: l.product.name }));
+      if (isThemeRow(l)) await offerThemeSwitch(t, outcomeFromStream(l.product.id, l.product.name, final));
       return ok;
     },
     onSettled: () => setProgress(null),

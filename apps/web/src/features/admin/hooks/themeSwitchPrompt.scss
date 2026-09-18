@@ -1,0 +1,35 @@
+// The body of the "switch or keep" dialog — see themeSwitchPrompt.tsx.
+.thm-switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+
+  &__shot {
+    width: 100%;
+    max-width: 360px;
+    // Capped, not sized: a screenshot is whatever aspect ratio the author's window
+    // was, and letting it drive the dialog's height pushes the buttons off-screen.
+    max-height: 200px;
+    object-fit: cover;
+    object-position: top;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+  }
+
+  // The declared look — a fact about the theme, stated before the admin commits.
+  &__look {
+    padding: 2px var(--sp-3);
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    border: 1px solid var(--c-border-hi);
+    background: var(--c-bg);
+    color: var(--c-fg-muted);
+  }
+
+  &__text {
+    margin: 0;
+    text-align: center;
+  }
+}
