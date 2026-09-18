@@ -10,11 +10,15 @@
 /* Tier 1 — primitives (never referenced directly by components) */
 :root { @include defaults.primitives; }
 
-/* Tier 2 — semantic. LIGHT is the default; dark overrides. */
-:root,
-[data-theme="light"] { @include defaults.palette-light; }
-
-[data-theme="dark"] { @include defaults.palette-dark; }
+/* Tier 2 — semantic. ONE palette, and it is the light one.
+   ⚠ There is deliberately no dark counterpart here, and no `prefers-color-scheme`.
+   A theme is ONE look that its author designed and a buyer chose; letting a
+   visitor's operating system flip it to a palette the author never tuned meant a
+   listing showed one thing and the site rendered another — and a theme shipping no
+   dark tokens fell all the way back to stock Xentium, so the theme did not appear
+   at all. A reader who wants a different look picks a different THEME, in the
+   footer chooser, from the ones the admin installed. */
+:root { @include defaults.palette-light; }
 
 /* Tier 3 — component tokens */
 :root { @include defaults.components; }
@@ -30,7 +34,6 @@
   @include defaults.palette-light;
   @include defaults.components;
 }
-[data-theme="dark"] .xt-site-tokens { @include defaults.palette-dark; }
 
 
 /* ── Tier 4 — style variants (ADR-0005) ────────────────────────────────────────

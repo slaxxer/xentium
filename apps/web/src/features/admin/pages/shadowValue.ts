@@ -49,15 +49,12 @@ export const SHADOW_STRONG = "var(--shadow-pop)";
  * and editable the moment the panel opens — so a drift here changes where you start,
  * never what the site renders.
  */
-export const SHADOW_SEED: Record<"light" | "dark", Record<"soft" | "strong", ShadowParts>> = {
-  light: {
-    soft:   { inset: false, top: false, bottom: true, left: false, right: false, distance: 6,  blur: 24, spread: 0, color: "#1e285a", alpha: 0.08 },
-    strong: { inset: false, top: false, bottom: true, left: false, right: false, distance: 12, blur: 40, spread: 0, color: "#1e285a", alpha: 0.13 },
-  },
-  dark: {
-    soft:   { inset: false, top: false, bottom: true, left: false, right: false, distance: 8,  blur: 30, spread: 0, color: "#000000", alpha: 0.34 },
-    strong: { inset: false, top: false, bottom: true, left: false, right: false, distance: 16, blur: 48, spread: 0, color: "#000000", alpha: 0.48 },
-  },
+// One pair, for the one palette. The dark seeds went with the scheme switch: a dark
+// theme that wants heavier shadows sets `--shadow-card` itself, which is exactly the
+// channel a theme has for it.
+export const SHADOW_SEED: Record<"soft" | "strong", ShadowParts> = {
+  soft:   { inset: false, top: false, bottom: true, left: false, right: false, distance: 6,  blur: 24, spread: 0, color: "#1e285a", alpha: 0.08 },
+  strong: { inset: false, top: false, bottom: true, left: false, right: false, distance: 12, blur: 40, spread: 0, color: "#1e285a", alpha: 0.13 },
 };
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));

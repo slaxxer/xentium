@@ -33,12 +33,11 @@ vi.mock("../../shared/utils/settings.js", () => ({
 
 const { appearanceService } = await import("./appearance.service.js");
 
-const globalTokens = (light: Record<string, string>, dark: Record<string, string> = {}): ScopedTokenSet =>
-  ({ light: { global: light }, dark: { global: dark } });
+const globalTokens = (global: Record<string, string>): ScopedTokenSet => ({ global });
 
-/** Serve `css` as the admin's light custom CSS and return the built stylesheet. */
+/** Serve `css` as the admin's custom CSS and return the built stylesheet. */
 async function withCustomCss(css: string): Promise<string> {
-  settings.set("appearance.custom_css_light", css);
+  settings.set("appearance.custom_css", css);
   return appearanceService.buildCSS(globalTokens({}));
 }
 
@@ -47,12 +46,12 @@ beforeEach(() => settings.clear());
 describe("custom CSS stops at the admin panel", () => {
   it("anchors an ordinary selector under the site body", async () => {
     const css = await withCustomCss("a { color: red }");
-    expect(css).toContain(':root:not([data-theme="dark"]) body:not(.xt-acp) a');
+    expect(css).toContain(":root body:not(.xt-acp) a");
   });
 
   it("compounds onto `body` rather than nesting a second one", async () => {
     const css = await withCustomCss("body { background: url(x.png) }");
-    expect(css).toContain(':root:not([data-theme="dark"]) body:not(.xt-acp) {');
+    expect(css).toContain(":root body:not(.xt-acp) {");
     expect(css).not.toContain("body:not(.xt-acp) body");
   });
 
@@ -65,8 +64,8 @@ describe("custom CSS stops at the admin panel", () => {
     // Qualifying a root rule by a class on its CHILD needs `:has()`, and an
     // unsupported selector drops the admin's ENTIRE stylesheet rather than one rule.
     const css = await withCustomCss(":root { --c-accent: #123456 }");
-    expect(css).toContain(':root:not([data-theme="dark"]) {');
-    expect(css).not.toContain(":root:not([data-theme=\"dark\"]) body");
+    expect(css).toContain(":root {");
+    expect(css).not.toContain(":root body {");
   });
 });
 
@@ -79,16 +78,13 @@ describe("the site's palette, mirrored for surfaces that opt back in", () => {
     expect(rule).toContain(".xt-site-tokens");
   });
 
-  it("mirrors the dark bucket under the dark root", async () => {
-    const css = await appearanceService.buildCSS(globalTokens({}, { "--c-accent": "#ff7a5c" }));
-    expect(css).toContain('[data-theme="dark"] .xt-site-tokens');
+  it("emits no `[data-theme]` selector at all — there is one look", async () => {
+    const css = await appearanceService.buildCSS(globalTokens({ "--c-accent": "#ff5c39" }));
+    expect(css).not.toContain("data-theme");
   });
 
   it("does NOT mirror a region scope — its selector already lives on the site", async () => {
-    const css = await appearanceService.buildCSS({
-      light: { navbar: { "--nav-bg": "#000000" } },
-      dark:  {},
-    });
+    const css = await appearanceService.buildCSS({ navbar: { "--nav-bg": "#000000" } });
     expect(css).toContain(":root .pub-nav");
     expect(css).not.toContain(".xt-site-tokens .pub-nav");
   });

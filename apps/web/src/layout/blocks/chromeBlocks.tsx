@@ -22,7 +22,7 @@ import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import {
-  NavLogo, NavPrimaryLinks, NavSearchBlock, NavThemeToggle,
+  NavLogo, NavPrimaryLinks, NavSearchBlock,
   NavNotifications, NavAdminLink, NavUserMenu,
 } from "../../layouts/PubNav";
 import {
@@ -125,13 +125,6 @@ registerBlock({
   schema: blockPropSchemas.search,
   editorMeta: { label: "Search", category: "content", allowedTemplates: CHROME_HEADER },
   component: ({ props }: BlockProps<{ expanded: boolean }>) => <NavSearchBlock expanded={props.expanded} />,
-});
-
-registerBlock({
-  type:   "themeToggle",
-  schema: blockPropSchemas.themeToggle,
-  editorMeta: { label: "Light/dark toggle", category: "content", allowedTemplates: CHROME_HEADER },
-  component: () => <NavThemeToggle />,
 });
 
 registerBlock({

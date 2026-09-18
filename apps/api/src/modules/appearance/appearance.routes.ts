@@ -122,9 +122,9 @@ appearanceRouter.get("/stream", async (_req, res, next) => {
 // Admin — read current tokens
 appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
   try {
-    // `light`/`dark` stay the ADMIN layer alone — the editor writes back what it reads,
-    // so returning the merged set would turn every theme value into an admin override
-    // and quietly destroy the inheritance. `theme` is additive: the editor shows those
+    // `tokens` is the ADMIN layer ALONE — the editor writes back what it reads, so
+    // returning the merged set would turn every theme value into an admin override and
+    // quietly destroy the inheritance. `theme` is additive: the editor shows those
     // values as the inherited baseline, which is what "Reset" now falls back to.
     const [admin, theme, installed] = await Promise.all([
       appearanceService.getTokens(),
@@ -135,30 +135,27 @@ appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
       appearanceService.getThemeDraftTokens(),
       appearanceService.getInstalledTheme(),
     ]);
-    res.json({ ...admin, theme, installedTheme: installed });
+    res.json({ tokens: admin, theme, installedTheme: installed });
   } catch (err) { next(err); }
 });
 
 // Admin — save tokens
 appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
   try {
-    // Scope-keyed shape (ADR-0003): { light: { global: {..}, navbar: {..} }, dark: {..} }.
-    // Names and values are validated (shared with theme import): every token here is
-    // emitted verbatim into the served stylesheet, and a value carrying `}` would close
-    // the block early — trusted admin or not, that is not worth leaving open.
+    // Scope-keyed shape (ADR-0003): { global: {..}, navbar: {..} }. ONE map, because a
+    // site has one look. Names and values are validated (shared with theme import):
+    // every token here is emitted verbatim into the served stylesheet, and a value
+    // carrying `}` would close the block early — trusted admin or not, that is not
+    // worth leaving open.
     const body = z.object({
-      light: scopedTokensSchema,
-      dark:  scopedTokensSchema,
-      label: z.string().optional(),
+      tokens: scopedTokensSchema,
+      label:  z.string().optional(),
     }).parse(req.body);
 
     // Edits land in the DRAFT — they go live only on publish (Run now or the
     // scheduled appearance-publish job). No version bump here, so other clients
     // keep seeing the published theme until publish.
-    await appearanceService.saveDraftTokens(
-      { light: body.light, dark: body.dark },
-      req.userId!,
-    );
+    await appearanceService.saveDraftTokens(body.tokens, req.userId!);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -183,49 +180,43 @@ appearanceRouter.patch("/tokens/scope/:scope", adminGuard, async (req, res, next
       tokenMapSchema.keyType,
       z.union([tokenMapSchema.valueType, z.null()]),
     );
-    const body = z.object({ light: clearable.optional(), dark: clearable.optional() }).parse(req.body ?? {});
+    const body = z.object({ tokens: clearable }).parse(req.body ?? {});
 
-    res.json(await appearanceService.saveDraftScope(scope, body, req.userId!));
+    res.json(await appearanceService.saveDraftScope(scope, body.tokens, req.userId!));
   } catch (err) { next(err); }
 });
 
 // Admin — read raw per-theme custom CSS for the console editor
 appearanceRouter.get("/custom-css", adminGuard, async (_req, res, next) => {
   try {
-    // Same shape and the same reason as `/tokens`: `light`/`dark` are the ADMIN layer
-    // alone, because the console writes back exactly what it reads — returning the two
-    // layers concatenated would save the theme's stylesheet as the admin's own, and the
-    // next theme update would have nothing left to inherit. `theme` is additive, and it
-    // is the STAGED layer so the console agrees with the preview during the window
-    // between importing a theme and publishing it.
+    // Same shape and the same reason as `/tokens`: `css` is the ADMIN layer alone,
+    // because the console writes back exactly what it reads — returning the two layers
+    // concatenated would save the theme's stylesheet as the admin's own, and the next
+    // theme update would have nothing left to inherit. `theme` is additive, and it is
+    // the STAGED layer so the console agrees with the preview during the window between
+    // importing a theme and publishing it.
     const [admin, theme] = await Promise.all([
       appearanceService.getCustomCss(),
       appearanceService.getThemeDraftCustomCss(),
     ]);
-    res.json({ ...admin, theme });
+    res.json({ css: admin, theme });
   } catch (err) { next(err); }
 });
 
 // Admin — save raw per-theme custom CSS (trusted boundary; bumps style version → live sync)
 appearanceRouter.put("/custom-css", adminGuard, async (req, res, next) => {
   try {
-    const body = z.object({
-      light: z.string().max(100_000),
-      dark:  z.string().max(100_000),
-    }).parse(req.body);
-    await appearanceService.saveCustomCss(body);
+    const body = z.object({ css: z.string().max(100_000) }).parse(req.body);
+    await appearanceService.saveCustomCss(body.css);
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
 
-// Admin — scope a raw blob for one theme (live preview; does not persist)
+// Admin — scope a raw blob (live preview; does not persist)
 appearanceRouter.post("/custom-css/preview", adminGuard, async (req, res, next) => {
   try {
-    const { css, theme } = z.object({
-      css:   z.string().max(100_000),
-      theme: z.enum(["light", "dark"]),
-    }).parse(req.body);
-    res.json({ css: appearanceService.scopeCss(css, theme) });
+    const { css } = z.object({ css: z.string().max(100_000) }).parse(req.body);
+    res.json({ css: appearanceService.scopeCss(css) });
   } catch (err) { next(err); }
 });
 

@@ -1,3 +1,20 @@
+/**
+ * The STAFF TOOLS' light/dark preference. Not the site's.
+ *
+ * ⚠ This used to theme everything. It no longer reaches the public site at all: a site
+ * has ONE look — the theme's — and `tokens.scss` defines exactly one palette with no
+ * `prefers-color-scheme` anywhere in the render path. A reader who wants a different
+ * look picks a different THEME, from the chooser in the footer.
+ *
+ * What is left is the ACP and the ModCP, which deliberately opt OUT of the site's
+ * palette (`body.xt-acp` re-declares the whole thing) and keep their own. They are
+ * tools, not part of anyone's design, so a dark one is a working preference rather than
+ * a second version of the site — which is why this hook survives the collapse while the
+ * navbar toggle, the installer's toggle and the account preference did not.
+ *
+ * It still writes `data-theme` on the root element, because that is the attribute those
+ * two surfaces' stylesheets key off. Nothing the site serves reads it.
+ */
 import { useEffect, useSyncExternalStore } from "react";
 
 export type ThemePreference = "light" | "dark" | "system";

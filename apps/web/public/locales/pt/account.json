@@ -10,11 +10,6 @@
     "theme": "Tema",
     "font": "Tipo de letra",
     "language": "Idioma",
-    "themes": {
-      "light": "Claro",
-      "dark": "Escuro",
-      "system": "Sistema"
-    },
     "reduceMotion": "Reduzir movimento",
     "reduceMotionDesc": "Minimizar animações e transições",
     "compactView": "Vista compacta",

@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
-  faXmark, faRotateLeft, faRotateRight, faCloudArrowUp, faSun, faMoon,
+  faXmark, faRotateLeft, faRotateRight, faCloudArrowUp,
   faMagnifyingGlass, faSliders, faObjectGroup, faArrowTurnDown,
   faArrowUp, faArrowDown, faArrowLeft, faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
@@ -16,7 +16,6 @@ import { toast } from "../../../lib/toast";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
 import { refreshTokenCss } from "../../../lib/liveStyle";
-import { useTheme } from "../../../hooks/useTheme";
 import { StyleHistoryList } from "../components/StyleHistoryList";
 import {
   HEARTH_DEFAULT_TOKENS,
@@ -45,7 +44,6 @@ import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/con
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
-type Mode = "light" | "dark";
 type Tab = "tokens" | "branding" | "css" | "history";
 
 interface StyleDraft {
@@ -154,18 +152,18 @@ type Origin = "own" | "global" | "theme" | "inherited";
  * rather than to stock Xentium.
  */
 function inheritedValue(
-  cssVar: string, mode: Mode, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
+  cssVar: string, globalBucket: TokenMap, themeBuckets: ScopedTokens, scope: ThemeScope,
 ): { value: string; origin: Origin; from?: string } {
   const fromTheme = themeBuckets[scope]?.[cssVar] ?? themeBuckets.global?.[cssVar];
   if (fromTheme !== undefined) return { value: fromTheme, origin: "theme" };
-  const def = (DEFAULTS[mode] as TokenMap)[cssVar];
+  const def = DEFAULTS[cssVar];
   if (def !== undefined) {
     const own = globalBucket[cssVar];
     return own !== undefined ? { value: own, origin: "global" } : { value: def, origin: "inherited" };
   }
   const reg: TokenDef | undefined = TOKEN_BY_VAR[cssVar];
   if (reg?.inheritsFrom) {
-    const up = inheritedValue(reg.inheritsFrom, mode, globalBucket, themeBuckets, scope);
+    const up = inheritedValue(reg.inheritsFrom, globalBucket, themeBuckets, scope);
     // The chain names the token this one falls back to, not wherever that one
     // ultimately resolved — "--btn-bg ← --c-accent" is what an admin can act on.
     return { value: up.value, origin: up.origin === "own" ? "inherited" : up.origin, from: reg.inheritsFrom };
@@ -200,9 +198,6 @@ function sectionVars(section: Section): string[] {
 export function StyleEditorPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [mode, setMode] = useState<Mode>(
-    () => (typeof document !== "undefined" && document.documentElement.dataset.theme === "dark" ? "dark" : "light"),
-  );
   // The tab lives in the URL so it can be linked and survives a refresh — and so
   // the retired `/admin/style-history` route can redirect straight to History
   // rather than dropping you on Tokens.
@@ -225,7 +220,6 @@ export function StyleEditorPage() {
   const [hotspots, setHotspots] = useState(false);
   const [jumpOpen, setJumpOpen] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
-  const { theme: viewedTheme } = useTheme();
 
   const [tokens, setTokens] = useState<ScopedTokenSet | null>(null);
   const initialised = useRef(false);
@@ -234,11 +228,13 @@ export function StyleEditorPage() {
   const [fontWeight, setFontWeight] = useState<string>("400");
   const [fontSize,   setFontSize]   = useState<string>("16");
 
-  // ── Custom CSS console (per theme) ──────────────────────────────────────────
-  const [customCss, setCustomCss]           = useState<Record<Mode, string>>({ light: "", dark: "" });
-  const [customCssSaved, setCustomCssSaved] = useState<Record<Mode, string>>({ light: "", dark: "" });
-  const activeCss = customCss[viewedTheme];
-  const customDirty = customCss.light !== customCssSaved.light || customCss.dark !== customCssSaved.dark;
+  // ── Custom CSS console ──────────────────────────────────────────────────────
+  // ONE stylesheet. It used to be a pair keyed by scheme, and the only thing that
+  // second sheet could express was "when the visitor's OS asks for dark" — a question
+  // this site no longer answers, because a dark site is a dark THEME.
+  const [customCss, setCustomCss]           = useState("");
+  const [customCssSaved, setCustomCssSaved] = useState("");
+  const customDirty = customCss !== customCssSaved;
 
   /**
    * The installed theme's own stylesheet, which sits UNDER this editor's content.
@@ -248,14 +244,13 @@ export function StyleEditorPage() {
    * own and the next theme update would have nothing left to inherit. Same rule, and the
    * same reason, as the token editor's `theme` field.
    */
-  const [themeCss, setThemeCss] = useState<Record<Mode, string>>({ light: "", dark: "" });
+  const [themeCss, setThemeCss] = useState("");
 
   useEffect(() => {
-    api.get<{ light?: string; dark?: string; theme?: { light?: string; dark?: string } }>("/appearance/custom-css")
+    api.get<{ css?: string; theme?: string }>("/appearance/custom-css")
       .then((r) => {
-        const next = { light: r?.light ?? "", dark: r?.dark ?? "" };
-        setCustomCss(next); setCustomCssSaved(next);
-        setThemeCss({ light: r?.theme?.light ?? "", dark: r?.theme?.dark ?? "" });
+        setCustomCss(r?.css ?? ""); setCustomCssSaved(r?.css ?? "");
+        setThemeCss(r?.theme ?? "");
       })
       .catch(() => {});
   }, []);
@@ -263,15 +258,15 @@ export function StyleEditorPage() {
   const [cssPreview, setCssPreview] = useState("");
   useEffect(() => {
     const id = setTimeout(() => {
-      api.post<{ css: string }>("/appearance/custom-css/preview", { css: activeCss, theme: viewedTheme })
+      api.post<{ css: string }>("/appearance/custom-css/preview", { css: customCss })
         .then((r) => setCssPreview(r?.css ?? ""))
         .catch(() => setCssPreview(""));
     }, 300);
     return () => clearTimeout(id);
-  }, [activeCss, viewedTheme]);
+  }, [customCss]);
 
   const saveCustomCssMut = useMutation({
-    mutationFn: () => api.put("/appearance/custom-css", { light: customCss.light, dark: customCss.dark }),
+    mutationFn: () => api.put("/appearance/custom-css", { css: customCss }),
     onSuccess: async () => {
       setCustomCssSaved(customCss);
       await refreshTokenCss();
@@ -284,7 +279,7 @@ export function StyleEditorPage() {
   // ── Autosave baseline ───────────────────────────────────────────────────────
   const [fontsLoaded, setFontsLoaded] = useState(false);
   const [savedSnap, setSavedSnap]     = useState<StyleDraft | undefined>(undefined);
-  const draft: StyleDraft = { tokens: tokens ?? { light: {}, dark: {} }, fontFamily, fontWeight, fontSize };
+  const draft: StyleDraft = { tokens: tokens ?? {}, fontFamily, fontWeight, fontSize };
   const draftRef = useRef(draft);
   draftRef.current = draft;
 
@@ -354,7 +349,8 @@ export function StyleEditorPage() {
   });
 
   // ── Token data (sparse scoped overrides) ────────────────────────────────────
-  const { data: saved, isLoading } = useQuery<ScopedTokenSet & {
+  const { data: saved, isLoading } = useQuery<{
+    tokens?: ScopedTokenSet;
     theme?: ScopedTokenSet;
     installedTheme?: { name?: string; version?: string } | null;
   }>({
@@ -369,7 +365,7 @@ export function StyleEditorPage() {
       initialised.current = true;
       // Stored sparse exactly as saved — do NOT merge defaults, or every token would
       // become an "override" and inheritance/sparse-storage would break.
-      setTokens({ light: saved.light ?? {}, dark: saved.dark ?? {} });
+      setTokens(saved.tokens ?? {});
     }
   }, [saved]);
 
@@ -397,7 +393,7 @@ export function StyleEditorPage() {
       // wrote that stale font back over whoever changed it since. Tokens are one
       // setting holding the whole sparse draft, so that one is written whole.
       const snap = savedSnap;
-      const writes: Promise<unknown>[] = [api.put("/appearance/tokens", tokens)];
+      const writes: Promise<unknown>[] = [api.put("/appearance/tokens", { tokens })];
       if (snap?.fontFamily !== fontFamily) writes.push(api.put(`/admin/settings/${FONT_SETTING_KEY}`,    { value: fontFamily }));
       if (snap?.fontSize   !== fontSize)   writes.push(api.put(`/admin/settings/${FSIZE_SETTING_KEY}`,   { value: fontSize   }));
       if (snap?.fontWeight !== fontWeight) writes.push(api.put(`/admin/settings/${FWEIGHT_SETTING_KEY}`, { value: fontWeight }));
@@ -437,10 +433,10 @@ export function StyleEditorPage() {
   const resetMut = useMutation({
     mutationFn: () => api.post("/appearance/reset", {}),
     onSuccess: async () => {
-      const empty: ScopedTokenSet = { light: {}, dark: {} };
+      const empty: ScopedTokenSet = {};
       setTokens(empty);
       setFontFamily(FONTS[0]); setFontSize("16"); setFontWeight("400");
-      setCustomCss({ light: "", dark: "" }); setCustomCssSaved({ light: "", dark: "" });
+      setCustomCss(""); setCustomCssSaved("");
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
       await refreshTokenCss();
       setSavedSnap({ tokens: empty, fontFamily: FONTS[0], fontSize: "16", fontWeight: "400" });
@@ -462,9 +458,9 @@ export function StyleEditorPage() {
   if (isLoading || !tokens) return <div className="acp-card acp-empty">{t("styleEditor.loading")}</div>;
 
   const section = SECTION_BY_ID[sectionId] ?? SECTIONS[0]!;
-  const globalBucket = tokens[mode].global ?? {};
+  const globalBucket = tokens.global ?? {};
   /** What the installed theme defines — the layer under the admin's own edits. */
-  const themeBuckets: ScopedTokens = themeTokens?.[mode] ?? {};
+  const themeBuckets: ScopedTokens = themeTokens ?? {};
 
   // The scope a section edits: regions + palette → global; components → the picker.
   //
@@ -493,45 +489,45 @@ export function StyleEditorPage() {
   }
 
   function bucketHas(s: ThemeScope, cssVar: string): boolean {
-    return !!(tokens![mode][s] && cssVar in tokens![mode][s]!);
+    return !!(tokens![s] && cssVar in tokens![s]!);
   }
   function setOverride(s: ThemeScope, cssVar: string, value: string) {
     setTokens((prev) => {
       if (!prev) return prev;
-      const buckets = { ...prev[mode] };
-      buckets[s] = { ...(buckets[s] ?? {}), [cssVar]: value };
-      return { ...prev, [mode]: buckets };
+      return { ...prev, [s]: { ...(prev[s] ?? {}), [cssVar]: value } };
     });
   }
   function clearOverride(s: ThemeScope, cssVar: string) {
     setTokens((prev) => {
       if (!prev) return prev;
-      const buckets = { ...prev[mode] };
-      const b = { ...(buckets[s] ?? {}) };
+      const next = { ...prev };
+      const b = { ...(next[s] ?? {}) };
       delete b[cssVar];
-      if (Object.keys(b).length) buckets[s] = b; else delete buckets[s];
-      return { ...prev, [mode]: buckets };
+      // An empty bucket is DELETED, not kept: "pending" is a stringify comparison, so
+      // a `{}` left behind reads as an unsaved change forever.
+      if (Object.keys(b).length) next[s] = b; else delete next[s];
+      return next;
     });
   }
 
   // Resolved value + where it came from, at the active scope.
   function display(cssVar: string, atScope: ThemeScope = effScope): { value: string; origin: Origin; from?: string } {
-    if (bucketHas(atScope, cssVar)) return { value: tokens![mode][atScope]![cssVar]!, origin: "own" };
+    if (bucketHas(atScope, cssVar)) return { value: tokens![atScope]![cssVar]!, origin: "own" };
     // A component token in a region scope falls back to its global override, then base.
     if (atScope !== "global" && cssVar in globalBucket) return { value: globalBucket[cssVar]!, origin: "global" };
-    return inheritedValue(cssVar, mode, globalBucket, themeBuckets, atScope);
+    return inheritedValue(cssVar, globalBucket, themeBuckets, atScope);
   }
 
   // ── Live preview CSS (scoped, mirrors the served stylesheet) ─────────────────
   const previewCss = (() => {
     // Theme first, admin on top — the same order `buildCSS` serves, so the preview cannot
     // show a site that has no theme installed when it does.
-    const themeScoped: ScopedTokens = themeTokens?.[mode] ?? {};
-    const scoped: ScopedTokens = { ...themeScoped, ...tokens[mode] };
+    const themeScoped: ScopedTokens = themeTokens ?? {};
+    const scoped: ScopedTokens = { ...themeScoped, ...tokens };
     for (const key of Object.keys(themeScoped)) {
-      if (tokens[mode][key]) scoped[key] = { ...themeScoped[key], ...tokens[mode][key] };
+      if (tokens[key]) scoped[key] = { ...themeScoped[key], ...tokens[key] };
     }
-    const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss[mode]) };
+    const globalVars = { ...(scoped.global ?? {}), ...extractRootVars(customCss) };
     const blocks: string[] = [];
     // The font comes from the SAME builders the API serves with (@xentium/contracts),
     // so the preview cannot render a font the site will not. It previously hand-rolled
@@ -559,23 +555,16 @@ export function StyleEditorPage() {
   })();
 
   // ── Draft accounting ────────────────────────────────────────────────────────
-  // Counted per mode so the switch can say there is work waiting on the side you
-  // are not looking at.
-  const countMode = (m: Mode) =>
-    Object.values(tokens![m]).reduce((n, bucket) => n + Object.keys(bucket ?? {}).length, 0);
-  const lightCount = countMode("light");
-  const darkCount  = countMode("dark");
-  const totalCount = lightCount + darkCount;
+  const totalCount = Object.values(tokens)
+    .reduce((n, bucket) => n + Object.keys(bucket ?? {}).length, 0);
 
-  const diffRows = (["light", "dark"] as const).flatMap((m) =>
-    Object.entries(tokens![m]).flatMap(([sc, bucket]) =>
-      Object.entries(bucket ?? {}).map(([cssVar, value]) => ({
-        key: `${m}|${sc}|${cssVar}`,
-        label: tokenLabel(cssVar, t),
-        where: `${t(SCOPE_LABEL[sc] ?? sc)} · ${t("styleEditor.mode_" + m)}`,
-        value,
-      })),
-    ),
+  const diffRows = Object.entries(tokens).flatMap(([sc, bucket]) =>
+    Object.entries(bucket ?? {}).map(([cssVar, value]) => ({
+      key: `${sc}|${cssVar}`,
+      label: tokenLabel(cssVar, t),
+      where: t(SCOPE_LABEL[sc] ?? sc),
+      value,
+    })),
   );
 
   // Rows for the active section.
@@ -616,23 +605,9 @@ export function StyleEditorPage() {
           </div>
 
           <div className="se-actions__row">
-            {/* Only the Tokens tab reads `mode`. Branding has no per-theme values, and
-                the Custom CSS console follows the ACP's OWN theme (`viewedTheme`), so
-                the switch would be a control that does nothing on either. */}
-            {tab === "tokens" && (
-              <>
-                <div className="se-modes">
-                  {(["light", "dark"] as const).map((m) => (
-                    <button key={m} type="button" className={`se-mode${mode === m ? " is-on" : ""}`} onClick={() => setMode(m)}>
-                      <FontAwesomeIcon icon={m === "light" ? faSun : faMoon} />
-                      {m === "light" ? t("styleEditor.modeLight") : t("styleEditor.modeDark")}
-                      <span className="se-mode__n">{m === "light" ? lightCount : darkCount}</span>
-                    </button>
-                  ))}
-                </div>
-                <span className="se-sep" />
-              </>
-            )}
+            {/* The light/dark switch used to live here. A site has ONE look now — the
+                editor edits that one palette, and a site that wants to be dark installs
+                a dark theme. */}
 
             <button type="button" className="btn-ghost se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
               <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
@@ -745,7 +720,6 @@ export function StyleEditorPage() {
           {/* ── Canvas + inspector ───────────────────────────────────────────── */}
           <div className="se-work">
             <PreviewFrame
-              mode={mode}
               css={previewCss}
               extraCss={cssPreview}
               activeGroup={section.id}
@@ -829,7 +803,6 @@ export function StyleEditorPage() {
                         : def?.control === "size" ? "size" : "color"}
                       min={def?.min}
                       max={def?.max}
-                      mode={mode}
                       onChange={(v) => setOverride(effScope, cssVar, v)}
                       onReset={() => clearOverride(effScope, cssVar)}
                     />
@@ -856,7 +829,7 @@ export function StyleEditorPage() {
 
               <div className="se-insp__foot">
                 <span className="se-insp__summary">
-                  {t("styleEditor.setHere", { set: setHere, total: rowVars.length, mode: t("styleEditor.mode_" + mode) })}
+                  {t("styleEditor.setHere", { set: setHere, total: rowVars.length })}
                 </span>
                 {setHere > 0 && (
                   <button type="button" className="se-insp__revert"
@@ -954,15 +927,12 @@ export function StyleEditorPage() {
           <div className="se-css__card">
             <div className="se-css__head">
               <div>
-                <div className="se-css__title">
-                  {t("styleEditor.secCustomCss")}
-                  <span>· {t("styleEditor.themeSuffix", { theme: t("styleEditor.mode_" + viewedTheme) })}</span>
-                </div>
+                <div className="se-css__title">{t("styleEditor.secCustomCss")}</div>
                 <p className="se-css__sub">{t("styleEditor.cssIntro")}</p>
                 {/* Without this the inheritance is invisible: an admin sees an empty
                     textarea and concludes the site has no custom CSS, while a theme's
                     stylesheet is on every page. */}
-                {themeCss[viewedTheme].trim() && (
+                {themeCss.trim() && (
                   <p className="se-css__sub">{t("styleEditor.cssThemeLayer")}</p>
                 )}
               </div>
@@ -972,15 +942,14 @@ export function StyleEditorPage() {
             </div>
             <textarea
               className="se-css__ta"
-              value={activeCss}
+              value={customCss}
               spellCheck={false}
-              onChange={(e) => setCustomCss((p) => ({ ...p, [viewedTheme]: e.target.value }))}
+              onChange={(e) => setCustomCss(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Tab") {
                   e.preventDefault();
                   const el = e.currentTarget; const s = el.selectionStart, end = el.selectionEnd;
-                  const next = activeCss.slice(0, s) + "  " + activeCss.slice(end);
-                  setCustomCss((p) => ({ ...p, [viewedTheme]: next }));
+                  setCustomCss(customCss.slice(0, s) + "  " + customCss.slice(end));
                   requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 2; });
                 }
               }}
@@ -988,7 +957,7 @@ export function StyleEditorPage() {
             />
             <div className="se-css__meta">
               <span>{customDirty ? t("styleEditor.unsaved") : t("styleEditor.saved")}</span>
-              <span>{t("styleEditor.charCount", { count: activeCss.length.toLocaleString() })}</span>
+              <span>{t("styleEditor.charCount", { count: customCss.length.toLocaleString() })}</span>
             </div>
           </div>
 
@@ -999,7 +968,7 @@ export function StyleEditorPage() {
             <div className="se-css__title" style={{ marginBottom: 10 }}>{t("styleEditor.cssShadowTitle")}</div>
             <p className="se-css__sub" style={{ marginBottom: 14 }}>{t("styleEditor.cssShadowBody")}</p>
             {(() => {
-              const vars = Object.entries(extractRootVars(activeCss));
+              const vars = Object.entries(extractRootVars(customCss));
               if (vars.length === 0) return <p className="se-css__sub">{t("styleEditor.cssShadowNone")}</p>;
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -1024,9 +993,9 @@ export function StyleEditorPage() {
 
 // ── Token row ───────────────────────────────────────────────────────────────────
 
-function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, max, mode, onChange, onReset }: {
+function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, max, onChange, onReset }: {
   label: string; cssVar: string; value: string; origin: Origin; inheritsFrom?: string;
-  control: "color" | "radius" | "shadow" | "size"; mode: Mode;
+  control: "color" | "radius" | "shadow" | "size";
   /** `size` only — the slider's ends, from the token's registry entry. */
   min?: number; max?: number;
   onChange: (v: string) => void; onReset: () => void;
@@ -1084,7 +1053,7 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, ma
         )}
       </div>
 
-      {control === "shadow" && <ShadowControl value={value} mode={mode} onChange={onChange} />}
+      {control === "shadow" && <ShadowControl value={value} onChange={onChange} />}
 
       <div className="se-row__foot">
         <span className="se-row__chain">
@@ -1112,8 +1081,8 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, ma
 // Custom resolves that reference to real numbers ONCE, which is the moment the
 // value stops tracking the theme — and the panel is on screen saying so.
 
-function ShadowControl({ value, mode, onChange }: {
-  value: string; mode: Mode; onChange: (v: string) => void;
+function ShadowControl({ value, onChange }: {
+  value: string; onChange: (v: string) => void;
 }) {
   const { t } = useTranslation("acp");
   const parsed = parseShadow(value);
@@ -1122,7 +1091,7 @@ function ShadowControl({ value, mode, onChange }: {
   // seeds from the preset it currently is, so opening Custom starts where you were
   // rather than at zero.
   const seed: ShadowParts = parsed.kind === "custom" ? parsed.parts
-    : SHADOW_SEED[mode][parsed.kind === "strong" ? "strong" : "soft"];
+    : SHADOW_SEED[parsed.kind === "strong" ? "strong" : "soft"];
 
   const set = (patch: Partial<ShadowParts>) => onChange(formatShadow({ ...seed, ...patch }));
 
@@ -1266,8 +1235,8 @@ export function previewOverlayRules({ activeGroup, hotspots, previewState }: {
   return rules.join("\n");
 }
 
-function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick }: {
-  mode: Mode; css: string; extraCss: string; activeGroup?: string;
+function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick }: {
+  css: string; extraCss: string; activeGroup?: string;
   hotspots: boolean; setHotspots: (v: boolean) => void;
   previewState: PreviewState; setPreviewState: (s: PreviewState) => void;
   onPick: (group: string, scope: string) => void;
@@ -1285,7 +1254,6 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots,
     const apply = () => {
       const doc = iframe.contentDocument;
       if (!doc || !doc.head) return;
-      doc.documentElement.setAttribute("data-theme", mode);
 
       let tok = doc.getElementById("xentium-preview-tokens") as HTMLStyleElement | null;
       if (!tok) { tok = doc.createElement("style"); tok.id = "xentium-preview-tokens"; doc.head.appendChild(tok); }
@@ -1303,7 +1271,7 @@ function PreviewFrame({ mode, css, extraCss, activeGroup, hotspots, setHotspots,
     apply();
     iframe.addEventListener("load", apply);
     return () => iframe.removeEventListener("load", apply);
-  }, [mode, css, extraCss, activeGroup, previewState, hotspots]);
+  }, [css, extraCss, activeGroup, previewState, hotspots]);
 
   // Capture-phase click-to-select on the iframe document (attached once per load).
   useEffect(() => {
