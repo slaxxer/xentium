@@ -201,13 +201,39 @@ describe("the site chrome", () => {
     expect(band.props.backgroundGradient).toHaveLength(2);
   });
 
-  it("ships the navbar with the same items as before", () => {
+  it("ships the navbar without a light/dark toggle", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
     const navbar = doc.regions.header!.find((b) => b.type === "navbar")!;
     expect(navbar.children!.map((c) => c.type)).toEqual([
-      "logo", "navLinks", "search", "themeToggle", "headerWidgets",
+      "logo", "navLinks", "search", "headerWidgets",
       "notifications", "adminLink", "userMenu",
     ]);
+  });
+
+  /**
+   * ⚠ The type still PARSES. A site that placed the old toggle in its header has
+   * that node in a saved document, and parsing has to keep succeeding or the whole
+   * header falls back to the code default and the admin loses their arrangement.
+   * Nothing renders it — an unregistered type is skipped — so the control is gone
+   * from the page while the document survives intact.
+   */
+  it("still parses a saved header that placed the old toggle", () => {
+    const base = DEFAULT_LAYOUTS["chrome.header"];
+    const navbar = base.regions.header!.find((b) => b.type === "navbar")!;
+    const withToggle = {
+      ...base,
+      regions: {
+        header: base.regions.header!.map((b) =>
+          b.type === "navbar"
+            ? { ...b, children: [...navbar.children!, { id: "h-theme", type: "themeToggle", props: {} }] }
+            : b),
+      },
+    };
+
+    const parsed = parseLayoutDocument("chrome.header", withToggle);
+    expect(parsed.usedDefault).toBe(false);
+    const parsedNav = parsed.document.regions.header!.find((b) => b.type === "navbar")!;
+    expect(parsedNav.children!.map((c) => c.type)).toContain("themeToggle");
   });
 
   it("takes the navbar ABOVE the band, which is the other arrangement", () => {
