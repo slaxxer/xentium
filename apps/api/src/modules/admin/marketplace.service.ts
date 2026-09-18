@@ -492,6 +492,10 @@ export const marketplaceService = {
       assetsImported:   report.assetsImported,
       customCssApplied: report.customCssApplied,
       replaced:         report.replaced,
+      // Whether the site now WEARS it. Installing is not switching: anything but an
+      // update to the active theme waits in the library for the admin's answer.
+      activated:        report.activated,
+      current:          report.current,
     };
   },
 

@@ -11,9 +11,10 @@ import { blocksThisSiteCannotDraw } from "../../../layout/themeFootprint";
  * they cannot drift; it had already drifted once, with the Licence panel reporting
  * a plugin install for a theme.
  *
- * Fact one: a theme import lands in the appearance DRAFT. Nothing changes for
- * visitors until someone publishes, and an admin who installs a theme and sees the
- * site unchanged is looking at correct behaviour nobody told them about.
+ * Fact one: whether the site now WEARS it. Only an update to the active theme is
+ * applied on install; anything else waits in the library and the switch prompt
+ * (`themeSwitchPrompt.tsx`) asks. An admin who installs a theme and sees the site
+ * unchanged is looking at correct behaviour, and has to be told so.
  *
  * Fact two: what will not appear. That is NOT simply the import report's lists —
  * see below, it is the reason this function is not three lines.
@@ -31,7 +32,9 @@ export function themeInstallMessage(
    *  a job that never reached its `done` frame has none. */
   final: ProgressEvent | null | undefined,
 ): string {
-  const staged = t("marketplace.themeStaged", { name });
+  const staged = final?.activated === false
+    ? t("marketplace.themeInstalled", { name })
+    : t("marketplace.themeStaged", { name });
 
   const list = (value: unknown): string[] => (Array.isArray(value) ? value as string[] : []);
 

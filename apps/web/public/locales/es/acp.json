@@ -1195,7 +1195,7 @@
     "searchThemesPlaceholder": "Buscar temas…",
     "themeDraftNote": "Instalar un tema lo aplica de inmediato: tus páginas toman su disposición y colores, y los visitantes lo ven al instante.",
     "themeGoManage": "Ir a Temas",
-    "themeInstalled": "Instalado",
+    "themeInstalled": "{{name}} está instalado.",
     "themeStaged": "{{name}} ya es el tema activo.",
     "themeGapsTitle": "{{count}} elemento que este sitio no puede dibujar",
     "themeGapsTitle_other": "{{count}} elementos que este sitio no puede dibujar",
@@ -2188,7 +2188,17 @@
     "libraryActive": "Activo",
     "libraryActivate": "Activar",
     "activated": "{{name}} ya es el tema activo.",
-    "removed": "Tema eliminado."
+    "removed": "Tema eliminado.",
+    "switchTitle": "¿Cambiar a {{name}}?",
+    "switchBody": "{{name}} está instalado. ¿Aplicarlo al sitio ahora o mantener {{current}}? Puedes cambiar cuando quieras en Apariencia → Temas.",
+    "switchBodyStock": "{{name}} está instalado. ¿Aplicarlo al sitio ahora o mantener el aspecto predeterminado? Puedes cambiar cuando quieras en Apariencia → Temas.",
+    "switchBtn": "Cambiar a {{name}}",
+    "keepBtn": "Mantener {{name}}",
+    "keepStockBtn": "Mantener el aspecto predeterminado",
+    "keptInLibrary": "{{name}} está en tu biblioteca de temas; el sitio no ha cambiado.",
+    "lookDark": "Tema oscuro",
+    "lookLight": "Tema claro",
+    "reportInLibrary": "{{name}} se añadió a tu biblioteca. El sitio no cambia hasta que cambies a él."
   },
   "owned": {
     "title": "Tus licencias",
