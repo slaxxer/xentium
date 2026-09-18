@@ -12,7 +12,14 @@
 import { z } from 'zod';
 
 /** Bumped when the PACKAGE layout changes, independently of the layout schema. */
-export const THEME_PACKAGE_VERSION = 1;
+/**
+ * The package format's own version.
+ *
+ * 2 — a site has ONE look, so `tokens.json` is a single scoped map and the stylesheets
+ * collapsed from `light`/`dark` pairs to one of each. A version-1 package still
+ * installs: the importer reads the old names and keeps the light half.
+ */
+export const THEME_PACKAGE_VERSION = 2;
 
 /** Where a package keeps its files. */
 export const THEME_PATHS = {
@@ -20,13 +27,27 @@ export const THEME_PATHS = {
   /** Full scoped token set — the lossless one. */
   tokens: 'tokens.json',
   /** Global tokens as `:root` CSS. Kept so a `.xttheme` is still a `.xtstyle` superset. */
-  cssLight: 'styles/light.css',
-  cssDark: 'styles/dark.css',
+  css: 'styles/tokens.css',
   /** The admin's own stylesheet, scoped at build time on the importing site. */
-  customLight: 'styles/custom-light.css',
-  customDark: 'styles/custom-dark.css',
+  custom: 'styles/custom.css',
   layouts: 'layouts/',
   assets: 'assets/',
+} as const;
+
+/**
+ * What a package built before there was ONE look called those two files.
+ *
+ * Read on import, never written on export. A site has one palette now, so the LIGHT
+ * half is the half that survives: `:root` was already the light palette, and it is what
+ * a visitor rendered unless their OS asked otherwise. Dropping the dark file silently
+ * would be wrong — the importer reports it — but carrying it forward would mean
+ * reintroducing the second palette this format just stopped having.
+ */
+export const THEME_PATHS_LEGACY = {
+  cssLight: 'styles/light.css',
+  cssDark: 'styles/dark.css',
+  customLight: 'styles/custom-light.css',
+  customDark: 'styles/custom-dark.css',
 } as const;
 
 /**
@@ -68,6 +89,23 @@ export const themeManifestSchema = z.object({
   authorUrl: z.string().url().max(300).optional(),
   /** Asset-relative path to a preview image, e.g. `assets/screenshot.png`. */
   screenshot: z.string().max(300).optional(),
+
+  /**
+   * Whether the author built a DARK theme or a LIGHT one.
+   *
+   * A site has one look, so this is not a mode the theme offers — it is a fact about
+   * the theme, the way "serif" is a fact about a typeface. It exists because the one
+   * thing a buyer has to know before opening a preview is which of the two they are
+   * looking at, and a thumbnail on a storefront card is too small to say it reliably.
+   *
+   * Declared, not inferred. Guessing it from `--c-bg` works until a theme is
+   * mid-grey, sepia, or sets its background only in custom CSS — and a card that is
+   * confidently wrong about this is worse than a card that does not say.
+   *
+   * Defaults to `light`, which is what stock Xentium is and therefore what a theme
+   * that says nothing is built on top of.
+   */
+  appearance: z.enum(['light', 'dark']).default('light'),
 });
 
 export type ThemeManifest = z.infer<typeof themeManifestSchema>;

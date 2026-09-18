@@ -144,11 +144,9 @@ describe("shadowValueFor", () => {
 
 describe("seeds", () => {
   it("round-trips every seed, so opening Custom never rewrites what it shows", () => {
-    for (const mode of ["light", "dark"] as const) {
-      for (const kind of ["soft", "strong"] as const) {
-        const parts = SHADOW_SEED[mode][kind];
-        expect(parseShadow(formatShadow(parts))).toEqual({ kind: "custom", parts });
-      }
+    for (const kind of ["soft", "strong"] as const) {
+      const parts = SHADOW_SEED[kind];
+      expect(parseShadow(formatShadow(parts))).toEqual({ kind: "custom", parts });
     }
   });
 });

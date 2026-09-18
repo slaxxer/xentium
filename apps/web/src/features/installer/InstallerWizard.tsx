@@ -11,8 +11,6 @@ import {
   faArrowRight,
   faRocket,
   faPlug,
-  faSun,
-  faMoon,
   faComments,
   faMagnifyingGlass,
   faMobileScreen,
@@ -27,7 +25,6 @@ import {
   faAngleDown
 } from "@fortawesome/free-solid-svg-icons";
 import { installerApi } from "./installer.api.js";
-import { useTheme } from "../../hooks/useTheme.js";
 import "../../styles/installer.scss";
 
 const STEPS_KEYS = ["welcome", "environment", "database", "site", "admin", "finalize", "done"];
@@ -85,7 +82,6 @@ function passwordStrength(pw: string) {
 
 export function InstallerWizard() {
   const { t } = useTranslation("installer");
-  const { theme, toggle } = useTheme();
   const [step, setStep] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
 
@@ -399,9 +395,10 @@ export function InstallerWizard() {
                 <option value="pt">Português</option>
               </select>
             </div>
-            <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme">
-              <FontAwesomeIcon icon={theme === "light" ? faMoon : faSun} />
-            </button>
+            {/* The light/dark toggle stood here. The installer borrows the site's
+                palette (`installer.scss` aliases `--c-bg` and friends), and a site has
+                ONE look now — so the button changed nothing. A site that wants to be
+                dark installs a dark theme. */}
           </div>
         </header>
 

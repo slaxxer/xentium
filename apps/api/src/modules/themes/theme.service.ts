@@ -34,6 +34,7 @@ import {
   THEME_ASSET_MIME,
   THEME_PACKAGE_VERSION,
   THEME_PATHS,
+  THEME_PATHS_LEGACY,
   scopedTokenSetSchema,
   type ThemeManifest,
   layoutDocumentSchema,
@@ -168,7 +169,8 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
 
   const hasThemeParts = zip.getEntries().some((e) =>
     e.entryName.startsWith(THEME_PATHS.layouts) || e.entryName === THEME_PATHS.tokens);
-  const hasStyles = !!zip.getEntry(THEME_PATHS.cssLight) || !!zip.getEntry(THEME_PATHS.cssDark);
+  const hasStyles = !!zip.getEntry(THEME_PATHS.css)
+    || !!zip.getEntry(THEME_PATHS_LEGACY.cssLight) || !!zip.getEntry(THEME_PATHS_LEGACY.cssDark);
   if (hasThemeParts || !hasStyles) return raw;
 
   const name = typeof m.name === "string" && m.name.trim() ? m.name.trim() : "Imported style";
@@ -224,6 +226,15 @@ export interface ImportReport {
   /** Non-fatal: blocks the package references that this install cannot render.
    *  They are kept in the document so enabling the plugin later restores them. */
   unknownBlocks: string[];
+  /**
+   * Non-fatal: files a pre-collapse package shipped that a site with ONE look has
+   * nowhere to put — its dark palette and its dark stylesheet.
+   *
+   * Reported rather than dropped in silence, because "I exported a theme with a dark
+   * mode and importing it lost half of it" deserves a sentence, not a mystery. The
+   * light half is taken; see `THEME_PATHS_LEGACY`.
+   */
+  ignoredFiles: string[];
 }
 
 /** Read a file out of the uploads dir, or null if it is not there. */
@@ -355,7 +366,12 @@ export const themeService = {
    */
   async exportTheme(
     meta: Pick<ThemeManifestInput, "id" | "name" | "version" | "vendor" | "description"
-      | "license" | "homepage" | "authorUrl">,
+      | "license" | "homepage" | "authorUrl">
+      // DECLARED by the exporting admin, never inferred from the tokens: guessing it
+      // from `--c-bg` works until a palette is mid-grey, sepia, or sets its background
+      // only in custom CSS, and a storefront card that is confidently wrong about this
+      // is worse than one that does not say. Absent = the schema's default, `light`.
+      & Partial<Pick<ThemeManifestInput, "appearance">>,
     opts: { tokensOnly?: boolean; screenshot?: Buffer } = {},
   ): Promise<Buffer> {
     /**
@@ -410,10 +426,9 @@ export const themeService = {
           appearanceService.getCustomCss(),
           appearanceService.getThemeCustomCss(),
         ]);
-        return {
-          light: [theme.light, admin.light].filter((c) => c.trim()).join("\n\n"),
-          dark:  [theme.dark,  admin.dark ].filter((c) => c.trim()).join("\n\n"),
-        };
+        // Theme layer first, admin second — the same order the site serves them in, so
+        // an export of a customised theme keeps the customisation winning.
+        return [theme, admin].filter((c) => c.trim()).join("\n\n");
       })(),
     ]);
 
@@ -478,12 +493,12 @@ export const themeService = {
 
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` is the lossless one: the FULL scoped set, including the region
-    // scopes (ADR-0003) that the two CSS files cannot express and that this export
-    // silently dropped before. The CSS files stay so a `.xttheme` remains a strict
-    // `.xtstyle` superset, and an importer prefers the JSON when both are present.
+    // scopes (ADR-0003) that the CSS file cannot express. The CSS stays so a `.xttheme`
+    // remains a strict `.xtstyle` superset, and an importer prefers the JSON when both
+    // are present. ONE of each now — the pre-collapse pair only ever existed to answer
+    // `prefers-color-scheme`, and nothing asks.
     zip.addFile(THEME_PATHS.tokens, Buffer.from(JSON.stringify(tokens, null, 2), "utf8"));
-    zip.addFile(THEME_PATHS.cssLight, Buffer.from(renderTokens(tokens.light?.global ?? {}), "utf8"));
-    zip.addFile(THEME_PATHS.cssDark,  Buffer.from(renderTokens(tokens.dark?.global  ?? {}), "utf8"));
+    zip.addFile(THEME_PATHS.css, Buffer.from(renderTokens(tokens.global ?? {}), "utf8"));
 
     // ── Custom CSS ────────────────────────────────────────────────────────
     // The escape hatch for a look the tokens cannot express. Stored raw and scoped by
@@ -513,13 +528,9 @@ export const themeService = {
       });
     };
 
-    const packedLight = await packCss(customCss.light);
-    const packedDark  = await packCss(customCss.dark);
-    if (packedLight.trim()) {
-      zip.addFile(THEME_PATHS.customLight, Buffer.from(packedLight, "utf8"));
-    }
-    if (packedDark.trim()) {
-      zip.addFile(THEME_PATHS.customDark, Buffer.from(packedDark, "utf8"));
+    const packedCustom = await packCss(customCss);
+    if (packedCustom.trim()) {
+      zip.addFile(THEME_PATHS.custom, Buffer.from(packedCustom, "utf8"));
     }
 
     zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify(manifest, null, 2), "utf8"));
@@ -655,10 +666,23 @@ export const themeService = {
       if (!(key in documents)) unknownTemplates.push(key);
     }
 
+    // Files a pre-collapse package carries that a one-look site cannot use. Collected,
+    // not thrown — an old theme still installs, it just installs as one palette.
+    const ignoredFiles: string[] = [];
+
+    const readCss = (p: string) => {
+      const entry = zip.getEntry(p);
+      return entry ? readText(entry, p) : "";
+    };
+
     // ── Tokens ────────────────────────────────────────────────────────────
     // `tokens.json` wins when present: it is the only file that can express the region
-    // scopes. The CSS pair remains the fallback, which is what a hand-written
-    // `.xtstyle` ships and all this format could read before.
+    // scopes. The CSS file remains the fallback, which is what a hand-written `.xtstyle`
+    // ships and all this format could read before.
+    //
+    // A pre-collapse package is read through the same door: its `tokens.json` is a
+    // `{light, dark}` pair and its styles are two files, and in both cases the LIGHT
+    // half is the one a one-look site keeps.
     let tokens: ScopedTokenSet | null = null;
     const tokensEntry = zip.getEntry(THEME_PATHS.tokens);
     if (tokensEntry) {
@@ -669,20 +693,31 @@ export const themeService = {
       } catch {
         throw themeError(`${THEME_PATHS.tokens} is not valid JSON`);
       }
-      const parsed = scopedTokenSetSchema.safeParse(json);
+      // `light`/`dark` are not scope names, so finding one at the top level identifies
+      // the older shape unambiguously.
+      let candidate: unknown = json;
+      if (json && typeof json === "object" && !Array.isArray(json)
+          && ("light" in json || "dark" in json)) {
+        const pair = json as { light?: unknown; dark?: unknown };
+        candidate = pair.light ?? {};
+        if (pair.dark && Object.keys(pair.dark as object).length > 0) {
+          ignoredFiles.push(`${THEME_PATHS.tokens} (dark)`);
+        }
+      }
+      const parsed = scopedTokenSetSchema.safeParse(candidate);
       if (!parsed.success) {
         throw themeError(`${THEME_PATHS.tokens} is invalid: ${issueList(parsed.error)}`);
       }
       tokens = parsed.data;
     } else {
-      const lightEntry = zip.getEntry(THEME_PATHS.cssLight);
-      const darkEntry  = zip.getEntry(THEME_PATHS.cssDark);
-      if (lightEntry || darkEntry) {
-        const lightCss = lightEntry ? readText(lightEntry, THEME_PATHS.cssLight) : "";
-        const darkCss  = darkEntry  ? readText(darkEntry,  THEME_PATHS.cssDark)  : "";
-        assertTokenCss(lightCss, THEME_PATHS.cssLight);
-        assertTokenCss(darkCss,  THEME_PATHS.cssDark);
-        tokens = { light: { global: parseTokens(lightCss) }, dark: { global: parseTokens(darkCss) } };
+      const cssPath = zip.getEntry(THEME_PATHS.css) ? THEME_PATHS.css
+        : zip.getEntry(THEME_PATHS_LEGACY.cssLight) ? THEME_PATHS_LEGACY.cssLight
+        : null;
+      if (zip.getEntry(THEME_PATHS_LEGACY.cssDark)) ignoredFiles.push(THEME_PATHS_LEGACY.cssDark);
+      if (cssPath) {
+        const css = readText(zip.getEntry(cssPath)!, cssPath);
+        assertTokenCss(css, cssPath);
+        tokens = { global: parseTokens(css) };
       }
     }
 
@@ -690,12 +725,13 @@ export const themeService = {
     // Not `:root`-restricted — this is the escape hatch, and it is scoped by the
     // importing site the same way the console's own CSS is. Parsed here so a syntax
     // error is caught in this pass instead of by `saveCustomCss` mid-write.
-    const readCss = (p: string) => {
-      const entry = zip.getEntry(p);
-      return entry ? readText(entry, p) : "";
-    };
-    const customCss = { light: readCss(THEME_PATHS.customLight), dark: readCss(THEME_PATHS.customDark) };
-    const hasCustomCss = !!(customCss.light.trim() || customCss.dark.trim());
+    const customCss = zip.getEntry(THEME_PATHS.custom)
+      ? readCss(THEME_PATHS.custom)
+      : readCss(THEME_PATHS_LEGACY.customLight);
+    if (readCss(THEME_PATHS_LEGACY.customDark).trim()) {
+      ignoredFiles.push(THEME_PATHS_LEGACY.customDark);
+    }
+    const hasCustomCss = !!customCss.trim();
 
     const assets = await stageAssets(zip);
 
@@ -708,8 +744,7 @@ export const themeService = {
      * package's asset NAMES: the paths they will be stored at do not exist yet.
      */
     const packAssets = new Set(assets.map((a) => a.packName));
-    assertThemeCssSafe(customCss.light, THEME_PATHS.customLight, packAssets);
-    assertThemeCssSafe(customCss.dark,  THEME_PATHS.customDark,  packAssets);
+    assertThemeCssSafe(customCss, THEME_PATHS.custom, packAssets);
 
     if (Object.keys(documents).length === 0 && !tokens && !hasCustomCss) {
       throw themeError("Package contains no layouts and no styles");
@@ -747,9 +782,7 @@ export const themeService = {
     const payload: ThemePayload = {
       documents: documents as Record<string, LayoutDocument>,
       tokens:    tokens ?? null,
-      customCss: hasCustomCss
-        ? { light: rewriteCss(customCss.light), dark: rewriteCss(customCss.dark) }
-        : null,
+      customCss: hasCustomCss ? rewriteCss(customCss) : null,
     };
 
     // INSTALLED, then ACTIVE — two steps even though an import does both, because the
@@ -768,6 +801,7 @@ export const themeService = {
       customCssApplied: hasCustomCss,
       assetsImported: assets.length,
       unknownBlocks: [...unknownBlocks],
+      ignoredFiles,
     };
   },
 
@@ -923,11 +957,10 @@ export const themeService = {
       appearanceService.getThemeCustomCss(),
     ]);
 
-    const hasCss = !!(customCss.light || customCss.dark);
     await this.saveInstalledTheme(installed as Record<string, unknown>, {
       documents: documents as Record<string, LayoutDocument>,
       tokens:    tokens ?? null,
-      customCss: hasCss ? customCss : null,
+      customCss: customCss.trim() ? customCss : null,
     }, "");
   },
 
@@ -1064,5 +1097,5 @@ export const themeService = {
 export interface ThemePayload {
   documents: Record<string, LayoutDocument>;
   tokens:    ScopedTokenSet | null;
-  customCss: { light: string; dark: string } | null;
+  customCss: string | null;
 }

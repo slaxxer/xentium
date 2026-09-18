@@ -7,14 +7,9 @@
     "privacy": "Privatsphäre"
   },
   "preferences": {
-    "theme": "Design",
+    "theme": "Theme",
     "font": "Schriftart",
     "language": "Sprache",
-    "themes": {
-      "light": "Hell",
-      "dark": "Dunkel",
-      "system": "System"
-    },
     "reduceMotion": "Bewegung reduzieren",
     "reduceMotionDesc": "Animationen und Übergänge minimieren",
     "compactView": "Kompakte Ansicht",
