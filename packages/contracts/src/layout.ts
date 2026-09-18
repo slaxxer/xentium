@@ -1398,6 +1398,11 @@ export const blockPropSchemas = {
       .meta({ title: 'Always expanded', description: 'Otherwise the field opens when clicked.' }),
   }),
 
+  // ⚠ Kept although nothing renders it any more. A site has ONE look now — the
+  // theme its author built and its admin chose — so there is no light/dark to
+  // toggle. The schema stays because saved documents may still name this type and
+  // must keep PARSING; the renderer skips an unregistered type, which is what
+  // lets the control vanish without taking the rest of the header with it.
   themeToggle: z.object({}),
   notifications: z.object({}),
   adminLink: z.object({}),
@@ -1694,7 +1699,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
           node('h-logo', 'logo', { showWordmark: true }),
           node('h-nav', 'navLinks'),
           { ...node('h-search', 'search', { expanded: false }), align: 'right' as const },
-          { ...node('h-theme',   'themeToggle'),   align: 'right' as const },
           { ...node('h-widgets', 'headerWidgets'), align: 'right' as const },
           { ...node('h-notif',   'notifications'), align: 'right' as const },
           { ...node('h-admin',   'adminLink'),     align: 'right' as const },
