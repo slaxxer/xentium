@@ -1398,7 +1398,7 @@
     "searchThemesPlaceholder": "Search themes…",
     "themeDraftNote": "Installing a theme applies it straight away — your pages take its arrangement and colours, and visitors see it immediately.",
     "themeGoManage": "Go to Themes",
-    "themeInstalled": "Installed",
+    "themeInstalled": "{{name}} is installed.",
     "themeStaged": "{{name}} is now the active theme.",
     "themeGapsTitle": "{{count}} piece this site cannot draw",
     "themeGapsTitle_other": "{{count}} pieces this site cannot draw",
@@ -2466,7 +2466,17 @@
     "libraryActive": "Active",
     "libraryActivate": "Activate",
     "activated": "{{name}} is now the active theme.",
-    "removed": "Theme removed."
+    "removed": "Theme removed.",
+    "switchTitle": "Switch to {{name}}?",
+    "switchBody": "{{name}} is installed. Put it on the site now, or keep {{current}}? You can switch at any time from Appearance → Themes.",
+    "switchBodyStock": "{{name}} is installed. Put it on the site now, or keep the default look? You can switch at any time from Appearance → Themes.",
+    "switchBtn": "Switch to {{name}}",
+    "keepBtn": "Keep {{name}}",
+    "keepStockBtn": "Keep the default look",
+    "keptInLibrary": "{{name}} is in your theme library — the site is unchanged.",
+    "lookDark": "Dark theme",
+    "lookLight": "Light theme",
+    "reportInLibrary": "{{name}} was added to your library. The site is unchanged until you switch to it."
   },
   "owned": {
     "title": "Your licences",

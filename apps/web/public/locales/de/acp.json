@@ -1195,7 +1195,7 @@
     "searchThemesPlaceholder": "Themes durchsuchen…",
     "themeDraftNote": "Ein Theme wird sofort angewendet — deine Seiten übernehmen Aufbau und Farben, Besucher sehen es unmittelbar.",
     "themeGoManage": "Zu den Themes",
-    "themeInstalled": "Installiert",
+    "themeInstalled": "{{name}} ist installiert.",
     "themeStaged": "{{name}} ist jetzt das aktive Theme.",
     "themeGapsTitle": "{{count}} Element, das diese Seite nicht darstellen kann",
     "themeGapsTitle_other": "{{count}} Elemente, die diese Seite nicht darstellen kann",
@@ -2188,7 +2188,17 @@
     "libraryActive": "Aktiv",
     "libraryActivate": "Aktivieren",
     "activated": "{{name}} ist jetzt das aktive Theme.",
-    "removed": "Theme entfernt."
+    "removed": "Theme entfernt.",
+    "switchTitle": "Zu {{name}} wechseln?",
+    "switchBody": "{{name}} ist installiert. Jetzt auf der Seite verwenden oder {{current}} behalten? Wechseln kannst du jederzeit unter Darstellung → Themes.",
+    "switchBodyStock": "{{name}} ist installiert. Jetzt auf der Seite verwenden oder das Standard-Aussehen behalten? Wechseln kannst du jederzeit unter Darstellung → Themes.",
+    "switchBtn": "Zu {{name}} wechseln",
+    "keepBtn": "{{name}} behalten",
+    "keepStockBtn": "Standard-Aussehen behalten",
+    "keptInLibrary": "{{name}} liegt in deiner Theme-Bibliothek — die Seite bleibt unverändert.",
+    "lookDark": "Dunkles Theme",
+    "lookLight": "Helles Theme",
+    "reportInLibrary": "{{name}} wurde deiner Bibliothek hinzugefügt. Die Seite bleibt unverändert, bis du wechselst."
   },
   "owned": {
     "title": "Deine Lizenzen",

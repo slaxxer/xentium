@@ -15,6 +15,7 @@ import { runStreamedJob } from "../../../lib/streamProgress";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 import { themeGaps } from "../../../layout/themeFootprint";
 import { themeInstallMessage } from "../hooks/themeInstallResult";
+import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 import { ThemePreview } from "../components/ThemePreview";
 import { openPanelDialog } from "../../../lib/dialog";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
@@ -142,7 +143,7 @@ export function MarketplacePage() {
   // instead of the button sitting silent until a toast appears at the end.
   const installMutation = useMutation({
     mutationFn: async (p: MarketplacePlugin) => {
-      const { ok } = await runStreamedJob(
+      const { ok, final } = await runStreamedJob(
         "/admin/marketplace/install",
         { pluginId: p.id, version: p.latestVersion, kind: p.kind },
         {
@@ -153,10 +154,8 @@ export function MarketplacePage() {
             const label = t(`marketplace.phase.${phase}`, { defaultValue: t("marketplace.phase.working") });
             return message ? `${label} ${message}` : label;
           },
-          // A theme lands in the DRAFT — importing one rewrites the arrangement of
-          // every page at once, which is exactly the change staging exists for. An
-          // admin who installs a theme and sees the site unchanged is looking at
-          // correct behaviour, and has to be told so here.
+          // A theme is INSTALLED, not switched to — unless it is an update to the
+          // one being worn. The sentence says which; the switch prompt follows.
           // The card warned before the purchase; this is the same fact after it,
           // for the admin who bought anyway or whose plugin was disabled since.
           successMessage: (final) => p.kind === "theme"
@@ -168,6 +167,9 @@ export function MarketplacePage() {
         },
       );
       if (!ok) throw new Error("install_failed");   // keeps isPending/isError honest
+      // Installing is not switching. Asked HERE, inside the mutation, so the
+      // invalidation below runs after the answer and picks up a switch too.
+      if (p.kind === "theme") await offerThemeSwitch(t, outcomeFromStream(p.id, p.name, final));
       return ok;
     },
     onSuccess: () => {

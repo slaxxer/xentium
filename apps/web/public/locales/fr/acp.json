@@ -1195,7 +1195,7 @@
     "searchThemesPlaceholder": "Rechercher des thèmes…",
     "themeDraftNote": "Installer un thème l'applique aussitôt : vos pages prennent sa disposition et ses couleurs, et les visiteurs le voient immédiatement.",
     "themeGoManage": "Aller aux thèmes",
-    "themeInstalled": "Installé",
+    "themeInstalled": "{{name}} est installé.",
     "themeStaged": "{{name}} est maintenant le thème actif.",
     "themeGapsTitle": "{{count}} élément que ce site ne peut pas afficher",
     "themeGapsTitle_other": "{{count}} éléments que ce site ne peut pas afficher",
@@ -2188,7 +2188,17 @@
     "libraryActive": "Actif",
     "libraryActivate": "Activer",
     "activated": "{{name}} est maintenant le thème actif.",
-    "removed": "Thème supprimé."
+    "removed": "Thème supprimé.",
+    "switchTitle": "Passer à {{name}} ?",
+    "switchBody": "{{name}} est installé. L'appliquer au site maintenant, ou garder {{current}} ? Vous pouvez changer à tout moment dans Apparence → Thèmes.",
+    "switchBodyStock": "{{name}} est installé. L'appliquer au site maintenant, ou garder l'apparence par défaut ? Vous pouvez changer à tout moment dans Apparence → Thèmes.",
+    "switchBtn": "Passer à {{name}}",
+    "keepBtn": "Garder {{name}}",
+    "keepStockBtn": "Garder l'apparence par défaut",
+    "keptInLibrary": "{{name}} est dans votre bibliothèque de thèmes — le site n'a pas changé.",
+    "lookDark": "Thème sombre",
+    "lookLight": "Thème clair",
+    "reportInLibrary": "{{name}} a été ajouté à votre bibliothèque. Le site ne change pas tant que vous n'y passez pas."
   },
   "owned": {
     "title": "Vos licences",

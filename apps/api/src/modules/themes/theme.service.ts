@@ -218,6 +218,19 @@ export interface ImportReport {
   kept: string[];
   /** The theme that was installed before this import, when there was one. */
   replaced: { id: string; name: string; version: string } | null;
+  /**
+   * Whether this import put the theme ON the site.
+   *
+   * Only an UPDATE to the theme the site is already wearing does. Anything else lands
+   * in the library inactive and the admin is asked — keep what the site wears, or
+   * switch — because installing and switching are two decisions, and a site that
+   * changed its whole look because somebody installed a theme to try it was answering
+   * a question nobody asked. When false, `templates`/`kept`/`replaced` are empty: the
+   * site was not touched.
+   */
+  activated: boolean;
+  /** The theme the site is still wearing when `activated` is false (null = stock). */
+  current: { id: string; name: string; version: string } | null;
   tokensApplied: boolean;
   /** Staged in the theme's own CSS layer, under the admin's stylesheet, like everything
    *  else in the package. It used to overwrite the admin's CSS outright, and live. */
@@ -785,13 +798,40 @@ export const themeService = {
       customCss: hasCustomCss ? rewriteCss(customCss) : null,
     };
 
-    // INSTALLED, then ACTIVE — two steps even though an import does both, because the
-    // row has to survive the next import. Before the library existed, installing a
-    // second theme destroyed the first.
-    await this.saveInstalledTheme(installedManifest, payload, userId);
+    // INSTALLED, then — only for an update to the theme already being worn — ACTIVE.
+    // Two steps because the row has to survive the next import: before the library
+    // existed, installing a second theme destroyed the first.
+    const worn   = await appearanceService.getInstalledTheme();
+    const wornId = worn?.id ? String(worn.id) : null;
+    const activate = wornId === manifest.id;
+
+    await this.saveInstalledTheme(installedManifest, payload, userId, { activate });
+
+    const base = {
+      manifest,
+      unknownTemplates,
+      assetsImported: assets.length,
+      unknownBlocks: [...unknownBlocks],
+      ignoredFiles,
+    };
+
+    if (!activate) {
+      return {
+        ...base,
+        templates: [], kept: [], replaced: null,
+        tokensApplied: false, customCssApplied: false,
+        activated: false,
+        current: worn
+          ? { id: String(worn.id ?? ""), name: String(worn.name ?? worn.id ?? ""), version: String(worn.version ?? "") }
+          : null,
+      };
+    }
+
     const { applied, kept, replaced } = await this.applyTheme(installedManifest, payload, userId);
 
     return {
+      activated: true,
+      current: null,
       manifest,
       templates: applied,
       unknownTemplates,
@@ -812,8 +852,8 @@ export const themeService = {
    * already in the library runs exactly the same code. Two paths that both "apply a
    * theme" but drift apart is how one of them quietly stops staging the stylesheet.
    *
-   * Everything it writes is STAGED: the theme layer and the draft. Nothing a visitor
-   * sees changes until the appearance draft is published.
+   * It goes LIVE — the theme layer, the published layouts and their drafts together.
+   * Putting a theme on is one decision; the undo point below is the way back.
    */
   async applyTheme(
     manifest: Record<string, unknown>,
@@ -874,13 +914,19 @@ export const themeService = {
      * overrides, so an admin who recoloured one accent keeps exactly that and takes
      * everything else the update brings.
      */
-    if (payload.tokens) await appearanceService.saveThemeTokens(payload.tokens);
+    // ⚠ WRITTEN EVEN WHEN ABSENT, as an empty layer. The theme layer belongs to the
+    // theme being put on, not a merge of every theme ever worn: skipping the write for
+    // a theme that ships no tokens left the PREVIOUS theme's palette on the site, and
+    // switching from a dark theme to a colours-less one stayed dark.
+    await appearanceService.saveThemeTokens(payload.tokens ?? {});
 
     await appearanceService.setInstalledTheme(manifest);
 
     /** The stylesheet gets the same treatment as the tokens: its own layer, so an
      *  import can never destroy the admin's own CSS. */
-    if (payload.customCss) await appearanceService.saveThemeCustomCss(payload.customCss);
+    // Same rule as the tokens: a theme with no stylesheet CLEARS the previous theme's,
+    // or its fonts and rules keep painting a site that has switched away from it.
+    await appearanceService.saveThemeCustomCss(payload.customCss ?? "");
 
     // The theme is ON now, so every open tab has to hear about it. Reuses the style
     // version the appearance SSE already carries — layouts ride the same channel.
@@ -895,12 +941,14 @@ export const themeService = {
     };
   },
 
-  /** Add or update a library row, and make it the active one. Exactly one row may be
-   *  active, which is why the clear and the set share a transaction. */
+  /** Add or update a library row — and, by default, make it the active one. Exactly
+   *  one row may be active, which is why the clear and the set share a transaction.
+   *  `activate: false` installs beside the active theme without touching it. */
   async saveInstalledTheme(
     manifest: Record<string, unknown>,
     payload: ThemePayload,
     userId: string,
+    { activate = true }: { activate?: boolean } = {},
   ): Promise<void> {
     const id = String(manifest.id ?? "");
     const row = {
@@ -909,11 +957,11 @@ export const themeService = {
       vendor:  String(manifest.vendor ?? ""),
       manifest:    manifest as object,
       payload:     payload as unknown as object,
-      active:      true,
-      activatedAt: new Date(),
+      active:      activate,
+      ...(activate ? { activatedAt: new Date() } : {}),
     };
     await prisma.$transaction([
-      prisma.theme.updateMany({ where: { active: true }, data: { active: false } }),
+      ...(activate ? [prisma.theme.updateMany({ where: { active: true }, data: { active: false } })] : []),
       // Reinstalling the same id replaces the payload, so anything built from the
       // old one has to go — the caches are keyed by id alone and would otherwise
       // outlive the version they were built from.
