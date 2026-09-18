@@ -32,6 +32,15 @@ export interface ThemeExportMeta {
    * chosen from its thumbnail alone. Capped at 500 by the manifest schema.
    */
   description: string;
+  /**
+   * Whether this is a DARK theme or a LIGHT one.
+   *
+   * A fact about the theme, not a mode it offers — a site has one look. It is asked
+   * rather than read off the palette because guessing from `--c-bg` works until a theme
+   * is mid-grey, sepia, or sets its background only in custom CSS, and it is the first
+   * thing a storefront card has to get right.
+   */
+  appearance: "light" | "dark";
   /** Palette only — no layouts, and therefore no assets. */
   tokensOnly: boolean;
   /**
@@ -47,11 +56,12 @@ export interface ThemeExportMeta {
 const BLANK: ThemeExportMeta = {
   id: "my-theme", name: "My theme", version: "1.0.0", vendor: "",
   license: "", homepage: "", authorUrl: "", description: "",
-  tokensOnly: false, screenshot: null,
+  appearance: "light", tokensOnly: false, screenshot: null,
 };
 
 /** The manifest fields the API accepts from an author, with their labels. */
-type TextField = Exclude<keyof ThemeExportMeta, "tokensOnly" | "screenshot" | "description">;
+type TextField = Exclude<keyof ThemeExportMeta,
+  "tokensOnly" | "screenshot" | "description" | "appearance">;
 
 const FIELDS: { key: TextField; label: string; placeholder?: string; type?: string }[] = [
   { key: "id",        label: "fieldId",        placeholder: "my-theme" },
@@ -127,6 +137,26 @@ function ThemeExportForm({ initial, onChange }: {
         />
         <em>{t("themes.fieldDescriptionHint")}</em>
       </label>
+
+      {/* Two buttons rather than a select: there are exactly two answers, and the one
+          that is chosen is worth seeing at a glance next to the picture above it. */}
+      <div className="thm-form__field thm-form__field--wide">
+        <span>{t("themes.fieldAppearance")}</span>
+        <div className="thm-form__look">
+          {(["light", "dark"] as const).map((look) => (
+            <button
+              key={look}
+              type="button"
+              className={`thm-form__lookBtn${value.appearance === look ? " is-on" : ""}`}
+              aria-pressed={value.appearance === look}
+              onClick={() => set({ appearance: look })}
+            >
+              {t(`themes.look_${look}`)}
+            </button>
+          ))}
+        </div>
+        <em>{t("themes.fieldAppearanceHint")}</em>
+      </div>
 
       {/* The listing's picture. Shown back as a thumbnail because the one thing a
           file input cannot tell you is whether you picked the right image. */}

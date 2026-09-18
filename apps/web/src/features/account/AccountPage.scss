@@ -584,6 +584,14 @@
     font-weight: 600;
     color: var(--c-fg-muted);
   }
+
+  /* Under the control, not above it: it qualifies what you just did rather than
+     introducing it. */
+  &__note {
+    margin: var(--sp-3) 0 0;
+    font-size: var(--fs-xs);
+    color: var(--c-fg-subtle);
+  }
 }
 
 /* ── Profile tab ────────────────────────────────────────────────────────────── */
@@ -833,6 +841,92 @@
   .acct-themes, .acct-fonts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+/* A theme is bought and worn for how it LOOKS, so the card leads with the picture
+   and the name explains it — the opposite weighting from the font cards below, where
+   the sample IS the name. */
+.acct-themecard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 0 0 var(--sp-3);
+  overflow: hidden;
+  border: 2px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--c-fg-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+
+  &:hover { border-color: color-mix(in srgb, var(--c-accent) 40%, transparent); }
+
+  &.is-on {
+    border-color: var(--c-accent);
+    background: var(--c-accent-soft);
+  }
+
+  &__shot {
+    display: block;
+    /* Fixed ratio rather than the image's own: a row of thumbnails at three
+       different heights reads as a broken grid, and every one of these is a
+       screenshot of whatever window its author happened to have open. */
+    aspect-ratio: 16 / 10;
+    background: var(--c-bg-hover);
+
+    img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  }
+
+  &__noshot {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--c-fg-subtle);
+  }
+
+  &__name {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 0 var(--sp-3);
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    color: var(--c-fg);
+  }
+
+  &.is-on &__name { color: var(--c-accent); }
+
+  &__badge {
+    padding: 1px 7px;
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--c-border);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+
+    &.is-on { color: var(--c-accent); border-color: var(--c-accent); }
+  }
+
+  &__desc {
+    /* Two lines, then clipped. A theme's own blurb is the author's, and one that
+       runs long must not make its card twice the height of its neighbours. */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding: 0 var(--sp-3);
+    font-size: var(--fs-xs);
+    line-height: 1.45;
+    color: var(--c-fg-subtle);
+  }
+}
+
 .acct-pickcard {
   display: flex;
   flex-direction: column;
@@ -870,20 +964,6 @@
 
     &.is-on strong { color: var(--c-accent); }
   }
-}
-
-/* ⚠ The only literal colours in this file. A theme swatch has to show the palette
-   it SWITCHES TO — drawn in the current palette's tokens, "Dark" would look light
-   while you are in the light theme, which is precisely the thing being chosen. */
-.acct-themeswatch {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  flex: none;
-
-  &--light  { background: #f4f4fb; border: 1px solid #d0d0e0; }
-  &--dark   { background: #080812; }
-  &--system { background: linear-gradient(135deg, #f4f4fb 50%, #080812 50%); }
 }
 
 .acct-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }

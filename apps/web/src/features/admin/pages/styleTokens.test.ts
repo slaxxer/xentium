@@ -104,8 +104,7 @@ describe("scope options", () => {
  */
 describe("inheritance chains terminate", () => {
   const resolvable = new Set([
-    ...Object.keys(HEARTH_DEFAULT_TOKENS.light),
-    ...Object.keys(HEARTH_DEFAULT_TOKENS.dark),
+    ...Object.keys(HEARTH_DEFAULT_TOKENS),
     ...Object.keys(BASE_FALLBACK),
     ...TOKEN_REGISTRY.map((t) => t.var),
   ]);
@@ -116,12 +115,9 @@ describe("inheritance chains terminate", () => {
     expect(dangling).toEqual([]);
   });
 
-  it("gives every editable palette row a default in both modes", () => {
+  it("gives every editable palette row a default", () => {
     const rows = [...PALETTE_ROWS, ...TEXT_ROWS, ...FEEDBACK_ROWS].map((r) => r.cssVar);
-    for (const mode of ["light", "dark"] as const) {
-      const have = HEARTH_DEFAULT_TOKENS[mode] as Record<string, string>;
-      expect(rows.filter((v) => have[v] === undefined), mode).toEqual([]);
-    }
+    expect(rows.filter((v) => HEARTH_DEFAULT_TOKENS[v] === undefined)).toEqual([]);
   });
 });
 

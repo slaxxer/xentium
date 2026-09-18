@@ -137,6 +137,38 @@
     object-fit: contain;
   }
 
+  /* Two mutually exclusive answers, so a pair of buttons rather than a select: the
+     chosen one is readable without opening anything, which is the whole point of
+     declaring the look in the first place. */
+  &__look {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: 2px;
+  }
+
+  &__lookBtn {
+    flex: 1;
+    padding: 8px 10px;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--c-fg);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+
+    &:hover { border-color: var(--c-accent); }
+
+    /* Not colour alone — `aria-pressed` carries it for a reader, and the border
+       weight carries it for anyone who cannot tell these two backgrounds apart. */
+    &.is-on {
+      color: var(--c-accent);
+      border-color: var(--c-accent);
+      background: var(--c-accent-soft);
+      font-weight: 600;
+    }
+  }
+
   &__check {
     display: flex;
     align-items: flex-start;

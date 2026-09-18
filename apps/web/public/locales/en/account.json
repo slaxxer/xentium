@@ -10,11 +10,6 @@
     "theme": "Theme",
     "font": "Font",
     "language": "Language",
-    "themes": {
-      "light": "Light",
-      "dark": "Dark",
-      "system": "System"
-    },
     "reduceMotion": "Reduce motion",
     "reduceMotionDesc": "Minimize animations and transitions",
     "compactView": "Compact view",

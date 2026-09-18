@@ -24,14 +24,21 @@ function timeLabel(d: string) {
   });
 }
 
-/** Every `scope|var` pair a snapshot holds, flattened so two can be compared. */
+/**
+ * Every `scope|var` pair a snapshot holds, flattened so two can be compared.
+ *
+ * ⚠ A snapshot taken before a site had ONE look is a `{light, dark}` pair. `light` and
+ * `dark` are not scope names, so their presence at the top level identifies that shape
+ * — and the light half is what a one-look site would restore, so it is the half compared.
+ */
 function flatten(set: ScopedTokenSet | undefined): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const mode of ["light", "dark"] as const) {
-    const buckets: ScopedTokens = set?.[mode] ?? {};
-    for (const [scope, map] of Object.entries(buckets)) {
-      for (const [cssVar, value] of Object.entries(map ?? {})) out[`${mode}|${scope}|${cssVar}`] = value;
-    }
+  const raw = (set ?? {}) as Record<string, unknown>;
+  const buckets: ScopedTokens = ("light" in raw || "dark" in raw)
+    ? ((raw.light as ScopedTokens | undefined) ?? {})
+    : (raw as ScopedTokens);
+  for (const [scope, map] of Object.entries(buckets)) {
+    for (const [cssVar, value] of Object.entries(map ?? {})) out[`${scope}|${cssVar}`] = value;
   }
   return out;
 }
@@ -56,7 +63,7 @@ function summarise(
   const changed: string[] = [];
   for (const k of keys) {
     if (now[k] === before[k]) continue;
-    changed.push(tokenLabel(k.split("|")[2]!, t));
+    changed.push(tokenLabel(k.split("|")[1]!, t));
   }
   if (changed.length === 0) return t("styleHistory.sumNone") as string;
   const unique = [...new Set(changed)];

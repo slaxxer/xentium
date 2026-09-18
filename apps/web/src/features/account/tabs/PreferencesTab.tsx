@@ -1,18 +1,19 @@
 /**
  * Preferences — appearance, badges, and how much the page moves.
  *
- * ⚠ Nothing here has a save button, and that is not laziness: a theme, a language
- * and a font APPLY AS YOU PICK THEM. The page you are looking at is the preview, so
- * a "save" step would ask you to confirm a change you can already see, and a
- * "discard" would have to undo the site around you.
+ * ⚠ Nothing here has a save button, and that is not laziness: a language and a font
+ * APPLY AS YOU PICK THEM. The page you are looking at is the preview, so a "save" step
+ * would ask you to confirm a change you can already see, and a "discard" would have to
+ * undo the site around you.
  *
- * ⚠ The theme swatches are drawn from the palette they represent, not from the
- * current one — "Dark" must look dark while you are in the light theme, which is
- * the only reason a literal colour appears in this file.
+ * ⚠ The light/dark picker that used to sit here is gone. A site has ONE look — the
+ * theme's — so a radio that set `data-theme` on a site with no dark palette was a
+ * control that did nothing. What replaced it picks a THEME, which is the real choice,
+ * and it is the same choice the footer chooser offers: one cookie, one vocabulary.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../../hooks/useTheme";
+import { setViewerTheme, viewerThemeId } from "../../../lib/viewerTheme";
 import { useFont, FONTS } from "../../../hooks/useFont";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -22,7 +23,100 @@ import i18n, { SUPPORTED_LOCALES, setLocale, type LocaleCode } from "../../../li
 import { AccountCard, AccountRow, AccountSwitch } from "../components/AccountCard";
 import { SavedChip } from "../components/SaveBar";
 
-const THEMES = ["light", "dark", "system"] as const;
+/**
+ * An installed theme a reader may choose to wear. `/themes/choices` is public and
+ * deliberately narrow — a name, a picture and a sentence, never the vendor or who
+ * installed it, which is an admin's inventory and none of a reader's business.
+ */
+interface ThemeChoice {
+  id: string;
+  name: string;
+  active: boolean;
+  description: string | null;
+  screenshot: string | null;
+}
+
+/**
+ * Pick which installed theme to read the site in — the same choice the footer offers.
+ *
+ * ⚠ Choosing RELOADS. The stylesheet and the layout documents change together, and
+ * every open query, every mounted block and the SSE reconciler would otherwise have to
+ * be talked through it — for something a reader does once. The footer chooser made the
+ * same call; doing it differently here would be two behaviours for one decision.
+ *
+ * ⚠ Choosing the SITE's theme CLEARS the cookie rather than storing its id. Storing it
+ * would pin the reader to today's active theme, and they would go on wearing it after
+ * the admin switched — having chosen "the site's theme", which is then the one thing
+ * that would not follow the site.
+ */
+function ThemeChoices() {
+  const { t } = useTranslation("account");
+  const { t: tc } = useTranslation("common");
+  const [themes, setThemes] = useState<ThemeChoice[] | null>(null);
+  const chosen = viewerThemeId();
+
+  useEffect(() => {
+    let alive = true;
+    api.get<{ themes: ThemeChoice[] }>("/themes/choices")
+      .then((r) => { if (alive) setThemes(r?.themes ?? []); })
+      // A site that cannot answer simply has no picker. This is a preference, not
+      // something worth an error message in a settings page.
+      .catch(() => { if (alive) setThemes([]); });
+    return () => { alive = false; };
+  }, []);
+
+  // Nothing to choose BETWEEN is not a choice: one installed theme means the site's
+  // own, and a row with a single card in it is furniture. Same rule as the footer.
+  if (!themes || themes.length < 2) return null;
+
+  const siteTheme = themes.find((x) => x.active);
+  /** What is being worn: the reader's pick, or the site's own when they have none. */
+  const wearing = chosen ?? siteTheme?.id ?? "";
+
+  return (
+    <div className="acct-group">
+      <span className="acct-group__label">{t("preferences.theme")}</span>
+      <div className="acct-themes">
+        {themes.map((theme) => {
+          const worn = theme.id === wearing;
+          return (
+            <button
+              key={theme.id}
+              type="button"
+              className={`acct-themecard${worn ? " is-on" : ""}`}
+              aria-current={worn}
+              onClick={() => {
+                setViewerTheme(theme.active ? null : theme.id);
+                window.location.reload();
+              }}
+            >
+              <span className="acct-themecard__shot">
+                {theme.screenshot
+                  ? <img src={theme.screenshot} alt="" loading="lazy" />
+                  : <span className="acct-themecard__noshot" aria-hidden="true">{theme.name.slice(0, 1)}</span>}
+              </span>
+              <span className="acct-themecard__name">
+                {theme.name}
+                {/* TWO different facts, and a reader can be looking at either. "Active"
+                    is what THEY are wearing; "Site" is what the admin chose for
+                    everyone. They coincide until the reader picks something else,
+                    which is exactly when telling them apart starts to matter. */}
+                {worn   && <span className="acct-themecard__badge is-on">{tc("themeChooser.activeBadge")}</span>}
+                {theme.active && <span className="acct-themecard__badge">{tc("themeChooser.siteBadge")}</span>}
+              </span>
+              {/* Omitted rather than padded with the theme's own name back at the
+                  reader: a theme with nothing to say about itself has the picture. */}
+              {theme.description && (
+                <span className="acct-themecard__desc">{theme.description}</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="acct-group__note">{tc("themeChooser.note")}</p>
+    </div>
+  );
+}
 
 interface OtherToggles {
   reduceMotion:  boolean;
@@ -114,7 +208,6 @@ function loadOthers(): OtherToggles {
 
 export function PreferencesTab() {
   const { t } = useTranslation("account");
-  const { preference, setPreference } = useTheme();
   const { font, setFont } = useFont();
   const { user } = useAuth();
   const [locale, setLocaleState] = useState<string>(user?.preferredLocale ?? i18n.language ?? "en");
@@ -154,22 +247,7 @@ export function PreferencesTab() {
     <>
       <AccountCard title={t("preferences.appearance")} desc={t("preferences.appearanceDesc")}>
         <div className="acct-stack">
-          <div className="acct-group">
-            <span className="acct-group__label">{t("preferences.theme")}</span>
-            <div className="acct-themes">
-              {THEMES.map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  className={`acct-pickcard${preference === value ? " is-on" : ""}`}
-                  onClick={() => setPreference(value)}
-                >
-                  <span className={`acct-themeswatch acct-themeswatch--${value}`} />
-                  {t(`preferences.themes.${value}`)}
-                </button>
-              ))}
-            </div>
-          </div>
+          <ThemeChoices />
 
           <div className="acct-group">
             <span className="acct-group__label">{t("preferences.language")}</span>

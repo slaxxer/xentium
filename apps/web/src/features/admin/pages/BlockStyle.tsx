@@ -47,14 +47,11 @@ import {
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
-import { useTheme } from "../../../hooks/useTheme";
 
-type Mode = "light" | "dark";
+/** Pending edits for one variant scope. `null` = clear the override. */
+type Patch = Record<string, string | null>;
 
-/** Pending edits for one variant scope, per theme. `null` = clear the override. */
-type Patch = Record<Mode, Record<string, string | null>>;
-
-const EMPTY_PATCH: Patch = { light: {}, dark: {} };
+const EMPTY_PATCH: Patch = {};
 
 /**
  * Resolve what a variant's tokens currently compute to, by measuring the browser.
@@ -63,7 +60,7 @@ const EMPTY_PATCH: Patch = { light: {}, dark: {} };
  * detached element resolves against nothing — `var(--c-card)` would come back empty.
  *
  * ⚠ …and body, in here, is `body.xt-acp`, which re-declares the whole palette so the
- * admin panel does not follow the site's theme. Measuring straight against it would
+ * admin panel does not follow the site. Measuring straight against it would
  * report the ACP's colours as the SITE's — a themed site would be told its accent
  * panel is blurple. The probe therefore sits inside a `.xt-site-tokens` host, which
  * restores the defaults and receives the served stylesheet's global overrides, so
@@ -86,6 +83,9 @@ function resolveVariantTokens(variant: BlockVariant, cssVars: string[]): Record<
   host.remove();
   return out;
 }
+
+/** What `GET /appearance/tokens` answers: the admin layer, and the theme under it. */
+interface AdminTokens { tokens?: ScopedTokenSet; theme?: ScopedTokenSet }
 
 /** `<input type="color">` only speaks `#rrggbb`, so anything else needs converting. */
 function toHex(value: string, fallback = "#888888"): string {
@@ -124,8 +124,6 @@ export function BlockStyleFields({
 }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const { theme } = useTheme();
-  const mode: Mode = theme === "dark" ? "dark" : "light";
 
   // Unsaved token edits, so a drag on the colour input does not fire a request per
   // frame. Flushed by the debounce below.
@@ -135,7 +133,7 @@ export function BlockStyleFields({
   const scope = variant ? variantScopeId(variant) : null;
 
   /** The appearance DRAFT — the same set the Style Editor edits. */
-  const { data: draft } = useQuery<ScopedTokenSet>({
+  const { data: draft } = useQuery<AdminTokens>({
     queryKey: ["acp-tokens"],
     queryFn:  () => api.get("/appearance/tokens"),
     staleTime: 30_000,
@@ -143,18 +141,16 @@ export function BlockStyleFields({
 
   const cssVars = useMemo(() => VARIANT_TOKEN_ROWS.map((r) => r.cssVar), []);
 
-  // Re-resolved per variant AND per theme: the same variant computes different values
-  // in dark mode, because its definition is written in palette tokens.
   const inherited = useMemo(
     () => (variant ? resolveVariantTokens(variant, cssVars) : {}),
-    [variant, cssVars, mode],
+    [variant, cssVars],
   );
 
-  const stored = (scope && draft?.[mode]?.[scope]) || {};
+  const stored = (scope && draft?.tokens?.[scope]) || {};
 
   /** Saved value, then a pending edit on top; `null` means "cleared, back to inherited". */
   const valueOf = (cssVar: string): { value: string; overridden: boolean } => {
-    const pending = patch[mode][cssVar];
+    const pending = patch[cssVar];
     if (pending === null) return { value: inherited[cssVar] ?? "", overridden: false };
     if (pending !== undefined) return { value: pending, overridden: true };
     const saved = stored[cssVar];
@@ -163,12 +159,14 @@ export function BlockStyleFields({
   };
 
   const patchMut = useMutation({
-    mutationFn: (body: Patch) =>
-      api.patch<ScopedTokenSet>(`/appearance/tokens/scope/${encodeURIComponent(scope!)}`, body),
+    mutationFn: (tokens: Patch) =>
+      api.patch<ScopedTokenSet>(`/appearance/tokens/scope/${encodeURIComponent(scope!)}`, { tokens }),
     onSuccess: (next) => {
       // Seed the cache with the server's answer rather than refetching: the Style
-      // Editor reads the same key, so both surfaces stay in step.
-      qc.setQueryData(["acp-tokens"], next);
+      // Editor reads the same key, so both surfaces stay in step. The endpoint answers
+      // with the whole admin layer, which is the `tokens` half of what `GET` returns —
+      // the theme layer beside it is untouched by a scope patch.
+      qc.setQueryData(["acp-tokens"], (prev: AdminTokens | undefined) => ({ ...prev, tokens: next }));
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
       setPatch(EMPTY_PATCH);
     },
@@ -180,41 +178,30 @@ export function BlockStyleFields({
    *
    * The preview iframe serves the PUBLISHED stylesheet, so a draft token edit would
    * otherwise be invisible until publish — which is the opposite of what a live preview
-   * is for. Both themes are emitted so switching the previewed theme still shows it.
+   * is for.
    */
   useEffect(() => {
     if (!variant || !scope) { onPreviewCss(""); return; }
-    const blocks: string[] = [];
-    for (const m of ["light", "dark"] as Mode[]) {
-      const merged: Record<string, string> = { ...((draft?.[m]?.[scope]) ?? {}) };
-      for (const [cssVar, v] of Object.entries(patch[m])) {
-        if (v === null) delete merged[cssVar];
-        else merged[cssVar] = v;
-      }
-      const decls = Object.entries(merged).map(([k, v]) => `  ${k}: ${v};`).join("\n");
-      if (!decls) continue;
-      // Mirrors the served stylesheet's own selectors, so the preview cannot show a
-      // precedence the real page would not.
-      const prefix = m === "light" ? `:root, [data-theme="light"]` : `[data-theme="dark"]`;
-      blocks.push(`${prefix} .${variantClass(variant)} {\n${decls}\n}`);
+    const merged: Record<string, string> = { ...(draft?.tokens?.[scope] ?? {}) };
+    for (const [cssVar, v] of Object.entries(patch)) {
+      if (v === null) delete merged[cssVar];
+      else merged[cssVar] = v;
     }
-    onPreviewCss(blocks.join("\n\n"));
+    const decls = Object.entries(merged).map(([k, v]) => `  ${k}: ${v};`).join("\n");
+    // Mirrors the served stylesheet's own selector, so the preview cannot show a
+    // precedence the real page would not. `[data-theme]` used to prefix this; there is
+    // one look now, and one root.
+    onPreviewCss(decls ? `:root .${variantClass(variant)} {\n${decls}\n}` : "");
   }, [variant, scope, draft, patch, onPreviewCss]);
 
   const edit = (cssVar: string, value: string | null) => {
-    setPatch((prev) => {
-      const next: Patch = { light: { ...prev.light }, dark: { ...prev.dark } };
-      next[mode][cssVar] = value;
-      return next;
-    });
+    setPatch((prev) => ({ ...prev, [cssVar]: value }));
     if (flushRef.current) clearTimeout(flushRef.current);
     flushRef.current = setTimeout(() => {
       // Read through the setter so the flush always sends the newest edits, not the
       // ones captured when the timer was armed.
       setPatch((current) => {
-        if (Object.keys(current.light).length || Object.keys(current.dark).length) {
-          patchMut.mutate(current);
-        }
+        if (Object.keys(current).length) patchMut.mutate(current);
         return current;
       });
     }, 500);
@@ -295,7 +282,6 @@ export function BlockStyleFields({
               <div className="lay__style-scope">
                 {t("layoutEditor.variantScope", {
                   variant: t(`layoutEditor.variant.${variant}`),
-                  theme:   t(mode === "dark" ? "layoutEditor.modeDark" : "layoutEditor.modeLight"),
                 })}
               </div>
 
