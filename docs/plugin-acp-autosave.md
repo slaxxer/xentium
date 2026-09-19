@@ -1,84 +1,84 @@
-# Plugin ACP surfaces
+# Plugin pages in the ACP
 
-## Typography and controls — the hard rule
+## Look like core
 
-**A plugin's admin surface must be indistinguishable from core's.** Not similar:
-identical font, weights, sizes and spacing. An admin should not be able to tell
-which parts of the ACP came from a plugin.
+Your plugin's admin pages should look exactly like ours. Not close: the same font,
+weights, sizes and spacing. An admin shouldn't be able to tell which parts of the ACP
+came from a plugin.
 
-The only reliable way to get that is to use core's OWN classes and components,
-never to re-implement them. Hand-picked numbers always drift — the launch plugin
-had already ended up at weight 700 where core uses 600, at sizes core does not
-use anywhere.
+The only way that holds up is to use core's own classes and components instead of
+copying them. Numbers picked by hand always drift; our own launch plugin ended up with
+weight 700 where core uses 600, and at font sizes core doesn't use anywhere.
 
-**Never set `font-family`, `font-weight` or `font-size` in a plugin ACP panel.**
-Use these instead — all global once the ACP is mounted, so a plugin bundle can
-rely on them without importing any core CSS:
+**Don't set `font-family`, `font-weight` or `font-size` in a plugin's ACP panel.** Use
+these instead. They're all global once the ACP has loaded, so your bundle can rely on
+them without importing any core CSS:
 
-| Need | Use |
+| You need | Use |
 |---|---|
 | A setting row | `.set-row` > `.set-row__label` + `.set-row__desc` + `.set-row__control` |
 | A group of rows | `.set-rows` |
-| A card/panel title + subtitle | `.set-card__titles` > `h3` + `p` (works standalone) |
-| Any secondary/description text | `.set-row__desc` |
-| Text input | `.acp-input` · select: `.acp-select` |
+| A card or panel title with a subtitle | `.set-card__titles` > `h3` + `p` (works on its own) |
+| Secondary or description text | `.set-row__desc` |
+| A text input / a select | `.acp-input` / `.acp-select` |
 | Buttons | `.btn-primary` / `.btn-ghost` / `.btn-ghost-danger`, plus `.btn-sm` |
-| Toggle, text field, number stepper | `@web/components/AcpControls` |
+| A toggle, text field or number stepper | `@web/components/AcpControls` |
 
-Externalise the controls like any other host global:
+Externalize the controls like any other host global:
 
 ```ts
 "@web/components/AcpControls": `${H}.webAcpControls`,
 ```
 
-Plugin-side CSS is for LAYOUT only — flex, grid, gaps, margins. If a rule in a
-plugin stylesheet mentions a font, it is a bug.
+Keep your plugin's CSS to **layout**: flex, grid, gaps, margins. If a rule in your
+stylesheet mentions a font, that's a bug.
 
-# Plugin ACP autosave
+## Saving: autosave
 
-How a plugin's admin surfaces persist changes. Xentium ACP **config** pages have no
-Save button — they save on change, with a status indicator in the header. A plugin
-must follow the same convention so its pages don't feel foreign inside the ACP.
+Settings pages in our ACP don't have a Save button. They save as you change things and
+show a status chip in the header. Your plugin should work the same way so it doesn't
+feel out of place.
 
-Live examples: `xentium-advanced-moderation` (`AdvModPage` — settings page with a
-secret field), `xentium-forum` (`ForumSettingsPage`, `ForumGroupProgression`),
+Working examples: `xentium-advanced-moderation` (`AdvModPage`, a settings page with a
+secret field), `xentium-forum` (`ForumSettingsPage`, `ForumGroupProgression`) and
 `xentium-shoutbox` (`ShoutboxAcpPage`, `ShoutboxGroupLimits`).
 
-## When autosave applies
+### When to autosave
 
-**Autosave — config.** A form that edits *existing* settings, where every field has
-a current value and the page is a view onto server state:
+**Autosave settings.** That's any form that edits *existing* settings, where every field
+already has a value and the page is a view of what's on the server:
 
 - plugin settings pages
-- per-group config panels (the `groupConfigPanel` slot — see below)
-- toggles, numeric limits, thresholds, dropdowns
+- per-group panels (the `groupConfigPanel` slot, see below)
+- toggles, limits, thresholds, dropdowns
 
-**Explicit Save — everything else.** Autosave is wrong when a "current value" does
-not exist yet or when a half-typed value is dangerous:
+**Use an explicit button for everything else.** Autosave is wrong when there's no
+current value yet, or when saving something half-typed would be dangerous:
 
-| Case | Why | Pattern |
+| Case | Why | What to do |
 |---|---|---|
-| Create/edit **entity** modals (a category, a room, a filter rule) | The draft isn't state until it's committed; a half-typed name must not create a row | Save / Cancel buttons |
-| **Secrets** and write-only fields (API keys, tokens) | Never persist a partially-typed credential | Dedicated Set / Remove |
-| **Destructive** actions (delete, purge, reset) | Needs intent | Confirm dialog |
+| Create/edit dialogs for **things** (a category, a room, a filter rule) | The draft isn't real until you commit it, and a half-typed name must not create a row | Save / Cancel buttons |
+| **Secrets** and write-only fields (API keys, tokens) | Never store a half-typed credential | A dedicated Set / Remove |
+| **Destructive** actions (delete, purge, reset) | You need to know the admin meant it | A confirm dialog |
 
-`ForumCategoriesPage`'s node editor keeps Save buttons for exactly the first
-reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
+The forum's category editor (`ForumCategoriesPage`) keeps its Save buttons for the
+first reason, and `AdvModPage` leaves its proxycheck key out of autosave for the second.
 
-## Recipe
+### Step by step
 
-1. **Externalize the bridges** in `vite.config.ts` (alongside the others):
+1. **Externalize the bridges** in `vite.config.ts`, next to the others:
 
    ```ts
    "@web/hooks/useAutosave":   `${H}.webUseAutosave`,
-   "@web/components/SaveChip": `${H}.webSaveChip`,   // standalone pages only
+   "@web/components/SaveChip": `${H}.webSaveChip`,   // only for standalone pages
    ```
 
-   `@web/components/AutosaveStatus` still resolves — it is an alias for
-   `SaveChip` — but new code should import `SaveChip`.
+   `@web/components/AutosaveStatus` still works (it's an alias for `SaveChip` that we
+   keep for older plugins), but import `SaveChip` in new code.
 
-2. **Wire the hook.** The server value is the baseline — `useAutosave` saves when
-   the draft diverges from it, after a quiet period (600 ms default):
+2. **Wire up the hook.** The server's value is the baseline: `useAutosave` saves once
+   your draft differs from it and you've stopped typing for a moment (600 ms by
+   default).
 
    ```tsx
    import { useAutosave } from "@web/hooks/useAutosave";
@@ -91,50 +91,48 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
    const saveMut = useMutation({
      mutationFn: (payload: Settings) => api.put(`${BASE}/admin/settings`, payload),
      onSuccess:  () => qc.invalidateQueries({ queryKey: ["myplugin", "settings"] }),
-     onError:    (e) => swalToast(apiErrorMessage(e)),
+     onError:    (e) => toast.error(apiErrorMessage(e)),
    });
 
    useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mutate(v); } });
    ```
 
-3. **Show the indicator** in the page/panel header — it is the affordance that
-   replaces the Save button, so it is not optional:
+3. **Show the status.** It replaces the Save button, so it isn't optional. Where it
+   goes depends on where your UI lives.
 
-   **A panel nested in a host page reports; it does NOT render a chip.** A
-   plugin section on ACP → Settings sits under a page that already shows one, and
-   two indicators on one screen say the same thing twice — and can disagree while
-   a save is in flight. Report instead:
+   **A panel inside one of our pages reports to it instead of showing its own chip.**
+   A plugin section on ACP → Settings sits under a page that already has a chip. Two
+   chips on one screen say the same thing twice, and they can disagree while a save is
+   running:
 
    ```tsx
    import { useAutosave, useReportSaving } from "@web/hooks/useAutosave";
 
    useAutosave({ value: form, savedValue: data, onSave: (v) => saveMut.mutate(v) });
-   useReportSaving(saveMut.isPending);   // the host page's chip speaks for you
+   useReportSaving(saveMut.isPending);   // the page's chip shows it for you
    ```
 
-   A **standalone** plugin ACP page — one that owns its own `pg-head` — renders
-   the chip itself, because there is nothing above it to report to:
+   **A standalone plugin page**, one with its own `pg-head`, shows the chip itself,
+   because there's nothing above it to report to:
 
    ```tsx
    <SaveChip saving={saveMut.isPending} />
    ```
 
-   Either way it is core's own component and core's own engine. Do not hand-roll
-   an indicator: there used to be two, and the plugin-facing one was hardcoded
-   English.
+   Either way it's our component, translated into every language we ship. Please don't
+   build your own indicator.
 
-### Rules that keep it correct
+### Things that trip people up
 
-- **Do not toast on every success.** The indicator already reports it; a toast per
-  debounce-flush stacks up while the admin tabs through fields. Toast on **error**
-  only.
-- **`savedValue` must be `undefined` while loading**, never `null` or `{}`.
-  Autosave stays idle until it resolves, which is what stops the freshly-seeded
-  form from immediately saving itself back.
-- **Normalize both sides** when the draft and the server row aren't the same
-  shape. The hook deep-compares via `JSON.stringify`, so key order and
-  `undefined`-vs-`null` matter. A panel whose group has no row yet should compare
-  an all-`null` object against an all-`null` draft:
+- **Don't toast every successful save.** The chip already says it's saved. A toast per
+  save piles up while the admin tabs through fields. Toast only on **errors**.
+- **`savedValue` has to be `undefined` while loading**, not `null` or `{}`. Autosave
+  waits until it's defined, which is what stops a freshly loaded form from saving itself
+  straight back.
+- **Normalize both sides** when your draft and the server row don't have the same shape.
+  The hook compares them with `JSON.stringify`, so key order and `undefined` vs `null`
+  matter. A panel for a group that has no row yet should compare an all-`null` object
+  with an all-`null` draft:
 
   ```ts
   type Form = Omit<Row, "groupId">;
@@ -145,46 +143,37 @@ reason; `AdvModPage` excludes its proxycheck key from autosave for the second.
   useAutosave({ value: form, savedValue: rows ? normalize(find(rows)) : undefined, … });
   ```
 
-- **Don't hand-roll the debounce.** A local `setTimeout` + `useRef` baseline looks
-  equivalent and isn't: it bypasses the query cache (so other views go stale) and
-  it is easy to latch the indicator into a permanent "Saved" state that never
-  reports saving again. Both bugs shipped in the shoutbox before it moved to the
-  shared hook.
+- **Don't write your own debounce.** A `setTimeout` with a `useRef` baseline looks like
+  the same thing, but it isn't. It skips the query cache, so other views go stale, and
+  it's easy to get the chip stuck on "Saved" forever. The shoutbox shipped both of those
+  bugs before it switched to the shared hook.
 
 ## Per-group panels (`groupConfigPanel`)
 
-RBAC/progression-adjacent config belongs in the **core Group settings dialog**, not
-a standalone plugin page. Register a panel and it renders as a tab beside core's
-own "Progression" tab:
+Settings that belong to a group (permissions, progression) go in **core's group settings
+dialog**, not on a page of their own. Register a panel and it shows up as a tab next to
+our "Progression" tab:
 
 ```tsx
 slotRegistry.registerGroupConfigPanel({
   id: "my-plugin", label: "My Plugin", component: MyGroupPanel, order: 10,
 });
-// component receives { groupId, groupName }
+// your component gets { groupId, groupName }
 ```
 
-The plugin owns the data — core passes the group context and never learns the
-plugin's schema. These panels are config, so they **autosave**; see
-`ShoutboxGroupLimits` / `ForumGroupProgression`.
+Your plugin owns the data. Core passes in the group and never learns your schema. These
+panels are settings, so they **autosave**; see `ShoutboxGroupLimits` and
+`ForumGroupProgression`.
 
-If the panel's values are meant to be *earned* rather than assigned, resolve them
-against the user's progression rung with `host.progression.getEffectiveGroupId`,
-and contribute any promotion thresholds via `ctx.registerProgressionCriteria`
-(§38). That keeps one rule across core, forum and shoutbox: a group that is not on
-the ladder grants nothing.
+If the values are meant to be *earned* rather than assigned, resolve them against the
+user's progression rung with `host.progression.getEffectiveGroupId`, and add any
+promotion thresholds through `ctx.registerProgressionCriteria`. That way core, the forum
+and the shoutbox all follow one rule: a group that isn't on the ladder grants nothing.
 
-## What core provides
+## What core gives you
 
-- `apps/web/src/hooks/useAutosave.ts` → `useAutosave({ value, savedValue, onSave, delay? })`,
-  bridged as `window.__XENTIUM_HOST__.webUseAutosave`.
-- `apps/web/src/components/AutosaveStatus.tsx` → `<AutosaveStatus saving />`,
-  bridged as `webAutosaveStatus`.
-- `apps/web/src/plugins/slotRegistry.ts` → `registerGroupConfigPanel(slot)`.
-
-## Known gap
-
-`AutosaveStatus` hardcodes its English strings ("Saving…" / "Changes save
-automatically") — it is not wired to i18next, so a plugin cannot localize the
-indicator the way it localizes its own labels ([plugin-i18n](plugin-i18n.md)).
-Use it anyway for consistency; localizing it is a core change.
+- `useAutosave({ value, savedValue, onSave, delay? })` and `useReportSaving(saving)` in
+  `apps/web/src/hooks/useAutosave.ts`, exposed as `window.__XENTIUM_HOST__.webUseAutosave`.
+- `<SaveChip saving />` in `apps/web/src/components/SaveChip.tsx`, exposed as
+  `webSaveChip` (and as `webAutosaveStatus`, the older name).
+- `registerGroupConfigPanel(slot)` in `apps/web/src/plugins/slotRegistry.ts`.

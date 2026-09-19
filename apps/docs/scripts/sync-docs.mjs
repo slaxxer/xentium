@@ -45,7 +45,7 @@ const README_PAGES = [
   { slug: "start/introduction",    title: "What is Xentium",          order: 1,
     sections: ["What is Xentium", "Tech stack"] },
   { slug: "start/install",         title: "Installing from source",   order: 2,
-    sections: ["Prerequisites", "Quick start", "First run — the installer"] },
+    sections: ["Prerequisites", "Quick start", "First run"] },
   { slug: "start/configuration",   title: "Configuration",            order: 3,
     sections: ["Environment configuration"] },
   { slug: "start/workspace",       title: "The workspace",            order: 4,

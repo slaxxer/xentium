@@ -1,7 +1,7 @@
 # Plugin extension points
 
-Everything a plugin can contribute to core, in one place. All of it is registered from
-`onEnable(ctx)` and dropped again on disable.
+Everything a plugin can add to core, in one place. You register all of it from
+`onEnable(ctx)`, and it's removed again when the plugin is disabled.
 
 ```ts
 export default definePlugin({
@@ -11,18 +11,18 @@ export default definePlugin({
 });
 ```
 
-Two rules hold for every registry below, and they are the reason plugins can be
-disabled safely:
+Two rules apply to every registry on this page. They're why a plugin can be disabled
+safely.
 
-⚠ **Registration is not persistence.** A registry is in-memory and rebuilt on boot.
-Core re-enables every enabled plugin before the server listens, so a registry is
-complete by the time a request can arrive — but nothing a plugin registers survives
-a disable, and nothing should need to.
+**Registering isn't storing.** Registries live in memory and are rebuilt on boot. Core
+re-enables every enabled plugin before the server starts listening, so the registries are
+complete before the first request comes in. Nothing a plugin registers survives a
+disable, and nothing should need to.
 
-⚠ **Disabling drops the contribution, never the admin's data.** A threshold stored
-against a metric whose plugin is gone is *skipped*, not deleted, and counts again the
-day the plugin comes back. The same rule as unknown block types in a layout: skipped
-and kept.
+**Disabling removes what the plugin added, never the admin's data.** Say an admin set a
+threshold on a metric your plugin provides, and your plugin gets disabled. We skip that
+threshold rather than delete it, and it counts again as soon as your plugin is back. It's
+the same rule we use for unknown blocks in a layout: skip it, keep it.
 
 ---
 
@@ -38,14 +38,14 @@ r.get("/threads", ctx.host.middleware.optionalAuth, handler);
 ctx.registerRoutes(r);
 ```
 
-⚠ Core injects an **enabled check** in front of it: while your plugin is disabled every
-one of its routes answers `404 XEC-PLUGIN-2020`, without your code running. A route
-cannot outlive the plugin that registered it — so never point core UI at a plugin route
-without handling its absence.
+Core puts an **enabled check** in front of your router. While your plugin is disabled,
+every one of its routes answers `404 XEC-PLUGIN-2020` without running your code. So if
+anything in core's UI calls a plugin route, it has to cope with that route not being
+there.
 
-⚠ Use the host's `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`), not
-your own token parsing: `req.userId` is what the rest of the platform means by the
-caller.
+Use the host's `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`) rather
+than parsing tokens yourself. `req.userId` is what the rest of the platform means by "the
+caller".
 
 ### `registerPermissions(perms)`
 
@@ -53,18 +53,18 @@ caller.
 await ctx.registerPermissions([{
   key:      "forum.thread.create",   // domain.action, namespaced to your plugin
   label:    "Create threads",
-  domain:   "Forum",                 // grouping in the ACP's permission matrix
+  domain:   "Forum",                 // how the ACP's permission matrix groups it
   defaults: ["member", "moderator"], // GROUP KEYS, not ids
 }]);
 ```
 
-Upserted by key, so shipping a new key in an update is just declaring it — the `label`
-is refreshed and existing grants are untouched.
+We upsert by key, so adding a permission in an update is just declaring it. The `label`
+is refreshed and existing grants stay as they are.
 
-⚠ `defaults` are **re-asserted on every boot**, not granted once: `onEnable` runs for
-every enabled plugin at startup, and the grant is an upsert. Treat them as "this group
-always has this", and keep anything an admin is meant to be able to take away out of the
-list. (Known deviation from the intended first-install-only behaviour — see `BUGS.md`.)
+Heads up: `defaults` are **applied again on every boot**, not only on first install.
+`onEnable` runs for every enabled plugin at startup, and the grant is an upsert. So read
+`defaults` as "this group always has this", and leave out anything an admin should be
+able to take away. (That's a known bug; it's meant to happen on first install only.)
 
 ---
 
@@ -85,25 +85,25 @@ ctx.registerSearchSource({
 });
 ```
 
-⚠ `permission` is enforced by core before `search` is called, but the plugin still owns
-row-level access — core cannot know which of your rows this viewer may see.
+Core checks `permission` before it calls `search`, but row-level access is still your
+job. Core can't know which of your rows this viewer is allowed to see.
 
 ### `registerHomeFeedSource(source)`
 
-Items for the home and guest feeds.
+Items for the home feed and the guest feed.
 
 ```ts
 ctx.registerHomeFeedSource({
   id:    "forum",
   label: "Forum threads",
   async recent(limit) { return [...]; },
-  async hot(limit)    { return [...]; },   // optional — powers the "Hot threads" rail
+  async hot(limit)    { return [...]; },   // optional; feeds the "Hot threads" rail
 });
 ```
 
 ### `registerStatSource(source)`
 
-Counters for the footer stats row.
+Counters for the stats row in the footer.
 
 ```ts
 ctx.registerStatSource({
@@ -114,8 +114,8 @@ ctx.registerStatSource({
 });
 ```
 
-⚠ `id` is a machine key the client localises; `label` is the English fallback, not the
-display string. See `docs/plugin-i18n.md`.
+`id` is a machine key that the browser translates. `label` is only the English fallback,
+not what's displayed. See [Translating a plugin](plugin-i18n.md).
 
 ---
 
@@ -123,38 +123,38 @@ display string. See `docs/plugin-i18n.md`.
 
 ### `registerBadgeCriteria(metric)`
 
-Something a **badge** can be earned for. The forum contributing `forum.posts` is why an
-admin can only require forum posts while the forum is installed.
+Something a **badge** can be earned for. The forum registers `forum.posts`, which is why
+an admin can only require forum posts while the forum is installed.
 
 ```ts
 ctx.registerBadgeCriteria({
-  key:   "forum.posts",             // namespace with your plugin's own prefix
+  key:   "forum.posts",             // namespace it with your plugin's prefix
   label: "Forum posts",             // a translation key AND the fallback text
   async valueFor(userId) { return 42; },
 });
 ```
 
-⚠ **You report a NUMBER; core does the comparing.** The threshold lives on the badge,
-set by an admin, so a plugin never stores or interprets one.
+**You report a number, and core does the comparing.** The threshold lives on the badge
+and an admin sets it, so your plugin never stores or interprets one.
 
-⚠ Different from `registerProgressionCriteria`, which answers yes/no against a ladder
-*group's* own thresholds. A badge keeps its thresholds on the badge.
+This is different from `registerProgressionCriteria`, which answers yes/no against a
+ladder *group's* own thresholds. A badge keeps its thresholds on the badge.
 
-⚠ A badge whose criteria name only metrics from absent plugins is granted to **nobody**,
-never to everybody. Two ways to over-grant were closed deliberately; do not "helpfully"
-return 0 for an unknown user — throw or return a real count.
+If a badge's criteria only use metrics from plugins that aren't there, **nobody** gets
+it; it never goes to everybody. Please don't return 0 for a user you don't know about to
+be helpful. Throw, or return a real count.
 
 ### `registerProgressionCriteria(criteria)`
 
-Per-group thresholds for the progression ladder (§38). The plugin owns both the
-thresholds and the user's metrics; core never sees your schema.
+Per-group thresholds for the progression ladder. Your plugin owns both the thresholds and
+the users' metrics; core never sees your schema.
 
-`evaluate(userId, groupId)` returns one boolean per threshold you have set for that
-group — empty if none — and core combines them with its own per
-`progression.threshold_logic`.
+`evaluate(userId, groupId)` returns one boolean for each threshold you've set on that
+group (an empty list if there are none), and core combines them with its own results
+according to `progression.threshold_logic`.
 
-Its ACP surface is a `groupConfigPanel` tab and it **autosaves**; see
-`docs/plugin-acp-autosave.md`.
+Its ACP page is a `groupConfigPanel` tab, and it **autosaves**. See
+[Plugin pages in the ACP](plugin-acp-autosave.md).
 
 ---
 
@@ -162,27 +162,27 @@ Its ACP surface is a `groupConfigPanel` tab and it **autosaves**; see
 
 ### `registerAcpPage(page)` / `registerNavItem(item)`
 
-An admin page, and a link in the site nav.
+An admin page, and a link in the site's nav.
 
-⚠ Plugin nav links always append below core's. The declared `position` is a hint, not
-an index — admins reorder in the ACP.
+Plugin nav links always go below core's. The `position` you declare is a hint, not an
+index; admins reorder links in the ACP.
 
 ### Blocks, layout templates and slots
 
-Covered in **`docs/plugin-blocks.md`**: `blockRegistry` for first-class blocks,
-`ctx.registerLayoutTemplate` for opening one of your own pages to the layout editor, and
-the `slotRegistry` contributions (header widget, layout widget, profile tab) that core
-mirrors into placeable blocks for you.
+These are covered in [Plugin-authored layout blocks](plugin-blocks.md): `blockRegistry`
+for real blocks, `ctx.registerLayoutTemplate` to open one of your own pages to the Layout
+Editor, and the `slotRegistry` contributions (header widget, layout widget, profile tab)
+that core turns into placeable blocks for you.
 
 ### Icons
 
-⚠ **Import `FontAwesomeIcon` from the externalised module** — every plugin already does,
-via `__XENTIUM_HOST__.FaReact`. Core swaps that one export for its own wrapper, so your
-icons follow the site's icon style with no change and no rebuild on your side.
+**Import `FontAwesomeIcon` from the externalized module.** Every plugin already does,
+through `__XENTIUM_HOST__.FaReact`. Core swaps that one export for its own wrapper, so
+your icons follow the site's icon style without any change or rebuild on your side.
 
-A plugin that *bundles* its own copy of `@fortawesome/react-fontawesome` silently opts
-out: its icons stay solid while the rest of the site changes. Keep it in your vite
-externals. See `docs/icon-kits.md`.
+If your plugin *bundles* its own copy of `@fortawesome/react-fontawesome`, it quietly
+opts out: its icons stay solid while the rest of the site changes. Keep it in your Vite
+externals. See [Icons](icon-kits.md).
 
 ---
 
@@ -199,8 +199,7 @@ ctx.registerNecCodes([{
 }]);
 ```
 
-⚠ Namespace the domain with your plugin. `XEC-API-*` and the other core domains are
-core's.
+Use your plugin's own domain. `XEC-API-*` and the other core domains are ours.
 
 ### `ctx.notify(opts)`
 
@@ -211,23 +210,24 @@ await ctx.notify({
 });
 ```
 
-⚠ **`type` is dotted and prefixed with your plugin's own namespace.** Per-user
-preferences are matched by *pattern prefix* (`forum.*`), so an unnamespaced type is
-uncontrollable by the member and may collide with core's.
+**Make `type` dotted and start it with your plugin's namespace.** We match per-user
+notification preferences by prefix (`forum.*`), so a type without a namespace can't be
+turned off by the member and might collide with one of ours.
 
-⚠ **Notifications with no human sender must say so.** The bell renders a `UserAvatar`
-built from the notification's own `title` unless the type matches a *system prefix* —
-which produces initials cut out of a sentence. Declare yours with
+**Say so when a notification has no human sender.** Unless the type matches a *system
+prefix*, the bell draws a `UserAvatar` from the notification's `title`, and you end up
+with initials cut out of a sentence. Declare your prefixes with
 `systemNotificationPrefixes` in your plugin meta.
 
-⚠ Notifying must never block the thing it reports. Dispatch **after** your write, and
-wrap it: a mail outage must not cost a member the action that succeeded.
+A notification should never block the thing it's about. Send it **after** your write and
+wrap it in a try/catch: a mail outage shouldn't cost a member an action that already
+worked.
 
 ### `registerNotificationTypes(types)`
 
-Currently a no-op that only logs — reserved for a future preferences UI. Registering is
-harmless and future-proof, but do not rely on it to make a type user-controllable
-today; the pattern prefix above is what does that.
+Right now this only logs. We've reserved it for a future preferences UI. Registering is
+harmless and future-proof, but it doesn't make a type controllable by users today; the
+prefix above does that.
 
 ---
 
@@ -244,28 +244,31 @@ ctx.registerAuthGuard({
 });
 ```
 
-⚠ `beforeRegister` returning `"allow"` **authorises** the registration and core's own
-`auth.registration_mode` gate no longer applies — that is how a private beta works on a
-site whose registration is otherwise closed. Returning nothing means "no opinion" and
+If `beforeRegister` returns `"allow"`, you've **authorized** the registration, and core's
+own `auth.registration_mode` check no longer applies. That's how a private beta works on
+a site where registration is otherwise closed. Returning nothing means "no opinion", and
 core's policy still runs.
 
-⚠ Staff are passed to `beforeLogin` too. The guard decides whether to exempt them; core
-does not assume a policy exempts anyone.
+Staff go through `beforeLogin` too. Your guard decides whether to let them through; core
+doesn't assume any policy exempts anyone.
 
 ### `registerSecurityScan(fn)` / `claimSecurityPatterns(patterns)`
 
-See **`docs/security-detection.md`**. A plugin claims a core baseline pattern to
-*replace* it with a better implementation, rather than both firing.
+`registerSecurityScan` runs your own abuse check on core's security-analysis schedule
+(every 30 minutes), and your scan opens review cases with `ctx.host.security.createCase`.
+With `claimSecurityPatterns` your plugin *replaces* one of core's built-in patterns with
+its own version, so the two don't both fire. Core's version comes back when your plugin is
+disabled.
 
 ---
 
-## What core gives you back
+## What core gives you
 
 `ctx.host` carries `prisma`, `queues`, `env`, `logger`, `errors` (`XentiumError`, `XEC`),
 `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`), `utils`
 (`resolveAvatar`, `sanitizeRichText`, `cron`), `progression.getEffectiveGroupId`,
 `notificationService` and `security`.
 
-⚠ Use `host.prisma`, never your own client. Plugin tables live outside the Prisma schema
-and are migrated by the plugin migration runner (`<pluginid>_` prefix, tracked in
-`xcf_plugin_migrations`) — a second client is a second connection pool.
+Use `host.prisma`, never a client of your own. Plugin tables live outside the Prisma
+schema and the plugin migration runner migrates them (with your `<pluginid>_` prefix,
+tracked in `xcf_plugin_migrations`). A second client just means a second connection pool.

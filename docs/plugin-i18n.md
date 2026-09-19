@@ -1,22 +1,22 @@
-# Plugin i18n (§60.7)
+# Translating a plugin
 
-How an official/community plugin ships its own translated UI strings in all
-bundled languages (en, de, es, fr, pt). Built June 2026 — see the
-`xentium-advanced-moderation` plugin for a live example (namespace `advmod`).
+This is how a plugin ships its own translated UI strings in every language we bundle
+(en, de, es, fr, pt). For a working example, look at the `xentium-advanced-moderation`
+plugin (namespace `advmod`).
 
-## Model
+## How it works
 
-The plugin **bundles** its locale JSON into its web bundle and registers it into
-the host i18next instance on load. No HTTP fetch, no server packaging — the
-translations travel with `web/dist/index.umd.js`. The plugin owns a **namespace**
-(use the plugin id or a short slug, e.g. `forum`, `messaging`, `advmod`).
+Your plugin **bundles** its locale JSON into its web bundle and registers it with the
+host's i18next instance when it loads. There's no HTTP fetch and nothing to package on
+the server; the translations travel inside `web/dist/index.umd.js`. Your plugin owns a
+**namespace**. Use the plugin id or a short slug, e.g. `forum`, `messaging`, `advmod`.
 
-A plugin may also reuse a **core** namespace (e.g. `acp`) when the strings already
-exist there — that needs no locale files at all (the cases UI does this).
+If the strings you need already exist in a **core** namespace (e.g. `acp`), you can
+just use that one and skip the locale files entirely. Our moderation cases UI does this.
 
-## Recipe
+## Step by step
 
-1. **Locale files** — one JSON per language, keyed by your namespace:
+1. **Add the locale files**, one JSON per language, named after your namespace:
 
    ```
    web/locales/en/<ns>.json
@@ -31,23 +31,25 @@ exist there — that needs no locale files at all (the cases UI does this).
    { "thread": { "reply": "Reply", "solved": "Solved" } }
    ```
 
-2. **Externalize the bridge** in `vite.config.ts` (alongside the others):
+2. **Externalize the bridge** in `vite.config.ts`, next to the others:
 
    ```ts
    "@web/plugins/pluginI18n": `${H}.webPluginI18n`,
    ```
 
-3. **Dev deps for typecheck** (externalized at runtime, only tsc needs the types):
+3. **Add the dev dependencies for typechecking.** They're externalized at runtime, so
+   only `tsc` needs them:
 
    ```jsonc
    // package.json devDependencies
    "i18next": "^26.2.0",
    "react-i18next": "^17.0.8"
    ```
-   then `pnpm install --filter <your-plugin>`. (`web/tsconfig.json` already has
+
+   Then run `pnpm install --filter <your-plugin>`. (`web/tsconfig.json` already has
    `resolveJsonModule: true`.)
 
-4. **Register** in `web/index.tsx`, before any UI renders:
+4. **Register them** in `web/index.tsx`, before any UI renders:
 
    ```ts
    import { registerPluginTranslations } from "@web/plugins/pluginI18n";
@@ -60,7 +62,7 @@ exist there — that needs no locale files at all (the cases UI does this).
    });
    ```
 
-5. **Use it** in components:
+5. **Use them** in your components:
 
    ```tsx
    import { useTranslation } from "react-i18next";
@@ -68,17 +70,19 @@ exist there — that needs no locale files at all (the cases UI does this).
    return <button>{t("thread.reply")}</button>;
    ```
 
-Missing keys fall back to `en` (i18next `fallbackLng`). Switching the UI language
-needs no re-fetch — all bundled languages are registered up front. Cross-namespace
-keys work with the `ns:` prefix, e.g. `t("common:actions.cancel")`.
+A missing key falls back to English (i18next's `fallbackLng`). Switching the UI language
+doesn't fetch anything, because every language is registered up front. To use a key from
+another namespace, prefix it: `t("common:actions.cancel")`.
 
-## What core provides
-- `apps/web/src/plugins/pluginI18n.ts` → `registerPluginTranslations(resources)`
-  (`resources` = `{ [lng]: { [ns]: { …keys } } }`), bridged as
+## What core gives you
+
+- `registerPluginTranslations(resources)` in `apps/web/src/plugins/pluginI18n.ts`, where
+  `resources` is `{ [lng]: { [ns]: { …keys } } }`. It's exposed as
   `window.__XENTIUM_HOST__.webPluginI18n`.
-- `react-i18next` itself is bridged (`ReactI18next`) so the plugin shares the host
-  i18next instance + its loaded namespaces.
+- `react-i18next` itself is shared too (`ReactI18next`), so your plugin uses the host's
+  i18next instance and everything it has already loaded.
 
-## Not covered (yet)
-Server-side i18n for plugin **emails / notifications** (the §60.9 backend path) is
-separate and not built. This doc is the **web** UI string mechanism only.
+## What's not covered yet
+
+Translating a plugin's **emails and notifications** on the server is a separate thing,
+and we haven't built it for plugins yet. This page is only about strings in the web UI.
