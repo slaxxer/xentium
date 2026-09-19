@@ -1254,7 +1254,12 @@
     "howToBlocked": "Aktualisiere zuerst diese Plugins, dann auf dem Server anwenden mit:",
     "dialogTitle": "Xentium {{version}} ist verfügbar",
     "dialogVersion": "Version",
-    "dialogBehind": "Versionen im Rückstand"
+    "dialogBehind": "Versionen im Rückstand",
+    "onTheWay": {
+      "security": "Enthält einen Sicherheitsfix in {{version}}:",
+      "critical": "Enthält einen kritischen Fix in {{version}}:"
+    },
+    "dialogBlocked": "Blockiert von"
   },
   "license": {
     "loading": "Lädt…",

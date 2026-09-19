@@ -30,6 +30,9 @@ export interface CoreUpdate {
   current: string;
   latest: CoreRelease;
   highestSeverity: "normal" | "security" | "critical" | null;
+  /** The release ON THE WAY that the severity actually comes from, when it is
+   *  not the newest one. Null when the newest release is itself the urgent one. */
+  urgentRelease: CoreRelease | null;
   releaseCount: number;
   via: string | null;
   blockedBy: Array<{ id: string; name: string; supports: string }>;
@@ -90,6 +93,20 @@ export function CoreUpdateCard({ update }: { update: CoreUpdate }) {
         {update.latest.notes && (
           <div style={{ fontSize: 13, color: "var(--c-fg-muted)", lineHeight: 1.6, whiteSpace: "pre-line" }}>
             {update.latest.notes}
+          </div>
+        )}
+
+        {/* Without this the card reads "security" above release notes about
+            layout variants: the badge is right and the page contradicts it. */}
+        {update.urgentRelease && (
+          <div style={{
+            fontSize: 12.5, marginTop: 8, padding: "8px 10px", lineHeight: 1.6,
+            color: accent, borderRadius: "var(--radius-sm)",
+            background: `color-mix(in srgb, ${accent} 10%, transparent)`,
+            border: `1px solid color-mix(in srgb, ${accent} 26%, transparent)`,
+          }}>
+            <strong>{t(`coreUpdate.onTheWay.${update.urgentRelease.severity}`, { version: update.urgentRelease.version })}</strong>
+            {update.urgentRelease.notes ? ` ${update.urgentRelease.notes}` : ""}
           </div>
         )}
 

@@ -49,6 +49,11 @@ describe("pluginsBlocking", () => {
     expect(pluginsBlocking("9.9.9", [plugin("vague")])).toEqual([]);
   });
 
+  it("does not write a range when the floor and ceiling are the same version", () => {
+    // "supports 1.0–1.0" is a range with one member, and reads like a mistake.
+    expect(pluginsBlocking("1.1.0", [plugin("forum", "1.0", "1.0")])[0]!.supports).toBe("1.0");
+  });
+
   it("names every blocker, not just the first", () => {
     const blockers = pluginsBlocking("2.0.0", [
       plugin("forum", "1.0", "1.2"), plugin("ok", "1.0"), plugin("shoutbox", "1.0", "1.5"),

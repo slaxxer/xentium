@@ -26,7 +26,8 @@ export interface InstalledManifest {
 export interface Blocker {
   id: string;
   name: string;
-  /** What it says it supports, for the card: "1.0+" or "1.0–1.2". */
+  /** What it says it supports, for the card: "1.0+", "1.0–1.2", or just "1.0"
+   *  when the floor and the ceiling are the same version. */
   supports: string;
 }
 
@@ -39,7 +40,8 @@ export function pluginsBlocking(version: string, installed: InstalledManifest[])
     const tooOld = compareBaseVersions(version, min) < 0;
     const tooNew = !!max && compareBaseVersions(version, max) > 0;
     if (tooOld || tooNew) {
-      blockers.push({ id: plugin.id, name: plugin.name, supports: max ? `${min}–${max}` : `${min}+` });
+      const supports = !max ? `${min}+` : max === min ? min : `${min}–${max}`;
+      blockers.push({ id: plugin.id, name: plugin.name, supports });
     }
   }
   return blockers;
