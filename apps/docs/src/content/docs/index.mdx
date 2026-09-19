@@ -1,0 +1,48 @@
+---
+title: Xentium developer docs
+description: Build plugins and themes for Xentium, work on its core, or run it on your own server.
+template: splash
+hero:
+  tagline: Build plugins and themes for Xentium, work on its core, or run it on your own server.
+  actions:
+    - text: Get started
+      link: /start/introduction/
+      icon: right-arrow
+    - text: Write a plugin
+      link: /plugins/guide/
+      variant: minimal
+    - text: GitHub
+      link: https://github.com/slaxxer/xentium
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from "@astrojs/starlight/components";
+
+<CardGrid stagger>
+  <Card title="Start here" icon="rocket">
+    What Xentium is, how to [install it from source](/start/install/), and how the
+    [workspace](/start/workspace/) is laid out.
+  </Card>
+  <Card title="Plugins" icon="puzzle">
+    Plugins are **code**: routes, migrations, permissions and blocks.
+    Start with [writing a plugin](/plugins/guide/), then
+    [layout blocks](/plugins/blocks/) and [extension points](/plugins/extension-points/).
+  </Card>
+  <Card title="Themes & styling" icon="seti:css">
+    Themes are **data**: tokens, layouts and a stylesheet, never code. Read
+    [the style system](/themes/style-system/), then the
+    [`.xttheme` format](/themes/packages/).
+  </Card>
+  <Card title="Server admins" icon="laptop">
+    [Running Xentium in production](/admin/production/): systemd, nginx, TLS, and
+    what the API needs from its environment.
+  </Card>
+  <Card title="Reference" icon="open-book">
+    The [REST API](/reference/api/), the [marketplace protocol](/reference/marketplace-protocol/)
+    and the [framework packages on npm](/reference/packages/).
+  </Card>
+  <Card title="Contributing" icon="github">
+    How to [contribute](/contributing/) to core, and the ground rules a pull request is held to.
+  </Card>
+</CardGrid>

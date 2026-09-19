@@ -8,7 +8,6 @@ themes.
 |---|---|
 | [`theme-packages.md`](theme-packages.md) | the `.xttheme` file format, byte by byte |
 | [`plugin-blocks.md`](plugin-blocks.md) | registering blocks a layout can place |
-| `d0cs/adr/0003`, `0005` (private) | region theming and block layouts — the *why* |
 
 ---
 
