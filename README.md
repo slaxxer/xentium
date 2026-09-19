@@ -2,9 +2,9 @@
 
 # Xentium
 
-**An open-source, extensible CMS & community platform.**
+**An open-source, extensible CMS and community platform.**
 
-Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
+Modular-monolith core · TypeScript end to end · plugins first
 
 `Node.js 24` · `Express 5` · `React 19` · `PostgreSQL 17` · `Prisma 7` · `Redis 7` · `pnpm + Turborepo`
 
@@ -21,7 +21,7 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 - [Prerequisites](#prerequisites)
 - [Quick start](#quick-start)
 - [Environment configuration](#environment-configuration)
-- [First run — the installer](#first-run--the-installer)
+- [First run](#first-run)
 - [Everyday commands](#everyday-commands)
 - [Project structure](#project-structure)
 - [Framework packages (npm)](#framework-packages-npm)
@@ -37,26 +37,29 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 ## What is Xentium
 
-Xentium is a **production-shaped, open-source community platform** you can run out of the box as an article/CMS site and extend with plugins. The core is fully usable on its own — premium official add-ons (forum, messaging, …) live in **plugins**, never in core.
+Xentium is an open-source community platform. Out of the box you get an article/CMS
+site, and you extend it with plugins. The core works fine on its own. Our paid official
+add-ons (forum, messaging and so on) are plugins, and we don't move core features into
+them.
 
-**Core features**
+What's in core:
 
-- 🔐 **Auth & RBAC** — email/password, rotating refresh sessions, flat permission groups, Redis-cached permission resolution.
-- 📝 **Articles / CMS** — TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
-- 👤 **Users & social** — profiles, custom profile fields, follow/block, profile walls, a group-based progression ("levels are groups") engine.
-- 🛡️ **Moderation** — reports, warnings, bans, review cases fed by **built-in abuse-pattern detection** (rapid logins, multi-account, registration bursts, ban evasion — informational, never auto-acting), immutable log, threshold engine, and a floating ModCanvas tool.
-- 🎨 **Appearance** — three-tier CSS token system, live style editor, `.xttheme` packages (colours-only or full), font system, dynamic nav manager.
-- 🧱 **Layout editor** — compose what appears on each page, and on the navbar and footer, by arranging **blocks** in named regions. Drag in the tree or directly in a live preview; edits appear instantly, autosave as a draft, and go live on an explicit publish. A layout is **data, not code**, so a theme can never execute anything.
-- 🔔 **Notifications** — core service every module dispatches through (in-app + queued email).
-- 🧩 **Plugin engine** — install/enable/disable lifecycle, sandboxed migrations, dynamic routes/permissions/ACP pages, and registry-based extension points.
-- 🛒 **Marketplace & licensing** — per-domain entitlement for official premium plugins (the core never gets bricked).
-- 🌍 **i18n** — multilingual from day one (en/de/es/fr/pt bundled), locale-agnostic API.
+- 🔐 **Auth & RBAC:** email/password login, rotating refresh sessions, flat permission groups, permissions cached in Redis.
+- 📝 **Articles / CMS:** TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
+- 👤 **Users & social:** profiles, custom profile fields, follow/block, profile walls, and a progression system where levels are groups.
+- 🛡️ **Moderation:** reports, warnings, bans, an immutable log, thresholds and the floating ModCanvas tool. Built-in abuse detection (rapid logins, multi-accounts, registration bursts, ban evasion) opens review cases for a human. It never acts on its own.
+- 🎨 **Appearance:** a three-tier CSS token system, a live Style Editor, `.xttheme` packages, fonts and a nav manager.
+- 🧱 **Layout editor:** arrange blocks in regions to decide what shows up on each page, in the navbar and in the footer. You drag in a tree or right in a live preview; edits autosave as a draft and go live when you publish. Layouts are data, so a theme can't run code.
+- 🔔 **Notifications:** one core service every module sends through (in-app and queued email).
+- 🧩 **Plugin engine:** install/enable/disable, sandboxed migrations, routes, permissions and ACP pages from plugins, plus registries you can hook into.
+- 🛒 **Marketplace & licensing:** per-domain licences for the official paid plugins. A lapsed licence never breaks core.
+- 🌍 **i18n:** English, German, Spanish, French and Portuguese bundled. The API itself doesn't care about language.
 
 ---
 
 ## Tech stack
 
-| Layer | Choices |
+| Layer | What we use |
 |---|---|
 | **Backend** | Node.js 24, Express 5, Prisma 7, PostgreSQL 17, Redis 7 + BullMQ, Zod, Pino, argon2, jose |
 | **Frontend** | React 19, Vite, React Router 7, TanStack Query, React Hook Form + Zod, SCSS, TipTap |
@@ -66,11 +69,12 @@ Xentium is a **production-shaped, open-source community platform** you can run o
 
 ## Prerequisites
 
-- **Node.js 24** (see `.nvmrc` — `nvm use` picks it up)
-- **pnpm 10** (`corepack enable` provisions the version pinned in `package.json`)
-- **Docker** + Docker Compose (for PostgreSQL + Redis), or your own Postgres 17 / Redis 7 instances
+- **Node.js 24** (there's an `.nvmrc`, so `nvm use` works)
+- **pnpm 10** (`corepack enable` gets you the version pinned in `package.json`)
+- **Docker** with Compose for PostgreSQL and Redis, or your own Postgres 17 and Redis 7
 
-That's it — no config files to write. The install wizard collects your database credentials, generates all secrets and writes `.env` for you.
+You don't write any config files. The install wizard asks for your database details,
+generates the secrets and writes `.env` for you.
 
 ---
 
@@ -80,57 +84,70 @@ That's it — no config files to write. The install wizard collects your databas
 # 1. Clone and install
 git clone https://github.com/slaxxer/xentium.git
 cd xentium
-corepack enable          # ensures the pinned pnpm version
+corepack enable          # gets the pinned pnpm version
 pnpm install
 
-# 2. Launch everything (Postgres + Redis containers, Prisma client, api + worker + web)
+# 2. Start everything: Postgres + Redis containers, Prisma client, api + worker + web
 ./xentium.sh
 ```
 
-Then open **http://localhost:5173** — you'll be redirected to the **install wizard**, which handles everything else in the browser: it collects your database credentials, **generates all secrets and writes the `.env` file itself**, applies the schema and creates your admin account. No hand-edited config, no restart.
+Open **http://localhost:5173** and you'll land in the install wizard. It does the rest in
+the browser: checks your database, generates the secrets, writes `.env`, applies the
+schema and creates your admin account. You don't restart anything.
 
-> Using the bundled Docker infra? The wizard's database step wants: host `localhost`, port `5432`, database `xentium`, user `xentium`, password `xentium`.
+> If you use our Docker setup, enter this in the wizard's database step: host `localhost`,
+> port `5432`, database `xentium`, user `xentium`, password `xentium`.
 
-> Already have a `.env` (an existing install, CI, or a restored config)? The wizard detects it and the database step becomes a plain connection test — nothing is overwritten.
+> Already have a `.env` (an existing install, CI, a restored config)? The wizard notices,
+> and the database step only tests the connection. It doesn't overwrite anything.
 
-> `./xentium.sh` brings the infra containers up (waiting for healthchecks), then runs the API, the BullMQ worker, and the web app together. `Ctrl+C` stops the app processes; the containers stay up for fast restarts. Run `./xentium.sh down` to stop them.
+> `./xentium.sh` starts the containers, waits until they're healthy, then runs the API,
+> the BullMQ worker and the web app together. `Ctrl+C` stops the apps but leaves the
+> containers running so the next start is quick. `./xentium.sh down` stops those too.
 
-**Default ports:** API → `http://localhost:4000`, web → `http://localhost:5173`, Postgres → `5432`, Redis → `6379`.
+**Default ports:** API `4000`, web `5173`, Postgres `5432`, Redis `6379`.
 
 ---
 
 ## Environment configuration
 
-Xentium reads a single **`.env` at the repo root** — but you normally never write it by hand: **the install wizard creates it on first run** (database URL + all generated secrets, written with mode `0600`). This section is the reference for advanced setups — CI, prebuilt containers, or restoring an existing config.
+Xentium reads one `.env` file at the repo root. Normally you never touch it: the wizard
+writes it on first run (with mode `0600`). This section is for when you need to, e.g. in
+CI, in a prebuilt container, or when you restore a config.
 
-**How boot decides:** if the required variables below are missing, the API starts in **setup mode** — a minimal server that serves only the install wizard. Once the wizard writes the config, the full application boots in the same process on the same port (no restart). If the variables are present, Xentium boots normally; the config is validated by Zod at startup (`apps/api/src/config/env.ts`) and the app refuses to run with an invalid one.
+**How the API decides what to boot:** if a required variable is missing, it starts in
+**setup mode**, a small server that only serves the install wizard. As soon as the wizard
+has written the config, the full app starts in the same process on the same port. If the
+variables are there, it boots normally. We validate the config with Zod at startup
+(`apps/api/src/config/env.ts`), and the API refuses to run on an invalid one.
 
 ### Required
 
 | Variable | Notes |
 |---|---|
-| `DATABASE_URL` | e.g. `postgresql://xentium:xentium@localhost:5432/xentium` (matches the Docker defaults) |
-| `COOKIE_SECRET` | ≥ 16 chars — signs cookies |
-| `JWT_SECRET` | ≥ 32 chars — signs HS256 access tokens |
-| `DUMMY_ARGON2_HASH` | a throwaway argon2 hash used to equalize login timing (prevents account enumeration) |
+| `DATABASE_URL` | e.g. `postgresql://xentium:xentium@localhost:5432/xentium` (matches our Docker defaults) |
+| `COOKIE_SECRET` | at least 16 characters; signs cookies |
+| `JWT_SECRET` | at least 32 characters; signs the HS256 access tokens |
+| `DUMMY_ARGON2_HASH` | a throwaway argon2 hash. We verify against it when a login email doesn't exist, so a failed login takes the same time either way and nobody can probe which accounts exist. |
 
-### Optional (sensible defaults)
+### Optional
 
 | Variable | Default |
 |---|---|
-| `NODE_ENV` | `development` |
+| `NODE_ENV` | `production`. Development mode is opt-in: `./xentium.sh` sets it, or put `NODE_ENV=development` in `.env`. |
 | `PORT` | `4000` |
 | `APP_URL` | `http://localhost:5173` |
 | `REDIS_URL` | `redis://localhost:6379` |
 | `REDIS_KEY_PREFIX` | `xentium:` |
-| `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` when unset (the wizard generates a dedicated one) |
-| `UPLOAD_DIR` | `./var/uploads` (resolved from the API process CWD) |
-| `BOOTSTRAP_OFFICIAL_PLUGINS` | `false` — when `true`, auto-installs first-party plugins from `plugins/official/` at startup; otherwise install them on demand in the ACP |
-| `LICENSE_SERVER_URL`, `LICENSE_*_KEY` | only needed for marketplace/licensing flows |
+| `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` if unset (the wizard generates its own) |
+| `UPLOAD_DIR` | `./var/uploads`, relative to where the API process runs |
+| `BOOTSTRAP_OFFICIAL_PLUGINS` | `false`. Set it to `true` to install the first-party plugins from `plugins/official/` on startup; otherwise you install them from the ACP. |
+| `LICENSE_SERVER_URL`, `LICENSE_*_KEY` | only needed for marketplace and licensing |
 
-### Manual setup (optional)
+### Manual setup
 
-If you'd rather skip the wizard's setup step, copy `.env.example` to `.env` and generate the secrets yourself:
+If you'd rather skip the wizard's setup step, copy `.env.example` to `.env` and generate
+the secrets yourself:
 
 ```bash
 # COOKIE_SECRET (>=16) and JWT_SECRET (>=32)
@@ -145,6 +162,7 @@ pnpm --filter @xentium/api exec node --input-type=commonjs \
 A complete dev `.env`:
 
 ```dotenv
+NODE_ENV="development"
 DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"
 REDIS_URL="redis://localhost:6379"
 APP_URL="http://localhost:5173"
@@ -155,23 +173,28 @@ DUMMY_ARGON2_HASH="<argon2 hash from the command above>"
 
 ---
 
-## First run — the installer
+## First run
 
-On first launch an **install guard** blocks every route except the installer and the web app redirects you to `/install`. The wizard runs server-side steps in order:
+Until the site is installed, an install guard blocks every route except the installer,
+and the web app sends you to `/install`. The wizard goes through these steps:
 
 1. **Welcome**
-2. **Environment check** — on a fresh clone: Node version, `.env` writability, data directory. With a preconfigured `.env`: Node / PostgreSQL / Redis / disk / config.
-3. **Database** — on a fresh clone you enter your PostgreSQL credentials (host, port, database, user, password — plus an optional Redis URL under *Advanced*). Xentium verifies the connection, **generates `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, writes `.env`** and switches to the full application in place — no restart. With a preconfigured `.env` this step is just a connection test.
-4. **Site config** — site name, URL, default language, timezone
-5. **Admin account** — create the first administrator
-6. **Finalize** — `prisma migrate deploy` applies the schema, core groups/permissions/system profile fields are seeded, and a `site.id` is written to settings
-7. **Complete** — links to the ACP and the public site
+2. **Environment check.** On a fresh clone it checks the Node version, whether `.env` is writable and the data directory. With an existing `.env` it checks Node, PostgreSQL, Redis, disk and config.
+3. **Database.** On a fresh clone you enter your PostgreSQL details (host, port, database, user, password, and a Redis URL under *Advanced* if you need one). We test the connection, generate `COOKIE_SECRET`, `JWT_SECRET`, `REFRESH_TOKEN_HMAC_SECRET` and `DUMMY_ARGON2_HASH`, write `.env` and switch to the full app. With an existing `.env` this step is just a connection test.
+4. **Site config:** name, URL, default language, timezone.
+5. **Admin account:** your first administrator.
+6. **Finalize:** `prisma migrate deploy` applies the schema, we seed the core groups, permissions and system profile fields, and write a `site.id` to settings.
+7. **Complete:** links to the ACP and to your site.
 
-Once complete, the installer **locks itself out** — the guard lifts and the wizard disappears from navigation. Log in with your admin account and head to the **ACP** (Admin Control Panel) at `/admin`.
+After that the installer locks itself. Log in and go to the ACP (Admin Control Panel)
+at `/admin`.
 
-> Entered wrong credentials? Nothing is written until the connection check passes — fix the values and hit *Connect & save* again. An existing `.env` is never clobbered: the wizard only fills in missing keys and preserves everything else in the file.
+> Typed the wrong credentials? Nothing is written until the connection test passes, so
+> fix them and hit *Connect & save* again. We never overwrite an existing `.env`; the
+> wizard only adds the keys that are missing.
 
-> Migrations are applied by the installer. If you prefer to run them yourself during development, use `pnpm db:migrate`.
+> The installer applies the migrations. If you want to run them yourself while
+> developing, use `pnpm db:migrate`.
 
 ---
 
@@ -179,19 +202,19 @@ Once complete, the installer **locks itself out** — the guard lifts and the wi
 
 ```bash
 # Dev
-./xentium.sh                 # infra (Postgres+Redis) + api + worker + web
-./xentium.sh down            # stop infra containers
-pnpm dev:apps            # api + worker + web only (infra already up)
-pnpm backbone:up         # start just the infra containers
+./xentium.sh             # infra (Postgres + Redis) + api + worker + web
+./xentium.sh down        # stop the infra containers
+pnpm dev:apps            # api + worker + web only (infra already running)
+pnpm backbone:up         # start only the infra containers
 pnpm backbone:down       # stop them
 
 # Database (Prisma)
-pnpm db:generate         # regenerate the Prisma client after schema changes
+pnpm db:generate         # regenerate the Prisma client after a schema change
 pnpm db:migrate          # create/apply a dev migration
-pnpm db:reset            # drop + re-apply (DESTRUCTIVE)
+pnpm db:reset            # drop everything and re-apply (DESTRUCTIVE)
 pnpm db:studio           # open Prisma Studio
 
-# Quality gates (run all before opening a PR)
+# Checks (run them all before you open a PR)
 pnpm backbone:check      # typecheck + lint + test + build
 pnpm typecheck
 pnpm lint
@@ -199,23 +222,23 @@ pnpm test
 pnpm build
 
 # End-to-end (Playwright)
-pnpm e2e                 # reset DB, run the suite
+pnpm e2e                 # reset the DB, run the suite
 pnpm e2e:ui              # interactive runner
 
 # Plugins
-pnpm plugin:package      # build + package a plugin into a .xtplugin
+pnpm plugin:package      # build and package a plugin into a .xtplugin
 ```
 
-**The API test database.** `installer.test.ts` asserts the install wizard starting from an
-empty database, so it truncates every table. It therefore runs against a **throwaway**
-database — `<yourdb>_test`, created and migrated automatically by
-`apps/api/vitest.config.ts` — and never your development data. A guard
-(`assertDisposableDatabase()`) independently refuses to truncate any database whose name
-does not end in `_test`, so a stray `DATABASE_URL` fails loudly instead of deleting.
+**The API tests use their own database.** `installer.test.ts` tests the wizard starting
+from an empty database, so the suite truncates every table. That's why it runs against a
+separate `<yourdb>_test` database, which `apps/api/vitest.config.ts` creates and migrates
+for you. On top of that, `assertDisposableDatabase()` refuses to truncate any database
+whose name doesn't end in `_test`, so a wrong `DATABASE_URL` fails instead of wiping your
+data.
 
-Set `TEST_DATABASE_URL` to point the suite somewhere specific (CI). `ALLOW_DESTRUCTIVE_TESTS=1`
-bypasses the guard — only ever aim that at a database you are happy to lose.
-
+Set `TEST_DATABASE_URL` to point the suite somewhere specific (CI).
+`ALLOW_DESTRUCTIVE_TESTS=1` switches the guard off. Only use it on a database you're
+happy to lose.
 
 Run a single API test file:
 
@@ -232,75 +255,75 @@ xentium/
 ├─ apps/
 │  ├─ api/                  Express API + BullMQ worker
 │  │  └─ src/
-│  │     ├─ app/            App wiring, route registration
-│  │     ├─ config/         Zod env, rate-limits, upload-limits
-│  │     ├─ core/           Platform engines: plugin / license / installer +
-│  │     │                  extension registries (search, home-feed, nec, acp-page)
+│  │     ├─ app/            app wiring, route registration
+│  │     ├─ config/         Zod env, rate limits, upload limits
+│  │     ├─ core/           platform engines: plugin / license / installer, plus the
+│  │     │                  extension registries (search, home feed, XEC codes, ACP pages)
 │  │     ├─ infrastructure/ db, redis, queue, storage, email, logging
-│  │     ├─ modules/        Feature modules (auth, users, articles, moderation, …)
+│  │     ├─ modules/        feature modules (auth, users, articles, moderation, …)
 │  │     ├─ shared/         errors (XEC), middleware, http, utils
 │  │     ├─ jobs/           BullMQ job handlers
 │  │     ├─ server.ts       HTTP entry point
-│  │     └─ worker.ts       BullMQ worker entry point
-│  └─ web/                  Vite + React frontend
-│     └─ src/               app, pages, features, components, layouts, hooks,
-│                           lib, plugins (slot/theme registries), styles
-├─ packages/               (@xentium/* — ↑ marks the five published to npm)
-│  ├─ contracts/          ↑ Shared types/DTOs/enums (permissions, pagination, XEC, …)
-│  ├─ errors/             ↑ XentiumError, XEC registry, Express error middleware
-│  ├─ server-kit/         ↑ Settings, pagination, secrets, rate limiting, uploads, storage
-│  ├─ auth/               ↑ Token service, password hashing, revocation, request guards
-│  ├─ plugin-engine/      ↑ Manifest validation, migration SQL guard, registry, router
-│  ├─ sdk/                  Shared runtime helpers (slug, access) + license public key
-│  ├─ plugin-sdk/           Plugin authoring contract (not yet on npm — see above)
-│  ├─ ui/                   Shared React components (GroupAccessPicker)
-│  └─ config/               Shared tsconfig base
+│  │     └─ worker.ts       worker entry point
+│  ├─ web/                  Vite + React frontend
+│  │  └─ src/               app, pages, features, components, layouts, hooks,
+│  │                        lib, plugins (slot registries), styles
+│  └─ docs/                 this wiki (doc.xentium.org), built from docs/ and this README
+├─ packages/                @xentium/* (↑ = published to npm)
+│  ├─ contracts/          ↑ shared types, DTOs and enums (permissions, pagination, XEC, …)
+│  ├─ errors/             ↑ XentiumError, the XEC registry, Express error middleware
+│  ├─ server-kit/         ↑ settings, pagination, secrets, rate limiting, uploads, storage
+│  ├─ auth/               ↑ tokens, password hashing, revocation, request guards
+│  ├─ plugin-engine/      ↑ manifest validation, migration SQL guard, registry, router
+│  ├─ sdk/                  runtime helpers (slug, access) + the licence public key
+│  ├─ plugin-sdk/           the plugin authoring contract (not on npm yet, see below)
+│  ├─ ui/                   shared React components (GroupAccessPicker)
+│  └─ config/               shared tsconfig base
 ├─ plugins/
-│  ├─ official/             First-party plugins (own repos / licensed)
-│  └─ community-examples/   Reference plugins for local dev
-├─ prisma/                  Schema + migrations (client → apps/api/src/generated/prisma)
+│  ├─ official/             first-party plugins (licensed, not in this repo)
+│  └─ community-examples/   reference plugins for local development
+├─ prisma/                  schema + migrations (client → apps/api/src/generated/prisma)
 ├─ docker/                  Compose for Postgres 17 + Redis 7
-├─ scripts/                 Tooling (plugin packaging, …)
+├─ scripts/                 tooling (plugin packaging, versioning, …)
 ├─ e2e/                     Playwright suites
-└─ docs/                    API reference + ADRs
+└─ docs/                    developer docs (published at doc.xentium.org)
 ```
 
-**Module convention** — every feature module under `apps/api/src/modules/<name>/` keeps the same shape:
-`*.routes.ts → *.controller.ts → *.service.ts → *.repository.ts`, plus `*.validation.ts`, `*.types.ts`, `*.test.ts`.
+Every feature module in `apps/api/src/modules/<name>/` has the same shape:
+`*.routes.ts → *.controller.ts → *.service.ts`, plus `*.validation.ts`, `*.types.ts` and
+`*.test.ts`. See [Working on core](#working-on-core) for when a `*.repository.ts` is worth it.
 
 ---
 
 ## Framework packages (npm)
 
-Xentium is a framework with the Xentium CMS as its first application. The framework
-layer is published to npm under the [`@xentium`](https://www.npmjs.com/search?q=%40xentium)
-scope — public, MIT — so anything can be built on it, not just this CMS.
+Xentium is a framework, and this CMS is the first app built on it. We publish the
+framework layer to npm under the [`@xentium`](https://www.npmjs.com/search?q=%40xentium)
+scope (public, MIT), so you can build other things on it too.
 
-These are the same packages core runs on. There is no separate "public API"
-that lags behind what we use ourselves.
+These are the packages core runs on. We don't keep a separate "public API" that lags
+behind what we use ourselves.
 
-| Package | What it gives you |
+| Package | What you get |
 | --- | --- |
-| [`@xentium/contracts`](https://www.npmjs.com/package/@xentium/contracts) | Shared types, permission keys, pagination, and the XEC error-code registry |
-| [`@xentium/errors`](https://www.npmjs.com/package/@xentium/errors) | `XentiumError`, the XEC registry, and the Express error middleware |
-| [`@xentium/server-kit`](https://www.npmjs.com/package/@xentium/server-kit) | Settings with a TTL cache, pagination, encryption-at-rest, rate limiting, upload validation, storage |
-| [`@xentium/auth`](https://www.npmjs.com/package/@xentium/auth) | Token minting/verification, argon2 hashing, revocation denylist, request guards |
-| [`@xentium/plugin-engine`](https://www.npmjs.com/package/@xentium/plugin-engine) | Manifest validation, the DDL-only migration SQL guard, plugin registry and router |
+| [`@xentium/contracts`](https://www.npmjs.com/package/@xentium/contracts) | shared types, permission keys, pagination and the XEC error-code registry |
+| [`@xentium/errors`](https://www.npmjs.com/package/@xentium/errors) | `XentiumError`, the XEC registry and the Express error middleware |
+| [`@xentium/server-kit`](https://www.npmjs.com/package/@xentium/server-kit) | settings with a TTL cache, pagination, encryption at rest, rate limiting, upload validation, storage |
+| [`@xentium/auth`](https://www.npmjs.com/package/@xentium/auth) | minting and verifying tokens, argon2 hashing, a revocation denylist, request guards |
+| [`@xentium/plugin-engine`](https://www.npmjs.com/package/@xentium/plugin-engine) | manifest validation, the DDL-only migration guard, the plugin registry and router |
 
 ```bash
 pnpm add @xentium/errors @xentium/server-kit
 ```
 
-While the platform is in prerelease these publish under the `alpha` dist-tag, so
-pin explicitly:
+We're still in prerelease, so these go out under the `alpha` dist-tag. Pin it:
 
 ```bash
 pnpm add @xentium/errors@alpha
 ```
 
-Everything with a dependency is a **factory** — nothing reaches for a module
-singleton, so an application injects its own database, secret, Redis client or
-filesystem root:
+Anything with a dependency is a factory. Nothing grabs a module-level singleton, so your
+app passes in its own database, secret, Redis client or filesystem root:
 
 ```ts
 import { createErrorMiddleware } from "@xentium/errors";
@@ -314,41 +337,41 @@ const settings = createSettings({
 });
 ```
 
-The boundary rule these packages are held to (ADR-0006): **a framework package
-may not know what a user, an article, or a page is.** So the layout/block system,
-appearance, and everything else CMS-shaped stays in `apps/`, and is not published.
+The rule we hold these packages to: **a framework package doesn't know what a user, an
+article or a page is.** So the layout/block system, appearance and everything else
+that's CMS-specific stays in `apps/` and isn't published.
 
 ### For plugin developers
 
 > [!IMPORTANT]
-> **`@xentium/plugin-sdk` is not on npm yet.** It is the authoring contract you
-> need, and it is deliberately held back: ADR-0006 splits it into a generic half
-> and a CMS-shaped half, and that is a breaking change. Publishing a version we
-> already know is wrong would be worse than the wait.
+> **`@xentium/plugin-sdk` isn't on npm yet.** It's the authoring contract you need, and
+> we're holding it back on purpose: we're splitting it into a generic half and a
+> CMS-specific half, which is a breaking change. We'd rather make you wait than publish a
+> version we already know we'll break.
 >
-> Until it lands, take it from the repo — copy `packages/plugin-sdk/src/index.ts`
-> into your plugin, or add the repo as a git dependency. It is types only, so
-> nothing ships at runtime either way.
+> Until then, take it from the repo: copy `packages/plugin-sdk/src/index.ts` into your
+> plugin, or add the repo as a git dependency. It's types only, so nothing extra ships
+> at runtime either way.
 
-The rest of the framework is installable today and useful in a plugin now:
-`@xentium/contracts` for permission keys and XEC codes, `@xentium/errors` so your
-plugin's failures come back in the same shape as core's.
+The rest of the framework is useful in a plugin today: `@xentium/contracts` for
+permission keys and XEC codes, and `@xentium/errors` so your plugin's errors come back
+in the same shape as ours.
 
-A plugin does **not** need `@xentium/server-kit`, `@xentium/auth` or
-`@xentium/plugin-engine`. The host already runs those, and `ctx.host` hands you
-what it has — `prisma`, `queues`, `logger`, the auth middleware. Installing your
-own copy gives you a second, unconnected instance.
+You **don't** need `@xentium/server-kit`, `@xentium/auth` or `@xentium/plugin-engine` in
+a plugin. The host already runs them, and `ctx.host` gives you what it has: `prisma`,
+`queues`, `logger`, the auth middleware. If you install your own copy, you get a second
+instance that isn't connected to anything.
 
-Full authoring walkthrough below in [Plugin development guide](#plugin-development-guide).
+The full walkthrough is in the [Plugin development guide](#plugin-development-guide).
 
 ---
 
 ## Architecture in a nutshell
 
-- **Modular monolith, not microservices.** Two processes in production: `server.ts` (HTTP) and `worker.ts` (BullMQ).
-- **REST-first**, Zod-validated on every endpoint. Errors use typed **XEC codes** (`XEC-AUTH-1001`, …) via a central handler.
-- **Auth** — RS256 access JWT (15-min, `Authorization: Bearer`, held in memory) + rotating refresh token (httpOnly, `SameSite=Strict` cookie).
-- **The core never knows a plugin exists.** Plugins contribute through **registries** — core iterates whatever's registered and never hardcodes plugin tables, ids, or routes. Search and the home feed both follow this exact pattern.
+- **A modular monolith, not microservices.** In production there are two processes: `server.ts` (HTTP) and `worker.ts` (BullMQ).
+- **REST first.** Every endpoint validates its input with Zod. Errors carry typed **XEC codes** (`XEC-AUTH-1001`, …) and go through one central handler.
+- **Auth:** a short-lived HS256 access token (15 minutes, sent as `Authorization: Bearer`, kept in memory in the browser) plus a rotating refresh token in an httpOnly `SameSite=Strict` cookie.
+- **Core doesn't know plugins exist.** Plugins add things through **registries**. Core loops over whatever is registered and never hardcodes a plugin's tables, ids or routes. Search and the home feed both work this way.
 
 ```
 Plugin (onEnable)  ──registers──▶  core registry  ──core iterates──▶  merged result
@@ -359,163 +382,161 @@ Plugin (onEnable)  ──registers──▶  core registry  ──core iterates�
 
 ## Layout system
 
-**ACP → Appearance → Layout Editor.** Page structure is a stored **document**, not compiled markup:
-an ordered list of **blocks** per named **region**, per **template**. The Style Editor answers *how
-things look*; the Layout Editor answers *what goes where*.
+You'll find it at **ACP → Appearance → Layout Editor**. A page's structure is a stored
+**document**, not compiled markup: for each **template**, an ordered list of **blocks** in
+each **region**. The Style Editor decides how things look; the Layout Editor decides what
+goes where.
 
 ### Templates
 
-A fixed set — a layout re-arranges pages that already exist, it never creates routes.
+Core ships a fixed set. A layout rearranges pages that already exist; it never creates
+routes. Plugins can register templates for their own pages (the forum does).
 
 | Template | Renders at | Regions |
 |---|---|---|
-| `home` | `/` | header · main · aside · footer |
-| `article.index` | `/articles` | header · main · aside · footer |
-| `article.detail` | `/articles/:slug` | header · beforeBody · main · afterBody · aside · footer |
-| `page.detail` | `/p/:slug` | header · main · aside · footer |
-| `profile` | `/u/:username` | header · main · aside · footer |
-| `members` | `/members` | header · main · aside · footer |
-| `chrome.header` | the navbar, every page | left · center · right |
-| `chrome.footer` | the footer, every page | top · main · bottom |
+| `home` | `/` | main · aside |
+| `article.index` | `/articles` | main · aside |
+| `article.detail` | `/articles/:slug` | main · aside |
+| `page.detail` | `/p/:slug` | main · aside |
+| `profile` | `/u/:username` | main · aside |
+| `members` | `/members` | main · aside |
+| `chrome.header` | the site header, on every page | header |
+| `chrome.footer` | the site footer, on every page | footer |
 
-Auth screens and the whole ACP are **permanently excluded** — an admin must never be able to
-rearrange the screen they would need in order to repair a broken arrangement.
+`main` is the page body (the editor labels it "Body") and `aside` is the rail beside it.
+The login screens and the whole ACP are left out on purpose: you should never be able to
+rearrange the screen you'd need to fix a broken arrangement.
 
-### Editing behaviour
+### Editing
 
-- **Edits show immediately.** The preview is the real route in an iframe; the editor pushes the
-  in-progress document to it, so a change is visible before it is stored.
-- **The draft autosaves** (~700 ms after you stop). There is no save button.
-- **Publish is explicit** and site-wide. It promotes every pending draft, then clears them. Open
-  browser tabs update within seconds over the existing style-version SSE stream — no reload.
-- **Reset** restores the built-in default for that template and cannot be undone.
-- **Drag anywhere.** Reorder in the structure tree or directly inside the preview; blocks can move
-  between regions. `↑`/`↓` buttons remain as the keyboard path. Hovering a block outlines it
-  (dashed) with its type; clicking selects it in the tree and opens its settings.
-- **Block settings are generated** from each block's Zod schema — no hand-written forms.
-- **Required blocks** (`logo`, `userMenu` on the navbar) can be moved but not deleted, enforced in
-  the editor *and* the API.
+- **You see edits right away.** The preview is the real page in an iframe, and the editor pushes the document into it before anything is saved.
+- **The draft autosaves** about 700 ms after you stop. There's no save button.
+- **Publishing is explicit** and covers the whole site. It promotes every pending draft. Open tabs pick up the change within seconds over the style-version SSE stream, without reloading.
+- **Reset** puts the template back to its built-in default. You can't undo it.
+- **Drag wherever you like:** in the structure tree or straight in the preview, and between regions. The `↑`/`↓` buttons are there for the keyboard. Hover a block to see its outline and type; click it to select it and open its settings.
+- **Block settings are generated** from each block's Zod schema, so nobody hand-writes forms.
+- **Required blocks** (`logo` and `userMenu` in the navbar) can be moved but not deleted. Both the editor and the API enforce that.
 
-### Failure behaviour
+### When something goes wrong
 
 None of these can take a site down:
 
-- A stored document that fails validation → the built-in default renders, with a warning in the ACP.
-- An **unknown block type** (a plugin was disabled, a block retired) → that block is skipped and the
-  rest of the page renders. The node **stays in the document**, so re-enabling the plugin restores
-  it exactly where it was.
-- A block that throws → it degrades to nothing; its siblings still render.
+- A stored document that fails validation: the built-in default renders, and the ACP shows a warning.
+- An **unknown block type** (a plugin got disabled, a block was retired): we skip that block and render the rest. The block stays in the document, so re-enabling the plugin brings it back exactly where it was.
+- A block that throws: it renders nothing, and the blocks around it are fine.
 
 ### Themes are data
 
-A `.xttheme` is a zip of layout documents, tokens and assets — **never code**:
+A `.xttheme` is a zip of layout documents, tokens, a stylesheet and assets. **Never code.**
 
 ```
-manifest.json            id, name, version, vendor, minXentiumVersion
+manifest.json            id, name, version, vendor, minXentiumVersion, appearance
+tokens.json              the design tokens, by scope
+styles/tokens.css        the global tokens as :root custom properties
+styles/custom.css        the theme's own stylesheet (optional)
 layouts/<template>.json  one document per template
-styles/light.css         :root custom properties only
-styles/dark.css
+assets/                  images and fonts
 ```
 
-Export packages what is currently **published**; import validates everything first and stages it as
-a **draft**, so a theme is previewed before it goes live. A package with one broken layout applies
-none of itself. Because there is no executable code, reviewing a theme is reading JSON.
+A theme is one look, light **or** dark; the manifest says which. Export packages what's
+currently published. Import checks everything before it writes anything, so a package
+with one broken layout doesn't apply at all. Installing a theme adds it to the site's
+theme library, and we ask you whether to switch to it. Since there's no executable code,
+reviewing a theme means reading JSON and CSS.
 
-Need a block the catalogue lacks? That is a **plugin**, not a theme — see
-[`docs/plugin-blocks.md`](docs/plugin-blocks.md).
+Need a block the catalogue doesn't have? That's a **plugin**, not a theme. See
+[`docs/plugin-blocks.md`](docs/plugin-blocks.md), and [`docs/style-system.md`](docs/style-system.md)
+for how themes and tokens fit together.
 
 ---
 
 ## Working on core
 
-The conventions below are load-bearing — new core code is expected to follow them, and PRs
-that hand-roll what a shared utility already does will be asked to switch.
+We expect new core code to follow these conventions. If a PR hand-rolls something a
+shared utility already does, we'll ask you to switch.
 
 ### Module shape
 
-`modules/<name>/<name>.routes → .controller → .service` (+ `.validation` / `.types` /
-`.test`). Services may use Prisma directly; extract a `.repository` **only** when a query is
-shared between services or genuinely complex — it is not a required layer.
+`modules/<name>/<name>.routes → .controller → .service` (plus `.validation`, `.types`,
+`.test`). Services can use Prisma directly. Pull a query out into a `.repository` only
+when several services share it or it's genuinely complex. It's not a required layer.
 
-### Controllers are plain async handlers
+### Controllers are plain async functions
 
-Express 5 forwards rejected promises to the error middleware — there is **no `wrap()`
-helper** and there are **no request casts**. `req.userId`, `req.sessionId`, and
-`req.file.detectedExt` are ambiently typed via `apps/api/src/types/express.d.ts`; if you
-find yourself writing `(req as any)` or a local `AuthedRequest`, stop — the typing already
-exists.
+Express 5 passes rejected promises to the error middleware, so there's **no `wrap()`
+helper**, and you don't cast `req`. `req.userId`, `req.sessionId` and
+`req.file.detectedExt` are typed in `apps/api/src/types/express.d.ts`. If you catch
+yourself writing `(req as any)` or a local `AuthedRequest`, the typing is already there.
 
 ```ts
-// A complete controller. Throws (incl. XentiumError) reach errorMiddleware on their own.
+// A complete controller. Anything it throws (XentiumError included) reaches errorMiddleware.
 export async function getThing(req: Request, res: Response) {
   const { id } = paramsSchema.parse(req.params);       // Zod on EVERY input
   res.json(await thingService.get(id, req.userId));
 }
 ```
 
-### The shared utilities (use these, don't reimplement)
+### Shared utilities (use these, don't rewrite them)
 
 | Utility (`apps/api/src/shared/utils/`) | Use it for | Rules |
 |---|---|---|
-| `settings.ts` — `getSetting` / `getSettings` / `getFreshSetting` / `bustSettingsCache` | every settings read | Reads are TTL-cached (15 s); batch multiple keys with `getSettings({key: default})`. **Every writer in the same process must call `bustSettingsCache(key)`.** Use `getFreshSetting` only where staleness is unacceptable (e.g. appearance tokens). |
-| `paginate.ts` — `paginate()` (meta via `buildPaginationMeta` from `@xentium/contracts`) | every list endpoint | `buildPaginationMeta` is the **only** producer of `{page, limit, total, totalPages, hasPrev, hasNext}` — never hand-roll the meta object. |
-| `userRef.ts` — `USER_REF_SELECT` / `toUserRef` | naming a user in any response | The one way responses reference a user (`id`, `username`, badge color). The `UserRef` type lives in `@xentium/contracts`. |
-| `memoTtl.ts` — `memoTtl` / `TtlCache` | in-process caching of anything hot | Backs the settings cache and the `/appearance/css` memo; reach for it before inventing a cache. |
+| `settings.ts`: `getSetting` / `getSettings` / `getFreshSetting` / `bustSettingsCache` | every settings read | Reads are cached for 15 s; read several keys at once with `getSettings({key: default})`. **Anything that writes a setting must call `bustSettingsCache(key)`.** Use `getFreshSetting` only where a stale value isn't acceptable (e.g. appearance tokens). |
+| `paginate.ts`: `paginate()` (meta via `buildPaginationMeta` from `@xentium/contracts`) | every list endpoint | Only `buildPaginationMeta` builds `{page, limit, total, totalPages, hasPrev, hasNext}`. Don't build that object by hand. |
+| `userRef.ts`: `USER_REF_SELECT` / `toUserRef` | naming a user in a response | The one way a response refers to a user (`id`, `username`, badge colour). The `UserRef` type is in `@xentium/contracts`. |
+| `memoTtl.ts`: `memoTtl` / `TtlCache` | caching anything hot in memory | It backs the settings cache and the `/appearance/css` memo. Use it before you invent a cache. |
 
-On the web side the equivalent load-bearing primitives are `lib/toast.ts`
-(`toast.success/info/warning/error` — Xentium's own toast system: stacking, dedup ×N,
-per-category durations, hover-pause; themed by the Style Editor's Feedback colours) and
-`lib/dialog.ts` (`openDialog` — promise-based confirm/alert). `lib/swal.ts` is a legacy-named
-facade over both (sweetalert2 is gone); new code imports `toast`/`openDialog` directly.
+On the web side the equivalents are `lib/toast.ts` (`toast.success/info/warning/error`,
+our own toasts: they stack, merge duplicates as ×N, pause on hover and take their
+colours from the Style Editor's Feedback tokens) and `lib/dialog.ts` (`openDialog`, a
+promise-based confirm/alert). `lib/swal.ts` is an old name that wraps both (sweetalert2
+is gone); new code imports `toast` and `openDialog` directly.
 
 ### Errors, validation, data
 
-- Every endpoint validates **body, params, and query** with Zod before any logic;
-  `ZodError` → `XEC-API-4001` centrally. Errors are `XentiumError` with `XEC-<DOMAIN>-<CODE>`;
-  stack traces never reach clients.
-- Core tables are `xcf_<snake_case>`; soft delete via `deletedAt` (queries default to
-  excluding deleted rows). TipTap content is stored as ProseMirror JSON, never raw HTML.
-- The API is locale-agnostic (machine keys + XEC codes only); only emails/notifications are
-  server-localized.
+- Every endpoint validates **body, params and query** with Zod before doing anything. A `ZodError` becomes `XEC-API-4001` centrally. Errors are `XentiumError`s with an `XEC-<DOMAIN>-<CODE>` code, and a stack trace never reaches a client.
+- Core tables are named `xcf_<snake_case>`. We soft-delete with `deletedAt`, and queries leave deleted rows out by default. TipTap content is stored as ProseMirror JSON, never raw HTML.
+- The API doesn't do languages (it returns machine keys and XEC codes). Only emails and notifications are translated on the server.
 
 ### Security detection
 
-Abuse detection (§15) is core: four baseline patterns run on the `security-analysis` job
-every 30 minutes and open informational review cases (ACP → Moderation → Review Cases,
-ModCanvas → Cases). Detection **never auto-acts**. Plugins extend via `registerSecurityScan`
-or replace baselines via `claimSecurityPatterns`. Full pipeline, thresholds, and operational
-notes: [`docs/security-detection.md`](docs/security-detection.md).
+Abuse detection is part of core. Four baseline patterns run on the `security-analysis`
+job every 30 minutes and open review cases for a human (ACP → Moderation → Review Cases,
+and in ModCanvas → Cases). Detection **never acts on its own**. Plugins can add scans
+with `registerSecurityScan` or take over a baseline with `claimSecurityPatterns`.
 
 ### Two processes, one codebase
 
-The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes that both
-load plugins and read the same registries. If you touch job code or anything a plugin
-registers into, remember the **worker** needs a restart to pick it up — in dev,
-`./xentium.sh` runs both.
+The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes, and
+both load plugins and read the same registries. If you change job code or anything a
+plugin registers into, restart the **worker** too. In dev, `./xentium.sh` runs both.
 
 ---
 
 ## Plugin development guide
 
-Plugins are how you extend Xentium without touching core. A plugin can register routes, permissions, ACP pages, nav items, notification types, XEC error codes, and **content sources** (search, home feed). It runs inside the host process but only through the SDK contract — **no unrestricted access to core internals.**
+Plugins are how you extend Xentium without touching core. A plugin can register routes,
+permissions, ACP pages, nav items, notification types, XEC error codes and **content
+sources** for search and the home feed. It runs inside the host process, but only through
+the SDK. You don't get free access to core internals.
 
-See [Framework packages](#framework-packages-npm) first for what is installable from npm, and for the current status of `@xentium/plugin-sdk`.
+Check [Framework packages](#framework-packages-npm) first for what's on npm, and where
+`@xentium/plugin-sdk` stands.
 
-### Anatomy of a plugin
+### What's in a plugin
 
 ```
 my-plugin/
-├─ manifest.json           Identity, version, permissions, migrations, entrypoints
-├─ server/                 Server entry → exports a PluginDefinition
+├─ manifest.json           identity, version, permissions, migrations, entry points
+├─ server/                 server entry, exports a PluginDefinition
 │  └─ index.ts
-├─ web/                    (optional) Web entry → registers UI slots
+├─ web/                    (optional) web entry, registers UI
 │  └─ index.ts
-└─ migrations/             Raw SQL, paired up/down
+└─ migrations/             raw SQL, in up/down pairs
    ├─ 001_create_things.up.sql
    └─ 001_create_things.down.sql
 ```
 
-**`manifest.json`** (validated on install):
+We validate **`manifest.json`** on install:
 
 ```json
 {
@@ -535,46 +556,44 @@ my-plugin/
 }
 ```
 
-### Migrations & database conventions
+### Migrations and the database
 
-Plugins own their schema through raw-SQL migrations, tracked **separately** from
-core (Prisma) in the `xcf_plugin_migrations` table. Every rule below is
-enforced by the host on install/enable/update — a violation aborts the operation
-with the noted `XEC-PLUGIN-*` code, so design to them from the start.
+Your plugin owns its schema through raw-SQL migrations. We track them separately from
+core's Prisma migrations, in the `xcf_plugin_migrations` table. The host checks every rule
+below on install, enable and update, and breaking one aborts the operation with the
+`XEC-PLUGIN-*` code shown. Design for them from the start.
 
-- **DDL only.** Migration files may contain only `CREATE` / `ALTER` / `DROP` of
-  `TABLE`, `INDEX`, `SEQUENCE`, `TYPE`, `FUNCTION`, `TRIGGER` (plus
-  `CREATE EXTENSION`). Any DML (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/
-  `COPY`/…) is rejected → `XEC-PLUGIN-2010`. Seed data belongs in your
-  `onEnable`, not a migration.
-- **Paired up/down.** Every `NNN_name.up.sql` must ship a matching
-  `NNN_name.down.sql` → `XEC-PLUGIN-2011`. Use `IF EXISTS` / `IF NOT EXISTS`
-  so down migrations are safely re-runnable.
-- **Table naming.** Core tables use the `xcf_` prefix; a plugin's schema must
-  stay in its own namespace. Declare a **`tablePrefix`** (short, snake_case,
-  ending in `_` — e.g. `forum_`, `sb_`) and the runner enforces that **every**
-  table, index, sequence, type, function, and trigger your migrations create —
-  or alter/drop/index — begins with it. Regardless of whether you declare one,
-  no plugin migration may ever touch a reserved core object (names beginning
-  `xcf_`, `xentium_`, `_prisma`, `pg_`, or `information_schema`) → both violations
-  raise `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. Declaring
-  a prefix is optional but strongly recommended — all four official plugins do.
-- **Applied migrations are immutable.** Once a migration has run, its checksum is
-  recorded; editing that file afterwards is rejected → `XEC-PLUGIN-2012`. Ship
-  schema changes as a **new** migration in the next version — never rewrite
-  history.
-- **Updates are forward-only, matched by name.** On update the runner runs only
-  migrations whose *name* it hasn't seen before (across any version), so keep the
-  historical list in the manifest intact and only append. Never renumber or
-  rename an already-shipped migration.
-- **No cross-boundary foreign keys.** Prisma is unaware of plugin tables, so a
-  plugin table cannot `REFERENCES` a core table (and core can't reference yours).
-  Store the id (e.g. `user_id TEXT`) and enforce integrity at the service layer;
-  clean up on account deactivation via the SDK's `onUserDeactivated` hook.
+- **DDL only.** A migration may only `CREATE` / `ALTER` / `DROP` a `TABLE`, `INDEX`,
+  `SEQUENCE`, `TYPE`, `FUNCTION` or `TRIGGER` (and `CREATE EXTENSION`). Any DML
+  (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/`COPY`/…) is rejected with
+  `XEC-PLUGIN-2010`. Seed data goes in `onEnable`, not in a migration.
+- **Up and down come in pairs.** Every `NNN_name.up.sql` needs a matching
+  `NNN_name.down.sql` (`XEC-PLUGIN-2011`). Use `IF EXISTS` / `IF NOT EXISTS` so a down
+  migration can safely run twice.
+- **Table names.** Core tables start with `xcf_`, and your schema stays in its own
+  namespace. Declare a **`tablePrefix`** (short, snake_case, ending in `_`, e.g. `forum_` or
+  `sb_`), and we check that **every** table, index, sequence, type, function and trigger
+  your migrations create, alter, drop or index starts with it. Whether you declare one or
+  not, a plugin migration can never touch a reserved core object (names starting with
+  `xcf_`, `xentium_`, `_prisma`, `pg_` or `information_schema`). Both mistakes raise
+  `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. The prefix is optional,
+  but we strongly recommend it; all our official plugins use one.
+- **A migration that has run is frozen.** We record its checksum, and editing the file
+  afterwards is rejected (`XEC-PLUGIN-2012`). Put schema changes in a **new** migration in
+  your next version.
+- **Updates only go forward, matched by name.** On update we run only the migrations
+  whose *name* we haven't seen before, in any version. So keep the full list in the
+  manifest and only append to it. Never renumber or rename one you've shipped.
+- **No foreign keys across the boundary.** Prisma doesn't know about plugin tables, so
+  your table can't `REFERENCES` a core table (and core can't reference yours). Store the
+  id (e.g. `user_id TEXT`), enforce integrity in your service, and clean up when an
+  account is deactivated with the SDK's `onUserDeactivated` hook.
 
 ### The server entry
 
-Your server entry exports a `PluginDefinition`. `onEnable(ctx)` is where you wire everything up; `onDisable` is optional (the engine auto-deregisters routes, registries, ACP pages, and XEC codes for you).
+Your server entry exports a `PluginDefinition`. You wire everything up in
+`onEnable(ctx)`. `onDisable` is optional, because the engine removes your routes,
+registrations, ACP pages and XEC codes for you.
 
 ```ts
 import type { PluginDefinition } from "@xentium/plugin-sdk";
@@ -585,53 +604,52 @@ const plugin: PluginDefinition = {
   id: "my-plugin",
 
   async onEnable(ctx) {
-    // Routes are mounted at /api/p/my-plugin/*  (host services injected via ctx.host)
+    // Routes are mounted at /api/p/my-plugin/*  (host services come in via ctx.host)
     ctx.registerRoutes(createRouter(ctx.host));
 
-    // Permission keys (inserted into the permissions table; defaults assigned on first install)
+    // Permission keys (written to the permissions table; defaults assigned on first install)
     await ctx.registerPermissions([
       { key: "myplugin.thing.create", label: "Create things", domain: "My Plugin",
         defaults: ["member", "admin"] },
     ]);
 
-    // A frontend nav item (auto-hidden when the plugin is disabled)
+    // A nav item on the site (hidden automatically when the plugin is disabled)
     await ctx.registerNavItem({ label: "Things", url: "/things", position: 5 });
 
-    // An ACP sidebar page (returned by GET /api/admin/registered-pages).
-    // Convention: plugin ACP settings pages AUTOSAVE on change (useAutosave +
-    // AutosaveStatus from the host globals) — no Save buttons, matching core
-    // config pages. Secrets (API keys) are the exception: explicit Set/Remove.
+    // An ACP sidebar page (listed by GET /api/admin/registered-pages).
+    // Settings pages in the ACP AUTOSAVE (useAutosave + SaveChip from the
+    // host globals), with no Save button, like core's. Secrets (API keys) are the
+    // exception: give them an explicit Set/Remove.
     ctx.registerAcpPage({ section: "My Plugin", label: "Things", path: "/admin/things" });
 
-    // Notification types (for the preference UI) + XEC error codes (for the Error Reference)
+    // Notification types (for the preferences UI) + XEC error codes (for the Error Reference)
     ctx.registerNotificationTypes(["myplugin.thing_created"]);
     ctx.registerNecCodes([
       { code: "XEC-MYPLUGIN-6001", msg: "Thing not found", sev: "Error",
         domain: "My Plugin", desc: "…", cause: "…", fix: "…" },
     ]);
 
-    // A SEARCH source — core merges your results; it never queries your tables.
+    // A SEARCH source: core merges your results and never queries your tables.
     ctx.registerSearchSource({
       id: "things",
       label: "Things",
-      permission: null,                  // null = public, or a permission key to gate
+      permission: null,                  // null = public, or a permission key to gate it
       search: (query, opts) => searchThings(query, opts),  // → { data: SearchResultItem[], total }
     });
 
-    // A HOME FEED source — same idea, for the home/guest feed.
+    // A HOME FEED source: the same idea, for the home and guest feeds.
     ctx.registerHomeFeedSource({
       id: "things",
       label: "Things",
       recent: (limit) => /* … */,        // → HomeFeedItem[]
     });
 
-    // A SECURITY SCAN — runs on the core security-analysis cadence (every 30 min);
-    // open review cases via ctx.host.security.createCase(...).
+    // A SECURITY SCAN: runs with core's security analysis (every 30 min);
+    // open review cases with ctx.host.security.createCase(...).
     ctx.registerSecurityScan(async () => { /* … */ });
 
-    // Optionally CLAIM core baseline detection patterns your scan replaces with an
-    // enhanced variant — core skips its built-in while you're enabled, and the
-    // baseline resumes automatically when you're disabled.
+    // Optionally CLAIM core baseline detection patterns that your scan replaces.
+    // Core skips its own version while you're enabled and resumes it when you're not.
     ctx.claimSecurityPatterns(["multi_account_suspicion"]);
   },
 };
@@ -641,140 +659,155 @@ export default plugin;
 
 ### Host services (`ctx.host`)
 
-Everything your plugin needs is injected — you never import core internals:
+We inject everything your plugin needs, so you never import core internals:
 
-| `ctx.host.*` | What |
+| `ctx.host.*` | What it is |
 |---|---|
-| `prisma` | the host Prisma client (use raw SQL for your own tables) |
-| `queues` | BullMQ queues — enqueue jobs; the core worker processes them |
+| `prisma` | the host's Prisma client (use raw SQL for your own tables) |
+| `queues` | BullMQ queues: you enqueue, the core worker runs the jobs |
 | `middleware` | `requireAuth`, `optionalAuth`, `enforcePostLength` |
 | `errors` | `XentiumError`, `XEC` |
 | `utils` | shared helpers (e.g. `resolveAvatar`) |
-| `notificationService` | dispatch notifications (or use `ctx.notify(...)`) |
-| `env`, `logger` | validated config + Pino logger |
+| `notificationService` | send notifications (or use `ctx.notify(...)`) |
+| `env`, `logger` | the validated config and a Pino logger |
 
-### The golden rule — core never knows your schema
+### Core never knows your schema
 
-The host has **no knowledge of your tables, ids, or routes**. Want your content in search or the home feed? Register a **source** that returns normalized items (`SearchResultItem` / `HomeFeedItem`). Core asks your source to run the query and merges the result — so your plugin can be installed, disabled, or removed and core simply iterates whatever is currently registered. Migrations are tracked separately from core (in `nodevo_plugin_migrations`) and must ship a `down.sql` for every `up.sql`.
+The host knows nothing about your tables, ids or routes. Want your content in search or
+the home feed? Register a **source** that returns normalized items (`SearchResultItem` /
+`HomeFeedItem`). Core asks your source to run the query and merges what comes back. That
+way your plugin can be installed, disabled or removed, and core just works with whatever
+is registered at the moment.
 
-### ACP admin UI — config surfaces autosave
+### ACP pages autosave
 
-Xentium ACP **config** pages have no Save button: they persist on change and show a status
-indicator instead. Your plugin's admin UI must follow the same convention or it will feel
-foreign inside the ACP. Externalize the two host bridges in your `vite.config.ts`:
+Settings pages in our ACP don't have a Save button. They save as you change things and
+show a status indicator. Your plugin's admin pages should do the same, or they'll feel
+out of place. Externalize the two host bridges in your `vite.config.ts`:
 
 ```ts
 "@web/hooks/useAutosave":         `${H}.webUseAutosave`,
-"@web/components/AutosaveStatus": `${H}.webAutosaveStatus`,
+"@web/components/SaveChip":       `${H}.webSaveChip`,
 ```
 
 ```tsx
 const saveMut = useMutation({ mutationFn: (v: Settings) => api.put(`${BASE}/admin/settings`, v) });
 useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mutate(v); } });
-// …and render <AutosaveStatus saving={saveMut.isPending} /> in the header.
+// …and render <SaveChip saving={saveMut.isPending} /> in the header.
 ```
 
-This applies to settings pages **and** per-group panels registered through the
-`groupConfigPanel` slot — which is where RBAC/progression-adjacent config belongs, so it
-appears as a tab in core's own Group settings dialog rather than a standalone page. An
-explicit action is still correct for **create/edit entity modals**, **secrets** (never
-autosave a half-typed credential — give it a Set/Remove), and **destructive actions**.
+That goes for settings pages **and** per-group panels registered through the
+`groupConfigPanel` slot. Per-group config (permissions, progression) belongs there,
+because it then shows up as a tab in core's own group settings dialog instead of a page
+of its own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
+autosave a half-typed credential; use Set/Remove) and **destructive actions**.
 
-📖 **Full recipe, the failure modes, and the `groupConfigPanel` + progression path:
-[`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).**
+📖 **The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
+path: [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).**
 
 ### Local development
 
-1. Put your plugin under `plugins/community-examples/<name>/` (or `plugins/official/<name>/`) — both are pnpm workspace members.
-2. For HMR on the web side during `vite dev`, add your web entry to the dev registry in `apps/web/src/plugins/dev-plugins.ts` (this edit stays local).
-3. Start the stack with `./xentium.sh`, then **install + enable** your plugin from **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to auto-load first-party plugins at startup).
+1. Put your plugin in `plugins/community-examples/<name>/` (or `plugins/official/<name>/`). Both are pnpm workspace members.
+2. For hot reload of the web side during `vite dev`, add your web entry to `apps/web/src/plugins/dev-plugins.ts` (keep that edit local).
+3. Start the stack with `./xentium.sh`, then **install and enable** your plugin under **ACP → Extensions → Upload** (or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to load the first-party plugins on startup).
 
-### Packaging & distribution
+### Packaging
 
-Plugins ship as a **`.xtplugin`** archive (a ZIP of the manifest, compiled `server`/`web` bundles, and migrations):
+Plugins ship as a **`.xtplugin`** archive: a zip of the manifest, the compiled
+`server`/`web` bundles and the migrations.
 
 ```bash
 node scripts/package-plugin.mjs [pluginDir] [outDir]
 # default: plugins/official/xentium-forum → dist/marketplace/
 ```
 
-The host plugin engine extracts the archive to a temp dir (with zip-slip protection), validates the manifest and DDL-only migrations, runs them transactionally, then registers and enables the plugin. **Install and enable are always separate operations** — enabling activates routes/registrations; disabling stops them and preserves data.
+The plugin engine extracts the archive to a temp directory (with zip-slip protection),
+validates the manifest and the migrations, runs the migrations in a transaction, then
+registers and enables the plugin. **Installing and enabling are always separate.**
+Enabling turns routes and registrations on; disabling turns them off and keeps the data.
 
 ### Plugin lifecycle
 
 ```
 upload → validate manifest → compatibility/trust check → install (stored, migrations run)
        → enable (onEnable: routes + registries active)
-       → disable (behavior stops, data kept) → uninstall (migrations reversed, package removed)
+       → disable (behaviour stops, data kept) → uninstall (migrations reversed, package removed)
 ```
 
-> **Registrations are in-memory.** Everything `onEnable` registers (routes, ACP pages,
-> content sources, security scans/claims, XEC codes) lives in the host process's registries
-> and is rebuilt at startup from the `xcf_installed_plugins` table. The lifecycle endpoints
-> keep memory and DB in sync — but if plugin state is changed **underneath a running
-> process** (manual row deletion, a DB reset in dev), the process keeps serving stale
-> registrations (e.g. a ghost ACP menu entry for a plugin that no longer exists) until it is
-> restarted. Restarting the API + worker always resyncs. The worker loads plugins too — after
-> replacing a plugin package, restart it so scheduled scans use the new code.
+> **Registrations live in memory.** Everything `onEnable` registers (routes, ACP pages,
+> content sources, security scans and claims, XEC codes) sits in the host process's
+> registries, and we rebuild it on startup from the `xcf_installed_plugins` table. The
+> lifecycle endpoints keep memory and the database in sync. But if you change plugin
+> state **behind a running process** (deleting a row by hand, resetting the DB in dev),
+> the process keeps serving what it had, e.g. an ACP menu entry for a plugin that's gone,
+> until you restart it. Restarting the API and the worker always fixes it. The worker
+> loads plugins too, so restart it after replacing a plugin package.
 
 ---
 
 ## Migrating from another platform
 
-Xentium ships **free, open-source migration tooling** as a standalone CLI — deliberately *not* a plugin: it runs once on your server, writes directly to the Xentium database, and leaves nothing behind except the migration log (visible in **ACP → System → Migration History**).
+We ship free, open-source migration tools as a standalone CLI. It's not a plugin on
+purpose: you run it once on your server, it writes straight into the Xentium database,
+and all it leaves behind is the migration log (**ACP → System → Migration History**).
 
 ### Available adapters
 
 | Adapter | Source | Status |
 |---|---|---|
-| `@xentium/migrate-wp` | WordPress — a **WXR export file** (wp-admin → Tools → Export). No WordPress install or database access needed. | ✅ Available |
-| `@xentium/migrate-phpbb` | phpBB 3.1+ — direct **MySQL connection**. Requires the `xentium-forum` plugin installed and enabled on the target (checked before anything runs). Users keep their passwords. | ✅ Available |
-| `@xentium/migrate-xenforo` | XenForo 2.x — direct **MySQL connection**. Requires the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
-| vBulletin, WoltLab Suite | Direct database connection | Planned (Wave 2) |
+| `@xentium/migrate-wp` | WordPress, from a **WXR export file** (wp-admin → Tools → Export). You don't need a WordPress install or database access. | ✅ Available |
+| `@xentium/migrate-phpbb` | phpBB 3.1+, over a direct **MySQL connection**. The `xentium-forum` plugin must be installed and enabled on the target (we check before anything runs). Users keep their passwords. | ✅ Available |
+| `@xentium/migrate-xenforo` | XenForo 2.x, over a direct **MySQL connection**. Needs the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
+| vBulletin, WoltLab Suite | direct database connection | Planned |
 
 ### Running a migration
 
 ```bash
-# 1. Always start with a dry run — inspects, extracts and reports, writes NOTHING
+# 1. Always start with a dry run: it inspects, extracts and reports, and writes NOTHING
 pnpm --filter @xentium/migrate-wp migrate -- \
   --file my-export.xml \
   --db "postgresql://user:pass@localhost:5432/xentium" \
   --dry-run
 
-# 2. The real run (interactive confirmation; --yes to skip)
+# 2. The real run (asks you to confirm; --yes skips that)
 pnpm --filter @xentium/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
 
-# Forum platforms: point at the board's MySQL database instead of a file
+# Forums: point at the board's MySQL database instead of a file
 # (same flags for @xentium/migrate-xenforo; --prefix overrides the table prefix)
 pnpm --filter @xentium/migrate-phpbb migrate -- \
   --source-db "mysql://user:pass@host:3306/phpbb" \
   --db "postgresql://…" --dry-run
 ```
 
-The target must be an **installed** Xentium instance (run the wizard first). Migrations are **resumable**: every imported entity is tracked in an import map, so a re-run after an interruption continues where it stopped instead of duplicating — and accounts matched by email map onto existing users.
+The target has to be an **installed** Xentium (run the wizard first). Migrations can be
+**resumed**: we track every imported item in an import map, so if a run is interrupted,
+the next one continues where it stopped instead of creating duplicates. Accounts that
+match an existing user by email are merged into that user.
 
 ### What carries over
 
-- **Users** — accounts, display names, join dates, and best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source provides password hashes (database-based adapters; XenForo's are extracted from its serialized auth blobs), users **keep their passwords**: the original hash is verified on first login and transparently upgraded to Xentium's argon2. WXR file exports contain no hashes, so WordPress users reset their password once.
-- **Content** — categories (with hierarchy), posts/articles (converted to the TipTap editor format — headings, lists, quotes, code, images and links survive), tags, and member comments (threaded one level). Forum platforms: the full node tree, threads (locked/pinned/view counts) and posts with their BBCode converted.
-- **Social graph** (where the source has one) — XenForo **reactions become post likes** (every reaction type collapses to a like), **follows migrate 1:1**, and ignores become blocks; phpBB foes become blocks (its *friend* flag is a private buddy list and is deliberately not turned into public follows). A block suppresses follow relationships in both directions, matching Xentium's rules, and all like/follower counters are recomputed.
-- **Not migrated** — themes/styling (Xentium has its own appearance system), source-platform plugins, private messages, guest comments (Xentium comments require an account), and in this version media files/attachments (referenced by URL, not downloaded). Everything skipped is itemized with a reason in the migration report.
+- **Users:** accounts, display names, join dates and a best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source has password hashes (the database adapters; for XenForo we pull them out of its serialized auth data), users **keep their passwords**: we check the old hash on their first login and quietly upgrade it to argon2. WXR exports don't contain hashes, so WordPress users reset their password once.
+- **Content:** categories with their hierarchy, posts/articles (converted to the TipTap format; headings, lists, quotes, code, images and links survive), tags and member comments (threaded one level deep). For forums: the whole node tree, threads (locked, pinned, view counts) and posts with their BBCode converted.
+- **Social graph** where the source has one: XenForo **reactions become likes** (every reaction type turns into a like), **follows carry over 1:1** and ignores become blocks. phpBB foes become blocks. phpBB's *friend* flag is a private buddy list, so we don't turn it into public follows. A block cancels follows in both directions, as it does in Xentium, and we recount every like and follower total.
+- **Not migrated:** themes and styling (Xentium has its own appearance system), the old platform's plugins, private messages, guest comments (comments on Xentium need an account), and, in this version, media files and attachments (we link to them by URL but don't download them). The migration report lists everything we skipped and why.
 
 ---
 
 ## Contributing
 
 1. Branch off `development`.
-2. Make your change; keep modules in their `routes → controller → service` shape (a `.repository` only when a query is shared or complex — see [Working on core](#working-on-core)) and put shared types in `@xentium/contracts`.
-3. **`pnpm backbone:check`** must be green (typecheck + lint + test + build).
-4. Validate all input with Zod; enforce permission/license checks on the backend.
+2. Make your change. Keep modules in their `routes → controller → service` shape (add a `.repository` only when a query is shared or complex, see [Working on core](#working-on-core)) and put shared types in `@xentium/contracts`.
+3. **`pnpm backbone:check`** has to pass (typecheck + lint + test + build).
+4. Validate all input with Zod, and enforce permission and licence checks on the backend.
 5. Ship Prisma schema changes with a migration in the same PR.
-6. Open a PR to `development` — the PR template includes the merge-readiness checklist.
+6. Open a PR against `development`. The PR template has the checklist we review against.
 
-See `docs/` for the API reference and architecture ADRs.
+More in [CONTRIBUTING.md](./CONTRIBUTING.md) and in the developer docs at
+[doc.xentium.org](https://doc.xentium.org).
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE). The open-source core is free to use; official premium plugins are licensed separately and never gate core functionality.
+MIT, see [LICENSE](./LICENSE). The open-source core is free to use. Our official paid
+plugins are licensed separately, and they never gate a core feature.
