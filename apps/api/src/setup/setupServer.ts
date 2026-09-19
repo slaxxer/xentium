@@ -1,7 +1,10 @@
-import express from "express";
+import express, { type Express } from "express";
 import cors from "cors";
+import { existsSync } from "node:fs";
+import path from "node:path";
 import { setupConfigSchema, InstallStep } from "@xentium/contracts";
 import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
+import { nodeRow, type RequirementRow } from "../core/installer-engine/requirementRows.js";
 
 /**
  * Pre-env setup server (§16, WordPress-style first run).
@@ -13,11 +16,35 @@ import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
  * .env (with generated secrets) via writeEnvConfig, then close this listener
  * and hand the freed port to the real app (onComplete → dynamic-import boot).
  *
+ * It also serves the built SPA, because in a production install there is no
+ * Vite: the wizard the admin is told to open has to come from this server.
+ *
  * Module-graph rule: nothing here may import env.ts, prisma, redis or any
  * other module that validates/connects at load time.
  */
 
-const MIN_NODE_MAJOR = 20;
+// Everything that is not an API call belongs to the SPA. Express 5 needs a
+// RegExp here; the same pattern the full app uses in serveWeb.ts.
+const SPA_PATH = /^\/(?!(api|uploads)(\/|$)).*/;
+
+/**
+ * Serve the built frontend, the way the full app does minus the per-request SEO
+ * meta — that reads settings out of a database this process cannot talk to yet.
+ *
+ * Resolved exactly like env.ts would: WEB_DIST, else REPO_ROOT/apps/web/dist,
+ * where REPO_ROOT defaults to two levels above the working directory. In the
+ * npm package that is the package root, so the default simply works.
+ */
+function mountSetupWeb(app: Express): void {
+  const webDist = process.env.WEB_DIST
+    ? path.resolve(process.env.WEB_DIST)
+    : path.resolve(process.env.REPO_ROOT ?? path.resolve(process.cwd(), "../.."), "apps/web/dist");
+  const indexPath = path.join(webDist, "index.html");
+  if (!existsSync(indexPath)) return; // dev: Vite owns the frontend
+
+  app.use(express.static(webDist, { index: false }));
+  app.get(SPA_PATH, (_req, res) => res.sendFile(indexPath));
+}
 
 interface SetupServerOptions {
   /** Called after .env is written and the listener is closed. Boots the app. */
@@ -35,16 +62,9 @@ function buildDatabaseUrl(input: {
 
 async function liteEnvironmentChecks() {
   const { promises: fs } = await import("node:fs");
-  const path = await import("node:path");
   const { ENV_FILE_PATH } = await import("../config/envProbe.js");
 
-  const nodeMajor = Number(process.versions.node.split(".")[0]);
-  const checks = [{
-    key: "node",
-    name: "Node.js",
-    ok: nodeMajor >= MIN_NODE_MAJOR,
-    detail: `Detected: v${process.versions.node} · Required: ${MIN_NODE_MAJOR}+`,
-  }];
+  const checks: RequirementRow[] = [nodeRow()];
 
   // .env writability — the wizard must be able to write the config file.
   try {
@@ -188,8 +208,13 @@ export async function startSetupServer(options: SetupServerOptions): Promise<voi
     res.status(503).json({ error: "setup_required", code: "XEC-INSTALL-SETUP" });
   });
 
+  // Last, so the fallback never swallows an API route.
+  mountSetupWeb(app);
+
   const port = Number(process.env.PORT ?? 4000);
   const server = app.listen(port, () => {
-    console.log(`Setup server running on :${port} — waiting for the install wizard`);
+    const address = process.env.APP_URL?.replace(/\/+$/, "") ?? `http://localhost:${port}`;
+    console.log(`Setup server running on :${port}`);
+    console.log(`Finish the install at ${address}/install`);
   });
 }

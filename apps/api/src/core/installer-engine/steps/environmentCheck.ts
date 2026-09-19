@@ -3,10 +3,10 @@ import { promises as fs } from "node:fs";
 import Redis from "ioredis";
 import { env } from "../../../config/env.js";
 import { prisma } from "../../../infrastructure/db.js";
-import type { EnvironmentCheckDto } from "@xentium/contracts";
+import { SYSTEM_REQUIREMENTS, type EnvironmentCheckDto } from "@xentium/contracts";
+import { nodeRow, postgresRow, redisRow } from "../requirementRows.js";
 
-const MIN_NODE_MAJOR = 20;
-const MIN_FREE_BYTES = 500 * 1024 * 1024;
+const MIN_FREE_BYTES = SYSTEM_REQUIREMENTS.dataDiskBytes;
 
 function redact(raw: string): string {
   try {
@@ -19,25 +19,17 @@ function redact(raw: string): string {
 }
 
 async function checkNode() {
-  const major = Number(process.versions.node.split(".")[0]);
-  return {
-    key: "node",
-    name: "Node.js",
-    ok: major >= MIN_NODE_MAJOR,
-    detail: `Detected: v${process.versions.node} · Required: ${MIN_NODE_MAJOR}+`,
-  };
+  return nodeRow();
 }
 
 async function checkPostgres() {
   try {
     const rows = await prisma.$queryRaw<Array<{ version: string }>>`SELECT version()`;
-    const ver = rows[0]?.version.match(/PostgreSQL (\d+\.\d+)/)?.[1] ?? "unknown";
-    return {
-      key: "postgres",
-      name: "PostgreSQL",
-      ok: ver === "unknown" || parseFloat(ver) >= 14,
-      detail: `Detected: ${ver} · Required: 14+`,
-    };
+    const ver = rows[0]?.version.match(/PostgreSQL (\d+\.\d+)/)?.[1];
+    // A build that reports its version oddly (a fork, a managed service) isn't
+    // refused for it: we can't tell, and the connection itself works.
+    if (!ver) return { key: "postgres", name: "PostgreSQL", ok: true, detail: "Detected: unknown version" };
+    return postgresRow(ver);
   } catch {
     return { key: "postgres", name: "PostgreSQL", ok: false, detail: "Could not connect" };
   }
@@ -51,8 +43,13 @@ async function checkRedis() {
   });
   try {
     await client.connect();
-    const ver = (await client.info("server")).match(/redis_version:(\S+)/)?.[1] ?? "unknown";
-    return { key: "redis", name: "Redis", ok: true, detail: `Detected: ${ver} · Required: 6.0+` };
+    const ver = (await client.info("server")).match(/redis_version:(\S+)/)?.[1];
+    if (!ver) return { key: "redis", name: "Redis", ok: true, detail: "Detected: unknown version" };
+    // CONFIG can be disabled on managed Redis; then we simply don't know the policy.
+    const policy = await client.config("GET", "maxmemory-policy")
+      .then((r) => (Array.isArray(r) && typeof r[1] === "string" ? r[1] : null))
+      .catch(() => null);
+    return redisRow(ver, policy);
   } catch {
     return { key: "redis", name: "Redis", ok: false, detail: "Could not connect" };
   } finally {
@@ -68,7 +65,7 @@ async function checkStorage() {
       key: "storage",
       name: "Storage",
       ok: free >= MIN_FREE_BYTES,
-      detail: `Detected: ${(free / 1024 ** 3).toFixed(1)} GB free · Required: 500 MB`,
+      detail: `Detected: ${(free / 1024 ** 3).toFixed(1)} GB free · Required: ${Math.round(MIN_FREE_BYTES / 1024 ** 2)} MB`,
     };
   } catch {
     return { key: "storage", name: "Storage", ok: false, detail: "Could not read disk" };

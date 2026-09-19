@@ -30,7 +30,7 @@ import "../../styles/installer.scss";
 const STEPS_KEYS = ["welcome", "environment", "database", "site", "admin", "finalize", "done"];
 const TOTAL = STEPS_KEYS.length;
 
-type EnvCheck = { key: string; name: string; ok: boolean; detail: string };
+type EnvCheck = { key: string; name: string; ok: boolean; detail: string; warn?: boolean };
 
 // How long the wizard waits for the setup-mode hot swap (POST /install/setup
 // → .env written → setup server closes → full app boots on the same port).
@@ -332,7 +332,10 @@ export function InstallerWizard() {
           : "";
 
   const envIcon = (cls: string) =>
-    cls === "checking" ? faArrowsRotate : cls === "pass" ? faCheck : faXmark;
+    cls === "checking" ? faArrowsRotate
+    : cls === "pass" ? faCheck
+    : cls === "warn" ? faTriangleExclamation
+    : faXmark;
 
   const features = [
     {
@@ -501,9 +504,10 @@ export function InstallerWizard() {
               {(envChecks ?? [{ key: "loading", name: "", ok: false, detail: "" }]).map(
                 (check, i) => {
                   const res = envChecks && i < revealed ? check : null;
-                  const cls = !res ? "checking" : res.ok ? "pass" : "fail";
+                  // A warning passes (it never blocks Continue); it only looks different.
+                  const cls = !res ? "checking" : !res.ok ? "fail" : res.warn ? "warn" : "pass";
                   return (
-                    <div className="env-item" key={check.key}>
+                    <div className={`env-item${cls === "warn" ? " env-item--warn" : ""}`} key={check.key}>
                       <div className={`env-icon ${cls}`}>
                         <FontAwesomeIcon icon={envIcon(cls)} />
                       </div>
@@ -520,9 +524,11 @@ export function InstallerWizard() {
                       <span className={`env-status ${cls}`}>
                         {!res
                           ? t("environment.status.checking")
-                          : res.ok
-                            ? t("environment.status.passed")
-                            : t("environment.status.failed")}
+                          : !res.ok
+                            ? t("environment.status.failed")
+                            : res.warn
+                              ? t("environment.status.warning")
+                              : t("environment.status.passed")}
                       </span>
                     </div>
                   );
