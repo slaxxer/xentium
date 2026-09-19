@@ -1,189 +1,187 @@
-# `.xttheme` — the theme package format
+# The `.xttheme` package format
 
-> The format, byte by byte. For how themes, tokens and layers work on a running site —
-> installing vs switching, the theme ⊕ admin layers, the served stylesheet — read
-> [`style-system.md`](style-system.md) first.
->
-> Companion to ADR-0005. `docs/plugin-blocks.md` covers the other half of the split:
-> a **theme is data, a plugin is code**. Nothing in a `.xttheme` executes, which is why
-> installing one needs no trust review — it is validated against a schema, and an
-> unknown block is skipped rather than run.
+This page describes the file format in detail. For how themes, tokens and layers behave
+on a running site (installing vs switching, the theme and admin layers, the stylesheet we
+serve), read [`style-system.md`](style-system.md) first.
 
-A package is a zip. Rename it `.xttheme`; nothing checks the extension.
+A **theme is data and a plugin is code**; [`plugin-blocks.md`](plugin-blocks.md) covers
+the plugin side. Nothing in a `.xttheme` runs, which is why installing one doesn't need a
+trust review: we validate it against a schema, and we skip unknown blocks instead of
+running anything.
+
+A package is a zip. Name it `.xttheme`, although nothing checks the extension.
 
 ```
 manifest.json            required
-tokens.json              full scope-keyed design tokens (the lossless copy)
-styles/tokens.css        global tokens as `:root` custom properties
+tokens.json              all design tokens, by scope (the complete copy)
+styles/tokens.css        the global tokens as :root custom properties
 styles/custom.css        the theme's own stylesheet (optional)
 layouts/<template>.json  one document per template
-assets/                  images and fonts the documents reference
+assets/                  images and fonts the documents use
 ```
 
-## ⚠ One look, one palette (package version 2)
+## One look, one palette (package version 2)
 
-**A site has ONE look, and a theme IS that look.** There is no light/dark toggle and no
-`prefers-color-scheme` anywhere in the render path: an author decides whether they are
-building a dark theme or a light one, declares it in the manifest, and the site wears it.
-A reader who wants the other one picks a different theme from the footer chooser.
+**A site has one look, and a theme is that look.** There's no light/dark toggle and no
+`prefers-color-scheme` anywhere in how a site renders. You decide whether you're building
+a dark theme or a light one, say so in the manifest, and the site wears it. A reader who
+wants the other kind picks a different theme from the footer.
 
-So the paired files are gone. `tokens.json` is a single scope map rather than
-`{ light, dark }`, and each stylesheet is one file:
+So the paired files are gone. `tokens.json` is one scope map instead of
+`{ light, dark }`, and each stylesheet is a single file:
 
-| before (package version 1) | now |
+| Before (package version 1) | Now |
 |---|---|
 | `tokens.json` → `{ light, dark }` | `tokens.json` → the scope map itself |
 | `styles/light.css` + `styles/dark.css` | `styles/tokens.css` |
 | `styles/custom-light.css` + `styles/custom-dark.css` | `styles/custom.css` |
 
-**A version-1 package still installs.** The importer reads every old name and keeps the
-**light** half — `:root` was already the light palette, and it is what a visitor rendered
-unless their OS asked otherwise. The dark half is *reported*, not dropped in silence: the
-import result carries `ignoredFiles`, and the ACP prints it. Nothing writes the old names
-any more.
+**A version 1 package still installs.** The importer reads all the old names and keeps
+the **light** half, because `:root` was always the light palette and it's what visitors
+saw unless their OS asked for dark. We don't drop the dark half silently: the import
+result lists it under `ignoredFiles`, and the ACP shows that. Nothing writes the old names
+anymore.
 
-## `.xtstyle` is this format now
+## `.xtstyle` is the same format
 
-A `.xtstyle` was a manifest plus a `:root`-only stylesheet — a theme with no
-`layouts/` and no `assets/`. The two were never really two formats, so as of
-**2026-08-15 they are one**: the theme importer accepts a `.xtstyle` unchanged, and the
-separate upload endpoint, its parallel validator and its ACP page are gone. Two
-ingestion paths for untrusted CSS was one more than a site needs.
+A `.xtstyle` used to be a manifest plus a `:root`-only stylesheet: a theme without
+`layouts/` or `assets/`. They were never really two formats, so since **2026-08-15 they're
+one**. The theme importer takes a `.xtstyle` as it is, and the separate upload endpoint,
+its own validator and its ACP page are gone. Two ways to import untrusted CSS was one too
+many.
 
-What differed was never the files but the paperwork: a theme manifest requires `id`,
-`vendor`, `version` and `minXentiumVersion`; a style pack carried only `name`. Those are
-filled in on import — `id` derived from the name, `vendor` defaulted to `community` —
-and **only for a package that is unmistakably a style pack**: no `layouts/`, no
-`tokens.json`, and a stylesheet present. A real theme with a malformed manifest still
-gets the strict error it deserves rather than an invented id.
+The only real difference was the manifest. A theme manifest needs `id`, `vendor`,
+`version` and `minXentiumVersion`; a style pack only had `name`. We fill those in on
+import (the `id` from the name, `vendor` as `community`), but **only for a package that's
+clearly a style pack**: no `layouts/`, no `tokens.json`, and a stylesheet present. A real
+theme with a broken manifest still gets a proper error instead of a made-up id.
 
-To produce one, export with **Colours only** (`tokensOnly`), which omits `layouts/` —
-and therefore `assets/`, since the only assets an export collects are the ones layouts
-reference. The result is a `.xttheme` that changes nothing but the palette.
+To make one, export with **Colours only** (`tokensOnly`). That leaves out `layouts/`, and
+with it `assets/`, since export only collects assets that layouts reference. You get a
+`.xttheme` that changes nothing but the palette.
 
 ## manifest.json
 
 ```jsonc
 {
-  "id": "midnight",              // kebab-case, and the directory assets unpack into
+  "id": "midnight",              // kebab-case; also the folder its assets unpack into
   "name": "Midnight",
   "version": "1.2.0",            // semver
   "vendor": "Someone",
-  "minXentiumVersion": "1.0",     // refused below this
+  "minXentiumVersion": "1.0",     // refused on older versions
   "maxXentiumVersion": "2.0",     // optional
-  "description": "…",            // optional, ≤500 chars
+  "description": "…",            // optional, up to 500 characters
 
-  "schemaVersion": 1,            // layout schema authored against
-  "packageVersion": 2,           // this package format — 2 = one look
+  "schemaVersion": 1,            // the layout schema you wrote against
+  "packageVersion": 2,           // this package format; 2 = one look
 
-  // Whether you built a DARK theme or a LIGHT one. A fact about the theme, not a
-  // mode it offers. Defaults to "light" when absent.
+  // Whether you built a DARK theme or a LIGHT one. It describes the theme; it's not
+  // a mode the theme offers. Defaults to "light" if you leave it out.
   "appearance": "dark",
 
-  // Distribution metadata — what a marketplace listing needs.
+  // For a marketplace listing.
   "license": "MIT",              // optional
   "homepage": "https://…",       // optional
   "authorUrl": "https://…",      // optional
-  "screenshot": "assets/preview.png"   // optional, asset-relative
+  "screenshot": "assets/preview.png"   // optional, relative to the package
 }
 ```
 
-`schemaVersion` is **surfaced, not enforced**: a document written against a newer
-catalogue still imports, and the blocks this install cannot render are reported and
-left in place.
+`schemaVersion` is **informational, not enforced**. A document written for a newer block
+catalogue still imports; blocks this install can't render are reported and left in
+place.
 
-`appearance` is **declared, never inferred.** Reading `--c-bg` and measuring its
-luminance works right up to a mid-grey, sepia or duotone palette — and a theme that sets
-its background only in `styles/custom.css` declares no background token at all. The
-marketplace prints it on the card, so getting it wrong is worse than saying nothing: a
-package that omits it gets no badge.
+`appearance` is **something you declare; we never guess it.** Measuring how bright
+`--c-bg` is works until the palette is mid-grey, sepia or duotone, and a theme that only
+sets its background in `styles/custom.css` has no background token at all. The
+marketplace shows it on the listing card, and a wrong badge is worse than none, so a
+package that leaves it out gets no badge.
 
 ## Tokens
 
-`tokens.json` is the one to write. It is the full scope-keyed set (ADR-0003) — one map,
-because there is one look:
+`tokens.json` is the file to write. It's the full set of tokens by scope, and it's one
+map because there's one look:
 
 ```jsonc
 {
   "global":        { "--c-accent": "#5865f2" },
-  "chrome.header": { "--c-bg": "#111827" }     // re-scoped for one region only
+  "chrome.header": { "--c-bg": "#111827" }     // changed for one region only
 }
 ```
 
-`styles/tokens.css` can only carry `global`, so it exists for `.xtstyle` compatibility.
-**When both are present `tokens.json` wins.** Token names must look like custom
-properties and values may not contain `{ } < > ;` — the values are emitted into a served
-stylesheet, and a stray brace would close the block early.
+`styles/tokens.css` can only hold `global`, so it's mostly there for `.xtstyle`
+compatibility. **When both exist, `tokens.json` wins.** Token names have to look like
+custom properties, and values can't contain `{ } < > ;`, since we write them into the
+stylesheet we serve and a stray brace would close the block.
 
-`styles/custom.css` is the escape hatch for a look tokens cannot express. It is *not*
-`:root`-restricted; the importing site scopes it at save time, exactly as the ACP's own
-custom-CSS console does. Like everything else in a theme it applies **live** — see
-*Import semantics*.
+`styles/custom.css` is for anything tokens can't express. It isn't limited to `:root`;
+the site scopes it when it's saved, exactly like the ACP's own custom CSS. Like the rest
+of a theme, it applies **live** (see [Importing](#importing)).
 
 ## Layouts
 
-One file per template, named for the key it declares:
+One file per template, named after the template key:
 
 ```
 layouts/home.json  article.index  article.detail  page.detail
        profile.json  members.json  chrome.header.json  chrome.footer.json
 ```
 
-Each file is a layout document: `{ templateKey, schemaVersion, regions: { … } }`, where
-every region is a tree of blocks. Ship every template — a package that carries only the
-ones it edited silently inherits whatever the target site had.
+Each file is a layout document, `{ templateKey, schemaVersion, regions: { … } }`, where
+each region is a tree of blocks. Ship every template. A package that only carries the
+ones you changed quietly inherits whatever the target site had for the rest.
 
-**Per-page layout variants are deliberately not exported.** One is keyed by a page slug,
-and slugs are a site's content, not a theme's: carried elsewhere they would either miss,
-or hijack a same-named page the author never saw.
+**We don't export per-page layout variants, on purpose.** They're keyed by a page slug,
+and slugs are a site's content, not a theme's. On another site they'd either match
+nothing or take over a page with the same name that you never saw.
 
-> ⚠ Two different things are called a *variant*. A **layout variant** is one instance of a
-> template — the layout for one specific page — and it keys a row in `xcf_layouts`. A
-> **style variant** (below) is a named look a block opts into. They never appear in the
-> same position: the first is part of a layout SELECTOR, the second a field on a BLOCK.
+> "Variant" means two different things here. A **layout variant** is one instance of a
+> template (the layout for one specific page) and it's a row in `xcf_layouts`. A **style
+> variant** (below) is a named look a block opts into. They never show up in the same
+> place: the first selects a layout, the second is a field on a block.
 
 ## Style variants
 
-A block may name a **variant** — `surface`, `muted`, `accent`, `plain` — and the theme
+A block can name a **variant** (`surface`, `muted`, `accent`, `plain`), and your theme
 says what that variant looks like. Both halves are in the package:
 
-- the layout document carries `"variant": "accent"` on the block;
-- `tokens.json` carries the `variant.accent` scope, emitted by the receiving site as
+- the layout document puts `"variant": "accent"` on the block;
+- `tokens.json` has a `variant.accent` scope, which the site emits as
   `:root .xt-v--accent`.
 
 ```jsonc
-// layouts/home.json — the block picks a look
+// layouts/home.json: the block picks a look
 { "id": "hero", "type": "section", "props": {}, "variant": "accent" }
 
-// tokens.json — the theme says what the look IS
+// tokens.json: the theme says what that look is
 { "variant.accent": { "--surface-bg": "#efe7ff", "--surface-border": "#d9c9ff" } }
 ```
 
-This is deliberately not per-block colours. A variant keeps every block using it in step
-and survives a palette change, because a variant's *default* is written in palette tokens
-(`--surface-bg: var(--c-card)`) — so it follows the site it lands on until a theme
+We deliberately don't do per-block colours. A variant keeps every block that uses it in
+sync and survives a palette change, because a variant's *default* is written in palette
+tokens (`--surface-bg: var(--c-card)`). It follows whatever site it lands on until a theme
 overrides it.
 
-Three rules worth knowing when authoring:
+Three things to know when you write one:
 
 - **`section` is the block that paints.** It reads `--surface-bg`, `--surface-border`,
-  `--surface-border-width`, `--surface-radius`, `--surface-shadow`, none of which have a
-  global definition — an unstyled section paints nothing. A card-painted block (the
-  profile card, a plugin panel) follows the same colours, because every variant aliases
-  `--card-bg` and friends to the `--surface-*` set.
-- **Variants cascade.** They are custom properties on a `display: contents` wrapper, so a
-  card inside an `accent` section is accented too. `plain` is the explicit reset.
-- **An unknown variant is refused on import**, unlike an unknown block: there is no class
-  for it and no way to render "the look it meant", so it fails validation rather than
-  landing as a silent no-op.
+  `--surface-border-width`, `--surface-radius` and `--surface-shadow`, and none of those
+  has a global value, so an unstyled section paints nothing. Card-style blocks (the
+  profile card, a plugin panel) follow the same colours, because every variant points
+  `--card-bg` and friends at the `--surface-*` values.
+- **Variants cascade.** They're custom properties on a `display: contents` wrapper, so a
+  card inside an `accent` section is accented too. Use `plain` to reset.
+- **An unknown variant is refused on import**, unlike an unknown block. There's no class
+  for it and no way to render the look it was meant to have, so it fails validation
+  instead of silently doing nothing.
 
-## CSS handles — `className` and linked images
+## CSS handles: `className` and linked images
 
-A variant covers "which named look", not "this one tile". For that a block carries an
-optional **`className`**: your own handle, which custom CSS can select on.
+A variant picks one of the named looks. It can't say "this one tile". For that, a block
+can have an optional **`className`**: your own handle that custom CSS can select.
 
 ```jsonc
-// layouts/chrome.header.json — an image navbar
+// layouts/chrome.header.json: a navbar made of images
 { "id": "t1", "type": "image", "className": "nav-tile",
   "props": { "source": "assets/forum.png", "ratio": "auto", "href": "/forum" } }
 ```
@@ -195,114 +193,114 @@ optional **`className`**: your own handle, which custom CSS can select on.
 .nav-tile:hover img    { filter: brightness(1.15); }
 ```
 
-Three things decide how you write that CSS:
+Three things shape how you write that CSS:
 
-- **Style *through* the handle, not on it.** It is stamped on the same
-  `display: contents` wrapper the variant uses, so it generates no box:
-  `.nav-tile { background: … }` paints nothing, while `.nav-tile > *`,
-  `.nav-tile img` and `.nav-tile .xt-image` all work. This is the price of the handle
-  being safe on **every** block — including a plugin's, which never had to opt in —
-  and of never breaking the flex and grid parents that size the real element.
-  Descendant and `:hover` selectors behave normally, because `:hover` matches an
-  ancestor of the hovered box whether or not that ancestor generates one.
-- **`xt-` is reserved.** A handle is 1–4 CSS identifiers, letters/digits/`-`/`_`, and
-  may not begin with `xt-` — that prefix is core's own class contract, and a document
-  that could mint one could impersonate a core class or hand itself a variant.
-- **`image.href` makes artwork a link**, which is what an image navbar needs:
+- **Style *through* the handle, not on it.** It sits on the same `display: contents`
+  wrapper as the variant, so it has no box: `.nav-tile { background: … }` paints nothing,
+  but `.nav-tile > *`, `.nav-tile img` and `.nav-tile .xt-image` all work. That's the
+  price of the handle being safe on **every** block, including plugin blocks that never
+  opted in, and of never breaking the flex and grid containers that size the real
+  element. Descendant and `:hover` selectors work normally, because `:hover` matches an
+  ancestor of the hovered element whether or not that ancestor has a box.
+- **`xt-` is reserved.** A handle is 1 to 4 CSS identifiers (letters, digits, `-`, `_`)
+  and can't start with `xt-`. That prefix is core's own set of classes, and a document
+  that could create one could pretend to be a core class or give itself a variant.
+- **`image.href` turns artwork into a link**, which is what an image navbar needs.
   `navLinks` renders text, so before this there was no way to say "this tile goes to
-  /forum". Relative paths and `http`/`https`/`mailto` only — a `javascript:` or
-  `data:` URL is refused at validation, so it cannot arrive in a package either.
-  There is deliberately no `hoverSource`: a hover swap is CSS the handle already
-  expresses, and every block prop is permanent.
+  /forum". Only relative paths and `http`, `https` and `mailto` are allowed; a
+  `javascript:` or `data:` URL fails validation, so it can't come in through a package
+  either. There's no `hoverSource` on purpose: swapping the image on hover is CSS the
+  handle can already do, and every block prop is forever.
 
 ## Assets
 
-An asset reference inside a document is a path into the receiving site's uploads —
-which means nothing on another machine. So export **copies the bytes into the package**
-and rewrites the reference to `assets/<file>`; import unpacks them to
-`uploads/themes/<manifest id>/` and rewrites it again to the new path.
+An asset path in a document points into the site's uploads, which means nothing on
+another machine. So export **copies the files into the package** and rewrites each path
+to `assets/<file>`. Import unpacks them to `uploads/themes/<manifest id>/` and rewrites the
+paths again.
 
-- Images and fonts only, checked by **magic bytes**, not by extension. SVG is the one
-  exception (it is XML), so `/uploads/themes/` is served with `nosniff` and a sandbox
-  CSP: an SVG cannot execute even when opened directly.
-- Names are flattened to a basename, so a traversing entry cannot escape.
-- Limits: 100 files, 5 MB each, 40 MB total.
-- An absolute `http(s)` URL is left alone — a theme may point at a CDN.
+- Images and fonts only, checked by their **magic bytes**, not their extension. SVG is the
+  exception (it's XML), so we serve `/uploads/themes/` with `nosniff` and a sandboxing
+  CSP: an SVG can't run anything even if you open it directly.
+- File names are reduced to their base name, so an entry can't escape its folder.
+- Limits: 100 files, 5 MB each, 40 MB in total.
+- Absolute `http(s)` URLs are left alone, so a theme can point at a CDN.
 
-## Import semantics
+## Importing
 
-- **Installing is not switching.** A new theme lands in the library inactive and the
-  admin is asked whether to switch to it; only an update to the theme the site is already
-  wearing is applied on import. See `style-system.md` §5.
-- **Switching applies live** — layouts, tokens and the stylesheet alike. Putting a theme on is one decision, not a batch of edits
-  waiting to be published; draft→publish is an editing affordance. The draft is written
-  too, so pending Style Editor edits preview against the theme actually on the site.
-- **The way back is the undo point**: `POST /admin/themes/discard` restores exactly what
-  the last import or switch replaced. ⚠ It is ONE level deep — a second import overwrites
-  it, so the state before the first is then only reachable by activating the old theme
-  from the library.
-- **A switch REPLACES the theme layer, never merges it.** A theme that ships no tokens or
-  no `styles/custom.css` clears the previous theme's, so its fonts and rules do not keep
-  painting a site that has moved on. (Layouts differ on purpose: a template the new theme
-  does not ship keeps whatever the site had.)
-- **All-or-nothing**: every layout, token, stylesheet and asset is validated before a
-  single byte is written, so one bad file leaves the site untouched.
-- **Unknown blocks are kept, not dropped.** They are reported to the admin, skipped by
-  the renderer, and reappear the moment the plugin that provides them is enabled.
+- **Installing isn't switching.** A new theme goes into the library inactive, and the
+  admin is asked whether to switch to it. Only an update to the theme the site is already
+  wearing is applied on import. See
+  [`style-system.md` → Themes on a site](style-system.md#themes-on-a-site-install-switch-undo).
+- **Switching is live:** layouts, tokens and the stylesheet together. Putting on a theme
+  is one decision, not a batch of edits waiting to be published; draft and publish are for
+  editing. We write the draft too, so pending Style Editor edits preview against the theme
+  that's actually on the site.
+- **The way back is the undo point:** `POST /admin/themes/discard` restores exactly what
+  the last import or switch replaced. It only goes back **one step**: a second import
+  overwrites it, and after that the only way back to the earlier state is to activate the
+  old theme from the library.
+- **A switch replaces the theme layer; it doesn't merge.** A theme without tokens or
+  without `styles/custom.css` clears the previous theme's, so its fonts and rules don't
+  keep painting a site that has moved on. (Layouts are different on purpose: a template
+  the new theme doesn't ship keeps what the site had.)
+- **All or nothing:** we validate every layout, token, stylesheet and asset before we
+  write a single byte, so one bad file leaves the site untouched.
+- **Unknown blocks are kept.** We report them to the admin, the renderer skips them, and
+  they come back as soon as the plugin that provides them is enabled.
 
-## Inheritance — updating a theme without losing your work
+## Inheritance: updating a theme without losing your work
 
-A theme is a **layer underneath** the admin's own changes, not a wholesale overwrite. This
-is the difference between taking an update and having to choose between the update and
-your customisations, which is the trade XenForo and WoltLab both leave you with.
+A theme is a **layer under** the admin's own changes, not something that overwrites them.
+That's the difference between taking an update and having to choose between the update
+and your customizations, which is the choice XenForo and WoltLab leave you with.
 
-**Tokens inherit per token.** An import writes the *theme layer*; the admin's edits live
-in their own layer on top. The served stylesheet is theme ⊕ admin, so if you recoloured
-one accent and the theme's 1.1 changes twenty tokens, you get the nineteen and keep yours.
-In the Style Editor a token you have not touched shows the theme's value as *Inherited*,
-and **Reset** on an overridden token falls back to the theme rather than to stock Xentium.
-`Reset appearance` clears your overrides and leaves the theme installed.
+**Tokens inherit one by one.** An import writes the *theme layer*, and the admin's edits
+live in their own layer on top. We serve theme + admin, so if you recoloured one accent
+and the theme's version 1.1 changes twenty tokens, you get the other nineteen and keep
+yours. In the Style Editor, a token you haven't touched shows the theme's value as
+*Inherited*, and **Reset** on a token you changed goes back to the theme's value, not to
+stock Xentium. `Reset appearance` clears your overrides and leaves the theme installed.
 
-**Layouts inherit per template.** A block tree cannot be merged sensibly — a three-way
-merge of moved blocks produces layouts nobody designed — so the unit is the template, and
-the rule is explicit:
+**Layouts inherit per template.** You can't sensibly merge block trees (a three-way merge
+of moved blocks produces layouts nobody designed), so the unit is the whole template, and
+the rule is simple:
 
-| Template state | On import |
+| Template | On import |
 |---|---|
-| Nothing stored, or identical to its baseline | **Updated** to the theme's version |
-| Moved away from its baseline (you edited it) | **Kept**, and reported in the result |
+| Nothing stored, or the same as its baseline | **Updated** to the theme's version |
+| Changed from its baseline (you edited it) | **Kept**, and listed in the result |
 
-The *baseline* is what the theme shipped last time, or the code default before any theme
-was imported — so a layout you hand-built before installing your first theme also counts
-as customised and is kept.
+The *baseline* is what the theme shipped last time, or the built-in default if no theme
+was ever imported. So a layout you built by hand before installing your first theme also
+counts as customized and is kept.
 
 Every import records the new baseline either way, so:
 
 - the next update compares against the version you actually received, and
-- **Revert to theme** (per template, in the Layout Editor) can hand you the theme's
-  current version of a page you had customised. It lands in the draft, like every other
-  layout change. `Reset` is still separate and still means the *code* default.
+- **Revert to theme** (per template, in the Layout Editor) can give you the theme's
+  current version of a page you'd customized. It lands in the draft, like any other layout
+  change. `Reset` is separate and still means the *built-in* default.
 
-The import result names all of it: `templates` (applied), `kept` (yours, untouched),
-`replaced` (the version that was installed before).
+The import result lists all of it: `templates` (applied), `kept` (yours, left alone) and
+`replaced` (the theme that was installed before).
 
-**The stylesheet inherits as a layer.** `styles/custom.css` lands in the theme's own
-layer and is emitted **before** the admin's console CSS, so on two rules of equal
-specificity the admin still wins — the same relationship their tokens have with yours.
-`Reset appearance` clears the admin's stylesheet and leaves the theme's in place.
+**The stylesheet is a layer too.** `styles/custom.css` goes into the theme's own layer and
+is emitted **before** the admin's own CSS, so when two rules have equal specificity, the
+admin still wins. That's the same relationship their tokens have with the theme's.
+`Reset appearance` clears the admin's stylesheet and leaves the theme's.
 
-> ⚠ Before 2026-08-29 an import called the admin's own `saveCustomCss`, so installing a
-> theme **destroyed whatever CSS the admin had written** — no baseline, nothing to
-> recover from, and applied live.
+> Until 2026-08-29, an import wrote into the admin's own custom CSS, so installing a theme
+> **wiped whatever CSS the admin had written**, live, with nothing to restore it from.
 
 ## The class contract
 
-A theme is CSS plus data — it cannot register a block or change a component — so every bit
-of design control it has runs through class names. Three things are promised, and it is
-worth knowing which is which, because they are not equally strong.
+A theme is CSS plus data. It can't register a block or change a component, so all of its
+design control goes through class names. We promise three things, and they're not equally
+strong, so it's worth knowing which is which.
 
-**1. `xt-b--<type>` on every block.** Always present, on every instance, for core, plugin
-and future blocks alike:
+**1. `xt-b--<type>` on every block.** It's always there, on every instance, for core
+blocks, plugin blocks and blocks we add later:
 
 ```css
 .xt-b--boardStats .stat-value { font-family: "Bebas Neue"; }
@@ -310,12 +308,12 @@ and future blocks alike:
 ```
 
 This is the hook a *downloaded* theme relies on. `className` is per instance and only an
-admin can set it, so a theme that does not control the site's layouts had nothing to aim
-at — and roughly fifty blocks render into their parent's markup and emit no class of their
-own at all. A plugin's dotted type is flattened for the selector:
-`forum.recentThreads` → `.xt-b--forum-recentThreads`.
+admin can set it, so a theme that doesn't control the site's layouts had nothing to aim
+at, and about fifty blocks render into their parent's markup without a class of their
+own. A plugin's dotted type is flattened for the selector: `forum.recentThreads` becomes
+`.xt-b--forum-recentThreads`.
 
-**2. Root classes**, for the blocks that own a root element:
+**2. Root classes** on the blocks that have their own root element:
 
 | Block | Root class | | Block | Root class |
 |---|---|---|---|---|
@@ -325,50 +323,57 @@ own at all. A plugin's dotted type is flattened for the selector:
 | `spacer` | `.xt-spacer` | | `profileCard` | `.profile-card` |
 | `heading` | `.xt-heading` | | `richText` | `.xt-richtext` |
 
-**3. Everything else is current behaviour, not a promise.** The classes inside a block
-(`.ghero__title`, `.mp-list`, `.ac__excerpt`) are real and stable in practice, but they
-are not yet covered by the guard, and the prefixes are inconsistent because several blocks
-were decomposed out of existing pages and kept those pages' names. Target them through
-`xt-b--<type>` or your own handle so a rename cannot reach across your whole stylesheet.
+**3. Everything else is how it works today, not a promise.** The classes inside a block
+(`.ghero__title`, `.mp-list`, `.ac__excerpt`) are real and stable in practice, but no test
+guards them yet, and the prefixes are inconsistent because several blocks were split out
+of existing pages and kept those pages' names. Reach them through `xt-b--<type>` or your
+own handle, so a rename can't ripple through your whole stylesheet.
 
-> ⚠ **Never use `>`, `+` or `~` against a block's root class from outside that block.**
-> Every block is rendered inside a `display: contents` wrapper. It generates no box, so it
-> cannot disturb a flex or grid parent — but selectors match the **DOM**, not the box
-> tree, so a combinator aimed across a block boundary silently matches nothing. Use a
-> descendant selector. (Core shipped `.xt-columns > .xt-column` and it stopped applying to
-> any column an admin had styled, leaving a sticky rail pinned over the content it was
-> meant to stack under on a phone.)
+> **Never use `>`, `+` or `~` against a block's root class from outside that block.** Every
+> block renders inside a `display: contents` wrapper. It has no box, so it can't disturb a
+> flex or grid parent, but selectors match the **DOM**, not the boxes, so a combinator
+> across a block boundary silently matches nothing. Use a descendant selector. (We shipped
+> `.xt-columns > .xt-column` in core once. It stopped applying to any column an admin had
+> styled, and on phones a sticky rail stayed pinned over the content it should have
+> stacked under.)
 
-## What a theme's stylesheet may and may not do
+## What a theme's stylesheet may do
 
-Your own console CSS is written by you, so it is checked for syntax and otherwise left
-alone. A stylesheet arriving inside a package is a stranger's code on every page of
-someone else's site, so it has two extra rules — both enforced at import, before a single
-byte is written:
+Your own custom CSS is written by you, so we only check the syntax. A stylesheet inside a
+package is a stranger's code on every page of someone else's site, so it follows two
+extra rules, both enforced on import before we write anything:
 
-- **No `@import`.** It fetches a stylesheet from another server at render time, which is
-  both a live dependency on someone else's uptime and a request carrying your visitors'
-  IPs. Put the rules in the file.
-- **No remote `url()`.** Same reason, plus a sharper one: with an attribute selector
-  (`input[value^="a"] { background: url(…) }`) a remote URL leaks what is on the page one
-  character at a time. Ship the file in `assets/` and reference it as `assets/<file>`.
+- **No `@import`.** It loads a stylesheet from another server on every page view. That's
+  a live dependency on someone else's uptime, and a request that carries your visitors'
+  IP addresses. Put the rules in the file.
+- **No remote `url()`.** Same reasons, plus a worse one: combined with an attribute
+  selector (`input[value^="a"] { background: url(…) }`), a remote URL can leak what's on
+  the page, one character at a time. Put the file in `assets/` and reference it as
+  `assets/<file>`.
 
-What *is* allowed: `assets/…` references (rewritten on import to wherever the files
-landed — this is why an image in a theme's stylesheet works at all), `data:` URLs, and
-site-absolute paths like `/uploads/branding/logo.png`, which are same-origin and cannot
-reach off-site. A reference to a file the package does not carry is refused by name.
+What *is* allowed: `assets/…` references (we rewrite them on import to wherever the files
+ended up, which is the only reason an image in a theme's stylesheet works at all),
+`data:` URLs, and absolute paths on the same site like `/uploads/branding/logo.png`, which
+can't reach anywhere else. A reference to a file that isn't in the package is refused by
+name.
 
-Export is the mirror: the files your stylesheet references are copied into the package and
-the references rewritten package-relative, so a `.xttheme` exported from a site running a
-theme imports cleanly somewhere else.
+Export does the reverse: it copies the files your stylesheet references into the package
+and makes the paths package-relative, so a `.xttheme` exported from a site that's running
+a theme imports cleanly somewhere else.
 
-This does **not** make a stranger's CSS harmless — CSS can still lay a fixed-position
-element over a button, or restyle a control into something it is not. The answer to that
-is the preview before install (the marketplace renders a theme from its package) and the
-undo point after it.
+This does **not** make a stranger's CSS harmless. CSS can still put a fixed-position
+element over a button, or restyle a control into something it isn't. The protections
+against that are the preview before you install (the marketplace renders a theme from its
+package) and the undo point afterwards.
 
 ## Building one
 
-The Layout Editor (`ACP → Appearance → Layout Editor → Theme package`) exports what is
-currently **published**, assets and all, and imports a package. There is no separate CLI
-in v1 — a package is a zip, so hand-authoring is a text editor and `zip -r`.
+The Layout Editor (**ACP → Appearance → Layout Editor → Theme package**) exports what's
+currently **published**, assets included, and imports packages. There's no separate CLI:
+a package is a zip, so you can also write one by hand in a text editor and pack it with
+`zip -r`.
+
+If you build one by hand, start your layouts from the built-in defaults (`DEFAULT_LAYOUTS`
+in `@xentium/contracts`) and run them through `layoutDocumentSchema` and
+`validateBlockTree` before you zip, so you find mistakes before the importer does. That's
+how we built our Redline theme.
