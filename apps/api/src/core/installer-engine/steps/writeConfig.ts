@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
-import path from "node:path";
 import crypto from "node:crypto";
 import argon2 from "argon2";
+import { ENV_FILE_PATH } from "../../../config/envProbe.js";
 
 /**
  * Writes the wizard-collected configuration to the repo-root .env and into
@@ -12,9 +12,8 @@ import argon2 from "argon2";
  * module graph).
  */
 
-// Same resolution as env.ts / envProbe.ts: repo root is two levels above the
-// API process cwd (apps/api in dev).
-const ENV_PATH = path.resolve(process.cwd(), "../../.env");
+// The one definition of where .env lives (XENTIUM_ENV_FILE, or the repo root).
+const ENV_PATH = ENV_FILE_PATH;
 
 export interface EnvWriteInput {
   databaseUrl: string;
