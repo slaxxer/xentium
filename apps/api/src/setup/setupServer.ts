@@ -2,6 +2,7 @@ import express from "express";
 import cors from "cors";
 import { setupConfigSchema, InstallStep } from "@xentium/contracts";
 import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
+import { nodeRow, type RequirementRow } from "../core/installer-engine/requirementRows.js";
 
 /**
  * Pre-env setup server (§16, WordPress-style first run).
@@ -16,8 +17,6 @@ import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
  * Module-graph rule: nothing here may import env.ts, prisma, redis or any
  * other module that validates/connects at load time.
  */
-
-const MIN_NODE_MAJOR = 20;
 
 interface SetupServerOptions {
   /** Called after .env is written and the listener is closed. Boots the app. */
@@ -38,13 +37,7 @@ async function liteEnvironmentChecks() {
   const path = await import("node:path");
   const { ENV_FILE_PATH } = await import("../config/envProbe.js");
 
-  const nodeMajor = Number(process.versions.node.split(".")[0]);
-  const checks = [{
-    key: "node",
-    name: "Node.js",
-    ok: nodeMajor >= MIN_NODE_MAJOR,
-    detail: `Detected: v${process.versions.node} · Required: ${MIN_NODE_MAJOR}+`,
-  }];
+  const checks: RequirementRow[] = [nodeRow()];
 
   // .env writability — the wizard must be able to write the config file.
   try {

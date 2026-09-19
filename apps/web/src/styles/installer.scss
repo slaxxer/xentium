@@ -233,11 +233,14 @@
       &.checking { background: var(--accent-soft); color: var(--accent); svg { animation: xtInstSpin 1s linear infinite; } }
       &.pass     { background: var(--success-bg);  color: var(--success); }
       &.fail     { background: var(--error-bg);    color: var(--error); }
+      &.warn     { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
     }
 
     .env-info { flex: 1; min-width: 0; }
     .env-name { font-weight: 700; font-size: 14.5px; margin-bottom: 3px; }
     .env-detail { font-family: var(--mono); font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    // A warning carries advice ("set maxmemory-policy to noeviction"), so it wraps instead of being cut off.
+    .env-item--warn .env-detail { white-space: normal; }
 
     .env-status {
       padding: 5px 12px;
@@ -248,6 +251,7 @@
 
       &.pass     { background: var(--success-bg);  color: var(--success); }
       &.fail     { background: var(--error-bg);    color: var(--error); }
+      &.warn     { background: color-mix(in srgb, var(--warning) 15%, transparent); color: var(--warning); }
       &.checking { background: var(--accent-soft); color: var(--accent); }
     }
   }
