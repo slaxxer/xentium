@@ -8,6 +8,8 @@ Modular-monolith core · TypeScript end-to-end · plugin-first architecture.
 
 `Node.js 24` · `Express 5` · `React 19` · `PostgreSQL 17` · `Prisma 7` · `Redis 7` · `pnpm + Turborepo`
 
+📖 **Developer docs: [doc.xentium.org](https://doc.xentium.org)**
+
 </div>
 
 ---

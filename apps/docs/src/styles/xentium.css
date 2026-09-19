@@ -1,0 +1,11 @@
+/* Xentium's accent — the house blurple, the same hue the app ships with. */
+:root {
+  --sl-color-accent-low:  #1e2156;
+  --sl-color-accent:      #7c84ff;
+  --sl-color-accent-high: #c9ccff;
+}
+:root[data-theme="light"] {
+  --sl-color-accent-low:  #e7e9fd;
+  --sl-color-accent:      #5865f2;
+  --sl-color-accent-high: #2b3290;
+}
