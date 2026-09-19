@@ -1238,6 +1238,24 @@
       "enabling": "Activando…"
     }
   },
+  "coreUpdate": {
+    "title": "Núcleo de Xentium",
+    "releasesBehind_one": "{{count}} versión por detrás",
+    "releasesBehind_other": "{{count}} versiones por detrás",
+    "severity": {
+      "normal": "actualización",
+      "security": "seguridad",
+      "critical": "crítica"
+    },
+    "via": "Esta versión no puede instalarse directamente desde la tuya. Instala antes la {{version}}.",
+    "blockedTitle": "Plugins que aún no admiten esta versión:",
+    "blockedRow": "{{name}} — admite {{supports}}",
+    "howTo": "Aplícala en el servidor con:",
+    "howToBlocked": "Actualiza antes esos plugins y luego aplícala en el servidor con:",
+    "dialogTitle": "Xentium {{version}} está disponible",
+    "dialogVersion": "Versión",
+    "dialogBehind": "Versiones por detrás"
+  },
   "license": {
     "loading": "Cargando…",
     "accountTitle": "Cuenta del marketplace",

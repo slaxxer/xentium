@@ -1238,6 +1238,24 @@
       "enabling": "Wird aktiviert…"
     }
   },
+  "coreUpdate": {
+    "title": "Xentium-Kern",
+    "releasesBehind_one": "{{count}} Version im Rückstand",
+    "releasesBehind_other": "{{count}} Versionen im Rückstand",
+    "severity": {
+      "normal": "Update",
+      "security": "Sicherheit",
+      "critical": "Kritisch"
+    },
+    "via": "Diese Version lässt sich von deiner aus nicht direkt installieren. Installiere zuerst {{version}}.",
+    "blockedTitle": "Plugins, die diese Version noch nicht unterstützen:",
+    "blockedRow": "{{name}} — unterstützt {{supports}}",
+    "howTo": "Auf dem Server anwenden mit:",
+    "howToBlocked": "Aktualisiere zuerst diese Plugins, dann auf dem Server anwenden mit:",
+    "dialogTitle": "Xentium {{version}} ist verfügbar",
+    "dialogVersion": "Version",
+    "dialogBehind": "Versionen im Rückstand"
+  },
   "license": {
     "loading": "Lädt…",
     "accountTitle": "Marketplace-Konto",

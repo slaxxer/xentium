@@ -162,6 +162,11 @@ async function runUpdateCheck(): Promise<void> {
  * A refresh failure must not cost the update check: `refreshLicense` already
  * applies the grace window internally, and anything that escapes it is logged
  * and swallowed here so the second half still runs.
+ *
+ * ⚠ The CORE check is a third, independent step, and it runs whatever the other
+ * two do. `processUpdateCheck` returns early without an account token; core
+ * asks anonymously, because an install that never connected an account is the
+ * one most likely to be running an un-patched forum.
  */
 export async function processMarketplaceSync(): Promise<void> {
   const { refreshLicense } = await import("../core/license-engine/license-engine.js");
@@ -169,6 +174,11 @@ export async function processMarketplaceSync(): Promise<void> {
     logger.warn({ err }, "License refresh failed during marketplace sync — grace period applies");
   });
   await processUpdateCheck();
+
+  const { processCoreUpdateCheck } = await import("./coreUpdateCheck.js");
+  await processCoreUpdateCheck().catch((err) => {
+    logger.warn({ err }, "Core update check failed during marketplace sync");
+  });
 }
 
 export function startUpdateCheckWorker() {
