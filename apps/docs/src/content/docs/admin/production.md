@@ -5,10 +5,11 @@ sidebar:
   order: 1
 ---
 
-Right now you run Xentium in production **from a git clone**, and that's what this page
-covers. We're working on a one-line installer and core updates you can apply from the
-ACP, both planned for **Xentium 1.0**. Once they're out, this page will describe that
-route, and the clone will be for developers.
+Most servers should use the installer: see [Installing Xentium on a server](/admin/installing/).
+It sets all of this up for you, and the `xentium` command keeps it running and up to date.
+
+This page covers running Xentium **from a git clone**, which is what you want when you
+deploy your own build, or when you are working on core and need production behaviour.
 
 ## What runs
 
