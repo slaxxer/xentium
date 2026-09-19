@@ -1,39 +1,41 @@
-# Last codebase update — 2026-09-19
+# Last codebase update
 
-Installing a theme is no longer switching to it, a switch now replaces the previous
-theme's stylesheet, and the style system has a developer guide. Built alongside
-**Redline**, the first first-party `.xttheme` (package v2, dark, `#e22b2b`) — the theme
-itself is not in this repo: it is free and ships from the marketplace.
+Step 3 of the core releases and updates plan: the installer and the CLI. Step 2 (the
+`@xentium/server` package) and the shared system requirements are in the same unpushed
+batch.
 
-## xentium (this repo)
+## New
 
-| File | Why |
+| Path | Purpose |
 |---|---|
-| `modules/themes/theme.service.ts` | `importTheme` applies only an UPDATE to the worn theme (`manifest.id === getInstalledTheme().id`); anything else is saved to the library inactive. `saveInstalledTheme` gains `{ activate }`. `ImportReport` gains `activated` + `current`. `applyTheme` always writes the theme token layer and stylesheet (`{}` / `""` when the theme has none) — the fix for CSS outliving a switch. Stale "everything is STAGED" comment corrected. |
-| `modules/themes/theme.service.test.ts` | `putOn()` helper = import + activate (what an import used to be) so the application tests keep testing application; the mock's `setInstalledTheme` now also sets what the site wears. New suites: "installing is not switching" (6) and the stylesheet/tokens clear-on-switch test. |
-| `modules/admin/marketplace.service.ts` | The marketplace theme install forwards `activated` + `current`. |
-| `web/features/admin/hooks/themeSwitchPrompt.tsx` + `.scss` | **New.** `offerThemeSwitch` — the one "switch or keep" dialog, reading the library row for the screenshot and declared look; `outcomeFromStream` for the streamed installs. |
-| `web/features/admin/pages/ThemesPage.tsx` | Upload asks; the report says "added to your library" when nothing was applied; invalidates the library too. |
-| `web/features/admin/pages/MarketplacePage.tsx`, `components/OwnedLicenses.tsx` | Ask after a theme install, inside the mutation so invalidation sees a switch. |
-| `web/features/admin/hooks/themeInstallResult.ts` | "installed" vs "now the active theme". |
-| `web/public/locales/{en,de,es,fr,pt}/acp.json` | 10 new `themes.*` strings + `marketplace.themeInstalled`. |
-| `docs/style-system.md` | **New** developer guide to the whole style system. |
-| `docs/theme-packages.md` | Points at the guide; import semantics corrected (install ≠ switch, switch is live, one-level undo, switch replaces the layer). |
+| `packages/cli/src/checks.ts` | Every system check, in one place. Shared by the installer, `xentium doctor` and (through `SYSTEM_REQUIREMENTS`) the install wizard. Node builtins and `pg` only, so it loads on a machine with nothing of ours on it. |
+| `packages/cli/src/site.ts` | The site layout: `xentium.json`, `releases/<v>`, the `current` symlink, `shared/`. Reading and merging `.env`. |
+| `packages/cli/src/release.ts` | Installing a release with npm, provenance, migrations, `pg_dump` / restore, the health probe. |
+| `packages/cli/src/service.ts` | systemd units (written, installed with sudo, enabled) and the foreground runner. |
+| `packages/cli/src/update.ts` | `update` and `rollback`, including the plugin-compatibility gate and the roll-back-on-failure path. |
+| `packages/cli/src/cli.ts` | Argument parsing and the commands. |
+| `packages/cli/src/ui.ts` | Terminal output, including the ASCII wordmark from `xentium.sh` that heads the installer. No dependency. |
+| `packages/cli/src/cli.test.ts` | 15 tests: version checks, `pgConnection`, `mergeEnv`, semver ordering, the unit files. |
+| `packages/create-xentium/bin/create-xentium.js` | Old-Node-safe entry. Someone on Node 16 gets a sentence, not a syntax error. |
+| `packages/create-xentium/src/index.ts` | The install flow: ask, check, set up the database, write `.env`, install, offer systemd, hand over to the wizard. |
+| `packages/create-xentium/src/compose.ts` | The Compose file: PostgreSQL 17 and Redis 7 on 127.0.0.1 only, named volumes, `noeviction`. |
+| `packages/create-xentium/src/prompt.ts` | Text, yes/no and pick-one, on `node:readline`. `--yes` and a pipe answer with the defaults. |
+| `apps/docs/src/content/docs/admin/installing.md` | The wiki page for installing on a server. |
 
-## xentium-marketplace
+## Changed
 
-| File | Why |
+| Path | Why |
 |---|---|
-| `catalog/themePreview.ts` | Reads `tokens.json` in either package shape (v1 keeps its light half, as the CMS does) through the CMS's `tokenMapSchema`; one page per template on the base palette. A v2 dark theme previewed as stock light before. |
-| `catalog/ingest.service.ts`, `catalog.routes.ts` | Preview files are `<template>.html`; `?scheme` is ignored. |
-| `web/pages/ThemeDetail.tsx`, `Detail.scss` | The light/dark preview switch is gone. |
-| `scripts/ingest-official.ts` | Takes `.xttheme` as well as `.xtplugin` (kind from the extension); catalogue entry for Redline. |
-| `themePreview.test.ts`, `ingest.e2e.test.ts` | One page per template; v2 palette; v1 light half. |
+| `apps/api/src/server.ts` | Load `.env` into the environment in setup mode, and when only secrets are missing generate them and boot instead of asking for the database a second time. |
+| `apps/api/src/setup/setupServer.ts` | Serve the built SPA (there is no Vite in production), and print the address to open. |
+| `apps/api/src/worker.ts` | Wait for the schema, not just for the config. |
+| `apps/docs/src/content/docs/admin/production.md` | Points at the installer page; the clone is now the developer route. |
+| `package.json` | Root package renamed to `xentium-monorepo` so `xentium` means the CLI. |
 
-## Verified beyond the suites
+## Verified
 
-`backbone:check` green; marketplace 282/282. In a real browser on the dev instance:
-Redline uploaded → the prompt showed its screenshot and "Dark theme"; **Keep** left the
-site on its theme with the report saying so; **Switch** made Redline active; re-uploading
-the active theme applied it with no prompt. Local marketplace ingest produced eight
-preview pages in Redline's own palette, `appearance: dark`, free, screenshot extracted.
+A full install into a scratch directory with the Docker path: checks, Compose up on
+127.0.0.1:5433/6380 (5432/6379 were taken, it picked the next free ports), release
+installed, `.env` written, app booted, the wizard run to `installed: true`, the site
+serving its configured name. Then `status`, `doctor`, `backup`, an `update` to a second
+release with the symlink swap, and a `rollback`. `pnpm backbone:check` green.
