@@ -33,7 +33,12 @@ export interface InstallStatusDto {
 
 export interface EnvironmentCheckDto {
   ok: boolean;
-  checks: Array<{ key: string; name: string; ok: boolean; detail: string }>;
+  checks: Array<{
+    key: string; name: string; ok: boolean; detail: string;
+    /** Passes, but isn't what we recommend (e.g. Postgres 14, a Redis eviction
+     *  policy that can drop queued jobs). Never blocks the install. */
+    warn?: boolean;
+  }>;
 }
 
 export interface DatabaseConfigInput {

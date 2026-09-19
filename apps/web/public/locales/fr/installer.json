@@ -37,7 +37,8 @@
     "status": {
       "checking": "Vérification...",
       "passed": "Réussi",
-      "failed": "Échoué"
+      "failed": "Échoué",
+      "warning": "Avertissement"
     },
     "retry": "Revérifier tout"
   },
