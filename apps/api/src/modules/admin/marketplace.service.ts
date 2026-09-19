@@ -193,10 +193,20 @@ async function getCoreUpdate(userId?: string) {
     ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(cache.setSince))
     : true;
 
+  // Where the urgency comes from, when it is not the newest release. Without
+  // this the card reads "security" next to release notes about layout variants
+  // — the badge is correct and the page contradicts it, which teaches admins to
+  // distrust the badge.
+  const urgentRelease = cache.highestSeverity && cache.highestSeverity !== "normal"
+    && cache.latest.severity !== cache.highestSeverity
+    ? cache.path.find((r) => r.severity === cache.highestSeverity) ?? null
+    : null;
+
   return {
     current:         cache.current,
     latest:          cache.latest,
     highestSeverity: cache.highestSeverity,
+    urgentRelease,
     releaseCount:    cache.path.length,
     patch:           cache.patch,
     via:             cache.via,

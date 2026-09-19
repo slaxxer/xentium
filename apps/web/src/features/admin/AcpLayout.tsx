@@ -113,27 +113,43 @@ function useAcpAlerts() {
       if (shownFor.current === key) return;
       shownFor.current = key;
 
+      // No severity marker on the version row: the panel already carries the
+      // badge, and with a single row the marker is the same word twice.
       const rows = [
         { label: t("coreUpdate.dialogVersion"), value: `${core!.current} → ${core!.latest.version}`,
-          marker: coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined },
+          marker: undefined as string | undefined },
       ];
       if (core!.releaseCount > 1) {
         rows.push({ label: t("coreUpdate.dialogBehind"), value: String(core!.releaseCount), marker: undefined });
       }
+      // ⚠ A short label: the label column ellipsises, so the card's full
+      // sentence ("Plugins that don't support this version yet:") would arrive
+      // here as two characters.
       if (core!.blockedBy.length > 0) {
         rows.push({
-          label:  t("coreUpdate.blockedTitle"),
+          label:  t("coreUpdate.dialogBlocked"),
           value:  core!.blockedBy.map((p) => p.name).join(", "),
           marker: undefined,
         });
       }
+
+      // Prose goes in the note, never in a row: a row's value is monospace and
+      // does not shrink, so a sentence there runs off the edge of the dialog.
+      // Where the urgency comes from outranks the upgrade notes — the dialog
+      // must not say SECURITY about a version whose notes are features.
+      const onTheWay = core!.urgentRelease
+        ? [
+            t(`coreUpdate.onTheWay.${core!.urgentRelease.severity}`, { version: core!.urgentRelease.version }),
+            core!.urgentRelease.notes,
+          ].filter(Boolean).join(" ")
+        : null;
 
       void openPanelDialog({
         icon:        coreUrgent ? "warning" : "update",
         title:       t("coreUpdate.dialogTitle", { version: core!.latest.version }),
         badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined,
         rows,
-        note:        core!.latest.upgradeNotes ?? undefined,
+        note:        onTheWay ?? core!.latest.upgradeNotes ?? undefined,
         confirmText: t("marketplace.updatesDialogView"),
         cancelText:  t("marketplace.updatesDialogLater"),
       }).then((view) => { if (view) navigate("/admin/updates"); });
