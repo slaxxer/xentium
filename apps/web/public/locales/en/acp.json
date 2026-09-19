@@ -1441,6 +1441,24 @@
       "enabling": "Enabling…"
     }
   },
+  "coreUpdate": {
+    "title": "Xentium core",
+    "releasesBehind_one": "{{count}} release behind",
+    "releasesBehind_other": "{{count}} releases behind",
+    "severity": {
+      "normal": "update",
+      "security": "security",
+      "critical": "critical"
+    },
+    "via": "This version can't be installed directly from the one you're on. Install {{version}} first.",
+    "blockedTitle": "Plugins that don't support this version yet:",
+    "blockedRow": "{{name}} — supports {{supports}}",
+    "howTo": "Apply it on the server with:",
+    "howToBlocked": "Update those plugins first, then apply it on the server with:",
+    "dialogTitle": "Xentium {{version}} is available",
+    "dialogVersion": "Version",
+    "dialogBehind": "Releases behind"
+  },
   "license": {
     "loading": "Loading…",
     "accountTitle": "Marketplace Account",

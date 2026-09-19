@@ -1238,6 +1238,24 @@
       "enabling": "Activation…"
     }
   },
+  "coreUpdate": {
+    "title": "Cœur de Xentium",
+    "releasesBehind_one": "{{count}} version de retard",
+    "releasesBehind_other": "{{count}} versions de retard",
+    "severity": {
+      "normal": "mise à jour",
+      "security": "sécurité",
+      "critical": "critique"
+    },
+    "via": "Cette version ne peut pas être installée directement depuis la vôtre. Installez d'abord la {{version}}.",
+    "blockedTitle": "Plugins qui ne prennent pas encore en charge cette version :",
+    "blockedRow": "{{name}} — prend en charge {{supports}}",
+    "howTo": "Appliquez-la sur le serveur avec :",
+    "howToBlocked": "Mettez d'abord ces plugins à jour, puis appliquez-la sur le serveur avec :",
+    "dialogTitle": "Xentium {{version}} est disponible",
+    "dialogVersion": "Version",
+    "dialogBehind": "Versions de retard"
+  },
   "license": {
     "loading": "Chargement…",
     "accountTitle": "Compte marketplace",

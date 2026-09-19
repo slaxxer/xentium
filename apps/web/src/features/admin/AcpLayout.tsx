@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
+import type { CoreUpdate } from "./components/CoreUpdateCard";
 import "./AcpLayout.scss";
 import "./nav/AcpNav.scss";
 import { RouteErrorBoundary } from "../errors/ErrorBoundary";
@@ -80,7 +81,7 @@ function useAcpAlerts() {
   const navigate = useNavigate();
   const shownFor = useRef<string | null>(null);
 
-  const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean }>({
+  const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean; core: CoreUpdate | null }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -95,6 +96,48 @@ function useAcpAlerts() {
     const licenseNeeds = !!status && (status.licenseExpiringSoon || status.licenseExpired) && !status.licenseAcknowledged;
     const list = updates?.updates ?? [];
     const updatesNeed = list.length > 0 && !updates?.acknowledged;
+
+    // Core. A PATCH on the minor we are already on never opens a dialog: it is
+    // the most common release there is, the card and the badge already say so,
+    // and a dialog people meet weekly is a dialog people stop reading. Anything
+    // else — a minor, a major, or a security fix anywhere along the way — is
+    // worth one interruption per admin per release.
+    const core = updates?.core ?? null;
+    const coreUrgent = !!core && (core.highestSeverity === "security" || core.highestSeverity === "critical");
+    const coreOnlyPatch = !!core && !!core.patch && core.patch.version === core.latest.version;
+    const coreNeeds = !!core && !core.acknowledged && (coreUrgent || !coreOnlyPatch);
+
+    /** One dialog per ACP entry — a second openPanelDialog pre-empts the first. */
+    const showCore = () => {
+      const key = `core:${core!.latest.version}`;
+      if (shownFor.current === key) return;
+      shownFor.current = key;
+
+      const rows = [
+        { label: t("coreUpdate.dialogVersion"), value: `${core!.current} → ${core!.latest.version}`,
+          marker: coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined },
+      ];
+      if (core!.releaseCount > 1) {
+        rows.push({ label: t("coreUpdate.dialogBehind"), value: String(core!.releaseCount), marker: undefined });
+      }
+      if (core!.blockedBy.length > 0) {
+        rows.push({
+          label:  t("coreUpdate.blockedTitle"),
+          value:  core!.blockedBy.map((p) => p.name).join(", "),
+          marker: undefined,
+        });
+      }
+
+      void openPanelDialog({
+        icon:        coreUrgent ? "warning" : "update",
+        title:       t("coreUpdate.dialogTitle", { version: core!.latest.version }),
+        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined,
+        rows,
+        note:        core!.latest.upgradeNotes ?? undefined,
+        confirmText: t("marketplace.updatesDialogView"),
+        cancelText:  t("marketplace.updatesDialogLater"),
+      }).then((view) => { if (view) navigate("/admin/updates"); });
+    };
 
     // License first (service continuity), one dialog per entry.
     if (licenseNeeds) {
@@ -123,7 +166,14 @@ function useAcpAlerts() {
       return;
     }
 
-    if (!updatesNeed) return;
+    // A security release in core outranks any number of plugin updates: it is
+    // the thing every plugin runs on.
+    if (coreNeeds && coreUrgent) { showCore(); return; }
+
+    if (!updatesNeed) {
+      if (coreNeeds) showCore();
+      return;
+    }
     const setHash = `updates:${list.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",")}`;
     if (shownFor.current === setHash) return;
     shownFor.current = setHash;

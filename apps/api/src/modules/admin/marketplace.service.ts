@@ -12,6 +12,8 @@ import {
   refreshLicense, activateFromAccount, assertThemeDownloadAllowed,
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
+import { readCoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
 import { pluginService } from "../plugins/plugin.service.js";
 import { themeService } from "../themes/theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
@@ -173,6 +175,49 @@ const linkSecrets = new Map<string, { secret: string; expiresAt: number }>();
 function pruneLinkSecrets() {
   const now = Date.now();
   for (const [id, held] of linkSecrets) if (held.expiresAt < now) linkSecrets.delete(id);
+}
+
+/**
+ * The core update, if there is one, with this admin's acknowledgement.
+ *
+ * Its own anchor, not the plugin set's: core and plugins move independently,
+ * and an admin who looked at the page because a plugin needed updating has not
+ * necessarily been told about a Xentium security release. Null when there is
+ * nothing to say, so every consumer can test one field.
+ */
+async function getCoreUpdate(userId?: string) {
+  const cache = await readCoreUpdateCache();
+  if (!cache || !cache.updateAvailable || !cache.latest) return null;
+
+  const acknowledged = userId
+    ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(cache.setSince))
+    : true;
+
+  return {
+    current:         cache.current,
+    latest:          cache.latest,
+    highestSeverity: cache.highestSeverity,
+    releaseCount:    cache.path.length,
+    patch:           cache.patch,
+    via:             cache.via,
+    checkedAt:       cache.checkedAt,
+    setSince:        cache.setSince,
+    acknowledged,
+    // Checked BEFORE the update is offered, not discovered at apply time. The
+    // CLI runs the same test against the same declarations; an admin who is
+    // going to be blocked should be told on the card, with the names.
+    blockedBy:       pluginsBlocking(cache.latest.version, await installedManifests()),
+  };
+}
+
+/** Every installed plugin's declared compatibility window. */
+async function installedManifests(): Promise<InstalledManifest[]> {
+  const rows = await prisma.installedPlugin.findMany({ select: { id: true, name: true, manifest: true } });
+  return rows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    manifest: r.manifest as InstalledManifest["manifest"],
+  }));
 }
 
 export const marketplaceService = {
@@ -354,7 +399,7 @@ export const marketplaceService = {
         ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(setSince))
         : false;
     }
-    return { checkedAt, setSince, updates, acknowledged };
+    return { checkedAt, setSince, updates, acknowledged, core: await getCoreUpdate(userId) };
   },
 
   /**
@@ -369,7 +414,15 @@ export const marketplaceService = {
     // plugin never inflates the badge from a stale cache.
     const { updates } = await readReconciledUpdates();
     const pluginUpdates = updates.length;
-    const criticalUpdate = updates.some((u) => u.critical);
+
+    // Core. One more thing needing attention, and urgent on the same terms a
+    // plugin is: `highestSeverity` and not `latest.severity`, because the
+    // security release may be one of the versions ON THE WAY to the newest.
+    const core = await readCoreUpdateCache();
+    const coreUpdate = !!core?.updateAvailable && !!core.latest;
+    const coreUrgent = coreUpdate && (core!.highestSeverity === "security" || core!.highestSeverity === "critical");
+
+    const criticalUpdate = updates.some((u) => u.critical) || coreUrgent;
 
     // Entitlement health. NOT "your subscription is ending" — see
     // licenseAttention.ts for why the previous rule was true for every
@@ -396,6 +449,9 @@ export const marketplaceService = {
 
     return {
       pluginUpdates,
+      coreUpdate,
+      coreVersion: coreUpdate ? core!.latest!.version : null,
+      coreSeverity: coreUpdate ? core!.highestSeverity : null,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
@@ -403,8 +459,9 @@ export const marketplaceService = {
       licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
-      // Badge count: each pending update + the license (once) if it needs attention.
-      total: pluginUpdates + (needsAttention ? 1 : 0),
+      // Badge count: each pending update, core once, + the license (once) if it
+      // needs attention.
+      total: pluginUpdates + (coreUpdate ? 1 : 0) + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
       urgent: criticalUpdate || needsAttention,
     };
