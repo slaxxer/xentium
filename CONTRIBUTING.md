@@ -1,8 +1,8 @@
 # Contributing to Xentium
 
-Thanks for helping build Xentium! This page is the short version — the
-[README](./README.md) has full setup, architecture, and the plugin development
-guide.
+Thanks for helping out! This is the short version. The [README](./README.md) has the
+full setup, the architecture and the plugin guide, and everything is also on
+[doc.xentium.org](https://doc.xentium.org).
 
 ## Getting set up
 
@@ -10,88 +10,93 @@ See **[README → Quick start](./README.md#quick-start)**. In short:
 
 ```bash
 corepack enable && pnpm install
-cp .env.example .env        # fill in the secrets (README → Environment configuration)
-pnpm db:generate
-./xentium.sh                    # infra + api + worker + web → http://localhost:5173
+./xentium.sh                # infra + api + worker + web → http://localhost:5173
 ```
 
-## Workflow
+The first time you open the site, the install wizard writes `.env` for you. If you'd
+rather write it yourself, see [README → Environment configuration](./README.md#environment-configuration).
 
-1. Branch off **`development`** (not `main`).
-2. Make a focused change. Before pushing, **`pnpm backbone:check`** must be green
+## How we work
+
+1. Branch off **`development`**, not `main`.
+2. Keep the change focused. Before you push, **`pnpm backbone:check`** has to pass
    (typecheck + lint + test + build).
-3. Open a PR to `development`. Fill in the PR template's merge-readiness checklist.
+3. Open a PR against `development` and fill in the checklist in the PR template.
 
 ## Ground rules
 
-These are enforced in review (and most are in the PR template):
+We check these in review, and most of them are in the PR template:
 
-- **Validate all input with Zod** — body, params, query, env/config, plugin
-  manifests. No endpoint touches `req.body`/`req.params`/`req.query` unvalidated.
-- **Security lives on the backend** — permission and license checks run server-side;
-  UI checks are cosmetic only.
-- **Keep the module shape** — `routes → controller → service → repository`, plus
-  `validation`, `types`, `tests`. Shared types/DTOs/permission keys go in
-  `@xentium/contracts`; shared runtime helpers in `@xentium/sdk`.
-- **Don't blur core and plugins** — official add-ons live in a **plugin**, never in
-  core. Core must stay fully usable with no premium plugin installed.
-- **Core never hardcodes a plugin** — no plugin table names, ids, or routes in core.
-  Plugins contribute through registries (search, home feed, nav, ACP, …) and core
-  iterates whatever's registered.
-- **Schema changes ship with a migration** in the same PR, applying cleanly on a
-  fresh DB.
+- **Validate all input with Zod:** body, params, query, env/config and plugin
+  manifests. No endpoint reads `req.body`, `req.params` or `req.query` unvalidated.
+- **Security lives on the backend.** Permission and licence checks run on the server.
+  Hiding a button in the UI is cosmetic.
+- **Keep the module shape:** `routes → controller → service`, plus `validation`, `types`
+  and `tests`. Add a `repository` only when a query is shared or complex. Shared
+  types, DTOs and permission keys go in `@xentium/contracts`, shared runtime helpers in
+  `@xentium/sdk`.
+- **Keep core and plugins apart.** Official add-ons are plugins, never core, and core
+  has to work fully without any paid plugin installed.
+- **Core never hardcodes a plugin.** No plugin table names, ids or routes in core.
+  Plugins add things through registries (search, home feed, nav, ACP, …) and core loops
+  over whatever is registered.
+- **Schema changes ship with a migration** in the same PR, and it has to apply cleanly
+  to a fresh database.
 
 ## Theming tokens
 
-All visual values are **CSS custom properties** — **never hardcode a colour, radius,
-or shadow**; always reference a token. Three tiers (defined in
-`apps/web/src/styles/tokens.scss`, contract in `@xentium/contracts` → `TOKEN_REGISTRY`):
-semantic `--c-*` → region `--nav-*`/`--footer-*`/… → component `--btn-*`/`--card-*`/…,
-each defaulting to its semantic base so palette edits cascade.
+Every visual value is a **CSS custom property**. Don't hardcode a colour, radius or
+shadow; reference a token. There are three tiers, defined in
+`apps/web/src/styles/tokens.scss` and described for code in `TOKEN_REGISTRY`
+(`@xentium/contracts`): semantic `--c-*`, then region `--nav-*`/`--footer-*`/…, then
+component `--btn-*`/`--card-*`/…. Each one defaults to the tier above it, so changing
+the palette changes everything.
 
 **To add a token:** add a `TokenDef` to `packages/contracts/src/tokens.ts`, define it in
-`tokens.scss` defaulting to its semantic base (`--my-token: var(--c-…)`), then reference
-`var(--my-token)` in the SCSS.
+`tokens.scss` with a default from the tier above (`--my-token: var(--c-…)`), then use
+`var(--my-token)` in your SCSS.
 
-Full contract — tiers, naming, inheritance, per-region scoping, and the `GET /css` output
-shape — is in **[docs/API.md → Theming tokens & scoped CSS](./docs/API.md#theming-tokens--scoped-css)**.
+How tokens, layers and themes fit together is in
+**[docs/style-system.md](./docs/style-system.md)**. The details of the stylesheet the API
+serves are in **[docs/API.md → Theming tokens & scoped CSS](./docs/API.md#theming-tokens--scoped-css)**.
 
 ## Contributing a plugin
 
 The full guide is in **[README → Plugin development guide](./README.md#plugin-development-guide)**.
-Put work-in-progress plugins under `plugins/community-examples/<name>/` (a pnpm
-workspace member), wire HMR via `apps/web/src/plugins/dev-plugins.ts`, and install
-them from **ACP → Extensions → Upload**. Package for distribution with
-`pnpm plugin:package` (produces a `.xtplugin`).
+Put a plugin you're working on in `plugins/community-examples/<name>/` (it's a pnpm
+workspace member), wire up hot reload in `apps/web/src/plugins/dev-plugins.ts`, and
+install it from **ACP → Extensions → Upload**. `pnpm plugin:package` builds the
+`.xtplugin` you distribute.
 
-### Plugin foundation (extension points)
+### Extension points
 
-Plugins never patch core — they **register** into it. Authoring contracts live in
-`@xentium/plugin-sdk`; the web host bridges shared singletons through
-`window.__XENTIUM_HOST__` so a plugin's UMD bundle reuses the host's React, router,
-and i18next rather than shipping its own.
+Plugins never patch core. They **register** things into it. The authoring contracts are
+in `@xentium/plugin-sdk`. On the web side the host shares its singletons through
+`window.__XENTIUM_HOST__`, so your plugin's UMD bundle uses the host's React, router and
+i18next instead of shipping its own.
 
-- **Translated UI strings** — bundle `web/locales/<lng>/<ns>.json` (en, de, es, fr,
-  pt) and register them with `registerPluginTranslations` (externalized as
-  `@web/plugins/pluginI18n`); then `useTranslation("<ns>")` as usual. Translations
-  travel inside the web bundle — no HTTP fetch, no server packaging. Full recipe:
+- **Translations:** bundle `web/locales/<lng>/<ns>.json` (en, de, es, fr, pt) and register
+  them with `registerPluginTranslations` (externalized as `@web/plugins/pluginI18n`),
+  then call `useTranslation("<ns>")` as usual. The translations travel inside your web
+  bundle, so there's no fetch and nothing to package on the server. Full recipe:
   **[docs/plugin-i18n.md](./docs/plugin-i18n.md)**.
-- **Web slots** (`apps/web/src/plugins/slotRegistry.ts`) — contribute UI via
-  `registerRoute`, `registerAcpPage`, `registerModCanvasSection`,
-  `registerUserDetailPanel`, `registerIpEnrichment`, etc. Core iterates whatever's
-  registered; slots are auto-deregistered when the plugin disables.
-- **Server hooks** (`@xentium/plugin-sdk` → `PluginContext` / `PluginHost`) —
-  `ctx.registerRoutes` / `registerPermissions` / `registerNecCodes`, and
-  `ctx.registerSecurityScan(fn)` for periodic detection run by the core
-  security-analysis job. Core moderation primitives are exposed on
-  `host.security` (`createCase`, `autoBanMultiaccounts`) so a plugin can open
-  review cases or enforce without reaching into core internals.
+- **Web slots** (`apps/web/src/plugins/slotRegistry.ts`): add UI with `registerRoute`,
+  `registerAcpPage`, `registerModCanvasSection`, `registerUserDetailPanel`,
+  `registerIpEnrichment` and friends. Core renders whatever is registered, and your
+  slots go away when the plugin is disabled.
+- **Server hooks** (`@xentium/plugin-sdk` → `PluginContext` / `PluginHost`):
+  `ctx.registerRoutes`, `registerPermissions`, `registerNecCodes`, and
+  `ctx.registerSecurityScan(fn)` for a periodic scan that core's security-analysis job
+  runs. Core's moderation tools are on `host.security` (`createCase`,
+  `autoBanMultiaccounts`), so a plugin can open review cases or enforce without
+  reaching into core.
 
-The rule still holds: **core stores and exposes; the plugin treats.** Core keeps the
-telemetry, case tables, and cadence; detection logic and review UI belong in the
-plugin.
+One rule sums it up: **core stores and exposes, the plugin decides.** Core keeps the
+telemetry, the case tables and the schedule; detection logic and review UI belong in
+the plugin.
 
 ## Reporting issues
 
-Open a GitHub issue with steps to reproduce, expected vs actual behavior, and the
-relevant **XEC error code** if one was shown — it pins down the failing domain fast.
+Open a GitHub issue with the steps to reproduce, what you expected and what happened,
+and the **XEC error code** if you saw one. The code tells us straight away which part
+of the system failed.

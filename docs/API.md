@@ -1,14 +1,15 @@
-# Xentium API Reference
+# API reference
 
-REST API for the Xentium core. This documents the **core** surface as mounted in
-`apps/api/src/app/app.ts`. Official plugins (e.g. the Forum) register their own routes at
-runtime under `/api/p/<pluginId>/*` and are documented by the plugin, not here.
+The REST API of Xentium core, as mounted in `apps/api/src/app/app.ts`. Plugins register
+their own routes at runtime under `/api/p/<pluginId>/*`, and each plugin documents those
+itself.
 
-- **Base path:** all routes are under `/api`.
-- **Format:** JSON request/response bodies. `Content-Type: application/json` unless an
-  endpoint takes a file (`multipart/form-data`, noted per endpoint).
-- **Last verified:** 2026-08-23 against the route files (licensing/marketplace section);
-  the rest 2026-06-02. When in doubt the route files are the source of truth.
+- **Base path:** everything is under `/api`.
+- **Format:** JSON in and out, `Content-Type: application/json`, except endpoints that take
+  a file (`multipart/form-data`, noted on each one).
+- **Last checked** against the route files: 2026-09-19 (appearance, themes, layouts),
+  2026-08-23 (licensing and marketplace), 2026-06-02 (the rest). If this page and the route
+  files disagree, the route files win.
 
 ---
 
@@ -16,40 +17,40 @@ runtime under `/api/p/<pluginId>/*` and are documented by the plugin, not here.
 
 ### Authentication
 
-Two tokens (see §43 of the reference doc):
+There are two tokens:
 
-| Token | Transport | Lifetime |
+| Token | How it's sent | Lifetime |
 |---|---|---|
-| **Access token** (RS256 JWT) | `Authorization: Bearer <token>` header | 15 min |
+| **Access token** (HS256 JWT) | `Authorization: Bearer <token>` header | 15 minutes |
 | **Refresh token** (opaque) | `HttpOnly; Secure; SameSite=Strict` cookie, scoped to `/api/auth` | 30 days, rotated on every refresh |
 
-Flow: `POST /api/auth/login` returns `{ accessToken }` in the body and sets the refresh
-cookie. When the access token expires, call `POST /api/auth/refresh` (sends the cookie, no
-body) to get a new access token and a rotated cookie. The browser never stores the refresh
-token in JS; the access token is held in memory only.
+`POST /api/auth/login` returns `{ accessToken }` in the body and sets the refresh cookie.
+When the access token expires, call `POST /api/auth/refresh` (it sends the cookie, no
+body) to get a new access token and a new cookie. The browser never has the refresh token
+in JavaScript, and it keeps the access token in memory only.
 
-**Auth levels used in this doc:**
+**What the Auth column means on this page:**
 
 | Marker | Meaning |
 |---|---|
-| **Public** | No auth required |
-| **Optional** | Works logged-out; richer response / visibility when a valid Bearer token is sent (`optionalAuth`) |
-| **Auth** | Valid Bearer access token required (`requireAuth`) |
-| **Perm:`key`** | Auth **plus** the named permission key (`requirePermission`) |
-| **Admin** | Auth **plus** `admin.access` (`adminGuard`) |
+| **Public** | no login needed |
+| **Optional** | works logged out; you get more (or see more) with a valid Bearer token (`optionalAuth`) |
+| **Auth** | needs a valid Bearer token (`requireAuth`) |
+| **Perm:`key`** | logged in **and** holding that permission (`requirePermission`) |
+| **Admin** | logged in **and** holding `admin.access` (`adminGuard`) |
 
 ### Install guard
 
-Until the site is installed (`settings['site.id']` unset), every route **except**
-`/api/install/*` and `/api/health` returns `XEC-INSTALL-*` and the client is redirected to
-the installer. After install, `/api/install/*` returns `410 Gone`.
+Until the site is installed (`settings['site.id']` isn't set), every route **except**
+`/api/install/*` and `/api/health` returns an `XEC-INSTALL-*` error, and the web app sends
+you to the installer. Once installed, `/api/install/*` returns `410 Gone`.
 
 ### Pagination
 
-List endpoints accept the standard contract (`@xentium/contracts`):
+List endpoints all take the same parameters (from `@xentium/contracts`):
 
 ```
-?page=1        1-based, default 1
+?page=1        starts at 1, default 1
 &limit=20      default 20, max 100
 &sort=field    optional
 &order=desc    "asc" | "desc", default "desc"
@@ -64,32 +65,33 @@ and return:
 }
 ```
 
-### Error envelope
+### Errors
 
-Every error returns a consistent shape with an HTTP status and a XEC code:
+Every error has the same shape, with an HTTP status and an XEC code:
 
 ```jsonc
 { "error": { "code": "XEC-API-4003", "message": "Forbidden", "details": { /* optional */ } } }
 ```
 
-| Condition | Status | Code |
+| When | Status | Code |
 |---|---|---|
-| Zod validation failed | `422` | `XEC-API-4001` (`details` = field issues) |
+| Zod validation failed | `422` | `XEC-API-4001` (`details` lists the field issues) |
 | Forbidden (missing permission) | `403` | `XEC-API-4003` |
 | Not found | `404` | `XEC-API-4004` |
 | Conflict | `409` | `XEC-API-4009` |
-| Rate limit exceeded | `429` | `XEC-API-4290` (with `Retry-After`) |
-| Unhandled server error | `500` | `XEC-API-5000` (message hidden in prod) |
+| Rate limit hit | `429` | `XEC-API-4290` (with `Retry-After`) |
+| Unhandled server error | `500` | `XEC-API-5000` (message hidden in production) |
 
-Full code catalog: ACP → System → Error Reference, or `packages/contracts/src/nec.ts`.
+The full list of codes is in the ACP under System → Error Reference, and in
+`packages/contracts/src/nec.ts`.
 
 ### Rate limits
 
-Redis-backed (`§26`). Notable limiters: `auth/login` 10/15m, `auth/register` 5/h,
-`auth/password-reset` 3/h, `auth/refresh` 20/m, `users/:id/follow` 30/m (per user),
-`users/:id/profile-comments` 10/5m (per user), `plugins/upload` 20/h,
-`admin/license/activate` 5/h, plus a coarse global per-IP API limiter in production.
-All emit `429 XEC-API-4290`.
+Stored in Redis. The notable ones: `auth/login` 10 per 15 min, `auth/register` 5 per hour,
+`auth/password-reset` 3 per hour, `auth/refresh` 20 per minute, `users/:id/follow` 30 per
+minute (per user), `users/:id/profile-comments` 10 per 5 min (per user), `plugins/upload`
+20 per hour, plus a general per-IP limit on the whole API in production. All of them
+answer `429 XEC-API-4290`.
 
 ---
 
@@ -97,427 +99,453 @@ All emit `429 XEC-API-4290`.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/health` | Public | Liveness probe → `{ status: "ok" }`. Exempt from the install guard. |
-| GET | `/api/admin/health` | Admin | Deep health: DB / Redis / queue / storage / email status + `overall`. |
+| GET | `/api/health` | Public | Liveness check → `{ status: "ok" }`. Not blocked by the install guard. |
+| GET | `/api/admin/health` | Admin | Detailed health: DB, Redis, queue, storage and email status, plus `overall`. |
 
-## Installer — `/api/install` (pre-install only)
+## Installer: `/api/install` (before install only)
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | GET | `/status` | Public | Install state (`installed`, current step). |
 | GET | `/environment` | Public | Environment checks (Node, PostgreSQL, Redis, disk, OpenSSL). |
-| POST | `/database` | Public | Save DB config. |
+| POST | `/database` | Public | Save the DB config. |
 | GET | `/database/test` | Public | Test the DB connection. |
-| POST | `/site` | Public | Site config; generates RS256 auth keypair + refresh secret into `.env`. |
+| POST | `/site` | Public | Site name, URL, language, timezone. |
 | POST | `/admin` | Public | Create the first admin account. |
-| POST | `/finalize` | Public | Run `migrate deploy` + seed, write `site.id`, lock the installer. |
+| POST | `/finalize` | Public | Run `migrate deploy` and the seed, write `site.id`, lock the installer. |
 
-## Auth — `/api/auth`
+## Auth: `/api/auth`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/registration-status` | Public | Whether registration / invite / beta gating is open. |
-| POST | `/register/send-code` | Public | Email a verification code to begin registration. |
-| POST | `/register` | Public | Create an account (with the emailed code + optional profile fields). |
-| POST | `/login` | Public | `{ email, password, loginPin? }` → `{ accessToken }` (+ refresh cookie). May return `{ requiresPin: true }`. |
-| POST | `/refresh` | Cookie | Rotate the refresh cookie, issue a new access token. |
-| POST | `/password-reset` | Public | Request a reset link. **Always 200** (no account enumeration). |
-| POST | `/password-reset/confirm` | Public | `{ token, password }` → set new password, revoke all sessions. |
-| POST | `/logout` | Cookie | Revoke the current session + clear the cookie. |
-| GET | `/me` | Auth | Current user + groups + effective context. |
+| GET | `/registration-status` | Public | Whether registration, invites or the beta gate are open. |
+| POST | `/register/send-code` | Public | Email a verification code to start registering. |
+| POST | `/register` | Public | Create an account (with the emailed code and optional profile fields). |
+| POST | `/login` | Public | `{ email, password, loginPin? }` → `{ accessToken }` (plus the refresh cookie). Can return `{ requiresPin: true }`. |
+| POST | `/refresh` | Cookie | Rotate the refresh cookie and issue a new access token. |
+| POST | `/password-reset` | Public | Request a reset link. **Always 200**, so nobody can probe which accounts exist. |
+| POST | `/password-reset/confirm` | Public | `{ token, password }` → sets the new password and revokes every session. |
+| POST | `/logout` | Cookie | Revoke the current session and clear the cookie. |
+| GET | `/me` | Auth | The current user, their groups and context. |
 
-## Account (self-service) — `/api/account`
+## Account (your own): `/api/account`
 
 All **Auth**.
 
 | Method | Path | Description |
 |---|---|---|
-| PATCH | `/profile` | Update display name / bio. |
-| POST | `/avatar` | Upload avatar (`multipart`, field `file`). |
-| POST / DELETE | `/cover` | Upload / remove the profile cover (`multipart`, field `file`). ⚠ Byte size AND permitted types come from the member's earned rank — see `profileImageLimits.ts`; an empty type list means "no per-rank restriction", not "nothing allowed". |
-| PATCH | `/username` | Change username (cooldown enforced). |
+| PATCH | `/profile` | Update display name and bio. |
+| POST | `/avatar` | Upload an avatar (`multipart`, field `file`). |
+| POST / DELETE | `/cover` | Upload or remove the profile cover (`multipart`, field `file`). The allowed size and file types depend on the member's earned rank (see `profileImageLimits.ts`). An empty type list means "no per-rank restriction", not "nothing allowed". |
+| PATCH | `/username` | Change username (with a cooldown). |
 | POST | `/email` | Request an email change (sends a code). |
 | POST | `/email/verify-code` | Confirm the email change. |
-| POST | `/password` | Change password (revokes all other sessions). |
-| GET | `/sessions` | List active sessions (device / IP / last seen). |
+| POST | `/password` | Change password (revokes every other session). |
+| GET | `/sessions` | Active sessions (device, IP, last seen). |
 | DELETE | `/sessions/:sessionId` | Revoke one session. |
-| GET / PATCH | `/privacy` | Read / update privacy settings (JSON). |
-| GET | `/username-history` | Own username change log. |
-| GET / PATCH | `/profile-fields` | Read / update own custom-field values (with per-field privacy). |
-| POST / DELETE | `/pin` | Set / disable the login PIN. |
-| GET / PATCH | `/notifications` | Read / update notification preferences. |
+| GET / PATCH | `/privacy` | Read or update privacy settings (JSON). |
+| GET | `/username-history` | Your own username changes. |
+| GET / PATCH | `/profile-fields` | Read or update your custom field values (with per-field privacy). |
+| POST / DELETE | `/pin` | Set or turn off the login PIN. |
+| GET / PATCH | `/notifications` | Read or update notification preferences. |
 
-## Users — `/api/users`
+## Users: `/api/users`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/profile-fields` | Public | Custom profile-field **definitions**. |
+| GET | `/profile-fields` | Public | Custom profile field **definitions**. |
 | GET | `/search` | Auth | User search (typeahead). |
-| GET | `/me/limits` | Auth | Effective content limits from progression config. |
-| GET | `/me/blocks` | Auth | Own block list. |
+| GET | `/me/limits` | Auth | Your content limits from the progression config. |
+| GET | `/me/blocks` | Auth | Who you've blocked. |
 | GET | `/:username` | Optional | Public profile (respects privacy). |
-| GET | `/:id/followers` | Optional | Paginated followers (403 if owner hid the list). |
-| GET | `/:id/following` | Optional | Paginated following (403 if hidden). |
-| GET | `/:id/profile-fields` | Optional | A user's field values, filtered by privacy + viewer. |
-| GET | `/:id/profile-comments` | Optional | Profile wall (includes tombstoned rows). |
+| GET | `/:id/followers` | Optional | Followers, paginated (403 if the owner hid the list). |
+| GET | `/:id/following` | Optional | Following, paginated (403 if hidden). |
+| GET | `/:id/profile-fields` | Optional | A user's field values, filtered by privacy and by who's asking. |
+| GET | `/:id/profile-comments` | Optional | Profile wall (deleted comments included as tombstones). |
 | POST | `/:id/profile-comments` | Auth (rate-limited) | Post on a wall. |
-| PUT | `/profile-comments/:commentId` | Auth | Edit own comment (within edit window). |
-| DELETE | `/profile-comments/:commentId` | Auth | Delete (own / wall-owner). |
+| PUT | `/profile-comments/:commentId` | Auth | Edit your comment (within the edit window). |
+| DELETE | `/profile-comments/:commentId` | Auth | Delete (your own, or on your wall). |
 | POST / DELETE | `/profile-comments/:commentId/like` | Auth | Like / unlike. |
 | POST / DELETE | `/:id/follow` | Auth (rate-limited) | Follow / unfollow. |
-| POST / DELETE | `/:id/block` | Auth (rate-limited) | Block / unblock (removes follows both ways). |
+| POST / DELETE | `/:id/block` | Auth (rate-limited) | Block / unblock (removes follows in both directions). |
 
-## Articles — `/api/articles`
+## Articles: `/api/articles`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/` | Optional | List published articles (filter by category/tag; visibility-aware). |
-| GET | `/me` | Auth | Own articles (any status). |
-| GET | `/:slug` | Optional | Read one (visibility-aware). |
+| GET | `/` | Optional | Published articles (filter by category or tag; respects visibility). |
+| GET | `/me` | Auth | Your own articles, any status. |
+| GET | `/:slug` | Optional | One article (respects visibility). |
 | POST | `/` | Perm:`article.create` | Create. |
 | PATCH | `/:id` | Auth (owner/admin) | Update. |
-| POST | `/:id/publish` | Auth | Publish (transactional; sets `published_at`, bumps `article_count`). |
-| POST | `/:id/unpublish` | Auth | Revert to draft. |
+| POST | `/:id/publish` | Auth | Publish (in a transaction; sets `published_at` and bumps `article_count`). |
+| POST | `/:id/unpublish` | Auth | Back to draft. |
 | DELETE | `/:id` | Auth (owner/admin) | Soft-delete. |
 | GET | `/:id/revisions` | Auth | Revision history. |
-| POST | `/:id/view` | Public | Register a view (deduped per IP). |
-| POST | `/:id/featured-image` | Auth | Upload featured image (`multipart`, field `file`). |
-| GET | `/:id/comments` | Public | List comments (tombstones included). |
+| POST | `/:id/view` | Public | Count a view (one per IP). |
+| POST | `/:id/featured-image` | Auth | Upload the featured image (`multipart`, field `file`). |
+| GET | `/:id/comments` | Public | Comments (tombstones included). |
 | POST | `/:id/comments` | Perm:`article.comment.create` | Add a comment. |
-| POST / DELETE | `/:id/like` · `/:id/dislike` | Auth | Like/dislike toggles. |
+| POST / DELETE | `/:id/like` · `/:id/dislike` | Auth | Like / dislike toggles. |
 
-### Article comments — `/api/article-comments`
+### Article comments: `/api/article-comments`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| PATCH | `/:commentId` | Auth | Edit own comment. |
-| DELETE | `/:commentId` | Auth | Delete (own / moderator → tombstone). |
+| PATCH | `/:commentId` | Auth | Edit your comment. |
+| DELETE | `/:commentId` | Auth | Delete (your own, or as a moderator, which leaves a tombstone). |
 | POST / DELETE | `/:commentId/like` | Auth | Like / unlike. |
 
-### Article categories — `/api/article-categories`
+### Article categories: `/api/article-categories`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/` | Optional | Category tree (visibility-aware). |
+| GET | `/` | Optional | The category tree (respects visibility). |
 | POST | `/` | Admin | Create. |
-| PATCH | `/:id` | Admin | Update (incl. access control). |
-| PATCH | `/reorder` | Admin | Reorder / reparent. |
-| DELETE | `/:id` | Admin | Delete (with child/article handling). |
+| PATCH | `/:id` | Admin | Update (including access control). |
+| PATCH | `/reorder` | Admin | Reorder / move. |
+| DELETE | `/:id` | Admin | Delete (handles child categories and articles). |
 
-## Search — `/api/search`
+## Search: `/api/search`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/?q=&type=&page=&limit=` | Optional | Full-text search. `type` = `all` \| `articles` \| `users` (plugins add types, e.g. `forum`). Visibility filtered in SQL. |
+| GET | `/?q=&type=&page=&limit=` | Optional | Full-text search. `type` is `all`, `articles` or `users`, and plugins add their own (e.g. `forum`). Visibility is filtered in SQL. |
 
-## Notifications — `/api/notifications`
+## Notifications: `/api/notifications`
 
 All **Auth**.
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/` | List (paginated). |
-| GET | `/unread-count` | Unread badge count. |
-| POST | `/read-all` | Mark all read. |
+| GET | `/unread-count` | The unread count for the badge. |
+| POST | `/read-all` | Mark everything read. |
 | PATCH | `/:id/read` | Mark one read. |
 
-## Badges — `/api/user-badges` (public) · `/api/admin/badges` (ACP)
+## Badges: `/api/user-badges` (public) and `/api/admin/badges` (ACP)
 
-What a site recognises is public; who holds what is answered per user.
+Which badges a site has is public; who holds what is answered per user.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/user-badges/batch?ids=a,b,c` | Public | Badges for many users in ONE request (bounded at 100 ids). ⚠ The card renderer batches through this; a thread of twenty author cards must not be twenty requests. |
-| GET | `/user-badges/catalogue` | Public | Every badge the site can award — what the profile draws unearned ones from. Carries no holder data. |
+| GET | `/user-badges/batch?ids=a,b,c` | Public | Badges for many users in ONE request (up to 100 ids). The user card uses this, so a thread with twenty author cards is one request, not twenty. |
+| GET | `/user-badges/catalogue` | Public | Every badge the site can award; the profile draws the unearned ones from this. No holder data. |
 | GET | `/user-badges/:id` | Public | One user's badges, in card order. |
-| GET / POST | `/admin/badges` | `badge.manage` | List / create catalogue entries. |
-| PATCH / DELETE | `/admin/badges/:id` | `badge.manage` | Edit / delete. ⚠ Deleting takes every award with it (`onDelete: Cascade`); a system badge is refused. |
-| GET | `/admin/badges/metrics` | `badge.manage` | What this site can measure right now — core's counters plus every metric a **currently enabled** plugin contributes. |
+| GET / POST | `/admin/badges` | `badge.manage` | List / create badges. |
+| PATCH / DELETE | `/admin/badges/:id` | `badge.manage` | Edit / delete. Deleting a badge removes every award of it too (`onDelete: Cascade`), and system badges can't be deleted. |
+| GET | `/admin/badges/metrics` | `badge.manage` | What this site can measure right now: core's counters plus every metric from a **currently enabled** plugin. |
 | GET | `/admin/badges/:id/holders` | `badge.assign` | Who holds it. |
-| POST | `/admin/badges/:id/award` | `badge.assign` | Grant to a user (`{ userId, note? }`). ⚠ An upsert: granting twice is the same badge and the second grant corrects the note. |
-| DELETE | `/admin/badges/:id/award/:userId` | `badge.assign` | Revoke. |
+| POST | `/admin/badges/:id/award` | `badge.assign` | Give it to a user (`{ userId, note? }`). It's an upsert, so giving it twice keeps one badge and updates the note. |
+| DELETE | `/admin/badges/:id/award/:userId` | `badge.assign` | Take it away. |
 
-⚠ Two permissions on purpose: `badge.manage` edits what the site recognises, `badge.assign`
-hands one out. A site can delegate the second without the first.
+There are two permissions on purpose: `badge.manage` changes which badges exist,
+`badge.assign` hands them out. A site can let someone do the second without the first.
 
-⚠ `faIcon` stores an **icon token** (`"star"`, or `"jelly-regular:star"` to pin a style).
-Legacy camelCase (`"faStar"`) still validates and is read as `star`.
+`faIcon` stores an **icon token** (`"star"`, or `"jelly-regular:star"` to pin a style).
+The old camelCase form (`"faStar"`) still validates and is read as `star`.
 
-## Profile views — `/api/users/:id/visitors`
+## Profile views: `/api/users/:id/visitors`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/users/:id/visitors` | Public | Recent named visitors (`limit`, bounded at 24) + the all-time view total. ⚠ The param is a user **id**, unlike `GET /users/:username`, which the profile page reads first. |
+| GET | `/users/:id/visitors` | Public | Recent named visitors (`limit`, up to 24) plus the total view count. Note the param is a user **id**, unlike `GET /users/:username`, which the profile page calls first. |
 
-⚠ The view is RECORDED by `GET /users/:username` — a write on a read path, and not
-awaited. Self-views are skipped, guests bump the counter but write no row, and a Redis
-window keeps a reload out of Postgres. It swallows its own errors: recording who looked
-must never fail the page being looked at.
+The view itself is **recorded** by `GET /users/:username`: a write inside a read, and not
+awaited. We skip self-views, guests increase the counter without writing a row, and a
+Redis window keeps a reload from hitting Postgres again. It swallows its own errors,
+because recording who looked must never break the page they're looking at.
 
-## Moderation — `/api/moderation`
+## Moderation: `/api/moderation`
 
-Each route is gated by its specific `moderation.*` permission.
+Each route needs its own `moderation.*` permission.
 
-Review cases (`/cases*`) are produced by the core `security-analysis` job — four built-in
-baseline abuse patterns (rapid logins, multi-account, registration burst, ban evasion),
-informational only, with per-pattern `security.pattern.*` settings toggles. Plugins can add
-scans or replace baselines via the SDK. Full pipeline: [security-detection.md](security-detection.md).
+Review cases (`/cases*`) come from core's `security-analysis` job: four built-in abuse
+patterns (rapid logins, multi-accounts, registration bursts, ban evasion). They're
+informational only, and each pattern can be switched off with its `security.pattern.*`
+setting. Plugins can add their own scans or replace a built-in pattern through the SDK.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/reports` | Auth | File a report (any target type). |
-| GET | `/summary` | Auth | ModCanvas badge counts. |
-| GET | `/reports` | Perm:`moderation.report.manage` | Report queue. |
-| PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update report status. |
+| GET | `/summary` | Auth | Counts for the ModCanvas badges. |
+| GET | `/reports` | Perm:`moderation.report.manage` | The report queue. |
+| PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update a report's status. |
 | GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. |
 | PATCH | `/warnings/:id/pardon` | Perm:`moderation.warn` | Pardon. |
 | GET | `/bans` · POST `/bans` | Perm:`moderation.ban` | List / issue bans. |
 | PATCH | `/bans/:id/lift` | Perm:`moderation.ban` | Lift a ban. |
 | GET | `/cases` | Perm:`moderation.cases.manage` | Review cases. |
-| PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / bulk-ban. |
+| PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / ban everyone in a case. |
 | GET | `/log` | Perm:`moderation.log.view` | Moderation log. |
-| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Perm:`moderation.*` | Soft-delete with reason → tombstone. |
+| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Perm:`moderation.*` | Soft-delete with a reason (leaves a tombstone). |
 
-## Appearance — `/api/appearance`
+## Appearance: `/api/appearance`
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/css` | Public | Compiled token CSS (injected on page load), emitted **scope-keyed** — see below. |
-| GET / PUT | `/tokens` | Admin | Read / save style tokens (scope-keyed map per theme; legacy flat = `global`). Writes land in the **draft**. |
-| PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ light?: { "--x": "#fff" \| null }, dark?: … }`, `null` clears. Returns the whole set. For a second editor of the same draft (the Layout Editor's variant panel) — a full-set read-modify-write from two surfaces loses whichever edit landed first. |
-| GET | `/version` | Public | Style version + poll interval for live theme sync. |
-| POST | `/history/:id/restore` | Admin | Restore a style-history snapshot. |
-| GET | `/branding` | Public | Resolved logo URLs + site name. |
-| POST | `/branding/:variant` (`multipart`) · DELETE `/branding/:variant` | Admin | Logo upload / reset (`variant` = `navbar` \| `icon`). |
-| PUT | `/branding/text` | Admin | Toggle site-name text in nav. |
-| PUT | `/branding/icon-kit` | Admin | Set / clear the site's **FontAwesome kit** (`{ kit }` — a kit id or its full URL; empty clears). ⚠ Its own endpoint, not the generic settings PUT: the value becomes a `<script src>` on every page, so the host is an allowlist and the URL is rebuilt rather than stored as typed. |
-| PUT | `/branding/icon-style` | Admin | Set the site-wide icon style (`{ style }`, e.g. `duotone-solid`). Validated against the shared table — a style the app cannot turn into classes would blank every icon. `solid` is the only style that draws without a kit. |
+| GET | `/css` | Public | The compiled token CSS the site loads, by scope (see below). `?source=draft` renders the draft instead (for the Style Editor's preview, never cached); `?theme=<id>` renders one installed theme for a reader who picked it. |
+| GET | `/tokens` | Admin | `{ tokens, theme, installedTheme }`: the admin's layer and the theme's layer, **kept apart**. |
+| PUT | `/tokens` | Admin | Save the admin's tokens (`{ tokens, label? }`, a map by scope). Goes into the **draft**. |
+| PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ tokens: { "--x": "#fff" \| null } }`, where `null` clears a token. Returns the whole set. This exists for a second editor on the same draft (the Layout Editor's variant panel), because two screens both reading and writing the whole set would lose whichever edit landed first. |
+| GET / PUT | `/custom-css` | Admin | The admin's own stylesheet. |
+| GET | `/draft-status` | Admin | Whether there's an unpublished draft. |
+| POST | `/publish` | Admin | Publish the draft now. |
+| POST | `/reset` | Admin | *Reset appearance*: clears the admin's tokens and stylesheet and keeps the installed theme. |
+| GET | `/version` | Public | The style version and poll interval, for live updates. |
+| GET | `/stream` | Public | The same as a Server-Sent Events stream. |
+| POST | `/history/:id/restore` | Admin | Restore a snapshot from the style history. |
+| GET | `/branding` | Public | Resolved logo URLs and the site name. |
+| POST | `/branding/:variant` (`multipart`) · DELETE `/branding/:variant` | Admin | Upload / reset a logo (`variant` is `navbar` or `icon`). |
+| PUT | `/branding/text` | Admin | Show or hide the site name next to the logo. |
+| PUT | `/branding/icon-kit` | Admin | Set or clear the site's **FontAwesome kit** (`{ kit }`: a kit id or its full URL; empty clears it). It has its own endpoint rather than the generic settings PUT because the value becomes a `<script src>` on every page, so the host is on an allowlist and we rebuild the URL instead of storing what was typed. |
+| PUT | `/branding/icon-style` | Admin | Set the site-wide icon style (`{ style }`, e.g. `duotone-solid`). Checked against the shared list, because a style the app can't turn into classes would blank every icon. `solid` is the only style that works without a kit. |
 
-⚠ `GET /branding` also returns `iconKitUrl` (re-validated on the way out — a settings row
-can arrive from a restored backup) and `iconStyle` (normalised to `solid` if unknown, because
-emitting a class nothing defines blanks every icon on the page). See `docs/icon-kits.md`.
+`GET /branding` also returns `iconKitUrl` (validated again on the way out, since a settings
+row can come from a restored backup) and `iconStyle` (turned into `solid` if we don't know
+it, since a class nothing defines blanks every icon on the page). See
+[Icons and FontAwesome Pro](icon-kits.md).
 
 ### Theming tokens & scoped CSS
 
-All visual values are CSS custom properties resolved at runtime — three tiers, defined in
-`apps/web/src/styles/tokens.scss`, with the contract in `@xentium/contracts` → `TOKEN_REGISTRY`:
+Every visual value is a CSS custom property resolved in the browser. There are three
+tiers, defined in `apps/web/src/styles/tokens.scss`, and described for code in
+`TOKEN_REGISTRY` (`@xentium/contracts`):
 
 | Tier | Prefix | Examples |
 |---|---|---|
-| Semantic (palette) | `--c-*` | `--c-bg`, `--c-accent`, `--c-fg`, `--c-card` |
+| Semantic (the palette) | `--c-*` | `--c-bg`, `--c-accent`, `--c-fg`, `--c-card` |
 | Region | `--<region>-*` | `--nav-bg`, `--footer-bg`, `--content-bg`, `--aside-bg` |
 | Component | `--<component>-*` | `--btn-bg`, `--card-bg`, `--input-bg`, `--menu-bg` |
 
-- **Inheritance:** region/component tokens default to a semantic token
-  (`--nav-bg: var(--c-surface)`), so editing the palette cascades; a token is overridden only when
-  that surface must differ. Tokens cover every facet (fill, border + per-side, radius, shadow).
-- **Per-region scoping:** `GET /css` emits overrides scope-keyed — `global` tokens on the theme
-  root (`:root, [data-theme="light"]`), region scopes under that region's selector
-  (`:root .pub-nav, [data-theme="light"] .pub-nav { … }`). Because custom properties inherit down
-  the DOM, a region re-scopes a component token (e.g. `.pub-nav { --btn-bg }` themes only navbar
-  buttons) — no per-region token names.
-- **Style variants:** a scope may also be a named LOOK rather than a place —
-  `variant.surface` / `variant.muted` / `variant.accent` / `variant.plain`, emitted under
-  `.xt-v--<name>`, which the renderer stamps on any block whose document says
-  `"variant": "accent"` (ADR-0005). `section` paints from the `--surface-*` set; every variant
-  aliases `--card-bg` and friends to it, so one background token moves both kinds of surface.
-- **Storage:** `PUT /tokens` takes a scope-keyed map per theme (`{ global: {…}, navbar: {…} }`);
-  legacy flat maps load as the `global` scope (back-compat). Token names must match
-  `--[\w-]+` and values may not contain `{ } < > ;` — they are emitted verbatim into the served
-  stylesheet. A scope this build does not know is **skipped**, never promoted to the theme root.
-- **Contributors:** add a `TokenDef` to `TOKEN_REGISTRY` + define it in `tokens.scss` (defaulting
-  to its semantic base); never hardcode a literal. See **[CONTRIBUTING → Theming tokens](../CONTRIBUTING.md#theming-tokens)**.
+- **Inheritance:** region and component tokens default to a semantic token
+  (`--nav-bg: var(--c-surface)`), so changing the palette changes everything. You only
+  override a token when that surface needs to be different. Tokens cover everything: fill,
+  border (and each side), radius, shadow.
+- **Scopes:** `GET /css` emits overrides by scope. `global` goes on the site root
+  (`:root, .xt-site-tokens`), and a region's scope goes under that region's selector
+  (`:root .pub-nav { … }`). Because custom properties inherit down the DOM, a region can
+  change a component token (e.g. `.pub-nav { --btn-bg }` restyles only the navbar's
+  buttons) without needing separate token names per region.
+- **Style variants:** a scope can also be a named *look* instead of a place:
+  `variant.surface`, `variant.muted`, `variant.accent` and `variant.plain`, emitted under
+  `:root .xt-v--<name>`. The renderer puts that class on any block whose document says
+  `"variant": "accent"`. `section` paints with the `--surface-*` tokens, and every variant
+  points `--card-bg` and friends at them too, so one background token changes both kinds
+  of surface.
+- **Storage:** `PUT /tokens` takes one map by scope (`{ global: {…}, navbar: {…} }`). Token
+  names must match `--[\w-]+`, and values can't contain `{ } < > ;`, because we write them
+  into the stylesheet as they are. A scope this version doesn't know is **skipped**, never
+  moved up to the site root.
+- **Adding a token:** add a `TokenDef` to `TOKEN_REGISTRY` and define it in `tokens.scss`
+  with a default from its semantic base. Don't hardcode values. See
+  [CONTRIBUTING → Theming tokens](../CONTRIBUTING.md#theming-tokens).
+
+How the layers, themes and this stylesheet fit together is in
+[The style system](style-system.md).
 
 ## Public nav
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/nav-items` | Public | Active nav items ordered by position (visibility filtered client-side). |
+| GET | `/api/nav-items` | Public | Active nav items by position (the browser filters by visibility). |
 
-## Online presence
-
-| Method | Path | Auth | Description |
-|---|---|---|---|
-| GET | `/api/online` | Public | Currently-online users grouped by group. |
-
-## Layouts — `/api/layouts`
-
-Published page structure (ADR-0005). Unauthenticated: layouts are global, and every block resolves
-its data through endpoints that apply their own permission checks.
+## Who's online
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/layouts` | Public | Every template's **published** `LayoutDocument`, keyed by `TemplateKey`. Templates with nothing stored return the built-in default, so the response always covers every key. Memoized in-process for 30 s; a publish busts it. |
+| GET | `/api/online` | Public | Users online right now, grouped by group. |
 
-A `LayoutDocument` is `{ templateKey, schemaVersion, regions: { [region]: BlockNode[] } }`, where a
-`BlockNode` is `{ id, type, props, children? }`. Unknown `type` values are **not** an error — the
-renderer skips them and keeps them in the document.
+## Layouts: `/api/layouts`
 
-## Plugin management — `/api/plugins`
+The published page structure. It's public: layouts are the same for everyone, and every
+block gets its data from endpoints that do their own permission checks.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/layouts` | Public | Every template's **published** `LayoutDocument`, by `TemplateKey`. A template with nothing stored returns the built-in default, so every key is always there. Cached in memory for 30 s; publishing clears it. `?theme=<id>` returns an installed theme's layouts for a reader who picked it. |
+
+A `LayoutDocument` is `{ templateKey, schemaVersion, regions: { [region]: BlockNode[] } }`,
+and a `BlockNode` is `{ id, type, props, children? }`. An unknown `type` isn't an error: the
+renderer skips it and it stays in the document.
+
+## Plugin management: `/api/plugins`
 
 All **Admin**.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/` | Installed plugins + status. |
-| POST | `/validate` | Dry-run validate an uploaded `.xtplugin` (`multipart`, field `file`). |
+| GET | `/` | Installed plugins and their status. |
+| POST | `/validate` | Check an uploaded `.xtplugin` without installing it (`multipart`, field `file`). |
 | POST | `/upload` | Install (rate-limited; `multipart`). |
-| POST | `/:id/enable` | Enable (checks entitlement for licensed plugins). |
-| POST | `/:id/disable` | Disable (data preserved). |
-| DELETE | `/:id?removeData=` | Uninstall (optionally reverse migrations). |
+| POST | `/:id/enable` | Enable (licensed plugins need an entitlement). |
+| POST | `/:id/disable` | Disable (the data stays). |
+| DELETE | `/:id?removeData=` | Uninstall (optionally reversing the migrations). |
 
-## Plugin runtime
+## Plugin routes
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| * | `/api/p/:pluginId/*` | per plugin | Routes registered by an enabled plugin. A guard returns `404 XEC-PLUGIN-2020` when the plugin is disabled. |
+| * | `/api/p/:pluginId/*` | up to the plugin | Routes registered by an enabled plugin. While the plugin is disabled, a guard answers `404 XEC-PLUGIN-2020`. |
 
-A plugin's **admin** endpoints under this prefix back ACP config surfaces, and those
-surfaces **autosave** — so expect a debounced write per edit rather than one save-button
-submit. Make them idempotent full-object writes, gate them on `admin.access` (they are not
-admin-gated by the `/api/p/` prefix itself), and never autosave secrets — give a write-only
-field its own explicit Set/Remove route. Web-side recipe:
-[`plugin-acp-autosave.md`](plugin-acp-autosave.md).
+A plugin's **admin** endpoints under this prefix back its ACP settings pages, and those
+pages **autosave**. So expect one debounced write per edit, not one submit from a Save
+button. Make them idempotent writes of the whole object, check `admin.access` yourself
+(the `/api/p/` prefix doesn't do that for you), and never autosave secrets: give a
+write-only field its own Set/Remove route. The web side is described in
+[Plugin pages in the ACP](plugin-acp-autosave.md).
 
 ---
 
-## Admin (ACP) — `/api/admin`
+## Admin (ACP): `/api/admin`
 
-All routes below are **Admin** (`admin.access`) unless a stricter permission is noted.
+Everything below needs **Admin** (`admin.access`) unless a stricter permission is listed.
 
-### Dashboard & users
+### Dashboard and users
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/dashboard` | ACP dashboard stats. |
-| GET | `/users` · `/users/:id` | User list / detail (incl. raw private fields for admin/supermod). |
+| GET | `/users` · `/users/:id` | User list / detail (including private fields, for admins and super moderators). |
 | PUT | `/users/:id/groups` | Set group membership. |
 | PATCH | `/users/:id/active` | Activate / deactivate. |
 | POST | `/users/:id/ban` · DELETE `/users/:id/ban` | Ban / lift. |
-| POST | `/users/:id/force-logout` | Revoke all sessions. |
+| POST | `/users/:id/force-logout` | Revoke every session. |
 | POST | `/users/:id/password-reset` | Send a reset email. |
 
 ### Profile fields
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/profile-fields` | List field schema. |
-| POST · PATCH `/:id` · DELETE `/:id` | Create / update / delete (system fields undeletable). |
+| GET | `/profile-fields` | The field definitions. |
+| POST · PATCH `/:id` · DELETE `/:id` | Create / update / delete (system fields can't be deleted). |
 | PUT | `/profile-fields/reorder` | Reorder. |
 
-### Access control (sub-mounted)
+### Access control
 
 | Method | Path | Description |
 |---|---|---|
-| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Group CRUD; `PUT /groups/:id/permissions`; `POST /groups/:id/icon` (`multipart`). |
-| GET | `/permissions` | Full permission catalog (incl. plugin-registered). |
-| GET·PATCH | `/progression` · `/progression/:id` | Ladder + per-group progression; `/progression/groups`, `PATCH /progression/settings`, `PATCH /progression/reorder`. |
+| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Groups; plus `PUT /groups/:id/permissions` and `POST /groups/:id/icon` (`multipart`). |
+| GET | `/permissions` | Every permission, including the ones plugins registered. |
+| GET·PATCH | `/progression` · `/progression/:id` | The ladder and per-group progression; plus `/progression/groups`, `PATCH /progression/settings`, `PATCH /progression/reorder`. |
 
-### Content & moderation (ACP views)
+### Content and moderation (ACP views)
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/articles` · DELETE `/articles/:id` | Article admin list / delete. |
-| GET | `/reports` · PATCH `/reports/:id` | Report queue. |
+| GET | `/articles` · DELETE `/articles/:id` | Article list / delete. |
+| GET | `/reports` · PATCH `/reports/:id` | The report queue. |
 | GET | `/warnings` · POST · PATCH `/warnings/:id/pardon` | Warnings. |
-| GET | `/bans` | Bans list. |
+| GET | `/bans` | Bans. |
 | GET | `/cases` · PATCH `/cases/:id` · PATCH `/cases/:id/notes` · POST `/cases/:id/ban-all` · POST `/cases/:id/revoke-exception` | Review cases. |
 | GET | `/modlog` | Moderation log. |
-| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Mod soft-delete. |
+| DELETE | `/comments/article/:id` · `/comments/profile/:id` | Moderator soft-delete. |
 
-### Extensions & licensing
+### Extensions and licensing
 
-A connected marketplace account is the only activation path — manual key entry was removed
-from both the ACP and the API on 2026-07-18, so there is no `POST /license/activate`. The
-instance's side of the wire is documented separately in
-[`marketplace-protocol.md`](./marketplace-protocol.md).
+A connected marketplace account is the only way to activate a licence. We removed manual
+key entry from both the ACP and the API on 2026-07-18, so there's no
+`POST /license/activate`. What the instance sends to the marketplace is described in
+[the marketplace protocol](./marketplace-protocol.md).
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/installed-plugins` | Installed plugins (ACP view). |
-| GET | `/license` | The active license row, or `null`. Includes the stored `entitlementJwt`. |
-| POST | `/license/refresh` | Re-activate from the connected account and re-verify. Self-heals an instance that connected before buying. |
-| DELETE | `/license` | Deactivate locally. Does not release the seat — that is `DELETE /marketplace/connection`. |
-| GET | `/marketplace/plugins` | Catalogue mirror. **Paginated server-side by the marketplace** (`page`/`limit`); an empty `data` means unreachable or not connected, never a fabricated catalogue. Listings carry `owned` when an account is connected. |
-| GET·POST·DELETE | `/marketplace/connection` | Account connection state / connect (`{authCode}`) / disconnect. GET also carries `accountUrl` + `licencesUrl` so the ACP can link to the marketplace it is actually pointed at, rather than guessing the default host. Connect mints this install's signing keypair; disconnect releases seats and drops every local credential. |
-| POST | `/marketplace/link` | Start the **one-click handshake** → `{linkId, userCode, approveUrl, expiresAt, pollInterval}`. The admin opens `approveUrl` and compares `userCode` against the approval screen. The poll secret stays server-side and never reaches the browser. |
-| GET | `/marketplace/link/:linkId` | Poll it → `{status: pending\|approved\|denied\|expired}`, plus `licenseActivated` on approval. `pending` is a **200**, not an error — it is the normal answer while a person is still deciding. See `docs/marketplace-protocol.md`. |
-| GET | `/marketplace/owned` | **What this account owns**, cross-referenced with what is installed here: `{licenses: [{keyRef, status, seats, seatsUsed, activeHere, updatesUntil, purchasedAt, product, installedVersion, installedStatus, updateAvailable}]}`. Not cached — an admin opening this has usually just bought something. Distinct from the entitlement JWT, which lists *grants*, not licences. |
-| GET | `/marketplace/updates` | The update-check cache, reconciled against what is installed right now, plus per-admin `acknowledged`. |
-| POST | `/marketplace/authorize` | The download gate → `AuthorizedDownload` (rate-limited). |
-| POST | `/marketplace/install` · `/marketplace/update` | Direct install / update-in-place. **Stream ndjson progress**, not a single JSON response — see Plugin management. |
-| GET | `/status-summary` | Aggregated ACP badge signals (pending updates, license expiry, per-admin acknowledgement). |
-| GET | `/registered-pages` | Plugin-registered ACP pages (drives ACP nav). |
+| GET | `/license` | The active licence row, or `null`. Includes the stored `entitlementJwt`. |
+| POST | `/license/refresh` | Activate again from the connected account and re-verify. Fixes an install that connected before buying. |
+| DELETE | `/license` | Deactivate locally. It doesn't free the seat; `DELETE /marketplace/connection` does that. |
+| GET | `/marketplace/plugins` | The marketplace catalogue. **Paginated by the marketplace** (`page`/`limit`). An empty `data` means it's unreachable or not connected; we never make up a catalogue. Listings include `owned` when an account is connected. |
+| GET·POST·DELETE | `/marketplace/connection` | Connection state / connect (`{authCode}`) / disconnect. GET also returns `accountUrl` and `licencesUrl`, so the ACP links to the marketplace it's actually using instead of guessing the default. Connecting creates this install's signing keypair; disconnecting frees the seats and drops every local credential. |
+| POST | `/marketplace/link` | Start the **one-click handshake** → `{linkId, userCode, approveUrl, expiresAt, pollInterval}`. The admin opens `approveUrl` and checks that `userCode` matches the approval screen. The poll secret stays on the server and never reaches the browser. |
+| GET | `/marketplace/link/:linkId` | Poll it → `{status: pending\|approved\|denied\|expired}`, plus `licenseActivated` once approved. `pending` is a **200**, not an error; it's the normal answer while someone is still deciding. |
+| GET | `/marketplace/owned` | **What this account owns**, matched against what's installed here: `{licenses: [{keyRef, status, seats, seatsUsed, activeHere, updatesUntil, purchasedAt, product, installedVersion, installedStatus, updateAvailable}]}`. Not cached, because an admin opening this has usually just bought something. Different from the entitlement JWT, which lists *grants*, not licences. |
+| GET | `/marketplace/updates` | The cached update check, matched against what's installed right now, plus `acknowledged` per admin. |
+| POST | `/marketplace/authorize` | The download check → `AuthorizedDownload` (rate-limited). |
+| POST | `/marketplace/install` · `/marketplace/update` | Install / update a plugin or theme. These **stream ndjson progress** instead of returning one JSON response. For a theme, the final event carries `activated` and `current` (see *Themes* below). |
+| GET | `/status-summary` | The ACP badge signals in one place (pending updates, licence expiry, per-admin acknowledgement). |
+| GET | `/registered-pages` | ACP pages registered by plugins (drives the ACP nav). |
 
-### Layouts & themes
+### Layouts
 
-Gated on `admin.access`, like the rest of Appearance. Every mutation is audited by
-`acpActivityLogger`.
+Needs `admin.access`, like the rest of Appearance. `acpActivityLogger` records every
+change.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/layouts` | Every template as the **draft** would render it (draft → published → default). Backs the editor's preview iframe. |
-| GET | `/layouts/templates` | The template catalogue: each `key` plus its declared `regions`, `label`, `pluginId`, `previewRoute`, `supportsVariants` and inheritance state. Built from the runtime registry, so an enabled plugin's templates are in it and a disabled one's are not. |
-| GET | `/layouts/draft-status` | `{ pending: TemplateKey[] }` — templates whose draft differs from live. |
-| GET | `/layouts/:templateKey` | The draft for one template, falling back to published, then to the default. |
-| PUT | `/layouts/:templateKey` | Save the draft (`{ document }`). Rejects an unknown region, a template-key mismatch, a document missing a **required** block, or a template nothing has registered — a plugin template needs its plugin enabled (all 422). |
-| POST | `/layouts/publish` | Promote **all** pending drafts to published and clear them. Bumps the style version → connected clients refresh over SSE. |
-| POST | `/layouts/:templateKey/discard` | Drop the draft, keep what is live. |
-| POST | `/layouts/:templateKey/reset` | Delete draft **and** published rows → back to the built-in default. Keeps the theme baseline. |
-| POST | `/layouts/:templateKey/revert-theme` | Stage the installed theme's version of this template as the draft. 404 when no theme ships it. |
-| POST | `/themes/export` | Build a `.xttheme` from what is **published** — layouts, scoped tokens, custom CSS and every referenced image, with asset paths rewritten to package-relative. Body: `{ id, name, version, vendor, description?, license?, homepage?, authorUrl? }`. Responds `application/zip`. |
-| GET | `/themes/installed` | The installed theme's manifest + the templates its baseline covers. |
-| POST | `/themes/import` | Validate a `.xttheme` (multipart `file`) and stage it as the **draft** — never live. All-or-nothing: one bad layout, asset or stylesheet applies none of it. Returns `{ manifest, templates, unknownTemplates, kept, replaced, tokensApplied, customCssApplied, assetsImported, unknownBlocks }`. |
+| GET | `/layouts` | Every template as the **draft** would render it (draft, else published, else default). The editor's preview iframe uses this. |
+| GET | `/layouts/templates` | The template catalogue: each `key` with its `regions`, `label`, `pluginId`, `previewRoute`, `supportsVariants` and inheritance state. Built from the runtime registry, so an enabled plugin's templates are there and a disabled one's aren't. |
+| GET | `/layouts/draft-status` | `{ pending: [...] }`: templates whose draft differs from what's live. |
+| GET | `/layouts/:templateKey` | One template's draft, falling back to published, then to the default. |
+| PUT | `/layouts/:templateKey` | Save the draft (`{ document }`). Refuses (422) an unknown region, a mismatched template key, a document missing a **required** block, or a template nothing has registered (a plugin template needs its plugin enabled). |
+| POST | `/layouts/publish` | Publish **every** pending draft and clear them. Bumps the style version, so open tabs refresh over SSE. |
+| POST | `/layouts/:templateKey/discard` | Throw away the draft and keep what's live. |
+| POST | `/layouts/:templateKey/reset` | Delete the draft **and** the published version, going back to the built-in default. The theme's baseline is kept. |
+| POST | `/layouts/:templateKey/revert-theme` | Put the installed theme's version of this template into the draft. 404 if no theme ships it. |
 
-`unknownBlocks` is informational, not a failure — those blocks are kept in the document and render
-once the plugin providing them is enabled. `unknownTemplates` is the same idea one level up: layouts
-the package ships for templates this install has no definition for (a plugin template whose plugin is
-not enabled). They are skipped rather than stored — there are no declared regions to validate them
-against — and the rest of the theme still applies.
+### Themes
 
-**Inheritance:** a theme is a LAYER under the admin's own changes. Tokens go to the theme
-layer (`appearance.tokens.theme.*`), merged under the admin's overrides, so an update keeps
-every token the admin set. Layouts are per template: `templates` were applied, `kept` had been
-customised and were left alone with their new baseline recorded — recoverable with
-`POST /layouts/:templateKey/revert-theme`. Full rules: `docs/theme-packages.md`.
+| Method | Path | Description |
+|---|---|---|
+| POST | `/themes/import` | Install a `.xttheme` (`multipart`, field `file`). We validate everything first; one bad layout, asset or stylesheet means nothing is written. A **new** theme is added to the library **inactive**, and the site doesn't change. Only an update to the theme the site is wearing is applied right away. Returns `{ manifest, activated, current, templates, unknownTemplates, kept, replaced, tokensApplied, customCssApplied, assetsImported, unknownBlocks, ignoredFiles }`. |
+| GET | `/themes/library` | Every installed theme, the active one first. |
+| POST | `/themes/library/:id/activate` | Switch to an installed theme. **Live**, no publish step, and it records an undo point first. |
+| DELETE | `/themes/library/:id` | Remove a theme from the library. The active theme can't be removed; switch first. |
+| POST | `/themes/discard` | Undo the last import or switch. It only goes back one step. |
+| GET | `/themes/installed` | The active theme's manifest and the templates its baseline covers. |
+| POST | `/themes/export` | Build a `.xttheme` from what's **published**: layouts, tokens, custom CSS and every image they reference, with paths made package-relative. `multipart` body: `id, name, version, vendor, appearance`, plus optional `description, license, homepage, authorUrl, tokensOnly` and a `screenshot` file. Responds with `application/zip`. |
 
-Assets unpack to `uploads/themes/<manifest id>/`, magic-byte checked and bounded (100 files, 5 MB
-each, 40 MB total). `customCssApplied` is a **live** change, not a staged one: the custom-CSS console
-has no draft. Format reference: `docs/theme-packages.md`.
+When `activated` is `false`, the site wasn't touched: `templates`, `kept` and `replaced` are
+empty, and `current` is the theme the site is still wearing (`null` means stock Xentium).
+The ACP then asks the admin whether to switch.
+
+`unknownBlocks` is for your information, not a failure: those blocks stay in the document
+and render once the plugin that provides them is enabled. `unknownTemplates` is the same
+idea one level up: layouts in the package for templates this install doesn't know (a
+plugin's template whose plugin isn't enabled). We skip those, since there are no declared
+regions to check them against, and the rest of the theme still applies. `ignoredFiles`
+lists parts of an older package we can't use, like its dark palette.
+
+**Inheritance:** a theme is a layer *under* the admin's own changes. Its tokens go into the
+theme layer and are merged under the admin's, so an update keeps every token the admin
+set. Layouts work per template: the ones in `templates` were applied, the ones in `kept`
+had been customized and were left alone (with the new baseline recorded), and you can
+still get the theme's version with `POST /layouts/:templateKey/revert-theme`. The full rules
+are in [the theme package format](theme-packages.md).
+
+Assets unpack to `uploads/themes/<manifest id>/`, checked by magic bytes and limited (100
+files, 5 MB each, 40 MB total).
 
 ### System
 
 | Method | Path | Description |
 |---|---|---|
 | GET | `/settings` · `/settings/:key` · PUT `/settings/:key` | Platform settings. |
-| GET | `/error-log` · DELETE `/error-log` | Error log (filterable) / clear. |
-| GET | `/migration-history` | `migration_runs` table. |
+| GET | `/error-log` · DELETE `/error-log` | The error log (filterable) / clear it. |
+| GET | `/migration-history` | The `migration_runs` table. |
 | GET | `/style-history` | Style snapshots. |
-| GET | `/xec-codes` | XEC code catalog (for the Error Reference page). |
-| GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | Frontend nav manager. |
+| GET | `/xec-codes` | The XEC code list (for the Error Reference page). |
+| GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | The site's nav manager. |
 
-### Beta / invites (deployment gating)
+### Beta and invites
 
-> Not part of §17 — added for gated beta deployments.
+For sites that are open only to invited users while in beta.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/beta/status` | Optional | Beta-gate state for the current visitor. |
+| GET | `/api/beta/status` | Optional | The beta gate's state for the current visitor. |
 | POST | `/api/beta/redeem` · `/api/beta/log-visit` | Public/Optional | Redeem a beta code / log a visit. |
-| GET·POST·DELETE | `/api/admin/beta-codes` (+ `/log`) | Admin | Beta code management + visit log. |
-| GET·POST·DELETE | `/api/admin/invites` | Admin | Invite management. |
+| GET·POST·DELETE | `/api/admin/beta-codes` (+ `/log`) | Admin | Manage beta codes; the visit log. |
+| GET·POST·DELETE | `/api/admin/invites` | Admin | Manage invites. |
 
 ---
 
-## Notes & known deviations from §17
+## Good to know
 
-- Self-service account actions live under **`/api/account`**, not `/api/users/me/*`.
-- Groups / permissions / progression are sub-mounted under **`/api/admin`**, not top-level
-  `/api/groups` etc.
-- Licensing is under **`/api/admin/license`** + `/api/admin/marketplace` (ADR 0001/0002);
-  there is no top-level `/api/licenses`. The **outbound** protocol this instance speaks to
-  the marketplace is a separate contract — see [`marketplace-protocol.md`](./marketplace-protocol.md).
-- **Beta / invite** routes are an addition for gated deployments and are not in the
-  original §17 plan.
-- There is **no machine-readable OpenAPI spec** yet — this hand-maintained reference is the
-  v1 contract. Generating OpenAPI from the route + Zod schemas is a post-v1 candidate.
+- Things you do to your own account live under **`/api/account`**, not `/api/users/me/*`.
+- Groups, permissions and progression are under **`/api/admin`**, not at the top level
+  (`/api/groups` etc.).
+- Licensing is under **`/api/admin/license`** and `/api/admin/marketplace`; there's no
+  `/api/licenses`. What the instance itself sends to the marketplace is a separate
+  contract, described in [the marketplace protocol](./marketplace-protocol.md).
+- There's **no machine-readable OpenAPI spec** yet, so this page is the v1 contract. We'd
+  like to generate OpenAPI from the routes and their Zod schemas after v1.

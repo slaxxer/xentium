@@ -1,55 +1,57 @@
 # The marketplace protocol (v1)
 
-How a Xentium install talks to a marketplace. This is the **outbound** contract — the
-inbound ACP routes that sit in front of it are in [`API.md`](./API.md).
+How a Xentium install talks to a marketplace. This page covers the **outgoing** side;
+the ACP routes in front of it are in [`API.md`](./API.md).
 
-Everything here is a **published contract**. The signing half lives in the marketplace and
-the verifying half is compiled into every install in the field, so the two can only move
-together. This document exists because they once did not: the marketplace signed
-entitlement grants as objects while the instance compared them as bare strings, and the
-result was not an error — `getEntitlementStatus` simply reported `missing` for plugins the
-site owned, and they refused to enable with no explanation on either end. Typecheck, lint,
-build and the full suite were green the whole time. **A drift here does not announce
-itself. Write changes down on both sides before making them.**
+Everything here is a **published contract**. The marketplace does the signing and every
+install out there does the verifying, so the two sides can only change together. We wrote
+this page because they once didn't. The marketplace signed entitlement grants as objects
+while the instance compared them as plain strings, and nothing errored:
+`getEntitlementStatus` just reported `missing` for plugins the site owned, and they
+refused to enable without any explanation on either side. Typecheck, lint, build and the
+whole test suite were green the entire time. **If the two sides drift apart, nothing will
+tell you. Write the change down on both sides before you make it.**
 
 - **Instance side:** `apps/api/src/core/license-engine/protocol-client.ts` (transport),
   `marketplace-source.ts` (the conversations), `site-identity.ts` (who am I).
-- **Base URL:** `env.LICENSE_SERVER_URL`, which **includes the version prefix**
-  (`https://plugins.xentium.org/api/v1`). It is part of what every signature covers.
-- **Implementing another marketplace?** Core talks to a `MarketplaceSource` interface and
-  never hardcodes a host. A community or self-hosted source may implement the same
-  interface and return free, no-op entitlements.
+- **Base URL:** `env.LICENSE_SERVER_URL`, **including the version prefix**
+  (`https://plugins.xentium.org/api/v1`). It's part of what every signature covers.
+- **Building another marketplace?** Core talks to a `MarketplaceSource` interface and
+  never hardcodes a host. A community or self-hosted source can implement the same
+  interface and hand out free entitlements that don't restrict anything.
 
 ---
 
-## The decision everything hangs off
+## The decision everything else depends on
 
-**A licence binds to an INSTALL (`siteId`), never to a hostname.**
+**A licence belongs to an INSTALL (`siteId`), never to a hostname.**
 
-Domains change on rebrands, migrations and staging promotions, and under hostname binding
-each of those is a support ticket. Hostnames are still *reported*, and the marketplace
-records them so an operator can recognise a site — but they gate nothing.
+Domains change with rebrands, server moves and staging being promoted, and if licences
+were tied to hostnames, each of those would be a support ticket. Installs still *report*
+their hostname, and the marketplace stores it so an operator can recognize a site, but it
+doesn't restrict anything.
 
-This is only defensible because of **request signing**. Without it, `siteId` is just a
-string in a JSON body and anyone holding a leaked token could claim any install. The two
-decisions are a package: taking the signing without dropping hostname binding pays for both
-and gains little.
+That only works because requests are **signed**. Without signatures, `siteId` is just a
+string in a JSON body, and anyone with a leaked token could claim to be any install. The
+two decisions go together: signing without dropping hostname binding would cost us both
+and gain little.
 
 ---
 
-## Two credentials, two different questions
+## Two credentials, two questions
 
 | | Answers | Sent as |
 |---|---|---|
-| **Account token** | *Who* is calling | `Authorization: Bearer <token>` |
-| **Ed25519 signature** | *Proof* the caller is that install | `X-Nodevo-Signature` |
+| **Account token** | *who* is calling | `Authorization: Bearer <token>` |
+| **Ed25519 signature** | *proof* the caller is that install | `X-Xentium-Signature` |
 
-The keypair is generated **on the instance**, once, at connect. The private half never
-leaves it and is encrypted at rest; the marketplace only ever holds the public half. Losing
-it costs a reconnect, not a licence — which is why it is never escrowed. A reinstall
-legitimately produces a new keypair for the same `siteId`, and connect accepts that.
+The install generates its keypair **itself**, once, when it connects. The private key
+never leaves the install and is encrypted at rest; the marketplace only ever has the
+public key. Losing it costs you a reconnect, not a licence, which is why we never keep a
+copy. A reinstall legitimately creates a new keypair for the same `siteId`, and connecting
+accepts that.
 
-### The canonical string
+### What gets signed
 
 ```
 {METHOD}\n{pathname}\n{timestamp}\n{sha256hex(body bytes)}
@@ -57,24 +59,28 @@ legitimately produces a new keypair for the same `siteId`, and connect accepts t
 
 | Header | Value |
 |---|---|
-| `X-Nodevo-Site` | the install's `siteId` |
-| `X-Nodevo-Timestamp` | unix **seconds**, ±300s tolerance |
-| `X-Nodevo-Signature` | base64 Ed25519 over the canonical string |
+| `X-Xentium-Site` | the install's `siteId` |
+| `X-Xentium-Timestamp` | unix time in **seconds**, ±300 s tolerance |
+| `X-Xentium-Signature` | base64 Ed25519 signature over the string above |
 
-Four things that are easy to get wrong, and each fails only on the happy path — a bad
-signature fails for the wrong reason and still looks right:
+(The marketplace still accepts the old `X-Nodevo-*` names, for installs from before the
+rename.)
 
-1. **`pathname` includes the base path.** The server rebuilds it as `req.baseUrl + req.path`,
-   which inside a router mounted at `/api/v1` reads `/api/v1/account/activate`. Take it from
-   the request URL, never from the route-relative path.
-2. **Query strings are excluded.** The server's reconstruction has no query.
-3. **The body is serialized ONCE** and those exact bytes are sent. Re-serializing the parsed
-   object produces different bytes and a hash the server cannot match. The marketplace keeps
-   `rawBody` for the same reason.
-4. **A body-less request hashes the empty string** — `sha256("")`, which is what the server
-   computes from a zero-length buffer.
+Four things are easy to get wrong here, and each one only shows up on the happy path. A
+bad signature fails for the wrong reason and still looks right:
 
-The public key is registered as **base64 of SPKI DER**, not PEM:
+1. **`pathname` includes the base path.** The server rebuilds it as
+   `req.baseUrl + req.path`, which inside a router mounted at `/api/v1` gives
+   `/api/v1/account/activate`. Take it from the request URL, never from the path relative
+   to the route.
+2. **Query strings are left out.** The server's version has no query.
+3. **Serialize the body ONCE** and send exactly those bytes. Serializing the parsed object
+   again gives different bytes and a hash the server can't match. The marketplace keeps
+   the `rawBody` for the same reason.
+4. **A request without a body hashes the empty string**, `sha256("")`, which is what the
+   server computes from an empty buffer.
+
+We register the public key as **base64 of the SPKI DER**, not PEM:
 
 ```ts
 publicKey.export({ type: "spki", format: "der" }).toString("base64")
@@ -84,32 +90,32 @@ publicKey.export({ type: "spki", format: "der" }).toString("base64")
 
 ## Endpoints
 
-`✍` = requires token **and** signature. `✎` = signed, but **no token** — the two
-linking calls happen before the install has an account, so the signature is checked against
-the public key carried in the request itself.
+`✍` = needs the token **and** a signature. `✎` = signed, but **no token**. The two linking
+calls happen before the install has an account, so we check the signature against the
+public key sent in the request itself.
 
 | | Method | Path | Notes |
 |---|---|---|---|
-| | POST | `/account/connect` | **The only unsigned, unauthenticated call** — the install has no registered identity until it succeeds. Body `{authCode, siteId, publicKey, domain?, environment}` → `{token, expiresAt, accountRef}`. `accountRef` is a masked email for display. |
-| ✎ | POST | `/account/link/start` | Opens a one-click link request. Body `{siteId, publicKey, domain?, environment}` → `{linkId, userCode, pollSecret, expiresAt, pollInterval}`. See **The linking handshake**. |
+| | POST | `/account/connect` | **The only call that's neither signed nor authenticated**, because the install has no registered identity until it succeeds. Body `{authCode, siteId, publicKey, domain?, environment}` → `{token, expiresAt, accountRef}`. `accountRef` is a masked email to display. |
+| ✎ | POST | `/account/link/start` | Opens a one-click link request. Body `{siteId, publicKey, domain?, environment}` → `{linkId, userCode, pollSecret, expiresAt, pollInterval}`. See [The linking handshake](#the-linking-handshake). |
 | ✎ | POST | `/account/link/poll` | Body `{linkId, pollSecret, publicKey}` → `{status}`, plus `{token, expiresAt, accountRef}` once `status` is `approved`. |
-| ✍ | POST | `/account/activate` | Binds licences and issues the first entitlement. **Idempotent** — re-activating an install that already holds activations returns the current entitlement rather than consuming a second seat. `siteId` is sent in the body *and* signed for; a mismatch is refused, because one install speaking for another is exactly what binding must prevent. |
-| ✍ | POST | `/account/deactivate` | Releases seats and revokes tokens. With install binding this is the ordinary way a customer **moves a licence between sites** — deactivate here, activate there, no support ticket. `204`. |
-| ✍ | GET | `/account/licenses` | What the account owns: seats, `seatsUsed`, `activeHere`, `updatesUntil`, latest published version. Answers "what am I entitled to", which the entitlement JWT cannot — it lists grants, not licences. |
-| | GET | `/catalog` | Public, paginated (`kind`, `category`, `q`, `sort`, `page`, `limit`). Unsigned, but **send the token if you hold one**: that is what makes each listing carry `owned`. |
-| ✍ | POST | `/downloads/authorize` | **The chokepoint.** Checks signature → account → licence → **updates window**, then issues a fresh entitlement and a single-use artifact URL. Note it does **not** check seats: a seat is consumed at `activate`, which is the binding event; downloading is not. |
-| | GET | `/downloads/:token` | The bytes. Unsigned **by necessity** — fetched by a streaming HTTP client, not the protocol client — which is why the grant is single-use and expires in ~5 minutes. |
-| ✍ | POST | `/updates/check` | The heartbeat. Reports the installed inventory, returns available updates and advisories, **and rotates the account token**. |
+| ✍ | POST | `/account/activate` | Binds licences and issues the first entitlement. **Idempotent:** activating an install that already has activations returns the current entitlement instead of using a second seat. `siteId` is in the body *and* signed; if they don't match, we refuse, because one install speaking for another is exactly what binding has to prevent. |
+| ✍ | POST | `/account/deactivate` | Frees the seats and revokes the tokens. Because licences belong to installs, this is how a customer **moves a licence to another site**: deactivate here, activate there, no support ticket. `204`. |
+| ✍ | GET | `/account/licenses` | What the account owns: seats, `seatsUsed`, `activeHere`, `updatesUntil`, the latest published version. It answers "what am I entitled to", which the entitlement JWT can't, since the JWT lists grants, not licences. |
+| | GET | `/catalog` | Public and paginated (`kind`, `category`, `q`, `sort`, `page`, `limit`). Not signed, but **send the token if you have one**: that's what makes each listing include `owned`. |
+| ✍ | POST | `/downloads/authorize` | **Where ownership is decided.** Checks the signature, then the account, the licence and the **updates window**, then issues a fresh entitlement and a single-use download URL. It does **not** check seats: a seat is used at `activate`, when the licence is bound, not when something is downloaded. |
+| | GET | `/downloads/:token` | The bytes. It can't be signed, because a plain streaming HTTP client fetches it, not the protocol client. That's why the grant is single-use and expires after about 5 minutes. |
+| ✍ | POST | `/updates/check` | The heartbeat. Reports what's installed, returns available updates and advisories, **and rotates the account token**. |
 
 ### The linking handshake
 
-The alternative to an admin copying a connect code between two browser tabs, and the
-default path in the ACP since 2026-08-28. Shaped like the **OAuth device grant**, and for
-the same reason: a Xentium install cannot receive a browser redirect it can prove came from
-the marketplace — it has no registered origin, and most of them are on hostnames the
+This replaced copying a connect code between two browser tabs, and it's been the default
+in the ACP since 2026-08-28. It's modelled on the **OAuth device flow**, for the same
+reason: an install can't receive a browser redirect it could prove came from the
+marketplace. It has no registered origin, and most installs run on hostnames the
 marketplace has never seen. So nothing is redirected back. The install **polls**, which
-removes the `redirect_uri` surface entirely: there is no URL for an attacker to substitute,
-because there is no URL.
+removes the whole `redirect_uri` problem: an attacker can't swap in a URL, because there
+isn't one.
 
 ```
 instance                     marketplace                    the account holder
@@ -121,130 +127,134 @@ instance                     marketplace                    the account holder
    │  ◄── status: approved + token   │
 ```
 
-Three properties carry it:
+Three properties make it safe:
 
-1. **Nothing redeemable is stored.** Approval records only *which account said yes*. The
-   account token is minted when the install claims the request, so reading
-   `mkt_link_requests` yields no credential. Approval and claim are separate events on
-   purpose — collapsing them would mean parking a live token in a row for as long as it
-   takes the install's next poll to arrive.
-2. **Both calls are signed with the key being registered.** That key is not in the database
-   yet, so the signature is verified against the key in the request itself (`assertSignedWith`,
-   split out of `requireSignature` for exactly this). It proves possession of the private
-   half and nothing more — but possession is the whole claim at this point. `poll` repeats
-   `publicKey` and the server compares it to the row: presenting a *different* key at claim
-   time would otherwise register the wrong one.
-3. **A `userCode` is shown on both screens.** An approval link is a link, and links can be
-   mailed to people; the code is what lets an account holder tell their own request apart
-   from one somebody asked them to approve. This is the device-flow phishing case, and it is
-   why the approval screen leads with the comparison instead of being a lone button.
+1. **Nothing that can be redeemed is stored.** Approving only records *which account said
+   yes*. We create the account token when the install claims the request, so reading
+   `mkt_link_requests` gives you no credential. Approving and claiming are separate steps
+   on purpose; merging them would mean a live token sitting in a table row until the
+   install's next poll.
+2. **Both calls are signed with the key being registered.** That key isn't in the
+   database yet, so we verify the signature against the key in the request itself
+   (`assertSignedWith`, which we split out of `requireSignature` for exactly this). It
+   only proves the caller holds the private key, but at this point that's the whole
+   claim. `poll` sends `publicKey` again and the server compares it with the stored row;
+   otherwise someone could present a *different* key at claim time and get the wrong one
+   registered.
+3. **Both screens show a `userCode`.** An approval link is a link, and links can be sent to
+   people. The code is how an account holder tells their own request apart from one
+   someone else asked them to approve. That's the classic device-flow phishing attack,
+   and it's why the approval screen leads with the code comparison instead of a single
+   button.
 
-Beyond that: one live request per `siteId` (starting a second supersedes the first, so an
-admin who clicks twice has one thing to approve); ten-minute expiry; claimed exactly once,
-via a conditional `updateMany` so two simultaneous polls cannot both reach the token mint.
+On top of that: one live request per `siteId` (starting a second replaces the first, so an
+admin who clicks twice only has one thing to approve), a ten-minute expiry, and each
+request can be claimed exactly once, through a conditional `updateMany`, so two polls
+arriving at the same time can't both get a token.
 
-`pending`, `denied` and `expired` are **answers with a 200**, not errors. This is called on
-a timer while a person is still reading a screen, and turning "not yet" into a 4xx makes the
-normal case look like a failure in every log it touches.
+`pending`, `denied` and `expired` are **answers with a 200**, not errors. This gets called
+on a timer while someone is still reading a screen, and turning "not yet" into a 4xx would
+make the normal case look like a failure in every log.
 
 The instance keeps the poll secret **in memory only** (`linkSecrets` in
-`admin/marketplace.service.ts`) and the browser never sees it: the ACP is handed the id, the
-code and the URL, and polls through its own API. A restart mid-handshake costs one click.
+`admin/marketplace.service.ts`), and the browser never sees it. The ACP gets the id, the
+code and the URL, and polls through its own API. If the server restarts mid-handshake, it
+costs the admin one more click.
 
-### Rotation rides the heartbeat
+### Token rotation happens on the heartbeat
 
-The token comes back in the `/updates/check` response and **must be stored**. Rotation is
-deliberately attached to the one recurring call so there is no second path that could hand
-out a credential nobody persists. The marketplace keeps the previous token alive for a short
-overlap, so a crash between "response received" and "token written" costs one retry rather
-than a disconnected install.
+The new token comes back in the `/updates/check` response and **must be stored**. We tied
+rotation to the one call that happens regularly, so there's no second path that could hand
+out a credential nobody saves. The marketplace keeps the previous token valid for a short
+overlap, so a crash between receiving the response and writing the token costs one retry,
+not a disconnected install.
 
-⚠ **Do not let two heartbeats run at once.** Two rotations mean two tokens minted and only
-the last one written; the other is stranded. The instance guards this with a single-flight
-Redis lock, because the worker fires one heartbeat on boot and the scheduler fires its
-missed run in the same millisecond.
+**Don't let two heartbeats run at the same time.** Two rotations mean two new tokens, and
+only the last one gets saved; the other is lost. The instance prevents this with a
+single-flight Redis lock, because the worker sends a heartbeat when it starts and the
+scheduler runs its missed job in the same millisecond.
 
-### Downloads are a two-step for a reason
+### Why downloads take two steps
 
-`/downloads/authorize` is where ownership is decided; `/downloads/:token` is where bytes
-change hands. They are separate because the fetching client is a plain streamer with no
-signing key — so **the URL is the credential**, and it behaves like one: unguessable,
-single-use, short-lived. A durable artifact URL that leaks once is a paid plugin published
-for good.
+`/downloads/authorize` decides ownership; `/downloads/:token` hands over the bytes. They're
+separate because the client that fetches the file is a plain streamer without a signing
+key, so **the URL is the credential**, and it behaves like one: unguessable, single-use and
+short-lived. A permanent download URL that leaks once is a paid plugin given away for good.
 
-The grant burns when the stream **starts**, not when it finishes: a resumable URL is a
-shareable URL. An interrupted download costs one more `/downloads/authorize`, which the
-install can already make. Always verify the fetched bytes against the `sha256` from the
-*authorize* response — never against a digest that travels with the bytes it describes.
+The grant is used up when the download **starts**, not when it finishes, because a URL you
+can resume is a URL you can share. An interrupted download costs one more
+`/downloads/authorize`, which the install can do anyway. Always check the downloaded bytes
+against the `sha256` from the *authorize* response, never against a checksum that comes
+with the bytes it describes.
 
 ### Refusals
 
-Ownership failures return **404**, identical for "no such release" and "you do not own it";
-separating them turns the endpoint into a way to enumerate unpublished releases.
+Ownership failures return **404**, the same for "no such release" and "you don't own it".
+If they were different, you could use the endpoint to discover unpublished releases.
 
-The **updates window** is the deliberate exception. A release published after
-`updatesUntil` is refused with a **403 naming the date and version**, because the customer
-*does* own the product and "renew to get 3.2" is something they can act on. Both halves
-speak XEC codes, so the instance prefers the code the marketplace named over one guessed
-from the status — but only codes it recognises, so a newer marketplace cannot inject an
-unknown one.
+The **updates window** is the exception, on purpose. A release published after
+`updatesUntil` is refused with a **403 that names the date and the version**, because the
+customer *does* own the product, and "renew to get 3.2" is something they can act on. Both
+sides use XEC codes, so the instance prefers the code the marketplace sent over one guessed
+from the status, but only codes it knows, so a newer marketplace can't inject one the
+instance doesn't understand.
 
 ---
 
 ## The entitlement JWT
 
-RS256. The verifying key ships in `@xentium/sdk`; `LICENSE_PUBLIC_KEY` overrides it, which is
-how a local dev instance verifies against a local marketplace's dev keypair.
+RS256. The key that verifies it ships in `@xentium/sdk`; `LICENSE_PUBLIC_KEY` overrides it,
+which is how a local dev instance verifies against a local marketplace's dev keypair.
 
 ```ts
 interface EntitlementClaims {
-  siteId:       string;             // the binding — NOT the hostname
-  licenseRef:   string;             // display reference, never the key
-  domain?:      string;             // reported at issue; display and audit only
+  siteId:       string;             // what the licence is bound to, NOT the hostname
+  licenseRef:   string;             // a reference to display, never the key
+  domain?:      string;             // reported when issued; for display and audit only
   environment:  "production" | "staging" | "development";
   entitlements: EntitlementGrant[];
   issuedAt:     number;             // unix seconds
-  expiresAt:    number;             // +30d
-  refreshAfter: number;             // +7d
+  expiresAt:    number;             // +30 days
+  refreshAfter: number;             // +7 days
 }
 
 interface EntitlementGrant {
   id:            string;   // namespaced: `plugin.<id>` or `theme.<id>`
-  updatesUntil?: number;   // unix seconds; absent = perpetual
-  maxVersion?:   string;   // e.g. "3.x"; absent = no ceiling
+  updatesUntil?: number;   // unix seconds; missing = forever
+  maxVersion?:   string;   // e.g. "3.x"; missing = no limit
 }
 ```
 
-⚠ **A grant is an OBJECT, not a bare id string**, and that is load-bearing: `updatesUntil`
-is what makes a lapsed-updates licence distinguishable from a dead one — the install keeps
-running what it has but may not fetch something newer. A single global expiry cannot express
-that per product. Match grants by `e.id === "plugin.<id>"`, exact equality: anything looser
-turns a cheap plugin id into a licence for an expensive one.
+**A grant is an object, not a plain id string**, and that matters: `updatesUntil` is what
+tells a licence whose updates ran out apart from a dead one. The install keeps running what
+it has but can't fetch anything newer. One global expiry date couldn't express that per
+product. Match grants with `e.id === "plugin.<id>"`, exactly. Anything looser turns a cheap
+plugin's id into a licence for an expensive one.
 
 `packages/contracts/src/entitlement.ts` publishes `EntitlementGrant` for exactly this
-reason. `apps/api/src/core/license-engine/entitlement-claims.test.ts` builds a JWT the way
-the marketplace builds one and is the alarm if the pairing breaks again.
+reason, and `apps/api/src/core/license-engine/entitlement-claims.test.ts` builds a JWT the
+way the marketplace does. That test is the alarm if the two sides drift apart again.
 
-### Grace, and never bricking
+### Grace, and never breaking a site
 
-Verification failure or an unreachable marketplace resolves to `grace` for **30 days** past
-the last good refresh, not to a refusal (§11). Running plugins are never bricked by an
-outage. Worst-case revocation latency is `refreshAfter` + grace ≈ 37 days, which is the
-price of that guarantee.
+If verification fails or the marketplace can't be reached, the install goes into `grace`
+for **30 days** after the last successful refresh, instead of refusing. Plugins that are
+running never stop because of an outage. The price is that revoking a licence can take up
+to `refreshAfter` + grace, about 37 days.
 
-Only `production` consumes a seat, and only at **`/account/activate`** — the download gate
-does not re-check seats, because binding is what spends one. `staging` and `development`
-are uncapped, which is what keeps local work, CI and previews painless.
+Only `production` uses a seat, and only at **`/account/activate`**. The download check
+doesn't look at seats again, because binding is what uses one. `staging` and `development`
+have no limit, so local work, CI and previews stay painless.
 
-Account tokens live **30 days** and rotate on the heartbeat, so an install that never checks
-in for a month must reconnect.
+Account tokens live for **30 days** and rotate on the heartbeat, so an install that doesn't
+check in for a month has to reconnect.
 
 ---
 
 ## Local development
 
-Point the instance at a local marketplace and pair the keys, or **every entitlement fails to
-verify** with a bare `JWSSignatureVerificationFailed`:
+Point the instance at a local marketplace and pair the keys, or **every entitlement fails
+to verify** with a bare `JWSSignatureVerificationFailed`:
 
 ```bash
 # .env (instance)
@@ -257,25 +267,26 @@ LICENSE_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----\n…"
 openssl rsa -in marketplace-dev-private.pem -pubout
 ```
 
-### The enable gate is not part of the wire
+### The enable check isn't part of the protocol
 
-Worth knowing because it *uses* this protocol without extending it. When an admin enables a
-paid plugin, `assertPluginEnableAllowed` re-syncs the paid-id set from `/catalog`, and — if
-the stored entitlement does not cover the plugin — calls `/account/activate` once before
-refusing. A plugin bought a minute ago is genuinely owned but is not in the stored JWT yet,
-and the gate used to refuse it until the next daily heartbeat.
+It's worth knowing anyway, because it *uses* the protocol without adding to it. When an
+admin enables a paid plugin, `assertPluginEnableAllowed` refreshes the list of paid plugin
+ids from `/catalog`, and if the stored entitlement doesn't cover the plugin, it calls
+`/account/activate` once before refusing. A plugin bought a minute ago really is owned, but
+it isn't in the stored JWT yet, and the check used to refuse it until the next daily
+heartbeat.
 
-When it still has to refuse, it asks `/account/licenses` for the reason. That endpoint
-already carries `seats`, `seatsUsed` and `activeHere`, so no protocol change was needed to
-tell "you never bought it" apart from "you bought it and every seat is on another install" —
-two states that had been collapsing into one message telling the admin to activate a licence
+If it still has to refuse, it asks `/account/licenses` why. That response already has
+`seats`, `seatsUsed` and `activeHere`, so we could tell "you never bought it" apart from
+"you bought it, but every seat is on another install" without changing the protocol.
+Those two used to end up as the same message, which told the admin to activate a licence
 that was already active.
 
-⚠ `activate` **silently skips** a licence with no free seat (`continue`), which is why the
-instance has to ask a second question rather than read it off the activation response. If
-that ever changes, the instance's explanation is where it will show up.
+`activate` **silently skips** a licence with no free seat, which is why the instance has to
+ask a second question instead of reading the answer off the activation response. If that
+ever changes, the instance's explanation is where you'll notice.
 
-An install with no `xcf_installs` row cannot connect at all — `getSiteId()` throws
-(XEC-LICENSE-9010) rather than falling back to a shared identity, because a shared `siteId`
-collapses every affected install into one bucket on the marketplace and, under install
-binding, becomes a licence bypass.
+An install without an `xcf_installs` row can't connect at all. `getSiteId()` throws
+(XEC-LICENSE-9010) instead of falling back to a shared identity, because a shared `siteId`
+would lump every affected install together on the marketplace, and with licences bound to
+installs, that would be a way around licensing.

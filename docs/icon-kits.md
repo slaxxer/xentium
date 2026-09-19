@@ -1,70 +1,69 @@
-# Icons, and FontAwesome Pro
+# Icons and FontAwesome Pro
 
-Xentium bundles the **FontAwesome Free** solid set and always will. Core's own chrome
-draws with no network call and no third-party script: if a kit fails to load, is
-blocked, or was never configured, the application looks and behaves exactly as it
-does today.
+We bundle the **FontAwesome Free** solid set, and that won't change. Core draws its own
+UI without any network call or third-party script, so if a kit fails to load, gets
+blocked or was never set up, everything looks and works exactly as it does without one.
 
-A **kit** is additive. It is how an admin who has their own FontAwesome Pro
-subscription gets Pro icons on their own instance.
+A **kit** only adds to that. It's how an admin with their own FontAwesome Pro
+subscription gets Pro icons on their own site.
 
-## Why not just bundle Pro
+## Why we don't just bundle Pro
 
-A FontAwesome Pro licence covers the sites and apps **its owner operates**. Xentium is
-installed by strangers on their own servers, so every install is a different operator.
+A FontAwesome Pro licence covers the sites and apps **its owner runs**. Xentium gets
+installed by lots of different people on their own servers, so every install has a
+different owner.
 
-`apps/web` builds to a `dist` that each instance deploys. Bundling Pro icons at build
-time would put the Pro SVG path data — the licensed artwork itself — into the
-JavaScript of every install. No amount of key-hiding changes that; the key stays
-secret while the thing it protects is copied to everyone. Proxying the assets through
-a central server is the same redistribution, plus somebody else's bandwidth bill.
+`apps/web` builds into a `dist` that every instance deploys. If we bundled Pro icons at
+build time, the Pro SVG path data (the licensed artwork itself) would end up in the
+JavaScript of every install. Hiding the key doesn't help: the key stays secret while the
+thing it protects gets copied everywhere. Proxying the icons through a central server is
+the same redistribution, plus someone else's bandwidth bill.
 
-The Pro **npm packages** are unusable here for a second reason: they need an auth
-token at *build* time, and admins install a prebuilt artifact.
+The Pro **npm packages** don't work here for a second reason: they need an auth token at
+*build* time, and admins install something that's already built.
 
-A kit is the mechanism that works, because it is fetched **at runtime** with the
-admin's own kit id, and FontAwesome domain-locks it to their site.
+A kit works because it's loaded **at runtime** with the admin's own kit id, and
+FontAwesome locks it to their domain.
 
-> If Xentium ever wants to ship Pro to everybody, that is a redistribution/OEM
-> conversation with FontAwesome's sales team, not an engineering problem. Until then,
-> per-instance kits are the only correct model.
+> If we ever want to ship Pro to everyone, that's a licensing conversation with
+> FontAwesome's sales team, not an engineering problem. Until then, a kit per instance
+> is the only correct way.
 
-## Configuring one
+## Setting one up
 
 **ACP → Appearance → Style Editor → Branding → FontAwesome Pro kit.**
 
-Paste either the kit id (`a1b2c3d4e5`) or the full
-`https://kit.fontawesome.com/a1b2c3d4e5.js` URL. Clearing the field removes it.
-Pro icons appear after a reload.
+Paste the kit id (`a1b2c3d4e5`) or the whole `https://kit.fontawesome.com/a1b2c3d4e5.js`
+URL. Clear the field to remove it. Pro icons show up after a reload.
 
-Setting key: `appearance.icons.kit`. It stores the normalised **URL**, never the raw
-input.
+It's stored in the setting `appearance.icons.kit`, as a normalized **URL**, never the
+raw input.
 
-## The security boundary
+## This is security code
 
-⚠ **This is the one setting whose value is executed as JavaScript by every visitor.**
-Treat `apps/api/src/modules/appearance/iconKit.ts` as security code.
+**It's the one setting whose value every visitor's browser runs as JavaScript**, so treat
+`apps/api/src/modules/appearance/iconKit.ts` as security code.
 
-- The host is an **allowlist** (`kit.fontawesome.com`), so this is a FontAwesome
-  integration rather than a general script loader.
-- The protocol is checked **before** the host: `javascript:` and `data:` URLs parse
-  fine and have no hostname, so a host check alone would never be reached.
-- Credentials and explicit ports are refused outright.
-- The URL is **rebuilt, not echoed** — any query string or fragment is dropped.
-- It has its **own endpoint** (`PUT /appearance/branding/icon-kit`), deliberately not
-  the generic `PUT /admin/settings/:key`, which takes any key and any string.
-- It is validated **on read as well as on write**. A settings row can arrive from a
-  restored backup or a hand-edited database; the write path is not the only way one
-  appears.
+- The host is on an **allowlist** (`kit.fontawesome.com`). This is a FontAwesome
+  integration, not a general way to load scripts.
+- We check the protocol **before** the host. `javascript:` and `data:` URLs parse fine
+  and have no hostname, so a host check alone would never catch them.
+- Credentials and explicit ports are refused.
+- We **rebuild** the URL instead of echoing what came in, so any query string or fragment
+  is dropped.
+- It has **its own endpoint** (`PUT /appearance/branding/icon-kit`) on purpose, not the
+  generic `PUT /admin/settings/:key`, which accepts any key and any string.
+- We validate it **when we read it, too**, not just when it's written. A settings row can
+  come from a restored backup or a hand-edited database.
 
-`iconKit.test.ts` is mostly refusals. That is the point — add a case there before
-relaxing anything above.
+`iconKit.test.ts` is mostly refusals, and that's intended. Add a test case there before
+you loosen anything above.
 
 ## Drawing an icon
 
 **Import `FontAwesomeIcon` from `components/Icon`, never from
-`@fortawesome/react-fontawesome`.** It is a drop-in: same name, same props, same
-`icon={faStar}` call, and it is what applies the site's icon style.
+`@fortawesome/react-fontawesome`.** It's a drop-in replacement (same name, same props,
+same `icon={faStar}`), and it's what applies the site's icon style.
 
 ```tsx
 import { FontAwesomeIcon } from "../components/Icon";
@@ -73,46 +72,46 @@ import { faStar } from "@fortawesome/free-solid-svg-icons";
 <FontAwesomeIcon icon={faStar} />
 ```
 
-⚠ **Keep importing the FREE definitions.** Those imports are what still draws when
-there is no kit — the default install, every install that never buys Pro, and any
-install whose kit is slow, blocked or broken. Only the icon's **name** is read out of
-the definition and handed to the kit as a class; no Pro artwork is ever bundled.
+**Keep importing the free definitions.** They're what draws when there's no kit: on a
+default install, on every install that never buys Pro, and on any install whose kit is
+slow, blocked or broken. We only read the icon's **name** from the definition and pass
+it to the kit as a class. No Pro artwork is ever bundled.
 
-The wrapper falls back to the bundled icon whenever it cannot confidently act:
+The wrapper falls back to the bundled icon whenever it can't be sure:
 
-- no kit configured, or the kit has not finished loading;
+- no kit is set up, or it hasn't finished loading;
 - the style is `solid` (the bundled free set);
-- the `icon` prop is an array, a string, or anything without a usable `iconName`.
+- the `icon` prop is an array, a string, or anything else without a usable `iconName`.
 
-**Plugins need no change.** They externalise `@fortawesome/react-fontawesome` to
-`__XENTIUM_HOST__.FaReact`, and `host-globals.ts` swaps `FontAwesomeIcon` in that
-namespace for this wrapper. One line, and every plugin follows the site style.
+**Plugins don't need to change anything.** They externalize
+`@fortawesome/react-fontawesome` to `__XENTIUM_HOST__.FaReact`, and `host-globals.ts`
+swaps `FontAwesomeIcon` in that namespace for our wrapper. One line, and every plugin
+follows the site's style.
 
-`AppIcon` is the other entry point, for when the icon name is **data** — an admin's
-choice, such as a badge glyph:
+`AppIcon` is the other way in, for when the icon name is **data**, i.e. an admin's
+choice, like a badge glyph:
 
 ```tsx
-<AppIcon name="faStar" />               // bundled free icon
-<AppIcon name="fa-duotone fa-dragon" /> // a Pro icon core does not ship
+<AppIcon name="faStar" />               // a bundled free icon
+<AppIcon name="fa-duotone fa-dragon" /> // a Pro icon core doesn't ship
 ```
 
-⚠ Both components write their `<i>` as raw HTML so **React never owns that node**. A
-kit in SVG mode replaces every `fa-` element with an `<svg>` of its own; had React
-rendered the `<i>`, unmounting would throw `NotFoundError` on a child FontAwesome had
-already swapped out. This works in both SVG and web-font kit modes.
+Both components write their `<i>` as raw HTML, so **React never owns that node**. A kit in
+SVG mode replaces every `fa-` element with its own `<svg>`. If React had rendered the
+`<i>`, unmounting would throw `NotFoundError` on a child FontAwesome had already swapped
+out. This way it works in both SVG and web-font kit modes.
 
-⚠ Class strings are built from a validated icon name and a fixed style list, never
-from free text. `AppIcon` additionally closes the charset (`[a-z0-9- ]`) because its
-names are admin-supplied.
+We build class strings from a validated icon name and a fixed list of styles, never from
+free text. `AppIcon` also restricts the characters (`[a-z0-9- ]`), because its names come
+from admins.
 
 ## Styles
 
-The table lives in `packages/contracts/src/icons.ts` — one list, used by the API to
-validate the setting and by the browser to build classes. Tested from
+The list lives in `packages/contracts/src/icons.ts`. The API uses it to validate the
+setting and the browser uses it to build classes. The tests are in
 `apps/web/src/lib/iconStyles.test.ts` (contracts has no test runner of its own).
 
-A style is a **family** plus a **weight**. Classic has no family prefix; everything
-else names one:
+A style is a **family** plus a **weight**. Classic has no family prefix; the others do:
 
 | Family | Weights | Coverage |
 | --- | --- | --- |
@@ -122,131 +121,131 @@ else names one:
 | Sharp Duotone | Solid, Regular, Light, Thin | full |
 | Pro+ | one weight each (Chisel, Etch, Graphite, Jelly, Mosaic, Notdog, Pixel, Slab, Thumbprint, Utility, Vellum, Whiteboard and their duo/fill variants) | **partial** |
 
-`solid` is the bundled free set, the default, and the only value that works with no
-kit. It resolves to **no classes at all** rather than `fa-solid`.
+`solid` is the bundled free set, the default, and the only style that works without a
+kit. It turns into **no classes at all**, not `fa-solid`.
 
-⚠ **Brands is deliberately absent.** It appears in every kit's style list, so it is an
-easy thing to add by mistake — but it is a separate icon SET, not a weight. A
-site-wide `fa-brands fa-star` does not exist, and every icon in the product would
-vanish at once. `icons.test.ts` pins its absence.
+**Brands is left out on purpose.** It shows up in every kit's style list, so it's easy to
+add by accident, but it's a separate icon *set*, not a weight. There's no site-wide
+`fa-brands fa-star`, and every icon in the product would disappear at once.
+`icons.test.ts` makes sure it stays out.
 
-⚠ **Pro+ families have partial coverage.** They are stylised sets, not a weight of the
-whole library. A name they have no glyph for renders as a **missing-glyph box**, not
-as nothing — visible to visitors, with no error anywhere. Observed live: with the
-site style set to Utility, most of the UI drew correctly but the logo mark, a chart
-icon and a caret did not. `IconStyleDef.full` records this and the ACP warns.
+**Pro+ families only cover part of the library.** They're stylized sets, not a weight of
+the whole library. A name they don't have a glyph for shows as a **missing-glyph box**,
+not as nothing, so visitors see it and nothing logs an error. We saw this live: with the
+site set to Utility, most of the UI looked right, but the logo mark, a chart icon and a
+caret didn't. `IconStyleDef.full` records this, and the ACP warns about it.
 
-⚠ Prefer a full-coverage family site-wide, and use Pro+ as a per-icon **pin**, where
-the picker's preview shows whether it actually draws.
+So for the whole site, prefer a family with full coverage, and use Pro+ to **pin**
+individual icons, where the picker's preview shows whether it actually draws.
 
-⚠ Both sides normalise an unknown style to `solid`. A stale row from an older version
-or a hand-edited database would otherwise emit a class nothing defines and leave the
-site with no visible icons. Renaming an existing id is therefore a **silent revert to
-Solid** for anyone who had it set — migrate the stored value if you ever do it.
+Both the API and the browser turn an unknown style into `solid`. Otherwise a stale value
+from an older version or a hand-edited database would produce a class nothing defines,
+and the site would have no visible icons. That also means renaming an existing style id
+**silently reverts** everyone who had it set to Solid, so migrate the stored value if you
+ever do that.
 
-Setting key: `appearance.icons.style`. The ACP select is disabled until a kit is saved.
+It's stored in `appearance.icons.style`. The ACP select is disabled until a kit is saved.
 
-## Icons that are DATA
+## Icons as data
 
-A badge's glyph and a block's icon prop are chosen by an admin, so they are stored,
-not written in code. The stored value is an **icon token**:
+A badge's glyph and a block's icon prop are chosen by an admin, so they're stored, not
+written in code. What we store is an **icon token**:
 
 | Stored | Means |
 | --- | --- |
 | `star` | follow the site's icon style |
-| `jelly-regular:star` | pinned to Jelly, whatever the site is set to |
-| `faStar` | legacy, read as `star` |
+| `jelly-regular:star` | always Jelly, whatever the site is set to |
+| `faStar` | the old format, read as `star` |
 
-⚠ **Unpinned is the default and should stay the common case.** It is what lets one
-select restyle the whole product; every pin is an exception carved out of that. The
-picker never writes a pin unless the admin chooses a style.
+**Unpinned is the default and should stay the normal case.** It's what lets one setting
+restyle the whole product, and every pin is an exception to that. The picker never
+stores a pin unless the admin picks a style.
 
-Render one with `TokenIcon`, which resolves in this order:
+Render a token with `TokenIcon`, which tries these in order:
 
 1. the token's pinned style, once the kit has loaded;
 2. the site's style, once the kit has loaded;
-3. the **bundled** free icon of that name;
+3. the **bundled** free icon with that name;
 4. nothing.
 
-⚠ Step 3 is the promise: a site that loses its kit still looks finished. It only
-works for names core actually ships — see `lib/iconCatalogue.ts`, which indexes the
-definitions the bundle *already* carries (the badge glyphs and the editor's block
-glyphs, ~80) rather than importing the free pack for a picker.
+Step 3 is what we promise: a site that loses its kit still looks finished. It only works
+for names core actually ships. `lib/iconCatalogue.ts` indexes the definitions the bundle
+*already* includes (the badge glyphs and the editor's block glyphs, about 80) instead of
+importing the whole free pack just for a picker.
 
 ### Adding an icon prop to a block
 
-Declare the hint; nothing needs registering:
+Declare the hint; there's nothing to register:
 
 ```ts
 icon: z.string().optional().meta({ title: 'Icon', format: 'icon' }),
 ```
 
-`SchemaFields` renders the picker for `format: "icon"`, so any block — core or
-plugin — gets the control for free. `heading` is the reference implementation.
+The settings form shows the picker for `format: "icon"`, so any block, core or plugin,
+gets the control for free. `heading` is the reference.
 
-### The picker's two tiers
+### The picker's two parts
 
-The **grid** is what core ships: those draw on every install, forever. The **name
-field** reaches anything else the kit carries.
+The **grid** shows what core ships; those icons draw on every install. The **name
+field** reaches anything else the kit has.
 
-⚠ The grid deliberately renders through the RAW FontAwesome component, NOT the site
-style — it is the one place in the app exempt from the lint guard. Drawing ~80
-bundled names through a partial Pro+ family fills the grid with missing-glyph boxes
-and makes choosing a *shape* impossible. The preview above it is where real styling
-is shown, and it is the only ground truth for whether a kit can draw something.
+The grid renders with the *raw* FontAwesome component, not the site's style. It's the
+one place in the app that's exempt from our lint rule. Drawing ~80 bundled names in a
+partial Pro+ family would fill the grid with missing-glyph boxes and make it impossible
+to pick a *shape*. The preview above the grid shows the real styling, and it's the only
+reliable way to tell whether a kit can draw something.
 
-## Changing ONE icon
+## Changing a single icon
 
-The admin panel is **excluded from all of this**: it draws with the bundled free set
-whatever the site is set to, the same separation that pins its font and its token
-layer. `lib/iconScope` carries that; a preview inside the ACP opts back in with
-`<IconScope value="site">`, or it would lie about what visitors see.
+The admin panel **stays out of all this**. It draws with the bundled free set whatever
+the site is set to, just like it keeps its own font and its own colours.
+`lib/iconScope` handles that, and a preview inside the ACP opts back in with
+`<IconScope value="site">`, or it would show something visitors don't see.
 
-On the site, any icon can be replaced individually. In the layout editor, turn on
-**Icons** in the preview toolbar: every icon outlines, clicking one selects its block
-and opens a picker in the rail, and the choice autosaves into the layout draft. It
-reaches visitors when the draft is published.
+On the site, any icon can be replaced on its own. In the Layout Editor, switch on
+**Icons** in the preview toolbar: every icon gets an outline, clicking one selects its
+block and opens a picker in the side panel, and your choice autosaves into the layout
+draft. Visitors see it once the draft is published.
 
-### How one icon is addressed
+### How we address one icon
 
-`BlockNode.iconOverrides`, keyed `"<icon-name>#<n>"` — the nth icon of that name in
-that block. The override lives on the block, so it travels when the block is moved or
-duplicated and publishes with the rest of the document.
+With `BlockNode.iconOverrides`, keyed `"<icon-name>#<n>"`: the nth icon with that name in
+that block. The override lives on the block, so it moves with the block when it's moved
+or duplicated, and it's published with the rest of the document.
 
-⚠ Numbering is **per name**. Adding an unrelated icon to a block cannot renumber the
+Numbering is **per name**. Adding an unrelated icon to a block can't renumber the
 `chevron-down`s below it.
 
-⚠ A slot is claimed **once per component instance**, in a ref — never counted freshly
-during render. The first implementation did count during render, and React's
-double-invoked render made the first icon `#0` in production and `#1` in development:
-the key the editor stored was not the key the live site computed. `iconSlots.test.tsx`
-renders under `StrictMode` specifically to hold that shut.
+Each component instance claims its slot **once**, in a ref, and never counts it again
+during render. Our first version counted during render, and because React renders twice
+in development, the first icon was `#0` in production and `#1` in development: the key the
+editor stored wasn't the key the live site computed. `iconSlots.test.tsx` renders under
+`StrictMode` specifically to keep that fixed.
 
-⚠ The key stays anchored to the name the **code** asked for, never to the replacement.
-Renaming the slot on override would lose its own anchor and it could never be edited
-or cleared again.
+The key stays tied to the name the **code** asked for, never to the replacement. If the
+slot were renamed on override, it would lose its own anchor and could never be edited or
+cleared again.
 
-⚠ The key is **positional**, which is the trade per-occurrence makes. If a block is
-later rewritten to draw a different number of icons *of the same name*, an existing
-override can land on a neighbour.
+The key is **positional**; that's the price of addressing individual occurrences. If a
+block is later changed to draw a different number of icons *with the same name*, an
+existing override can land on the icon next to it.
 
-### When a replacement cannot be drawn
+### When a replacement can't be drawn
 
-It falls back to the icon the code asked for. A hole where a control used to be is
-worse than a wrong-but-present icon.
+We fall back to the icon the code asked for. A wrong icon is better than a hole where a
+control used to be.
 
-⚠ That fallback only covers what is **detectable**: no kit, or a style that resolves
-to no classes. A kit that simply lacks the glyph renders a missing-glyph box, and a
-web-font kit gives no signal we could hook. The picker's preview is the mitigation —
-it draws the real thing, so the box is visible before saving.
+That fallback only covers what we can **detect**: no kit, or a style that turns into no
+classes. A kit that just doesn't have the glyph draws a missing-glyph box, and a
+web-font kit doesn't give us any signal to hook into. The picker's preview is the
+safeguard: it draws the real thing, so you see the box before you save.
 
-## Known behaviour
+## Things you'll notice
 
-- **First visit shows free icons briefly.** The app is a static SPA — there is no
-  server render to put the script tag in the HTML — so the kit can only be requested
-  after boot. The URL is cached in `localStorage`, so subsequent loads inject it
-  immediately.
-- **Changing a kit or style takes effect on the next load.** A script that has been
-  executed cannot be unloaded.
-- **Kit mode does not matter.** Web-font kits leave the `<i>` in place; SVG kits
-  replace it. Both work, because React never owns that node.
+- **The first visit briefly shows free icons.** The app is a static SPA with no server
+  rendering to put the script tag in the HTML, so the kit can only be requested after the
+  app starts. We cache the URL in `localStorage`, so later visits load it immediately.
+- **A new kit or style takes effect on the next page load.** A script that has already
+  run can't be unloaded.
+- **Kit mode doesn't matter.** Web-font kits leave the `<i>` in place and SVG kits replace
+  it. Both work, because React never owns that node.

@@ -1,58 +1,59 @@
-# The style system — a developer guide
+# The style system
 
-How a Xentium site gets its look: tokens, layers, themes, the served stylesheet, and the
-rules that keep them honest. Written for people changing core or building plugins and
-themes.
+How a Xentium site gets its look: tokens, layers, themes, the stylesheet we serve, and
+the rules that keep it all consistent. It's for you if you work on core or build plugins
+or themes.
 
-| Also read | For |
+| See also | For |
 |---|---|
-| [`theme-packages.md`](theme-packages.md) | the `.xttheme` file format, byte by byte |
+| [`theme-packages.md`](theme-packages.md) | the `.xttheme` file format in detail |
 | [`plugin-blocks.md`](plugin-blocks.md) | registering blocks a layout can place |
 
 ---
 
-## 1. One look, one palette
+## One look, one palette
 
-**A site has ONE look, and it is the active theme's.** There is no light/dark toggle, no
-`prefers-color-scheme` and no `[data-theme]` selector anywhere in what the site serves. A
-theme author builds a dark theme *or* a light one and declares which
-(`manifest.appearance`). A reader who wants a different look picks a different **theme**
-(§6), not a mode.
+**A site has one look, and it's the active theme's.** There's no light/dark toggle, no
+`prefers-color-scheme` and no `[data-theme]` selector anywhere in what the site serves.
+When you build a theme, you build a dark one *or* a light one and say which in the
+manifest (`manifest.appearance`). A reader who wants a different look picks a different
+**theme** (see [Readers choosing a theme](#readers-choosing-a-theme)), not a mode.
 
-Why: a visitor's OS used to override the theme author. A theme designed dark would be
-served as its light half, which the author may never have tuned, and a theme that
-shipped no dark tokens fell back to stock Xentium entirely. The listing showed one
-thing and the site rendered another.
+Why: a visitor's OS used to override the theme's author. A theme designed as dark would
+be served in its light variant, which the author may never have tuned, and a theme that
+shipped no dark tokens fell back to stock Xentium completely. The marketplace listing
+showed one thing and the site rendered another.
 
-**The ACP and ModCP are the exception.** They are tools, not part of anyone's design:
-they re-declare the whole palette on `body.xt-acp` and keep their own light/dark switch.
-`useTheme` (`apps/web/src/hooks/useTheme.ts`) still writes `data-theme` on the root, and
-only the admin panels read it.
+**The ACP and ModCP are the exception.** They're tools, not part of anyone's design. They
+declare the whole palette again on `body.xt-acp` and keep their own light/dark switch.
+`useTheme` (`apps/web/src/hooks/useTheme.ts`) still sets `data-theme` on the root element,
+and only the admin panels read it.
 
 ---
 
-## 2. Tokens
+## Tokens
 
-Components never use a raw colour. Everything reads a custom property, in three tiers
-(`apps/web/src/styles/_tokenDefaults.scss`, emitted by `tokens.scss`):
+Components never use a raw colour. Everything reads a CSS custom property, in three tiers
+(defined in `apps/web/src/styles/_tokenDefaults.scss`, emitted by `tokens.scss`):
 
-| Tier | Example | Who edits it |
+| Tier | Example | Who changes it |
 |---|---|---|
-| 1 · primitives | `--primitive-blurple-600` | nobody — never referenced by components |
-| 2 · semantic | `--c-bg`, `--c-accent`, `--c-fg-muted` | Style Editor, themes |
-| 3 · component | `--card-bg`, `--nav-bg`, `--btn-radius` | themes; default to a tier-2 token |
+| 1 · primitives | `--primitive-blurple-600` | nobody; components never reference them |
+| 2 · semantic | `--c-bg`, `--c-accent`, `--c-fg-muted` | the Style Editor, themes |
+| 3 · component | `--card-bg`, `--nav-bg`, `--btn-radius` | themes; each defaults to a tier-2 token |
 
-Tier-3 tokens default to tier-2 ones (`--card-bg: var(--c-card)`), so recolouring the
-palette moves every component with it. Overriding a component token breaks that link
-for that one component, on purpose.
+Tier-3 tokens default to tier-2 ones (`--card-bg: var(--c-card)`), so when you recolour
+the palette, every component follows. If you override a component token, you break that
+link for that one component, which is usually what you want.
 
-`HEARTH_DEFAULT_TOKENS` (`@xentium/contracts`) mirrors the **editable** subset of
-`tokens.scss` so the API and the Style Editor agree on defaults. `tokens.scss` is still
-the rendering source of truth; when an editable default changes there, change it here.
+`HEARTH_DEFAULT_TOKENS` in `@xentium/contracts` mirrors the **editable** tokens from
+`tokens.scss`, so the API and the Style Editor agree on the defaults. `tokens.scss` is
+still what actually renders, so when you change an editable default there, change it in
+`HEARTH_DEFAULT_TOKENS` too.
 
 ### Scopes
 
-Tokens are stored **scope-keyed** (ADR-0003):
+We store tokens **by scope**:
 
 ```jsonc
 {
@@ -62,231 +63,239 @@ Tokens are stored **scope-keyed** (ADR-0003):
 }
 ```
 
-`SCOPE_SELECTOR` in `packages/contracts/src/tokens.ts` maps each scope to its selector.
-A token set in a region scope cascades only inside that region.
+`SCOPE_SELECTOR` in `packages/contracts/src/tokens.ts` maps each scope to its selector. A
+token set in a region's scope only applies inside that region.
 
 ### Validation
 
-Every token value is written **verbatim** into a served stylesheet, so it is validated
-at the door by `tokenMapSchema`: names must be `--custom-properties`, and values may not
-contain `{ } < > ;`, since a stray brace would close the block. The same schema guards the
-Style Editor, the Layout Editor's variant panel, a `.xttheme` import and the
-marketplace's preview renderer. Never write a second copy of it.
+We write every token value **as is** into the stylesheet we serve, so we validate it on
+the way in with `tokenMapSchema`: names have to be `--custom-properties`, and values can't
+contain `{ } < > ;`, because a stray brace would close the block. The same schema guards
+the Style Editor, the Layout Editor's variant panel, `.xttheme` imports and the
+marketplace's preview renderer. Don't write a second copy of it.
 
 ### Style variants
 
-A block may carry `variant: surface | muted | accent | plain`. A variant is a named
-**token bucket** rather than per-block colours. Its defaults live in `tokens.scss` in
-palette terms, and a theme overrides them through the `variant.<name>` scope. `section`
-is the block that paints (`--surface-*`); every variant aliases `--card-bg` & co. to the
-same set, so one token moves both a section and a card. See `theme-packages.md` →
-*Style variants*.
+A block can have `variant: surface | muted | accent | plain`. A variant is a named
+**group of tokens**, not colours on one block. Its defaults live in `tokens.scss`, written
+in palette tokens, and a theme overrides them in the `variant.<name>` scope. `section` is
+the block that actually paints (`--surface-*`). Every variant also points `--card-bg` and
+friends at the same values, so one token changes both a section and a card. See
+[`theme-packages.md` → Style variants](theme-packages.md#style-variants).
 
 ---
 
-## 3. Layers — theme ⊕ admin
+## Layers: theme and admin
 
-The served palette is two layers, merged **per token**:
+What we serve is two layers, merged **token by token**:
 
 ```
 theme layer   appearance.tokens.theme     what the installed theme shipped
 admin layer   appearance.tokens           what the admin changed in the Style Editor
 ────────────
-served        getEffectiveTokens() = theme ⊕ admin   (admin wins, token by token)
+served        getEffectiveTokens() = theme + admin   (the admin wins, token by token)
 ```
 
-This is what makes a theme update non-destructive: if the admin recoloured one accent
-and the theme's next version changes twenty tokens, they get the other nineteen and keep
-theirs.
+That's what makes a theme update safe. If the admin recoloured one accent and the
+theme's next version changes twenty tokens, they get the other nineteen and keep their
+accent.
 
-- `GET /api/appearance/tokens` returns `{ tokens, theme, installedTheme }` with the
-  layers **separate**. Merging them there would make the editor write theme values back
-  as admin overrides and destroy the inheritance.
-- **Reset** on a token falls back to the theme's value, not stock Xentium. *Reset
+- `GET /api/appearance/tokens` returns `{ tokens, theme, installedTheme }` with the two
+  layers **kept apart**. If we merged them there, the editor would write the theme's
+  values back as admin overrides, and the inheritance would be gone.
+- **Reset** on a token goes back to the theme's value, not stock Xentium. *Reset
   appearance* clears the admin layer and keeps the theme.
-- The same two-layer model applies to **custom CSS**: the theme's stylesheet
-  (`appearance.custom_css.theme`) is emitted before the admin's console CSS, so the admin
-  wins on equal specificity.
-- **Layouts** inherit per *template*, not per block. A template the admin moved away
-  from its theme baseline is kept on update. See `theme-packages.md` → *Inheritance*.
+- **Custom CSS** works the same way: we emit the theme's stylesheet
+  (`appearance.custom_css.theme`) before the admin's own CSS, so the admin wins when
+  specificity is equal.
+- **Layouts** inherit per *template*, not per block. A template the admin changed away
+  from the theme's version is kept on update. See
+  [`theme-packages.md` → Inheritance](theme-packages.md#inheritance-updating-a-theme-without-losing-your-work).
 
-### Draft → publish (Style Editor edits only)
+### Draft and publish (Style Editor edits only)
 
-The admin layer has a draft: Style Editor edits stage in `appearance.tokens.draft` and go
-live on **Publish** (now or scheduled via the `appearance-publish` job). The editor
-previews `theme.draft ⊕ admin.draft` through `GET /api/appearance/css?source=draft`.
+The admin layer has a draft. Style Editor edits go into `appearance.tokens.draft` and go
+live when you **publish** (now, or on a schedule through the `appearance-publish` job).
+The editor previews `theme draft + admin draft` through
+`GET /api/appearance/css?source=draft`.
 
-⚠ **Themes do not use draft→publish.** Putting a theme on is one decision, not a batch of
-edits; see §5.
+**Themes don't use draft and publish.** Putting on a theme is one decision, not a batch
+of edits; see [Switching is live](#switching-is-live).
 
-### Storage keys
+### Where it's stored
 
-| Key | Holds |
+| Key | What's in it |
 |---|---|
-| `appearance.tokens` / `.draft` | admin layer, live / staged |
+| `appearance.tokens` / `.draft` | admin layer, live / draft |
 | `appearance.tokens.theme` / `.theme.draft` | theme layer (the draft mirrors live) |
-| `appearance.custom_css_light` | admin console CSS — ⚠ the name is historical (see below) |
-| `appearance.custom_css.theme` / `.theme.draft` | theme stylesheet |
-| `appearance.custom_css_compiled` | both stylesheets, scoped, cached for the hot path |
-| `appearance.theme.installed` | the worn theme's manifest |
-| `appearance.theme.rollback` | the one-level undo point (§5) |
+| `appearance.custom_css_light` | the admin's own CSS (the name is historical, see below) |
+| `appearance.custom_css.theme` / `.theme.draft` | the theme's stylesheet |
+| `appearance.custom_css_compiled` | both stylesheets, scoped and cached for serving |
+| `appearance.theme.installed` | the manifest of the theme the site is wearing |
+| `appearance.theme.rollback` | the one-step undo point (see [Undo](#undo)) |
 
-**Pre-collapse keys** (`…​.light`, `…​.dark`) are **read as a fallback and deleted on the
-next write**, through one helper, `appearanceService.readStaged(key, legacyKey)`. Reading
-them is what let existing sites keep their look with no data migration. Deleting them
-stops a stale light half from winning again for every token the new set leaves absent.
-`light`/`dark` are never scope names, so their presence at the top level of a stored
-value is the unambiguous marker of the old shape.
+Before we went to one look, many of these keys came in `.light` / `.dark` pairs. We still
+**read the old keys as a fallback and delete them on the next write**, all through one
+helper, `appearanceService.readStaged(key, legacyKey)`. Reading them is how existing
+sites kept their look without a data migration. Deleting them stops a stale light value
+from winning again for every token the new set doesn't have. `light` and `dark` are never
+scope names, so if you see them at the top level of a stored value, you know it's the old
+format.
 
 `appearance.custom_css_light` keeps its misleading name because `appearance.custom_css`
-is already taken by an older generation of the setting. Renaming it would need a third
-fallback for nothing a user can see.
+is already taken by an even older version of the setting. Renaming it would mean a third
+fallback, for nothing a user could notice.
 
 ---
 
-## 4. The served stylesheet
+## The stylesheet we serve
 
-`GET /api/appearance/css` is public, sits on the hot path, and is built by
-`appearanceService.buildCSS()`:
+`GET /api/appearance/css` is public and gets hit a lot. `appearanceService.buildCSS()`
+builds it from:
 
-1. one block per scope (`global` first, so regions can override it), `global` emitted
-   on **`:root, .xt-site-tokens`**;
-2. the site font's rule, if one is set (see *Fonts*);
-3. the compiled custom CSS, theme first and admin last.
+1. one block per scope (`global` first, so regions can override it), with `global` on
+   **`:root, .xt-site-tokens`**;
+2. the site font's rule, if one is set (see [Fonts](#fonts));
+3. the compiled custom CSS, the theme's first and the admin's last.
 
-Empty blocks are not emitted: a site with no overrides serves almost nothing and
-renders the bundled `tokens.scss`.
+We skip empty blocks. A site with no overrides gets an almost empty stylesheet and
+renders with the bundled `tokens.scss`.
 
-**Live sync.** Every writer bumps the style version. Clients follow it over
-`GET /api/appearance/stream` (SSE; `/version` is the polling fallback) and refetch the
-sheet, so every open tab changes when a theme or a published edit lands.
+**Live updates.** Everything that writes to these settings bumps the style version.
+Browsers follow it over `GET /api/appearance/stream` (SSE; `/version` is the polling
+fallback) and refetch the stylesheet, so every open tab changes when a theme or a
+published edit lands.
 
-**`.xt-site-tokens`** restores the *site's* palette inside a surface that opts out of it.
-The ACP wraps the Layout Editor's variant probe in it so it can measure what the site
-would paint.
+**`.xt-site-tokens`** brings the *site's* palette back inside something that opted out of
+it. The ACP wraps the Layout Editor's variant probe in it, so the probe can measure what
+the site would actually paint.
 
-### Custom CSS scoping
+### How custom CSS is scoped
 
-Console and theme CSS are scoped by postcss **at save time**, not per request:
+We scope the admin's CSS and the theme's CSS with postcss **when it's saved**, not on
+every request:
 
-- every rule is anchored under **`body:not(.xt-acp)`**, so site CSS never reaches the
+- every rule gets anchored under **`body:not(.xt-acp)`**, so site CSS never reaches the
   admin panel;
-- `:root` / `html` rules stay document-wide (a root rule cannot be qualified by a class
-  on its child), which is how a stylesheet sets tokens or `color-scheme: dark`;
-- `@keyframes` steps and nested rules are left as authored.
+- `:root` / `html` rules stay document-wide (you can't qualify a rule on the root element
+  with a class on its child), which is how a stylesheet sets tokens or
+  `color-scheme: dark`;
+- `@keyframes` steps and nested rules stay as written.
 
-A **theme's** stylesheet has two extra rules, enforced at import: no `@import`, and no
-remote `url()`. It may reference its own `assets/…` (rewritten to wherever they land),
-`data:` URLs and site-absolute paths.
+A **theme's** stylesheet has two extra rules, which we enforce on import: no `@import`,
+and no remote `url()`. It can reference its own `assets/…` (we rewrite those to wherever
+the files end up), `data:` URLs and paths on the same site.
 
 ### Fonts
 
-The Style Editor font is **site-wide** (body and headings, `--ff-sans` + `--font-display`).
-A user may override it per profile. The ACP is always Poppins (`body.xt-acp` pins
-family, weight and size). A theme can ship its own face (`@font-face` in
-`styles/custom.css`, file in `assets/`) and point `--font-display` at it through a token.
-Redline does exactly this with Oxanium.
+The Style Editor font applies **to the whole site** (body and headings, `--ff-sans` and
+`--font-display`). Users can override it on their profile. The ACP always uses Poppins
+(`body.xt-acp` pins family, weight and size). A theme can ship its own font
+(`@font-face` in `styles/custom.css`, the file in `assets/`) and point `--font-display` at
+it with a token. Our Redline theme does exactly that with Oxanium.
 
 ---
 
-## 5. Themes on a site — install, switch, undo
+## Themes on a site: install, switch, undo
 
-A theme is **data**: layout documents, tokens, a stylesheet and images, with no code, so
-installing one cannot run anything. Plugins are the code half. Themes are installed
-into a **library** (`xcf_themes`, one row per id, one row active).
+A theme is **data**: layout documents, tokens, a stylesheet and images. There's no code,
+so installing one can't run anything; plugins are where code goes. Installed themes live
+in a **library** (`xcf_themes`, one row per theme, one of them active).
 
 ### Installing is not switching
 
-| What is imported | What happens |
+| What you import | What happens |
 |---|---|
-| a **new** theme (any id the site is not wearing) | added to the library **inactive**; the site is untouched; the admin is **asked** |
-| an **update** to the theme being worn (same id) | applied immediately, with the usual inheritance rules |
-| an update to an **inactive** theme | its library row is refreshed, still inactive |
+| a **new** theme (any theme the site isn't wearing) | it's added to the library **inactive**, the site doesn't change, and we **ask** the admin |
+| an **update** to the theme the site is wearing | it's applied right away, with the usual inheritance |
+| an update to an **inactive** theme | its library entry is refreshed and it stays inactive |
 
-The question is the **switch prompt** (`features/admin/hooks/themeSwitchPrompt.tsx`,
-`offerThemeSwitch`): the new theme's screenshot, its declared look, and *"Switch to X" /
-"Keep Y"* (or *"Keep the default look"* on a stock site). Every install path uses it:
-the Themes page upload, the Marketplace grid and the owned-licence rows. The import
-report says which case happened with `activated` and `current`.
+The question comes from the **switch prompt** (`offerThemeSwitch` in
+`features/admin/hooks/themeSwitchPrompt.tsx`). It shows the new theme's screenshot, its
+light/dark look, and *"Switch to X" / "Keep Y"* (or *"Keep the default look"* on a site
+without a theme). Every install path uses it: the upload on the Themes page, the
+Marketplace grid, and the owned-licence rows. The import report tells you which case
+happened through `activated` and `current`.
 
-Why ask: a site that changed its whole look because somebody installed a theme to try it
-was answering a question nobody had asked. It also costs nothing: "Switch" is the
-ordinary library activation.
+We ask because a site that changed its whole look when someone installed a theme to try
+it out was answering a question nobody had asked. And it costs nothing: "Switch" is the
+normal library activation.
 
 ### Switching is live
 
-`POST /api/admin/themes/library/:id/activate` applies a theme **live**: the theme layer,
-the published layouts and their drafts together, plus a style-version bump. There is no
+`POST /api/admin/themes/library/:id/activate` puts a theme on **live**: the theme layer,
+the published layouts and their drafts all at once, plus a style-version bump. There's no
 publish step.
 
-- **A switch REPLACES the theme layer, never merges it.** A theme with no tokens or no
-  stylesheet clears the previous theme's, so its fonts and rules stop painting the
-  site. (Before 2026-09-19 they did not; a switch away from a theme with custom CSS left
-  that CSS behind.)
-- **Layouts differ on purpose:** a template the new theme does not ship keeps whatever
-  the site had, and a template the admin customised is kept (§3).
+- **A switch replaces the theme layer; it never merges.** If the new theme has no tokens
+  or no stylesheet, the previous theme's are cleared, so its fonts and rules stop
+  painting the site. (Until 2026-09-19 that wasn't the case: switching away from a theme
+  with custom CSS left the CSS behind.)
+- **Layouts work differently, on purpose.** A template the new theme doesn't ship keeps
+  what the site had, and a template the admin customized is kept (see
+  [Layers](#layers-theme-and-admin)).
 
 ### Undo
 
-Every activation records an undo point first; `POST /api/admin/themes/discard` restores
-exactly what it replaced (layouts and both theme layers).
+Every activation saves an undo point first, and `POST /api/admin/themes/discard` restores
+exactly what it replaced (the layouts and both theme layers).
 
-⚠ **It is ONE level deep.** The next activation overwrites it, so "undo" after two
-switches returns to the first, not to the original. The way back further is the
-library: activate the old theme.
+**It only goes back one step.** The next activation overwrites it, so after two switches
+"undo" takes you back to the first, not the original. To go back further, activate the
+old theme from the library.
 
 ---
 
-## 6. Readers choosing a theme
+## Readers choosing a theme
 
-A reader may wear any **installed** theme instead of the site's own. It is their choice
+A reader can wear any **installed** theme instead of the site's own. That's their choice
 alone and changes nothing on the server.
 
-- Stored in the `xt_theme` cookie (`apps/web/src/lib/viewerTheme.ts`) — not
-  `localStorage`, because both the layout and stylesheet fetches need it before first
-  paint, and guests must have it too.
-- Sent as `?theme=<id>` to `/api/appearance/css` and `/api/layouts`; the API validates it
-  against the library, and an id naming nothing falls back to the site's own.
-- A reader wearing another theme gets it **as its author shipped it**, with no admin
-  layer. The admin's overrides were chosen against the site's theme and mean nothing on
+- It's stored in the `xt_theme` cookie (`apps/web/src/lib/viewerTheme.ts`), not in
+  `localStorage`, because both the layout request and the stylesheet request need it
+  before the first paint, and guests need it too.
+- It's sent as `?theme=<id>` to `/api/appearance/css` and `/api/layouts`. The API checks
+  it against the library, and an id that doesn't match anything falls back to the site's
+  own theme.
+- A reader wearing another theme gets it **as its author shipped it**, without the admin
+  layer. The admin's overrides were picked for the site's theme and don't mean anything on
   another one.
-- Offered in the footer (`ThemeChooserBlock`) and Account → Preferences. They are **one
-  decision**: same cookie, same strings (`themeChooser.*`), same reload, same rule that
-  **below two installed themes, neither renders**. Change one, change both.
-- ⚠ Choosing the **site's own** theme **clears** the cookie instead of storing its id, or
-  the reader would stay pinned to it after the admin switches.
-- Installing a theme **offers it to readers immediately**, even if the admin kept their
-  current one. There is no separate "offered to readers" flag, by decision.
+- It's offered in the footer (`ThemeChooserBlock`) and in Account → Preferences. They're
+  **the same choice**: same cookie, same strings (`themeChooser.*`), same reload, and the
+  same rule that **with fewer than two installed themes, neither shows up**. If you change
+  one, change both.
+- Choosing the **site's own** theme **clears** the cookie instead of storing that theme's
+  id. Otherwise the reader would stay on it after the admin switches.
+- An installed theme is **offered to readers right away**, even if the admin kept their
+  current one. We decided against a separate "offer to readers" setting.
 
 ---
 
-## 7. The marketplace side
+## The marketplace side
 
-- A listing's **light/dark badge** is `mkt_products.appearance`, read from the package's
-  `manifest.appearance` at ingest. It is **declared, never inferred**: luminance off
-  `--c-bg` breaks on mid-grey, sepia and duotone palettes. A package that does not say
-  gets no badge.
-- **The preview** (`catalog/themePreview.ts`) renders one page per template **at ingest**,
-  from the package's own layouts and `global` tokens over the base palette, which is how
-  the CMS serves it. It reads both package shapes (a v1 `{ light, dark }` file keeps its
-  light half, as the CMS importer does) and goes through the CMS's own `tokenMapSchema`.
-  Because previews are rendered at ingest, **a renderer fix only reaches a listing when
-  its release is re-ingested.**
-- First-party themes are stocked with `scripts/ingest-official.ts`, which accepts
-  `.xttheme` alongside `.xtplugin`.
+- A listing's **light/dark badge** comes from the package's `manifest.appearance`, read
+  when the release is added. It's **declared, never guessed**: measuring the brightness of
+  `--c-bg` breaks on mid-grey, sepia and duotone palettes. A package that doesn't say gets
+  no badge.
+- **The preview** is rendered once per template **when a release is added**, from the
+  package's own layouts and `global` tokens on top of the base palette, which is how the
+  CMS serves it. It understands both package formats (an old `{ light, dark }` file keeps
+  its light half, as the CMS importer does) and validates with the CMS's own
+  `tokenMapSchema`. Since previews are rendered when a release is added, **a fix to the
+  renderer only reaches a listing once its release is added again.**
 
 ---
 
-## 8. Rules of thumb
+## Rules of thumb
 
-- **No hardcoded visual values** in components; always a token. The Style Editor edits
-  semantic tokens only.
-- **Target blocks through `xt-b--<type>`** or your own `className` handle, not their inner
+- **No hardcoded visual values** in components. Always use a token. The Style Editor only
+  edits semantic tokens.
+- **Target blocks with `xt-b--<type>`** or your own `className` handle, not their inner
   classes. Never use `>`, `+` or `~` across a block boundary: every block sits in a
-  `display: contents` wrapper, so the combinator silently matches nothing.
-- **Verify against the served sheet**, not the docs:
-  `curl /api/appearance/css` is the truth about what visitors get.
-- **A theme screenshot taken on a dev site shows that site's admin layer** on top of the
-  theme. Neutralise the overridden tokens, or use a clean instance.
-- Anything that writes a theme layer, a stylesheet or a layout must bump the style
-  version, or open tabs keep the old look until a reload.
+  `display: contents` wrapper, so the combinator quietly matches nothing.
+- **Check the stylesheet we actually serve**, not the docs. `curl /api/appearance/css`
+  tells you what visitors get.
+- **A theme screenshot taken on a dev site includes that site's admin layer** on top of
+  the theme. Neutralize the overridden tokens, or use a clean install.
+- Anything that writes a theme layer, a stylesheet or a layout has to bump the style
+  version, or open tabs keep the old look until they reload.
