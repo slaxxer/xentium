@@ -46,7 +46,8 @@
     "status": {
       "checking": "Checking...",
       "passed": "Passed",
-      "failed": "Failed"
+      "failed": "Failed",
+      "warning": "Warning"
     },
     "retry": "Re-check all"
   },

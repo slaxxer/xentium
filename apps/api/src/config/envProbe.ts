@@ -11,9 +11,18 @@ import { parse } from "dotenv";
  * imports (prisma/redis instantiate at module load).
  */
 
-// Same resolution as env.ts: .env lives at the repo root, two levels above
-// the API process cwd (apps/api in dev).
-export const ENV_FILE_PATH = path.resolve(process.cwd(), "../../.env");
+/**
+ * Where `.env` lives. THE one definition: env.ts and the installer's writer import
+ * it from here (this module is safe to load in setup mode).
+ *
+ * In a clone it's the repo root, two levels above the API's cwd (`apps/api`). An
+ * install from npm keeps it outside the package, so updates never touch it, and
+ * points at it with `XENTIUM_ENV_FILE` (the `xentium` CLI and its systemd units
+ * set that to `<site>/shared/.env`).
+ */
+export const ENV_FILE_PATH = process.env.XENTIUM_ENV_FILE
+  ? path.resolve(process.env.XENTIUM_ENV_FILE)
+  : path.resolve(process.cwd(), "../../.env");
 
 // The keys env.ts hard-requires, with the same minimum lengths as its schema.
 const REQUIRED: Array<{ key: string; min: number }> = [

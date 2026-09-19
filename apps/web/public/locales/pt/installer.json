@@ -37,7 +37,8 @@
     "status": {
       "checking": "Verificando...",
       "passed": "Aprovado",
-      "failed": "Falhou"
+      "failed": "Falhou",
+      "warning": "Aviso"
     },
     "retry": "Verificar tudo novamente"
   },

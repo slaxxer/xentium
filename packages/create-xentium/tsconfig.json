@@ -1,0 +1,5 @@
+{
+  "extends": "@xentium/config/tsconfig.base.json",
+  "compilerOptions": { "noEmit": true, "types": ["node"] },
+  "include": ["src", "../cli/src", "../contracts/src/system.ts"]
+}
