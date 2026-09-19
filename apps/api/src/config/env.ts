@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { config } from 'dotenv';
 import path from 'node:path';
+import { ENV_FILE_PATH } from './envProbe.js';
 
-config({ path: path.resolve(process.cwd(), '../../.env') });
+config({ path: ENV_FILE_PATH });
 
 const schema = z.object({
   // Safe-by-default: an instance that never sets NODE_ENV runs as production

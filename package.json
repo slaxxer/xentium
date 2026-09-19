@@ -27,7 +27,8 @@
     "release:framework:dry": "node scripts/release-framework.mjs --dry-run",
     "e2e:reset": "prisma migrate reset --force",
     "e2e": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e",
-    "e2e:ui": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e:ui"
+    "e2e:ui": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e:ui",
+    "pack:server": "node scripts/pack-server.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9",
