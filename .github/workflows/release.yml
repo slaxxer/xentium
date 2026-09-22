@@ -1,0 +1,132 @@
+# Publish a Xentium release to npm.
+#
+# The npm version is the ARTIFACT, not the announcement. An installed site learns
+# about a release from its update source, and that record carries an urgency a
+# person decides, so this workflow ships the bytes and stops there. An automatic
+# "critical" nobody chose would interrupt every admin in the world.
+#
+# Triggered by pushing a version tag (`v1.0.0-alpha.3`), or by hand from the
+# Actions tab. Run it by hand with dry-run first if you want to see the tarball
+# contents without burning a version number: npm never lets a version be reused.
+#
+# What it needs once, in repo settings:
+#   NPM_TOKEN — a granular npm automation token with publish rights on the
+#               @xentium scope and on the `xentium` + `create-xentium` names.
+#               Automation tokens bypass 2FA, which is why publishing from CI
+#               works at all.
+#
+# Provenance (a signed, public attestation linking the tarball to this workflow
+# run) needs the SOURCE REPOSITORY to be public, because the attestation goes to
+# a public transparency log. This repo is private today, so the job detects that
+# and publishes without it rather than failing. Make the repo public and
+# provenance turns itself on — nothing here changes.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build and pack, but publish nothing"
+        type: boolean
+        default: true
+      only:
+        description: "Publish one part only"
+        type: choice
+        default: all
+        options: [all, framework, server, cli, create]
+      tag:
+        description: "npm dist-tag override (default: the prerelease id, else latest)"
+        type: string
+        default: ""
+
+# Two releases publishing at once would race for the same version numbers.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write # attach the tarballs to the GitHub release
+      id-token: write # npm provenance, once the repo is public
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Not the full backbone check: `pnpm test` needs Postgres and Redis, and a
+      # tagged commit has already been through them. The builds are not skipped —
+      # publish-release.mjs runs them, because the build IS the artifact.
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+      - name: Decide on provenance
+        id: provenance
+        env:
+          PRIVATE: ${{ github.event.repository.private }}
+        run: |
+          if [ "$PRIVATE" = "true" ]; then
+            echo "flag=" >> "$GITHUB_OUTPUT"
+            echo "::warning::Publishing WITHOUT provenance: npm can only attest packages built from a public repository, and this one is private."
+          else
+            echo "flag=--provenance" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PROVENANCE: ${{ steps.provenance.outputs.flag }}
+          EVENT: ${{ github.event_name }}
+          DRY_RUN: ${{ inputs.dry_run }}
+          ONLY: ${{ inputs.only }}
+          NPM_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          args=""
+          # A tag-triggered run must publish the version that tag names. The
+          # script refuses when the repo is on a different one, which is what
+          # tagging before bumping looks like.
+          if [ "$EVENT" = "push" ]; then args="--expect-version=${GITHUB_REF_NAME#v}"; fi
+          if [ "${DRY_RUN:-}" = "true" ]; then args="$args --dry-run"; fi
+          if [ -n "${ONLY:-}" ] && [ "$ONLY" != "all" ]; then args="$args --only=$ONLY"; fi
+          if [ -n "${NPM_TAG:-}" ]; then args="$args --tag=$NPM_TAG"; fi
+          node scripts/publish-release.mjs ${PROVENANCE:-} $args
+
+      # The tarballs are how a server without the published names is installed
+      # or updated (`xentium update --package <tgz>`), so keep them even for a
+      # dry run — that is the whole point of a dry run.
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: inputs.only != 'framework'
+        with:
+          name: xentium-${{ github.ref_name }}-tarballs
+          path: dist/release/*.tgz
+          # warn, not error: a re-run of an already-published version skips the
+          # packing it has nothing left to do, and that is a success, not a fault.
+          if-no-files-found: warn
+
+      - name: Attach the tarballs to the GitHub release
+        if: startsWith(github.ref, 'refs/tags/v') && inputs.dry_run != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # A tag with a prerelease identifier (v1.0.0-alpha.3) is marked as one,
+          # so it never becomes the "latest release" people land on.
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 \
+            || gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --generate-notes $prerelease
+          gh release upload "$GITHUB_REF_NAME" dist/release/*.tgz --clobber

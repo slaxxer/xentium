@@ -1,41 +1,27 @@
 # Last codebase update
 
-Step 3 of the core releases and updates plan: the installer and the CLI. Step 2 (the
-`@xentium/server` package) and the shared system requirements are in the same unpushed
-batch.
+Core update notifications on the instance (steps 4 and 5 of the core releases plan), plus the
+release pipeline that publishes the packages those notifications point at.
 
 ## New
 
 | Path | Purpose |
 |---|---|
-| `packages/cli/src/checks.ts` | Every system check, in one place. Shared by the installer, `xentium doctor` and (through `SYSTEM_REQUIREMENTS`) the install wizard. Node builtins and `pg` only, so it loads on a machine with nothing of ours on it. |
-| `packages/cli/src/site.ts` | The site layout: `xentium.json`, `releases/<v>`, the `current` symlink, `shared/`. Reading and merging `.env`. |
-| `packages/cli/src/release.ts` | Installing a release with npm, provenance, migrations, `pg_dump` / restore, the health probe. |
-| `packages/cli/src/service.ts` | systemd units (written, installed with sudo, enabled) and the foreground runner. |
-| `packages/cli/src/update.ts` | `update` and `rollback`, including the plugin-compatibility gate and the roll-back-on-failure path. |
-| `packages/cli/src/cli.ts` | Argument parsing and the commands. |
-| `packages/cli/src/ui.ts` | Terminal output, including the ASCII wordmark from `xentium.sh` that heads the installer. No dependency. |
-| `packages/cli/src/cli.test.ts` | 15 tests: version checks, `pgConnection`, `mergeEnv`, semver ordering, the unit files. |
-| `packages/create-xentium/bin/create-xentium.js` | Old-Node-safe entry. Someone on Node 16 gets a sentence, not a syntax error. |
-| `packages/create-xentium/src/index.ts` | The install flow: ask, check, set up the database, write `.env`, install, offer systemd, hand over to the wizard. |
-| `packages/create-xentium/src/compose.ts` | The Compose file: PostgreSQL 17 and Redis 7 on 127.0.0.1 only, named volumes, `noeviction`. |
-| `packages/create-xentium/src/prompt.ts` | Text, yes/no and pick-one, on `node:readline`. `--yes` and a pipe answer with the defaults. |
-| `apps/docs/src/content/docs/admin/installing.md` | The wiki page for installing on a server. |
+| `.github/workflows/release.yml` | The Release workflow. Triggered by a `v*` tag or by hand (dry run by default). Installs, typechecks, lints, publishes through `publish-release.mjs`, uploads the tarballs, attaches them to a GitHub release. Actions are pinned by commit SHA; `NPM_TOKEN` is the only secret. |
+| `scripts/publish-release.mjs` | One script for a whole release: framework packages, `@xentium/server`, `xentium`, `create-xentium`. Resolves the version and dist-tag from the repo, refuses a tag that disagrees with it, skips what is already published, prints the marketplace announcement that still has to be made. |
+| `apps/docs/src/content/docs/admin/updating.md` | Wiki page for server admins: how a site finds out about a release, what the urgency means, and every step and flag of `xentium update`. |
+| `apps/api/src/jobs/coreUpdateCheck.ts` | The anonymous core check and the `core.update` cache. Sibling of the plugin heartbeat, not part of it. |
+| `apps/api/src/modules/admin/coreCompat.ts` | Whether each installed plugin's declared version window contains the release being offered. |
+| `apps/web/src/features/admin/components/CoreUpdateCard.tsx` | The core card on Extensions → Updates. |
 
 ## Changed
 
-| Path | Why |
+| Path | Change |
 |---|---|
-| `apps/api/src/server.ts` | Load `.env` into the environment in setup mode, and when only secrets are missing generate them and boot instead of asking for the database a second time. |
-| `apps/api/src/setup/setupServer.ts` | Serve the built SPA (there is no Vite in production), and print the address to open. |
-| `apps/api/src/worker.ts` | Wait for the schema, not just for the config. |
-| `apps/docs/src/content/docs/admin/production.md` | Points at the installer page; the clone is now the developer route. |
-| `package.json` | Root package renamed to `xentium-monorepo` so `xentium` means the CLI. |
-
-## Verified
-
-A full install into a scratch directory with the Docker path: checks, Compose up on
-127.0.0.1:5433/6380 (5432/6379 were taken, it picked the next free ports), release
-installed, `.env` written, app booted, the wizard run to `installed: true`, the site
-serving its configured name. Then `status`, `doctor`, `backup`, an `update` to a second
-release with the symlink swap, and a `rollback`. `pnpm backbone:check` green.
+| `scripts/release-framework.mjs` | Gained `--provenance` and `--skip-published`, so CI can drive it and a half-finished release can be re-run. Header points at `publish-release.mjs` for a full release. |
+| `package.json` | `release` and `release:dry` scripts. |
+| `apps/api/src/jobs/updateCheck.ts` | The marketplace sync runs the core check as a third step, whatever the other two do. |
+| `apps/api/src/workerBoot.ts` | The boot check runs the core check too, not only the plugin half. |
+| `apps/web/src/features/admin/AcpLayout.tsx` | The ACP-entry dialog includes core, with its own anchor and the patch-only restraint. |
+| `apps/api/src/modules/admin/marketplace.service.ts` | `getUpdates` returns core; `getStatusSummary` ORs it into the gear badge. |
+| `apps/web/public/locales/*/acp.json` | Strings for the card and dialog, all five locales. |

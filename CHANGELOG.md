@@ -1,56 +1,41 @@
 # Changelog
 
-## Installing Xentium is one command now
+## Admins hear about core updates, and we can publish one
 
 ### Added
 
-- **`npm create xentium@latest my-community`** installs a whole site: it checks the
-  server, sets up PostgreSQL and Redis, installs the app from npm, offers to install
-  systemd units, and hands you the address for the install wizard. About a minute, no
-  clone and nothing to compile. `--check` runs only the checks and stops, `--json` for a
-  script, `--package <tgz>` for a server with no registry access.
-- **The `xentium` command** manages the site afterwards: `start`, `stop`, `restart`,
-  `status`, `doctor`, `backup`, `update`, `rollback` and `install-service`. It is
-  installed into the site, so `npx xentium status` works inside the directory.
-- **`xentium update`** installs the new release *next to* the running one, checks every
-  installed plugin's supported version window, dumps the database, migrates, and moves
-  the `current` symlink. If the site does not answer afterwards it moves the symlink
-  back, restarts, and restores the dump when a migration had already run. It refuses to
-  go backwards; that is what `xentium rollback` is for.
-- **`@xentium/server`**, the app as an npm package: the built API and web app, the Prisma
-  schema, migrations and CLI, with an `npm-shrinkwrap.json` so every server installs the
-  dependency tree we tested. Built with `pnpm pack:server`.
-- **One list of system requirements** (`SYSTEM_REQUIREMENTS`), read by the installer, the
-  install wizard, the setup-mode server and `xentium doctor`. There were two copies of
-  the minimum Node version before, and they disagreed: the wizard accepted Node 20 while
-  the app needs 22.12.
-- Checks now say what to do about what they find, with the command for the system they
-  are running on (apt, dnf, pacman, apk or brew).
-- **Redis eviction policy** is checked. BullMQ keeps queued jobs in Redis, and every
-  policy but `noeviction` is allowed to throw them away when memory runs out. The
-  Compose file the installer writes sets it.
-- **`XENTIUM_ENV_FILE`** says where `.env` lives, so an install can keep its config
-  outside the app directory and updates never touch it.
-- New wiki page: [Installing Xentium on a server](https://doc.xentium.org/admin/installing/).
+- **Instances are told when there is a newer Xentium.** The daily marketplace sync gains a
+  third, independent step that asks the marketplace what core releases exist, and the three
+  surfaces that already existed for plugin updates learn about core: a card above the plugin
+  list on Extensions → Updates, the ACP-entry dialog, and the navbar gear badge. The check is
+  anonymous (the version we are on, and nothing else) because an install that never connected
+  an account is the one most likely to be running an un-patched forum.
+- **Urgency comes from the whole upgrade path, not the newest release.** An install three
+  versions behind whose newest offer is a feature release may still have a security fix waiting
+  in between. The card names the release the urgency comes from and quotes its notes.
+- **The dialog stays restrained.** It fires for a minor, a major or anything urgent, and never
+  for a plain patch on the minor you are already on. That is the most common release there is,
+  and a dialog people meet weekly is a dialog people stop reading.
+- **Plugin compatibility is checked before an update is offered**, against each installed
+  plugin's declared version window, and the blockers are named.
+- **A release workflow** (`.github/workflows/release.yml`). Pushing a `v*` tag builds
+  everything, publishes `@xentium/server`, `xentium`, `create-xentium` and the framework
+  packages to npm, and attaches the tarballs to a GitHub release. It can also be run from the
+  Actions tab, where it defaults to a dry run.
+- **`pnpm release`** (`scripts/publish-release.mjs`) publishes all four parts of a release in
+  one act, since they share one version. Already-published versions are skipped rather than
+  fatal, so a release that failed halfway is safe to re-run. `--only=` publishes one part,
+  `--dry-run` builds and packs without publishing.
 
 ### Fixed
 
-- **A fresh install asked for the database twice.** The installer wrote and tested the
-  connection, and then the wizard asked for the credentials again, because the app only
-  knew how to start in setup mode when anything was missing. It now generates the
-  secrets it can generate itself and boots straight into the wizard.
-- **Setup mode ignored `PORT`.** It could not read `.env` (reading it is what setup mode
-  exists to avoid doing through the config module), so an install on port 4411 was
-  greeted by a wizard on 4000.
-- **Setup mode served no web app.** In a production install there is no Vite, so the
-  wizard an admin was told to open had nothing to serve it. It now serves the built SPA.
-- **The worker booted into a database with no tables** and filled the admin's first
-  screen with "table does not exist". It waits for the schema now, the way it already
-  waited for the config.
-- **`pg_dump` rejected our own connection URL.** Prisma's `?schema=` is not a libpq
-  parameter, and backups failed on it. A non-default schema becomes `--schema` instead.
-
-### Changed
-
-- The monorepo's root package is `xentium-monorepo`. The published CLI is `xentium`, and
-  two workspace packages with the same name make `--filter xentium` ambiguous.
+- **The core check only ran on the 02:30 schedule.** The boot-time check called the plugin half,
+  so a site restarted right after a security release would wait up to 24 hours to be told, which
+  is the case the boot check exists for.
+- **The card said SECURITY above release notes about layout variants.** The badge was right and
+  the page contradicted it, which teaches admins to distrust the badge.
+- **The dialog printed SECURITY twice**, as the panel badge and again as a marker on its only row.
+- **A dialog row is a label and a short value**, not prose: the label ellipsises and the value
+  cannot shrink, so a sentence arrived as "I..". Prose moved to the note, which wraps.
+- **"supports 1.0–1.0"** is a range with one member and reads like a bug. A plugin whose floor and
+  ceiling are the same version now says "supports 1.0".
