@@ -75,6 +75,9 @@ npx xentium backup     # dump the database into shared/backups
 npx xentium update     # install the newest release and switch to it
 ```
 
+Your site tells you in the ACP when there is a new release: see
+[Updating Xentium](/admin/updating/).
+
 ## Putting it behind nginx
 
 The app serves the API and the web app on one port, so the proxy has one upstream. Turn
