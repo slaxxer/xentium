@@ -26,6 +26,19 @@ const PUBLIC_KEY_PATH = path.resolve(
 
 const GRACE_PERIOD_DAYS = 30;
 
+/**
+ * The marketplace's public half.
+ *
+ * Exported because entitlements are no longer the only thing it verifies: the
+ * announcement channel renders the marketplace's prose in a modal in front of
+ * an administrator, and it has to be able to prove the marketplace said it.
+ * Same key deliberately — both claims are "the marketplace said this", and a
+ * second key would be a second thing to rotate and a second thing to get wrong.
+ */
+export async function getMarketplacePublicKey() {
+  return getPublicKey();
+}
+
 async function getPublicKey() {
   // LICENSE_PUBLIC_KEY (env) overrides the bundled entitlement-verification key —
   // e.g. to verify against a non-default license server. Normally unset, and the

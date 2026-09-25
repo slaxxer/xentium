@@ -8,6 +8,8 @@ import { startBanExpiryWorker }               from './jobs/banExpiry.js';
 import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
+import { processCoreUpdateCheck } from './jobs/coreUpdateCheck.js';
+import { processAnnouncementCheck } from './jobs/announcementCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
@@ -91,6 +93,11 @@ async function boot() {
   // daily run — matters most right after a worker restart following an update
   // deploy. Deliberately NOT the full sync: refreshLicense() has no refreshAfter
   // guard, so including it would call the license server on every restart.
+  //
+  // The CORE check runs here for the same reason and more so: core is what every
+  // plugin runs on. It is a separate call because the plugin half returns early
+  // without an account token, and an install that never connected an account
+  // still has to hear about a security release.
   // Best-effort and non-blocking (processUpdateCheck self-guards dev/no-token and
   // keeps the last cache when the marketplace is unreachable). Honors the admin's
   // ACP → Scheduled Tasks toggle: if the sync job is disabled, the boot check is
@@ -98,7 +105,14 @@ async function boot() {
   const updateDef = SCHEDULED_JOBS.find((d) => d.key === "update-check");
   if (updateDef) {
     getJobConfig(updateDef)
-      .then((cfg) => { if (cfg.enabled) return processUpdateCheck(); })
+      .then(async (cfg) => {
+        if (!cfg.enabled) return;
+        await processUpdateCheck();
+        await processCoreUpdateCheck();
+        // Same argument again for broadcasts: an admin restarting a site after
+        // an incident should not have to wait until tomorrow to be told about it.
+        await processAnnouncementCheck();
+      })
       .catch((err) => console.error('[worker] boot update-check failed:', (err as Error)?.message ?? err));
   }
 }

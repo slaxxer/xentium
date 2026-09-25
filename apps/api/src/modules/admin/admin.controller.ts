@@ -5,6 +5,7 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { paginatedRequestSchema } from "@xentium/contracts";
 import { marketplaceService } from "./marketplace.service.js";
+import { announcementService } from "./announcement.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import {
@@ -363,6 +364,16 @@ export const adminController = {
   deactivateLicense: (async (_req, res) => {
     await deactivateLicense();
     res.json({ ok: true });
+  }) as RequestHandler,
+
+  // ── Announcements — broadcasts from the Xentium team ──────────────────────
+  listAnnouncements: (async (req, res) => {
+    res.json(await announcementService.list(req.userId!));
+  }) as RequestHandler,
+
+  acknowledgeAnnouncement: (async (req, res) => {
+    const { id } = z.object({ id: z.string().min(1).max(64) }).parse(req.params);
+    res.json(await announcementService.acknowledge(req.userId!, id));
   }) as RequestHandler,
 
   // ── Marketplace (ADR 0001) — logic lives in marketplace.service.ts ─────────

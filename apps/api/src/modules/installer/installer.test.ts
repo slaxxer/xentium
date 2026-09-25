@@ -89,11 +89,23 @@ describe("installer happy path", () => {
     // Step 4 — site config.
     const site = await request(app).post("/api/install/site").send(SITE);
     expect(site.status).toBe(200);
-    expect(site.body.currentStep).toBe("ADMIN");
+    expect(site.body.currentStep).toBe("ADDONS");
     const siteName = await prisma.setting.findUnique({ where: { key: "site.name" } });
     expect(siteName?.value).toBe(SITE.siteName);
 
-    // Step 5 — admin account.
+    // Step 5 — add-ons. The catalogue needs no marketplace to answer: an
+    // unreachable one is a state the step renders, not an error it throws.
+    const catalogue = await request(app).get("/api/install/addons");
+    expect(catalogue.status).toBe(200);
+    expect(catalogue.body.connected).toBe(false);
+    expect(catalogue.body.selected).toEqual([]);
+
+    // Skipping the step is a selection of nothing, not a step that was not taken.
+    const addons = await request(app).post("/api/install/addons").send({ pluginIds: [] });
+    expect(addons.status).toBe(200);
+    expect(addons.body.currentStep).toBe("ADMIN");
+
+    // Step 6 — admin account.
     const admin = await request(app).post("/api/install/admin").send(ADMIN);
     expect(admin.status).toBe(200);
     expect(admin.body.currentStep).toBe("FINALIZE");
@@ -106,7 +118,7 @@ describe("installer happy path", () => {
     });
     expect(membership).not.toBeNull();
 
-    // Step 6 — finalize: keys, site id, completedAt.
+    // Step 7 — finalize: keys, site id, completedAt.
     const fin = await request(app).post("/api/install/finalize").send({});
     expect(fin.status).toBe(200);
     expect(fin.body.currentStep).toBe("COMPLETE");
@@ -133,6 +145,7 @@ describe("installer happy path", () => {
   it("refuses to mutate once already complete (assertNotComplete)", async () => {
     await request(app).post("/api/install/database").send({});
     await request(app).post("/api/install/site").send(SITE);
+    await request(app).post("/api/install/addons").send({ pluginIds: [] });
     await request(app).post("/api/install/admin").send(ADMIN);
     await request(app).post("/api/install/finalize").send({});
 

@@ -5,6 +5,10 @@
  *   node scripts/release-framework.mjs --otp=123456   # publish the current version
  *   node scripts/release-framework.mjs --dry-run      # show what would happen
  *
+ * A full release publishes these AND the app AND the installers, in one act:
+ * `node scripts/publish-release.mjs`, which is what CI runs. Use this script on
+ * its own only when the framework is the only thing that moved.
+ *
  * npm requires a 2FA code to publish. Pass it with --otp and run immediately —
  * codes expire in about 30 seconds.
  *
@@ -36,6 +40,22 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PACKAGES = ["contracts", "errors", "server-kit", "auth", "plugin-engine", "plugin-kit", "plugin-sdk"];
 
 const dryRun = process.argv.includes("--dry-run");
+
+/**
+ * Publish with npm provenance. Only works from CI — npm builds the attestation
+ * from the GitHub Actions OIDC token — so the release workflow passes it and a
+ * local publish does not.
+ */
+const provenance = process.argv.includes("--provenance");
+
+/**
+ * Skip packages already published at this version instead of refusing the run.
+ *
+ * The refusal below is right for a human: it means "you forgot to bump". It is
+ * wrong for a re-run of a release that failed halfway, where some packages are
+ * up and some are not, and the version can never be reused.
+ */
+const skipPublished = process.argv.includes("--skip-published");
 
 /**
  * A one-time 2FA code. npm requires one to publish unless the credential is a
@@ -95,18 +115,27 @@ for (const name of PACKAGES) {
   }
 }
 
-if (alreadyPublished.length > 0) {
+if (alreadyPublished.length > 0 && !skipPublished) {
   fail(
     `${version} is already on the registry for: ${alreadyPublished.join(", ")}`,
     "Bump first: node scripts/set-version.mjs <next version>",
   );
 }
 
+const remaining = PACKAGES.filter((n) => !alreadyPublished.includes(`@xentium/${n}`));
+if (remaining.length === 0) {
+  console.log(`Every framework package is already published at ${version} — nothing to do.`);
+  process.exit(0);
+}
+if (alreadyPublished.length > 0) {
+  console.log(`Skipping, already published at ${version}: ${alreadyPublished.join(", ")}\n`);
+}
+
 // ── 4. Build, then publish ──────────────────────────────────────────────────
 // `prepublishOnly` builds each package too; doing it up front means a compile
 // error stops the run BEFORE anything is published rather than midway.
 console.log("Building…");
-const filters = PACKAGES.flatMap((n) => ["--filter", `@xentium/${n}`]);
+const filters = remaining.flatMap((n) => ["--filter", `@xentium/${n}`]);
 run("pnpm", [...filters, "build"], { stdio: "inherit" });
 
 console.log("\nPublishing…");
@@ -121,6 +150,7 @@ run(
     // The repo tags releases itself; pnpm's own git checks would refuse a
     // perfectly good publish for want of a tag it expects to create.
     "--no-git-checks",
+    ...(provenance ? ["--provenance"] : []),
     ...(otp ? ["--otp", otp] : []),
     ...(dryRun ? ["--dry-run"] : []),
   ],
