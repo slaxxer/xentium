@@ -45,7 +45,11 @@
     "loading": "Cargando…",
     "accessDeniedTitle": "Acceso denegado",
     "accessDeniedBody": "No tienes permiso para acceder al panel de administración.",
-    "goToSite": "Ir al sitio"
+    "goToSite": "Ir al sitio",
+    "sections": "Secciones",
+    "expandPanel": "Expandir panel",
+    "collapsePanel": "Contraer panel",
+    "dockPanel": "Mantener el panel abierto"
   },
   "topbar": {
     "breadcrumbRoot": "Panel de administración",
@@ -72,7 +76,11 @@
     "themeDark": "Oscuro",
     "signOut": "Cerrar sesión",
     "roleFallback": "Miembro",
-    "breadcrumb": "Ruta de navegación"
+    "breadcrumb": "Ruta de navegación",
+    "searchPlaceholderShort": "Buscar páginas…",
+    "navLayout": "Navegación",
+    "navLayoutRail": "Lateral",
+    "navLayoutTop": "Superior"
   },
   "settings": {
     "eyebrow": "Sistema",

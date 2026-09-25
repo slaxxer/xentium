@@ -45,7 +45,11 @@
     "loading": "Wird geladen…",
     "accessDeniedTitle": "Zugriff verweigert",
     "accessDeniedBody": "Du hast keine Berechtigung für den Admin-Bereich.",
-    "goToSite": "Zur Seite"
+    "goToSite": "Zur Seite",
+    "sections": "Bereiche",
+    "expandPanel": "Leiste ausklappen",
+    "collapsePanel": "Leiste einklappen",
+    "dockPanel": "Leiste offen lassen"
   },
   "topbar": {
     "breadcrumbRoot": "Admin-Bereich",
@@ -72,7 +76,11 @@
     "themeDark": "Dunkel",
     "signOut": "Abmelden",
     "roleFallback": "Mitglied",
-    "breadcrumb": "Brotkrümelnavigation"
+    "breadcrumb": "Brotkrümelnavigation",
+    "searchPlaceholderShort": "Seiten suchen…",
+    "navLayout": "Navigation",
+    "navLayoutRail": "Seitlich",
+    "navLayoutTop": "Oben"
   },
   "settings": {
     "eyebrow": "System",
