@@ -5,6 +5,8 @@ import path from "node:path";
 import { setupConfigSchema, InstallStep } from "@xentium/contracts";
 import { writeEnvConfig } from "../core/installer-engine/steps/writeConfig.js";
 import { nodeRow, type RequirementRow } from "../core/installer-engine/requirementRows.js";
+// Safe here: version.ts reads a package.json and validates nothing at load time.
+import { XENTIUM_VERSION } from "../config/version.js";
 
 /**
  * Pre-env setup server (§16, WordPress-style first run).
@@ -107,7 +109,7 @@ export async function startSetupServer(options: SetupServerOptions): Promise<voi
   app.use(express.json());
 
   app.get("/api/health", (_req, res) => {
-    res.json({ status: "ok", setupMode: true });
+    res.json({ status: "ok", setupMode: true, version: XENTIUM_VERSION });
   });
 
   app.get("/api/install/status", (_req, res) => {
@@ -116,11 +118,89 @@ export async function startSetupServer(options: SetupServerOptions): Promise<voi
       setupMode: true,
       currentStep: InstallStep.WELCOME,
       siteId: null,
+      version: XENTIUM_VERSION,
     });
   });
 
   app.get("/api/install/environment", async (_req, res) => {
     res.json(await liteEnvironmentChecks());
+  });
+
+  /**
+   * Verify credentials WITHOUT writing anything.
+   *
+   * The DATABASE step probes as you type, and the only other endpoint that can
+   * answer "do these work" is the one that writes `.env` and swaps the process
+   * — so before this, the wizard could not tell you your password was wrong
+   * until after it had committed to it. This is that same connect, minus every
+   * side effect.
+   *
+   * Bounded rather than rate-limited: the wizard debounces, and one probe at a
+   * time is the whole budget a single-operator setup screen needs. A pending
+   * probe answers 409 instead of opening a second connection.
+   */
+  let probing = false;
+  app.post("/api/install/database/probe", async (req, res) => {
+    if (probing) return res.status(409).json({ error: "probe_in_progress" });
+    const parsed = setupConfigSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ error: "Invalid connection details" });
+    }
+    const input = parsed.data;
+    probing = true;
+    const started = Date.now();
+
+    try {
+      const { Client } = await import("pg");
+      const client = new Client({
+        host: input.host,
+        port: input.port,
+        database: input.database,
+        user: input.user,
+        password: input.password,
+        connectionTimeoutMillis: 5000,
+      });
+      let postgres: string | null = null;
+      try {
+        await client.connect();
+        const r = await client.query<{ version: string }>("SELECT version()");
+        postgres = r.rows[0]?.version.match(/PostgreSQL (\d+\.\d+)/)?.[1] ?? null;
+      } finally {
+        await client.end().catch(() => { /* already closed */ });
+      }
+
+      // A Redis URL is optional, and its absence is not a failure — but a URL
+      // that was typed and does not work has to be caught HERE. The setup write
+      // pings it too, and finding out there is the failure this endpoint exists
+      // to move earlier.
+      let redisVersion: string | null = null;
+      if (input.redisUrl) {
+        const { default: Redis } = await import("ioredis");
+        const redis = new Redis(input.redisUrl, {
+          lazyConnect: true,
+          maxRetriesPerRequest: 1,
+          connectTimeout: 3000,
+        });
+        try {
+          await redis.connect();
+          redisVersion = (await redis.info("server")).match(/redis_version:(\S+)/)?.[1] ?? "unknown";
+        } finally {
+          redis.disconnect();
+        }
+      }
+
+      return res.json({
+        ok: true,
+        postgres,
+        redis: redisVersion,
+        latencyMs: Date.now() - started,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Connection failed";
+      return res.status(400).json({ error: message });
+    } finally {
+      probing = false;
+    }
   });
 
   let configuring = false;

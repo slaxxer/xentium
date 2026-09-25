@@ -1,38 +1,71 @@
 {
+  "rail": {
+    "setup": "Setup",
+    "step_counter": "Step {{current}} of {{total}}",
+    "help": "Stuck? The install guide covers every check on this list."
+  },
+  "phases": {
+    "prepare": "Prepare",
+    "configure": "Configure",
+    "finish": "Finish"
+  },
   "steps": {
     "welcome": "Welcome",
-    "environment": "Environment",
+    "environment": "Server check",
     "database": "Database",
-    "site": "Site",
-    "admin": "Admin",
-    "finalize": "Finalize",
+    "site": "Site details",
+    "addons": "Add-ons",
+    "admin": "Administrator",
+    "finalize": "Install",
     "done": "Done"
   },
+  "estimates": {
+    "welcome": "a quick read",
+    "environment": "~10 sec",
+    "database": "~1 min",
+    "site": "~1 min",
+    "addons": "optional",
+    "admin": "~1 min",
+    "finalize": "~2 min",
+    "done": ""
+  },
   "welcome": {
-    "title": "Welcome to Xentium",
-    "subtitle": "A modern, blazing-fast forum platform. This wizard will guide you through installation in a couple of minutes.",
+    "title": "Let's get your community online",
+    "subtitle": "{{count}} short steps, about five minutes. We'll check your server, connect your database and write the config for you — nothing touches disk until you say go.",
     "features": {
-      "discussions": {
-        "title": "Real-time discussions",
-        "desc": "WebSocket-powered threads with instant updates."
+      "noconfig": {
+        "title": "No config files",
+        "desc": "We generate every secret and write .env for you."
       },
-      "search": {
-        "title": "Full-text search",
-        "desc": "Powered by Postgres tsvector for fast queries."
+      "retry": {
+        "title": "Safe to retry",
+        "desc": "Wrong credentials? Nothing is saved until a check passes."
       },
-      "responsive": {
-        "title": "Responsive & PWA",
-        "desc": "Works on every device. Installable as an app."
+      "locks": {
+        "title": "Locks itself after",
+        "desc": "Once you're done the wizard bolts the door behind it."
       },
-      "security": {
-        "title": "Built-in security",
-        "desc": "Rate limiting, Redis sessions, RBAC."
+      "norestart": {
+        "title": "No restart",
+        "desc": "The full app boots in place the moment config lands."
       }
-    }
+    },
+    "docker_hint": "Running the bundled Docker infra? Keep your terminal open — the database step can fill itself in with its defaults."
   },
   "environment": {
-    "title": "Environment check",
-    "subtitle": "Verifying your server meets the requirements for Xentium to run.",
+    "title": "Checking your server",
+    "subtitle": "A few quick probes for the things Xentium needs to run. This is read-only.",
+    "retry": "Re-check",
+    "unreachable": "Could not reach the server",
+    "block_reason": "Fix the failing checks to continue",
+    "summary": {
+      "running": "Running checks…",
+      "passed": "Everything checks out",
+      "failed": "Some checks need attention",
+      "progress": "{{done}} of {{total}} probes done",
+      "ready": "Your server is ready for Xentium.",
+      "fix": "Fix the red rows, then re-check."
+    },
     "rows": {
       "node": "Node.js",
       "postgres": "PostgreSQL",
@@ -44,69 +77,123 @@
       "server": "API server"
     },
     "status": {
-      "checking": "Checking...",
+      "checking": "Checking…",
       "passed": "Passed",
       "failed": "Failed",
       "warning": "Warning"
-    },
-    "retry": "Re-check all"
+    }
   },
   "database": {
-    "title": "Database connection",
-    "subtitle": "Xentium connects using the <code>DATABASE_URL</code> configured on your server. Verify it is reachable before continuing.",
+    "title": "Connect your database",
+    "setup_subtitle": "We test as you type. When it goes green, we'll generate your secrets, write the config and create the schema.",
+    "configured_subtitle": "Your server already carries a DATABASE_URL. We only need to check that it answers.",
     "postgres": "PostgreSQL",
-    "not_tested": "Not tested yet",
-    "test_button": "Test connection",
-    "testing": "Connecting...",
-    "setup_subtitle": "Enter your PostgreSQL connection details. Xentium verifies them, generates all secrets and writes the configuration for you.",
     "host": "Host",
     "port": "Port",
-    "db_name": "Database name",
-    "user": "Username",
+    "db_name": "Database",
+    "user": "User",
     "password": "Password",
-    "advanced": "Advanced",
     "redis_url": "Redis URL",
-    "redis_hint": "Optional — leave empty to use redis://localhost:6379.",
-    "connect": "Connect & save",
-    "connecting": "Connecting...",
-    "swap_wait": "Configuring... starting server",
+    "use_docker_defaults": "Use Docker defaults",
+    "awaiting": "Waiting for details",
+    "awaiting_detail": "host, database and user",
+    "not_tested": "Not tested yet",
+    "test_button": "Test connection",
+    "testing": "Testing connection…",
+    "connected": "Connected",
+    "connection_failed": "Couldn't connect",
+    "preparing": "Creating the schema…",
+    "prepared": "Schema created, core data seeded",
+    "swap_wait": "Writing the config and starting the server…",
     "setup_failed": "The server did not come back up in time. Check the server logs and try again.",
-    "connected": "Connection successful",
-    "connection_failed": "Connection failed"
+    "block_reason": "Waiting on a green connection",
+    "env_preview_title": "What we'll write to .env",
+    "env_preview_sub": "Four secrets, generated on the server. Nothing is written until you continue.",
+    "env_generated": "generated on save",
+    "show_password": "Show password",
+    "hide_password": "Hide password"
   },
   "site": {
-    "title": "Site configuration",
-    "subtitle": "Basic settings for your forum. You can change these later in the admin panel.",
+    "title": "Make it yours",
+    "subtitle": "Names, dates and a language. All of it is editable later in the admin panel.",
     "site_name": "Site name",
     "site_url": "Site URL",
-    "url_hint": "The full URL where your forum will be accessible.",
+    "url_hint": "The full URL where your site will be reachable.",
     "language": "Default language",
     "timezone": "Timezone",
     "timezone_hint": "Used for displaying dates and times across the platform."
   },
+  "addons": {
+    "title": "Add what you need",
+    "label": "Add-ons",
+    "subtitle": "Xentium works on its own. Everything here is optional, and nothing is permanent — add or remove any of it later from the admin panel.",
+    "account_title": "Marketplace account",
+    "account_sub": "Link one to install add-ons — every download goes through your account, free or paid.",
+    "link": "Link",
+    "not_now": "Not now",
+    "link_now": "Link now",
+    "skipped": "Free add-ons only for now. You can link an account any time from the admin panel.",
+    "linked_title": "Marketplace account linked",
+    "linked_generic": "Connected",
+    "licences_one": "{{count}} licence found",
+    "licences_other": "{{count}} licences found",
+    "unlink": "Unlink",
+    "link_pending": "Waiting for you to confirm…",
+    "link_pending_sub": "We opened the approval page in a new tab. Check that it shows this code, then approve it there.",
+    "copy_code": "Copy code",
+    "copied": "Copied",
+    "cancel": "Cancel",
+    "linked": "Marketplace account linked.",
+    "link_failed": "Couldn't reach the marketplace. You can link an account later from the admin panel.",
+    "link_denied": "That link request was declined.",
+    "link_expired": "That link request expired. Start a new one.",
+    "select_failed": "Couldn't save your selection.",
+    "loading": "Loading the catalogue…",
+    "unreachable": "We couldn't reach the marketplace, so there's nothing to add here. That's fine — the install carries on, and you can add plugins later from the admin panel.",
+    "locked_account": "Needs a linked marketplace account.",
+    "locked_licence": "Unlocks with an account that owns it.",
+    "locked_unreleased": "Nothing published yet.",
+    "not_linked": "not linked",
+    "tag_free": "Free",
+    "tag_paid": "Paid",
+    "tag_owned": "Owned",
+    "no_release": "no release yet",
+    "cta_locked": "Link to unlock",
+    "cta_link": "Link an account",
+    "cta_added": "Added",
+    "cta_add": "Add",
+    "tally_one": "1 add-on queued — it installs right after your account is created.",
+    "tally_other": "{{count}} add-ons queued — they install right after your account is created.",
+    "tally_empty": "Nothing selected — a bare Xentium works fine, and you can add these later.",
+    "tally_unlinked": "Link a marketplace account above to pick add-ons — or skip this step and add them later."
+  },
   "admin": {
-    "title": "Create admin user",
-    "subtitle": "This account gets full administrative privileges. Choose a strong password.",
-    "display_name": "Display name",
+    "title": "Your account",
+    "subtitle": "This is the first administrator — full run of the place. Pick a password you'd trust with it.",
     "email": "Email address",
     "username": "Username",
+    "username_hint": "Letters, numbers and underscores.",
     "password": "Password",
-    "password_hint": "Minimum 12 characters, include numbers and symbols.",
-    "password_weak": "Add numbers and symbols",
-    "password_strong": "Strong password",
-    "confirm": "Confirm password",
-    "match": "Passwords match",
-    "mismatch": "Passwords do not match",
-    "password_too_short": "Too short ({{length}}/5 characters)",
+    "password_hint": "At least 12 characters",
+    "confirm": "Confirm",
+    "confirm_placeholder": "Type it again",
+    "match": "Matches",
+    "mismatch": "Doesn't match yet",
+    "generate": "Generate",
+    "generated": "Generated — copy it somewhere safe before continuing.",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
+    "pw_good": "Nice one — that'll hold.",
+    "pw_advice": "Longer beats clever. A passphrase is fine.",
     "pw_rules": {
       "length": "12+ characters",
-      "upper": "Uppercase letter",
-      "lower": "Lowercase letter",
+      "upper": "Uppercase",
+      "lower": "Lowercase",
       "number": "A number",
       "symbol": "A symbol"
     },
     "pw_strength": {
-      "empty": "Empty",
+      "empty": "—",
       "weak": "Weak",
       "fair": "Fair",
       "good": "Good",
@@ -114,41 +201,60 @@
     }
   },
   "finalize": {
-    "title": "Finalize installation",
-    "subtitle": "Review your settings. Installation will run migrations, seed data, and create your admin account.",
+    "title": "Ready when you are",
+    "subtitle": "One last look. Hitting install creates your account, fetches the add-ons you picked and locks the installer behind you.",
     "site_section": "Site",
-    "admin_section": "Admin",
+    "admin_section": "Administrator",
+    "marketplace": "Marketplace",
+    "none": "none",
     "progress": {
-      "migrations": "Creating schema and running migrations",
-      "seeding": "Seeding roles and permissions",
-      "site": "Saving site configuration",
-      "admin": "Creating admin account",
-      "keys": "Generating keys and finalizing",
-      "complete": "Installation complete!"
+      "admin": "Creating your account",
+      "addons": "Installing add-ons",
+      "keys": "Finalizing",
+      "complete": "All done"
+    },
+    "log": {
+      "admin": "administrator {{username}} created · added to the admin group",
+      "addon": "{{name}} {{version}} installed and enabled",
+      "addon_installed_only": "{{name}} {{version}} installed — enable it from the admin panel",
+      "addon_failed": "{{name}} failed: {{reason}}",
+      "finalized": "site id written · installer locked",
+      "complete": "install complete"
     }
   },
   "done": {
-    "title": "Installation complete!",
-    "subtitle": "Your community is ready. You are already logged in as administrator.",
-    "login": "Log in",
-    "visit": "Visit forum",
-    "goto": "Go to your site"
+    "title": "You're live",
+    "subtitle": "{{site}} is installed and running. You're signed in as administrator, and the installer has locked itself behind you.",
+    "signed_in": "Signed in as administrator",
+    "summary": "Installed in {{duration}} · {{addons}}",
+    "summary_addons_one": "1 add-on",
+    "summary_addons_other": "{{count}} add-ons",
+    "summary_no_addons": "no add-ons",
+    "goto_admin": "Open the admin panel",
+    "goto_site": "Visit your site",
+    "tip": "First thing worth doing: set up outbound email so verification and notification messages can actually leave the server.",
+    "details": "Installation details",
+    "copy_recap": "Copy full recap",
+    "version": "Version"
   },
   "buttons": {
     "back": "Back",
-    "next": "Next",
+    "next": "Continue",
+    "start": "Let's go",
     "install": "Install Xentium",
-    "installing": "Installing...",
-    "retry": "Re-check all"
+    "installing": "Installing…"
   },
   "toast": {
-    "env_fail": "All environment checks must pass.",
-    "db_fail": "Test the database connection first.",
-    "admin_invalid_display": "Please enter a display name.",
-    "admin_invalid_email": "Please enter a valid email address.",
-    "admin_invalid_username": "Username must be at least 3 characters.",
-    "admin_invalid_password": "Password must be at least 12 characters.",
-    "admin_password_mismatch": "Passwords do not match.",
-    "install_failed": "Installation failed."
+    "env_fail": "Every check has to pass before we continue.",
+    "db_fail": "We need a working database connection first.",
+    "site_name_required": "Your site needs a name.",
+    "site_failed": "Couldn't save the site configuration.",
+    "admin_invalid_email": "That email address doesn't look right.",
+    "admin_invalid_username": "Usernames are 3–32 letters, numbers or underscores.",
+    "admin_invalid_password": "Give your password at least 12 characters.",
+    "admin_password_mismatch": "The two passwords don't match yet.",
+    "install_failed": "Installation failed.",
+    "api_unreachable": "Could not reach the API server. Make sure it is running.",
+    "already_installed": "This instance is already installed."
   }
 }

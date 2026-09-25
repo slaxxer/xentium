@@ -1,131 +1,260 @@
 {
+  "rail": {
+    "setup": "Instalação",
+    "step_counter": "Passo {{current}} de {{total}}",
+    "help": "Empacado? O guia de instalação cobre cada verificação desta lista."
+  },
+  "phases": {
+    "prepare": "Preparar",
+    "configure": "Configurar",
+    "finish": "Concluir"
+  },
+  "steps": {
+    "welcome": "Boas-vindas",
+    "environment": "Verificação",
+    "database": "Base de dados",
+    "site": "Dados do site",
+    "addons": "Extensões",
+    "admin": "Administrador",
+    "finalize": "Instalar",
+    "done": "Pronto"
+  },
+  "estimates": {
+    "welcome": "uma leitura rápida",
+    "environment": "~10 s",
+    "database": "~1 min",
+    "site": "~1 min",
+    "addons": "opcional",
+    "admin": "~1 min",
+    "finalize": "~2 min",
+    "done": ""
+  },
   "welcome": {
-    "title": "Bem-vindo ao Xentium",
-    "subtitle": "Uma plataforma de fórum moderna e extremamente rápida. Este assistente irá guiá-lo pela instalação em poucos minutos.",
+    "title": "Vamos pôr a tua comunidade no ar",
+    "subtitle": "{{count}} passos curtos, cerca de cinco minutos. Verificamos o teu servidor, ligamos a tua base de dados e escrevemos a configuração por ti — nada é gravado até tu mandares.",
     "features": {
-      "discussions": {
-        "title": "Discussões em tempo real",
-        "desc": "Tópicos alimentados por WebSocket com atualizações instantâneas."
+      "noconfig": {
+        "title": "Sem ficheiros de configuração",
+        "desc": "Geramos cada segredo e escrevemos o .env por ti."
       },
-      "search": {
-        "title": "Busca de texto completo",
-        "desc": "Alimentada pelo tsvector do Postgres para consultas rápidas."
+      "retry": {
+        "title": "Podes tentar de novo",
+        "desc": "Credenciais erradas? Nada é gravado até uma verificação passar."
       },
-      "responsive": {
-        "title": "Responsivo e PWA",
-        "desc": "Funciona em qualquer dispositivo. Instalável como um aplicativo."
+      "locks": {
+        "title": "Tranca-se no fim",
+        "desc": "Quando terminares, o assistente fecha a porta atrás de si."
       },
-      "security": {
-        "title": "Segurança integrada",
-        "desc": "Limitação de taxa, sessões Redis, RBAC."
+      "norestart": {
+        "title": "Sem reinícios",
+        "desc": "A aplicação completa arranca no lugar assim que a configuração existe."
       }
-    }
+    },
+    "docker_hint": "Estás a usar a infraestrutura Docker incluída? Deixa o terminal aberto — o passo da base de dados consegue preencher-se sozinho com os valores dela."
   },
   "environment": {
-    "title": "Verificação do ambiente",
-    "subtitle": "Verificando se o seu servidor atende aos requisitos para executar o Xentium.",
+    "title": "A verificar o teu servidor",
+    "subtitle": "Algumas verificações rápidas do que o Xentium precisa para funcionar. Só de leitura.",
+    "retry": "Verificar de novo",
+    "unreachable": "Não foi possível contactar o servidor",
+    "block_reason": "Corrige as verificações falhadas para continuar",
+    "summary": {
+      "running": "A verificar…",
+      "passed": "Está tudo bem",
+      "failed": "Algumas verificações precisam de atenção",
+      "progress": "{{done}} de {{total}} verificações feitas",
+      "ready": "O teu servidor está pronto para o Xentium.",
+      "fix": "Corrige as linhas a vermelho e verifica de novo."
+    },
     "rows": {
       "node": "Node.js",
       "postgres": "PostgreSQL",
       "redis": "Redis",
       "storage": "Armazenamento",
-      "database_url": "URL do banco de dados",
+      "database_url": "URL da base de dados",
       "data_dir": "Diretório de instalação",
-      "env_file": "Arquivo de configuração",
+      "env_file": "Ficheiro de configuração",
       "server": "Servidor API"
     },
     "status": {
-      "checking": "Verificando...",
-      "passed": "Aprovado",
+      "checking": "A verificar…",
+      "passed": "Passou",
       "failed": "Falhou",
       "warning": "Aviso"
-    },
-    "retry": "Verificar tudo novamente"
+    }
   },
   "database": {
-    "title": "Conexão com o banco de dados",
-    "subtitle": "O Xentium se conecta usando a <code>DATABASE_URL</code> configurada no seu servidor. Verifique se ela está acessível antes de continuar.",
+    "title": "Liga a tua base de dados",
+    "setup_subtitle": "Testamos enquanto escreves. Quando ficar verde, geramos os teus segredos, escrevemos a configuração e criamos o esquema.",
+    "configured_subtitle": "O teu servidor já traz um DATABASE_URL. Só precisamos de confirmar que responde.",
     "postgres": "PostgreSQL",
-    "not_tested": "Não testado ainda",
-    "test_button": "Testar conexão",
-    "testing": "Conectando...",
-    "setup_subtitle": "Informe os dados de conexão do seu banco de dados PostgreSQL. O Xentium os verifica, gera todos os segredos e grava a configuração para você.",
-    "host": "Host",
+    "host": "Anfitrião",
     "port": "Porta",
-    "db_name": "Nome do banco de dados",
-    "user": "Usuário",
-    "password": "Senha",
-    "advanced": "Avançado",
+    "db_name": "Base de dados",
+    "user": "Utilizador",
+    "password": "Palavra-passe",
     "redis_url": "URL do Redis",
-    "redis_hint": "Opcional — deixe em branco para usar redis://localhost:6379.",
-    "connect": "Conectar e salvar",
-    "connecting": "Conectando...",
-    "swap_wait": "Configurando... iniciando o servidor",
-    "setup_failed": "O servidor não voltou a tempo. Verifique os logs do servidor e tente novamente.",
-    "connected": "Conexão bem-sucedida",
-    "connection_failed": "Falha na conexão"
+    "use_docker_defaults": "Valores do Docker",
+    "awaiting": "À espera dos dados",
+    "awaiting_detail": "anfitrião, base de dados e utilizador",
+    "not_tested": "Ainda não testado",
+    "test_button": "Testar ligação",
+    "testing": "A testar a ligação…",
+    "connected": "Ligado",
+    "connection_failed": "Não foi possível ligar",
+    "preparing": "A criar o esquema…",
+    "prepared": "Esquema criado, dados base inseridos",
+    "swap_wait": "A escrever a configuração e a arrancar o servidor…",
+    "setup_failed": "O servidor não voltou a tempo. Verifica os registos do servidor e tenta de novo.",
+    "block_reason": "À espera de uma ligação a verde",
+    "env_preview_title": "O que vamos escrever no .env",
+    "env_preview_sub": "Quatro segredos, gerados no servidor. Nada é escrito até continuares.",
+    "env_generated": "gerado ao gravar",
+    "show_password": "Mostrar palavra-passe",
+    "hide_password": "Ocultar palavra-passe"
   },
   "site": {
-    "title": "Configuração do site",
-    "subtitle": "Configurações básicas do seu fórum. Você pode alterá-las mais tarde no painel administrativo.",
+    "title": "Torna-o teu",
+    "subtitle": "Nomes, datas e um idioma. Tudo isto se muda depois no painel de administração.",
     "site_name": "Nome do site",
     "site_url": "URL do site",
-    "url_hint": "A URL completa onde seu fórum estará acessível.",
-    "language": "Idioma padrão",
+    "url_hint": "O URL completo onde o teu site vai estar acessível.",
+    "language": "Idioma predefinido",
     "timezone": "Fuso horário",
-    "timezone_hint": "Usado para exibir datas e horários na plataforma."
+    "timezone_hint": "Usado para mostrar datas e horas em toda a plataforma."
+  },
+  "addons": {
+    "title": "Acrescenta o que precisares",
+    "label": "Extensões",
+    "subtitle": "O Xentium funciona sozinho. Tudo aqui é opcional e nada é definitivo — podes acrescentar ou remover mais tarde no painel de administração.",
+    "account_title": "Conta do mercado",
+    "account_sub": "Liga uma para instalar extensões: cada transferência passa pela tua conta, gratuita ou paga.",
+    "link": "Ligar",
+    "not_now": "Agora não",
+    "link_now": "Ligar agora",
+    "skipped": "Só extensões gratuitas por agora. Podes ligar uma conta a qualquer momento no painel de administração.",
+    "linked_title": "Conta do mercado ligada",
+    "linked_generic": "Ligada",
+    "licences_one": "{{count}} licença encontrada",
+    "licences_other": "{{count}} licenças encontradas",
+    "unlink": "Desligar",
+    "link_pending": "À espera da tua confirmação…",
+    "link_pending_sub": "Abrimos a página de aprovação num separador novo. Confirma que mostra este código e aprova-o aí.",
+    "copy_code": "Copiar código",
+    "copied": "Copiado",
+    "cancel": "Cancelar",
+    "linked": "Conta do mercado ligada.",
+    "link_failed": "Não foi possível contactar o mercado. Podes ligar uma conta mais tarde no painel de administração.",
+    "link_denied": "Esse pedido de ligação foi recusado.",
+    "link_expired": "Esse pedido de ligação expirou. Começa outro.",
+    "select_failed": "Não foi possível guardar a tua seleção.",
+    "loading": "A carregar o catálogo…",
+    "unreachable": "Não conseguimos contactar o mercado, por isso não há nada para acrescentar aqui. Tudo bem — a instalação segue e podes acrescentar plugins depois no painel de administração.",
+    "locked_account": "Precisa de uma conta do mercado ligada.",
+    "locked_licence": "Desbloqueia com uma conta que a tenha.",
+    "locked_unreleased": "Ainda não há nada publicado.",
+    "not_linked": "não ligada",
+    "tag_free": "Gratuita",
+    "tag_paid": "Paga",
+    "tag_owned": "Na tua conta",
+    "no_release": "ainda sem versão",
+    "cta_locked": "Liga para desbloquear",
+    "cta_link": "Ligar uma conta",
+    "cta_added": "Acrescentada",
+    "cta_add": "Acrescentar",
+    "tally_one": "1 extensão em fila — é instalada logo a seguir à tua conta.",
+    "tally_other": "{{count}} extensões em fila — são instaladas logo a seguir à tua conta.",
+    "tally_empty": "Nada selecionado — um Xentium simples funciona muito bem, e podes voltar a isto depois.",
+    "tally_unlinked": "Liga acima uma conta do mercado para escolher extensões, ou salta este passo e acrescenta-as depois."
   },
   "admin": {
-    "title": "Criar usuário administrador",
-    "subtitle": "Esta conta terá todos os privilégios administrativos. Escolha uma senha forte.",
-    "display_name": "Nome de exibição",
+    "title": "A tua conta",
+    "subtitle": "Este é o primeiro administrador — com todos os poderes. Escolhe uma palavra-passe à altura.",
     "email": "Endereço de e-mail",
-    "username": "Nome de usuário",
-    "password": "Senha",
-    "password_hint": "Mínimo de 12 caracteres, incluindo números e símbolos.",
-    "password_weak": "Adicione números e símbolos",
-    "password_strong": "Senha forte",
-    "confirm": "Confirmar senha",
-    "match": "As senhas coincidem",
-    "mismatch": "As senhas não coincidem",
-    "password_too_short": "Muito curta ({{length}}/5 caracteres)"
+    "username": "Nome de utilizador",
+    "username_hint": "Letras, números e underscores.",
+    "password": "Palavra-passe",
+    "password_hint": "Pelo menos 12 caracteres",
+    "confirm": "Confirmar",
+    "confirm_placeholder": "Escreve outra vez",
+    "match": "Coincidem",
+    "mismatch": "Ainda não coincidem",
+    "generate": "Gerar",
+    "generated": "Gerada — guarda-a num sítio seguro antes de continuar.",
+    "show_password": "Mostrar palavra-passe",
+    "hide_password": "Ocultar palavra-passe",
+    "pw_good": "Boa — essa aguenta.",
+    "pw_advice": "Comprida bate engenhosa. Uma frase-passe serve.",
+    "pw_rules": {
+      "length": "12+ caracteres",
+      "upper": "Maiúscula",
+      "lower": "Minúscula",
+      "number": "Um número",
+      "symbol": "Um símbolo"
+    },
+    "pw_strength": {
+      "empty": "—",
+      "weak": "Fraca",
+      "fair": "Razoável",
+      "good": "Boa",
+      "strong": "Forte"
+    }
   },
   "finalize": {
-    "title": "Finalizar instalação",
-    "subtitle": "Revise suas configurações. A instalação executará migrações, semeará dados e criará sua conta de administrador.",
+    "title": "Quando quiseres",
+    "subtitle": "Um último olhar. Ao instalar criamos a tua conta, buscamos as extensões que escolheste e trancamos o instalador atrás de ti.",
     "site_section": "Site",
     "admin_section": "Administrador",
+    "marketplace": "Mercado",
+    "none": "nenhuma",
     "progress": {
-      "migrations": "Criando esquema e executando migrações",
-      "seeding": "Semeando papéis e permissões",
-      "site": "Salvando configuração do site",
-      "admin": "Criando conta de administrador",
-      "keys": "Gerando chaves e finalizando",
-      "complete": "Instalação concluída!"
+      "admin": "A criar a tua conta",
+      "addons": "A instalar extensões",
+      "keys": "A finalizar",
+      "complete": "Está tudo feito"
+    },
+    "log": {
+      "admin": "administrador {{username}} criado · adicionado ao grupo admin",
+      "addon": "{{name}} {{version}} instalada e ativada",
+      "addon_installed_only": "{{name}} {{version}} instalada — ativa-a no painel de administração",
+      "addon_failed": "{{name}} falhou: {{reason}}",
+      "finalized": "site id escrito · instalador trancado",
+      "complete": "instalação concluída"
     }
   },
   "done": {
-    "title": "Instalação concluída!",
-    "subtitle": "Sua comunidade está pronta. Você já está conectado como administrador.",
-    "login": "Entrar",
-    "visit": "Visitar o fórum",
-    "goto": "Ir para o site"
+    "title": "Estás no ar",
+    "subtitle": "O {{site}} está instalado e a funcionar. Tens sessão iniciada como administrador, e o instalador trancou-se atrás de ti.",
+    "signed_in": "Sessão iniciada como administrador",
+    "summary": "Instalado em {{duration}} · {{addons}}",
+    "summary_addons_one": "1 extensão",
+    "summary_addons_other": "{{count}} extensões",
+    "summary_no_addons": "sem extensões",
+    "goto_admin": "Abrir o painel de administração",
+    "goto_site": "Visitar o teu site",
+    "tip": "A primeira coisa que vale a pena fazer: configurar o envio de e-mail para que as mensagens de verificação e notificação consigam sair do servidor.",
+    "details": "Detalhes da instalação",
+    "copy_recap": "Copiar o resumo",
+    "version": "Versão"
   },
   "buttons": {
     "back": "Voltar",
-    "next": "Próximo",
-    "install": "Instalar Xentium",
-    "installing": "Instalando...",
-    "retry": "Verificar tudo novamente"
+    "next": "Continuar",
+    "start": "Vamos lá",
+    "install": "Instalar o Xentium",
+    "installing": "A instalar…"
   },
   "toast": {
-    "env_fail": "Todas as verificações de ambiente devem ser aprovadas.",
-    "db_fail": "Teste a conexão com o banco de dados primeiro.",
-    "admin_invalid_display": "Por favor, insira um nome de exibição.",
-    "admin_invalid_email": "Por favor, insira um endereço de e-mail válido.",
-    "admin_invalid_username": "O nome de usuário deve ter pelo menos 3 caracteres.",
-    "admin_invalid_password": "A senha deve ter pelo menos 12 caracteres.",
-    "admin_password_mismatch": "As senhas não coincidem.",
-    "install_failed": "A instalação falhou."
+    "env_fail": "Todas as verificações têm de passar antes de continuarmos.",
+    "db_fail": "Precisamos primeiro de uma ligação à base de dados que funcione.",
+    "site_name_required": "O teu site precisa de um nome.",
+    "site_failed": "Não foi possível guardar a configuração do site.",
+    "admin_invalid_email": "Esse endereço de e-mail não parece certo.",
+    "admin_invalid_username": "Os nomes de utilizador têm 3 a 32 letras, números ou underscores.",
+    "admin_invalid_password": "Dá pelo menos 12 caracteres à tua palavra-passe.",
+    "admin_password_mismatch": "As duas palavras-passe ainda não coincidem.",
+    "install_failed": "A instalação falhou.",
+    "api_unreachable": "Não foi possível contactar o servidor API. Confirma que está a correr.",
+    "already_installed": "Esta instância já está instalada."
   }
 }
