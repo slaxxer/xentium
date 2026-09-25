@@ -1,10 +1,12 @@
 import { z } from "zod";
+import type { MarketplaceListing } from "./marketplace.js";
 
 export const InstallStep = {
   WELCOME: "WELCOME",
   ENVIRONMENT: "ENVIRONMENT",
   DATABASE: "DATABASE",
   SITE_CONFIG: "SITE_CONFIG",
+  ADDONS: "ADDONS",
   ADMIN: "ADMIN",
   FINALIZE: "FINALIZE",
   COMPLETE: "COMPLETE",
@@ -16,6 +18,7 @@ export const INSTALL_STEP_ORDER: InstallStep[] = [
   InstallStep.ENVIRONMENT,
   InstallStep.DATABASE,
   InstallStep.SITE_CONFIG,
+  InstallStep.ADDONS,
   InstallStep.ADMIN,
   InstallStep.FINALIZE,
   InstallStep.COMPLETE,
@@ -29,6 +32,9 @@ export interface InstallStatusDto {
    *  The wizard's DATABASE step shows a credentials form instead of the
    *  test-connection button. False/absent once the full app is booted. */
   setupMode?: boolean;
+  /** The platform version, so the wizard can print what it is installing. The
+   *  setup server answers it too — it is the one thing both modes know. */
+  version?: string;
 }
 
 export interface EnvironmentCheckDto {
@@ -89,4 +95,72 @@ export interface AdminAccountInput {
   email: string;
   username: string;
   password: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ADD-ONS step (§16 / ADR-0001)
+//
+// The wizard's fifth step browses the marketplace catalogue, links an account
+// and records which plugins to install. Nothing is downloaded here: the choice
+// is a SELECTION, and the artifacts are fetched during the install run — after
+// the administrator exists, because the install path is the same authenticated
+// one the ACP uses and it attributes the install to a user.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** What the ADD-ONS step needs to draw itself, in one call. */
+export interface InstallAddonsDto {
+  /** False when the marketplace could not be reached. The step still renders —
+   *  it just says so instead of showing an empty catalogue as "nothing to add". */
+  reachable: boolean;
+  connected: boolean;
+  /** Display label for the linked account (masked email / account id), never a token. */
+  accountRef: string | null;
+  listings: MarketplaceListing[];
+  /** Ids the account holds a licence for. Separate from `listings[].owned` so a
+   *  catalogue page that predates the field still answers the lock correctly. */
+  ownedIds: string[];
+  /** The selection already recorded on this install, so a back-and-forward
+   *  through the wizard does not silently drop it. */
+  selected: string[];
+}
+
+export const installAddonSelectionSchema = z.object({
+  pluginIds: z.array(z.string().min(1).max(200)).max(50).default([]),
+});
+
+export interface InstallAddonSelectionInput {
+  pluginIds: string[];
+}
+
+export const installAddonInstallSchema = z.object({
+  pluginId: z.string().min(1).max(200),
+  version: z.string().min(1).max(64),
+});
+
+export interface InstallAddonInstallInput {
+  pluginId: string;
+  version: string;
+}
+
+export interface InstallAddonInstallResult {
+  id: string;
+  name: string;
+  version: string;
+  /** Add-ons picked in the wizard are enabled straight away — an admin who ticked
+   *  "Forum" expects a forum, not a disabled package. False when enabling failed
+   *  (a licence the marketplace declined at the gate); the package is installed
+   *  either way and the ACP can enable it later. */
+  enabled: boolean;
+}
+
+/** Setup-mode only: verify credentials WITHOUT writing anything. The DATABASE
+ *  step probes as you type; only Continue writes `.env`. */
+export interface SetupProbeResult {
+  ok: boolean;
+  /** Server version string when we got far enough to ask, else null. */
+  postgres: string | null;
+  /** null when no Redis URL was supplied — absence is not a failure. */
+  redis: string | null;
+  /** Round-trip of the connect + SELECT 1, in milliseconds. */
+  latencyMs: number;
 }

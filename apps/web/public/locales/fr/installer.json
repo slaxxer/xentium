@@ -1,131 +1,260 @@
 {
+  "rail": {
+    "setup": "Installation",
+    "step_counter": "Étape {{current}} sur {{total}}",
+    "help": "Bloqué ? Le guide d'installation couvre chaque vérification de cette liste."
+  },
+  "phases": {
+    "prepare": "Préparer",
+    "configure": "Configurer",
+    "finish": "Terminer"
+  },
+  "steps": {
+    "welcome": "Bienvenue",
+    "environment": "Vérification",
+    "database": "Base de données",
+    "site": "Détails du site",
+    "addons": "Extensions",
+    "admin": "Administrateur",
+    "finalize": "Installation",
+    "done": "Terminé"
+  },
+  "estimates": {
+    "welcome": "une lecture rapide",
+    "environment": "~10 s",
+    "database": "~1 min",
+    "site": "~1 min",
+    "addons": "facultatif",
+    "admin": "~1 min",
+    "finalize": "~2 min",
+    "done": ""
+  },
   "welcome": {
-    "title": "Bienvenue sur Xentium",
-    "subtitle": "Une plateforme de forum moderne et ultra-rapide. Cet assistant vous guidera tout au long de l'installation en quelques minutes.",
+    "title": "Mettons votre communauté en ligne",
+    "subtitle": "{{count}} étapes courtes, environ cinq minutes. Nous vérifions votre serveur, connectons votre base de données et écrivons la configuration pour vous — rien n'est enregistré avant votre feu vert.",
     "features": {
-      "discussions": {
-        "title": "Discussions en temps réel",
-        "desc": "Fils de discussion alimentés par WebSocket avec mises à jour instantanées."
+      "noconfig": {
+        "title": "Aucun fichier de config",
+        "desc": "Nous générons chaque secret et écrivons le .env pour vous."
       },
-      "search": {
-        "title": "Recherche plein texte",
-        "desc": "Alimentée par tsvector de Postgres pour des requêtes rapides."
+      "retry": {
+        "title": "On peut réessayer",
+        "desc": "Mauvais identifiants ? Rien n'est enregistré tant qu'une vérification n'a pas réussi."
       },
-      "responsive": {
-        "title": "Responsive et PWA",
-        "desc": "Fonctionne sur tous les appareils. Installable comme une application."
+      "locks": {
+        "title": "Se verrouille ensuite",
+        "desc": "Une fois terminé, l'assistant ferme la porte derrière lui."
       },
-      "security": {
-        "title": "Sécurité intégrée",
-        "desc": "Limitation de débit, sessions Redis, RBAC."
+      "norestart": {
+        "title": "Pas de redémarrage",
+        "desc": "L'application complète démarre sur place dès que la configuration existe."
       }
-    }
+    },
+    "docker_hint": "Vous utilisez l'infrastructure Docker fournie ? Gardez votre terminal ouvert — l'étape base de données peut se remplir toute seule avec ses valeurs par défaut."
   },
   "environment": {
-    "title": "Vérification de l'environnement",
-    "subtitle": "Vérification que votre serveur remplit les conditions requises pour exécuter Xentium.",
+    "title": "Vérification de votre serveur",
+    "subtitle": "Quelques vérifications rapides de ce dont Xentium a besoin pour fonctionner. En lecture seule.",
+    "retry": "Revérifier",
+    "unreachable": "Serveur injoignable",
+    "block_reason": "Corrigez les vérifications en échec pour continuer",
+    "summary": {
+      "running": "Vérifications en cours…",
+      "passed": "Tout est bon",
+      "failed": "Certaines vérifications demandent votre attention",
+      "progress": "{{done}} vérifications sur {{total}}",
+      "ready": "Votre serveur est prêt pour Xentium.",
+      "fix": "Corrigez les lignes en rouge, puis revérifiez."
+    },
     "rows": {
       "node": "Node.js",
       "postgres": "PostgreSQL",
       "redis": "Redis",
       "storage": "Stockage",
-      "database_url": "URL de la base de données",
+      "database_url": "URL de base de données",
       "data_dir": "Répertoire d'installation",
       "env_file": "Fichier de configuration",
       "server": "Serveur API"
     },
     "status": {
-      "checking": "Vérification...",
+      "checking": "Vérification…",
       "passed": "Réussi",
-      "failed": "Échoué",
+      "failed": "Échec",
       "warning": "Avertissement"
-    },
-    "retry": "Revérifier tout"
+    }
   },
   "database": {
-    "title": "Connexion à la base de données",
-    "subtitle": "Xentium se connecte en utilisant la <code>DATABASE_URL</code> configurée sur votre serveur. Vérifiez qu'elle est accessible avant de continuer.",
+    "title": "Connectez votre base de données",
+    "setup_subtitle": "Nous testons pendant que vous tapez. Au vert, nous générons vos secrets, écrivons la configuration et créons le schéma.",
+    "configured_subtitle": "Votre serveur porte déjà un DATABASE_URL. Nous vérifions simplement qu'il répond.",
     "postgres": "PostgreSQL",
-    "not_tested": "Pas encore testé",
-    "test_button": "Tester la connexion",
-    "testing": "Connexion...",
-    "setup_subtitle": "Saisissez les informations de connexion de votre base de données PostgreSQL. Xentium les vérifie, génère tous les secrets et écrit la configuration pour vous.",
     "host": "Hôte",
     "port": "Port",
-    "db_name": "Nom de la base de données",
+    "db_name": "Base de données",
     "user": "Utilisateur",
     "password": "Mot de passe",
-    "advanced": "Avancé",
     "redis_url": "URL Redis",
-    "redis_hint": "Optionnel — laissez vide pour utiliser redis://localhost:6379.",
-    "connect": "Connecter et enregistrer",
-    "connecting": "Connexion...",
-    "swap_wait": "Configuration... démarrage du serveur",
-    "setup_failed": "Le serveur n'est pas revenu à temps. Vérifiez les journaux du serveur et réessayez.",
-    "connected": "Connexion réussie",
-    "connection_failed": "Échec de la connexion"
+    "use_docker_defaults": "Valeurs Docker",
+    "awaiting": "En attente des informations",
+    "awaiting_detail": "hôte, base de données et utilisateur",
+    "not_tested": "Pas encore testé",
+    "test_button": "Tester la connexion",
+    "testing": "Test de la connexion…",
+    "connected": "Connecté",
+    "connection_failed": "Connexion impossible",
+    "preparing": "Création du schéma…",
+    "prepared": "Schéma créé, données de base insérées",
+    "swap_wait": "Écriture de la configuration et démarrage du serveur…",
+    "setup_failed": "Le serveur n'est pas revenu à temps. Consultez les journaux du serveur et réessayez.",
+    "block_reason": "En attente d'une connexion au vert",
+    "env_preview_title": "Ce que nous écrirons dans le .env",
+    "env_preview_sub": "Quatre secrets, générés sur le serveur. Rien n'est écrit tant que vous ne continuez pas.",
+    "env_generated": "généré à l'enregistrement",
+    "show_password": "Afficher le mot de passe",
+    "hide_password": "Masquer le mot de passe"
   },
   "site": {
-    "title": "Configuration du site",
-    "subtitle": "Paramètres de base de votre forum. Vous pourrez les modifier plus tard dans le panneau d'administration.",
+    "title": "Faites-en le vôtre",
+    "subtitle": "Des noms, des dates et une langue. Tout cela se modifie ensuite dans le panneau d'administration.",
     "site_name": "Nom du site",
     "site_url": "URL du site",
-    "url_hint": "L'URL complète où votre forum sera accessible.",
+    "url_hint": "L'URL complète à laquelle votre site sera accessible.",
     "language": "Langue par défaut",
     "timezone": "Fuseau horaire",
-    "timezone_hint": "Utilisé pour afficher les dates et heures sur la plateforme."
+    "timezone_hint": "Utilisé pour afficher les dates et les heures sur toute la plateforme."
+  },
+  "addons": {
+    "title": "Ajoutez ce qu'il vous faut",
+    "label": "Extensions",
+    "subtitle": "Xentium fonctionne tout seul. Tout ici est facultatif et rien n'est définitif — vous pourrez en ajouter ou en retirer plus tard depuis le panneau d'administration.",
+    "account_title": "Compte de la marketplace",
+    "account_sub": "Reliez-en un pour installer des extensions : chaque téléchargement passe par votre compte, gratuit ou payant.",
+    "link": "Relier",
+    "not_now": "Pas maintenant",
+    "link_now": "Relier maintenant",
+    "skipped": "Extensions gratuites uniquement pour l'instant. Vous pourrez relier un compte à tout moment depuis le panneau d'administration.",
+    "linked_title": "Compte de la marketplace relié",
+    "linked_generic": "Connecté",
+    "licences_one": "{{count}} licence trouvée",
+    "licences_other": "{{count}} licences trouvées",
+    "unlink": "Dissocier",
+    "link_pending": "En attente de votre confirmation…",
+    "link_pending_sub": "Nous avons ouvert la page d'approbation dans un nouvel onglet. Vérifiez qu'elle affiche ce code, puis approuvez-la.",
+    "copy_code": "Copier le code",
+    "copied": "Copié",
+    "cancel": "Annuler",
+    "linked": "Compte de la marketplace relié.",
+    "link_failed": "La marketplace est injoignable. Vous pourrez relier un compte plus tard depuis le panneau d'administration.",
+    "link_denied": "Cette demande de liaison a été refusée.",
+    "link_expired": "Cette demande de liaison a expiré. Recommencez.",
+    "select_failed": "Votre sélection n'a pas pu être enregistrée.",
+    "loading": "Chargement du catalogue…",
+    "unreachable": "La marketplace est injoignable, il n'y a donc rien à ajouter ici. Ce n'est pas grave : l'installation continue et vous pourrez ajouter des plugins plus tard depuis le panneau d'administration.",
+    "locked_account": "Nécessite un compte marketplace relié.",
+    "locked_licence": "Se débloque avec un compte qui la possède.",
+    "locked_unreleased": "Rien de publié pour l'instant.",
+    "not_linked": "non relié",
+    "tag_free": "Gratuit",
+    "tag_paid": "Payant",
+    "tag_owned": "Possédé",
+    "no_release": "aucune version",
+    "cta_locked": "Reliez pour débloquer",
+    "cta_link": "Relier un compte",
+    "cta_added": "Ajouté",
+    "cta_add": "Ajouter",
+    "tally_one": "1 extension en attente — elle s'installe juste après la création de votre compte.",
+    "tally_other": "{{count}} extensions en attente — elles s'installent juste après la création de votre compte.",
+    "tally_empty": "Rien de sélectionné — un Xentium nu fonctionne très bien, et vous pourrez y revenir plus tard.",
+    "tally_unlinked": "Reliez un compte marketplace ci-dessus pour choisir des extensions, ou passez cette étape et ajoutez-les plus tard."
   },
   "admin": {
-    "title": "Créer l'utilisateur administrateur",
-    "subtitle": "Ce compte dispose de tous les privilèges d'administration. Choisissez un mot de passe fort.",
-    "display_name": "Nom d'affichage",
+    "title": "Votre compte",
+    "subtitle": "C'est le premier administrateur — les pleins pouvoirs. Choisissez un mot de passe à la hauteur.",
     "email": "Adresse e-mail",
     "username": "Nom d'utilisateur",
+    "username_hint": "Lettres, chiffres et tirets bas.",
     "password": "Mot de passe",
-    "password_hint": "Minimum 12 caractères, incluant chiffres et symboles.",
-    "password_weak": "Ajoutez des chiffres et des symboles",
-    "password_strong": "Mot de passe fort",
-    "confirm": "Confirmer le mot de passe",
-    "match": "Les mots de passe correspondent",
-    "mismatch": "Les mots de passe ne correspondent pas",
-    "password_too_short": "Trop court ({{length}}/5 caractères)"
+    "password_hint": "Au moins 12 caractères",
+    "confirm": "Confirmer",
+    "confirm_placeholder": "Saisissez-le à nouveau",
+    "match": "Correspondent",
+    "mismatch": "Ne correspondent pas encore",
+    "generate": "Générer",
+    "generated": "Généré — mettez-le en lieu sûr avant de continuer.",
+    "show_password": "Afficher le mot de passe",
+    "hide_password": "Masquer le mot de passe",
+    "pw_good": "Parfait — celui-là tiendra.",
+    "pw_advice": "Plus long vaut mieux que plus malin. Une phrase de passe convient.",
+    "pw_rules": {
+      "length": "12+ caractères",
+      "upper": "Majuscule",
+      "lower": "Minuscule",
+      "number": "Un chiffre",
+      "symbol": "Un symbole"
+    },
+    "pw_strength": {
+      "empty": "—",
+      "weak": "Faible",
+      "fair": "Moyen",
+      "good": "Bon",
+      "strong": "Fort"
+    }
   },
   "finalize": {
-    "title": "Finaliser l'installation",
-    "subtitle": "Vérifiez vos paramètres. L'installation exécutera les migrations, chargera les données de référence et créera votre compte administrateur.",
+    "title": "Quand vous voulez",
+    "subtitle": "Un dernier coup d'œil. Lancer l'installation crée votre compte, récupère les extensions choisies et verrouille l'assistant derrière vous.",
     "site_section": "Site",
     "admin_section": "Administrateur",
+    "marketplace": "Marketplace",
+    "none": "aucune",
     "progress": {
-      "migrations": "Création du schéma et exécution des migrations",
-      "seeding": "Initialisation des rôles et permissions",
-      "site": "Enregistrement de la configuration du site",
-      "admin": "Création du compte administrateur",
-      "keys": "Génération des clés et finalisation",
-      "complete": "Installation terminée !"
+      "admin": "Création de votre compte",
+      "addons": "Installation des extensions",
+      "keys": "Finalisation",
+      "complete": "Tout est prêt"
+    },
+    "log": {
+      "admin": "administrateur {{username}} créé · ajouté au groupe admin",
+      "addon": "{{name}} {{version}} installée et activée",
+      "addon_installed_only": "{{name}} {{version}} installée — activez-la depuis le panneau d'administration",
+      "addon_failed": "{{name}} a échoué : {{reason}}",
+      "finalized": "site id écrit · installateur verrouillé",
+      "complete": "installation terminée"
     }
   },
   "done": {
-    "title": "Installation terminée !",
-    "subtitle": "Votre communauté est prête. Vous êtes déjà connecté en tant qu'administrateur.",
-    "login": "Se connecter",
-    "visit": "Visiter le forum",
-    "goto": "Aller sur le site"
+    "title": "Vous êtes en ligne",
+    "subtitle": "{{site}} est installé et fonctionne. Vous êtes connecté en tant qu'administrateur, et l'installateur s'est verrouillé derrière vous.",
+    "signed_in": "Connecté en tant qu'administrateur",
+    "summary": "Installé en {{duration}} · {{addons}}",
+    "summary_addons_one": "1 extension",
+    "summary_addons_other": "{{count}} extensions",
+    "summary_no_addons": "aucune extension",
+    "goto_admin": "Ouvrir le panneau d'administration",
+    "goto_site": "Voir votre site",
+    "tip": "La première chose à faire : configurer l'envoi d'e-mails pour que les messages de vérification et de notification puissent quitter le serveur.",
+    "details": "Détails de l'installation",
+    "copy_recap": "Copier le récapitulatif",
+    "version": "Version"
   },
   "buttons": {
     "back": "Retour",
-    "next": "Suivant",
+    "next": "Continuer",
+    "start": "C'est parti",
     "install": "Installer Xentium",
-    "installing": "Installation...",
-    "retry": "Revérifier tout"
+    "installing": "Installation…"
   },
   "toast": {
-    "env_fail": "Toutes les vérifications de l'environnement doivent réussir.",
-    "db_fail": "Testez d'abord la connexion à la base de données.",
-    "admin_invalid_display": "Veuillez saisir un nom d'affichage.",
-    "admin_invalid_email": "Veuillez saisir une adresse e-mail valide.",
-    "admin_invalid_username": "Le nom d'utilisateur doit comporter au moins 3 caractères.",
-    "admin_invalid_password": "Le mot de passe doit comporter au moins 12 caractères.",
-    "admin_password_mismatch": "Les mots de passe ne correspondent pas.",
-    "install_failed": "L'installation a échoué."
+    "env_fail": "Toutes les vérifications doivent réussir avant de continuer.",
+    "db_fail": "Il nous faut d'abord une connexion à la base de données qui fonctionne.",
+    "site_name_required": "Votre site a besoin d'un nom.",
+    "site_failed": "La configuration du site n'a pas pu être enregistrée.",
+    "admin_invalid_email": "Cette adresse e-mail ne semble pas correcte.",
+    "admin_invalid_username": "Les noms d'utilisateur font 3 à 32 lettres, chiffres ou tirets bas.",
+    "admin_invalid_password": "Donnez au moins 12 caractères à votre mot de passe.",
+    "admin_password_mismatch": "Les deux mots de passe ne correspondent pas encore.",
+    "install_failed": "L'installation a échoué.",
+    "api_unreachable": "Serveur API injoignable. Vérifiez qu'il est démarré.",
+    "already_installed": "Cette instance est déjà installée."
   }
 }
