@@ -8,6 +8,7 @@ import { Badge } from "../../../components/Badge";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { useUploadAllowed, UPLOAD_ALLOWED_KEY } from "../hooks/useUploadAllowed";
+import { TrustBadge } from "../components/TrustBadge";
 
 interface InstalledPlugin {
   id:               string;
@@ -16,6 +17,10 @@ interface InstalledPlugin {
   installedVersion: string;
   status:           string;
   licenseRequired:  boolean;
+  /** Which review the package carried, or null when it carried no signature. */
+  signatureTier:    string | null;
+  /** Null only for a plugin installed before provenance was recorded at all. */
+  contentDigest:    string | null;
   installedAt:      string;
   loadError:        { hook: string; message: string; at: string } | null;
 }
@@ -141,6 +146,9 @@ export function InstalledPage() {
                     <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
                     <span style={{ fontSize:12, color:"var(--c-fg-muted)" }}>v{p.installedVersion}</span>
                     {p.licenseRequired && <Badge label={t("installed.licensed")} color="var(--c-warn)" />}
+                    {/* Beside the name, not with the status pills: this is about
+                        what the code IS, not about what it is currently doing. */}
+                    <TrustBadge tier={p.signatureTier} recorded={p.contentDigest !== null} />
                   </div>
                   <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>
                     {t("installed.meta", { id: p.id, vendor: p.vendor, date: new Date(p.installedAt).toLocaleDateString() })}

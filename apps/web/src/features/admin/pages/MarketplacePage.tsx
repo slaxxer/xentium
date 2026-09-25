@@ -18,6 +18,7 @@ import { themeInstallMessage } from "../hooks/themeInstallResult";
 import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 import { ThemePreview } from "../components/ThemePreview";
 import { openPanelDialog } from "../../../lib/dialog";
+import { TrustBadge } from "../components/TrustBadge";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 
 type ProductKind = "plugin" | "theme";
@@ -32,6 +33,8 @@ interface MarketplacePlugin {
   latestVersion:   string | null;
   vendor:          string;
   licenseRequired: boolean;
+  /** How hard we looked before listing it. Absent from an older catalogue page. */
+  trustTier?:      "audited" | "reviewed" | "unvetted";
   /** A theme's own screenshot, served BY the marketplace as an absolute URL.
    *  Null for plugins and for themes whose package shipped none. */
   screenshot?:     string | null;
@@ -365,7 +368,13 @@ export function MarketplacePage() {
                 </div>
               </div>
 
-              <div style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)", marginBottom:6 }}>{p.name}</div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:6 }}>
+                <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
+                {/* Before the money, not after it. How hard we looked is part of
+                    what a buyer is deciding on, and a theme has no code for us to
+                    have looked at. */}
+                {!isTheme && p.trustTier && <TrustBadge tier={p.trustTier} mode="tier" />}
+              </div>
               <div style={{ fontSize:13, color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
 
               {/* On the CARD, beside the price — a theme's missing pieces are part

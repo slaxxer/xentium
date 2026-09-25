@@ -930,6 +930,23 @@ model InstalledPlugin {
   licenseRequired  Boolean   @default(false) @map("license_required")
   packagePath      String    @map("package_path")
   manifest         Json
+  /// Has the Xentium team reviewed this build: audited | reviewed | unvetted,
+  /// or NULL for a package that carries no signature at all.
+  ///
+  /// NULL is the normal state for a developer's own build and is not an
+  /// accusation — the ACP says "unverified source". A package that carries a
+  /// signature which does NOT verify never reaches this table: it is refused at
+  /// install, because a package claiming a review it cannot prove is a hostile
+  /// one, not a lesser one.
+  signatureTier    String?   @map("signature_tier")
+  /// When that review happened. A review is a historical fact, so the signature
+  /// itself never expires; a withdrawal is an advisory, not an expiry.
+  reviewedAt       DateTime? @map("reviewed_at")
+  /// Digest of the package's CONTENTS (not of the zip container) at install
+  /// time. Recorded for every plugin, signed or not, because it is what a later
+  /// re-verification compares against — it is how a package swapped on disk
+  /// after install gets caught.
+  contentDigest    String?   @map("content_digest")
   installedAt      DateTime  @default(now()) @map("installed_at")
   enabledAt        DateTime? @map("enabled_at")
   disabledAt       DateTime? @map("disabled_at")

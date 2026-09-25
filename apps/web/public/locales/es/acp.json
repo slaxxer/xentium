@@ -1225,6 +1225,16 @@
       "critical": "Crítico"
     }
   },
+  "trust": {
+    "official": "Plugin oficial",
+    "nonOfficial": "Plugin no oficial",
+    "notRecorded": "Sin registrar",
+    "tier": {
+      "audited": "Auditado por Xentium",
+      "reviewed": "Revisado por Xentium",
+      "unvetted": "Listado, sin revisar"
+    }
+  },
   "updates": {
     "title": "Actualizaciones",
     "loading": "Buscando actualizaciones…",
