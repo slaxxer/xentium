@@ -1,11 +1,13 @@
 {
   "name": "create-xentium",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.4",
   "description": "Install Xentium: checks your server, sets up the database, and starts the install wizard.",
   "license": "MIT",
   "author": "Xentium",
   "type": "module",
-  "bin": { "create-xentium": "./bin/create-xentium.js" },
+  "bin": {
+    "create-xentium": "./bin/create-xentium.js"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -22,9 +24,21 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "repository": { "type": "git", "url": "git+https://github.com/slaxxer/xentium.git", "directory": "packages/create-xentium" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
+    "directory": "packages/create-xentium"
+  },
   "homepage": "https://doc.xentium.org",
-  "engines": { "node": ">=22.12" },
-  "files": ["bin", "dist", "README.md"],
-  "publishConfig": { "access": "public" }
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
