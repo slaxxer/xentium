@@ -45,7 +45,11 @@
     "loading": "A carregar…",
     "accessDeniedTitle": "Acesso negado",
     "accessDeniedBody": "Não tens permissão para aceder ao painel de administração.",
-    "goToSite": "Ir para o site"
+    "goToSite": "Ir para o site",
+    "sections": "Secções",
+    "expandPanel": "Expandir painel",
+    "collapsePanel": "Recolher painel",
+    "dockPanel": "Manter o painel aberto"
   },
   "topbar": {
     "breadcrumbRoot": "Painel de administração",
@@ -72,7 +76,11 @@
     "themeDark": "Escuro",
     "signOut": "Terminar sessão",
     "roleFallback": "Membro",
-    "breadcrumb": "Trilho de navegação"
+    "breadcrumb": "Trilho de navegação",
+    "searchPlaceholderShort": "Procurar páginas…",
+    "navLayout": "Navegação",
+    "navLayoutRail": "Lateral",
+    "navLayoutTop": "Topo"
   },
   "settings": {
     "eyebrow": "Sistema",
@@ -1219,11 +1227,11 @@
     "emptyCheckedAt": "Verificado pela última vez em {{date}}. Os anúncios chegam com a verificação diária de atualizações.",
     "emptyHint": "Os anúncios chegam com a verificação diária de atualizações.",
     "dialogOk": "OK",
-    "dialogNote": "Enviado pela equipa Xentium. Carregar em OK marca-o como lido na tua conta.",
     "severity": {
       "important": "Importante",
       "critical": "Crítico"
-    }
+    },
+    "moreWaiting": "Mais {{count}} à espera"
   },
   "trust": {
     "official": "Plugin oficial",
