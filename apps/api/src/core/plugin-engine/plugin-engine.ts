@@ -7,6 +7,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { validateManifest, type PluginManifest } from "./manifest-validator.js";
 import { verifyPackageSignature, type PackageProvenance } from "./package-signature.js";
+import { assertExtractionIntact } from "./extraction-integrity.js";
 import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
@@ -283,6 +284,16 @@ export async function enablePlugin(pluginId: string): Promise<void> {
   const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
   if (record.status === "enabled") return;
 
+  // Do the files still match the package they came from? The signature was
+  // checked once, at install; this is every time the code is about to run.
+  // Before the licence gate deliberately — that one makes a network call, and
+  // there is no point asking the marketplace about a plugin we are not going to
+  // load.
+  const tampered = await assertExtractionIntact(pluginId, record.packagePath, extractedDir(pluginId));
+  if (tampered) {
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: tampered });
+  }
+
   // License check — authoritative BY ID: a plugin needs an entitlement iff the
   // marketplace sells THIS id as paid, regardless of what its (uploadable) manifest
   // `licenseRequired` flag claims. Closes the "repackage a paid plugin as free" hole.
@@ -495,6 +506,27 @@ export async function initializeEnabledPlugins(): Promise<void> {
   for (const record of records) {
     try {
       const manifest = validateManifest(record.manifest) as PluginManifest;
+
+      // Every boot, for anything that is about to execute: do the extracted
+      // files still match the package they were installed from? A signature
+      // verified once at install and never looked at again is trust on first
+      // use, and the interesting moment is every boot after it.
+      //
+      // A failure does NOT stop the server. The plugin is left unregistered and
+      // the reason is recorded where the ACP already shows load failures, so
+      // the site comes up without the suspect code and the admin is told which
+      // files moved. Taking a forum offline over one bad plugin would be a
+      // denial of service dressed as a security feature.
+      if (record.status === "enabled") {
+        const tampered = await assertExtractionIntact(record.id, record.packagePath, extractedDir(record.id));
+        if (tampered) {
+          pluginRegistry.setLoadError(record.id, {
+            hook: "integrity", message: tampered, at: new Date().toISOString(),
+          });
+          continue;
+        }
+      }
+
       pluginRegistry.register(manifest, record.status as "enabled" | "disabled" | "installed");
       logger.info({ pluginId: record.id, status: record.status }, "Plugin loaded into registry");
 
