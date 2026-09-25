@@ -1430,11 +1430,11 @@
     "emptyCheckedAt": "Last checked {{date}}. Announcements arrive with the daily update check.",
     "emptyHint": "Announcements arrive with the daily update check.",
     "dialogOk": "OK",
-    "dialogNote": "Sent by the Xentium team. Clicking OK marks it read for your account.",
     "severity": {
       "important": "Important",
       "critical": "Critical"
-    }
+    },
+    "moreWaiting": "{{count}} more waiting"
   },
   "trust": {
     "official": "Official plugin",

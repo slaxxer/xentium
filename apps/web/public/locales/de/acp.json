@@ -1227,11 +1227,11 @@
     "emptyCheckedAt": "Zuletzt geprüft {{date}}. Ankündigungen kommen mit der täglichen Update-Prüfung.",
     "emptyHint": "Ankündigungen kommen mit der täglichen Update-Prüfung.",
     "dialogOk": "OK",
-    "dialogNote": "Vom Xentium-Team gesendet. Mit OK wird sie für dein Konto als gelesen markiert.",
     "severity": {
       "important": "Wichtig",
       "critical": "Kritisch"
-    }
+    },
+    "moreWaiting": "{{count}} weitere warten"
   },
   "trust": {
     "official": "Offizielles Plugin",
