@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Dashboard",
+    "announcements": "Announcements",
     "users": "Users",
     "accessControl": "Access Control",
     "content": "Content",
@@ -1410,6 +1411,23 @@
     "previewClose": "Close",
     "previewNote": "Rendered by the marketplace from the version on sale, so the arrangement and colours are this theme's own. Block interiors are placeholders — what goes inside them is your content, drawn by your site's own components."
   },
+  "announcements": {
+    "title": "Announcements",
+    "loading": "Loading announcements…",
+    "from": "From the Xentium team",
+    "unread": "New",
+    "read": "Read",
+    "englishFallback": "shown in English",
+    "emptyTitle": "Nothing from the Xentium team",
+    "emptyCheckedAt": "Last checked {{date}}. Announcements arrive with the daily update check.",
+    "emptyHint": "Announcements arrive with the daily update check.",
+    "dialogOk": "OK",
+    "dialogNote": "Sent by the Xentium team. Clicking OK marks it read for your account.",
+    "severity": {
+      "important": "Important",
+      "critical": "Critical"
+    }
+  },
   "updates": {
     "title": "Updates",
     "loading": "Checking for updates…",
@@ -1440,6 +1458,29 @@
       "migrating": "Applying migrations…",
       "enabling": "Enabling…"
     }
+  },
+  "coreUpdate": {
+    "title": "Xentium core",
+    "releasesBehind_one": "{{count}} release behind",
+    "releasesBehind_other": "{{count}} releases behind",
+    "severity": {
+      "normal": "update",
+      "security": "security",
+      "critical": "critical"
+    },
+    "via": "This version can't be installed directly from the one you're on. Install {{version}} first.",
+    "blockedTitle": "Plugins that don't support this version yet:",
+    "blockedRow": "{{name}} — supports {{supports}}",
+    "howTo": "Apply it on the server with:",
+    "howToBlocked": "Update those plugins first, then apply it on the server with:",
+    "dialogTitle": "Xentium {{version}} is available",
+    "dialogVersion": "Version",
+    "dialogBehind": "Releases behind",
+    "onTheWay": {
+      "security": "Includes a security fix in {{version}}:",
+      "critical": "Includes a critical fix in {{version}}:"
+    },
+    "dialogBlocked": "Blocked by"
   },
   "license": {
     "loading": "Loading…",

@@ -149,6 +149,12 @@ adminRouter.get("/xec-codes", adminGuard, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Broadcasts from the Xentium team. Read-only here — the announcements are the
+// marketplace's records, already signature-verified by the daily check; the only
+// thing this instance writes is which admin has read which.
+adminRouter.get("/announcements",              adminGuard, adminController.listAnnouncements);
+adminRouter.post("/announcements/:id/ack",     adminGuard, adminController.acknowledgeAnnouncement);
+
 // Marketplace (ADR 0001) — catalogue mirror + server-side account connection.
 adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listMarketplacePlugins);
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);

@@ -1,10 +1,11 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
+import type { CoreUpdate } from "./components/CoreUpdateCard";
 import "./AcpLayout.scss";
 import "./nav/AcpNav.scss";
 import { RouteErrorBoundary } from "../errors/ErrorBoundary";
@@ -54,6 +55,14 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
  * first); the license takes priority since it threatens service continuity, and
  * the badge + banners carry whatever isn't shown. Both re-fire when their anchor
  * moves (a renewed license / a new update set).
+ *
+ * A BROADCAST from the Xentium team outranks all of them, and acknowledges
+ * differently: OK is the acknowledgement, recorded server-side per admin. The
+ * visit-the-page rule exists because a licence or an update has something to be
+ * DONE about, and dismissing without looking would be a lie; an announcement is
+ * finished when it has been read. It goes first because it is a deliberate,
+ * rare, human act — one click and it is gone, so the cost to everything behind
+ * it is a single ACP entry.
  */
 const MAX_DIALOG_ROWS = 5;
 
@@ -65,6 +74,22 @@ interface PluginUpdate {
   critical:          boolean;
   renewalRequired:   boolean;
 }
+
+interface AnnouncementView {
+  id:           string;
+  severity:     "info" | "important" | "critical";
+  publishedAt:  string;
+  link:         string | null;
+  title:        string;
+  body:         string;
+  acknowledged: boolean;
+}
+
+/** Loudest first, then newest — one dialog per entry, so the order decides
+ *  which of several unread broadcasts an admin meets first. */
+const ANNOUNCEMENT_RANK: Record<AnnouncementView["severity"], number> = {
+  critical: 2, important: 1, info: 0,
+};
 
 interface StatusSummary {
   licenseExpiringSoon: boolean;
@@ -78,9 +103,16 @@ interface StatusSummary {
 function useAcpAlerts() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const shownFor = useRef<string | null>(null);
 
-  const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean }>({
+  const { data: broadcasts } = useQuery<{ checkedAt: string | null; announcements: AnnouncementView[] }>({
+    queryKey:  ["acp-announcements"],
+    queryFn:   () => api.get("/admin/announcements"),
+    staleTime: 5 * 60_000,
+  });
+
+  const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean; core: CoreUpdate | null }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -96,7 +128,116 @@ function useAcpAlerts() {
     const list = updates?.updates ?? [];
     const updatesNeed = list.length > 0 && !updates?.acknowledged;
 
-    // License first (service continuity), one dialog per entry.
+    // Core. A PATCH on the minor we are already on never opens a dialog: it is
+    // the most common release there is, the card and the badge already say so,
+    // and a dialog people meet weekly is a dialog people stop reading. Anything
+    // else — a minor, a major, or a security fix anywhere along the way — is
+    // worth one interruption per admin per release.
+    const core = updates?.core ?? null;
+    const coreUrgent = !!core && (core.highestSeverity === "security" || core.highestSeverity === "critical");
+    const coreOnlyPatch = !!core && !!core.patch && core.patch.version === core.latest.version;
+    const coreNeeds = !!core && !core.acknowledged && (coreUrgent || !coreOnlyPatch);
+
+    /** One dialog per ACP entry — a second openPanelDialog pre-empts the first. */
+    const showCore = () => {
+      const key = `core:${core!.latest.version}`;
+      if (shownFor.current === key) return;
+      shownFor.current = key;
+
+      // No severity marker on the version row: the panel already carries the
+      // badge, and with a single row the marker is the same word twice.
+      const rows = [
+        { label: t("coreUpdate.dialogVersion"), value: `${core!.current} → ${core!.latest.version}`,
+          marker: undefined as string | undefined },
+      ];
+      if (core!.releaseCount > 1) {
+        rows.push({ label: t("coreUpdate.dialogBehind"), value: String(core!.releaseCount), marker: undefined });
+      }
+      // ⚠ A short label: the label column ellipsises, so the card's full
+      // sentence ("Plugins that don't support this version yet:") would arrive
+      // here as two characters.
+      if (core!.blockedBy.length > 0) {
+        rows.push({
+          label:  t("coreUpdate.dialogBlocked"),
+          value:  core!.blockedBy.map((p) => p.name).join(", "),
+          marker: undefined,
+        });
+      }
+
+      // Prose goes in the note, never in a row: a row's value is monospace and
+      // does not shrink, so a sentence there runs off the edge of the dialog.
+      // Where the urgency comes from outranks the upgrade notes — the dialog
+      // must not say SECURITY about a version whose notes are features.
+      const onTheWay = core!.urgentRelease
+        ? [
+            t(`coreUpdate.onTheWay.${core!.urgentRelease.severity}`, { version: core!.urgentRelease.version }),
+            core!.urgentRelease.notes,
+          ].filter(Boolean).join(" ")
+        : null;
+
+      void openPanelDialog({
+        icon:        coreUrgent ? "warning" : "update",
+        title:       t("coreUpdate.dialogTitle", { version: core!.latest.version }),
+        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined,
+        rows,
+        note:        onTheWay ?? core!.latest.upgradeNotes ?? undefined,
+        confirmText: t("marketplace.updatesDialogView"),
+        cancelText:  t("marketplace.updatesDialogLater"),
+      }).then((view) => { if (view) navigate("/admin/updates"); });
+    };
+
+    // A broadcast from the Xentium team goes first. It is rare, deliberate, and
+    // one click makes it go away for good — so everything behind it waits at
+    // most one ACP entry.
+    const unread = (broadcasts?.announcements ?? [])
+      .filter((a) => !a.acknowledged)
+      .sort((a, b) =>
+        ANNOUNCEMENT_RANK[b.severity] - ANNOUNCEMENT_RANK[a.severity]
+        || b.publishedAt.localeCompare(a.publishedAt));
+
+    if (unread.length > 0) {
+      const post = unread[0]!;
+      const key = `announcement:${post.id}`;
+      if (shownFor.current === key) return;
+      shownFor.current = key;
+
+      const urgent = post.severity !== "info";
+
+      void openPanelDialog({
+        // `alert`, not `confirm`: there is one button and it means "read". A
+        // second, softer one would offer a way to not answer, and the whole
+        // point of this channel is that it is answered.
+        kind:        "alert",
+        icon:        urgent ? "warning" : "info",
+        title:       post.title,
+        badge:       urgent ? t(`announcements.severity.${post.severity}`) : undefined,
+        // The body carries the team's own prose, newlines and all. The link is
+        // shown in full underneath and never opened for the admin — they click
+        // it or they do not.
+        bodyNode: (
+          <>
+            <p className="acp-announcement__body">{post.body}</p>
+            {post.link && (
+              <a className="acp-announcement__link" href={post.link} target="_blank" rel="noopener noreferrer">
+                {post.link}
+              </a>
+            )}
+          </>
+        ),
+        note:        t("announcements.dialogNote"),
+        confirmText: t("announcements.dialogOk"),
+      }).then(() => {
+        // OK IS the acknowledgement, and it is recorded server-side so the same
+        // admin does not meet it again on another machine. A failed write is
+        // swallowed: the notice simply returns, which is the safe direction.
+        void api.post(`/admin/announcements/${post.id}/ack`, {})
+          .then(() => qc.invalidateQueries({ queryKey: ["acp-announcements"] }))
+          .catch(() => { /* it comes back next entry */ });
+      });
+      return;
+    }
+
+    // License next (service continuity), one dialog per entry.
     if (licenseNeeds) {
       const key = `license:${status!.licenseExpiresAt}`;
       if (shownFor.current === key) return;
@@ -123,7 +264,14 @@ function useAcpAlerts() {
       return;
     }
 
-    if (!updatesNeed) return;
+    // A security release in core outranks any number of plugin updates: it is
+    // the thing every plugin runs on.
+    if (coreNeeds && coreUrgent) { showCore(); return; }
+
+    if (!updatesNeed) {
+      if (coreNeeds) showCore();
+      return;
+    }
     const setHash = `updates:${list.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",")}`;
     if (shownFor.current === setHash) return;
     shownFor.current = setHash;
@@ -152,7 +300,7 @@ function useAcpAlerts() {
       // don't count, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
-  }, [status, updates, t, navigate]);
+  }, [status, updates, broadcasts, t, navigate, qc]);
 }
 
 function AcpShell() {

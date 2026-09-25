@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Tableau de bord",
+    "announcements": "Annonces",
     "users": "Utilisateurs",
     "accessControl": "Contrôle d'accès",
     "content": "Contenu",
@@ -1207,6 +1208,23 @@
     "previewClose": "Fermer",
     "previewNote": "Rendu par la place de marché à partir de la version en vente : la disposition et les couleurs sont donc celles du thème. L'intérieur des blocs est un substitut — ce qui s'y trouve, c'est votre contenu, dessiné par les composants de votre site."
   },
+  "announcements": {
+    "title": "Annonces",
+    "loading": "Chargement des annonces…",
+    "from": "De l'équipe Xentium",
+    "unread": "Nouveau",
+    "read": "Lu",
+    "englishFallback": "affiché en anglais",
+    "emptyTitle": "Rien de l'équipe Xentium",
+    "emptyCheckedAt": "Dernière vérification le {{date}}. Les annonces arrivent avec la vérification quotidienne des mises à jour.",
+    "emptyHint": "Les annonces arrivent avec la vérification quotidienne des mises à jour.",
+    "dialogOk": "OK",
+    "dialogNote": "Envoyé par l'équipe Xentium. Cliquer sur OK la marque comme lue pour votre compte.",
+    "severity": {
+      "important": "Important",
+      "critical": "Critique"
+    }
+  },
   "updates": {
     "title": "Mises à jour",
     "loading": "Recherche de mises à jour…",
@@ -1237,6 +1255,29 @@
       "migrating": "Application des migrations…",
       "enabling": "Activation…"
     }
+  },
+  "coreUpdate": {
+    "title": "Cœur de Xentium",
+    "releasesBehind_one": "{{count}} version de retard",
+    "releasesBehind_other": "{{count}} versions de retard",
+    "severity": {
+      "normal": "mise à jour",
+      "security": "sécurité",
+      "critical": "critique"
+    },
+    "via": "Cette version ne peut pas être installée directement depuis la vôtre. Installez d'abord la {{version}}.",
+    "blockedTitle": "Plugins qui ne prennent pas encore en charge cette version :",
+    "blockedRow": "{{name}} — prend en charge {{supports}}",
+    "howTo": "Appliquez-la sur le serveur avec :",
+    "howToBlocked": "Mettez d'abord ces plugins à jour, puis appliquez-la sur le serveur avec :",
+    "dialogTitle": "Xentium {{version}} est disponible",
+    "dialogVersion": "Version",
+    "dialogBehind": "Versions de retard",
+    "onTheWay": {
+      "security": "Inclut un correctif de sécurité dans {{version}} :",
+      "critical": "Inclut un correctif critique dans {{version}} :"
+    },
+    "dialogBlocked": "Bloqué par"
   },
   "license": {
     "loading": "Chargement…",

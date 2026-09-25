@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Panel",
+    "announcements": "Anuncios",
     "users": "Usuarios",
     "accessControl": "Control de acceso",
     "content": "Contenido",
@@ -1207,6 +1208,23 @@
     "previewClose": "Cerrar",
     "previewNote": "Renderizado por el marketplace a partir de la versión en venta, así que la disposición y los colores son los del propio tema. El interior de los bloques son marcadores: lo que va dentro es tu contenido, dibujado por los componentes de tu sitio."
   },
+  "announcements": {
+    "title": "Anuncios",
+    "loading": "Cargando anuncios…",
+    "from": "Del equipo de Xentium",
+    "unread": "Nuevo",
+    "read": "Leído",
+    "englishFallback": "mostrado en inglés",
+    "emptyTitle": "Nada del equipo de Xentium",
+    "emptyCheckedAt": "Comprobado por última vez el {{date}}. Los anuncios llegan con la comprobación diaria de actualizaciones.",
+    "emptyHint": "Los anuncios llegan con la comprobación diaria de actualizaciones.",
+    "dialogOk": "OK",
+    "dialogNote": "Enviado por el equipo de Xentium. Al pulsar OK queda marcado como leído en tu cuenta.",
+    "severity": {
+      "important": "Importante",
+      "critical": "Crítico"
+    }
+  },
   "updates": {
     "title": "Actualizaciones",
     "loading": "Buscando actualizaciones…",
@@ -1237,6 +1255,29 @@
       "migrating": "Aplicando migraciones…",
       "enabling": "Activando…"
     }
+  },
+  "coreUpdate": {
+    "title": "Núcleo de Xentium",
+    "releasesBehind_one": "{{count}} versión por detrás",
+    "releasesBehind_other": "{{count}} versiones por detrás",
+    "severity": {
+      "normal": "actualización",
+      "security": "seguridad",
+      "critical": "crítica"
+    },
+    "via": "Esta versión no puede instalarse directamente desde la tuya. Instala antes la {{version}}.",
+    "blockedTitle": "Plugins que aún no admiten esta versión:",
+    "blockedRow": "{{name}} — admite {{supports}}",
+    "howTo": "Aplícala en el servidor con:",
+    "howToBlocked": "Actualiza antes esos plugins y luego aplícala en el servidor con:",
+    "dialogTitle": "Xentium {{version}} está disponible",
+    "dialogVersion": "Versión",
+    "dialogBehind": "Versiones por detrás",
+    "onTheWay": {
+      "security": "Incluye una corrección de seguridad en {{version}}:",
+      "critical": "Incluye una corrección crítica en {{version}}:"
+    },
+    "dialogBlocked": "Bloqueado por"
   },
   "license": {
     "loading": "Cargando…",
