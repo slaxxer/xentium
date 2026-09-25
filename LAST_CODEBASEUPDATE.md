@@ -1,27 +1,45 @@
 # Last codebase update
 
-Core update notifications on the instance (steps 4 and 5 of the core releases plan), plus the
-release pipeline that publishes the packages those notifications point at.
+Two pieces, two commits.
 
-## New
+## feat(installer): two-column wizard with a marketplace add-ons step
 
-| Path | Purpose |
-|---|---|
-| `.github/workflows/release.yml` | The Release workflow. Triggered by a `v*` tag or by hand (dry run by default). Installs, typechecks, lints, publishes through `publish-release.mjs`, uploads the tarballs, attaches them to a GitHub release. Actions are pinned by commit SHA; `NPM_TOKEN` is the only secret. |
-| `scripts/publish-release.mjs` | One script for a whole release: framework packages, `@xentium/server`, `xentium`, `create-xentium`. Resolves the version and dist-tag from the repo, refuses a tag that disagrees with it, skips what is already published, prints the marketplace announcement that still has to be made. |
-| `apps/docs/src/content/docs/admin/updating.md` | Wiki page for server admins: how a site finds out about a release, what the urgency means, and every step and flag of `xentium update`. |
-| `apps/api/src/jobs/coreUpdateCheck.ts` | The anonymous core check and the `core.update` cache. Sibling of the plugin heartbeat, not part of it. |
-| `apps/api/src/modules/admin/coreCompat.ts` | Whether each installed plugin's declared version window contains the release being offered. |
-| `apps/web/src/features/admin/components/CoreUpdateCard.tsx` | The core card on Extensions → Updates. |
+The "Installer Wizard" redesign, integrated. Seven steps become eight; the new
+**Add-ons** step links a marketplace account and picks plugins to install during the run.
 
-## Changed
+- `packages/contracts/src/installer.ts` — `InstallStep.ADDONS`, the add-on DTOs and
+  schemas, `SetupProbeResult`, `version` on `InstallStatusDto`.
+- `apps/api/src/core/installer-engine/installState.ts` — mint `siteId` at row creation, not
+  at finalize: the add-ons step talks to the marketplace and `getSiteId()` is what a licence
+  binds to.
+- `apps/api/src/modules/installer/` — the catalogue, the account link, the selection and the
+  per-add-on install (the one route behind `requireAuth`). The link poll has its own
+  rate-limit window; it is a timer, not a form submission.
+- `apps/api/src/setup/setupServer.ts` — `POST /install/database/probe`: verify credentials
+  with no side effects, so the database step tests as you type.
+- `apps/web/src/features/installer/` + `styles/installer.scss` — rewritten. Schema creation
+  moved to the database step's Continue, because the two steps after it need a database.
+- Locales rewritten for all five languages.
 
-| Path | Change |
-|---|---|
-| `scripts/release-framework.mjs` | Gained `--provenance` and `--skip-published`, so CI can drive it and a half-finished release can be re-run. Header points at `publish-release.mjs` for a full release. |
-| `package.json` | `release` and `release:dry` scripts. |
-| `apps/api/src/jobs/updateCheck.ts` | The marketplace sync runs the core check as a third step, whatever the other two do. |
-| `apps/api/src/workerBoot.ts` | The boot check runs the core check too, not only the plugin half. |
-| `apps/web/src/features/admin/AcpLayout.tsx` | The ACP-entry dialog includes core, with its own anchor and the patch-only restraint. |
-| `apps/api/src/modules/admin/marketplace.service.ts` | `getUpdates` returns core; `getStatusSummary` ORs it into the gear badge. |
-| `apps/web/public/locales/*/acp.json` | Strings for the card and dialog, all five locales. |
+## feat(announcements): receive signed broadcasts from the Xentium team
+
+The instance half of a global alert channel, and the marketplace half in the
+`xentium-marketplace` repo.
+
+- `apps/api/src/jobs/announcementCheck.ts` — anonymous daily check beside the core update
+  check, verifying each announcement's RS256 signature before anything is rendered.
+  `announcementCheck.test.ts` pins the five failure modes that must not get through.
+- `xcf_announcement_acks` — per-admin acknowledgement. OK is the acknowledgement here,
+  unlike the update and licence dialogs, which want a page visit.
+- `apps/api/src/modules/admin/announcement.service.ts` + routes — read and ack.
+- `apps/web/src/features/admin/AcpLayout.tsx` — broadcasts go first in the dialog queue.
+- `apps/web/src/features/admin/pages/AnnouncementsPage.tsx` — the record, at ACP →
+  Announcements. Copy follows the admin's locale, then the site's, then English.
+- Docs: `apps/docs/src/content/docs/admin/announcements.md` (hand-written wiki page) and a
+  README section, mapped into the wiki through `sync-docs.mjs`.
+
+## Notes
+
+- The entitlement signing key is load-bearing for two things now. Rotating it invalidates
+  every live announcement as well as every entitlement.
+- Nothing has been broadcast. The capability is deployed; the channel is empty.
