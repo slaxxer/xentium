@@ -8,15 +8,28 @@ import { openPanelDialog } from "../../lib/dialog";
 import type { CoreUpdate } from "./components/CoreUpdateCard";
 import "./AcpLayout.scss";
 import "./nav/AcpNav.scss";
+import "./nav/AcpChrome.scss";
 import { RouteErrorBoundary } from "../errors/ErrorBoundary";
 import { AcpTopbar } from "./AcpTopbar";
 import { useAcpNav } from "./useAcpNav";
 import { HorizontalNav } from "./nav/HorizontalNav";
+import { AcpRailShell } from "./nav/AcpRailShell";
+import { useAcpLayout } from "./nav/acpChrome";
 import { IconScope } from "../../lib/iconScope";
 
-// The ACP uses the horizontal navbar layout. A runtime layout/density/accent
-// switcher (with sidebar + icon-rail chromes and a Tweaks panel) was prototyped
-// but removed for now — it'll return in a future update.
+// The ACP wears one of two navigation chromes, chosen per admin in the user
+// menu and remembered in localStorage (nav/acpChrome.ts):
+//
+//   rail (default) — a 72px icon rail plus a 248px section panel down the left,
+//                    with the top bar folded into them. One thin utility line
+//                    survives for the notification bell and plugin header
+//                    widgets; nav/AcpUtilityBar.tsx says why.
+//   horizontal     — the previous chrome: topbar + two-tier HorizontalNav. Kept
+//                    whole rather than deleted, because it is the layout every
+//                    admin has been using and taste in this is not unanimous.
+//
+// Both chromes share the palette (nav/AcpSearch) and the user menu
+// (nav/AcpUserMenu) — there is one of each, arranged twice.
 
 function AcpAuthGate({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation("acp");
@@ -305,7 +318,18 @@ function useAcpAlerts() {
 
 function AcpShell() {
   const nav = useAcpNav();
+  const layout = useAcpLayout();
   useAcpAlerts();
+
+  const content = (
+    <main className="acp-content">
+      {/* A crashing ACP page must not take the nav with it — an admin needs
+          a way to click somewhere else. Clears on navigation. */}
+      <RouteErrorBoundary variant="inline">
+        <Outlet />
+      </RouteErrorBoundary>
+    </main>
+  );
 
   return (
     // ⚠ The ACP draws with the BUNDLED free icons, never the site's chosen style —
@@ -314,18 +338,16 @@ function AcpShell() {
     // family with partial coverage would leave holes in the panel's own chrome.
     // Previews inside here opt back in with <IconScope value="site">.
     <IconScope value="acp">
-      <div className="acp-layout" data-layout="horizontal">
-        <div className="acp-main">
-          <AcpTopbar />
-          <HorizontalNav nav={nav} />
-          <main className="acp-content">
-            {/* A crashing ACP page must not take the nav with it — an admin needs
-                a way to click somewhere else. Clears on navigation. */}
-            <RouteErrorBoundary variant="inline">
-              <Outlet />
-            </RouteErrorBoundary>
-          </main>
-        </div>
+      <div className="acp-layout" data-layout={layout}>
+        {layout === "rail" ? (
+          <AcpRailShell nav={nav}>{content}</AcpRailShell>
+        ) : (
+          <div className="acp-main">
+            <AcpTopbar />
+            <HorizontalNav nav={nav} />
+            {content}
+          </div>
+        )}
       </div>
     </IconScope>
   );

@@ -47,7 +47,11 @@
     "loading": "Loading…",
     "accessDeniedTitle": "Access Denied",
     "accessDeniedBody": "You don't have permission to access the admin panel.",
-    "goToSite": "Go to site"
+    "goToSite": "Go to site",
+    "sections": "Sections",
+    "expandPanel": "Expand panel",
+    "collapsePanel": "Collapse panel",
+    "dockPanel": "Keep panel open"
   },
   "topbar": {
     "breadcrumbRoot": "Admin Panel",
@@ -74,7 +78,11 @@
     "themeDark": "Dark",
     "signOut": "Sign out",
     "roleFallback": "Member",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "searchPlaceholderShort": "Search pages…",
+    "navLayout": "Navigation",
+    "navLayoutRail": "Side",
+    "navLayoutTop": "Top"
   },
   "settings": {
     "eyebrow": "System",
