@@ -373,7 +373,7 @@ export function MarketplacePage() {
                 {/* Before the money, not after it. How hard we looked is part of
                     what a buyer is deciding on, and a theme has no code for us to
                     have looked at. */}
-                {!isTheme && p.trustTier && <TrustBadge tier={p.trustTier} />}
+                {!isTheme && p.trustTier && <TrustBadge tier={p.trustTier} mode="tier" />}
               </div>
               <div style={{ fontSize:13, color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
 

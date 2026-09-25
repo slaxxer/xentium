@@ -1226,8 +1226,8 @@
     }
   },
   "trust": {
-    "reviewed": "Vérifié",
-    "unverified": "Source non vérifiée",
+    "official": "Extension officielle",
+    "nonOfficial": "Extension non officielle",
     "notRecorded": "Non enregistré",
     "tier": {
       "audited": "Audité par Xentium",

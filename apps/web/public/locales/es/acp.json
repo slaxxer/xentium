@@ -1226,8 +1226,8 @@
     }
   },
   "trust": {
-    "reviewed": "Revisado",
-    "unverified": "Origen sin verificar",
+    "official": "Plugin oficial",
+    "nonOfficial": "Plugin no oficial",
     "notRecorded": "Sin registrar",
     "tier": {
       "audited": "Auditado por Xentium",
