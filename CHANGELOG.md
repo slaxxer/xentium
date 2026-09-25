@@ -1,41 +1,47 @@
 # Changelog
 
-## Admins hear about core updates, and we can publish one
+## A new admin panel navigation, and a quieter way to hear from us
 
 ### Added
 
-- **Instances are told when there is a newer Xentium.** The daily marketplace sync gains a
-  third, independent step that asks the marketplace what core releases exist, and the three
-  surfaces that already existed for plugin updates learn about core: a card above the plugin
-  list on Extensions → Updates, the ACP-entry dialog, and the navbar gear badge. The check is
-  anonymous (the version we are on, and nothing else) because an install that never connected
-  an account is the one most likely to be running an un-patched forum.
-- **Urgency comes from the whole upgrade path, not the newest release.** An install three
-  versions behind whose newest offer is a feature release may still have a security fix waiting
-  in between. The card names the release the urgency comes from and quotes its notes.
-- **The dialog stays restrained.** It fires for a minor, a major or anything urgent, and never
-  for a plain patch on the minor you are already on. That is the most common release there is,
-  and a dialog people meet weekly is a dialog people stop reading.
-- **Plugin compatibility is checked before an update is offered**, against each installed
-  plugin's declared version window, and the blockers are named.
-- **A release workflow** (`.github/workflows/release.yml`). Pushing a `v*` tag builds
-  everything, publishes `@xentium/server`, `xentium`, `create-xentium` and the framework
-  packages to npm, and attaches the tarballs to a GitHub release. It can also be run from the
-  Actions tab, where it defaults to a dry run.
-- **`pnpm release`** (`scripts/publish-release.mjs`) publishes all four parts of a release in
-  one act, since they share one version. Already-published versions are skipped rather than
-  fatal, so a release that failed halfway is safe to re-run. `--only=` publishes one part,
-  `--dry-run` builds and packs without publishing.
+- **The admin panel has an icon rail and a section panel.** A 72px rail of section icons and a
+  248px panel listing that section's pages run down the left, and the old top bar is folded
+  into them. Collapse the panel and the rail is left on its own; clicking a section then opens
+  it as a flyout over the page **without navigating**, so you can look into a section you are
+  not in and change your mind.
+- **The previous layout is still there.** Both chromes live side by side and each admin picks
+  one in their own menu, under the light/dark toggle. The choice is per browser, like the
+  theme — it is how you drive the panel, not part of anyone's site design.
+- **The panel gets out of the way on a narrow window.** Below 1100px it cannot dock, so it
+  behaves as a flyout regardless of the preference — and the preference comes back untouched
+  when there is room for it again.
+
+### Changed
+
+- **Broadcasts from the Xentium team are a band across the top of the panel, not a dialog.** A
+  dialog is the right shape for something that must be answered before anything else can
+  happen, and a notice from us is not that: it arrives on its own schedule, it is rare, and it
+  has nothing to be done about. What the modal actually did was stand between an admin and the
+  job they opened the panel for, which is how a channel teaches people to dismiss it without
+  reading. The band is still unmissable and still has to be answered — OK is the
+  acknowledgement, recorded for your account — but you pick the moment.
+- **A licence warning or a waiting update now arrives on the visit it applies to.** They used
+  to queue behind a broadcast for one more, because only one dialog can open per visit and the
+  broadcast went first. It is no longer in that queue.
+- **The command palette and the admin menu are one component each**, arranged twice, instead of
+  a copy per layout.
+
+### Removed
+
+- **The notification bell and plugin header widgets are gone from the admin panel.**
+  Notifications and private messages are things that happen to you as a member, and the place
+  to read them is the site; in here every unread count was a reason to leave the job you came
+  in to do. Plugins keep the slot — it still renders in the site's own header.
+- About 200 lines of styling for a sidebar that nothing had rendered since the horizontal
+  navigation landed.
 
 ### Fixed
 
-- **The core check only ran on the 02:30 schedule.** The boot-time check called the plugin half,
-  so a site restarted right after a security release would wait up to 24 hours to be told, which
-  is the case the boot check exists for.
-- **The card said SECURITY above release notes about layout variants.** The badge was right and
-  the page contradicted it, which teaches admins to distrust the badge.
-- **The dialog printed SECURITY twice**, as the panel badge and again as a marker on its only row.
-- **A dialog row is a label and a short value**, not prose: the label ellipsises and the value
-  cannot shrink, so a sentence arrived as "I..". Prose moved to the note, which wraps.
-- **"supports 1.0–1.0"** is a range with one member and reads like a bug. A plugin whose floor and
-  ceiling are the same version now says "supports 1.0".
+- **The installer no longer tells you to link an account you have already linked.** A paid
+  add-on your account does not hold said "Link to unlock"; it now says what is actually
+  missing.
