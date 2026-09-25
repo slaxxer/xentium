@@ -33,7 +33,11 @@ const schema = z.object({
   // different marketplace. The base INCLUDES the protocol version (`/api/v1`),
   // which is also what every request signature covers — see protocol-client.
   LICENSE_SERVER_URL:      z.string().url().default("https://plugins.xentium.org/api/v1"),
-  LICENSE_PUBLIC_KEY:      z.string().optional(),  // overrides the bundled entitlement-verification key (e.g. to point at a non-default license server); prod uses the bundled marketplace key
+  // DEVELOPMENT ONLY. Overrides the bundled key for ENTITLEMENT verification, so a
+  // local marketplace can issue them. It does NOT move what counts as Xentium
+  // itself: announcements and plugin signatures verify against the bundled key in
+  // production whatever this says. Unset on a real install.
+  LICENSE_PUBLIC_KEY:      z.string().optional(),
   // Where a HUMAN goes — the marketplace's storefront, for the links the ACP
   // shows an admin ("get a connect code", "free a seat"). Derived from
   // LICENSE_SERVER_URL by dropping the `/api/vN` suffix, which is correct in

@@ -6,6 +6,7 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { validateManifest, type PluginManifest } from "./manifest-validator.js";
+import { verifyPackageSignature, type PackageProvenance } from "./package-signature.js";
 import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
@@ -85,7 +86,9 @@ export function extractedDir(pluginId: string): string {
 }
 
 /** Validate a .xtplugin ZIP buffer. Returns the parsed manifest. */
-export async function validatePackage(buffer: Buffer): Promise<{ manifest: PluginManifest; zip: AdmZip }> {
+export async function validatePackage(
+  buffer: Buffer,
+): Promise<{ manifest: PluginManifest; zip: AdmZip; provenance: PackageProvenance }> {
   let zip: AdmZip;
   try {
     zip = new AdmZip(buffer);
@@ -125,12 +128,18 @@ export async function validatePackage(buffer: Buffer): Promise<{ manifest: Plugi
   // Validate migration pairs before touching anything
   validateMigrationPairs(zip, manifest);
 
-  return { manifest, zip };
+  // Provenance LAST, and before anything is written: a package carrying a
+  // signature that does not verify is refused here, so neither install nor
+  // update can reach the filesystem with it. An unsigned package passes — that
+  // is a developer's own build, not an accusation.
+  const provenance = await verifyPackageSignature(zip, manifest);
+
+  return { manifest, zip, provenance };
 }
 
 /** Install a plugin from a buffer. Stores the package and creates the DB record. */
 export async function installPlugin(buffer: Buffer, _installedById: string): Promise<PluginManifest> {
-  const { manifest, zip } = await validatePackage(buffer);
+  const { manifest, zip, provenance } = await validatePackage(buffer);
 
   // Check if already installed
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
@@ -177,6 +186,9 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
       licenseRequired:  manifest.licenseRequired,
       packagePath:      pkgPath,
       manifest:         manifest as unknown as object,
+      signatureTier:    provenance.tier,
+      reviewedAt:       provenance.reviewedAt ? new Date(provenance.reviewedAt) : null,
+      contentDigest:    provenance.digest,
     },
   });
 
@@ -198,7 +210,7 @@ export async function updatePlugin(
   _updatedById: string,
   onProgress?: (p: { phase: string; percent: number }) => void,
 ): Promise<PluginManifest> {
-  const { manifest, zip } = await validatePackage(buffer);
+  const { manifest, zip, provenance } = await validatePackage(buffer);
 
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (!existing) {
@@ -241,6 +253,12 @@ export async function updatePlugin(
       licenseRequired:  manifest.licenseRequired,
       packagePath:      pkgPath,
       manifest:         manifest as unknown as object,
+      // Re-recorded, never carried over: the new bytes have their own
+      // provenance, and an update from a signed build to an unsigned one must
+      // show as unsigned rather than inherit the old build's review.
+      signatureTier:    provenance.tier,
+      reviewedAt:       provenance.reviewedAt ? new Date(provenance.reviewedAt) : null,
+      contentDigest:    provenance.digest,
     },
   });
   pluginRegistry.register(manifest, "disabled");

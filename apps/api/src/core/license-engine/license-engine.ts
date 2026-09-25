@@ -3,7 +3,7 @@ import path from "node:path";
 import * as jose from "jose";
 import type { DeployEnvironment, EntitlementGrant, EntitlementStatus, ProductKind } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
-import { env } from "../../config/env.js";
+import { env, isProd } from "../../config/env.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
@@ -27,25 +27,43 @@ const PUBLIC_KEY_PATH = path.resolve(
 const GRACE_PERIOD_DAYS = 30;
 
 /**
- * The marketplace's public half.
+ * The marketplace's public half — the key that decides what this instance will
+ * believe Xentium itself said.
  *
- * Exported because entitlements are no longer the only thing it verifies: the
- * announcement channel renders the marketplace's prose in a modal in front of
- * an administrator, and it has to be able to prove the marketplace said it.
- * Same key deliberately — both claims are "the marketplace said this", and a
- * second key would be a second thing to rotate and a second thing to get wrong.
+ * ⚠ `allowOverride` is the important argument, and it defaults to NO.
+ *
+ * `LICENSE_PUBLIC_KEY` exists so a developer can verify entitlements issued by
+ * a local marketplace. That is fine for entitlements: a forged one only grants
+ * plugin access on a box whose environment the forger already controls, and
+ * nothing follows from it.
+ *
+ * It is NOT fine for the two things that carry an IDENTITY CLAIM — an
+ * announcement ("the Xentium team says this", rendered in a modal in front of
+ * an administrator) and a package signature ("the Xentium team reviewed this").
+ * If an env var could reassign those, an admin could be talked into pointing
+ * their instance at a stranger's signer, and both statements would then mean
+ * whatever that stranger wanted. So they ask for the bundled key and get it,
+ * whatever the environment says.
+ *
+ * In DEVELOPMENT the override is honoured for identity claims too, so a local
+ * marketplace can be exercised end to end. That is not a hole worth closing:
+ * nobody is protected from an operator who can already write their own `.env`,
+ * and running a real forum in development mode has loud consequences of its own.
+ * What the pin removes is the legitimate-looking configuration — "point this at
+ * our community marketplace" stops being something a normal install can do.
  */
-export async function getMarketplacePublicKey() {
-  return getPublicKey();
+export async function getMarketplacePublicKey(opts: { allowOverride?: boolean } = {}) {
+  return getPublicKey(opts.allowOverride === true || !isProd);
 }
 
-async function getPublicKey() {
-  // LICENSE_PUBLIC_KEY (env) overrides the bundled entitlement-verification key —
-  // e.g. to verify against a non-default license server. Normally unset, and the
-  // bundled marketplace key is used (packages/sdk/src/license-public-key.pem —
-  // must be licenseserver.ich.codes's public half; see the marketplace repo's
-  // DEPLOY note).
-  const pem = env.LICENSE_PUBLIC_KEY
+async function getPublicKey(allowOverride = true) {
+  // LICENSE_PUBLIC_KEY (env) overrides the bundled ENTITLEMENT-verification key,
+  // for development against a local marketplace. Normally unset, and the bundled
+  // key is used (packages/sdk/src/license-public-key.pem — plugins.xentium.org's
+  // public half; see the marketplace repo's DEPLOY note). It cannot move what an
+  // announcement or a package signature is checked against in production — see
+  // getMarketplacePublicKey.
+  const pem = allowOverride && env.LICENSE_PUBLIC_KEY
     ? env.LICENSE_PUBLIC_KEY.replace(/\\n/g, "\n")
     : await readFile(PUBLIC_KEY_PATH, "utf8");
   return jose.importSPKI(pem, "RS256");

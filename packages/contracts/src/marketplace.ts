@@ -1,7 +1,12 @@
 // Marketplace contracts (ADR 0001). The download gate — where paid plugins are
-// actually protected. Core talks to a `MarketplaceSource`, never hardcoding
-// xentium.org: a community / self-hosted source implements the same interface and
-// may return free, no-op entitlements.
+// actually protected.
+//
+// There is ONE marketplace, plugins.xentium.org. `MarketplaceSource` exists as a
+// seam so the licence engine can be tested without the network, not so an
+// instance can be pointed at someone else's shop — and it has exactly one real
+// implementation. Anything that carries an identity claim (an announcement, a
+// package signature) is verified against the key bundled in the build, whatever
+// LICENSE_SERVER_URL says.
 
 import type { PaginatedRequest, PaginatedResponse } from "./pagination.js";
 import type { DeployEnvironment } from "./entitlement.js";
@@ -117,7 +122,7 @@ export interface AuthorizedDownload {
 }
 
 export interface MarketplaceSource {
-  readonly id:    string;        // "xentium.org" | a self-hosted/community source
+  readonly id:    string;        // "xentium.org" — the one source; see the header
   readonly label: string;
 
   /** Store the server-side account credential (auth code → token in settings). */
