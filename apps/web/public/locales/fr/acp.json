@@ -1225,6 +1225,16 @@
       "critical": "Critique"
     }
   },
+  "trust": {
+    "reviewed": "Vérifié",
+    "unverified": "Source non vérifiée",
+    "notRecorded": "Non enregistré",
+    "tier": {
+      "audited": "Audité par Xentium",
+      "reviewed": "Vérifié par Xentium",
+      "unvetted": "Listé, non vérifié"
+    }
+  },
   "updates": {
     "title": "Mises à jour",
     "loading": "Recherche de mises à jour…",
