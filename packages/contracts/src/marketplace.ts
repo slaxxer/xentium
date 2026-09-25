@@ -23,6 +23,17 @@ export interface MarketplaceListing {
   priceCents:      number;   // 0 = free
   currency:        string;
   licenseRequired: boolean;
+  /**
+   * How hard we looked before listing it: `audited` (we read the code),
+   * `reviewed` (we checked what it does and what it ships), `unvetted` (listed,
+   * not examined closely).
+   *
+   * The marketplace has always graded every product and has always served this;
+   * it was simply dropped here, so the ACP could not show a buyer what kind of
+   * review a plugin had before they installed it. Optional because a catalogue
+   * page fetched from an older build will not carry it.
+   */
+  trustTier?:      "audited" | "reviewed" | "unvetted";
   category?:       string | null;
   /**
    * Absolute URL of the listing's preview image, or null.
