@@ -1,11 +1,13 @@
 {
   "name": "xentium",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.4",
   "description": "Install, run, check and update a Xentium site. Start with `npm create xentium`.",
   "license": "MIT",
   "author": "Xentium",
   "type": "module",
-  "bin": { "xentium": "./dist/cli.js" },
+  "bin": {
+    "xentium": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit -p tsconfig.json",
@@ -22,9 +24,20 @@
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
-  "repository": { "type": "git", "url": "git+https://github.com/slaxxer/xentium.git", "directory": "packages/cli" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/slaxxer/xentium.git",
+    "directory": "packages/cli"
+  },
   "homepage": "https://doc.xentium.org",
-  "engines": { "node": ">=22.12" },
-  "files": ["dist", "README.md"],
-  "publishConfig": { "access": "public" }
+  "engines": {
+    "node": ">=22.12"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }

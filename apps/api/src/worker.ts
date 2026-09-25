@@ -38,11 +38,26 @@ async function main() {
     while (missingRequiredEnv().length > 0) {
       await new Promise((resolve) => setTimeout(resolve, POLL_MS));
     }
-    // The probe reads the file; the values still need to land in process.env
-    // before the worker's module graph (env.ts, redis, queues) evaluates.
-    loadEnvFileIntoProcess();
     console.log('[worker] setup complete — booting');
   }
+
+  // ⚠ UNCONDITIONALLY, and before the schema probe.
+  //
+  // `missingRequiredEnv()` reads the FILE, so a complete .env skipped the branch
+  // above — and with it the only call that put those values into process.env.
+  // Everything after this point that reads `process.env` directly then saw
+  // nothing. `env.ts` hides it, because dotenv loads the file when that module
+  // evaluates; the probe below runs BEFORE any of that and used the raw
+  // variable, so it connected to libpq's defaults, never found `xcf_settings`,
+  // and waited for an installer that had finished months ago.
+  //
+  // That is not theoretical: it stranded the worker on every install whose env
+  // comes only from XENTIUM_ENV_FILE — i.e. every npm install, where systemd
+  // passes the path and nothing else. No scheduled job ran on those sites at
+  // all. Loading here is idempotent (dotenv never overrides an existing var),
+  // so the setup-mode path above is unaffected.
+  loadEnvFileIntoProcess();
+
   if (!(await schemaExists())) {
     console.log('[worker] waiting for the install wizard to create the database schema…');
     while (!(await schemaExists())) {
