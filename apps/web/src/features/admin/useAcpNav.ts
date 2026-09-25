@@ -197,3 +197,26 @@ export function useAcpNav(): NavItem[] {
     ...baseNav.slice(moderationIdx + 1),
   ];
 }
+
+/**
+ * Is this top-level nav item the one the current route belongs to?
+ *
+ * ⚠ The dashboard is an EXACT match. Every ACP route starts with `/admin`, so
+ * `startsWith` on a leaf whose `to` is `/admin` would mark the dashboard active
+ * on every page in the panel — and with the rail chrome that means the rail's
+ * indicator bar never moves.
+ */
+export function isNavItemActive(item: NavItem, path: string): boolean {
+  if (item.to) return item.to === "/admin" ? path === "/admin" : path.startsWith(item.to);
+  return !!item.children?.some((c) => path.startsWith(c.to));
+}
+
+/** The section the current route sits in, falling back to the first one. */
+export function activeNavSection(nav: NavItem[], path: string): NavItem | undefined {
+  return nav.find((n) => isNavItemActive(n, path)) ?? nav[0];
+}
+
+/** Stable identity for a nav item — its key, else its route, else its label. */
+export function navItemId(item: NavItem): string {
+  return item.key ?? item.to ?? item.label;
+}

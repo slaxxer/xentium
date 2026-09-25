@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ACP_NAV, ACP_NAV_INDEX } from "./useAcpNav";
+import { ACP_NAV, ACP_NAV_INDEX, isNavItemActive, activeNavSection, navItemId } from "./useAcpNav";
 
 /**
  * The topbar breadcrumb and command palette used to keep their own copy of the
@@ -79,5 +79,44 @@ describe("breadcrumb resolution", () => {
   it("every nav route resolves to a breadcrumb", () => {
     const unresolved = ACP_NAV_INDEX.map((e) => e.to).filter((to) => !resolveCrumb(to));
     expect(unresolved, `no breadcrumb for: ${unresolved.join(", ")}`).toEqual([]);
+  });
+});
+
+/**
+ * The rail draws one cell per section and marks exactly one of them as where
+ * you are. Both chromes resolve that from `isNavItemActive`, so a wrong answer
+ * here is an indicator bar that never moves.
+ */
+describe("isNavItemActive", () => {
+  const section = (key: string) => ACP_NAV.find((n) => n.key === key)!;
+  const dashboard = ACP_NAV.find((n) => n.to === "/admin")!;
+
+  it("matches the dashboard only on its exact route", () => {
+    expect(isNavItemActive(dashboard, "/admin")).toBe(true);
+    // ⚠ The whole panel lives under /admin. A prefix match here would light
+    // the dashboard on every page there is.
+    expect(isNavItemActive(dashboard, "/admin/users")).toBe(false);
+    expect(isNavItemActive(dashboard, "/admin/settings")).toBe(false);
+  });
+
+  it("matches a group through any of its children", () => {
+    expect(isNavItemActive(section("users"), "/admin/groups")).toBe(true);
+    expect(isNavItemActive(section("users"), "/admin/badges")).toBe(true);
+    expect(isNavItemActive(section("users"), "/admin/permissions")).toBe(false);
+  });
+
+  it("matches a child's own sub-routes", () => {
+    expect(isNavItemActive(section("content"), "/admin/articles/new")).toBe(true);
+  });
+
+  it("picks exactly one section for every route in the nav", () => {
+    for (const { to } of ACP_NAV_INDEX) {
+      const hits = ACP_NAV.filter((n) => isNavItemActive(n, to));
+      expect(hits.map(navItemId), `route ${to}`).toHaveLength(1);
+    }
+  });
+
+  it("falls back to the first section for an unknown route", () => {
+    expect(activeNavSection(ACP_NAV, "/admin/nowhere")).toBe(ACP_NAV[0]);
   });
 });
