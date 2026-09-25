@@ -27,6 +27,7 @@ Modular-monolith core · TypeScript end to end · plugins first
 - [Framework packages (npm)](#framework-packages-npm)
 - [Architecture in a nutshell](#architecture-in-a-nutshell)
 - [Layout system](#layout-system)
+- [Announcements](#announcements)
 - [Working on core](#working-on-core)
 - [Plugin development guide](#plugin-development-guide)
 - [Migrating from another platform](#migrating-from-another-platform)
@@ -447,6 +448,37 @@ reviewing a theme means reading JSON and CSS.
 Need a block the catalogue doesn't have? That's a **plugin**, not a theme. See
 [`docs/plugin-blocks.md`](docs/plugin-blocks.md), and [`docs/style-system.md`](docs/style-system.md)
 for how themes and tokens fit together.
+
+---
+
+## Announcements
+
+Xentium can reach your admin panel directly. Once a day the worker asks the marketplace
+whether there is anything to pass on, and anything that comes back opens a dialog in the ACP,
+once per administrator. **ACP → Announcements** keeps the ones still current so you can
+re-read them.
+
+The check is anonymous. It sends no site id, no account, no version and no plugin list, and
+it works whether or not you've connected a marketplace account — a site that never linked one
+is exactly the site that most needs to hear about a security problem. There are no read
+receipts, deliberately: a channel that knows who read it is a tracking channel.
+
+Every announcement is **signed** (RS256, the same key that signs entitlements) and your
+instance throws away anything that doesn't verify, has been altered in transit, or has
+expired. Without that, anyone who could answer for your `LICENSE_SERVER_URL` would get to put
+arbitrary text in a modal in front of every administrator. There's no HTML in the channel at
+all — plain text, plus at most one `https://` link that's shown in full and never opened for
+you.
+
+We write them in English and translate where we can; each admin sees their own language if
+we have it, then the site's, then English. They can't be muted: a channel you can turn off
+isn't one we can rely on when it matters.
+
+Running your own marketplace? The channel is whichever license server you're pointed at, so
+you can broadcast to your own fleet. Your instances trust it exactly as far as the public key
+they're configured with.
+
+Full details in [the wiki](https://doc.xentium.org/admin/announcements/).
 
 ---
 

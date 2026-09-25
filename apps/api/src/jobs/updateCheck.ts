@@ -167,6 +167,10 @@ async function runUpdateCheck(): Promise<void> {
  * two do. `processUpdateCheck` returns early without an account token; core
  * asks anonymously, because an install that never connected an account is the
  * one most likely to be running an un-patched forum.
+ *
+ * The ANNOUNCEMENT check is a fourth, on the same anonymous terms and for the
+ * same reason — a broadcast that only reached accounted installs would miss
+ * precisely the administrators a warning is aimed at.
  */
 export async function processMarketplaceSync(): Promise<void> {
   const { refreshLicense } = await import("../core/license-engine/license-engine.js");
@@ -178,6 +182,11 @@ export async function processMarketplaceSync(): Promise<void> {
   const { processCoreUpdateCheck } = await import("./coreUpdateCheck.js");
   await processCoreUpdateCheck().catch((err) => {
     logger.warn({ err }, "Core update check failed during marketplace sync");
+  });
+
+  const { processAnnouncementCheck } = await import("./announcementCheck.js");
+  await processAnnouncementCheck().catch((err) => {
+    logger.warn({ err }, "Announcement check failed during marketplace sync");
   });
 }
 

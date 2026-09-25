@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Painel",
+    "announcements": "Anúncios",
     "users": "Utilizadores",
     "accessControl": "Controlo de acesso",
     "content": "Conteúdo",
@@ -1206,6 +1207,23 @@
     "previewTitle": "{{name}} — pré-visualização",
     "previewClose": "Fechar",
     "previewNote": "Renderizado pelo marketplace a partir da versão à venda, por isso a disposição e as cores são do próprio tema. O interior dos blocos são marcadores: o que vai lá dentro é o teu conteúdo, desenhado pelos componentes do teu site."
+  },
+  "announcements": {
+    "title": "Anúncios",
+    "loading": "A carregar anúncios…",
+    "from": "Da equipa Xentium",
+    "unread": "Novo",
+    "read": "Lido",
+    "englishFallback": "mostrado em inglês",
+    "emptyTitle": "Nada da equipa Xentium",
+    "emptyCheckedAt": "Verificado pela última vez em {{date}}. Os anúncios chegam com a verificação diária de atualizações.",
+    "emptyHint": "Os anúncios chegam com a verificação diária de atualizações.",
+    "dialogOk": "OK",
+    "dialogNote": "Enviado pela equipa Xentium. Carregar em OK marca-o como lido na tua conta.",
+    "severity": {
+      "important": "Importante",
+      "critical": "Crítico"
+    }
   },
   "updates": {
     "title": "Atualizações",
