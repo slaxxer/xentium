@@ -67,6 +67,14 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The Prisma client is GENERATED, not committed, and half the API's types
+      # come from it. Without this the typecheck does not fail honestly — it
+      # cannot resolve `../generated/prisma/client.js`, every derived type
+      # collapses to `any`, and `noImplicitAny` then reports dozens of errors in
+      # files nobody touched. The first real run of this workflow died exactly
+      # that way. It needs no database: generate only reads the schema.
+      - run: pnpm db:generate
+
       # Not the full backbone check: `pnpm test` needs Postgres and Redis, and a
       # tagged commit has already been through them. The builds are not skipped —
       # publish-release.mjs runs them, because the build IS the artifact.
