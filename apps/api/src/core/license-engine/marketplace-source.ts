@@ -1,7 +1,11 @@
-// The download gate (ADR 0001). Core talks to a `MarketplaceSource`, never
-// hardcoding a marketplace host — the URL comes from env.LICENSE_SERVER_URL. A
-// community / self-hosted source can implement the same interface and return
-// free, no-op entitlements.
+// The download gate (ADR 0001). Core talks to a `MarketplaceSource` rather than
+// reaching for a host directly, and the URL comes from env.LICENSE_SERVER_URL so
+// a developer can run against a local marketplace.
+//
+// There is ONE marketplace: plugins.xentium.org. The interface is a test seam,
+// not an invitation to point an instance at someone else's shop, and anything
+// carrying an identity claim — an announcement, a plugin signature — is checked
+// against the key bundled in the build whatever that URL says.
 //
 // This source speaks PROTOCOL v1 (the marketplace's `/api/v1`): every call
 // after connect carries an account token AND an Ed25519 signature over the

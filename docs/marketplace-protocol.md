@@ -16,9 +16,12 @@ tell you. Write the change down on both sides before you make it.**
   `marketplace-source.ts` (the conversations), `site-identity.ts` (who am I).
 - **Base URL:** `env.LICENSE_SERVER_URL`, **including the version prefix**
   (`https://plugins.xentium.org/api/v1`). It's part of what every signature covers.
-- **Building another marketplace?** Core talks to a `MarketplaceSource` interface and
-  never hardcodes a host. A community or self-hosted source can implement the same
-  interface and hand out free entitlements that don't restrict anything.
+- **One marketplace.** `plugins.xentium.org` is it. Core talks to a `MarketplaceSource`
+  interface rather than reaching for a host directly, but that's a test seam — it's what
+  lets the licence engine be exercised without the network — not an invitation to point an
+  instance somewhere else. `LICENSE_SERVER_URL` exists so a developer can run against a
+  local marketplace; identity claims (announcements, package signatures) are checked
+  against the bundled key regardless of where it points.
 
 ---
 

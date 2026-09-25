@@ -474,9 +474,10 @@ We write them in English and translate where we can; each admin sees their own l
 we have it, then the site's, then English. They can't be muted: a channel you can turn off
 isn't one we can rely on when it matters.
 
-Running your own marketplace? The channel is whichever license server you're pointed at, so
-you can broadcast to your own fleet. Your instances trust it exactly as far as the public key
-they're configured with.
+There is one marketplace, `plugins.xentium.org`, and an announcement is checked against the
+key bundled in the build — not against `LICENSE_PUBLIC_KEY`. That env var can change which
+*licences* an instance accepts, for development against a local marketplace; it cannot change
+who an instance believes is Xentium.
 
 Full details in [the wiki](https://doc.xentium.org/admin/announcements/).
 

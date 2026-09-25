@@ -6,6 +6,8 @@ import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { validateManifest, type PluginManifest } from "./manifest-validator.js";
+import { verifyPackageSignature, type PackageProvenance } from "./package-signature.js";
+import { assertExtractionIntact } from "./extraction-integrity.js";
 import { validateMigrationPairs, runUpMigrations, runNewUpMigrations, runDownMigrations, forceCleanupSchema } from "./migration-runner.js";
 import { pluginRegistry } from "./plugin-registry.js";
 import { logger } from "../../infrastructure/logging/logger.js";
@@ -85,7 +87,9 @@ export function extractedDir(pluginId: string): string {
 }
 
 /** Validate a .xtplugin ZIP buffer. Returns the parsed manifest. */
-export async function validatePackage(buffer: Buffer): Promise<{ manifest: PluginManifest; zip: AdmZip }> {
+export async function validatePackage(
+  buffer: Buffer,
+): Promise<{ manifest: PluginManifest; zip: AdmZip; provenance: PackageProvenance }> {
   let zip: AdmZip;
   try {
     zip = new AdmZip(buffer);
@@ -125,12 +129,18 @@ export async function validatePackage(buffer: Buffer): Promise<{ manifest: Plugi
   // Validate migration pairs before touching anything
   validateMigrationPairs(zip, manifest);
 
-  return { manifest, zip };
+  // Provenance LAST, and before anything is written: a package carrying a
+  // signature that does not verify is refused here, so neither install nor
+  // update can reach the filesystem with it. An unsigned package passes — that
+  // is a developer's own build, not an accusation.
+  const provenance = await verifyPackageSignature(zip, manifest);
+
+  return { manifest, zip, provenance };
 }
 
 /** Install a plugin from a buffer. Stores the package and creates the DB record. */
 export async function installPlugin(buffer: Buffer, _installedById: string): Promise<PluginManifest> {
-  const { manifest, zip } = await validatePackage(buffer);
+  const { manifest, zip, provenance } = await validatePackage(buffer);
 
   // Check if already installed
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
@@ -177,6 +187,9 @@ export async function installPlugin(buffer: Buffer, _installedById: string): Pro
       licenseRequired:  manifest.licenseRequired,
       packagePath:      pkgPath,
       manifest:         manifest as unknown as object,
+      signatureTier:    provenance.tier,
+      reviewedAt:       provenance.reviewedAt ? new Date(provenance.reviewedAt) : null,
+      contentDigest:    provenance.digest,
     },
   });
 
@@ -198,7 +211,7 @@ export async function updatePlugin(
   _updatedById: string,
   onProgress?: (p: { phase: string; percent: number }) => void,
 ): Promise<PluginManifest> {
-  const { manifest, zip } = await validatePackage(buffer);
+  const { manifest, zip, provenance } = await validatePackage(buffer);
 
   const existing = await prisma.installedPlugin.findUnique({ where: { id: manifest.id } });
   if (!existing) {
@@ -241,6 +254,12 @@ export async function updatePlugin(
       licenseRequired:  manifest.licenseRequired,
       packagePath:      pkgPath,
       manifest:         manifest as unknown as object,
+      // Re-recorded, never carried over: the new bytes have their own
+      // provenance, and an update from a signed build to an unsigned one must
+      // show as unsigned rather than inherit the old build's review.
+      signatureTier:    provenance.tier,
+      reviewedAt:       provenance.reviewedAt ? new Date(provenance.reviewedAt) : null,
+      contentDigest:    provenance.digest,
     },
   });
   pluginRegistry.register(manifest, "disabled");
@@ -264,6 +283,16 @@ export async function updatePlugin(
 export async function enablePlugin(pluginId: string): Promise<void> {
   const record = await prisma.installedPlugin.findUniqueOrThrow({ where: { id: pluginId } });
   if (record.status === "enabled") return;
+
+  // Do the files still match the package they came from? The signature was
+  // checked once, at install; this is every time the code is about to run.
+  // Before the licence gate deliberately — that one makes a network call, and
+  // there is no point asking the marketplace about a plugin we are not going to
+  // load.
+  const tampered = await assertExtractionIntact(pluginId, record.packagePath, extractedDir(pluginId));
+  if (tampered) {
+    throw new XentiumError({ code: XEC.PLUGIN_PACKAGE_INVALID, httpStatus: 422, message: tampered });
+  }
 
   // License check — authoritative BY ID: a plugin needs an entitlement iff the
   // marketplace sells THIS id as paid, regardless of what its (uploadable) manifest
@@ -477,6 +506,27 @@ export async function initializeEnabledPlugins(): Promise<void> {
   for (const record of records) {
     try {
       const manifest = validateManifest(record.manifest) as PluginManifest;
+
+      // Every boot, for anything that is about to execute: do the extracted
+      // files still match the package they were installed from? A signature
+      // verified once at install and never looked at again is trust on first
+      // use, and the interesting moment is every boot after it.
+      //
+      // A failure does NOT stop the server. The plugin is left unregistered and
+      // the reason is recorded where the ACP already shows load failures, so
+      // the site comes up without the suspect code and the admin is told which
+      // files moved. Taking a forum offline over one bad plugin would be a
+      // denial of service dressed as a security feature.
+      if (record.status === "enabled") {
+        const tampered = await assertExtractionIntact(record.id, record.packagePath, extractedDir(record.id));
+        if (tampered) {
+          pluginRegistry.setLoadError(record.id, {
+            hook: "integrity", message: tampered, at: new Date().toISOString(),
+          });
+          continue;
+        }
+      }
+
       pluginRegistry.register(manifest, record.status as "enabled" | "disabled" | "installed");
       logger.info({ pluginId: record.id, status: record.status }, "Plugin loaded into registry");
 

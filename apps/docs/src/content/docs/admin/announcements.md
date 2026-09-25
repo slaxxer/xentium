@@ -60,11 +60,3 @@ asking for any of that, it did not come from us, and we would like to hear about
 
 Announcements can carry a single link. It is always shown in full, always points at
 `xentium.org`, and your site never opens it for you.
-
-## If you run your own marketplace
-
-The channel is the license server you are pointed at, so a self-hosted marketplace can
-broadcast to its own fleet. Your instances verify against whichever public key they are
-configured with, which means a notice from your marketplace is trusted exactly as far as that
-key is. It is worth saying out loud to your administrators that "the Xentium team" in a
-self-hosted setup means whoever holds that key.
