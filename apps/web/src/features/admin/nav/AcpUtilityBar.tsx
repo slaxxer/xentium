@@ -1,25 +1,18 @@
 import { useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { NotificationBell } from "../../../components/NotificationBell";
-import { slotRegistry } from "../../../plugins/slotRegistry";
 import { ACP_NAV_INDEX as NAV_INDEX } from "../useAcpNav";
 import { AcpSearch } from "./AcpSearch";
 
 /**
- * The rail chrome's one horizontal line: where you are on the left, the alert
- * surfaces on the right.
+ * The rail chrome's one horizontal line: where you are, and — when the panel is
+ * collapsed — the palette.
  *
- * The redesign folds the whole top bar into the sidebar, and this is what did
- * not fit. The notification bell and every `registerHeaderWidget` a plugin
- * contributes are 40px buttons whose menus are ~340px wide and open downward,
- * pinned to the button's right edge. That works against the right edge of a
- * full-width strip and nowhere else: inside the 72px rail or the 248px panel
- * the menu would start several hundred pixels off the left of the screen. A
- * plugin cannot be asked to know which chrome it is being drawn in, so the
- * chrome keeps a place where its assumptions hold.
- *
- * It carries no navigation — that is the rail's and the panel's job — so it is
- * 44px against the old chrome's 140px.
+ * It held the notification bell and plugin header widgets until those were
+ * taken out of the ACP entirely, so what is left is deliberately thin. It earns
+ * its 44px in collapsed mode, where the panel is gone and this is the only
+ * thing on screen that names the section you are in. Docked, it repeats what
+ * the panel already says; that is the price of the chrome not moving around
+ * when you collapse it.
  */
 export function AcpUtilityBar({ showSearch }: {
   /** True when the panel is collapsed and has nowhere to put the palette.
@@ -48,10 +41,6 @@ export function AcpUtilityBar({ showSearch }: {
 
       <div className="acp-util__right">
         {showSearch && <AcpSearch />}
-        {slotRegistry.getHeaderWidgets().map((w) => (
-          <w.component key={w.id} />
-        ))}
-        <NotificationBell />
       </div>
     </div>
   );

@@ -1227,11 +1227,11 @@
     "emptyCheckedAt": "Verificado pela última vez em {{date}}. Os anúncios chegam com a verificação diária de atualizações.",
     "emptyHint": "Os anúncios chegam com a verificação diária de atualizações.",
     "dialogOk": "OK",
-    "dialogNote": "Enviado pela equipa Xentium. Carregar em OK marca-o como lido na tua conta.",
     "severity": {
       "important": "Importante",
       "critical": "Crítico"
-    }
+    },
+    "moreWaiting": "Mais {{count}} à espera"
   },
   "trust": {
     "official": "Plugin oficial",

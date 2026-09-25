@@ -1227,11 +1227,11 @@
     "emptyCheckedAt": "Dernière vérification le {{date}}. Les annonces arrivent avec la vérification quotidienne des mises à jour.",
     "emptyHint": "Les annonces arrivent avec la vérification quotidienne des mises à jour.",
     "dialogOk": "OK",
-    "dialogNote": "Envoyé par l'équipe Xentium. Cliquer sur OK la marque comme lue pour votre compte.",
     "severity": {
       "important": "Important",
       "critical": "Critique"
-    }
+    },
+    "moreWaiting": "{{count}} autre(s) en attente"
   },
   "trust": {
     "official": "Extension officielle",

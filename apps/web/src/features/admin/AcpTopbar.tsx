@@ -1,8 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../hooks/useTheme";
-import { NotificationBell } from "../../components/NotificationBell";
-import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon } from "./pages/acpIcons";
 // Breadcrumb routes come from the one nav definition — see ACP_NAV_INDEX.
 import { ACP_NAV_INDEX as NAV_INDEX } from "./useAcpNav";
@@ -13,6 +11,13 @@ import "./AcpTopbar.scss";
 // The horizontal chrome's top line: breadcrumb + palette on the left, the util
 // cluster on the right. The palette and the user menu are shared with the rail
 // chrome (nav/) — this file is only their arrangement.
+//
+// No notification bell and no plugin header widgets. Notifications and private
+// messages are things that happen to you as a MEMBER, and the place to read
+// them is the site; the ACP is a tool for running the place, and every unread
+// count in here was a reason to leave the job you came in to do. Plugins keep
+// their `registerHeaderWidget` slot — it still renders in the site's own
+// chrome (layout/blocks/chromeBlocks.tsx).
 
 // ── Topbar ─────────────────────────────────────────────────────────────────────
 export function AcpTopbar() {
@@ -55,10 +60,6 @@ export function AcpTopbar() {
         >
           <AcpIcon name={theme === "dark" ? "sun" : "moon"} size={18} />
         </button>
-        {slotRegistry.getHeaderWidgets().map((w) => (
-          <w.component key={w.id} />
-        ))}
-        <NotificationBell />
         <span className="nbdiv" />
         <AcpUserMenu />
       </div>

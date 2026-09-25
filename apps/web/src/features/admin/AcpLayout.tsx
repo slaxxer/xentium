@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
@@ -14,6 +14,7 @@ import { AcpTopbar } from "./AcpTopbar";
 import { useAcpNav } from "./useAcpNav";
 import { HorizontalNav } from "./nav/HorizontalNav";
 import { AcpRailShell } from "./nav/AcpRailShell";
+import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { useAcpLayout } from "./nav/acpChrome";
 import { IconScope } from "../../lib/iconScope";
 
@@ -58,7 +59,7 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * ACP-entry announcement dialogs (openPanelDialog — the app-wide alert surface),
+ * ACP-entry dialogs (openPanelDialog — the app-wide alert surface),
  * shown PER ADMIN and persistent until this admin has actually LOOKED at the
  * matching page (server-tracked via the ACP movement log — dismissing never
  * counts, only visiting does):
@@ -69,13 +70,15 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
  * the badge + banners carry whatever isn't shown. Both re-fire when their anchor
  * moves (a renewed license / a new update set).
  *
- * A BROADCAST from the Xentium team outranks all of them, and acknowledges
- * differently: OK is the acknowledgement, recorded server-side per admin. The
- * visit-the-page rule exists because a licence or an update has something to be
- * DONE about, and dismissing without looking would be a lie; an announcement is
- * finished when it has been read. It goes first because it is a deliberate,
- * rare, human act — one click and it is gone, so the cost to everything behind
- * it is a single ACP entry.
+ * The visit-the-page rule exists because a licence or an update has something
+ * to be DONE about, and dismissing without looking would be a lie.
+ *
+ * A BROADCAST from the Xentium team used to sit at the front of this queue and
+ * no longer does: it is a band across the top of the canvas now
+ * (components/AnnouncementBanner.tsx). It has nothing for the admin to do, so
+ * it was the one notice here that did not need to stop them — and taking it out
+ * of the queue means a licence warning is met on the entry it applies to
+ * instead of the one after.
  */
 const MAX_DIALOG_ROWS = 5;
 
@@ -87,22 +90,6 @@ interface PluginUpdate {
   critical:          boolean;
   renewalRequired:   boolean;
 }
-
-interface AnnouncementView {
-  id:           string;
-  severity:     "info" | "important" | "critical";
-  publishedAt:  string;
-  link:         string | null;
-  title:        string;
-  body:         string;
-  acknowledged: boolean;
-}
-
-/** Loudest first, then newest — one dialog per entry, so the order decides
- *  which of several unread broadcasts an admin meets first. */
-const ANNOUNCEMENT_RANK: Record<AnnouncementView["severity"], number> = {
-  critical: 2, important: 1, info: 0,
-};
 
 interface StatusSummary {
   licenseExpiringSoon: boolean;
@@ -116,14 +103,7 @@ interface StatusSummary {
 function useAcpAlerts() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
-  const qc = useQueryClient();
   const shownFor = useRef<string | null>(null);
-
-  const { data: broadcasts } = useQuery<{ checkedAt: string | null; announcements: AnnouncementView[] }>({
-    queryKey:  ["acp-announcements"],
-    queryFn:   () => api.get("/admin/announcements"),
-    staleTime: 5 * 60_000,
-  });
 
   const { data: updates } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; acknowledged: boolean; core: CoreUpdate | null }>({
     queryKey:  ["acp-marketplace-updates"],
@@ -199,57 +179,6 @@ function useAcpAlerts() {
       }).then((view) => { if (view) navigate("/admin/updates"); });
     };
 
-    // A broadcast from the Xentium team goes first. It is rare, deliberate, and
-    // one click makes it go away for good — so everything behind it waits at
-    // most one ACP entry.
-    const unread = (broadcasts?.announcements ?? [])
-      .filter((a) => !a.acknowledged)
-      .sort((a, b) =>
-        ANNOUNCEMENT_RANK[b.severity] - ANNOUNCEMENT_RANK[a.severity]
-        || b.publishedAt.localeCompare(a.publishedAt));
-
-    if (unread.length > 0) {
-      const post = unread[0]!;
-      const key = `announcement:${post.id}`;
-      if (shownFor.current === key) return;
-      shownFor.current = key;
-
-      const urgent = post.severity !== "info";
-
-      void openPanelDialog({
-        // `alert`, not `confirm`: there is one button and it means "read". A
-        // second, softer one would offer a way to not answer, and the whole
-        // point of this channel is that it is answered.
-        kind:        "alert",
-        icon:        urgent ? "warning" : "info",
-        title:       post.title,
-        badge:       urgent ? t(`announcements.severity.${post.severity}`) : undefined,
-        // The body carries the team's own prose, newlines and all. The link is
-        // shown in full underneath and never opened for the admin — they click
-        // it or they do not.
-        bodyNode: (
-          <>
-            <p className="acp-announcement__body">{post.body}</p>
-            {post.link && (
-              <a className="acp-announcement__link" href={post.link} target="_blank" rel="noopener noreferrer">
-                {post.link}
-              </a>
-            )}
-          </>
-        ),
-        note:        t("announcements.dialogNote"),
-        confirmText: t("announcements.dialogOk"),
-      }).then(() => {
-        // OK IS the acknowledgement, and it is recorded server-side so the same
-        // admin does not meet it again on another machine. A failed write is
-        // swallowed: the notice simply returns, which is the safe direction.
-        void api.post(`/admin/announcements/${post.id}/ack`, {})
-          .then(() => qc.invalidateQueries({ queryKey: ["acp-announcements"] }))
-          .catch(() => { /* it comes back next entry */ });
-      });
-      return;
-    }
-
     // License next (service continuity), one dialog per entry.
     if (licenseNeeds) {
       const key = `license:${status!.licenseExpiresAt}`;
@@ -313,7 +242,7 @@ function useAcpAlerts() {
       // don't count, so the dialog returns on the next ACP entry.
       if (view) navigate("/admin/updates");
     });
-  }, [status, updates, broadcasts, t, navigate, qc]);
+  }, [status, updates, t, navigate]);
 }
 
 function AcpShell() {
@@ -321,14 +250,20 @@ function AcpShell() {
   const layout = useAcpLayout();
   useAcpAlerts();
 
+  // The broadcast band sits ABOVE the page and outside its centred column: it
+  // belongs to the chrome, not to whatever page happens to be open. Same place
+  // in both chromes, so a notice does not move when an admin switches.
   const content = (
-    <main className="acp-content">
-      {/* A crashing ACP page must not take the nav with it — an admin needs
-          a way to click somewhere else. Clears on navigation. */}
-      <RouteErrorBoundary variant="inline">
-        <Outlet />
-      </RouteErrorBoundary>
-    </main>
+    <>
+      <AnnouncementBanner />
+      <main className="acp-content">
+        {/* A crashing ACP page must not take the nav with it — an admin needs
+            a way to click somewhere else. Clears on navigation. */}
+        <RouteErrorBoundary variant="inline">
+          <Outlet />
+        </RouteErrorBoundary>
+      </main>
+    </>
   );
 
   return (
