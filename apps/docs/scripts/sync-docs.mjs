@@ -54,6 +54,8 @@ const README_PAGES = [
     sections: ["Architecture in a nutshell"] },
   { slug: "concepts/layouts",      title: "The layout system",        order: 2,
     sections: ["Layout system"] },
+  { slug: "concepts/announcements", title: "Announcements",           order: 3,
+    sections: ["Announcements"] },
   { slug: "core/working-on-core",  title: "Working on core",          order: 1,
     sections: ["Working on core"] },
   { slug: "plugins/guide",         title: "Writing a plugin",         order: 1,

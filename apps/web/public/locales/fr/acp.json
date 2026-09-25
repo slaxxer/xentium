@@ -1,6 +1,7 @@
 {
   "nav": {
     "dashboard": "Tableau de bord",
+    "announcements": "Annonces",
     "users": "Utilisateurs",
     "accessControl": "Contrôle d'accès",
     "content": "Contenu",
@@ -1206,6 +1207,23 @@
     "previewTitle": "{{name}} — aperçu",
     "previewClose": "Fermer",
     "previewNote": "Rendu par la place de marché à partir de la version en vente : la disposition et les couleurs sont donc celles du thème. L'intérieur des blocs est un substitut — ce qui s'y trouve, c'est votre contenu, dessiné par les composants de votre site."
+  },
+  "announcements": {
+    "title": "Annonces",
+    "loading": "Chargement des annonces…",
+    "from": "De l'équipe Xentium",
+    "unread": "Nouveau",
+    "read": "Lu",
+    "englishFallback": "affiché en anglais",
+    "emptyTitle": "Rien de l'équipe Xentium",
+    "emptyCheckedAt": "Dernière vérification le {{date}}. Les annonces arrivent avec la vérification quotidienne des mises à jour.",
+    "emptyHint": "Les annonces arrivent avec la vérification quotidienne des mises à jour.",
+    "dialogOk": "OK",
+    "dialogNote": "Envoyé par l'équipe Xentium. Cliquer sur OK la marque comme lue pour votre compte.",
+    "severity": {
+      "important": "Important",
+      "critical": "Critique"
+    }
   },
   "updates": {
     "title": "Mises à jour",

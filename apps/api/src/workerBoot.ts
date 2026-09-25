@@ -9,6 +9,7 @@ import { startWarningExpiryWorker }           from './jobs/warningExpiry.js';
 import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { processCoreUpdateCheck } from './jobs/coreUpdateCheck.js';
+import { processAnnouncementCheck } from './jobs/announcementCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
@@ -108,6 +109,9 @@ async function boot() {
         if (!cfg.enabled) return;
         await processUpdateCheck();
         await processCoreUpdateCheck();
+        // Same argument again for broadcasts: an admin restarting a site after
+        // an incident should not have to wait until tomorrow to be told about it.
+        await processAnnouncementCheck();
       })
       .catch((err) => console.error('[worker] boot update-check failed:', (err as Error)?.message ?? err));
   }

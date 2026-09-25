@@ -1,0 +1,147 @@
+// ACP → Announcements. Layout only; every colour is an ACP token, so the page
+// follows the admin panel rather than the site's theme.
+
+.acp-ann__list { display: flex; flex-direction: column; gap: 12px; }
+
+.acp-ann {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 24px;
+  flex-wrap: wrap;
+
+  // A read announcement stays in the list — the record is the point — but it
+  // stops competing with the ones that still want an answer.
+  &.is-read { opacity: 0.72; }
+
+  --ann-accent: var(--c-accent);
+  &--important { --ann-accent: var(--c-warn); }
+  &--critical  { --ann-accent: var(--c-danger); }
+
+  &--important:not(.is-read),
+  &--critical:not(.is-read) {
+    border: 1px solid color-mix(in srgb, var(--ann-accent) 40%, transparent);
+  }
+
+  &__icon {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--ann-accent) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ann-accent) 34%, transparent);
+    color: var(--ann-accent);
+  }
+
+  &__main { flex: 1 1 320px; min-width: 0; }
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: 15.5px;
+    font-weight: 800;
+    line-height: 1.3;
+    color: var(--c-fg);
+    overflow-wrap: anywhere;
+  }
+
+  &__badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    background: color-mix(in srgb, var(--ann-accent) 18%, transparent);
+    color: var(--ann-accent);
+  }
+
+  &__new {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 100px;
+    font-size: 11px;
+    font-weight: 700;
+    background: color-mix(in srgb, var(--c-accent) 16%, transparent);
+    color: var(--c-accent);
+  }
+
+  &__meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+    font-size: 12.5px;
+    color: var(--c-fg-subtle);
+  }
+  &__dot { opacity: 0.5; }
+
+  &__body {
+    margin: 0;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--c-fg-muted);
+    // Authored as plain text; the newlines the team typed are the formatting
+    // they get, because the channel deliberately carries no markup.
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+
+  &__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    font-family: var(--ff-mono, monospace);
+    font-size: 12.5px;
+    color: var(--c-accent);
+    overflow-wrap: anywhere;
+
+    &:hover { text-decoration: underline; }
+  }
+
+  &__action { flex-shrink: 0; }
+
+  &__read {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--c-success);
+  }
+}
+
+// The same prose and link inside the ACP-entry dialog, so the two surfaces
+// agree about what an announcement looks like.
+.acp-announcement__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.acp-announcement__link {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: var(--ff-mono, monospace);
+  font-size: 12.5px;
+  color: var(--c-accent);
+  overflow-wrap: anywhere;
+
+  &:hover { text-decoration: underline; }
+}

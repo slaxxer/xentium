@@ -100,6 +100,8 @@ model User {
   profileComments         ProfileComment[] @relation("ProfileCommentOwner")
   authoredProfileComments ProfileComment[] @relation("ProfileCommentAuthor")
 
+  announcementAcks AnnouncementAck[]
+
   following   UserFollow[] @relation("UserFollower")
   followers   UserFollow[] @relation("UserFollowing")
   blocking    UserBlock[]  @relation("UserBlocker")
@@ -408,6 +410,38 @@ model Theme {
 
   @@index([active])
   @@map("xcf_themes")
+}
+
+/// One administrator has seen one broadcast from the Xentium team.
+///
+/// Per ADMIN, not per site: the dialog interrupts a person, so it is a person
+/// who dismisses it. And server-side rather than in browser storage, because an
+/// admin who clicked OK on their laptop has answered — meeting the same notice
+/// again on their phone would teach them that clicking OK does nothing.
+///
+/// ⚠ Deliberately NOT the acknowledgement rule the update and licence dialogs
+/// use. Those re-fire until the admin VISITS the matching page, because there
+/// is something there to do; dismissing without looking would be a lie. An
+/// announcement is finished when it has been read, and there is nowhere to go
+/// — so OK means OK.
+///
+/// The row survives the announcement expiring or being pulled. It is small, and
+/// keeping it means a broadcast that is re-published cannot reappear for
+/// someone who already dealt with it.
+model AnnouncementAck {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  /// The marketplace's id for the announcement. No foreign key — the
+  /// announcements themselves are cached in a setting, not a table, because
+  /// they are someone else's records and this instance is only their reader.
+  announcementId String   @map("announcement_id")
+  ackedAt        DateTime @default(now()) @map("acked_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, announcementId])
+  @@index([userId])
+  @@map("xcf_announcement_acks")
 }
 
 model Setting {
