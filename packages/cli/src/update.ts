@@ -198,7 +198,15 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
   // ── 5. Swap ────────────────────────────────────────────────────────────────
   heading("Switching over");
   const previous = config.version;
-  const hadMigrations = await migrationsPending(site, version);
+  // Asked while the site is still up: if we cannot tell, nothing has been touched yet.
+  let hadMigrations: boolean;
+  try {
+    hadMigrations = await migrationsPending(site, version);
+  } catch (e) {
+    error((e as Error).message);
+    note(`Nothing was changed. ${previous} is still running.`);
+    return 1;
+  }
   if (managed) systemctl("stop", serviceUnits);
 
   try {
@@ -213,8 +221,9 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
     success(`current → releases/${version}`);
   } catch (e) {
     error((e as Error).message);
-    await rollTo(site, previous, serviceUnits, managed);
+    // Restore while nothing is running, then bring the old release back up.
     if (hadMigrations && dump) await restoreQuietly(site, dump);
+    await rollTo(site, previous, serviceUnits, managed);
     return 1;
   }
 
@@ -237,8 +246,8 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
 
   error(`${version} did not come up within 60 seconds. Rolling back to ${previous}.`);
   systemctl("stop", serviceUnits);
-  await rollTo(site, previous, serviceUnits, managed);
   if (hadMigrations && dump) await restoreQuietly(site, dump);
+  await rollTo(site, previous, serviceUnits, managed);
   if (await waitForHealth(config.port, 60_000)) success(`Back on ${previous}.`);
   else error(`${previous} did not come back up either. The logs are in \`journalctl -u ${serviceUnits.api}\`.`);
   return 1;
