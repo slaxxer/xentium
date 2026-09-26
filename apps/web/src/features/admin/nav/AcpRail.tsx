@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "../../../hooks/useTheme";
+import { faUserShield } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { AcpIcon } from "../pages/acpIcons";
 import { type NavItem, navItemId } from "../useAcpNav";
 import { AcpUserMenu } from "./AcpUserMenu";
@@ -44,7 +46,9 @@ export function AcpRail({ nav, activeId, flyoutId, collapsed, canDock, onPeek }:
 
   return (
     <aside className="acp-rail" aria-label={t("sidebar.sections")}>
-      <div className="acp-rail__mark"><AcpIcon name="dashboard" size={18} /></div>
+      {/* The staff mark, the same glyph the marketplace's ops console wears
+          (Material's shield_person): this is the room only staff can enter. */}
+      <div className="acp-rail__mark"><FontAwesomeIcon icon={faUserShield} /></div>
 
       {collapsed && canDock && (
         <button

@@ -117,7 +117,8 @@
     "toggleTheme": "Toggle theme",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
-    "adminPanel": "Admin panel"
+    "adminPanel": "Admin panel",
+    "adminAttention": "Something in the admin panel needs your attention"
   },
   "search": {
     "short": "Search",
