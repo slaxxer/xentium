@@ -24,3 +24,7 @@ Core updates as a one-time dialog (same session):
 - `AcpLayout.tsx`: every core release opens the dialog once (no patch exception, any close acknowledges); pending plugin updates listed inside it; the plugin dialog doesn't follow it in the same visit.
 - `marketplace.service.ts`: core acknowledged only by the dialog mark; core dropped from `getStatusSummary` (badge).
 - Locales ×5: `coreUpdate.pluginsTitle`, `dialogPlugins`, `dialogClose`; card strings removed. Docs updated.
+
+Navbar badge (same session):
+- `marketplace.service.ts`: `getStatusSummary` counts a pending core update again (`coreUpdate`), urgent by path severity; `pendingCore()` ignores a cache written by an older version (right after `xentium update`), used by the dialog too.
+- `components/AcpStatusBadge.tsx` + `layouts/AppLayout.scss` (`.pub-nav__badge`): tokens instead of inline `#fff`, even padding, border-box, opaque ring.

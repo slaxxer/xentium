@@ -12,7 +12,8 @@ import {
   refreshLicense, activateFromAccount, assertThemeDownloadAllowed,
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
-import { readCoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { readCoreUpdateCache, type CoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { XENTIUM_VERSION } from "../../config/version.js";
 import { cliSiteDir } from "../../config/envProbe.js";
 import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
 import { pluginService } from "../plugins/plugin.service.js";
@@ -186,12 +187,22 @@ function pruneLinkSecrets() {
  * necessarily been told about a Xentium security release. Null when there is
  * nothing to say, so every consumer can test one field.
  */
+/**
+ * Is a core update actually waiting? Only if the cache was written by the version
+ * we are running: right after `xentium update` it still describes the release we
+ * just installed until the worker's boot check replaces it, and the badge and
+ * dialog would otherwise offer an update to the version already running.
+ */
+function pendingCore(cache: CoreUpdateCache | null): cache is CoreUpdateCache & { latest: NonNullable<CoreUpdateCache["latest"]> } {
+  return !!cache?.updateAvailable && !!cache.latest && cache.current === XENTIUM_VERSION;
+}
+
 /** The acknowledgement closing the core dialog writes. Not a page: an ACP visit row nobody navigates to. */
 const CORE_ACK_MARK = "/admin/updates#core";
 
 async function getCoreUpdate(userId?: string) {
   const cache = await readCoreUpdateCache();
-  if (!cache || !cache.updateAvailable || !cache.latest) return null;
+  if (!cache || !pendingCore(cache)) return null;
 
   // The dialog is the only place a core release appears, and it is one-time:
   // closing it in any way writes this mark.
@@ -450,9 +461,14 @@ export const marketplaceService = {
     const { updates } = await readReconciledUpdates();
     const pluginUpdates = updates.length;
 
-    // Core is deliberately NOT here: a new Xentium is a one-time dialog, and a
-    // badge pointing at an Updates page that no longer lists it would never clear.
-    const criticalUpdate = updates.some((u) => u.critical);
+    // Core counts once, until the site is actually on the new version: the
+    // dialog is one-time, the badge is the standing reminder. Urgent on the same
+    // terms a plugin is — `highestSeverity`, not `latest.severity`, because the
+    // security release may be one of the versions ON THE WAY to the newest.
+    const core = await readCoreUpdateCache();
+    const coreUpdate = pendingCore(core);
+    const coreUrgent = coreUpdate && (core!.highestSeverity === "security" || core!.highestSeverity === "critical");
+    const criticalUpdate = updates.some((u) => u.critical) || coreUrgent;
 
     // Entitlement health. NOT "your subscription is ending" — see
     // licenseAttention.ts for why the previous rule was true for every
@@ -479,6 +495,7 @@ export const marketplaceService = {
 
     return {
       pluginUpdates,
+      coreUpdate,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
@@ -486,9 +503,9 @@ export const marketplaceService = {
       licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
-      // Badge count: each pending plugin update, + the license (once) if it
-      // needs attention.
-      total: pluginUpdates + (needsAttention ? 1 : 0),
+      // Badge count: each pending plugin update, core once, + the license
+      // (once) if it needs attention.
+      total: pluginUpdates + (coreUpdate ? 1 : 0) + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
       urgent: criticalUpdate || needsAttention,
     };

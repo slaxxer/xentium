@@ -340,6 +340,34 @@
     }
   }
 
+  /* Count on the ACP gear (AcpStatusBadge): pending plugin updates, a new
+     Xentium, the licence. Its own padding on every side and border-box sizing,
+     so one digit is a circle, two are a pill, and the number sits in the middle
+     rather than riding the top edge. */
+  &__badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    box-sizing: border-box;
+    min-width: 20px;
+    height: 20px;
+    padding: 3px 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 99px;
+    border: 2px solid var(--c-surface); // --nav-bg is translucent; the ring must be opaque
+    background: var(--c-accent2);
+    color: var(--c-on-accent);
+    font-size: 10px;
+    font-weight: 800;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    pointer-events: none;
+
+    &--urgent { background: var(--c-danger); }
+  }
+
   /* Write button */
   &__write-btn {
     display: inline-flex;

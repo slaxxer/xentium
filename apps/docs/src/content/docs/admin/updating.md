@@ -38,7 +38,11 @@ The dialog is one-time: however you close it, it is gone for you, and each admin
 Copy the command before you close it, or find it again in [Installing the update](#installing-the-update)
 below. The next release brings a new dialog, and so does a release we later mark as a security
 fix, even if you had already seen it as an ordinary one. A core release doesn't appear on the
-Updates page or in the gear badge.
+Updates page.
+
+**The gear icon in your site's navbar** carries a count for admins: one for a waiting Xentium
+release, one per plugin update, and one if your licence needs attention. It turns red when any
+of them is urgent, and the core one stays until your site is running the new version.
 
 ## How urgent is it
 
