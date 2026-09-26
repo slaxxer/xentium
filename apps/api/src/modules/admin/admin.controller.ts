@@ -371,9 +371,9 @@ export const adminController = {
     res.json(await announcementService.list(req.userId!));
   }) as RequestHandler,
 
-  acknowledgeAnnouncement: (async (req, res) => {
+  dismissAnnouncement: (async (req, res) => {
     const { id } = z.object({ id: z.string().min(1).max(64) }).parse(req.params);
-    res.json(await announcementService.acknowledge(req.userId!, id));
+    res.json(await announcementService.dismiss(id));
   }) as RequestHandler,
 
   // ── Marketplace (ADR 0001) — logic lives in marketplace.service.ts ─────────

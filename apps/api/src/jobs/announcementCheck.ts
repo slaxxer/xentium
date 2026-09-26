@@ -1,6 +1,7 @@
 import * as jose from "jose";
 import type { CryptoKey } from "jose";
 import { prisma } from "../infrastructure/db.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import { env } from "../config/env.js";
 import { bustSettingsCache } from "../shared/utils/settings.js";
 import { logger } from "../infrastructure/logging/logger.js";
@@ -30,6 +31,17 @@ import { getMarketplacePublicKey } from "../core/license-engine/license-engine.j
  */
 
 export const ANNOUNCEMENTS_SETTING = "announcements";
+
+/**
+ * Ids of announcements an admin has read, and nothing else — no who, no when.
+ *
+ * An announcement is gone from this site the moment one admin clicks OK. But
+ * the marketplace keeps serving it until it expires or is pulled, so without
+ * this list the next check would bring it straight back. Each id is dropped
+ * again as soon as the marketplace stops serving it: the list never outlives
+ * the announcements it names.
+ */
+export const DISMISSED_SETTING = "announcements.dismissed";
 
 export type AnnouncementSeverity = "info" | "important" | "critical";
 
@@ -61,15 +73,61 @@ function announcementsUrl(): string {
   return `${env.LICENSE_SERVER_URL.replace(/\/+$/, "")}/announcements`;
 }
 
-export async function readAnnouncementCache(): Promise<AnnouncementCache | null> {
-  const row = await prisma.setting.findUnique({ where: { key: ANNOUNCEMENTS_SETTING } });
+type Db = Pick<Prisma.TransactionClient, "setting" | "$executeRaw">;
+
+async function readJson<T>(db: Db, key: string): Promise<T | null> {
+  const row = await db.setting.findUnique({ where: { key } });
   if (!row) return null;
   try {
     const value = row.value;
-    return (typeof value === "string" ? JSON.parse(value) : value) as AnnouncementCache;
+    return (typeof value === "string" ? JSON.parse(value) : value) as T;
   } catch {
     return null;
   }
+}
+
+async function writeJson(db: Db, key: string, data: unknown): Promise<void> {
+  const value = JSON.stringify(data);
+  await db.setting.upsert({ where: { key }, update: { value }, create: { key, value } });
+  bustSettingsCache(key);
+}
+
+export async function readAnnouncementCache(db: Db = prisma): Promise<AnnouncementCache | null> {
+  return readJson<AnnouncementCache>(db, ANNOUNCEMENTS_SETTING);
+}
+
+export async function readDismissed(db: Db = prisma): Promise<string[]> {
+  const ids = await readJson<unknown>(db, DISMISSED_SETTING);
+  return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
+}
+
+/**
+ * Run `fn` holding the announcement lock. The check job and an admin's OK both
+ * read and rewrite the cache and the dismissed list; without this, a check that
+ * started before the click would write the notice back and drop its id.
+ */
+export async function withAnnouncementLock<T>(fn: (db: Db) => Promise<T>): Promise<T> {
+  return prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('xentium.announcements'))`;
+    return fn(tx);
+  });
+}
+
+/**
+ * An admin read it: it leaves this site for every admin, and only its id stays
+ * behind, until the marketplace stops serving it.
+ */
+export async function dismissAnnouncement(id: string): Promise<void> {
+  await withAnnouncementLock(async (db) => {
+    const cache = await readAnnouncementCache(db);
+    if (!cache?.announcements.some((a) => a.id === id)) return;
+    await writeJson(db, ANNOUNCEMENTS_SETTING, {
+      ...cache,
+      announcements: cache.announcements.filter((a) => a.id !== id),
+    } satisfies AnnouncementCache);
+    const dismissed = await readDismissed(db);
+    await writeJson(db, DISMISSED_SETTING, [...new Set([...dismissed, id])]);
+  });
 }
 
 /**
@@ -188,17 +246,19 @@ export async function processAnnouncementCheck(): Promise<void> {
   // Newest first, so the ACP shows the most recent thing first without sorting.
   verified.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 
-  const value = JSON.stringify({
-    checkedAt: new Date().toISOString(),
-    announcements: verified,
-  } satisfies AnnouncementCache);
+  const shown = await withAnnouncementLock(async (db) => {
+    const served = new Set(verified.map((a) => a.id));
+    const dismissed = await readDismissed(db);
+    const stillServed = dismissed.filter((id) => served.has(id));
+    const shown = verified.filter((a) => !dismissed.includes(a.id));
 
-  await prisma.setting.upsert({
-    where:  { key: ANNOUNCEMENTS_SETTING },
-    update: { value },
-    create: { key: ANNOUNCEMENTS_SETTING, value },
+    await writeJson(db, ANNOUNCEMENTS_SETTING, {
+      checkedAt: new Date().toISOString(),
+      announcements: shown,
+    } satisfies AnnouncementCache);
+    if (stillServed.length !== dismissed.length) await writeJson(db, DISMISSED_SETTING, stillServed);
+    return shown.length;
   });
-  bustSettingsCache(ANNOUNCEMENTS_SETTING);
 
-  logger.info({ announcements: verified.length }, "Announcement check completed");
+  logger.info({ announcements: shown }, "Announcement check completed");
 }

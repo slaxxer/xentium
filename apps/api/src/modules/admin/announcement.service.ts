@@ -1,15 +1,17 @@
 import { prisma } from "../../infrastructure/db.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import {
-  readAnnouncementCache, type Announcement, type AnnouncementCopy,
+  dismissAnnouncement, readAnnouncementCache, type Announcement, type AnnouncementCopy,
 } from "../../jobs/announcementCheck.js";
 
 /**
  * Broadcasts from the Xentium team, as one administrator sees them.
  *
  * The announcements themselves are the marketplace's records — cached by the
- * daily check, already signature-verified, and never authored here. What this
- * instance owns is who has read what.
+ * daily check, already signature-verified, and never authored here. The
+ * instance keeps no history of them: once an admin clicks OK the announcement
+ * is deleted from the cache for everyone, and the ACP has no page to find it
+ * on again.
  */
 
 /** One announcement, resolved to this site's language and this admin's state. */
@@ -20,8 +22,6 @@ export interface AnnouncementView {
   link: string | null;
   title: string;
   body: string;
-  /** Has THIS admin clicked OK. */
-  acknowledged: boolean;
   /** The language the copy above is actually in. */
   locale: string;
   /** True when that is not the site's language — English standing in. */
@@ -51,7 +51,7 @@ function copyFor(announcement: Announcement, locale: string): {
 
 export const announcementService = {
   /**
-   * Everything still live, newest first, with this admin's acknowledgement.
+   * Everything still waiting to be read, newest first.
    *
    * Expired ones are dropped here as well as at the endpoint: the cache is a
    * day old at worst, and a notice whose deadline has passed should stop being
@@ -65,12 +65,6 @@ export const announcementService = {
     const live = cache.announcements.filter(
       (a) => !a.expiresAt || Date.parse(a.expiresAt) > now,
     );
-
-    const acks = await prisma.announcementAck.findMany({
-      where: { userId, announcementId: { in: live.map((a) => a.id) } },
-      select: { announcementId: true },
-    });
-    const acked = new Set(acks.map((a) => a.announcementId));
 
     // §60's resolution chain, as far as the server can see it: the ADMIN's own
     // preference first, then the site's default. An administrator reading an
@@ -92,7 +86,6 @@ export const announcementService = {
           link: a.link,
           title: copy.title,
           body: copy.body,
-          acknowledged: acked.has(a.id),
           locale: used,
           fallback,
         };
@@ -101,19 +94,12 @@ export const announcementService = {
   },
 
   /**
-   * This admin has read it.
-   *
-   * Idempotent, and it does NOT check that the id is one we know about: an
-   * announcement pulled between the dialog opening and the click would
-   * otherwise fail the acknowledgement, and the admin would meet it again the
-   * moment it came back. An unknown id costs one small row.
+   * An admin has read it, so it leaves this site — for every admin, not just
+   * this one. An id we no longer hold (pulled or expired while the dialog was
+   * open) is already gone, and is not an error.
    */
-  async acknowledge(userId: string, announcementId: string): Promise<{ ok: true }> {
-    await prisma.announcementAck.upsert({
-      where:  { userId_announcementId: { userId, announcementId } },
-      update: {},
-      create: { userId, announcementId },
-    });
+  async dismiss(announcementId: string): Promise<{ ok: true }> {
+    await dismissAnnouncement(announcementId);
     return { ok: true };
   },
 };

@@ -78,7 +78,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
           </div>
 
           <nav className="acp-panel__nav acp-scroll">
-            {/* A leaf section (Dashboard, Announcements) has one destination and
+            {/* A leaf section (Dashboard) has one destination and
                 it is the section itself — listing it again would be the same
                 word twice, so the rail cell is the whole control. */}
             {(section.children ?? []).map((child) => {

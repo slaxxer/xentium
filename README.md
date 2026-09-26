@@ -454,9 +454,9 @@ for how themes and tokens fit together.
 ## Announcements
 
 Xentium can reach your admin panel directly. Once a day the worker asks the marketplace
-whether there is anything to pass on, and anything that comes back opens a dialog in the ACP,
-once per administrator. **ACP → Announcements** keeps the ones still current so you can
-re-read them.
+whether there is anything to pass on, and anything that comes back opens a dialog in the ACP.
+Once an admin clicks OK it is gone from the site, for every admin: your instance keeps no
+copy and no record of who read it.
 
 The check is anonymous. It sends no site id, no account, no version and no plugin list, and
 it works whether or not you've connected a marketplace account — a site that never linked one
