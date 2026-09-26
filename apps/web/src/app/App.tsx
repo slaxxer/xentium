@@ -8,10 +8,9 @@ import { EditorLayout } from "../layouts/EditorLayout";
 import { ProfilePage } from "../features/profiles/ProfilePage";
 import { MembersPage } from "../features/members/MembersPage";
 import { AccountPage } from "../features/account/AccountPage";
-import { LoginPage } from "../features/auth/LoginPage";
-import { RegisterPage } from "../features/auth/RegisterPage";
-import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
-import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
+import { SignInPanel } from "../features/auth/doorway/SignInPanel";
+import { RegisterPanel } from "../features/auth/doorway/RegisterPanel";
+import { ForgotPanel, MagicLinkLanding, ResetPanel, SignInComplete } from "../features/auth/doorway/RecoveryPanels";
 import { ArticlesListPage } from "../features/articles/ArticlesListPage";
 import { ArticleReaderPage } from "../features/articles/ArticleReaderPage";
 import { ArticleEditorPage } from "../features/articles/ArticleEditorPage";
@@ -262,10 +261,13 @@ function buildRouter() {
     element: <AppGuard />,
     errorElement: <RouteErrorPage />,
     children: [
-      { path: "/login",           element: <LoginPage /> },
-      { path: "/register",        element: <RegisterPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/reset-password",  element: <ResetPasswordPage /> },
+      // The doorway: every way in (features/auth/doorway).
+      { path: "/login",           element: <SignInPanel /> },
+      { path: "/login/link",      element: <MagicLinkLanding /> },
+      { path: "/login/complete",  element: <SignInComplete /> },
+      { path: "/register",        element: <RegisterPanel /> },
+      { path: "/forgot-password", element: <ForgotPanel /> },
+      { path: "/reset-password",  element: <ResetPanel /> },
       {
         element: <EditorLayout />,
         children: [

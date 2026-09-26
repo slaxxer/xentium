@@ -842,6 +842,48 @@
         "desc": "Cette instance n'a aucun enregistrement d'installation, donc aucune identité à licencier.",
         "cause": "L'installateur n'a jamais été terminé, ou la ligne xcf_installs a été supprimée de la base de données.",
         "fix": "Terminez l'installateur. Si l'installation est saine par ailleurs, restaurez la ligne xcf_installs depuis une sauvegarde — son siteId est ce à quoi chaque licence est liée."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Lien de connexion invalide",
+        "desc": "Un lien de connexion à usage unique a été refusé.",
+        "cause": "Le lien a expiré (15 minutes), a déjà servi ou n'a jamais existé.",
+        "fix": "Demandez un nouveau lien depuis la page de connexion."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Clé d'accès non vérifiée",
+        "desc": "Une connexion ou un enregistrement par clé d'accès n'a pas été vérifié.",
+        "cause": "La demande a expiré, la clé appartient à un autre site ou son compteur a reculé (clé clonée).",
+        "fix": "Réessayez. Si l'échec persiste, retirez la clé et ajoutez-la de nouveau."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Clés d'accès indisponibles",
+        "desc": "Les clés d'accès ne peuvent pas fonctionner sur cette installation.",
+        "cause": "Le site n'est pas servi en https (APP_URL est en http et n'est pas localhost).",
+        "fix": "Servez le site en https et renseignez l'adresse https dans APP_URL."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Échec de connexion via le fournisseur",
+        "desc": "La connexion avec Google, GitHub ou Discord n'a pas abouti.",
+        "cause": "La demande a expiré, a été lancée dans un autre navigateur, ou le fournisseur a refusé le code.",
+        "fix": "Réessayez. Vérifiez l'identifiant client, le secret et l'URL de rappel dans Paramètres → Connexion."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "E-mail du fournisseur déjà enregistré",
+        "desc": "L'e-mail du fournisseur appartient à un membre existant, ou le compte du fournisseur est associé à quelqu'un d'autre.",
+        "cause": "Les comptes ne sont jamais associés automatiquement par e-mail.",
+        "fix": "Connectez-vous avec le mot de passe, puis associez le fournisseur dans les paramètres du compte."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Fournisseur non configuré",
+        "desc": "Un fournisseur de connexion désactivé ou sans identifiants a été utilisé.",
+        "cause": "Le fournisseur est désactivé, ou son identifiant client ou son secret manque.",
+        "fix": "Configurez-le dans ACP → Paramètres → Connexion."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Dernier moyen de connexion",
+        "desc": "Retirer cette clé ou ce fournisseur laisserait le compte sans moyen de connexion.",
+        "cause": "Le compte n'a ni mot de passe ni autre clé ou fournisseur.",
+        "fix": "Définissez d'abord un mot de passe (via un lien de réinitialisation) ou ajoutez un autre moyen."
       }
     }
   },
@@ -2359,6 +2401,7 @@
     "keys": {
       "notification": "Notification",
       "password_reset": "Réinitialisation du mot de passe",
+      "magic_link": "Lien de connexion",
       "email_verify": "Vérification de l'e-mail",
       "email_change": "Changement d'e-mail",
       "smtp_test": "Test SMTP"
@@ -2644,5 +2687,23 @@
     "mentions": "Mentions partout",
     "mentionsDesc": "Taper @ propose des membres dans les commentaires, sujets, réponses et messages privés.",
     "notSupported": "Les pièces jointes dépendent de la surface : le forum fournit un envoi, les commentaires d'articles, le mur et les messages privés non — le trombone y est donc désactivé. Aucun service GIF n'est configuré, ce sélecteur n'est pas proposé."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Clés d'accès",
+    "passkeysOn": "Activées. Les membres peuvent ajouter des clés d'accès pour {{host}} et se connecter avec.",
+    "passkeysOff": "Désactivées : les clés d'accès nécessitent https, et l'adresse de ce site est {{origin}}. Renseignez l'adresse https dans APP_URL.",
+    "live": "Activé, affiché sur la page de connexion",
+    "incomplete": "Activé, mais masqué tant que l'identifiant client et le secret ne sont pas renseignés",
+    "off": "Désactivé",
+    "clientId": "Identifiant client",
+    "clientSecret": "Secret client",
+    "secretSet": "Le secret est défini",
+    "set": "Définir",
+    "remove": "Retirer",
+    "callback": "URL de rappel",
+    "copy": "Copier",
+    "copied": "Copié",
+    "callbackHint": "Déclarez exactement cette adresse comme URL de redirection dans les paramètres de l'application chez le fournisseur.",
+    "console": "Ouvrir la console développeur de {{name}}"
   }
 }

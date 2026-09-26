@@ -842,6 +842,48 @@
         "desc": "Diese Instanz hat keinen Installationsdatensatz und damit keine Identität für die Lizenzierung.",
         "cause": "Der Installer wurde nie abgeschlossen oder die Zeile in xcf_installs wurde aus der Datenbank gelöscht.",
         "fix": "Schließen Sie den Installer ab. Ist die Installation ansonsten intakt, stellen Sie die xcf_installs-Zeile aus einem Backup wieder her — ihre siteId ist die Bindung jeder Lizenz."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Anmeldelink ungültig",
+        "desc": "Ein einmaliger Anmeldelink wurde abgelehnt.",
+        "cause": "Der Link ist abgelaufen (15 Minuten), wurde schon benutzt oder existierte nie.",
+        "fix": "Auf der Anmeldeseite einen neuen Link anfordern."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Passkey nicht bestätigt",
+        "desc": "Eine Passkey-Anmeldung oder -Registrierung wurde nicht bestätigt.",
+        "cause": "Die Anfrage ist abgelaufen, der Passkey gehört zu einer anderen Seite oder sein Zähler ist zurückgegangen (geklonter Schlüssel).",
+        "fix": "Erneut versuchen. Wenn es weiter scheitert, den Passkey entfernen und neu hinzufügen."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Passkeys nicht verfügbar",
+        "desc": "Passkeys können in dieser Installation nicht funktionieren.",
+        "cause": "Die Seite wird nicht über https ausgeliefert (APP_URL ist http und nicht localhost).",
+        "fix": "Die Seite über https ausliefern und APP_URL auf die https-Adresse setzen."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Anmeldung über Anbieter fehlgeschlagen",
+        "desc": "Die Anmeldung mit Google, GitHub oder Discord wurde nicht abgeschlossen.",
+        "cause": "Die Anfrage ist abgelaufen, wurde in einem anderen Browser begonnen oder der Anbieter hat den Code abgelehnt.",
+        "fix": "Erneut versuchen. Client-ID, Secret und Callback-URL unter Einstellungen → Anmeldung prüfen."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "E-Mail des Anbieters schon registriert",
+        "desc": "Die E-Mail des Anbieters gehört einem bestehenden Mitglied, oder das Anbieterkonto ist mit jemand anderem verbunden.",
+        "cause": "Konten werden nie automatisch über die E-Mail verknüpft.",
+        "fix": "Mit dem Passwort anmelden und den Anbieter dann in den Kontoeinstellungen verbinden."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Anbieter nicht eingerichtet",
+        "desc": "Ein Anmeldeanbieter wurde verwendet, der aus ist oder dem Zugangsdaten fehlen.",
+        "cause": "Der Anbieter ist deaktiviert oder Client-ID bzw. Secret fehlen.",
+        "fix": "Unter ACP → Einstellungen → Anmeldung einrichten."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Letzte Anmeldemöglichkeit",
+        "desc": "Ohne diesen Passkey oder Anbieter gäbe es keine Möglichkeit mehr, sich anzumelden.",
+        "cause": "Das Konto hat kein Passwort und keinen weiteren Passkey oder Anbieter.",
+        "fix": "Zuerst ein Passwort festlegen (über einen Link zum Zurücksetzen) oder eine weitere Möglichkeit hinzufügen."
       }
     }
   },
@@ -2359,6 +2401,7 @@
     "keys": {
       "notification": "Benachrichtigung",
       "password_reset": "Passwort zurücksetzen",
+      "magic_link": "Anmeldelink",
       "email_verify": "E-Mail bestätigen",
       "email_change": "E-Mail-Änderung",
       "smtp_test": "SMTP-Test"
@@ -2644,5 +2687,23 @@
     "mentions": "Erwähnungen überall",
     "mentionsDesc": "Ein @ schlägt Mitglieder vor – in Kommentaren, Themen, Antworten und Nachrichten.",
     "notSupported": "Anhänge hängen von der Oberfläche ab: das Forum bietet einen Upload, Artikelkommentare, die Pinnwand und Nachrichten nicht – dort ist die Klammer deaktiviert. Ein GIF-Dienst ist nicht eingerichtet, deshalb wird dieser Reiter gar nicht angeboten."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Passkeys",
+    "passkeysOn": "Aktiv. Mitglieder können Passkeys für {{host}} hinzufügen und sich damit anmelden.",
+    "passkeysOff": "Aus: Passkeys brauchen https, und die Adresse dieser Seite ist {{origin}}. Setze APP_URL auf die https-Adresse.",
+    "live": "Aktiv, auf der Anmeldeseite sichtbar",
+    "incomplete": "Aktiv, aber erst sichtbar, wenn Client-ID und Secret gesetzt sind",
+    "off": "Aus",
+    "clientId": "Client-ID",
+    "clientSecret": "Client-Secret",
+    "secretSet": "Secret ist gesetzt",
+    "set": "Setzen",
+    "remove": "Entfernen",
+    "callback": "Callback-URL",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "callbackHint": "Trage genau diese Adresse als Weiterleitungs-URL in den App-Einstellungen des Anbieters ein.",
+    "console": "Entwicklerkonsole von {{name}} öffnen"
   }
 }

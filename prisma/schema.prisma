@@ -98,6 +98,8 @@ model User {
   updatedAt  DateTime @updatedAt
 
   groups   UserGroup[]
+  passkeys Passkey[]
+  oauthAccounts OAuthAccount[]
   sessions Session[]
   emailChangeTokens EmailChangeToken[]
   passwordResetTokens PasswordResetToken[]
@@ -353,6 +355,10 @@ model Session {
   lastUsedAt       DateTime  @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
+  /// "Keep me signed in". False = the refresh cookie is a browser-session cookie
+  /// and the row expires 12h after its last use; true = the usual 30 days.
+  /// Carried across every rotation, so the choice made at sign-in holds.
+  persistent       Boolean   @default(true)
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -1210,3 +1216,51 @@ model ScheduledTaskRun {
   @@index([taskId, startedAt])
   @@map("xcf_scheduled_task_runs")
 }
+
+/// A WebAuthn credential (passkey / security key) a member can sign in with.
+/// The private key never leaves their device; this row is what verifies it.
+model Passkey {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  /// base64url credential id, as the browser reports it.
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  /// Signature counter. Synced passkeys stay at 0; a hardware key counts up, and
+  /// a value that goes backwards means a cloned key.
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  /// "singleDevice" | "multiDevice" (synced).
+  deviceType   String    @map("device_type")
+  backedUp     Boolean   @default(false) @map("backed_up")
+  /// The member's own label for it ("MacBook", "YubiKey").
+  name         String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("xcf_passkeys")
+}
+
+/// A sign-in provider account (Google, GitHub, Discord) linked to a member.
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  /// "google" | "github" | "discord"
+  provider       String
+  /// The provider's stable id for the person — never their email, which changes.
+  providerUserId String   @map("provider_user_id")
+  /// The address the provider reported when linked, for display only.
+  email          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  lastUsedAt     DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("xcf_oauth_accounts")
+}
+

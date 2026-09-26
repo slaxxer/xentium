@@ -4,10 +4,15 @@ import { env } from "../../config/env.js";
 export const REFRESH_COOKIE_NAME = "xt_rt";
 const prod = env.NODE_ENV === "production";
 
-export function setRefreshCookie(res: Response, token: string) {
+/**
+ * `persistent: false` ("don't keep me signed in") sets no max-age, so the
+ * browser drops the cookie when it closes; the session row has its own
+ * shorter expiry for a browser that never closes.
+ */
+export function setRefreshCookie(res: Response, token: string, persistent = true) {
   res.cookie(REFRESH_COOKIE_NAME, token, {
     httpOnly: true, secure: prod, sameSite: "strict",
-    path: "/api/auth", maxAge: 1000 * 60 * 60 * 24 * 30,
+    path: "/api/auth", ...(persistent ? { maxAge: 1000 * 60 * 60 * 24 * 30 } : {}),
   });
 }
 export function clearRefreshCookie(res: Response) {

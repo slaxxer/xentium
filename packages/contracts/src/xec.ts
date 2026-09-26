@@ -25,6 +25,13 @@ export const XEC = {
   AUTH_UNAUTHENTICATED: "XEC-AUTH-1008",   // protected route hit without a Bearer token
   AUTH_TOKEN_INVALID: "XEC-AUTH-1009",     // access token failed verification / expired
   AUTH_NO_SESSION: "XEC-AUTH-1010",        // refresh attempted without a session cookie
+  AUTH_LINK_INVALID: "XEC-AUTH-1011",      // sign-in link unknown, used or expired
+  AUTH_PASSKEY_FAILED: "XEC-AUTH-1050",    // WebAuthn ceremony did not verify
+  AUTH_PASSKEY_UNAVAILABLE: "XEC-AUTH-1051", // passkeys cannot work on this install (no secure origin)
+  AUTH_OAUTH_FAILED: "XEC-AUTH-1060",      // provider exchange / state / profile failed
+  AUTH_OAUTH_EMAIL_TAKEN: "XEC-AUTH-1061", // provider email belongs to an existing, unlinked account
+  AUTH_OAUTH_UNAVAILABLE: "XEC-AUTH-1062", // provider not configured / disabled
+  AUTH_LAST_SIGNIN_METHOD: "XEC-AUTH-1063", // removing it would leave no way to sign in
   AUTH_INVITE_REQUIRED: "XEC-AUTH-1020",
   AUTH_INVITE_INVALID: "XEC-AUTH-1021",
   AUTH_BETA_REQUIRED: "XEC-AUTH-1030",

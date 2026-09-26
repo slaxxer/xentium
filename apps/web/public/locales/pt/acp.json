@@ -842,6 +842,48 @@
         "desc": "Esta instância não tem registo de instalação, pelo que não tem identidade para licenciar.",
         "cause": "O instalador nunca foi concluído, ou a linha xcf_installs foi eliminada da base de dados.",
         "fix": "Conclua o instalador. Se a instalação estiver de resto saudável, restaure a linha xcf_installs a partir de uma cópia de segurança — o seu siteId é aquilo a que cada licença está vinculada."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Link de acesso inválido",
+        "desc": "Um link de acesso de utilização única foi recusado.",
+        "cause": "O link expirou (15 minutos), já foi usado ou nunca existiu.",
+        "fix": "Pede um link novo na página de início de sessão."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Chave de acesso não verificada",
+        "desc": "Um início de sessão ou registo com chave de acesso não foi verificado.",
+        "cause": "O pedido expirou, a chave pertence a outro site ou o seu contador recuou (chave clonada).",
+        "fix": "Tenta de novo. Se continuar a falhar, remove a chave e adiciona-a outra vez."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Chaves de acesso indisponíveis",
+        "desc": "As chaves de acesso não podem funcionar nesta instalação.",
+        "cause": "O site não é servido por https (APP_URL é http e não é localhost).",
+        "fix": "Serve o site por https e define APP_URL com o endereço https."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Falhou o início de sessão com o fornecedor",
+        "desc": "O início de sessão com Google, GitHub ou Discord não foi concluído.",
+        "cause": "O pedido expirou, foi iniciado noutro navegador ou o fornecedor recusou o código.",
+        "fix": "Tenta de novo. Verifica o ID de cliente, o segredo e o URL de retorno em Definições → Início de sessão."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "Email do fornecedor já registado",
+        "desc": "O email do fornecedor pertence a um membro existente, ou a conta do fornecedor está ligada a outra pessoa.",
+        "cause": "As contas nunca são ligadas automaticamente pelo email.",
+        "fix": "Inicia sessão com a palavra-passe e liga o fornecedor nas definições da conta."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Fornecedor não configurado",
+        "desc": "Foi usado um fornecedor de início de sessão desativado ou sem credenciais.",
+        "cause": "O fornecedor está desativado, ou falta o ID de cliente ou o segredo.",
+        "fix": "Configura-o em ACP → Definições → Início de sessão."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Último método de início de sessão",
+        "desc": "Remover esta chave ou fornecedor deixaria a conta sem forma de iniciar sessão.",
+        "cause": "A conta não tem palavra-passe nem outra chave ou fornecedor.",
+        "fix": "Define primeiro uma palavra-passe (através de um link de reposição) ou adiciona outro método."
       }
     }
   },
@@ -2359,6 +2401,7 @@
     "keys": {
       "notification": "Notificação",
       "password_reset": "Reposição de palavra-passe",
+      "magic_link": "Link de início de sessão",
       "email_verify": "Verificar e-mail",
       "email_change": "Alteração de e-mail",
       "smtp_test": "Teste SMTP"
@@ -2644,5 +2687,23 @@
     "mentions": "Menções em todo o lado",
     "mentionsDesc": "Escrever @ sugere membros em comentários, tópicos, respostas e mensagens privadas.",
     "notSupported": "Os anexos dependem da superfície: o fórum tem um caminho de envio; os comentários de artigos, o mural e as mensagens privadas não — aí o clipe está desativado. Não há serviço de GIF configurado, por isso esse seletor não é oferecido."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Chaves de acesso",
+    "passkeysOn": "Ativas. Os membros podem adicionar chaves de acesso para {{host}} e iniciar sessão com elas.",
+    "passkeysOff": "Desativadas: as chaves de acesso precisam de https e o endereço deste site é {{origin}}. Define APP_URL com o endereço https.",
+    "live": "Ativo, visível na página de início de sessão",
+    "incomplete": "Ativo, mas só aparece quando o ID de cliente e o segredo estiverem definidos",
+    "off": "Desativado",
+    "clientId": "ID de cliente",
+    "clientSecret": "Segredo de cliente",
+    "secretSet": "O segredo está definido",
+    "set": "Definir",
+    "remove": "Remover",
+    "callback": "URL de retorno",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "callbackHint": "Regista exatamente este endereço como URL de redirecionamento nas definições da app do fornecedor.",
+    "console": "Abrir a consola de programadores de {{name}}"
   }
 }

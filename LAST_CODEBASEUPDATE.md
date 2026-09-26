@@ -1,11 +1,84 @@
 # Last codebase update
 
-Three changes this session, all unpushed:
+Four changes this session, all unpushed:
 
-1. **Groups redesign** (the `nodevo-redesign/ACP group page redesign` mock): precedence list
-   + a page per group replacing four modals, delta permission saves, icon removal.
-2. **Migration History redesign** (+ `xentium update` records deploys).
-3. **Announcements:** back to the ACP-entry dialog, no page, no per-admin record.
+1. **Sign-in and registration redesign** (the `nodevo-redesign/Login and registration
+   redesign` mock) with every method it shows: passkeys, sign-in links, Google/GitHub/
+   Discord, "keep me signed in".
+2. **Groups redesign.**
+3. **Migration History redesign** (+ `xentium update` records deploys).
+4. **Announcements:** back to the dialog, no page, no per-admin record.
+
+# S. Sign-in methods
+
+## Server (`apps/api/src/modules/auth/`)
+
+- `auth.signin.ts` — `finishSignIn(userId, ctx, { method, persistent, pinVerified })`: the one
+  last mile for every non-password method (active, ban, PIN, plugin guards, login event,
+  session). A PIN returns a single-use Redis ticket (5 min, burns after 5 wrong PINs);
+  `completePinStep` + `POST /auth/login/pin`. `respondSignIn` = the password endpoint's shape.
+- `auth.tokens.ts` / `shared/http/cookies.ts` / migration `session_persistent` — "keep me
+  signed in": `Session.persistent`; false = no cookie max-age + 12h server expiry, carried
+  across every rotation. `POST /auth/login { remember }` (default true).
+- `magicLink.service.ts` — HMAC-hashed Redis token, 15 min, `GETDEL` = single use; always
+  200; email template `magic_link` (+ ACP label ×5). Landing page requires a click.
+- `passkey.service.ts` — @simplewebauthn/server v14. RP = `APP_URL` host; available on https
+  or localhost. Discoverable credentials (user handle = user id). Challenges in Redis, used
+  once. Counter regression refused by the library. `userVerified` → skips the login PIN.
+  Migration `passkeys_oauth`: `xcf_passkeys`, `xcf_oauth_accounts`.
+- `oauth.service.ts` — Google/GitHub/Discord, auth code + PKCE S256; state in Redis (10 min,
+  single use) AND pinned to the browser by a signed Lax cookie (login-CSRF). Match by
+  provider id only; an existing member's email is NOT auto-linked (AUTH_OAUTH_EMAIL_TAKEN);
+  unverified email never creates an account; `beforeRegister` guards + registration mode
+  apply (guard refusal code passed through). Provider-created accounts: password hash
+  `!oauth:…` (never verifies — the importers' convention). Secrets encrypted (secretBox),
+  write-only. `handleCallback` takes injectable exchange/profile for tests.
+- `signInMethods.service.ts` — `assertKeepsASignInMethod`: never remove the last way in.
+- `auth.methods.controller.ts` + routes: `/auth/methods`, `/auth/doorway` (1-min cache;
+  members-only profiles excluded from joiners), passkey, oauth, `/auth/sign-in-methods`;
+  ACP `/admin/auth-providers`. `/auth/register/check-invite` (auth.controller).
+- `packages/contracts/src/xec.ts` — AUTH_LINK_INVALID 1011, PASSKEY_FAILED 1050,
+  PASSKEY_UNAVAILABLE 1051, OAUTH_FAILED 1060, OAUTH_EMAIL_TAKEN 1061, OAUTH_UNAVAILABLE 1062,
+  LAST_SIGNIN_METHOD 1063 (+ Error Reference entries, translated ×5).
+- Tests: `signInMethods.test.ts` (7), `oauth.test.ts` (9), `passkey.test.ts` (5).
+
+## Web
+
+- `features/auth/doorway/` replaces LoginPage/RegisterPage/ForgotPasswordPage/
+  ResetPasswordPage (+ their SCSS, aurora-layout) — all deleted. `AuthDoorway` (shell,
+  welcome side, tabs, language menu), `SignInPanel` (+ `MagicLinkRequest`), `RegisterPanel`
+  (invite-first screen, 3 steps, done; keeps profile fields, name, terms, plugin-worded closed
+  screens; passkey made AFTER the account exists), `RecoveryPanels` (forgot, reset, link
+  landing, `/login/complete`), `pieces`, `signInClient`, `authErrors`, `Doorway.scss` (site
+  tokens only). Routes `/login/link`, `/login/complete`. + `doorway.test.ts` (12).
+- `features/account/tabs/SignInMethodsCards.tsx` — Passkeys (inline rename), Connected
+  accounts (reports `?connected`/`?oauthError` once), `SetPasswordHint` for password-less
+  accounts; wired into SecurityTab.
+- `features/admin/pages/SignInProvidersPanel.tsx` under Settings → Login (autosave toggle +
+  client id via functional updates — a same-tick edit used to overwrite the toggle; secret
+  Set/Remove explicit; callback URL copy; passkey status). Styles in acpSystem.scss.
+- Deps: @simplewebauthn/browser, @fortawesome/free-brands-svg-icons pinned 7.2.0 (must match
+  free-solid, or the icon types clash).
+- Locales: auth `door.*` (137 keys, old login/register/forgot/reset/closed/pin removed),
+  account `signin.*` (32), acp `signInProviders.*` (16) — all ×5.
+
+## Docs
+
+- `apps/docs/.../admin/sign-in.md` (new), `docs/API.md`.
+
+## Verified (sign-in)
+
+- Browser: doorway vs mock; wrong password; provider error from the URL (re-worded on
+  language change); full registration with PIN via the dev code; password + PIN with
+  "keep me signed in" off → session `persistent=false`, 12h; sign-in link → Continue →
+  ticket PIN (wrong then right) → signed in, link dead afterwards; forgot page; completion
+  page's stuck state; provider start URL (PKCE S256, state, callback) and a forged callback
+  → `/login?error=XEC-AUTH-1060`; ACP panel incl. the stale-closure fix; account cards.
+- NOT verified in a browser: a real passkey ceremony (the prompt is a native modal and no
+  virtual authenticator is attached) and a real Google/GitHub/Discord round trip (needs a
+  registered app). Server logic for both is unit-tested.
+- Test data removed. The dev site's announcement was dismissed during testing; its
+  dismissal is cleared, so it returns on the next successful announcement check.
 
 # 0. Groups
 
@@ -205,7 +278,7 @@ Three changes this session, all unpushed:
 
 ## Verified (announcements)
 
-- `pnpm backbone:check` green after all changes: API 462/462, web 793/793, migrate-core 10/10, CLI 21/21.
+- `pnpm backbone:check` green after all changes: API 483/483, web 800/800, migrate-core 10/10, CLI 21/21.
 - The lock and the dismissal run against the real dev Postgres: a second writer waits for the
   first (`A in → A out → B in → B out`), dismissal empties the cache and keeps only the id, and
   the acks table is gone after `migrate deploy`.

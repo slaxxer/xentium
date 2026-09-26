@@ -842,6 +842,48 @@
         "desc": "Esta instancia no tiene registro de instalación, por lo que carece de identidad para licenciarse.",
         "cause": "El instalador nunca se completó, o la fila de xcf_installs se eliminó de la base de datos.",
         "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila xcf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Enlace de acceso no válido",
+        "desc": "Se rechazó un enlace de acceso de un solo uso.",
+        "cause": "El enlace caducó (15 minutos), ya se usó o nunca existió.",
+        "fix": "Pide un enlace nuevo desde la página de inicio de sesión."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Llave de acceso no verificada",
+        "desc": "No se verificó un inicio de sesión o registro con llave de acceso.",
+        "cause": "La solicitud caducó, la llave pertenece a otro sitio o su contador retrocedió (llave clonada).",
+        "fix": "Inténtalo de nuevo. Si sigue fallando, elimina la llave y vuelve a añadirla."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Llaves de acceso no disponibles",
+        "desc": "Las llaves de acceso no pueden funcionar en esta instalación.",
+        "cause": "El sitio no se sirve por https (APP_URL es http y no es localhost).",
+        "fix": "Sirve el sitio por https y pon en APP_URL la dirección https."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Falló el inicio de sesión con el proveedor",
+        "desc": "No se completó el inicio de sesión con Google, GitHub o Discord.",
+        "cause": "La solicitud caducó, se inició en otro navegador o el proveedor rechazó el código.",
+        "fix": "Inténtalo de nuevo. Revisa el ID de cliente, el secreto y la URL de retorno en Ajustes → Inicio de sesión."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "Correo del proveedor ya registrado",
+        "desc": "El correo del proveedor pertenece a un miembro existente o la cuenta del proveedor está vinculada a otra persona.",
+        "cause": "Las cuentas nunca se vinculan automáticamente por correo.",
+        "fix": "Inicia sesión con la contraseña y conecta el proveedor en los ajustes de la cuenta."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Proveedor no configurado",
+        "desc": "Se usó un proveedor de inicio de sesión desactivado o sin credenciales.",
+        "cause": "El proveedor está desactivado o le falta el ID de cliente o el secreto.",
+        "fix": "Configúralo en ACP → Ajustes → Inicio de sesión."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Último método de inicio de sesión",
+        "desc": "Quitar esta llave o proveedor dejaría la cuenta sin forma de iniciar sesión.",
+        "cause": "La cuenta no tiene contraseña ni otra llave o proveedor.",
+        "fix": "Crea una contraseña (con un enlace de restablecimiento) o añade otro método primero."
       }
     }
   },
@@ -2359,6 +2401,7 @@
     "keys": {
       "notification": "Notificación",
       "password_reset": "Restablecer contraseña",
+      "magic_link": "Enlace de inicio de sesión",
       "email_verify": "Verificar correo",
       "email_change": "Cambio de correo",
       "smtp_test": "Prueba SMTP"
@@ -2644,5 +2687,23 @@
     "mentions": "Menciones en todas partes",
     "mentionsDesc": "Escribir @ sugiere miembros en comentarios, temas, respuestas y mensajes privados.",
     "notSupported": "Los adjuntos dependen de la superficie: el foro ofrece una vía de subida; los comentarios de artículos, el muro y los mensajes privados no, así que allí el clip está desactivado. No hay servicio de GIF configurado, por lo que ese selector no se ofrece."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Llaves de acceso",
+    "passkeysOn": "Activadas. Los miembros pueden añadir llaves de acceso para {{host}} e iniciar sesión con ellas.",
+    "passkeysOff": "Desactivadas: las llaves de acceso necesitan https y la dirección de este sitio es {{origin}}. Pon en APP_URL la dirección https.",
+    "live": "Activado, visible en la página de inicio de sesión",
+    "incomplete": "Activado, pero no se muestra hasta que estén el ID de cliente y el secreto",
+    "off": "Desactivado",
+    "clientId": "ID de cliente",
+    "clientSecret": "Secreto de cliente",
+    "secretSet": "El secreto está configurado",
+    "set": "Guardar",
+    "remove": "Quitar",
+    "callback": "URL de retorno",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "callbackHint": "Registra exactamente esta dirección como URL de redirección en la configuración de la app del proveedor.",
+    "console": "Abrir la consola de desarrolladores de {{name}}"
   }
 }
