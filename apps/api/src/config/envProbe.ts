@@ -24,6 +24,19 @@ export const ENV_FILE_PATH = process.env.XENTIUM_ENV_FILE
   ? path.resolve(process.env.XENTIUM_ENV_FILE)
   : path.resolve(process.cwd(), "../../.env");
 
+/**
+ * The site directory of an install made by the `xentium` CLI (`<site>/shared/.env`),
+ * or null for a clone or anything laid out differently. The ACP uses it to print an
+ * update command the admin can paste as is; it is never used to find files.
+ */
+export function cliSiteDir(envFile: string | undefined = process.env.XENTIUM_ENV_FILE): string | null {
+  if (!envFile) return null;
+  const file = path.resolve(envFile);
+  const shared = path.dirname(file);
+  if (path.basename(file) !== ".env" || path.basename(shared) !== "shared") return null;
+  return path.dirname(shared);
+}
+
 // The keys env.ts hard-requires, with the same minimum lengths as its schema.
 const REQUIRED: Array<{ key: string; min: number }> = [
   { key: "DATABASE_URL", min: 1 },

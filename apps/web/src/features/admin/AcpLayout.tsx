@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
 import type { CoreUpdate } from "./components/CoreUpdateCard";
+import { CoreUpdateDialogBody, isPrerelease } from "./components/coreUpdateParts";
 import "./AcpLayout.scss";
 import "./AcpAnnouncement.scss";
 import "./nav/AcpNav.scss";
@@ -145,12 +146,14 @@ function useAcpAlerts() {
     // Core. A PATCH on the minor we are already on never opens a dialog: it is
     // the most common release there is, the card and the badge already say so,
     // and a dialog people meet weekly is a dialog people stop reading. Anything
-    // else — a minor, a major, or a security fix anywhere along the way — is
-    // worth one interruption per admin per release.
+    // else — a minor, a major, a security fix anywhere along the way, or a
+    // PRERELEASE (every alpha is a "patch" on 1.0, and each one is a release
+    // the team wants tested) — is worth one interruption per admin per release.
     const core = updates?.core ?? null;
     const coreUrgent = !!core && (core.highestSeverity === "security" || core.highestSeverity === "critical");
     const coreOnlyPatch = !!core && !!core.patch && core.patch.version === core.latest.version;
-    const coreNeeds = !!core && !core.acknowledged && (coreUrgent || !coreOnlyPatch);
+    const corePre = !!core && isPrerelease(core.latest.version);
+    const coreNeeds = !!core && !core.acknowledged && (coreUrgent || corePre || !coreOnlyPatch);
 
     /** One dialog per ACP entry — a second openPanelDialog pre-empts the first. */
     const showCore = () => {
@@ -158,46 +161,25 @@ function useAcpAlerts() {
       if (shownFor.current === key) return;
       shownFor.current = key;
 
-      // No severity marker on the version row: the panel already carries the
-      // badge, and with a single row the marker is the same word twice.
-      const rows = [
-        { label: t("coreUpdate.dialogVersion"), value: `${core!.current} → ${core!.latest.version}`,
-          marker: undefined as string | undefined },
-      ];
-      if (core!.releaseCount > 1) {
-        rows.push({ label: t("coreUpdate.dialogBehind"), value: String(core!.releaseCount), marker: undefined });
-      }
-      // ⚠ A short label: the label column ellipsises, so the card's full
-      // sentence ("Plugins that don't support this version yet:") would arrive
-      // here as two characters.
-      if (core!.blockedBy.length > 0) {
-        rows.push({
-          label:  t("coreUpdate.dialogBlocked"),
-          value:  core!.blockedBy.map((p) => p.name).join(", "),
-          marker: undefined,
-        });
-      }
-
-      // Prose goes in the note, never in a row: a row's value is monospace and
-      // does not shrink, so a sentence there runs off the edge of the dialog.
-      // Where the urgency comes from outranks the upgrade notes — the dialog
-      // must not say SECURITY about a version whose notes are features.
-      const onTheWay = core!.urgentRelease
-        ? [
-            t(`coreUpdate.onTheWay.${core!.urgentRelease.severity}`, { version: core!.urgentRelease.version }),
-            core!.urgentRelease.notes,
-          ].filter(Boolean).join(" ")
-        : null;
-
+      // The same shape as a broadcast from the team: everything an admin needs
+      // is IN the dialog — the facts, the changelog, the command — so "Got it"
+      // counts as read. "Later" does not; it returns on the next ACP entry.
       void openPanelDialog({
         icon:        coreUrgent ? "warning" : "update",
         title:       t("coreUpdate.dialogTitle", { version: core!.latest.version }),
-        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined,
-        rows,
-        note:        onTheWay ?? core!.latest.upgradeNotes ?? undefined,
-        confirmText: t("marketplace.updatesDialogView"),
+        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`)
+                   : corePre    ? t("coreUpdate.prerelease") : undefined,
+        badgeTone:   coreUrgent ? "danger" : "calm",
+        large:       true,
+        bodyNode:    <CoreUpdateDialogBody update={core!} />,
+        confirmText: t("coreUpdate.dialogOk"),
         cancelText:  t("marketplace.updatesDialogLater"),
-      }).then((view) => { if (view) navigate("/admin/updates"); });
+      }).then((ok) => {
+        if (!ok) return;
+        void api.post("/admin/marketplace/updates/core/acknowledge", {})
+          .then(() => qc.invalidateQueries({ queryKey: ["acp-marketplace-updates"] }))
+          .catch(() => { /* it comes back next entry */ });
+      });
     };
 
     // A broadcast from the Xentium team goes first. Everything the endpoint

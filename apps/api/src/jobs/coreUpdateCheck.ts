@@ -67,10 +67,19 @@ function coreLatestUrl(from: string): string {
 /**
  * The anchor only moves when the OFFER changes. Re-checking every day and
  * finding the same release must not re-nudge an admin who has already looked.
+ * A release the team later marks as a security fix IS a new offer: the admin
+ * looked at a feature release and has not been told about the vulnerability.
  */
-function anchorFor(previous: CoreUpdateCache | null, latestVersion: string | null): string {
-  const unchanged = previous && (previous.latest?.version ?? null) === latestVersion;
-  return unchanged && previous.setSince ? previous.setSince : new Date().toISOString();
+export function anchorFor(
+  previous: CoreUpdateCache | null,
+  latestVersion: string | null,
+  highestSeverity: CoreSeverity | null,
+  now = new Date(),
+): string {
+  const unchanged = previous
+    && (previous.latest?.version ?? null) === latestVersion
+    && (previous.highestSeverity ?? null) === highestSeverity;
+  return unchanged && previous.setSince ? previous.setSince : now.toISOString();
 }
 
 export async function readCoreUpdateCache(): Promise<CoreUpdateCache | null> {
@@ -112,7 +121,7 @@ export async function processCoreUpdateCheck(): Promise<void> {
   const previous = await readCoreUpdateCache();
   const cache: CoreUpdateCache = {
     checkedAt: new Date().toISOString(),
-    setSince: anchorFor(previous, body.latest?.version ?? null),
+    setSince: anchorFor(previous, body.latest?.version ?? null, body.highestSeverity ?? null),
     current,
     latest: body.latest ?? null,
     updateAvailable: body.updateAvailable === true,

@@ -164,6 +164,8 @@ adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listM
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
 adminRouter.get("/marketplace/owned",          adminGuard, adminController.getMarketplaceOwned);
 adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
+// "Got it" on the core-update dialog: it carries the whole changelog, so reading it counts.
+adminRouter.post("/marketplace/updates/core/acknowledge", adminGuard, adminController.acknowledgeCoreUpdate);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.
 adminRouter.get("/status-summary",             adminGuard, adminController.getStatusSummary);
 adminRouter.post("/marketplace/connection",    adminGuard, adminController.connectMarketplace);

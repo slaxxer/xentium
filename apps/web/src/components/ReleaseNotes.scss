@@ -1,0 +1,59 @@
+// Release notes (ReleaseNotes.tsx): a changelog in the core-update dialog and card.
+.release-notes {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--c-fg-muted);
+  overflow-wrap: anywhere;
+
+  > :first-child { margin-top: 0; }
+  > :last-child { margin-bottom: 0; }
+
+  p { margin: 0 0 8px; }
+
+  &__h {
+    margin: 14px 0 6px;
+    font-family: var(--ff-sans);
+    color: var(--c-fg);
+    font-weight: 700;
+  }
+  h4.release-notes__h { font-size: 14px; }
+  h5.release-notes__h {
+    font-size: 11.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--c-fg-subtle);
+  }
+
+  ul, ol {
+    margin: 0 0 8px;
+    padding-left: 18px;
+  }
+  li { margin: 3px 0; }
+  li::marker { color: var(--c-fg-subtle); }
+
+  strong { color: var(--c-fg); font-weight: 700; }
+
+  code {
+    padding: 1px 5px;
+    font-family: var(--ff-mono, monospace);
+    font-size: 0.92em;
+    background: color-mix(in srgb, var(--c-fg-muted) 14%, transparent);
+    border-radius: var(--radius-sm);
+  }
+
+  pre {
+    margin: 0 0 8px;
+    padding: 8px 10px;
+    overflow-x: auto;
+    background: color-mix(in srgb, var(--c-fg-muted) 10%, transparent);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+
+    code { padding: 0; background: none; font-size: 12px; }
+  }
+
+  a {
+    color: var(--c-accent);
+    &:hover { text-decoration: underline; }
+  }
+}
