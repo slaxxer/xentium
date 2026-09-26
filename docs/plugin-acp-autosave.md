@@ -150,9 +150,9 @@ first reason, and `AdvModPage` leaves its proxycheck key out of autosave for the
 
 ## Per-group panels (`groupConfigPanel`)
 
-Settings that belong to a group (permissions, progression) go in **core's group settings
-dialog**, not on a page of their own. Register a panel and it shows up as a tab next to
-our "Progression" tab:
+Settings that belong to a group (permissions, progression) go on **core's group page**
+(ACP → Users → Groups → a group), not on a page of their own. Register a panel and it
+shows up as a tab of that page, after our "Progression" tab:
 
 ```tsx
 slotRegistry.registerGroupConfigPanel({
@@ -164,6 +164,11 @@ slotRegistry.registerGroupConfigPanel({
 Your plugin owns the data. Core passes in the group and never learns your schema. These
 panels are settings, so they **autosave**; see `ShoutboxGroupLimits` and
 `ForumGroupProgression`.
+
+The group page has one save indicator for everything on it, your tab included. Call
+`useReportSaving(saving)` and render no indicator of your own. A panel that already
+renders `AutosaveStatus` is fine as it is: on the group page it reports to the page's
+indicator and draws nothing.
 
 If the values are meant to be *earned* rather than assigned, resolve them against the
 user's progression rung with `host.progression.getEffectiveGroupId`, and add any

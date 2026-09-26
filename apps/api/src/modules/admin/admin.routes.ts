@@ -5,6 +5,7 @@ import { CorePermissions, XEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
+import { adminProvidersHandler, adminProviderUpdateHandler } from "../auth/auth.methods.controller.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
 import { scheduledTaskRouter } from "../scheduled-tasks/scheduled-task.routes.js";
@@ -117,6 +118,9 @@ if (isDev) {
 
 // Migration history
 adminRouter.get("/migration-history", adminGuard, adminController.listMigrationHistory);
+// Sign-in providers (Google, GitHub, Discord) and the passkey relying party.
+adminRouter.get("/auth-providers", adminGuard, adminProvidersHandler);
+adminRouter.patch("/auth-providers/:provider", adminGuard, adminProviderUpdateHandler);
 
 // Scheduled tasks (cron jobs)
 adminRouter.get("/jobs",            adminGuard, adminController.listJobs);
@@ -149,11 +153,11 @@ adminRouter.get("/xec-codes", adminGuard, async (_req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Broadcasts from the Xentium team. Read-only here — the announcements are the
-// marketplace's records, already signature-verified by the daily check; the only
-// thing this instance writes is which admin has read which.
+// Broadcasts from the Xentium team — the marketplace's records, already
+// signature-verified by the daily check. Dismissing one removes it from this
+// site for every admin; nothing records who read it.
 adminRouter.get("/announcements",              adminGuard, adminController.listAnnouncements);
-adminRouter.post("/announcements/:id/ack",     adminGuard, adminController.acknowledgeAnnouncement);
+adminRouter.post("/announcements/:id/dismiss", adminGuard, adminController.dismissAnnouncement);
 
 // Marketplace (ADR 0001) — catalogue mirror + server-side account connection.
 adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listMarketplacePlugins);

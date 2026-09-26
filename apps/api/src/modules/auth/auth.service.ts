@@ -89,7 +89,7 @@ async function recordLoginFailure(identifier: string, cfg: { enabled: boolean; d
   if (n === 1) await redis.expire(key, cfg.durationSec); // start the window on the first failure
 }
 
-export async function login(identifier: string, password: string, pin: string | undefined, meta: Meta) {
+export async function login(identifier: string, password: string, pin: string | undefined, meta: Meta, opts: { persistent?: boolean } = {}) {
   const lockCfg = await getLockout();
   await assertNotLockedOut(identifier, lockCfg, meta.ip);
 
@@ -159,7 +159,7 @@ export async function login(identifier: string, password: string, pin: string | 
     if (!pinOk) return null;
   }
 
-  const tokens = await createSession(user.id, meta);
+  const tokens = await createSession(user.id, meta, { persistent: opts.persistent ?? true });
   return {
     user: { id: user.id, email: user.email },
     ...tokens,

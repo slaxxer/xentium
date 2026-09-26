@@ -147,7 +147,15 @@ export function prismaBin(site: Site, version: string): string {
   return found;
 }
 
-export async function migrate(site: Site, version: string, opts: { quiet?: boolean } = {}): Promise<void> {
+/** A failed `migrate deploy`, carrying everything it printed. */
+export class MigrateError extends Error {
+  constructor(readonly output: string) {
+    super(`prisma migrate deploy failed:\n${output.trim().slice(-2000)}`);
+  }
+}
+
+/** Runs `prisma migrate deploy`; returns what it printed, or throws MigrateError. */
+export async function migrate(site: Site, version: string, opts: { quiet?: boolean } = {}): Promise<string> {
   const env = { ...site.processEnv(version), ...site.readEnv() };
   const result = await exec(prismaBin(site, version), ["migrate", "deploy"], {
     cwd: site.appDir(version),
@@ -155,7 +163,66 @@ export async function migrate(site: Site, version: string, opts: { quiet?: boole
     quiet: opts.quiet,
     timeout: 10 * 60_000,
   });
-  if (result.code !== 0) throw new Error(`prisma migrate deploy failed:\n${result.output.trim().slice(-2000)}`);
+  if (result.code !== 0) throw new MigrateError(result.output);
+  return result.output;
+}
+
+export interface DeployRecord {
+  status: "completed" | "failed";
+  /** The release being deployed. */
+  version: string;
+  output: string;
+  startedAt: Date;
+  completedAt: Date;
+}
+
+/**
+ * Write a schema deploy into ACP → System → Migration History, the same row
+ * the installer writes. Through psql, which the backup already needs, because
+ * the CLI has no database driver of its own.
+ *
+ * Every value goes in as a psql variable and is quoted by psql (`:'name'`), so
+ * the log cannot break out of the statement. The times are written in UTC
+ * explicitly: the columns carry no zone and the app reads them as UTC, while a
+ * database default would use the session's zone.
+ *
+ * Best effort: false when psql is missing or the write fails. A history row is
+ * never worth failing an update over.
+ */
+export async function recordDeploy(site: Site, record: DeployRecord): Promise<boolean> {
+  const raw = site.readEnv().DATABASE_URL;
+  if (!raw || !(await run("psql", ["--version"]))) return false;
+  const { url } = pgConnection(raw);
+
+  const output = record.output.length > 8000
+    ? `${record.output.slice(0, 2000)}\n…\n${record.output.slice(-6000)}`
+    : record.output;
+  const sql = `INSERT INTO xcf_migration_runs
+  (id, adapter, adapter_ver, command, status, "durationMs", output, started_at, completed_at, "createdAt")
+VALUES
+  (gen_random_uuid()::text, 'core', :'version', 'migrate deploy', :'status', :'duration'::int, :'output',
+   (:'started')::timestamptz AT TIME ZONE 'UTC', (:'completed')::timestamptz AT TIME ZONE 'UTC',
+   (:'started')::timestamptz AT TIME ZONE 'UTC');
+`;
+  // Variables are only interpolated in a script, never in -c — hence the file.
+  await fs.mkdir(site.backupsDir, { recursive: true });
+  const file = path.join(site.backupsDir, `.record-deploy-${process.pid}.sql`);
+  await fs.writeFile(file, sql, { mode: 0o600 });
+  try {
+    const result = await exec("psql", [
+      "--quiet", "--no-psqlrc", "--set", "ON_ERROR_STOP=1",
+      "--set", `version=${record.version}`,
+      "--set", `status=${record.status}`,
+      "--set", `duration=${Math.max(0, Math.round(record.completedAt.getTime() - record.startedAt.getTime()))}`,
+      "--set", `output=${output}`,
+      "--set", `started=${record.startedAt.toISOString()}`,
+      "--set", `completed=${record.completedAt.toISOString()}`,
+      "--file", file, url,
+    ], { quiet: true, timeout: 30_000 });
+    return result.code === 0;
+  } finally {
+    await fs.rm(file, { force: true });
+  }
 }
 
 /**

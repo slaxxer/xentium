@@ -1,4 +1,17 @@
+import { createContext, useContext, type ReactNode } from "react";
 import { SaveChip } from "./SaveChip";
+import { useReportSaving } from "../hooks/useAutosave";
+
+/**
+ * Marks a region whose page already shows a `SaveChip` for everything on it —
+ * the group page around a plugin's groupConfigPanel, say. Inside it,
+ * `AutosaveStatus` reports to that chip instead of drawing a second one.
+ */
+const HostedChip = createContext(false);
+
+export function SaveChipHost({ children }: { children: ReactNode }) {
+  return <HostedChip.Provider value={true}>{children}</HostedChip.Provider>;
+}
 
 /**
  * Autosave indicator — an alias for `SaveChip`.
@@ -16,5 +29,10 @@ import { SaveChip } from "./SaveChip";
  * `SaveChip` directly.
  */
 export function AutosaveStatus({ saving }: { saving: boolean }) {
-  return <SaveChip saving={saving} />;
+  const hosted = useContext(HostedChip);
+  // Shipped plugin bundles call this, not useReportSaving — so the choice is
+  // made here, and a panel written before the group page existed still reports
+  // to its chip instead of showing two that can disagree.
+  useReportSaving(hosted && saving);
+  return hosted ? null : <SaveChip saving={saving} />;
 }

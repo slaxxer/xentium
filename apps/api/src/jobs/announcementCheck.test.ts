@@ -16,6 +16,10 @@
  *   5. one with no English copy, which nothing could be guaranteed to render
  *
  * ...and a genuine one, so a check that rejects everything fails here too.
+ *
+ * Then the other rule: once an admin reads one it is gone from this site, and
+ * the next check must not bring it back — while the list that remembers that
+ * must not outlive the announcement.
  */
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createServer, type Server } from "node:http";
@@ -23,17 +27,22 @@ import { SignJWT, exportSPKI, generateKeyPair, type CryptoKey } from "jose";
 
 const PORT = 4931;
 
-// The settings row the job writes, captured instead of stored.
-let written: string | null = null;
+// The settings rows the job writes, kept in memory instead of a database.
+const store = new Map<string, string>();
 
-vi.mock("../infrastructure/db.js", () => ({
-  prisma: {
+vi.mock("../infrastructure/db.js", () => {
+  const db = {
     setting: {
-      findUnique: async () => (written === null ? null : { key: "announcements", value: written }),
-      upsert: async ({ create }: { create: { value: string } }) => { written = create.value; },
+      findUnique: async ({ where }: { where: { key: string } }) =>
+        store.has(where.key) ? { key: where.key, value: store.get(where.key) } : null,
+      upsert: async ({ where, create }: { where: { key: string }; create: { value: string } }) => {
+        store.set(where.key, create.value);
+      },
     },
-  },
-}));
+    $executeRaw: async () => 0,
+  };
+  return { prisma: { ...db, $transaction: async (fn: (tx: typeof db) => unknown) => fn(db) } };
+});
 
 vi.mock("../shared/utils/settings.js", () => ({ bustSettingsCache: () => {} }));
 vi.mock("../infrastructure/logging/logger.js", () => ({
@@ -98,14 +107,23 @@ afterAll(async () => {
   await new Promise<void>((resolve) => server.close(() => resolve()));
 });
 
-async function run(tokens: string[]) {
+type Cache = { announcements: { id: string; link: string | null; locales: Record<string, unknown> }[] };
+
+const cached = (): Cache => JSON.parse(store.get("announcements") ?? '{"announcements":[]}') as Cache;
+const dismissed = (): string[] => JSON.parse(store.get("announcements.dismissed") ?? "[]") as string[];
+
+/** One check against `tokens`. `fresh` starts from an empty instance. */
+async function run(tokens: string[], { fresh = true } = {}) {
   served = tokens;
-  written = null;
+  if (fresh) store.clear();
   const { processAnnouncementCheck } = await import("./announcementCheck.js");
   await processAnnouncementCheck();
-  return JSON.parse(written ?? '{"announcements":[]}') as {
-    announcements: { id: string; link: string | null; locales: Record<string, unknown> }[];
-  };
+  return cached();
+}
+
+async function dismiss(id: string) {
+  const { dismissAnnouncement } = await import("./announcementCheck.js");
+  await dismissAnnouncement(id);
 }
 
 describe("announcement verification", () => {
@@ -175,5 +193,46 @@ describe("announcement verification", () => {
       await sign({ ...GENUINE, id: "forged-3" }, impostor.privateKey),
     ]);
     expect(cache.announcements.map((a) => a.id)).toEqual(["real-1"]);
+  });
+});
+
+describe("reading an announcement", () => {
+  it("removes it from the site and keeps only its id", async () => {
+    await run([await sign(GENUINE, marketplace.privateKey)]);
+    await dismiss("real-1");
+    expect(cached().announcements).toEqual([]);
+    expect(dismissed()).toEqual(["real-1"]);
+  });
+
+  it("does not come back on the next check while the marketplace still serves it", async () => {
+    const token = await sign(GENUINE, marketplace.privateKey);
+    await run([token]);
+    await dismiss("real-1");
+    const cache = await run([token], { fresh: false });
+    expect(cache.announcements).toEqual([]);
+    expect(dismissed()).toEqual(["real-1"]);
+  });
+
+  it("lets a newer announcement through beside a read one", async () => {
+    const first = await sign(GENUINE, marketplace.privateKey);
+    await run([first]);
+    await dismiss("real-1");
+    const second = await sign({ ...GENUINE, id: "real-2" }, marketplace.privateKey);
+    const cache = await run([first, second], { fresh: false });
+    expect(cache.announcements.map((a) => a.id)).toEqual(["real-2"]);
+  });
+
+  it("forgets the id once the marketplace stops serving it", async () => {
+    await run([await sign(GENUINE, marketplace.privateKey)]);
+    await dismiss("real-1");
+    await run([], { fresh: false });
+    expect(dismissed()).toEqual([]);
+  });
+
+  it("ignores an id the site does not hold", async () => {
+    await run([await sign(GENUINE, marketplace.privateKey)]);
+    await dismiss("never-served");
+    expect(cached().announcements.map((a) => a.id)).toEqual(["real-1"]);
+    expect(dismissed()).toEqual([]);
   });
 });

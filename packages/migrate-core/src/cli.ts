@@ -75,7 +75,9 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
     }
   }
 
-  const summary = await runMigration(adapter, source, { targetDb, dryRun: !!args["dry-run"] }, reporter);
+  const summary = await runMigration(
+    adapter, source, { targetDb, dryRun: !!args["dry-run"], command: maskedCommand(adapter, args) }, reporter,
+  );
 
   console.log(`\nDone in ${(summary.durationMs / 1000).toFixed(1)}s`);
   for (const [entity, count] of Object.entries(summary.counts)) {
@@ -88,6 +90,39 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
     }
     if (summary.errors.length > 20) console.log(`    … and ${summary.errors.length - 20} more`);
   }
+}
+
+/**
+ * The command that started this run, safe to store and show: every connection
+ * string is reduced to its scheme and database name, so a password never lands
+ * in the target database or the ACP. The admin fills the rest back in.
+ */
+export function maskedCommand(adapter: MigrateAdapter, args: Record<string, string | true>): string {
+  const pkg = process.env.npm_package_name ?? `@xentium/migrate-${adapter.name}`;
+  const parts = [`pnpm --filter ${pkg} migrate --`];
+  if (typeof args.file === "string") parts.push(`--file ${quote(args.file)}`);
+  if (typeof args["source-db"] === "string") parts.push(`--source-db ${quote(maskUrl(args["source-db"]))}`);
+  if (typeof args.prefix === "string") parts.push(`--prefix ${quote(args.prefix)}`);
+  parts.push(`--db "postgresql://…"`);
+  return parts.join(" ");
+}
+
+/** `mysql://user:pw@host:3306/forum?x=1` → `mysql://…/forum`. */
+export function maskUrl(raw: string): string {
+  // Only a real `scheme://` URL: `user:pw@host/db` also parses, as scheme "user:"
+  // with the password in its path.
+  if (!/^[a-z][a-z0-9+.-]*:\/\//i.test(raw)) return "…";
+  try {
+    const url = new URL(raw);
+    const db = url.pathname.split("/").filter(Boolean).pop() ?? "";
+    return `${url.protocol}//…${/^[\w.-]+$/.test(db) ? `/${db}` : ""}`;
+  } catch {
+    return "…";
+  }
+}
+
+function quote(value: string): string {
+  return /^[\w./:@%+=,-]+$/.test(value) && !value.includes("…") ? value : `"${value.replace(/(["\\$`])/g, "\\$1")}"`;
 }
 
 function parseArgs(argv: string[]): Record<string, string | true> {

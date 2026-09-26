@@ -35,18 +35,27 @@ export async function runMigrations(): Promise<void> {
   } catch (err: unknown) {
     // Re-connect before re-throwing so the rest of the API keeps working.
     await prisma.$connect().catch(() => null);
-    const e = err as Error & { stderr?: string };
+    const e = err as Error & { stdout?: string; stderr?: string };
+    // A failed deploy is the one an admin most needs to read afterwards, so it
+    // is recorded too. It may not land: the table itself can be what failed.
+    await record(started, "failed", `${e.stdout ?? ""}\n${e.stderr ?? e.message ?? ""}`).catch(() => null);
     const msg = e.stderr ?? e.message ?? "migrate deploy failed";
     throw new Error(String(msg).slice(0, 500));
   }
 
   // Pool reconnects automatically on first use — no explicit $connect needed.
+  await record(started, "completed", `${stdout}\n${stderr}`);
+}
+
+async function record(started: number, status: "completed" | "failed", output: string): Promise<void> {
   await prisma.migrationRun.create({
     data: {
       adapter:     "core",
       command:     "migrate deploy",
+      status,
       durationMs:  Date.now() - started,
-      output:      `${stdout}\n${stderr}`.slice(0, 8000),
+      // Both ends: the head says what ran, and a failure's error is at the tail.
+      output:      output.length > 8000 ? `${output.slice(0, 2000)}\n…\n${output.slice(-6000)}` : output,
       startedAt:   new Date(started),
       completedAt: new Date(),
     },

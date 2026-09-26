@@ -1,7 +1,6 @@
 {
   "nav": {
     "dashboard": "Panel",
-    "announcements": "Anuncios",
     "users": "Usuarios",
     "accessControl": "Control de acceso",
     "content": "Contenido",
@@ -312,23 +311,149 @@
   "migrations": {
     "title": "Historial de migraciones",
     "loading": "Cargando…",
-    "emptyTitle": "No se ha ejecutado ninguna migración",
-    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @xentium/migrate importa una comunidad desde otra plataforma.",
-    "success": "Correcto",
-    "failed": "Fallido",
-    "hide": "▲ Ocultar",
-    "output": "▼ Salida",
+    "emptyTitle": "Aún no se ha ejecutado ninguna migración",
+    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o una herramienta de migración importa una comunidad desde otra plataforma.",
     "noOutput": "(sin salida)",
-    "status": {
-      "completed": "Completada",
-      "failed": "Fallida",
-      "partial": "Parcial",
-      "running": "En curso"
+    "search": "Buscar ejecuciones, orígenes, salida…",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "unknownSource": "Importación de {{adapter}}",
+    "type": {
+      "all": "Todas",
+      "core": "Núcleo",
+      "import": "Importaciones"
     },
-    "coreBadge": "Core",
-    "importBadge": "Importación",
-    "errors": "Errores",
-    "report": "Informe completo"
+    "status": {
+      "all": "Todos los estados",
+      "running": "En curso",
+      "completed": "Completada",
+      "partial": "Parcial",
+      "failed": "Fallida",
+      "stalled": "Sin respuesta"
+    },
+    "noMatch": "Ninguna ejecución coincide con estos filtros",
+    "clearFilters": "Borrar filtros",
+    "sub": {
+      "core": "Despliegue del esquema",
+      "import": "Importación · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Último despliegue del esquema",
+      "noDeploy": "Ninguno registrado",
+      "schema": "Esquema",
+      "schemaValue_one": "{{count}} migración",
+      "schemaValue_other": "{{count}} migraciones",
+      "upToDate": "Al día · 0 pendientes",
+      "schemaPending_one": "{{count}} pendiente",
+      "schemaPending_other": "{{count}} pendientes",
+      "schemaFailed_one": "{{count}} no se pudo aplicar",
+      "schemaFailed_other": "{{count}} no se pudieron aplicar",
+      "schemaUnknown": "No se pudo leer",
+      "imports": "Importaciones de plataforma",
+      "runs_one": "{{count}} ejecución",
+      "runs_other": "{{count}} ejecuciones",
+      "runningNow_one": "{{count}} en curso",
+      "runningNow_other": "{{count}} en curso",
+      "noneRunning": "Ninguna en curso",
+      "attention": "Requiere atención",
+      "attentionSub": "{{failed}} fallidas · {{partial}} parciales"
+    },
+    "eyebrow": {
+      "core": "Núcleo · Despliegue del esquema",
+      "import": "Importación de plataforma"
+    },
+    "meta": {
+      "started": "Inicio",
+      "duration": "Duración",
+      "elapsed": "Transcurrido",
+      "found": "Encontradas",
+      "result": "Resultado",
+      "source": "Origen",
+      "adapter": "Adaptador"
+    },
+    "foundValue_one": "{{count}} migración",
+    "foundValue_other": "{{count}} migraciones",
+    "result": {
+      "applied_one": "{{count}} aplicada",
+      "applied_other": "{{count}} aplicadas",
+      "appliedFailed_one": "{{count}} aplicada · 1 fallida",
+      "appliedFailed_other": "{{count}} aplicadas · 1 fallida",
+      "nothing": "Nada que aplicar"
+    },
+    "callout": {
+      "failedTitle": "La migración {{name}} no se pudo aplicar",
+      "line": "Línea {{n}}",
+      "partialTitle_one": "Terminó con {{count}} incidencia",
+      "partialTitle_other": "Terminó con {{count}} incidencias",
+      "partialBody": "Todo lo demás se importó. Volver a ejecutarla continúa desde el mapa de importación, así que los elementos corregidos se incorporan sin duplicados.",
+      "importFailedTitle": "La importación se detuvo con un error",
+      "stalledTitle": "Esta ejecución dejó de responder",
+      "stalledBody": "Su última señal de vida fue {{time}}, así que lo más probable es que el proceso se detuviera. Volver a ejecutarla continúa desde el mapa de importación, sin duplicados.",
+      "stalledBodyUnknown": "Nunca informó de su progreso, así que lo más probable es que el proceso se detuviera. Volver a ejecutarla continúa desde el mapa de importación, sin duplicados."
+    },
+    "counts": {
+      "progress": "Progreso",
+      "progressAux_one": "{{done}} de {{count}} tipo cargado",
+      "progressAux_other": "{{done}} de {{count}} tipos cargados",
+      "imported": "Importado",
+      "importedAux_one": "{{formatted}} registro",
+      "importedAux_other": "{{formatted}} registros"
+    },
+    "issues": {
+      "title": "Incidencias",
+      "aux_one": "{{count}} en total · agrupadas por tipo",
+      "aux_other": "{{count}} en total · agrupadas por tipo",
+      "auxRunning_one": "{{count}} hasta ahora · agrupadas por tipo",
+      "auxRunning_other": "{{count}} hasta ahora · agrupadas por tipo",
+      "reasons_one": "{{count}} motivo",
+      "reasons_other": "{{count}} motivos"
+    },
+    "commands": {
+      "title": "Comandos",
+      "titleImport": "Informe y comandos",
+      "recover": "Recuperar",
+      "command": "Comando",
+      "resolve": "Resolver",
+      "dryRun": "Prueba",
+      "rerun": "Repetir",
+      "report": "Informe",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "recoverNote": "Corrige la migración, márcala como revertida y vuelve a desplegar.",
+      "maskedNote": "Las cadenas de conexión no se guardan. Sustituye las partes … antes de ejecutarlo."
+    },
+    "log": {
+      "title": "Salida",
+      "lines_one": "{{count}} línea",
+      "lines_other": "{{count}} líneas",
+      "hidden_one": "{{count}} oculta",
+      "hidden_other": "{{count}} ocultas",
+      "matches_one": "{{count}} coincidencia",
+      "matches_other": "{{count}} coincidencias",
+      "live": "En directo",
+      "find": "Buscar en la salida",
+      "hideNoise": "Ocultar ruido",
+      "folded_one": "{{count}} línea de ruido oculta, mostrar",
+      "folded_other": "{{count}} líneas de ruido ocultas, mostrar",
+      "copy": "Copiar salida",
+      "download": "Descargar",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa (Esc)"
+    },
+    "entities": {
+      "users": "Usuarios",
+      "categories": "Categorías",
+      "articles": "Artículos",
+      "comments": "Comentarios",
+      "forumNodes": "Nodos del foro",
+      "threads": "Hilos",
+      "posts": "Mensajes",
+      "postLikes": "Me gusta",
+      "follows": "Seguimientos",
+      "blocks": "Bloqueos",
+      "attachments": "Adjuntos",
+      "run": "Ejecución"
+    }
   },
   "errorLog": {
     "title": "Registro de errores",
@@ -717,6 +842,48 @@
         "desc": "Esta instancia no tiene registro de instalación, por lo que carece de identidad para licenciarse.",
         "cause": "El instalador nunca se completó, o la fila de xcf_installs se eliminó de la base de datos.",
         "fix": "Complete el instalador. Si la instalación está por lo demás sana, restaure la fila xcf_installs desde una copia de seguridad: su siteId es a lo que se vincula cada licencia."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Enlace de acceso no válido",
+        "desc": "Se rechazó un enlace de acceso de un solo uso.",
+        "cause": "El enlace caducó (15 minutos), ya se usó o nunca existió.",
+        "fix": "Pide un enlace nuevo desde la página de inicio de sesión."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Llave de acceso no verificada",
+        "desc": "No se verificó un inicio de sesión o registro con llave de acceso.",
+        "cause": "La solicitud caducó, la llave pertenece a otro sitio o su contador retrocedió (llave clonada).",
+        "fix": "Inténtalo de nuevo. Si sigue fallando, elimina la llave y vuelve a añadirla."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Llaves de acceso no disponibles",
+        "desc": "Las llaves de acceso no pueden funcionar en esta instalación.",
+        "cause": "El sitio no se sirve por https (APP_URL es http y no es localhost).",
+        "fix": "Sirve el sitio por https y pon en APP_URL la dirección https."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Falló el inicio de sesión con el proveedor",
+        "desc": "No se completó el inicio de sesión con Google, GitHub o Discord.",
+        "cause": "La solicitud caducó, se inició en otro navegador o el proveedor rechazó el código.",
+        "fix": "Inténtalo de nuevo. Revisa el ID de cliente, el secreto y la URL de retorno en Ajustes → Inicio de sesión."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "Correo del proveedor ya registrado",
+        "desc": "El correo del proveedor pertenece a un miembro existente o la cuenta del proveedor está vinculada a otra persona.",
+        "cause": "Las cuentas nunca se vinculan automáticamente por correo.",
+        "fix": "Inicia sesión con la contraseña y conecta el proveedor en los ajustes de la cuenta."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Proveedor no configurado",
+        "desc": "Se usó un proveedor de inicio de sesión desactivado o sin credenciales.",
+        "cause": "El proveedor está desactivado o le falta el ID de cliente o el secreto.",
+        "fix": "Configúralo en ACP → Ajustes → Inicio de sesión."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Último método de inicio de sesión",
+        "desc": "Quitar esta llave o proveedor dejaría la cuenta sin forma de iniciar sesión.",
+        "cause": "La cuenta no tiene contraseña ni otra llave o proveedor.",
+        "fix": "Crea una contraseña (con un enlace de restablecimiento) o añade otro método primero."
       }
     }
   },
@@ -1217,21 +1384,12 @@
     "previewNote": "Renderizado por el marketplace a partir de la versión en venta, así que la disposición y los colores son los del propio tema. El interior de los bloques son marcadores: lo que va dentro es tu contenido, dibujado por los componentes de tu sitio."
   },
   "announcements": {
-    "title": "Anuncios",
-    "loading": "Cargando anuncios…",
-    "from": "Del equipo de Xentium",
-    "unread": "Nuevo",
-    "read": "Leído",
-    "englishFallback": "mostrado en inglés",
-    "emptyTitle": "Nada del equipo de Xentium",
-    "emptyCheckedAt": "Comprobado por última vez el {{date}}. Los anuncios llegan con la comprobación diaria de actualizaciones.",
-    "emptyHint": "Los anuncios llegan con la comprobación diaria de actualizaciones.",
+    "dialogNote": "Enviado por el equipo de Xentium. Al pulsar OK se elimina de este sitio para todos los administradores.",
     "dialogOk": "OK",
     "severity": {
       "important": "Importante",
       "critical": "Crítico"
-    },
-    "moreWaiting": "{{count}} más en espera"
+    }
   },
   "trust": {
     "official": "Plugin oficial",
@@ -2056,98 +2214,171 @@
     "iconOverrideClear": "Usar el icono original"
   },
   "groups": {
-    "glow": "Brillo en los nombres",
-    "glowDesc": "Añade una sombra de texto a los nombres de este grupo en todo el sitio.",
-    "glowColor": "Color del brillo",
-    "useBadge": "Usar el color de la insignia",
-    "badgeReset": "↺ insignia",
-    "eqBadge": "= insignia",
-    "blur": "Desenfoque",
-    "preview": "Vista previa",
-    "noPerms": "No se encontraron permisos.",
-    "badgeColor": "Color de la insignia",
-    "badgeLabel": "Etiqueta de la insignia",
-    "badgeLabelPlaceholder": "Opcional — por defecto el nombre del grupo",
-    "icon": "Icono del grupo",
-    "changeImage": "Cambiar imagen",
-    "uploadImage": "Subir imagen",
-    "remove": "Eliminar",
-    "name": "Nombre",
-    "key": "Clave (slug)",
-    "showTeam": "Mostrar en la página de equipo",
-    "cancel": "Cancelar",
-    "createTitle": "Crear grupo",
-    "namePreview": "Nombre del grupo",
-    "identity": "Identidad",
-    "namePlaceholderCreate": "p. ej. Editor",
-    "keyPlaceholder": "p. ej. editor",
-    "keyHintCreate": "Identificador único — no se puede cambiar tras la creación.",
-    "showTeamDescCreate": "Los miembros de este grupo tienen su propia sección en la página pública Miembros → Equipo (ordenada por prioridad de insignia).",
-    "iconHintCreate": "PNG, JPG, GIF, WebP · máx. 512 KB.",
-    "permissions": "Permisos",
-    "selectedCount": "{{count}} seleccionados",
-    "creating": "Creando…",
-    "toastCreated": "¡Grupo creado!",
-    "toastUpdated": "¡Grupo actualizado!",
-    "editTitle": "Editar grupo",
-    "namePlaceholderEdit": "Nombre del grupo",
-    "keyHintEdit": "La clave se establece al crear y no se puede cambiar.",
-    "showTeamDescEdit": "Los miembros de este grupo tienen su propia sección en Miembros → Equipo (ordenada por prioridad de insignia).",
-    "badgeColorHint": "Se usa para la insignia del grupo y el color de acento de la tarjeta.",
-    "iconHintEdit": "PNG, JPG, GIF, WebP · máx. 512 KB. Se muestra en las tarjetas de grupo y perfiles.",
-    "saving": "Guardando…",
-    "save": "Guardar",
-    "toastPerms": "¡Permisos guardados!",
-    "permsTitle": "Permisos — {{name}}",
-    "permsSelected_one": "{{count}} permiso seleccionado",
-    "permsSelected_other": "{{count}} permisos seleccionados",
-    "savePerms": "Guardar permisos",
-    "toastProg": "¡Configuración de progresión guardada!",
-    "progTitle": "Progresión — {{name}}",
-    "tabProgression": "Progresión",
-    "progSub": "Configura la ubicación en la escalera, los umbrales de promoción y los límites de contenido.",
     "loading": "Cargando…",
-    "onLadder": "Parte de la escalera de progresión",
-    "onLadderDesc": "Los usuarios de este grupo pueden promocionarse automáticamente",
-    "ladderPos": "Posición en la escalera",
-    "ladderPosPlaceholder": "p. ej. 1 (nivel inicial)",
-    "ladderPosHint": "Arrastra para reordenar en la página de Progresión.",
-    "thresholds": "Umbrales de promoción",
-    "thresholdsNote": "(en blanco = no requerido)",
-    "minArticles": "Mín. artículos",
-    "minComments": "Mín. comentarios",
-    "minDays": "Mín. días como miembro",
-    "minLikes": "Mín. me gusta recibidos",
-    "limits": "Límites de contenido",
-    "limitsNote": "(en blanco = ilimitado)",
-    "maxArticleLen": "Longitud máx. del artículo (caracteres)",
-    "maxCommentLen": "Longitud máx. del comentario (caracteres)",
-    "maxDailyArticles": "Máx. artículos diarios",
-    "maxDailyComments": "Máx. comentarios diarios",
+    "cancel": "Cancelar",
     "unlimited": "Ilimitado",
-    "toastDeleted": "¡Grupo eliminado!",
-    "deleteTitle": "¿Eliminar grupo?",
-    "deleteText": "Los miembros de «{{name}}» se moverán al grupo Miembro.",
-    "delete": "Eliminar",
-    "empty": "No se encontraron grupos",
-    "precedenceTitle": "Prioridad de insignia — menor = más alto. Usa las flechas para reordenar.",
     "protected": "Protegido",
-    "moveUp": "Subir (mayor prioridad)",
-    "moveDown": "Bajar (menor prioridad)",
-    "members_one": "{{count}} miembro",
-    "members_other": "{{count}} miembros",
-    "permsCount_one": "{{count}} permiso",
-    "permsCount_other": "{{count}} permisos",
-    "progression": "Progresión",
-    "editTitleHint": "Editar nombre y color de la insignia",
-    "profileImages": "Imágenes de perfil",
-    "profileImagesNote": "— avatar y portada",
-    "maxProfileImageKb": "Tamaño máximo (KB)",
-    "coverAllowed": "Portada",
-    "coverYes": "Permitida",
-    "coverNo": "No en este rango",
-    "imageTypes": "Tipos de archivo permitidos",
-    "imageTypesNote": "Déjalos todos apagados para no restringir por rango. Activar GIF es lo que concede avatares y portadas animadas."
+    "memberCount_one": "{{count}} miembro",
+    "memberCount_other": "{{count}} miembros",
+    "permCount_one": "{{count}} permiso",
+    "permCount_other": "{{count}} permisos",
+    "powerDetail_one": "{{sensitive}} sensibles · {{count}} clave",
+    "powerDetail_other": "{{sensitive}} sensibles · {{count}} claves",
+    "power": {
+      "full": "Control total",
+      "fullHint": "Tiene admin.access: el panel de administración y, con él, todo.",
+      "elevated": "Elevado",
+      "elevatedHint": "Cuatro o más claves sensibles.",
+      "trusted": "De confianza",
+      "trustedHint": "Al menos una clave sensible.",
+      "standard": "Estándar",
+      "standardHint": "Ninguna clave sensible."
+    },
+    "list": {
+      "sub": "Ordenados por precedencia de insignia: el grupo de arriba es la insignia que lleva un miembro. Arrastra una fila para reordenar.",
+      "filter": "Filtrar grupos",
+      "noMatch": "Ningún grupo coincide con este filtro.",
+      "manage": "Gestionar",
+      "moveHint": "Mover {{name}}: arrastra o usa Alt+↑/↓",
+      "moveDisabled": "Borra el filtro para reordenar",
+      "powerNote": "El poder se calcula con las claves que un grupo tiene de verdad. admin.access, group.manage, plugin.install y las demás claves sensibles pesan más.",
+      "col": {
+        "group": "Grupo",
+        "members": "Miembros",
+        "power": "Poder",
+        "actions": "Acciones"
+      },
+      "stats": {
+        "groups": "Grupos",
+        "memberships": "Membresías",
+        "keys": "Claves de permiso",
+        "admins": "Con acceso de administración"
+      }
+    },
+    "create": {
+      "button": "Crear grupo",
+      "creating": "Creando…",
+      "done": "{{name}} creado",
+      "namePlaceholder": "p. ej. Miembros VIP"
+    },
+    "fields": {
+      "name": "Nombre",
+      "key": "Clave",
+      "keyHint": "Minúsculas, números, - y _. No se puede cambiar después.",
+      "keyPermanent": "Permanente: el código y los plugins encuentran los grupos por su clave.",
+      "nameTooShort": "Al menos 2 caracteres. No se guarda hasta entonces.",
+      "badgeLabel": "Texto de la insignia",
+      "badgeColor": "Color de la insignia"
+    },
+    "detail": {
+      "notFound": "Este grupo ya no existe.",
+      "precedence": "Precedencia #{{n}}"
+    },
+    "tabs": {
+      "identity": "Identidad e insignia",
+      "permissions": "Permisos",
+      "progression": "Progresión",
+      "members": "Miembros",
+      "plugin": "plugin"
+    },
+    "identity": {
+      "title": "Identidad",
+      "glow": "Brillo del nombre",
+      "glowHint": "Añade una sombra de texto tras el nombre de los miembros de este grupo allí donde aparezca.",
+      "blur": "Desenfoque",
+      "glowColor": "Color del brillo",
+      "glowCustom": "Usar un color propio",
+      "glowSameAsBadge": "Igual que la insignia",
+      "pickColor": "Elegir un color",
+      "team": "Mostrar en la página del equipo",
+      "teamHint": "Muestra este grupo y sus miembros públicamente en /team.",
+      "preview": "Vista previa",
+      "previewMeta": "Publicado hace 4 minutos",
+      "previewText": "Así se muestra a un miembro de este grupo en el sitio: color del nombre, insignia y brillo.",
+      "precedenceNote": "Precedencia #{{n}}: esta insignia se impone a los grupos de rango inferior que tenga el mismo miembro."
+    },
+    "icon": {
+      "title": "Icono del grupo",
+      "upload": "Subir imagen",
+      "replace": "Reemplazar",
+      "remove": "Quitar",
+      "hint": "JPEG, PNG, GIF o WebP. Sustituye el icono por defecto.",
+      "uploaded": "Icono actualizado",
+      "removed": "Icono eliminado"
+    },
+    "delete": {
+      "section": "Eliminar grupo",
+      "hint": "Los miembros conservan su cuenta y sus otros grupos; solo pierden este.",
+      "confirm": "Eliminar grupo",
+      "title": "¿Eliminar {{name}}?",
+      "body_one": "{{count}} miembro pierde este grupo. No se puede deshacer.",
+      "body_other": "{{count}} miembros pierden este grupo. No se puede deshacer.",
+      "done": "{{name}} eliminado"
+    },
+    "perms": {
+      "title": "Permisos",
+      "summary_one": "{{count}} permiso concedido en {{domains}} áreas.",
+      "summary_other": "{{count}} permisos concedidos en {{domains}} áreas.",
+      "none": "No hay permisos registrados.",
+      "sensitive": "sensible",
+      "grantAll": "Conceder todos",
+      "revokeAll": "Retirar todos"
+    },
+    "prog": {
+      "onLadder": "En la escala de progresión",
+      "onLadderHint": "Los miembros ascienden a este grupo automáticamente cuando cumplen todos los umbrales.",
+      "position": "Posición en la escala",
+      "positionHint": "Orden del peldaño en la escala. Independiente de la precedencia de insignia.",
+      "thresholds": "Umbrales",
+      "thresholdsNote": "hay que cumplirlos todos",
+      "minArticles": "Mín. artículos",
+      "minComments": "Mín. comentarios",
+      "minDays": "Mín. días como miembro",
+      "minLikes": "Mín. me gusta recibidos",
+      "contributed": "Criterios aportados",
+      "contributedNote": "se suman a la misma comprobación de ascenso",
+      "contributedItem": "Se ajusta en su propia pestaña · {{plugin}}",
+      "contributedFoot": "Estos valores son de los plugins; el núcleo solo pregunta a cada uno si un miembro cumple.",
+      "limits": "Límites de contenido",
+      "limitsNote": "vacío es ilimitado",
+      "maxArticleLength": "Longitud máx. de artículo",
+      "maxDailyArticles": "Máx. artículos / día",
+      "maxCommentLength": "Longitud máx. de comentario",
+      "maxDailyComments": "Máx. comentarios / día",
+      "images": "Imágenes de perfil",
+      "maxImageKb": "Tamaño máx. de subida (KB)",
+      "cover": "Portadas permitidas",
+      "coverHint": "Permite a este rango subir una portada de perfil. Se aplica en las dos rutas de subida, no solo se oculta en la interfaz.",
+      "imageTypes": "Tipos permitidos",
+      "imageTypesNote": "Sin selección no hay restricción para este rango, no significa «nada permitido»."
+    },
+    "members": {
+      "title": "Miembros",
+      "summary_one": "{{count}} miembro en este grupo.",
+      "summary_other": "{{count}} miembros en este grupo.",
+      "add": "Añadir miembro",
+      "search": "Buscar por nombre de usuario o correo",
+      "noResults": "Ningún usuario coincide.",
+      "addOne": "Añadir",
+      "already": "Ya es miembro",
+      "added": "{{user}} añadido a {{group}}",
+      "empty": "Este grupo aún no tiene miembros.",
+      "joined": "Se unió el {{date}}",
+      "open": "Abrir",
+      "remove": "Quitar",
+      "removeTitle": "¿Quitar a {{user}}?",
+      "removeBody": "Sale de {{group}} y conserva sus otros grupos.",
+      "removed": "{{user}} quitado de {{group}}",
+      "prev": "Anterior",
+      "next": "Siguiente",
+      "pageOf": "Página {{page}} de {{pages}}"
+    },
+    "plugin": {
+      "offLadder": "Este grupo no está en la escala de progresión, así que los valores ganados no dan nada. Asigna el grupo directamente o activa la escala en",
+      "sourceTitle": "Origen del panel",
+      "source": "Registrado como panel de grupo por {{plugin}}, por eso aparece aquí y no como una página propia del ACP. Guarda por su cuenta e informa al indicador de esta página.",
+      "disable": "Sus valores viven en las tablas propias de {{plugin}}. Si desactivas el plugin, esta pestaña se oculta pero lo configurado se conserva."
+    }
   },
   "email": {
     "eyebrow": "Sistema",
@@ -2170,6 +2401,7 @@
     "keys": {
       "notification": "Notificación",
       "password_reset": "Restablecer contraseña",
+      "magic_link": "Enlace de inicio de sesión",
       "email_verify": "Verificar correo",
       "email_change": "Cambio de correo",
       "smtp_test": "Prueba SMTP"
@@ -2455,5 +2687,23 @@
     "mentions": "Menciones en todas partes",
     "mentionsDesc": "Escribir @ sugiere miembros en comentarios, temas, respuestas y mensajes privados.",
     "notSupported": "Los adjuntos dependen de la superficie: el foro ofrece una vía de subida; los comentarios de artículos, el muro y los mensajes privados no, así que allí el clip está desactivado. No hay servicio de GIF configurado, por lo que ese selector no se ofrece."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Llaves de acceso",
+    "passkeysOn": "Activadas. Los miembros pueden añadir llaves de acceso para {{host}} e iniciar sesión con ellas.",
+    "passkeysOff": "Desactivadas: las llaves de acceso necesitan https y la dirección de este sitio es {{origin}}. Pon en APP_URL la dirección https.",
+    "live": "Activado, visible en la página de inicio de sesión",
+    "incomplete": "Activado, pero no se muestra hasta que estén el ID de cliente y el secreto",
+    "off": "Desactivado",
+    "clientId": "ID de cliente",
+    "clientSecret": "Secreto de cliente",
+    "secretSet": "El secreto está configurado",
+    "set": "Guardar",
+    "remove": "Quitar",
+    "callback": "URL de retorno",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "callbackHint": "Registra exactamente esta dirección como URL de redirección en la configuración de la app del proveedor.",
+    "console": "Abrir la consola de desarrolladores de {{name}}"
   }
 }
