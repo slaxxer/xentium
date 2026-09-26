@@ -1636,9 +1636,6 @@
     }
   },
   "coreUpdate": {
-    "title": "Xentium core",
-    "releasesBehind_one": "{{count}} release behind",
-    "releasesBehind_other": "{{count}} releases behind",
     "severity": {
       "normal": "update",
       "security": "security",
@@ -1666,7 +1663,11 @@
     "prereleaseNote": "This is a prerelease: it's for testing, and may change before the stable version.",
     "changelog": "What's new",
     "prerelease": "Prerelease",
-    "dialogOk": "Got it"
+    "dialogOk": "Got it",
+    "pluginsTitle_one": "Also waiting: {{count}} plugin update",
+    "pluginsTitle_other": "Also waiting: {{count}} plugin updates",
+    "dialogPlugins": "View plugin updates",
+    "dialogClose": "Close"
   },
   "license": {
     "loading": "Loading…",

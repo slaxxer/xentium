@@ -1433,9 +1433,6 @@
     }
   },
   "coreUpdate": {
-    "title": "Xentium-Kern",
-    "releasesBehind_one": "{{count}} Version im Rückstand",
-    "releasesBehind_other": "{{count}} Versionen im Rückstand",
     "severity": {
       "normal": "Update",
       "security": "Sicherheit",
@@ -1463,7 +1460,11 @@
     "prereleaseNote": "Dies ist eine Vorabversion: Sie dient zum Testen und kann sich bis zur stabilen Version noch ändern.",
     "changelog": "Was ist neu",
     "prerelease": "Vorabversion",
-    "dialogOk": "Verstanden"
+    "dialogOk": "Verstanden",
+    "pluginsTitle_one": "Außerdem wartet {{count}} Plugin-Update",
+    "pluginsTitle_other": "Außerdem warten {{count}} Plugin-Updates",
+    "dialogPlugins": "Plugin-Updates ansehen",
+    "dialogClose": "Schließen"
   },
   "license": {
     "loading": "Lädt…",

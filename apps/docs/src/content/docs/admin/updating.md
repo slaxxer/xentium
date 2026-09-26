@@ -24,28 +24,21 @@ worker restarts, so you are then responsible for watching releases yourself.
 
 ## What you see
 
-**Extensions → Updates** gets a card at the top for Xentium itself, above your plugin
-updates. It shows the version you are on, the version available, how many releases you are
-behind, and what changed.
+A new Xentium release is announced **once, in a dialog when you enter the ACP**. It carries
+everything you need to decide: the version you are on and the one available, when it was
+released, how many releases you are behind, anything to watch out for (a security fix on the
+way, a plugin that doesn't support the new version yet, manual steps), the full changelog of
+every release in between, and the commands that install it, ready to copy.
 
-**The gear badge** in the navbar counts a waiting core update the same way it counts plugin
-updates, so it stays visible until you deal with it.
+If plugin updates are waiting too, they are listed at the bottom of the same dialog, so you
+meet one dialog about updates rather than two in a row. **View plugin updates** takes you to
+**Extensions → Updates**, which lists plugin updates only.
 
-**A dialog when you enter the ACP**, once per admin. It carries everything you need to
-decide: the version you are on and the one available, when it was released, how many
-releases you are behind, anything to watch out for (a security fix on the way, a plugin that
-doesn't support the new version yet, manual steps), the full changelog of every release in
-between, and the commands that install it, ready to copy.
-
-**Got it** counts as read, and so does opening the Updates page. **Later** doesn't: the
-dialog comes back the next time you enter the ACP. Each admin gets their own, and a new
-release brings it back. So does a release we later mark as a security fix, even if you had
-already seen it.
-
-One deliberate exception: a patch on the version line you are already running never opens the
-dialog. Those are the most common releases there are, the card and the badge already say so,
-and a dialog you meet every week is a dialog you stop reading. Prereleases (alphas and betas)
-always open it, because each one is a version we want tested.
+The dialog is one-time: however you close it, it is gone for you, and each admin sees it once.
+Copy the command before you close it, or find it again in [Installing the update](#installing-the-update)
+below. The next release brings a new dialog, and so does a release we later mark as a security
+fix, even if you had already seen it as an ordinary one. A core release doesn't appear on the
+Updates page or in the gear badge.
 
 ## How urgent is it
 
@@ -60,11 +53,11 @@ Every release carries an urgency:
 The urgency you see covers **every release between yours and the newest one**, not just the
 newest. If you are on 1.0.0 and 1.2.0 is out, and 1.0.1 in between fixed a vulnerability, you
 are told about the security fix even though the newest release is an ordinary feature release.
-The card names the release the urgency comes from and quotes its notes, so you can see what
-you are actually being warned about.
+The dialog names the release the urgency comes from, and its notes are in the changelog, so
+you can see what you are actually being warned about.
 
 Some releases can't be installed directly from very old versions. When that is the case, the
-card names the version to install first.
+dialog names the version to install first, and its command installs that one.
 
 ## Your plugins come first
 
@@ -83,7 +76,7 @@ npm install xentium@1.1.2
 npx xentium update 1.1.2
 ```
 
-That is what the dialog and the card show you, with your site's directory and the version
+That is what the dialog shows you, with your site's directory and the version
 they are offering filled in. The first line updates the `xentium` command itself, because
 fixes to the updater ship in it. Naming the version matters for prereleases: without one,
 `xentium update` installs what npm calls the newest stable release. You don't need `sudo`;
