@@ -1,7 +1,74 @@
 # Last codebase update
 
-Announcements go back to the ACP-entry dialog, the Announcements page goes, and the instance
-stops keeping a per-admin record: the first OK removes a notice from the site for everyone.
+Two changes this session, both unpushed:
+
+1. **Migration History redesign** (the `nodevo-redesign/ACP migration history redesign` mock):
+   master–detail page, live imports, recorded deploy failures.
+2. **Announcements:** back to the ACP-entry dialog, the Announcements page goes, and the
+   instance keeps no per-admin record (first OK removes a notice site-wide).
+
+# 1. Migration History
+
+## Data
+
+- `prisma/schema.prisma` + `migrations/20260926170000_migration_run_progress` — `MigrationRun.
+  progress` (JSONB): `{ at, current, entities: { key: { done, total } } }`. `at` is the
+  heartbeat; a "running" row whose `at` is older than 2 min is shown as not responding.
+- `apps/api/src/core/installer-engine/steps/runMigrations.ts` — a failed `migrate deploy` is
+  now recorded too (`status: failed`, its output). Before this only successes were written,
+  so every core row said "completed". Output keeps its head AND tail (the error is at the end).
+- `packages/migrate-core/src/runner.ts` — the run row is created BEFORE extraction and kept
+  current by `RunRecorder` (wraps the CLI's reporter): log lines, per-entity progress and the
+  heartbeat, flushed at most once a second when dirty and every 5 s regardless; final state
+  written on completion and on failure (extraction failures now land as `failed` too). Log
+  capped at 64 KB, head + tail. Dry runs still write nothing.
+- `packages/migrate-core/src/loader.ts` — every phase reports progress under the same key its
+  count uses: categories/forumNodes (multi-pass, closed out when orphans fail), blocks/follows
+  (in `finally` — a `continue` inside `try` skipped code after it), `post likes` → `postLikes`.
+- `packages/migrate-core/src/cli.ts` — `maskedCommand` stores how the run was started with
+  every connection string reduced to `scheme://…/db` (`--db` is always `postgresql://…`).
+  ⚠ `maskUrl` requires a real `scheme://`: `user:pw@host/db` parses as scheme `user:` with the
+  password in the path — caught by the new `cli.test.ts`.
+- `apps/api/src/modules/admin/admin.service.ts` — `GET /admin/migration-history` returns
+  `{ runs, schema }`. `schema` is read live (the shipped `prisma/migrations` folders against
+  `_prisma_migrations`): total, applied, pending, failed. Needed because `xentium update`
+  migrates through the CLI and never writes a history row.
+
+## Web
+
+- `features/admin/pages/migrationHistory/model.ts` (+ 16 tests) — pure rules: effective status
+  incl. `stalled`, durations (a stalled run up to its last heartbeat), `packageOf` from the
+  stored command, `entityKey` (counts are camelCase plurals, errors snake_case singulars),
+  `inLoadOrder` (⚠ `jsonb` reorders keys shortest-first — never trust object order), core
+  output analysis (found / applied / failed migration / error line), issue grouping, log
+  tones + noise folding + search.
+- `features/admin/pages/MigrationHistoryPage.tsx` — rewritten on the `pg-head` shell: stats
+  strip, run list (search incl. output, type segment, status chips with a "Not responding" chip
+  that only appears when needed, day groups), detail (meta, callouts, progress/imported
+  counts, grouped issues, commands with copy, log viewer with find/hide noise/copy/download/
+  full screen + Esc, follows the tail of a live log). Polls every 2 s only while an import is
+  alive. The old output-regex "failed" guess is gone.
+- `features/admin/pages/MigrationHistory.scss` — ACP tokens only; one status→colour map.
+- `public/locales/*/acp.json` — `migrations.*` rewritten, 119 keys, all five languages.
+
+## Docs
+
+- `docs/API.md` — the endpoint's new shape. `README.md` (→ wiki guide) — imports can be
+  watched live; commands come back without connection strings.
+
+## Verified (migration history)
+
+- The REAL runner against `xentium_test` with a fake adapter: row "running" before
+  extraction, heartbeat during it, source filled in after, final row completed with counts,
+  full log, final progress, masked command (no password/user/host). Probe data removed.
+- In the browser with seeded runs + a simulated live import: every status, the failed-deploy
+  callout and its Line jump, partial import, filters/search, full screen + Esc, live counts
+  moving, and the live row turning "Not responding" 2 min after its last heartbeat without a
+  reload. Seeded rows removed and the dev announcement restored afterwards.
+- Not checked: phone width (the layout collapses at 900 px by media query), the Download
+  button (it saves a file).
+
+# 2. Announcements
 
 ## API
 
@@ -52,9 +119,9 @@ stops keeping a per-admin record: the first OK removes a notice from the site fo
   `important`/`critical` rank differently against licence and update dialogs: every
   announcement goes first, and always did.
 
-## Verified
+## Verified (announcements)
 
-- `pnpm backbone:check` green: API 454/454, web 768/768, CLI 20/20.
+- `pnpm backbone:check` green after both changes: API 454/454, web 784/784, migrate-core 10/10, CLI 20/20.
 - The lock and the dismissal run against the real dev Postgres: a second writer waits for the
   first (`A in → A out → B in → B out`), dismissal empties the cache and keeps only the id, and
   the acks table is gone after `migrate deploy`.

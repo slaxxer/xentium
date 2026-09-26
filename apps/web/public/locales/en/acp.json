@@ -483,22 +483,148 @@
     "title": "Migration History",
     "loading": "Loading…",
     "emptyTitle": "No migrations have been run",
-    "emptyHint": "Recorded when the installer applies database migrations or the @xentium/migrate CLI imports a community from another platform.",
-    "success": "Success",
-    "failed": "Failed",
-    "hide": "▲ Hide",
-    "output": "▼ Output",
+    "emptyHint": "Recorded when the installer applies database migrations or a migrate tool imports a community from another platform.",
     "noOutput": "(no output)",
-    "status": {
-      "completed": "Completed",
-      "failed": "Failed",
-      "partial": "Partial",
-      "running": "Running"
+    "search": "Search runs, sources, output…",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "unknownSource": "{{adapter}} import",
+    "type": {
+      "all": "All",
+      "core": "Core",
+      "import": "Imports"
     },
-    "coreBadge": "Core",
-    "importBadge": "Import",
-    "errors": "Errors",
-    "report": "Full report"
+    "status": {
+      "all": "All statuses",
+      "running": "Running",
+      "completed": "Completed",
+      "partial": "Partial",
+      "failed": "Failed",
+      "stalled": "Not responding"
+    },
+    "noMatch": "No runs match these filters",
+    "clearFilters": "Clear filters",
+    "sub": {
+      "core": "Schema deploy",
+      "import": "Import · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Last schema deploy",
+      "noDeploy": "None recorded",
+      "schema": "Schema",
+      "schemaValue_one": "{{count}} migration",
+      "schemaValue_other": "{{count}} migrations",
+      "upToDate": "Up to date · 0 pending",
+      "schemaPending_one": "{{count}} pending",
+      "schemaPending_other": "{{count}} pending",
+      "schemaFailed_one": "{{count}} failed to apply",
+      "schemaFailed_other": "{{count}} failed to apply",
+      "schemaUnknown": "Could not be read",
+      "imports": "Platform imports",
+      "runs_one": "{{count}} run",
+      "runs_other": "{{count}} runs",
+      "runningNow_one": "{{count}} running now",
+      "runningNow_other": "{{count}} running now",
+      "noneRunning": "None running",
+      "attention": "Needs attention",
+      "attentionSub": "{{failed}} failed · {{partial}} partial"
+    },
+    "eyebrow": {
+      "core": "Core · Schema deploy",
+      "import": "Platform import"
+    },
+    "meta": {
+      "started": "Started",
+      "duration": "Duration",
+      "elapsed": "Elapsed",
+      "found": "Found",
+      "result": "Result",
+      "source": "Source",
+      "adapter": "Adapter"
+    },
+    "foundValue_one": "{{count}} migration",
+    "foundValue_other": "{{count}} migrations",
+    "result": {
+      "applied_one": "{{count}} applied",
+      "applied_other": "{{count}} applied",
+      "appliedFailed_one": "{{count}} applied · 1 failed",
+      "appliedFailed_other": "{{count}} applied · 1 failed",
+      "nothing": "Nothing to apply"
+    },
+    "callout": {
+      "failedTitle": "Migration {{name}} failed to apply",
+      "line": "Line {{n}}",
+      "partialTitle_one": "Finished with {{count}} issue",
+      "partialTitle_other": "Finished with {{count}} issues",
+      "partialBody": "Everything else was imported. Re-running resumes from the import map, so fixed items are picked up without creating duplicates.",
+      "importFailedTitle": "The import stopped with an error",
+      "stalledTitle": "This run stopped responding",
+      "stalledBody": "Its last sign of life was {{time}}, so the process was most likely stopped. Re-running resumes from the import map without creating duplicates.",
+      "stalledBodyUnknown": "It never reported progress, so the process was most likely stopped. Re-running resumes from the import map without creating duplicates."
+    },
+    "counts": {
+      "progress": "Progress",
+      "progressAux_one": "{{done}} of {{count}} entity loaded",
+      "progressAux_other": "{{done}} of {{count}} entities loaded",
+      "imported": "Imported",
+      "importedAux_one": "{{formatted}} record",
+      "importedAux_other": "{{formatted}} records"
+    },
+    "issues": {
+      "title": "Issues",
+      "aux_one": "{{count}} total · grouped by entity",
+      "aux_other": "{{count}} total · grouped by entity",
+      "auxRunning_one": "{{count}} so far · grouped by entity",
+      "auxRunning_other": "{{count}} so far · grouped by entity",
+      "reasons_one": "{{count}} reason",
+      "reasons_other": "{{count}} reasons"
+    },
+    "commands": {
+      "title": "Commands",
+      "titleImport": "Report & commands",
+      "recover": "Recover",
+      "command": "Command",
+      "resolve": "Resolve",
+      "dryRun": "Dry run",
+      "rerun": "Re-run",
+      "report": "Report",
+      "copy": "Copy",
+      "copied": "Copied",
+      "recoverNote": "Fix the migration, mark it rolled back, then deploy again.",
+      "maskedNote": "Connection strings aren't stored. Replace the … parts before running."
+    },
+    "log": {
+      "title": "Output",
+      "lines_one": "{{count}} line",
+      "lines_other": "{{count}} lines",
+      "hidden_one": "{{count}} hidden",
+      "hidden_other": "{{count}} hidden",
+      "matches_one": "{{count}} match",
+      "matches_other": "{{count}} matches",
+      "live": "Live",
+      "find": "Find in output",
+      "hideNoise": "Hide noise",
+      "folded_one": "{{count}} noise line hidden, show",
+      "folded_other": "{{count}} noise lines hidden, show",
+      "copy": "Copy output",
+      "download": "Download",
+      "fullscreen": "Full screen",
+      "exitFullscreen": "Exit full screen (Esc)"
+    },
+    "entities": {
+      "users": "Users",
+      "categories": "Categories",
+      "articles": "Articles",
+      "comments": "Comments",
+      "forumNodes": "Forum nodes",
+      "threads": "Threads",
+      "posts": "Posts",
+      "postLikes": "Likes",
+      "follows": "Follows",
+      "blocks": "Blocks",
+      "attachments": "Attachments",
+      "run": "Run"
+    }
   },
   "errorLog": {
     "title": "Error Log",

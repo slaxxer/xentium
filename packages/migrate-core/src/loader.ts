@@ -165,6 +165,7 @@ export class XentiumLoader {
   async loadCategories(categories: ImportedCategory[]): Promise<void> {
     // Parents before children — iterate until no progress (cycles → error).
     const pending = [...categories];
+    let done = 0;
     let progressed = true;
     while (pending.length && progressed) {
       progressed = false;
@@ -180,11 +181,14 @@ export class XentiumLoader {
         }
         pending.splice(i, 1);
         progressed = true;
+        this.reporter.progress("categories", ++done, categories.length);
       }
     }
     for (const cat of pending) {
       this.fail("category", cat.sourceId, `parent "${cat.parentSourceId}" was never imported`);
     }
+    // Orphans are settled too — as failures — so the phase reads as finished.
+    if (pending.length) this.reporter.progress("categories", categories.length, categories.length);
   }
 
   private async loadCategory(cat: ImportedCategory): Promise<void> {
@@ -333,6 +337,7 @@ export class XentiumLoader {
 
   async loadForumNodes(nodes: ImportedForumNode[]): Promise<void> {
     const pending = [...nodes];
+    let done = 0;
     let progressed = true;
     while (pending.length && progressed) {
       progressed = false;
@@ -348,11 +353,14 @@ export class XentiumLoader {
         }
         pending.splice(i, 1);
         progressed = true;
+        this.reporter.progress("forumNodes", ++done, nodes.length);
       }
     }
     for (const node of pending) {
       this.fail("forum_node", node.sourceId, `parent "${node.parentSourceId}" was never imported`);
     }
+    // Orphans are settled too — as failures — so the phase reads as finished.
+    if (pending.length) this.reporter.progress("forumNodes", nodes.length, nodes.length);
   }
 
   private async loadForumNode(node: ImportedForumNode): Promise<void> {
@@ -486,6 +494,7 @@ export class XentiumLoader {
 
   /** Blocks load FIRST: §36 — a block suppresses follows in both directions. */
   async loadBlocks(blocks: ImportedBlock[]): Promise<void> {
+    let done = 0;
     for (const block of blocks) {
       try {
         const blockerId = await this.mapped("user", block.blockerSourceId);
@@ -500,11 +509,14 @@ export class XentiumLoader {
         if (res.rowCount) this.bump("blocks");
       } catch (err) {
         this.fail("block", `${block.blockerSourceId}->${block.blockedSourceId}`, (err as Error).message);
+      } finally {
+        this.reporter.progress("blocks", ++done, blocks.length);
       }
     }
   }
 
   async loadFollows(follows: ImportedFollow[]): Promise<void> {
+    let done = 0;
     for (const follow of follows) {
       try {
         const followerId = await this.mapped("user", follow.followerSourceId);
@@ -526,6 +538,8 @@ export class XentiumLoader {
         if (res.rowCount) this.bump("follows");
       } catch (err) {
         this.fail("follow", `${follow.followerSourceId}->${follow.followingSourceId}`, (err as Error).message);
+      } finally {
+        this.reporter.progress("follows", ++done, follows.length);
       }
     }
   }
@@ -546,7 +560,7 @@ export class XentiumLoader {
       } catch (err) {
         this.fail("post_like", `${like.postSourceId}<-${like.userSourceId}`, (err as Error).message);
       }
-      this.reporter.progress("post likes", ++done, likes.length);
+      this.reporter.progress("postLikes", ++done, likes.length);
     }
   }
 

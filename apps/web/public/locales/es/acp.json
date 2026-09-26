@@ -311,23 +311,149 @@
   "migrations": {
     "title": "Historial de migraciones",
     "loading": "Cargando…",
-    "emptyTitle": "No se ha ejecutado ninguna migración",
-    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o la CLI @xentium/migrate importa una comunidad desde otra plataforma.",
-    "success": "Correcto",
-    "failed": "Fallido",
-    "hide": "▲ Ocultar",
-    "output": "▼ Salida",
+    "emptyTitle": "Aún no se ha ejecutado ninguna migración",
+    "emptyHint": "Se registra cuando el instalador aplica migraciones de base de datos o una herramienta de migración importa una comunidad desde otra plataforma.",
     "noOutput": "(sin salida)",
-    "status": {
-      "completed": "Completada",
-      "failed": "Fallida",
-      "partial": "Parcial",
-      "running": "En curso"
+    "search": "Buscar ejecuciones, orígenes, salida…",
+    "today": "Hoy",
+    "yesterday": "Ayer",
+    "unknownSource": "Importación de {{adapter}}",
+    "type": {
+      "all": "Todas",
+      "core": "Núcleo",
+      "import": "Importaciones"
     },
-    "coreBadge": "Core",
-    "importBadge": "Importación",
-    "errors": "Errores",
-    "report": "Informe completo"
+    "status": {
+      "all": "Todos los estados",
+      "running": "En curso",
+      "completed": "Completada",
+      "partial": "Parcial",
+      "failed": "Fallida",
+      "stalled": "Sin respuesta"
+    },
+    "noMatch": "Ninguna ejecución coincide con estos filtros",
+    "clearFilters": "Borrar filtros",
+    "sub": {
+      "core": "Despliegue del esquema",
+      "import": "Importación · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Último despliegue del esquema",
+      "noDeploy": "Ninguno registrado",
+      "schema": "Esquema",
+      "schemaValue_one": "{{count}} migración",
+      "schemaValue_other": "{{count}} migraciones",
+      "upToDate": "Al día · 0 pendientes",
+      "schemaPending_one": "{{count}} pendiente",
+      "schemaPending_other": "{{count}} pendientes",
+      "schemaFailed_one": "{{count}} no se pudo aplicar",
+      "schemaFailed_other": "{{count}} no se pudieron aplicar",
+      "schemaUnknown": "No se pudo leer",
+      "imports": "Importaciones de plataforma",
+      "runs_one": "{{count}} ejecución",
+      "runs_other": "{{count}} ejecuciones",
+      "runningNow_one": "{{count}} en curso",
+      "runningNow_other": "{{count}} en curso",
+      "noneRunning": "Ninguna en curso",
+      "attention": "Requiere atención",
+      "attentionSub": "{{failed}} fallidas · {{partial}} parciales"
+    },
+    "eyebrow": {
+      "core": "Núcleo · Despliegue del esquema",
+      "import": "Importación de plataforma"
+    },
+    "meta": {
+      "started": "Inicio",
+      "duration": "Duración",
+      "elapsed": "Transcurrido",
+      "found": "Encontradas",
+      "result": "Resultado",
+      "source": "Origen",
+      "adapter": "Adaptador"
+    },
+    "foundValue_one": "{{count}} migración",
+    "foundValue_other": "{{count}} migraciones",
+    "result": {
+      "applied_one": "{{count}} aplicada",
+      "applied_other": "{{count}} aplicadas",
+      "appliedFailed_one": "{{count}} aplicada · 1 fallida",
+      "appliedFailed_other": "{{count}} aplicadas · 1 fallida",
+      "nothing": "Nada que aplicar"
+    },
+    "callout": {
+      "failedTitle": "La migración {{name}} no se pudo aplicar",
+      "line": "Línea {{n}}",
+      "partialTitle_one": "Terminó con {{count}} incidencia",
+      "partialTitle_other": "Terminó con {{count}} incidencias",
+      "partialBody": "Todo lo demás se importó. Volver a ejecutarla continúa desde el mapa de importación, así que los elementos corregidos se incorporan sin duplicados.",
+      "importFailedTitle": "La importación se detuvo con un error",
+      "stalledTitle": "Esta ejecución dejó de responder",
+      "stalledBody": "Su última señal de vida fue {{time}}, así que lo más probable es que el proceso se detuviera. Volver a ejecutarla continúa desde el mapa de importación, sin duplicados.",
+      "stalledBodyUnknown": "Nunca informó de su progreso, así que lo más probable es que el proceso se detuviera. Volver a ejecutarla continúa desde el mapa de importación, sin duplicados."
+    },
+    "counts": {
+      "progress": "Progreso",
+      "progressAux_one": "{{done}} de {{count}} tipo cargado",
+      "progressAux_other": "{{done}} de {{count}} tipos cargados",
+      "imported": "Importado",
+      "importedAux_one": "{{formatted}} registro",
+      "importedAux_other": "{{formatted}} registros"
+    },
+    "issues": {
+      "title": "Incidencias",
+      "aux_one": "{{count}} en total · agrupadas por tipo",
+      "aux_other": "{{count}} en total · agrupadas por tipo",
+      "auxRunning_one": "{{count}} hasta ahora · agrupadas por tipo",
+      "auxRunning_other": "{{count}} hasta ahora · agrupadas por tipo",
+      "reasons_one": "{{count}} motivo",
+      "reasons_other": "{{count}} motivos"
+    },
+    "commands": {
+      "title": "Comandos",
+      "titleImport": "Informe y comandos",
+      "recover": "Recuperar",
+      "command": "Comando",
+      "resolve": "Resolver",
+      "dryRun": "Prueba",
+      "rerun": "Repetir",
+      "report": "Informe",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "recoverNote": "Corrige la migración, márcala como revertida y vuelve a desplegar.",
+      "maskedNote": "Las cadenas de conexión no se guardan. Sustituye las partes … antes de ejecutarlo."
+    },
+    "log": {
+      "title": "Salida",
+      "lines_one": "{{count}} línea",
+      "lines_other": "{{count}} líneas",
+      "hidden_one": "{{count}} oculta",
+      "hidden_other": "{{count}} ocultas",
+      "matches_one": "{{count}} coincidencia",
+      "matches_other": "{{count}} coincidencias",
+      "live": "En directo",
+      "find": "Buscar en la salida",
+      "hideNoise": "Ocultar ruido",
+      "folded_one": "{{count}} línea de ruido oculta, mostrar",
+      "folded_other": "{{count}} líneas de ruido ocultas, mostrar",
+      "copy": "Copiar salida",
+      "download": "Descargar",
+      "fullscreen": "Pantalla completa",
+      "exitFullscreen": "Salir de pantalla completa (Esc)"
+    },
+    "entities": {
+      "users": "Usuarios",
+      "categories": "Categorías",
+      "articles": "Artículos",
+      "comments": "Comentarios",
+      "forumNodes": "Nodos del foro",
+      "threads": "Hilos",
+      "posts": "Mensajes",
+      "postLikes": "Me gusta",
+      "follows": "Seguimientos",
+      "blocks": "Bloqueos",
+      "attachments": "Adjuntos",
+      "run": "Ejecución"
+    }
   },
   "errorLog": {
     "title": "Registro de errores",

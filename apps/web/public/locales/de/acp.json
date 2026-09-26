@@ -312,22 +312,148 @@
     "title": "Migrationsverlauf",
     "loading": "Wird geladen…",
     "emptyTitle": "Es wurden noch keine Migrationen ausgeführt",
-    "emptyHint": "Wird aufgezeichnet, wenn der Installer Datenbankmigrationen anwendet oder die @xentium/migrate-CLI eine Community von einer anderen Plattform importiert.",
-    "success": "Erfolgreich",
-    "failed": "Fehlgeschlagen",
-    "hide": "▲ Verbergen",
-    "output": "▼ Ausgabe",
+    "emptyHint": "Wird erfasst, wenn der Installer Datenbankmigrationen anwendet oder ein Migrationswerkzeug eine Community von einer anderen Plattform importiert.",
     "noOutput": "(keine Ausgabe)",
-    "status": {
-      "completed": "Abgeschlossen",
-      "failed": "Fehlgeschlagen",
-      "partial": "Teilweise",
-      "running": "Läuft"
+    "search": "Läufe, Quellen, Ausgabe durchsuchen…",
+    "today": "Heute",
+    "yesterday": "Gestern",
+    "unknownSource": "{{adapter}}-Import",
+    "type": {
+      "all": "Alle",
+      "core": "Core",
+      "import": "Importe"
     },
-    "coreBadge": "Core",
-    "importBadge": "Import",
-    "errors": "Fehler",
-    "report": "Vollständiger Bericht"
+    "status": {
+      "all": "Alle Status",
+      "running": "Läuft",
+      "completed": "Abgeschlossen",
+      "partial": "Teilweise",
+      "failed": "Fehlgeschlagen",
+      "stalled": "Reagiert nicht"
+    },
+    "noMatch": "Keine Läufe passen zu diesen Filtern",
+    "clearFilters": "Filter zurücksetzen",
+    "sub": {
+      "core": "Schema-Deploy",
+      "import": "Import · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Letzter Schema-Deploy",
+      "noDeploy": "Keiner erfasst",
+      "schema": "Schema",
+      "schemaValue_one": "{{count}} Migration",
+      "schemaValue_other": "{{count}} Migrationen",
+      "upToDate": "Aktuell · 0 ausstehend",
+      "schemaPending_one": "{{count}} ausstehend",
+      "schemaPending_other": "{{count}} ausstehend",
+      "schemaFailed_one": "{{count}} fehlgeschlagen",
+      "schemaFailed_other": "{{count}} fehlgeschlagen",
+      "schemaUnknown": "Nicht lesbar",
+      "imports": "Plattform-Importe",
+      "runs_one": "{{count}} Lauf",
+      "runs_other": "{{count}} Läufe",
+      "runningNow_one": "{{count}} läuft gerade",
+      "runningNow_other": "{{count}} laufen gerade",
+      "noneRunning": "Keiner aktiv",
+      "attention": "Braucht Aufmerksamkeit",
+      "attentionSub": "{{failed}} fehlgeschlagen · {{partial}} teilweise"
+    },
+    "eyebrow": {
+      "core": "Core · Schema-Deploy",
+      "import": "Plattform-Import"
+    },
+    "meta": {
+      "started": "Gestartet",
+      "duration": "Dauer",
+      "elapsed": "Verstrichen",
+      "found": "Gefunden",
+      "result": "Ergebnis",
+      "source": "Quelle",
+      "adapter": "Adapter"
+    },
+    "foundValue_one": "{{count}} Migration",
+    "foundValue_other": "{{count}} Migrationen",
+    "result": {
+      "applied_one": "{{count}} angewendet",
+      "applied_other": "{{count}} angewendet",
+      "appliedFailed_one": "{{count}} angewendet · 1 fehlgeschlagen",
+      "appliedFailed_other": "{{count}} angewendet · 1 fehlgeschlagen",
+      "nothing": "Nichts anzuwenden"
+    },
+    "callout": {
+      "failedTitle": "Migration {{name}} konnte nicht angewendet werden",
+      "line": "Zeile {{n}}",
+      "partialTitle_one": "Mit {{count}} Problem abgeschlossen",
+      "partialTitle_other": "Mit {{count}} Problemen abgeschlossen",
+      "partialBody": "Alles andere wurde importiert. Ein erneuter Lauf setzt an der Import-Zuordnung an, behobene Einträge werden also ohne Duplikate übernommen.",
+      "importFailedTitle": "Der Import wurde mit einem Fehler abgebrochen",
+      "stalledTitle": "Dieser Lauf reagiert nicht mehr",
+      "stalledBody": "Das letzte Lebenszeichen war {{time}}, der Prozess wurde also sehr wahrscheinlich beendet. Ein erneuter Lauf setzt an der Import-Zuordnung an, ohne Duplikate.",
+      "stalledBodyUnknown": "Er hat nie Fortschritt gemeldet, der Prozess wurde also sehr wahrscheinlich beendet. Ein erneuter Lauf setzt an der Import-Zuordnung an, ohne Duplikate."
+    },
+    "counts": {
+      "progress": "Fortschritt",
+      "progressAux_one": "{{done}} von {{count}} Typ geladen",
+      "progressAux_other": "{{done}} von {{count}} Typen geladen",
+      "imported": "Importiert",
+      "importedAux_one": "{{formatted}} Datensatz",
+      "importedAux_other": "{{formatted}} Datensätze"
+    },
+    "issues": {
+      "title": "Probleme",
+      "aux_one": "{{count}} insgesamt · nach Typ gruppiert",
+      "aux_other": "{{count}} insgesamt · nach Typ gruppiert",
+      "auxRunning_one": "{{count}} bisher · nach Typ gruppiert",
+      "auxRunning_other": "{{count}} bisher · nach Typ gruppiert",
+      "reasons_one": "{{count}} Grund",
+      "reasons_other": "{{count}} Gründe"
+    },
+    "commands": {
+      "title": "Befehle",
+      "titleImport": "Bericht & Befehle",
+      "recover": "Wiederherstellen",
+      "command": "Befehl",
+      "resolve": "Auflösen",
+      "dryRun": "Probelauf",
+      "rerun": "Erneut",
+      "report": "Bericht",
+      "copy": "Kopieren",
+      "copied": "Kopiert",
+      "recoverNote": "Migration korrigieren, als zurückgerollt markieren und dann erneut deployen.",
+      "maskedNote": "Verbindungsdaten werden nicht gespeichert. Ersetze die …-Teile vor dem Ausführen."
+    },
+    "log": {
+      "title": "Ausgabe",
+      "lines_one": "{{count}} Zeile",
+      "lines_other": "{{count}} Zeilen",
+      "hidden_one": "{{count}} ausgeblendet",
+      "hidden_other": "{{count}} ausgeblendet",
+      "matches_one": "{{count}} Treffer",
+      "matches_other": "{{count}} Treffer",
+      "live": "Live",
+      "find": "In der Ausgabe suchen",
+      "hideNoise": "Rauschen ausblenden",
+      "folded_one": "{{count}} Rauschzeile ausgeblendet, anzeigen",
+      "folded_other": "{{count}} Rauschzeilen ausgeblendet, anzeigen",
+      "copy": "Ausgabe kopieren",
+      "download": "Herunterladen",
+      "fullscreen": "Vollbild",
+      "exitFullscreen": "Vollbild verlassen (Esc)"
+    },
+    "entities": {
+      "users": "Benutzer",
+      "categories": "Kategorien",
+      "articles": "Artikel",
+      "comments": "Kommentare",
+      "forumNodes": "Forenknoten",
+      "threads": "Themen",
+      "posts": "Beiträge",
+      "postLikes": "Likes",
+      "follows": "Follows",
+      "blocks": "Blockierungen",
+      "attachments": "Anhänge",
+      "run": "Lauf"
+    }
   },
   "errorLog": {
     "title": "Fehlerprotokoll",

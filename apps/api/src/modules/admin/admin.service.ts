@@ -1033,10 +1033,11 @@ export const adminService = {
   },
 
   async listMigrationHistory() {
-    return prisma.migrationRun.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 100,
-    });
+    const [runs, schema] = await Promise.all([
+      prisma.migrationRun.findMany({ orderBy: { createdAt: "desc" }, take: 100 }),
+      schemaStatus(),
+    ]);
+    return { runs, schema };
   },
 
   // ── Style history ─────────────────────────────────────────────────────────
@@ -1097,3 +1098,48 @@ export const adminService = {
     await seedDefaultNavItems();
   },
 };
+
+/**
+ * The schema as it actually is: the migrations this build ships against what
+ * Prisma recorded as applied. Read live rather than from the history rows,
+ * because not every deploy writes one — `xentium update` migrates through the
+ * CLI, which never talks to the app.
+ *
+ * Null when either side cannot be read (no migrations folder beside a dev
+ * build, or a database that predates Prisma's table): the page then shows no
+ * schema figure rather than a wrong one.
+ */
+async function schemaStatus(): Promise<{
+  total: number; applied: number; pending: string[]; failed: string[]; lastAppliedAt: Date | null;
+} | null> {
+  let shipped: string[];
+  try {
+    const dir = path.join(env.REPO_ROOT, "prisma", "migrations");
+    const entries = await fs.readdir(dir, { withFileTypes: true });
+    shipped = entries.filter((e) => e.isDirectory()).map((e) => e.name).sort();
+  } catch {
+    return null;
+  }
+
+  let rows: Array<{ migration_name: string; finished_at: Date | null; rolled_back_at: Date | null }>;
+  try {
+    rows = await prisma.$queryRaw`
+      SELECT migration_name, finished_at, rolled_back_at FROM _prisma_migrations`;
+  } catch {
+    return null;
+  }
+
+  const applied = new Set(rows.filter((r) => r.finished_at && !r.rolled_back_at).map((r) => r.migration_name));
+  // Started, never finished, never rolled back: what P3009 refuses to deploy past.
+  const failed = rows.filter((r) => !r.finished_at && !r.rolled_back_at).map((r) => r.migration_name);
+  const lastAppliedAt = rows.reduce<Date | null>(
+    (latest, r) => (r.finished_at && (!latest || r.finished_at > latest) ? r.finished_at : latest), null);
+
+  return {
+    total: shipped.length,
+    applied: shipped.filter((name) => applied.has(name)).length,
+    pending: shipped.filter((name) => !applied.has(name) && !failed.includes(name)),
+    failed,
+    lastAppliedAt,
+  };
+}

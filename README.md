@@ -783,6 +783,11 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 We ship free, open-source migration tools as a standalone CLI. It's not a plugin on
 purpose: you run it once on your server, it writes straight into the Xentium database,
 and all it leaves behind is the migration log (**ACP → System → Migration History**).
+You can watch an import there while it runs: progress for each kind of record, the log as
+it is written, and the issues so far. If the process dies, the page says the run stopped
+responding instead of showing it as running forever. The page also gives you the command
+back for a dry run or a re-run, with connection strings left out, because we never store
+them.
 
 ### Available adapters
 
