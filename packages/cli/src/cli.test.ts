@@ -1,6 +1,9 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkMemory, checkNode, checkPlatform, worst, type Check } from "./checks.js";
-import { pgConnection } from "./release.js";
+import { pgConnection, prismaBin } from "./release.js";
 import { compareSemver, mergeEnv, parseEnv } from "./site.js";
 import { unitFile } from "./service.js";
 import { logo } from "./ui.js";
@@ -95,6 +98,43 @@ describe("systemd units", () => {
     expect(unit).toContain("Environment=XENTIUM_ENV_FILE=/srv/community/shared/.env");
     expect(unit).toContain("ReadWritePaths=/srv/community/shared");
     expect(unit).toContain("dist/worker.js");
+  });
+});
+
+describe("the Prisma CLI inside a release", () => {
+  const bin = process.platform === "win32" ? "prisma.cmd" : "prisma";
+  const withRelease = (links: string[], body: (site: Site) => void) => {
+    const root = mkdtempSync(path.join(tmpdir(), "xentium-rel-"));
+    try {
+      for (const dir of links) {
+        const full = path.join(root, "releases", "1.0.0", dir);
+        mkdirSync(full, { recursive: true });
+        writeFileSync(path.join(full, bin), "");
+      }
+      body(new Site(root));
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  };
+  const nested = "node_modules/@xentium/server/node_modules/.bin";
+  const hoisted = "node_modules/.bin";
+
+  it("finds it under the package, where the published shrinkwrap makes npm put it", () => {
+    withRelease([nested], (site) => {
+      expect(prismaBin(site, "1.0.0")).toBe(path.join(site.releaseDir("1.0.0"), nested, bin));
+    });
+  });
+
+  it("falls back to the release root when npm hoisted it", () => {
+    withRelease([hoisted], (site) => {
+      expect(prismaBin(site, "1.0.0")).toBe(path.join(site.releaseDir("1.0.0"), hoisted, bin));
+    });
+  });
+
+  it("refuses rather than spawning a path that is not there", () => {
+    withRelease([], (site) => {
+      expect(() => prismaBin(site, "1.0.0")).toThrow(/no Prisma CLI/);
+    });
   });
 });
 
