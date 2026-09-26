@@ -1653,10 +1653,20 @@
     "dialogVersion": "Version",
     "dialogBehind": "Releases behind",
     "onTheWay": {
-      "security": "Includes a security fix in {{version}}:",
-      "critical": "Includes a critical fix in {{version}}:"
+      "security": "Includes a security fix, in {{version}}.",
+      "critical": "Includes a critical fix, in {{version}}."
     },
-    "dialogBlocked": "Blocked by"
+    "howToWhere": "Run it in your site's directory.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "howToAfter": "It backs up the database first and switches back by itself if the site doesn't come up.",
+    "guide": "Updating guide",
+    "noNotes": "This release has no notes.",
+    "released": "Released",
+    "prereleaseNote": "This is a prerelease: it's for testing, and may change before the stable version.",
+    "changelog": "What's new",
+    "prerelease": "Prerelease",
+    "dialogOk": "Got it"
   },
   "license": {
     "loading": "Loading…",

@@ -31,13 +31,21 @@ behind, and what changed.
 **The gear badge** in the navbar counts a waiting core update the same way it counts plugin
 updates, so it stays visible until you deal with it.
 
-**A dialog when you enter the ACP**, once per admin. It stays until you actually open the
-Updates page: closing it doesn't count as having seen it, looking at the page does. Each
-admin gets their own, and a new release brings it back.
+**A dialog when you enter the ACP**, once per admin. It carries everything you need to
+decide: the version you are on and the one available, when it was released, how many
+releases you are behind, anything to watch out for (a security fix on the way, a plugin that
+doesn't support the new version yet, manual steps), the full changelog of every release in
+between, and the commands that install it, ready to copy.
+
+**Got it** counts as read, and so does opening the Updates page. **Later** doesn't: the
+dialog comes back the next time you enter the ACP. Each admin gets their own, and a new
+release brings it back. So does a release we later mark as a security fix, even if you had
+already seen it.
 
 One deliberate exception: a patch on the version line you are already running never opens the
 dialog. Those are the most common releases there are, the card and the badge already say so,
-and a dialog you meet every week is a dialog you stop reading.
+and a dialog you meet every week is a dialog you stop reading. Prereleases (alphas and betas)
+always open it, because each one is a version we want tested.
 
 ## How urgent is it
 
@@ -71,12 +79,19 @@ replace the code it is running, so there is no button that does this.
 
 ```bash
 cd /srv/xentium
-sudo xentium update
+npm install xentium@1.1.2
+npx xentium update 1.1.2
 ```
 
-That is the command the card shows you. In order, it:
+That is what the dialog and the card show you, with your site's directory and the version
+they are offering filled in. The first line updates the `xentium` command itself, because
+fixes to the updater ship in it. Naming the version matters for prereleases: without one,
+`xentium update` installs what npm calls the newest stable release. You don't need `sudo`;
+the command asks for it when it restarts your site's services.
 
-1. finds the newest release, and refuses if a plugin doesn't support it
+In order, `xentium update`:
+
+1. finds the release, and refuses if a plugin doesn't support it
 2. installs it **next to** the one that is running, so nothing has changed yet
 3. dumps the database into `shared/backups/`
 4. stops the site, applies any new migrations, points `current` at the new release, starts it
@@ -92,11 +107,11 @@ yourself.
 Useful flags:
 
 ```bash
-sudo xentium update 1.1.2        # a specific version rather than the newest
-sudo xentium update --dry-run    # install the release but don't switch to it
-sudo xentium update --package ./xentium-server-1.1.2.tgz   # from a tarball, no registry
-sudo xentium update --skip-backup                          # when pg_dump isn't installed
-sudo xentium update --force      # past a plugin that says it doesn't support the version
+npx xentium update               # the newest stable release
+npx xentium update --dry-run     # install the release but don't switch to it
+npx xentium update --package ./xentium-server-1.1.2.tgz   # from a tarball, no registry
+npx xentium update --skip-backup                          # when pg_dump isn't installed
+npx xentium update --force       # past a plugin that says it doesn't support the version
 ```
 
 Without `--skip-backup`, an update refuses to start when `pg_dump` is missing, because there
@@ -105,8 +120,8 @@ would be nothing to roll back to. Installing the PostgreSQL client tools is the 
 ## Going back
 
 ```bash
-sudo xentium rollback            # back to the release you were on
-sudo xentium rollback 1.1.0      # back to a specific one you still have
+npx xentium rollback             # back to the release you were on
+npx xentium rollback 1.1.0       # back to a specific one you still have
 ```
 
 A rollback is the same swap the other way, which is why releases are kept as separate

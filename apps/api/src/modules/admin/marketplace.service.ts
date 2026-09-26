@@ -13,6 +13,7 @@ import {
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { readCoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { cliSiteDir } from "../../config/envProbe.js";
 import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
 import { pluginService } from "../plugins/plugin.service.js";
 import { themeService } from "../themes/theme.service.js";
@@ -185,12 +186,19 @@ function pruneLinkSecrets() {
  * necessarily been told about a Xentium security release. Null when there is
  * nothing to say, so every consumer can test one field.
  */
+/** The acknowledgement "Got it" writes. Not a page: an ACP visit row nobody navigates to. */
+const CORE_ACK_MARK = "/admin/updates#core";
+
 async function getCoreUpdate(userId?: string) {
   const cache = await readCoreUpdateCache();
   if (!cache || !cache.updateAvailable || !cache.latest) return null;
 
+  // Either counts: a visit to the Updates page, or "Got it" on the dialog,
+  // which shows the same notes and the same command.
+  const since = new Date(cache.setSince);
   const acknowledged = userId
-    ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(cache.setSince))
+    ? await activityService.hasVisitedSince(userId, "/admin/updates", since)
+      || await activityService.hasVisitedSince(userId, CORE_ACK_MARK, since)
     : true;
 
   // Where the urgency comes from, when it is not the newest release. Without
@@ -208,6 +216,13 @@ async function getCoreUpdate(userId?: string) {
     highestSeverity: cache.highestSeverity,
     urgentRelease,
     releaseCount:    cache.path.length,
+    // Every release between here and there, newest first: the dialog and the
+    // card show all of their notes, because skipping three releases means
+    // taking all three changelogs.
+    path:            [...cache.path].reverse(),
+    // Where `xentium update` has to run, so the command the ACP prints can be
+    // pasted as is. Null on a clone, where the command does not apply.
+    siteDir:         cliSiteDir(),
     patch:           cache.patch,
     via:             cache.via,
     checkedAt:       cache.checkedAt,
@@ -231,6 +246,18 @@ async function installedManifests(): Promise<InstalledManifest[]> {
 }
 
 export const marketplaceService = {
+  /** The admin read the core-update dialog to the end and pressed "Got it". */
+  // Awaited, unlike markVisit: the dialog refetches right after, and a
+  // fire-and-forget write loses that race and shows the dialog again.
+  async acknowledgeCoreUpdate(userId: string): Promise<void> {
+    const now = new Date();
+    await prisma.acpVisit.upsert({
+      where:  { userId_path: { userId, path: CORE_ACK_MARK } },
+      update: { lastVisitAt: now },
+      create: { userId, path: CORE_ACK_MARK, lastVisitAt: now },
+    });
+  },
+
   listPlugins(opts: MarketplaceListQuery) {
     return marketplaceSource.listPlugins(opts);
   },

@@ -46,12 +46,12 @@ export function DialogHost() {
 
   return (
     <div className="xt-dialog-overlay" onMouseDown={(e) => { if (!running && e.target === e.currentTarget) resolveDialog(false); }}>
-      <div className={`xt-dialog xt-dialog--${effIcon}${dialog.wide ? " xt-dialog--wide" : ""}`} role="dialog" aria-modal="true" aria-label={dialog.title}>
+      <div className={`xt-dialog xt-dialog--${effIcon}${dialog.wide ? " xt-dialog--wide" : ""}${dialog.large ? " xt-dialog--large" : ""}`} role="dialog" aria-modal="true" aria-label={dialog.title}>
         {dialog.wide ? (
           <div className="xt-dialog__head">
             <span className="xt-dialog__icon"><FontAwesomeIcon icon={ICONS[effIcon]} /></span>
             <h2 className="xt-dialog__title">{dialog.title}</h2>
-            {dialog.badge && <span className="xt-dialog__badge">{dialog.badge}</span>}
+            {dialog.badge && <span className={`xt-dialog__badge${dialog.badgeTone === "calm" ? " xt-dialog__badge--calm" : ""}`}>{dialog.badge}</span>}
           </div>
         ) : (
           <>

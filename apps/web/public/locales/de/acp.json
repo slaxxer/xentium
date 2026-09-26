@@ -1450,10 +1450,20 @@
     "dialogVersion": "Version",
     "dialogBehind": "Versionen im Rückstand",
     "onTheWay": {
-      "security": "Enthält einen Sicherheitsfix in {{version}}:",
-      "critical": "Enthält einen kritischen Fix in {{version}}:"
+      "security": "Enthält einen Sicherheitsfix, in {{version}}.",
+      "critical": "Enthält einen kritischen Fix, in {{version}}."
     },
-    "dialogBlocked": "Blockiert von"
+    "howToWhere": "Führe es im Verzeichnis deiner Seite aus.",
+    "copy": "Kopieren",
+    "copied": "Kopiert",
+    "howToAfter": "Es sichert zuerst die Datenbank und wechselt von selbst zurück, wenn die Seite nicht startet.",
+    "guide": "Anleitung zum Aktualisieren",
+    "noNotes": "Zu dieser Version gibt es keine Hinweise.",
+    "released": "Veröffentlicht",
+    "prereleaseNote": "Dies ist eine Vorabversion: Sie dient zum Testen und kann sich bis zur stabilen Version noch ändern.",
+    "changelog": "Was ist neu",
+    "prerelease": "Vorabversion",
+    "dialogOk": "Verstanden"
   },
   "license": {
     "loading": "Lädt…",

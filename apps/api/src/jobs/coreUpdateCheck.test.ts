@@ -121,6 +121,23 @@ describe("the cache", () => {
     expect(second.setSince).not.toBe(first);
     expect(second.highestSeverity).toBe("security");
   });
+
+  it("moves the anchor when the same release is later marked a security fix", async () => {
+    await processCoreUpdateCheck();
+    const first = (await readCoreUpdateCache())!.setSince;
+
+    const { latest } = world.response as { latest: ReturnType<typeof release> };
+    world.response = {
+      latest: { ...latest, severity: "security" }, updateAvailable: true,
+      path: [{ ...latest, severity: "security" }], highestSeverity: "security", patch: null, via: null,
+    };
+    await new Promise((r) => setTimeout(r, 5));
+    await processCoreUpdateCheck();
+
+    // Same version, but the admin who looked at a feature release has not been
+    // told about the vulnerability.
+    expect((await readCoreUpdateCache())!.setSince).not.toBe(first);
+  });
 });
 
 describe("when the marketplace cannot be reached", () => {

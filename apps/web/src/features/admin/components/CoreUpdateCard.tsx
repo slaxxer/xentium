@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faTriangleExclamation, faServer } from "@fortawesome/free-solid-svg-icons";
+import { CoreChangelog, CoreUpdateWarnings, UpdateCommand } from "./coreUpdateParts";
 
 /**
  * "There is a newer Xentium."
@@ -42,13 +43,16 @@ export interface CoreUpdate {
    *  interrupt anybody. */
   patch: CoreRelease | null;
   acknowledged: boolean;
+  /** Every release between here and `latest`, newest first. */
+  path: CoreRelease[];
+  /** The site directory of a CLI install, for a command that pastes as is. Null on a clone. */
+  siteDir: string | null;
 }
 
 export function CoreUpdateCard({ update }: { update: CoreUpdate }) {
   const { t } = useTranslation("acp");
   const urgent = update.highestSeverity === "security" || update.highestSeverity === "critical";
   const accent = urgent ? "var(--c-danger)" : "var(--c-update, var(--c-accent))";
-  const blocked = update.blockedBy.length > 0;
 
   return (
     <div
@@ -90,64 +94,14 @@ export function CoreUpdateCard({ update }: { update: CoreUpdate }) {
           )}
         </div>
 
-        {update.latest.notes && (
-          <div style={{ fontSize: 13, color: "var(--c-fg-muted)", lineHeight: 1.6, whiteSpace: "pre-line" }}>
-            {update.latest.notes}
-          </div>
-        )}
-
-        {/* Without this the card reads "security" above release notes about
-            layout variants: the badge is right and the page contradicts it. */}
-        {update.urgentRelease && (
-          <div style={{
-            fontSize: 12.5, marginTop: 8, padding: "8px 10px", lineHeight: 1.6,
-            color: accent, borderRadius: "var(--radius-sm)",
-            background: `color-mix(in srgb, ${accent} 10%, transparent)`,
-            border: `1px solid color-mix(in srgb, ${accent} 26%, transparent)`,
-          }}>
-            <strong>{t(`coreUpdate.onTheWay.${update.urgentRelease.severity}`, { version: update.urgentRelease.version })}</strong>
-            {update.urgentRelease.notes ? ` ${update.urgentRelease.notes}` : ""}
-          </div>
-        )}
-
-        {update.latest.upgradeNotes && (
-          <div style={{ fontSize: 12.5, color: "var(--c-warn)", marginTop: 8, fontWeight: 600, lineHeight: 1.6 }}>
-            <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 6 }} />
-            {update.latest.upgradeNotes}
-          </div>
-        )}
-
-        {update.via && (
-          <div style={{ fontSize: 12.5, color: "var(--c-warn)", marginTop: 8, fontWeight: 600 }}>
-            {t("coreUpdate.via", { version: update.via })}
-          </div>
-        )}
-
-        {blocked && (
-          <div style={{ fontSize: 12.5, color: "var(--c-warn)", marginTop: 8, lineHeight: 1.7 }}>
-            <div style={{ fontWeight: 700 }}>{t("coreUpdate.blockedTitle")}</div>
-            {update.blockedBy.map((p) => (
-              <div key={p.id}>{t("coreUpdate.blockedRow", { name: p.name, supports: p.supports })}</div>
-            ))}
-          </div>
-        )}
-
-        {/* The web process must never replace its own code, so there is no
-            button here yet: applying an update is the job of a root-owned
-            updater the API can only ask, and only read the progress of. Until
-            that ships, the honest answer is the command that already does it. */}
-        <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: "var(--c-fg-subtle)", marginBottom: 4 }}>
-            {blocked ? t("coreUpdate.howToBlocked") : t("coreUpdate.howTo")}
-          </div>
-          <code style={{
-            display: "inline-block", fontSize: 12.5, padding: "6px 10px",
-            background: "var(--c-bg-subtle, rgba(127,127,127,.12))",
-            borderRadius: "var(--radius-sm)", fontFamily: "var(--ff-mono, monospace)",
-            color: "var(--c-fg)", userSelect: "all",
-          }}>
-            sudo xentium update
-          </code>
+        <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 12 }}>
+          <CoreUpdateWarnings update={update} />
+          <div className="core-notes"><CoreChangelog update={update} /></div>
+          {/* The web process must never replace its own code, so there is no
+              button here yet: applying an update is the job of a root-owned
+              updater the API can only ask, and only read the progress of. Until
+              that ships, the honest answer is the command that already does it. */}
+          <UpdateCommand update={update} />
         </div>
       </div>
     </div>
