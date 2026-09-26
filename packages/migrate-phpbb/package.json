@@ -16,7 +16,7 @@
   "dependencies": {
     "@xentium/migrate-core": "workspace:*",
     "htmlparser2": "^10.1.0",
-    "mysql2": "^3.16.0"
+    "mysql2": "^3.23.1"
   },
   "devDependencies": {
     "@xentium/config": "workspace:*",
