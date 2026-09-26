@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-wp",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "private": true,
   "description": "WordPress → Xentium migration adapter (§34, Wave 1). Consumes a WXR export file — no WordPress installation or database access needed.",
   "type": "module",
