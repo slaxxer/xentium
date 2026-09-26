@@ -311,23 +311,149 @@
   "migrations": {
     "title": "Historique des migrations",
     "loading": "Chargement…",
-    "emptyTitle": "Aucune migration n'a été exécutée",
-    "emptyHint": "Enregistré lorsque l'installateur applique des migrations de base de données ou que la CLI @xentium/migrate importe une communauté depuis une autre plateforme.",
-    "success": "Réussite",
-    "failed": "Échec",
-    "hide": "▲ Masquer",
-    "output": "▼ Sortie",
+    "emptyTitle": "Aucune migration n'a encore été exécutée",
+    "emptyHint": "Enregistré lorsque l'installateur applique des migrations de base de données ou qu'un outil de migration importe une communauté depuis une autre plateforme.",
     "noOutput": "(aucune sortie)",
-    "status": {
-      "completed": "Terminée",
-      "failed": "Échouée",
-      "partial": "Partielle",
-      "running": "En cours"
+    "search": "Rechercher exécutions, sources, sortie…",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "unknownSource": "Import {{adapter}}",
+    "type": {
+      "all": "Toutes",
+      "core": "Cœur",
+      "import": "Imports"
     },
-    "coreBadge": "Core",
-    "importBadge": "Import",
-    "errors": "Erreurs",
-    "report": "Rapport complet"
+    "status": {
+      "all": "Tous les statuts",
+      "running": "En cours",
+      "completed": "Terminée",
+      "partial": "Partielle",
+      "failed": "Échouée",
+      "stalled": "Ne répond plus"
+    },
+    "noMatch": "Aucune exécution ne correspond à ces filtres",
+    "clearFilters": "Effacer les filtres",
+    "sub": {
+      "core": "Déploiement du schéma",
+      "import": "Import · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Dernier déploiement du schéma",
+      "noDeploy": "Aucun enregistré",
+      "schema": "Schéma",
+      "schemaValue_one": "{{count}} migration",
+      "schemaValue_other": "{{count}} migrations",
+      "upToDate": "À jour · 0 en attente",
+      "schemaPending_one": "{{count}} en attente",
+      "schemaPending_other": "{{count}} en attente",
+      "schemaFailed_one": "{{count}} n'a pas pu être appliquée",
+      "schemaFailed_other": "{{count}} n'ont pas pu être appliquées",
+      "schemaUnknown": "Illisible",
+      "imports": "Imports de plateforme",
+      "runs_one": "{{count}} exécution",
+      "runs_other": "{{count}} exécutions",
+      "runningNow_one": "{{count}} en cours",
+      "runningNow_other": "{{count}} en cours",
+      "noneRunning": "Aucune en cours",
+      "attention": "À surveiller",
+      "attentionSub": "{{failed}} échouées · {{partial}} partielles"
+    },
+    "eyebrow": {
+      "core": "Cœur · Déploiement du schéma",
+      "import": "Import de plateforme"
+    },
+    "meta": {
+      "started": "Démarrage",
+      "duration": "Durée",
+      "elapsed": "Écoulé",
+      "found": "Trouvées",
+      "result": "Résultat",
+      "source": "Source",
+      "adapter": "Adaptateur"
+    },
+    "foundValue_one": "{{count}} migration",
+    "foundValue_other": "{{count}} migrations",
+    "result": {
+      "applied_one": "{{count}} appliquée",
+      "applied_other": "{{count}} appliquées",
+      "appliedFailed_one": "{{count}} appliquée · 1 échouée",
+      "appliedFailed_other": "{{count}} appliquées · 1 échouée",
+      "nothing": "Rien à appliquer"
+    },
+    "callout": {
+      "failedTitle": "La migration {{name}} n'a pas pu être appliquée",
+      "line": "Ligne {{n}}",
+      "partialTitle_one": "Terminée avec {{count}} problème",
+      "partialTitle_other": "Terminée avec {{count}} problèmes",
+      "partialBody": "Tout le reste a été importé. Une nouvelle exécution reprend à partir de la table de correspondance, les éléments corrigés sont donc repris sans doublons.",
+      "importFailedTitle": "L'import s'est arrêté sur une erreur",
+      "stalledTitle": "Cette exécution ne répond plus",
+      "stalledBody": "Son dernier signe de vie date de {{time}}, le processus a donc très probablement été arrêté. Une nouvelle exécution reprend à partir de la table de correspondance, sans doublons.",
+      "stalledBodyUnknown": "Elle n'a jamais signalé sa progression, le processus a donc très probablement été arrêté. Une nouvelle exécution reprend à partir de la table de correspondance, sans doublons."
+    },
+    "counts": {
+      "progress": "Progression",
+      "progressAux_one": "{{done}} type chargé sur {{count}}",
+      "progressAux_other": "{{done}} types chargés sur {{count}}",
+      "imported": "Importé",
+      "importedAux_one": "{{formatted}} enregistrement",
+      "importedAux_other": "{{formatted}} enregistrements"
+    },
+    "issues": {
+      "title": "Problèmes",
+      "aux_one": "{{count}} au total · regroupés par type",
+      "aux_other": "{{count}} au total · regroupés par type",
+      "auxRunning_one": "{{count}} pour l'instant · regroupés par type",
+      "auxRunning_other": "{{count}} pour l'instant · regroupés par type",
+      "reasons_one": "{{count}} motif",
+      "reasons_other": "{{count}} motifs"
+    },
+    "commands": {
+      "title": "Commandes",
+      "titleImport": "Rapport et commandes",
+      "recover": "Récupérer",
+      "command": "Commande",
+      "resolve": "Résoudre",
+      "dryRun": "Essai à blanc",
+      "rerun": "Relancer",
+      "report": "Rapport",
+      "copy": "Copier",
+      "copied": "Copié",
+      "recoverNote": "Corrigez la migration, marquez-la comme annulée, puis redéployez.",
+      "maskedNote": "Les chaînes de connexion ne sont pas enregistrées. Remplacez les parties … avant de lancer la commande."
+    },
+    "log": {
+      "title": "Sortie",
+      "lines_one": "{{count}} ligne",
+      "lines_other": "{{count}} lignes",
+      "hidden_one": "{{count}} masquée",
+      "hidden_other": "{{count}} masquées",
+      "matches_one": "{{count}} résultat",
+      "matches_other": "{{count}} résultats",
+      "live": "En direct",
+      "find": "Rechercher dans la sortie",
+      "hideNoise": "Masquer le bruit",
+      "folded_one": "{{count}} ligne de bruit masquée, afficher",
+      "folded_other": "{{count}} lignes de bruit masquées, afficher",
+      "copy": "Copier la sortie",
+      "download": "Télécharger",
+      "fullscreen": "Plein écran",
+      "exitFullscreen": "Quitter le plein écran (Échap)"
+    },
+    "entities": {
+      "users": "Utilisateurs",
+      "categories": "Catégories",
+      "articles": "Articles",
+      "comments": "Commentaires",
+      "forumNodes": "Nœuds du forum",
+      "threads": "Sujets",
+      "posts": "Messages",
+      "postLikes": "J'aime",
+      "follows": "Abonnements",
+      "blocks": "Blocages",
+      "attachments": "Pièces jointes",
+      "run": "Exécution"
+    }
   },
   "errorLog": {
     "title": "Journal des erreurs",

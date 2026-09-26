@@ -311,23 +311,149 @@
   "migrations": {
     "title": "Histórico de migrações",
     "loading": "A carregar…",
-    "emptyTitle": "Ainda não foram executadas migrações",
-    "emptyHint": "Registrado quando o instalador aplica migrações de banco de dados ou a CLI @xentium/migrate importa uma comunidade de outra plataforma.",
-    "success": "Sucesso",
-    "failed": "Falhou",
-    "hide": "▲ Ocultar",
-    "output": "▼ Saída",
+    "emptyTitle": "Ainda não foi executada nenhuma migração",
+    "emptyHint": "Registado quando o instalador aplica migrações da base de dados ou quando uma ferramenta de migração importa uma comunidade de outra plataforma.",
     "noOutput": "(sem saída)",
-    "status": {
-      "completed": "Concluída",
-      "failed": "Falhou",
-      "partial": "Parcial",
-      "running": "Em execução"
+    "search": "Pesquisar execuções, origens, saída…",
+    "today": "Hoje",
+    "yesterday": "Ontem",
+    "unknownSource": "Importação {{adapter}}",
+    "type": {
+      "all": "Todas",
+      "core": "Núcleo",
+      "import": "Importações"
     },
-    "coreBadge": "Core",
-    "importBadge": "Importação",
-    "errors": "Erros",
-    "report": "Relatório completo"
+    "status": {
+      "all": "Todos os estados",
+      "running": "Em curso",
+      "completed": "Concluída",
+      "partial": "Parcial",
+      "failed": "Falhou",
+      "stalled": "Sem resposta"
+    },
+    "noMatch": "Nenhuma execução corresponde a estes filtros",
+    "clearFilters": "Limpar filtros",
+    "sub": {
+      "core": "Implementação do esquema",
+      "import": "Importação · {{pkg}}"
+    },
+    "stats": {
+      "lastDeploy": "Última implementação do esquema",
+      "noDeploy": "Nenhuma registada",
+      "schema": "Esquema",
+      "schemaValue_one": "{{count}} migração",
+      "schemaValue_other": "{{count}} migrações",
+      "upToDate": "Atualizado · 0 pendentes",
+      "schemaPending_one": "{{count}} pendente",
+      "schemaPending_other": "{{count}} pendentes",
+      "schemaFailed_one": "{{count}} não foi aplicada",
+      "schemaFailed_other": "{{count}} não foram aplicadas",
+      "schemaUnknown": "Não foi possível ler",
+      "imports": "Importações de plataforma",
+      "runs_one": "{{count}} execução",
+      "runs_other": "{{count}} execuções",
+      "runningNow_one": "{{count}} em curso",
+      "runningNow_other": "{{count}} em curso",
+      "noneRunning": "Nenhuma em curso",
+      "attention": "Requer atenção",
+      "attentionSub": "{{failed}} falhadas · {{partial}} parciais"
+    },
+    "eyebrow": {
+      "core": "Núcleo · Implementação do esquema",
+      "import": "Importação de plataforma"
+    },
+    "meta": {
+      "started": "Início",
+      "duration": "Duração",
+      "elapsed": "Decorrido",
+      "found": "Encontradas",
+      "result": "Resultado",
+      "source": "Origem",
+      "adapter": "Adaptador"
+    },
+    "foundValue_one": "{{count}} migração",
+    "foundValue_other": "{{count}} migrações",
+    "result": {
+      "applied_one": "{{count}} aplicada",
+      "applied_other": "{{count}} aplicadas",
+      "appliedFailed_one": "{{count}} aplicada · 1 falhou",
+      "appliedFailed_other": "{{count}} aplicadas · 1 falhou",
+      "nothing": "Nada a aplicar"
+    },
+    "callout": {
+      "failedTitle": "A migração {{name}} não foi aplicada",
+      "line": "Linha {{n}}",
+      "partialTitle_one": "Terminou com {{count}} problema",
+      "partialTitle_other": "Terminou com {{count}} problemas",
+      "partialBody": "Tudo o resto foi importado. Voltar a executar retoma a partir do mapa de importação, por isso os itens corrigidos entram sem duplicados.",
+      "importFailedTitle": "A importação parou com um erro",
+      "stalledTitle": "Esta execução deixou de responder",
+      "stalledBody": "O último sinal de vida foi {{time}}, por isso o processo terá sido interrompido. Voltar a executar retoma a partir do mapa de importação, sem duplicados.",
+      "stalledBodyUnknown": "Nunca comunicou progresso, por isso o processo terá sido interrompido. Voltar a executar retoma a partir do mapa de importação, sem duplicados."
+    },
+    "counts": {
+      "progress": "Progresso",
+      "progressAux_one": "{{done}} de {{count}} tipo carregado",
+      "progressAux_other": "{{done}} de {{count}} tipos carregados",
+      "imported": "Importado",
+      "importedAux_one": "{{formatted}} registo",
+      "importedAux_other": "{{formatted}} registos"
+    },
+    "issues": {
+      "title": "Problemas",
+      "aux_one": "{{count}} no total · agrupados por tipo",
+      "aux_other": "{{count}} no total · agrupados por tipo",
+      "auxRunning_one": "{{count}} até agora · agrupados por tipo",
+      "auxRunning_other": "{{count}} até agora · agrupados por tipo",
+      "reasons_one": "{{count}} motivo",
+      "reasons_other": "{{count}} motivos"
+    },
+    "commands": {
+      "title": "Comandos",
+      "titleImport": "Relatório e comandos",
+      "recover": "Recuperar",
+      "command": "Comando",
+      "resolve": "Resolver",
+      "dryRun": "Simulação",
+      "rerun": "Repetir",
+      "report": "Relatório",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "recoverNote": "Corrige a migração, marca-a como revertida e volta a implementar.",
+      "maskedNote": "As strings de ligação não são guardadas. Substitui as partes … antes de executar."
+    },
+    "log": {
+      "title": "Saída",
+      "lines_one": "{{count}} linha",
+      "lines_other": "{{count}} linhas",
+      "hidden_one": "{{count}} oculta",
+      "hidden_other": "{{count}} ocultas",
+      "matches_one": "{{count}} correspondência",
+      "matches_other": "{{count}} correspondências",
+      "live": "Em direto",
+      "find": "Procurar na saída",
+      "hideNoise": "Ocultar ruído",
+      "folded_one": "{{count}} linha de ruído oculta, mostrar",
+      "folded_other": "{{count}} linhas de ruído ocultas, mostrar",
+      "copy": "Copiar saída",
+      "download": "Transferir",
+      "fullscreen": "Ecrã inteiro",
+      "exitFullscreen": "Sair do ecrã inteiro (Esc)"
+    },
+    "entities": {
+      "users": "Utilizadores",
+      "categories": "Categorias",
+      "articles": "Artigos",
+      "comments": "Comentários",
+      "forumNodes": "Nós do fórum",
+      "threads": "Tópicos",
+      "posts": "Publicações",
+      "postLikes": "Gostos",
+      "follows": "Seguimentos",
+      "blocks": "Bloqueios",
+      "attachments": "Anexos",
+      "run": "Execução"
+    }
   },
   "errorLog": {
     "title": "Registo de erros",

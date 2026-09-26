@@ -521,7 +521,7 @@ files, 5 MB each, 40 MB total).
 |---|---|---|
 | GET | `/settings` · `/settings/:key` · PUT `/settings/:key` | Platform settings. |
 | GET | `/error-log` · DELETE `/error-log` | The error log (filterable) / clear it. |
-| GET | `/migration-history` | The `migration_runs` table. |
+| GET | `/migration-history` | `{ runs, schema }`: the last 100 runs (schema deploys and platform imports, a running import's live `progress` included) and the schema as it is now, the migrations this build ships against what the database has applied. |
 | GET | `/style-history` | Style snapshots. |
 | GET | `/xec-codes` | The XEC code list (for the Error Reference page). |
 | GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | The site's nav manager. |

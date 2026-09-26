@@ -27,6 +27,11 @@ model MigrationRun {
   completedAt DateTime? @map("completed_at")
   summary     Json?     // { users: 1240, threads: 8904, posts: 44320, ... }
   errors      Json?     // [{ entity, sourceId, reason }, ...]
+  /// A running import's live state, rewritten about once a second:
+  /// { at, current, entities: { users: { done, total }, … } }. `at` is the
+  /// heartbeat — a row still "running" whose `at` has gone stale belongs to a
+  /// process that died, and the ACP says so instead of spinning forever.
+  progress    Json?
   reportPath  String?   @map("report_path")
   createdAt   DateTime  @default(now())
 
