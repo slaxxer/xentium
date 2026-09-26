@@ -12,3 +12,9 @@ Core-update dialog, redone after testing alpha.7's notice locally (unpushed).
 - `apps/web/src/lib/dialog.ts`, `components/DialogHost.tsx/.scss`: `large` panel size and `badgeTone: "calm"`.
 - Locales ×5: new `coreUpdate.*` keys, `onTheWay` reworded, `dialogBlocked` removed.
 - `apps/docs/src/content/docs/admin/updating.md`, `docs/API.md`: the dialog, the command, the endpoint.
+
+ACP chrome fixes (same session):
+- `apps/web/src/features/admin/nav/AcpUtilityBar.tsx` deleted; `AcpRailShell.tsx` no longer renders it; `.acp-util` + `$util-h` removed from `AcpChrome.scss`.
+- `nav/AcpSearch.tsx`: `variant="rail"`, an icon in the collapsed rail that opens the palette centred; `nav/AcpRail.tsx` mounts it when collapsed.
+- `nav/AcpUserMenu.tsx` + `AcpChrome.scss`: the rail menu is `position: fixed`, placed from the avatar (the scrolling rail clipped it); `AcpTopbar.scss`: `.nbpop--user` min-width + max-content so segment labels fit.
+- `AcpLayout.tsx`: comment updated.

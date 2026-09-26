@@ -23,9 +23,8 @@ import { IconScope } from "../../lib/iconScope";
 // menu and remembered in localStorage (nav/acpChrome.ts):
 //
 //   rail (default) — a 72px icon rail plus a 248px section panel down the left,
-//                    with the top bar folded into them. One thin utility line
-//                    survives for the notification bell and plugin header
-//                    widgets; nav/AcpUtilityBar.tsx says why.
+//                    with the top bar folded into them entirely. Collapsed,
+//                    the palette becomes a search icon in the rail.
 //   horizontal     — the previous chrome: topbar + two-tier HorizontalNav. Kept
 //                    whole rather than deleted, because it is the layout every
 //                    admin has been using and taste in this is not unanimous.
