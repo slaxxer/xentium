@@ -1,7 +1,6 @@
 {
   "nav": {
     "dashboard": "Dashboard",
-    "announcements": "Announcements",
     "users": "Users",
     "accessControl": "Access Control",
     "content": "Content",
@@ -1420,21 +1419,12 @@
     "previewNote": "Rendered by the marketplace from the version on sale, so the arrangement and colours are this theme's own. Block interiors are placeholders — what goes inside them is your content, drawn by your site's own components."
   },
   "announcements": {
-    "title": "Announcements",
-    "loading": "Loading announcements…",
-    "from": "From the Xentium team",
-    "unread": "New",
-    "read": "Read",
-    "englishFallback": "shown in English",
-    "emptyTitle": "Nothing from the Xentium team",
-    "emptyCheckedAt": "Last checked {{date}}. Announcements arrive with the daily update check.",
-    "emptyHint": "Announcements arrive with the daily update check.",
+    "dialogNote": "Sent by the Xentium team. Clicking OK removes it from this site for every admin.",
     "dialogOk": "OK",
     "severity": {
       "important": "Important",
       "critical": "Critical"
-    },
-    "moreWaiting": "{{count}} more waiting"
+    }
   },
   "trust": {
     "official": "Official plugin",

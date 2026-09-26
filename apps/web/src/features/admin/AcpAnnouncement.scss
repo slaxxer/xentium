@@ -1,0 +1,18 @@
+// A broadcast from the Xentium team, inside the ACP-entry dialog
+// (useAcpAlerts in AcpLayout.tsx).
+.acp-announcement__body {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.acp-announcement__link {
+  display: inline-block;
+  margin-top: 12px;
+  font-family: var(--ff-mono, monospace);
+  font-size: 12.5px;
+  color: var(--c-accent);
+  overflow-wrap: anywhere;
+
+  &:hover { text-decoration: underline; }
+}

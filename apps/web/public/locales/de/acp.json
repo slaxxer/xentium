@@ -1,7 +1,6 @@
 {
   "nav": {
     "dashboard": "Übersicht",
-    "announcements": "Ankündigungen",
     "users": "Benutzer",
     "accessControl": "Zugriffskontrolle",
     "content": "Inhalte",
@@ -1217,21 +1216,12 @@
     "previewNote": "Vom Marktplatz aus der verkauften Version gerendert — Aufbau und Farben stammen also vom Theme selbst. Blockinhalte sind Platzhalter: Was darin steht, sind deine Inhalte, gezeichnet von den Komponenten deiner Seite."
   },
   "announcements": {
-    "title": "Ankündigungen",
-    "loading": "Ankündigungen werden geladen…",
-    "from": "Vom Xentium-Team",
-    "unread": "Neu",
-    "read": "Gelesen",
-    "englishFallback": "auf Englisch angezeigt",
-    "emptyTitle": "Nichts vom Xentium-Team",
-    "emptyCheckedAt": "Zuletzt geprüft {{date}}. Ankündigungen kommen mit der täglichen Update-Prüfung.",
-    "emptyHint": "Ankündigungen kommen mit der täglichen Update-Prüfung.",
+    "dialogNote": "Vom Xentium-Team gesendet. Mit OK wird sie für alle Admins von dieser Seite entfernt.",
     "dialogOk": "OK",
     "severity": {
       "important": "Wichtig",
       "critical": "Kritisch"
-    },
-    "moreWaiting": "{{count}} weitere warten"
+    }
   },
   "trust": {
     "official": "Offizielles Plugin",
