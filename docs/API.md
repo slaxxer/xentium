@@ -425,7 +425,7 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 
 | Method | Path | Description |
 |---|---|---|
-| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Groups; plus `PUT /groups/:id/permissions` and `POST /groups/:id/icon` (`multipart`). |
+| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Groups; plus `PUT /groups/reorder` (badge precedence), `PUT /groups/:id/permissions` (replace the whole set), `PATCH /groups/:id/permissions` (`{ grant, revoke }`: change only those keys, which is what the ACP uses so it never reverts a grant made elsewhere), `POST /groups/:id/icon` (`multipart`) and `DELETE /groups/:id/icon`. |
 | GET | `/permissions` | Every permission, including the ones plugins registered. |
 | GET·PATCH | `/progression` · `/progression/:id` | The ladder and per-group progression; plus `/progression/groups`, `PATCH /progression/settings`, `PATCH /progression/reorder`. |
 

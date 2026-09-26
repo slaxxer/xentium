@@ -731,8 +731,8 @@ useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mut
 
 That goes for settings pages **and** per-group panels registered through the
 `groupConfigPanel` slot. Per-group config (permissions, progression) belongs there,
-because it then shows up as a tab in core's own group settings dialog instead of a page
-of its own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
+because it then shows up as a tab on core's own group page instead of a page of its
+own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
 autosave a half-typed credential; use Set/Remove) and **destructive actions**.
 
 📖 **The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression

@@ -15,4 +15,6 @@ groupsRouter.post("/", guard, groupsController.create);
 groupsRouter.patch("/:id", guard, groupsController.update);
 groupsRouter.delete("/:id", guard, groupsController.remove);
 groupsRouter.put("/:id/permissions", guard, groupsController.setPermissions);
+groupsRouter.patch("/:id/permissions", guard, groupsController.patchPermissions);
 groupsRouter.post("/:id/icon", guard, uploadSingle("GROUP_ICON", "file"), groupsController.uploadIcon);
+groupsRouter.delete("/:id/icon", guard, groupsController.removeIcon);

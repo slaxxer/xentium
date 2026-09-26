@@ -487,33 +487,6 @@ table.acp-table {
   gap: 2px;
 }
 
-.acp-perm-row {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: var(--sp-2) var(--sp-3);
-  border-radius: var(--radius-sm);
-
-  &:nth-child(odd) { background: var(--c-surface); }
-
-  label {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-2);
-    cursor: pointer;
-    flex: 1;
-    font-size: var(--fs-sm);
-    color: var(--c-fg);
-  }
-
-  .acp-perm-key {
-    font-family: monospace;
-    font-size: var(--fs-xs);
-    color: var(--c-fg-muted);
-    margin-left: auto;
-  }
-}
-
 // Category tree
 .acp-tree {
   display: flex;
@@ -727,18 +700,3 @@ table.acp-table {
   }
 }
 
-// ── Groups card grid (prototype layout) ──────────────────────────────────────
-
-.acp-groups-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-
-  @media (max-width: 1000px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-.acp-group-card {
-  padding: 22px;
-}

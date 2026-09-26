@@ -14,6 +14,10 @@ const updateSchema = z.object({
   showInTeam: z.boolean().optional(),
 });
 const setPermsSchema = z.object({ permissionKeys: z.array(z.string()) });
+const patchPermsSchema = z.object({
+  grant:  z.array(z.string().max(120)).max(500).default([]),
+  revoke: z.array(z.string().max(120)).max(500).default([]),
+});
 const reorderSchema = z.object({
   items: z.array(z.object({ id: z.string(), displayOrder: z.number().int().min(0).max(9999) })).min(1),
 });
@@ -56,13 +60,25 @@ export const groupsController = {
     res.json(await groupsService.setPermissions(id, permissionKeys));
   }) as RequestHandler,
 
+  patchPermissions: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    const { grant, revoke } = patchPermsSchema.parse(req.body);
+    res.json(await groupsService.patchPermissions(id, grant, revoke));
+  }) as RequestHandler,
+
   uploadIcon: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     if (!req.file) {
       res.status(400).json({ code: "XEC-STORE-7000", message: "No file uploaded" });
       return;
     }
-    const url = await groupsService.uploadIcon(id, req.file.buffer, req.file.originalname);
+    const url = await groupsService.uploadIcon(id, req.file.buffer, req.file.detectedExt ?? "png");
     res.json({ url });
+  }) as RequestHandler,
+
+  removeIcon: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    await groupsService.removeIcon(id);
+    res.json({ ok: true });
   }) as RequestHandler,
 };
