@@ -1433,9 +1433,6 @@
     }
   },
   "coreUpdate": {
-    "title": "Núcleo do Xentium",
-    "releasesBehind_one": "{{count}} versão atrás",
-    "releasesBehind_other": "{{count}} versões atrás",
     "severity": {
       "normal": "atualização",
       "security": "segurança",
@@ -1463,7 +1460,11 @@
     "prereleaseNote": "É uma pré-versão: serve para testar e pode mudar antes da versão estável.",
     "changelog": "Novidades",
     "prerelease": "Pré-versão",
-    "dialogOk": "Entendi"
+    "dialogOk": "Entendi",
+    "pluginsTitle_one": "Também pendente: {{count}} atualização de plugin",
+    "pluginsTitle_other": "Também pendentes: {{count}} atualizações de plugins",
+    "dialogPlugins": "Ver atualizações de plugins",
+    "dialogClose": "Fechar"
   },
   "license": {
     "loading": "Carregando…",

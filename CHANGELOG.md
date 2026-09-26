@@ -8,16 +8,17 @@
   and the page title already say where you are. With the panel collapsed, search is a
   magnifier in the sidebar that opens the palette in the middle of the screen (⌘K still
   works).
-- **A new Xentium release opens a dialog with everything in it.** The version you are on
-  and the one available, when it was released, how many releases you are behind, anything
-  to watch out for (a security fix on the way, a plugin that doesn't support the new
-  version yet, manual steps), the changelog of every release in between, and the commands
-  that install it, with a Copy button.
-- **Prereleases always open the dialog.** Every alpha counted as a patch on 1.0, and patches
-  on your own version line stay quiet, so an alpha was only ever announced by the badge and
-  the card. They are labelled as prereleases.
-- **"Got it" counts as read.** The dialog carries the same notes and commands as the Updates
-  page, so reading it is enough. "Later" still brings it back on your next visit.
+- **A new Xentium release is a one-time dialog with everything in it.** The version you are
+  on and the one available, when it was released, how many releases you are behind,
+  anything to watch out for (a security fix on the way, a plugin that doesn't support the
+  new version yet, manual steps), the changelog of every release in between, and the
+  commands that install it, with a Copy button. Every release opens it once per admin, and
+  any way of closing it counts as seen.
+- **Plugin updates join that dialog.** When plugin updates are waiting too, they are listed
+  at the bottom, with a button to the Updates page, instead of a second dialog straight
+  after.
+- **Core releases are no longer on Extensions → Updates or in the gear badge.** The Updates
+  page lists plugin updates only; the dialog is the one place a new Xentium is announced.
 - **A release later marked as a security fix brings the dialog back**, even for an admin who
   had already seen it as an ordinary release.
 
@@ -32,8 +33,7 @@
   updating the CLI first. It now prints your site's directory, `npm install xentium@<version>`
   and `npx xentium update <version>`, with the version it is offering.
 - **Release notes are formatted.** They showed as raw Markdown (`## Title`, `**bold**`). They
-  now render as headings, lists, code and links, in a box that scrolls on its own on the
-  Updates card too.
+  now render as headings, lists, code and links, in a box that scrolls on its own.
 
 ### Upgrading
 

@@ -18,3 +18,9 @@ ACP chrome fixes (same session):
 - `nav/AcpSearch.tsx`: `variant="rail"`, an icon in the collapsed rail that opens the palette centred; `nav/AcpRail.tsx` mounts it when collapsed.
 - `nav/AcpUserMenu.tsx` + `AcpChrome.scss`: the rail menu is `position: fixed`, placed from the avatar (the scrolling rail clipped it); `AcpTopbar.scss`: `.nbpop--user` min-width + max-content so segment labels fit.
 - `AcpLayout.tsx`: comment updated.
+
+Core updates as a one-time dialog (same session):
+- `features/admin/components/CoreUpdateCard.tsx` deleted; its types moved to `coreUpdateParts.tsx` (+ `PluginUpdateList`); `pages/UpdatesPage.tsx` lists plugins only.
+- `AcpLayout.tsx`: every core release opens the dialog once (no patch exception, any close acknowledges); pending plugin updates listed inside it; the plugin dialog doesn't follow it in the same visit.
+- `marketplace.service.ts`: core acknowledged only by the dialog mark; core dropped from `getStatusSummary` (badge).
+- Locales ×5: `coreUpdate.pluginsTitle`, `dialogPlugins`, `dialogClose`; card strings removed. Docs updated.

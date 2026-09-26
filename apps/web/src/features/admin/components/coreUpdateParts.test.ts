@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isPrerelease, updateCommands } from "./coreUpdateParts";
-import type { CoreUpdate } from "./CoreUpdateCard";
+import { isPrerelease, updateCommands, type CoreUpdate } from "./coreUpdateParts";
 
 const release = (version: string) => ({ version, severity: "normal" as const, publishedAt: null, notes: null, upgradeNotes: null });
 const update = (over: Partial<CoreUpdate> = {}): CoreUpdate => ({

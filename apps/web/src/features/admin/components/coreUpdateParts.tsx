@@ -3,13 +3,49 @@ import { useTranslation } from "react-i18next";
 import { faCheck, faCopy, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { ReleaseNotes } from "../../../components/ReleaseNotes";
-import type { CoreRelease, CoreUpdate } from "./CoreUpdateCard";
 import "./CoreUpdate.scss";
 
 /**
  * The pieces the core-update dialog and the Updates card share, so the two can
  * never disagree about what changed or how to install it.
  */
+
+/**
+ * A new Xentium, as the ACP-entry dialog shows it — the only place it appears.
+ *
+ * ⚠ The severity is that of the WHOLE PATH, not of the newest release. An install
+ * three versions behind whose newest offer is a feature release may still have a
+ * security fix waiting in between, and that decides whether this can wait.
+ */
+export interface CoreRelease {
+  version: string;
+  severity: "normal" | "security" | "critical";
+  publishedAt: string | null;
+  notes: string | null;
+  upgradeNotes: string | null;
+}
+
+export interface CoreUpdate {
+  current: string;
+  latest: CoreRelease;
+  highestSeverity: "normal" | "security" | "critical" | null;
+  /** The release ON THE WAY that the severity actually comes from, when it is
+   *  not the newest one. Null when the newest release is itself the urgent one. */
+  urgentRelease: CoreRelease | null;
+  releaseCount: number;
+  via: string | null;
+  blockedBy: Array<{ id: string; name: string; supports: string }>;
+  checkedAt: string;
+  /** The newest release on our own minor. Equal to `latest` when the only thing
+   *  waiting is a patch — which is the one core update that must never
+   *  interrupt anybody. */
+  patch: CoreRelease | null;
+  acknowledged: boolean;
+  /** Every release between here and `latest`, newest first. */
+  path: CoreRelease[];
+  /** The site directory of a CLI install, for a command that pastes as is. Null on a clone. */
+  siteDir: string | null;
+}
 
 export const UPDATING_GUIDE_URL = "https://doc.xentium.org/admin/updating/";
 
@@ -134,8 +170,40 @@ export function CoreUpdateWarnings({ update }: { update: CoreUpdate }) {
   );
 }
 
-/** The dialog's body: the facts, what to watch out for, the changelog, how to install. */
-export function CoreUpdateDialogBody({ update }: { update: CoreUpdate }) {
+/** A pending plugin update, as the ACP-entry dialog lists it. */
+export interface PluginUpdateRow {
+  pluginId:          string;
+  name?:             string;
+  installedVersion?: string | null;
+  latestVersion:     string;
+  critical:          boolean;
+  renewalRequired:   boolean;
+}
+
+/** Plugin updates waiting alongside a core release: one line each, critical first. */
+export function PluginUpdateList({ updates }: { updates: PluginUpdateRow[] }) {
+  const { t } = useTranslation("acp");
+  const ordered = [...updates].sort((a, b) => Number(b.critical) - Number(a.critical));
+  return (
+    <div className="core-plugins">
+      <div className="core-dialog__label">{t("coreUpdate.pluginsTitle", { count: updates.length })}</div>
+      <ul className="core-plugins__list">
+        {ordered.map((u) => (
+          <li key={u.pluginId} className="core-plugins__row">
+            <span className="core-plugins__name">{u.name ?? u.pluginId}</span>
+            {u.critical && <span className="core-changelog__sev">{t("marketplace.updatesDialogCritical")}</span>}
+            <span className="core-plugins__ver">{u.installedVersion ?? "?"} → {u.latestVersion}</span>
+          </li>
+        ))}
+      </ul>
+      {ordered.some((u) => u.renewalRequired) && <p className="core-dialog__pre">{t("marketplace.updatesRenewal")}</p>}
+    </div>
+  );
+}
+
+/** The dialog's body: the facts, what to watch out for, the changelog, how to
+ *  install, and any plugin updates waiting at the same time. */
+export function CoreUpdateDialogBody({ update, plugins = [] }: { update: CoreUpdate; plugins?: PluginUpdateRow[] }) {
   const { t, i18n } = useTranslation("acp");
   const released = releaseDate(update.latest.publishedAt, i18n.language);
   return (
@@ -150,6 +218,7 @@ export function CoreUpdateDialogBody({ update }: { update: CoreUpdate }) {
       <div className="core-dialog__label">{t("coreUpdate.changelog")}</div>
       <div className="core-notes"><CoreChangelog update={update} /></div>
       <UpdateCommand update={update} />
+      {plugins.length > 0 && <PluginUpdateList updates={plugins} />}
     </div>
   );
 }

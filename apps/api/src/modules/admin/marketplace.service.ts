@@ -186,19 +186,17 @@ function pruneLinkSecrets() {
  * necessarily been told about a Xentium security release. Null when there is
  * nothing to say, so every consumer can test one field.
  */
-/** The acknowledgement "Got it" writes. Not a page: an ACP visit row nobody navigates to. */
+/** The acknowledgement closing the core dialog writes. Not a page: an ACP visit row nobody navigates to. */
 const CORE_ACK_MARK = "/admin/updates#core";
 
 async function getCoreUpdate(userId?: string) {
   const cache = await readCoreUpdateCache();
   if (!cache || !cache.updateAvailable || !cache.latest) return null;
 
-  // Either counts: a visit to the Updates page, or "Got it" on the dialog,
-  // which shows the same notes and the same command.
-  const since = new Date(cache.setSince);
+  // The dialog is the only place a core release appears, and it is one-time:
+  // closing it in any way writes this mark.
   const acknowledged = userId
-    ? await activityService.hasVisitedSince(userId, "/admin/updates", since)
-      || await activityService.hasVisitedSince(userId, CORE_ACK_MARK, since)
+    ? await activityService.hasVisitedSince(userId, CORE_ACK_MARK, new Date(cache.setSince))
     : true;
 
   // Where the urgency comes from, when it is not the newest release. Without
@@ -246,7 +244,7 @@ async function installedManifests(): Promise<InstalledManifest[]> {
 }
 
 export const marketplaceService = {
-  /** The admin read the core-update dialog to the end and pressed "Got it". */
+  /** The admin has seen the core-update dialog (it is one-time: any way of closing it counts). */
   // Awaited, unlike markVisit: the dialog refetches right after, and a
   // fire-and-forget write loses that race and shows the dialog again.
   async acknowledgeCoreUpdate(userId: string): Promise<void> {
@@ -444,7 +442,7 @@ export const marketplaceService = {
    * Persists (count > 0) until the work is done: pending plugin updates until
    * they're applied, plus the license when it's about to expire (or has). Kept
    * deliberately small + server-side so the badge stays a dumb consumer and new
-   * signals (core update, stuck jobs, …) can be OR-ed in here later.
+   * signals (stuck jobs, …) can be OR-ed in here later.
    */
   async getStatusSummary(userId?: string) {
     // Pending plugin updates — reconciled so an uninstalled/already-updated
@@ -452,14 +450,9 @@ export const marketplaceService = {
     const { updates } = await readReconciledUpdates();
     const pluginUpdates = updates.length;
 
-    // Core. One more thing needing attention, and urgent on the same terms a
-    // plugin is: `highestSeverity` and not `latest.severity`, because the
-    // security release may be one of the versions ON THE WAY to the newest.
-    const core = await readCoreUpdateCache();
-    const coreUpdate = !!core?.updateAvailable && !!core.latest;
-    const coreUrgent = coreUpdate && (core!.highestSeverity === "security" || core!.highestSeverity === "critical");
-
-    const criticalUpdate = updates.some((u) => u.critical) || coreUrgent;
+    // Core is deliberately NOT here: a new Xentium is a one-time dialog, and a
+    // badge pointing at an Updates page that no longer lists it would never clear.
+    const criticalUpdate = updates.some((u) => u.critical);
 
     // Entitlement health. NOT "your subscription is ending" — see
     // licenseAttention.ts for why the previous rule was true for every
@@ -486,9 +479,6 @@ export const marketplaceService = {
 
     return {
       pluginUpdates,
-      coreUpdate,
-      coreVersion: coreUpdate ? core!.latest!.version : null,
-      coreSeverity: coreUpdate ? core!.highestSeverity : null,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
@@ -496,9 +486,9 @@ export const marketplaceService = {
       licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
-      // Badge count: each pending update, core once, + the license (once) if it
+      // Badge count: each pending plugin update, + the license (once) if it
       // needs attention.
-      total: pluginUpdates + (coreUpdate ? 1 : 0) + (needsAttention ? 1 : 0),
+      total: pluginUpdates + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
       urgent: criticalUpdate || needsAttention,
     };
