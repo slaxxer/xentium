@@ -41,6 +41,7 @@ import { UserListPage }      from "../features/admin/pages/UserListPage";
 import { UserDetailPage }    from "../features/admin/pages/UserDetailPage";
 import { ProfileFieldsPage } from "../features/admin/pages/ProfileFieldsPage";
 import { GroupsPage }        from "../features/admin/pages/GroupsPage";
+import { GroupDetailPage }   from "../features/admin/pages/groups/GroupDetailPage";
 import { BadgesPage }        from "../features/admin/pages/BadgesPage";
 import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
 import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
@@ -285,6 +286,7 @@ function buildRouter() {
           { path: "users/:id",        element: <UserDetailPage /> },
           { path: "profile-fields",   element: <ProfileFieldsPage /> },
           { path: "groups",           element: <GroupsPage /> },
+          { path: "groups/:id",       element: <GroupDetailPage /> },
           { path: "badges",           element: <BadgesPage /> },
           { path: "permissions",      element: <PermissionsPage /> },
           { path: "progression",      element: <ProgressionPage /> },

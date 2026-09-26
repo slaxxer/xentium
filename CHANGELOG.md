@@ -1,5 +1,34 @@
 # Changelog
 
+## Groups: one precedence list, and a page per group
+
+### Changed
+
+- **ACP → Users → Groups is one precedence list.** The group at the top is the badge a
+  member of several groups wears, so the order is the point of the page: drag a row to
+  change it, or focus its handle and press Alt+↑/↓. Each row shows the badge, the
+  members and a power meter read from the keys the group actually holds (full control,
+  elevated, trusted, standard), with a filter and totals across the top.
+- **Every group has its own page** instead of four dialogs: identity and badge (name,
+  label, colour, username glow, team page, icon, a live preview), permissions grouped by
+  area with the sensitive ones marked, progression, and members. Identity, permissions
+  and progression save as you go, with one indicator for the whole page.
+- **Plugin panels are tabs of that page.** A plugin's group settings (the forum's
+  progression, the shoutbox's limits) appear beside core's own, say which plugin they
+  come from, and report into the same save indicator.
+- **Members can be managed from the group**: search and add a member, or remove one,
+  without leaving the page. Their other groups are kept.
+- **Creating a group** asks for a name and a key and takes you to the new group's page.
+
+### Fixed
+
+- **Saving a group's permissions no longer reverts grants made elsewhere.** The page used
+  to replace the whole set with the copy it loaded, so a key granted meanwhile, by another
+  admin or a plugin's defaults, was silently revoked on the next click. It now sends only
+  what changed.
+- **A group icon can be removed**, and a replaced icon no longer leaves the old file
+  behind. Icons are stored under the type read from the file itself, not its name.
+
 ## Migration History, redesigned, and imports you can watch
 
 ### Added

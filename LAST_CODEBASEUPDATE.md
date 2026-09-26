@@ -1,11 +1,77 @@
 # Last codebase update
 
-Two changes this session, both unpushed:
+Three changes this session, all unpushed:
 
-1. **Migration History redesign** (the `nodevo-redesign/ACP migration history redesign` mock):
-   master–detail page, live imports, recorded deploy failures.
-2. **Announcements:** back to the ACP-entry dialog, the Announcements page goes, and the
-   instance keeps no per-admin record (first OK removes a notice site-wide).
+1. **Groups redesign** (the `nodevo-redesign/ACP group page redesign` mock): precedence list
+   + a page per group replacing four modals, delta permission saves, icon removal.
+2. **Migration History redesign** (+ `xentium update` records deploys).
+3. **Announcements:** back to the ACP-entry dialog, no page, no per-admin record.
+
+# 0. Groups
+
+## API
+
+- `groups.service.ts` / `.controller.ts` / `.routes.ts`
+  - `PATCH /groups/:id/permissions` `{ grant, revoke }` → `patchPermissions`: changes only
+    those keys (`skipDuplicates`, a key in both lists is revoked), busts the permission
+    cache. ⚠ WHY: the page first saved by `PUT` (replace the whole set) from a copy taken
+    at mount, and while testing it lost a real grant (`forum.moderate`) that way. The exact
+    trigger was never reproduced, but the class is plain: any grant made after the page
+    opened is reverted by the next click. `PUT` stays for callers that mean "replace".
+  - `DELETE /groups/:id/icon` → `removeIcon` (idempotent, deletes the file).
+  - `uploadIcon` now takes the DETECTED extension (`req.file.detectedExt`, never the
+    client's filename) and deletes the previous file when the extension changed.
+- Tests: `groupPermissionsPatch.test.ts` (untouched keys survive), `groupIcon.test.ts`
+  (in-memory storage mock: never writes to a real upload dir).
+
+## Web
+
+- `pages/GroupsPage.tsx` — the list: `pg-head`, filter, inline create card (key follows
+  the name until edited), stats, precedence table. Reorder is optimistic via
+  `PUT /groups/reorder`; native drag and a keyboard path (Alt+↑/↓ on the handle); disabled
+  while filtering (precedence of a filtered subset is ambiguous).
+- `pages/groups/GroupDetailPage.tsx` — `/admin/groups/:id?tab=…`, remounted per id (drafts
+  are seeded once). Group form + progression autosave through `useAutosave`; permissions
+  are NOT a draft: optimistic cache update → PATCH delta → refetch, one mutation `scope`
+  so clicks arrive in order, `cancelQueries` first. One `SaveChip` = own mutations +
+  `useAnySaving()` (plugin panels).
+  ⚠ `editableProgression()` reduces the progression row to editable fields: the PATCH
+  response carries `updatedAt`, and comparing whole rows would autosave forever.
+- `groups/IdentityTab.tsx` (colour = swatches + picker + hex, hex-only because the column
+  is 20 chars and colours get alpha-suffixed; glow incl. custom glow colour; preview uses the
+  signed-in admin; icon card; delete card with `openDialog` confirm), `PermissionsTab.tsx`
+  (domains, sensitive markers, fill bars, grant/revoke all), `ProgressionTab.tsx`,
+  `MembersTab.tsx` (users API filtered by group; add/remove send the user's FULL group set
+  because `PUT /users/:id/groups` replaces it), `PluginPanelTab.tsx` (error boundary,
+  off-ladder warning, owner via `slotRegistry.ownerOf`).
+- `groups/groupModel.ts` (+ 7 tests) — types, `powerOf`, `isSensitive` (core list + the
+  `admin./plugin./system.` / `.manage` / `.settings` rule for plugin keys), `reorder`,
+  `glowShadow`, `editableProgression`. `groups/groupParts.tsx`, `groups/Groups.scss`.
+- `components/AutosaveStatus.tsx` — `SaveChipHost` context: inside it, `AutosaveStatus`
+  reports via `useReportSaving` and renders nothing. Shipped plugin panels (the forum's
+  renders `AutosaveStatus`) therefore report to the group page's chip with no rebuild.
+  + `AutosaveStatus.test.tsx`.
+- `App.tsx` route `groups/:id`; `AcpLayout.scss` — dead `.acp-perm-row`, `.acp-groups-grid`,
+  `.acp-group-card` removed (checked: no core or official-plugin use).
+- `locales/*/acp.json` — `groups.*` rewritten, 135 keys, five languages.
+
+## Docs
+
+- `docs/API.md` (new endpoints), `docs/plugin-acp-autosave.md` + `README.md` (panels are
+  tabs of the group page; report, don't draw a chip).
+
+## Verified (groups)
+
+- Browser: list vs mock; keyboard reorder persisted dense 1..N; Identity autosave (three
+  edits → one save, no repeat); permissions delta with a grant made directly in the DB
+  while the page was open: kept after a toggle on the page; members add (kept the user's
+  admin group) / remove via confirm; a test groupConfigPanel as a tab, its save report
+  driving the page chip; create → lands on the new page; delete via confirm. Dev data
+  restored by targeted updates afterwards (no TRUNCATE: other tables reference groups).
+- Not checked: drag with a real mouse (CDP drags don't fire HTML5 dnd; the drop calls the
+  same `move()` the keyboard path does), phone width, an icon upload (unit-tested).
+- Noticed, not fixed: `slotRegistry._activePlugin` is never cleared after plugin loading,
+  so anything registered outside a plugin later is attributed to the last plugin loaded.
 
 # 1. Migration History
 
@@ -139,7 +205,7 @@ Two changes this session, both unpushed:
 
 ## Verified (announcements)
 
-- `pnpm backbone:check` green after all changes: API 454/454, web 784/784, migrate-core 10/10, CLI 21/21.
+- `pnpm backbone:check` green after all changes: API 462/462, web 793/793, migrate-core 10/10, CLI 21/21.
 - The lock and the dismissal run against the real dev Postgres: a second writer waits for the
   first (`A in → A out → B in → B out`), dismissal empties the cache and keeps only the id, and
   the acks table is gone after `migrate deploy`.
