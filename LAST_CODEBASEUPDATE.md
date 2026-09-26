@@ -34,6 +34,24 @@ Two changes this session, both unpushed:
   `_prisma_migrations`): total, applied, pending, failed. Needed because `xentium update`
   migrates through the CLI and never writes a history row.
 
+## `xentium update` records deploys (follow-up, same session)
+
+- `packages/cli/src/release.ts` — `migrate` returns its output and throws `MigrateError`
+  carrying the full output. `recordDeploy(site, record)` inserts a core row through `psql`
+  (the CLI has no DB driver; psql ships with the pg_dump the backup already needs). Every
+  value is a psql variable quoted by psql (`:'name'`), which only works in a script file, not
+  `-c` — hence a 0600 temp file in `shared/backups`, removed in `finally`. Times written as
+  UTC explicitly (the columns are zone-less, a DB default would use the session zone); `id`
+  is `gen_random_uuid()::text` (no DB default). Best effort: false on no psql / no URL /
+  failed write. Verified against `xentium_test` with hostile output (quotes, backslashes,
+  `:'version'`, `'); DROP TABLE …`): stored byte for byte, table intact, times exact.
+- `packages/cli/src/update.ts` — records only when migrations ran. Success: after the health
+  check (or right away for a non-systemd site). Migrate failure: AFTER the automatic restore,
+  because the restore rewinds the history table too. Health-check rollback: recorded as
+  `failed` with a line saying whether the restore worked (`restoreQuietly` now returns it).
+- `MigrationHistoryPage.tsx` — a deploy with `adapterVer` (only `xentium update` sets it)
+  shows `v<version>` in the list and detail, and its Command is `xentium update <version>`.
+
 ## Web
 
 - `features/admin/pages/migrationHistory/model.ts` (+ 16 tests) — pure rules: effective status
@@ -121,7 +139,7 @@ Two changes this session, both unpushed:
 
 ## Verified (announcements)
 
-- `pnpm backbone:check` green after both changes: API 454/454, web 784/784, migrate-core 10/10, CLI 20/20.
+- `pnpm backbone:check` green after all changes: API 454/454, web 784/784, migrate-core 10/10, CLI 21/21.
 - The lock and the dismissal run against the real dev Postgres: a second writer waits for the
   first (`A in → A out → B in → B out`), dismissal empties the cache and keeps only the id, and
   the acks table is gone after `migrate deploy`.

@@ -183,7 +183,8 @@ export function MigrationHistoryPage() {
                           <span className="mh-run__main">
                             <span className={`mh-run__title${isCore(run) ? " is-mono" : ""}`}>{titleOf(run, t)}</span>
                             <span className="mh-run__sub">
-                              {isCore(run) ? t("migrations.sub.core") : t("migrations.sub.import", { pkg: packageOf(run).replace("@xentium/", "") })} · {dur}
+                              {isCore(run) ? t("migrations.sub.core") : t("migrations.sub.import", { pkg: packageOf(run).replace("@xentium/", "") })}
+                              {isCore(run) && run.adapterVer ? ` · v${run.adapterVer}` : ""} · {dur}
                             </span>
                           </span>
                           <span className="mh-run__side">
@@ -321,7 +322,11 @@ function Detail({ run, status, dur, fmt }: {
       { label: t("migrations.meta.found"), value: a.found != null ? t("migrations.foundValue", { count: a.found }) : "—" },
       { label: t("migrations.meta.result"), value: result },
     );
-    commands.push({ key: "cmd", label: t("migrations.commands.command"), text: "prisma migrate deploy" });
+    // A deploy `xentium update` recorded carries its release; the installer's does not.
+    commands.push({
+      key: "cmd", label: t("migrations.commands.command"),
+      text: run.adapterVer ? `xentium update ${run.adapterVer}` : "prisma migrate deploy",
+    });
     if (status === "failed" && a.failedName) {
       callout = {
         tone: "danger", icon: faCircleXmark, mono: true,
@@ -422,7 +427,9 @@ function Detail({ run, status, dur, fmt }: {
             {core ? t("migrations.eyebrow.core") : t("migrations.eyebrow.import")}
           </div>
           <h2 className={`mh-detail__title${core ? " is-mono" : ""}`}>{titleOf(run, t)}</h2>
-          <div className="mh-detail__date">{fmt.day(started)} · {fmt.time(started)}</div>
+          <div className="mh-detail__date">
+            {fmt.day(started)} · {fmt.time(started)}{core && run.adapterVer ? ` · v${run.adapterVer}` : ""}
+          </div>
         </div>
         <span className={`mh-st mh-st--${status} mh-st--lg`}>
           <FontAwesomeIcon icon={STATUS_ICON[status]} spin={status === "running"} />
