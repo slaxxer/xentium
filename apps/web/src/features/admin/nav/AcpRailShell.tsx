@@ -3,11 +3,10 @@ import { useLocation } from "react-router-dom";
 import { type NavItem, activeNavSection, navItemId } from "../useAcpNav";
 import { AcpRail } from "./AcpRail";
 import { AcpPanel } from "./AcpPanel";
-import { AcpUtilityBar } from "./AcpUtilityBar";
 import { useAcpCollapsed, PANEL_DOCK_MIN_WIDTH } from "./acpChrome";
 
 /**
- * The rail chrome: icon rail, section panel, and one thin utility line.
+ * The rail chrome: icon rail and section panel.
  *
  * Three states, and the third is a viewport fact rather than a preference:
  *   docked    — rail + panel side by side.
@@ -78,9 +77,6 @@ export function AcpRailShell({ nav, children }: { nav: NavItem[]; children: Reac
       )}
 
       <div className="acp-main">
-        {/* The palette follows the search field: it lives in the panel when the
-            panel is there, and moves up here when it is not. Never both. */}
-        <AcpUtilityBar showSearch={collapsed} />
         {children}
       </div>
     </div>

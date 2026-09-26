@@ -125,7 +125,8 @@
   background: var(--menu-bg); border: 1px solid var(--menu-border-color); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-pop); overflow: hidden; animation: nbpop 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.nbpop--user { width: 268px; padding: 8px; }
+// min-width, not width: German and Spanish segment labels ("Lateral · Superior") ran past a fixed 268px.
+.nbpop--user { min-width: 268px; width: max-content; max-width: min(340px, calc(100vw - 24px)); padding: 8px; }
 
 /* ---------- user chip ------------------------------------------------- */
 .nbuser {

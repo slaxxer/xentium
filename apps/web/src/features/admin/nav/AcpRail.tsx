@@ -4,6 +4,7 @@ import { useTheme } from "../../../hooks/useTheme";
 import { AcpIcon } from "../pages/acpIcons";
 import { type NavItem, navItemId } from "../useAcpNav";
 import { AcpUserMenu } from "./AcpUserMenu";
+import { AcpSearch } from "./AcpSearch";
 import { setAcpCollapsed } from "./acpChrome";
 
 /**
@@ -93,6 +94,9 @@ export function AcpRail({ nav, activeId, flyoutId, collapsed, canDock, onPeek }:
       <div className="acp-rail__spacer" />
 
       <div className="acp-rail__foot">
+        {/* The palette follows the search field: in the panel when the panel is
+            there, here when it is not. Never both — two would both answer ⌘K. */}
+        {collapsed && <AcpSearch variant="rail" />}
         <button
           type="button"
           className="acp-rail__util"
