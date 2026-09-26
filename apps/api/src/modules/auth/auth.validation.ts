@@ -8,7 +8,15 @@ export const loginSchema = z.object({
   email: z.string().min(1).max(255).optional(),
   password: z.string().min(1),
   loginPin: z.string().regex(/^\d{4}$/).optional(),
+  /** "Keep me signed in". Absent = true, the behaviour every older client had. */
+  remember: z.boolean().optional().default(true),
 }).refine((d) => !!(d.identifier ?? d.email), { message: "identifier required", path: ["identifier"] });
+
+/** The PIN step of a sign-in that already proved who it is (link, passkey, provider). */
+export const pinStepSchema = z.object({
+  ticket: z.string().min(16).max(128),
+  pin:    z.string().regex(/^\d{4}$/),
+});
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const sendCodeSchema = z.object({
@@ -67,3 +75,14 @@ export const confirmPasswordResetSchema = z.object({
   password: z.string().min(8).max(128),
 });
 export type ConfirmPasswordResetInput = z.infer<typeof confirmPasswordResetSchema>;
+
+export const magicLinkRequestSchema = z.object({
+  email:    z.string().email().max(255),
+  remember: z.boolean().optional().default(true),
+});
+
+export const magicLinkConsumeSchema = z.object({
+  token: z.string().min(20).max(128),
+});
+
+export const checkInviteSchema = z.object({ code: z.string().trim().min(1).max(64) });

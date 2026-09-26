@@ -1,5 +1,36 @@
 # Changelog
 
+## A new way in: passkeys, sign-in links, Google, GitHub and Discord
+
+### Added
+
+- **A new sign-in and registration page.** One page for everyone who is not signed in yet:
+  a welcome side about your community (members online, member count, who joined this
+  week) and a card with the form. Sign in, the three steps of creating an account, the
+  login PIN step, invite-only registration, forgot and reset password all live in it, in
+  your site's theme, with a language menu.
+- **Passkeys.** Members can sign in with Face ID, Touch ID, Windows Hello or a security
+  key. They add one in Account → Security or while creating their account, and can rename
+  or remove it. Passkeys need your site on https.
+- **Sign-in links.** "Email me a link" sends a one-time link that works for 15 minutes.
+  Opening it asks for one click, so mail scanners cannot use it up.
+- **Sign in with Google, GitHub or Discord.** Set each up under ACP → Settings → Login with
+  your app's client ID and secret; the panel shows the callback URL to register. A provider
+  address that already belongs to a member is never connected automatically: they sign in
+  and connect it from their account settings.
+- **Keep me signed in.** Unticked, the session ends when the browser closes (or 12 hours
+  after it was last used); ticked, it lasts 30 days as before.
+- **Account → Security** lists passkeys and connected accounts. Members who joined through
+  a provider can set a password with an emailed link.
+
+### Security
+
+- A login PIN is asked for after a sign-in link or a provider too, not only after a
+  password. A passkey unlocked with biometrics or the device PIN counts as two steps.
+- No member can remove their last way to sign in.
+- Provider sign-ins are bound to the browser that started them, so nobody can make your
+  browser sign in to their account.
+
 ## Groups: one precedence list, and a page per group
 
 ### Changed
@@ -83,8 +114,10 @@
 
 ## Upgrading
 
-Nothing to do. Two migrations run on update: one drops the announcement read log, the other
-adds the column a running import keeps its progress in. Any announcement that is still
+Nothing to do. Migrations run on update: they drop the announcement read log, add the
+column a running import keeps its progress in, and add the tables for passkeys, linked
+sign-in providers and "keep me signed in". Passkeys switch themselves on when your site's
+APP_URL is https; providers stay off until you configure them. Any announcement that is still
 current will show once more, to the first admin who enters the ACP, and is then gone.
 
 Imports started with an older migrate tool still appear, but without a live view or

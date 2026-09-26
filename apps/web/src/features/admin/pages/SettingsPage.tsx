@@ -11,6 +11,7 @@ import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
 import { MaintenanceSettings, MaintenanceStatusPill } from "./MaintenanceSettings";
+import { SignInProvidersPanel } from "./SignInProvidersPanel";
 import { ErrorBoundary } from "../../errors/ErrorBoundary";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 
@@ -590,6 +591,9 @@ export function SettingsPage() {
                 )}
                 {section.id === "registration" && draft["auth.registration_mode"] === "invite" && (
                   <div className="set-extra"><InviteCodesPanel /></div>
+                )}
+                {section.id === "login" && (
+                  <div className="set-extra"><SignInProvidersPanel /></div>
                 )}
               </section>
             ))}

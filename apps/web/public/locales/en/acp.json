@@ -1013,6 +1013,48 @@
         "desc": "This instance has no install record, so it has no identity to license.",
         "cause": "The installer never finished, or the xcf_installs row was deleted from the database.",
         "fix": "Complete the installer. If the install is otherwise healthy, restore the xcf_installs row from a backup — its siteId is what every license is bound to."
+      },
+      "XEC-AUTH-1011": {
+        "msg": "Sign-in Link Invalid",
+        "desc": "A one-time sign-in link was refused.",
+        "cause": "The link expired (15 minutes), was already used, or never existed.",
+        "fix": "Ask for a new link from the sign-in page."
+      },
+      "XEC-AUTH-1050": {
+        "msg": "Passkey Not Verified",
+        "desc": "A passkey sign-in or registration did not verify.",
+        "cause": "The request expired, the passkey belongs to another site, or its counter went backwards (a cloned key).",
+        "fix": "Try again. If it keeps failing, remove the passkey and add it again."
+      },
+      "XEC-AUTH-1051": {
+        "msg": "Passkeys Unavailable",
+        "desc": "Passkeys cannot work on this install.",
+        "cause": "The site is not served over https (APP_URL is http and not localhost).",
+        "fix": "Serve the site over https and set APP_URL to the https address."
+      },
+      "XEC-AUTH-1060": {
+        "msg": "Provider Sign-in Failed",
+        "desc": "Signing in with Google, GitHub or Discord did not complete.",
+        "cause": "The request expired, was started in another browser, or the provider refused the code.",
+        "fix": "Try again. Check the client id, secret and callback URL under Settings → Login."
+      },
+      "XEC-AUTH-1061": {
+        "msg": "Provider Email Already Registered",
+        "desc": "The provider's email belongs to an existing member, or the provider account is linked to someone else.",
+        "cause": "Accounts are never linked by email automatically.",
+        "fix": "Sign in with the password, then connect the provider in account settings."
+      },
+      "XEC-AUTH-1062": {
+        "msg": "Provider Not Set Up",
+        "desc": "A sign-in provider was used that is off or missing its credentials.",
+        "cause": "The provider is disabled, or its client id or secret is not set.",
+        "fix": "Configure it under ACP → Settings → Login."
+      },
+      "XEC-AUTH-1063": {
+        "msg": "Last Sign-in Method",
+        "desc": "Removing this passkey or provider would leave the account with no way to sign in.",
+        "cause": "The account has no password and no other passkey or provider.",
+        "fix": "Set a password (through a reset link) or add another method first."
       }
     }
   },
@@ -2637,6 +2679,7 @@
     "keys": {
       "notification": "Notification",
       "password_reset": "Password reset",
+      "magic_link": "Sign-in link",
       "email_verify": "Verify email",
       "email_change": "Email change",
       "smtp_test": "SMTP test"
@@ -2922,5 +2965,23 @@
     "mentions": "Mentions everywhere",
     "mentionsDesc": "Typing @ suggests members in comments, threads, replies and private messages.",
     "notSupported": "Attachments depend on the surface: the forum provides an upload path, article comments, the profile wall and private messages do not, so the paperclip is disabled there. There is no GIF service configured, so that picker is not offered at all."
+  },
+  "signInProviders": {
+    "passkeysTitle": "Passkeys",
+    "passkeysOn": "On. Members can add passkeys for {{host}} and sign in with them.",
+    "passkeysOff": "Off: passkeys need https, and this site's address is {{origin}}. Set APP_URL to the https address.",
+    "live": "On, shown on the sign-in page",
+    "incomplete": "On, but not shown until the client id and secret are both set",
+    "off": "Off",
+    "clientId": "Client ID",
+    "clientSecret": "Client secret",
+    "secretSet": "Secret is set",
+    "set": "Set",
+    "remove": "Remove",
+    "callback": "Callback URL",
+    "copy": "Copy",
+    "copied": "Copied",
+    "callbackHint": "Register this exact address as the redirect URL in the provider's app settings.",
+    "console": "Open the {{name}} developer console"
   }
 }

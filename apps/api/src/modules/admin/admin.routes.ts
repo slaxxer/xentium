@@ -5,6 +5,7 @@ import { CorePermissions, XEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
+import { adminProvidersHandler, adminProviderUpdateHandler } from "../auth/auth.methods.controller.js";
 import { permissionsRouter } from "../permissions/permissions.routes.js";
 import { adminProgressionRouter } from "../progression/progression.routes.js";
 import { scheduledTaskRouter } from "../scheduled-tasks/scheduled-task.routes.js";
@@ -117,6 +118,9 @@ if (isDev) {
 
 // Migration history
 adminRouter.get("/migration-history", adminGuard, adminController.listMigrationHistory);
+// Sign-in providers (Google, GitHub, Discord) and the passkey relying party.
+adminRouter.get("/auth-providers", adminGuard, adminProvidersHandler);
+adminRouter.patch("/auth-providers/:provider", adminGuard, adminProviderUpdateHandler);
 
 // Scheduled tasks (cron jobs)
 adminRouter.get("/jobs",            adminGuard, adminController.listJobs);

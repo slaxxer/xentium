@@ -20,6 +20,7 @@ import { getSetting } from "../../shared/utils/settings.js";
 export const EMAIL_TEMPLATE_KEYS = [
   "notification",
   "password_reset",
+  "magic_link",
   "email_verify",
   "email_change",
   "smtp_test",
@@ -68,6 +69,22 @@ export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateDef>
   <a href="{{reset_url}}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px">Reset password →</a>
   <p style="color:#9ca3af;font-size:13px;margin:24px 0 0">
     If you didn't request this, you can safely ignore this email — your password will stay the same.
+  </p>
+</div>`,
+  },
+
+  magic_link: {
+    subject: "Your sign-in link for {{site_name}}",
+    placeholders: ["site_name", "site_url", "login_url", "username", "expiry_minutes"],
+    body: `${SHELL_OPEN}
+  ${BRAND}
+  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Sign in to {{site_name}}</h2>
+  <p style="color:#6b7280;margin:0 0 24px;line-height:1.6">
+    Click the button below to sign in. This link expires in {{expiry_minutes}} minutes and can only be used once.
+  </p>
+  <a href="{{login_url}}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px">Sign in →</a>
+  <p style="color:#9ca3af;font-size:13px;margin:24px 0 0">
+    If you didn't ask for this, ignore this email. Nobody can sign in without the link.
   </p>
 </div>`,
   },

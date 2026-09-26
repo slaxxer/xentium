@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { loginSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
+import { loginSchema, checkInviteSchema, pinStepSchema, magicLinkRequestSchema, magicLinkConsumeSchema, registerSchema, sendCodeSchema, checkAvailabilitySchema, requestPasswordResetSchema, confirmPasswordResetSchema } from "./auth.validation.js";
 import { login, register, sendRegistrationCode, checkAvailability, requestPasswordReset, confirmPasswordReset } from "./auth.service.js";
 import { rotateSession, revokeSession } from "./auth.tokens.js";
 import { getRequestMeta } from "../../shared/http/requestMeta.js";
@@ -20,14 +20,8 @@ function uaOf(req: Request): string | null {
   return Array.isArray(raw) ? raw[0] ?? null : (raw ?? null);
 }
 
-/** Staff = admin / supermod / moderator. Passed to guards so THEY decide whether
- *  a policy exempts staff; core takes no view. */
-async function isStaffUser(userId: string): Promise<boolean> {
-  const groups = await prisma.userGroup.findMany({
-    where: { userId }, select: { group: { select: { key: true } } },
-  });
-  return groups.some((ug) => ["admin", "supermod", "moderator"].includes(ug.group.key));
-}
+import { completePinStep, isStaffUser, respondSignIn } from "./auth.signin.js";
+import { consumeMagicLink, requestMagicLink } from "./magicLink.service.js";
 
 /**
  * Public — the frontend uses this to show or hide the register button.
@@ -85,7 +79,7 @@ export async function loginHandler(req: Request, res: Response) {
 
   const meta = getRequestMeta(req, res);
   const identifier = parsed.identifier ?? parsed.email ?? "";
-  const result = await login(identifier, parsed.password, parsed.loginPin, meta);
+  const result = await login(identifier, parsed.password, parsed.loginPin, meta, { persistent: parsed.remember });
   // Failed logins are already tracked via login_events + lockout — persist:false
   // keeps the error_log free of routine credential noise.
   if (!result) {
@@ -120,8 +114,50 @@ export async function loginHandler(req: Request, res: Response) {
   await authGuardRegistry.beforeLogin(guardReq);
   await authGuardRegistry.afterLogin(guardReq);
 
-  setRefreshCookie(res, result.refreshToken);
+  setRefreshCookie(res, result.refreshToken, result.persistent);
   res.json({ accessToken: result.accessToken, user: result.user });
+}
+
+/**
+ * Public: is this invite code usable right now? The same test registration
+ * applies (exists, not expired, uses left), so "Redeem" can answer before the
+ * whole form is filled in. Rate-limited like the availability probe; it says
+ * nothing about who issued the code or how often it was used.
+ */
+export async function checkInviteHandler(req: Request, res: Response) {
+  const { code } = checkInviteSchema.parse(req.body);
+  const invite = await prisma.inviteCode.findUnique({ where: { code: code.toUpperCase() } });
+  const valid = !!invite && !(invite.expiresAt && invite.expiresAt < new Date()) && invite.useCount < invite.maxUses;
+  res.json({ valid });
+}
+
+/** Email a one-time sign-in link. Always 200: the answer must not reveal who has an account. */
+export async function magicLinkRequestHandler(req: Request, res: Response) {
+  const { email, remember } = magicLinkRequestSchema.parse(req.body);
+  await requestMagicLink(email, remember);
+  res.json({ ok: true });
+}
+
+/** Use a sign-in link. */
+export async function magicLinkConsumeHandler(req: Request, res: Response) {
+  const { token } = magicLinkConsumeSchema.parse(req.body);
+  const meta = getRequestMeta(req, res);
+  const result = await consumeMagicLink(token, { ...meta, cookies: (req.signedCookies ?? {}) as Record<string, string> });
+  if (!result) {
+    throw new XentiumError({ code: XEC.AUTH_LINK_INVALID, httpStatus: 400, message: "This sign-in link is invalid or has expired", persist: false });
+  }
+  respondSignIn(res, result);
+}
+
+/** Finish a link / passkey / provider sign-in whose account has a login PIN. */
+export async function pinStepHandler(req: Request, res: Response) {
+  const { ticket, pin } = pinStepSchema.parse(req.body);
+  const meta = getRequestMeta(req, res);
+  const result = await completePinStep(ticket, pin, { ...meta, cookies: (req.signedCookies ?? {}) as Record<string, string> });
+  if (!result) {
+    throw new XentiumError({ code: XEC.AUTH_INVALID_CREDENTIALS, httpStatus: 401, message: "Invalid or expired PIN step", persist: false });
+  }
+  respondSignIn(res, result);
 }
 
 export async function refreshHandler(req: Request, res: Response) {
@@ -135,7 +171,7 @@ export async function refreshHandler(req: Request, res: Response) {
     clearRefreshCookie(res);
     throw new XentiumError({ code: XEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
   }
-  setRefreshCookie(res, result.refreshToken);
+  setRefreshCookie(res, result.refreshToken, result.persistent);
   res.json({ accessToken: result.accessToken });
 }
 
