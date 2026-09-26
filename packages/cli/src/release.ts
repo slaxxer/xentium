@@ -11,7 +11,7 @@
  * update go through exactly the same code.
  */
 import { spawn } from "node:child_process";
-import { createWriteStream, promises as fs } from "node:fs";
+import { createWriteStream, existsSync, promises as fs } from "node:fs";
 import path from "node:path";
 import { run } from "./checks.js";
 import type { Site } from "./site.js";
@@ -130,10 +130,21 @@ export async function checkProvenance(site: Site, version: string): Promise<"ok"
   return result.code === 0 && /verified/i.test(result.output) ? "ok" : "unverified";
 }
 
-/** The package's own Prisma CLI, from the same release it migrates. */
-function prismaBin(site: Site, version: string): string {
+/**
+ * The package's own Prisma CLI, from the same release it migrates. The shrinkwrap
+ * we publish makes npm install our tree UNDER the package, so from the registry
+ * the link lives in the app's own node_modules/.bin — the release root only has
+ * one when npm chose to hoist (a tarball install can).
+ */
+export function prismaBin(site: Site, version: string): string {
   const name = process.platform === "win32" ? "prisma.cmd" : "prisma";
-  return path.join(site.releaseDir(version), "node_modules", ".bin", name);
+  const candidates = [
+    path.join(site.appDir(version), "node_modules", ".bin", name),
+    path.join(site.releaseDir(version), "node_modules", ".bin", name),
+  ];
+  const found = candidates.find((c) => existsSync(c));
+  if (!found) throw new Error(`release ${version} has no Prisma CLI (looked in ${candidates.join(", ")})`);
+  return found;
 }
 
 export async function migrate(site: Site, version: string, opts: { quiet?: boolean } = {}): Promise<void> {
@@ -147,13 +158,21 @@ export async function migrate(site: Site, version: string, opts: { quiet?: boole
   if (result.code !== 0) throw new Error(`prisma migrate deploy failed:\n${result.output.trim().slice(-2000)}`);
 }
 
-/** Has anything been migrated into this database yet? */
+/**
+ * Does this release have migrations the database hasn't run? `migrate status`
+ * exits 1 for "pending", so a non-zero code alone means nothing — only the text
+ * does. Anything else is a status we could not read, and that throws: guessing
+ * "pending" is what once sent a restore into a live database whose migrations
+ * had never started.
+ */
 export async function migrationsPending(site: Site, version: string): Promise<boolean> {
   const env = { ...site.processEnv(version), ...site.readEnv() };
   const result = await exec(prismaBin(site, version), ["migrate", "status"], {
     cwd: site.appDir(version), env, quiet: true, timeout: 60_000,
   });
-  return result.code !== 0 || /not yet been applied|pending/i.test(result.output);
+  if (/not yet been applied|pending/i.test(result.output)) return true;
+  if (result.code === 0) return false;
+  throw new Error(`could not read the migration status:\n${result.output.trim().slice(-2000)}`);
 }
 
 /**
@@ -202,7 +221,10 @@ export async function backup(site: Site, label = "backup"): Promise<string | nul
 
   const result = await new Promise<number>((resolve) => {
     const out = createWriteStream(file);
-    const args = ["--no-owner", "--no-privileges", ...(schema ? ["--schema", schema] : []), url];
+    // --clean --if-exists: the dump drops what it recreates, so it can be restored
+    // over the live database it came from — a plain dump fails on its first CREATE.
+    const args = ["--no-owner", "--no-privileges", "--clean", "--if-exists",
+      ...(schema ? ["--schema", schema] : []), url];
     const child = spawn("pg_dump", args, { stdio: ["ignore", "pipe", "pipe"] });
     let stderr = "";
     child.stderr.setEncoding("utf8");
@@ -226,7 +248,8 @@ export async function restore(site: Site, file: string): Promise<void> {
   const raw = site.readEnv().DATABASE_URL;
   if (!raw) throw new Error("DATABASE_URL is not set in shared/.env");
   const { url } = pgConnection(raw);
-  const result = await exec("psql", ["--quiet", "--set", "ON_ERROR_STOP=1", "--file", file, url], { quiet: true });
+  // One transaction: a restore that fails halfway leaves the database as it was.
+  const result = await exec("psql", ["--quiet", "--single-transaction", "--set", "ON_ERROR_STOP=1", "--file", file, url], { quiet: true });
   if (result.code !== 0) throw new Error(`psql could not restore ${file}:\n${result.output.trim().slice(-2000)}`);
 }
 
