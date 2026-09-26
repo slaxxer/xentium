@@ -17,13 +17,19 @@
 - **Plugin updates join that dialog.** When plugin updates are waiting too, they are listed
   at the bottom, with a button to the Updates page, instead of a second dialog straight
   after.
-- **Core releases are no longer on Extensions → Updates or in the gear badge.** The Updates
-  page lists plugin updates only; the dialog is the one place a new Xentium is announced.
+- **Core releases are no longer on Extensions → Updates.** The Updates page lists plugin
+  updates only; the dialog is where a new Xentium is announced.
+- **The gear icon in the site's navbar counts a waiting Xentium release** as well as plugin
+  updates and the licence, until your site runs the new version. It turns red when anything
+  is urgent.
 - **A release later marked as a security fix brings the dialog back**, even for an admin who
   had already seen it as an ordinary release.
 
 ### Fixed
 
+- **The count on the navbar gear is centred.** It had padding on the sides only, so the number
+  rode the top edge of a squashed dot; it now has room on every side, stays round for one
+  digit and becomes a pill for more, with an opaque ring around it.
 - **The admin menu in the sidebar opens in full.** Clicking your avatar at the foot of the
   sidebar opened the menu behind the section panel, cut off at the sidebar's edge. It now
   opens beside the avatar, over everything, and grows to fit longer labels ("Lateral ·

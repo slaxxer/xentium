@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 
 interface StatusSummary {
   pluginUpdates:       number;
+  coreUpdate:          boolean;
   criticalUpdate:      boolean;
   licenseExpiringSoon: boolean;
   licenseExpired:      boolean;
@@ -13,8 +14,9 @@ interface StatusSummary {
 /**
  * Small count badge on the frontend navbar ACP (gear) icon — a standing "there's
  * something waiting in the admin panel" signal for admins browsing the site.
- * Persists until the work is done (plugin updates until applied, the license
- * while it's about to expire / has expired). Red when urgent, neutral otherwise.
+ * Persists until the work is done (plugin updates until applied, a new Xentium
+ * until the site runs it, the license while it's about to expire / has expired).
+ * Red when urgent, neutral otherwise.
  * Server-aggregated (GET /admin/status-summary) so this stays a dumb consumer.
  * Renders nothing when there's nothing to show. Only mounted for admins.
  */
@@ -29,18 +31,7 @@ export function AcpStatusBadge() {
   if (total <= 0) return null;
 
   return (
-    <span
-      aria-hidden="true"
-      style={{
-        position: "absolute", top: -4, right: -4,
-        background: data?.urgent ? "var(--c-danger)" : "var(--c-accent2)",
-        color: "#fff", fontSize: 9, fontWeight: 800,
-        minWidth: 16, height: 16, borderRadius: 99,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "0 3px", lineHeight: 1,
-        border: "2px solid var(--c-card)",
-      }}
-    >
+    <span aria-hidden="true" className={`pub-nav__badge${data?.urgent ? " pub-nav__badge--urgent" : ""}`}>
       {total > 99 ? "99+" : total}
     </span>
   );
