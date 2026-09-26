@@ -19,17 +19,16 @@
   after.
 - **Core releases are no longer on Extensions → Updates.** The Updates page lists plugin
   updates only; the dialog is where a new Xentium is announced.
-- **The gear icon in the site's navbar counts a waiting Xentium release** as well as plugin
-  updates and the licence, until your site runs the new version. It turns red when anything
-  is urgent.
+- **The gear icon in the site's navbar shows a red dot when the ACP needs you**: a waiting
+  Xentium release, a plugin update, or the licence. No count, just the dot; the core release
+  keeps it lit until your site runs the new version.
+- **The ACP sidebar's mark is a shield with a person**, the same staff mark the marketplace's
+  ops console wears.
 - **A release later marked as a security fix brings the dialog back**, even for an admin who
   had already seen it as an ordinary release.
 
 ### Fixed
 
-- **The count on the navbar gear is centred.** It had padding on the sides only, so the number
-  rode the top edge of a squashed dot; it now has room on every side, stays round for one
-  digit and becomes a pill for more, with an opaque ring around it.
 - **The admin menu in the sidebar opens in full.** Clicking your avatar at the foot of the
   sidebar opened the menu behind the section panel, cut off at the sidebar's edge. It now
   opens beside the avatar, over everything, and grows to fit longer labels ("Lateral ·

@@ -40,9 +40,9 @@ below. The next release brings a new dialog, and so does a release we later mark
 fix, even if you had already seen it as an ordinary one. A core release doesn't appear on the
 Updates page.
 
-**The gear icon in your site's navbar** carries a count for admins: one for a waiting Xentium
-release, one per plugin update, and one if your licence needs attention. It turns red when any
-of them is urgent, and the core one stays until your site is running the new version.
+**The gear icon in your site's navbar** gets a red dot, for admins only, while anything in the
+ACP needs you: a waiting Xentium release, a plugin update, or your licence. There is no count;
+the dot tells you to look. A waiting release keeps it lit until your site runs the new version.
 
 ## How urgent is it
 

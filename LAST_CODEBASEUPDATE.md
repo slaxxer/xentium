@@ -27,4 +27,5 @@ Core updates as a one-time dialog (same session):
 
 Navbar badge (same session):
 - `marketplace.service.ts`: `getStatusSummary` counts a pending core update again (`coreUpdate`), urgent by path severity; `pendingCore()` ignores a cache written by an older version (right after `xentium update`), used by the dialog too.
-- `components/AcpStatusBadge.tsx` + `layouts/AppLayout.scss` (`.pub-nav__badge`): tokens instead of inline `#fff`, even padding, border-box, opaque ring.
+- `components/AcpStatusBadge.tsx` + `layouts/AppLayout.scss` (`.pub-nav__dot`): a red dot, no count, with an accessible label (`nav.adminAttention` ×5), opaque ring, token colours.
+- `features/admin/nav/AcpRail.tsx` + `AcpChrome.scss`: the rail mark is FontAwesome `faUserShield` (the marketplace ops console's `shield_person`).
