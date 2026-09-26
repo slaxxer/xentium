@@ -10,8 +10,13 @@
   warnings, folds tooling noise, searches, copies, downloads and goes full screen.
 - **A strip across the top** with the last schema deploy, the schema itself, platform imports
   and anything that needs attention. The schema figure is read live, the migrations this
-  build ships against what your database has applied, so it is right even after an update
-  that recorded no history row.
+  build ships against what your database has applied.
+- **`xentium update` records its schema deploys.** An update that applies migrations now adds
+  a row to Migration History, with its log and the release it deployed, and the page offers
+  `xentium update <version>` as its command. A failed deploy is recorded after the automatic
+  restore, and an update that migrated but was rolled back because the new release did not
+  come up is recorded as failed, saying whether the database was restored. An update with
+  nothing to apply records nothing. If the row cannot be written, the update carries on.
 - **Imports you can watch.** A running import shows progress for each kind of record, its log
   as it is written and the issues so far, refreshing every two seconds.
 - **A failed deploy tells you what to do.** It names the migration that failed, quotes the
