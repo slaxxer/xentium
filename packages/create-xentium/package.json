@@ -1,6 +1,6 @@
 {
   "name": "create-xentium",
-  "version": "1.0.0-alpha.4",
+  "version": "1.0.0-alpha.5",
   "description": "Install Xentium: checks your server, sets up the database, and starts the install wizard.",
   "license": "MIT",
   "author": "Xentium",
