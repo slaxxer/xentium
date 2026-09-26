@@ -1,4 +1,3 @@
-import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { permissionCache } from "../permissions/permission.cache.js";
@@ -87,14 +86,56 @@ export const groupsService = {
     await prisma.group.delete({ where: { id } });
   },
 
-  async uploadIcon(groupId: string, buffer: Buffer, originalname: string): Promise<string> {
+  /**
+   * `ext` is the type the upload middleware detected from the bytes — never the
+   * client's filename, which says whatever the client likes.
+   */
+  async uploadIcon(groupId: string, buffer: Buffer, ext: string): Promise<string> {
     const group = await prisma.group.findUnique({ where: { id: groupId } });
     if (!group) throw XentiumError.notFound("Group not found");
-    const ext      = path.extname(originalname).toLowerCase() || ".png";
-    const filename = `${groupId}${ext}`;
+    const filename = `${groupId}.${ext.replace(/^\./, "").toLowerCase()}`;
     const relPath  = await storage.save("groups", filename, buffer);
     await prisma.group.update({ where: { id: groupId }, data: { icon: relPath } });
+    // A PNG replaced by a WebP is a different file; the old one would linger forever.
+    if (group.icon && group.icon !== relPath) await storage.delete(group.icon).catch(() => {});
     return storage.publicUrl(relPath);
+  },
+
+  /** Back to the default glyph. Idempotent: a group with no icon is left as it is. */
+  async removeIcon(groupId: string): Promise<void> {
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) throw XentiumError.notFound("Group not found");
+    if (!group.icon) return;
+    await prisma.group.update({ where: { id: groupId }, data: { icon: null } });
+    await storage.delete(group.icon).catch(() => {});
+  },
+
+  /**
+   * Grant and revoke individual keys, leaving every other key the group holds
+   * alone. What the ACP's group page uses: `setPermissions` replaces the whole
+   * set, so a page holding a copy from when it opened would silently revert
+   * anything granted since — by another admin, another tab, or a plugin
+   * assigning its defaults. A key in both lists is revoked.
+   */
+  async patchPermissions(groupId: string, grant: string[], revoke: string[]) {
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) throw XentiumError.notFound("Group not found");
+    const revoking = new Set(revoke);
+    const toGrant = await prisma.permission.findMany({ where: { key: { in: grant.filter((k) => !revoking.has(k)) } } });
+    const toRevoke = await prisma.permission.findMany({ where: { key: { in: revoke } } });
+    await prisma.$transaction(async (tx) => {
+      if (toRevoke.length > 0) {
+        await tx.groupPermission.deleteMany({ where: { groupId, permissionId: { in: toRevoke.map((p) => p.id) } } });
+      }
+      if (toGrant.length > 0) {
+        await tx.groupPermission.createMany({
+          data: toGrant.map((p) => ({ groupId, permissionId: p.id })),
+          skipDuplicates: true,
+        });
+      }
+    });
+    await permissionCache.invalidateForGroup(groupId);
+    return groupsService.getById(groupId);
   },
 
   async setPermissions(groupId: string, permissionKeys: string[]) {

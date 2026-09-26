@@ -26,6 +26,7 @@ import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { AccountCard } from "../components/AccountCard";
+import { ConnectedAccountsCard, PasskeysCard, SetPasswordHint, useSignInMethods } from "./SignInMethodsCards";
 
 type PinMode = null | "enable" | "change" | "disable";
 
@@ -559,6 +560,7 @@ export function SecurityTab() {
     queryKey: ["account", "sessions"],
     queryFn: () => api.get<Session[]>("/account/sessions"),
   });
+  const { data: methods } = useSignInMethods();
 
   /** The strip: three real facts, each with the card that changes it below. */
   const status = [
@@ -593,8 +595,10 @@ export function SecurityTab() {
 
       <ChangeEmailCard />
       <ChangeUsernameCard />
-      <ChangePasswordCard />
+      {methods && !methods.password ? <SetPasswordHint /> : <ChangePasswordCard />}
       <LoginPinCard />
+      <PasskeysCard />
+      <ConnectedAccountsCard />
       <SessionsCard />
 
       <p className="account-hint acct-foot">

@@ -27,6 +27,11 @@ model MigrationRun {
   completedAt DateTime? @map("completed_at")
   summary     Json?     // { users: 1240, threads: 8904, posts: 44320, ... }
   errors      Json?     // [{ entity, sourceId, reason }, ...]
+  /// A running import's live state, rewritten about once a second:
+  /// { at, current, entities: { users: { done, total }, … } }. `at` is the
+  /// heartbeat — a row still "running" whose `at` has gone stale belongs to a
+  /// process that died, and the ACP says so instead of spinning forever.
+  progress    Json?
   reportPath  String?   @map("report_path")
   createdAt   DateTime  @default(now())
 
@@ -93,14 +98,14 @@ model User {
   updatedAt  DateTime @updatedAt
 
   groups   UserGroup[]
+  passkeys Passkey[]
+  oauthAccounts OAuthAccount[]
   sessions Session[]
   emailChangeTokens EmailChangeToken[]
   passwordResetTokens PasswordResetToken[]
 
   profileComments         ProfileComment[] @relation("ProfileCommentOwner")
   authoredProfileComments ProfileComment[] @relation("ProfileCommentAuthor")
-
-  announcementAcks AnnouncementAck[]
 
   following   UserFollow[] @relation("UserFollower")
   followers   UserFollow[] @relation("UserFollowing")
@@ -350,6 +355,10 @@ model Session {
   lastUsedAt       DateTime  @default(now())
   expiresAt        DateTime
   revokedAt        DateTime?
+  /// "Keep me signed in". False = the refresh cookie is a browser-session cookie
+  /// and the row expires 12h after its last use; true = the usual 30 days.
+  /// Carried across every rotation, so the choice made at sign-in holds.
+  persistent       Boolean   @default(true)
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -410,38 +419,6 @@ model Theme {
 
   @@index([active])
   @@map("xcf_themes")
-}
-
-/// One administrator has seen one broadcast from the Xentium team.
-///
-/// Per ADMIN, not per site: the dialog interrupts a person, so it is a person
-/// who dismisses it. And server-side rather than in browser storage, because an
-/// admin who clicked OK on their laptop has answered — meeting the same notice
-/// again on their phone would teach them that clicking OK does nothing.
-///
-/// ⚠ Deliberately NOT the acknowledgement rule the update and licence dialogs
-/// use. Those re-fire until the admin VISITS the matching page, because there
-/// is something there to do; dismissing without looking would be a lie. An
-/// announcement is finished when it has been read, and there is nowhere to go
-/// — so OK means OK.
-///
-/// The row survives the announcement expiring or being pulled. It is small, and
-/// keeping it means a broadcast that is re-published cannot reappear for
-/// someone who already dealt with it.
-model AnnouncementAck {
-  id             String   @id @default(uuid())
-  userId         String   @map("user_id")
-  /// The marketplace's id for the announcement. No foreign key — the
-  /// announcements themselves are cached in a setting, not a table, because
-  /// they are someone else's records and this instance is only their reader.
-  announcementId String   @map("announcement_id")
-  ackedAt        DateTime @default(now()) @map("acked_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, announcementId])
-  @@index([userId])
-  @@map("xcf_announcement_acks")
 }
 
 model Setting {
@@ -1239,3 +1216,51 @@ model ScheduledTaskRun {
   @@index([taskId, startedAt])
   @@map("xcf_scheduled_task_runs")
 }
+
+/// A WebAuthn credential (passkey / security key) a member can sign in with.
+/// The private key never leaves their device; this row is what verifies it.
+model Passkey {
+  id           String    @id @default(uuid())
+  userId       String    @map("user_id")
+  /// base64url credential id, as the browser reports it.
+  credentialId String    @unique @map("credential_id")
+  publicKey    Bytes     @map("public_key")
+  /// Signature counter. Synced passkeys stay at 0; a hardware key counts up, and
+  /// a value that goes backwards means a cloned key.
+  counter      BigInt    @default(0)
+  transports   String[]  @default([])
+  /// "singleDevice" | "multiDevice" (synced).
+  deviceType   String    @map("device_type")
+  backedUp     Boolean   @default(false) @map("backed_up")
+  /// The member's own label for it ("MacBook", "YubiKey").
+  name         String
+  createdAt    DateTime  @default(now()) @map("created_at")
+  lastUsedAt   DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("xcf_passkeys")
+}
+
+/// A sign-in provider account (Google, GitHub, Discord) linked to a member.
+model OAuthAccount {
+  id             String   @id @default(uuid())
+  userId         String   @map("user_id")
+  /// "google" | "github" | "discord"
+  provider       String
+  /// The provider's stable id for the person — never their email, which changes.
+  providerUserId String   @map("provider_user_id")
+  /// The address the provider reported when linked, for display only.
+  email          String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  lastUsedAt     DateTime? @map("last_used_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerUserId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("xcf_oauth_accounts")
+}
+

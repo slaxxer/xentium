@@ -8,10 +8,9 @@ import { EditorLayout } from "../layouts/EditorLayout";
 import { ProfilePage } from "../features/profiles/ProfilePage";
 import { MembersPage } from "../features/members/MembersPage";
 import { AccountPage } from "../features/account/AccountPage";
-import { LoginPage } from "../features/auth/LoginPage";
-import { RegisterPage } from "../features/auth/RegisterPage";
-import { ForgotPasswordPage } from "../features/auth/ForgotPasswordPage";
-import { ResetPasswordPage } from "../features/auth/ResetPasswordPage";
+import { SignInPanel } from "../features/auth/doorway/SignInPanel";
+import { RegisterPanel } from "../features/auth/doorway/RegisterPanel";
+import { ForgotPanel, MagicLinkLanding, ResetPanel, SignInComplete } from "../features/auth/doorway/RecoveryPanels";
 import { ArticlesListPage } from "../features/articles/ArticlesListPage";
 import { ArticleReaderPage } from "../features/articles/ArticleReaderPage";
 import { ArticleEditorPage } from "../features/articles/ArticleEditorPage";
@@ -41,6 +40,7 @@ import { UserListPage }      from "../features/admin/pages/UserListPage";
 import { UserDetailPage }    from "../features/admin/pages/UserDetailPage";
 import { ProfileFieldsPage } from "../features/admin/pages/ProfileFieldsPage";
 import { GroupsPage }        from "../features/admin/pages/GroupsPage";
+import { GroupDetailPage }   from "../features/admin/pages/groups/GroupDetailPage";
 import { BadgesPage }        from "../features/admin/pages/BadgesPage";
 import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
 import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
@@ -65,7 +65,6 @@ import { NavigationPage }   from "../features/admin/pages/NavigationPage";
 import { MarketplacePage } from "../features/admin/pages/MarketplacePage";
 import { InstalledPage }   from "../features/admin/pages/InstalledPage";
 import { UpdatesPage }     from "../features/admin/pages/UpdatesPage";
-import { AnnouncementsPage } from "../features/admin/pages/AnnouncementsPage";
 import { UploadPage }      from "../features/admin/pages/UploadPage";
 import { LicensePage }     from "../features/admin/pages/LicensePage";
 // ACP pages — system
@@ -262,10 +261,13 @@ function buildRouter() {
     element: <AppGuard />,
     errorElement: <RouteErrorPage />,
     children: [
-      { path: "/login",           element: <LoginPage /> },
-      { path: "/register",        element: <RegisterPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/reset-password",  element: <ResetPasswordPage /> },
+      // The doorway: every way in (features/auth/doorway).
+      { path: "/login",           element: <SignInPanel /> },
+      { path: "/login/link",      element: <MagicLinkLanding /> },
+      { path: "/login/complete",  element: <SignInComplete /> },
+      { path: "/register",        element: <RegisterPanel /> },
+      { path: "/forgot-password", element: <ForgotPanel /> },
+      { path: "/reset-password",  element: <ResetPanel /> },
       {
         element: <EditorLayout />,
         children: [
@@ -286,6 +288,7 @@ function buildRouter() {
           { path: "users/:id",        element: <UserDetailPage /> },
           { path: "profile-fields",   element: <ProfileFieldsPage /> },
           { path: "groups",           element: <GroupsPage /> },
+          { path: "groups/:id",       element: <GroupDetailPage /> },
           { path: "badges",           element: <BadgesPage /> },
           { path: "permissions",      element: <PermissionsPage /> },
           { path: "progression",      element: <ProgressionPage /> },
@@ -319,7 +322,6 @@ function buildRouter() {
           { path: "marketplace",      element: <MarketplacePage /> },
           { path: "installed",        element: <InstalledPage /> },
           { path: "updates",          element: <UpdatesPage /> },
-          { path: "announcements",    element: <AnnouncementsPage /> },
           { path: "upload",           element: <UploadPage /> },
           { path: "license",          element: <LicensePage /> },
           // Plugin ACP routes (registered by plugins via slotRegistry)

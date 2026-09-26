@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { checkMemory, checkNode, checkPlatform, worst, type Check } from "./checks.js";
-import { pgConnection, prismaBin } from "./release.js";
+import { pgConnection, prismaBin, recordDeploy } from "./release.js";
 import { compareSemver, mergeEnv, parseEnv } from "./site.js";
 import { unitFile } from "./service.js";
 import { logo } from "./ui.js";
@@ -168,5 +168,20 @@ describe("the wordmark", () => {
   it("gives a narrow terminal the name instead of five sheared lines", () => {
     expect(plain(capture(60))).toContain("Xentium");
     expect(plain(capture(60))).not.toContain("\\_\\");
+  });
+});
+
+describe("recording a deploy", () => {
+  it("is best effort: no database configured means false, never a thrown update", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "xentium-record-"));
+    try {
+      mkdirSync(path.join(root, "shared"), { recursive: true });
+      writeFileSync(path.join(root, "shared", ".env"), "PORT=4000\n");
+      const at = new Date();
+      await expect(recordDeploy(new Site(root), { status: "completed", version: "1.0.0", output: "", startedAt: at, completedAt: at }))
+        .resolves.toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

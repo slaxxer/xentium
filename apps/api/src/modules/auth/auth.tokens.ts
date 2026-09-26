@@ -42,14 +42,27 @@ async function triggerSecurityCheck(): Promise<void> {
 
 type Meta = { ip?: string; userAgent?: string; deviceCookieId?: string };
 
-// called on successful login
-export async function createSession(userId: string, meta: Meta) {
+/** How long a "don't keep me signed in" session lives past its last use. */
+export const SESSION_ONLY_TTL_MS = 12 * 60 * 60_000;
+
+const expiryFor = (persistent: boolean) =>
+  persistent ? tokens.refreshExpiryFrom() : new Date(Date.now() + SESSION_ONLY_TTL_MS);
+
+/**
+ * Called on every successful sign-in, whatever the method. `persistent` is "keep
+ * me signed in": false gives a browser-session cookie and a row that dies 12h
+ * after its last use. Defaults to true so a caller that says nothing keeps the
+ * 30-day behaviour it always had.
+ */
+export async function createSession(userId: string, meta: Meta, opts: { persistent?: boolean } = {}) {
+  const persistent = opts.persistent ?? true;
   const raw = tokens.generateRefreshToken();
   const session = await prisma.session.create({
     data: {
       userId,
+      persistent,
       refreshTokenHash: tokens.hashRefreshToken(raw),
-      expiresAt: tokens.refreshExpiryFrom(),
+      expiresAt: expiryFor(persistent),
       ip: meta.ip,
       userAgent: meta.userAgent,
       deviceCookieId: meta.deviceCookieId,
@@ -58,7 +71,7 @@ export async function createSession(userId: string, meta: Meta) {
   // Trigger security analysis shortly after login so multi-account / IP
   // patterns are detected in near real-time instead of waiting 30 minutes.
   triggerSecurityCheck().catch(() => null);
-  return { refreshToken: raw, accessToken: await tokens.issueAccess(userId, session.id) };
+  return { refreshToken: raw, persistent, accessToken: await tokens.issueAccess(userId, session.id) };
 }
 
 // called on POST /auth/refresh — rotates the refresh token
@@ -91,8 +104,10 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     prisma.session.create({
       data: {
         userId: current.userId,
+        // The choice made at sign-in holds for the life of the session.
+        persistent: current.persistent,
         refreshTokenHash: tokens.hashRefreshToken(raw),
-        expiresAt: tokens.refreshExpiryFrom(),
+        expiresAt: expiryFor(current.persistent),
         ip: meta.ip,
         userAgent: meta.userAgent,
         deviceCookieId: meta.deviceCookieId,
@@ -115,7 +130,7 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     },
   }).then(() => triggerSecurityCheck()).catch(() => null);
 
-  return { refreshToken: raw, accessToken: await tokens.issueAccess(next.userId, next.id) };
+  return { refreshToken: raw, persistent: current.persistent, accessToken: await tokens.issueAccess(next.userId, next.id) };
 }
 
 export async function revokeSession(rawRefresh: string) {

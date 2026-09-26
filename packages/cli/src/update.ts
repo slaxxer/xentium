@@ -22,10 +22,13 @@ import {
   checkProvenance,
   installRelease,
   migrate,
+  MigrateError,
   migrationsPending,
+  recordDeploy,
   resolveVersion,
   restore,
   waitForHealth,
+  type DeployRecord,
 } from "./release.js";
 import { compareSemver, type Site } from "./site.js";
 import { systemctl, unitNames, unitsInstalled } from "./service.js";
@@ -209,9 +212,20 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
   }
   if (managed) systemctl("stop", serviceUnits);
 
+  // What `migrate deploy` said and when, for Migration History. Only a run that
+  // actually migrated is recorded: an update with nothing to apply is not a deploy.
+  let deploy: DeployRecord | null = null;
   try {
     if (hadMigrations) {
-      await migrate(site, version, { quiet: true });
+      const startedAt = new Date();
+      try {
+        const output = await migrate(site, version, { quiet: true });
+        deploy = { status: "completed", version, output, startedAt, completedAt: new Date() };
+      } catch (e) {
+        const output = e instanceof MigrateError ? e.output : (e as Error).message;
+        deploy = { status: "failed", version, output, startedAt, completedAt: new Date() };
+        throw e;
+      }
       success("Migrations applied");
     } else {
       note("No pending migrations.");
@@ -223,11 +237,14 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
     error((e as Error).message);
     // Restore while nothing is running, then bring the old release back up.
     if (hadMigrations && dump) await restoreQuietly(site, dump);
+    // After the restore, which rewinds the whole database — history table included.
+    if (deploy) await recordQuietly(site, deploy);
     await rollTo(site, previous, serviceUnits, managed);
     return 1;
   }
 
   if (!managed) {
+    if (deploy) await recordQuietly(site, deploy);
     line();
     success(`Updated to ${version}.`);
     note("This site isn't run by systemd, so restart it yourself to pick up the new release.");
@@ -238,6 +255,7 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
   systemctl("start", serviceUnits);
   const healthy = await waitForHealth(config.port);
   if (healthy) {
+    if (deploy) await recordQuietly(site, deploy);
     line();
     success(`Xentium ${version} is running.`);
     note(`Rolled something back? \`xentium rollback\` returns to ${previous}.`);
@@ -246,7 +264,17 @@ export async function update(site: Site, options: UpdateOptions = {}): Promise<n
 
   error(`${version} did not come up within 60 seconds. Rolling back to ${previous}.`);
   systemctl("stop", serviceUnits);
-  if (hadMigrations && dump) await restoreQuietly(site, dump);
+  const restored = hadMigrations && dump ? await restoreQuietly(site, dump) : false;
+  // The migrations applied, but the deploy as a whole did not stand — say so,
+  // and say truthfully what happened to the database.
+  if (deploy) {
+    await recordQuietly(site, {
+      ...deploy,
+      status: "failed",
+      output: `${deploy.output}\n\nerror: ${version} did not come up after migrating, so the update was rolled back to ${previous}. ${
+        restored ? "The database was restored from the backup taken before the update." : "The database could NOT be restored automatically."}`,
+    });
+  }
   await rollTo(site, previous, serviceUnits, managed);
   if (await waitForHealth(config.port, 60_000)) success(`Back on ${previous}.`);
   else error(`${previous} did not come back up either. The logs are in \`journalctl -u ${serviceUnits.api}\`.`);
@@ -259,14 +287,23 @@ async function rollTo(site: Site, version: string, units: { api: string; worker:
   if (managed) systemctl("start", units);
 }
 
-async function restoreQuietly(site: Site, dump: string): Promise<void> {
+async function restoreQuietly(site: Site, dump: string): Promise<boolean> {
   warning(`Restoring the database from ${path.relative(site.root, dump)} — migrations had already run.`);
   try {
     await restore(site, dump);
     success("Database restored.");
+    return true;
   } catch (e) {
     error(`Could not restore automatically: ${(e as Error).message}`);
     note(`Restore it by hand: psql "$DATABASE_URL" -f ${dump}`);
+    return false;
+  }
+}
+
+/** Record the deploy in Migration History; a note, never a failure, if it cannot. */
+async function recordQuietly(site: Site, deploy: DeployRecord): Promise<void> {
+  if (!(await recordDeploy(site, deploy).catch(() => false))) {
+    note("Could not record this deploy in ACP → System → Migration History (psql unavailable or the write failed).");
   }
 }
 

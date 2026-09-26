@@ -23,18 +23,17 @@ If we can't be reached, your site keeps whatever it already had and carries on.
 
 ## What you see
 
-**A dialog when you enter the ACP**, once per administrator. It has a single OK button, and
-clicking it is the acknowledgement. That is recorded on your server against your account, so
-the same notice will not meet you again on another machine.
+**A dialog when you enter the ACP.** It has a single OK button. The first administrator to
+click it has read it for the whole site: the notice is deleted from your server and does not
+appear for anyone else. Your site keeps no copy, no history and no record of who read what,
+and there is no page to find it on again. The only thing left behind is the notice's id, so
+that the next daily check does not bring it straight back, and that goes too once we stop
+serving the notice.
 
-**ACP → Announcements** keeps everything still current, so you can re-read something you
-clicked past. Anything you have not acknowledged is marked, and you can acknowledge it from
-there instead of waiting for the dialog.
-
-Notices carry one of three urgencies. `info` is something worth knowing, `important` sits
-above plugin updates in the queue, and `critical` comes before everything else, including a
-licence about to expire. All three open the dialog: we would rather send fewer than have you
-stop reading them.
+If several are waiting, you see one at a time, the most urgent first. Notices carry one of
+three urgencies: `info` is something worth knowing, `important` and `critical` are marked as
+such in the dialog. All three open the dialog, and an announcement comes before a licence or
+update dialog: we would rather send fewer than have you stop reading them.
 
 There is no way to mute them, and that is on purpose. A channel you can turn off is a channel
 we cannot rely on when it matters.
@@ -43,8 +42,7 @@ we cannot rely on when it matters.
 
 We write announcements in English and translate them where we can. Your site shows each
 administrator the text in their own language if we have it, then the site's default language,
-then English. When you are reading a translation that we do not have, the page says so, so
-you know it is a gap in our translations rather than a setting on your side.
+then English.
 
 ## How to tell a real notice from a fake one
 

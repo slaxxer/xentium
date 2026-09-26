@@ -121,7 +121,22 @@ answer `429 XEC-API-4290`.
 | GET | `/registration-status` | Public | Whether registration, invites or the beta gate are open. |
 | POST | `/register/send-code` | Public | Email a verification code to start registering. |
 | POST | `/register` | Public | Create an account (with the emailed code and optional profile fields). |
-| POST | `/login` | Public | `{ email, password, loginPin? }` → `{ accessToken }` (plus the refresh cookie). Can return `{ requiresPin: true }`. |
+| POST | `/login` | Public | `{ identifier, password, loginPin?, remember? }` → `{ accessToken }` (plus the refresh cookie). Can return `{ requiresPin: true }`. `remember: false` gives a browser-session cookie and a session that ends 12 hours after its last use. |
+| POST | `/login/pin` | Public | `{ ticket, pin }`: the PIN step after a sign-in link, passkey or provider. The ticket is single-use, lasts five minutes and burns after five wrong PINs. |
+| POST | `/register/check-availability` | Public | `{ email?, username? }` → which are free. |
+| POST | `/register/check-invite` | Public | `{ code }` → `{ valid }`. |
+| GET | `/methods` | Public | `{ passkeys, magicLink, providers[] }`: which sign-in methods this site offers. |
+| GET | `/doorway` | Public | Site name, member and online counts and this week's joiners for the sign-in page (members-only profiles are left out). |
+| POST | `/magic-link` | Public | `{ email, remember? }`: email a one-time sign-in link. **Always 200.** |
+| POST | `/magic-link/consume` | Public | `{ token }` → a session, or `{ requiresPin, ticket }`. |
+| POST | `/passkey/login/options` · `/passkey/login/verify` | Public | Sign in with a passkey: options (`{ ceremonyId, options }`), then `{ ceremonyId, response, remember? }`. |
+| POST | `/passkey/register/options` · `/passkey/register/verify` | Auth | Add a passkey: options, then `{ response, name? }`. |
+| PATCH / DELETE | `/passkeys/:id` | Auth | Rename or remove a passkey. Removing the last way to sign in is refused (409). |
+| GET | `/sign-in-methods` | Auth | Your password state, passkeys and connected providers. |
+| POST | `/oauth/:provider/start` | Public | `{ remember?, returnTo? }` → `{ url }` to send the browser to (Google, GitHub, Discord). |
+| POST | `/oauth/:provider/link` | Auth | Same, to connect the provider to your account. |
+| DELETE | `/oauth/:provider` | Auth | Disconnect a provider (refused if it is your last way in). |
+| GET | `/oauth/:provider/callback` | Public | Where the provider returns; redirects to the site with the outcome. Never carries a token. |
 | POST | `/refresh` | Cookie | Rotate the refresh cookie and issue a new access token. |
 | POST | `/password-reset` | Public | Request a reset link. **Always 200**, so nobody can probe which accounts exist. |
 | POST | `/password-reset/confirm` | Public | `{ token, password }` → sets the new password and revokes every session. |
@@ -425,7 +440,7 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 
 | Method | Path | Description |
 |---|---|---|
-| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Groups; plus `PUT /groups/:id/permissions` and `POST /groups/:id/icon` (`multipart`). |
+| GET·POST·PATCH·DELETE | `/groups` · `/groups/:id` | Groups; plus `PUT /groups/reorder` (badge precedence), `PUT /groups/:id/permissions` (replace the whole set), `PATCH /groups/:id/permissions` (`{ grant, revoke }`: change only those keys, which is what the ACP uses so it never reverts a grant made elsewhere), `POST /groups/:id/icon` (`multipart`) and `DELETE /groups/:id/icon`. |
 | GET | `/permissions` | Every permission, including the ones plugins registered. |
 | GET·PATCH | `/progression` · `/progression/:id` | The ladder and per-group progression; plus `/progression/groups`, `PATCH /progression/settings`, `PATCH /progression/reorder`. |
 
@@ -521,7 +536,8 @@ files, 5 MB each, 40 MB total).
 |---|---|---|
 | GET | `/settings` · `/settings/:key` · PUT `/settings/:key` | Platform settings. |
 | GET | `/error-log` · DELETE `/error-log` | The error log (filterable) / clear it. |
-| GET | `/migration-history` | The `migration_runs` table. |
+| GET·PATCH | `/auth-providers` · `/auth-providers/:provider` | Sign-in provider settings (client id, secret, on/off). The secret is write-only: send `null` to remove it. |
+| GET | `/migration-history` | `{ runs, schema }`: the last 100 runs (schema deploys and platform imports, a running import's live `progress` included) and the schema as it is now, the migrations this build ships against what the database has applied. |
 | GET | `/style-history` | Style snapshots. |
 | GET | `/xec-codes` | The XEC code list (for the Error Reference page). |
 | GET·POST·PATCH·DELETE | `/nav-items` … `/nav-items/reorder` | The site's nav manager. |

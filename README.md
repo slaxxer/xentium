@@ -454,9 +454,9 @@ for how themes and tokens fit together.
 ## Announcements
 
 Xentium can reach your admin panel directly. Once a day the worker asks the marketplace
-whether there is anything to pass on, and anything that comes back opens a dialog in the ACP,
-once per administrator. **ACP → Announcements** keeps the ones still current so you can
-re-read them.
+whether there is anything to pass on, and anything that comes back opens a dialog in the ACP.
+Once an admin clicks OK it is gone from the site, for every admin: your instance keeps no
+copy and no record of who read it.
 
 The check is anonymous. It sends no site id, no account, no version and no plugin list, and
 it works whether or not you've connected a marketplace account — a site that never linked one
@@ -731,8 +731,8 @@ useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mut
 
 That goes for settings pages **and** per-group panels registered through the
 `groupConfigPanel` slot. Per-group config (permissions, progression) belongs there,
-because it then shows up as a tab in core's own group settings dialog instead of a page
-of its own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
+because it then shows up as a tab on core's own group page instead of a page of its
+own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
 autosave a half-typed credential; use Set/Remove) and **destructive actions**.
 
 📖 **The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
@@ -783,6 +783,11 @@ upload → validate manifest → compatibility/trust check → install (stored, 
 We ship free, open-source migration tools as a standalone CLI. It's not a plugin on
 purpose: you run it once on your server, it writes straight into the Xentium database,
 and all it leaves behind is the migration log (**ACP → System → Migration History**).
+You can watch an import there while it runs: progress for each kind of record, the log as
+it is written, and the issues so far. If the process dies, the page says the run stopped
+responding instead of showing it as running forever. The page also gives you the command
+back for a dry run or a re-run, with connection strings left out, because we never store
+them.
 
 ### Available adapters
 

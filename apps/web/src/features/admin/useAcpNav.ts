@@ -24,10 +24,6 @@ export interface NavItem {
 // when it's missing, so those pass through untranslated, which is correct.
 export const ACP_NAV: NavItem[] = [
   { label: "nav.dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), iconName: "dashboard", to: "/admin" },
-  // Top level, beside the dashboard, rather than buried under System: it is
-  // where an admin goes to re-read the thing that interrupted them, and they
-  // will be looking for it right after clicking OK.
-  { label: "nav.announcements", icon: createElement(AcpIcon, { name: "megaphone", size: 18 }), iconName: "megaphone", to: "/admin/announcements" },
   {
     label: "nav.users", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
     children: [
