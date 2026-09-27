@@ -14,7 +14,7 @@ import {
 import { pagesApi, pagePath, type PageVisibility } from "../../../lib/pagesApi";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import "../../articles/ArticleEditorPage.scss";
+import "./PageEditorPage.scss";
 
 const EMPTY_BODY = { type: "doc", content: [{ type: "paragraph" }] };
 
