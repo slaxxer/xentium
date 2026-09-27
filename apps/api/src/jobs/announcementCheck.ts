@@ -106,6 +106,23 @@ export async function readAnnouncementCache(db: Db = prisma): Promise<Announceme
   return readJson<AnnouncementCache>(db, ANNOUNCEMENTS_SETTING);
 }
 
+/**
+ * Is an announcement waiting to be read on this site? What the navbar gear's dot
+ * asks, next to a pending core update and plugin updates.
+ *
+ * Lit while an unread, unexpired announcement is cached; it goes out when an
+ * admin reads it (reading removes it for the whole site) or when its expiry passes,
+ * without waiting for the next check. "important" and "critical" make it urgent,
+ * like a security release.
+ */
+export function pendingAnnouncement(
+  cache: AnnouncementCache | null,
+  now: number = Date.now(),
+): { pending: boolean; urgent: boolean } {
+  const live = (cache?.announcements ?? []).filter((a) => !a.expiresAt || Date.parse(a.expiresAt) > now);
+  return { pending: live.length > 0, urgent: live.some((a) => a.severity !== "info") };
+}
+
 export async function readDismissed(db: Db = prisma): Promise<string[]> {
   const ids = await readJson<unknown>(db, DISMISSED_SETTING);
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];

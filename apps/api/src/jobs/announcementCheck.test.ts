@@ -289,3 +289,23 @@ describe("only the most recent announcement", () => {
     expect(cache.announcements.map((a) => a.id)).toEqual(["live"]);
   });
 });
+
+describe("the navbar gear's dot", () => {
+  const cache = (announcements: { severity: string; expiresAt: string | null }[]) =>
+    ({ checkedAt: "", announcements: announcements.map((a, i) => ({ id: `a${i}`, publishedAt: "", link: null, locales: {}, ...a })) }) as never;
+
+  it("is lit by an unread announcement, urgent only when it is not info", async () => {
+    const { pendingAnnouncement } = await import("./announcementCheck.js");
+    expect(pendingAnnouncement(cache([{ severity: "info", expiresAt: null }]))).toEqual({ pending: true, urgent: false });
+    expect(pendingAnnouncement(cache([{ severity: "critical", expiresAt: null }]))).toEqual({ pending: true, urgent: true });
+  });
+
+  it("goes out when nothing is waiting, or the one waiting has expired", async () => {
+    const { pendingAnnouncement } = await import("./announcementCheck.js");
+    expect(pendingAnnouncement(null)).toEqual({ pending: false, urgent: false });
+    expect(pendingAnnouncement(cache([]))).toEqual({ pending: false, urgent: false });
+    const now = Date.parse("2026-09-27T12:00:00.000Z");
+    expect(pendingAnnouncement(cache([{ severity: "important", expiresAt: "2026-09-27T11:00:00.000Z" }]), now))
+      .toEqual({ pending: false, urgent: false });
+  });
+});
