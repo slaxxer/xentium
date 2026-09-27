@@ -13,6 +13,7 @@ import {
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { readCoreUpdateCache, type CoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { readAnnouncementCache, pendingAnnouncement } from "../../jobs/announcementCheck.js";
 import { XENTIUM_VERSION } from "../../config/version.js";
 import { cliSiteDir } from "../../config/envProbe.js";
 import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
@@ -470,6 +471,10 @@ export const marketplaceService = {
     const coreUrgent = coreUpdate && (core!.highestSeverity === "security" || core!.highestSeverity === "critical");
     const criticalUpdate = updates.some((u) => u.critical) || coreUrgent;
 
+    // A Xentium-team announcement nobody has read yet, on the same terms: counted
+    // once, until an admin reads it or it expires.
+    const announcement = pendingAnnouncement(await readAnnouncementCache());
+
     // Entitlement health. NOT "your subscription is ending" — see
     // licenseAttention.ts for why the previous rule was true for every
     // connected install in the field, forever.
@@ -497,17 +502,18 @@ export const marketplaceService = {
       pluginUpdates,
       coreUpdate,
       criticalUpdate,
+      announcement:       announcement.pending,
       licenseExpiringSoon,
       licenseExpired,
       licenseDaysLeft,
       licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
-      // Badge count: each pending plugin update, core once, + the license
-      // (once) if it needs attention.
-      total: pluginUpdates + (coreUpdate ? 1 : 0) + (needsAttention ? 1 : 0),
+      // Badge count: each pending plugin update, core once, an unread
+      // announcement once, + the license (once) if it needs attention.
+      total: pluginUpdates + (coreUpdate ? 1 : 0) + (announcement.pending ? 1 : 0) + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
-      urgent: criticalUpdate || needsAttention,
+      urgent: criticalUpdate || announcement.urgent || needsAttention,
     };
   },
 

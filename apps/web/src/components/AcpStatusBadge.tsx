@@ -6,6 +6,7 @@ interface StatusSummary {
   pluginUpdates:       number;
   coreUpdate:          boolean;
   criticalUpdate:      boolean;
+  announcement:        boolean;
   licenseExpiringSoon: boolean;
   licenseExpired:      boolean;
   total:               number;
@@ -17,7 +18,8 @@ interface StatusSummary {
  * the admin panel" for admins browsing the site. Deliberately no number: the
  * dot says to look, the ACP says what. It stays until the work is done (plugin
  * updates until applied, a new Xentium until the site runs it, the license while
- * it's about to expire / has expired). Server-aggregated (GET
+ * it's about to expire / has expired, a Xentium announcement until an admin
+ * reads it or it expires). Server-aggregated (GET
  * /admin/status-summary) so this stays a dumb consumer. Renders nothing when
  * there's nothing to show. Only mounted for admins.
  */
