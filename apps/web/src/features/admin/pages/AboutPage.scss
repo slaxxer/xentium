@@ -43,12 +43,12 @@
 .ab-hero__id h2 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 26px;
+  font-size: 1.625rem;
   margin: 0;
   letter-spacing: -0.02em;
   color: var(--c-fg);
 }
-.ab-hero__meta { font-size: 13.5px; font-weight: 700; color: var(--c-fg-muted); margin: 5px 0 0; }
+.ab-hero__meta { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg-muted); margin: 5px 0 0; }
 .ab-hero__meta b { color: var(--c-fg); }
 .ab-pill {
   position: relative;
@@ -60,7 +60,7 @@
   gap: 8px;
   font-family: var(--font-body);
   font-weight: 800;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   color: var(--c-success);
   background: var(--c-success-soft);
   padding: 8px 14px;
@@ -94,12 +94,12 @@
 .ab-card__head h3 {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--fs-base);
   margin: 0;
   letter-spacing: -0.01em;
   color: var(--c-fg);
 }
-.ab-card__aside { margin-left: auto; font-family: var(--font-body); font-weight: 700; font-size: 12px; color: var(--c-fg-subtle); }
+.ab-card__aside { margin-left: auto; font-family: var(--font-body); font-weight: 700; font-size: var(--fs-xs); color: var(--c-fg-subtle); }
 
 .ab-dl { display: flex; flex-direction: column; }
 .ab-dl__row {
@@ -111,8 +111,8 @@
   border-top: 1px solid var(--c-rowline);
 }
 .ab-dl__row:first-of-type { border-top: none; padding-top: 10px; }
-.ab-dl__k { font-family: var(--font-body); font-weight: 700; font-size: 13.5px; color: var(--c-fg-muted); }
-.ab-dl__v { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--c-fg); text-align: right; }
+.ab-dl__k { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-md); color: var(--c-fg-muted); }
+.ab-dl__v { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); text-align: right; }
 .ab-dl__v.is-ok  { color: var(--c-success); }
 .ab-dl__v.is-dev { color: var(--c-warn); }
 
@@ -121,9 +121,9 @@
 .ab-gauge { display: flex; flex-direction: column; align-items: center; gap: 9px; }
 .ab-gauge__ring { position: relative; width: 108px; height: 108px; }
 .ab-gauge__num { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.ab-gauge__num b { font-family: var(--font-display); font-weight: 700; font-size: 23px; letter-spacing: -0.02em; line-height: 1; }
-.ab-gauge__num span { font-size: 10.5px; font-weight: 800; color: var(--c-fg-subtle); margin-top: 2px; }
-.ab-gauge__sub { font-family: var(--font-body); font-weight: 700; font-size: 11.5px; color: var(--c-fg-subtle); }
+.ab-gauge__num b { font-family: var(--font-display); font-weight: 700; font-size: 1.4375rem; letter-spacing: -0.02em; line-height: 1; }
+.ab-gauge__num span { font-size: var(--fs-2xs); font-weight: 800; color: var(--c-fg-subtle); margin-top: 2px; }
+.ab-gauge__sub { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
 
 .ab-spark { width: 100%; height: 46px; margin-top: 14px; display: block; }
 .ab-meterline {
@@ -134,8 +134,8 @@
   padding-top: 14px;
   border-top: 1px solid var(--c-rowline);
 }
-.ab-meterline b { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--c-fg); }
-.ab-meterline span { font-family: var(--font-body); font-weight: 700; font-size: 12.5px; color: var(--c-fg-subtle); }
+.ab-meterline b { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }
+.ab-meterline span { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
 
 /* resources */
 .ab-res { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 6px; }
@@ -167,8 +167,8 @@
 }
 .ab-reslink:hover .ab-reslink__ic { background: var(--c-accent); color: var(--c-on-accent); }
 .ab-reslink__t { min-width: 0; }
-.ab-reslink__t b { display: block; font-family: var(--font-display); font-weight: 600; font-size: 14px; }
-.ab-reslink__t span { font-size: 12px; font-weight: 600; color: var(--c-fg-subtle); }
+.ab-reslink__t b { display: block; font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); }
+.ab-reslink__t span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
 .ab-reslink__ext { margin-left: auto; color: var(--c-fg-subtle); flex: none; }
 .ab-reslink:hover .ab-reslink__ext { color: var(--c-accent); }
 

@@ -122,7 +122,7 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 4,
                       padding: "1px 7px", borderRadius: 20,
-                      fontSize: 11, fontWeight: 700,
+                      fontSize: "var(--fs-2xs)", fontWeight: 700,
                       background: `${color}20`, color, border: `1px solid ${color}40`,
                     }}
                   >
@@ -309,7 +309,7 @@ export function NavPrimaryLinks() {
                   >
                     {navLabel}
                     {item.openInNewTab && (
-                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginLeft: 4, fontSize: 10 }} />
+                      <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginLeft: 4, fontSize: "var(--fs-2xs)" }} />
                     )}
                   </a>
                 ) : (

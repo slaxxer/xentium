@@ -50,8 +50,8 @@
   box-shadow: var(--shadow-card);
   white-space: nowrap;
 
-  span { font-size: 13px; font-weight: 700; color: var(--c-fg-muted); }
-  b    { font-size: 14px; color: var(--c-fg); }
+  span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-muted); }
+  b    { font-size: var(--fs-md); color: var(--c-fg); }
   i    { width: 1px; height: 16px; background: var(--c-border); }
 }
 
@@ -70,7 +70,7 @@
     align-items: center;
     gap: 8px;
 
-    > span { font-size: 12.5px; font-weight: 600; color: var(--c-fg-subtle); }
+    > span { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
   }
 }
 
@@ -103,7 +103,7 @@
   gap: 12px;
   padding: 0 4px 12px;
 
-  p { margin: 2px 0 0; font-size: 12.5px; font-weight: 600; color: var(--c-fg-subtle); }
+  p { margin: 2px 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 }
 
 .bdg-group__titles {
@@ -114,7 +114,7 @@
   h2 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--fs-base);
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--c-fg);
@@ -122,7 +122,7 @@
 }
 
 .bdg-group__count {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 800;
   letter-spacing: 0.03em;
   color: var(--c-fg-muted);
@@ -171,7 +171,7 @@
 
   &__name {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--fs-base);
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--c-fg);
@@ -182,7 +182,7 @@
 
   &__key {
     font-family: var(--ff-mono, monospace);
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     font-weight: 500;
     color: var(--c-fg-muted);
     background: var(--c-bg);
@@ -192,7 +192,7 @@
   }
 
   &__system {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -206,7 +206,7 @@
   /* The sub-line gives up its space first — the name and the actions must not wrap. */
   &__sub {
     margin: 3px 0 0;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--c-fg-subtle);
     overflow: hidden;
@@ -232,7 +232,7 @@
   white-space: nowrap;
   transition: border-color 0.15s, background 0.15s;
 
-  > span { font-size: 13px; font-weight: 700; color: var(--c-fg); }
+  > span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); }
   > .ic  { color: var(--c-fg-subtle); }
 
   &:hover {
@@ -262,7 +262,7 @@
     img { width: 100%; height: 100%; object-fit: cover; }
   }
 
-  &__initial { font-size: 9px; font-weight: 800; color: var(--c-accent); }
+  &__initial { font-size: var(--fs-2xs); font-weight: 800; color: var(--c-accent); }
 }
 
 /* ── Icon buttons (edit, delete, close, revoke) ─────────────────────────────── */
@@ -294,7 +294,7 @@
 
   /* The pencil and the bin are FontAwesome, not the stroke set — so they need
      their own size, which the stroke icons carry as an attribute. */
-  svg { font-size: 13px; }
+  svg { font-size: var(--fs-sm); }
 }
 
 /* ── An empty group ────────────────────────────────────────────────────────── */
@@ -307,11 +307,11 @@
   border: 1px dashed var(--c-border-hi);
   border-radius: var(--radius-lg);
 
-  &__title { font-size: 13.5px; font-weight: 700; color: var(--c-fg); }
+  &__title { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
 
   p {
     margin: 3px 0 0;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--c-fg-subtle);
     line-height: 1.45;
@@ -331,7 +331,7 @@
     color: var(--c-fg-muted);
     font-family: inherit;
     font-weight: 600;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     cursor: pointer;
 
     &:hover { color: var(--c-accent); border-color: var(--c-accent); }
@@ -370,13 +370,13 @@
 
   &__name {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: var(--fs-base);
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--c-fg);
   }
 
-  &__sub { font-size: 12.5px; font-weight: 600; color: var(--c-fg-subtle); }
+  &__sub { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 
   &__head .bdg-iconbtn { margin-left: auto; width: 32px; height: 32px; }
 
@@ -387,7 +387,7 @@
     border-top: 1px solid var(--c-border);
     background: var(--c-bg);
 
-    p { margin: 0; font-size: 12px; font-weight: 600; color: var(--c-fg-muted); line-height: 1.5; }
+    p { margin: 0; font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-muted); line-height: 1.5; }
   }
 }
 
@@ -410,17 +410,17 @@
     place-items: center;
     background: var(--c-accent-soft);
     color: var(--c-accent);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 800;
 
     img { width: 100%; height: 100%; object-fit: cover; }
   }
 
   &__id   { min-width: 0; flex: 1; }
-  &__name { font-size: 13.5px; font-weight: 700; color: var(--c-fg); }
+  &__name { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
 
   &__meta {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     overflow: hidden;
@@ -469,7 +469,7 @@
 
   &__note {
     margin: auto 0 0;
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     line-height: 1.5;
@@ -487,7 +487,7 @@
     h2 {
       margin: 0;
       font-family: var(--font-display);
-      font-size: 20px;
+      font-size: var(--fs-xl);
       font-weight: 700;
       letter-spacing: -0.02em;
       color: var(--c-fg);
@@ -496,7 +496,7 @@
     p {
       margin: 5px 0 0;
       max-width: 52ch;
-      font-size: 13px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       color: var(--c-fg-subtle);
       line-height: 1.45;
@@ -521,7 +521,7 @@
     > span {
       flex: 1;
       min-width: 0;
-      font-size: 12px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       color: var(--c-fg-subtle);
       line-height: 1.4;
@@ -535,7 +535,7 @@
 /* The rows inside the pane are core's, minus the card padding they assume. */
 .bdg-rows { padding: 0; }
 
-.bdg-mono { font-family: var(--ff-mono, monospace); font-size: 13px; }
+.bdg-mono { font-family: var(--ff-mono, monospace); font-size: var(--fs-sm); }
 
 /* ── The rail's live preview ────────────────────────────────────────────────── */
 
@@ -553,7 +553,7 @@
 
   &__name {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--fs-base);
     font-weight: 700;
     letter-spacing: -0.01em;
     color: var(--c-fg);
@@ -567,7 +567,7 @@
     display: inline-block;
     margin-top: 6px;
     font-family: var(--ff-mono, monospace);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-muted);
     background: var(--c-bg);
     border-radius: 6px;
@@ -589,7 +589,7 @@
   color: var(--c-fg-muted);
   font-family: inherit;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   text-align: left;
   cursor: pointer;
 
@@ -609,7 +609,7 @@
      DOES, and the thing an admin comes back to check. */
   &__mark {
     font-style: normal;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -665,7 +665,7 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   cursor: pointer;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--c-fg-muted);
 
@@ -721,7 +721,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     font-weight: 600;
     color: var(--c-fg);
   }
@@ -742,7 +742,7 @@
     width: 88px;
     flex: none;
     line-height: 1.2;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
   }
@@ -751,7 +751,7 @@
      counting, and an admin should not have to discover that afterwards. */
   &__from {
     font-style: normal;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -764,7 +764,7 @@
 
 .bdg-summary {
   margin: 14px 0 0;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--c-fg-muted);
   line-height: 1.5;
@@ -815,7 +815,7 @@
     .bdg-mark {
       width: 40px !important;
       height: 40px !important;
-      font-size: 19px !important;
+      font-size: 1.1875rem !important;
     }
 
     &__id { text-align: left; }

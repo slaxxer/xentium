@@ -1,79 +1,60 @@
 # Changelog
 
-## Core updates arrive as a dialog with the whole story
+## Moderation you can work with, readable text, and a Style Editor that reaches everything
 
 ### Changed
 
-- **Writing an article has a new editor.** The canvas takes the full width, with the title,
-  an excerpt and the body in the shared composer (the same toolbar, block picker and tool set
-  your admin configured for comments and posts). Category, tags, cover image, visibility and
-  search appearance live in a Details panel that sits beside the canvas on wide screens and
-  slides over it on smaller ones.
-- **What publishing still needs is shown next to each field**, instead of in a popup after you
-  press Publish. The Details button counts what's missing, and pressing Publish opens it.
-- **A draft can be saved as soon as it has a title.** Category and tags are only needed to
-  publish.
-- **An article's status is Draft or Published.** Switching a published article back to Draft
-  unpublishes it. The old "Review" button did nothing and is gone.
-- **ACP → Users is redesigned.** The list has a search that also finds an email, a user ID
-  or an IP address, status tabs (All, Active, Banned, Flagged), a role filter, sorting by
-  last seen, newest, most posts or name, and counts of active, banned and flagged members.
-  Each row shows the member's role, activity, status and when they were last seen.
-- **Select several members and act on them at once**: add to a group, grant a badge, log
-  out or ban. Each member goes through the same checks as a single action, and anyone who
-  can't be changed (an administrator, or yourself) is listed with the reason.
-- **Flagged members**: accounts with repeated failed sign-ins in the last 24 hours, and
-  accounts that signed up but never confirmed their email. A member's page says why, with
-  a button to their security history.
-- **A member's page is split into tabs**: Overview, Access, Badges and Security. Group
-  changes are saved together with Save membership, and only the groups you actually
-  changed are touched, so a promotion that happened meanwhile is kept.
-- **Banning has duration presets** (24 hours, 7 days, 30 days, 90 days) and the ban's
-  reason is shown on the member's page.
-- **The breadcrumb line above ACP pages is gone** in the sidebar layout. The section panel
-  and the page title already say where you are. With the panel collapsed, search is a
-  magnifier in the sidebar that opens the palette in the middle of the screen (⌘K still
-  works).
-- **A new Xentium release is a one-time dialog with everything in it.** The version you are
-  on and the one available, when it was released, how many releases you are behind,
-  anything to watch out for (a security fix on the way, a plugin that doesn't support the
-  new version yet, manual steps), the changelog of every release in between, and the
-  commands that install it, with a Copy button. Every release opens it once per admin, and
-  any way of closing it counts as seen.
-- **Plugin updates join that dialog.** When plugin updates are waiting too, they are listed
-  at the bottom, with a button to the Updates page, instead of a second dialog straight
-  after.
-- **Core releases are no longer on Extensions → Updates.** The Updates page lists plugin
-  updates only; the dialog is where a new Xentium is announced.
-- **The gear icon in the site's navbar shows a red dot when the ACP needs you**: a waiting
-  Xentium release, a plugin update, or the licence. No count, just the dot; the core release
-  keeps it lit until your site runs the new version.
-- **The ACP sidebar's mark is a shield with a person**, the same staff mark the marketplace's
-  ops console wears.
-- **A release later marked as a security fix brings the dialog back**, even for an admin who
-  had already seen it as an ordinary release.
+- **Text on the site is bigger and follows your browser.** Nothing is smaller than 12px any
+  more, everyday text moved up a step, and articles and messages are set at 17px for
+  reading. Text sizes are relative to the browser's own setting, so a visitor who asked their
+  browser for larger text gets it. On phones, form fields are at least 16px, so tapping one no
+  longer zooms the page.
+- **One control sets the size of all text on the site.** Style Editor → Typography now shows
+  the text size as a percentage, and every text size follows it, headings and captions
+  included. The ACP keeps its own sizes.
+- **The Style Editor reaches every design token.** New sections for tints and states,
+  typography, spacing, corners, shadows, page layout and the base palette cover everything
+  the site is built from, so colours like the accent tint behind selected rows can be changed
+  without custom CSS. Every row starts from the site's real default, and colour pickers show
+  values written as `rgba()` or built from other colours.
+- **ModCanvas is a slide-over panel with one tab row**: Reports, Cases, Users and Audit log,
+  with the counts on the tabs.
+- **Reports are a list and a detail view.** Reports about the same thing are one row, and
+  acting on it closes all of them. The detail shows what was reported as it was at the time,
+  every reporter and their reason, and the author's standing, including when the next warning
+  would trigger a ban.
+- **Every action starts from a premade text.** Warn, ban, remove or dismiss offers texts with
+  the member's name, the place and the ban length filled in, suggests one based on the report's
+  reason, and lets you edit it before sending. You can choose not to notify the member, claim a
+  report, resolve or dismiss several at once, and undo a dismissal.
+- **ACP → Moderation → Templates** is where admins write those texts, or keep the default set.
+  Restore defaults brings back any default text that was deleted, without touching ones you
+  changed.
+- **ACP → Review Cases is redesigned**: filters by status, pattern and severity, a detail pane
+  with the evidence and each linked account's sign-ins and status, a note that saves as you
+  type, assigning a case to a moderator, and a preview of exactly who a ban would affect.
+- **ACP → Mod Settings is redesigned** into Warnings, Bans and Detection, and every setting on
+  it now takes effect: warnings expire on schedule, the escalation ladder is editable (warn,
+  temporary ban, permanent ban or just notify, each once), bans outside the allowed length
+  are refused unless moderators may override, and the warning count can restart after a ban.
+  Ban dialogs open at the default length you set.
+- **Climbing a rank shows a one-time "Level up" dialog** with what the new rank unlocks and
+  the next goal. It follows the "notify on promote" setting.
+- **Only the most recent Xentium announcement is shown**, and one already read never comes
+  back. An unread announcement lights the navbar gear's red dot.
 
 ### Fixed
 
-- **Reopening an article you just saved no longer offers to restore an "unsaved draft".**
-  The editor kept a copy on your device even when nothing had changed since the save.
-- **A member's page in the ACP no longer sends their password hash to the browser.** The
-  page never showed it, but the response carried it, along with the sign-in PIN hash.
-- **The Banned filter on the user list works.** It used to list everyone.
-- **Clicking anywhere in a tall composer starts typing.** A composer given a minimum height
-  only accepted clicks on its first line, so a click in the empty space below did nothing.
-  It now puts the cursor at the end of what you've written.
-- **The admin menu in the sidebar opens in full.** Clicking your avatar at the foot of the
-  sidebar opened the menu behind the section panel, cut off at the sidebar's edge. It now
-  opens beside the avatar, over everything, and grows to fit longer labels ("Lateral ·
-  Superior") instead of cutting them off, in both layouts.
-- **The update command works for your site.** The ACP printed `sudo xentium update`, which
-  installs npm's newest stable release, so it could never install an alpha, and it skipped
-  updating the CLI first. It now prints your site's directory, `npm install xentium@<version>`
-  and `npx xentium update <version>`, with the version it is offering.
-- **Release notes are formatted.** They showed as raw Markdown (`## Title`, `**bold**`). They
-  now render as headings, lists, code and links, in a box that scrolls on its own.
-
-### Upgrading
-
-Nothing to do. There are no migrations. Update the CLI first, as the dialog now tells you.
+- **A site with a theme no longer flashes the default look on every load.** The theme's
+  colours and page layouts now arrive with the page instead of after it.
+- **Mod Settings did nothing.** Its settings were saved and never read: warnings never expired,
+  the ban range was never checked, and the warning thresholds on the page were not the ones
+  that ran.
+- **A warning ladder step fires once.** The temporary ban for the third warning used to fire
+  again on the fourth.
+- **Bans issued from ModCanvas and automatic bans sign the member out**, like every other ban.
+- **Each review case shows its own accounts' IP addresses.** Every case used to show the same
+  list for the whole page.
+- **Banning everyone in a case signs them out and records the reason you typed.**
+- **Reports on articles and comments record who wrote them and what they said**, so the
+  author can be warned or banned from the report.

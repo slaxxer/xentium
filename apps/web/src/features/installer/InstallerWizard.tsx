@@ -1326,7 +1326,7 @@ export function InstallerWizard() {
                   <button
                     type="button"
                     className="btn is-pill is-sm"
-                    style={{ padding: "3px 9px", fontSize: 11.5 }}
+                    style={{ padding: "3px 9px", fontSize: "var(--fs-2xs)" }}
                     onClick={() => {
                       const generated = generatePassphrase();
                       setAdmin((a) => ({ ...a, password: generated, confirm: generated }));

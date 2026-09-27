@@ -207,7 +207,7 @@ export function SearchPage() {
                         {item.tags && item.tags.length > 0 && (
                           <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
                             {item.tags.map((tag) => (
-                              <span key={tag} style={{ fontSize: 11, color: "var(--c-accent)", background: "var(--c-accent-soft)", padding: "2px 7px", borderRadius: 100, fontWeight: 600 }}>#{tag}</span>
+                              <span key={tag} style={{ fontSize: "var(--fs-2xs)", color: "var(--c-accent)", background: "var(--c-accent-soft)", padding: "2px 7px", borderRadius: 100, fontWeight: 600 }}>#{tag}</span>
                             ))}
                           </div>
                         )}

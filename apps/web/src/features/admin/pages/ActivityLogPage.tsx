@@ -69,34 +69,34 @@ export function ActivityLogPage() {
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>{t("activity.loading")}</div>
+          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>{t("activity.loading")}</div>
         ) : (
           <div>
             {data?.data.map((r) => (
               <div key={r.id} className="acp-list-row" style={{ gridTemplateColumns: COLS, alignItems: "center" }}>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{fmt(r.createdAt)}</div>
-                <div style={{ fontSize: 12.5, fontWeight: 600 }}>{r.username ? `@${r.username}` : "—"}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{fmt(r.createdAt)}</div>
+                <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>{r.username ? `@${r.username}` : "—"}</div>
                 <div>
                   <span style={{
-                    fontSize: 11, fontWeight: 700, borderRadius: 100, padding: "2px 8px",
+                    fontSize: "var(--fs-2xs)", fontWeight: 700, borderRadius: 100, padding: "2px 8px",
                     color: r.category === "acp_action" ? "var(--c-accent)" : "var(--c-fg-muted)",
                     background: r.category === "acp_action" ? "var(--c-accent-soft)" : "var(--c-surface)",
                   }}>
                     {t(r.category === "acp_action" ? "activity.acpActions" : "activity.movements")}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--c-fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {r.method && <b style={{ color: "var(--c-fg-muted)", marginRight: 6 }}>{r.method}</b>}
                   <code>{r.path}</code>
                 </div>
-                <div style={{ textAlign: "center", fontSize: 12, fontWeight: 700, color: (r.status ?? 0) >= 400 ? "var(--c-danger)" : "var(--c-fg-muted)" }}>
+                <div style={{ textAlign: "center", fontSize: "var(--fs-xs)", fontWeight: 700, color: (r.status ?? 0) >= 400 ? "var(--c-danger)" : "var(--c-fg-muted)" }}>
                   {r.status ?? "—"}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{r.ip ?? "—"}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{r.ip ?? "—"}</div>
               </div>
             ))}
             {data?.data.length === 0 && (
-              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>{t("activity.empty")}</div>
+              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>{t("activity.empty")}</div>
             )}
           </div>
         )}

@@ -22,8 +22,11 @@ describe("site font CSS", () => {
     expect(fontBodyRule({ weight: "700" })).toContain("font-weight: var(--fw-body);");
   });
 
-  it("sizes through --fs-base, never by rescaling the root", () => {
-    expect(fontRootDecls({ size: "13" })).toContain("  --fs-base: 13px;");
+  it("sizes through the text scale, never by rescaling the root", () => {
+    // 18px means every step is 18/16 of its default — all text, not only the body.
+    expect(fontRootDecls({ size: "18" })).toContain("  --fs-scale: 1.125;");
+    expect(fontRootDecls({ size: "13" })).toContain("  --fs-scale: 0.8125;");
+    expect(fontRootDecls({ size: "junk" }).some((d) => d.includes("--fs-scale"))).toBe(false);
     const rule = fontBodyRule({ size: "13" })!;
     expect(rule).toContain("font-size: var(--fs-base);");
     expect(rule.startsWith("body, input, textarea, select, button {")).toBe(true);

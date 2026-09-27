@@ -56,7 +56,7 @@
   &__wordmark {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 19px;
+    font-size: 1.1875rem;
     letter-spacing: -0.02em;
   }
 
@@ -72,7 +72,7 @@
     white-space: nowrap;
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--c-accent);
@@ -115,7 +115,7 @@
     border-radius: var(--radius-md);
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 15px;
+    font-size: var(--fs-base);
     text-decoration: none;
     transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
 
@@ -144,7 +144,7 @@
     z-index: 5;
     font-family: var(--font-body);
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
   }
 

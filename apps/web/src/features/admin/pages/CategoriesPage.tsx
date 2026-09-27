@@ -215,7 +215,7 @@ function TreeNode({
         {canDrag ? (
           <span
             style={{
-              cursor: "grab", color: "var(--c-fg-muted)", fontSize: 13,
+              cursor: "grab", color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)",
               marginRight: 4, flexShrink: 0,
             }}
             title={t("categories.dragTitle")}
@@ -237,7 +237,7 @@ function TreeNode({
 
         <span className="acp-tree-name">{node.name}</span>
 
-        <span className={`acp-badge ${effectiveBadge}`} style={{ marginTop: 0, marginLeft: 6, fontSize: 10 }}>
+        <span className={`acp-badge ${effectiveBadge}`} style={{ marginTop: 0, marginLeft: 6, fontSize: "var(--fs-2xs)" }}>
           {isInherited ? t("categories.inherited", { label: effectiveLabel }) : ownLabel}
         </span>
 

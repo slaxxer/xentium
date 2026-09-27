@@ -72,7 +72,7 @@
     white-space: nowrap;
     font-family: var(--font-display, system-ui);
     font-weight: 600;
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--c-danger, #ef4444);
@@ -106,7 +106,7 @@
     align-items: center;
     gap: 9px;
     margin: 0 0 22px;
-    font-size: 14px;
+    font-size: var(--fs-md);
     font-weight: 600;
     color: var(--c-accent, #7c6af7);
   }
@@ -120,7 +120,7 @@
     margin-bottom: 24px;
   }
   &__ref-label {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -129,7 +129,7 @@
   &__ref-code {
     padding: 7px 12px;
     font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     font-weight: 600;
     letter-spacing: 0.02em;
     color: var(--c-fg, #eeeef8);
@@ -149,7 +149,7 @@
     align-items: center;
     gap: 7px;
     padding: 7px 13px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     cursor: pointer;
     color: var(--c-fg, #eeeef8);
@@ -178,7 +178,7 @@
     border-radius: var(--btn-radius, 10px);
     font-family: var(--font-display, system-ui);
     font-weight: 600;
-    font-size: 14.5px;
+    font-size: var(--fs-base);
     text-decoration: none;
     transition: transform 0.15s, box-shadow 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
 
@@ -211,7 +211,7 @@
     align-items: center;
     gap: 7px;
     padding: 0;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     cursor: pointer;
     text-decoration: none;
@@ -224,7 +224,7 @@
   &__hint {
     margin: 26px 0 0;
     max-width: 54ch;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     line-height: 1.55;
     color: var(--c-fg-subtle, #6a6f90);
   }
@@ -240,7 +240,7 @@
     > summary {
       cursor: pointer;
       padding: 12px 16px;
-      font-size: 13px;
+      font-size: var(--fs-sm);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -252,7 +252,7 @@
   }
   &__details-hint {
     margin: 14px 16px 0;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle, #6a6f90);
   }
   &__meta {
@@ -260,7 +260,7 @@
     grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
     gap: 6px 16px;
     margin: 14px 16px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
 
     dt {
       font-weight: 700;
@@ -283,7 +283,7 @@
     max-height: 320px;
     overflow: auto;
     font-family: ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     line-height: 1.5;
     white-space: pre;
     color: var(--c-fg-muted, #8080b0);
@@ -302,7 +302,7 @@
     z-index: 5;
     font-family: var(--font-body, system-ui);
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle, #6a6f90);
   }
 

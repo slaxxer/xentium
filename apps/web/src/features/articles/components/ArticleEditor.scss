@@ -31,7 +31,7 @@
 .article-editor__right {
   margin-left: auto;
   padding-left: 12px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--c-fg-subtle);
 }
 
@@ -46,7 +46,7 @@
   border-radius: var(--radius-sm);
   color: var(--c-fg-muted);
   cursor: pointer;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   font-family: inherit;
   transition: all 0.15s;
@@ -72,7 +72,7 @@
 .article-editor__content {
   color: var(--c-fg);
   line-height: 1.7;
-  font-size: 16px;
+  font-size: var(--fs-base);
   min-height: 400px;
 
   &:focus { outline: none; }
@@ -126,5 +126,5 @@
   left: 0;
   color: var(--c-fg-subtle);
   pointer-events: none;
-  font-size: 16px;
+  font-size: var(--fs-base);
 }

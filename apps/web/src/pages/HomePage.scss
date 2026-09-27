@@ -24,13 +24,13 @@
 .hf-railhead {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--c-fg-muted);
   margin-bottom: 12px;
 
-  &--row { display: flex; align-items: center; gap: 8px; text-transform: none; font-size: 14px; letter-spacing: 0; }
+  &--row { display: flex; align-items: center; gap: 8px; text-transform: none; font-size: var(--fs-md); letter-spacing: 0; }
 }
 
 /* ── me card ──────────────────────────────────────────── */
@@ -53,15 +53,15 @@
     z-index: 1;
     .hearth-ava { box-shadow: 0 0 0 4px var(--c-card); }
   }
-  &__name { font-family: var(--font-display); font-weight: 600; font-size: 17px; margin-top: 10px; color: var(--c-fg); }
-  &__handle { color: var(--c-fg-muted); font-size: 13px; }
+  &__name { font-family: var(--font-display); font-weight: 600; font-size: 1.0625rem; margin-top: 10px; color: var(--c-fg); }
+  &__handle { color: var(--c-fg-muted); font-size: var(--fs-sm); }
   &__stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     margin: 16px 14px 0;
     div { display: flex; flex-direction: column; }
-    b { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--c-fg); }
-    span { color: var(--c-fg-muted); font-size: 11.5px; }
+    b { font-family: var(--font-display); font-weight: 700; font-size: 1.0625rem; color: var(--c-fg); }
+    span { color: var(--c-fg-muted); font-size: var(--fs-2xs); }
   }
 }
 
@@ -80,14 +80,14 @@
   border-radius: var(--radius-pill);
   padding: 6px 14px;
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* role badge inline beside an author name (real group badge) */
 .hf-rolepill {
   font-family: var(--font-body);
   font-weight: 700;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   background: var(--c-accent-soft);
   color: var(--c-accent);
   border-radius: var(--radius-pill);
@@ -111,7 +111,7 @@
     gap: 11px;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: 14px;
+    font-size: var(--fs-md);
     padding: 11px 14px;
     border-radius: var(--radius-md);
     color: var(--c-fg);
@@ -144,7 +144,7 @@
   border-radius: var(--radius-sm);
   color: var(--c-fg);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--fs-md);
   transition: background 0.12s;
   &:hover { background: var(--c-accent-soft); }
   i { width: 11px; height: 11px; border-radius: 4px; flex-shrink: 0; }
@@ -169,7 +169,7 @@
     padding: 13px 16px;
     color: var(--c-fg-muted);
     font-weight: 600;
-    font-size: 14.5px;
+    font-size: var(--fs-base);
     transition: background 0.12s;
     &:hover { background: var(--c-bg-hover); }
   }
@@ -182,7 +182,7 @@
       background: var(--c-accent-soft);
       color: var(--c-accent);
       display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
+      font-size: var(--fs-base);
     }
   }
 }
@@ -198,7 +198,7 @@
     padding: 8px 16px;
     font-family: var(--font-display);
     font-weight: 500;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg);
     transition: background 0.12s, color 0.12s;
     &.is-on { background: var(--c-fg); color: var(--c-bg); }
@@ -217,11 +217,11 @@
   &__head { display: flex; align-items: center; gap: 12px; }
   &__id { flex: 1; min-width: 0; }
   &__name {
-    font-family: var(--font-display); font-weight: 600; font-size: 15px; color: var(--c-fg);
+    font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base); color: var(--c-fg);
     display: flex; align-items: center; gap: 8px;
     a { color: inherit; &:hover { color: var(--c-accent); } }
   }
-  &__sub { color: var(--c-fg-muted); font-size: 13px; b { color: var(--c-fg); font-weight: 700; } }
+  &__sub { color: var(--c-fg-muted); font-size: var(--fs-sm); b { color: var(--c-fg); font-weight: 700; } }
 
   &__actions {
     display: flex;
@@ -262,11 +262,11 @@
   }
   &__body {
     min-width: 0;
-    h3 { font-family: var(--font-display); font-weight: 600; font-size: 18px; line-height: 1.25; color: var(--c-fg); }
+    h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); line-height: 1.25; color: var(--c-fg); }
     p {
       margin-top: 6px;
       font-weight: 600;
-      font-size: 14px;
+      font-size: var(--fs-md);
       line-height: 1.5;
       color: var(--c-fg-muted);
       display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
@@ -280,7 +280,7 @@
   background: rgba(0, 0, 0, 0.32);
   color: var(--c-on-accent);
   font-weight: 700;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   padding: 3px 8px;
   border-radius: 7px;
 }
@@ -290,7 +290,7 @@
   align-items: center;
   gap: 7px;
   font-weight: 700;
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   padding: 7px 12px;
   border-radius: var(--radius-sm);
   color: var(--c-fg-muted);
@@ -307,7 +307,7 @@
   background: var(--c-accent-soft);
   color: var(--c-accent);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   &.is-on { background: var(--c-accent); color: var(--c-on-accent); }
@@ -333,7 +333,7 @@
   background: var(--c-success);
   color: var(--c-on-accent);
   font-weight: 800;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   padding: 2px 9px;
   border-radius: var(--radius-pill);
 }
@@ -347,7 +347,7 @@
   margin-left: 10px;
   color: var(--c-fg-muted);
   font-weight: 700;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 /* ── right rail: hot threads ──────────────────────────── */
@@ -366,12 +366,12 @@
     p {
       font-family: var(--font-body);
       font-weight: 700;
-      font-size: 13.5px;
+      font-size: var(--fs-md);
       color: var(--c-fg);
       line-height: 1.35;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
     }
-    span { color: var(--c-fg-muted); font-size: 11.5px; }
+    span { color: var(--c-fg-muted); font-size: var(--fs-2xs); }
     &:hover p { color: var(--c-accent); }
   }
 }
@@ -389,12 +389,12 @@
   background: var(--c-bg-hover); // neutral chip surface — decoupled from the Field token
   color: var(--c-fg);
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   padding: 6px 12px;
   border-radius: var(--radius-pill);
   transition: background 0.12s, color 0.12s;
   &:hover { background: var(--c-accent-soft); color: var(--c-accent); }
-  em { font-style: normal; color: var(--c-fg-muted); font-weight: 700; font-size: 11px; }
+  em { font-style: normal; color: var(--c-fg-muted); font-weight: 700; font-size: var(--fs-2xs); }
   &:hover em { color: var(--c-accent); }
 }
 
@@ -410,9 +410,9 @@
   &__id {
     flex: 1;
     min-width: 0;
-    b { font-family: var(--font-display); font-weight: 600; font-size: 13.5px; color: var(--c-fg); display: block; }
+    b { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); display: block; }
     a { color: inherit; &:hover { color: var(--c-accent); } }
-    span { color: var(--c-fg-muted); font-size: 11.5px; }
+    span { color: var(--c-fg-muted); font-size: var(--fs-2xs); }
   }
 }
 
@@ -420,7 +420,7 @@
   background: var(--c-accent);
   color: var(--c-on-accent);
   font-weight: 800;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   padding: 8px 14px;
   border-radius: var(--radius-sm);
   white-space: nowrap;

@@ -15,7 +15,7 @@
 .mp-heading { margin-bottom: 24px; }
 .mp-eyebrow {
   font-family: var(--font-display);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   letter-spacing: .16em;
   text-transform: uppercase;
@@ -24,7 +24,7 @@
 .mp-h1 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 38px;
+  font-size: 2.375rem;
   letter-spacing: -.025em;
   margin: 7px 0 0;
   color: var(--c-fg);
@@ -38,7 +38,7 @@
 }
 .mp-segtabs button {
   font-family: var(--font-display);
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-weight: 500;
   color: var(--c-fg-subtle);
   background: none;
@@ -53,7 +53,7 @@
 /* role pills */
 .mp-role {
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 800;
   padding: 5px 12px;
   border-radius: var(--radius-pill);
@@ -62,7 +62,7 @@
   gap: 5px;
   width: fit-content;
 }
-.mp-role--sm { font-size: 11px; padding: 3px 9px; }
+.mp-role--sm { font-size: var(--fs-2xs); padding: 3px 9px; }
 .mp-role--admin  { color: var(--c-accent2); background: var(--c-accent2-soft); }
 .mp-role--mod    { color: var(--c-accent);  background: var(--c-accent-soft); }
 .mp-role--member { color: var(--c-fg-subtle); background: var(--c-bg); }
@@ -79,7 +79,7 @@
   transition: background .12s ease, color .12s ease;
 }
 .mp-follow--soft {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--c-accent);
   background: var(--c-accent-soft);
   padding: 9px 16px;
@@ -88,7 +88,7 @@
 .mp-follow--soft:hover { background: var(--c-accent); color: var(--c-on-accent); }
 .mp-follow--soft.is-following { background: var(--c-bg); color: var(--c-fg-subtle); }
 .mp-follow--primary {
-  font-size: 13.5px;
+  font-size: var(--fs-md);
   color: var(--c-on-accent);
   background: var(--c-accent);
   padding: 11px;
@@ -122,35 +122,35 @@
   background: var(--input-bg);
   margin-bottom: 18px;
 }
-.mp-rail__search span { font-size: 16px; color: var(--c-fg-muted); }
+.mp-rail__search span { font-size: var(--fs-base); color: var(--c-fg-muted); }
 .mp-rail__search input {
   flex: 1; min-width: 0;
   border: none; background: none; outline: none;
-  font-family: var(--font-body); font-size: 14px; font-weight: 600; color: var(--c-fg);
+  font-family: var(--font-body); font-size: var(--fs-md); font-weight: 600; color: var(--c-fg);
 }
 .mp-rail__h {
   font-family: var(--font-display);
-  font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
+  font-size: var(--fs-2xs); font-weight: 600; text-transform: uppercase; letter-spacing: .1em;
   color: var(--c-fg-muted);
   margin: 6px 4px 10px;
 }
 .mp-filters { display: flex; flex-direction: column; gap: 2px; margin-bottom: 18px; }
 .mp-filters button {
   display: flex; align-items: center; gap: 9px;
-  font-family: var(--font-body); font-size: 14px; font-weight: 700;
+  font-family: var(--font-body); font-size: var(--fs-md); font-weight: 700;
   color: var(--c-fg-subtle);
   background: none; border: none; padding: 10px 12px; border-radius: var(--radius-sm);
   cursor: pointer; text-align: left;
 }
 .mp-filters button:hover { background: var(--c-bg); }
-.mp-filters button em { margin-left: auto; font-style: normal; font-size: 12px; font-weight: 800; color: var(--c-fg-muted); }
+.mp-filters button em { margin-left: auto; font-style: normal; font-size: var(--fs-xs); font-weight: 800; color: var(--c-fg-muted); }
 .mp-filters button.is-on { background: var(--c-accent-soft); color: var(--c-accent); }
 .mp-filters button.is-on em { color: var(--c-accent); }
 .mp-fdot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success); flex: none; }
 
 .mp-sortbox { display: flex; flex-wrap: wrap; gap: 6px; }
 .mp-sortbox button {
-  font-family: var(--font-body); font-size: 12.5px; font-weight: 700;
+  font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 700;
   color: var(--seg-fg);
   background: var(--seg-bg); border: none; padding: 7px 12px; border-radius: var(--radius-sm); cursor: pointer;
   transition: background 0.12s, color 0.12s;
@@ -164,7 +164,7 @@
   display: flex; justify-content: space-between;
   padding: 16px 22px;
   font-family: var(--font-display);
-  font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
+  font-size: var(--fs-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .08em;
   color: var(--c-fg-muted);
   border-bottom: 1px solid var(--c-border);
 }
@@ -183,37 +183,37 @@
 .mp-row:hover { background: var(--c-bg); }
 .mp-row__id { min-width: 0; }
 .mp-row__top { display: flex; align-items: center; gap: 9px; }
-.mp-row__top b { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--c-fg); }
+.mp-row__top b { font-family: var(--font-display); font-size: var(--fs-base); font-weight: 600; color: var(--c-fg); }
 .mp-banlock { color: var(--c-danger, #ef4444); font-size: 0.82em; margin-left: 5px; }
-.mp-row__handle { font-size: 12.5px; font-weight: 600; color: var(--c-fg-muted); }
-.mp-row__bio { margin: 0; font-size: 13.5px; font-weight: 600; line-height: 1.45; color: var(--c-fg-subtle); max-width: 42ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mp-row__handle { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted); }
+.mp-row__bio { margin: 0; font-size: var(--fs-md); font-weight: 600; line-height: 1.45; color: var(--c-fg-subtle); max-width: 42ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .mp-row__stats { display: flex; gap: 22px; }
 .mp-row__stats div { display: flex; flex-direction: column; align-items: center; }
-.mp-row__stats b { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--c-fg); }
-.mp-row__stats span { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--c-fg-muted); }
+.mp-row__stats b { font-family: var(--font-display); font-size: var(--fs-base); font-weight: 700; color: var(--c-fg); }
+.mp-row__stats span { font-size: var(--fs-2xs); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--c-fg-muted); }
 
-.mp-empty { padding: 56px 0; text-align: center; font-size: 15px; font-weight: 700; color: var(--c-fg-muted); }
-.mp-note { font-size: 14.5px; font-weight: 600; color: var(--c-fg-subtle); margin: 0 0 20px; }
+.mp-empty { padding: 56px 0; text-align: center; font-size: var(--fs-base); font-weight: 700; color: var(--c-fg-muted); }
+.mp-note { font-size: var(--fs-base); font-weight: 600; color: var(--c-fg-subtle); margin: 0 0 20px; }
 
 /* team — grouped role sections */
 .mp-teamsec { margin-bottom: 28px; }
 .mp-teamsec__head { display: flex; align-items: center; gap: 10px; margin: 0 0 12px 2px; }
 .mp-teamsec__head h2 {
-  font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -.01em;
+  font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; letter-spacing: -.01em;
   margin: 0; color: var(--c-fg);
 }
 .mp-teamsec__head span {
-  font-family: var(--font-body); font-size: 12px; font-weight: 800;
+  font-family: var(--font-body); font-size: var(--fs-xs); font-weight: 800;
   color: var(--c-accent); background: var(--c-accent-soft);
   padding: 2px 10px; border-radius: var(--radius-pill);
 }
 
 .mp-pagination {
   display: flex; align-items: center; justify-content: center; gap: 16px;
-  padding: 18px; font-size: 13px; font-weight: 700; color: var(--c-fg-muted);
+  padding: 18px; font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-muted);
 }
 .mp-pagination button {
-  font-family: var(--font-body); font-weight: 800; font-size: 13px;
+  font-family: var(--font-body); font-weight: 800; font-size: var(--fs-sm);
   background: var(--c-bg); color: var(--c-fg-subtle);
   border: none; padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer;
 }
@@ -222,8 +222,8 @@
 /* ── Leaderboard (Hall of Fame) ────────────────────────────────────────── */
 .mp-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 30px; }
 .mp-stat { background: var(--card-bg); border-radius: var(--radius-md); padding: 20px 22px; box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 3px; }
-.mp-stat b { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--c-fg); line-height: 1; }
-.mp-stat span { font-size: 13px; font-weight: 700; color: var(--c-fg-muted); }
+.mp-stat b { font-family: var(--font-display); font-size: var(--fs-3xl); font-weight: 700; color: var(--c-fg); line-height: 1; }
+.mp-stat span { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-muted); }
 
 .mp-podium-wrap {
   background: var(--card-bg); border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
@@ -234,16 +234,16 @@
   background: linear-gradient(120deg, var(--c-accent-soft), var(--c-accent2-soft));
 }
 .mp-podium-head { position: relative; text-align: center; margin-bottom: 26px; }
-.mp-podium-head h2 { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin: 0 0 5px; color: var(--c-fg); }
-.mp-podium-head span { font-size: 13px; font-weight: 600; color: var(--c-fg-subtle); }
+.mp-podium-head h2 { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 700; margin: 0 0 5px; color: var(--c-fg); }
+.mp-podium-head span { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 .mp-podium { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: end; max-width: 760px; margin: 0 auto; }
 .mp-spot { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--c-bg); border-radius: var(--radius-lg); padding: 22px 16px 20px; }
 .mp-spot--1 { padding-top: 30px; background: linear-gradient(180deg, rgba(244, 183, 64, .14), var(--c-bg) 60%); }
-.mp-spot__medal { font-size: 26px; margin-bottom: 8px; }
-.mp-spot--1 .mp-spot__medal { font-size: 32px; }
+.mp-spot__medal { font-size: 1.625rem; margin-bottom: 8px; }
+.mp-spot--1 .mp-spot__medal { font-size: 2rem; }
 .mp-spot__ava { border-radius: 50%; }
-.mp-spot__name { font-family: var(--font-display); font-size: 16px; font-weight: 600; margin: 13px 0 7px; color: var(--c-fg); }
-.mp-spot__likes { margin-top: 11px; font-family: var(--font-body); font-size: 13px; font-weight: 800; color: var(--c-fg); display: flex; align-items: center; gap: 6px; }
+.mp-spot__name { font-family: var(--font-display); font-size: var(--fs-base); font-weight: 600; margin: 13px 0 7px; color: var(--c-fg); }
+.mp-spot__likes { margin-top: 11px; font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 800; color: var(--c-fg); display: flex; align-items: center; gap: 6px; }
 .mp-spot__likes span { color: var(--c-accent2); }
 
 /* how-to-climb context (replaces the all-members cover grid) */
@@ -259,22 +259,22 @@
   content: ""; position: absolute; inset: 0 0 auto; height: 6px;
   background: linear-gradient(90deg, var(--c-accent2), var(--c-accent));
 }
-.mp-howto__title { font-family: var(--font-display); font-size: 20px; font-weight: 700; margin: 4px 0 8px; color: var(--c-fg); }
-.mp-howto__intro { font-size: 14.5px; font-weight: 600; line-height: 1.55; color: var(--c-fg-subtle); margin: 0 0 18px; }
+.mp-howto__title { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; margin: 4px 0 8px; color: var(--c-fg); }
+.mp-howto__intro { font-size: var(--fs-base); font-weight: 600; line-height: 1.55; color: var(--c-fg-subtle); margin: 0 0 18px; }
 .mp-howto__list { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
 .mp-howto__list li {
   display: flex; align-items: flex-start; gap: 11px;
-  font-size: 14px; font-weight: 600; line-height: 1.45; color: var(--c-fg);
+  font-size: var(--fs-md); font-weight: 600; line-height: 1.45; color: var(--c-fg);
 }
 .mp-howto__list li span {
   flex: none; width: 30px; height: 30px; border-radius: var(--radius-sm);
-  display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-base);
   background: var(--c-accent-soft);
 }
 .mp-howto__foot {
   margin: 0; padding: 14px 16px;
   background: var(--c-accent-soft); border-radius: var(--radius-md);
-  font-size: 13.5px; font-weight: 700; line-height: 1.5; color: var(--c-accent);
+  font-size: var(--fs-md); font-weight: 700; line-height: 1.5; color: var(--c-accent);
 }
 
 /* ── responsive ────────────────────────────────────────────────────────── */

@@ -50,7 +50,7 @@
       width: 42px;
       height: 42px;
       margin: 0;
-      font-size: 19px;
+      font-size: 1.1875rem;
       flex-shrink: 0;
     }
     .xt-dialog__title { margin: 0; flex: 1; min-width: 0; }
@@ -63,7 +63,7 @@
   &__badge {
     padding: 3px 10px;
     border-radius: 100px;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -92,7 +92,7 @@
     align-items: center;
     gap: 10px;
     padding: 10px 14px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     background: var(--c-surface);
 
     & + & { border-top: 1px solid var(--c-border); }
@@ -109,7 +109,7 @@
   &__row-marker {
     padding: 1px 8px;
     border-radius: 100px;
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     text-transform: uppercase;
     color: var(--c-danger);
@@ -118,7 +118,7 @@
   }
   &__row-value {
     font-family: monospace;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-muted);
     flex-shrink: 0;
   }
@@ -128,7 +128,7 @@
     gap: 8px;
     margin-top: 12px;
     padding: 9px 13px;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-warn);
     background: color-mix(in srgb, var(--c-warn) 10%, transparent);
     border: 1px solid color-mix(in srgb, var(--c-warn) 28%, transparent);
@@ -160,7 +160,7 @@
     justify-content: space-between;
     gap: 10px;
     margin-top: 8px;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-muted);
   }
   &__progress-pct {
@@ -175,7 +175,7 @@
     width: 52px;
     height: 52px;
     margin: 0 auto 14px;
-    font-size: 24px;
+    font-size: var(--fs-2xl);
     color: var(--_dlg-c);
     background: color-mix(in srgb, var(--_dlg-c) 12%, transparent);
     border-radius: 50%;
@@ -183,11 +183,11 @@
   &__title {
     margin: 0 0 8px;
     font-family: var(--ff-sans);   // override the global h1–h6 display font
-    font-size: 18px;
+    font-size: var(--fs-lg);
     font-weight: 800;
   }
   &__body {
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     line-height: 1.55;
     color: var(--c-fg-muted);
     overflow-wrap: break-word;
@@ -201,7 +201,7 @@
   &__btn {
     padding: 8px 20px;
     font: inherit;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     border-radius: var(--radius-sm);
     cursor: pointer;

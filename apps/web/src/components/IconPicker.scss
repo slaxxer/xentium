@@ -21,7 +21,7 @@
     flex: none;
     width: 34px;
     height: 34px;
-    font-size: 17px;
+    font-size: 1.0625rem;
     border-radius: var(--radius-md);
     border: 1px solid var(--c-border);
     background: var(--c-surface);
@@ -46,7 +46,7 @@
     display: grid;
     place-items: center;
     aspect-ratio: 1;
-    font-size: 15px;
+    font-size: var(--fs-base);
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     background: transparent;

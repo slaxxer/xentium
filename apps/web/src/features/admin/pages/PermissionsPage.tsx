@@ -116,7 +116,7 @@ export function PermissionsPage() {
       {/* Group selector */}
       <div className="acp-card" style={{ padding: "14px 20px", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg-muted)" }}>
+          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg-muted)" }}>
             {t("permissions.editingFor")}
           </span>
           <select
@@ -130,7 +130,7 @@ export function PermissionsPage() {
             ))}
           </select>
           {selected && (
-            <span style={{ fontSize: 13, color: "var(--c-fg-muted)", marginLeft: "auto" }}>
+            <span style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginLeft: "auto" }}>
               {t("permissions.grantedCount", { granted: allowed.size, total: (allPermissions as Permission[]).length })}
             </span>
           )}
@@ -148,10 +148,10 @@ export function PermissionsPage() {
                 padding: "12px 20px",
                 borderBottom: "1px solid var(--c-border)",
               }}>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "var(--c-fg)" }}>
+                <div style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--c-fg)" }}>
                   {domain}
                 </div>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                   {t("permissions.domainGranted", { granted: domainGranted, total: perms.length })}
                 </div>
               </div>
@@ -176,8 +176,8 @@ export function PermissionsPage() {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg)" }}>{ep.label}</div>
-                        <div style={{ fontSize: 11, color: "var(--c-fg-muted)", fontFamily: "monospace", marginTop: 2 }}>{p.key}</div>
+                        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg)" }}>{ep.label}</div>
+                        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)", fontFamily: "monospace", marginTop: 2 }}>{p.key}</div>
                       </div>
                       <div style={{
                         width: 40, height: 22, borderRadius: 100,

@@ -67,7 +67,7 @@ function Gauge({
         <div className="ab-gauge__num">
           <b style={{ color: col }}>
             {Math.round(value)}
-            <span style={{ fontSize: 13, fontWeight: 700 }}>{suffix}</span>
+            <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700 }}>{suffix}</span>
           </b>
           <span>{label}</span>
         </div>

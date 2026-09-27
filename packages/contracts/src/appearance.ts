@@ -127,8 +127,19 @@ export function fontRootDecls(font: SiteFont): string[] {
     out.push(`  --font-display: ${FONT_STACKS[font.family]};`);
   }
   if (font.weight) out.push(`  --fw-body: ${font.weight};`);
-  if (font.size)   out.push(`  --fs-base: ${font.size}px;`);
+  // The size is the SITE's text size: it sets the scale every `--fs-*` step multiplies
+  // by, so 18 makes all text 18/16 of its default — headings, captions and all — rather
+  // than only the body text it used to move.
+  const scale = fontScale(font.size);
+  if (scale !== null) out.push(`  --fs-scale: ${scale};`);
   return out;
+}
+
+/** "18" → 1.125: the text-size scale a base size in px means. Null when unset or not a size. */
+export function fontScale(size: string | undefined): number | null {
+  const px = Number(size);
+  if (!size || !Number.isFinite(px) || px <= 0) return null;
+  return Math.round((px / 16) * 10000) / 10000;
 }
 
 /** The rule that applies those properties, or null when nothing is set. */

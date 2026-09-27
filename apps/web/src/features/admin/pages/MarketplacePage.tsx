@@ -228,7 +228,7 @@ export function MarketplacePage() {
 
       {/* Account connection notice (ADR 0001) */}
       {!conn?.connected && (
-        <div style={{ background:"color-mix(in srgb, var(--c-warn) 12%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-md)", padding:"12px 18px", marginBottom:20, display:"flex", alignItems:"center", gap:10, fontSize:13, color:"var(--c-warn)" }}>
+        <div style={{ background:"color-mix(in srgb, var(--c-warn) 12%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-md)", padding:"12px 18px", marginBottom:20, display:"flex", alignItems:"center", gap:10, fontSize:"var(--fs-sm)", color:"var(--c-warn)" }}>
           <FontAwesomeIcon icon={faFlask} />
           <span>
             <Trans ns="acp" i18nKey="marketplace.notConnected" components={[
@@ -240,19 +240,19 @@ export function MarketplacePage() {
 
       {/* License banner */}
       <div style={{ background: license ? "var(--c-accent-soft)" : "var(--c-surface)", border:`1px solid ${license ? "var(--c-accent-glow)" : "var(--c-border)"}`, borderRadius:"var(--radius-md)", padding:"14px 20px", marginBottom:24, display:"flex", alignItems:"center", gap:12 }}>
-        <FontAwesomeIcon icon={faKey} style={{ fontSize:18, color: license ? "var(--c-accent)" : "var(--c-fg-muted)" }} />
+        <FontAwesomeIcon icon={faKey} style={{ fontSize:"var(--fs-lg)", color: license ? "var(--c-accent)" : "var(--c-fg-muted)" }} />
         <div style={{ flex:1 }}>
           {license ? (
             <>
-              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.licenseActive")}</div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>
+              <div style={{ fontSize:"var(--fs-md)", fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.licenseActive")}</div>
+              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)" }}>
                 {entitlements.length ? t("marketplace.entitlementsList", { list: entitlements.map((e) => e.replace(/^(plugin|theme)\./, "")).join(", ") }) : t("marketplace.noEntitlements")}
               </div>
             </>
           ) : (
             <>
-              <div style={{ fontSize:14, fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.noLicense")}</div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{t("marketplace.activateHint")}</div>
+              <div style={{ fontSize:"var(--fs-md)", fontWeight:700, color:"var(--c-fg)" }}>{t("marketplace.noLicense")}</div>
+              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)" }}>{t("marketplace.activateHint")}</div>
             </>
           )}
         </div>
@@ -290,7 +290,7 @@ export function MarketplacePage() {
       {/* Said once above the grid rather than on every card: installing a theme
           applies it immediately, and the admin has somewhere to go to manage it. */}
       {kind === "theme" && (
-        <p style={{ fontSize:12.5, color:"var(--c-fg-subtle)", margin:"-8px 0 18px", maxWidth:"80ch" }}>
+        <p style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-subtle)", margin:"-8px 0 18px", maxWidth:"80ch" }}>
           {t("marketplace.themeDraftNote")}{" "}
           <button type="button" onClick={() => navigate("/admin/themes")}
             style={{ background:"none", border:"none", padding:0, color:"var(--c-accent)", fontWeight:700, textDecoration:"underline", cursor:"pointer", font:"inherit" }}>
@@ -330,7 +330,7 @@ export function MarketplacePage() {
             <div key={p.id} className="acp-card" style={{ padding:22, position:"relative", opacity: locked ? 0.8 : 1, overflow:"hidden" }}>
               {locked && (
                 <div style={{ position:"absolute", top:14, right:14, zIndex:1 }}>
-                  <FontAwesomeIcon icon={faLock} style={{ color:"var(--c-fg-muted)", fontSize:14 }} />
+                  <FontAwesomeIcon icon={faLock} style={{ color:"var(--c-fg-muted)", fontSize:"var(--fs-md)" }} />
                 </div>
               )}
 
@@ -352,30 +352,30 @@ export function MarketplacePage() {
                     style={{ display:"block", width:"calc(100% + 44px)", maxWidth:"none", margin:"-22px -22px 14px", aspectRatio:"16 / 10", objectFit:"cover", background:"var(--c-surface)" }}
                   />
                 ) : (
-                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"calc(100% + 44px)", margin:"-22px -22px 14px", aspectRatio:"16 / 10", background:"var(--c-surface)", borderBottom:"1px solid var(--c-border)", color:"var(--c-fg-subtle)", fontSize:22 }}>
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"calc(100% + 44px)", margin:"-22px -22px 14px", aspectRatio:"16 / 10", background:"var(--c-surface)", borderBottom:"1px solid var(--c-border)", color:"var(--c-fg-subtle)", fontSize:"1.375rem" }}>
                     <FontAwesomeIcon icon={faImage} />
                   </div>
                 )
               )}
 
               <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:12 }}>
-                <div style={{ width:44, height:44, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color }}>
+                <div style={{ width:44, height:44, background:`${color}15`, border:`1px solid ${color}30`, borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"var(--fs-xl)", color }}>
                   <FontAwesomeIcon icon={icon} />
                 </div>
-                <div style={{ fontSize:18, fontWeight:800, color:"var(--c-fg)", textAlign:"right" }}>
+                <div style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--c-fg)", textAlign:"right" }}>
                   {p.priceCents === 0 ? t("marketplace.free") : `$${(p.priceCents / 100).toFixed(0)}`}
-                  {p.priceCents > 0 && <span style={{ fontSize:12, fontWeight:400, color:"var(--c-fg-muted)" }}>{t("marketplace.perYear")}</span>}
+                  {p.priceCents > 0 && <span style={{ fontSize:"var(--fs-xs)", fontWeight:400, color:"var(--c-fg-muted)" }}>{t("marketplace.perYear")}</span>}
                 </div>
               </div>
 
               <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom:6 }}>
-                <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
+                <span style={{ fontSize:"var(--fs-base)", fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
                 {/* Before the money, not after it. How hard we looked is part of
                     what a buyer is deciding on, and a theme has no code for us to
                     have looked at. */}
                 {!isTheme && p.trustTier && <TrustBadge tier={p.trustTier} mode="tier" />}
               </div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
+              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", lineHeight:1.6, marginBottom:16 }}>{p.description}</div>
 
               {/* On the CARD, beside the price — a theme's missing pieces are part
                   of what it costs, and a warning shown after the purchase is not
@@ -386,7 +386,7 @@ export function MarketplacePage() {
                   style={{
                     display:"flex", gap:8, alignItems:"flex-start", marginBottom:16, padding:"9px 11px",
                     borderRadius:"var(--radius-md)", background:"color-mix(in srgb, var(--c-warn) 12%, transparent)",
-                    color:"var(--c-fg)", fontSize:12, lineHeight:1.5,
+                    color:"var(--c-fg)", fontSize:"var(--fs-xs)", lineHeight:1.5,
                   }}
                 >
                   <FontAwesomeIcon icon={faTriangleExclamation} style={{ color:"var(--c-warn)", marginTop:2 }} />
@@ -433,7 +433,7 @@ export function MarketplacePage() {
                   </button>
                 ) : null}
                 {instStatus === "enabled" ? (
-                  <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:11, fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:"var(--fs-2xs)", fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
                     {/* For a theme this says "installed", not "enabled": a theme
                         has no enabled state, and the library may hold several while
                         exactly one is active — "enabled" would claim this is the one
