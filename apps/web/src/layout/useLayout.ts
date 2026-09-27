@@ -21,7 +21,7 @@ import {
   type TemplateKey,
 } from "@xentium/contracts";
 import { api } from "../lib/api";
-import { viewerThemeParam } from "../lib/viewerTheme";
+import { viewerThemeId, viewerThemeParam } from "../lib/viewerTheme";
 /**
  * ⚠ Re-exported, not redefined. These moved to `previewMode` so the icon wrapper can
  * ask without pulling this module's dependencies in behind it; every existing caller
@@ -148,6 +148,24 @@ function subscribeLive(fn: () => void): () => void {
 
 const liveSnapshot = () => liveDocs;
 
+/**
+ * The documents the server inlined into index.html (serveWeb `injectLayouts`), for
+ * the theme this visitor wears — so the first render is the site's arrangement, not
+ * the code default it used to show until the fetch landed.
+ *
+ * ⚠ Taken ONCE. It describes the page as it was served; a later query for the same
+ * key (after the cache dropped it, say) must fetch, or it would be answered with
+ * documents an admin may have published over since.
+ */
+export function takeInlinedLayouts(): PublishedLayouts | undefined {
+  if (typeof document === "undefined") return undefined;
+  const el = document.getElementById("xentium-layouts");
+  if (!el) return undefined;
+  el.remove();
+  if ((el.dataset.theme ?? "") !== (viewerThemeId() ?? "")) return undefined;
+  try { return JSON.parse(el.textContent ?? "") as PublishedLayouts; } catch { return undefined; }
+}
+
 export function usePublishedLayouts() {
   // DATA, so both modes — a preview that read published layouts would be a preview
   // of nothing.
@@ -170,6 +188,8 @@ export function usePublishedLayouts() {
     queryFn:  () => api.get(
       preview ? "/admin/layouts" : themed ? `/layouts?${themed}` : "/layouts",
     ),
+    // Never for a preview: the inlined set is the PUBLISHED one.
+    initialData: preview ? undefined : takeInlinedLayouts,
     staleTime: Infinity,   // invalidated explicitly on the style-version event
     retry: false,          // a failure falls back to defaults; retrying blocks nothing
   });
