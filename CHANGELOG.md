@@ -29,6 +29,9 @@
 
 ### Fixed
 
+- **Clicking anywhere in a tall composer starts typing.** A composer given a minimum height
+  only accepted clicks on its first line, so a click in the empty space below did nothing.
+  It now puts the cursor at the end of what you've written.
 - **The admin menu in the sidebar opens in full.** Clicking your avatar at the foot of the
   sidebar opened the menu behind the section panel, cut off at the sidebar's edge. It now
   opens beside the avatar, over everything, and grows to fit longer labels ("Lateral ·
