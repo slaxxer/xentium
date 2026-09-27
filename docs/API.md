@@ -171,6 +171,8 @@ All **Auth**.
 | GET | `/profile-fields` | Public | Custom profile field **definitions**. |
 | GET | `/search` | Auth | User search (typeahead). |
 | GET | `/me/limits` | Auth | Your content limits from the progression config. |
+| GET | `/me/level-up` | Auth | `{ levelUp }`: the newest rung you climbed and have not seen yet (`rank`, `from`, what it `unlocks`, the `next` goal), or `null`. Null too when progression or promotion notices are off. |
+| POST | `/me/level-up/seen` | Auth | Marks every unseen climb seen. The site shows the level-up dialog once. |
 | GET | `/me/blocks` | Auth | Who you've blocked. |
 | GET | `/:username` | Optional | Public profile (respects privacy). |
 | GET | `/:id/followers` | Optional | Followers, paginated (403 if the owner hid the list). |
@@ -286,10 +288,16 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | GET | `/summary` | Auth | Counts for the ModCanvas badges. |
 | GET | `/reports` | Perm:`moderation.report.manage` | The report queue. |
 | PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update a report's status. |
-| GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. |
+| GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. Without an `expiresAt`, a warning gets the expiry set in Mod Settings. Each warning runs the escalation ladder. |
 | PATCH | `/warnings/:id/pardon` | Perm:`moderation.warn` | Pardon. |
-| GET | `/bans` · POST `/bans` | Perm:`moderation.ban` | List / issue bans. |
+| GET | `/bans` · POST `/bans` | Perm:`moderation.ban` | List / issue bans. A temporary ban outside the Mod Settings range is refused (`XEC-API-4001`) unless moderators may override it; an override is noted in the mod log. The banned member is signed out. |
+| GET | `/ban-policy` | Perm:`moderation.ban` | `{ defaultDays, minDays, maxDays, allowOverride }`, so a ban dialog opens at the default length. |
 | PATCH | `/bans/:id/lift` | Perm:`moderation.ban` | Lift a ban. |
+| GET | `/inspector` | Perm:`moderation.report.manage` | ModCanvas: pending reports grouped by what they are about. Each group has its `reports` (reporter, reason, time), `where`/`href`, the `snapshot` kept at filing, the `author` (joined, active warnings, the ladder step the next warning would hit, other open reports) and `claimedBy`. |
+| POST | `/reports/act` | a moderator | `{ reportIds, mode: warn \| ban \| delete \| dismiss, message, notify, templateId?, duration? }`. Acts on one group and closes all of its reports; the permission checked depends on `mode`. `notify: false` sends the member nothing. `duration` is `1h`, `24h`, `7d`, `30d` or `perm`. Remove works on articles and article/profile comments. |
+| POST | `/reports/status` | Perm:`moderation.report.manage` | `{ reportIds, status: resolved \| dismissed \| pending }`. Bulk close, and `pending` is Undo. |
+| POST | `/reports/claim` | Perm:`moderation.report.manage` | `{ reportIds, on }` claims a group for yourself or releases it. Logged. |
+| GET | `/templates` | a moderator | The premade texts ModCanvas fills in (read-only here; admins manage them under `/api/admin/mod-templates`): `mode`, `name`, `text` (with `{user}`, `{type}`, `{where}`, `{duration}`), `ruleRef`, `defaultDuration` (bans), `matchCategories`, `useCount`. |
 | GET | `/cases` | Perm:`moderation.cases.manage` | Review cases. |
 | PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / ban everyone in a case. |
 | GET | `/log` | Perm:`moderation.log.view` | Moderation log. |
@@ -454,7 +462,14 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | GET | `/reports` · PATCH `/reports/:id` | The report queue. |
 | GET | `/warnings` · POST · PATCH `/warnings/:id/pardon` | Warnings. |
 | GET | `/bans` | Bans. |
-| GET | `/cases` · PATCH `/cases/:id` · PATCH `/cases/:id/notes` · POST `/cases/:id/ban-all` · POST `/cases/:id/revoke-exception` | Review cases. |
+| GET | `/cases` | Review cases. Query: `status` (`open`, `reviewed`, `all`; default `open`), `type`, `severity` (`high`, `medium`, `low`), `sort` (`new`, `old`), `page`, `limit`. Each case carries its linked accounts (registered, last login, last IP, `status`, `willBeBanned`), its own IPs and `sharedIdentifiers`, and `assignedTo`. The response adds `counts` per status and `detection` (last run, interval). |
+| PATCH | `/cases/:id` · PATCH `/cases/:id/notes` · POST `/cases/:id/revoke-exception` | Grant an exception, save the mod note, revoke an exception. |
+| POST | `/cases/:id/ban-all` | Ban every linked account except staff and the already banned, with an optional `{ reason }`. Banned accounts are signed out everywhere. |
+| PATCH | `/cases/:id/assign` | `{ userId }` assigns a staff member, `null` clears it. Logged. |
+| GET · POST | `/mod-templates` | Moderation → Templates: list (each with `isDefault`), create. |
+| PATCH · DELETE | `/mod-templates/:id` | Edit (partial) or delete (soft) a template. |
+| POST | `/mod-templates/restore-defaults` | Adds back every default template that is missing (matched by mode and name). Edited ones are left alone. Returns `{ restored }`. |
+| GET·PATCH | `/mod-settings` | Mod Settings: `expiry { enabled, days }`, `ladder` (steps of `{ warningCount, action: notify \| ban_temporary \| ban_permanent, banDays?, notifyModerators }`), `bans { defaultDays, minDays, maxDays, allowOverride }`, `resetAfterBan`, and `patterns` (per pattern: `enabled`, `claimedBy`, `casesLast7d`). PATCH takes any of those sections (`patterns` as `{ type: boolean }`) and writes only what it carries. An impossible range, a default outside it, or two steps on one count is refused. |
 | GET | `/modlog` | Moderation log. |
 | DELETE | `/comments/article/:id` · `/comments/profile/:id` | Moderator soft-delete. |
 

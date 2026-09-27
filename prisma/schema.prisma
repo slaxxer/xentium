@@ -98,6 +98,7 @@ model User {
   updatedAt  DateTime @updatedAt
 
   groups   UserGroup[]
+  levelUps LevelUp[]
   passkeys Passkey[]
   oauthAccounts OAuthAccount[]
   sessions Session[]
@@ -158,6 +159,22 @@ model Group {
 }
 
 // ── Phase 7 — Progression system (§38) ───────────────────────────────────────
+
+/// A rung a member climbed, kept until they have SEEN it: the site shows a one-time
+/// "Level up" dialog for the newest unseen one. Chain promotions (two rungs at once)
+/// leave two rows; the dialog shows the latest and marks them all seen.
+model LevelUp {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromGroupId String?   @map("from_group_id")
+  toGroupId   String    @map("to_group_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  seenAt      DateTime? @map("seen_at")
+
+  @@index([userId, seenAt])
+  @@map("xcf_level_ups")
+}
 
 model GroupProgression {
   groupId                  String   @id @map("group_id")
@@ -877,10 +894,37 @@ model ModerationCase {
   notes         String?   @db.Text         // free-text mod note (reason for exception etc.)
   reviewedBy    String?   @map("reviewed_by")
   reviewedAt    DateTime? @map("reviewed_at")
+  /// The moderator looking into it. Null = nobody yet. A plain id, like reviewedBy:
+  /// a staff account that is deleted leaves the case unassigned in effect.
+  assignedTo    String?   @map("assigned_to")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   @@index([status, createdAt(sort: Desc)])
   @@map("xcf_moderation_cases")
+}
+
+/// A premade moderation message (ModCanvas → Templates). Every action a moderator takes
+/// from a report starts from one; `{user}`, `{type}`, `{where}` and `{duration}` fill in.
+model ModerationTemplate {
+  id              String    @id @default(cuid())
+  mode            String    // warn | ban | delete | dismiss
+  name            String
+  text            String    @db.Text
+  ruleRef         String?   @map("rule_ref")
+  /// Bans only: 1h | 24h | 7d | 30d | perm
+  defaultDuration String?   @map("default_duration")
+  /// A dismissal note is for the mod log, never sent to anyone.
+  internal        Boolean   @default(false)
+  /// Report reasons this template is suggested for (lower-case words).
+  matchCategories String[]  @default([]) @map("match_categories")
+  useCount        Int       @default(0) @map("use_count")
+  updatedById     String?   @map("updated_by_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  @@index([mode, deletedAt])
+  @@map("xcf_moderation_templates")
 }
 
 model ModerationLog {

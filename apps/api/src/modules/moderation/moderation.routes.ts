@@ -32,6 +32,18 @@ moderationRouter.get("/warnings", modGuard,   moderationController.listWarnings)
 moderationRouter.get("/bans",     banGuard,   moderationController.listBans);
 moderationRouter.get("/cases",    caseGuard,  moderationController.listCases);
 moderationRouter.get("/log",      logGuard,   moderationController.listLog);
+// The ban range + default length, so a ban dialog opens at what the admin set.
+moderationRouter.get("/ban-policy", banGuard, moderationController.banPolicy);
+
+// ── ModCanvas: the report inspector and the premade texts it reads ────────────
+moderationRouter.get("/inspector",              repGuard,        moderationController.inspector);
+// The permission an action needs depends on its mode (warn / ban / remove / dismiss),
+// so the route admits any moderator and the service checks the one that applies.
+moderationRouter.post("/reports/act",           userSearchGuard, moderationController.act);
+moderationRouter.post("/reports/status",        repGuard,        moderationController.setReportStatus);
+moderationRouter.post("/reports/claim",         repGuard,        moderationController.claimReports);
+// Read-only here: moderators USE the texts. Admins manage them in the ACP (/admin/mod-templates).
+moderationRouter.get("/templates",              userSearchGuard, moderationController.listTemplates);
 
 // ── Write actions ────────────────────────────────────────────────────────────
 moderationRouter.patch("/reports/:id",         repGuard,   moderationController.updateReport);

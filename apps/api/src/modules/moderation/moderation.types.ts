@@ -6,10 +6,14 @@ export type BanStatus        = "active" | "expired" | "lifted";
 export type CaseStatus       = "open" | "reviewed" | "dismissed";
 export type CaseType         = "rapid_login_attempts" | "multi_account_suspicion" | "ban_evasion_suspicion" | "registration_burst" | "impossible_travel";
 
+/** One step of the escalation ladder. Fires once, when a member's counted warnings
+ *  reach exactly `warningCount`. */
 export interface ThresholdRule {
   warningCount: number;
-  action:       "ban_temporary" | "ban_permanent";
+  action:       "notify" | "ban_temporary" | "ban_permanent";
   banDays?:     number;
+  /** Tell everyone who manages warnings. Absent on rows saved before the field existed = true. */
+  notifyModerators?: boolean;
 }
 
 export interface ModerationPolicy {
@@ -45,7 +49,7 @@ export function describeCaseSignal(type: string, usernames: string[]): string {
 
 export const DEFAULT_MODERATION_POLICY: ModerationPolicy = {
   thresholds: [
-    { warningCount: 3, action: "ban_temporary", banDays: 7 },
-    { warningCount: 5, action: "ban_permanent" },
+    { warningCount: 3, action: "ban_temporary", banDays: 7, notifyModerators: true },
+    { warningCount: 5, action: "ban_permanent", notifyModerators: true },
   ],
 };

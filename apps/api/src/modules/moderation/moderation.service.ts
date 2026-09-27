@@ -4,7 +4,9 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
-import { DEFAULT_MODERATION_POLICY, humanizeCaseType, describeCaseSignal, type ModerationPolicy, type ReportTargetType } from "./moderation.types.js";
+import { humanizeCaseType, describeCaseSignal, type ReportTargetType, type ThresholdRule } from "./moderation.types.js";
+import { getModPolicy, warningExpiry, checkBanLength } from "./moderationPolicy.js";
+import { describeTarget } from "./reportTarget.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 
 
@@ -62,12 +64,6 @@ async function resolveCaseUsers<T extends { linkedUserIds: string[] }>(rows: T[]
     ...r,
     linkedUsers: r.linkedUserIds.map((id) => map.get(id) ?? { id, username: id, badgeColor: null }),
   }));
-}
-
-async function getPolicy(): Promise<ModerationPolicy> {
-  const row = await prisma.setting.findUnique({ where: { key: "moderation.policy" } });
-  if (!row) return DEFAULT_MODERATION_POLICY;
-  return row.value as unknown as ModerationPolicy;
 }
 
 async function writeModLog(data: {
@@ -133,7 +129,12 @@ export const moderationService = {
     reporterId: string;
     reason:     string;
   }) {
-    const report = await prisma.moderationReport.create({ data: { ...data, status: "pending" } });
+    // Record who wrote it and what it said NOW: the canvas acts on the author, and the
+    // content may be edited or deleted before anyone looks.
+    const info = await describeTarget(data.targetType, data.targetId);
+    const report = await prisma.moderationReport.create({
+      data: { ...data, status: "pending", targetUserId: info.authorId, contentSnapshot: info.snapshot },
+    });
 
     await notifyPermHolders("moderation.report.manage", {
       type:  "mod.new_report",
@@ -180,6 +181,8 @@ export const moderationService = {
     issuedById: string;
     reason:     string;
     expiresAt?: Date | null;
+    /** false = no notification to the member (ModCanvas "Send to … as a notification" off). */
+    notify?:    boolean;
   }) {
     const user = await prisma.user.findUnique({
       where:   { id: data.userId },
@@ -194,13 +197,14 @@ export const moderationService = {
       throw XentiumError.forbidden(`You cannot warn a ${staffGroup.group.name} member`);
     }
 
+    const policy = await getModPolicy();
     const warning = await prisma.moderationWarning.create({
       data: {
         userId:     data.userId,
         issuedById: data.issuedById,
         reason:     data.reason,
         status:     "active",
-        expiresAt:  data.expiresAt ?? null,
+        expiresAt:  warningExpiry(policy, data.expiresAt),
       },
     });
 
@@ -213,7 +217,7 @@ export const moderationService = {
       reason:     data.reason,
     });
 
-    await notificationService.dispatch({
+    if (data.notify !== false) await notificationService.dispatch({
       userId:   data.userId,
       type:     "moderation.warning_issued",
       title:    "You have received a warning",
@@ -257,25 +261,58 @@ export const moderationService = {
 
   // ── Threshold engine ─────────────────────────────────────────────────────
 
-  async checkThresholds(userId: string, actorId: string) {
-    const policy = await getPolicy();
-    if (!policy.thresholds.length) return;
-
-    const activeCount = await prisma.moderationWarning.count({
-      where: { userId, status: "active" },
+  /**
+   * Warnings that count toward the ladder right now: active, not past their expiry,
+   * and — when the policy clears the count after a ban — issued since the latest one.
+   *
+   * ⚠ Expiry is a date, not a status change: nothing flips a warning to "expired",
+   * so counting `status: "active"` alone kept every warning escalating forever.
+   */
+  async countedWarnings(userId: string, resetAfterBan: boolean, now = new Date()) {
+    const lastBan = resetAfterBan
+      ? await prisma.moderationBan.findFirst({ where: { userId }, orderBy: { createdAt: "desc" }, select: { createdAt: true } })
+      : null;
+    return prisma.moderationWarning.count({
+      where: {
+        userId, status: "active",
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+        ...(lastBan ? { createdAt: { gt: lastBan.createdAt } } : {}),
+      },
     });
+  },
 
-    for (const rule of policy.thresholds.sort((a, b) => b.warningCount - a.warningCount)) {
-      if (activeCount >= rule.warningCount) {
-        if (rule.action === "ban_temporary" && rule.banDays) {
-          const expiresAt = new Date(Date.now() + rule.banDays * 86400000);
-          await this.autoBan(userId, actorId, "temporary", expiresAt);
-        } else if (rule.action === "ban_permanent") {
-          await this.autoBan(userId, actorId, "permanent", null);
-        }
-        break;
-      }
+  /**
+   * Run the ladder step this warning lands on. A step fires when the count reaches
+   * EXACTLY its number, so each fires once on the way up — the old "highest rule
+   * at or below the count" re-ran the 3-warning temp ban on the 4th warning.
+   */
+  async checkThresholds(userId: string, actorId: string) {
+    const policy = await getModPolicy();
+    if (!policy.ladder.length) return;
+
+    const count = await this.countedWarnings(userId, policy.resetAfterBan);
+    const step = policy.ladder.find((r) => r.warningCount === count);
+    if (!step) return;
+
+    if (step.action === "ban_temporary" && step.banDays) {
+      await this.autoBan(userId, actorId, "temporary", new Date(Date.now() + step.banDays * 86400000));
+    } else if (step.action === "ban_permanent") {
+      await this.autoBan(userId, actorId, "permanent", null);
     }
+    if (step.action === "notify" || step.notifyModerators !== false) await this.notifyLadderStep(userId, count, step);
+  },
+
+  async notifyLadderStep(userId: string, count: number, step: ThresholdRule) {
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
+    const outcome = step.action === "ban_permanent" ? "was banned permanently"
+      : step.action === "ban_temporary" ? `was banned for ${step.banDays} days`
+      : "needs a look";
+    await notifyPermHolders("moderation.warn.manage", {
+      type:  "mod.warning_ladder",
+      title: "Warning ladder reached",
+      body:  `${user?.username ?? "A member"} reached ${count} warnings and ${outcome}.`,
+      link:  `/admin/users/${userId}`,
+    });
   },
 
   async autoBan(userId: string, triggeredById: string, type: "temporary" | "permanent", expiresAt: Date | null) {
@@ -293,6 +330,8 @@ export const moderationService = {
         where: { id: userId },
         data:  { bannedUntil: type === "permanent" ? new Date("9999-12-31") : expiresAt },
       });
+      // Signed out in the same transaction, as every other ban path does.
+      await tx.session.updateMany({ where: { userId, revokedAt: null }, data: { revokedAt: new Date() } });
       await tx.moderationLog.create({
         data: {
           actorId:    null,
@@ -304,6 +343,8 @@ export const moderationService = {
         },
       });
     });
+
+    await revokeUserAccessTokens(userId);
 
     await notificationService.dispatch({
       userId,
@@ -369,9 +410,14 @@ export const moderationService = {
 
   // ── Comment mod-delete ───────────────────────────────────────────────────
 
-  async banCaseUsers(caseId: string, actorId: string) {
+  /**
+   * Ban every account a case links, skipping staff and anyone already banned.
+   * `reason` is what the moderator typed in the ban preview; it is recorded on each
+   * ban and in the mod log, and told to the member.
+   */
+  async banCaseUsers(caseId: string, actorId: string, reason?: string) {
     const STAFF_KEYS  = new Set(["admin", "supermod", "moderator"]);
-    const BAN_REASON  = "Multi-account policy violation — multiple accounts detected on the same device";
+    const BAN_REASON  = reason?.trim() || "Multi-account policy violation — multiple accounts detected on the same device";
 
     const existing = await prisma.moderationCase.findUnique({ where: { id: caseId } });
     if (!existing) throw XentiumError.notFound("Case not found");
@@ -399,6 +445,10 @@ export const moderationService = {
           data: { userId: user.id, issuedById: actorId, type: "permanent", reason: BAN_REASON, status: "active", expiresAt: null },
         });
         await tx.user.update({ where: { id: user.id }, data: { bannedUntil: new Date("9999-12-31") } });
+        // ⚠ Signed out everywhere, in the same transaction — as a single ban does.
+        // This used to leave every session alive, so an account banned from a case
+        // kept refreshing access tokens for the rest of its 30-day refresh window.
+        await tx.session.updateMany({ where: { userId: user.id, revokedAt: null }, data: { revokedAt: new Date() } });
         // Individual log entry per banned user — clearly readable in the mod log
         await tx.moderationLog.create({
           data: {
@@ -407,10 +457,12 @@ export const moderationService = {
             action:     "ban.issued",
             targetType: "user",
             targetId:   user.id,
-            reason:     `Banned ${user.username} for Multiaccounting`,
+            reason:     `Banned ${user.username}: ${BAN_REASON}`,
           },
         });
       });
+      // And any access token already in flight (BUGS.md #4), so the next request fails.
+      await revokeUserAccessTokens(user.id);
       await notificationService.dispatch({
         userId:   user.id,
         type:     "moderation.ban_issued",
@@ -435,7 +487,7 @@ export const moderationService = {
       targetType: "moderation_case",
       targetId:   caseId,
       reason:     bannedNames.length > 0
-        ? `Banned for Multiaccounting: ${bannedNames.join(", ")}`
+        ? `Banned ${bannedNames.join(", ")}: ${BAN_REASON}`
         : `No users banned (all skipped)`,
     });
 
@@ -829,6 +881,7 @@ export const moderationService = {
     type:       "temporary" | "permanent";
     reason:     string;
     expiresAt?: Date | null;
+    notify?:    boolean;
   }) {
     const user = await prisma.user.findUnique({
       where:   { id: data.userId },
@@ -844,18 +897,26 @@ export const moderationService = {
     const alreadyBanned = await prisma.moderationBan.findFirst({ where: { userId: data.userId, status: "active" } });
     if (alreadyBanned) throw XentiumError.forbidden("User is already banned");
 
+    const length = checkBanLength((await getModPolicy()).bans, data.type, data.expiresAt);
+
     await prisma.$transaction(async (tx) => {
       await tx.moderationBan.create({
         data: { userId: data.userId, issuedById: data.issuedById, type: data.type, reason: data.reason, status: "active", expiresAt: data.expiresAt ?? null },
       });
       const bannedUntil = data.type === "permanent" ? new Date("9999-12-31") : (data.expiresAt ?? null);
       await tx.user.update({ where: { id: data.userId }, data: { bannedUntil } });
+      await tx.session.updateMany({ where: { userId: data.userId, revokedAt: null }, data: { revokedAt: new Date() } });
       await tx.moderationLog.create({
-        data: { actorId: data.issuedById, actorType: "user", action: "ban.issued", targetType: "user", targetId: data.userId, reason: data.reason },
+        data: {
+          actorId: data.issuedById, actorType: "user", action: "ban.issued", targetType: "user", targetId: data.userId, reason: data.reason,
+          ...(length.override ? { meta: { rangeOverride: true, days: length.days } } : {}),
+        },
       });
     });
 
-    await notificationService.dispatch({
+    await revokeUserAccessTokens(data.userId);
+
+    if (data.notify !== false) await notificationService.dispatch({
       userId:   data.userId,
       type:     "moderation.ban_issued",
       title:    data.type === "permanent" ? "Your account has been permanently suspended" : "Your account has been temporarily suspended",
