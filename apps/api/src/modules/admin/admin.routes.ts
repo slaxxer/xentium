@@ -44,6 +44,7 @@ adminRouter.get("/users", adminGuard, adminController.listUsers);
 adminRouter.get("/users/:id", adminGuard, adminController.getUserDetail);
 adminRouter.get("/users/:id/login-events", adminGuard, adminController.listUserLoginEvents);
 adminRouter.put("/users/:id/groups", adminGuard, adminController.setUserGroups);
+adminRouter.patch("/users/:id/groups", adminGuard, adminController.patchUserGroups);
 adminRouter.patch("/users/:id/active", adminGuard, adminController.setUserActive);
 adminRouter.post("/users/:id/ban",     adminGuard, adminController.banUser);
 adminRouter.delete("/users/:id/ban",   adminGuard, adminController.liftBan);
