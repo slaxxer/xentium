@@ -501,7 +501,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         </div>
       )}
 
-      <div className="nvc-body" style={minHeight ? { minHeight } : undefined}>
+      {/* ⚠ The editable element is only as tall as its text, while `minHeight` makes
+          the BOX taller: a click in the empty lower part of the box landed on this
+          div and focused nothing. A press on the body itself (never on the text, the
+          mode toggle or a popover) puts the caret at the end instead. */}
+      <div
+        className="nvc-body"
+        style={minHeight ? { minHeight } : undefined}
+        onMouseDown={(e) => {
+          if (mode !== "write" || !editor) return;
+          const el = e.target as HTMLElement;
+          if (el !== e.currentTarget && !el.classList.contains("nvc-editor")) return;
+          e.preventDefault();
+          editor.commands.focus("end");
+        }}
+      >
         {/* The panel variant floats the toggle over the body — it has no header.
             Not when the tools are on top: it sits in that row instead. */}
         {variant === "panel" && toolbarPosition === "bottom" && (
@@ -511,7 +525,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         )}
 
         {mode === "write"
-          ? <EditorContent editor={editor} />
+          ? <EditorContent editor={editor} className="nvc-editor" />
           : (
             /**
              * ⚠ The preview renders the editor's OWN html, which TipTap produced from
