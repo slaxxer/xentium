@@ -27,7 +27,8 @@
     "toggleTheme": "Alternar tema",
     "switchToLight": "Mudar para o modo claro",
     "switchToDark": "Mudar para o modo escuro",
-    "adminPanel": "Painel de administração"
+    "adminPanel": "Painel de administração",
+    "adminAttention": "Há algo no painel de administração que precisa da sua atenção"
   },
   "search": {
     "short": "Pesquisar",

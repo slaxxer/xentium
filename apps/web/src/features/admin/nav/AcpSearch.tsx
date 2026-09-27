@@ -38,11 +38,13 @@ function highlight(label: string, q: string) {
   return <>{label.slice(0, i)}<mark>{label.slice(i, i + q.length)}</mark>{label.slice(i + q.length)}</>;
 }
 
-export function AcpSearch({ align = "right", compact = false }: {
+export function AcpSearch({ align = "right", compact = false, variant = "field" }: {
   /** Which edge the results panel is pinned to. */
   align?: "left" | "right";
   /** Panel variant: shorter placeholder, field fills its column. */
   compact?: boolean;
+  /** `rail`: an icon in the collapsed rail that opens the palette centred on screen. */
+  variant?: "field" | "rail";
 }) {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation("acp");
@@ -109,8 +111,8 @@ export function AcpSearch({ align = "right", compact = false }: {
 
   const groupLabel = (kind: string) => kind === "Actions" ? t("topbar.groupActions") : t("topbar.groupNavigation");
 
-  return (
-    <div className={`nbsearch${open ? " is-open" : ""}${compact ? " nbsearch--compact" : ""}`} ref={wrapRef}>
+  const body = (
+    <>
       <div className="nbsearch__field" onClick={() => { setOpen(true); inputRef.current?.focus(); }}>
         <AcpIcon name="search" size={16} className="nbsearch__ic" />
         <input
@@ -176,6 +178,31 @@ export function AcpSearch({ align = "right", compact = false }: {
           </div>
         </div>
       )}
+    </>
+  );
+
+  // Rail variant: the panel is collapsed, so there is no column for a field.
+  // An icon in the rail opens the same field and results as a centred palette.
+  if (variant === "rail") {
+    return (
+      <div className={`nbsearch nbsearch--rail${open ? " is-open" : ""}`} ref={wrapRef}>
+        <button
+          type="button"
+          className="acp-rail__util"
+          title={t("topbar.searchPlaceholderShort")}
+          aria-label={t("topbar.searchPlaceholderShort")}
+          onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+        >
+          <AcpIcon name="search" size={18} />
+        </button>
+        {open && <div className="nbsearch__panel">{body}</div>}
+      </div>
+    );
+  }
+
+  return (
+    <div className={`nbsearch${open ? " is-open" : ""}${compact ? " nbsearch--compact" : ""}`} ref={wrapRef}>
+      {body}
     </div>
   );
 }

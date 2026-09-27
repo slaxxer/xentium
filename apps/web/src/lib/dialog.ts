@@ -35,12 +35,16 @@ export interface DialogOptions {
   // ── Panel extras (announcement-style dialogs; see openPanelDialog) ────────
   /** Danger-styled pill next to the title, e.g. "Critical update". */
   badge?:       string;
+  /** "calm" draws the badge in the dialog's own colour: a label, not an alarm. */
+  badgeTone?:   "danger" | "calm";
   /** Structured detail rows rendered as a list. */
   rows?:        PanelRow[];
   /** Warn-colored footer note, e.g. "License renewal required". */
   note?:        string;
   /** Wider, left-aligned announcement layout. */
   wide?:        boolean;
+  /** A panel with more to read (release notes): wider still. Panel dialogs only. */
+  large?:       boolean;
 }
 
 export interface ActiveDialog extends DialogOptions { id: number }

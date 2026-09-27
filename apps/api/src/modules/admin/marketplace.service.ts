@@ -12,7 +12,9 @@ import {
   refreshLicense, activateFromAccount, assertThemeDownloadAllowed,
 } from "../../core/license-engine/license-engine.js";
 import { processUpdateCheck } from "../../jobs/updateCheck.js";
-import { readCoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { readCoreUpdateCache, type CoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
+import { XENTIUM_VERSION } from "../../config/version.js";
+import { cliSiteDir } from "../../config/envProbe.js";
 import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
 import { pluginService } from "../plugins/plugin.service.js";
 import { themeService } from "../themes/theme.service.js";
@@ -185,12 +187,27 @@ function pruneLinkSecrets() {
  * necessarily been told about a Xentium security release. Null when there is
  * nothing to say, so every consumer can test one field.
  */
+/**
+ * Is a core update actually waiting? Only if the cache was written by the version
+ * we are running: right after `xentium update` it still describes the release we
+ * just installed until the worker's boot check replaces it, and the badge and
+ * dialog would otherwise offer an update to the version already running.
+ */
+function pendingCore(cache: CoreUpdateCache | null): cache is CoreUpdateCache & { latest: NonNullable<CoreUpdateCache["latest"]> } {
+  return !!cache?.updateAvailable && !!cache.latest && cache.current === XENTIUM_VERSION;
+}
+
+/** The acknowledgement closing the core dialog writes. Not a page: an ACP visit row nobody navigates to. */
+const CORE_ACK_MARK = "/admin/updates#core";
+
 async function getCoreUpdate(userId?: string) {
   const cache = await readCoreUpdateCache();
-  if (!cache || !cache.updateAvailable || !cache.latest) return null;
+  if (!cache || !pendingCore(cache)) return null;
 
+  // The dialog is the only place a core release appears, and it is one-time:
+  // closing it in any way writes this mark.
   const acknowledged = userId
-    ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(cache.setSince))
+    ? await activityService.hasVisitedSince(userId, CORE_ACK_MARK, new Date(cache.setSince))
     : true;
 
   // Where the urgency comes from, when it is not the newest release. Without
@@ -208,6 +225,13 @@ async function getCoreUpdate(userId?: string) {
     highestSeverity: cache.highestSeverity,
     urgentRelease,
     releaseCount:    cache.path.length,
+    // Every release between here and there, newest first: the dialog and the
+    // card show all of their notes, because skipping three releases means
+    // taking all three changelogs.
+    path:            [...cache.path].reverse(),
+    // Where `xentium update` has to run, so the command the ACP prints can be
+    // pasted as is. Null on a clone, where the command does not apply.
+    siteDir:         cliSiteDir(),
     patch:           cache.patch,
     via:             cache.via,
     checkedAt:       cache.checkedAt,
@@ -231,6 +255,18 @@ async function installedManifests(): Promise<InstalledManifest[]> {
 }
 
 export const marketplaceService = {
+  /** The admin has seen the core-update dialog (it is one-time: any way of closing it counts). */
+  // Awaited, unlike markVisit: the dialog refetches right after, and a
+  // fire-and-forget write loses that race and shows the dialog again.
+  async acknowledgeCoreUpdate(userId: string): Promise<void> {
+    const now = new Date();
+    await prisma.acpVisit.upsert({
+      where:  { userId_path: { userId, path: CORE_ACK_MARK } },
+      update: { lastVisitAt: now },
+      create: { userId, path: CORE_ACK_MARK, lastVisitAt: now },
+    });
+  },
+
   listPlugins(opts: MarketplaceListQuery) {
     return marketplaceSource.listPlugins(opts);
   },
@@ -417,7 +453,7 @@ export const marketplaceService = {
    * Persists (count > 0) until the work is done: pending plugin updates until
    * they're applied, plus the license when it's about to expire (or has). Kept
    * deliberately small + server-side so the badge stays a dumb consumer and new
-   * signals (core update, stuck jobs, …) can be OR-ed in here later.
+   * signals (stuck jobs, …) can be OR-ed in here later.
    */
   async getStatusSummary(userId?: string) {
     // Pending plugin updates — reconciled so an uninstalled/already-updated
@@ -425,13 +461,13 @@ export const marketplaceService = {
     const { updates } = await readReconciledUpdates();
     const pluginUpdates = updates.length;
 
-    // Core. One more thing needing attention, and urgent on the same terms a
-    // plugin is: `highestSeverity` and not `latest.severity`, because the
+    // Core counts once, until the site is actually on the new version: the
+    // dialog is one-time, the badge is the standing reminder. Urgent on the same
+    // terms a plugin is — `highestSeverity`, not `latest.severity`, because the
     // security release may be one of the versions ON THE WAY to the newest.
     const core = await readCoreUpdateCache();
-    const coreUpdate = !!core?.updateAvailable && !!core.latest;
+    const coreUpdate = pendingCore(core);
     const coreUrgent = coreUpdate && (core!.highestSeverity === "security" || core!.highestSeverity === "critical");
-
     const criticalUpdate = updates.some((u) => u.critical) || coreUrgent;
 
     // Entitlement health. NOT "your subscription is ending" — see
@@ -460,8 +496,6 @@ export const marketplaceService = {
     return {
       pluginUpdates,
       coreUpdate,
-      coreVersion: coreUpdate ? core!.latest!.version : null,
-      coreSeverity: coreUpdate ? core!.highestSeverity : null,
       criticalUpdate,
       licenseExpiringSoon,
       licenseExpired,
@@ -469,8 +503,8 @@ export const marketplaceService = {
       licenseExpiresAt:   license?.expiresAt ? new Date(license.expiresAt).toISOString() : null,
       licenseDomain:      license?.domain ?? null,
       licenseAcknowledged,
-      // Badge count: each pending update, core once, + the license (once) if it
-      // needs attention.
+      // Badge count: each pending plugin update, core once, + the license
+      // (once) if it needs attention.
       total: pluginUpdates + (coreUpdate ? 1 : 0) + (needsAttention ? 1 : 0),
       // Red vs neutral badge.
       urgent: criticalUpdate || needsAttention,

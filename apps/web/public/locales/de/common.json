@@ -27,7 +27,8 @@
     "toggleTheme": "Design umschalten",
     "switchToLight": "Zum hellen Design wechseln",
     "switchToDark": "Zum dunklen Design wechseln",
-    "adminPanel": "Admin-Bereich"
+    "adminPanel": "Admin-Bereich",
+    "adminAttention": "Im Adminbereich wartet etwas auf dich"
   },
   "search": {
     "short": "Suchen",

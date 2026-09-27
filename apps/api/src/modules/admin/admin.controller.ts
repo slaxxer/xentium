@@ -61,8 +61,16 @@ const keyParamSchema = z.object({ key: z.string() });
 const listUsersSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
-  search: z.string().optional(),
+  search: z.string().max(200).optional(),
   groupId: z.string().optional(),
+  // ⚠ The list page has sent `status` for a long time and nothing read it — Zod
+  // dropped the unknown key, so "Banned" listed everyone.
+  status: z.enum(["all", "active", "banned", "inactive", "flagged"]).optional(),
+  sort: z.enum(["recent", "joined", "posts", "name"]).optional(),
+});
+const patchGroupsSchema = z.object({
+  add:    z.array(z.string()).max(100).default([]),
+  remove: z.array(z.string()).max(100).default([]),
 });
 const setGroupsSchema = z.object({ groupIds: z.array(z.string()) });
 const setActiveSchema = z.object({ isActive: z.boolean() });
@@ -146,6 +154,12 @@ export const adminController = {
     const { id } = idParamSchema.parse(req.params);
     const { page, limit } = paginatedSchema.parse(req.query);
     res.json(await adminService.listUserLoginEvents(id, page, limit));
+  }) as RequestHandler,
+
+  patchUserGroups: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    const { add, remove } = patchGroupsSchema.parse(req.body);
+    res.json(await adminService.patchUserGroups(id, add, remove, req.userId!));
   }) as RequestHandler,
 
   setUserGroups: (async (req, res) => {
@@ -415,6 +429,11 @@ export const adminController = {
 
   getMarketplaceUpdates: (async (req, res) => {
     res.json(await marketplaceService.getUpdates(req.userId));
+  }) as RequestHandler,
+
+  acknowledgeCoreUpdate: (async (req, res) => {
+    await marketplaceService.acknowledgeCoreUpdate(req.userId!);
+    res.status(204).end();
   }) as RequestHandler,
 
   getStatusSummary: (async (req, res) => {

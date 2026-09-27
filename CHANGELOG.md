@@ -1,124 +1,79 @@
 # Changelog
 
-## A new way in: passkeys, sign-in links, Google, GitHub and Discord
-
-### Added
-
-- **A new sign-in and registration page.** One page for everyone who is not signed in yet:
-  a welcome side about your community (members online, member count, who joined this
-  week) and a card with the form. Sign in, the three steps of creating an account, the
-  login PIN step, invite-only registration, forgot and reset password all live in it, in
-  your site's theme, with a language menu.
-- **Passkeys.** Members can sign in with Face ID, Touch ID, Windows Hello or a security
-  key. They add one in Account → Security or while creating their account, and can rename
-  or remove it. Passkeys need your site on https.
-- **Sign-in links.** "Email me a link" sends a one-time link that works for 15 minutes.
-  Opening it asks for one click, so mail scanners cannot use it up.
-- **Sign in with Google, GitHub or Discord.** Set each up under ACP → Settings → Login with
-  your app's client ID and secret; the panel shows the callback URL to register. A provider
-  address that already belongs to a member is never connected automatically: they sign in
-  and connect it from their account settings.
-- **Keep me signed in.** Unticked, the session ends when the browser closes (or 12 hours
-  after it was last used); ticked, it lasts 30 days as before.
-- **Account → Security** lists passkeys and connected accounts. Members who joined through
-  a provider can set a password with an emailed link.
-
-### Security
-
-- A login PIN is asked for after a sign-in link or a provider too, not only after a
-  password. A passkey unlocked with biometrics or the device PIN counts as two steps.
-- No member can remove their last way to sign in.
-- Provider sign-ins are bound to the browser that started them, so nobody can make your
-  browser sign in to their account.
-
-## Groups: one precedence list, and a page per group
+## Core updates arrive as a dialog with the whole story
 
 ### Changed
 
-- **ACP → Users → Groups is one precedence list.** The group at the top is the badge a
-  member of several groups wears, so the order is the point of the page: drag a row to
-  change it, or focus its handle and press Alt+↑/↓. Each row shows the badge, the
-  members and a power meter read from the keys the group actually holds (full control,
-  elevated, trusted, standard), with a filter and totals across the top.
-- **Every group has its own page** instead of four dialogs: identity and badge (name,
-  label, colour, username glow, team page, icon, a live preview), permissions grouped by
-  area with the sensitive ones marked, progression, and members. Identity, permissions
-  and progression save as you go, with one indicator for the whole page.
-- **Plugin panels are tabs of that page.** A plugin's group settings (the forum's
-  progression, the shoutbox's limits) appear beside core's own, say which plugin they
-  come from, and report into the same save indicator.
-- **Members can be managed from the group**: search and add a member, or remove one,
-  without leaving the page. Their other groups are kept.
-- **Creating a group** asks for a name and a key and takes you to the new group's page.
+- **Writing an article has a new editor.** The canvas takes the full width, with the title,
+  an excerpt and the body in the shared composer (the same toolbar, block picker and tool set
+  your admin configured for comments and posts). Category, tags, cover image, visibility and
+  search appearance live in a Details panel that sits beside the canvas on wide screens and
+  slides over it on smaller ones.
+- **What publishing still needs is shown next to each field**, instead of in a popup after you
+  press Publish. The Details button counts what's missing, and pressing Publish opens it.
+- **A draft can be saved as soon as it has a title.** Category and tags are only needed to
+  publish.
+- **An article's status is Draft or Published.** Switching a published article back to Draft
+  unpublishes it. The old "Review" button did nothing and is gone.
+- **ACP → Users is redesigned.** The list has a search that also finds an email, a user ID
+  or an IP address, status tabs (All, Active, Banned, Flagged), a role filter, sorting by
+  last seen, newest, most posts or name, and counts of active, banned and flagged members.
+  Each row shows the member's role, activity, status and when they were last seen.
+- **Select several members and act on them at once**: add to a group, grant a badge, log
+  out or ban. Each member goes through the same checks as a single action, and anyone who
+  can't be changed (an administrator, or yourself) is listed with the reason.
+- **Flagged members**: accounts with repeated failed sign-ins in the last 24 hours, and
+  accounts that signed up but never confirmed their email. A member's page says why, with
+  a button to their security history.
+- **A member's page is split into tabs**: Overview, Access, Badges and Security. Group
+  changes are saved together with Save membership, and only the groups you actually
+  changed are touched, so a promotion that happened meanwhile is kept.
+- **Banning has duration presets** (24 hours, 7 days, 30 days, 90 days) and the ban's
+  reason is shown on the member's page.
+- **The breadcrumb line above ACP pages is gone** in the sidebar layout. The section panel
+  and the page title already say where you are. With the panel collapsed, search is a
+  magnifier in the sidebar that opens the palette in the middle of the screen (⌘K still
+  works).
+- **A new Xentium release is a one-time dialog with everything in it.** The version you are
+  on and the one available, when it was released, how many releases you are behind,
+  anything to watch out for (a security fix on the way, a plugin that doesn't support the
+  new version yet, manual steps), the changelog of every release in between, and the
+  commands that install it, with a Copy button. Every release opens it once per admin, and
+  any way of closing it counts as seen.
+- **Plugin updates join that dialog.** When plugin updates are waiting too, they are listed
+  at the bottom, with a button to the Updates page, instead of a second dialog straight
+  after.
+- **Core releases are no longer on Extensions → Updates.** The Updates page lists plugin
+  updates only; the dialog is where a new Xentium is announced.
+- **The gear icon in the site's navbar shows a red dot when the ACP needs you**: a waiting
+  Xentium release, a plugin update, or the licence. No count, just the dot; the core release
+  keeps it lit until your site runs the new version.
+- **The ACP sidebar's mark is a shield with a person**, the same staff mark the marketplace's
+  ops console wears.
+- **A release later marked as a security fix brings the dialog back**, even for an admin who
+  had already seen it as an ordinary release.
 
 ### Fixed
 
-- **Saving a group's permissions no longer reverts grants made elsewhere.** The page used
-  to replace the whole set with the copy it loaded, so a key granted meanwhile, by another
-  admin or a plugin's defaults, was silently revoked on the next click. It now sends only
-  what changed.
-- **A group icon can be removed**, and a replaced icon no longer leaves the old file
-  behind. Icons are stored under the type read from the file itself, not its name.
+- **Reopening an article you just saved no longer offers to restore an "unsaved draft".**
+  The editor kept a copy on your device even when nothing had changed since the save.
+- **A member's page in the ACP no longer sends their password hash to the browser.** The
+  page never showed it, but the response carried it, along with the sign-in PIN hash.
+- **The Banned filter on the user list works.** It used to list everyone.
+- **Clicking anywhere in a tall composer starts typing.** A composer given a minimum height
+  only accepted clicks on its first line, so a click in the empty space below did nothing.
+  It now puts the cursor at the end of what you've written.
+- **The admin menu in the sidebar opens in full.** Clicking your avatar at the foot of the
+  sidebar opened the menu behind the section panel, cut off at the sidebar's edge. It now
+  opens beside the avatar, over everything, and grows to fit longer labels ("Lateral ·
+  Superior") instead of cutting them off, in both layouts.
+- **The update command works for your site.** The ACP printed `sudo xentium update`, which
+  installs npm's newest stable release, so it could never install an alpha, and it skipped
+  updating the CLI first. It now prints your site's directory, `npm install xentium@<version>`
+  and `npx xentium update <version>`, with the version it is offering.
+- **Release notes are formatted.** They showed as raw Markdown (`## Title`, `**bold**`). They
+  now render as headings, lists, code and links, in a box that scrolls on its own.
 
-## Migration History, redesigned, and imports you can watch
+### Upgrading
 
-### Added
-
-- **ACP → System → Migration History is a list and a detail view.** Search runs (the logs
-  too), filter by core or imports and by status, runs grouped by day. The detail shows what
-  ran, how long it took and what came of it, and a log viewer that colours errors and
-  warnings, folds tooling noise, searches, copies, downloads and goes full screen.
-- **A strip across the top** with the last schema deploy, the schema itself, platform imports
-  and anything that needs attention. The schema figure is read live, the migrations this
-  build ships against what your database has applied.
-- **`xentium update` records its schema deploys.** An update that applies migrations now adds
-  a row to Migration History, with its log and the release it deployed, and the page offers
-  `xentium update <version>` as its command. A failed deploy is recorded after the automatic
-  restore, and an update that migrated but was rolled back because the new release did not
-  come up is recorded as failed, saying whether the database was restored. An update with
-  nothing to apply records nothing. If the row cannot be written, the update carries on.
-- **Imports you can watch.** A running import shows progress for each kind of record, its log
-  as it is written and the issues so far, refreshing every two seconds.
-- **A failed deploy tells you what to do.** It names the migration that failed, quotes the
-  database's error with a link to the line, and gives you the command to mark it rolled back.
-- **Commands to copy.** An import offers its own dry-run and re-run commands. Connection
-  strings are never stored, so they come back as `…` for you to fill in.
-
-### Fixed
-
-- **Failed schema deploys are recorded.** Until now only successful ones were, so the history
-  could never show a failure.
-- **A run is no longer called failed because its log says "error".** The page used to guess,
-  and a migration with "error" in its name (the error-log tables) made a good deploy read as
-  failed. It now trusts the stored status.
-- **An import that dies says so.** A run that stops writing its heartbeat for two minutes is
-  shown as not responding instead of running forever.
-
-## Announcements are a dialog again, and leave nothing behind
-
-### Changed
-
-- **Announcements from the Xentium team open as a dialog again** when you enter the ACP,
-  instead of a band across the top of the page. One at a time, the most urgent first, with a
-  single OK button. They come before licence and update dialogs, as they did before.
-- **Reading an announcement removes it from your site.** The first admin to click OK has read
-  it for everyone: it is deleted from your server and nobody else on the site sees it. Your
-  site keeps no copy, no history and no record of who read what. The only thing left is the
-  notice's id, so the next daily check does not bring it back, and that is dropped as soon as
-  we stop serving the notice.
-
-### Removed
-
-- **ACP → Announcements.** With nothing kept, there is nothing to list.
-- **The per-admin read log.** The `xcf_announcement_acks` table is dropped by a migration.
-
-## Upgrading
-
-Nothing to do. Migrations run on update: they drop the announcement read log, add the
-column a running import keeps its progress in, and add the tables for passkeys, linked
-sign-in providers and "keep me signed in". Passkeys switch themselves on when your site's
-APP_URL is https; providers stay off until you configure them. Any announcement that is still
-current will show once more, to the first admin who enters the ACP, and is then gone.
-
-Imports started with an older migrate tool still appear, but without a live view or
-commands to copy: those runs never recorded them.
+Nothing to do. There are no migrations. Update the CLI first, as the dialog now tells you.

@@ -161,3 +161,45 @@ describe("the paperclip", () => {
     expect(onAttach).toHaveBeenCalled();
   });
 });
+
+/**
+ * A surface that stores ProseMirror JSON (articles). The document must go in and come
+ * out as JSON, never through HTML, and the reader's extension set has no mention node.
+ */
+describe("a JSON surface", () => {
+  const doc = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Hello there" }] }] };
+
+  it("loads the document it is given and hands it back as JSON", async () => {
+    const ref = createRef<ComposerHandle>();
+    mount(<Composer ref={ref} initialJson={doc} mentions={false} />);
+    await screen.findByText("Hello there");
+    // The editor normalises (a paragraph gains `attrs`), so compare what it SAYS.
+    const out = ref.current?.getJSON();
+    expect(out?.type).toBe("doc");
+    expect(out?.content?.[0]?.content?.[0]?.text).toBe("Hello there");
+  });
+
+  it("follows a replaced document, and leaves the same one alone", async () => {
+    const onChangeJson = vi.fn();
+    const { rerender } = mount(<Composer initialJson={doc} onChangeJson={onChangeJson} mentions={false} />);
+    await screen.findByText("Hello there");
+    // Mounting is not an edit either.
+    expect(onChangeJson).not.toHaveBeenCalled();
+
+    const next = { type: "doc", content: [{ type: "paragraph", content: [{ type: "text", text: "Restored draft" }] }] };
+    const qc = new QueryClient();
+    await act(async () => {
+      rerender(<QueryClientProvider client={qc}><Composer initialJson={next} onChangeJson={onChangeJson} mentions={false} /></QueryClientProvider>);
+    });
+    await screen.findByText("Restored draft");
+    // Loading a document is not an edit: nothing is reported back to the caller.
+    expect(onChangeJson).not.toHaveBeenCalled();
+  });
+
+  it("offers no mention tool when mentions are off", async () => {
+    mount(<Composer mentions={false} />);
+    await screen.findByLabelText("composer.tool.bold");
+    expect(screen.queryByLabelText("composer.tool.mention")).toBeNull();
+    expect(screen.queryByText("composer.hintMention")).toBeNull();
+  });
+});

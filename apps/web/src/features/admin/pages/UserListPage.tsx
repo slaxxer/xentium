@@ -1,406 +1,352 @@
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import type { BadgeRow } from "@xentium/contracts";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
-  faPenToSquare, faBan, faUnlock,
+  faBan, faUnlock, faChevronRight, faMagnifyingGlass, faUserGroup, faAward,
+  faRightFromBracket, faXmark, faCheck, faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
+import { apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
 import { Pager } from "../../../components/Pager";
-import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
-import { UserAvatar } from "../../../components/UserAvatar";
-import { Username } from "../../../components/Username";
-
-interface Group {
-  id: string;
-  name: string;
-  key: string;
-  icon: string | null;
-  isSystem: boolean;
-  progression: { badgeColor: string | null; badgeLabel: string | null } | null;
-}
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-  avatar: string | null;
-  isActive: boolean;
-  createdAt: string;
-  articleCount: number;
-  postCount?: number;
-  bannedUntil?: string | null;
-  groups: Group[];
-}
+import { Avatar } from "../../../components/Avatar";
+import { useAuth } from "../../../hooks/useAuth";
+import {
+  type Group, type ListUser, type UserCounts, BanDialog, type BanOutcome,
+  RolePill, StatusPill, FlagChip, topGroup, groupColor, lastSeenText,
+} from "./users/usersShared";
+import "./users/Users.scss";
 
 interface PaginatedUsers {
-  data: User[];
+  data: ListUser[];
   meta: { page: number; limit: number; total: number; totalPages: number };
+  counts: UserCounts;
 }
 
-function formatJoinDate(d: string) {
-  return new Date(d).toLocaleDateString("en-US", { month: "short", year: "numeric" });
-}
+type StatusFilter = "all" | "active" | "banned" | "flagged";
+type Sort = "recent" | "joined" | "posts" | "name";
+const LIMIT = 25;
 
-function groupColor(g: Group): string {
-  return g.progression?.badgeColor ?? "var(--c-accent)";
-}
-
-function groupLabel(g: Group): string {
-  return g.progression?.badgeLabel ?? g.name;
-}
-
-// ── Ban modal ───────────────────────────────────────────────────────────────
-
-function BanModal({ user, onClose }: { user: User; onClose: () => void }) {
-  const { t } = useTranslation("acp");
-  const qc = useQueryClient();
-  const [type,      setType]      = useState<"temporary" | "permanent">("temporary");
-  const [reason,    setReason]    = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-
-  const banMutation = useMutation({
-    mutationFn: () => api.post(`/admin/users/${user.id}/ban`, {
-      type,
-      reason,
-      expiresAt: type === "temporary" && expiresAt ? new Date(expiresAt).toISOString() : null,
-    }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-users"] });
-      swalToast(t("userList.banned", { username: user.username }), "success");
-      onClose();
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+/** One request per member, and a sentence about how it went. */
+async function forEachUser(
+  users: { id: string; username: string }[],
+  run: (u: { id: string; username: string }) => Promise<unknown>,
+): Promise<BanOutcome> {
+  const results = await Promise.allSettled(users.map(run));
+  const out: BanOutcome = { done: [], refused: [] };
+  results.forEach((r, i) => {
+    const u = users[i]!;
+    if (r.status === "fulfilled") out.done.push(u.username);
+    else out.refused.push({ username: u.username, reason: apiErrorMessage(r.reason) });
   });
-
-  const minDate = new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16);
-
-  const canSubmit = reason.trim().length > 0 &&
-    (type === "permanent" || (type === "temporary" && !!expiresAt));
-
-  return (
-    <div className="acp-modal-overlay" onClick={onClose}>
-      <div className="acp-modal" style={{ maxWidth: 460 }} onClick={(e) => e.stopPropagation()}>
-        <h2 style={{ fontSize: "1.1rem", marginBottom: 4 }}>{t("userList.banTitle")}</h2>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 20 }}>
-          {t("userList.banBody", { username: user.username })}
-        </p>
-
-        {/* Type */}
-        <div className="acp-form-field">
-          <label className="acp-label">{t("userList.banType")}</label>
-          <div style={{ display: "flex", gap: 10 }}>
-            {(["temporary", "permanent"] as const).map((bt) => (
-              <label
-                key={bt}
-                style={{
-                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-                  gap: 8, padding: "9px 14px", borderRadius: "var(--radius-sm)", cursor: "pointer",
-                  border: `1px solid ${type === bt ? "var(--c-danger)" : "var(--c-border)"}`,
-                  background: type === bt ? "rgba(248,113,113,0.08)" : "var(--c-surface)",
-                  fontSize: 13, fontWeight: 600,
-                  color: type === bt ? "var(--c-danger)" : "var(--c-fg-muted)",
-                  transition: "all .15s",
-                }}
-              >
-                <input
-                  type="radio"
-                  name="ban-type"
-                  value={bt}
-                  checked={type === bt}
-                  onChange={() => setType(bt)}
-                  style={{ display: "none" }}
-                />
-                {bt === "temporary" ? t("userList.typeTemporary") : t("userList.typePermanent")}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        {/* Expires at — only for temporary */}
-        {type === "temporary" && (
-          <div className="acp-form-field">
-            <label className="acp-label">{t("userList.expiresAt")}</label>
-            <input
-              className="acp-input"
-              type="datetime-local"
-              min={minDate}
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-            />
-          </div>
-        )}
-
-        {/* Reason */}
-        <div className="acp-form-field">
-          <label className="acp-label">{t("userList.reason")} <span style={{ color: "var(--c-danger)" }}>*</span></label>
-          <textarea
-            className="acp-input"
-            rows={3}
-            style={{ resize: "vertical", fontFamily: "inherit" }}
-            placeholder={t("userList.reasonPlaceholder")}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: 8 }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("common:actions.cancel")}</button>
-          <button
-            type="button"
-            className="btn-danger btn-sm"
-            disabled={!canSubmit || banMutation.isPending}
-            onClick={() => banMutation.mutate()}
-          >
-            <FontAwesomeIcon icon={faBan} style={{ marginRight: 5 }} />
-            {banMutation.isPending ? t("userList.banning") : t("userList.banTitle")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  return out;
 }
 
-// ── Main page ───────────────────────────────────────────────────────────────
+/**
+ * A pick-one dialog. The value is captured on change: the host unmounts the field on close.
+ *
+ * ⚠ It starts on an empty choice, never the first option. The first group is
+ * Administrator, and a default there turned one careless click into promoting the
+ * whole selection. Confirming with nothing picked does nothing.
+ */
+async function pickDialog(title: string, body: string, placeholder: string, options: { value: string; label: string }[], confirm: string, cancel: string) {
+  let value = "";
+  const ok = await openDialog({
+    kind: "confirm", icon: "question", title, confirmText: confirm, cancelText: cancel,
+    bodyNode: (
+      <>
+        <p style={{ margin: 0 }}>{body}</p>
+        <select className="inp usr-pick" defaultValue="" onChange={(e) => { value = e.target.value; }}>
+          <option value="" disabled>{placeholder}</option>
+          {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </>
+    ),
+  });
+  return ok && value ? value : null;
+}
 
 export function UserListPage() {
   const { t } = useTranslation("acp");
-  const qc                              = useQueryClient();
-  const [page, setPage]                 = useState(1);
-  const [search, setSearch]             = useState("");
-  const [debouncedSearch, setDebounced] = useState("");
-  const [groupId, setGroupId]           = useState("");
-  const [status, setStatus]             = useState("");
-  const [banTarget, setBanTarget]       = useState<User | null>(null);
-  const debRef = { current: 0 };
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const { user: me } = useAuth();
 
-  const { data, isLoading } = useQuery<PaginatedUsers>({
-    queryKey: ["acp-users", page, debouncedSearch, groupId, status],
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<StatusFilter>("all");
+  const [groupId, setGroupId] = useState("");
+  const [sort, setSort] = useState<Sort>("recent");
+  const [checked, setChecked] = useState<Map<string, ListUser>>(new Map());
+  const [banTargets, setBanTargets] = useState<{ id: string; username: string }[] | null>(null);
+  const debounce = useRef<number>(0);
+
+  const { data, isLoading, isFetching } = useQuery<PaginatedUsers>({
+    queryKey: ["acp-users", page, query, status, groupId, sort],
     queryFn: () => {
-      const p = new URLSearchParams({ page: String(page), limit: "20" });
-      if (debouncedSearch) p.set("search", debouncedSearch);
-      if (groupId)         p.set("groupId", groupId);
-      if (status)          p.set("status", status);
+      const p = new URLSearchParams({ page: String(page), limit: String(LIMIT), sort });
+      if (query) p.set("search", query);
+      if (groupId) p.set("groupId", groupId);
+      if (status !== "all") p.set("status", status);
       return api.get(`/admin/users?${p}`);
     },
+    placeholderData: (prev) => prev,
   });
-
   const { data: groups = [] } = useQuery<Group[]>({
     queryKey: ["acp-groups-list"],
     queryFn:  () => api.get<Group[]>("/admin/groups"),
   });
 
-  const liftBanMutation = useMutation({
-    mutationFn: (userId: string) => api.delete(`/admin/users/${userId}/ban`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-users"] });
-      swalToast(t("userList.banLifted"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
+  // A filter change starts a new list: page 1, nothing selected.
+  const refilter = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); setChecked(new Map()); };
+  useEffect(() => () => clearTimeout(debounce.current), []);
+  function onSearch(v: string) {
+    setSearch(v);
+    clearTimeout(debounce.current);
+    debounce.current = window.setTimeout(() => refilter(setQuery)(v.trim()), 300);
+  }
+  const clearFilters = () => { setSearch(""); setQuery(""); setGroupId(""); refilter(setStatus)("all"); };
 
-  async function handleLiftBan(u: User) {
-    const result = await swalConfirm(
-      t("userList.liftConfirmTitle"),
-      t("userList.liftConfirmBody", { username: u.username }),
-      t("userList.liftBan"),
-      t("common:actions.cancel"),
-    );
-    if (result) liftBanMutation.mutate(u.id);
+  const rows = data?.data ?? [];
+  const counts = data?.counts;
+  const allOn = rows.length > 0 && rows.every((u) => checked.has(u.id));
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: ["acp-users"] });
+    void qc.invalidateQueries({ queryKey: ["acp-user"] });
+  };
+
+  function toggle(u: ListUser) {
+    setChecked((prev) => {
+      const next = new Map(prev);
+      if (next.has(u.id)) next.delete(u.id); else next.set(u.id, u);
+      return next;
+    });
+  }
+  function toggleAll() {
+    setChecked((prev) => {
+      const next = new Map(prev);
+      if (allOn) rows.forEach((u) => next.delete(u.id)); else rows.forEach((u) => next.set(u.id, u));
+      return next;
+    });
   }
 
-  function handleSearch(val: string) {
-    setSearch(val);
-    clearTimeout(debRef.current);
-    debRef.current = window.setTimeout(() => { setDebounced(val); setPage(1); }, 350);
+  /** Report a batch: how many went through, and every refusal with its reason. */
+  function report(out: BanOutcome, doneKey: string) {
+    if (out.done.length) toast.success(t(doneKey, { count: out.done.length }));
+    for (const r of out.refused) toast.error(t("users.bulk.refused", { name: r.username, reason: r.reason }));
+    refresh();
   }
 
-  const meta = data?.meta;
+  const selection = [...checked.values()].map((u) => ({ id: u.id, username: u.username }));
+
+  async function bulkGroup() {
+    const g = await pickDialog(t("users.bulk.groupTitle", { count: selection.length }), t("users.bulk.groupBody"), t("users.bulk.pickGroup"),
+      groups.map((x) => ({ value: x.id, label: x.name })), t("users.bulk.add"), t("common:actions.cancel"));
+    if (!g) return;
+    report(await forEachUser(selection, (u) => api.patch(`/admin/users/${u.id}/groups`, { add: [g] })), "users.bulk.groupDone");
+  }
+  async function bulkBadge() {
+    let catalogue: BadgeRow[];
+    try { catalogue = await qc.fetchQuery({ queryKey: ["admin-badges"], queryFn: () => api.get<BadgeRow[]>("/admin/badges") }); }
+    catch (e) { toast.error(apiErrorMessage(e)); return; }
+    if (!catalogue.length) { toast.info(t("users.bulk.noBadges")); return; }
+    const b = await pickDialog(t("users.bulk.badgeTitle", { count: selection.length }), t("users.bulk.badgeBody"), t("users.bulk.pickBadge"),
+      catalogue.map((x) => ({ value: x.id, label: x.name })), t("users.bulk.grant"), t("common:actions.cancel"));
+    if (!b) return;
+    report(await forEachUser(selection, (u) => api.post(`/admin/badges/${b}/award`, { userId: u.id })), "users.bulk.badgeDone");
+    void qc.invalidateQueries({ queryKey: ["user-badges"] });
+  }
+  async function bulkLogout() {
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", title: t("users.bulk.logoutTitle", { count: selection.length }),
+      body: t("users.bulk.logoutBody"), confirmText: t("users.logout"), cancelText: t("common:actions.cancel"),
+    });
+    if (!ok) return;
+    report(await forEachUser(selection, (u) => api.post(`/admin/users/${u.id}/force-logout`, {})), "users.bulk.logoutDone");
+  }
+  async function liftBan(u: ListUser) {
+    const ok = await openDialog({
+      kind: "confirm", icon: "question", title: t("users.liftTitle"),
+      body: t("users.liftBody", { name: u.username }), confirmText: t("users.liftBan"), cancelText: t("common:actions.cancel"),
+    });
+    if (!ok) return;
+    try { await api.delete(`/admin/users/${u.id}/ban`); toast.success(t("users.liftDone", { name: u.username })); refresh(); }
+    catch (e) { toast.error(apiErrorMessage(e)); }
+  }
+
+  const segs: StatusFilter[] = ["all", "active", "banned", "flagged"];
+  const isAdmin = (u: ListUser) => u.groups.some((g) => g.key === "admin");
 
   return (
-    <div>
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("userList.eyebrow")}</div>
-          <h1 className="acp-page-title">{t("nav.users")}</h1>
+    <div className="usr">
+      <div className="pg-head">
+        <div>
+          <p className="pg-eyebrow">{t("userList.eyebrow")}</p>
+          <h1 className="pg-title">{t("nav.users")}</h1>
         </div>
-      </div>
-
-      {/* Filters */}
-      <div className="acp-filter-row">
-        <input
-          className="acp-input"
-          style={{ width: 280, flexShrink: 0 }}
-          placeholder={t("userList.searchPlaceholder")}
-          value={search}
-          onChange={(e) => handleSearch(e.target.value)}
-        />
-        <select
-          className="acp-select"
-          style={{ width: "auto" }}
-          value={groupId}
-          onChange={(e) => { setGroupId(e.target.value); setPage(1); }}
-        >
-          <option value="">{t("userList.allRoles")}</option>
-          {groups.map((g) => (
-            <option key={g.id} value={g.id}>{g.name}</option>
-          ))}
-        </select>
-        <select
-          className="acp-select"
-          style={{ width: "auto" }}
-          value={status}
-          onChange={(e) => { setStatus(e.target.value); setPage(1); }}
-        >
-          <option value="">{t("userList.allStatus")}</option>
-          <option value="active">{t("userList.statusActive")}</option>
-          <option value="banned">{t("userList.statusBanned")}</option>
-        </select>
-        {meta && (
-          <span className="acp-filter-count">
-            {t("userList.countUsers", { count: meta.total })}
-          </span>
+        {counts && (
+          <div className="usr-counts">
+            <span className="usr-count"><i className="usr-dot usr-dot--ok" />{t("users.countActive", { count: counts.active })}</span>
+            <span className="usr-count"><i className="usr-dot usr-dot--bad" />{t("users.countBanned", { count: counts.banned })}</span>
+            {counts.flagged > 0 && (
+              <button type="button" className="usr-count usr-count--flag" onClick={() => refilter(setStatus)("flagged")}>
+                <FontAwesomeIcon className="usr-count__ic" icon={faTriangleExclamation} />{t("users.countFlagged", { count: counts.flagged })}
+              </button>
+            )}
+          </div>
         )}
       </div>
 
-      <div className="acp-card" style={{ padding: 0, overflow: "hidden" }}>
-        {/* Column headers */}
-        <div className="acp-list-head acp-users-cols">
-          {[t("userList.colUser"), t("userList.colEmail"), t("userList.colRole"), t("userList.colPosts"), t("userList.colStatus"), t("userList.colActions")].map((h) => (
-            <div key={h}>{h}</div>
+      {/* Command bar */}
+      <div className="usr-bar">
+        <label className="usr-search">
+          <FontAwesomeIcon className="usr-search__ic" icon={faMagnifyingGlass} />
+          <input value={search} onChange={(e) => onSearch(e.target.value)} placeholder={t("users.searchPlaceholder")} />
+        </label>
+        <div className="acp-seg acp-seg--auto">
+          {segs.map((s) => (
+            <button key={s} type="button" className={status === s ? "is-on" : ""} onClick={() => refilter(setStatus)(s)}>
+              {t(`users.seg.${s}`)}
+            </button>
           ))}
+        </div>
+        <select className="inp inp--sm usr-select" value={groupId} onChange={(e) => refilter(setGroupId)(e.target.value)}>
+          <option value="">{t("userList.allRoles")}</option>
+          {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
+        <select className="inp inp--sm usr-select" value={sort} onChange={(e) => { setSort(e.target.value as Sort); setPage(1); }}>
+          {(["recent", "joined", "posts", "name"] as Sort[]).map((s) => <option key={s} value={s}>{t(`users.sort.${s}`)}</option>)}
+        </select>
+        {data && counts && (
+          <span className="usr-shown">{t("users.shown", { shown: data.meta.total, total: counts.total })}</span>
+        )}
+      </div>
+
+      <section className="usr-table">
+        <div className="usr-row usr-row--head">
+          <div><button type="button" className={`usr-check${allOn ? " is-on" : ""}`} onClick={toggleAll}
+            aria-label={t("users.selectAll")} disabled={!rows.length}>{allOn && <FontAwesomeIcon icon={faCheck} />}</button></div>
+          <div>{t("users.col.member")}</div>
+          <div className="usr-col--role">{t("users.col.role")}</div>
+          <div className="usr-col--activity">{t("users.col.activity")}</div>
+          <div>{t("users.col.status")}</div>
+          <div className="usr-col--seen">{t("users.col.seen")}</div>
+          <div className="usr-col--end">{data ? t("users.shownCount", { count: rows.length }) : ""}</div>
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
-            {t("userList.loading")}
+          <div className="usr-skel">
+            {[62, 48, 70, 54, 66, 44].map((w, i) => (
+              <div key={i} className="usr-skel__row">
+                <span className="usr-skel__ava" />
+                <span className="usr-skel__lines"><i style={{ width: `${w}%` }} /><i style={{ width: `${w + 12}%` }} /></span>
+              </div>
+            ))}
+          </div>
+        ) : rows.length === 0 ? (
+          <div className="usr-empty">
+            <div className="usr-empty__ic"><FontAwesomeIcon icon={faMagnifyingGlass} /></div>
+            <p>{t("users.emptyTitle")}</p>
+            <span>{t("users.emptyBody")}</span>
+            <button type="button" className="usr-empty__btn" onClick={clearFilters}>{t("users.clearFilters")}</button>
           </div>
         ) : (
-          <div>
-            {data?.data.map((u) => {
-              const pg       = u.groups[0];
-              const color    = pg ? groupColor(pg) : "var(--c-accent)";
-              const isBanned = !u.isActive || !!u.bannedUntil;
-              const isAdmin  = u.groups.some((g) => g.key === "admin");
+          <div className={isFetching ? "usr-rows is-fetching" : "usr-rows"}>
+            {rows.map((u) => {
+              const on = checked.has(u.id);
+              const g = topGroup(u.groups);
+              const banned = u.status === "banned";
+              const protectedTarget = isAdmin(u) || u.id === me?.id;
+              const activity = u.postCount + u.articleCount + u.commentCount;
               return (
-                <div key={u.id} className="acp-list-row acp-users-cols">
-                  {/* User: avatar + name + joined */}
-                  <div className="acp-user-cell">
-                    <UserAvatar
-                      user={{
-                        username: u.username,
-                        avatar: u.avatar ? `/uploads/${u.avatar}` : null,
-                      }}
-                      size={34}
-                    />
-                    <div>
-                      <Username className="acp-user-cell__name" username={u.username} badgeColor={u.groups[0] ? groupColor(u.groups[0]) : undefined} />
-                      <div className="acp-user-cell__sub">{t("userList.joined", { date: formatJoinDate(u.createdAt) })}</div>
-                    </div>
-                  </div>
-
-                  {/* Email */}
-                  <div className="acp-cell-muted">{u.email}</div>
-
-                  {/* Role */}
+                <div key={u.id} className={`usr-row${on ? " is-checked" : ""}`} onClick={() => navigate(`/admin/users/${u.id}`)}>
                   <div>
-                    {pg ? (
-                      <span
-                        className="acp-badge"
-                        style={{
-                          background: `${color}20`,
-                          color,
-                          border: `1px solid ${color}40`,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: 5,
-                        }}
-                      >
-                        {pg.icon && (
-                          <img
-                            src={`/uploads/${pg.icon}`}
-                            alt=""
-                            style={{ width: 12, height: 12, borderRadius: 2, objectFit: "cover" }}
-                          />
-                        )}
-                        {groupLabel(pg)}
+                    <button type="button" className={`usr-check${on ? " is-on" : ""}`} aria-label={t("users.select", { name: u.username })}
+                      onClick={(e) => { e.stopPropagation(); toggle(u); }}>{on && <FontAwesomeIcon icon={faCheck} />}</button>
+                  </div>
+                  <div className="usr-member">
+                    <Avatar user={{ username: u.username, avatar: u.avatar }} size={36} online={u.online} />
+                    <span className="usr-member__id">
+                      <span className="usr-member__line">
+                        <b className="usr-member__name" style={g?.progression?.badgeColor ? { color: groupColor(g) } : undefined}>{u.username}</b>
+                        <FlagChip flags={u.flags} failed={u.failedSignins24h} />
                       </span>
-                    ) : (
-                      <span className="acp-cell-muted">—</span>
-                    )}
-                  </div>
-
-                  {/* Posts */}
-                  <div className="acp-cell-muted">
-                    {u.postCount ?? u.articleCount}
-                  </div>
-
-                  {/* Status */}
-                  <div>
-                    <span className={`acp-badge ${isBanned ? "acp-badge--danger" : "acp-badge--success"}`}>
-                      {isBanned ? t("userList.statusBanned") : t("userList.statusActive")}
+                      <span className="usr-member__email">{u.email}</span>
                     </span>
                   </div>
-
-                  {/* Actions */}
-                  <div className="acp-user-actions">
-                    <Link
-                      to={`/admin/users/${u.id}`}
-                      className="btn-ghost btn-sm"
-                      style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5 }}
-                    >
-                      <FontAwesomeIcon icon={faPenToSquare} /> {t("userList.edit")}
-                    </Link>
-                    {isBanned ? (
-                      <button
-                        type="button"
-                        className="btn-ghost btn-sm"
-                        style={{ color: "var(--c-success)" }}
-                        disabled={liftBanMutation.isPending}
-                        onClick={() => handleLiftBan(u)}
-                      >
-                        <FontAwesomeIcon icon={faUnlock} /> {t("userList.liftBan")}
-                      </button>
-                    ) : isAdmin ? (
-                      <button
-                        type="button"
-                        className="btn-ghost btn-sm"
-                        disabled
-                        title={t("userList.adminCannotBan")}
-                        style={{ opacity: 0.35, cursor: "not-allowed" }}
-                      >
-                        <FontAwesomeIcon icon={faBan} /> {t("userList.ban")}
+                  <div className="usr-col--role"><RolePill group={g} fallback={t("userDetail.roleMember")} /></div>
+                  <div className="usr-col--activity usr-activity">
+                    <b>{activity > 0 ? t("users.posts", { count: activity }) : t("users.noPosts")}</b>
+                    <span>{t("users.articles", { count: u.articleCount })}</span>
+                  </div>
+                  <div><StatusPill status={u.status} /></div>
+                  <div className="usr-col--seen usr-seen">{lastSeenText(u, t)}</div>
+                  <div className="usr-col--end usr-actions">
+                    <button type="button" className="usr-open" onClick={(e) => { e.stopPropagation(); navigate(`/admin/users/${u.id}`); }}>
+                      {t("users.open")} <FontAwesomeIcon className="usr-open__ic" icon={faChevronRight} />
+                    </button>
+                    {banned ? (
+                      <button type="button" className="usr-ban-btn usr-ban-btn--lift" title={t("users.liftBan")}
+                        onClick={(e) => { e.stopPropagation(); void liftBan(u); }}>
+                        <FontAwesomeIcon icon={faUnlock} />
                       </button>
                     ) : (
-                      <button
-                        type="button"
-                        className="btn-ghost-danger btn-sm"
-                        onClick={() => setBanTarget(u)}
-                      >
-                        <FontAwesomeIcon icon={faBan} /> {t("userList.ban")}
+                      <button type="button" className="usr-ban-btn" disabled={protectedTarget}
+                        title={protectedTarget ? t("userList.adminCannotBan") : t("users.banName", { name: u.username })}
+                        onClick={(e) => { e.stopPropagation(); setBanTargets([{ id: u.id, username: u.username }]); }}>
+                        <FontAwesomeIcon icon={faBan} />
                       </button>
                     )}
                   </div>
                 </div>
               );
             })}
-            {data?.data.length === 0 && (
-              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
-                {t("userList.noUsers")}
-              </div>
-            )}
           </div>
         )}
 
-        {meta && (
-          <Pager page={page} totalPages={meta.totalPages} onPage={setPage}
-            label={t("userList.paginationSummary", { page: meta.page, pages: meta.totalPages, count: meta.total })} />
+        {data && data.meta.totalPages > 1 && (
+          <div className="usr-pager">
+            <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage}
+              label={t("userList.paginationSummary", { page: data.meta.page, pages: data.meta.totalPages, count: data.meta.total })} />
+          </div>
         )}
-      </div>
+      </section>
 
-      {banTarget && (
-        <BanModal user={banTarget} onClose={() => setBanTarget(null)} />
+      {/* Bulk bar — acts on the selection, which survives paging. */}
+      {checked.size > 0 && (
+        <div className="usr-bulk">
+          <div className="usr-bulk__in">
+            <span className="usr-bulk__count"><b>{checked.size}</b>{t("users.bulk.selected")}</span>
+            <span className="usr-bulk__sep" />
+            <button type="button" onClick={bulkGroup}><FontAwesomeIcon icon={faUserGroup} />{t("users.bulk.addToGroup")}</button>
+            <button type="button" onClick={bulkBadge}><FontAwesomeIcon icon={faAward} />{t("users.bulk.grantBadge")}</button>
+            <button type="button" onClick={bulkLogout}><FontAwesomeIcon icon={faRightFromBracket} />{t("users.logout")}</button>
+            <button type="button" className="usr-bulk__danger" onClick={() => setBanTargets(selection)}>
+              <FontAwesomeIcon icon={faBan} />{t("users.bulk.ban")}
+            </button>
+            <span className="usr-bulk__sep" />
+            <button type="button" className="usr-bulk__x" onClick={() => setChecked(new Map())} aria-label={t("users.bulk.clear")}>
+              <FontAwesomeIcon icon={faXmark} />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {banTargets && (
+        <BanDialog
+          targets={banTargets}
+          onClose={() => setBanTargets(null)}
+          onDone={(out) => {
+            setBanTargets(null);
+            report(out, "users.bulk.banDone");
+            if (out.done.length) setChecked(new Map());
+          }}
+        />
       )}
     </div>
   );

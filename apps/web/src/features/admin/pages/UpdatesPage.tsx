@@ -5,7 +5,6 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import { faCloudArrowDown, faCircleCheck, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { runStreamedJob } from "../../../lib/streamProgress";
-import { CoreUpdateCard, type CoreUpdate } from "../components/CoreUpdateCard";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -22,7 +21,7 @@ export function UpdatesPage() {
   const qc = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; core: CoreUpdate | null }>({
+  const { data, isLoading } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[] }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -68,7 +67,6 @@ export function UpdatesPage() {
   }
 
   const updates = data?.updates ?? [];
-  const core = data?.core ?? null;
 
   return (
     <div>
@@ -79,14 +77,9 @@ export function UpdatesPage() {
         </div>
       </div>
 
-      {/* Core first: it is what the plugins run on, and a security release here
-          outranks anything in the list below. */}
-      {!isLoading && core && <CoreUpdateCard update={core} />}
-
       {isLoading ? (
         <div className="acp-card acp-empty">{t("updates.loading")}</div>
       ) : updates.length === 0 ? (
-        core ? null : (
         <div className="acp-card" style={{ padding: 40, textAlign: "center" }}>
           <FontAwesomeIcon icon={faCircleCheck} style={{ fontSize: 32, color: "var(--c-success)", marginBottom: 12 }} />
           <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("updates.emptyTitle")}</div>
@@ -96,7 +89,6 @@ export function UpdatesPage() {
               : t("updates.emptyHint")}
           </div>
         </div>
-        )
       ) : (
         <>
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

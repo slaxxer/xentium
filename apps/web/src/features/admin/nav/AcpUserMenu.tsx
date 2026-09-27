@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
@@ -31,6 +31,24 @@ export function AcpUserMenu({ variant = "bar" }: { variant?: "bar" | "rail" }) {
   const layout = useAcpLayout();
   const [open, setOpen] = useState(false);
   const ref = useDismiss<HTMLDivElement>(open, () => setOpen(false));
+  const railButton = useRef<HTMLButtonElement>(null);
+  const [railPos, setRailPos] = useState<CSSProperties | undefined>();
+
+  // ⚠ The rail scrolls (overflow-y: auto), and a scrolling box clips everything
+  // outside it — an absolutely positioned menu beside a 60px column was cut off
+  // at the rail's edge and looked like it opened BEHIND the panel. `fixed`
+  // escapes the clip, so the menu is placed from the avatar's own position.
+  useLayoutEffect(() => {
+    if (!open || variant !== "rail") return;
+    const place = () => {
+      const r = railButton.current?.getBoundingClientRect();
+      if (!r) return;
+      setRailPos({ left: r.right + 10, bottom: Math.max(8, window.innerHeight - r.bottom), maxHeight: r.bottom - 8 });
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open, variant]);
 
   if (!user) return null;
 
@@ -52,6 +70,7 @@ export function AcpUserMenu({ variant = "bar" }: { variant?: "bar" | "rail" }) {
       {variant === "rail" ? (
         <button
           type="button"
+          ref={railButton}
           className={`nbrailuser${open ? " is-active" : ""}`}
           onClick={() => setOpen((o) => !o)}
           title={user.username}
@@ -71,7 +90,7 @@ export function AcpUserMenu({ variant = "bar" }: { variant?: "bar" | "rail" }) {
       )}
 
       {open && (
-        <div className={`nbpop nbpop--user nbpop--${variant}`}>
+        <div className={`nbpop nbpop--user nbpop--${variant}`} style={variant === "rail" ? railPos : undefined}>
           <div className="nbuser__card">
             <Avatar user={avatar} size={46} online presenceSize={12} />
             <div className="nbuser__cardid">

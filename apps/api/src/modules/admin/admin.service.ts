@@ -17,6 +17,7 @@ import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { buildPaginationMeta } from "@xentium/contracts";
+import { adminUsersService } from "./adminUsers.service.js";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -228,107 +229,10 @@ export const adminService = {
 
   // ── Users ─────────────────────────────────────────────────────────────────
 
-  async listUsers(opts: { page: number; limit: number; search?: string; groupId?: string }) {
-    const { page, limit, search, groupId } = opts;
-    const where: any = {};
-    if (search) {
-      where.OR = [
-        { username: { contains: search, mode: "insensitive" } },
-        { email: { contains: search, mode: "insensitive" } },
-      ];
-    }
-    if (groupId) where.groups = { some: { groupId } };
-
-    const [data, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          avatar: true,
-          isActive: true,
-          bannedUntil: true,
-          createdAt: true,
-          articleCount: true,
-          groups: {
-            include: {
-              group: {
-                include: {
-                  progression: { select: { badgeColor: true, badgeLabel: true } },
-                },
-              },
-            },
-          },
-        },
-      }),
-      prisma.user.count({ where }),
-    ]);
-    return {
-      data: data.map((u) => ({
-        ...u,
-        groups: u.groups.map((ug) => ({
-          id:       ug.group.id,
-          name:     ug.group.name,
-          key:      ug.group.key,
-          icon:     ug.group.icon ?? null,
-          isSystem: ug.group.isSystem,
-          progression: ug.group.progression
-            ? { badgeColor: ug.group.progression.badgeColor, badgeLabel: ug.group.progression.badgeLabel }
-            : null,
-        })),
-      })),
-      meta: buildPaginationMeta({ page, limit, total }),
-    };
-  },
-
-  async getUserDetail(id: string) {
-    const user = await prisma.user.findUnique({
-      where: { id },
-      include: {
-        groups: {
-          include: {
-            group: {
-              include: { progression: { select: { badgeColor: true, badgeLabel: true } } },
-            },
-          },
-        },
-        _count: { select: { articles: true, articleComments: true, sessions: true } },
-      },
-    });
-    if (!user) throw XentiumError.notFound("User not found");
-
-    const [fields, values, loginEvents] = await Promise.all([
-      prisma.userProfileField.findMany({ orderBy: { position: "asc" } }),
-      prisma.userProfileFieldValue.findMany({ where: { userId: id } }),
-      prisma.loginEvent.findMany({
-        where:   { userId: id },
-        orderBy: { createdAt: "desc" },
-        take:    20,
-        select:  { id: true, ip: true, userAgent: true, deviceCookieId: true, success: true, eventType: true, createdAt: true },
-      }),
-    ]);
-    const valueMap = Object.fromEntries(values.map((v) => [v.fieldId, v.value]));
-
-    return {
-      ...user,
-      groups: user.groups.map((ug) => ({
-        id:       ug.group.id,
-        name:     ug.group.name,
-        key:      ug.group.key,
-        icon:     ug.group.icon ?? null,
-        isSystem: ug.group.isSystem,
-        progression: ug.group.progression
-          ? { badgeColor: ug.group.progression.badgeColor, badgeLabel: ug.group.progression.badgeLabel }
-          : null,
-      })),
-      profileFields: fields.map((f) => ({ field: f, value: valueMap[f.id] ?? "" })),
-      loginEvents,
-    };
-  },
+  // The list, one member's page and membership deltas live in adminUsers.service.
+  listUsers:        adminUsersService.listUsers.bind(adminUsersService),
+  getUserDetail:    adminUsersService.getUserDetail.bind(adminUsersService),
+  patchUserGroups:  adminUsersService.patchUserGroups.bind(adminUsersService),
 
   /** Paginated security/login activity for a user (newest first). */
   async listUserLoginEvents(userId: string, page: number, limit: number) {
