@@ -106,5 +106,13 @@
     "saved": "Titelbild aktualisiert",
     "unlocksAt": "Freigeschaltet ab {{rank}}",
     "unavailable": "Auf dieser Seite nicht verfügbar"
+  },
+  "levelUp": {
+    "eyebrow": "Aufgestiegen!",
+    "title": "Du bist jetzt",
+    "unlocked": "Freigeschaltet",
+    "nextRank": "Als Nächstes: {{rank}}",
+    "top": "Du hast die Spitze der Leiter erreicht.",
+    "cta": "Weiter geht's"
   }
 }

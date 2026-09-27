@@ -1,4 +1,7 @@
 import type { RequestHandler } from "express";
+import { adminCasesService } from "./adminCases.service.js";
+import { modSettingsService, modSettingsPatchSchema } from "./modSettings.service.js";
+import { modCanvasService, templateSchema } from "../moderation/modCanvas.service.js";
 import { adminService } from "./admin.service.js";
 import { z } from "zod";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
@@ -54,6 +57,35 @@ async function jobView(def: (typeof SCHEDULED_JOBS)[number]) {
     nextRuns, valid, error, lastRun,
   };
 }
+
+/**
+ * The security scan's schedule, for the Review Cases header ("Detection ran 12m ago
+ * · every 30 min") and its all-clear state. The interval is read off the next two
+ * scheduled runs rather than parsed out of the cron, so any schedule an admin set
+ * reads correctly.
+ */
+async function detectionStatus() {
+  const def = SCHEDULED_JOBS.find((d) => d.key === "security-analysis");
+  if (!def) return null;
+  const view = await jobView(def);
+  const [a, b] = view.nextRuns.map((r) => Date.parse(r));
+  return {
+    enabled: view.config.enabled,
+    lastRunAt: view.lastRun.at ? new Date(view.lastRun.at).toISOString() : null,
+    lastRunStatus: view.lastRun.status,
+    nextRunAt: view.nextRuns[0] ?? null,
+    intervalMinutes: a && b && b > a ? Math.round((b - a) / 60_000) : null,
+  };
+}
+
+const listCasesSchema = z.object({
+  page:     z.coerce.number().int().positive().default(1),
+  limit:    z.coerce.number().int().min(1).max(100).default(20),
+  status:   z.enum(["open", "reviewed", "all"]).default("open"),
+  type:     z.string().max(60).optional(),
+  severity: z.enum(["high", "medium", "low"]).optional(),
+  sort:     z.enum(["new", "old"]).default("new"),
+});
 
 const idParamSchema = z.object({ id: z.string() });
 const keyParamSchema = z.object({ key: z.string() });
@@ -312,9 +344,55 @@ export const adminController = {
     res.json(await adminService.listBans(q));
   }) as RequestHandler,
 
+  // Mod Settings — the policy, each pattern's state, and when detection runs.
+  getModSettings: (async (_req, res) => {
+    const [settings, detection] = await Promise.all([modSettingsService.get(), detectionStatus()]);
+    res.json({ ...settings, detection });
+  }) as RequestHandler,
+
+  updateModSettings: (async (req, res) => {
+    const patch = modSettingsPatchSchema.parse(req.body);
+    const [settings, detection] = await Promise.all([modSettingsService.update(patch), detectionStatus()]);
+    res.json({ ...settings, detection });
+  }) as RequestHandler,
+
+  // Moderation → Templates: the premade texts ModCanvas fills in.
+  listModTemplates: (async (_req, res) => {
+    res.json(await modCanvasService.listTemplates());
+  }) as RequestHandler,
+
+  createModTemplate: (async (req, res) => {
+    res.status(201).json(await modCanvasService.createTemplate(req.userId!, templateSchema.parse(req.body)));
+  }) as RequestHandler,
+
+  updateModTemplate: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    res.json(await modCanvasService.updateTemplate(req.userId!, id, templateSchema.partial().parse(req.body)));
+  }) as RequestHandler,
+
+  deleteModTemplate: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    await modCanvasService.deleteTemplate(id);
+    res.status(204).end();
+  }) as RequestHandler,
+
+  restoreModTemplates: (async (req, res) => {
+    res.json(await modCanvasService.restoreDefaults(req.userId!));
+  }) as RequestHandler,
+
   listCases: (async (req, res) => {
-    const q = paginatedSchema.parse(req.query);
-    res.json(await adminService.listCases(q));
+    const q = listCasesSchema.parse(req.query);
+    const [cases, detection] = await Promise.all([
+      adminCasesService.listCases(q),
+      detectionStatus(),
+    ]);
+    res.json({ ...cases, detection });
+  }) as RequestHandler,
+
+  assignCase: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    const { userId } = z.object({ userId: z.string().min(1).nullable() }).parse(req.body);
+    res.json(await adminCasesService.assignCase(id, req.userId!, userId));
   }) as RequestHandler,
 
   updateCase: (async (req, res) => {
@@ -332,7 +410,8 @@ export const adminController = {
 
   banCaseUsers: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    res.json(await moderationService.banCaseUsers(id, req.userId!));
+    const { reason } = z.object({ reason: z.string().trim().max(500).optional() }).parse(req.body ?? {});
+    res.json(await moderationService.banCaseUsers(id, req.userId!, reason));
   }) as RequestHandler,
 
   revokeException: (async (req, res) => {

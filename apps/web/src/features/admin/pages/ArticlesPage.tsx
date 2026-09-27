@@ -115,7 +115,7 @@ export function ArticlesPage() {
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
+          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>
             {t("articles.loading")}
           </div>
         ) : (
@@ -126,7 +126,7 @@ export function ArticlesPage() {
                 <div key={a.id} className="acp-list-row" style={{ gridTemplateColumns: COLS }}>
                   {/* Title */}
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)", lineHeight: 1.3 }}>
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)", lineHeight: 1.3 }}>
                       {a.title}
                     </span>
                   </div>
@@ -139,7 +139,7 @@ export function ArticlesPage() {
                     >
                       {getAuthorInitials(a.author.username)}
                     </div>
-                    <span style={{ fontSize: 12 }}>@<Username username={a.author.username} badgeColor={a.author.badgeColor} /></span>
+                    <span style={{ fontSize: "var(--fs-xs)" }}>@<Username username={a.author.username} badgeColor={a.author.badgeColor} /></span>
                   </div>
 
                   {/* Category */}
@@ -147,32 +147,32 @@ export function ArticlesPage() {
                     {a.category ? (
                       <span style={{
                         background: "var(--c-accent-soft)", color: "var(--c-accent)",
-                        borderRadius: 100, padding: "2px 8px", fontSize: 11, fontWeight: 700,
+                        borderRadius: 100, padding: "2px 8px", fontSize: "var(--fs-2xs)", fontWeight: 700,
                       }}>
                         {a.category.name}
                       </span>
                     ) : (
-                      <span style={{ fontSize: 12, color: "var(--c-fg-muted)", opacity: 0.5 }}>{t("articles.uncategorised")}</span>
+                      <span style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", opacity: 0.5 }}>{t("articles.uncategorised")}</span>
                     )}
                   </div>
 
                   {/* Status */}
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ background: bg, color, borderRadius: 100, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
+                    <span style={{ background: bg, color, borderRadius: 100, padding: "2px 8px", fontSize: "var(--fs-2xs)", fontWeight: 700 }}>
                       {t(`articles.status.${a.status}`, { defaultValue: a.status })}
                     </span>
                   </div>
 
                   {/* Views */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: "var(--c-fg-muted)" }}>
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg-muted)" }}>
                       {a.viewCount.toLocaleString()}
                     </span>
                   </div>
 
                   {/* Published date */}
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{formatDate(a.publishedAt)}</span>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{formatDate(a.publishedAt)}</span>
                   </div>
 
                   {/* Actions */}
@@ -181,7 +181,7 @@ export function ArticlesPage() {
                       to={`/articles/${a.slug}`}
                       target="_blank"
                       style={{
-                        fontSize: 12, fontWeight: 600, color: "var(--c-fg-muted)",
+                        fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--c-fg-muted)",
                         border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)",
                         padding: "4px 8px", textDecoration: "none",
                         transition: "border-color .15s, color .15s",
@@ -195,7 +195,7 @@ export function ArticlesPage() {
                       type="button"
                       onClick={() => handleDelete(a)}
                       style={{
-                        fontSize: 12, fontWeight: 600, color: "var(--c-danger)",
+                        fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--c-danger)",
                         border: "1px solid rgba(248,113,113,.3)", borderRadius: "var(--radius-sm)",
                         padding: "4px 8px", background: "transparent", cursor: "pointer",
                         transition: "background .15s, border-color .15s",
@@ -210,7 +210,7 @@ export function ArticlesPage() {
               );
             })}
             {data?.data.length === 0 && (
-              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
+              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>
                 {t("articles.empty")}
               </div>
             )}

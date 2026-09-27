@@ -41,11 +41,11 @@
     width: 38px; height: 38px; border-radius: var(--radius-md); flex: none;
     display: flex; align-items: center; justify-content: center;
     background: var(--c-accent-soft); border: 1px solid var(--c-border); color: var(--c-accent);
-    font-size: 15px;
+    font-size: var(--fs-base);
   }
-  &__wordmark { font-family: var(--font-display); font-weight: 700; font-size: 18px; letter-spacing: -0.02em; }
+  &__wordmark { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-lg); letter-spacing: -0.02em; }
 
-  &__note { text-align: center; margin: 0; font-weight: 600; font-size: 12px; color: var(--c-fg-subtle); }
+  &__note { text-align: center; margin: 0; font-weight: 600; font-size: var(--fs-xs); color: var(--c-fg-subtle); }
 }
 
 /* ── The card ─────────────────────────────────────────────────────────────── */
@@ -69,7 +69,7 @@
     text-wrap: pretty;
   }
   &__lead {
-    font-weight: 600; font-size: 15px; line-height: 1.6;
+    font-weight: 600; font-size: var(--fs-base); line-height: 1.6;
     color: var(--c-fg-muted); margin: 0; max-width: 52ch; text-wrap: pretty;
   }
 
@@ -83,15 +83,15 @@
   display: inline-flex; align-items: center; gap: 9px;
   height: 30px; padding: 0 14px; border-radius: var(--radius-pill);
   background: var(--c-accent-soft); color: var(--c-accent);
-  font-weight: 700; font-size: 12.5px;
+  font-weight: 700; font-size: var(--fs-sm);
 
   i { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent); flex: none; animation: mt-pulse 2.2s ease-out infinite; }
 }
 
 .mt-selfupdate {
   margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
-  font-weight: 600; font-size: 12px; color: var(--c-fg-subtle);
-  svg { font-size: 11px; }
+  font-weight: 600; font-size: var(--fs-xs); color: var(--c-fg-subtle);
+  svg { font-size: var(--fs-2xs); }
 }
 
 /* ── Countdown ────────────────────────────────────────────────────────────── */
@@ -102,8 +102,8 @@
   &__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 360px; }
   &__eta {
     margin-top: 11px; display: inline-flex; align-items: center; gap: 8px;
-    font-weight: 600; font-size: 12.5px; color: var(--c-fg-muted);
-    svg { font-size: 12px; color: var(--c-fg-subtle); }
+    font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted);
+    svg { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
   }
 }
 
@@ -112,11 +112,11 @@
   border-radius: var(--radius-md); padding: 13px 0 11px; text-align: center;
 
   &__n {
-    font-family: var(--font-display); font-weight: 700; font-size: 30px;
+    font-family: var(--font-display); font-weight: 700; font-size: var(--fs-3xl);
     letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums;
   }
   &__l {
-    margin-top: 6px; font-weight: 700; font-size: 10.5px;
+    margin-top: 6px; font-weight: 700; font-size: var(--fs-2xs);
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-fg-subtle);
   }
   /* Seconds is the only number that moves — the accent marks it as the live one. */
@@ -130,11 +130,11 @@
 
   &__head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
   &__title {
-    display: block; font-weight: 700; font-size: 10.5px;
+    display: block; font-weight: 700; font-size: var(--fs-2xs);
     letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-fg-subtle);
   }
   &__head &__title { margin-bottom: 0; }
-  &__aside { font-weight: 600; font-size: 12px; color: var(--c-fg-muted); margin-left: auto; }
+  &__aside { font-weight: 600; font-size: var(--fs-xs); color: var(--c-fg-muted); margin-left: auto; }
   &--bar { max-width: 420px; }
 }
 
@@ -156,11 +156,11 @@
     width: 22px; height: 22px; border-radius: 50%; flex: none;
     display: flex; align-items: center; justify-content: center;
     border: 2px solid var(--c-border-hi);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
   &__pip { width: 8px; height: 8px; border-radius: 50%; background: var(--c-accent2); }
-  &__name { font-weight: 500; font-size: 14px; line-height: 1.35; color: var(--c-fg-muted); }
-  &__state { font-weight: 700; font-size: 11px; color: var(--c-fg-subtle); padding-top: 2px; }
+  &__name { font-weight: 500; font-size: var(--fs-md); line-height: 1.35; color: var(--c-fg-muted); }
+  &__state { font-weight: 700; font-size: var(--fs-2xs); color: var(--c-fg-subtle); padding-top: 2px; }
 
   &.is-done .mt-step__dot { background: var(--c-accent); border-color: var(--c-accent); color: var(--c-on-accent, #fff); }
   &.is-current .mt-step__dot { border-color: var(--c-accent); animation: mt-pulse 2.4s ease-out infinite; }
@@ -177,8 +177,8 @@
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   &__meta { margin-top: 10px; display: flex; align-items: baseline; gap: 8px; }
-  &__label { font-weight: 600; font-size: 13px; color: var(--c-fg); }
-  &__pct { font-weight: 700; font-size: 12px; color: var(--c-fg-subtle); margin-left: auto; font-variant-numeric: tabular-nums; }
+  &__label { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg); }
+  &__pct { font-weight: 700; font-size: var(--fs-xs); color: var(--c-fg-subtle); margin-left: auto; font-variant-numeric: tabular-nums; }
 }
 
 .mt-svcs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
@@ -186,10 +186,10 @@
 .mt-svc {
   display: flex; align-items: center; gap: 12px; padding: 9px 0;
 
-  &__name { font-weight: 600; font-size: 13.5px; }
+  &__name { font-weight: 600; font-size: var(--fs-md); }
   &__state {
     margin-left: auto; display: inline-flex; align-items: center; gap: 7px;
-    font-weight: 700; font-size: 11.5px; padding: 4px 10px; border-radius: var(--radius-pill);
+    font-weight: 700; font-size: var(--fs-2xs); padding: 4px 10px; border-radius: var(--radius-pill);
 
     i { width: 6px; height: 6px; border-radius: 50%; background: currentcolor; flex: none; }
 
@@ -204,12 +204,12 @@
 .mt-links {
   display: flex; align-items: center; gap: 8px;
 
-  &__label { font-weight: 600; font-size: 12.5px; color: var(--c-fg-subtle); margin-right: 4px; }
+  &__label { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); margin-right: 4px; }
   &__a {
     width: 34px; height: 34px; border-radius: var(--radius-sm);
     display: flex; align-items: center; justify-content: center;
     background: var(--c-bg); border: 1px solid var(--c-border);
-    color: var(--c-fg-muted); font-size: 14px;
+    color: var(--c-fg-muted); font-size: var(--fs-md);
     transition: color 0.15s, border-color 0.15s;
 
     &:hover { color: var(--c-accent); border-color: var(--c-accent); }
@@ -219,11 +219,11 @@
 .mt-stafflink {
   margin-left: auto; display: inline-flex; align-items: center; gap: 8px;
   background: none; border: none; padding: 8px 2px; cursor: pointer;
-  font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: var(--c-fg-subtle);
+  font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); color: var(--c-fg-subtle);
   transition: color 0.15s;
 
   &:hover { color: var(--c-accent); }
-  svg { font-size: 11px; }
+  svg { font-size: var(--fs-2xs); }
 }
 
 /* ── Staff sign-in dialog ─────────────────────────────────────────────────── */
@@ -255,27 +255,27 @@
   &__x {
     position: absolute; top: 14px; right: 14px;
     width: 30px; height: 30px; border-radius: var(--radius-sm);
-    border: none; background: none; color: var(--c-fg-subtle); cursor: pointer; font-size: 13px;
+    border: none; background: none; color: var(--c-fg-subtle); cursor: pointer; font-size: var(--fs-sm);
     &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
   }
 
   &__head { text-align: center; margin-bottom: 20px; }
   &__logo {
     width: 52px; height: 52px; border-radius: 50%; margin: 0 auto 14px;
-    display: grid; place-items: center; font-size: 21px;
+    display: grid; place-items: center; font-size: 1.3125rem;
     color: var(--c-accent); background: var(--c-accent-soft);
   }
-  &__head h2 { font-family: var(--font-display); font-weight: 800; font-size: 18px; margin: 0 0 8px; }
-  &__head p { margin: 0; font-size: 13.5px; font-weight: 600; line-height: 1.55; color: var(--c-fg-muted); }
+  &__head h2 { font-family: var(--font-display); font-weight: 800; font-size: var(--fs-lg); margin: 0 0 8px; }
+  &__head p { margin: 0; font-size: var(--fs-md); font-weight: 600; line-height: 1.55; color: var(--c-fg-muted); }
 
   &__foot {
     margin-top: 16px; display: flex; align-items: center; gap: 10px;
 
-    span { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12px; color: var(--c-fg-subtle); }
-    span svg { font-size: 10px; }
+    span { display: inline-flex; align-items: center; gap: 7px; font-weight: 700; font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+    span svg { font-size: var(--fs-2xs); }
     button {
       margin-left: auto; background: none; border: none; padding: 0; cursor: pointer;
-      font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: var(--c-fg-muted);
+      font-family: var(--font-display); font-weight: 700; font-size: var(--fs-sm); color: var(--c-fg-muted);
       &:hover { color: var(--c-accent); }
     }
   }
@@ -287,7 +287,7 @@
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
   padding: 10px 13px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-weight: 700;
   margin-top: 20px;
 
@@ -298,12 +298,12 @@
 .mt-field {
   margin-bottom: 12px;
 
-  label { display: block; font-family: var(--font-display); font-weight: 600; font-size: 12.5px; margin-bottom: 6px; }
+  label { display: block; font-family: var(--font-display); font-weight: 600; font-size: var(--fs-sm); margin-bottom: 6px; }
   input {
     width: 100%; height: 46px; padding: 0 14px 0 40px;
     border-radius: var(--input-radius); border: 1px solid var(--input-border-color);
     background: var(--input-bg); color: var(--input-fg);
-    font-family: var(--ff-sans); font-weight: 700; font-size: 14px; outline: none;
+    font-family: var(--ff-sans); font-weight: 700; font-size: var(--fs-md); outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
 
     &::placeholder { color: var(--c-fg-muted); font-weight: 600; }
@@ -321,7 +321,7 @@
   width: 100%; height: 50px; margin-top: 4px; border: none; cursor: pointer;
   border-radius: var(--radius-pill);
   background: var(--c-accent); color: var(--c-on-accent, #fff);
-  font-family: var(--font-display); font-weight: 600; font-size: 15px;
+  font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base);
   box-shadow: var(--shadow-pop);
   transition: transform 0.12s, filter 0.15s;
 

@@ -106,5 +106,13 @@
     "saved": "Portada actualizada",
     "unlocksAt": "Se desbloquea en {{rank}}",
     "unavailable": "No disponible en este sitio"
+  },
+  "levelUp": {
+    "eyebrow": "¡Subiste de nivel!",
+    "title": "Ahora eres",
+    "unlocked": "Has desbloqueado",
+    "nextRank": "Siguiente: {{rank}}",
+    "top": "Has llegado a lo más alto de la escalera.",
+    "cta": "¡Vamos!"
   }
 }

@@ -64,6 +64,15 @@ export const progressionController = {
    * and the profile rail drift into two components. `getProfileProgression` is a
    * strict superset, so every existing caller keeps the fields it already read.
    */
+  // The one-time "Level up" dialog: the newest rung climbed and not yet seen, or null.
+  getMyLevelUp: (async (req, res) => {
+    res.json({ levelUp: await progressionService.getPendingLevelUp(req.userId!) });
+  }) as RequestHandler,
+
+  markMyLevelUpSeen: (async (req, res) => {
+    res.json(await progressionService.markLevelUpsSeen(req.userId!));
+  }) as RequestHandler,
+
   getMyProgression: (async (req, res) => {
     const userId = req.userId!;
     res.json(await progressionService.getProfileProgression(userId));

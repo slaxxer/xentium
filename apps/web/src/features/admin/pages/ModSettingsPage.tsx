@@ -1,245 +1,547 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import {
+  faWaveSquare, faBan, faShieldHalved, faClock, faLayerGroup, faMagnifyingGlass,
+  faArrowRight, faPlus, faXmark, faCheck, faCircleExclamation, faPuzzlePiece,
+} from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
-import { swalToast, apiErrorMessage } from "../../../lib/swal";
+import { apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
 import { useAutosave, sameValue } from "../../../hooks/useAutosave";
-import { AutosaveStatus } from "../../../components/AutosaveStatus";
+import { SaveChip } from "../../../components/SaveChip";
+import { Toggle, NumberStepper } from "../../../components/AcpControls";
+import "./ModSettingsPage.scss";
 
-interface Setting { key: string; value: unknown }
+/**
+ * ACP → Moderation → Mod Settings.
+ *
+ * Three tabs — how warnings escalate, what a ban may cost, which patterns open a
+ * case — autosaving into ONE endpoint that validates every field.
+ *
+ * ⚠ Only the SECTIONS that changed are sent, and a section nobody touched here
+ * follows the server: a tab left open must never write its stale copy back over
+ * an edit made elsewhere.
+ */
 
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <div onClick={onToggle} style={{ width:40,height:22,background:on?"var(--c-accent)":"var(--c-border)",borderRadius:100,cursor:"pointer",position:"relative",flexShrink:0,transition:"background 0.2s" }}>
-      <div style={{ width:16,height:16,background:"var(--c-on-accent)",borderRadius:"50%",position:"absolute",top:3,left:on?21:3,transition:"left 0.2s" }} />
-    </div>
-  );
+type Action = "notify" | "ban_temporary" | "ban_permanent";
+interface Step { warningCount: number; action: Action; banDays?: number; notifyModerators: boolean }
+interface Bans { defaultDays: number; minDays: number; maxDays: number; allowOverride: boolean }
+type PatternType = "rapid_login_attempts" | "multi_account_suspicion" | "registration_burst" | "ban_evasion_suspicion";
+interface PatternView {
+  type: PatternType;
+  enabled: boolean;
+  claimedBy: { id: string; name: string } | null;
+  casesLast7d: number;
+}
+interface ModSettings {
+  expiry: { enabled: boolean; days: number };
+  ladder: Step[];
+  bans: Bans;
+  resetAfterBan: boolean;
+  patterns: PatternView[];
+  detection: { enabled: boolean; intervalMinutes: number | null } | null;
 }
 
-// Map settings keys → local state
-function parse(settings: Setting[]): Record<string, unknown> {
-  const map: Record<string, unknown> = {};
-  for (const s of settings) map[s.key] = s.value;
-  return map;
+interface Draft {
+  expiry: ModSettings["expiry"];
+  ladder: Step[];
+  bans: Bans;
+  resetAfterBan: boolean;
+  patterns: Record<string, boolean>;
 }
+type Section = keyof Draft;
+const SECTIONS: Section[] = ["expiry", "ladder", "bans", "resetAfterBan", "patterns"];
 
-/** Form field → the settings key it persists to. One list, so the save path and
- *  the seed path cannot drift apart. */
-const SETTING_KEY: Record<string, string> = {
-  expiryEnabled:  "moderation.warning_expiry_enabled",
-  expiryDays:     "moderation.warning_expiry_days",
-  allowOverride:  "moderation.ban_allow_override",
-  appealEnabled:  "moderation.ban_appeals_enabled",
-  resetCount:     "moderation.reset_count_after_ban",
-  defaultBanDays: "moderation.default_ban_days",
-  minDays:        "moderation.min_ban_days",
-  maxDays:        "moderation.max_ban_days",
-  patRapid:       "security.pattern.rapid_login_attempts",
-  patMulti:       "security.pattern.multi_account_suspicion",
-  patRegBurst:    "security.pattern.registration_burst",
-  patBanEvasion:  "security.pattern.ban_evasion_suspicion",
+type Tab = "warnings" | "bans" | "detection";
+const TABS: { key: Tab; icon: IconDefinition }[] = [
+  { key: "warnings", icon: faWaveSquare },
+  { key: "bans", icon: faBan },
+  { key: "detection", icon: faShieldHalved },
+];
+
+const PATTERN_KEY: Record<PatternType, string> = {
+  rapid_login_attempts: "rapid",
+  multi_account_suspicion: "multi",
+  registration_burst: "burst",
+  ban_evasion_suspicion: "evasion",
 };
+
+const MAX_STEPS = 10;
+
+function draftOf(s: ModSettings): Draft {
+  return {
+    expiry: s.expiry,
+    ladder: s.ladder,
+    bans: s.bans,
+    resetAfterBan: s.resetAfterBan,
+    patterns: Object.fromEntries(s.patterns.map((p) => [p.type, p.enabled])),
+  };
+}
+
+/** What the server would store: the ladder sorted, a length only on a temporary ban.
+ *  Both sides are compared in this form, or a reordered ladder saves forever. */
+function normalise(d: Draft): Draft {
+  return {
+    ...d,
+    ladder: [...d.ladder]
+      .sort((a, b) => a.warningCount - b.warningCount)
+      .map((s) => (s.action === "ban_temporary" ? s : { warningCount: s.warningCount, action: s.action, notifyModerators: s.notifyModerators })),
+  };
+}
+
+function ladderProblem(l: Step[]): "duplicate" | "days" | null {
+  if (new Set(l.map((s) => s.warningCount)).size !== l.length) return "duplicate";
+  if (l.some((s) => s.action === "ban_temporary" && !(s.banDays && s.banDays >= 1))) return "days";
+  return null;
+}
+function bansProblem(b: Bans): "range" | "default" | null {
+  if (b.minDays > b.maxDays) return "range";
+  if (b.defaultDays < b.minDays || b.defaultDays > b.maxDays) return "default";
+  return null;
+}
 
 export function ModSettingsPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const tab: Tab = (TABS.some((x) => x.key === params.get("tab")) ? params.get("tab") : "warnings") as Tab;
 
-  const { data: settings = [] } = useQuery<Setting[]>({
-    queryKey: ["acp-settings"],
-    queryFn: () => api.get("/admin/settings"),
+  const { data } = useQuery<ModSettings>({
+    queryKey: ["acp-mod-settings"],
+    queryFn: () => api.get("/admin/mod-settings"),
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (entries: Array<[string, unknown]>) =>
-      Promise.all(entries.map(([key, value]) =>
-        api.put(`/admin/settings/${encodeURIComponent(key)}`, { value }))),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-settings"] });
-      swalToast(t("modSettings.toastSaved"), "success");
+  const save = useMutation({
+    mutationFn: (patch: Partial<Draft>) => api.patch<ModSettings>("/admin/mod-settings", patch),
+    onSuccess: (res) => qc.setQueryData(["acp-mod-settings"], res),
+    onError: (e) => {
+      toast.error(apiErrorMessage(e));
+      qc.invalidateQueries({ queryKey: ["acp-mod-settings"] });
     },
-    onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
-  const raw = parse(settings);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const serverRef = useRef<Draft | null>(null);
+  const saved = data ? normalise(draftOf(data)) : undefined;
 
-  // Local draft state
-  const [expiryEnabled,  setExpiryEnabled]  = useState(true);
-  const [expiryDays,     setExpiryDays]     = useState(90);
-  const [allowOverride,  setAllowOverride]  = useState(true);
-  const [appealEnabled,  setAppealEnabled]  = useState(false);
-  const [resetCount,     setResetCount]     = useState(false);
-  const [defaultBanDays, setDefaultBanDays] = useState(7);
-  const [minDays,        setMinDays]        = useState(1);
-  const [maxDays,        setMaxDays]        = useState(365);
-  const [patRapid,       setPatRapid]       = useState(true);
-  const [patMulti,       setPatMulti]       = useState(true);
-  const [patRegBurst,    setPatRegBurst]    = useState(true);
-  const [patBanEvasion,  setPatBanEvasion]  = useState(true);
-
-  const setField = {
-    expiryEnabled:  setExpiryEnabled,
-    expiryDays:     setExpiryDays,
-    allowOverride:  setAllowOverride,
-    appealEnabled:  setAppealEnabled,
-    resetCount:     setResetCount,
-    defaultBanDays: setDefaultBanDays,
-    minDays:        setMinDays,
-    maxDays:        setMaxDays,
-    patRapid:       setPatRapid,
-    patMulti:       setPatMulti,
-    patRegBurst:    setPatRegBurst,
-    patBanEvasion:  setPatBanEvasion,
-  } as Record<string, (v: never) => void>;
-
-
-
-  // Draft (current form) vs the server's persisted values, using identical
-  // defaults to the merge below so a freshly-loaded form never auto-saves.
-  const draft = { expiryEnabled, expiryDays, allowOverride, appealEnabled, resetCount, defaultBanDays, minDays, maxDays, patRapid, patMulti, patRegBurst, patBanEvasion };
-  const savedValue = settings.length ? {
-    expiryEnabled:  raw["moderation.warning_expiry_enabled"] as boolean ?? true,
-    expiryDays:     raw["moderation.warning_expiry_days"]    as number  ?? 90,
-    allowOverride:  raw["moderation.ban_allow_override"]     as boolean ?? true,
-    appealEnabled:  raw["moderation.ban_appeals_enabled"]    as boolean ?? false,
-    resetCount:     raw["moderation.reset_count_after_ban"]  as boolean ?? false,
-    defaultBanDays: raw["moderation.default_ban_days"]       as number  ?? 7,
-    minDays:        raw["moderation.min_ban_days"]           as number  ?? 1,
-    maxDays:        raw["moderation.max_ban_days"]           as number  ?? 365,
-    patRapid:       raw["security.pattern.rapid_login_attempts"]    as boolean ?? true,
-    patMulti:       raw["security.pattern.multi_account_suspicion"] as boolean ?? true,
-    patRegBurst:    raw["security.pattern.registration_burst"]      as boolean ?? true,
-    patBanEvasion:  raw["security.pattern.ban_evasion_suspicion"]   as boolean ?? true,
-  } : undefined;
-
-  /** The last server snapshot this page merged — see the effect below. */
-  const serverRef = useRef<Record<string, unknown> | null>(null);
-
-  /**
-   * Merge each new server snapshot into the form, per field.
-   *
-   * This seeded on `[settings.length]`, which re-ran only if the NUMBER of
-   * settings rows changed — so a tab left open while somebody edited the same
-   * settings elsewhere kept its stale form, while `savedValue` (derived every
-   * render) went fresh. Autosave then saw form ≠ saved and wrote the whole
-   * stale form back, reverting the other session's changes.
-   *
-   * A field nobody has touched here follows the server; a field with an unsaved
-   * local edit keeps it, because autosave is about to push it.
-   */
+  // Merge each server snapshot per section: untouched here → follow the server;
+  // edited here and not yet saved → keep, autosave is about to send it.
   useEffect(() => {
-    if (!settings.length || !savedValue) return;
-    const prevServer = serverRef.current;
-    serverRef.current = savedValue as Record<string, unknown>;
-    for (const [key, incoming] of Object.entries(savedValue)) {
-      if (prevServer) {
-        if (sameValue(incoming, prevServer[key])) continue;                        // unchanged on the server
-        if (!sameValue((draft as Record<string, unknown>)[key], prevServer[key])) continue; // unsaved local edit
+    if (!saved) return;
+    const prev = serverRef.current;
+    serverRef.current = saved;
+    setDraft((cur) => {
+      if (!cur || !prev) return draftOf(data!);
+      const next = { ...cur };
+      const local = normalise(cur);
+      for (const k of SECTIONS) {
+        if (sameValue(saved[k], prev[k])) continue;
+        if (!sameValue(local[k], prev[k])) continue;
+        (next as Record<Section, unknown>)[k] = saved[k];
       }
-      setField[key]?.(incoming as never);
-    }
-    // `settings` is structurally shared by the query client, so this runs when
-    // the DATA changes, not on every refetch returning the same rows. `draft` is
-    // deliberately not a dependency — it changes on every keystroke, and this
-    // must only react to the server.
-  }, [settings]);
+      return next;
+    });
+    // `data` is structurally shared by the query client: this runs when the
+    // server's values change, not on every refetch.
+  }, [data]);
 
-  // Only the fields that changed are written — a save must not stamp the whole
-  // form over whatever the server holds. See the merge effect above.
+  const ladderIssue = draft ? ladderProblem(draft.ladder) : null;
+  const bansIssue = draft ? bansProblem(draft.bans) : null;
+
   useAutosave({
-    value: draft,
-    savedValue,
+    value: draft ? normalise(draft) : saved,
+    savedValue: saved,
     onSave: (d) => {
-      const saved = savedValue as Record<string, unknown> | undefined;
-      const changed = Object.entries(d)
-        .filter(([field, value]) => !sameValue(value, saved?.[field]))
-        .map(([field, value]) => [SETTING_KEY[field]!, value] as [string, unknown]);
-      if (changed.length) saveMutation.mutate(changed);
+      if (!d || !saved) return;
+      const patch: Partial<Draft> = {};
+      for (const k of SECTIONS) {
+        if (sameValue(d[k], saved[k])) continue;
+        // An impossible section is held back until it is fixed — the page says why.
+        if (k === "ladder" && ladderProblem(d.ladder)) continue;
+        if (k === "bans" && bansProblem(d.bans)) continue;
+        (patch as Record<Section, unknown>)[k] = d[k];
+      }
+      if (Object.keys(patch).length) save.mutate(patch);
     },
   });
+
+  const set = <K extends Section>(k: K, v: Draft[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));
 
   return (
-    <div>
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("modSettings.sub")}</div>
-          <h1 className="acp-page-title">{t("modSettings.title")}</h1>
+    <div className="ms">
+      <div className="pg-head">
+        <div>
+          <p className="pg-eyebrow">{t("modSettings.sub")}</p>
+          <h1 className="pg-title">{t("modSettings.title")}</h1>
+          <p className="pg-sub">{t("modSettings.intro")}</p>
         </div>
-        <AutosaveStatus saving={saveMutation.isPending} />
+        <SaveChip saving={save.isPending} />
       </div>
 
-      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:20 }}>
-        {/* Warning policy */}
-        <div className="acp-card" style={{ padding:"24px" }}>
-          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:20 }}>{t("modSettings.warningPolicy")}</div>
+      <div className="acp-tab-bar ms-tabs" role="tablist">
+        {TABS.map((x) => (
+          <button key={x.key} type="button" role="tab" aria-selected={tab === x.key}
+            className={`acp-tab${tab === x.key ? " acp-tab--active" : ""}`}
+            onClick={() => setParams((p) => { p.set("tab", x.key); return p; }, { replace: true })}>
+            <FontAwesomeIcon icon={x.icon} /> {t(`modSettings.tabs.${x.key}`)}
+          </button>
+        ))}
+      </div>
 
-          <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderBottom:"1px solid var(--c-border)",marginBottom:16 }}>
-            <div>
-              <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{t("modSettings.warningExpiry")}</div>
-              <div style={{ fontSize:12,color:"var(--c-fg-muted)" }}>{t("modSettings.warningExpiryDesc")}</div>
-            </div>
-            <Toggle on={expiryEnabled} onToggle={() => setExpiryEnabled(v => !v)} />
-          </div>
-
-          {expiryEnabled && (
-            <div className="acp-form-field">
-              <label className="acp-label">{t("modSettings.expireAfter")}</label>
-              <input type="number" className="acp-input" value={expiryDays} onChange={e => setExpiryDays(+e.target.value)} />
-            </div>
+      {!draft || !data ? (
+        <div className="set-card ms-loading">{t("sidebar.loading")}</div>
+      ) : (
+        <div className="set-content">
+          {tab === "warnings" && (
+            <>
+              <Lifetime value={draft.expiry} onChange={(v) => set("expiry", v)} />
+              <Ladder steps={draft.ladder} issue={ladderIssue} onChange={(v) => set("ladder", v)} />
+            </>
           )}
-
-          <div style={{ fontSize:13,fontWeight:700,color:"var(--c-fg)",marginBottom:10,marginTop:16 }}>{t("modSettings.thresholds")}</div>
-          {[{ count:3,action:"Temp ban",days:"7" },{ count:5,action:"Perm ban",days:null }].map((th, i) => (
-            <div key={i} style={{ background:"var(--c-surface)",border:"1px solid var(--c-border)",borderRadius:"var(--radius-sm)",padding:"14px",marginBottom:10 }}>
-              <div style={{ display:"grid",gridTemplateColumns:th.days?"80px 1fr 80px":"80px 1fr",gap:8,marginBottom:8 }}>
-                <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>{t("modSettings.afterWarns")}</div><input type="number" className="acp-input" defaultValue={th.count} /></div>
-                <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>{t("modSettings.action")}</div><select className="acp-select" style={{ width:"100%" }}><option>{t("modSettings.actTempBan")}</option><option>{t("modSettings.actPermBan")}</option><option>{t("modSettings.actNotify")}</option></select></div>
-                {th.days && <div><div style={{ fontSize:11,color:"var(--c-fg-muted)",marginBottom:4 }}>{t("modSettings.days")}</div><input type="number" className="acp-input" defaultValue={th.days} /></div>}
-              </div>
-              <div style={{ display:"flex",alignItems:"center",gap:8 }}><input type="checkbox" defaultChecked style={{ accentColor:"var(--c-accent)" }} /><span style={{ fontSize:12,color:"var(--c-fg-muted)" }}>{t("modSettings.notifyModerators")}</span></div>
-            </div>
-          ))}
-          <button type="button" className="btn-ghost btn-sm"><FontAwesomeIcon icon={faPlus} style={{ marginRight:5 }} /> {t("modSettings.addThreshold")}</button>
+          {tab === "bans" && (
+            <>
+              <BanLengths value={draft.bans} issue={bansIssue} onChange={(v) => set("bans", v)} />
+              <WhoDecides
+                override={draft.bans.allowOverride}
+                reset={draft.resetAfterBan}
+                onOverride={(v) => set("bans", { ...draft.bans, allowOverride: v })}
+                onReset={(v) => set("resetAfterBan", v)}
+              />
+            </>
+          )}
+          {tab === "detection" && (
+            <Detection
+              patterns={data.patterns}
+              toggles={draft.patterns}
+              detection={data.detection}
+              onToggle={(type, on) => set("patterns", { ...draft.patterns, [type]: on })}
+            />
+          )}
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Ban policy */}
-        <div className="acp-card" style={{ padding:"24px" }}>
-          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:20 }}>{t("modSettings.banPolicy")}</div>
-          {([[t("modSettings.defaultBanDuration"), defaultBanDays, setDefaultBanDays],[t("modSettings.minDuration"), minDays, setMinDays],[t("modSettings.maxDuration"), maxDays, setMaxDays]] as [string, number, (v: number) => void][]).map(([label, val, setter]) => (
-            <div key={label} className="acp-form-field">
-              <label className="acp-label">{label}</label>
-              <input type="number" className="acp-input" value={val} onChange={e => setter(+e.target.value)} />
-            </div>
-          ))}
-          {([[t("modSettings.allowOverride"), allowOverride, setAllowOverride],[t("modSettings.allowAppeals"), appealEnabled, setAppealEnabled],[t("modSettings.resetAfterBan"), resetCount, setResetCount]] as [string, boolean, (v: boolean) => void][]).map(([label, val, setter]) => (
-            <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderTop:"1px solid var(--c-border)" }}>
-              <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{label}</div>
-              <Toggle on={val} onToggle={() => setter(!val)} />
-            </div>
-          ))}
+function CardHead({ icon, title, sub, children }: { icon: IconDefinition; title: string; sub: string; children?: ReactNode }) {
+  return (
+    <div className="set-card__head">
+      <div className="set-card__icon"><FontAwesomeIcon icon={icon} /></div>
+      <div className="set-card__titles">
+        <h3>{title}</h3>
+        <p>{sub}</p>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+// ── Warnings ─────────────────────────────────────────────────────────────────
+
+function Lifetime({ value, onChange }: { value: Draft["expiry"]; onChange: (v: Draft["expiry"]) => void }) {
+  const { t } = useTranslation("acp");
+  const on = value.enabled;
+  return (
+    <section className="set-card">
+      <CardHead icon={faClock} title={t("modSettings.lifetime.title")} sub={t("modSettings.lifetime.sub")} />
+      <div className="set-extra">
+        <div className={`ms-banner${on ? " is-on" : ""}`}>
+          <div className="ms-banner__ic"><FontAwesomeIcon icon={faWaveSquare} /></div>
+          <div className="ms-banner__text">
+            <div className="ms-banner__title">{t(on ? "modSettings.lifetime.onTitle" : "modSettings.lifetime.offTitle")}</div>
+            <div className="ms-banner__desc">{t(on ? "modSettings.lifetime.onDesc" : "modSettings.lifetime.offDesc")}</div>
+          </div>
+          <Toggle on={on} onToggle={() => onChange({ ...value, enabled: !on })} />
         </div>
-
-        {/* §15 baseline detection patterns */}
-        <div className="acp-card" style={{ padding:"24px", gridColumn:"1 / -1" }}>
-          <div style={{ fontSize:16,fontWeight:800,color:"var(--c-fg)",marginBottom:4 }}>{t("modSettings.detectionPatterns")}</div>
-          <div style={{ fontSize:12,color:"var(--c-fg-muted)",marginBottom:12 }}>{t("modSettings.detectionPatternsDesc")}</div>
-          {([
-            [t("modSettings.patRapidLogin"),  t("modSettings.patRapidLoginDesc"),  patRapid,      setPatRapid],
-            [t("modSettings.patMulti"),       t("modSettings.patMultiDesc"),       patMulti,      setPatMulti],
-            [t("modSettings.patRegBurst"),    t("modSettings.patRegBurstDesc"),    patRegBurst,   setPatRegBurst],
-            [t("modSettings.patBanEvasion"),  t("modSettings.patBanEvasionDesc"),  patBanEvasion, setPatBanEvasion],
-          ] as [string, string, boolean, (v: boolean) => void][]).map(([label, desc, val, setter]) => (
-            <div key={label} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"12px 0",borderTop:"1px solid var(--c-border)" }}>
-              <div>
-                <div style={{ fontSize:14,fontWeight:600,color:"var(--c-fg)" }}>{label}</div>
-                <div style={{ fontSize:12,color:"var(--c-fg-muted)" }}>{desc}</div>
-              </div>
-              <Toggle on={val} onToggle={() => setter(!val)} />
+        {on && (
+          <div className="ms-after">
+            <div>
+              <div className="set-row__label">{t("modSettings.lifetime.after")}</div>
+              <div className="set-row__desc">{t("modSettings.lifetime.afterDesc")}</div>
             </div>
-          ))}
+            <div className="ms-after__ctl">
+              <NumberStepper value={value.days} min={1} max={3650} step={5} onChange={(days) => onChange({ ...value, days })} />
+              <span className="ms-unit">{t("modSettings.days")}</span>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Ladder({ steps, issue, onChange }: { steps: Step[]; issue: ReturnType<typeof ladderProblem>; onChange: (v: Step[]) => void }) {
+  const { t } = useTranslation("acp");
+  const sorted = [...steps].sort((a, b) => a.warningCount - b.warningCount);
+  const last = sorted[sorted.length - 1];
+
+  const what = (s: Step) => s.action === "ban_permanent" ? t("modSettings.ladder.whatPerm")
+    : s.action === "ban_temporary" ? t("modSettings.ladder.whatTemp", { count: s.banDays ?? 0 })
+    : t("modSettings.ladder.whatNotify");
+
+  const update = (i: number, patch: Partial<Step>) => onChange(steps.map((s, j) => (j === i ? { ...s, ...patch } : s)));
+
+  async function remove(i: number) {
+    const s = steps[i]!;
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: t("modSettings.ladder.removeTitle"),
+      body: `${t("modSettings.ladder.removeBody", { count: s.warningCount })} ${t("modSettings.ladder.removeNote")}`,
+      confirmText: t("modSettings.ladder.removeConfirm"),
+      cancelText: t("modSettings.ladder.removeCancel"),
+    });
+    if (ok) onChange(steps.filter((_, j) => j !== i));
+  }
+
+  function add() {
+    const top = sorted.length ? last!.warningCount : 0;
+    onChange([...steps, { warningCount: top + 2, action: "notify", notifyModerators: true }]);
+  }
+
+  const dupes = new Set(steps.map((s) => s.warningCount).filter((n, i, a) => a.indexOf(n) !== i));
+
+  return (
+    <section className="set-card">
+      <CardHead icon={faLayerGroup} title={t("modSettings.ladder.title")} sub={t("modSettings.ladder.sub")}>
+        <span className="set-card__beta">{t("modSettings.ladder.count", { count: steps.length })}</span>
+      </CardHead>
+
+      <div className="ms-rail-wrap">
+        <div className="ms-rail">
+          {sorted.length === 0 ? (
+            <span className="ms-rail__empty">{t("modSettings.ladder.railEmpty")}</span>
+          ) : (
+            <>
+              {sorted.map((s, i) => (
+                <div key={i} className="ms-rail__step">
+                  <div>
+                    <div className="ms-rail__when">{t("modSettings.ladder.railWhen", { count: s.warningCount })}</div>
+                    <div className="ms-rail__what">{what(s)}</div>
+                  </div>
+                  <FontAwesomeIcon icon={faArrowRight} className="ms-rail__arrow" />
+                </div>
+              ))}
+              <span className="ms-rail__end">
+                {t(last!.action === "ban_permanent" ? "modSettings.ladder.endPerm" : "modSettings.ladder.endOpen")}
+              </span>
+            </>
+          )}
         </div>
       </div>
+
+      <div className="ms-steps">
+        {steps.map((s, i) => (
+          <div key={i} className={`ms-step${i === steps.length - 1 ? " is-last" : ""}`}>
+            <div className="ms-step__num">{s.warningCount}</div>
+            <div className={`ms-step__box${dupes.has(s.warningCount) ? " is-bad" : ""}`}>
+              <div className="ms-step__row">
+                <span className="ms-word">{t("modSettings.ladder.after")}</span>
+                <input type="number" className="inp inp--sm ms-num" min={1} max={100} value={s.warningCount}
+                  aria-label={t("modSettings.ladder.afterAria")}
+                  onChange={(e) => update(i, { warningCount: Math.max(1, Number(e.target.value) || 1) })} />
+                <span className="ms-word">{t("modSettings.ladder.warnings")}</span>
+                <FontAwesomeIcon icon={faArrowRight} className="ms-step__arrow" />
+                <select className="inp inp--sm ms-select" value={s.action} aria-label={t("modSettings.ladder.actionAria")}
+                  onChange={(e) => {
+                    const action = e.target.value as Action;
+                    update(i, {
+                      action,
+                      ...(action === "ban_temporary" && !s.banDays ? { banDays: 7 } : {}),
+                      ...(action === "notify" ? { notifyModerators: true } : {}),
+                    });
+                  }}>
+                  <option value="notify">{t("modSettings.ladder.actNotify")}</option>
+                  <option value="ban_temporary">{t("modSettings.ladder.actTemp")}</option>
+                  <option value="ban_permanent">{t("modSettings.ladder.actPerm")}</option>
+                </select>
+                {s.action === "ban_temporary" && (
+                  <>
+                    <span className="ms-word">{t("modSettings.ladder.for")}</span>
+                    <input type="number" className="inp inp--sm ms-num" min={1} max={3650} value={s.banDays ?? 7}
+                      aria-label={t("modSettings.ladder.daysAria")}
+                      onChange={(e) => update(i, { banDays: Math.max(1, Number(e.target.value) || 1) })} />
+                    <span className="ms-word">{t("modSettings.days")}</span>
+                  </>
+                )}
+                <button type="button" className="mnt-del ms-step__del" aria-label={t("modSettings.ladder.removeAria")} onClick={() => remove(i)}>
+                  <FontAwesomeIcon icon={faXmark} />
+                </button>
+              </div>
+              <div className="ms-step__foot">
+                <span className="ms-step__summary">
+                  {t("modSettings.ladder.summary", { count: s.warningCount, what: what(s) })}
+                  {/* A "notify only" step IS the notice — it has no switch to turn it off. */}
+                  {s.action !== "notify" && <>{" · "}{t(s.notifyModerators ? "modSettings.ladder.told" : "modSettings.ladder.silent")}</>}
+                </span>
+                {s.action !== "notify" && (
+                  <>
+                    <span className="ms-step__notify">{t("modSettings.ladder.notify")}</span>
+                    <Toggle on={s.notifyModerators} onToggle={() => update(i, { notifyModerators: !s.notifyModerators })} />
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {issue && (
+          <div className="ms-alert" role="alert">
+            <FontAwesomeIcon icon={faCircleExclamation} />
+            <div>
+              <div className="ms-alert__title">{t(`modSettings.ladder.issue.${issue}`)}</div>
+              <div className="ms-alert__desc">{t("modSettings.notSaved")}</div>
+            </div>
+          </div>
+        )}
+
+        {steps.length < MAX_STEPS && (
+          <button type="button" className="mnt-add ms-add" onClick={add}>
+            <FontAwesomeIcon icon={faPlus} /> {t("modSettings.ladder.add")}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Bans ─────────────────────────────────────────────────────────────────────
+
+function BanLengths({ value, issue, onChange }: { value: Bans; issue: ReturnType<typeof bansProblem>; onChange: (v: Bans) => void }) {
+  const { t } = useTranslation("acp");
+  const field = (k: "defaultDays" | "minDays" | "maxDays", bad: boolean) => (
+    <div className="ms-field">
+      <label className="ms-field__label" htmlFor={`ms-${k}`}>{t(`modSettings.bans.${k}`)}</label>
+      <input id={`ms-${k}`} type="number" min={1} max={3650} className={`inp${bad ? " is-bad" : ""}`} value={value[k]}
+        onChange={(e) => onChange({ ...value, [k]: Math.max(1, Number(e.target.value) || 1) })} />
+      <div className="ms-field__hint">{t(`modSettings.bans.${k}Hint`)}</div>
     </div>
+  );
+  return (
+    <section className="set-card">
+      <CardHead icon={faClock} title={t("modSettings.bans.title")} sub={t("modSettings.bans.sub")} />
+      <div className="set-extra">
+        <div className="ms-fields">
+          {field("defaultDays", issue === "default")}
+          {field("minDays", issue === "range")}
+          {field("maxDays", issue === "range")}
+        </div>
+        {issue ? (
+          <div className="ms-alert" role="alert">
+            <FontAwesomeIcon icon={faCircleExclamation} />
+            <div>
+              <div className="ms-alert__title">{t(`modSettings.bans.issue.${issue}`)}</div>
+              <div className="ms-alert__desc">{t("modSettings.bans.issueDesc")}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="ms-ok">
+            <FontAwesomeIcon icon={faCheck} />
+            <span>{t("modSettings.bans.summary", { min: value.minDays, max: value.maxDays, def: value.defaultDays })}</span>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function WhoDecides({ override, reset, onOverride, onReset }: {
+  override: boolean; reset: boolean; onOverride: (v: boolean) => void; onReset: (v: boolean) => void;
+}) {
+  const { t } = useTranslation("acp");
+
+  async function toggleReset() {
+    if (reset) return onReset(false);
+    const ok = await openDialog({
+      kind: "confirm", icon: "question",
+      title: t("modSettings.who.resetConfirmTitle"),
+      body: `${t("modSettings.who.resetConfirmBody")} ${t("modSettings.who.resetConfirmNote")}`,
+      confirmText: t("modSettings.who.resetConfirm"),
+    });
+    if (ok) onReset(true);
+  }
+
+  return (
+    <section className="set-card">
+      <CardHead icon={faShieldHalved} title={t("modSettings.who.title")} sub={t("modSettings.who.sub")} />
+      <div className="set-rows">
+        <div className="set-row ms-row">
+          <div>
+            <div className="set-row__label">{t("modSettings.who.override")}</div>
+            <div className="set-row__desc">{t("modSettings.who.overrideDesc")}</div>
+          </div>
+          <div className="set-row__control"><Toggle on={override} onToggle={() => onOverride(!override)} /></div>
+        </div>
+        <div className="set-row ms-row">
+          <div>
+            <div className="set-row__label">{t("modSettings.who.reset")}</div>
+            <div className="set-row__desc">{t("modSettings.who.resetDesc")}</div>
+          </div>
+          <div className="set-row__control"><Toggle on={reset} onToggle={toggleReset} /></div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Detection ────────────────────────────────────────────────────────────────
+
+function Detection({ patterns, toggles, detection, onToggle }: {
+  patterns: PatternView[];
+  toggles: Record<string, boolean>;
+  detection: ModSettings["detection"];
+  onToggle: (type: PatternType, on: boolean) => void;
+}) {
+  const { t } = useTranslation("acp");
+  const paused = detection && !detection.enabled;
+  const sub = paused ? t("modSettings.detection.paused")
+    : t("modSettings.detection.sub", { count: detection?.intervalMinutes ?? 30 });
+
+  return (
+    <section className="set-card">
+      <CardHead icon={faMagnifyingGlass} title={t("modSettings.detection.title")} sub={sub}>
+        <Link to="/admin/cases" className="ms-link-btn">
+          {t("modSettings.detection.cases")} <FontAwesomeIcon icon={faArrowRight} />
+        </Link>
+      </CardHead>
+      <div className="set-extra ms-patterns">
+        {patterns.map((p) => {
+          const key = PATTERN_KEY[p.type];
+          const on = toggles[p.type] !== false;
+          return (
+            <div key={p.type} className="ms-pattern">
+              <div className="ms-pattern__head">
+                <div className="ms-pattern__text">
+                  <div className="ms-pattern__title">{t(`modSettings.detection.${key}.title`)}</div>
+                  <div className="ms-pattern__desc">{t(`modSettings.detection.${key}.desc`)}</div>
+                </div>
+                {p.claimedBy ? (
+                  <span className="ms-claimed"><FontAwesomeIcon icon={faPuzzlePiece} /> {t("modSettings.detection.claimed", { name: p.claimedBy.name })}</span>
+                ) : (
+                  <Toggle on={on} onToggle={() => onToggle(p.type, !on)} />
+                )}
+              </div>
+              {(on || p.claimedBy) && (
+                <div className="ms-pattern__foot">
+                  {!p.claimedBy && <span className="ms-pattern__rule">{t(`modSettings.detection.${key}.rule`)}</span>}
+                  {p.casesLast7d > 0 ? (
+                    <Link to={`/admin/cases?type=${p.type}&status=all`} className="ms-pattern__cases">
+                      <span className="ms-pill">{t("modSettings.detection.casesWeek", { count: p.casesLast7d })}</span>
+                      <span className="ms-pattern__see">{t("modSettings.detection.see")}</span>
+                    </Link>
+                  ) : (
+                    <span className="ms-pattern__none">{t("modSettings.detection.noneWeek")}</span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 }

@@ -162,7 +162,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
               <input type="checkbox" checked={Boolean(value)}
                 onChange={(e) => set(key, e.target.checked)} style={{ marginTop: 3 }} />
               <span>
-                <b style={{ fontSize: 13 }}>{label}</b>
+                <b style={{ fontSize: "var(--fs-sm)" }}>{label}</b>
                 {prop.description && <div className="acp-hint" style={{ marginTop: 2 }}>{prop.description}</div>}
               </span>
             </label>

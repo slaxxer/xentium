@@ -106,5 +106,13 @@
     "saved": "Bannière mise à jour",
     "unlocksAt": "Débloqué au rang {{rank}}",
     "unavailable": "Indisponible sur ce site"
+  },
+  "levelUp": {
+    "eyebrow": "Niveau supérieur !",
+    "title": "Vous êtes maintenant",
+    "unlocked": "Vous avez débloqué",
+    "nextRank": "Prochain palier : {{rank}}",
+    "top": "Vous avez atteint le sommet de l'échelle.",
+    "cta": "C'est parti"
   }
 }

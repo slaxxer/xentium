@@ -92,7 +92,7 @@ function JobCard({ job }: { job: JobView }) {
   }
 
   const radio = (id: string, label: React.ReactNode) => (
-    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--c-fg)", cursor: "pointer", opacity: cfg.enabled ? 1 : 0.5 }}>
+    <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-sm)", color: "var(--c-fg)", cursor: "pointer", opacity: cfg.enabled ? 1 : 0.5 }}>
       <input type="radio" name={`mode-${job.key}`} checked={preset === id} disabled={!cfg.enabled} onChange={() => setPreset(id)} />
       {label}
     </label>
@@ -102,18 +102,18 @@ function JobCard({ job }: { job: JobView }) {
     <div className="acp-card" style={{ padding: 20, marginBottom: 16 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16 }}>
         <div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)", display: "flex", alignItems: "center", gap: 8 }}>
             <FontAwesomeIcon icon={faClock} style={{ color: "var(--c-accent)" }} />
             {job.label}
             {!cfg.enabled && (
-              <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: "color-mix(in srgb, var(--c-fg-muted) 18%, transparent)", color: "var(--c-fg-muted)", display: "inline-flex", gap: 4, alignItems: "center" }}>
+              <span style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: "color-mix(in srgb, var(--c-fg-muted) 18%, transparent)", color: "var(--c-fg-muted)", display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <FontAwesomeIcon icon={faPause} /> {t("scheduled.disabled")}
               </span>
             )}
           </div>
-          <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginTop: 4, maxWidth: 560 }}>{job.description}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginTop: 4, maxWidth: 560 }}>{job.description}</div>
         </div>
-        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600, color: "var(--c-fg)", cursor: "pointer", whiteSpace: "nowrap" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg)", cursor: "pointer", whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={cfg.enabled} onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked })} />
           {t("scheduled.enabled")}
         </label>
@@ -128,7 +128,7 @@ function JobCard({ job }: { job: JobView }) {
             {t("scheduled.dailyAt")}
             <input type="time" value={cfg.dailyTime ?? "02:00"} disabled={!cfg.enabled || preset !== "daily"}
               onChange={(e) => setCfg({ ...cfg, mode: "daily", dailyTime: e.target.value })}
-              style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: 13 }} />
+              style={{ padding: "3px 6px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: "var(--fs-sm)" }} />
           </span>
         ))}
         {radio("cron", t("scheduled.advanced"))}
@@ -138,16 +138,16 @@ function JobCard({ job }: { job: JobView }) {
         <div style={{ marginTop: 12 }}>
           <input type="text" value={cfg.cron ?? ""} disabled={!cfg.enabled} placeholder={job.defaultCron}
             onChange={(e) => setCfg({ ...cfg, mode: "cron", cron: e.target.value })}
-            style={{ width: 240, fontFamily: "monospace", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: 13 }} />
-          <span style={{ fontSize: 12, color: "var(--c-fg-muted)", marginLeft: 10 }}>{t("scheduled.cronHint", { min: minMin })}</span>
+            style={{ width: 240, fontFamily: "monospace", padding: "6px 10px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: "var(--fs-sm)" }} />
+          <span style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginLeft: 10 }}>{t("scheduled.cronHint", { min: minMin })}</span>
         </div>
       )}
 
       {(preset === "daily" || preset === "cron") && (
-        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "var(--c-fg-muted)" }}>
+        <div style={{ marginTop: 12, display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)" }}>
           {t("scheduled.timezone")}
           <select value={cfg.tz ?? "UTC"} disabled={!cfg.enabled} onChange={(e) => setCfg({ ...cfg, tz: e.target.value })}
-            style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: 13 }}>
+            style={{ padding: "5px 8px", borderRadius: 6, border: "1px solid var(--c-border)", background: "var(--c-bg)", color: "var(--c-fg)", fontSize: "var(--fs-sm)" }}>
             {TZS.map((t) => <option key={t} value={t}>{t}</option>)}
             {cfg.tz && !TZS.includes(cfg.tz) && <option value={cfg.tz}>{cfg.tz}</option>}
           </select>
@@ -155,7 +155,7 @@ function JobCard({ job }: { job: JobView }) {
       )}
 
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--c-border)", gap: 16, flexWrap: "wrap" }}>
-        <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
+        <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
           {!job.valid && job.error ? (
             <span style={{ color: "var(--c-danger)" }}><FontAwesomeIcon icon={faCircleExclamation} /> {job.error}</span>
           ) : job.nextRuns.length > 0 ? (
@@ -198,7 +198,7 @@ export function ScheduledJobsPage() {
           <h1 className="acp-page-title">{t("scheduled.title")}</h1>
         </div>
       </div>
-      <p style={{ fontSize: 13, color: "var(--c-fg-muted)", margin: "0 0 18px", maxWidth: 640 }}>
+      <p style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", margin: "0 0 18px", maxWidth: 640 }}>
         {t("scheduled.subtitle")}
       </p>
 

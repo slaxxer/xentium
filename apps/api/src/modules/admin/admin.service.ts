@@ -11,6 +11,7 @@ import { env } from "../../config/env.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { moderationService } from "../moderation/moderation.service.js";
+import { getModPolicy, checkBanLength } from "../moderation/moderationPolicy.js";
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
@@ -314,6 +315,7 @@ export const adminService = {
     if (isAdmin) {
       throw XentiumError.forbidden("Administrator accounts cannot be banned");
     }
+    const length = checkBanLength((await getModPolicy()).bans, opts.type, opts.expiresAt);
 
     await prisma.$transaction(async (tx) => {
       await tx.moderationBan.create({
@@ -346,6 +348,7 @@ export const adminService = {
           targetType: "user",
           targetId:   opts.userId,
           reason:     opts.reason,
+          ...(length.override ? { meta: { rangeOverride: true, days: length.days } } : {}),
         },
       });
     });
@@ -719,47 +722,6 @@ export const adminService = {
 
   async listBans(opts: { page: number; limit: number; status?: string }) {
     return moderationService.listBans({ ...opts, withStats: true });
-  },
-
-  async listCases(opts: { page: number; limit: number; status?: string; type?: string }) {
-    const { page, limit, status, type } = opts;
-    const where: any = {
-      ...(status ? { status } : {}),
-      ...(type   ? { type   } : {}),
-    };
-    const SEV_RANK: Record<string, number> = { high: 0, medium: 1, low: 2 };
-    const [rows, total] = await Promise.all([
-      prisma.moderationCase.findMany({ where, skip: (page - 1) * limit, take: limit, orderBy: { createdAt: "desc" } }),
-      prisma.moderationCase.count({ where }),
-    ]);
-    rows.sort((a, b) => (SEV_RANK[a.severity] ?? 9) - (SEV_RANK[b.severity] ?? 9));
-
-    // Resolve linkedUserIds to { id, username, badgeColor }
-    const allIds = [...new Set(rows.flatMap((r) => r.linkedUserIds))];
-    const users  = allIds.length > 0
-      ? await prisma.user.findMany({
-          where:  { id: { in: allIds } },
-          select: { id: true, username: true, ...badgeColorSelect },
-        })
-      : [];
-    const userMap = new Map(users.map((u) => [u.id, toUserRef(u)]));
-    // Also fetch distinct IPs for linked users so the UI can display them in signals
-    const ipRows = allIds.length > 0
-      ? await prisma.loginEvent.findMany({
-          where:    { userId: { in: allIds }, ip: { not: null }, success: true },
-          select:   { ip: true },
-          distinct: ["ip"],
-        })
-      : [];
-    const ipAddresses = [...new Set(ipRows.map((r) => r.ip).filter(Boolean) as string[])];
-
-    const data = rows.map((r) => ({
-      ...r,
-      linkedUsers:  r.linkedUserIds.map((id) => userMap.get(id) ?? { id, username: id, badgeColor: null }),
-      ipAddresses,
-    }));
-
-    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   async revokeException(caseId: string, actorId: string) {

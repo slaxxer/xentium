@@ -95,7 +95,7 @@ export function NotificationBell() {
           <span style={{
             position: "absolute", top: -4, right: -4,
             background: "var(--c-accent2)", color: "#fff",
-            fontSize: 9, fontWeight: 800,
+            fontSize: "var(--fs-2xs)", fontWeight: 800,
             minWidth: 16, height: 16,
             borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center",
             padding: "0 3px", lineHeight: 1,
@@ -122,15 +122,15 @@ export function NotificationBell() {
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "12px 16px", borderBottom: "1px solid var(--c-border)", flexShrink: 0,
           }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-              Notifications {unread > 0 && <span style={{ color: "var(--c-accent)", fontSize: 12 }}>({unread})</span>}
+            <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
+              Notifications {unread > 0 && <span style={{ color: "var(--c-accent)", fontSize: "var(--fs-xs)" }}>({unread})</span>}
             </span>
             {unread > 0 && (
               <button
                 type="button"
                 onClick={() => markAllMutation.mutate()}
                 disabled={markAllMutation.isPending}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--c-accent)", fontWeight: 600, padding: 0 }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--c-accent)", fontWeight: 600, padding: 0 }}
               >
                 Mark all read
               </button>
@@ -140,11 +140,11 @@ export function NotificationBell() {
           {/* List */}
           <div style={{ overflowY: "auto", flex: 1 }}>
             {listLoading ? (
-              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 13 }}>
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>
                 Loading…
               </div>
             ) : notifications.length === 0 ? (
-              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 13 }}>
+              <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>
                 No notifications
               </div>
             ) : (
@@ -170,7 +170,7 @@ export function NotificationBell() {
                     {/* Avatar: gear for system, UserAvatar for everything else */}
                     <div style={{ flexShrink: 0, position: "relative", marginTop: 1 }}>
                       {isSystemNotif ? (
-                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--c-surface)", border: "1px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: "var(--c-fg-muted)" }}>
+                        <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--c-surface)", border: "1px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                           <FontAwesomeIcon icon={faGear} />
                         </div>
                       ) : (
@@ -185,13 +185,13 @@ export function NotificationBell() {
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 13, fontWeight: isUnread ? 700 : 500, color: senderColor ?? "var(--c-fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: isUnread ? 700 : 500, color: senderColor ?? "var(--c-fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {n.title}
                       </div>
-                      <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {n.body}
                       </div>
-                      <div style={{ fontSize: 11, color: "var(--c-fg-muted)", marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
+                      <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)", marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
                     </div>
                   </div>
                 );

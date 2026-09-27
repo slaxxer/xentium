@@ -41,8 +41,8 @@
     width: auto;
   }
 
-  &--sm { width: 22px; height: 22px; font-size: 11px;   --badge-mark: 11px; }
-  &--md { width: 32px; height: 32px; font-size: 15px;   --badge-mark: 15px; }
+  &--sm { width: 22px; height: 22px; font-size: var(--fs-2xs);   --badge-mark: 11px; }
+  &--md { width: 32px; height: 32px; font-size: var(--fs-base);   --badge-mark: 15px; }
 
   /* The overflow count. A pill rather than a circle, because a number needs the
      width and a two-digit "+12" in a 22px circle is unreadable. */
@@ -52,7 +52,7 @@
     padding: 0 6px;
     border-radius: 999px;
     font-weight: 700;
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-muted);
     background: var(--c-surface);
     border-color: var(--c-border);
@@ -79,6 +79,6 @@
   /* ⚠ For the "+N" TEXT this variant also draws, nothing else. It used to shrink
      the padlock too, because a glyph is measured in `em`; `--badge-mark` above is
      what keeps a locked mark the same size as an earned one. */
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 800;
 }

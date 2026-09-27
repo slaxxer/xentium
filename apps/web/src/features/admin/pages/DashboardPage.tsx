@@ -81,7 +81,7 @@ function KpiCard({ k, label, sub }: {
         <span className="kpi__ic"><FontAwesomeIcon icon={meta.icon} /></span>
         <span className="kpi__label">{label}</span>
         <span className={"kpi__delta " + (good ? "is-up" : "is-down")}>
-          <FontAwesomeIcon icon={faArrowRight} style={{ transform: up ? "rotate(-45deg)" : "rotate(45deg)", fontSize: 11 }} />
+          <FontAwesomeIcon icon={faArrowRight} style={{ transform: up ? "rotate(-45deg)" : "rotate(45deg)", fontSize: "var(--fs-2xs)" }} />
           {sign + k.delta + (isPct ? "%" : "")}
         </span>
       </div>
@@ -307,7 +307,7 @@ export function DashboardPage() {
               <div key={i} className="feed__row">
                 <span className="feed__ava" style={{ background: `linear-gradient(140deg, ${avatarGradient(f.who)[0]}, ${avatarGradient(f.who)[1]})` }}>
                   {initials(f.who)}
-                  <span className={"feed__badge feed__badge--" + f.tone}><FontAwesomeIcon icon={f.icon} style={{ fontSize: 9 }} /></span>
+                  <span className={"feed__badge feed__badge--" + f.tone}><FontAwesomeIcon icon={f.icon} style={{ fontSize: "var(--fs-2xs)" }} /></span>
                 </span>
                 <div className="feed__body">
                   <p><b>{f.who}</b> {f.text}</p>

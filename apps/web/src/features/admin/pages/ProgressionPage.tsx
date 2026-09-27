@@ -126,26 +126,26 @@ function GroupProgressionModal({
                 border: `1px solid ${form.badgeColor ?? "var(--c-accent-glow)"}`,
                 borderRadius: "var(--radius-sm)",
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 18,
+                fontSize: "var(--fs-lg)",
               }}>
                 <FontAwesomeIcon icon={faUsers} style={{ color: form.badgeColor ?? "var(--c-accent)" }} />
               </div>
               <div>
                 <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{t("progression.modalTitle", { name: groupName })}</h2>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.modalSub")}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{t("progression.modalSub")}</div>
               </div>
             </div>
 
             {/* On ladder toggle */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid var(--c-border)", marginBottom: 16 }}>
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.onLadder")}</div>
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.onLadderDesc")}</div>
+                <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.onLadder")}</div>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{t("progression.onLadderDesc")}</div>
               </div>
               <button type="button" onClick={() => setForm(p => ({ ...p, isProgressionGroup: !p.isProgressionGroup }))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
                 <FontAwesomeIcon
                   icon={form.isProgressionGroup ? faToggleOn : faToggleOff}
-                  style={{ fontSize: 26, color: form.isProgressionGroup ? "var(--c-accent)" : "var(--c-fg-muted)" }}
+                  style={{ fontSize: "1.625rem", color: form.isProgressionGroup ? "var(--c-accent)" : "var(--c-fg-muted)" }}
                 />
               </button>
             </div>
@@ -158,7 +158,7 @@ function GroupProgressionModal({
             </div>
 
             {/* Thresholds */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "16px 0 10px" }}>
+            <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", margin: "16px 0 10px" }}>
               {t("progression.thresholdsHeading")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("progression.thresholdsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -176,7 +176,7 @@ function GroupProgressionModal({
             </div>
 
             {/* Content limits */}
-            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
+            <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>
               {t("progression.limitsHeading")} <span style={{ fontWeight: 400, textTransform: "none" }}>{t("progression.limitsNote")}</span>
             </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
@@ -218,7 +218,7 @@ function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
     <button type="button" onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
       <FontAwesomeIcon
         icon={on ? faToggleOn : faToggleOff}
-        style={{ fontSize: 26, color: on ? "var(--c-accent)" : "var(--c-fg-muted)" }}
+        style={{ fontSize: "1.625rem", color: on ? "var(--c-accent)" : "var(--c-fg-muted)" }}
       />
     </button>
   );
@@ -372,7 +372,7 @@ export function ProgressionPage() {
 
       {/* Global settings */}
       <div className="acp-card" style={{ padding: "24px", marginBottom: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)", marginBottom: 18 }}>
+        <div style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--c-fg)", marginBottom: 18 }}>
           {t("progression.globalHeading")}
         </div>
         {[
@@ -382,8 +382,8 @@ export function ProgressionPage() {
         ].map(({ label, desc, key }) => (
           <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: "1px solid var(--c-border)" }}>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{label}</div>
-              <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{desc}</div>
+              <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--c-fg)" }}>{label}</div>
+              <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{desc}</div>
             </div>
             <Toggle
               on={settings[key] as boolean}
@@ -393,8 +393,8 @@ export function ProgressionPage() {
         ))}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.thresholdLogic")}</div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{t("progression.thresholdLogicDesc")}</div>
+            <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.thresholdLogic")}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{t("progression.thresholdLogicDesc")}</div>
           </div>
           <select
             className="acp-select"
@@ -412,8 +412,8 @@ export function ProgressionPage() {
       <div className="acp-card" style={{ padding: 0, overflow: "hidden", marginBottom: 20 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid var(--c-border)" }}>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)" }}>{t("progression.ladderHeading")}</div>
-            <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 2 }}>
+            <div style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--c-fg)" }}>{t("progression.ladderHeading")}</div>
+            <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginTop: 2 }}>
               {t("progression.ladderHint")}
             </div>
           </div>
@@ -435,7 +435,7 @@ export function ProgressionPage() {
             {/* Column headers */}
             <div style={{ display: "grid", gridTemplateColumns: "36px 40px 1fr 1fr 1fr 90px 80px", padding: "8px 18px", borderBottom: "1px solid var(--c-border)" }}>
               {["", t("progression.colPos"), t("progression.colGroup"), t("progression.colThresholds"), t("progression.colLimits"), t("progression.colUsers"), ""].map((h, i) => (
-                <div key={i} style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
+                <div key={i} style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
               ))}
             </div>
 
@@ -463,12 +463,12 @@ export function ProgressionPage() {
                   }}
                 >
                   {/* Grip */}
-                  <div style={{ cursor: "grab", color: "var(--c-fg-muted)", fontSize: 14 }}>
+                  <div style={{ cursor: "grab", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>
                     <FontAwesomeIcon icon={faGripVertical} />
                   </div>
 
                   {/* Position */}
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "var(--c-accent)" }}>
+                  <div style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--c-accent)" }}>
                     {entry.ladderPosition ?? i + 1}
                   </div>
 
@@ -481,11 +481,11 @@ export function ProgressionPage() {
                       }} />
                     )}
                     <div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
                         {entry.group.name}
                       </div>
                       {entry.badgeLabel && (
-                        <div style={{ fontSize: 11, color: entry.badgeColor ?? "var(--c-fg-muted)" }}>
+                        <div style={{ fontSize: "var(--fs-2xs)", color: entry.badgeColor ?? "var(--c-fg-muted)" }}>
                           {entry.badgeLabel}
                         </div>
                       )}
@@ -493,18 +493,18 @@ export function ProgressionPage() {
                   </div>
 
                   {/* Thresholds */}
-                  <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                     {thresholdSummary(entry)}
                   </div>
 
                   {/* Limits */}
-                  <div style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                     {limitSummary(entry)}
                   </div>
 
                   {/* User count */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
-                    <FontAwesomeIcon icon={faUsers} style={{ fontSize: 11, color: "var(--c-fg-muted)" }} />
+                  <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
+                    <FontAwesomeIcon icon={faUsers} style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }} />
                     {entry.userCount.toLocaleString()}
                   </div>
 
@@ -528,7 +528,7 @@ export function ProgressionPage() {
       {/* Groups not on ladder */}
       {offLadder.length > 0 && (
         <div className="acp-card" style={{ padding: "20px 24px" }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-fg)", marginBottom: 12 }}>
+          <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 12 }}>
             {t("progression.addGroupHeading")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>

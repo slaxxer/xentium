@@ -70,6 +70,22 @@ function ActionBar({ userId, username, banned, onDone }: { userId: string; usern
 
   const minDate = new Date(Date.now() + 3600000).toISOString().slice(0, 16);
 
+  // A ban form opens at the default length set in ACP → Mod Settings.
+  const { data: policy } = useQuery<{ defaultDays: number }>({
+    queryKey: ["ban-policy"],
+    queryFn: () => api.get("/moderation/ban-policy"),
+    staleTime: 60_000,
+    enabled: mode === "ban",
+  });
+  useEffect(() => {
+    if (mode !== "ban" || !policy) return;
+    setExpiry((cur) => {
+      if (cur) return cur;
+      const d = new Date(Date.now() + policy.defaultDays * 86_400_000);
+      return new Date(d.getTime() - d.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+    });
+  }, [mode, policy]);
+
   return (
     <div className="mc-uprofile__actions">
       {!mode && (

@@ -1,0 +1,186 @@
+/* ACP → Moderation → Mod Settings. Shell, cards, rows and controls are core's own
+   (acpSystem.scss); this file carries only what the three tabs add. */
+
+.ms-tabs {
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+
+  .acp-tab { display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px; font-size: var(--fs-md); }
+}
+
+.ms-loading { padding: 28px 22px; color: var(--c-fg-subtle); font-weight: 600; font-size: var(--fs-sm); }
+
+.ms-unit, .ms-word { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); white-space: nowrap; }
+.ms-unit { font-weight: 700; }
+
+.inp.is-bad { border-color: var(--c-danger); }
+
+/* ── Warning lifetime ───────────────────────────────────────────────────────── */
+.ms-banner {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 18px; border-radius: var(--radius-md);
+  background: var(--c-bg); border: 1px solid var(--c-border);
+
+  &__ic {
+    width: 34px; height: 34px; flex: none; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    background: var(--c-surface); color: var(--c-fg-subtle); font-size: var(--fs-md);
+  }
+  &__text { min-width: 0; flex: 1; }
+  &__title { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base); color: var(--c-fg); }
+  &__desc { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted); margin-top: 2px; line-height: 1.45; }
+
+  &.is-on { background: var(--c-accent-soft); border-color: var(--c-accent); }
+  &.is-on &__ic { background: var(--c-accent-soft); color: var(--c-accent); }
+}
+
+.ms-after {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 18px 2px 0;
+
+  &__ctl { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+}
+
+/* ── Escalation ladder ──────────────────────────────────────────────────────── */
+.ms-rail-wrap { padding: 2px 22px 10px; }
+.ms-rail {
+  display: flex; align-items: stretch; flex-wrap: wrap; row-gap: 10px;
+  background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  padding: 12px 14px;
+
+  &__step { display: flex; align-items: center; gap: 12px; padding-right: 12px; }
+  &__when { font-weight: 700; font-size: var(--fs-xs); color: var(--c-fg); white-space: nowrap; }
+  &__what { font-weight: 600; font-size: var(--fs-2xs); color: var(--c-fg-subtle); white-space: nowrap; }
+  &__arrow { color: var(--c-fg-subtle); opacity: 0.55; font-size: var(--fs-sm); flex: none; }
+  &__end {
+    align-self: center;
+    display: inline-flex; align-items: center; padding: 5px 11px; border-radius: var(--radius-pill);
+    background: var(--c-danger-soft); color: var(--c-danger);
+    font-weight: 800; font-size: var(--fs-2xs); letter-spacing: 0.03em; text-transform: uppercase; white-space: nowrap;
+  }
+  &__empty { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
+}
+
+.ms-steps { padding: 8px 22px 22px; display: flex; flex-direction: column; }
+
+.ms-step {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 14px; padding-bottom: 14px;
+
+  &__num {
+    position: relative;
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--c-accent-soft); color: var(--c-accent);
+    font-family: var(--font-display); font-weight: 700; font-size: var(--fs-md);
+
+    /* the line down to the next step */
+    &::after {
+      content: ""; position: absolute; left: 17px; top: 38px; width: 2px; height: calc(100% + 14px);
+      background: var(--c-border);
+    }
+  }
+  &.is-last &__num::after { display: none; }
+
+  &__box {
+    min-width: 0; background: var(--c-bg); border: 1px solid var(--c-border);
+    border-radius: var(--radius-md); padding: 14px 16px;
+
+    &.is-bad { border-color: var(--c-danger); }
+  }
+  &__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  &__arrow { color: var(--c-fg-subtle); opacity: 0.6; font-size: var(--fs-sm); }
+  &__del { margin-left: auto; }
+  &__foot {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--c-rowline);
+  }
+  &__summary { flex: 1; min-width: 0; font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
+  &__notify { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted); }
+}
+
+.inp.ms-num { width: 64px; text-align: center; padding: 0 8px; }
+.inp.ms-select { width: auto; cursor: pointer; }
+
+.ms-add { margin-left: 50px; height: 38px; padding: 0 14px; }
+
+/* ── Ban lengths ────────────────────────────────────────────────────────────── */
+.ms-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.ms-field {
+  &__label { display: block; font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted); margin-bottom: 8px; }
+  &__hint { font-weight: 600; font-size: var(--fs-xs); color: var(--c-fg-subtle); margin-top: 6px; }
+}
+
+.ms-alert {
+  display: flex; align-items: flex-start; gap: 10px; margin-top: 14px;
+  padding: 12px 14px; border-radius: var(--radius-md);
+  background: var(--c-danger-soft); border: 1px solid var(--c-danger);
+
+  > svg { color: var(--c-danger); flex: none; margin-top: 2px; }
+  &__title { font-weight: 700; font-size: var(--fs-sm); color: var(--c-danger); }
+  &__desc { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted); margin-top: 2px; line-height: 1.45; }
+}
+.ms-steps .ms-alert { margin: 0 0 14px 50px; }
+
+.ms-ok {
+  display: flex; align-items: center; gap: 10px; margin-top: 14px;
+  font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle);
+
+  > svg { color: var(--c-success); flex: none; }
+}
+
+/* The rows here carry a switch, not a 288px field. */
+.set-row.ms-row { grid-template-columns: minmax(0, 1fr) auto; }
+.ms-row .set-row__desc { max-width: 52ch; }
+
+/* ── Detection ──────────────────────────────────────────────────────────────── */
+.ms-link-btn {
+  margin-left: auto; flex: none;
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 14px; border-radius: var(--radius-md);
+  border: 1px solid var(--c-border); color: var(--c-fg-muted);
+  font-weight: 600; font-size: var(--fs-sm); text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+
+  &:hover { border-color: var(--c-accent); color: var(--c-accent); background: var(--c-accent-soft); }
+}
+
+.ms-patterns { display: flex; flex-direction: column; gap: 12px; }
+
+.ms-pattern {
+  background: var(--c-bg); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  padding: 16px 18px;
+
+  &__head { display: flex; align-items: flex-start; gap: 14px; }
+  &__text { min-width: 0; flex: 1; }
+  &__title { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base); color: var(--c-fg); }
+  &__desc { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted); margin-top: 2px; line-height: 1.45; max-width: 56ch; }
+  &__foot {
+    display: flex; align-items: center; gap: 10px 16px; flex-wrap: wrap;
+    margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--c-rowline);
+  }
+  &__rule { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); flex: 1; min-width: 0; }
+  &__cases {
+    display: inline-flex; align-items: center; gap: 10px; text-decoration: none;
+
+    &:hover .ms-pattern__see { color: var(--c-accent); }
+  }
+  &__see { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); transition: color 0.15s; }
+  &__none { font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
+}
+
+.ms-pill {
+  display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--radius-pill);
+  background: var(--c-accent-soft); color: var(--c-accent); font-weight: 700; font-size: var(--fs-2xs);
+}
+
+.ms-claimed {
+  flex: none; display: inline-flex; align-items: center; gap: 7px;
+  padding: 5px 11px; border-radius: var(--radius-pill);
+  background: var(--c-accent2-soft); color: var(--c-accent2);
+  font-weight: 700; font-size: var(--fs-2xs);
+}
+
+@media (max-width: 640px) {
+  .ms-add, .ms-steps .ms-alert { margin-left: 0; }
+  .ms-step { grid-template-columns: minmax(0, 1fr); }
+  .ms-step__num { display: none; }
+}

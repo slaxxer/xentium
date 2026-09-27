@@ -38,10 +38,10 @@ function StatusRow({ label, value, ok }: { label: string; value: string; ok: boo
   const color = ok ? "var(--c-success)" : "var(--c-danger)";
   return (
     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid var(--c-border)" }}>
-      <span style={{ fontSize:13, color:"var(--c-fg-muted)" }}>{label}</span>
+      <span style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)" }}>{label}</span>
       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-        <span style={{ fontSize:13, color }}>{value}</span>
-        <FontAwesomeIcon icon={ok ? faCheck : faCircleExclamation} style={{ color, fontSize:12 }} />
+        <span style={{ fontSize:"var(--fs-sm)", color }}>{value}</span>
+        <FontAwesomeIcon icon={ok ? faCheck : faCircleExclamation} style={{ color, fontSize:"var(--fs-xs)" }} />
       </div>
     </div>
   );
@@ -114,9 +114,9 @@ export function UploadPage() {
           </div>
         </div>
         <div className="acp-card" style={{ padding: 40, textAlign: "center" }}>
-          <FontAwesomeIcon icon={faShieldHalved} style={{ fontSize: 32, color: "var(--c-fg-muted)", marginBottom: 12 }} />
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("upload.disabledTitle")}</div>
-          <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginBottom: 20, maxWidth: 460, marginInline: "auto", lineHeight: 1.6 }}>
+          <FontAwesomeIcon icon={faShieldHalved} style={{ fontSize: "2rem", color: "var(--c-fg-muted)", marginBottom: 12 }} />
+          <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("upload.disabledTitle")}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginBottom: 20, maxWidth: 460, marginInline: "auto", lineHeight: 1.6 }}>
             {t("upload.disabledHint")}
           </div>
           <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/marketplace")}>
@@ -144,7 +144,7 @@ export function UploadPage() {
         <div style={{ display:"flex", alignItems:"center", gap:0, marginBottom:28 }}>
           {STEP_KEYS.map((_s, i) => (
             <div key={i} style={{ display:"flex", alignItems:"center", flex: i < STEP_KEYS.length - 1 ? 1 : undefined }}>
-              <div className={busy && i === step ? "plugin-step--busy" : undefined} style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:800, color: i <= step ? "var(--c-on-accent)" : "var(--c-fg-muted)" }}>
+              <div className={busy && i === step ? "plugin-step--busy" : undefined} style={{ width:28, height:28, borderRadius:"50%", flexShrink:0, background: i < step ? "var(--c-success)" : i === step ? "var(--c-accent)" : "var(--c-border)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"var(--fs-2xs)", fontWeight:800, color: i <= step ? "var(--c-on-accent)" : "var(--c-fg-muted)" }}>
                 {i < step ? <FontAwesomeIcon icon={faCheck} /> : i + 1}
               </div>
               {i < STEP_KEYS.length - 1 && (
@@ -175,11 +175,11 @@ export function UploadPage() {
               onClick={() => fileRef.current?.click()}
               style={{ border:`2px dashed ${dragging ? "var(--c-accent)" : "var(--c-border)"}`, borderRadius:"var(--radius-md)", padding:"48px 32px", textAlign:"center", background: dragging ? "var(--c-accent-soft)" : "transparent", transition:"all 0.2s", marginBottom:20, cursor:"pointer" }}
             >
-              <FontAwesomeIcon icon={faBox} style={{ fontSize:36, color:"var(--c-fg-muted)", marginBottom:12, display:"block" }} />
-              <div style={{ fontSize:16, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>
+              <FontAwesomeIcon icon={faBox} style={{ fontSize:"2.25rem", color:"var(--c-fg-muted)", marginBottom:12, display:"block" }} />
+              <div style={{ fontSize:"var(--fs-base)", fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>
                 {file ? file.name : t("upload.drop")}
               </div>
-              <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:16 }}>{t("upload.orClick")}</div>
+              <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", marginBottom:16 }}>{t("upload.orClick")}</div>
               <button type="button" className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
                 <FontAwesomeIcon icon={faFolderOpen} style={{ marginRight:5 }} /> {t("upload.browse")}
               </button>
@@ -188,7 +188,7 @@ export function UploadPage() {
             <input ref={fileRef} type="file" accept=".xtplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
 
             {error && (
-              <div style={{ marginTop:12, padding:"12px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>
+              <div style={{ marginTop:12, padding:"12px 14px", background:"color-mix(in srgb, var(--c-danger) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:"var(--fs-sm)", color:"var(--c-danger)", display:"flex", gap:8, alignItems:"flex-start" }}>
                 <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginTop:2, flexShrink:0 }} />
                 {error}
               </div>
@@ -219,7 +219,7 @@ export function UploadPage() {
             <StatusRow label={t("upload.rowInstalled")}   value={result.alreadyInstalled ? t("upload.yesUpdate") : t("upload.no")} ok={!result.alreadyInstalled} />
 
             {result.alreadyInstalled && (
-              <div style={{ marginTop:12, padding:"10px 14px", background:"color-mix(in srgb, var(--c-warn) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:13, color:"var(--c-warn)" }}>
+              <div style={{ marginTop:12, padding:"10px 14px", background:"color-mix(in srgb, var(--c-warn) 10%, transparent)", border:"1px solid color-mix(in srgb, var(--c-warn) 30%, transparent)", borderRadius:"var(--radius-sm)", fontSize:"var(--fs-sm)", color:"var(--c-warn)" }}>
                 {t("upload.alreadyWarning")}
               </div>
             )}
@@ -238,9 +238,9 @@ export function UploadPage() {
         {/* Step 2 — Done */}
         {step === 2 && (
           <div style={{ textAlign:"center", padding:"20px 0" }}>
-            <FontAwesomeIcon icon={faCheck} style={{ fontSize:48, color:"var(--c-success)", marginBottom:16 }} />
-            <div style={{ fontSize:18, fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("upload.doneTitle")}</div>
-            <p style={{ fontSize:14, color:"var(--c-fg-muted)", marginBottom:24 }}>
+            <FontAwesomeIcon icon={faCheck} style={{ fontSize:"3rem", color:"var(--c-success)", marginBottom:16 }} />
+            <div style={{ fontSize:"var(--fs-lg)", fontWeight:800, color:"var(--c-fg)", marginBottom:8 }}>{t("upload.doneTitle")}</div>
+            <p style={{ fontSize:"var(--fs-md)", color:"var(--c-fg-muted)", marginBottom:24 }}>
               {t("upload.doneText")}
             </p>
             <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/installed")}>

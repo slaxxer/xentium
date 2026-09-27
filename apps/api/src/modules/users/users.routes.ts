@@ -20,6 +20,8 @@ usersRouter.get("/ping", (_req, res) => res.json({ pong: true }));
 // Must be before /:id/* routes to prevent shadowing
 usersRouter.get("/me/limits", requireAuth, progressionController.getMyLimits);
 usersRouter.get("/me/progression", requireAuth, progressionController.getMyProgression);
+usersRouter.get("/me/level-up", requireAuth, progressionController.getMyLevelUp);
+usersRouter.post("/me/level-up/seen", requireAuth, progressionController.markMyLevelUpSeen);
 usersRouter.get("/me/blocks", requireAuth, usersController.getMyBlocks);
 usersRouter.get("/suggested", requireAuth, usersController.getSuggested);
 

@@ -42,6 +42,16 @@ export const ANNOUNCEMENTS_SETTING = "announcements";
  * the announcements it names.
  */
 export const DISMISSED_SETTING = "announcements.dismissed";
+/**
+ * The publish date of the newest announcement an admin has read. Nothing published
+ * at or before it is shown again.
+ *
+ * ⚠ Needed because only the newest announcement is served. The dismissed ids are
+ * forgotten once the marketplace stops serving them, so when the newest EXPIRES and
+ * an older one that is still live becomes the newest again, the id list no longer
+ * remembers it was read and the admin would meet it a second time.
+ */
+export const READ_THROUGH_SETTING = "announcements.readThrough";
 
 export type AnnouncementSeverity = "info" | "important" | "critical";
 
@@ -96,6 +106,23 @@ export async function readAnnouncementCache(db: Db = prisma): Promise<Announceme
   return readJson<AnnouncementCache>(db, ANNOUNCEMENTS_SETTING);
 }
 
+/**
+ * Is an announcement waiting to be read on this site? What the navbar gear's dot
+ * asks, next to a pending core update and plugin updates.
+ *
+ * Lit while an unread, unexpired announcement is cached; it goes out when an
+ * admin reads it (reading removes it for the whole site) or when its expiry passes,
+ * without waiting for the next check. "important" and "critical" make it urgent,
+ * like a security release.
+ */
+export function pendingAnnouncement(
+  cache: AnnouncementCache | null,
+  now: number = Date.now(),
+): { pending: boolean; urgent: boolean } {
+  const live = (cache?.announcements ?? []).filter((a) => !a.expiresAt || Date.parse(a.expiresAt) > now);
+  return { pending: live.length > 0, urgent: live.some((a) => a.severity !== "info") };
+}
+
 export async function readDismissed(db: Db = prisma): Promise<string[]> {
   const ids = await readJson<unknown>(db, DISMISSED_SETTING);
   return Array.isArray(ids) ? ids.filter((id): id is string => typeof id === "string") : [];
@@ -117,10 +144,18 @@ export async function withAnnouncementLock<T>(fn: (db: Db) => Promise<T>): Promi
  * An admin read it: it leaves this site for every admin, and only its id stays
  * behind, until the marketplace stops serving it.
  */
+export async function readReadThrough(db: Db = prisma): Promise<string | null> {
+  const v = await readJson<unknown>(db, READ_THROUGH_SETTING);
+  return typeof v === "string" ? v : null;
+}
+
 export async function dismissAnnouncement(id: string): Promise<void> {
   await withAnnouncementLock(async (db) => {
     const cache = await readAnnouncementCache(db);
-    if (!cache?.announcements.some((a) => a.id === id)) return;
+    const read = cache?.announcements.find((a) => a.id === id);
+    if (!cache || !read) return;
+    const through = await readReadThrough(db);
+    if (!through || read.publishedAt > through) await writeJson(db, READ_THROUGH_SETTING, read.publishedAt);
     await writeJson(db, ANNOUNCEMENTS_SETTING, {
       ...cache,
       announcements: cache.announcements.filter((a) => a.id !== id),
@@ -243,14 +278,22 @@ export async function processAnnouncementCheck(): Promise<void> {
     );
   }
 
-  // Newest first, so the ACP shows the most recent thing first without sorting.
+  // Newest first: the one kept below is the most recently published.
   verified.sort((a, b) => b.publishedAt.localeCompare(a.publishedAt));
 
   const shown = await withAnnouncementLock(async (db) => {
     const served = new Set(verified.map((a) => a.id));
     const dismissed = await readDismissed(db);
+    const readThrough = await readReadThrough(db);
     const stillServed = dismissed.filter((id) => served.has(id));
-    const shown = verified.filter((a) => !dismissed.includes(a.id));
+    // ⚠ Only the MOST RECENT announcement is ever shown. A fresh install, or one
+    // just updated, used to walk its admin through every notice still live on the
+    // marketplace, oldest news included. And once the newest is read the site
+    // shows nothing: an older one does not step up to take its place.
+    const newest = verified.slice(0, 1);
+    // The newest LIVE one: expired ones were rejected by their signature above, so an
+    // announcement whose admin-set expiry has passed can never be the one kept here.
+    const shown = newest.filter((a) => !dismissed.includes(a.id) && !(readThrough && a.publishedAt <= readThrough));
 
     await writeJson(db, ANNOUNCEMENTS_SETTING, {
       checkedAt: new Date().toISOString(),

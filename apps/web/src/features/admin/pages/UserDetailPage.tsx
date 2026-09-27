@@ -176,7 +176,7 @@ function SecurityActivity({ userId }: { userId: string }) {
                         <span className="up-evt__type">{t(`users.event.${ev.eventType}`, { defaultValue: ev.eventType.replace(/_/g, " ") })}</span>
                       </span>
                     </td>
-                    <td><span className="up-mono" style={{ fontSize: 12 }}>{ev.ip ?? "—"}</span></td>
+                    <td><span className="up-mono" style={{ fontSize: "var(--fs-xs)" }}>{ev.ip ?? "—"}</span></td>
                     <td>
                       <span className="up-dev">
                         <span title={ev.userAgent ?? undefined}>{deviceOf(ev.userAgent)}</span>

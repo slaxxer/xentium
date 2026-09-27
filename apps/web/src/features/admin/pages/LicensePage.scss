@@ -52,7 +52,7 @@
   border-radius: var(--radius-md);
   display: grid; place-items: center;
   flex: 0 0 auto;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 
 .lic-hero__body { flex: 1; min-width: 0; }
@@ -62,18 +62,18 @@
   flex-wrap: wrap; margin-bottom: 4px;
 }
 
-.lic-hero__headline { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; color: var(--c-fg); }
+.lic-hero__headline { font-size: var(--fs-xl); font-weight: 800; letter-spacing: -0.02em; color: var(--c-fg); }
 
-.lic-hero__badge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); }
+.lic-hero__badge { font-size: var(--fs-2xs); font-weight: 700; padding: 3px 9px; border-radius: var(--radius-pill); }
 
-.lic-hero__sub { font-size: 13px; color: var(--c-fg-muted); line-height: 1.5; text-wrap: pretty; }
+.lic-hero__sub { font-size: var(--fs-sm); color: var(--c-fg-muted); line-height: 1.5; text-wrap: pretty; }
 
 .lic-hint {
   margin-top: 12px;
   display: flex; gap: 8px; align-items: flex-start;
   padding: 10px 14px;
   border-radius: var(--radius-sm);
-  font-size: 12.5px; font-weight: 600; line-height: 1.45;
+  font-size: var(--fs-sm); font-weight: 600; line-height: 1.45;
 }
 .lic-hint > svg { margin-top: 2px; flex-shrink: 0; }
 
@@ -84,12 +84,12 @@
 .lic-meta__item { display: flex; align-items: baseline; gap: 7px; }
 
 .lic-meta__label {
-  font-size: 11px; font-weight: 700;
+  font-size: var(--fs-2xs); font-weight: 700;
   color: var(--c-fg-muted);
   text-transform: uppercase; letter-spacing: 0.06em;
 }
 
-.lic-meta__value { font-size: 13px; font-weight: 600; color: var(--c-fg); font-family: monospace; }
+.lic-meta__value { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg); font-family: monospace; }
 
 .lic-meta__rule { width: 1px; height: 16px; background: var(--c-border); }
 
@@ -104,7 +104,7 @@
 }
 
 .lic-tech__label {
-  font-size: 11px; font-weight: 700;
+  font-size: var(--fs-2xs); font-weight: 700;
   color: var(--c-fg-muted);
   text-transform: uppercase; letter-spacing: 0.08em;
   margin-bottom: 12px;
@@ -124,12 +124,12 @@
 .lic-field__body { min-width: 0; flex: 1; }
 
 .lic-field__label {
-  font-size: 11px; color: var(--c-fg-muted); margin-bottom: 3px;
+  font-size: var(--fs-2xs); color: var(--c-fg-muted); margin-bottom: 3px;
   text-transform: uppercase; font-weight: 700; letter-spacing: 0.06em;
 }
 
 .lic-field__value {
-  font-size: 13px; font-weight: 600; color: var(--c-fg);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg);
   font-family: monospace; word-break: break-all;
 }
 
@@ -141,7 +141,7 @@
   color: var(--c-fg-subtle);
   cursor: pointer;
   display: grid; place-items: center;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   transition: color .15s, border-color .15s;
 }
 .lic-copy:hover { border-color: var(--c-accent-glow); color: var(--c-accent); }
@@ -153,13 +153,13 @@
 
 .lic-sec__title {
   display: flex; align-items: center; gap: 10px; margin-bottom: 5px;
-  font-size: 15px; font-weight: 800; color: var(--c-fg);
+  font-size: var(--fs-base); font-weight: 800; color: var(--c-fg);
 }
 .lic-sec__title > svg { color: var(--c-accent); }
 
-.lic-sec__count { margin-left: auto; font-size: 11px; font-weight: 700; color: var(--c-fg-muted); }
+.lic-sec__count { margin-left: auto; font-size: var(--fs-2xs); font-weight: 700; color: var(--c-fg-muted); }
 
-.lic-sec__desc { font-size: 13px; color: var(--c-fg-muted); text-wrap: pretty; }
+.lic-sec__desc { font-size: var(--fs-sm); color: var(--c-fg-muted); text-wrap: pretty; }
 
 .lic-tablewrap { overflow-x: auto; }
 
@@ -178,7 +178,7 @@
 
 .lic-row--head > div {
   padding: 10px 6px;
-  font-size: 11px; font-weight: 700;
+  font-size: var(--fs-2xs); font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--c-fg-muted);
 }
@@ -188,11 +188,11 @@
 .lic-row--item:hover { background: var(--c-bg-hover); }
 
 .lic-row__product { padding: 14px 6px; min-width: 0; display: flex; align-items: center; gap: 11px; }
-.lic-row__kind { font-size: 15px; color: var(--c-fg-subtle); flex-shrink: 0; width: 16px; text-align: center; }
-.lic-row__name { font-size: 13.5px; font-weight: 700; color: var(--c-fg); line-height: 1.3; }
-.lic-row__key { font-size: 11.5px; color: var(--c-fg-subtle); font-family: monospace; }
+.lic-row__kind { font-size: var(--fs-base); color: var(--c-fg-subtle); flex-shrink: 0; width: 16px; text-align: center; }
+.lic-row__name { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); line-height: 1.3; }
+.lic-row__key { font-size: var(--fs-2xs); color: var(--c-fg-subtle); font-family: monospace; }
 
-.lic-row__cell { padding: 14px 6px; font-size: 12.5px; font-weight: 600; color: var(--c-fg-muted); }
+.lic-row__cell { padding: 14px 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted); }
 .lic-row__cell.is-warn { color: var(--c-warn); }
 
 .lic-row__state { padding: 14px 6px; }
@@ -202,10 +202,10 @@
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 9px;
   border-radius: var(--radius-pill);
-  font-size: 10.5px; font-weight: 700;
+  font-size: var(--fs-2xs); font-weight: 700;
   white-space: nowrap;
 }
-.lic-chip > svg { font-size: 9px; }
+.lic-chip > svg { font-size: var(--fs-2xs); }
 
 /* Inline install progress — the row is where the admin is already looking. */
 .lic-progress { width: 100%; }
@@ -219,15 +219,15 @@
   background: var(--c-accent);
   transition: width .25s ease;
 }
-.lic-progress__phase { font-size: 10.5px; font-weight: 700; color: var(--c-accent); white-space: nowrap; }
+.lic-progress__phase { font-size: var(--fs-2xs); font-weight: 700; color: var(--c-accent); white-space: nowrap; }
 
 /* ── Empty / unreachable notice inside the table card ────────────────────── */
 
 .lic-notice { border-top: 1px solid var(--c-border); padding: 26px 24px 30px; text-align: center; }
-.lic-notice__icon { font-size: 22px; margin-bottom: 10px; }
-.lic-notice__title { font-size: 13.5px; font-weight: 700; color: var(--c-fg); margin-bottom: 4px; }
+.lic-notice__icon { font-size: 1.375rem; margin-bottom: 10px; }
+.lic-notice__title { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); margin-bottom: 4px; }
 .lic-notice__body {
-  font-size: 13px; color: var(--c-fg-muted);
+  font-size: var(--fs-sm); color: var(--c-fg-muted);
   max-width: 420px; margin: 0 auto 14px;
   line-height: 1.5; text-wrap: pretty;
 }
@@ -243,39 +243,39 @@
 
 .lic-rail__title {
   display: flex; align-items: center; gap: 9px; margin-bottom: 6px;
-  font-size: 14px; font-weight: 800; color: var(--c-fg);
+  font-size: var(--fs-md); font-weight: 800; color: var(--c-fg);
 }
-.lic-rail__title > svg { color: var(--c-accent); font-size: 14px; }
+.lic-rail__title > svg { color: var(--c-accent); font-size: var(--fs-md); }
 
-.lic-rail__conn { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; font-size: 12px; font-weight: 700; }
+.lic-rail__conn { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; font-size: var(--fs-xs); font-weight: 700; }
 .lic-rail__dot { width: 7px; height: 7px; border-radius: 50%; }
 
 .lic-rail__desc {
-  font-size: 12.5px; color: var(--c-fg-muted);
+  font-size: var(--fs-sm); color: var(--c-fg-muted);
   line-height: 1.55; margin-bottom: 16px; text-wrap: pretty;
 }
 
 .lic-rail__stack { display: flex; flex-direction: column; gap: 10px; }
 
 .lic-rail__field { background: var(--c-bg); border-radius: var(--radius-sm); padding: 11px 13px; }
-.lic-rail__field .lic-field__label { font-size: 10.5px; }
+.lic-rail__field .lic-field__label { font-size: var(--fs-2xs); }
 
 .lic-rail__eyebrow {
-  font-size: 11px; font-weight: 700; color: var(--c-fg-muted);
+  font-size: var(--fs-2xs); font-weight: 700; color: var(--c-fg-muted);
   text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px;
 }
 
 .lic-rail__rows { display: flex; flex-direction: column; gap: 11px; }
 
 .lic-rail__row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.lic-rail__row dt { font-size: 12.5px; color: var(--c-fg-muted); }
-.lic-rail__row dd { margin: 0; font-size: 12.5px; font-weight: 700; color: var(--c-fg); font-family: monospace; }
+.lic-rail__row dt { font-size: var(--fs-sm); color: var(--c-fg-muted); }
+.lic-rail__row dd { margin: 0; font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); font-family: monospace; }
 
 .lic-rail__rule { height: 1px; background: var(--c-border); margin: 16px 0 14px; }
 
-.lic-rail__note { font-size: 12px; color: var(--c-fg-subtle); line-height: 1.5; }
+.lic-rail__note { font-size: var(--fs-xs); color: var(--c-fg-subtle); line-height: 1.5; }
 
-.lic-rail__hint { font-size: 11.5px; color: var(--c-fg-subtle); line-height: 1.45; }
+.lic-rail__hint { font-size: var(--fs-2xs); color: var(--c-fg-subtle); line-height: 1.45; }
 
 /* The connect code lives on the marketplace, so the hint that names it has to be
    able to take the admin there — an instruction they cannot follow without
@@ -303,7 +303,7 @@
 }
 
 .lic-link__label {
-  font-size: 10.5px; font-weight: 700; line-height: 1.4;
+  font-size: var(--fs-2xs); font-weight: 700; line-height: 1.4;
   text-transform: uppercase; letter-spacing: 0.06em;
   color: var(--c-fg-muted);
   margin-bottom: 8px;
@@ -311,13 +311,13 @@
 
 .lic-link__code {
   font-family: monospace;
-  font-size: 22px; font-weight: 700; letter-spacing: 0.16em;
+  font-size: 1.375rem; font-weight: 700; letter-spacing: 0.16em;
   color: var(--c-fg);
 }
 
 .lic-link__waiting {
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 600;
+  font-size: var(--fs-xs); font-weight: 600;
   color: var(--c-accent);
 }
 
@@ -325,7 +325,7 @@
    machine, so it is collapsed rather than removed. */
 .lic-link__manual {
   > summary {
-    font-size: 11.5px; font-weight: 600;
+    font-size: var(--fs-2xs); font-weight: 600;
     color: var(--c-fg-muted);
     cursor: pointer;
     padding: 4px 0;

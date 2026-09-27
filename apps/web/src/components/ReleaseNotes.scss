@@ -1,6 +1,6 @@
 // Release notes (ReleaseNotes.tsx): a changelog in the core-update dialog and card.
 .release-notes {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
   color: var(--c-fg-muted);
   overflow-wrap: anywhere;
@@ -16,9 +16,9 @@
     color: var(--c-fg);
     font-weight: 700;
   }
-  h4.release-notes__h { font-size: 14px; }
+  h4.release-notes__h { font-size: var(--fs-md); }
   h5.release-notes__h {
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--c-fg-subtle);
@@ -49,7 +49,7 @@
     border: 1px solid var(--c-border);
     border-radius: var(--radius-sm);
 
-    code { padding: 0; background: none; font-size: 12px; }
+    code { padding: 0; background: none; font-size: var(--fs-xs); }
   }
 
   a {

@@ -37,7 +37,7 @@
     background: transparent;
     border: none;
     outline: none;
-    font-size: 36px;
+    font-size: 2.25rem;
     font-weight: 800;
     color: var(--c-fg);
     letter-spacing: -0.03em;
@@ -62,7 +62,7 @@
     margin-bottom: 32px;
     padding-bottom: 24px;
     border-bottom: 1px solid var(--c-border);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-subtle);
   }
 
@@ -73,7 +73,7 @@
     background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
     color: var(--c-on-accent);
     font-weight: 700;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -86,7 +86,7 @@
     outline: none;
     resize: vertical;
     color: var(--c-fg-muted);
-    font-size: 17px;
+    font-size: 1.0625rem;
     line-height: 1.6;
     margin-bottom: 24px;
     font-family: inherit;
@@ -119,7 +119,7 @@
   &__section { margin-bottom: 18px; }
 
   &__label {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--c-fg-subtle);
     letter-spacing: 0.1em;
@@ -145,7 +145,7 @@
     color: var(--c-fg-muted);
     padding: 6px 4px;
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     cursor: pointer;
     font-family: inherit;
@@ -169,7 +169,7 @@
     padding: 9px;
     cursor: pointer;
     font-weight: 700;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-family: inherit;
     margin-bottom: 8px;
     transition: opacity 0.15s;
@@ -191,7 +191,7 @@
   &__error {
     margin-top: 4px;
     color: var(--c-danger);
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   &__select,
@@ -201,7 +201,7 @@
     border: 1px solid var(--input-border-color);
     border-radius: var(--radius-sm); // intentionally tighter than --input-radius; revisit if field-radius knob lands
     padding: 9px 14px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--input-fg);
     outline: none;
     font-family: inherit;
@@ -223,7 +223,7 @@
     border: 1px solid var(--c-accent-glow);
     padding: 2px 8px;
     border-radius: 100px;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -247,8 +247,8 @@
     }
     &.is-busy { opacity: 0.6; pointer-events: none; }
   }
-  &__dropzone-icon { font-size: 22px; margin-bottom: 4px; }
-  &__dropzone-text { font-size: 11px; color: var(--c-fg-subtle); }
+  &__dropzone-icon { font-size: 1.375rem; margin-bottom: 4px; }
+  &__dropzone-text { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
   &__dropzone-preview {
     display: block;
     width: 100%;
@@ -268,7 +268,7 @@
     cursor: pointer;
     margin-bottom: 2px;
     color: var(--c-fg);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     transition: background 0.15s;
 
     &:hover { background: var(--c-bg-hover); }
@@ -278,14 +278,14 @@
       margin: 0;
     }
   }
-  &__radio-icon { font-size: 13px; }
+  &__radio-icon { font-size: var(--fs-sm); }
 
   &__seo {
     background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-sm);
     padding: 10px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
   &__seo-host {
     color: #4285f4;
@@ -305,7 +305,7 @@
   }
   &__seo-desc {
     color: var(--c-fg-subtle);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     line-height: 1.5;
   }
 }
