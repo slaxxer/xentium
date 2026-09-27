@@ -25,6 +25,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
+import type { AnyExtension, JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import TextAlign from "@tiptap/extension-text-align";
@@ -51,6 +52,8 @@ export type ComposerVariant = "inline" | "panel" | "dock";
 export interface ComposerHandle {
   /** The HTML, or "" when the document is empty. */
   getHTML:    () => string;
+  /** The ProseMirror document — for a surface that STORES JSON (articles). */
+  getJSON:    () => JSONContent | null;
   isEmpty:    () => boolean;
   setContent: (html: string) => void;
   clear:      () => void;
@@ -62,6 +65,21 @@ export interface ComposerProps {
   onChange?:   (html: string) => void;
   placeholder?: string;
   initialHtml?: string;
+  /**
+   * ⚠ For a surface that stores ProseMirror JSON rather than HTML — articles. Their
+   * reader renders the JSON with its own extension set, so the document must never
+   * pass through HTML on the way to storage: that would drop any node the HTML
+   * round-trip does not know. When given, it wins over `initialHtml`.
+   */
+  initialJson?: JSONContent | null;
+  onChangeJson?: (json: JSONContent) => void;
+  /** Nodes a surface needs beyond the shared set — an article's images. */
+  extraExtensions?: AnyExtension[];
+  /**
+   * Off where the reader cannot draw a mention node (articles render with their own
+   * extension set, which has none). Hides the tool and the hint as well. Default on.
+   */
+  mentions?:   boolean;
   disabled?:   boolean;
   /** Ctrl/⌘+Enter, and the primary button. */
   onSubmit?:   () => void;
@@ -123,14 +141,19 @@ function shortcutLabel(): string {
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer({
   variant = "panel",
-  onChange, placeholder, initialHtml, disabled, onSubmit, submitLabel, busy,
+  onChange, placeholder, initialHtml, initialJson, onChangeJson, extraExtensions, mentions = true,
+  disabled, onSubmit, submitLabel, busy,
   onCancel, minHeight, className, replyTo, onDismissReply,
   canAttach, onAttach, enterSends, submitInBar = true,
   toolbarPosition = "bottom", showStats,
 }, ref) {
   const { t } = useTranslation("common");
   const { user } = useAuth();
-  const { config, tools } = useComposerConfig();
+  const { config, tools: allTools } = useComposerConfig();
+  const tools = useMemo(
+    () => (mentions ? allTools : allTools.filter((x) => x.id !== "mention")),
+    [allTools, mentions],
+  );
 
   /** `inline` starts closed; every other variant is open from the start. */
   const [open, setOpen] = useState(variant !== "inline");
@@ -139,12 +162,15 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   /** `dock` hides formatting behind `Aa` — chat first, editor second. */
   const [showTools, setShowTools] = useState(variant !== "dock");
   const prevInitial = useRef<string | undefined>(undefined);
+  const prevJson = useRef<string | undefined>(undefined);
 
   /**
    * ⚠ `onSubmit` is read through a ref inside the key handler. TipTap builds its
    * keymap ONCE; a captured prop would keep calling the first render's submit, which
    * on a page that re-renders per keystroke means posting stale content.
    */
+  const onChangeJsonRef = useRef(onChangeJson);
+  onChangeJsonRef.current = onChangeJson;
   const submitRef = useRef(onSubmit);
   submitRef.current = onSubmit;
   const enterSendsRef = useRef(enterSends);
@@ -175,7 +201,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
        * at creation, so this reads the config's default rather than waiting for the
        * request and rebuilding the editor underneath the writer.
        */
-      Mention.configure({
+      ...(extraExtensions ?? []),
+      ...(mentions ? [Mention.configure({
         HTMLAttributes: {},
         renderHTML({ node }) {
           return ["a", {
@@ -187,11 +214,14 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         },
         renderText({ node }) { return `@${node.attrs.label ?? node.attrs.id}`; },
         suggestion: buildMentionSuggestion(),
-      }),
+      })] : []),
     ],
-    content: initialHtml ?? "",
+    content: initialJson ?? initialHtml ?? "",
     editable: !disabled,
-    onUpdate: ({ editor: e }) => onChange?.(e.isEmpty ? "" : e.getHTML()),
+    onUpdate: ({ editor: e }) => {
+      onChange?.(e.isEmpty ? "" : e.getHTML());
+      onChangeJsonRef.current?.(e.getJSON());
+    },
     editorProps: {
       attributes: { class: "nvc-content" },
       handleKeyDown(_view, event) {
@@ -221,12 +251,31 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     }
   }, [editor, initialHtml, onChange]);
 
+  // Follow `initialJson` the same way — an article loaded, a local draft restored.
+  // ⚠ Compared as text and against what the editor already holds: the caller feeds
+  // `onChangeJson` back in as `initialJson`, and resetting to the same document on
+  // every keystroke would throw the caret to the end.
   useEffect(() => {
-    editor?.setEditable(!disabled);
+    if (!editor || initialJson == null) return;
+    const next = JSON.stringify(initialJson);
+    if (next === prevJson.current) return;
+    prevJson.current = next;
+    if (next !== JSON.stringify(editor.getJSON())) {
+      editor.commands.setContent(initialJson, { emitUpdate: false });
+    }
+  }, [editor, initialJson]);
+
+  // ⚠ `false`: setEditable() emits an update by default, so every mount — and every
+  // save that disables the editor for a moment — reported the untouched document as
+  // an edit. A surface comparing against what it saved (articles) then saw a change
+  // that never happened and kept a local "unsaved draft" of it.
+  useEffect(() => {
+    editor?.setEditable(!disabled, false);
   }, [editor, disabled]);
 
   useImperativeHandle(ref, () => ({
     getHTML:    () => (editor?.isEmpty ? "" : editor?.getHTML() ?? ""),
+    getJSON:    () => editor?.getJSON() ?? null,
     isEmpty:    () => editor?.isEmpty ?? true,
     setContent: (html) => { editor?.commands.setContent(html); onChange?.(html); },
     clear:      () => {
@@ -397,7 +446,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
    */
   const stats = (
     <div className="nvc-stats">
-      <span><FontAwesomeIcon className="nvc-ic" icon={faAt} />{t("composer.hintMention")}</span>
+      {mentions && <span><FontAwesomeIcon className="nvc-ic" icon={faAt} />{t("composer.hintMention")}</span>}
       <span>
         <kbd>{shortcut.replace("↵", "")}</kbd><kbd>↵</kbd>{t("composer.hintPost")}
       </span>
@@ -501,7 +550,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         </div>
       )}
 
-      <div className="nvc-body" style={minHeight ? { minHeight } : undefined}>
+      {/* ⚠ The editable element is only as tall as its text, while `minHeight` makes
+          the BOX taller: a click in the empty lower part of the box landed on this
+          div and focused nothing. A press on the body itself (never on the text, the
+          mode toggle or a popover) puts the caret at the end instead. */}
+      <div
+        className="nvc-body"
+        style={minHeight ? { minHeight } : undefined}
+        onMouseDown={(e) => {
+          if (mode !== "write" || !editor) return;
+          const el = e.target as HTMLElement;
+          if (el !== e.currentTarget && !el.classList.contains("nvc-editor")) return;
+          e.preventDefault();
+          editor.commands.focus("end");
+        }}
+      >
         {/* The panel variant floats the toggle over the body — it has no header.
             Not when the tools are on top: it sits in that row instead. */}
         {variant === "panel" && toolbarPosition === "bottom" && (
@@ -511,7 +574,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         )}
 
         {mode === "write"
-          ? <EditorContent editor={editor} />
+          ? <EditorContent editor={editor} className="nvc-editor" />
           : (
             /**
              * ⚠ The preview renders the editor's OWN html, which TipTap produced from

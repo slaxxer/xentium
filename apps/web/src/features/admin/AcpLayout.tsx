@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
-import type { CoreUpdate } from "./components/CoreUpdateCard";
+import { CoreUpdateDialogBody, isPrerelease, type CoreUpdate, type PluginUpdateRow } from "./components/coreUpdateParts";
 import "./AcpLayout.scss";
 import "./AcpAnnouncement.scss";
 import "./nav/AcpNav.scss";
@@ -22,9 +22,8 @@ import { IconScope } from "../../lib/iconScope";
 // menu and remembered in localStorage (nav/acpChrome.ts):
 //
 //   rail (default) — a 72px icon rail plus a 248px section panel down the left,
-//                    with the top bar folded into them. One thin utility line
-//                    survives for the notification bell and plugin header
-//                    widgets; nav/AcpUtilityBar.tsx says why.
+//                    with the top bar folded into them entirely. Collapsed,
+//                    the palette becomes a search icon in the rail.
 //   horizontal     — the previous chrome: topbar + two-tier HorizontalNav. Kept
 //                    whole rather than deleted, because it is the layout every
 //                    admin has been using and taste in this is not unanimous.
@@ -81,14 +80,7 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
  */
 const MAX_DIALOG_ROWS = 5;
 
-interface PluginUpdate {
-  pluginId:          string;
-  name?:             string;
-  installedVersion?: string | null;
-  latestVersion:     string;
-  critical:          boolean;
-  renewalRequired:   boolean;
-}
+type PluginUpdate = PluginUpdateRow;
 
 interface AnnouncementView {
   id:          string;
@@ -119,6 +111,9 @@ function useAcpAlerts() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const shownFor = useRef<string | null>(null);
+  /** The plugin set the core dialog already listed: its own dialog must not
+   *  follow straight after, in the same visit, saying the same thing. */
+  const pluginsShownWithCore = useRef<string | null>(null);
 
   const { data: broadcasts } = useQuery<{ checkedAt: string | null; announcements: AnnouncementView[] }>({
     queryKey:  ["acp-announcements"],
@@ -141,16 +136,16 @@ function useAcpAlerts() {
     const licenseNeeds = !!status && (status.licenseExpiringSoon || status.licenseExpired) && !status.licenseAcknowledged;
     const list = updates?.updates ?? [];
     const updatesNeed = list.length > 0 && !updates?.acknowledged;
+    const setHash = `updates:${list.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",")}`;
 
-    // Core. A PATCH on the minor we are already on never opens a dialog: it is
-    // the most common release there is, the card and the badge already say so,
-    // and a dialog people meet weekly is a dialog people stop reading. Anything
-    // else — a minor, a major, or a security fix anywhere along the way — is
-    // worth one interruption per admin per release.
+    // Core. A new Xentium lives ONLY in this dialog — not on the Updates page,
+    // not in the badge — so every release opens it, once per admin: any way of
+    // closing it counts as seen. Plugin updates waiting at the same time ride
+    // along, so an admin meets one dialog about updates, not two in a row.
     const core = updates?.core ?? null;
     const coreUrgent = !!core && (core.highestSeverity === "security" || core.highestSeverity === "critical");
-    const coreOnlyPatch = !!core && !!core.patch && core.patch.version === core.latest.version;
-    const coreNeeds = !!core && !core.acknowledged && (coreUrgent || !coreOnlyPatch);
+    const corePre = !!core && isPrerelease(core.latest.version);
+    const coreNeeds = !!core && !core.acknowledged;
 
     /** One dialog per ACP entry — a second openPanelDialog pre-empts the first. */
     const showCore = () => {
@@ -158,46 +153,27 @@ function useAcpAlerts() {
       if (shownFor.current === key) return;
       shownFor.current = key;
 
-      // No severity marker on the version row: the panel already carries the
-      // badge, and with a single row the marker is the same word twice.
-      const rows = [
-        { label: t("coreUpdate.dialogVersion"), value: `${core!.current} → ${core!.latest.version}`,
-          marker: undefined as string | undefined },
-      ];
-      if (core!.releaseCount > 1) {
-        rows.push({ label: t("coreUpdate.dialogBehind"), value: String(core!.releaseCount), marker: undefined });
-      }
-      // ⚠ A short label: the label column ellipsises, so the card's full
-      // sentence ("Plugins that don't support this version yet:") would arrive
-      // here as two characters.
-      if (core!.blockedBy.length > 0) {
-        rows.push({
-          label:  t("coreUpdate.dialogBlocked"),
-          value:  core!.blockedBy.map((p) => p.name).join(", "),
-          marker: undefined,
-        });
-      }
-
-      // Prose goes in the note, never in a row: a row's value is monospace and
-      // does not shrink, so a sentence there runs off the edge of the dialog.
-      // Where the urgency comes from outranks the upgrade notes — the dialog
-      // must not say SECURITY about a version whose notes are features.
-      const onTheWay = core!.urgentRelease
-        ? [
-            t(`coreUpdate.onTheWay.${core!.urgentRelease.severity}`, { version: core!.urgentRelease.version }),
-            core!.urgentRelease.notes,
-          ].filter(Boolean).join(" ")
-        : null;
-
+      const withPlugins = list.length > 0;
+      if (withPlugins) pluginsShownWithCore.current = setHash;
       void openPanelDialog({
+        kind:        withPlugins ? "confirm" : "alert",
         icon:        coreUrgent ? "warning" : "update",
         title:       t("coreUpdate.dialogTitle", { version: core!.latest.version }),
-        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`) : undefined,
-        rows,
-        note:        onTheWay ?? core!.latest.upgradeNotes ?? undefined,
-        confirmText: t("marketplace.updatesDialogView"),
-        cancelText:  t("marketplace.updatesDialogLater"),
-      }).then((view) => { if (view) navigate("/admin/updates"); });
+        badge:       coreUrgent ? t(`coreUpdate.severity.${core!.highestSeverity}`)
+                   : corePre    ? t("coreUpdate.prerelease") : undefined,
+        badgeTone:   coreUrgent ? "danger" : "calm",
+        large:       true,
+        bodyNode:    <CoreUpdateDialogBody update={core!} plugins={list} />,
+        confirmText: withPlugins ? t("coreUpdate.dialogPlugins") : t("coreUpdate.dialogOk"),
+        cancelText:  withPlugins ? t("coreUpdate.dialogClose") : undefined,
+      }).then((ok) => {
+        // One-time: every way out acknowledges. A failed write only means the
+        // dialog shows once more, the safe direction.
+        void api.post("/admin/marketplace/updates/core/acknowledge", {})
+          .then(() => qc.invalidateQueries({ queryKey: ["acp-marketplace-updates"] }))
+          .catch(() => { /* it comes back next entry */ });
+        if (ok && withPlugins) navigate("/admin/updates");
+      });
     };
 
     // A broadcast from the Xentium team goes first. Everything the endpoint
@@ -271,16 +247,11 @@ function useAcpAlerts() {
       return;
     }
 
-    // A security release in core outranks any number of plugin updates: it is
-    // the thing every plugin runs on.
-    if (coreNeeds && coreUrgent) { showCore(); return; }
+    // A new core carries the plugin list with it.
+    if (coreNeeds) { showCore(); return; }
 
-    if (!updatesNeed) {
-      if (coreNeeds) showCore();
-      return;
-    }
-    const setHash = `updates:${list.map((u) => `${u.pluginId}@${u.latestVersion}`).sort().join(",")}`;
-    if (shownFor.current === setHash) return;
+    if (!updatesNeed) return;
+    if (shownFor.current === setHash || pluginsShownWithCore.current === setHash) return;
     shownFor.current = setHash;
 
     // Critical rows first, then cap the list for the dialog.

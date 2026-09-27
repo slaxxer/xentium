@@ -57,6 +57,9 @@
     .xt-dialog__actions { justify-content: flex-end; }
   }
 
+  /* A panel with more to read (the core-update dialog's release notes). */
+  &--large { width: min(680px, 100%); }
+
   &__badge {
     padding: 3px 10px;
     border-radius: 100px;
@@ -68,6 +71,12 @@
     background: color-mix(in srgb, var(--c-danger) 14%, transparent);
     border: 1px solid color-mix(in srgb, var(--c-danger) 35%, transparent);
     flex-shrink: 0;
+
+    &--calm {
+      color: var(--_dlg-c);
+      background: color-mix(in srgb, var(--_dlg-c) 14%, transparent);
+      border-color: color-mix(in srgb, var(--_dlg-c) 35%, transparent);
+    }
   }
 
   &__rows {

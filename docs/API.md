@@ -421,8 +421,10 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | Method | Path | Description |
 |---|---|---|
 | GET | `/dashboard` | ACP dashboard stats. |
-| GET | `/users` · `/users/:id` | User list / detail (including private fields, for admins and super moderators). |
-| PUT | `/users/:id/groups` | Set group membership. |
+| GET | `/users` | User list. Query: `page`, `limit`, `search` (username, email, user ID or IP), `groupId`, `status` (`all`, `active`, `banned`, `inactive`, `flagged`), `sort` (`recent`, `joined`, `posts`, `name`). Each row has `status`, `lastSeenAt`, `online` and `flags`; the response adds `counts` for the whole site. |
+| GET | `/users/:id` | One member: groups, profile fields, known IPs and device cookies, active sessions, flags and the active ban. Never includes password or PIN hashes. |
+| PATCH | `/users/:id/groups` | Change group membership: `{ add: [groupId], remove: [groupId] }`. Only the named groups change. You can't remove yourself from Administrator. |
+| PUT | `/users/:id/groups` | Replace group membership with `{ groupIds }`. Prefer `PATCH`: a replacement undoes any change made since you read the list. |
 | PATCH | `/users/:id/active` | Activate / deactivate. |
 | POST | `/users/:id/ban` · DELETE `/users/:id/ban` | Ban / lift. |
 | POST | `/users/:id/force-logout` | Revoke every session. |
@@ -474,7 +476,8 @@ key entry from both the ACP and the API on 2026-07-18, so there's no
 | POST | `/marketplace/link` | Start the **one-click handshake** → `{linkId, userCode, approveUrl, expiresAt, pollInterval}`. The admin opens `approveUrl` and checks that `userCode` matches the approval screen. The poll secret stays on the server and never reaches the browser. |
 | GET | `/marketplace/link/:linkId` | Poll it → `{status: pending\|approved\|denied\|expired}`, plus `licenseActivated` once approved. `pending` is a **200**, not an error; it's the normal answer while someone is still deciding. |
 | GET | `/marketplace/owned` | **What this account owns**, matched against what's installed here: `{licenses: [{keyRef, status, seats, seatsUsed, activeHere, updatesUntil, purchasedAt, product, installedVersion, installedStatus, updateAvailable}]}`. Not cached, because an admin opening this has usually just bought something. Different from the entitlement JWT, which lists *grants*, not licences. |
-| GET | `/marketplace/updates` | The cached update check, matched against what's installed right now, plus `acknowledged` per admin. |
+| GET | `/marketplace/updates` | The cached update check, matched against what's installed right now, plus `acknowledged` per admin. `core` carries `path` (every release in between, newest first, with notes) and `siteDir` (the CLI install's directory, or null). |
+| POST | `/marketplace/updates/core/acknowledge` | Closing the core-update dialog (it is one-time): acknowledges the current core offer for this admin. The only acknowledgement core has; it is not on the Updates page. `/status-summary` still counts it (`coreUpdate`) until the site runs the new version. 204. |
 | POST | `/marketplace/authorize` | The download check → `AuthorizedDownload` (rate-limited). |
 | POST | `/marketplace/install` · `/marketplace/update` | Install / update a plugin or theme. These **stream ndjson progress** instead of returning one JSON response. For a theme, the final event carries `activated` and `current` (see *Themes* below). |
 | GET | `/status-summary` | The ACP badge signals in one place (pending updates, licence expiry, per-admin acknowledgement). |

@@ -6,7 +6,6 @@
 
 $rail-w: 72px;
 $panel-w: 248px;
-$util-h: 44px;
 
 .acp-shell {
   display: flex;
@@ -48,6 +47,7 @@ $util-h: 44px;
     border-radius: var(--radius-md);
     background: var(--c-accent-soft);
     color: var(--c-accent);
+    font-size: 17px;
     margin-bottom: 8px;
   }
 
@@ -284,30 +284,6 @@ $util-h: 44px;
   z-index: 84;
 }
 
-// ── Utility line ─────────────────────────────────────────────────────────────
-
-.acp-util {
-  height: $util-h;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 0 20px;
-  border-bottom: 1px solid var(--c-border);
-  background: var(--card-bg);
-  position: sticky;
-  top: 0;
-  z-index: 80;
-
-  &__right {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: none;
-  }
-}
-
 // ── Responsive ───────────────────────────────────────────────────────────────
 
 // Below the docking width the panel only ever appears as a flyout, so the rail
@@ -317,11 +293,6 @@ $util-h: 44px;
   .acp-rail { width: 60px; }
   .acp-panel--flyout { left: 60px; width: min(#{$panel-w}, calc(100vw - 60px)); }
   .acp-scrim { left: 60px; }
-  .acp-util { padding: 0 12px; }
-
-  // The breadcrumb is the first thing to go: the section and page are both
-  // already named by the panel and the page's own title.
-  .acp-util .acp-crumbs { display: none; }
 }
 
 // ── Shared popovers, rail-side variants ──────────────────────────────────────
@@ -371,9 +342,33 @@ $util-h: 44px;
   &:hover, &.is-active { background: var(--c-accent-soft); }
 }
 
+// Rail search: an icon, and the palette centred on screen when it opens.
+// Doubled classes for the same source-order reason as above; `display: block`
+// undoes the topbar's "hide the field below 860px", which is exactly when the
+// rail is the only chrome there is.
+.nbsearch.nbsearch--rail {
+  display: block;
+  width: auto;
+  max-width: none;
+  position: static;
+
+  .nbsearch__panel {
+    position: fixed;
+    top: 12vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, calc(100vw - #{$rail-w} - 32px));
+    z-index: 95;
+  }
+  .nbsearch__field { border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); background: var(--c-surface); }
+  .nbpal { width: auto; }
+}
+
+// Fixed, not absolute: the rail scrolls and would clip it. AcpUserMenu sets
+// `left` / `bottom` from the avatar's position when it opens.
 .nbpop.nbpop--rail {
+  position: fixed;
   top: auto;
-  bottom: 0;
   right: auto;
-  left: calc(100% + 10px);
+  overflow-y: auto;
 }

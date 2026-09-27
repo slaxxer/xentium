@@ -340,6 +340,22 @@
     }
   }
 
+  /* Dot on the ACP gear (AcpStatusBadge): something is waiting in the admin
+     panel. No count on purpose. Sits on the button's corner with an opaque
+     ring (--nav-bg is translucent), so it reads on any navbar colour. */
+  &__dot {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    box-sizing: border-box;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid var(--c-surface);
+    background: var(--c-danger);
+    pointer-events: none;
+  }
+
   /* Write button */
   &__write-btn {
     display: inline-flex;

@@ -24,20 +24,25 @@ worker restarts, so you are then responsible for watching releases yourself.
 
 ## What you see
 
-**Extensions → Updates** gets a card at the top for Xentium itself, above your plugin
-updates. It shows the version you are on, the version available, how many releases you are
-behind, and what changed.
+A new Xentium release is announced **once, in a dialog when you enter the ACP**. It carries
+everything you need to decide: the version you are on and the one available, when it was
+released, how many releases you are behind, anything to watch out for (a security fix on the
+way, a plugin that doesn't support the new version yet, manual steps), the full changelog of
+every release in between, and the commands that install it, ready to copy.
 
-**The gear badge** in the navbar counts a waiting core update the same way it counts plugin
-updates, so it stays visible until you deal with it.
+If plugin updates are waiting too, they are listed at the bottom of the same dialog, so you
+meet one dialog about updates rather than two in a row. **View plugin updates** takes you to
+**Extensions → Updates**, which lists plugin updates only.
 
-**A dialog when you enter the ACP**, once per admin. It stays until you actually open the
-Updates page: closing it doesn't count as having seen it, looking at the page does. Each
-admin gets their own, and a new release brings it back.
+The dialog is one-time: however you close it, it is gone for you, and each admin sees it once.
+Copy the command before you close it, or find it again in [Installing the update](#installing-the-update)
+below. The next release brings a new dialog, and so does a release we later mark as a security
+fix, even if you had already seen it as an ordinary one. A core release doesn't appear on the
+Updates page.
 
-One deliberate exception: a patch on the version line you are already running never opens the
-dialog. Those are the most common releases there are, the card and the badge already say so,
-and a dialog you meet every week is a dialog you stop reading.
+**The gear icon in your site's navbar** gets a red dot, for admins only, while anything in the
+ACP needs you: a waiting Xentium release, a plugin update, or your licence. There is no count;
+the dot tells you to look. A waiting release keeps it lit until your site runs the new version.
 
 ## How urgent is it
 
@@ -52,11 +57,11 @@ Every release carries an urgency:
 The urgency you see covers **every release between yours and the newest one**, not just the
 newest. If you are on 1.0.0 and 1.2.0 is out, and 1.0.1 in between fixed a vulnerability, you
 are told about the security fix even though the newest release is an ordinary feature release.
-The card names the release the urgency comes from and quotes its notes, so you can see what
-you are actually being warned about.
+The dialog names the release the urgency comes from, and its notes are in the changelog, so
+you can see what you are actually being warned about.
 
 Some releases can't be installed directly from very old versions. When that is the case, the
-card names the version to install first.
+dialog names the version to install first, and its command installs that one.
 
 ## Your plugins come first
 
@@ -71,12 +76,19 @@ replace the code it is running, so there is no button that does this.
 
 ```bash
 cd /srv/xentium
-sudo xentium update
+npm install xentium@1.1.2
+npx xentium update 1.1.2
 ```
 
-That is the command the card shows you. In order, it:
+That is what the dialog shows you, with your site's directory and the version
+they are offering filled in. The first line updates the `xentium` command itself, because
+fixes to the updater ship in it. Naming the version matters for prereleases: without one,
+`xentium update` installs what npm calls the newest stable release. You don't need `sudo`;
+the command asks for it when it restarts your site's services.
 
-1. finds the newest release, and refuses if a plugin doesn't support it
+In order, `xentium update`:
+
+1. finds the release, and refuses if a plugin doesn't support it
 2. installs it **next to** the one that is running, so nothing has changed yet
 3. dumps the database into `shared/backups/`
 4. stops the site, applies any new migrations, points `current` at the new release, starts it
@@ -92,11 +104,11 @@ yourself.
 Useful flags:
 
 ```bash
-sudo xentium update 1.1.2        # a specific version rather than the newest
-sudo xentium update --dry-run    # install the release but don't switch to it
-sudo xentium update --package ./xentium-server-1.1.2.tgz   # from a tarball, no registry
-sudo xentium update --skip-backup                          # when pg_dump isn't installed
-sudo xentium update --force      # past a plugin that says it doesn't support the version
+npx xentium update               # the newest stable release
+npx xentium update --dry-run     # install the release but don't switch to it
+npx xentium update --package ./xentium-server-1.1.2.tgz   # from a tarball, no registry
+npx xentium update --skip-backup                          # when pg_dump isn't installed
+npx xentium update --force       # past a plugin that says it doesn't support the version
 ```
 
 Without `--skip-backup`, an update refuses to start when `pg_dump` is missing, because there
@@ -105,8 +117,8 @@ would be nothing to roll back to. Installing the PostgreSQL client tools is the 
 ## Going back
 
 ```bash
-sudo xentium rollback            # back to the release you were on
-sudo xentium rollback 1.1.0      # back to a specific one you still have
+npx xentium rollback             # back to the release you were on
+npx xentium rollback 1.1.0       # back to a specific one you still have
 ```
 
 A rollback is the same swap the other way, which is why releases are kept as separate
