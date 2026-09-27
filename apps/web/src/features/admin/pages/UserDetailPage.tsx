@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useParams, Link } from "react-router-dom";
 import type { AwardedBadge, BadgeRow } from "@xentium/contracts";
@@ -6,18 +6,25 @@ import { BadgeMark } from "../../../components/UserBadges";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../lib/api";
 import { useAuth } from "../../../hooks/useAuth";
-import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
-  faSave, faChevronLeft, faBan, faShield, faRightFromBracket, faKey,
-  faNewspaper, faComment, faArrowsRotate, faNetworkWired,
+  faFloppyDisk, faChevronLeft, faBan, faShield, faRightFromBracket, faKey,
+  faNewspaper, faComment, faArrowsRotate, faNetworkWired, faMagnifyingGlass,
   faAddressCard, faUserGroup, faTableList, faShieldHalved, faTriangleExclamation,
-  faAward, faXmark,
+  faAward, faXmark, faLock,
 } from "@fortawesome/free-solid-svg-icons";
-import { Username } from "../../../components/Username";
-import { UserAvatar } from "../../../components/UserAvatar";
+import { Avatar } from "../../../components/Avatar";
 import { slotRegistry } from "../../../plugins/slotRegistry";
+import { timeAgo } from "../../../lib/time";
+import {
+  type Group, type UserStatus, type UserFlag, BanDialog, RolePill, StatusPill,
+  topGroup, groupColor, lastSeenText,
+} from "./users/usersShared";
 import "./UserDetailPage.scss";
+import "./users/Users.scss";
 
 // ── Copyable mono ID chip ─────────────────────────────────────────────────────
 
@@ -37,13 +44,25 @@ function CodeChip({ value }: { value: string }) {
   );
 }
 
-interface Group {
-  id: string;
-  name: string;
-  key: string;
-  isSystem: boolean;
-  icon: string | null;
-  progression: { badgeColor: string | null; badgeLabel: string | null } | null;
+/**
+ * The first few addresses or devices, and a way to the rest. A busy account has
+ * dozens; listing them all turned the Overview into a column of chips.
+ */
+function ChipList({ values, onMore }: { values: string[]; onMore: () => void }) {
+  const { t } = useTranslation("acp");
+  if (values.length === 0) return <span className="up-empty">—</span>;
+  const shown = values.slice(0, 4);
+  const rest = values.length - shown.length;
+  return (
+    <>
+      {shown.map((v) => <CodeChip key={v} value={v} />)}
+      {rest > 0 && (
+        <button type="button" className="up-more" onClick={onMore}>
+          {values.length >= 20 ? t("users.moreCapped", { count: rest }) : t("users.more", { count: rest })}
+        </button>
+      )}
+    </>
+  );
 }
 
 interface ProfileFieldEntry {
@@ -69,116 +88,49 @@ interface UserDetail {
   isActive: boolean;
   bannedUntil: string | null;
   createdAt: string;
+  emailVerifiedAt: string | null;
+  postCount: number;
   articleCount: number;
-  _count: { articles: number; articleComments: number; sessions: number };
+  commentCount: number;
+  _count: { articles: number; articleComments: number };
+  status: UserStatus;
+  activeBan: { type: string; reason: string; expiresAt: string | null; createdAt: string } | null;
+  lastSeenAt: string | null;
+  online: boolean;
+  flags: UserFlag[];
+  failedSignins24h: number;
+  activeSessions: number;
+  knownIps: string[];
+  deviceCookies: string[];
+  securityEventTotal: number;
   groups: Group[];
   profileFields: ProfileFieldEntry[];
-  loginEvents: LoginEvent[];
 }
+
+type Tab = "overview" | "access" | "badges" | "security";
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString(undefined, {
-    year: "numeric", month: "long", day: "numeric",
-  });
+  return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
 }
 
-// ── Ban modal ────────────────────────────────────────────────────────────────
-
-function BanModal({
-  user,
-  onClose,
-  onDone,
-}: {
-  user: UserDetail;
-  onClose: () => void;
-  onDone: () => void;
-}) {
-  const { t } = useTranslation("acp");
-  const [type,      setType]      = useState<"temporary" | "permanent">("temporary");
-  const [reason,    setReason]    = useState("");
-  const [expiresAt, setExpiresAt] = useState("");
-
-  const banMutation = useMutation({
-    mutationFn: () => api.post(`/admin/users/${user.id}/ban`, {
-      type,
-      reason,
-      expiresAt: type === "temporary" && expiresAt ? new Date(expiresAt).toISOString() : null,
-    }),
-    onSuccess: () => {
-      swalToast(t("userDetail.toastBanned", { name: user.username }), "success");
-      onDone();
-      onClose();
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
-  return (
-    <div className="acp-modal-overlay" onClick={onClose}>
-      <div className="acp-modal" style={{ maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-          <FontAwesomeIcon icon={faBan} style={{ color: "var(--c-danger)", fontSize: 18 }} />
-          <h2 style={{ margin: 0, fontSize: "1.1rem" }}>{t("userDetail.banTitle", { name: user.username })}</h2>
-        </div>
-
-        <div className="acp-form-field">
-          <label className="acp-label">{t("userDetail.banType")}</label>
-          <select
-            className="acp-select"
-            value={type}
-            onChange={(e) => setType(e.target.value as "temporary" | "permanent")}
-          >
-            <option value="temporary">{t("userDetail.temporary")}</option>
-            <option value="permanent">{t("userDetail.permanent")}</option>
-          </select>
-        </div>
-
-        {type === "temporary" && (
-          <div className="acp-form-field">
-            <label className="acp-label">{t("userDetail.expiresAt")}</label>
-            <input
-              type="datetime-local"
-              className="acp-input"
-              value={expiresAt}
-              onChange={(e) => setExpiresAt(e.target.value)}
-              min={new Date().toISOString().slice(0, 16)}
-            />
-          </div>
-        )}
-
-        <div className="acp-form-field">
-          <label className="acp-label">{t("userDetail.reason")} <span style={{ color: "var(--c-danger)" }}>*</span></label>
-          <textarea
-            className="acp-input"
-            rows={3}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder={t("userDetail.reasonPlaceholder")}
-            style={{ resize: "vertical" }}
-          />
-        </div>
-
-        <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: "1rem" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("userDetail.cancel")}</button>
-          <button
-            type="button"
-            className="btn-danger btn-sm"
-            disabled={!reason.trim() || (type === "temporary" && !expiresAt) || banMutation.isPending}
-            onClick={() => banMutation.mutate()}
-          >
-            <FontAwesomeIcon icon={faBan} style={{ marginRight: 5 }} />
-            {banMutation.isPending ? t("userDetail.banning") : t("userDetail.issueBan")}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+/** "20+" once a list reaches the server's cap, so a count never under-reports. */
+const capped = (n: number) => (n >= 20 ? "20+" : String(n));
 
 // ── Security activity (paginated, 10 per page) ─────────────────────────────────
 
 interface LoginEventsPage {
   data: LoginEvent[];
   meta: { page: number; limit: number; total: number; totalPages: number };
+}
+
+/** "macOS · Chrome" out of a user agent — the table's device column, not a fingerprint. */
+function deviceOf(ua: string | null): string {
+  if (!ua) return "—";
+  const os = /Windows/.test(ua) ? "Windows" : /Android/.test(ua) ? "Android" : /iPhone|iPad|iOS/.test(ua) ? "iOS"
+    : /Mac OS X|Macintosh/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : null;
+  const br = /Edg\//.test(ua) ? "Edge" : /OPR\//.test(ua) ? "Opera" : /Firefox\//.test(ua) ? "Firefox"
+    : /Chrome\//.test(ua) ? "Chrome" : /Safari\//.test(ua) ? "Safari" : null;
+  return [os, br].filter(Boolean).join(" · ") || ua.slice(0, 40);
 }
 
 function SecurityActivity({ userId }: { userId: string }) {
@@ -214,15 +166,23 @@ function SecurityActivity({ userId }: { userId: string }) {
         <>
           <div style={{ overflowX: "auto" }}>
             <table className="up-table">
-              <thead><tr><th>{t("userDetail.evType")}</th><th>{t("userDetail.evResult")}</th><th>{t("userDetail.evIp")}</th><th>{t("userDetail.evCookie")}</th><th>{t("userDetail.evUa")}</th><th>{t("userDetail.evWhen")}</th></tr></thead>
+              <thead><tr><th>{t("userDetail.evType")}</th><th>{t("userDetail.evIp")}</th><th>{t("users.device")}</th><th className="up-when">{t("userDetail.evWhen")}</th></tr></thead>
               <tbody>
                 {events.map((ev) => (
                   <tr key={ev.id}>
-                    <td><span className="up-type"><span className="d" />{ev.eventType}</span></td>
-                    <td><span className={"up-result" + (ev.success ? "" : " fail")}><i />{ev.success ? t("userDetail.success") : t("userDetail.failed")}</span></td>
+                    <td>
+                      <span className="up-evt">
+                        <span className={"up-result" + (ev.success ? "" : " fail")}><i />{ev.success ? t("userDetail.success") : t("userDetail.failed")}</span>
+                        <span className="up-evt__type">{t(`users.event.${ev.eventType}`, { defaultValue: ev.eventType.replace(/_/g, " ") })}</span>
+                      </span>
+                    </td>
                     <td><span className="up-mono" style={{ fontSize: 12 }}>{ev.ip ?? "—"}</span></td>
-                    <td><span className="up-mono" style={{ fontSize: 11.5, color: "var(--c-fg-muted)" }}>{ev.deviceCookieId ?? "—"}</span></td>
-                    <td><span className="up-ua">{ev.userAgent ?? "—"}</span></td>
+                    <td>
+                      <span className="up-dev">
+                        <span title={ev.userAgent ?? undefined}>{deviceOf(ev.userAgent)}</span>
+                        <span className="up-mono up-dev__cookie">{ev.deviceCookieId ? ev.deviceCookieId.slice(0, 13) : "—"}</span>
+                      </span>
+                    </td>
                     <td className="up-when">{new Date(ev.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                   </tr>
                 ))}
@@ -254,14 +214,10 @@ function SecurityActivity({ userId }: { userId: string }) {
  * thresholds: the next sweep grants it again. Say so, rather than let an admin think
  * a revoke failed.
  */
-function UserBadgesCard({ userId }: { userId: string }) {
+function UserBadgesCard({ userId, held }: { userId: string; held: AwardedBadge[] }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
 
-  const held = useQuery<AwardedBadge[]>({
-    queryKey: ["admin-user-badges", userId],
-    queryFn:  () => api.get(`/user-badges/${userId}`),
-  });
   const catalogue = useQuery<BadgeRow[]>({
     queryKey: ["admin-badges"],
     queryFn:  () => api.get("/admin/badges"),
@@ -275,17 +231,16 @@ function UserBadgesCard({ userId }: { userId: string }) {
 
   const grant = useMutation({
     mutationFn: (badgeId: string) => api.post(`/admin/badges/${badgeId}/award`, { userId }),
-    onSuccess: () => { refresh(); swalToast(t("userDetail.badgeGranted"), "success"); },
-    onError:   (e) => swalToast(apiErrorMessage(e)),
+    onSuccess: () => { refresh(); toast.success(t("userDetail.badgeGranted")); },
+    onError:   (e) => toast.error(apiErrorMessage(e)),
   });
   const revoke = useMutation({
     mutationFn: (badgeId: string) => api.delete(`/admin/badges/${badgeId}/award/${userId}`),
-    onSuccess: () => { refresh(); },
-    onError:   (e) => swalToast(apiErrorMessage(e)),
+    onSuccess: () => { refresh(); toast.success(t("users.badgeRevoked")); },
+    onError:   (e) => toast.error(apiErrorMessage(e)),
   });
 
-  const rows = held.data ?? [];
-  const heldIds = new Set(rows.map((b) => b.id));
+  const heldIds = new Set(held.map((b) => b.id));
   const grantable = (catalogue.data ?? []).filter((b) => !heldIds.has(b.id));
 
   return (
@@ -293,32 +248,30 @@ function UserBadgesCard({ userId }: { userId: string }) {
       <div className="up-card__head">
         <div className="ic"><FontAwesomeIcon icon={faAward} /></div>
         <h3>{t("userDetail.badges")}</h3>
-        <span className="count">{rows.length}</span>
+        <span className="count">{t("users.held", { count: held.length })}</span>
       </div>
       <div className="up-card__body">
         <div className="up-badges">
-          {rows.map((b) => (
+          {held.map((b) => (
             <span key={b.id} className={`up-badge${b.source === "earned" ? " up-badge--earned" : ""}`}
               title={b.source === "earned"
                 ? t("userDetail.badgeEarnedHint")
                 : (b.note ?? b.description ?? b.name)}>
               <BadgeMark badge={b} size="sm" />
               <span className="up-badge__name">{b.name}</span>
-              {b.source === "earned" && (
-                <span className="up-badge__src">{t("userDetail.badgeEarned")}</span>
-              )}
+              <span className="up-badge__src">{b.source === "earned" ? t("userDetail.badgeEarned") : t("users.badgeGranted")}</span>
               <button type="button" className="up-badge__x" title={t("userDetail.badgeRevoke")}
                 onClick={() => revoke.mutate(b.id)} disabled={revoke.isPending}>
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </span>
           ))}
-          {rows.length === 0 && <span className="up-empty">{t("userDetail.noBadges")}</span>}
+          {held.length === 0 && <span className="up-empty">{t("userDetail.noBadges")}</span>}
         </div>
 
         <div className="up-groups__foot">
           <span>{t("userDetail.badgeGrantHint")}</span>
-          <select className="acp-input" style={{ maxWidth: 260 }} value=""
+          <select className="inp inp--sm up-grant" value=""
             disabled={grant.isPending || grantable.length === 0}
             onChange={(e) => { if (e.target.value) grant.mutate(e.target.value); }}>
             <option value="">
@@ -327,6 +280,91 @@ function UserBadgesCard({ userId }: { userId: string }) {
             {grantable.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
           </select>
         </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Group membership: a draft, saved as what CHANGED.
+ *
+ * ⚠ Never PUT the draft as the member's new set. The draft was taken when the tab
+ * opened; a promotion by the progression sweep or another admin's edit since then
+ * would be reverted by a replacement. `PATCH {add, remove}` touches only the rows the
+ * admin toggled here.
+ */
+function MembershipCard({ user, allGroups, isSelf }: { user: UserDetail; allGroups: Group[]; isSelf: boolean }) {
+  const { t } = useTranslation("acp");
+  const qc = useQueryClient();
+  const saved = useMemo(() => new Set(user.groups.map((g) => g.id)), [user.groups]);
+  const [draft, setDraft] = useState<Set<string>>(saved);
+  const [filter, setFilter] = useState("");
+
+  // A different member resets the draft; a background refetch of the SAME member does
+  // not stomp edits in progress.
+  useEffect(() => { setDraft(new Set(user.groups.map((g) => g.id))); }, [user.id]);
+
+  const add = [...draft].filter((id) => !saved.has(id));
+  const remove = [...saved].filter((id) => !draft.has(id));
+  const dirty = add.length + remove.length > 0;
+
+  const save = useMutation({
+    mutationFn: () => api.patch<{ groups: Group[] }>(`/admin/users/${user.id}/groups`, { add, remove }),
+    onSuccess: (res) => {
+      setDraft(new Set(res.groups.map((g) => g.id)));
+      void qc.invalidateQueries({ queryKey: ["acp-user", user.id] });
+      void qc.invalidateQueries({ queryKey: ["acp-users"] });
+      toast.success(t("userDetail.toastGroups"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  const q = filter.trim().toLowerCase();
+  const shown = allGroups.filter((g) => !q || g.name.toLowerCase().includes(q));
+  const toggle = (id: string) => setDraft((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  return (
+    <section className="up-card">
+      <div className="up-card__head">
+        <div className="ic"><FontAwesomeIcon icon={faUserGroup} /></div>
+        <h3>{t("users.membership")}</h3>
+        <label className="up-gfilter">
+          <FontAwesomeIcon className="up-gfilter__ic" icon={faMagnifyingGlass} />
+          <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder={t("users.filterGroups")} />
+        </label>
+      </div>
+      <div className="up-card__body">
+        <div className="up-groups">
+          {shown.map((g) => {
+            const on = draft.has(g.id);
+            // Your own administrator seat is not yours to give up from here; the server refuses it too.
+            const locked = isSelf && g.key === "admin" && saved.has(g.id);
+            return (
+              <div key={g.id} className={"up-grow" + (on ? " on" : "") + (locked ? " is-locked" : "")} role="checkbox" aria-checked={on}
+                aria-disabled={locked} title={locked ? t("users.selfAdminLocked") : undefined}
+                onClick={() => { if (!locked) toggle(g.id); }}>
+                <div className="up-check">{on ? "✓" : ""}</div>
+                <span className="up-gdot" style={{ background: groupColor(g) }} />
+                <span className="up-grow__name">{g.name}</span>
+                {g.isSystem && <span className="up-protected"><FontAwesomeIcon icon={faLock} /> {t("users.system")}</span>}
+              </div>
+            );
+          })}
+          {shown.length === 0 && <span className="up-empty">{allGroups.length ? t("users.noGroupMatch") : t("userDetail.noGroups")}</span>}
+        </div>
+      </div>
+      <div className={"up-dirty" + (dirty ? " is-dirty" : "")}>
+        <span>{dirty ? t("users.unsavedMembership") : t("users.membershipSaved")}</span>
+        <button type="button" className="btn-ghost btn-sm" disabled={!dirty || save.isPending} onClick={() => setDraft(new Set(saved))}>
+          {t("users.revert")}
+        </button>
+        <button type="button" className="up-btn up-btn--primary" disabled={!dirty || save.isPending} onClick={() => save.mutate()}>
+          <FontAwesomeIcon icon={faFloppyDisk} /> {t("users.saveMembership")}
+        </button>
       </div>
     </section>
   );
@@ -341,230 +379,201 @@ export function UserDetailPage() {
   const { user: currentUser } = useAuth();
   const isSelf = currentUser?.id === id;
 
-  const [showBanModal, setShowBanModal] = useState(false);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [banOpen, setBanOpen] = useState(false);
+  useEffect(() => { setTab("overview"); }, [id]);
 
   const { data: user, isLoading } = useQuery<UserDetail>({
     queryKey: ["acp-user", id],
     queryFn: () => api.get(`/admin/users/${id}`),
     enabled: !!id,
   });
-
   const { data: allGroups = [] } = useQuery<Group[]>({
     queryKey: ["acp-groups-list"],
     queryFn: () => api.get<Group[]>("/admin/groups"),
   });
-
-  const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
-
-  // Initialize once when user data first arrives, then let the admin freely edit.
-  // Keyed to user.id so navigating to a different user resets the form, but a
-  // background refetch on the SAME user does not stomp over in-flight edits.
-  useEffect(() => {
-    if (user) setSelectedGroupIds(user.groups.map((g) => g.id));
-  }, [user?.id]);
-
-  const groupsMutation = useMutation({
-    mutationFn: (groupIds: string[]) =>
-      api.put(`/admin/users/${id}/groups`, { groupIds }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["acp-user", id] });
-      swalToast(t("userDetail.toastGroups"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+  // Held badges are fetched here, not in the tab, so the tab strip can count them.
+  const { data: held = [] } = useQuery<AwardedBadge[]>({
+    queryKey: ["admin-user-badges", id],
+    queryFn:  () => api.get(`/user-badges/${id}`),
+    enabled: !!id,
   });
+
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["acp-user", id] });
+    void queryClient.invalidateQueries({ queryKey: ["acp-users"] });
+  };
+  const fail = (e: unknown) => toast.error(apiErrorMessage(e));
 
   const activeMutation = useMutation({
-    mutationFn: (isActive: boolean) =>
-      api.patch(`/admin/users/${id}/active`, { isActive }),
-    onSuccess: (_, isActive) => {
-      queryClient.invalidateQueries({ queryKey: ["acp-user", id] });
-      queryClient.invalidateQueries({ queryKey: ["acp-users"] });
-      swalToast(isActive ? t("userDetail.toastActivated") : t("userDetail.toastDeactivated"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+    mutationFn: (isActive: boolean) => api.patch(`/admin/users/${id}/active`, { isActive }),
+    onSuccess: (_, isActive) => { refresh(); toast.success(isActive ? t("userDetail.toastActivated") : t("userDetail.toastDeactivated")); },
+    onError: fail,
   });
-
   const liftBanMutation = useMutation({
     mutationFn: () => api.delete(`/admin/users/${id}/ban`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["acp-user", id] });
-      swalToast(t("userDetail.toastBanLifted"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+    onSuccess: () => { refresh(); toast.success(t("userDetail.toastBanLifted")); },
+    onError: fail,
   });
-
   const forceLogoutMutation = useMutation({
     mutationFn: () => api.post<{ revokedSessions: number }>(`/admin/users/${id}/force-logout`, {}),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries({ queryKey: ["acp-user", id] });
-      swalToast(t("userDetail.toastLoggedOut", { count: res.revokedSessions }), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+    onSuccess: (res) => { refresh(); toast.success(t("userDetail.toastLoggedOut", { count: res.revokedSessions })); },
+    onError: fail,
   });
-
   const resetPasswordMutation = useMutation({
     mutationFn: () => api.post(`/admin/users/${id}/password-reset`, {}),
-    onSuccess: () => swalToast(t("userDetail.toastResetSent", { email: user?.email }), "success"),
-    onError: (e) => swalToast(apiErrorMessage(e)),
+    onSuccess: () => toast.success(t("userDetail.toastResetSent", { email: user?.email })),
+    onError: fail,
   });
 
-  function toggleGroup(groupId: string) {
-    setSelectedGroupIds((prev) =>
-      prev.includes(groupId) ? prev.filter((gid) => gid !== groupId) : [...prev, groupId],
-    );
-  }
+  const confirm = (title: string, body: string, confirmText: string, danger = false) =>
+    openDialog({ kind: "confirm", icon: danger ? "warning" : "question", title, body, confirmText, cancelText: t("userDetail.cancel"), danger });
 
   async function handleDeactivate() {
     if (!user) return;
     const willActivate = !user.isActive;
-    const result = await swalConfirm(
+    const ok = await confirm(
       willActivate ? t("userDetail.activateTitle") : t("userDetail.deactivateTitle"),
-      willActivate
-        ? t("userDetail.activateText", { name: user.username })
-        : t("userDetail.deactivateText", { name: user.username }),
+      willActivate ? t("userDetail.activateText", { name: user.username }) : t("userDetail.deactivateText", { name: user.username }),
       willActivate ? t("userDetail.activate") : t("userDetail.deactivate"),
-      t("userDetail.cancel"),
+      !willActivate,
     );
-    if (result) activeMutation.mutate(willActivate);
+    if (ok) activeMutation.mutate(willActivate);
   }
-
   async function handleLiftBan() {
-    const result = await swalConfirm(
-      t("userDetail.liftBanTitle"),
-      t("userDetail.liftBanText", { name: user?.username }),
-      t("userDetail.liftBan"),
-      t("userDetail.cancel"),
-    );
-    if (result) liftBanMutation.mutate();
+    if (await confirm(t("userDetail.liftBanTitle"), t("userDetail.liftBanText", { name: user?.username }), t("userDetail.liftBan"))) {
+      liftBanMutation.mutate();
+    }
   }
-
   async function handleForceLogout() {
-    const result = await swalConfirm(
-      t("userDetail.logoutTitle"),
-      t("userDetail.logoutText", { name: user?.username }),
-      t("userDetail.logout"),
-      t("userDetail.cancel"),
-    );
-    if (result) forceLogoutMutation.mutate();
+    if (await confirm(t("userDetail.logoutTitle"), t("userDetail.logoutText", { name: user?.username }), t("userDetail.logout"))) {
+      forceLogoutMutation.mutate();
+    }
   }
-
   async function handleResetPassword() {
-    const result = await swalConfirm(
-      t("userDetail.resetTitle"),
-      t("userDetail.resetText", { email: user?.email }),
-      t("userDetail.sendEmail"),
-      t("userDetail.cancel"),
-    );
-    if (result) resetPasswordMutation.mutate();
+    if (await confirm(t("userDetail.resetTitle"), t("userDetail.resetText", { email: user?.email }), t("userDetail.sendEmail"))) {
+      resetPasswordMutation.mutate();
+    }
   }
 
   if (isLoading || !user) {
-    return <div style={{ padding: "2rem", color: "var(--c-fg-muted)" }}>{t("userDetail.loading")}</div>;
+    return (
+      <div className="acp-up">
+        <section className="up-card up-skel">
+          <div className="up-skel__hero"><span className="up-skel__ava" /><span className="up-skel__lines"><i /><i /></span></div>
+          <div className="up-skel__tiles"><i /><i /><i /><i /></div>
+        </section>
+      </div>
+    );
   }
 
-  const isBanned = !!user.bannedUntil;
+  const isBanned = user.status === "banned";
   // Administrator accounts cannot be managed via the ACP (no force-logout,
   // no password reset) — mirrors the backend guard.
   const isAdminTarget = user.groups.some((g) => g.key === "admin");
   const protectedTarget = isSelf || isAdminTarget;
-  const protectedReason = isSelf
-    ? t("userDetail.protectedSelf")
-    : t("userDetail.protectedAdmin");
-
-  const topGroup    = user.groups[0];
-  const roleColor   = topGroup?.progression?.badgeColor ?? "var(--c-accent)";
-  const roleLabel   = topGroup?.progression?.badgeLabel ?? topGroup?.name ?? t("userDetail.roleMember");
-  const roleSoft    = `color-mix(in srgb, ${roleColor} 14%, transparent)`;
-
-  const events  = user.loginEvents ?? [];
-  const ips     = [...new Set(events.map((e) => e.ip).filter(Boolean))] as string[];
-  const cookies = [...new Set(events.map((e) => e.deviceCookieId).filter(Boolean))] as string[];
+  const protectedReason = isSelf ? t("userDetail.protectedSelf") : t("userDetail.protectedAdmin");
+  const top = topGroup(user.groups);
 
   const stats = [
     { icon: faNewspaper,    cls: "",   value: user._count.articles,        label: t("userDetail.statArticles") },
     { icon: faComment,      cls: "co", value: user._count.articleComments, label: t("userDetail.statComments") },
-    { icon: faArrowsRotate, cls: "gr", value: user._count.sessions,        label: t("userDetail.statSessions") },
-    { icon: faNetworkWired, cls: "am", value: ips.length,                  label: t("userDetail.statIps") },
+    { icon: faArrowsRotate, cls: "gr", value: user.activeSessions,         label: t("users.activeSessions") },
+    { icon: faNetworkWired, cls: "am", value: capped(user.knownIps.length), label: t("userDetail.statIps") },
   ];
+  const tabs: { id: Tab; label: string; count: number }[] = [
+    { id: "overview", label: t("users.tab.overview"), count: 0 },
+    { id: "access",   label: t("users.tab.access"),   count: user.groups.length },
+    { id: "badges",   label: t("users.tab.badges"),   count: held.length },
+    { id: "security", label: t("users.tab.security"), count: user.securityEventTotal },
+  ];
+  const flagText = user.flags.map((f) => t(`users.flag.${f}`, { count: user.failedSignins24h })).join(" · ");
 
   return (
     <div className="acp-up">
       <div className="acp-up__crumb">
-        <Link to="/admin/users"><FontAwesomeIcon icon={faChevronLeft} /> {t("userDetail.crumbUsers")}</Link>
+        <Link to="/admin/users"><FontAwesomeIcon icon={faChevronLeft} /> {t("users.allUsers")}</Link>
         <span className="sep">/</span>
         <span className="cur">{user.username}</span>
       </div>
 
-      {/* HERO */}
+      {/* Identity, actions and the tab strip — one card. */}
       <div className="up-hero">
         <div className="up-hero__body">
-          <div className="up-ava-ring">
-            <UserAvatar user={{ username: user.username, avatar: user.avatar }} size={92} />
-          </div>
+          <Avatar user={{ username: user.username, avatar: user.avatar }} size={72} online={user.online} />
           <div className="up-hero__id">
             <div className="up-hero__namerow">
-              <span className="up-hero__name">
-                <Username username={user.username} badgeColor={topGroup?.progression?.badgeColor} />
-              </span>
-              <span className="up-role" style={{ color: roleColor, background: roleSoft }}>
-                <i style={{ background: roleColor }} />{roleLabel}
-              </span>
-              {isBanned ? (
-                <span className="up-status is-banned"><i />
-                  {t("userDetail.banned")}
-                  {user.bannedUntil && new Date(user.bannedUntil).getFullYear() < 9999
-                    ? " " + t("userDetail.bannedUntil", { date: formatDate(user.bannedUntil) })
-                    : " " + t("userDetail.bannedPermanent")}
-                </span>
-              ) : (
-                <span className={"up-status" + (user.isActive ? "" : " is-inactive")}><i />{user.isActive ? t("userDetail.active") : t("userDetail.inactive")}</span>
-              )}
+              <span className="up-hero__name" style={top?.progression?.badgeColor ? { color: groupColor(top) } : undefined}>{user.username}</span>
+              <RolePill group={top} fallback={t("userDetail.roleMember")} />
+              {user.status === "inactive" || isBanned
+                ? <StatusPill status={user.status} long bannedUntil={user.bannedUntil} />
+                : <StatusPill status="active" />}
             </div>
             <div className="up-hero__handle">
-              <span className="up-mono" style={{ fontSize: 12.5 }}>{user.id.slice(0, 18)}…</span>
-              <span className="sep" />
+              <span className="up-mono up-hero__idchip">{user.id.slice(0, 18)}…</span>
               <span>{user.email}</span>
-              <span className="sep" />
               <span>{t("userDetail.joined", { date: formatDate(user.createdAt) })}</span>
+              <span>{t("users.lastSeen", { when: lastSeenText(user, t) })}</span>
             </div>
           </div>
           <div className="up-hero__actions">
-            <button type="button" className="up-btn up-btn--ghost"
-              onClick={handleResetPassword}
+            <button type="button" className="up-btn up-btn--ghost" onClick={handleResetPassword}
               disabled={resetPasswordMutation.isPending || protectedTarget}
               title={protectedTarget ? protectedReason : t("userDetail.resetHint")}>
               <FontAwesomeIcon icon={faKey} /> {t("userDetail.resetPassword")}
             </button>
-            <button type="button" className="up-btn up-btn--ghost"
-              onClick={handleForceLogout}
+            <button type="button" className="up-btn up-btn--ghost" onClick={handleForceLogout}
               disabled={forceLogoutMutation.isPending || protectedTarget}
               title={protectedTarget ? protectedReason : t("userDetail.logoutHint")}>
               <FontAwesomeIcon icon={faRightFromBracket} /> {t("userDetail.logout")}
             </button>
             {isBanned ? (
-              <button type="button" className="up-btn up-btn--ghost"
-                onClick={handleLiftBan} disabled={liftBanMutation.isPending}>
+              <button type="button" className="up-btn up-btn--lift" onClick={handleLiftBan} disabled={liftBanMutation.isPending}>
                 <FontAwesomeIcon icon={faShield} /> {t("userDetail.liftBan")}
               </button>
             ) : (
-              <button type="button" className="up-btn up-btn--warn"
-                onClick={() => setShowBanModal(true)}
-                disabled={isSelf}
-                title={isSelf ? t("userDetail.cannotBanSelf") : undefined}>
+              <button type="button" className="up-btn up-btn--warn" onClick={() => setBanOpen(true)}
+                disabled={protectedTarget} title={protectedTarget ? protectedReason : undefined}>
                 <FontAwesomeIcon icon={faBan} /> {t("userDetail.ban")}
               </button>
             )}
             <button type="button" className={user.isActive ? "up-btn up-btn--danger" : "up-btn up-btn--primary"}
-              onClick={handleDeactivate}
-              disabled={activeMutation.isPending || isSelf}
+              onClick={handleDeactivate} disabled={activeMutation.isPending || isSelf}
               title={isSelf ? t("userDetail.cannotDeactivateSelf") : undefined}>
               {user.isActive ? t("userDetail.deactivate") : t("userDetail.activate")}
             </button>
           </div>
         </div>
+
+        {user.flags.length > 0 && (
+          <div className="up-risk">
+            <div className="up-risk__ic"><FontAwesomeIcon icon={faTriangleExclamation} /></div>
+            <div className="up-risk__text">
+              <b>{flagText}</b>{" "}
+              <span>{t("users.riskBody", { ips: capped(user.knownIps.length), devices: capped(user.deviceCookies.length), failed: user.failedSignins24h })}</span>
+            </div>
+            <button type="button" className="up-risk__btn" onClick={() => setTab("security")}>{t("users.review")}</button>
+          </div>
+        )}
+
+        {isBanned && user.activeBan && (
+          <div className="up-banline">
+            <FontAwesomeIcon icon={faBan} />
+            <span><b>{t("users.banReason")}</b> {user.activeBan.reason}</span>
+          </div>
+        )}
+
+        <nav className="up-tabs" role="tablist">
+          {tabs.map((tb) => (
+            <button key={tb.id} type="button" role="tab" aria-selected={tab === tb.id}
+              className={tab === tb.id ? "is-on" : ""} onClick={() => setTab(tb.id)}>
+              {tb.label}
+              {tb.count > 0 && <span className="up-tabs__n">{tb.count}</span>}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* SELF BANNER */}
       {isSelf && (
         <div className="up-banner">
           <div className="ic"><FontAwesomeIcon icon={faTriangleExclamation} /></div>
@@ -572,121 +581,120 @@ export function UserDetailPage() {
         </div>
       )}
 
-      {/* STAT STRIP */}
-      <div className="up-strip">
-        {stats.map((s) => (
-          <div key={s.label} className="up-stat">
-            <div className={"up-stat__ic " + s.cls}><FontAwesomeIcon icon={s.icon} /></div>
-            <div><b>{s.value}</b><span>{s.label}</span></div>
+      {tab === "overview" && (
+        <>
+          <div className="up-strip">
+            {stats.map((s) => (
+              <div key={s.label} className="up-stat">
+                <div className={"up-stat__ic " + s.cls}><FontAwesomeIcon icon={s.icon} /></div>
+                <div><b>{s.value}</b><span>{s.label}</span></div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* ACCOUNT + GROUPS */}
-      <div className="up-cols">
-        <section className="up-card">
-          <div className="up-card__head">
-            <div className="ic"><FontAwesomeIcon icon={faAddressCard} /></div>
-            <h3>{t("userDetail.accountInfo")}</h3>
-          </div>
-          <div className="up-card__body">
-            <div className="up-kv">
-              <div className="up-kv__row"><span className="up-kv__k">{t("userDetail.kUserId")}</span><span className="up-kv__v"><CodeChip value={user.id} /></span></div>
-              <div className="up-kv__row"><span className="up-kv__k">{t("userDetail.kEmail")}</span><span className="up-kv__v">{user.email}</span></div>
-              <div className="up-kv__row">
-                <span className="up-kv__k">{t("userDetail.kStatus")}</span>
-                <span className="up-kv__v">
-                  {isBanned ? <span className="up-status is-banned"><i />{t("userDetail.banned")}</span>
-                            : <span className={"up-status" + (user.isActive ? "" : " is-inactive")}><i />{user.isActive ? t("userDetail.active") : t("userDetail.inactive")}</span>}
-                </span>
+          <div className="up-cols">
+            <section className="up-card">
+              <div className="up-card__head">
+                <div className="ic"><FontAwesomeIcon icon={faAddressCard} /></div>
+                <h3>{t("userDetail.accountInfo")}</h3>
               </div>
-              <div className="up-kv__row"><span className="up-kv__k">{t("userDetail.kJoined")}</span><span className="up-kv__v">{formatDate(user.createdAt)}</span></div>
-              <div className="up-kv__row">
-                <span className="up-kv__k">{t("userDetail.kIps")}</span>
-                <span className="up-kv__v">
-                  {ips.length === 0 ? <span className="up-empty">—</span> : ips.map((ip) => <CodeChip key={ip} value={ip} />)}
-                </span>
-              </div>
-              <div className="up-kv__row">
-                <span className="up-kv__k">{t("userDetail.kCookies")}</span>
-                <span className="up-kv__v">
-                  {cookies.length === 0 ? <span className="up-empty">—</span> : cookies.map((c) => <CodeChip key={c} value={c} />)}
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="up-card">
-          <div className="up-card__head">
-            <div className="ic"><FontAwesomeIcon icon={faUserGroup} /></div>
-            <h3>{t("userDetail.groups")}</h3>
-            <span className="count">{t("userDetail.groupsCount", { sel: selectedGroupIds.length, total: (allGroups as Group[]).length })}</span>
-          </div>
-          <div className="up-card__body">
-            <div className="up-groups">
-              {(allGroups as Group[]).map((g) => {
-                const color   = g.progression?.badgeColor ?? "var(--c-accent)";
-                const checked = selectedGroupIds.includes(g.id);
-                return (
-                  <div key={g.id} className={"up-grow" + (checked ? " on" : "")} role="checkbox" aria-checked={checked} onClick={() => toggleGroup(g.id)}>
-                    <div className="up-check">{checked ? "✓" : ""}</div>
-                    <span className="up-gdot" style={{ background: color }} />
-                    <span className="up-grow__name">{g.name}</span>
-                    {g.isSystem && <span className="up-protected">🔒 {t("userDetail.protected")}</span>}
+              <div className="up-card__body">
+                <div className="up-kv">
+                  <div className="up-kv__row"><span className="up-kv__k">{t("userDetail.kUserId")}</span><span className="up-kv__v"><CodeChip value={user.id} /></span></div>
+                  <div className="up-kv__row">
+                    <span className="up-kv__k">{t("userDetail.kEmail")}</span>
+                    <span className="up-kv__v">
+                      {user.email}
+                      {!user.emailVerifiedAt && <span className="up-unverified">{t("users.unverified")}</span>}
+                    </span>
                   </div>
-                );
-              })}
-              {(allGroups as Group[]).length === 0 && <span className="up-empty">{t("userDetail.noGroups")}</span>}
-            </div>
-            <div className="up-groups__foot">
-              <span>{t("userDetail.changesOnSave")}</span>
-              <button type="button" className="up-btn up-btn--primary" onClick={() => groupsMutation.mutate(selectedGroupIds)} disabled={groupsMutation.isPending}>
-                <FontAwesomeIcon icon={faSave} /> {t("userDetail.saveGroups")}
-              </button>
-            </div>
+                  <div className="up-kv__row"><span className="up-kv__k">{t("userDetail.kJoined")}</span><span className="up-kv__v">{formatDate(user.createdAt)}</span></div>
+                  <div className="up-kv__row">
+                    <span className="up-kv__k">{t("userDetail.kIps")}</span>
+                    <span className="up-kv__v">
+                      <ChipList values={user.knownIps} onMore={() => setTab("security")} />
+                    </span>
+                  </div>
+                  <div className="up-kv__row">
+                    <span className="up-kv__k">{t("userDetail.kCookies")}</span>
+                    <span className="up-kv__v">
+                      <ChipList values={user.deviceCookies} onMore={() => setTab("security")} />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="up-card">
+              <div className="up-card__head"><div className="ic"><FontAwesomeIcon icon={faTableList} /></div><h3>{t("userDetail.profileFields")}</h3></div>
+              <div className="up-card__body">
+                <div className="up-kv">
+                  {user.profileFields.map(({ field, value }) => (
+                    <div key={field.id} className="up-kv__row">
+                      <span className="up-kv__k">{field.label}</span>
+                      <span className="up-kv__v">{value ? value : <span className="up-empty">{t("userDetail.notSet")}</span>}</span>
+                    </div>
+                  ))}
+                  {user.profileFields.length === 0 && <p className="up-empty">{t("users.noProfileFields")}</p>}
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
-      </div>
-
-      {/* BADGES — granting lives HERE, beside the member it concerns, rather than on
-          the Badges page. That page is the CATALOGUE: what the site can award. Who
-          holds what is a fact about a person, and an admin looking at a person is
-          where they want to change it. */}
-      <UserBadgesCard userId={user.id} />
-
-      {/* PROFILE FIELDS */}
-      {user.profileFields.length > 0 && (
-        <section className="up-card">
-          <div className="up-card__head"><div className="ic"><FontAwesomeIcon icon={faTableList} /></div><h3>{t("userDetail.profileFields")}</h3></div>
-          <table className="up-table">
-            <thead><tr><th style={{ width: "30%" }}>{t("userDetail.pfField")}</th><th>{t("userDetail.pfValue")}</th></tr></thead>
-            <tbody>
-              {user.profileFields.map(({ field, value }) => (
-                <tr key={field.id}>
-                  <td className="up-field-k">{field.label}</td>
-                  <td>{value ? value : <span className="up-empty">{t("userDetail.notSet")}</span>}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div style={{ height: 14 }} />
-        </section>
+        </>
       )}
 
-      {/* SECURITY ACTIVITY */}
-      <SecurityActivity userId={user.id} />
+      {tab === "access" && <MembershipCard user={user} allGroups={allGroups} isSelf={isSelf} />}
 
-      {/* PLUGIN PANELS — e.g. advanced-moderation "Suspicious Multiaccounts". */}
-      {slotRegistry.getUserDetailPanels().map((p) => (
-        <p.component key={p.id} userId={user.id} username={user.username} />
-      ))}
+      {/* Granting lives HERE, beside the member it concerns, rather than on the Badges
+          page. That page is the CATALOGUE: what the site can award. Who holds what is
+          a fact about a person, and an admin looking at a person is where they want to
+          change it. */}
+      {tab === "badges" && <UserBadgesCard userId={user.id} held={held} />}
 
-      {showBanModal && (
-        <BanModal
-          user={user}
-          onClose={() => setShowBanModal(false)}
-          onDone={() => queryClient.invalidateQueries({ queryKey: ["acp-user", id] })}
+      {tab === "security" && (
+        <>
+          <div className="up-sec">
+            <div className="up-sec__tile">
+              <span>{t("users.sec.signins")}</span>
+              <b className={user.failedSignins24h > 0 ? "is-bad" : ""}>
+                {user.failedSignins24h > 0 ? t("users.sec.failed", { count: user.failedSignins24h }) : t("users.sec.clean")}
+              </b>
+              <em>{user.failedSignins24h > 0 ? t("users.sec.failedNote") : t("users.sec.cleanNote")}</em>
+            </div>
+            <div className="up-sec__tile">
+              <span>{t("userDetail.statIps")}</span>
+              <b>{capped(user.knownIps.length)}</b>
+              <em>{user.knownIps.length > 2 ? t("users.sec.spread") : t("users.sec.stable")}</em>
+            </div>
+            <div className="up-sec__tile">
+              <span>{t("users.sec.devices")}</span>
+              <b>{capped(user.deviceCookies.length)}</b>
+              <em>{user.deviceCookies.length > 1 ? t("users.sec.multiDevice") : t("users.sec.oneDevice")}</em>
+            </div>
+            <div className="up-sec__tile">
+              <span>{t("users.activeSessions")}</span>
+              <b>{user.activeSessions}</b>
+              <em>{t("users.sec.revocable")} · {user.lastSeenAt ? timeAgo(user.lastSeenAt) : t("users.seenNever")}</em>
+            </div>
+          </div>
+          <SecurityActivity userId={user.id} />
+          {/* PLUGIN PANELS — e.g. advanced-moderation "Suspicious Multiaccounts". */}
+          {slotRegistry.getUserDetailPanels().map((p) => (
+            <p.component key={p.id} userId={user.id} username={user.username} />
+          ))}
+        </>
+      )}
+
+      {banOpen && (
+        <BanDialog
+          targets={[{ id: user.id, username: user.username }]}
+          onClose={() => setBanOpen(false)}
+          onDone={(out) => {
+            setBanOpen(false);
+            if (out.done.length) toast.success(t("userDetail.toastBanned", { name: user.username }));
+            for (const r of out.refused) toast.error(r.reason);
+            refresh();
+          }}
         />
       )}
     </div>

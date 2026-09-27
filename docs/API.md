@@ -421,8 +421,10 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | Method | Path | Description |
 |---|---|---|
 | GET | `/dashboard` | ACP dashboard stats. |
-| GET | `/users` · `/users/:id` | User list / detail (including private fields, for admins and super moderators). |
-| PUT | `/users/:id/groups` | Set group membership. |
+| GET | `/users` | User list. Query: `page`, `limit`, `search` (username, email, user ID or IP), `groupId`, `status` (`all`, `active`, `banned`, `inactive`, `flagged`), `sort` (`recent`, `joined`, `posts`, `name`). Each row has `status`, `lastSeenAt`, `online` and `flags`; the response adds `counts` for the whole site. |
+| GET | `/users/:id` | One member: groups, profile fields, known IPs and device cookies, active sessions, flags and the active ban. Never includes password or PIN hashes. |
+| PATCH | `/users/:id/groups` | Change group membership: `{ add: [groupId], remove: [groupId] }`. Only the named groups change. You can't remove yourself from Administrator. |
+| PUT | `/users/:id/groups` | Replace group membership with `{ groupIds }`. Prefer `PATCH`: a replacement undoes any change made since you read the list. |
 | PATCH | `/users/:id/active` | Activate / deactivate. |
 | POST | `/users/:id/ban` · DELETE `/users/:id/ban` | Ban / lift. |
 | POST | `/users/:id/force-logout` | Revoke every session. |

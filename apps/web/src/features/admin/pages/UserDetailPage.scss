@@ -48,7 +48,7 @@
   }
   &__id { flex: 1; min-width: 240px; padding-bottom: 4px; }
   &__namerow { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  &__name { font-family: var(--font-display); font-weight: 700; font-size: 30px; letter-spacing: -0.02em; line-height: 1; }
+  &__name { font-family: var(--font-display); font-weight: 700; font-size: 24px; letter-spacing: -0.02em; line-height: 1.1; color: var(--c-fg); }
   &__handle {
     margin-top: 9px;
     font-size: 14px;
@@ -61,30 +61,6 @@
     .sep { width: 4px; height: 4px; border-radius: 50%; background: var(--c-fg-subtle); opacity: 0.6; }
   }
   &__actions { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; padding-bottom: 6px; }
-}
-
-.up-ava-ring {
-  flex: none;
-  display: inline-flex;
-  border-radius: 50%;
-  box-shadow: var(--shadow-card);
-}
-
-/* status + role pills */
-.up-status {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 12.5px; font-weight: 800;
-  padding: 5px 12px 5px 10px; border-radius: var(--radius-pill);
-  color: var(--c-success); background: var(--c-success-soft);
-  i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent); }
-  &.is-inactive { color: var(--c-fg-subtle); background: color-mix(in srgb, var(--c-fg-subtle) 14%, transparent); }
-  &.is-banned   { color: var(--c-danger);    background: var(--c-danger-soft); }
-}
-.up-role {
-  display: inline-flex; align-items: center; gap: 7px;
-  font-size: 12px; font-weight: 800;
-  padding: 5px 12px 5px 9px; border-radius: var(--radius-pill);
-  i { width: 8px; height: 8px; border-radius: 50%; }
 }
 
 /* buttons */
@@ -104,6 +80,8 @@
   &--warn:hover { background: var(--c-warn); color: var(--c-on-accent); }
   &--danger { background: var(--c-danger); color: var(--c-on-accent); box-shadow: 0 6px 16px var(--c-danger-soft); }
   &--danger:hover { filter: brightness(1.06); }
+  &--lift   { background: var(--c-success-soft); color: var(--c-success); }
+  &--lift:hover { background: var(--c-success); color: var(--c-on-accent); }
   &:disabled { opacity: 0.42; cursor: not-allowed; box-shadow: none; filter: none; }
 }
 
@@ -222,10 +200,7 @@
   &.fail { color: var(--c-danger); background: var(--c-danger-soft); }
   i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 }
-.up-ua { color: var(--c-fg-muted); font-weight: 600; max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; vertical-align: middle; }
 .up-when { color: var(--c-fg-muted); font-weight: 700; white-space: nowrap; }
-.up-type { display: inline-flex; align-items: center; gap: 8px; text-transform: capitalize; }
-.up-type .d { width: 7px; height: 7px; border-radius: 50%; background: var(--c-accent); }
 
 .up-table__foot {
   display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 4px;
@@ -286,4 +261,119 @@
 
     &:hover { color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 16%, transparent); }
   }
+}
+
+/* ── Redesign: tabs, risk, membership save bar, security tiles ─────────────── */
+
+.up-hero__idchip { font-size: 11.5px; background: var(--c-bg); padding: 3px 8px; border-radius: 7px; }
+
+/* What the core can measure about this account, and a way to go and look. */
+.up-risk {
+  display: flex; align-items: center; gap: 12px; padding: 12px 28px;
+  background: color-mix(in srgb, var(--c-warn) 12%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--c-warn) 26%, transparent);
+  &__ic {
+    width: 28px; height: 28px; border-radius: var(--radius-sm); flex: none; display: grid; place-items: center;
+    background: var(--c-warn); color: var(--c-on-accent); font-size: 13px;
+  }
+  &__text {
+    flex: 1; min-width: 0; font-size: 12.5px; font-weight: 700; color: var(--c-fg);
+    span { font-weight: 600; color: var(--c-fg-muted); }
+  }
+  &__btn {
+    flex: none; border: none; cursor: pointer; padding: 6px 12px; border-radius: var(--btn-radius);
+    font-family: var(--font-body); font-size: 12px; font-weight: 800;
+    color: color-mix(in srgb, var(--c-warn) 55%, var(--c-fg));
+    background: color-mix(in srgb, var(--c-warn) 22%, transparent);
+  }
+}
+
+/* The ban's own reason, where the admin will look for it. */
+.up-banline {
+  display: flex; align-items: center; gap: 10px; padding: 11px 28px;
+  background: var(--c-danger-soft); color: var(--c-danger); font-size: 12.5px; font-weight: 600;
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--c-danger) 22%, transparent);
+  span { color: var(--c-fg); min-width: 0; overflow-wrap: anywhere; }
+  b { color: var(--c-danger); font-weight: 800; }
+}
+
+.up-tabs {
+  display: flex; gap: 2px; padding: 0 16px; overflow-x: auto;
+  border-top: 1px solid var(--c-border); background: var(--c-surface);
+  button {
+    display: inline-flex; align-items: center; gap: 7px; padding: 12px 14px; flex: none;
+    border: none; background: none; cursor: pointer; white-space: nowrap;
+    font-family: var(--font-body); font-size: 13px; font-weight: 700; color: var(--c-fg-muted);
+    &:hover { color: var(--c-fg); }
+    &.is-on { color: var(--c-accent); box-shadow: inset 0 -2px 0 var(--c-accent); }
+  }
+  &__n {
+    font-size: 10.5px; font-weight: 800; padding: 1px 6px; border-radius: var(--radius-pill);
+    color: var(--c-fg-subtle); background: var(--c-bg);
+    .is-on & { color: var(--c-accent); background: var(--c-accent-soft); }
+  }
+}
+
+.up-unverified {
+  font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: var(--radius-pill);
+  color: color-mix(in srgb, var(--c-warn) 55%, var(--c-fg)); background: color-mix(in srgb, var(--c-warn) 16%, transparent);
+}
+
+/* Group membership */
+.up-gfilter {
+  display: flex; align-items: center; gap: 8px; height: 34px; min-width: 160px; padding: 0 11px;
+  border-radius: var(--radius-md); background: var(--c-bg); border: 1px solid var(--c-border);
+  &:focus-within { border-color: var(--c-accent); }
+  &__ic { font-size: 12px; color: var(--c-fg-subtle); flex: none; }
+  input {
+    flex: 1; min-width: 0; border: none; background: none; outline: none;
+    font-family: var(--font-body); font-size: 12.5px; font-weight: 600; color: var(--c-fg);
+  }
+}
+.up-grow.is-locked { cursor: not-allowed; opacity: 0.7; }
+.up-dirty {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 14px 24px;
+  border-top: 1px solid var(--c-border); background: var(--c-surface);
+  > span { flex: 1; min-width: 140px; font-size: 12.5px; font-weight: 700; color: var(--c-fg-subtle); }
+  &.is-dirty { background: color-mix(in srgb, var(--c-warn) 10%, transparent); > span { color: var(--c-fg); } }
+}
+select.up-grant { width: auto; max-width: 260px; }
+
+/* Security */
+.up-sec { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+.up-sec__tile {
+  background: var(--card-bg); border-radius: var(--radius-md); box-shadow: var(--shadow-card); padding: 13px 15px;
+  span { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--c-fg-subtle); }
+  b { display: block; font-family: var(--font-display); font-size: 20px; font-weight: 700; line-height: 1.3; color: var(--c-fg); }
+  b.is-bad { color: var(--c-danger); }
+  em { font-style: normal; font-size: 11.5px; font-weight: 600; color: var(--c-fg-muted); }
+}
+.up-evt { display: inline-flex; align-items: center; gap: 9px; }
+/* First letter only: `capitalize` title-cases every word ("Inicio De Sesión"). */
+.up-evt__type { display: inline-block; font-size: 12.5px; font-weight: 700; color: var(--c-fg); }
+.up-evt__type::first-letter { text-transform: uppercase; }
+.up-dev { display: flex; flex-direction: column; gap: 1px; min-width: 0; font-size: 12px; }
+.up-dev__cookie { font-size: 10.5px; color: var(--c-fg-subtle); }
+.up-table th.up-when { text-align: right; }
+.up-table td.up-when { text-align: right; }
+
+/* Loading */
+.up-skel { padding: 26px; }
+.up-skel__hero { display: flex; align-items: center; gap: 18px; }
+.up-skel__ava, .up-skel__lines i, .up-skel__tiles i {
+  background: linear-gradient(90deg, var(--c-bg) 25%, var(--c-bg-hover) 37%, var(--c-bg) 63%);
+  background-size: 400% 100%; animation: usr-skel 1.4s linear infinite;
+}
+.up-skel__ava { width: 72px; height: 72px; border-radius: 50%; flex: none; }
+.up-skel__lines { flex: 1; display: flex; flex-direction: column; gap: 10px;
+  i { display: block; height: 14px; width: 190px; border-radius: 5px; }
+  i + i { height: 10px; width: 320px; max-width: 70%; } }
+.up-skel__tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 26px;
+  i { display: block; height: 74px; border-radius: var(--radius-md); } }
+
+.up-more {
+  border: none; cursor: pointer; padding: 6px 11px; border-radius: 9px;
+  font-family: var(--font-body); font-size: 12px; font-weight: 700;
+  color: var(--c-accent); background: var(--c-accent-soft);
+  &:hover { filter: brightness(1.05); }
 }
