@@ -92,8 +92,8 @@
       justify-content: center;
       box-shadow: 0 8px 22px -10px var(--accent-glow);
     }
-    .name { font-weight: 800; font-size: 17px; letter-spacing: -0.01em; line-height: 1.2; }
-    .sub  { font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
+    .name { font-weight: 800; font-size: 1.0625rem; letter-spacing: -0.01em; line-height: 1.2; }
+    .sub  { font-size: var(--fs-2xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
   }
 
   // Progress meter — one segment per step, so the length of the wizard is
@@ -105,8 +105,8 @@
       justify-content: space-between;
       margin-bottom: 8px;
 
-      .label { font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
-      .pct   { font-family: var(--mono); font-size: 11.5px; color: var(--text-muted); }
+      .label { font-size: var(--fs-sm); font-weight: 700; color: var(--text-secondary); }
+      .pct   { font-family: var(--mono); font-size: var(--fs-2xs); color: var(--text-muted); }
     }
     &__segs {
       display: flex;
@@ -135,14 +135,14 @@
       margin-bottom: 10px;
 
       .name {
-        font-size: 10.5px;
+        font-size: var(--fs-2xs);
         font-weight: 700;
         letter-spacing: 0.09em;
         text-transform: uppercase;
         color: var(--text-muted);
       }
       .rule { flex: 1; height: 1px; background: var(--border); }
-      .tick { font-size: 9px; color: var(--success); }
+      .tick { font-size: var(--fs-2xs); color: var(--success); }
     }
     &.is-current .inst-phase__head .name { color: var(--accent); }
     &.is-done    .inst-phase__head .name { color: var(--success); }
@@ -178,11 +178,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
     }
-    .label { flex: 1; min-width: 0; font-size: 13.5px; font-weight: 500; color: var(--text-secondary); }
-    .meta  { flex-shrink: 0; font-size: 10.5px; font-weight: 600; color: var(--accent); }
+    .label { flex: 1; min-width: 0; font-size: var(--fs-md); font-weight: 500; color: var(--text-secondary); }
+    .meta  { flex-shrink: 0; font-size: var(--fs-2xs); font-weight: 600; color: var(--accent); }
 
     &.is-active {
       background: var(--accent-soft);
@@ -212,22 +212,22 @@
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--sunken);
-      font-size: 13px;
+      font-size: var(--fs-sm);
 
       svg { color: var(--text-secondary); }
       select {
         border: none;
         background: transparent;
         color: var(--text);
-        font-size: 13px;
+        font-size: var(--fs-sm);
         font-weight: 600;
         cursor: pointer;
         outline: none;
       }
     }
 
-    .inst-help    { font-size: 12px; color: var(--text-muted); }
-    .inst-version { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    .inst-help    { font-size: var(--fs-xs); color: var(--text-muted); }
+    .inst-version { display: flex; align-items: center; gap: 8px; font-family: var(--mono); font-size: var(--fs-2xs); color: var(--text-muted); }
   }
 
   // ═══ Content column ════════════════════════════════════════════════════════
@@ -243,7 +243,7 @@
     margin-bottom: 14px;
 
     .step {
-      font-size: 12px;
+      font-size: var(--fs-xs);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -257,7 +257,7 @@
       border: 1px solid var(--border);
       border-radius: 999px;
       background: var(--surface);
-      font-size: 11.5px;
+      font-size: var(--fs-2xs);
       font-weight: 600;
       color: var(--text-secondary);
     }
@@ -267,13 +267,13 @@
 
   h1.inst-title {
     font-weight: 800;
-    font-size: 33px;
+    font-size: 2.0625rem;
     letter-spacing: -0.02em;
     line-height: 1.22;
     margin: 0 0 12px;
   }
   p.inst-lede {
-    font-size: 16px;
+    font-size: var(--fs-base);
     line-height: 1.65;
     color: var(--text-secondary);
     margin: 0 0 22px;
@@ -299,7 +299,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: var(--fs-base);
       background: var(--accent-soft);
       color: var(--accent);
 
@@ -307,8 +307,8 @@
       &.is-success { background: var(--success-soft); color: var(--success); }
       &.is-warn    { background: var(--warning-soft); color: var(--warning); }
     }
-    h4 { font-weight: 700; font-size: 14.5px; line-height: 1.35; margin: 0 0 3px; }
-    p  { font-size: 13px; line-height: 1.55; color: var(--text-secondary); margin: 0; }
+    h4 { font-weight: 700; font-size: var(--fs-base); line-height: 1.35; margin: 0 0 3px; }
+    p  { font-size: var(--fs-sm); line-height: 1.55; color: var(--text-secondary); margin: 0; }
   }
 
   .inst-note {
@@ -319,7 +319,7 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     background: var(--accent2-soft);
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     color: var(--text-secondary);
 
     > svg { margin-top: 4px; color: var(--accent2); flex-shrink: 0; }
@@ -341,7 +341,7 @@
       flex-wrap: wrap;
       padding: 13px 18px;
       border-bottom: 1px solid var(--border);
-      font-size: 11.5px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.09em;
       text-transform: uppercase;
@@ -361,8 +361,8 @@
     border-bottom: 1px solid var(--line);
 
     &:last-child { border-bottom: none; }
-    .k { font-size: 13.5px; color: var(--text-secondary); }
-    .v { font-family: var(--mono); font-size: 13px; text-align: right; overflow-wrap: anywhere; }
+    .k { font-size: var(--fs-md); color: var(--text-secondary); }
+    .v { font-family: var(--mono); font-size: var(--fs-sm); text-align: right; overflow-wrap: anywhere; }
   }
 
   // Status pill in front of a row or a strip.
@@ -374,7 +374,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     background: var(--line);
     color: var(--text-muted);
 
@@ -406,7 +406,7 @@
       // password field's Generate), so the inputs in a row still line up.
       min-height: 27px;
       font-weight: 600;
-      font-size: 13px;
+      font-size: var(--fs-sm);
       margin-bottom: 7px;
       color: var(--text-secondary);
 
@@ -421,7 +421,7 @@
       border-radius: var(--radius-sm);
       background: var(--surface);
       color: var(--text);
-      font-size: 14.5px;
+      font-size: var(--fs-base);
       outline: none;
       transition: border-color 0.15s, background 0.15s;
 
@@ -443,7 +443,7 @@
     // Inside a box the field ground sinks, so the card reads as the surface.
     .inst-box & input, .inst-box & select { background: var(--sunken); &:focus { background: var(--surface); } }
 
-    .hint { display: block; font-size: 12px; margin-top: 6px; font-weight: 600; color: var(--text-muted); }
+    .hint { display: block; font-size: var(--fs-xs); margin-top: 6px; font-weight: 600; color: var(--text-muted); }
     .hint.is-ok   { color: var(--success); }
     .hint.is-bad  { color: var(--error); }
 
@@ -465,7 +465,7 @@
       border-radius: 8px;
       background: none;
       color: var(--text-muted);
-      font-size: 13px;
+      font-size: var(--fs-sm);
       cursor: pointer;
 
       &:hover { color: var(--text); }
@@ -487,10 +487,10 @@
     &.is-pass { background: var(--success-soft); border-color: var(--success-edge); .t { color: var(--success); } }
     &.is-fail { .t { color: var(--error); } }
 
-    .inst-dot { width: 34px; height: 34px; font-size: 13px; }
+    .inst-dot { width: 34px; height: 34px; font-size: var(--fs-sm); }
     .txt { flex: 1; min-width: 0; }
-    .t   { font-weight: 700; font-size: 14.5px; }
-    .s   { font-size: 13px; color: var(--text-secondary); }
+    .t   { font-weight: 700; font-size: var(--fs-base); }
+    .s   { font-size: var(--fs-sm); color: var(--text-secondary); }
   }
 
   .inst-check {
@@ -501,12 +501,12 @@
     border-bottom: 1px solid var(--line);
 
     &:last-child { border-bottom: none; }
-    .name   { flex: 1 1 160px; min-width: 0; font-weight: 600; font-size: 14px; }
+    .name   { flex: 1 1 160px; min-width: 0; font-weight: 600; font-size: var(--fs-md); }
     .detail {
       flex: 2 1 220px;
       min-width: 0;
       font-family: var(--mono);
-      font-size: 12px;
+      font-size: var(--fs-xs);
       color: var(--text-secondary);
       text-align: right;
       overflow-wrap: anywhere;
@@ -522,9 +522,9 @@
     border-top: 1px solid var(--border);
     background: var(--sunken);
 
-    .inst-dot { width: 22px; height: 22px; font-size: 10px; }
-    .t { font-size: 13.5px; font-weight: 600; }
-    .d { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--text-secondary); overflow-wrap: anywhere; text-align: right; }
+    .inst-dot { width: 22px; height: 22px; font-size: var(--fs-2xs); }
+    .t { font-size: var(--fs-md); font-weight: 600; }
+    .d { margin-left: auto; font-family: var(--mono); font-size: var(--fs-xs); color: var(--text-secondary); overflow-wrap: anywhere; text-align: right; }
 
     &.is-busy { background: var(--accent-soft); .t { color: var(--accent); } }
     &.is-pass { background: var(--success-soft); .t { color: var(--success); } }
@@ -547,9 +547,9 @@
     > .lead { color: var(--text-muted); flex-shrink: 0; }
     // Spans, because the row is a <button> — they have to be told to stack.
     .txt  { display: block; flex: 1; min-width: 0; }
-    .t    { display: block; font-weight: 700; font-size: 14px; }
-    .s    { display: block; font-size: 12.5px; color: var(--text-muted); }
-    .chev { color: var(--text-muted); font-size: 12px; flex-shrink: 0; }
+    .t    { display: block; font-weight: 700; font-size: var(--fs-md); }
+    .s    { display: block; font-size: var(--fs-sm); color: var(--text-muted); }
+    .chev { color: var(--text-muted); font-size: var(--fs-xs); flex-shrink: 0; }
   }
 
   .inst-code {
@@ -564,7 +564,7 @@
       gap: 10px;
       flex-wrap: wrap;
       margin-bottom: 10px;
-      font-size: 11.5px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.08em;
       text-transform: uppercase;
@@ -573,7 +573,7 @@
     pre {
       margin: 0;
       font-family: var(--mono);
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       line-height: 1.85;
       color: var(--code-fg);
       overflow-x: auto;
@@ -607,13 +607,13 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
+      font-size: var(--fs-base);
       background: var(--accent-soft);
       color: var(--accent);
     }
     .txt { flex: 1 1 220px; min-width: 0; }
-    .t   { font-weight: 700; font-size: 14.5px; }
-    .s   { font-size: 13px; color: var(--text-secondary); overflow-wrap: anywhere; }
+    .t   { font-weight: 700; font-size: var(--fs-base); }
+    .s   { font-size: var(--fs-sm); color: var(--text-secondary); overflow-wrap: anywhere; }
     .acts { display: flex; gap: 9px; flex-wrap: wrap; }
   }
 
@@ -628,7 +628,7 @@
       background: var(--code-bg);
       color: var(--code-fg);
       font-family: var(--mono);
-      font-size: 18px;
+      font-size: var(--fs-lg);
       letter-spacing: 0.14em;
     }
   }
@@ -666,15 +666,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 15px;
+      font-size: var(--fs-base);
       background: var(--accent-soft);
       color: var(--accent);
     }
     &.is-locked .ic { background: var(--line); color: var(--text-muted); }
     .txt  { flex: 1; min-width: 0; }
-    .name { font-weight: 700; font-size: 14.5px; line-height: 1.3; }
-    .desc { font-size: 12.5px; line-height: 1.45; color: var(--text-secondary); }
-    .tick { color: var(--accent); font-size: 16px; flex-shrink: 0; margin-top: 2px; }
+    .name { font-weight: 700; font-size: var(--fs-base); line-height: 1.3; }
+    .desc { font-size: var(--fs-sm); line-height: 1.45; color: var(--text-secondary); }
+    .tick { color: var(--accent); font-size: var(--fs-base); flex-shrink: 0; margin-top: 2px; }
 
     &__foot {
       display: flex;
@@ -686,7 +686,7 @@
     .tag {
       padding: 3px 9px;
       border-radius: 999px;
-      font-size: 10.5px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -696,8 +696,8 @@
       &.is-owned { background: var(--success-soft); color: var(--success); }
       &.is-paid  { background: var(--accent-soft);  color: var(--accent); }
     }
-    .ver { font-family: var(--mono); font-size: 11.5px; color: var(--text-muted); }
-    .cta { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); }
+    .ver { font-family: var(--mono); font-size: var(--fs-2xs); color: var(--text-muted); }
+    .cta { margin-left: auto; font-size: var(--fs-sm); font-weight: 700; color: var(--text-secondary); }
     &.is-on .cta { color: var(--accent); }
   }
 
@@ -710,7 +710,7 @@
     border: 1px solid var(--border);
     border-radius: 16px;
     background: var(--surface);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--text-secondary);
 
     > svg { color: var(--text-muted); }
@@ -731,7 +731,7 @@
       justify-content: space-between;
       gap: 10px;
       flex-wrap: wrap;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
 
       .hint  { color: var(--text-secondary); }
       .label { font-weight: 700; }
@@ -748,12 +748,12 @@
         gap: 7px;
         padding: 6px 11px;
         border-radius: 999px;
-        font-size: 12.5px;
+        font-size: var(--fs-sm);
         font-weight: 600;
         background: var(--line);
         color: var(--text-muted);
 
-        svg { font-size: 10px; }
+        svg { font-size: var(--fs-2xs); }
         &.is-ok { background: var(--success-soft); color: var(--success); }
       }
     }
@@ -769,9 +769,9 @@
       flex-wrap: wrap;
       margin-bottom: 12px;
 
-      .t { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 14.5px; }
+      .t { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: var(--fs-base); }
       .t svg { color: var(--accent); animation: xtInstSpin 1s linear infinite; }
-      .pct { font-family: var(--mono); font-size: 13px; color: var(--text-secondary); }
+      .pct { font-family: var(--mono); font-size: var(--fs-sm); color: var(--text-secondary); }
     }
     &__track { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
     &__fill  { height: 100%; border-radius: 999px; background: var(--accent); transition: width 0.45s ease; }
@@ -789,7 +789,7 @@
       display: flex;
       gap: 10px;
       font-family: var(--mono);
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       line-height: 1.75;
       color: var(--code-fg);
 
@@ -817,10 +817,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 24px;
+      font-size: var(--fs-2xl);
     }
     h1 { margin-bottom: 8px; }
-    p  { font-size: 15.5px; line-height: 1.6; color: var(--text-secondary); margin: 0; }
+    p  { font-size: var(--fs-base); line-height: 1.6; color: var(--text-secondary); margin: 0; }
   }
 
   .inst-site {
@@ -832,8 +832,8 @@
     margin-bottom: 20px;
 
     &__body { padding: 20px; }
-    .name { font-weight: 800; font-size: 20px; letter-spacing: -0.01em; line-height: 1.25; margin-bottom: 4px; }
-    .url  { font-family: var(--mono); font-size: 13.5px; overflow-wrap: anywhere; }
+    .name { font-weight: 800; font-size: var(--fs-xl); letter-spacing: -0.01em; line-height: 1.25; margin-bottom: 4px; }
+    .url  { font-family: var(--mono); font-size: var(--fs-md); overflow-wrap: anywhere; }
 
     &__who {
       display: flex;
@@ -853,11 +853,11 @@
         justify-content: center;
         background: var(--accent);
         color: var(--on-accent);
-        font-size: 11.5px;
+        font-size: var(--fs-2xs);
         font-weight: 700;
       }
-      .r { font-size: 13px; color: var(--text-secondary); }
-      .e { font-family: var(--mono); font-size: 12.5px; overflow-wrap: anywhere; }
+      .r { font-size: var(--fs-sm); color: var(--text-secondary); }
+      .e { font-family: var(--mono); font-size: var(--fs-sm); overflow-wrap: anywhere; }
     }
 
     &__foot {
@@ -867,15 +867,15 @@
       padding: 11px 20px;
       border-top: 1px solid var(--border);
       background: var(--sunken);
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       color: var(--text-secondary);
 
-      svg { color: var(--success); font-size: 11px; }
+      svg { color: var(--success); font-size: var(--fs-2xs); }
     }
   }
 
   .inst-done__links { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
-  .inst-done__tip   { font-size: 13.5px; color: var(--text-secondary); margin-bottom: 20px; }
+  .inst-done__tip   { font-size: var(--fs-md); color: var(--text-secondary); margin-bottom: 20px; }
 
   // ═══ Action bar ════════════════════════════════════════════════════════════
   .inst-nav {
@@ -892,7 +892,7 @@
       padding-top: 18px;
       border-top: 1px solid var(--border);
     }
-    &__reason { font-size: 12.5px; color: var(--text-muted); margin-left: 4px; }
+    &__reason { font-size: var(--fs-sm); color: var(--text-muted); margin-left: 4px; }
     .spacer { flex: 1; }
   }
 
@@ -906,7 +906,7 @@
     border: 1px solid transparent;
     border-radius: var(--btn-r);
     font-weight: 700;
-    font-size: 14.5px;
+    font-size: var(--fs-base);
     font-family: inherit;
     cursor: pointer;
     text-decoration: none;
@@ -939,7 +939,7 @@
       font-weight: 600;
       &:not(:disabled):hover { color: var(--text); }
     }
-    &.is-sm { padding: 9px 15px; font-size: 13px; font-weight: 600; }
+    &.is-sm { padding: 9px 15px; font-size: var(--fs-sm); font-weight: 600; }
     &.is-pill { border-radius: 999px; background: var(--sunken); color: var(--text); border-color: var(--border); font-weight: 600; }
     &.is-pill:not(:disabled):hover { border-color: var(--accent); color: var(--accent); }
     // On the terminal ground, where the site palette would vanish.
@@ -948,7 +948,7 @@
       border-color: color-mix(in srgb, var(--code-fg) 16%, transparent);
       background: color-mix(in srgb, var(--code-fg) 6%, transparent);
       color: var(--code-fg);
-      font-size: 12px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       padding: 6px 12px;
     }
@@ -969,7 +969,7 @@
     background: var(--code-bg);
     color: var(--code-fg);
     font-weight: 600;
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     box-shadow: var(--shadow-pop, 0 16px 40px -14px rgba(0, 0, 0, 0.55));
     z-index: 50;
     // Its own keyframes, not xtInstRise: that one ends on `transform: none`,
@@ -1004,7 +1004,7 @@
 
     .inst-scroll { padding: 28px 20px 8px; }
     .inst-nav    { padding: 12px 20px 26px; }
-    h1.inst-title { font-size: 27px; }
+    h1.inst-title { font-size: 1.6875rem; }
   }
 }
 

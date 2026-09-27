@@ -4,7 +4,7 @@
 .thm {
   &__intro {
     margin: 0 0 var(--sp-4);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-subtle);
     max-width: 70ch;
   }
@@ -15,7 +15,7 @@
   }
 
   &__card-title {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -28,9 +28,9 @@
     align-items: center;
     gap: var(--sp-3);
 
-    svg { font-size: 20px; color: var(--c-accent); }
-    b { display: block; font-size: 14px; }
-    span { font-size: 12px; color: var(--c-fg-subtle); }
+    svg { font-size: var(--fs-xl); color: var(--c-accent); }
+    b { display: block; font-size: var(--fs-md); }
+    span { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
   }
 
   /* Fixed box, cropped: the row is a name and a date beside a picture, and a
@@ -46,7 +46,7 @@
 
   &__note {
     margin: var(--sp-3) 0 0;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-subtle);
     max-width: 80ch;
   }
@@ -60,11 +60,11 @@
     background: var(--c-bg);
 
     ul { margin: 0; padding-left: 1.1rem; }
-    li { font-size: 12.5px; margin: 2px 0; }
+    li { font-size: var(--fs-sm); margin: 2px 0; }
   }
 
   &__report-title {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 700;
     margin-bottom: var(--sp-2);
   }
@@ -82,7 +82,7 @@
 
   &__hint {
     margin: 0 0 var(--sp-3);
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-subtle);
   }
 
@@ -102,10 +102,10 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
 
-    .acp-input { width: 100%; font-size: 12.5px; }
+    .acp-input { width: 100%; font-size: var(--fs-sm); }
   }
 
   &__req { color: var(--c-danger); font-style: normal; }
@@ -117,11 +117,11 @@
     flex-direction: column;
     gap: 4px;
     margin-top: var(--sp-4);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
 
-    input[type="file"] { font-size: 12px; color: var(--c-fg); }
-    em { font-style: normal; font-size: 11.5px; color: var(--c-fg-subtle); }
+    input[type="file"] { font-size: var(--fs-xs); color: var(--c-fg); }
+    em { font-style: normal; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
   }
 
   &__shot-preview {
@@ -150,7 +150,7 @@
     flex: 1;
     padding: 8px 10px;
     font: inherit;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     color: var(--c-fg);
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -177,8 +177,8 @@
     cursor: pointer;
 
     input { margin-top: 3px; }
-    b { display: block; font-size: 12.5px; color: var(--c-fg); }
-    em { display: block; font-style: normal; font-size: 11.5px; color: var(--c-fg-subtle); }
+    b { display: block; font-size: var(--fs-sm); color: var(--c-fg); }
+    em { display: block; font-style: normal; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
   }
 }
 
@@ -227,8 +227,8 @@
   flex-direction: column;
   gap: 2px;
 
-  b { font-size: 14px; }
-  span { font-size: 12px; color: var(--c-fg-muted); }
+  b { font-size: var(--fs-md); }
+  span { font-size: var(--fs-xs); color: var(--c-fg-muted); }
 }
 
 .thm__lib-actions { display: flex; align-items: center; gap: 6px; }
@@ -237,7 +237,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--c-accent);
 }

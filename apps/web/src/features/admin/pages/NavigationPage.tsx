@@ -239,7 +239,7 @@ export function NavigationPage() {
       <div style={{
         background: "var(--c-accent-soft)", border: "1px solid var(--c-accent-glow)",
         borderRadius: "var(--radius-sm)", padding: "10px 16px",
-        marginBottom: 20, fontSize: 13, color: "var(--c-accent)",
+        marginBottom: 20, fontSize: "var(--fs-sm)", color: "var(--c-accent)",
         display: "flex", alignItems: "center", gap: 8,
       }}>
         <FontAwesomeIcon icon={faGripVertical} />
@@ -259,7 +259,7 @@ export function NavigationPage() {
             borderBottom: "1px solid var(--c-border)",
           }}>
             {[["h_", ""], ["h_label", t("navigation.colLabel")], ["h_url", t("navigation.colUrl")], ["h_vis", t("navigation.colVisibility")], ["h_active", t("navigation.colActive")], ["h_actions", t("navigation.colActions")]].map(([k, h]) => (
-              <div key={k} style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
+              <div key={k} style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.08em", textTransform: "uppercase" }}>{h}</div>
             ))}
           </div>
 
@@ -288,7 +288,7 @@ export function NavigationPage() {
               >
                 {/* Grip handle */}
                 <div
-                  style={{ cursor: "grab", color: "var(--c-fg-muted)", fontSize: 14, display: "flex", alignItems: "center" }}
+                  style={{ cursor: "grab", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)", display: "flex", alignItems: "center" }}
                   title={t("navigation.dragTitle")}
                 >
                   <FontAwesomeIcon icon={faGripVertical} />
@@ -296,17 +296,17 @@ export function NavigationPage() {
 
                 {/* Label */}
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>{item.label}</span>
+                  <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>{item.label}</span>
                   {item.isSystem && (
                     <span className="acp-badge acp-badge--muted" style={{ marginTop: 0 }}>{t("navigation.core")}</span>
                   )}
                   {item.openInNewTab && (
-                    <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: 10, color: "var(--c-fg-muted)" }} />
+                    <FontAwesomeIcon icon={faExternalLinkAlt} style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }} />
                   )}
                 </div>
 
                 {/* URL */}
-                <div style={{ fontSize: 12, color: "var(--c-fg-muted)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", fontFamily: "monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {item.url}
                 </div>
 
@@ -330,7 +330,7 @@ export function NavigationPage() {
                   >
                     <FontAwesomeIcon
                       icon={item.isActive ? faToggleOn : faToggleOff}
-                      style={{ fontSize: 22, color: item.isActive ? "var(--c-accent)" : "var(--c-fg-muted)" }}
+                      style={{ fontSize: "1.375rem", color: item.isActive ? "var(--c-accent)" : "var(--c-fg-muted)" }}
                     />
                   </button>
                 </div>

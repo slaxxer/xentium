@@ -197,8 +197,25 @@
   --font-body:    var(--font-poppins);   /* Poppins until the admin/user picks another */
   --ff-sans:      var(--font-body);
   --ff-mono: "JetBrains Mono", "Cascadia Code", "Fira Mono", monospace;
-  --fs-xs: 0.75rem; --fs-sm: 0.875rem; --fs-base: 1rem;
-  --fs-lg: 1.125rem; --fs-xl: 1.25rem; --fs-2xl: 1.5rem; --fs-3xl: 1.875rem;
+  /* Type scale, in rem so it follows the visitor's browser text size. 12px is the
+     floor: nothing on the site is set smaller (`--fs-2xs`). `--fs-read` is for long
+     reading — article bodies, forum posts, messages. Plugins use these same tokens;
+     a plugin that sets its own pixel size will not grow with the rest of the site. */
+  /* `--fs-scale` is the site's text size (Style Editor → Typography): every step
+     multiplies by it, so one control makes all text bigger or smaller together. The
+     ACP pins it to 1 on `body.xt-acp`, and because the steps are re-declared there
+     they resolve against THAT 1, not the site's. */
+  --fs-scale: 1;
+  --fs-2xs:  calc(0.75rem   * var(--fs-scale));  /* 12px — uppercase labels, badges, the smallest meta */
+  --fs-xs:   calc(0.8125rem * var(--fs-scale));  /* 13px — timestamps, captions, "by …" */
+  --fs-sm:   calc(0.875rem  * var(--fs-scale));  /* 14px — secondary text, buttons, dense lists */
+  --fs-md:   calc(0.9375rem * var(--fs-scale));  /* 15px — UI text on cards and rows */
+  --fs-base: calc(1rem      * var(--fs-scale));  /* 16px — body text, form fields */
+  --fs-read: calc(1.0625rem * var(--fs-scale));  /* 17px — articles, posts, messages */
+  --fs-lg:   calc(1.125rem  * var(--fs-scale));
+  --fs-xl:   calc(1.25rem   * var(--fs-scale));
+  --fs-2xl:  calc(1.5rem    * var(--fs-scale));
+  --fs-3xl:  calc(1.875rem  * var(--fs-scale));
 
   /* Spacing */
   --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;

@@ -176,7 +176,7 @@ export function ErrorReferencePage() {
 
       {/* Lookup */}
       <div className="acp-card" style={{ padding: 24, marginBottom: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "var(--c-fg)", marginBottom: 10 }}>{t("errorRef.lookupTitle")}</div>
+        <div style={{ fontSize: "var(--fs-md)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 10 }}>{t("errorRef.lookupTitle")}</div>
         <div style={{ display: "flex", gap: 10 }}>
           <input
             className="acp-input"
@@ -196,24 +196,24 @@ export function ErrorReferencePage() {
       {result && (
         "notfound" in result ? (
           <div className="acp-card" style={{ padding: 24, textAlign: "center", marginBottom: 20 }}>
-            <FontAwesomeIcon icon={faMagnifyingGlass} style={{ fontSize: 28, color: "var(--c-fg-muted)", marginBottom: 8 }} />
-            <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)" }}>{t("errorRef.notFoundTitle")}</div>
-            <div style={{ fontSize: 13, color: "var(--c-fg-muted)", marginTop: 4 }}>{t("errorRef.notFoundBody", { code: result.code })}</div>
+            <FontAwesomeIcon icon={faMagnifyingGlass} style={{ fontSize: "1.75rem", color: "var(--c-fg-muted)", marginBottom: 8 }} />
+            <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)" }}>{t("errorRef.notFoundTitle")}</div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginTop: 4 }}>{t("errorRef.notFoundBody", { code: result.code })}</div>
           </div>
         ) : (
           <div className="acp-card" style={{ padding: 24, marginBottom: 20, borderLeft: `3px solid ${SEV_COLOR[result.sev]}` }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-              <span style={{ fontFamily: "monospace", fontSize: 13, fontWeight: 800, color: "var(--c-accent)", background: "var(--c-accent-soft)", border: "1px solid var(--c-accent-glow)", padding: "5px 12px", borderRadius: "var(--radius-sm)" }}>
+              <span style={{ fontFamily: "monospace", fontSize: "var(--fs-sm)", fontWeight: 800, color: "var(--c-accent)", background: "var(--c-accent-soft)", border: "1px solid var(--c-accent-glow)", padding: "5px 12px", borderRadius: "var(--radius-sm)" }}>
                 {result.code}
               </span>
               <Badge label={sevLabel(result.sev)} color={SEV_COLOR[result.sev]} />
               <Badge label={domainLabel(result.domain)} />
             </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: "var(--c-fg)", marginBottom: 20 }}>{result.msg}</div>
+            <div style={{ fontSize: "1.0625rem", fontWeight: 800, color: "var(--c-fg)", marginBottom: 20 }}>{result.msg}</div>
             {([[t("errorRef.whatHappened"), result.desc], [t("errorRef.likelyCause"), result.cause], [t("errorRef.suggestedFix"), result.fix]] as [string, string][]).map(([label, val]) => (
               <div key={label} style={{ marginBottom: 14 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
-                <div style={{ fontSize: 14, color: "var(--c-fg-muted)", lineHeight: 1.7 }}>{val}</div>
+                <div style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 5 }}>{label}</div>
+                <div style={{ fontSize: "var(--fs-md)", color: "var(--c-fg-muted)", lineHeight: 1.7 }}>{val}</div>
               </div>
             ))}
           </div>
@@ -238,8 +238,8 @@ export function ErrorReferencePage() {
       <div className="acp-card" style={{ padding: 0, overflow: "hidden" }}>
         {filtered.length === 0 ? (
           <div style={{ padding: 32, textAlign: "center" }}>
-            <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize: 24, color: "var(--c-fg-muted)", marginBottom: 8 }} />
-            <div style={{ fontSize: 13, color: "var(--c-fg-muted)" }}>{t("errorRef.noMatch")}</div>
+            <FontAwesomeIcon icon={faCircleInfo} style={{ fontSize: "var(--fs-2xl)", color: "var(--c-fg-muted)", marginBottom: 8 }} />
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)" }}>{t("errorRef.noMatch")}</div>
           </div>
         ) : filtered.map(([k, v], i) => (
           <div
@@ -249,14 +249,14 @@ export function ErrorReferencePage() {
             onMouseEnter={(e) => e.currentTarget.style.background = "var(--c-accent-soft)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
           >
-            <div style={{ fontFamily: "monospace", fontSize: 12, fontWeight: 700, color: "var(--c-accent)" }}>{k}</div>
-            <div style={{ fontSize: 13, color: "var(--c-fg)" }}>{v.msg}</div>
-            <div style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>{domainLabel(v.domain)}</div>
+            <div style={{ fontFamily: "monospace", fontSize: "var(--fs-xs)", fontWeight: 700, color: "var(--c-accent)" }}>{k}</div>
+            <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg)" }}>{v.msg}</div>
+            <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }}>{domainLabel(v.domain)}</div>
             <Badge label={sevLabel(v.sev)} color={SEV_COLOR[v.sev]} />
           </div>
         ))}
       </div>
-      <div style={{ fontSize: 12, color: "var(--c-fg-muted)", marginTop: 10, textAlign: "right" }}>
+      <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginTop: 10, textAlign: "right" }}>
         {t("errorRef.countSummary", { shown: filtered.length, total: Object.keys(fullCatalog).length })}
       </div>
     </div>

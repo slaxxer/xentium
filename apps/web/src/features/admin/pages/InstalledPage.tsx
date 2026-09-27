@@ -91,7 +91,7 @@ export function InstalledPage() {
           <h1 className="acp-page-title">{t("installed.title")}</h1>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-          <label style={{ display:"flex", alignItems:"center", gap:7, fontSize:12.5, color:"var(--c-fg-muted)", cursor:"pointer" }} title={t("installed.allowUploadHint")}>
+          <label style={{ display:"flex", alignItems:"center", gap:7, fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", cursor:"pointer" }} title={t("installed.allowUploadHint")}>
             <input
               type="checkbox"
               checked={uploadAllowed === true}
@@ -114,9 +114,9 @@ export function InstalledPage() {
         <div className="acp-card acp-empty">{t("installed.loading")}</div>
       ) : plugins.length === 0 ? (
         <div className="acp-card" style={{ padding:40, textAlign:"center" }}>
-          <FontAwesomeIcon icon={faPuzzlePiece} style={{ fontSize:32, color:"var(--c-fg-muted)", marginBottom:12 }} />
-          <div style={{ fontSize:15, fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>{t("installed.emptyTitle")}</div>
-          <div style={{ fontSize:13, color:"var(--c-fg-muted)", marginBottom:20 }}>
+          <FontAwesomeIcon icon={faPuzzlePiece} style={{ fontSize:"2rem", color:"var(--c-fg-muted)", marginBottom:12 }} />
+          <div style={{ fontSize:"var(--fs-base)", fontWeight:700, color:"var(--c-fg)", marginBottom:6 }}>{t("installed.emptyTitle")}</div>
+          <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", marginBottom:20 }}>
             {t("installed.emptyHint")}
           </div>
           {uploadAllowed === true ? (
@@ -137,20 +137,20 @@ export function InstalledPage() {
             const failed = p.status === "enabled" && !!p.loadError;
             return (
               <div key={p.id} className="acp-card" style={{ padding:"20px 24px", display:"flex", alignItems:"center", gap:16, flexWrap:"wrap", border: failed ? "1px solid var(--c-danger)" : undefined }}>
-                <div style={{ width:44, height:44, flexShrink:0, background: failed ? "var(--c-danger-soft, rgba(248,113,113,.14))" : "var(--c-accent-soft)", border: failed ? "1px solid var(--c-danger)" : "1px solid var(--c-accent-glow)", borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, color: failed ? "var(--c-danger)" : "var(--c-accent)" }}>
+                <div style={{ width:44, height:44, flexShrink:0, background: failed ? "var(--c-danger-soft, rgba(248,113,113,.14))" : "var(--c-accent-soft)", border: failed ? "1px solid var(--c-danger)" : "1px solid var(--c-accent-glow)", borderRadius:"var(--radius-md)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"var(--fs-xl)", color: failed ? "var(--c-danger)" : "var(--c-accent)" }}>
                   <FontAwesomeIcon icon={failed ? faTriangleExclamation : faPuzzlePiece} />
                 </div>
 
                 <div style={{ flex:1, minWidth:0 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, flexWrap:"wrap" }}>
-                    <span style={{ fontSize:15, fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
-                    <span style={{ fontSize:12, color:"var(--c-fg-muted)" }}>v{p.installedVersion}</span>
+                    <span style={{ fontSize:"var(--fs-base)", fontWeight:800, color:"var(--c-fg)" }}>{p.name}</span>
+                    <span style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)" }}>v{p.installedVersion}</span>
                     {p.licenseRequired && <Badge label={t("installed.licensed")} color="var(--c-warn)" />}
                     {/* Beside the name, not with the status pills: this is about
                         what the code IS, not about what it is currently doing. */}
                     <TrustBadge tier={p.signatureTier} recorded={p.contentDigest !== null} />
                   </div>
-                  <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>
+                  <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)" }}>
                     {t("installed.meta", { id: p.id, vendor: p.vendor, date: new Date(p.installedAt).toLocaleDateString() })}
                   </div>
                 </div>
@@ -176,14 +176,14 @@ export function InstalledPage() {
 
                 {failed && (
                   <div style={{ flexBasis:"100%", marginTop:4, padding:"10px 12px", borderRadius:"var(--radius-md)", background:"var(--c-danger-soft, rgba(248,113,113,.10))", border:"1px solid var(--c-danger)" }}>
-                    <div style={{ fontSize:12.5, fontWeight:700, color:"var(--c-danger)", marginBottom:3 }}>
+                    <div style={{ fontSize:"var(--fs-sm)", fontWeight:700, color:"var(--c-danger)", marginBottom:3 }}>
                       <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight:6 }} />
                       {t("installed.loadFailedTitle")}
                     </div>
-                    <div style={{ fontSize:12, color:"var(--c-fg-muted)", fontFamily:"var(--ff-mono, monospace)", wordBreak:"break-word" }}>
+                    <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", fontFamily:"var(--ff-mono, monospace)", wordBreak:"break-word" }}>
                       {p.loadError!.message}
                     </div>
-                    <div style={{ fontSize:11.5, color:"var(--c-fg-subtle)", marginTop:4 }}>
+                    <div style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-subtle)", marginTop:4 }}>
                       {t("installed.loadFailedHint")}
                     </div>
                   </div>

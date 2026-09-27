@@ -88,7 +88,7 @@ export function OnlineCounter() {
           boxShadow: "0 -8px 24px rgba(0,0,0,0.2)",
           zIndex: 50,
         }}>
-          <div style={{ padding: "4px 14px 8px", fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--c-fg-muted)", borderBottom: "1px solid var(--c-border)", marginBottom: 4 }}>
+          <div style={{ padding: "4px 14px 8px", fontSize: "var(--fs-2xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--c-fg-muted)", borderBottom: "1px solid var(--c-border)", marginBottom: 4 }}>
             Online now
           </div>
 
@@ -98,7 +98,7 @@ export function OnlineCounter() {
                 user={{ username: u.username, avatar: u.avatar ? `/uploads/${u.avatar}` : null }}
                 size={22}
               />
-              <Username username={u.username} badgeColor={u.badgeColor} style={{ fontSize: 13 }} />
+              <Username username={u.username} badgeColor={u.badgeColor} style={{ fontSize: "var(--fs-sm)" }} />
             </div>
           ))}
 
@@ -112,18 +112,18 @@ export function OnlineCounter() {
                 type="button"
                 disabled={page === 1}
                 onClick={() => setPage((p) => p - 1)}
-                style={{ background: "none", border: "none", cursor: page === 1 ? "not-allowed" : "pointer", color: page === 1 ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: 13, fontWeight: 600, padding: "2px 4px", opacity: page === 1 ? 0.4 : 1, fontFamily: "inherit" }}
+                style={{ background: "none", border: "none", cursor: page === 1 ? "not-allowed" : "pointer", color: page === 1 ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "2px 4px", opacity: page === 1 ? 0.4 : 1, fontFamily: "inherit" }}
               >
                 ‹ Prev
               </button>
-              <span style={{ fontSize: 11, color: "var(--c-fg-muted)" }}>
+              <span style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }}>
                 {page} / {totalPages}
               </span>
               <button
                 type="button"
                 disabled={page === totalPages}
                 onClick={() => setPage((p) => p + 1)}
-                style={{ background: "none", border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", color: page === totalPages ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: 13, fontWeight: 600, padding: "2px 4px", opacity: page === totalPages ? 0.4 : 1, fontFamily: "inherit" }}
+                style={{ background: "none", border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", color: page === totalPages ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "2px 4px", opacity: page === totalPages ? 0.4 : 1, fontFamily: "inherit" }}
               >
                 Next ›
               </button>

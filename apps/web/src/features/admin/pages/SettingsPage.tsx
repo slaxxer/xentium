@@ -456,7 +456,7 @@ export function SettingsPage() {
                   title={isAdmin ? "Administrators always have access during maintenance" : undefined}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 12px",
-                    borderRadius: 8, cursor: isAdmin ? "default" : "pointer", fontSize: 13, fontWeight: 600,
+                    borderRadius: 8, cursor: isAdmin ? "default" : "pointer", fontSize: "var(--fs-sm)", fontWeight: 600,
                     border: `1px solid ${on || isAdmin ? "var(--c-accent)" : "var(--c-border)"}`,
                     background: on || isAdmin ? "var(--c-accent-soft)" : "var(--c-surface)",
                     color: on || isAdmin ? "var(--c-accent)" : "var(--c-fg-muted)",
@@ -668,10 +668,10 @@ function InviteCodesPanel() {
 
   return (
     <div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)", marginBottom: 4 }}>
+      <div style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 4 }}>
         {t("invite.title")}
       </div>
-      <p style={{ fontSize: 12, color: "var(--c-fg-muted)", marginBottom: 14 }}>
+      <p style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginBottom: 14 }}>
         {t("invite.subtitle")}
       </p>
 
@@ -697,9 +697,9 @@ function InviteCodesPanel() {
 
       {/* List */}
       {isLoading ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("invite.loading")}</div>
+        <div style={{ color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>{t("invite.loading")}</div>
       ) : codes.length === 0 ? (
-        <div style={{ color: "var(--c-fg-muted)", fontSize: 13 }}>{t("invite.empty")}</div>
+        <div style={{ color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>{t("invite.empty")}</div>
       ) : (
         <div style={{ border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)", overflow: "hidden" }}>
           {codes.map((c, i) => {
@@ -713,18 +713,18 @@ function InviteCodesPanel() {
                   opacity: used ? 0.5 : 1,
                 }}
               >
-                <code style={{ flex: "0 0 auto", fontSize: 13, fontWeight: 700, color: used ? "var(--c-fg-muted)" : "var(--c-accent)", letterSpacing: "0.05em" }}>
+                <code style={{ flex: "0 0 auto", fontSize: "var(--fs-sm)", fontWeight: 700, color: used ? "var(--c-fg-muted)" : "var(--c-accent)", letterSpacing: "0.05em" }}>
                   {c.code}
                 </code>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  {c.note && <span style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>{c.note}</span>}
+                  {c.note && <span style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{c.note}</span>}
                   {used && c.usedByUser && (
-                    <span style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>
+                    <span style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                       {c.note ? " · " : ""}{t("invite.usedBy", { username: c.usedByUser.username })}
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: 11, color: used ? "var(--c-success)" : "var(--c-fg-muted)" }}>
+                <span style={{ fontSize: "var(--fs-2xs)", color: used ? "var(--c-success)" : "var(--c-fg-muted)" }}>
                   {used ? t("invite.used") : t("invite.available")}
                 </span>
                 {!used && (

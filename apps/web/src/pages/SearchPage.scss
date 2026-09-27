@@ -57,7 +57,7 @@
   }
 
   &__tab-count {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -104,7 +104,7 @@
     color: var(--c-fg-muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     margin: 0 0 var(--sp-4);
     display: flex;
     align-items: center;
@@ -116,7 +116,7 @@
     border: none;
     cursor: pointer;
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-accent);
     font-weight: 600;
     text-transform: none;
@@ -162,7 +162,7 @@
   &__body { flex: 1; min-width: 0; }
 
   &__cat {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -195,7 +195,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-muted);
     flex-wrap: wrap;
   }
@@ -234,7 +234,7 @@
   }
 
   &__badge {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     padding: 1px 8px;
     border-radius: 20px;

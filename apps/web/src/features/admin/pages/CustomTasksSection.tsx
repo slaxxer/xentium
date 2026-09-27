@@ -104,7 +104,7 @@ function TaskDialog({ task, actions, onClose }: {
     <div className="acp-modal-overlay" onClick={onClose}>
       <div className="acp-modal" style={{ maxWidth: 560, maxHeight: "85vh", overflowY: "auto" }} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ margin: "0 0 4px" }}>{t(task ? "tasks.editTitle" : "tasks.newTitle")}</h3>
-        <p style={{ fontSize: 13, color: "var(--c-fg-muted)", margin: "0 0 18px" }}>{t("tasks.dialogHint")}</p>
+        <p style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", margin: "0 0 18px" }}>{t("tasks.dialogHint")}</p>
 
         <div className="acp-form-field">
           <label className="acp-label">{t("tasks.name")}</label>
@@ -124,7 +124,7 @@ function TaskDialog({ task, actions, onClose }: {
         {action?.destructive && (
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 10, borderRadius: 8, background: "color-mix(in srgb, var(--c-danger) 12%, transparent)", marginBottom: 14 }}>
             <FontAwesomeIcon icon={faTriangleExclamation} style={{ color: "var(--c-danger)", marginTop: 2 }} />
-            <div style={{ fontSize: 12.5 }}>{t("tasks.destructiveWarn")}</div>
+            <div style={{ fontSize: "var(--fs-sm)" }}>{t("tasks.destructiveWarn")}</div>
           </div>
         )}
 
@@ -171,7 +171,7 @@ function TaskDialog({ task, actions, onClose }: {
         <label style={{ display: "flex", gap: 8, alignItems: "flex-start", cursor: "pointer", marginBottom: 18 }}>
           <input type="checkbox" checked={dryRun} onChange={(e) => setDryRun(e.target.checked)} style={{ marginTop: 3 }} />
           <span>
-            <b style={{ fontSize: 13 }}>{t("tasks.dryRun")}</b>
+            <b style={{ fontSize: "var(--fs-sm)" }}>{t("tasks.dryRun")}</b>
             <div className="acp-hint" style={{ marginTop: 2 }}>{t("tasks.dryRunHint")}</div>
           </span>
         </label>

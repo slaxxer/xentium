@@ -49,13 +49,13 @@ export function ExtensionsUpdateBanner() {
         display: "flex", alignItems: "center", gap: 12, color: accent,
       }}
     >
-      <FontAwesomeIcon icon={critical ? faTriangleExclamation : faCloudArrowDown} style={{ fontSize: 16 }} />
-      <span style={{ flex: 1, fontSize: 13, fontWeight: 700, color: "var(--c-fg)" }}>
+      <FontAwesomeIcon icon={critical ? faTriangleExclamation : faCloudArrowDown} style={{ fontSize: "var(--fs-base)" }} />
+      <span style={{ flex: 1, fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
         {critical
           ? t("updates.bannerCritical", { count: updates.length })
           : t("updates.banner", { count: updates.length })}
       </span>
-      <span style={{ fontSize: 12.5, fontWeight: 700, color: accent }}>{t("updates.bannerAction")}</span>
+      <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: accent }}>{t("updates.bannerAction")}</span>
     </button>
   );
 }

@@ -47,7 +47,7 @@ $panel-w: 248px;
     border-radius: var(--radius-md);
     background: var(--c-accent-soft);
     color: var(--c-accent);
-    font-size: 17px;
+    font-size: 1.0625rem;
     margin-bottom: 8px;
   }
 
@@ -175,13 +175,13 @@ $panel-w: 248px;
 
   &__name {
     font-weight: 800;
-    font-size: 16px;
+    font-size: var(--fs-base);
     color: var(--c-fg);
     line-height: 1.1;
   }
 
   &__tag {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-muted);
     line-height: 1.5;
   }
@@ -208,7 +208,7 @@ $panel-w: 248px;
     padding: 0 20px 8px;
     color: var(--c-fg);
     font-weight: 700;
-    font-size: 14px;
+    font-size: var(--fs-md);
   }
 
   &__sectionic { display: flex; color: var(--c-accent); }
@@ -231,7 +231,7 @@ $panel-w: 248px;
     width: 100%;
     padding: 9px 12px;
     border-radius: 14px;
-    font-size: 13.5px;
+    font-size: var(--fs-md);
     line-height: 1.4;
     font-weight: 500;
     color: var(--c-fg-muted);
@@ -261,7 +261,7 @@ $panel-w: 248px;
     border: 1px solid var(--c-border);
     color: var(--c-fg-muted);
     font-weight: 600;
-    font-size: 13px;
+    font-size: var(--fs-sm);
 
     &:hover {
       border-color: var(--c-accent);

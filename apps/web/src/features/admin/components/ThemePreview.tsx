@@ -79,7 +79,7 @@ export function ThemePreview({ name, base, templates }: {
         }}
       />
 
-      <p style={{ margin: 0, fontSize: 12, lineHeight: 1.6, color: "var(--c-fg-muted)" }}>
+      <p style={{ margin: 0, fontSize: "var(--fs-xs)", lineHeight: 1.6, color: "var(--c-fg-muted)" }}>
         {t("marketplace.previewNote")}
       </p>
     </div>

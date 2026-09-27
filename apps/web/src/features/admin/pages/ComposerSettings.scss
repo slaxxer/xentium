@@ -20,7 +20,7 @@
   flex-wrap: wrap;
 
   &__label {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -91,7 +91,7 @@
 
     em {
       font-style: normal;
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -107,4 +107,4 @@
   }
 }
 
-.cmp-ic { font-size: 13px; }
+.cmp-ic { font-size: var(--fs-sm); }

@@ -46,6 +46,13 @@ Tier-3 tokens default to tier-2 ones (`--card-bg: var(--c-card)`), so when you r
 the palette, every component follows. If you override a component token, you break that
 link for that one component, which is usually what you want.
 
+**The Style Editor reaches every token.** Each token `_tokenDefaults.scss` declares has a
+row: the palette, regions and components, plus tints and states, typography, spacing,
+corners, shadows, page layout and the base palette. The editor reads each token's
+starting value from `_tokenDefaults.scss` itself, and `foundationCoverage.test.ts` fails
+when you add a token to that file without registering it in `TOKEN_REGISTRY`
+(`packages/contracts/src/tokens.ts`).
+
 `HEARTH_DEFAULT_TOKENS` in `@xentium/contracts` mirrors the **editable** tokens from
 `tokens.scss`, so the API and the Style Editor agree on the defaults. `tokens.scss` is
 still what actually renders, so when you change an editable default there, change it in
@@ -73,6 +80,31 @@ the way in with `tokenMapSchema`: names have to be `--custom-properties`, and va
 contain `{ } < > ;`, because a stray brace would close the block. The same schema guards
 the Style Editor, the Layout Editor's variant panel, `.xttheme` imports and the
 marketplace's preview renderer. Don't write a second copy of it.
+
+### Text sizes
+
+Text sizes work the same way: components use a size token, never a pixel value. The
+scale is in `rem`, so it follows the text size a visitor set in their browser (the root
+is `font-size: 100%` for that reason), and nothing on the site goes below 12px.
+
+| Token | Size | For |
+|---|---|---|
+| `--fs-2xs` | 12px | uppercase labels, count badges, the smallest meta |
+| `--fs-xs` | 13px | timestamps, captions, "by …" |
+| `--fs-sm` | 14px | secondary text, buttons, dense lists |
+| `--fs-md` | 15px | text on cards and rows |
+| `--fs-base` | 16px | body text, form fields |
+| `--fs-read` | 17px | long reading: articles, forum posts, messages |
+| `--fs-lg` … `--fs-3xl` | 18–30px | headings |
+
+Every step is `calc(<size> * var(--fs-scale))`. The Style Editor's text size (Typography,
+shown as a percentage) sets `--fs-scale`, so one control makes all text on the site
+bigger or smaller together. The ACP pins the scale to 1 and keeps its own sizes.
+
+Plugins use the same tokens in their inline styles (`fontSize: "var(--fs-sm)"`). A plugin
+that sets its own pixel size won't grow with the rest of the site. On touch screens, form
+fields never go below 16px, because anything smaller makes iOS Safari zoom the page when
+you tap into it.
 
 ### Style variants
 

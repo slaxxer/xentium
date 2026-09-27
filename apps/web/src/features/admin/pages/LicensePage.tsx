@@ -369,7 +369,7 @@ export function LicensePage() {
                     {detailsOpen ? t("license.hideDetails") : t("license.showDetails")}
                     <FontAwesomeIcon
                       icon={faChevronDown}
-                      style={{ marginLeft: 7, fontSize: 10, transition: "transform .2s", transform: `rotate(${detailsOpen ? 180 : 0}deg)` }}
+                      style={{ marginLeft: 7, fontSize: "var(--fs-2xs)", transition: "transform .2s", transform: `rotate(${detailsOpen ? 180 : 0}deg)` }}
                     />
                   </button>
                 </div>

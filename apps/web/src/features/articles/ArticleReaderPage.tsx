@@ -251,7 +251,7 @@ export function ArticleReaderContent() {
               onChange={(e) => setWarnReason(e.target.value)}
               autoFocus
             />
-            <label style={{ display:"flex",alignItems:"center",gap:8,fontSize:13,color:"var(--c-fg)",marginTop:12,cursor:"pointer" }}>
+            <label style={{ display:"flex",alignItems:"center",gap:8,fontSize:"var(--fs-sm)",color:"var(--c-fg)",marginTop:12,cursor:"pointer" }}>
               <input type="checkbox" checked={warnHasExp} onChange={(e) => setWarnHasExp(e.target.checked)} />
               {t("reader.setExpiry")}
             </label>
@@ -439,7 +439,7 @@ export function ArticleReaderContent() {
                           style={{
                             display: "inline-flex", alignItems: "center", gap: 4,
                             padding: "2px 8px", borderRadius: 20,
-                            fontSize: 11, fontWeight: 700,
+                            fontSize: "var(--fs-2xs)", fontWeight: 700,
                             background: `color-mix(in srgb, ${color} 13%, transparent)`,
                             color,
                             border: `1px solid color-mix(in srgb, ${color} 32%, transparent)`,

@@ -39,7 +39,7 @@ export const FEEDBACK_ROWS: ColorRow[] = [
 ];
 
 /** The editor's groups, in the order the Jump-to list offers them. */
-export type SectionKind = "palette" | "text" | "feedback" | "region" | "component";
+export type SectionKind = "palette" | "text" | "feedback" | "region" | "component" | "foundation";
 export interface Section {
   id: string;
   label: string;
@@ -53,6 +53,7 @@ export const SECTIONS: Section[] = [
   { id: "palette",  label: "styleEditor.secPalette",  kind: "palette",   rows: PALETTE_ROWS },
   { id: "text",     label: "styleEditor.secText",     kind: "text",      rows: TEXT_ROWS },
   { id: "feedback", label: "styleEditor.secFeedback", kind: "feedback",  rows: FEEDBACK_ROWS },
+  { id: "tints",    label: "styleEditor.secTints",    kind: "foundation", group: "tints" },
   { id: "navbar",   label: "styleEditor.secNavbar",   kind: "region",    group: "navbar" },
   { id: "content",  label: "styleEditor.secContent",  kind: "region",    group: "content" },
   { id: "footer",   label: "styleEditor.secFooter",   kind: "region",    group: "footer" },
@@ -62,6 +63,13 @@ export const SECTIONS: Section[] = [
   { id: "field",    label: "styleEditor.secField",    kind: "component", group: "field" },
   { id: "menu",     label: "styleEditor.secMenu",     kind: "component", group: "menu" },
   { id: "segment",  label: "styleEditor.secSegment",  kind: "component", group: "segment" },
+  // Foundation: the rest of what the site is built from. Global only.
+  { id: "type",     label: "styleEditor.secType",     kind: "foundation", group: "type" },
+  { id: "spacing",  label: "styleEditor.secSpacing",  kind: "foundation", group: "spacing" },
+  { id: "corners",  label: "styleEditor.secCorners",  kind: "foundation", group: "corners" },
+  { id: "shadows",  label: "styleEditor.secShadows",  kind: "foundation", group: "shadows" },
+  { id: "layout",   label: "styleEditor.secLayout",   kind: "foundation", group: "layout" },
+  { id: "base",     label: "styleEditor.secBase",     kind: "foundation", group: "base" },
 ];
 
 export const SECTION_BY_ID: Record<string, Section> =

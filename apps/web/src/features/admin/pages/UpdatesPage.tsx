@@ -81,9 +81,9 @@ export function UpdatesPage() {
         <div className="acp-card acp-empty">{t("updates.loading")}</div>
       ) : updates.length === 0 ? (
         <div className="acp-card" style={{ padding: 40, textAlign: "center" }}>
-          <FontAwesomeIcon icon={faCircleCheck} style={{ fontSize: 32, color: "var(--c-success)", marginBottom: 12 }} />
-          <div style={{ fontSize: 15, fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("updates.emptyTitle")}</div>
-          <div style={{ fontSize: 13, color: "var(--c-fg-muted)" }}>
+          <FontAwesomeIcon icon={faCircleCheck} style={{ fontSize: "2rem", color: "var(--c-success)", marginBottom: 12 }} />
+          <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("updates.emptyTitle")}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)" }}>
             {data?.checkedAt
               ? t("updates.emptyCheckedAt", { date: new Date(data.checkedAt).toLocaleString() })
               : t("updates.emptyHint")}
@@ -97,27 +97,27 @@ export function UpdatesPage() {
               const accent = u.critical ? "var(--c-danger)" : "var(--c-update, var(--c-accent))";
               return (
                 <div key={u.pluginId} className="acp-card" style={{ padding: "20px 24px", display: "flex", alignItems: "flex-start", gap: 16, flexWrap: "wrap", border: u.critical ? `1px solid color-mix(in srgb, ${accent} 40%, transparent)` : undefined }}>
-                  <div style={{ width: 44, height: 44, flexShrink: 0, background: `color-mix(in srgb, ${accent} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${accent} 34%, transparent)`, borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, color: accent }}>
+                  <div style={{ width: 44, height: 44, flexShrink: 0, background: `color-mix(in srgb, ${accent} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${accent} 34%, transparent)`, borderRadius: "var(--radius-md)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xl)", color: accent }}>
                     <FontAwesomeIcon icon={u.critical ? faTriangleExclamation : faCloudArrowDown} />
                   </div>
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 800, color: "var(--c-fg)" }}>{u.name ?? u.pluginId}</span>
-                      <span style={{ fontSize: 12.5, color: "var(--c-fg-muted)", fontFamily: "var(--ff-mono, monospace)" }}>
+                      <span style={{ fontSize: "var(--fs-base)", fontWeight: 800, color: "var(--c-fg)" }}>{u.name ?? u.pluginId}</span>
+                      <span style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", fontFamily: "var(--ff-mono, monospace)" }}>
                         {u.installedVersion ?? "?"} → {u.latestVersion}
                       </span>
                       {u.critical && (
-                        <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 100, fontSize: 11, fontWeight: 700, background: `color-mix(in srgb, ${accent} 18%, transparent)`, color: accent }}>
+                        <span style={{ display: "inline-flex", alignItems: "center", padding: "3px 10px", borderRadius: 100, fontSize: "var(--fs-2xs)", fontWeight: 700, background: `color-mix(in srgb, ${accent} 18%, transparent)`, color: accent }}>
                           {t("updates.critical")}
                         </span>
                       )}
                     </div>
                     {u.changelog && (
-                      <div style={{ fontSize: 13, color: "var(--c-fg-muted)", lineHeight: 1.6 }}>{u.changelog}</div>
+                      <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", lineHeight: 1.6 }}>{u.changelog}</div>
                     )}
                     {u.renewalRequired && (
-                      <div style={{ fontSize: 12.5, color: "var(--c-warn)", marginTop: 6, fontWeight: 600 }}>
+                      <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-warn)", marginTop: 6, fontWeight: 600 }}>
                         <FontAwesomeIcon icon={faTriangleExclamation} style={{ marginRight: 6 }} />
                         {t("updates.renewalRequired")}
                       </div>
