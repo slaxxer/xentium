@@ -101,7 +101,7 @@ export function ErrorLogPage() {
         <div style={{ display:"flex", gap:8, alignItems:"center" }}>
           {import.meta.env.DEV && (
             <div style={{ display:"flex", gap:6, alignItems:"center", marginRight:6 }}>
-              <span style={{ fontSize:11, color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
+              <span style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
               <button type="button" className="btn-ghost btn-sm" title="Throw an unhandled 500 (critical) — trips the fatal halt" onClick={() => simulate("critical")}>500</button>
               <button type="button" className="btn-ghost btn-sm" title="Throw a XentiumError 500 — trips the fatal halt" onClick={() => simulate("xentium500")}>XEC 500</button>
               <button type="button" className="btn-ghost btn-sm" title="Throw a 404 — toast only, no halt" onClick={() => simulate("notfound")}>404</button>
@@ -150,17 +150,17 @@ export function ErrorLogPage() {
                     onMouseEnter={(el) => { if (hasCtx) el.currentTarget.style.background = "var(--c-accent-soft)"; }}
                     onMouseLeave={(el) => el.currentTarget.style.background = "transparent"}
                   >
-                    <div style={{ fontFamily:"monospace", fontSize:12, fontWeight:700, color:"var(--c-accent)" }}>{e.code}</div>
-                    <div style={{ fontSize:13, color:"var(--c-fg-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={e.message}>{e.message}</div>
+                    <div style={{ fontFamily:"monospace", fontSize:"var(--fs-xs)", fontWeight:700, color:"var(--c-accent)" }}>{e.code}</div>
+                    <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={e.message}>{e.message}</div>
                     <Badge label={sevLabel(e.severity)} color={color} />
-                    <div style={{ fontSize:11, color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
-                    <div style={{ fontSize:11, color:"var(--c-fg-muted)", fontFamily:"monospace" }}>
+                    <div style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
+                    <div style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-muted)", fontFamily:"monospace" }}>
                       {e.requestId ? e.requestId.slice(0, 8) : "—"}
                     </div>
                   </div>
                   {isOpen && hasCtx && (
                     <div style={{ padding:"12px 18px", background:"var(--c-bg)", borderBottom: i < data.data.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                      <pre style={{ margin:0, fontSize:12, color:"var(--c-fg-muted)", fontFamily:"monospace", whiteSpace:"pre-wrap", wordBreak:"break-all" }}>
+                      <pre style={{ margin:0, fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", fontFamily:"monospace", whiteSpace:"pre-wrap", wordBreak:"break-all" }}>
                         {JSON.stringify(e.context, null, 2)}
                       </pre>
                     </div>
@@ -169,7 +169,7 @@ export function ErrorLogPage() {
               );
             })}
           </div>
-          <div style={{ fontSize:12, color:"var(--c-fg-muted)", marginTop:10, textAlign:"right" }}>
+          <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", marginTop:10, textAlign:"right" }}>
             {t("errorLog.totalEntries", { count: data.meta.total })}
           </div>
         </>

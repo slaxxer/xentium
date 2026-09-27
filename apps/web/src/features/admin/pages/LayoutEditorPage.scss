@@ -17,7 +17,7 @@
 .lay {
 
   &__intro {
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-muted);
     margin: 0 0 var(--sp-4);
     max-width: 680px;
@@ -53,7 +53,7 @@
   }
 
   &__status {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
   }
@@ -78,8 +78,8 @@
     border-radius: var(--card-radius);
     background: color-mix(in srgb, var(--c-danger) 12%, var(--card-bg));
 
-    strong { font-size: 13px; }
-    p { margin: 2px 0 0; font-size: 12px; color: var(--c-fg-subtle); }
+    strong { font-size: var(--fs-sm); }
+    p { margin: 2px 0 0; font-size: var(--fs-xs); color: var(--c-fg-subtle); }
   }
 
   &__conflict-actions {
@@ -92,7 +92,7 @@
      stated where the editing happens rather than in a tooltip nobody opens. */
   &__variant-note {
     margin: calc(-1 * var(--sp-2)) 0 var(--sp-4);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
   }
 
@@ -112,14 +112,14 @@
     cursor: pointer;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--c-fg-subtle);
   }
 
   &__theme-hint {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-muted);
     margin: 4px 0 var(--sp-3);
     max-width: 720px;
@@ -128,7 +128,7 @@
   /* Names what the site inherits from — an admin who cannot see which theme is
      installed cannot reason about what "Revert to theme" will do. */
   &__theme-installed {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg);
     margin: 0 0 var(--sp-3);
 
@@ -150,7 +150,7 @@
     display: inline-flex;
     align-items: center;
     gap: var(--sp-2);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
     white-space: nowrap;
     cursor: pointer;
@@ -227,7 +227,7 @@
     border-radius: 8px;
     background: var(--c-accent-soft);
     color: var(--c-accent);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     flex: none;
   }
 
@@ -241,14 +241,14 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
+      font-size: var(--fs-sm);
       font-weight: 700;
       color: var(--c-fg);
     }
 
     code {
       font-family: monospace;
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       color: var(--c-fg-subtle);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -265,7 +265,7 @@
     flex: none;
   }
 
-  &__doc-caret { color: var(--c-fg-subtle); font-size: 11px; flex: none; }
+  &__doc-caret { color: var(--c-fg-subtle); font-size: var(--fs-2xs); flex: none; }
 
   /* ── toolbar pills ─────────────────────────────────────────────────────── */
   /* Two facts, two pills: what is STORED and what is LIVE. They were one grey line
@@ -285,7 +285,7 @@
     border-radius: 999px;
     border: 1px solid var(--c-border);
     background: var(--c-bg-hover);
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     white-space: nowrap;
@@ -338,7 +338,7 @@
       border-radius: var(--radius-sm);
       background: none;
       font-family: inherit;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       font-weight: 600;
       color: var(--c-fg);
       text-align: left;
@@ -369,7 +369,7 @@
     padding: 0 5px;
     border-radius: 999px;
     background: rgb(255 255 255 / 0.22);
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
   }
 
@@ -388,7 +388,7 @@
     align-items: center;
     gap: 6px;
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-muted);
     background: var(--c-bg);
@@ -414,7 +414,7 @@
   }
 
   &__tab-count {
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--c-fg-subtle);
     background: var(--c-surface);
@@ -425,7 +425,7 @@
   }
 
   &__pane-count {
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     text-transform: none;
@@ -445,7 +445,7 @@
     border: 1px dashed var(--c-border-hi, var(--c-border));
     background: none;
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     cursor: pointer;
@@ -474,7 +474,7 @@
       align-items: center;
       gap: 6px;
       font-family: inherit;
-      font-size: 11.5px;
+      font-size: var(--fs-2xs);
       font-weight: 600;
       color: var(--c-fg-muted);
       background: none;
@@ -495,7 +495,7 @@
   }
 
   &__canvasbar-label {
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -503,14 +503,14 @@
   }
 
   &__canvasbar-width {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
   }
 
   &__zoom {
     font-family: inherit;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--c-fg-muted);
     background: var(--c-bg);
@@ -554,7 +554,7 @@
   &__pane-title {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--c-fg-subtle);
@@ -573,7 +573,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--c-fg);
     padding-bottom: 4px;
@@ -589,7 +589,7 @@
      band down. Anything longer belongs in the docs, not in the rail. */
   &__region-hint {
     margin: 0 0 var(--sp-2);
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     line-height: 1.45;
     color: var(--c-fg-subtle);
   }
@@ -603,7 +603,7 @@
   &__dropline { --lay-depth: 1; }
 
   &__empty {
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-subtle);
     padding: var(--sp-2) 0;
     padding-left: calc((var(--lay-depth) - 1) * 12px);
@@ -618,7 +618,7 @@
     border-radius: var(--radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
 
     &:hover { background: var(--c-accent-soft); }
     &.is-selected { background: var(--c-accent-soft); border-color: var(--c-accent); }
@@ -683,7 +683,7 @@
     border-radius: 6px;
     background: var(--c-bg-hover);
     color: var(--c-fg-subtle);
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
 
     > * { grid-area: 1 / 1; transition: opacity 0.1s ease; }
   }
@@ -704,7 +704,7 @@
   &__node-type {
     display: block;
     font-family: monospace;
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-subtle);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -745,7 +745,7 @@
       cursor: pointer;
       padding: 2px 5px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: var(--fs-2xs);
 
       &:hover:not(:disabled) { color: var(--c-fg); background: var(--c-bg-hover); }
       &:disabled { opacity: 0.3; cursor: not-allowed; }
@@ -758,7 +758,7 @@
      renders it, so this is the only place the condition is visible. */
   &__node-restricted {
     margin-left: 6px;
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-subtle);
     cursor: help;
   }
@@ -773,7 +773,7 @@
 
   &__vis-title {
     font-weight: 700;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg);
     margin-bottom: var(--sp-2);
   }
@@ -783,7 +783,7 @@
     align-items: center;
     gap: var(--sp-2);
     padding: 3px 0;
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
     cursor: pointer;
 
     input { cursor: pointer; }
@@ -828,7 +828,7 @@
       width: 100%;
       margin-top: var(--sp-1);
       font-family: var(--ff-mono, ui-monospace, monospace);
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
     }
   }
 
@@ -843,7 +843,7 @@
   /* Says which look and which theme is being recoloured — without it the panel looks
      like it is editing the block, which is the misunderstanding it exists to prevent. */
   &__style-scope {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -858,7 +858,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-muted);
     margin-bottom: 4px;
   }
@@ -882,7 +882,7 @@
     .acp-input {
       min-width: 0;
       font-family: var(--ff-mono, monospace);
-      font-size: 12px;
+      font-size: var(--fs-xs);
     }
   }
 
@@ -891,7 +891,7 @@
     border: none;
     cursor: pointer;
     padding: 0;
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--c-accent);
     display: inline-flex;
@@ -921,7 +921,7 @@
     padding-bottom: var(--sp-2);
     color: var(--c-fg-subtle);
 
-    .acp-input { flex: 1; min-width: 0; font-size: 12.5px; padding: 4px 8px; }
+    .acp-input { flex: 1; min-width: 0; font-size: var(--fs-sm); padding: 4px 8px; }
   }
 
   /* The list scrolls, not the panel: a template can offer thirty blocks, and letting
@@ -938,7 +938,7 @@
   &__picker-group + &__picker-group { margin-top: var(--sp-2); }
 
   &__picker-group-title {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -959,7 +959,7 @@
     padding: 5px 6px;
     border-radius: var(--radius-sm);
     color: var(--c-fg);
-    font-size: 12.5px;
+    font-size: var(--fs-sm);
 
     /* Hover and the keyboard cursor are the same state deliberately — the pointer
        moves the cursor, so there is only ever one highlighted row to commit. */
@@ -967,7 +967,7 @@
     &.is-active { background: var(--c-accent-soft); }
 
     span {
-      font-size: 10.5px;
+      font-size: var(--fs-2xs);
       color: var(--c-fg-subtle);
       font-family: monospace;
       /* Long block types must not push the label out of the row. */
@@ -985,7 +985,7 @@
     margin-right: auto;
     flex: 0 0 auto;
     font-family: inherit;
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -1022,7 +1022,7 @@
     height: 24px;
     border-radius: var(--radius-sm);
     color: var(--c-fg-subtle);
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     flex: none;
 
     &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
@@ -1030,7 +1030,7 @@
 
   &__preview-url {
     font-family: monospace;
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-subtle);
     text-transform: none;
     letter-spacing: 0;
@@ -1089,7 +1089,7 @@
     border-radius: 8px;
     background: var(--c-accent-soft);
     color: var(--c-accent);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     flex: none;
   }
 
@@ -1101,11 +1101,11 @@
     line-height: 1.25;
     min-width: 0;
 
-    b { font-size: 13.5px; font-weight: 700; color: var(--c-fg); }
+    b { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
 
     code {
       font-family: monospace;
-      font-size: 10px;
+      font-size: var(--fs-2xs);
       color: var(--c-fg-subtle);
       overflow: hidden;
       text-overflow: ellipsis;
@@ -1137,7 +1137,7 @@
     border-radius: 999px;
     background: var(--c-accent-soft);
     color: var(--c-accent);
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.02em;
     white-space: nowrap;
@@ -1152,7 +1152,7 @@
     border-radius: 999px;
     border: 1px solid var(--c-border);
     background: var(--c-bg-hover);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-subtle);
     cursor: pointer;
@@ -1179,7 +1179,7 @@
   &__props-section {
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: 10.5px;
+    font-size: var(--fs-2xs);
     letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--c-fg-subtle);
@@ -1205,7 +1205,7 @@
     align-items: center;
     gap: 6px;
     font-family: inherit;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg);
     background: var(--card-bg);
@@ -1224,7 +1224,7 @@
   &__props-head {
     font-family: var(--font-display);
     font-weight: 600;
-    font-size: 14px;
+    font-size: var(--fs-md);
     color: var(--c-fg);
     margin-bottom: var(--sp-3);
   }
@@ -1240,7 +1240,7 @@
   border-top: 1px solid var(--c-border);
 
   &__title {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -1264,7 +1264,7 @@
     margin-bottom: var(--sp-3);
 
     span {
-      font-size: 11.5px;
+      font-size: var(--fs-2xs);
       color: var(--c-fg-subtle);
     }
   }
@@ -1278,7 +1278,7 @@
   }
 
   &__label {
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-muted);
   }
@@ -1319,7 +1319,7 @@
       cursor: pointer;
     }
 
-    .acp-input { flex: 1; min-width: 0; font-family: var(--ff-mono, monospace); font-size: 12px; }
+    .acp-input { flex: 1; min-width: 0; font-family: var(--ff-mono, monospace); font-size: var(--fs-xs); }
   }
 
   &__x {

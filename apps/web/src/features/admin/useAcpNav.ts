@@ -56,6 +56,7 @@ export const ACP_NAV: NavItem[] = [
       { label: "nav.reviewCases", to: "/admin/cases" },
       { label: "nav.modLog", to: "/admin/modlog" },
       { label: "nav.modSettings", to: "/admin/modsettings" },
+      { label: "nav.modTemplates", to: "/admin/mod-templates" },
     ],
   },
   {

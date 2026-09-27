@@ -28,7 +28,10 @@ export type ThemeScope =
 /** Editor grouping — regions (where) and components (what). */
 export type TokenGroup =
   | "global" | "navbar" | "content" | "footer" | "aside"   // palette + regions
-  | "button" | "card" | "field" | "menu" | "segment";      // components
+  | "button" | "card" | "field" | "menu" | "segment"       // components
+  // Foundation: everything else the site is built from. Every token `_tokenDefaults.scss`
+  // declares is in the registry, so the Style Editor can reach all of it.
+  | "tints" | "shadows" | "corners" | "type" | "spacing" | "layout" | "base";
 
 export interface TokenDef {
   var: string;
@@ -37,7 +40,7 @@ export interface TokenDef {
   kind: TokenKind;
   group: TokenGroup;
   /** Compound editor control this token folds into (else a plain row). */
-  control?: "border" | "shadow" | "radius" | "size";
+  control?: "border" | "shadow" | "radius" | "size" | "text";
   /** `size` only: the slider's ends, in px. A length needs a range to be draggable,
    *  and the sensible range for a rail is not the sensible range for a radius. */
   min?: number;
@@ -189,7 +192,90 @@ const COMPONENT_TOKENS: TokenDef[] = [
   { var: "--seg-active-fg", label: "Selected text",         type: "color", kind: "component", group: "segment", inheritsFrom: "--c-bg", state: "active", editable: true },
 ];
 
-export const TOKEN_REGISTRY: TokenDef[] = [...REGION_TOKENS, ...COMPONENT_TOKENS];
+// ── Foundation tokens (global) ─────────────────────────────────────────────────
+//
+// ⚠ The rest of the site's design. These existed in `_tokenDefaults.scss` and nowhere
+// in the editor, so a tint like `--c-accent-soft` (every selected row, every active
+// tab) could only be changed with custom CSS. `foundationCoverage.test.ts` fails if a
+// token is added to the stylesheet without being registered here.
+const f = (v: string, label: string, group: TokenGroup, type: TokenValueType, extra: Partial<TokenDef> = {}): TokenDef =>
+  ({ var: v, label, type, kind: "shape", group, editable: true, ...extra });
+
+const FOUNDATION_TOKENS: TokenDef[] = [
+  // Tints & states — the soft backgrounds and lines the palette colours are shown on.
+  f("--c-accent-soft",  "Accent tint",       "tints", "color", { kind: "semantic" }),
+  f("--c-accent2-soft", "Accent 2 tint",     "tints", "color", { kind: "semantic" }),
+  f("--c-accent-glow",  "Accent glow",       "tints", "color", { kind: "semantic" }),
+  f("--c-on-accent",    "Text on accent",    "tints", "color", { kind: "semantic" }),
+  f("--c-border-hi",    "Strong border",     "tints", "color", { kind: "semantic" }),
+  f("--c-rowline",      "Row divider",       "tints", "color", { kind: "semantic" }),
+  f("--c-success-soft", "Success tint",      "tints", "color", { kind: "semantic" }),
+  f("--c-danger-soft",  "Danger tint",       "tints", "color", { kind: "semantic" }),
+  f("--avatar-presence","Online dot",        "tints", "color", { kind: "semantic", inheritsFrom: "--c-success" }),
+
+  // Shadows
+  f("--shadow-card",        "Card shadow",    "shadows", "shadow", { control: "shadow" }),
+  f("--shadow-pop",         "Popover shadow", "shadows", "shadow", { control: "shadow" }),
+  f("--shadow-sm",          "Small shadow",   "shadows", "shadow", { control: "shadow", inheritsFrom: "--shadow-card" }),
+  f("--shadow-md",          "Medium shadow",  "shadows", "shadow", { control: "shadow", inheritsFrom: "--shadow-card" }),
+  f("--shadow-lg",          "Large shadow",   "shadows", "shadow", { control: "shadow", inheritsFrom: "--shadow-pop" }),
+  f("--shadow-glow",        "Glow",           "shadows", "shadow", { control: "text" }),
+  f("--shadow-inset-knob",  "Switch knob",    "shadows", "shadow", { control: "text" }),
+
+  // Corners
+  f("--radius-sm",   "Small corners",  "corners", "length", { control: "radius" }),
+  f("--radius-md",   "Medium corners", "corners", "length", { control: "radius" }),
+  f("--radius-lg",   "Large corners",  "corners", "length", { control: "radius" }),
+  f("--radius-xl",   "Extra-large corners", "corners", "length", { control: "radius" }),
+  f("--radius-pill", "Pill corners",   "corners", "length", { control: "size", min: 0, max: 999 }),
+
+  // Typography — the steps are `calc(<rem> * var(--fs-scale))`; the site-wide text size
+  // is the Size control, which sets the scale. A step set here replaces its calc.
+  f("--fs-2xs",  "Text · smallest (12px)",  "type", "length", { control: "text" }),
+  f("--fs-xs",   "Text · caption (13px)",   "type", "length", { control: "text" }),
+  f("--fs-sm",   "Text · small (14px)",     "type", "length", { control: "text" }),
+  f("--fs-md",   "Text · UI (15px)",        "type", "length", { control: "text" }),
+  f("--fs-base", "Text · body (16px)",      "type", "length", { control: "text" }),
+  f("--fs-read", "Text · reading (17px)",   "type", "length", { control: "text" }),
+  f("--fs-lg",   "Heading · small (18px)",  "type", "length", { control: "text" }),
+  f("--fs-xl",   "Heading · medium (20px)", "type", "length", { control: "text" }),
+  f("--fs-2xl",  "Heading · large (24px)",  "type", "length", { control: "text" }),
+  f("--fs-3xl",  "Heading · huge (30px)",   "type", "length", { control: "text" }),
+  f("--font-display", "Heading font",        "type", "keyword", { control: "text" }),
+  f("--font-body",    "Body font",           "type", "keyword", { control: "text" }),
+  f("--ff-mono",      "Code font",           "type", "keyword", { control: "text" }),
+
+  // Spacing
+  ...([1, 2, 3, 4, 5, 6, 8, 10, 12, 16] as const).map((n) =>
+    f(`--sp-${n}`, `Space ${n} (${n * 4}px)`, "spacing", "length", { control: "size", min: 0, max: 96 })),
+
+  // Layout
+  f("--nav-height",     "Navbar height",       "layout", "length", { control: "size", min: 44, max: 120 }),
+  f("--content-max",    "Page width",          "layout", "length", { control: "size", min: 720, max: 1800 }),
+  f("--content-narrow", "Narrow page width",   "layout", "length", { control: "size", min: 480, max: 1100 }),
+
+  // Button sizing sits with the button colours.
+  f("--btn-pad-y", "Button padding (vertical)",   "button", "length", { kind: "component", control: "size", min: 0, max: 32, scopeable: true }),
+  f("--btn-pad-x", "Button padding (horizontal)", "button", "length", { kind: "component", control: "size", min: 0, max: 48, scopeable: true }),
+  f("--btn-fs",    "Button text size",            "button", "length", { kind: "component", control: "text", inheritsFrom: "--fs-sm", scopeable: true }),
+  f("--btn-fw",    "Button text weight",          "button", "keyword", { kind: "component", control: "text", scopeable: true }),
+  f("--btn-gap",   "Button icon gap",             "button", "length", { kind: "component", control: "size", min: 0, max: 24, scopeable: true }),
+
+  // Base palette — the raw colours the semantic tokens are made from. Changing one
+  // moves every colour built on it that has not been set on its own.
+  ...([
+    ["--primitive-blurple-600", "Blurple 600"], ["--primitive-blurple-400", "Blurple 400"], ["--primitive-blurple-300", "Blurple 300"],
+    ["--primitive-cyan-500", "Cyan 500"], ["--primitive-cyan-400", "Cyan 400"],
+    ["--primitive-green-500", "Green 500"], ["--primitive-green-400", "Green 400"],
+    ["--primitive-amber-500", "Amber 500"], ["--primitive-sky-400", "Sky 400"], ["--primitive-red-400", "Red 400"],
+    ["--primitive-mist-50", "Mist 50"], ["--primitive-white", "White"],
+    ["--primitive-ink-900", "Ink 900"], ["--primitive-ink-600", "Ink 600"], ["--primitive-ink-400", "Ink 400"],
+    ["--primitive-night-950", "Night 950"], ["--primitive-night-900", "Night 900"],
+    ["--primitive-night-850", "Night 850"], ["--primitive-night-50", "Night 50"],
+  ] as const).map(([v, label]) => f(v, label, "base", "color", { kind: "semantic" })),
+];
+
+export const TOKEN_REGISTRY: TokenDef[] = [...REGION_TOKENS, ...COMPONENT_TOKENS, ...FOUNDATION_TOKENS];
 
 /** Fast lookup by CSS var name. */
 export const TOKEN_BY_VAR: Record<string, TokenDef> = Object.fromEntries(

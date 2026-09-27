@@ -127,16 +127,16 @@ export function ModLogPage() {
                 onMouseLeave={(el) => (el.currentTarget.style.background = "transparent")}
               >
                 {/* Icon */}
-                <div style={{ width:32, height:32, borderRadius:"50%", background:iconBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, color:aColor }}>
+                <div style={{ width:32, height:32, borderRadius:"50%", background:iconBg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"var(--fs-md)", color:aColor }}>
                   <FontAwesomeIcon icon={isSystem ? faGear : faShield} />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:"var(--c-fg)" }}>
+                  <div style={{ fontSize:"var(--fs-sm)", fontWeight:600, color:"var(--c-fg)" }}>
                     {humanizeAction(e.action, t)}
                   </div>
-                  <div style={{ fontSize:12, color:"var(--c-fg-muted)", marginTop:2 }}>
+                  <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", marginTop:2 }}>
                     {t("modLog.by")}{" "}
                     {isSystem
                       ? <span style={{ color:aColor, fontWeight:600 }}>{t("modLog.system")}</span>
@@ -164,7 +164,7 @@ export function ModLogPage() {
                 <Badge label={isSystem ? t("modLog.actorSystem") : t("modLog.actorHuman")} color={aColor} />
 
                 {/* Time */}
-                <div style={{ fontSize:12, color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
+                <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
               </div>
             );
           })}

@@ -214,7 +214,11 @@ function useAcpAlerts() {
         // OK removes it from the site. A failed write is swallowed: the notice
         // simply returns next entry, which is the safe direction.
         void api.post(`/admin/announcements/${post.id}/dismiss`, {})
-          .then(() => qc.invalidateQueries({ queryKey: ["acp-announcements"] }))
+          .then(() => {
+            void qc.invalidateQueries({ queryKey: ["acp-announcements"] });
+            // The gear's dot counts an unread announcement: put it out now, not in five minutes.
+            return qc.invalidateQueries({ queryKey: ["acp-status-summary"] });
+          })
           .catch(() => { /* it comes back next entry */ });
       });
       return;

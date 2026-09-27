@@ -26,7 +26,7 @@
 
     h2 {
       font-family: var(--font-display);
-      font-size: 17px;
+      font-size: 1.0625rem;
       font-weight: 700;
       color: var(--c-fg);
       margin: 0;
@@ -34,7 +34,7 @@
 
     p {
       margin: 5px 0 0;
-      font-size: 12.5px;
+      font-size: var(--fs-sm);
       color: var(--c-fg-subtle);
       line-height: 1.5;
       max-width: 62ch;
@@ -74,7 +74,7 @@
       outline: none;
       color: var(--c-fg);
       font-family: inherit;
-      font-size: 13.5px;
+      font-size: var(--fs-md);
       font-weight: 500;
     }
   }
@@ -96,7 +96,7 @@
       border-radius: calc(var(--radius-md) - 4px);
       background: none;
       font-family: inherit;
-      font-size: 12px;
+      font-size: var(--fs-xs);
       font-weight: 600;
       color: var(--c-fg-subtle);
       cursor: pointer;
@@ -107,7 +107,7 @@
       &.is-on { background: var(--c-accent); color: var(--c-on-accent); }
 
       span {
-        font-size: 10px;
+        font-size: var(--fs-2xs);
         font-weight: 800;
         opacity: 0.75;
       }
@@ -163,7 +163,7 @@
     code {
       display: block;
       font-family: monospace;
-      font-size: 9.5px;
+      font-size: var(--fs-2xs);
       color: var(--c-fg-subtle);
       margin-top: 7px;
       overflow: hidden;
@@ -177,13 +177,13 @@
     align-items: center;
     gap: 7px;
     flex-wrap: wrap;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--c-fg);
   }
 
   &__badge {
-    font-size: 9.5px;
+    font-size: var(--fs-2xs);
     font-weight: 800;
     letter-spacing: 0.04em;
     text-transform: uppercase;
@@ -195,7 +195,7 @@
 
   &__desc {
     display: block;
-    font-size: 11.5px;
+    font-size: var(--fs-2xs);
     color: var(--c-fg-subtle);
     line-height: 1.45;
     margin-top: 5px;
@@ -209,8 +209,8 @@
     text-align: center;
     padding: 48px 20px;
 
-    b { font-size: 14px; font-weight: 600; color: var(--c-fg-subtle); }
-    span { font-size: 12.5px; color: var(--c-fg-subtle); opacity: 0.75; }
+    b { font-size: var(--fs-md); font-weight: 600; color: var(--c-fg-subtle); }
+    span { font-size: var(--fs-sm); color: var(--c-fg-subtle); opacity: 0.75; }
   }
 }
 

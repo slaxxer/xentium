@@ -31,6 +31,12 @@ class SecurityScanRegistry {
     return false;
   }
 
+  /** The plugin that claimed this pattern, if any — Mod Settings says who handles it. */
+  claimant(pattern: string): string | null {
+    for (const [pluginId, set] of this.claims) if (set.has(pattern)) return pluginId;
+    return null;
+  }
+
   deregister(pluginId: string): void {
     this.scans.delete(pluginId);
     this.claims.delete(pluginId);

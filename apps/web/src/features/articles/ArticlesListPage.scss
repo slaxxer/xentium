@@ -4,7 +4,7 @@
   align-items: center;
   padding: 3px 10px;
   border-radius: 100px;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   font-weight: 700;
   letter-spacing: 0.04em;
   background: var(--c-accent-soft);
@@ -29,7 +29,7 @@
     margin-bottom: 28px;
   }
   &__eyebrow {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     font-weight: 700;
     color: var(--c-fg-subtle);
     letter-spacing: 0.1em;
@@ -37,7 +37,7 @@
     margin-bottom: 4px;
   }
   &__title {
-    font-size: 30px;
+    font-size: var(--fs-3xl);
     font-weight: 800;
     color: var(--c-fg);
     letter-spacing: -0.03em;
@@ -60,7 +60,7 @@
       padding: 6px 10px;
       border-radius: var(--radius-sm);
       cursor: pointer;
-      font-size: 14px;
+      font-size: var(--fs-md);
       &:hover { color: var(--c-accent); border-color: var(--c-accent-glow); }
       &.is-active {
         background: var(--c-accent-soft);
@@ -75,7 +75,7 @@
     color: var(--btn-fg);
     padding: 7px 16px;
     border-radius: var(--radius-sm);
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 700;
     text-decoration: none;
     transition: opacity 0.15s;
@@ -95,7 +95,7 @@
     border: 1px solid var(--c-border);
     padding: 6px 16px;
     border-radius: 100px;
-    font-size: 13px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     cursor: pointer;
     font-family: inherit;
@@ -189,7 +189,7 @@
   }
 
   &__title {
-    font-size: 16px;
+    font-size: var(--fs-base);
     font-weight: 700;
     color: var(--c-fg);
     line-height: 1.35;
@@ -197,7 +197,7 @@
   }
 
   &__excerpt {
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-muted);
     line-height: 1.6;
     margin: 0 0 14px;
@@ -212,7 +212,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
   }
   &__author { font-weight: 600; color: var(--c-fg-muted); }
@@ -257,13 +257,13 @@
     flex-wrap: wrap;
   }
   &__title {
-    font-size: 15px;
+    font-size: var(--fs-base);
     font-weight: 700;
     color: var(--c-fg);
     margin: 0;
   }
   &__excerpt {
-    font-size: 13px;
+    font-size: var(--fs-sm);
     color: var(--c-fg-muted);
     margin: 0;
     line-height: 1.5;
@@ -277,7 +277,7 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    font-size: 12px;
+    font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
   }
 }

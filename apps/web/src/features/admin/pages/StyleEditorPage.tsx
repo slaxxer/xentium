@@ -35,6 +35,7 @@ import {
   SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
   type Section,
 } from "./styleTokens";
+import { STYLESHEET_DEFAULTS, resolveColor } from "./tokenDefaults";
 import {
   parseShadow, formatShadow, shadowValueFor, SHADOW_SEED,
   type ShadowKind, type ShadowParts,
@@ -170,6 +171,9 @@ function inheritedValue(
   }
   const base = BASE_FALLBACK[cssVar];
   if (base !== undefined) return { value: base, origin: "inherited" };
+  // Anything else starts from the stylesheet's own default, so no row is ever blank.
+  const stock = STYLESHEET_DEFAULTS[cssVar];
+  if (stock !== undefined) return { value: stock, origin: "inherited" };
   return { value: "", origin: "inherited" };
 }
 
@@ -698,7 +702,9 @@ export function StyleEditorPage() {
                       <button type="button" aria-label={t("styleEditor.fontSmaller")}
                         disabled={numVal(fontSize, 16) <= FONT_SIZE_MIN}
                         onClick={() => setFontSize(String(Math.max(FONT_SIZE_MIN, numVal(fontSize, 16) - 1)))}>−</button>
-                      <span className="se-step__v">{numVal(fontSize, 16)}px</span>
+                      {/* The site's TEXT SIZE: every step of the type scale follows it, so it
+                          reads as a percentage of stock rather than as the body's pixel size. */}
+                      <span className="se-step__v" title={t("styleEditor.textSize")}>{Math.round((numVal(fontSize, 16) / 16) * 100)}%</span>
                       <button type="button" aria-label={t("styleEditor.fontBigger")}
                         disabled={numVal(fontSize, 16) >= FONT_SIZE_MAX}
                         onClick={() => setFontSize(String(Math.min(FONT_SIZE_MAX, numVal(fontSize, 16) + 1)))}>+</button>
@@ -738,7 +744,7 @@ export function StyleEditorPage() {
                     <div style={{ minWidth: 0 }}>
                       <div className="se-insp__title">{t(section.label)}</div>
                       <div className="se-insp__kind">
-                        {t(`styleEditor.k${section.kind === "component" ? "Component" : section.kind === "region" ? "Region" : "Palette"}`)}
+                        {t(`styleEditor.k${section.kind === "component" ? "Component" : section.kind === "region" ? "Region" : section.kind === "foundation" ? "Foundation" : "Palette"}`)}
                         {section.kind === "component" && ` · ${t(SCOPE_LABEL[scope] ?? scope)}`}
                       </div>
                     </div>
@@ -800,7 +806,8 @@ export function StyleEditorPage() {
                       inheritsFrom={d.from ?? def?.inheritsFrom}
                       control={def?.control === "radius" ? "radius"
                         : def?.control === "shadow" ? "shadow"
-                        : def?.control === "size" ? "size" : "color"}
+                        : def?.control === "size" ? "size"
+                        : def?.control === "text" ? "text" : "color"}
                       min={def?.min}
                       max={def?.max}
                       onChange={(v) => setOverride(effScope, cssVar, v)}
@@ -820,7 +827,7 @@ export function StyleEditorPage() {
                     }}>
                       {t("styleEditor.previewToasts")}
                     </button>
-                    <div style={{ fontSize: 11, color: "var(--c-fg-subtle)", marginTop: 6 }}>
+                    <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-subtle)", marginTop: 6 }}>
                       {t("styleEditor.toastsUse")}
                     </div>
                   </div>
@@ -995,7 +1002,7 @@ export function StyleEditorPage() {
 
 function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, max, onChange, onReset }: {
   label: string; cssVar: string; value: string; origin: Origin; inheritsFrom?: string;
-  control: "color" | "radius" | "shadow" | "size";
+  control: "color" | "radius" | "shadow" | "size" | "text";
   /** `size` only — the slider's ends, from the token's registry entry. */
   min?: number; max?: number;
   onChange: (v: string) => void; onReset: () => void;
@@ -1038,10 +1045,20 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, ma
         )}
         {control === "color" && (
           <>
-            <input type="color" className="se-row__color" value={safeHex(value, "#888888")}
+            {/* The picker gets the RESOLVED colour: a default like `rgba(…)`,
+                `var(--primitive-…)` or `color-mix(…)` is still a colour the admin
+                should see and start from. The text field keeps the exact value, alpha
+                included; picking a colour writes a plain hex. */}
+            <input type="color" className="se-row__color" value={resolveColor(value) ?? safeHex(value, "#888888")}
               onChange={(e) => onChange(e.target.value)} aria-label={label} />
             <input className="se-row__text" value={value} onChange={(e) => onChange(e.target.value)} placeholder="#rrggbb" />
           </>
+        )}
+        {/* A value that is not a single colour or length — a font stack, a type step,
+            a glow built from another token. Typed as CSS, previewed live. */}
+        {control === "text" && (
+          <input className="se-row__text se-row__text--wide" value={value} onChange={(e) => onChange(e.target.value)}
+            aria-label={label} spellCheck={false} />
         )}
         {control === "radius" && (
           <>

@@ -89,3 +89,12 @@ export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
     next();
   };
 }
+
+/**
+ * The same check, for a route whose required permission depends on its INPUT — the
+ * ModCanvas action endpoint needs warn, ban or report rights depending on the mode.
+ */
+export async function assertPermission(userId: string, key: PermissionKey): Promise<void> {
+  const effective = await loadEffective(userId);
+  if (!effective.includes(key)) throw permissionDeniedError([key]);
+}

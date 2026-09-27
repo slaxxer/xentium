@@ -8,7 +8,7 @@
   border-radius: var(--radius-sm);
   background: color-mix(in srgb, var(--c-warning) 12%, transparent);
   border: 1px solid color-mix(in srgb, var(--c-warning) 38%, transparent);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 
@@ -34,7 +34,7 @@
     border-radius: 999px;
     background: color-mix(in srgb, var(--c-success) 16%, transparent);
     color: var(--c-success);
-    font-size: 12px;
+    font-size: var(--fs-xs);
     font-weight: 700;
   }
 }
@@ -57,7 +57,7 @@
   width: 100%;
   min-height: 320px;
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 12.5px;
+  font-size: var(--fs-sm);
   line-height: 1.6;
   resize: vertical;
   white-space: pre;
@@ -79,7 +79,7 @@
   background: var(--c-surface-2, var(--c-surface));
   color: var(--c-fg-muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11.5px;
+  font-size: var(--fs-2xs);
   cursor: pointer;
 
   &:hover { border-color: var(--c-accent); color: var(--c-accent); }

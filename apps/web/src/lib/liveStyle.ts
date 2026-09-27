@@ -19,6 +19,18 @@ import { viewerThemeParam } from "./viewerTheme";
 
 const STYLE_ID = "xentium-custom-tokens";
 
+/**
+ * The stylesheet the server inlined into index.html, if any, and its version.
+ *
+ * Adopting the version means a page that painted from the inlined sheet is already
+ * "holding" something, so the stream can reconcile it before the startup fetch lands.
+ */
+function adoptInlinedVersion(): void {
+  if (typeof document === "undefined") return;
+  const v = Number(document.getElementById(STYLE_ID)?.dataset.styleVersion);
+  if (Number.isFinite(v) && v > 0 && loadedVersion === null) loadedVersion = v;
+}
+
 /** Inject (or replace) the global token <style> tag. */
 export function applyTokenCss(css: string): void {
   let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null;
@@ -58,6 +70,7 @@ export async function refreshTokenCss(): Promise<void> {
  */
 export async function loadTokenCss(opts: { draft?: boolean } = {}): Promise<void> {
   loadedDraft = !!opts.draft;
+  if (!loadedDraft) adoptInlinedVersion();
   if (loadedDraft) {
     await fetchTokenCss("/api/appearance/css?source=draft");
     return;
@@ -204,7 +217,12 @@ function openStream(): void {
      *    stale against it. Refetching there would spend a request to replace the
      *    themed stylesheet with an identical one on every publish the admin makes.
      */
-    if (viewerThemeParam()) { notifyVersionListeners(); return; }
+    if (viewerThemeParam()) {
+      // A real change only: the connect echo notifying refetched the layouts the page
+      // was just served with, on every load.
+      if (previous !== null && previous !== version) notifyVersionListeners();
+      return;
+    }
 
     if (previous !== null && previous !== version) {
       void refreshTokenCss();

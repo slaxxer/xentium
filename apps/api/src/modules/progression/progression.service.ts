@@ -304,6 +304,54 @@ export const progressionService = {
     };
   },
 
+  /**
+   * The rung this member climbed and has not seen yet, for the one-time "Level up"
+   * dialog. Null when there is none, when progression is off, or when the admin
+   * switched promotion notices off (the dialog IS that notice).
+   *
+   * The NEWEST unseen climb: two rungs gained at once make one dialog, about where
+   * the member ended up, not two in a row.
+   */
+  async getPendingLevelUp(userId: string) {
+    const settings = await loadGlobalSettings();
+    if (!settings.enabled || !settings.notifyOnPromote) return null;
+
+    const row = await prisma.levelUp.findFirst({
+      where: { userId, seenAt: null },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!row) return null;
+
+    const [to, from] = await Promise.all([
+      prisma.groupProgression.findUnique({ where: { groupId: row.toGroupId }, include: { group: { select: { name: true } } } }),
+      row.fromGroupId
+        ? prisma.groupProgression.findUnique({ where: { groupId: row.fromGroupId }, include: { group: { select: { name: true } } } })
+        : null,
+    ]);
+    // The rung was deleted since: nothing true to celebrate, so it is simply spent.
+    if (!to) {
+      await this.markLevelUpsSeen(userId);
+      return null;
+    }
+
+    const progression = await this.getUserProgression(userId);
+    return {
+      id: row.id,
+      at: row.createdAt,
+      rank: { label: to.badgeLabel ?? to.group.name, color: to.badgeColor },
+      from: from ? { label: from.badgeLabel ?? from.group.name, color: from.badgeColor } : null,
+      // What reaching THIS rung gave them (the profile's `unlocks` describes the next one).
+      unlocks: describeUnlocks(to),
+      next: progression.atTop ? null : { rank: progression.next?.badgeLabel ?? null, primary: progression.primary ?? null },
+    };
+  },
+
+  /** Every unseen climb, marked seen — the dialog is shown once. */
+  async markLevelUpsSeen(userId: string) {
+    const res = await prisma.levelUp.updateMany({ where: { userId, seenAt: null }, data: { seenAt: new Date() } });
+    return { seen: res.count };
+  },
+
   async getUserProgression(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },

@@ -19,7 +19,7 @@ const COLS = "1fr 220px 110px 100px 90px 110px";
 
 const ICON_BTN: React.CSSProperties = {
   display: "inline-flex", alignItems: "center", justifyContent: "center",
-  width: 28, height: 28, fontSize: 12, color: "var(--c-fg-muted)",
+  width: 28, height: 28, fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)",
   border: "1px solid var(--c-border)", borderRadius: "var(--radius-sm)",
   background: "transparent", cursor: "pointer", textDecoration: "none",
 };
@@ -94,7 +94,7 @@ export function PagesPage() {
         </div>
 
         {isLoading ? (
-          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
+          <div style={{ padding: "2.5rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>
             {t("pages.loading")}
           </div>
         ) : (
@@ -104,22 +104,22 @@ export function PagesPage() {
               return (
                 <div key={p.id} className="acp-list-row" style={{ gridTemplateColumns: COLS }}>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--c-fg)", lineHeight: 1.3 }}>
+                    <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)", lineHeight: 1.3 }}>
                       {p.title}
                     </span>
                   </div>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <code style={{ fontSize: 12, color: "var(--c-fg-muted)" }}>/p/{p.slug}</code>
+                    <code style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>/p/{p.slug}</code>
                   </div>
                   <div style={{ display: "flex", alignItems: "center" }}>
-                    <span style={{ background: bg, color, borderRadius: 100, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>
+                    <span style={{ background: bg, color, borderRadius: 100, padding: "2px 8px", fontSize: "var(--fs-2xs)", fontWeight: 700 }}>
                       {t(`pages.status.${p.status}`, { defaultValue: p.status })}
                     </span>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", fontSize: 12, color: "var(--c-fg-muted)" }}>
+                  <div style={{ display: "flex", alignItems: "center", fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                     {t(`pages.visibility.${p.visibility}`, { defaultValue: p.visibility })}
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: p.navPlacement ? "var(--c-success)" : "var(--c-fg-muted)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xs)", color: p.navPlacement ? "var(--c-success)" : "var(--c-fg-muted)" }}>
                     {p.navPlacement ? t(`pages.nav${p.navPlacement === "footer" ? "Footer" : "Navbar"}`) : "—"}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
@@ -150,7 +150,7 @@ export function PagesPage() {
               );
             })}
             {data?.data.length === 0 && (
-              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: 14 }}>
+              <div style={{ padding: "3rem", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-md)" }}>
                 {t("pages.empty")}
               </div>
             )}

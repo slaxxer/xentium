@@ -5,6 +5,7 @@ import { api } from "../lib/api";
 import { PubNav } from "./PubNav";
 import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
+import { LevelUpDialog } from "../features/progression/LevelUpDialog";
 import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import "./AppLayout.scss";
@@ -44,6 +45,7 @@ export function AppLayout() {
       </main>
       <SiteFooter />
       <ModCanvas />
+      <LevelUpDialog />
     </div>
   );
 }
