@@ -217,7 +217,7 @@ describe("reading an announcement", () => {
     const first = await sign(GENUINE, marketplace.privateKey);
     await run([first]);
     await dismiss("real-1");
-    const second = await sign({ ...GENUINE, id: "real-2" }, marketplace.privateKey);
+    const second = await sign({ ...GENUINE, id: "real-2", publishedAt: "2026-09-26T10:00:00.000Z" }, marketplace.privateKey);
     const cache = await run([first, second], { fresh: false });
     expect(cache.announcements.map((a) => a.id)).toEqual(["real-2"]);
   });
@@ -234,5 +234,58 @@ describe("reading an announcement", () => {
     await dismiss("never-served");
     expect(cached().announcements.map((a) => a.id)).toEqual(["real-1"]);
     expect(dismissed()).toEqual([]);
+  });
+});
+
+describe("only the most recent announcement", () => {
+  const at = (id: string, day: number) =>
+    sign({ ...GENUINE, id, publishedAt: `2026-09-${String(day).padStart(2, "0")}T10:00:00.000Z` }, marketplace.privateKey);
+
+  it("is shown to a fresh install, not the backlog", async () => {
+    const cache = await run([await at("old-1", 10), await at("newest", 20), await at("old-2", 15)]);
+    expect(cache.announcements.map((a) => a.id)).toEqual(["newest"]);
+  });
+
+  it("is not replaced by an older one once it has been read", async () => {
+    const tokens = [await at("old-1", 10), await at("newest", 20)];
+    await run(tokens);
+    await dismiss("newest");
+    const cache = await run(tokens, { fresh: false });
+    expect(cache.announcements).toEqual([]);
+    expect(dismissed()).toEqual(["newest"]);
+  });
+
+  it("gives way to a newer one when the team publishes again", async () => {
+    await run([await at("first", 10)]);
+    await dismiss("first");
+    const cache = await run([await at("first", 10), await at("second", 12)], { fresh: false });
+    expect(cache.announcements.map((a) => a.id)).toEqual(["second"]);
+  });
+
+  it("does not bring back an older one that was already read when the newest expires", async () => {
+    // Day 10 is read, then day 20 arrives and is read too.
+    await run([await at("old", 10)]);
+    await dismiss("old");
+    await run([await at("old", 10), await at("newest", 20)], { fresh: false });
+    await dismiss("newest");
+    // Day 20 expires; the marketplace's newest live one is day 10 again.
+    const cache = await run([await at("old", 10)], { fresh: false });
+    expect(cache.announcements).toEqual([]);
+  });
+
+  it("does not show an older one after a newer one was read, even unseen", async () => {
+    await run([await at("newest", 20)]);
+    await dismiss("newest");
+    const cache = await run([await at("older-unseen", 15)], { fresh: false });
+    expect(cache.announcements).toEqual([]);
+  });
+
+  it("drops an announcement whose expiry has passed, and shows the live one before it", async () => {
+    const expired = await sign(
+      { ...GENUINE, id: "expired-newest", publishedAt: "2026-09-21T10:00:00.000Z" },
+      marketplace.privateKey, "-1m",
+    );
+    const cache = await run([expired, await at("live", 18)]);
+    expect(cache.announcements.map((a) => a.id)).toEqual(["live"]);
   });
 });
