@@ -54,6 +54,7 @@ import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
 import { ModLogPage }      from "../features/admin/pages/ModLogPage";
 import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
+import { ModTemplatesPage } from "../features/admin/pages/ModTemplatesPage";
 import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
 import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
@@ -302,6 +303,7 @@ function buildRouter() {
           { path: "cases",            element: <ReviewCasesPage /> },
           { path: "modlog",           element: <ModLogPage /> },
           { path: "modsettings",      element: <ModSettingsPage /> },
+          { path: "mod-templates",    element: <ModTemplatesPage /> },
           // Appearance
           { path: "style-editor",     element: <StyleEditorPage /> },
           { path: "layout-editor",    element: <LayoutEditorPage /> },

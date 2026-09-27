@@ -2,7 +2,8 @@
  * What the ACP's user list and user page share: the wire types, how a status, a
  * role and a flag are drawn, and the one ban dialog.
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../../components/Icon";
 import { faBan, faXmark, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
@@ -122,6 +123,16 @@ export function BanDialog({ targets, onClose, onDone }: {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const bulk = targets.length > 1;
+
+  // Opens at the length set in Mod Settings, so the default is the admin's, not ours.
+  const { data: policy } = useQuery<{ defaultDays: number }>({
+    queryKey: ["ban-policy"],
+    queryFn: () => api.get("/moderation/ban-policy"),
+    staleTime: 60_000,
+  });
+  useEffect(() => {
+    if (policy) setExpires((cur) => cur || toLocalInput(new Date(Date.now() + policy.defaultDays * 86_400_000)));
+  }, [policy]);
   const blocked = !reason.trim() || (type === "temporary" && !expires) || busy;
 
   async function submit() {

@@ -1,6 +1,8 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
+import { getModPolicy } from "./moderationPolicy.js";
 import { moderationService } from "./moderation.service.js";
+import { modCanvasService, actSchema } from "./modCanvas.service.js";
 
 const idParam   = z.object({ id: z.string() });
 const pageQuery = z.object({
@@ -38,9 +40,38 @@ const issueBanSchema = z.object({
   expiresAt: z.string().datetime().nullable().optional(),
 });
 
+const reportIdsSchema = z.object({ reportIds: z.array(z.string().min(1)).min(1).max(100) });
+const statusSchema = reportIdsSchema.extend({ status: z.enum(["resolved", "dismissed", "pending"]) });
+const claimSchema = reportIdsSchema.extend({ on: z.boolean() });
+
 const deleteCommentSchema = z.object({ reason: z.string().min(3).max(2000) });
 
 export const moderationController = {
+  // ── ModCanvas inspector + templates ────────────────────────────────────────
+
+  inspector: (async (_req, res) => {
+    res.json(await modCanvasService.inspector());
+  }) as RequestHandler,
+
+  act: (async (req, res) => {
+    res.json(await modCanvasService.act(req.userId!, actSchema.parse(req.body)));
+  }) as RequestHandler,
+
+  setReportStatus: (async (req, res) => {
+    const body = statusSchema.parse(req.body);
+    res.json(await modCanvasService.setStatus(req.userId!, body.reportIds, body.status));
+  }) as RequestHandler,
+
+  claimReports: (async (req, res) => {
+    const body = claimSchema.parse(req.body);
+    res.json(await modCanvasService.claim(req.userId!, body.reportIds, body.on));
+  }) as RequestHandler,
+
+  listTemplates: (async (_req, res) => {
+    res.json(await modCanvasService.listTemplates());
+  }) as RequestHandler,
+
+
   // ── Canvas read ──────────────────────────────────────────────────────────────
 
   getSummary: (async (_req, res) => {
@@ -123,6 +154,10 @@ export const moderationController = {
     const { id } = idParam.parse(req.params);
     await moderationService.pardonWarning(id, req.userId!);
     res.status(204).end();
+  }) as RequestHandler,
+
+  banPolicy: (async (_req, res) => {
+    res.json((await getModPolicy()).bans);
   }) as RequestHandler,
 
   issueBan: (async (req, res) => {

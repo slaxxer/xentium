@@ -31,9 +31,9 @@ export function UserSearch({ value, onChange }: { value: string; onChange: (id: 
 
   if (selectedRef.current && value) {
     return (
-      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--c-bg)",border:"1px solid var(--c-accent)",borderRadius:"var(--radius-md)",padding:"8px 12px",fontSize:13,color:"var(--c-fg)" }}>
+      <div style={{ display:"flex",alignItems:"center",justifyContent:"space-between",background:"var(--c-bg)",border:"1px solid var(--c-accent)",borderRadius:"var(--radius-md)",padding:"8px 12px",fontSize:"var(--fs-sm)",color:"var(--c-fg)" }}>
         <span style={{ fontWeight:700 }}>{selectedRef.current.username}</span>
-        <button type="button" onClick={clear} style={{ background:"none",border:"none",cursor:"pointer",color:"var(--c-fg-muted)",fontSize:15,padding:0,lineHeight:1 }}>×</button>
+        <button type="button" onClick={clear} style={{ background:"none",border:"none",cursor:"pointer",color:"var(--c-fg-muted)",fontSize:"var(--fs-base)",padding:0,lineHeight:1 }}>×</button>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function UserSearch({ value, onChange }: { value: string; onChange: (id: 
               // Select on mouseDown + preventDefault so the input never blurs
               // (an onClick here races the input's blur and gets dropped).
               onMouseDown={(e) => { e.preventDefault(); select(u); }}
-              style={{ display:"block",width:"100%",textAlign:"left",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:13,color:"var(--c-fg)",fontFamily:"inherit" }}
+              style={{ display:"block",width:"100%",textAlign:"left",padding:"8px 12px",background:"none",border:"none",cursor:"pointer",fontSize:"var(--fs-sm)",color:"var(--c-fg)",fontFamily:"inherit" }}
               onMouseEnter={(e) => e.currentTarget.style.background = "var(--c-accent-soft)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}
             >
