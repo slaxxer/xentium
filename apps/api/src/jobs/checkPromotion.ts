@@ -99,6 +99,11 @@ export async function processCheckPromotion(
 
   // ── Promote ──────────────────────────────────────────────────────────────
 
+  const notifySetting = await prisma.setting.findUnique({
+    where: { key: "progression.notify_on_promote" },
+  });
+  const shouldNotify = notifySetting?.value !== false; // default true
+
   await prisma.$transaction(async tx => {
     // Remove from the current progression group (if any)
     if (currentProg) {
@@ -113,17 +118,20 @@ export async function processCheckPromotion(
       update: {},
       create: { userId, groupId: nextRung.groupId },
     });
+
+    // The member sees this once, as the "Level up" dialog, next time they are on the site.
+    // Only while notices are on: switching them back on later must not replay old climbs.
+    if (shouldNotify) {
+      await tx.levelUp.create({
+        data: { userId, fromGroupId: currentProg?.groupId ?? null, toGroupId: nextRung.groupId },
+      });
+    }
   });
 
   // Flush the permission cache — user now has different group memberships
   await permissionCache.invalidate(userId);
 
   // ── Notify ───────────────────────────────────────────────────────────────
-
-  const notifySetting = await prisma.setting.findUnique({
-    where: { key: "progression.notify_on_promote" },
-  });
-  const shouldNotify = notifySetting?.value !== false; // default true
 
   if (shouldNotify) {
     const badgeName = nextRung.badgeLabel ?? nextRung.group.name;
