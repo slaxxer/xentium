@@ -107,5 +107,13 @@
     "saved": "Cover updated",
     "unlocksAt": "Unlocked at {{rank}}",
     "unavailable": "Not available on this site"
+  },
+  "levelUp": {
+    "eyebrow": "Level up!",
+    "title": "You're now",
+    "unlocked": "You unlocked",
+    "nextRank": "Next up: {{rank}}",
+    "top": "You've reached the top of the ladder.",
+    "cta": "Let's go"
   }
 }
