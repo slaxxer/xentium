@@ -4,6 +4,32 @@
 
 ### Changed
 
+- **Writing an article has a new editor.** The canvas takes the full width, with the title,
+  an excerpt and the body in the shared composer (the same toolbar, block picker and tool set
+  your admin configured for comments and posts). Category, tags, cover image, visibility and
+  search appearance live in a Details panel that sits beside the canvas on wide screens and
+  slides over it on smaller ones.
+- **What publishing still needs is shown next to each field**, instead of in a popup after you
+  press Publish. The Details button counts what's missing, and pressing Publish opens it.
+- **A draft can be saved as soon as it has a title.** Category and tags are only needed to
+  publish.
+- **An article's status is Draft or Published.** Switching a published article back to Draft
+  unpublishes it. The old "Review" button did nothing and is gone.
+- **ACP → Users is redesigned.** The list has a search that also finds an email, a user ID
+  or an IP address, status tabs (All, Active, Banned, Flagged), a role filter, sorting by
+  last seen, newest, most posts or name, and counts of active, banned and flagged members.
+  Each row shows the member's role, activity, status and when they were last seen.
+- **Select several members and act on them at once**: add to a group, grant a badge, log
+  out or ban. Each member goes through the same checks as a single action, and anyone who
+  can't be changed (an administrator, or yourself) is listed with the reason.
+- **Flagged members**: accounts with repeated failed sign-ins in the last 24 hours, and
+  accounts that signed up but never confirmed their email. A member's page says why, with
+  a button to their security history.
+- **A member's page is split into tabs**: Overview, Access, Badges and Security. Group
+  changes are saved together with Save membership, and only the groups you actually
+  changed are touched, so a promotion that happened meanwhile is kept.
+- **Banning has duration presets** (24 hours, 7 days, 30 days, 90 days) and the ban's
+  reason is shown on the member's page.
 - **The breadcrumb line above ACP pages is gone** in the sidebar layout. The section panel
   and the page title already say where you are. With the panel collapsed, search is a
   magnifier in the sidebar that opens the palette in the middle of the screen (⌘K still
@@ -29,6 +55,11 @@
 
 ### Fixed
 
+- **Reopening an article you just saved no longer offers to restore an "unsaved draft".**
+  The editor kept a copy on your device even when nothing had changed since the save.
+- **A member's page in the ACP no longer sends their password hash to the browser.** The
+  page never showed it, but the response carried it, along with the sign-in PIN hash.
+- **The Banned filter on the user list works.** It used to list everyone.
 - **Clicking anywhere in a tall composer starts typing.** A composer given a minimum height
   only accepted clicks on its first line, so a click in the empty space below did nothing.
   It now puts the cursor at the end of what you've written.
