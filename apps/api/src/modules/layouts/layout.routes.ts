@@ -18,6 +18,11 @@ adminLayoutRouter.get("/",                       guard, layoutController.draftAl
 adminLayoutRouter.get("/templates",              guard, layoutController.templates);
 adminLayoutRouter.get("/draft-status",           guard, layoutController.draftStatus);
 adminLayoutRouter.post("/publish",               guard, layoutController.publish);
+// The site frame. Before `/:templateKey`, which would otherwise read "frame" as a
+// template key and refuse it.
+adminLayoutRouter.get("/frame",                  guard, layoutController.getFrame);
+adminLayoutRouter.put("/frame",                  guard, layoutController.saveFrame);
+adminLayoutRouter.post("/frame/revert-theme",    guard, layoutController.revertFrame);
 adminLayoutRouter.get("/:templateKey/variants",  guard, layoutController.variants);
 adminLayoutRouter.get("/:templateKey",           guard, layoutController.getDraft);
 adminLayoutRouter.put("/:templateKey",           guard, layoutController.saveDraft);

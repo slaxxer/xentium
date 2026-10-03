@@ -31,7 +31,7 @@ FontAwesome locks it to their domain.
 
 ## Setting one up
 
-**ACP → Appearance → Style Editor → Branding → FontAwesome Pro kit.**
+**ACP → Appearance → Themes → Colours (on any theme) → Branding → FontAwesome Pro kit.**
 
 Paste the kit id (`a1b2c3d4e5`) or the whole `https://kit.fontawesome.com/a1b2c3d4e5.js`
 URL. Clear the field to remove it. Pro icons show up after a reload.
@@ -202,7 +202,7 @@ the site is set to, just like it keeps its own font and its own colours.
 `lib/iconScope` handles that, and a preview inside the ACP opts back in with
 `<IconScope value="site">`, or it would show something visitors don't see.
 
-On the site, any icon can be replaced on its own. In the Layout Editor, switch on
+On the site, any icon can be replaced on its own. In Theme Studio's Layout mode, switch on
 **Icons** in the preview toolbar: every icon gets an outline, clicking one selects its
 block and opens a picker in the side panel, and your choice autosaves into the layout
 draft. Visitors see it once the draft is published.

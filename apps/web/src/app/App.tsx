@@ -17,7 +17,7 @@ import { ArticleEditorPage } from "../features/articles/ArticleEditorPage";
 import { InstallPage } from "../pages/InstallPage";
 import { HomePage }   from "../pages/HomePage";
 import { SearchPage } from "../pages/SearchPage";
-import { PageReaderPage } from "../features/pages/PageReaderPage";
+import { LegalPage } from "../features/legal/LegalPage";
 import { NotFoundPage } from "../features/pages/NotFoundPage";
 import { ThemePreview } from "../pages/ThemePreview";
 import { useInstallStatus } from "../features/installer/hooks/useInstallState";
@@ -26,6 +26,7 @@ import { useMaintenance } from "../features/maintenance/useMaintenance";
 import { MaintenancePage } from "../features/maintenance/MaintenancePage";
 import { api } from "../lib/api";
 import { setBadgeShadows, type GroupShadowConfig } from "../lib/badgeShadow";
+import { setRankImages } from "../lib/rankImage";
 import { useAuth } from "../hooks/useAuth";
 import { useActivityLogger } from "../hooks/useActivityLogger";
 import { loadTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
@@ -46,8 +47,7 @@ import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
 import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
 import { ArticlesPage }      from "../features/admin/pages/ArticlesPage";
 import { CategoriesPage }    from "../features/admin/pages/CategoriesPage";
-import { PagesPage }         from "../features/admin/pages/PagesPage";
-import { PageEditorPage }    from "../features/admin/pages/PageEditorPage";
+import { LegalDocumentsPage } from "../features/admin/pages/LegalDocumentsPage";
 import { SettingsPage }      from "../features/admin/pages/SettingsPage";
 import { EmailPage } from "../features/admin/pages/EmailPage";
 import { AboutPage }         from "../features/admin/pages/AboutPage";
@@ -57,9 +57,8 @@ import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
 import { ModTemplatesPage } from "../features/admin/pages/ModTemplatesPage";
 import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
-import { StyleEditorPage }  from "../features/admin/pages/StyleEditorPage";
 import { ComposerSettings } from "../features/admin/pages/ComposerSettings";
-import { LayoutEditorPage } from "../features/admin/pages/LayoutEditorPage";
+import { StudioRedirect, ThemeStudioPage } from "../features/admin/pages/ThemeStudioPage";
 import { ThemesPage }       from "../features/admin/pages/ThemesPage";
 import { NavigationPage }   from "../features/admin/pages/NavigationPage";
 // ACP pages — extensions
@@ -274,8 +273,6 @@ function buildRouter() {
         children: [
           { path: "/articles/new",       element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
           { path: "/articles/:slug/edit",element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
-          { path: "/pages/new",          element: <PageEditorPage /> },
-          { path: "/pages/:id/edit",     element: <PageEditorPage /> },
         ],
       },
       // ── ACP ──────────────────────────────────────────────────────────────
@@ -295,7 +292,9 @@ function buildRouter() {
           { path: "progression",      element: <ProgressionPage /> },
           { path: "articles",         element: <ArticlesPage /> },
           { path: "categories",       element: <CategoriesPage /> },
-          { path: "pages",            element: <PagesPage /> },
+          { path: "legal",            element: <LegalDocumentsPage /> },
+          // Custom pages removed 2026-10-02; legal documents are what they were used for.
+          { path: "pages",            element: <Navigate to="/admin/legal" replace /> },
           { path: "settings",         element: <SettingsPage /> },
           { path: "email",            element: <EmailPage /> },
           { path: "about",            element: <AboutPage /> },
@@ -305,16 +304,20 @@ function buildRouter() {
           { path: "modsettings",      element: <ModSettingsPage /> },
           { path: "mod-templates",    element: <ModTemplatesPage /> },
           // Appearance
-          { path: "style-editor",     element: <StyleEditorPage /> },
-          { path: "layout-editor",    element: <LayoutEditorPage /> },
+          // Theme Studio (2026-10-02): the Layout Editor and the Style Editor, merged —
+          // one theme's layouts, colours, branding, CSS and history, one Publish. The
+          // old routes redirect, keeping `?theme=` (and the style `?tab=` as a mode).
+          { path: "theme-studio",     element: <ThemeStudioPage /> },
+          { path: "style-editor",     element: <StudioRedirect from="style" /> },
+          { path: "layout-editor",    element: <StudioRedirect from="layout" /> },
           { path: "composer",         element: <ComposerSettings /> },
           // Retired 2026-08-26: the same list is the Style Editor's History tab.
-          { path: "style-history",    element: <Navigate to="/admin/style-editor?tab=history" replace /> },
+          { path: "style-history",    element: <Navigate to="/admin/theme-studio?mode=history" replace /> },
           { path: "navigation",       element: <NavigationPage /> },
           // `guest-home` retired 2026-08-09: the hero copy and section toggles are
           // block props on the guest landing, edited in the Layout Editor. Redirected
           // rather than 404'd, because the old path is in admins' history and docs.
-          { path: "guest-home",       element: <Navigate to="/admin/layout-editor" replace /> },
+          { path: "guest-home",       element: <Navigate to="/admin/theme-studio" replace /> },
           { path: "themes",           element: <ThemesPage /> },
           // `styles` retired 2026-08-15: `.xtstyle` was merged into `.xttheme`, so the
           // pack library and its table are gone. Themes is where the format lives now,
@@ -350,7 +353,7 @@ function buildRouter() {
           { path: "/account",         element: <AccountPage /> },
           { path: "/articles",                element: <FeatureGate feature="articles"><ArticlesListPage /></FeatureGate> },
           { path: "/articles/:slug",          element: <FeatureGate feature="articles"><ArticleReaderPage /></FeatureGate> },
-          { path: "/p/:slug",                 element: <PageReaderPage /> },
+          { path: "/legal/:key",              element: <LegalPage /> },
           // Plugin public routes (registered by plugins via slotRegistry)
           ...slotRegistry.getRoutes("public").map((r) => ({
             path: r.path,
@@ -398,14 +401,14 @@ function BadgeShadowSync() {
   // install guard, and firing it just spams the console (same as a root gate).
   const { data: install, error: installError } = useInstallStatus();
   const installed = !!install?.installed || (installError as any)?.status === 410;
-  const { data } = useQuery<GroupShadowConfig[]>({
+  const { data } = useQuery<Array<GroupShadowConfig & { key: string; rankImage?: string | null }>>({
     queryKey: ["legend-groups"],
     queryFn:  () => api.get("/members/groups"),
     staleTime: 300_000,
     enabled:   installed,
   });
   useEffect(() => {
-    if (data) setBadgeShadows(data);
+    if (data) { setBadgeShadows(data); setRankImages(data); }
   }, [data]);
   return null;
 }

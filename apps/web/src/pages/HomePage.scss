@@ -17,6 +17,7 @@
 .hf-card {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 16px;
 }
@@ -37,6 +38,7 @@
 .hf-mecard {
   background: var(--card-bg);
   border-radius: var(--radius-xl);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding-bottom: 18px;
   text-align: center;
@@ -99,6 +101,7 @@
 .hf-sidenav {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 10px;
   display: flex;
@@ -133,6 +136,7 @@
 .hf-spaces {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 16px 14px;
 }
@@ -195,6 +199,7 @@
     background: var(--card-bg);
     box-shadow: var(--shadow-card);
     border-radius: var(--radius-pill);
+    clip-path: var(--clip-sm);
     padding: 8px 16px;
     font-family: var(--font-display);
     font-weight: 500;
@@ -209,6 +214,7 @@
 .hf-post {
   background: var(--card-bg);
   border-radius: var(--radius-xl);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 18px;
   transition: box-shadow 0.16s;
@@ -245,6 +251,7 @@
   gap: 14px;
   background: var(--card-bg); // it's a card — owned by the Card component, not the Field token
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   padding: 14px;
   margin-top: 14px;
   color: inherit;
@@ -316,6 +323,7 @@
 .hf-feed__empty {
   background: var(--card-bg);
   border-radius: var(--radius-lg);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 40px;
   text-align: center;

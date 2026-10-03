@@ -3,6 +3,7 @@
  * Shared by filing (to record it) and the ModCanvas inspector (to show it).
  */
 import { prisma } from "../../infrastructure/db.js";
+import { reportTargetRegistry } from "../../core/report-target-registry/report-target-registry.js";
 
 // ── What a report is about ───────────────────────────────────────────────────
 
@@ -67,7 +68,27 @@ export async function describeTarget(targetType: string, targetId: string): Prom
       if (!u) return NONE;
       return { authorId: u.id, snapshot: u.bio ? plainText(u.bio) : null, where: `${u.username}'s profile`, href: `/u/${u.username}` };
     }
+    if (targetType === "plugin-content") {
+      // The plugin describes its own content (`ctx.registerReportTarget`); core never
+      // reads plugin tables. A disabled plugin's content resolves to nothing.
+      const target = reportTargetRegistry.resolve(targetId);
+      const info = target ? await target.handler.describe(target.id) : null;
+      if (!info) return NONE;
+      return {
+        authorId: info.authorId,
+        snapshot: info.snapshot ? plainText(info.snapshot) : null,
+        where: info.where,
+        // Site-relative only: a plugin's link is followed by the moderator's browser.
+        href: info.href && info.href.startsWith("/") && !info.href.startsWith("//") ? info.href : null,
+      };
+    }
   } catch { /* deleted or malformed — the report still shows */ }
   return NONE;
 }
 
+/** Content core can remove from a report: its own kinds, or a plugin's that offers it. */
+export function canRemoveTarget(targetType: string, targetId: string): boolean {
+  if (targetType === "article" || targetType === "article_comment" || targetType === "profile_comment") return true;
+  if (targetType === "plugin-content") return !!reportTargetRegistry.resolve(targetId)?.handler.remove;
+  return false;
+}

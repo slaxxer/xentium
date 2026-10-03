@@ -119,6 +119,32 @@ not what's displayed. See [Translating a plugin](plugin-i18n.md).
 
 ---
 
+### `registerReportTarget(handler)`
+
+Members report your content through core, with `targetType: "plugin-content"` and
+`targetId: "<pluginId>:<kind>:<id>"`. Core can't read your tables, so tell it what a
+reported item is. Moderators then see the author, a copy of the text and where it is,
+ModCanvas opens the page and marks the item, and Warn, Ban and (if you give `remove`)
+Remove become available.
+
+```ts
+ctx.registerReportTarget?.({
+  kind: "post",                                  // xentium-forum:post:<id>
+  describe: async (id) => ({
+    authorId: post.author_id,
+    snapshot: post.body,                         // tags are stripped for you
+    where:    thread.title,
+    href:     `/forum/thread/${thread.slug}?page=${page}`,   // site-relative only
+  }),
+  remove: (id, { actorId, reason }) => softDeletePost(id, actorId, reason),
+});
+```
+
+Return `null` from `describe` when the item is gone. Put
+`data-mod-target="plugin-content:<targetId>"` on the item in your page, so ModCanvas can
+scroll to it. Call it with `?.` if your plugin should still load on older cores. It is
+removed when the plugin is disabled.
+
 ## Earning things
 
 ### `registerBadgeCriteria(metric)`
@@ -185,6 +211,38 @@ opts out: its icons stay solid while the rest of the site changes. Keep it in yo
 externals. See [Icons](icon-kits.md).
 
 ---
+
+### Moderation queues (`slotRegistry.registerModQueue`)
+
+Anything moderators work through one by one, such as threads waiting for approval,
+belongs in the moderation shield in the navbar. Each item is a row next to reports
+and security cases. Picking one opens its page, marks it and shows a pill with your
+actions.
+
+```ts
+slotRegistry.registerModQueue({
+  id: "forum-approvals",
+  label: "Approvals",
+  icon: faHourglassHalf,
+  fetchItems: async () => pending.map((t) => ({
+    id: t.id, title: t.title, line: `by ${t.author} in ${t.node}`,
+    createdAt: t.created_at,
+    href: `/forum/thread/${t.slug}`,
+    markKey: `xentium-forum:thread:${t.id}`,     // the page's data-mod-target
+  })),
+  actions: [
+    { id: "approve", label: "Approve", tone: "primary", run: async (item) => { /* … */ return "Thread approved"; } },
+    { id: "reject", label: "Reject", tone: "danger",
+      confirm: { title: "Reject thread", body: "The author is told why.", reasonLabel: "Reason" },
+      run: async (item, reason) => { /* … */ } },
+  ],
+});
+```
+
+`fetchItems` is polled while the site is open, and its length is the count on the
+shield. Return only what this moderator may act on; a failed fetch counts as empty.
+`registerModCanvasSection` (a panel in a dialog) still works, but use a queue for
+lists of decisions.
 
 ## Errors and notifications
 

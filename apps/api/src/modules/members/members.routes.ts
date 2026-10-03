@@ -3,6 +3,8 @@ import { z } from "zod";
 import { userService } from "../users/users.service.js";
 import { prisma } from "../../infrastructure/db.js";
 import { requireFeature } from "../../shared/middleware/requireFeature.js";
+import { getSetting } from "../../shared/utils/settings.js";
+import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 
 export const membersRouter: Router = Router();
 
@@ -11,12 +13,16 @@ export const membersRouter: Router = Router();
 // those currently online. Guests are excluded (anonymous, no member color).
 membersRouter.get("/groups", async (_req, res, next) => {
   try {
+    // Rank images are handed out only while the site shows images; otherwise every
+    // client draws the text badge, so the switch needs no second request.
+    const showImages = (await getSetting<string>("groups.rank_display", "badge")) === "image";
     const groups = await prisma.group.findMany({
       where: { key: { not: "guest" } },
       orderBy: { displayOrder: "asc" },
       select: {
         name: true,
         key: true,
+        rankImage: true,
         progression: {
           select: {
             badgeColor: true, badgeLabel: true, badgeTextShadow: true,
@@ -36,6 +42,7 @@ membersRouter.get("/groups", async (_req, res, next) => {
         badgeShadowX: g.progression?.badgeShadowX ?? 1,
         badgeShadowY: g.progression?.badgeShadowY ?? 1,
         badgeShadowBlur: g.progression?.badgeShadowBlur ?? 20,
+        rankImage: showImages && g.rankImage ? storage.publicUrl(g.rankImage) : null,
       })),
     );
   } catch (err) {

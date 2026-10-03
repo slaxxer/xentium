@@ -22,6 +22,7 @@ import {
   Component,
   createContext,
   useContext,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react";
@@ -44,6 +45,8 @@ import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
 import { editingTemplate, isEditorPreview, isLayoutPreview, usePreviewAudience } from "./useLayout";
 import { IconSlotProvider } from "./iconSlots";
+import { useRegisterPageTemplate } from "./siteFrame";
+import { EdgeArtLayer } from "./edgeArt";
 
 /**
  * True inside the layout editor's preview iframe — which loads a REAL route with
@@ -173,6 +176,16 @@ function RenderNode({
   const def = getBlock(node.type);
   const doc = useRenderedDocument();
   const isOpenDocument = useIsOpenDocument();
+  /*
+   * Edge art is drawn into the block's own element, found through this wrapper.
+   * A callback ref into STATE, not `useRef`: a child's layout effect runs before its
+   * parent element's ref is attached, so a ref object is still null on first mount and
+   * nothing would ever look again. Only set for a block that has edges, so no other
+   * block pays a second render.
+   */
+  const [wrapperEl, setWrapperEl] = useState<HTMLDivElement | null>(null);
+  const hasEdges = !!(node.edges?.top || node.edges?.bottom);
+  const wrapperRef = hasEdges ? setWrapperEl : undefined;
 
   /**
    * Audience (ADR-0005 + Amendment 2). Narrowing only — when the audience admits the
@@ -223,6 +236,7 @@ function RenderNode({
       <IconSlotProvider blockId={node.id} overrides={node.iconOverrides}>
         <Block props={props as never} context={context} children={children} />
       </IconSlotProvider>
+      {hasEdges && <EdgeArtLayer edges={node.edges!} wrapper={wrapperEl} />}
     </BlockBoundary>
   );
 
@@ -297,10 +311,11 @@ function RenderNode({
   // page an admin is looking at, and clicking one of their blocks is how you get to
   // edit it. `data-xt-template` is what lets the bridge say which document to open.
   if (!isEditorPreview()) {
-    return <div className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
+    return <div ref={wrapperRef} className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
   }
   return (
     <div
+      ref={wrapperRef}
       className={wrapperClass}
       data-xt-block={node.id}
       data-xt-type={node.type}
@@ -476,6 +491,8 @@ export interface LayoutRendererProps {
  * their own markup between regions should use `LayoutRegion` directly instead.
  */
 export function LayoutRenderer({ templateKey, context, document: raw, regions }: LayoutRendererProps) {
+  // The site frame may differ per page, and this is where the shell learns which page.
+  useRegisterPageTemplate(templateKey);
   const { document: doc } = parseLayoutDocument(templateKey, raw ?? undefined);
   /**
    * Order comes from the TEMPLATE, never from the document's key order.

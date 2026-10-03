@@ -16,7 +16,8 @@ import { badgeColorSelect, toUserRef } from "../../shared/utils/userRef.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { moderationService } from "./moderation.service.js";
 import { getModPolicy } from "./moderationPolicy.js";
-import { describeTarget, type TargetInfo } from "./reportTarget.js";
+import { canRemoveTarget, describeTarget, type TargetInfo } from "./reportTarget.js";
+import { reportTargetRegistry } from "../../core/report-target-registry/report-target-registry.js";
 
 // ── The inspector ────────────────────────────────────────────────────────────
 
@@ -83,6 +84,7 @@ export const modCanvasService = {
         targetId: list[0]!.targetId,
         where: info.where,
         href: info.href,
+        canRemove: canRemoveTarget(list[0]!.targetType, list[0]!.targetId),
         snapshot: list.find((r) => r.contentSnapshot)?.contentSnapshot ?? info.snapshot,
         firstReportedAt: list[list.length - 1]!.createdAt,
         latestAt: list[0]!.createdAt,
@@ -356,6 +358,16 @@ async function removeContent(targetType: string, targetId: string, actorId: stri
       data: { actorId, actorType: "user", action: "article.deleted", targetType: "article", targetId, reason },
     });
     return;
+  }
+  if (targetType === "plugin-content") {
+    const target = reportTargetRegistry.resolve(targetId);
+    if (target?.handler.remove) {
+      await target.handler.remove(target.id, { actorId, reason });
+      await prisma.moderationLog.create({
+        data: { actorId, actorType: "user", action: "plugin_content.deleted", targetType, targetId, reason },
+      });
+      return;
+    }
   }
   throw new XentiumError({
     code: "XEC-API-4001", httpStatus: 400,

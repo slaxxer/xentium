@@ -7,7 +7,7 @@
  * moment a token is added to the stylesheet without a row in the editor.
  */
 import { describe, expect, it } from "vitest";
-import { TOKEN_BY_VAR, VARIANT_TOKEN_ROWS } from "@xentium/contracts";
+import { THEME_STYLE_DEFAULTS, TOKEN_BY_VAR, VARIANT_TOKEN_ROWS } from "@xentium/contracts";
 import { SECTIONS } from "./styleTokens";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -50,5 +50,13 @@ describe("Style Editor coverage", () => {
     expect(STYLESHEET_DEFAULTS["--radius-pill"]).toBe("999px");
     expect(parseTokenDefaults("@mixin components {\n  --a: 1px; // note\n  /* x */ --b: var(--a);\n}", ["components"]))
       .toEqual({ "--a": "1px", "--b": "var(--a)" });
+  });
+
+  it("the stock theme-style presets ARE the stylesheet defaults", () => {
+    // Theme style → Corners "Rounded" and glow off clear an override when the value
+    // equals the default; that only works while the two agree.
+    for (const [cssVar, value] of Object.entries(THEME_STYLE_DEFAULTS)) {
+      expect(STYLESHEET_DEFAULTS[cssVar], cssVar).toBe(value);
+    }
   });
 });

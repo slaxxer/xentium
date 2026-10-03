@@ -8,6 +8,7 @@ import { ModCanvas } from "../features/modcp/ModCanvas";
 import { LevelUpDialog } from "../features/progression/LevelUpDialog";
 import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
+import { presentFrame, usePageTemplate, useSiteFrame } from "../layout/siteFrame";
 import "./AppLayout.scss";
 
 /** Keeps the <link rel="icon"> in sync with the uploaded favicon. */
@@ -31,19 +32,39 @@ function useFavicon() {
 
 export function AppLayout() {
   useFavicon();
+  const frame = presentFrame(useSiteFrame(), usePageTemplate());
 
+  /*
+   * The frame wrappers are UNCONDITIONAL. Which of them draws a box depends on the
+   * mode (see AppLayout.scss); in `full` all three are `display: contents` and the
+   * page lays out exactly as it did before frames existed. A DOM shape that changed
+   * with the mode would break every custom stylesheet written against the other one.
+   *
+   *   .app-frame        the box, in boxed and flush
+   *   .app-frame__body  everything under the header: carries the overlap band
+   *   .app-frame__box   the box around page + footer, in framed and overlap
+   *   .app-frame__foot  the footer's own card, in floating
+   */
   return (
-    <div className="app-layout">
-      <PubNav />
-      <main className="app-main">
-        <LayoutWidgetOutlet outlet="top" />
-        {/* Page crashes stay contained: nav, footer and the widget outlets keep
-            working, and navigating away clears the error. */}
-        <RouteErrorBoundary variant="inline">
-          <Outlet />
-        </RouteErrorBoundary>
-      </main>
-      <SiteFooter />
+    <div className={frame.className} style={frame.style} data-frame={frame.mode}>
+      <div className="app-frame">
+        <PubNav />
+        <div className="app-frame__body">
+          <div className="app-frame__box">
+            <main className="app-main">
+              <LayoutWidgetOutlet outlet="top" />
+              {/* Page crashes stay contained: nav, footer and the widget outlets keep
+                  working, and navigating away clears the error. */}
+              <RouteErrorBoundary variant="inline">
+                <Outlet />
+              </RouteErrorBoundary>
+            </main>
+            <div className="app-frame__foot">
+              <SiteFooter />
+            </div>
+          </div>
+        </div>
+      </div>
       <ModCanvas />
       <LevelUpDialog />
     </div>

@@ -66,9 +66,13 @@ interface Props {
    * set here is drawn OVER that, and clearing it hands the block back.
    */
   inherits?: boolean;
+  /** Show one half only — the header's Image | Gradient choice decides which paints. */
+  only?: "image" | "gradient";
+  /** No title / preview / note: the caller frames it (the header's own settings). */
+  bare?: boolean;
 }
 
-export function BlockBackgroundFields({ image, gradient, angle, onChange, inherits }: Props) {
+export function BlockBackgroundFields({ image, gradient, angle, onChange, inherits, only, bare }: Props) {
   const { t } = useTranslation("acp");
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -108,12 +112,12 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
 
   return (
     <div className="lay-bg">
-      <div className="lay-bg__title">{t("layoutEditor.bgTitle")}</div>
+      {!bare && <div className="lay-bg__title">{t("layoutEditor.bgTitle")}</div>}
 
       {/* What the two halves actually compose to. The rail is narrow and a gradient
           angle is impossible to hold in your head — showing the result is cheaper
           than describing it. */}
-      <div
+      {!bare && <div
         className="lay-bg__preview"
         style={preview ? { backgroundImage: preview } : undefined}
       >
@@ -123,10 +127,10 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
             the wrong one of those goes looking for a colour control that already
             exists somewhere else. What is empty here is the block's OVERRIDE. */}
         {!preview && <span>{t(inherits ? "layoutEditor.bgInherits" : "layoutEditor.bgNone")}</span>}
-      </div>
+      </div>}
 
       {/* ── Image ─────────────────────────────────────────────────────────── */}
-      <div className="lay-bg__row">
+      {only !== "gradient" && <div className="lay-bg__row">
         <span className="lay-bg__label">{t("layoutEditor.bgImage")}</span>
         {image ? (
           <div className="lay-bg__file">
@@ -150,10 +154,10 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
           hidden
           onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }}
         />
-      </div>
+      </div>}
 
       {/* ── Gradient ──────────────────────────────────────────────────────── */}
-      <div className="lay-bg__row">
+      {only !== "image" && <div className="lay-bg__row">
         <span className="lay-bg__label">{t("layoutEditor.bgGradient")}</span>
 
         {stops.map((stop, i) => (
@@ -205,11 +209,11 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
         {/* One colour is a flat fill, which is a legitimate thing to want and not
             obviously a "gradient" — so the panel says so rather than looking broken. */}
         {stops.length === 1 && <div className="acp-hint">{t("layoutEditor.bgOneStop")}</div>}
-      </div>
+      </div>}
 
       {/* Direction is meaningless with nothing to point, so it appears with the
           second stop rather than sitting permanently disabled. */}
-      {stops.length > 1 && (
+      {only !== "image" && stops.length > 1 && (
         <div className="lay-bg__row">
           <span className="lay-bg__label">{t("layoutEditor.bgAngle")}</span>
           <select className="acp-input" value={currentAngle}
@@ -226,7 +230,7 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
         </div>
       )}
 
-      <div className="acp-hint lay-bg__note">{t("layoutEditor.bgNote")}</div>
+      {!bare && <div className="acp-hint lay-bg__note">{t("layoutEditor.bgNote")}</div>}
     </div>
   );
 }

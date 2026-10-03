@@ -1,5 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import { homeFeedRegistry } from "../../core/home-feed-registry/home-feed-registry.js";
+import { withAuthorBadgeColors } from "../../shared/utils/userRef.js";
 
 const GUEST_DEFAULTS = {
   badge:        "builders online now",
@@ -64,7 +65,7 @@ export const homeService = {
     const source = homeFeedRegistry.get(id);
     if (!source) return [];
     try {
-      return await source.recent(limit);
+      return await withAuthorBadgeColors(await source.recent(limit));
     } catch {
       return [];
     }
@@ -102,7 +103,7 @@ export const homeService = {
     if (!source?.hot) return off;
 
     try {
-      return { enabled: true as const, items: await source.hot(5) };
+      return { enabled: true as const, items: await withAuthorBadgeColors(await source.hot(5)) };
     } catch {
       return off;
     }

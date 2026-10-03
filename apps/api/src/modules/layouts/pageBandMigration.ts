@@ -97,8 +97,8 @@ export async function migratePageBandsIntoBody(): Promise<void> {
   if (await getSetting<boolean>(PAGE_BANDS_MERGED, false)) return;
 
   // EVERY scope and every variant: a draft is work an admin is mid-way through, the
-  // `theme` baseline is what "Revert to theme" restores, and a page's own layout
-  // (`page.detail` with a slug) is as much a stored document as the template default.
+  // `theme` baseline is what "Revert to theme" restores, and a variant row is as much
+  // a stored document as the template default.
   const rows = await prisma.layout.findMany({
     select: { id: true, templateKey: true, document: true },
   });

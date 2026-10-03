@@ -1,16 +1,17 @@
 import { Fragment, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
-import { FontAwesomeIcon } from "../components/Icon";
-import { faUsers } from "@fortawesome/free-solid-svg-icons";
+import { Trans, useTranslation } from "react-i18next";
 import { api } from "../lib/api";
+import { useLegalLinks } from "../lib/legalApi";
+import { legalPath } from "@xentium/contracts";
 import { ThemeChooser } from "../layout/blocks/ThemeChooserBlock";
 import { Username } from "../components/Username";
 import { useAuth } from "../hooks/useAuth";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
 import "./SiteFooter.scss";
+import { useBadgeShadows } from "../lib/badgeShadow";
 
 interface LegendGroup { name: string; key: string; badgeColor: string | null }
 interface OnlineUser { username: string; groupKey: string; badgeColor: string | null }
@@ -88,17 +89,21 @@ export function FooterGroupLegend() {
     queryFn: () => api.get("/members/groups"),
     staleTime: 300_000,
   });
+  const shadows = useBadgeShadows();
   if (legendGroups.length === 0) return null;
   return (
     <div className="xt-legend">
       <span className="xt-legend__lbl">{t("footer.legend")}</span>
       {legendGroups.map((g) => {
         const color = g.badgeColor ?? "var(--c-fg-muted)";
+        // The legend names the groups — always the name in the group's colour, never
+        // a rank image — with the username glow the group has, if any.
+        const glow = g.badgeColor ? shadows.get(g.badgeColor.toLowerCase()) : undefined;
         return (
           <span
             key={g.key}
             className="xt-grp"
-            style={{ color, background: `color-mix(in srgb, ${color} 14%, transparent)` }}
+            style={{ color, ...(glow ? { textShadow: glow } : {}) }}
           >
             {g.name}
           </span>
@@ -137,14 +142,71 @@ export function FooterBoardStats() {
   );
 }
 
-/** Wordmark, footer nav links, copyright and (optionally) uptime + latency. */
-export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
-  showUptime?: boolean;
-  /** The reader's theme picker, at the right of the brand row. */
-  showThemeChooser?: boolean;
-}) {
+/**
+ * The footer's links: the published legal documents first, in their fixed order,
+ * then ACP → Navigation's footer links as this viewer may see them.
+ *
+ * The legal links are core's, not navigation items: an admin cannot delete or
+ * reorder the imprint out of the footer, only publish or unpublish it.
+ */
+function useFooterNavLinks(): FooterNavItem[] {
   const { t } = useTranslation("common");
+  const legal = useLegalLinks().map((d): FooterNavItem => ({
+    id: `legal:${d.key}`, label: t(`legal.link.${d.key}`), url: legalPath(d.key),
+    openInNewTab: false, visibility: "public",
+  }));
+  return [...legal, ...useFooterNavItems()];
+}
+
+/** ACP → Navigation, placement Footer, as this viewer may see them. */
+function useFooterNavItems(): FooterNavItem[] {
   const { isAuthenticated } = useAuth();
+  const { data: navItems = [] } = useQuery<FooterNavItem[]>({
+    queryKey: ["pub-nav-items"],
+    queryFn: () => api.get("/nav-items"),
+    staleTime: 60_000,
+  });
+  return navItems.filter((i) =>
+    i.placement === "footer" &&
+    (i.visibility === "public" || (i.visibility === "members" && isAuthenticated)),
+  );
+}
+
+function FooterLinkList({ links }: { links: FooterNavItem[] }) {
+  const { t } = useTranslation("common");
+  return (
+    <nav className="xt-footlinks__list" aria-label={t("footer.linksLabel")}>
+      {links.map((item) =>
+        item.url.startsWith("/") ? (
+          <Link key={item.id} className="xt-footlinks__link" to={item.url}>{item.label}</Link>
+        ) : (
+          <a key={item.id} className="xt-footlinks__link" href={item.url}
+            {...(item.openInNewTab ? { target: "_blank", rel: "noreferrer" } : {})}>
+            {item.label}
+          </a>
+        ),
+      )}
+    </nav>
+  );
+}
+
+/** ⚠ Superseded by `FooterBar`; renders documents stored before it. */
+export function FooterLinks({ showThemeChooser = true }: { showThemeChooser?: boolean }) {
+  const links = useFooterNavLinks();
+  // Nothing to show: no box either, so an empty row does not hold space in the band.
+  if (links.length === 0 && !showThemeChooser) return null;
+  return (
+    <div className="xt-footlinks">
+      <FooterLinkList links={links} />
+      {/* Draws nothing with fewer than two installed themes. */}
+      {showThemeChooser && <span className="xt-footlinks__theme"><ThemeChooser /></span>}
+    </div>
+  );
+}
+
+/** The fixed footer line — `© {year} Powered by Xentium Community` — not editable, always centred. */
+export function FooterText({ showUptime = false }: { showUptime?: boolean }) {
+  const { t } = useTranslation("common");
   const { data: meta } = useFooterMeta();
 
   // Tick once a second so uptime counts up live between refetches.
@@ -156,56 +218,53 @@ export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
   }, [showUptime]);
   const liveUptime = meta ? meta.uptimeSeconds + Math.floor((Date.now() - meta.fetchedAt) / 1000) : 0;
 
-  const { data: navItems = [] } = useQuery<FooterNavItem[]>({
-    queryKey: ["pub-nav-items"],
-    queryFn: () => api.get("/nav-items"),
-    staleTime: 60_000,
-  });
-  const footerLinks = navItems.filter((i) =>
-    i.placement === "footer" &&
-    (i.visibility === "public" || (i.visibility === "members" && isAuthenticated)),
+  return (
+    <div className="xt-foottext">
+      <span className="xt-foottext__line">
+        <Trans t={t} i18nKey="footer.poweredBy" values={{ year: new Date().getFullYear() }} components={{ b: <b /> }} />
+      </span>
+      {showUptime && (
+        <span className="xt-foottext__meta">
+          <span title={t("footer.uptimeHint")}>{t("footer.uptime")}: <b>{meta ? formatUptime(liveUptime) : "—"}</b></span>
+          <span className="xt-sep">·</span>
+          <span title={t("footer.latencyHint")}>{t("footer.latency")}: <b>{meta ? `${meta.latencyMs} ms` : "—"}</b></span>
+        </span>
+      )}
+    </div>
   );
+}
 
+/**
+ * The footer's bottom: the legal and footer links on the left and the reader's
+ * theme picker on the right, with the fixed copyright line centred under them.
+ */
+export function FooterBar({ showUptime = false, showThemeChooser = true }: {
+  showUptime?: boolean; showThemeChooser?: boolean;
+}) {
+  const links = useFooterNavLinks();
+  return (
+    <div className="xt-footbar">
+      {/* No links and no picker: no row, so it holds no space above the copyright. */}
+      {(links.length > 0 || showThemeChooser) && (
+        <div className="xt-footbar__top">
+          <FooterLinkList links={links} />
+          {/* Draws nothing with fewer than two installed themes. */}
+          {showThemeChooser && <span className="xt-footbar__theme"><ThemeChooser /></span>}
+        </div>
+      )}
+      <FooterText showUptime={showUptime} />
+    </div>
+  );
+}
+
+/** ⚠ Superseded by `FooterBar`; renders documents stored before it. */
+export function FooterBranding({ showUptime = true, showThemeChooser = true }: {
+  showUptime?: boolean; showThemeChooser?: boolean;
+}) {
   return (
     <>
-      <div className="xt-bar">
-        <Link className="xt-brand" to="/" aria-label="Xentium home">
-          <span className="xt-logomark"><FontAwesomeIcon icon={faUsers} /></span>
-          <span className="xt-wordmark">Xentium</span>
-        </Link>
-        {footerLinks.length > 0 && (
-          <nav className="xt-links xt-links--grow">
-            {footerLinks.map((item) =>
-              item.url.startsWith("/") ? (
-                <Link key={item.id} to={item.url}>{item.label}</Link>
-              ) : (
-                <a key={item.id} href={item.url} {...(item.openInNewTab ? { target: "_blank", rel: "noreferrer" } : {})}>
-                  {item.label}
-                </a>
-              ),
-            )}
-          </nav>
-        )}
-        {/* The theme picker, at the RIGHT of the brand row. Part of `branding` rather
-            than a block of its own: it belongs beside the site's mark and its links,
-            and a second placeable control that does the same thing is two ways to
-            reach one setting. `xt-themepick` is pushed over by `margin-left: auto`,
-            which works whether or not there are footer links. */}
-        {showThemeChooser && (
-          <span className="xt-themepick"><ThemeChooser /></span>
-        )}
-      </div>
-
-      <div className="xt-copyright">
-        <span className="xt-copyright__legal">© {new Date().getFullYear()} {meta?.siteName ?? ""}</span>
-        {showUptime && (
-          <span className="xt-copyright__meta">
-            <span title={t("footer.uptimeHint")}>{t("footer.uptime")}: <b>{meta ? formatUptime(liveUptime) : "—"}</b></span>
-            <span className="xt-sep">·</span>
-            <span title={t("footer.latencyHint")}>{t("footer.latency")}: <b>{meta ? `${meta.latencyMs} ms` : "—"}</b></span>
-          </span>
-        )}
-      </div>
+      <FooterLinks showThemeChooser={showThemeChooser} />
+      <FooterText showUptime={showUptime} />
     </>
   );
 }

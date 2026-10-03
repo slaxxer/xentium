@@ -28,10 +28,10 @@
  */
 import { FontAwesomeIcon } from "../../components/Icon";
 import {
-  faLock, faUserSlash, faUserCheck, faChevronRight, faEye,
+  faLock, faUserSlash, faUserCheck, faChevronRight, faChevronDown, faEye,
   faImage, faXmark, faCloudArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -51,6 +51,8 @@ import { timeAgo } from "../../lib/time";
 import { api } from "../../lib/api";
 import { toast } from "../../lib/toast";
 import { apiErrorMessage } from "../../lib/swal";
+import { useRankImages } from "../../lib/rankImage";
+import "../../components/RankBadge.scss";
 import {
   InformationTab,
   ProfileArticlesTab,
@@ -70,7 +72,7 @@ registerBlock({
   type:      "profileCard",
   schema:    blockPropSchemas.profileCard,
   container: true,
-  editorMeta: { label: "Profile card", category: "structure", ...ON_PROFILE },
+  editorMeta: { surface: true, label: "Profile card", category: "structure", ...ON_PROFILE },
   component: ({ props, children }: Ctx<{ padding: string }>) => (
     <div className={`profile-card profile-card--pad-${props.padding}`}>{children}</div>
   ),
@@ -94,34 +96,91 @@ registerBlock({
   },
 });
 
+/**
+ * Former usernames: a chevron beside the name that opens the latest ones.
+ *
+ * Which names arrive, and for how long, is the admin's (ACP → Settings, previous
+ * usernames + day window); the member cannot hide it. A `<details>` for keyboard and
+ * screen-reader behaviour for free, closed on an outside click or Escape like any menu.
+ */
+function FormerUsernames({ names }: { names: Array<{ username: string; changedAt: string }> }) {
+  const { t } = useTranslation("profiles");
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const close = (e: Event) => {
+      const el = ref.current;
+      if (!el?.open) return;
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !el.contains(e.target as Node)) el.open = false;
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, []);
+
+  const label = t("formerlyKnownAs", { names: "" }).replace(/[:\s]+$/, "");
+  return (
+    <details ref={ref} className="profile-formerly">
+      <summary aria-label={label} title={label}>
+        <FontAwesomeIcon icon={faChevronDown} />
+      </summary>
+      <ul className="profile-formerly__menu">
+        {/* The three most recent (the API sends newest first), names only. */}
+        {names.slice(0, 3).map((n) => <li key={n.username}>{n.username}</li>)}
+      </ul>
+    </details>
+  );
+}
+
 registerBlock({
   type:   "profileIdentity",
   schema: blockPropSchemas.profileIdentity,
   editorMeta: { label: "Name & badges", category: "data", ...ON_PROFILE },
   component: ({ props, context }: Ctx<{
-    showHandle: boolean; showJoined: boolean; showBadges: boolean; showFormerly: boolean;
+    showHandle: boolean; showJoined: boolean; showAge?: boolean; showBadges: boolean; showFormerly: boolean;
   }>) => {
-    const { t } = useTranslation("profiles");
+    const { t, i18n } = useTranslation("profiles");
     const { profile } = context;
     const usesFullName = profile.namePreference === "fullName" && !!profile.displayName;
+    const rankImages = useRankImages();
+    const rankRow = profile.groups.filter((g) => g.key && rankImages.has(g.key));
 
     /**
      * ⚠ ONE meta line, joined with a separator — `@handle · Member since August 2026`.
      * The pieces were three stacked paragraphs, which pushed the pills a whole
      * block further down and broke the card's proportions against the mockup.
      */
+    const joined = props.showJoined
+      ? t("memberSince", {
+          date: new Date(profile.joinedDate)
+            .toLocaleDateString(i18n.language, { year: "numeric", month: "long" }),
+        })
+      : null;
+    // Age or birthday, as the member allowed in Account → Privacy (null = neither).
+    // ⚠ `showAge` is read as "not false": documents saved before the prop existed
+    // carry no value, and `parseLayoutDocument` does not fill defaults.
+    const dob = props.showAge !== false && profile.dob
+      ? profile.dob.kind === "age"
+        ? t("yearsOld", { count: profile.dob.age })
+        : t("birthdayOn", {
+            date: new Date(Date.UTC(2000, profile.dob.month - 1, profile.dob.day))
+              .toLocaleDateString(i18n.language, { month: "long", day: "numeric", timeZone: "UTC" }),
+          })
+      : null;
+    // "Member since September 2026, 20 years old" — one clause about the member, so
+    // a comma; the @handle stays a separate piece behind the dot.
+    const about = [joined, dob].filter(Boolean).join(", ");
+
     const meta = [
       props.showHandle && usesFullName ? `@${profile.username}` : null,
-      props.showJoined
-        ? t("memberSince", {
-            date: new Date(profile.joinedDate)
-              .toLocaleDateString(undefined, { year: "numeric", month: "long" }),
-          })
-        : null,
+      about || null,
     ].filter(Boolean);
 
     return (
-      <div className="profile-identity">
+      <div className="profile-identity" data-mod-target={`user:${profile.id}`}>
         {/* The name and every pill share one wrapping row: the mockup reads the
             rank beside the name, not underneath it. */}
         <div className="profile-titlerow">
@@ -132,6 +191,10 @@ registerBlock({
             />
           </h1>
 
+          {props.showFormerly && profile.previousUsernames.length > 0 && (
+            <FormerUsernames names={profile.previousUsernames} />
+          )}
+
           {/* A ban notice is NOT covered by `showBadges`: it is a moderation state,
               not decoration, and an admin must not be able to hide it by unticking a
               badge option. */}
@@ -140,24 +203,34 @@ registerBlock({
               <FontAwesomeIcon icon={faLock} />
               {profile.isPermanentBan ? t("permanentlyBanned") : t("banned")}
             </span>
-          ) : props.showBadges && profile.groups.map((g) => {
-            const color = g.badgeColor ?? "var(--c-accent)";
-            return (
-              <span key={g.id} className="profile-badge"
-                style={{ background: `${color}20`, color, borderColor: `${color}40` }}>
-                {g.badgeLabel ?? g.name}
-              </span>
-            );
-          })}
+          ) : props.showBadges && profile.groups
+            // A group with a rank image draws it on its own row under the name instead.
+            .filter((g) => !(g.key && rankImages.has(g.key)))
+            .map((g) => {
+              const color = g.badgeColor ?? "var(--c-accent)";
+              return (
+                <span key={g.id} className="profile-badge"
+                  style={{ background: `${color}20`, color, borderColor: `${color}40` }}>
+                  {g.badgeLabel ?? g.name}
+                </span>
+              );
+            })}
         </div>
+
+        {/* Rank images (ACP → Settings → Rank display = images) sit UNDER the name: a
+            160px banner beside it pushed the name row apart. Hidden while banned, like
+            the badges, and by the same `showBadges` switch. */}
+        {!profile.isBanned && props.showBadges && rankRow.length > 0 && (
+          <div className="profile-rankimgs">
+            {rankRow.map((g) => (
+              <img key={g.id} className="xt-rankimg" src={rankImages.get(g.key!)} alt={g.badgeLabel ?? g.name}
+                title={g.badgeLabel ?? g.name} loading="lazy" decoding="async" />
+            ))}
+          </div>
+        )}
 
         {meta.length > 0 && <p className="profile-meta">{meta.join(" · ")}</p>}
 
-        {props.showFormerly && profile.previousUsernames.length > 0 && (
-          <p className="profile-formerly">
-            {t("formerlyKnownAs", { names: profile.previousUsernames.map((p) => p.username).join(", ") })}
-          </p>
-        )}
       </div>
     );
   },
@@ -354,7 +427,7 @@ function CoverTools({ profile, progression }: {
 registerBlock({
   type:   "profileCover",
   schema: blockPropSchemas.profileCover,
-  editorMeta: { label: "Cover band", category: "structure", ...ON_PROFILE, wide: true },
+  editorMeta: { surface: true, label: "Cover band", category: "structure", ...ON_PROFILE, wide: true },
   component: ({ props, context }: Ctx<{
     height: number; backgroundImage: string; backgroundGradient: string[]; backgroundAngle: number;
   }>) => {

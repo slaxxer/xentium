@@ -8,7 +8,20 @@ import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
 import { useUploadAllowed } from "./hooks/useUploadAllowed";
 
-export interface NavChild { label: string; to: string }
+export interface NavChild {
+  label: string;
+  to: string;
+  /**
+   * Routes that are INSIDE this page without having nav entries of their own. The
+   * entry stays highlighted there, and the breadcrumb names them under it.
+   */
+  within?: { to: string; label: string }[];
+}
+
+/** Whether `path` is this nav child's page, or one reached only through it. */
+export function childMatches(child: NavChild, path: string): boolean {
+  return path.startsWith(child.to) || !!child.within?.some((w) => path.startsWith(w.to));
+}
 export interface NavItem {
   label: string;        // `acp` i18n key for core items; literal label for plugin sections
   icon: ReactNode;
@@ -47,7 +60,7 @@ export const ACP_NAV: NavItem[] = [
     children: [
       { label: "nav.articles", to: "/admin/articles" },
       { label: "nav.categories", to: "/admin/categories" },
-      { label: "nav.pages", to: "/admin/pages" },
+      { label: "nav.legal", to: "/admin/legal" },
     ],
   },
   {
@@ -62,10 +75,12 @@ export const ACP_NAV: NavItem[] = [
   {
     label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
     children: [
-      { label: "nav.styleEditor", to: "/admin/style-editor" },
-      { label: "nav.layoutEditor", to: "/admin/layout-editor" },
       { label: "nav.composer", to: "/admin/composer" },
-      { label: "nav.themes", to: "/admin/themes" },
+      // Theme Studio is reached from a theme on this page — it edits ONE theme — so
+      // it has no nav entry of its own.
+      { label: "nav.themes", to: "/admin/themes", within: [
+        { to: "/admin/theme-studio", label: "nav.themeStudio" },
+      ] },
       // `style-history` retired 2026-08-26: the Style Editor's History tab is the
       // same list, beside the editor the snapshots came from. The route redirects.
       { label: "nav.navigation", to: "/admin/navigation" },
@@ -101,6 +116,8 @@ export interface AcpNavEntry {
   subKey: string;
   icon: AcpIconName;
   to: string;
+  /** A page inside another (see `NavChild.within`): breadcrumb only, never in the palette. */
+  parentKey?: string;
 }
 
 /**
@@ -116,9 +133,10 @@ export interface AcpNavEntry {
 export const ACP_NAV_INDEX: AcpNavEntry[] = ACP_NAV.flatMap((item) => {
   const icon = item.iconName ?? "cog";
   if (item.children?.length) {
-    return item.children.map((c) => ({
-      labelKey: c.label, subKey: item.label, icon, to: c.to,
-    }));
+    return item.children.flatMap((c) => [
+      { labelKey: c.label, subKey: item.label, icon, to: c.to },
+      ...(c.within ?? []).map((w) => ({ labelKey: w.label, subKey: item.label, icon, to: w.to, parentKey: c.label })),
+    ]);
   }
   // Leaf entries (only the dashboard today) sit under a generic parent crumb.
   return item.to ? [{ labelKey: item.label, subKey: "nav.overview", icon, to: item.to }] : [];
@@ -205,7 +223,7 @@ export function useAcpNav(): NavItem[] {
  */
 export function isNavItemActive(item: NavItem, path: string): boolean {
   if (item.to) return item.to === "/admin" ? path === "/admin" : path.startsWith(item.to);
-  return !!item.children?.some((c) => path.startsWith(c.to));
+  return !!item.children?.some((c) => childMatches(c, path));
 }
 
 /** The section the current route sits in, falling back to the first one. */

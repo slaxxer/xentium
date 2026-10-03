@@ -31,6 +31,7 @@
  * `getComputedStyle`. That reads exactly what the browser would paint, rather than
  * duplicating the SCSS in TypeScript where the two could drift.
  */
+import { useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
@@ -131,11 +132,13 @@ export function BlockStyleFields({
   const flushRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scope = variant ? variantScopeId(variant) : null;
+  // The theme the Layout Editor is editing — variant colours belong to it.
+  const { key: themeKey } = useEditingTheme();
 
-  /** The appearance DRAFT — the same set the Style Editor edits. */
+  /** The appearance DRAFT of that theme — the same set the Style Editor edits. */
   const { data: draft } = useQuery<AdminTokens>({
-    queryKey: ["acp-tokens"],
-    queryFn:  () => api.get("/appearance/tokens"),
+    queryKey: ["acp-tokens", themeKey],
+    queryFn:  () => api.get(withTheme("/appearance/tokens", themeKey)),
     staleTime: 30_000,
   });
 
@@ -160,13 +163,13 @@ export function BlockStyleFields({
 
   const patchMut = useMutation({
     mutationFn: (tokens: Patch) =>
-      api.patch<ScopedTokenSet>(`/appearance/tokens/scope/${encodeURIComponent(scope!)}`, { tokens }),
+      api.patch<ScopedTokenSet>(withTheme(`/appearance/tokens/scope/${encodeURIComponent(scope!)}`, themeKey), { tokens }),
     onSuccess: (next) => {
       // Seed the cache with the server's answer rather than refetching: the Style
       // Editor reads the same key, so both surfaces stay in step. The endpoint answers
       // with the whole admin layer, which is the `tokens` half of what `GET` returns —
       // the theme layer beside it is untouched by a scope patch.
-      qc.setQueryData(["acp-tokens"], (prev: AdminTokens | undefined) => ({ ...prev, tokens: next }));
+      qc.setQueryData(["acp-tokens", themeKey], (prev: AdminTokens | undefined) => ({ ...prev, tokens: next }));
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
       setPatch(EMPTY_PATCH);
     },

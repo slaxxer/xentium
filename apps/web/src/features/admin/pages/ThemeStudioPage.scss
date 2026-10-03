@@ -1,0 +1,100 @@
+// Theme Studio — the one header and mode bar over the embedded editors.
+
+/* A WORKSPACE, like the Layout Editor it embeds: out of the ACP's 1200px reading
+   column, which the editor's own `:has(> .lay)` opt-out no longer reaches once the
+   editor sits inside the Studio. */
+.acp-content:has(> .studio) {
+  max-width: min(1900px, 100%);
+}
+
+/* The Style Editor caps itself at 1400px as a page; in the Studio it follows the
+   Studio's width so the two modes line up. */
+.studio .se-page { max-width: none; }
+.studio {
+  &__head { align-items: flex-end; }
+
+  &__publish {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__draft {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+
+    &.is-pending { color: var(--c-fg); }
+  }
+
+  &__dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--c-success);
+  }
+  &__draft.is-pending &__dot { background: var(--c-warn); }
+
+  &__go { display: inline-flex; align-items: center; gap: 8px; }
+
+  &__modes {
+    display: flex;
+    gap: 2px;
+    width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
+    margin: var(--sp-4) 0 var(--sp-4);
+    padding: 3px;
+    border-radius: 999px;
+    background: var(--c-bg-hover);
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      font-family: inherit;
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--c-fg-muted);
+      background: none;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+
+      &:hover { color: var(--c-fg); }
+      &.is-on {
+        color: var(--c-accent);
+        background: var(--c-surface);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+      }
+      &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+    }
+  }
+
+  // Unpublished changes in that mode.
+  &__count {
+    min-width: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--c-warn);
+    color: var(--c-on-accent);
+    font-size: var(--fs-2xs);
+    line-height: 18px;
+    text-align: center;
+  }
+}
+
+// The Style Editor's action row, embedded: no page header around it.
+.se-embedded-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--sp-3);
+}

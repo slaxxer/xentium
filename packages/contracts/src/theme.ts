@@ -10,6 +10,7 @@
  * `index.ts` and described nothing that was ever written to disk.
  */
 import { z } from 'zod';
+import { colourwaySchema } from './themeStyle.js';
 
 /** Bumped when the PACKAGE layout changes, independently of the layout schema. */
 /**
@@ -30,6 +31,8 @@ export const THEME_PATHS = {
   css: 'styles/tokens.css',
   /** The admin's own stylesheet, scoped at build time on the importing site. */
   custom: 'styles/custom.css',
+  /** The site frame (boxed layouts). Absent = full width. */
+  frame: 'frame.json',
   layouts: 'layouts/',
   assets: 'assets/',
 } as const;
@@ -106,6 +109,14 @@ export const themeManifestSchema = z.object({
    * that says nothing is built on top of.
    */
   appearance: z.enum(['light', 'dark']).default('light'),
+
+  /**
+   * Named colour sets the admin can switch between (Layout Editor → Theme style).
+   * Each is a handful of GLOBAL tokens; picking one writes them into the theme's
+   * appearance draft like any token edit. The package's own `tokens.json` is what
+   * the theme wears before anyone picks, so it should equal the first colourway.
+   */
+  colourways: z.array(colourwaySchema).max(8).optional(),
 });
 
 export type ThemeManifest = z.infer<typeof themeManifestSchema>;

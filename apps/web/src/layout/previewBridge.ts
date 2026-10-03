@@ -43,6 +43,8 @@ import type { AudienceView, LayoutDocument, TemplateKey } from "@xentium/contrac
 import { acceptsChild } from "./blockRegistry";
 import { shortcutFor } from "./editorShortcuts";
 import { setLivePreviewDocument, setPreviewAudience } from "./useLayout";
+import { setLivePreviewFrame } from "./siteFrame";
+import { setPreviewDate } from "./edgeArt";
 
 /**
  * ⚠ Icon mode HIJACKS the click, so it is off by default and the editor turns it on
@@ -556,6 +558,15 @@ export function installPreviewBridge(): () => void {
     if (data.type === "audience") {
       const view = (e.data as { audience?: AudienceView | null }).audience ?? null;
       setPreviewAudience(view);
+      requestAnimationFrame(redraw);
+    }
+    // "Viewing on": the date seasonal edge art is judged against; null = today.
+    if (data.type === "previewDate") {
+      setPreviewDate((e.data as { md?: string | null }).md ?? null);
+    }
+    // The editor's unsaved site frame, from the Site layout popover.
+    if (data.type === "frame") {
+      setLivePreviewFrame((e.data as { frame?: unknown }).frame ?? null);
       requestAnimationFrame(redraw);
     }
     // The editor's working document, pushed on every edit so the preview reflects

@@ -22,6 +22,7 @@ import {
 } from "@xentium/contracts";
 import { api } from "../lib/api";
 import { viewerThemeId, viewerThemeParam } from "../lib/viewerTheme";
+import { previewThemeKey, withTheme } from "../lib/editingTheme";
 /**
  * ⚠ Re-exported, not redefined. These moved to `previewMode` so the icon wrapper can
  * ask without pulling this module's dependencies in behind it; every existing caller
@@ -39,6 +40,8 @@ interface PublishedLayouts {
   templates: Record<string, LayoutDocument>;
   /** Only variants the site actually stores — an untouched site sends none. */
   variants: Partial<Record<string, Record<string, LayoutDocument>>>;
+  /** The site frame. Optional only because an inlined set may predate it. */
+  frame?: unknown;
 }
 
 /**
@@ -181,12 +184,14 @@ export function usePublishedLayouts() {
    * changed, which is the half-applied look this whole feature exists to avoid.
    */
   const themed = preview ? "" : viewerThemeParam();
+  // In a preview: the theme the editor is editing, which need not be the live one.
+  const editing = preview ? previewThemeKey() : null;
   return useQuery<PublishedLayouts>({
     queryKey: preview
-      ? [...LAYOUTS_QUERY_KEY, "draft"]
+      ? [...LAYOUTS_QUERY_KEY, "draft", editing ?? ""]
       : themed ? [...LAYOUTS_QUERY_KEY, themed] : LAYOUTS_QUERY_KEY,
     queryFn:  () => api.get(
-      preview ? "/admin/layouts" : themed ? `/layouts?${themed}` : "/layouts",
+      preview ? withTheme("/admin/layouts", editing) : themed ? `/layouts?${themed}` : "/layouts",
     ),
     // Never for a preview: the inlined set is the PUBLISHED one.
     initialData: preview ? undefined : takeInlinedLayouts,
@@ -198,7 +203,7 @@ export function usePublishedLayouts() {
 /**
  * The document to render, defaulting while loading and on failure.
  *
- * `variant` names one instance of the template — a page slug for `page.detail`.
+ * `variant` names one instance of the template (none accepts one today).
  * Resolution is the same two steps the server applies: the variant's own document,
  * then the template default, then the code default. Two steps and no cascade is the
  * whole point; a template hierarchy is what this design exists to avoid.

@@ -106,7 +106,7 @@ registerBlock({
   type:      "section",
   schema:    blockPropSchemas.section,
   container: true,
-  editorMeta: { label: "Section", category: "structure", wide: true },
+  editorMeta: { surface: true, label: "Section", category: "structure", wide: true },
   component: SectionBlock,
 });
 

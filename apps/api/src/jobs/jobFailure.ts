@@ -3,6 +3,7 @@ import { prisma } from "../infrastructure/db.js";
 import { logger } from "../infrastructure/logging/logger.js";
 import { notificationService } from "../modules/notifications/notification.service.js";
 import { XEC } from "../shared/errors/xec.js";
+import { errorGroupKey } from "../shared/errors/errorGroupKey.js";
 
 // Queues whose final failure pages admins (§55). Others are logged + retained.
 // "update-check" carries the license refresh since the two merged (2026-08-22),
@@ -42,12 +43,16 @@ export function attachFailureHandler(worker: Worker, queueName: string): Worker 
 
 async function onFinalFailure(queueName: string, job: Job | undefined, err: Error): Promise<void> {
   // Persist to error_log for ACP inspection (fire-and-forget).
+  const message = `Job "${job?.name ?? queueName}" failed after exhausting retries: ${err?.message ?? "unknown error"}`;
   prisma.errorLog.create({
     data: {
       code:     XEC.QUEUE_JOB_FAILED,
-      message:  `Job "${job?.name ?? queueName}" failed after exhausting retries: ${err?.message ?? "unknown error"}`,
+      message,
       severity: CRITICAL_QUEUES.has(queueName) ? "critical" : "error",
       context:  { queue: queueName, jobId: job?.id, jobName: job?.name, data: job?.data ?? null },
+      method:   "JOB",
+      url:      job?.name && job.name !== queueName ? `${queueName} · ${job.name}` : queueName,
+      groupKey: errorGroupKey(XEC.QUEUE_JOB_FAILED, message),
     },
   }).catch((e) => logger.error({ queue: queueName, e }, "Failed to write job-failure to error_log"));
 

@@ -148,7 +148,7 @@
 .gp-glyph {
   display: grid; place-items: center; flex: 0 0 auto; overflow: hidden;
   border: 1px solid var(--c-border); border-radius: 10px;
-  img { width: 100%; height: 100%; object-fit: cover; }
+  &--sm { width: 28px; height: 28px; font-size: var(--fs-xs); border-radius: 8px; }
   &--md { width: 34px; height: 34px; font-size: var(--fs-md); }
   &--lg { width: 46px; height: 46px; font-size: var(--fs-lg); border-radius: 12px; }
 }
@@ -161,6 +161,7 @@
   &--trusted  { --mc: var(--c-accent); }
   &__bars { display: inline-flex; gap: 3px; span { width: 13px; height: 5px; border-radius: 999px; background: var(--c-border-hi); &.is-lit { background: var(--mc); } } }
   &__label { font-size: var(--fs-xs); font-weight: 700; color: var(--mc); }
+  &--compact .gp-meter__bars { gap: 2px; span { width: 8px; height: 4px; } }
 }
 
 // ── Group page ───────────────────────────────────────────────────────────────
@@ -249,16 +250,21 @@
   &__main { min-width: 0; }
   &__line { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
   &__name { font-size: var(--fs-md); font-weight: 800; }
+  &__rank { display: block; margin-top: 4px; }
   &__text { margin: 8px 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted); }
 }
 .gp-note { display: flex; gap: 6px; margin: 12px 0 0; font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); svg { margin-top: 3px; } }
 
-.gp-icon-row { display: flex; align-items: center; gap: 14px; }
-.gp-icon-empty {
-  display: grid; place-items: center; width: 46px; height: 46px; flex: 0 0 auto;
-  border-radius: 12px; border: 1px dashed var(--c-border-hi); color: var(--c-fg-subtle);
-}
 .gp-icon-actions { display: flex; gap: 8px; }
+
+/* Rank image: drawn at the size the site draws it (`.xt-rankimg`), so what you see
+   here is what members see beside a name. */
+.gp-rankimg { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 8px; }
+.gp-rankimg__empty {
+  display: grid; place-items: center; width: 160px; height: var(--rank-image-height);
+  border-radius: var(--radius-sm); border: 1px dashed var(--c-border-hi); color: var(--c-fg-subtle);
+}
+.gp-rankimg__mode { margin-top: 6px; a { color: var(--c-accent); } }
 
 .gp-danger { border-color: color-mix(in srgb, var(--c-danger) 30%, var(--c-border)); .btn-danger { margin-top: 12px; } }
 .gp-danger-text { color: var(--c-danger); }
@@ -287,6 +293,8 @@
   input { accent-color: var(--c-accent); }
   &__label { flex: 1; min-width: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg); }
   &__key { font-family: var(--ff-mono); font-size: var(--fs-2xs); color: var(--c-fg-subtle); @media (max-width: 600px) { display: none; } }
+  &__via { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-accent); }
+  &.is-implied { cursor: default; }
 }
 
 // Progression

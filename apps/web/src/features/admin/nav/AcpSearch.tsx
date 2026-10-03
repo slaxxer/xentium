@@ -58,7 +58,9 @@ export function AcpSearch({ align = "right", compact = false, variant = "field" 
     const actions: PaletteItem[] = [
       { kind: "Actions", id: "Actions:viewSite", label: t("topbar.viewLiveSite"), sub: t("topbar.openPublicSite"), icon: "external", run: () => navigate("/") },
     ];
-    const nav: PaletteItem[] = NAV_INDEX.map((n) => ({
+    // Pages reached only through another (the editors, through Themes) are not
+    // destinations of their own.
+    const nav: PaletteItem[] = NAV_INDEX.filter((n) => !n.parentKey).map((n) => ({
       kind: "Navigation", id: `Navigation:${n.to}`, label: t(n.labelKey), sub: t(n.subKey), icon: n.icon, to: n.to,
     }));
     return [...actions, ...nav];

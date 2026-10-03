@@ -10,6 +10,7 @@ import { openDialog } from "../../../../lib/dialog";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { toast } from "../../../../lib/toast";
 import type { Group } from "./groupModel";
+import { Username } from "../../../../components/Username";
 
 interface MemberRow {
   id: string;
@@ -122,7 +123,7 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
             <div key={u.id} className="gp-member">
               <UserAvatar user={u} size={34} />
               <div className="gp-member__main">
-                <span className="gp-member__name" style={{ color }}>{u.username}</span>
+                <Username className="gp-member__name" username={u.username} badgeColor={color} />
                 <span className="gp-hint">{t("groups.members.joined", { date: joined(u.createdAt) })}</span>
               </div>
               <Link to={`/admin/users/${u.id}`} className="btn-ghost btn-sm">{t("groups.members.open")}</Link>

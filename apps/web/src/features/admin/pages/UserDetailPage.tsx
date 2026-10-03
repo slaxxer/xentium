@@ -25,6 +25,7 @@ import {
 } from "./users/usersShared";
 import "./UserDetailPage.scss";
 import "./users/Users.scss";
+import { Username } from "../../../components/Username";
 
 // ── Copyable mono ID chip ─────────────────────────────────────────────────────
 
@@ -503,7 +504,7 @@ export function UserDetailPage() {
           <Avatar user={{ username: user.username, avatar: user.avatar }} size={72} online={user.online} />
           <div className="up-hero__id">
             <div className="up-hero__namerow">
-              <span className="up-hero__name" style={top?.progression?.badgeColor ? { color: groupColor(top) } : undefined}>{user.username}</span>
+              <Username className="up-hero__name" username={user.username} badgeColor={top?.progression?.badgeColor} />
               <RolePill group={top} fallback={t("userDetail.roleMember")} />
               {user.status === "inactive" || isBanned
                 ? <StatusPill status={user.status} long bannedUntil={user.bannedUntil} />

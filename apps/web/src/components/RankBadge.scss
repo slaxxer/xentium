@@ -1,0 +1,11 @@
+/* A rank image in place of a text badge. Sized by a token so a theme can make rank
+   banners larger or smaller; the width follows the image's own proportions. */
+.xt-rankimg {
+  display: inline-block;
+  height: var(--rank-image-height);
+  width: auto;
+  max-width: 100%;
+  vertical-align: middle;
+  flex: none;
+  object-fit: contain;
+}

@@ -1,0 +1,213 @@
+// The inspector's "Theme style" tab. Sits inside `.lay__props-body`.
+.lay-ts {
+  display: flex;
+  flex-direction: column;
+
+  &__lede {
+    margin: 0 0 var(--sp-3);
+    font-size: var(--fs-xs);
+    line-height: 1.5;
+    color: var(--c-fg-muted);
+  }
+
+  &__cws {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: var(--sp-3);
+  }
+
+  &__cw {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 6px;
+    font-family: inherit;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: 12px;
+    cursor: pointer;
+
+    &:hover { border-color: var(--c-border-hi); }
+    &.is-on {
+      border-color: var(--c-accent);
+      background: var(--c-accent-soft);
+    }
+    &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  }
+
+  // The colourway's background with its two accents as bars along the bottom.
+  &__swatch {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 34px;
+    padding: 5px;
+    border-radius: 8px;
+
+    span { height: 6px; border-radius: 2px; }
+    span:first-child { flex: 2; }
+    span:last-child  { flex: 1; }
+  }
+
+  &__cw-name {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    color: var(--c-fg);
+    text-align: left;
+  }
+
+  &__none { margin: 0 0 var(--sp-3); }
+
+  &__row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-2);
+    flex-wrap: wrap;
+    padding: var(--sp-2) 0;
+    border-top: 1px solid var(--c-rowline);
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+  }
+
+  &__check {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: var(--sp-2) 0;
+    border-top: 1px solid var(--c-rowline);
+    font-size: var(--fs-sm);
+    color: var(--c-fg);
+    cursor: pointer;
+
+    input { margin: 0; }
+  }
+
+  &__note { margin: 4px 0 var(--sp-2); }
+
+  &__tokens-head { margin-top: var(--sp-3); }
+
+  &__tokens {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--c-bg);
+    font-family: var(--ff-mono);
+    font-size: var(--fs-2xs);
+    line-height: 1.6;
+    color: var(--c-fg);
+  }
+
+  &__token {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  &__chip {
+    flex: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    border: 1px solid var(--c-border);
+    background: transparent;
+  }
+
+  &__var { color: var(--c-fg-muted); }
+
+  &__val {
+    margin-left: auto;
+    max-width: 50%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+// ── Inspector tabs + folds (LayoutEditorPage) ────────────────────────────────
+.lay__props-tabs {
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--sp-3);
+  padding: 2px;
+  border-radius: 999px;
+  background: var(--c-bg);
+
+  button {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    background: none;
+    border: none;
+    border-radius: 999px;
+    cursor: pointer;
+
+    &:hover { color: var(--c-fg); }
+    &.is-on {
+      color: var(--c-accent);
+      background: var(--c-surface);
+      box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+    }
+    &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  }
+}
+
+// What the block is for — the catalogue's sentence, under the header.
+.lay__props-about {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--fs-xs);
+  line-height: 1.5;
+  color: var(--c-fg-muted);
+}
+
+.lay-fold {
+  border-top: 1px solid var(--c-rowline);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    padding: var(--sp-2) 0;
+    font-family: var(--font-display);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    background: none;
+    border: none;
+    cursor: pointer;
+
+    &:hover { color: var(--c-fg); }
+    &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  }
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c-accent);
+  }
+
+  &__chev {
+    margin-left: auto;
+    font-size: 11px;
+    transition: transform 0.15s;
+  }
+  &.is-open &__chev { transform: rotate(90deg); }
+
+  &__body { padding-bottom: var(--sp-3); }
+}

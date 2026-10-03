@@ -108,12 +108,6 @@ export const accountController = {
     res.json(updated);
   }),
 
-  getUsernameHistory: (async (req, res) => {
-    const userId = req.userId!;
-    const history = await accountService.getUsernameHistory(userId);
-    res.json(history);
-  }),
-
   getProfileFieldValues: (async (req, res) => {
     const userId = req.userId!;
     const fields = await accountService.getProfileFieldValues(userId);

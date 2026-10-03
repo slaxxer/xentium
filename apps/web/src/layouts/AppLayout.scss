@@ -31,8 +31,8 @@
 /**
  * The FOOTER's region, dissolved for the same reason the header's is.
  *
- * ⚠ Scoped to `.app-layout`, NOT to `.pub-head`. The header's region sits inside
- * `.pub-head`; the footer's is a direct child of `.app-layout`, and a copy of the
+ * ⚠ Scoped to `.app-frame__foot`, NOT to `.pub-head`. The header's region sits inside
+ * `.pub-head`; the footer's is a direct child of `.app-frame__foot`, and a copy of the
  * header's rule nested beside it matched nothing at all — the band stayed 1192px
  * wide in a 3387px window and the fix looked correct in the file.
  *
@@ -43,7 +43,7 @@
  *
  * The `<footer>` element and its contentinfo landmark survive; only the box goes.
  */
-.app-layout > .xt-region--footer {
+.app-frame__foot > .xt-region--footer {
   display: contents;
 }
 
@@ -516,6 +516,187 @@
       svg { opacity: 1; }
       &:hover { background: rgba(248, 113, 113, 0.08); color: var(--c-danger); }
     }
+  }
+}
+
+/* ── Site frame ─────────────────────────────────────────
+   How the page sits in the window (Layout Editor → Site layout). `presentFrame`
+   puts the mode on `.app-layout` as a class and the admin's values as custom
+   properties; everything else is here.
+
+   In `full` every wrapper is `display: contents`, so the page lays out exactly as
+   it did before frames existed — the sticky navbar still travels the whole page,
+   because no wrapper has a box for it to be trapped in. */
+.app-frame,
+.app-frame__body,
+.app-frame__box,
+.app-frame__foot {
+  display: contents;
+}
+
+
+/* The frame's own values — set by the Layout Editor's Site layout popover, not the
+   Style Editor, which is why they are not in `_tokenDefaults.scss`. The shadow is
+   stored as a preset NAME; these are what the names mean, so a theme's custom CSS
+   can retune them without touching anyone's layout. */
+.app-layout--boxed {
+  box-sizing: border-box;
+  --frame-shadow-none:   none;
+  --frame-shadow-soft:   var(--shadow-pop);
+  --frame-shadow-lifted: 0 16px 48px rgba(0, 0, 0, 0.48);
+  /* Space between the window and a boxed site. */
+  --frame-gap:       32px;
+  /* How far the overlap band reaches above the page box before it rises into it. */
+  --frame-band-top:  48px;
+  --frame-radius:   var(--frame-r);
+  --frame-overlap:  var(--frame-ov);
+  --frame-card-gap: 16px;
+  --frame-sticky-top: 12px;
+}
+
+/* A kept frame on a phone: tighter gaps, smaller corners, a shorter overlap. */
+@media (max-width: 640px) {
+  .app-layout--phone-keep {
+    --frame-gap:        10px;
+    --frame-card-gap:   8px;
+    --frame-band-top:   16px;
+    --frame-sticky-top: 8px;
+    --frame-radius:     min(var(--frame-r), 14px);
+    --frame-overlap:    min(var(--frame-ov), 140px);
+  }
+}
+
+@mixin frame-box {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  width: 100%;
+  max-width: var(--frame-max);
+  margin-inline: auto;
+  border-radius: var(--frame-radius);
+  box-shadow: var(--frame-shadow);
+  /* `clip`, not `hidden`: hidden makes the box a scroll container, and a sticky
+     navbar inside one sticks to the box instead of to the window. */
+  overflow: clip;
+  background: var(--c-bg);
+}
+
+@mixin frame-card {
+  display: block;
+  border-radius: var(--frame-radius);
+  box-shadow: var(--frame-shadow);
+  overflow: clip;
+}
+
+@mixin frame-modes {
+  /* The body background shows around the box. Overlap paints it as a band instead. */
+  &:not(.app-layout--frame-overlap) {
+    background: var(--frame-bg) center / cover no-repeat;
+  }
+  &.app-layout--bg-fixed:not(.app-layout--frame-overlap) {
+    background-attachment: fixed;
+  }
+
+  /* Boxed / flush top: the whole site in one box. */
+  &.app-layout--frame-boxed { padding: var(--frame-gap); }
+  &.app-layout--frame-flush { padding: 0 var(--frame-gap) var(--frame-gap); }
+  &.app-layout--frame-boxed > .app-frame,
+  &.app-layout--frame-flush > .app-frame {
+    @include frame-box;
+  }
+  &.app-layout--frame-flush > .app-frame {
+    border-radius: 0 0 var(--frame-radius) var(--frame-radius);
+  }
+
+  /* Framed / overlap: the header spans the window, page + footer sit in a box. */
+  &.app-layout--frame-framed,
+  &.app-layout--frame-overlap {
+    .app-frame__body {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: var(--frame-gap);
+    }
+    .app-frame__box {
+      @include frame-box;
+      position: relative;
+    }
+  }
+
+  /* Overlap: a full-width band carries the background and the box rises into it. */
+  &.app-layout--frame-overlap {
+    background: var(--c-bg);
+
+    .app-frame__body {
+      padding-top: var(--frame-band-top);
+
+      &::before {
+        content: "";
+        position: absolute;
+        inset: 0 0 auto;
+        height: calc(var(--frame-band-top) + var(--frame-overlap));
+        background: var(--frame-bg) center / cover no-repeat;
+      }
+    }
+  }
+
+  /* Floating: header, page and footer are three cards. The HEADER card sticks,
+     not the navbar inside it — a sticky element inside a box only travels that box. */
+  &.app-layout--frame-floating {
+    padding: var(--frame-gap);
+
+    > .app-frame {
+      display: flex;
+      flex-direction: column;
+      gap: var(--frame-card-gap);
+      flex: 1;
+      width: 100%;
+      max-width: var(--frame-max);
+      margin-inline: auto;
+    }
+
+    .app-main,
+    .app-frame__foot {
+      @include frame-card;
+    }
+
+    /* ⚠ The header card is NOT clipped: the account menu and the notification
+       dropdown are drawn inline and hang below it, and `overflow: clip` would cut
+       them off at the card's edge. Its first and last painted blocks take the
+       corners instead — reached through the `display: contents` block wrappers. */
+    .pub-head {
+      display: block;
+      position: sticky;
+      top: var(--frame-sticky-top);
+      z-index: 100;
+      border-radius: var(--frame-radius);
+      box-shadow: var(--frame-shadow);
+
+      > .xt-region--header > :first-child > * {
+        border-start-start-radius: var(--frame-radius);
+        border-start-end-radius: var(--frame-radius);
+      }
+      > .xt-region--header > :last-child > * {
+        border-end-start-radius: var(--frame-radius);
+        border-end-end-radius: var(--frame-radius);
+      }
+    }
+  }
+  /* The navbar block's own `sticky: false` un-sticks the card that holds it. */
+  &.app-layout--frame-floating .pub-head:has(.pub-nav--static) {
+    position: relative;
+  }
+}
+
+/* `keep` frames every width; `edge` drops the frame below 640px, where a box with a
+   gap round it is mostly gap. */
+.app-layout--phone-keep {
+  @include frame-modes;
+}
+@media (min-width: 641px) {
+  .app-layout--phone-edge {
+    @include frame-modes;
   }
 }
 

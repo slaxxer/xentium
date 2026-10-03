@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import { errorLogService } from "./errorLog.service.js";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { Prisma } from "../../generated/prisma/client.js";
@@ -532,6 +533,10 @@ export const adminService = {
     // Admin-controlled; users cannot hide it. Window in days (0 = show all history).
     "profile.show_previous_usernames":     true,
     "profile.previous_username_days":      90,
+    // How a group's rank shows beside a name: its text "badge" (default, a fresh
+    // install) or its uploaded rank "image" (falls back to the badge for a group
+    // without one).
+    "groups.rank_display":                 "badge",
     "articles.allow_comments":             true,
     "articles.require_comment_approval":   false,
     "articles.per_page":                   10,
@@ -896,6 +901,8 @@ export const adminService = {
   async clearErrorLog(severity?: string) {
     const where: any = severity ? { severity } : {};
     await prisma.errorLog.deleteMany({ where });
+    // Housekeeping: resolve marks for groups with no rows left.
+    await errorLogService.pruneOrphanGroups();
   },
 
   async listMigrationHistory() {
@@ -908,8 +915,9 @@ export const adminService = {
 
   // ── Style history ─────────────────────────────────────────────────────────
 
-  async listStyleHistory() {
+  async listStyleHistory(themeKey: string) {
     const rows = await prisma.styleHistory.findMany({
+      where:   { themeKey },
       orderBy: { createdAt: "desc" },
       take: 20,
       include: { savedBy: { select: { id: true, username: true, ...badgeColorSelect } } },

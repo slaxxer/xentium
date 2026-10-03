@@ -33,8 +33,13 @@ export interface Template {
 
 export interface Vars { user: string; type: string; where: string; duration: string }
 
-/** "article_comment" → "comment". What `{type}` reads as. */
-export function typeLabel(targetType: string): string {
+/** "article_comment" → "comment". What `{type}` reads as. A plugin's content reads as
+ *  its kind — `"xentium-forum:post:<id>"` is a "post" — when the target id is given. */
+export function typeLabel(targetType: string, targetId?: string): string {
+  if (targetType === "plugin-content" && targetId) {
+    const kind = targetId.split(":")[1];
+    if (kind) return kind.replace(/[_-]/g, " ");
+  }
   if (targetType === "article_comment") return "comment";
   if (targetType === "profile_comment") return "profile comment";
   if (targetType === "user") return "profile";

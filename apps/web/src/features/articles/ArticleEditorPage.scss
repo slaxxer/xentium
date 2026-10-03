@@ -2,9 +2,8 @@
    Create / edit article — full-width canvas, slide-over details.
    Source: nodevo-redesign/Create article redesign. Site tokens only.
 
-   ⚠ Prefix `aed`, not the old `aep`: the ACP's page editor still uses `.aep`
-   (PageEditorPage.scss), and a stylesheet stays in the document once loaded, so a
-   shared root class would let one editor restyle the other.
+   Prefix `aed`: a stylesheet stays in the document once loaded, so a root class
+   shared with another editor would let one restyle the other.
    ========================================================= */
 
 .aed {

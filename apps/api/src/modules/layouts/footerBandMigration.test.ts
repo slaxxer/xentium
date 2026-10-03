@@ -10,6 +10,7 @@
  * The risks this file guards are the two ways a wrap can go wrong: losing something
  * on the way in, and wrapping a footer that is already wrapped.
  */
+import { composeFooter } from "./composedChromeMigration.js";
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_LAYOUTS, MAX_BLOCK_DEPTH,
@@ -51,7 +52,10 @@ describe("carrying a footer over", () => {
     // so "customised?" and "pending publish?" are a stringify against the literal
     // default. A band written with the full prop set draws identically and compares
     // unequal, which marks an untouched footer as customised for ever.
-    expect(JSON.stringify(migrateFooterBand(doc(shipped()))!.regions.footer))
+    // Boot runs this carry-over and then the composed-footer one (branding → links +
+    // text); together they land on today's default.
+    const banded = migrateFooterBand(doc(shipped()))!;
+    expect(JSON.stringify(composeFooter(banded)!.regions.footer))
       .toBe(JSON.stringify(DEFAULT_LAYOUTS["chrome.footer"].regions.footer));
   });
 

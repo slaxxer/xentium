@@ -13,9 +13,13 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { parseKitUrl } from "./iconKit.js";
 import { bustSettingsCache, getSetting } from "../../shared/utils/settings.js";
+import { resolveEditingKey } from "../themes/themeKey.js";
 
 export const appearanceRouter: Router = Router();
 const adminGuard = requirePermission(CorePermissions.ADMIN_ACCESS);
+
+/** The theme an admin request edits: `?theme=` (an id, or `_core`), else the active one. */
+const themeOf = (req: { query: Record<string, unknown> }) => resolveEditingKey(req.query.theme);
 
 /** ⚠ A settings row is free text. Bad JSON must fall back to the default config,
  *  not 500 the endpoint every editor on the site waits for. */
@@ -53,17 +57,15 @@ appearanceRouter.get("/css", async (req, res, next) => {
       // not an error and not a blank page.
     }
 
-    const css   = draft
-      // Effective, not just the admin layer: the draft has to preview the theme it is
-      // layered over, or a site with a theme installed previews as if it had none.
-      ? await appearanceService.buildCSS(
-          await appearanceService.getEffectiveDraftTokens(),
-          // The STAGED stylesheet too, not just the staged tokens — otherwise a
-          // theme being previewed wears its own colours under the previous theme's
-          // CSS, which is a look neither theme has.
-          { draft: true },
-        )
-      : await appearanceService.getLiveCss();
+    let css: string;
+    if (draft) {
+      // The draft of the theme an editor is previewing (`?theme=`, else the active one):
+      // what it ships, under the admin's staged edits to it.
+      const key = await resolveEditingKey(req.query.theme);
+      css = await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens(key), { key });
+    } else {
+      css = await appearanceService.getLiveCss();
+    }
     res.setHeader("Content-Type", "text/css; charset=utf-8");
     /**
      * The version of the stylesheet in this response, so a client can tell what it
@@ -120,19 +122,17 @@ appearanceRouter.get("/stream", async (_req, res, next) => {
 });
 
 // Admin — read current tokens
-appearanceRouter.get("/tokens", adminGuard, async (_req, res, next) => {
+appearanceRouter.get("/tokens", adminGuard, async (req, res, next) => {
   try {
+    const key = await themeOf(req);
     // `tokens` is the ADMIN layer ALONE — the editor writes back what it reads, so
     // returning the merged set would turn every theme value into an admin override and
     // quietly destroy the inheritance. `theme` is additive: the editor shows those
     // values as the inherited baseline, which is what "Reset" now falls back to.
+    // `theme` is what the theme being edited SHIPS — the baseline under the edits.
     const [admin, theme, installed] = await Promise.all([
-      appearanceService.getTokens(),
-      // The STAGED theme layer, because the editor edits the draft: its "Inherited"
-      // labels and its preview must agree, and during the window between importing a
-      // theme and publishing it, the incoming theme is what a cleared override falls
-      // back to.
-      appearanceService.getThemeDraftTokens(),
+      appearanceService.getTokens(key),
+      appearanceService.getThemeTokens(key),
       appearanceService.getInstalledTheme(),
     ]);
     res.json({ tokens: admin, theme, installedTheme: installed });
@@ -155,7 +155,7 @@ appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
     // Edits land in the DRAFT — they go live only on publish (Run now or the
     // scheduled appearance-publish job). No version bump here, so other clients
     // keep seeing the published theme until publish.
-    await appearanceService.saveDraftTokens(body.tokens, req.userId!);
+    await appearanceService.saveDraftTokens(body.tokens, req.userId!, await themeOf(req));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -182,13 +182,14 @@ appearanceRouter.patch("/tokens/scope/:scope", adminGuard, async (req, res, next
     );
     const body = z.object({ tokens: clearable }).parse(req.body ?? {});
 
-    res.json(await appearanceService.saveDraftScope(scope, body.tokens, req.userId!));
+    res.json(await appearanceService.saveDraftScope(scope, body.tokens, req.userId!, await themeOf(req)));
   } catch (err) { next(err); }
 });
 
 // Admin — read raw per-theme custom CSS for the console editor
-appearanceRouter.get("/custom-css", adminGuard, async (_req, res, next) => {
+appearanceRouter.get("/custom-css", adminGuard, async (req, res, next) => {
   try {
+    const key = await themeOf(req);
     // Same shape and the same reason as `/tokens`: `css` is the ADMIN layer alone,
     // because the console writes back exactly what it reads — returning the two layers
     // concatenated would save the theme's stylesheet as the admin's own, and the next
@@ -196,8 +197,8 @@ appearanceRouter.get("/custom-css", adminGuard, async (_req, res, next) => {
     // the STAGED layer so the console agrees with the preview during the window between
     // importing a theme and publishing it.
     const [admin, theme] = await Promise.all([
-      appearanceService.getCustomCss(),
-      appearanceService.getThemeDraftCustomCss(),
+      appearanceService.getCustomCss(key),
+      appearanceService.getThemeCustomCss(key),
     ]);
     res.json({ css: admin, theme });
   } catch (err) { next(err); }
@@ -207,7 +208,7 @@ appearanceRouter.get("/custom-css", adminGuard, async (_req, res, next) => {
 appearanceRouter.put("/custom-css", adminGuard, async (req, res, next) => {
   try {
     const body = z.object({ css: z.string().max(100_000) }).parse(req.body);
-    await appearanceService.saveCustomCss(body.css);
+    await appearanceService.saveCustomCss(body.css, await themeOf(req));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -221,24 +222,43 @@ appearanceRouter.post("/custom-css/preview", adminGuard, async (req, res, next) 
 });
 
 // Admin — is there a staged (draft) change waiting to be published?
-appearanceRouter.get("/draft-status", adminGuard, async (_req, res, next) => {
+appearanceRouter.get("/draft-status", adminGuard, async (req, res, next) => {
   try {
-    res.json(await appearanceService.getDraftStatus());
+    res.json(await appearanceService.getDraftStatus(await themeOf(req)));
   } catch (err) { next(err); }
 });
 
 // Admin — publish the draft now (Run now). Promotes draft → live + SSE push.
 appearanceRouter.post("/publish", adminGuard, async (req, res, next) => {
   try {
-    const published = await appearanceService.publishDraft(req.userId!);
+    const published = await appearanceService.publishDraft(req.userId!, undefined, await themeOf(req));
     res.json({ ok: true, published });
   } catch (err) { next(err); }
 });
 
 // Admin — reset all appearance overrides → inherit the bundled core design
-appearanceRouter.post("/reset", adminGuard, async (_req, res, next) => {
+appearanceRouter.post("/reset", adminGuard, async (req, res, next) => {
   try {
-    await appearanceService.resetAppearance();
+    await appearanceService.resetAppearance(await themeOf(req));
+    res.json({ ok: true });
+  } catch (err) { next(err); }
+});
+
+// Admin — one theme's site font (family / weight / size). Live on save, as it always was.
+appearanceRouter.get("/font", adminGuard, async (req, res, next) => {
+  try {
+    res.json(await appearanceService.getFont(await themeOf(req)));
+  } catch (err) { next(err); }
+});
+
+appearanceRouter.put("/font", adminGuard, async (req, res, next) => {
+  try {
+    const body = z.object({
+      family: z.string().max(200).optional(),
+      weight: z.string().max(10).optional(),
+      size:   z.string().max(10).optional(),
+    }).parse(req.body ?? {});
+    await appearanceService.saveFont(body, await themeOf(req));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
