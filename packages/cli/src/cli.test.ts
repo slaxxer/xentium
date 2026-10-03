@@ -83,6 +83,11 @@ describe("compareSemver", () => {
   it("puts a prerelease below its release", () => {
     expect(compareSemver("1.0.0-alpha.2", "1.0.0")).toBe(-1);
     expect(compareSemver("1.0.0-alpha.3", "1.0.0-alpha.2")).toBe(1);
+    expect(compareSemver("1.0.0-alpha.10", "1.0.0-alpha.9")).toBe(1);
+    expect(compareSemver("1.0.0-alpha.9", "1.0.0-alpha.10")).toBe(-1);
+    expect(compareSemver("1.0.0-alpha", "1.0.0-alpha.1")).toBe(-1);
+    expect(compareSemver("1.0.0-alpha.1", "1.0.0-beta")).toBe(-1);
+    expect(compareSemver("1.0.0-beta.2", "1.0.0-beta.11")).toBe(-1);
   });
 });
 
