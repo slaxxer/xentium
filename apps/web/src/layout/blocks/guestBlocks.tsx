@@ -34,6 +34,7 @@ import { articleCategoriesApi, articlesApi } from "../../lib/articlesApi";
 import { Avatar } from "../../components/Avatar";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { resolveImageSource } from "./coreBlocks";
+import { Username } from "../../components/Username";
 import {
   ArticleFeed,
   DEFAULT_CONFIG,
@@ -119,7 +120,7 @@ registerBlock({
   type:      "guestSurface",
   schema:    blockPropSchemas.guestSurface,
   container: true,
-  editorMeta: { label: "Guest landing", category: "structure", ...ON_HOME },
+  editorMeta: { surface: true, label: "Guest landing", category: "structure", ...ON_HOME },
   component: ({ children }) => <GuestSurface>{children}</GuestSurface>,
 });
 
@@ -129,7 +130,7 @@ registerBlock({
   type:      "guestHero",
   schema:    blockPropSchemas.guestHero,
   container: true,
-  editorMeta: { label: "Hero panel", category: "structure", ...ON_HOME },
+  editorMeta: { surface: true, label: "Hero panel", category: "structure", ...ON_HOME },
   // A two-track grid; its children ARE the tracks.
   component: ({ props, children }: BlockProps<{ backgroundImage: string; overlay: string }>) => {
     const bg = props.backgroundImage.trim();
@@ -213,7 +214,7 @@ registerBlock({
             <div className="gpresence__row" key={a.id}>
               <Avatar user={{ username: a.author.username, avatar: a.author.avatar }} size={38} />
               <div className="gpresence__txt">
-                <b>{a.author.username}</b><span>posted in {a.category?.name ?? "the community"}</span>
+                <b><Username username={a.author.username} badgeColor={a.author.badgeColor} /></b><span>posted in {a.category?.name ?? "the community"}</span>
               </div>
               <span className="gpresence__dot" />
             </div>
@@ -258,7 +259,7 @@ registerBlock({
 registerBlock({
   type:   "guestRail",
   schema: blockPropSchemas.guestRail,
-  editorMeta: { label: "Guest rail", category: "data", ...ON_HOME },
+  editorMeta: { surface: true, label: "Guest rail", category: "data", ...ON_HOME },
   component: ({ props }: BlockProps<{
     showCategories: boolean; showOnline: boolean; showTags: boolean;
   }>) => {

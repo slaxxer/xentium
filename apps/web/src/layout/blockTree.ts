@@ -20,6 +20,7 @@
  */
 import {
   MAX_BLOCK_DEPTH,
+  type BlockEdges,
   type BlockNode,
   type BlockVariant,
   type BlockVisibility,
@@ -402,5 +403,69 @@ export function updateBlockIconOverride(
   else delete map[slot];
   if (Object.keys(map).length === 0) delete node.iconOverrides;
   else node.iconOverrides = map;
+  return next;
+}
+
+/**
+ * Set or clear a block's edge art. An edge set to nothing is deleted, and a block
+ * with no edges left carries no `edges` field — the absence rule `variant` follows.
+ */
+export function updateBlockEdges(regions: Regions, id: string, edges: BlockEdges | undefined): Regions {
+  if (!findNode(regions, id)) return regions;
+  const next = clone(regions);
+  const { node } = findNode(next, id)!;
+  const clean: BlockEdges = {};
+  if (edges?.top) clean.top = edges.top;
+  if (edges?.bottom) clean.bottom = edges.bottom;
+  if (clean.top || clean.bottom) node.edges = clean;
+  else delete node.edges;
+  return next;
+}
+
+/**
+ * Where a block of `type` lives between two containers — the header's "Search sits
+ * in: masthead | navbar | both" and the account menu's placement.
+ *
+ * Moves rather than re-creates where it can, so an existing block keeps its id and
+ * settings. `both` duplicates the one that exists. `make` builds a fresh block only
+ * when neither container has one. Refuses (returns the input) if either container is
+ * missing.
+ */
+export function placeBetween(
+  regions: Regions,
+  type: string,
+  first: string,
+  second: string,
+  where: "first" | "second" | "both",
+  make: () => BlockNode,
+): Regions {
+  if (!findNode(regions, first) || !findNode(regions, second)) return regions;
+  const wantA = where !== "second";
+  const wantB = where !== "first";
+
+  let next = clone(regions);
+  const taken = collectIds(next);
+  const nodeA = findNode(next, first)!.node;
+  const nodeB = findNode(next, second)!.node;
+  const inA = (nodeA.children ?? []).find((n) => n.type === type);
+  const inB = (nodeB.children ?? []).find((n) => n.type === type);
+  const source = inA ?? inB;
+  const fresh = (): BlockNode => (source ? cloneBlock(source, taken) : make());
+
+  if (wantA && !inA) {
+    // Moving is what keeps the id: take it from the other container unless that one
+    // is also staying.
+    const moved = inB && !wantB ? inB : fresh();
+    nodeA.children = [...(nodeA.children ?? []), { ...moved, align: "right" }];
+  }
+  if (wantB && !inB) {
+    const moved = inA && !wantA ? inA : fresh();
+    nodeB.children = [...(nodeB.children ?? []), { ...moved, align: "right" }];
+  }
+  if (!wantA) nodeA.children = (nodeA.children ?? []).filter((n) => n.type !== type);
+  if (!wantB) nodeB.children = (nodeB.children ?? []).filter((n) => n.type !== type);
+  // A block moved from one list to the other appears once: the filter above removed
+  // the original, the push added it at its new home.
+  next = finish(next);
   return next;
 }

@@ -30,7 +30,7 @@ xcf_login_events  ──▶  security-analysis job (BullMQ, every 30 min, runs i
 ```
 
 Review surfaces (core): **ACP → Moderation → Review Cases** (`/admin/cases`)
-and the **ModCanvas → Cases** tab. Case actions: allow (grants a signal
+and in the moderation shield in the navbar (Security), where each case opens a pill on the linked profile. Case actions: allow (grants a signal
 exception), ban-all, mod notes, revoke exception.
 
 ## The four baseline patterns (core, free)

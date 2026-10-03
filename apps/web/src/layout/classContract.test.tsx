@@ -36,7 +36,6 @@ import "./blocks/chromeBlocks";
 import "./blocks/guestBlocks";
 import "./blocks/homeBlocks";
 import "./blocks/memberBlocks";
-import "./blocks/pageDetailBlocks";
 import "./blocks/pageTemplateBlocks";
 import "./blocks/profileBlocks";
 

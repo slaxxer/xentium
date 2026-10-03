@@ -1,179 +1,206 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { faMagnifyingGlass, faRotateRight, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { faTrash, faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
-import { timeAgo } from "../../../lib/time";
-import { Badge } from "../../../components/Badge";
-import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
+import {
+  PAGE_SIZE, type GroupStatus, type GroupsResponse, type Range, type Severity, type StatsResponse,
+} from "./errorLog/errorLogModel";
+import { Overview } from "./errorLog/Overview";
+import { GroupTable } from "./errorLog/GroupTable";
+import { ErrorDrawer } from "./errorLog/ErrorDrawer";
+import "./errorLog/ErrorLog.scss";
 
-interface ErrorEntry {
-  id:        string;
-  code:      string;
-  message:   string;
-  severity:  string;
-  context:   Record<string, unknown> | null;
-  requestId: string | null;
-  userId:    string | null;
-  createdAt: string;
+const STATUSES: GroupStatus[] = ["open", "resolved", "all"];
+
+/** Re-render every 30s so "updated N min ago" keeps moving. */
+function useNow(ms = 30_000) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const id = setInterval(() => setNow(Date.now()), ms); return () => clearInterval(id); }, [ms]);
+  return now;
 }
-interface ErrorLogResponse {
-  data: ErrorEntry[];
-  meta: { page: number; limit: number; total: number; totalPages: number };
-}
-
-const DOMAINS = ["API", "AUTH", "PERM", "ARTICLE", "STORE", "PLUGIN", "CORE", "MOD", "INSTALL", "DB", "QUEUE"];
-
-const SEV_COLOR: Record<string, string> = {
-  critical: "var(--c-danger)",
-  error:    "var(--c-danger)",
-  warn:     "var(--c-warn)",
-  info:     "var(--c-accent)",
-};
-
-const SEV_LABEL_KEY: Record<string, string> = {
-  critical: "errorLog.sevCritical",
-  error:    "errorLog.sevError",
-  warn:     "errorLog.sevWarn",
-  info:     "errorLog.sevInfo",
-};
 
 export function ErrorLogPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [severity, setSeverity] = useState("");
-  const [domain,   setDomain]   = useState("");
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const [severity, setSeverity] = useState<Severity | null>(null);
+  const [domain, setDomain] = useState("");
+  const [queryInput, setQueryInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<GroupStatus>("open");
+  const [range, setRange] = useState<Range>("24h");
+  const [page, setPage] = useState(1);
+  const selectedKey = params.get("group");
+  const now = useNow();
 
-  const { data, isLoading, refetch } = useQuery<ErrorLogResponse>({
-    queryKey: ["acp-error-log", severity, domain],
+  // Search waits for a pause in typing.
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(queryInput.trim()), 250);
+    return () => clearTimeout(id);
+  }, [queryInput]);
+  // Any filter change starts over at page 1.
+  useEffect(() => setPage(1), [severity, domain, query, status]);
+
+  const stats = useQuery<StatsResponse>({
+    queryKey: ["acp-error-log", "stats", range],
+    queryFn: () => api.get(`/admin/error-log/stats?range=${range}&tzOffset=${new Date().getTimezoneOffset()}`),
+  });
+  const groups = useQuery<GroupsResponse>({
+    queryKey: ["acp-error-log", "groups", severity, domain, query, status, page],
     queryFn: () => {
-      const p = new URLSearchParams({ limit: "50" });
+      const p = new URLSearchParams({ status, page: String(page), pageSize: String(PAGE_SIZE) });
       if (severity) p.set("severity", severity);
-      if (domain)   p.set("domain", domain);
-      return api.get(`/admin/error-log?${p}`);
+      if (domain) p.set("domain", domain);
+      if (query) p.set("q", query);
+      return api.get(`/admin/error-log/groups?${p}`);
     },
+    placeholderData: (prev) => prev,
   });
 
-  const clearMut = useMutation({
-    mutationFn: () => {
-      const p = new URLSearchParams();
-      if (severity) p.set("severity", severity);
-      return api.delete(`/admin/error-log${p.size ? `?${p}` : ""}`);
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-error-log"] });
-      swalToast(t("errorLog.cleared"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
+  const select = (key: string | null) => setParams((p) => {
+    const n = new URLSearchParams(p);
+    if (key) n.set("group", key); else n.delete("group");
+    return n;
+  }, { replace: true });
 
-  const sevLabel = (s: string) => SEV_LABEL_KEY[s] ? t(SEV_LABEL_KEY[s]!) : s;
-
-  // Dev-only: trigger a real backend error to verify error_log persistence and
-  // the fatal-halt overlay. 5xx types trip the full-screen halt; "notfound" (4xx)
-  // stays a toast — the deliberate contrast. Mirrors GET /admin/_debug/throw (dev-only).
-  const simulate = async (type: "critical" | "xentium500" | "notfound") => {
-    try {
-      await api.get(`/admin/_debug/throw?type=${type}`);
-    } catch (e) {
-      if (type === "notfound") swalToast(apiErrorMessage(e));
-      // 5xx cases already tripped the fatal overlay in api.ts — nothing more to do.
-    }
+  const refresh = async () => {
+    await qc.invalidateQueries({ queryKey: ["acp-error-log"] });
+    toast.success(t("errorLog.refreshed"));
   };
 
+  const sevLabel = (s: Severity) => t(`errorLog.sev.${s}`);
+  const clearMut = useMutation({
+    mutationFn: () => api.delete(`/admin/error-log${severity ? `?severity=${severity}` : ""}`),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ["acp-error-log"] });
+      select(null);
+      toast.success(t("errorLog.cleared"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
   const handleClear = async () => {
-    const title = severity
-      ? t("errorLog.confirmSeverity", { severity: sevLabel(severity) })
-      : t("errorLog.confirmAll");
-    const ok = await swalConfirm(title, t("errorLog.confirmBody"), t("errorLog.confirmBtn"));
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: severity ? t("errorLog.confirmSeverity", { severity: sevLabel(severity) }) : t("errorLog.confirmAll"),
+      body: t("errorLog.confirmBody"),
+      confirmText: t("errorLog.confirmBtn"),
+      cancelText: t("errorLog.cancel"),
+    });
     if (ok) clearMut.mutate();
   };
 
+  // Dev-only: trigger a real backend error to check the log and the fatal-halt
+  // overlay. Mirrors GET /admin/_debug/throw, which production never mounts.
+  const simulate = async (type: "critical" | "xentium500" | "notfound") => {
+    try { await api.get(`/admin/_debug/throw?type=${type}`); }
+    catch (e) { if (type === "notfound") toast.error(apiErrorMessage(e)); }
+    void qc.invalidateQueries({ queryKey: ["acp-error-log"] });
+  };
+
+  const updatedAgo = Math.floor((now - Math.max(stats.dataUpdatedAt, groups.dataUpdatedAt)) / 60_000);
+  const counts = groups.data?.counts;
+  const meta = groups.data?.meta;
+  const filtered = !!(severity || domain || query || status !== "open");
+  const resetFilters = () => { setSeverity(null); setDomain(""); setQueryInput(""); setQuery(""); setStatus("open"); };
+  const domains = useMemo(() => stats.data?.domains ?? [], [stats.data]);
+
   return (
-    <div>
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.system")}</div>
-          <h1 className="acp-page-title">{t("errorLog.title")}</h1>
+    <div className={`el-shell${selectedKey ? " has-drawer" : ""}`}>
+      <div className="el-page">
+        <div className="pg-head el-head">
+          <div>
+            <p className="pg-eyebrow">{t("nav.system")}</p>
+            <h1 className="pg-title">{t("errorLog.title")}</h1>
+            {stats.data && (
+              <p className="el-head__sub">
+                {t("errorLog.summary", { count: stats.data.totalEntries, groups: stats.data.totalGroups })}
+                {stats.data.retentionDays > 0 && <> · {t("errorLog.retention", { count: stats.data.retentionDays })}</>}
+              </p>
+            )}
+          </div>
+          <div className="el-head__actions">
+            <span className="el-updated">{updatedAgo < 1 ? t("errorLog.updatedNow") : t("errorLog.updatedAgo", { count: updatedAgo })}</span>
+            <button type="button" className="btn-ghost btn-sm" onClick={() => void refresh()}>
+              <FontAwesomeIcon icon={faRotateRight} className="el-ic" /> {t("errorLog.refresh")}
+            </button>
+            <button type="button" className="btn-ghost btn-sm el-btn-danger" onClick={() => void handleClear()} disabled={clearMut.isPending}>
+              <FontAwesomeIcon icon={faTrash} className="el-ic" /> {severity ? t("errorLog.clearSeverity", { severity: sevLabel(severity) }) : t("errorLog.clearLog")}
+            </button>
+          </div>
         </div>
-        <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-          {import.meta.env.DEV && (
-            <div style={{ display:"flex", gap:6, alignItems:"center", marginRight:6 }}>
-              <span style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-subtle)", fontWeight:600 }}>DEV simulate:</span>
-              <button type="button" className="btn-ghost btn-sm" title="Throw an unhandled 500 (critical) — trips the fatal halt" onClick={() => simulate("critical")}>500</button>
-              <button type="button" className="btn-ghost btn-sm" title="Throw a XentiumError 500 — trips the fatal halt" onClick={() => simulate("xentium500")}>XEC 500</button>
-              <button type="button" className="btn-ghost btn-sm" title="Throw a 404 — toast only, no halt" onClick={() => simulate("notfound")}>404</button>
-            </div>
+
+        {import.meta.env.DEV && (
+          <div className="el-dev">
+            <span>DEV simulate:</span>
+            <button type="button" className="btn-ghost btn-sm" title="Unhandled 500 (critical), trips the fatal halt" onClick={() => void simulate("critical")}>500</button>
+            <button type="button" className="btn-ghost btn-sm" title="XentiumError 500, trips the fatal halt" onClick={() => void simulate("xentium500")}>XEC 500</button>
+            <button type="button" className="btn-ghost btn-sm" title="404, toast only" onClick={() => void simulate("notfound")}>404</button>
+          </div>
+        )}
+
+        <Overview stats={stats.data} range={range} onRange={setRange} severity={severity}
+          onSeverity={(s) => setSeverity((cur) => (cur === s ? null : s))} />
+
+        <div className="el-filters">
+          <label className="el-search">
+            <FontAwesomeIcon icon={faMagnifyingGlass} className="el-ic" />
+            <input value={queryInput} onChange={(e) => setQueryInput(e.target.value)} placeholder={t("errorLog.searchPlaceholder")} />
+            {queryInput && (
+              <button type="button" className="el-search__clear" aria-label={t("errorLog.clearSearch")} onClick={() => setQueryInput("")}>
+                <FontAwesomeIcon icon={faXmark} className="el-ic" />
+              </button>
+            )}
+          </label>
+          <select className="acp-select el-select" value={domain} onChange={(e) => setDomain(e.target.value)} aria-label={t("errorLog.allDomains")}>
+            <option value="">{t("errorLog.allDomains")}</option>
+            {domains.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <div className="el-seg" role="tablist">
+            {STATUSES.map((s) => (
+              <button key={s} type="button" role="tab" aria-selected={status === s} className={status === s ? "is-on" : ""} onClick={() => setStatus(s)}>
+                {t(`errorLog.status.${s}`)} {counts && <span className="el-seg__n">{counts[s]}</span>}
+              </button>
+            ))}
+          </div>
+          {severity && (
+            <button type="button" className="el-chip" onClick={() => setSeverity(null)}>
+              {t("errorLog.severityChip", { severity: sevLabel(severity) })} <FontAwesomeIcon icon={faXmark} className="el-ic" />
+            </button>
           )}
-          <button type="button" className="btn-ghost btn-sm" onClick={() => refetch()}>
-            <FontAwesomeIcon icon={faRotateRight} />
-          </button>
         </div>
+
+        <GroupTable
+          loading={groups.isLoading}
+          items={groups.data?.items ?? []}
+          selectedKey={selectedKey}
+          dimResolved={status !== "resolved"}
+          onSelect={(k) => select(k === selectedKey ? null : k)}
+          onReset={filtered ? resetFilters : undefined}
+        />
+
+        {meta && meta.total > 0 && (
+          <div className="el-pager">
+            <span>{t("errorLog.pageRange", {
+              from: (meta.page - 1) * meta.limit + 1,
+              to: Math.min(meta.page * meta.limit, meta.total),
+              count: meta.total,
+            })}</span>
+            <div className="el-pager__nav">
+              <button type="button" className="btn-ghost btn-sm" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)}>{t("errorLog.prev")}</button>
+              <span>{meta.page} / {meta.totalPages}</span>
+              <button type="button" className="btn-ghost btn-sm" disabled={meta.page >= meta.totalPages} onClick={() => setPage(meta.page + 1)}>{t("errorLog.next")}</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div style={{ display:"flex", gap:10, marginBottom:20, flexWrap:"wrap" }}>
-        <select className="acp-select" style={{ width:"auto" }} value={severity} onChange={(e) => setSeverity(e.target.value)}>
-          <option value="">{t("errorLog.allSeverity")}</option>
-          <option value="critical">{t("errorLog.sevCritical")}</option>
-          <option value="error">{t("errorLog.sevError")}</option>
-          <option value="warn">{t("errorLog.sevWarn")}</option>
-          <option value="info">{t("errorLog.sevInfo")}</option>
-        </select>
-        <select className="acp-select" style={{ width:"auto" }} value={domain} onChange={(e) => setDomain(e.target.value)}>
-          <option value="">{t("errorLog.allDomains")}</option>
-          {DOMAINS.map((d) => <option key={d} value={d}>{d}</option>)}
-        </select>
-        <button type="button" className="btn-danger btn-sm" onClick={handleClear} disabled={clearMut.isPending} style={{ marginLeft:"auto" }}>
-          <FontAwesomeIcon icon={faTrash} style={{ marginRight:5 }} />
-          {severity ? t("errorLog.clearSeverity", { severity: sevLabel(severity) }) : t("errorLog.clearLog")}
-        </button>
-      </div>
-
-      {isLoading ? (
-        <div className="acp-card acp-empty">{t("errorLog.loading")}</div>
-      ) : !data?.data.length ? (
-        <div className="acp-card acp-empty">{t("errorLog.empty")}</div>
-      ) : (
-        <>
-          <div className="acp-card" style={{ padding:0, overflow:"hidden" }}>
-            {data.data.map((e, i) => {
-              const color    = SEV_COLOR[e.severity] ?? "var(--c-fg-muted)";
-              const isOpen   = expanded === e.id;
-              const hasCtx   = e.context && Object.keys(e.context).length > 0;
-              return (
-                <div key={e.id}>
-                  <div
-                    onClick={() => setExpanded(isOpen ? null : e.id)}
-                    style={{ display:"grid", gridTemplateColumns:"160px 1fr 80px 90px 80px", alignItems:"center", gap:12, padding:"13px 18px", borderBottom: i < data.data.length - 1 && !isOpen ? "1px solid var(--c-border)" : "none", cursor: hasCtx ? "pointer" : "default", transition:"background 0.12s" }}
-                    onMouseEnter={(el) => { if (hasCtx) el.currentTarget.style.background = "var(--c-accent-soft)"; }}
-                    onMouseLeave={(el) => el.currentTarget.style.background = "transparent"}
-                  >
-                    <div style={{ fontFamily:"monospace", fontSize:"var(--fs-xs)", fontWeight:700, color:"var(--c-accent)" }}>{e.code}</div>
-                    <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }} title={e.message}>{e.message}</div>
-                    <Badge label={sevLabel(e.severity)} color={color} />
-                    <div style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-muted)" }}>{timeAgo(e.createdAt)}</div>
-                    <div style={{ fontSize:"var(--fs-2xs)", color:"var(--c-fg-muted)", fontFamily:"monospace" }}>
-                      {e.requestId ? e.requestId.slice(0, 8) : "—"}
-                    </div>
-                  </div>
-                  {isOpen && hasCtx && (
-                    <div style={{ padding:"12px 18px", background:"var(--c-bg)", borderBottom: i < data.data.length - 1 ? "1px solid var(--c-border)" : "none" }}>
-                      <pre style={{ margin:0, fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", fontFamily:"monospace", whiteSpace:"pre-wrap", wordBreak:"break-all" }}>
-                        {JSON.stringify(e.context, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-          <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)", marginTop:10, textAlign:"right" }}>
-            {t("errorLog.totalEntries", { count: data.meta.total })}
-          </div>
-        </>
-      )}
+      {selectedKey && <ErrorDrawer groupKey={selectedKey} onClose={() => select(null)} />}
     </div>
   );
 }

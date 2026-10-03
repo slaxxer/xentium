@@ -118,15 +118,18 @@ async function refsInLayouts(): Promise<string[]> {
  * anything that might be a reference is treated as one.
  */
 async function collectReferenced(): Promise<Set<string>> {
-  const [users, covers, groups, logos, articles, pages, articleBodyRefs, pageBodyRefs, layoutRefs] = await Promise.all([
+  const [users, covers, groups, rankImages, logos, articles, articleBodyRefs, legalBodyRefs, legalDraftRefs, layoutRefs] = await Promise.all([
     prisma.user.findMany({ where: { avatar: { not: null } }, select: { avatar: true } }),
     prisma.user.findMany({ where: { coverImage: { not: null } }, select: { coverImage: true } }),
     prisma.group.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
+    prisma.group.findMany({ where: { rankImage: { not: null } }, select: { rankImage: true } }),
     prisma.setting.findMany({ where: { key: { startsWith: "appearance.logo." } }, select: { value: true } }),
     prisma.article.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
-    prisma.page.findMany({ where: { featuredImage: { not: null } }, select: { featuredImage: true } }),
     refsInJson("xcf_articles", "body"),
-    refsInJson("xcf_pages", "body"),
+    // Custom pages are gone, but a legal document carried over from one may still
+    // show an image under `pages/`. Everything else there is now an orphan.
+    refsInJson("xcf_legal_documents", "body"),
+    refsInJson("xcf_legal_documents", "draft_body"),
     // Section backgrounds and every other asset prop a block carries. These live
     // ONLY in the document — no column points at them — so without this the files
     // have no reference anywhere and the sweep treats them all as orphans.
@@ -144,11 +147,12 @@ async function collectReferenced(): Promise<Set<string>> {
   users.forEach((u) => add(u.avatar));
   covers.forEach((u) => add(u.coverImage));
   groups.forEach((g) => add(g.icon));
+  rankImages.forEach((g) => add(g.rankImage));
   logos.forEach((s) => add(s.value));
   articles.forEach((a) => add(a.featuredImage));
-  pages.forEach((p) => add(p.featuredImage));
   articleBodyRefs.forEach(add);
-  pageBodyRefs.forEach(add);
+  legalBodyRefs.forEach(add);
+  legalDraftRefs.forEach(add);
   layoutRefs.forEach(add);
   return set;
 }
@@ -233,8 +237,8 @@ registerScheduledAction({
   label: "Purge orphaned uploads",
   description:
     "Deletes files in the core upload folders (avatars, covers, groups, themes, articles, pages, layouts) that no record points at " +
-    "any more — replaced avatars and group icons, and the leftovers of deleted articles and pages. Inline images " +
-    "referenced from page/article bodies and files belonging to soft-deleted records are kept, and plugin upload " +
+    "any more — replaced avatars and group icons, and the leftovers of deleted articles and of the removed custom pages. Inline images " +
+    "referenced from article and legal-document bodies and files belonging to soft-deleted records are kept, and plugin upload " +
     "folders are never touched. Always dry-run this first: deleted files cannot be recovered.",
   domain:         "System",
   params:         paramsSchema,

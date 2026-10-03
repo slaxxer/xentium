@@ -68,8 +68,8 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
   {
     key: "appearance-publish", schedulerId: "appearance-publish-repeat",
     queue: queues.appearancePublish, jobName: "appearance-publish",
-    label: "Publish appearance changes",
-    description: "Applies staged (draft) Style Editor changes to the live site at the scheduled time. Disabled by default — use 'Run now' to publish immediately, or enable a schedule to auto-publish pending drafts.",
+    label: "Publish theme changes",
+    description: "Applies every theme's staged (draft) Theme Studio changes, layouts and styles together, to the live site at the scheduled time. Disabled by default — use 'Run now' to publish immediately, or enable a schedule to auto-publish pending drafts.",
     defaultCron: "0 3 * * *", minIntervalSec: 5 * 60,
     defaultEnabled: false,
   },

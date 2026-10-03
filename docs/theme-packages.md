@@ -1,7 +1,7 @@
 # The `.xttheme` package format
 
 This page describes the file format in detail. For how themes, tokens and layers behave
-on a running site (installing vs switching, the theme and admin layers, the stylesheet we
+on a running site (installing vs switching, each theme's own edits, the stylesheet we
 serve), read [`style-system.md`](style-system.md) first.
 
 A **theme is data and a plugin is code**; [`plugin-blocks.md`](plugin-blocks.md) covers
@@ -16,6 +16,7 @@ manifest.json            required
 tokens.json              all design tokens, by scope (the complete copy)
 styles/tokens.css        the global tokens as :root custom properties
 styles/custom.css        the theme's own stylesheet (optional)
+frame.json               the site frame: boxed, floating, overlap… (optional; absent = full width)
 layouts/<template>.json  one document per template
 assets/                  images and fonts the documents use
 ```
@@ -83,7 +84,14 @@ with it `assets/`, since export only collects assets that layouts reference. You
   "license": "MIT",              // optional
   "homepage": "https://…",       // optional
   "authorUrl": "https://…",      // optional
-  "screenshot": "assets/preview.png"   // optional, relative to the package
+  "screenshot": "assets/preview.png",  // optional, relative to the package
+
+  // Optional, up to 8. Named colour sets the admin can switch between in the Layout
+  // Editor (Theme style tab). Each one is a handful of GLOBAL tokens.
+  "colourways": [
+    { "id": "toxin",  "name": "Toxin",  "tokens": { "--c-bg": "#090d0b", "--c-accent": "#3be38a", "--c-accent2": "#b07cff" } },
+    { "id": "ember",  "name": "Ember",  "tokens": { "--c-bg": "#0e0909", "--c-accent": "#ff3d4a", "--c-accent2": "#3be38a" } }
+  ]
 }
 ```
 
@@ -96,6 +104,22 @@ place.
 sets its background in `styles/custom.css` has no background token at all. The
 marketplace shows it on the listing card, and a wrong badge is worse than none, so a
 package that leaves it out gets no badge.
+
+### Colourways
+
+A colourway is a shortcut, not a second palette. Picking one writes its tokens into the
+admin's appearance draft for your theme, exactly as if they had been typed into the Style
+Editor, and it publishes the same way. So:
+
+- Give every colourway the **same set of tokens**. Picking Ember after Toxin only
+  changes what Ember names; a token only Toxin set would stay behind.
+- Make your `tokens.json` equal to the **first** colourway. That is what the theme wears
+  before anyone picks, and it is how the editor knows to mark it as current.
+- A value your package already ships is cleared rather than copied when the admin picks
+  it, so a later update of your theme can still move it.
+
+The tile in the editor is drawn from `--c-bg`, `--c-accent` and `--c-accent2`, so set
+those three in each colourway.
 
 ## Tokens
 
@@ -123,8 +147,8 @@ of a theme, it applies **live** (see [Importing](#importing)).
 One file per template, named after the template key:
 
 ```
-layouts/home.json  article.index  article.detail  page.detail
-       profile.json  members.json  chrome.header.json  chrome.footer.json
+layouts/home.json  article.index.json  article.detail.json  profile.json
+       members.json  chrome.header.json  chrome.footer.json
 ```
 
 Each file is a layout document, `{ templateKey, schemaVersion, regions: { … } }`, where
@@ -228,70 +252,62 @@ paths again.
 
 ## Importing
 
-- **Installing isn't switching.** A new theme goes into the library inactive, and the
-  admin is asked whether to switch to it. Only an update to the theme the site is already
-  wearing is applied on import. See
-  [`style-system.md` → Themes on a site](style-system.md#themes-on-a-site-install-switch-undo).
-- **Switching is live:** layouts, tokens and the stylesheet together. Putting on a theme
-  is one decision, not a batch of edits waiting to be published; draft and publish are for
-  editing. We write the draft too, so pending Style Editor edits preview against the theme
-  that's actually on the site.
-- **The way back is the undo point:** `POST /admin/themes/discard` restores exactly what
-  the last import or switch replaced. It only goes back **one step**: a second import
-  overwrites it, and after that the only way back to the earlier state is to activate the
-  old theme from the library.
-- **A switch replaces the theme layer; it doesn't merge.** A theme without tokens or
-  without `styles/custom.css` clears the previous theme's, so its fonts and rules don't
-  keep painting a site that has moved on. (Layouts are different on purpose: a template
-  the new theme doesn't ship keeps what the site had.)
+- **Installing isn't switching.** A new theme goes into the library inactive, and you're
+  asked whether to switch to it. See
+  [`style-system.md` → Themes on a site](style-system.md#themes-on-a-site-install-switch-update-undo).
+- **Each theme keeps its own work.** Your edits to a theme's layouts, tokens, custom CSS,
+  font and site frame belong to that theme. Switching only changes which theme visitors
+  see, so it can't overwrite or leave behind anything from another theme. You can edit a
+  theme before you switch to it.
+- **The way back is the undo point:** `POST /admin/themes/discard` undoes the last switch
+  (by switching back) or the last update (by restoring the old version and that theme's
+  layouts). It only goes back **one step**; after that, activate the old theme from the
+  library.
 - **All or nothing:** we validate every layout, token, stylesheet and asset before we
   write a single byte, so one bad file leaves the site untouched.
-- **Unknown blocks are kept.** We report them to the admin, the renderer skips them, and
-  they come back as soon as the plugin that provides them is enabled.
+- **Unknown blocks are kept.** We report them, the renderer skips them, and they come
+  back as soon as the plugin that provides them is enabled.
 
-## Inheritance: updating a theme without losing your work
+## Updating a theme without losing your work
 
-A theme is a **layer under** the admin's own changes, not something that overwrites them.
-That's the difference between taking an update and having to choose between the update
-and your customizations, which is the choice XenForo and WoltLab leave you with.
+A theme's package is a **layer under** your changes to that theme, not something that
+overwrites them. That's the difference between taking an update and having to choose
+between the update and your customizations, which is the choice XenForo and WoltLab leave
+you with.
 
-**Tokens inherit one by one.** An import writes the *theme layer*, and the admin's edits
-live in their own layer on top. We serve theme + admin, so if you recoloured one accent
-and the theme's version 1.1 changes twenty tokens, you get the other nineteen and keep
-yours. In the Style Editor, a token you haven't touched shows the theme's value as
-*Inherited*, and **Reset** on a token you changed goes back to the theme's value, not to
-stock Xentium. `Reset appearance` clears your overrides and leaves the theme installed.
+**Tokens inherit one by one.** We serve what the theme ships with your overrides on top,
+so if you recoloured one accent and the theme's version 1.1 changes twenty tokens, you get
+the other nineteen and keep yours. In Theme Studio's Colours & type mode, a token you haven't touched shows
+the theme's value, and **Reset** on a token you changed goes back to the theme's value,
+not to stock Xentium. *Reset appearance* clears your overrides for that theme and leaves
+the theme installed.
 
 **Layouts inherit per template.** You can't sensibly merge block trees (a three-way merge
-of moved blocks produces layouts nobody designed), so the unit is the whole template, and
-the rule is simple:
+of moved blocks produces layouts nobody designed), so the unit is the whole template:
 
-| Template | On import |
+| Template | On update |
 |---|---|
-| Nothing stored, or the same as its baseline | **Updated** to the theme's version |
-| Changed from its baseline (you edited it) | **Kept**, and listed in the result |
+| You never changed it, or it's exactly what the old version shipped | **Follows** the new version |
+| You changed it | **Kept**, and listed in the result |
 
-The *baseline* is what the theme shipped last time, or the built-in default if no theme
-was ever imported. So a layout you built by hand before installing your first theme also
-counts as customized and is kept.
+We compare against the **old** version before replacing it. A template you never touched
+has nothing stored at all: it renders whatever the theme currently ships, so it follows
+every update on its own.
 
-Every import records the new baseline either way, so:
+In Theme Studio's Layout mode, **Revert to theme** stages the theme's current version of a page as
+a draft you can preview and publish, and **Reset** removes your layout so the page shows
+what the theme ships.
 
-- the next update compares against the version you actually received, and
-- **Revert to theme** (per template, in the Layout Editor) can give you the theme's
-  current version of a page you'd customized. It lands in the draft, like any other layout
-  change. `Reset` is separate and still means the *built-in* default.
+The import result lists `templates` (the ones following the new version), `kept` (yours,
+left alone) and `replaced` (the version you had before).
 
-The import result lists all of it: `templates` (applied), `kept` (yours, left alone) and
-`replaced` (the theme that was installed before).
+**The stylesheet is a layer too.** `styles/custom.css` is emitted **before** your own CSS
+for that theme, so when two rules have equal specificity, yours wins. That's the same
+relationship your tokens have with the theme's. *Reset appearance* clears your stylesheet
+and leaves the theme's.
 
-**The stylesheet is a layer too.** `styles/custom.css` goes into the theme's own layer and
-is emitted **before** the admin's own CSS, so when two rules have equal specificity, the
-admin still wins. That's the same relationship their tokens have with the theme's.
-`Reset appearance` clears the admin's stylesheet and leaves the theme's.
-
-> Until 2026-08-29, an import wrote into the admin's own custom CSS, so installing a theme
-> **wiped whatever CSS the admin had written**, live, with nothing to restore it from.
+**The site frame** follows the template rule: a frame you never changed follows the
+update, one you changed is kept.
 
 ## The class contract
 
@@ -368,8 +384,8 @@ package) and the undo point afterwards.
 
 ## Building one
 
-The Layout Editor (**ACP → Appearance → Layout Editor → Theme package**) exports what's
-currently **published**, assets included, and imports packages. There's no separate CLI:
+The Themes page (**ACP → Appearance → Themes**) exports a theme as it's currently
+**published**, assets included, and imports packages. There's no separate CLI:
 a package is a zip, so you can also write one by hand in a text editor and pack it with
 `zip -r`.
 

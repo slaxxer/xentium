@@ -19,9 +19,19 @@ describe("ACP_NAV_INDEX", () => {
   });
 
   it("indexes nothing the nav does not contain", () => {
+    // Pages reached THROUGH a nav entry (`within`) are in the index for the breadcrumb
+    // and carry their parent; nothing else may be indexed without a nav entry.
     const navSet = new Set(navRoutes);
-    const extra = ACP_NAV_INDEX.map((e) => e.to).filter((to) => !navSet.has(to));
+    const extra = ACP_NAV_INDEX.filter((e) => !e.parentKey).map((e) => e.to).filter((to) => !navSet.has(to));
     expect(extra, `routes indexed but not in the nav: ${extra.join(", ")}`).toEqual([]);
+  });
+
+  it("reaches Theme Studio only through Themes", () => {
+    const studio = ACP_NAV_INDEX.filter((e) => e.to === "/admin/theme-studio");
+    expect(studio.map((e) => e.parentKey)).toEqual(["nav.themes"]);
+    expect(navRoutes).not.toContain("/admin/theme-studio");
+    // The two editors it replaced are redirects now, and appear nowhere in the nav.
+    expect(ACP_NAV_INDEX.some((e) => e.to === "/admin/style-editor" || e.to === "/admin/layout-editor")).toBe(false);
   });
 
   it("gives every entry a label, a parent crumb and an icon", () => {
@@ -65,7 +75,7 @@ describe("breadcrumb resolution", () => {
   it.each([
     ["/admin/email", "nav.email", "nav.system"],
     ["/admin/settings", "nav.settings", "nav.system"],
-    ["/admin/pages", "nav.pages", "nav.content"],
+    ["/admin/legal", "nav.legal", "nav.content"],
     ["/admin/cases", "nav.reviewCases", "nav.moderation"],
     ["/admin/updates", "nav.updates", "nav.extensions"],
     ["/admin/activity-log", "nav.activityLog", "nav.system"],

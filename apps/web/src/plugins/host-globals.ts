@@ -22,6 +22,9 @@ import * as webLayoutWidgetOutlet from "@web/plugins/LayoutWidgetOutlet";
 import * as webAuthStore from "@web/lib/authStore";
 import * as webUserAvatar from "@web/components/UserAvatar";
 import * as webUsername from "@web/components/Username";
+// A group's rank: its uploaded rank image when the site shows images, else the badge
+// the plugin passes in. Wrap the pill: `<RankBadge groupKey label>{pill}</RankBadge>`.
+import * as webRankBadge from "@web/components/RankBadge";
 // Badges (ADR-0009). Exposed so a PLUGIN's user card adopts awards with one line
 // and no payload change of its own — the component fetches (batched) and draws
 // them itself. The alternative is every card selecting badge rows in its own
@@ -89,6 +92,7 @@ const HOST = {
   webAuthStore,
   webUserAvatar,
   webUsername,
+  webRankBadge,
   webUserBadges,
   webTokenIcon,
   webMiniEditor,

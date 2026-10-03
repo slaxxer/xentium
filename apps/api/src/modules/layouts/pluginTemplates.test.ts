@@ -67,16 +67,16 @@ describe("while the plugin is enabled", () => {
   });
 
   it("saves, publishes and resets a draft exactly like a core template", async () => {
-    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER);
+    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER, undefined, "");
 
-    const { pending } = await layoutService.getDraftStatus();
+    const { pending } = await layoutService.getDraftStatus("");
     expect(pending).toContainEqual({ templateKey: KEY, variant: DEFAULT_VARIANT });
 
-    await layoutService.publish(USER);
+    await layoutService.publish(USER, "");
     const { templates } = await layoutService.getPublishedAll();
     expect(templates[KEY]?.regions.header).toHaveLength(1);
 
-    await layoutService.reset({ templateKey: KEY, variant: DEFAULT_VARIANT });
+    await layoutService.reset({ templateKey: KEY, variant: DEFAULT_VARIANT }, "");
     const after = await layoutService.getPublishedAll();
     // Back to the plugin's shipped default, not to nothing.
     expect(after.templates[KEY]?.regions.header ?? []).toHaveLength(0);
@@ -84,11 +84,11 @@ describe("while the plugin is enabled", () => {
   });
 
   it("reports ownership, so a theme update can tell touched from untouched", async () => {
-    const clean = await layoutService.getOwnership();
+    const clean = await layoutService.getOwnership("");
     expect(clean[KEY]).toEqual({ customised: false, hasTheme: false });
 
-    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER);
-    const dirty = await layoutService.getOwnership();
+    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER, undefined, "");
+    const dirty = await layoutService.getOwnership("");
     expect(dirty[KEY]?.customised).toBe(true);
   });
 
@@ -99,7 +99,7 @@ describe("while the plugin is enabled", () => {
    */
   it("refuses a variant, because a plugin template declares no instances", async () => {
     await expect(
-      layoutService.saveDraft({ templateKey: KEY, variant: "anything" }, customised, USER),
+      layoutService.saveDraft({ templateKey: KEY, variant: "anything" }, customised, USER, undefined, ""),
     ).rejects.toThrow(/does not support per-instance layouts/);
   });
 });
@@ -110,8 +110,7 @@ describe("a template nothing has registered", () => {
       layoutService.saveDraft(
         { templateKey: "nosuch.template", variant: DEFAULT_VARIANT },
         { ...customised, templateKey: "nosuch.template" },
-        USER,
-      ),
+        USER, undefined, ""),
     ).rejects.toThrow(/Unknown template "nosuch.template"/);
 
     expect(await prisma.layout.count({ where: { templateKey: "nosuch.template" } })).toBe(0);
@@ -120,8 +119,8 @@ describe("a template nothing has registered", () => {
 
 describe("when the plugin is disabled", () => {
   it("KEEPS the stored document and stops serving the template", async () => {
-    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER);
-    await layoutService.publish(USER);
+    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER, undefined, "");
+    await layoutService.publish(USER, "");
 
     // What `disablePlugin` does, minus the database bookkeeping.
     deregisterTemplatesFor(PLUGIN);
@@ -139,8 +138,8 @@ describe("when the plugin is disabled", () => {
   });
 
   it("restores the admin's arrangement when the plugin comes back", async () => {
-    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER);
-    await layoutService.publish(USER);
+    await layoutService.saveDraft({ templateKey: KEY, variant: DEFAULT_VARIANT }, customised, USER, undefined, "");
+    await layoutService.publish(USER, "");
 
     deregisterTemplatesFor(PLUGIN);
     layoutService.bustCache();

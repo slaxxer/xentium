@@ -74,11 +74,12 @@ describe("the footer band", () => {
     expect(container.querySelector(".xt-foot--noline")).not.toBeNull();
   });
 
-  it("is what the shipped default puts in the region, with the four pieces inside it", () => {
+  it("is what the shipped default puts in the region, with its pieces inside it", () => {
     const shipped = DEFAULT_LAYOUTS["chrome.footer"].regions.footer!;
     expect(shipped.map((b) => b.type)).toEqual(["footer"]);
+    // The bottom row is one footer bar: the copyright on one side, links on the other.
     expect(shipped[0]!.children!.map((b) => b.type))
-      .toEqual(["whosOnline", "groupLegend", "boardStats", "branding"]);
+      .toEqual(["whosOnline", "groupLegend", "boardStats", "footerBar"]);
   });
 
   it("still renders a footer whose pieces were never migrated", () => {
@@ -88,5 +89,37 @@ describe("the footer band", () => {
       <LayoutRegion document={doc([{ id: "b", type: "branding", props: { showUptime: false } }])} region="footer" />);
     expect(container.querySelector(".xt-b--branding")).not.toBeNull();
     expect(container.querySelector(".xt-foot")).toBeNull();
+  });
+});
+
+describe("the footer bar", () => {
+  const bar = (props: Record<string, unknown>) => doc([{
+    id: "f", type: "footer", props: {}, children: [{ id: "bar", type: "footerBar", props }],
+  }]);
+  const sides = (c: HTMLElement) =>
+    [...c.querySelectorAll(".xt-footbar > *")].map((e) => e.className);
+
+  it("puts the links and the theme picker in a row, with the copyright under them", () => {
+    const { container } = withQuery(<LayoutRegion document={bar({})} region="footer" />);
+    expect(sides(container)).toEqual(["xt-footbar__top", "xt-foottext"]);
+    expect(container.querySelector(".xt-footbar__top .xt-footlinks__list")).not.toBeNull();
+  });
+
+  it("drops the row when there are no links and no theme picker", () => {
+    const { container } = withQuery(<LayoutRegion document={bar({ showThemeChooser: false })} region="footer" />);
+    expect(sides(container)).toEqual(["xt-foottext"]);
+  });
+
+  it("shows uptime and latency only when asked", () => {
+    const off = withQuery(<LayoutRegion document={bar({})} region="footer" />);
+    expect(off.container.querySelector(".xt-foottext__meta")).toBeNull();
+    cleanup();
+    const on = withQuery(<LayoutRegion document={bar({ showUptime: true })} region="footer" />);
+    expect(on.container.querySelector(".xt-foottext__meta")).not.toBeNull();
+  });
+
+  it("draws the fixed line", () => {
+    const { container } = withQuery(<LayoutRegion document={bar({})} region="footer" />);
+    expect(container.querySelector(".xt-foottext__line")).not.toBeNull();
   });
 });

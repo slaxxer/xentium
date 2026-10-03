@@ -32,7 +32,6 @@ import { getBlock } from "./blockRegistry";
 // The full catalogue, exactly as main.tsx registers it.
 import "./blocks/coreBlocks";
 import "./blocks/chromeBlocks";
-import "./blocks/pageDetailBlocks";
 import "./blocks/pageTemplateBlocks";
 import "./blocks/profileBlocks";
 import "./blocks/memberBlocks";
@@ -44,11 +43,10 @@ const EXPECTED_ANCHOR: Record<TemplateKey, string> = {
   "home":           "homeFeed",
   "article.index":  "articleIndex",
   "article.detail": "articleDetail",
-  "page.detail":    "pageBody",
   "profile":        "profileCard",
   "members":        "membersList",
   "chrome.header":  "logo",
-  "chrome.footer":  "branding",
+  "chrome.footer":  "footerBar",
 };
 
 describe("no template is offered while wired to nothing", () => {
@@ -105,9 +103,6 @@ describe("page blocks are scoped to their own template", () => {
     ["profileIdentity", "profile"],
     ["profileStats", "profile"],
     ["profileTabs", "profile"],
-    ["pageBody", "page.detail"],
-    ["pageTitle", "page.detail"],
-    ["pageImage", "page.detail"],
   ] as const)("%s is only placeable on %s", (type, template) => {
     // These read their page's own data, so offering them elsewhere would put a
     // block on a page that cannot feed it.

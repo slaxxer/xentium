@@ -17,11 +17,14 @@ import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faDownload, faUpload, faPalette, faTriangleExclamation, faEye, faRotateLeft, faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { Link } from "react-router-dom";
+import { CORE_THEME_PARAM } from "../../../lib/editingTheme";
 import { api, apiStream } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import { openThemeExportDialog } from "./ThemeExportDialog";
+import { studioHref } from "./studioLinks";
 import { openDialog } from "../../../lib/dialog";
 import { offerThemeSwitch } from "../hooks/themeSwitchPrompt";
 import "./ThemesPage.scss";
@@ -122,9 +125,13 @@ export function ThemesPage() {
   });
 
   const activateMut = useMutation({
-    mutationFn: (id: string) => api.post(`/admin/themes/library/${id}/activate`, {}),
+    mutationFn: (id: string) => api.post(
+      id === CORE_THEME_PARAM ? "/admin/themes/core/activate" : `/admin/themes/library/${id}/activate`, {},
+    ),
     onSuccess: (_r, id) => {
-      const name = libraryQuery.data?.themes.find((t) => t.id === id)?.name ?? id;
+      const name = id === CORE_THEME_PARAM
+        ? t("themeScope.core")
+        : libraryQuery.data?.themes.find((t) => t.id === id)?.name ?? id;
       toast.success(t("themes.activated", { name }));
       invalidateTheme();
     },
@@ -137,11 +144,25 @@ export function ThemesPage() {
     onError: (e: unknown) => toast.error(apiErrorMessage(e)),
   });
 
+  /** Removing a theme drops the edits made to it, so it asks first. */
+  async function confirmRemove(th: LibraryTheme) {
+    const ok = await openDialog({
+      kind: "confirm",
+      icon: "warning",
+      danger: true,
+      title: t("themes.removeTitle", { name: th.name }),
+      body:  t(th.active ? "themes.removeBodyLive" : "themes.removeBody"),
+      confirmText: t("themes.remove"),
+    });
+    if (ok) removeMut.mutate(th.id);
+  }
+
   /** Everything a theme change touches, in one place — three call sites had been
    *  keeping their own copies of this list. */
   function invalidateTheme() {
     for (const key of ["acp-theme-installed", "acp-theme-library", "acp-layout",
-                       "acp-layout-status", "acp-layout-templates", "acp-tokens"]) {
+                       "acp-layout-status", "acp-layout-templates", "acp-layout-all",
+                       "acp-layout-frame", "acp-tokens", "acp-draft-status"]) {
       void qc.invalidateQueries({ queryKey: [key] });
     }
   }
@@ -304,48 +325,81 @@ export function ThemesPage() {
           theme destroyed the first and an admin could not look at two and choose. */}
       {/* Shown as soon as anything is installed, not only at two: an admin needs to
           see that the library exists before they have a second theme in it. */}
-      {(libraryQuery.data?.themes.length ?? 0) > 0 && (
-        <div className="acp-card thm__card">
-          <div className="thm__card-title">{t("themes.libraryTitle")}</div>
-          <p className="thm__note">{t("themes.libraryHint")}</p>
-          <div className="thm__library">
-            {libraryQuery.data!.themes.map((th) => (
-              <div key={th.id} className={`thm__lib${th.active ? " thm__lib--on" : ""}`}>
-                {th.screenshot
-                  ? <img className="thm__lib-shot" src={resolveImageSource(th.screenshot)} alt="" />
-                  : <div className="thm__lib-shot thm__lib-shot--none"><FontAwesomeIcon icon={faPalette} /></div>}
-                <div className="thm__lib-body">
-                  <b>{th.name} {th.version}</b>
-                  <span>{t("themes.installedBy", { vendor: th.vendor || "—" })}</span>
-                </div>
-                <div className="thm__lib-actions">
-                  {th.active ? (
-                    <span className="thm__lib-active">
-                      <FontAwesomeIcon icon={faCheck} /> {t("themes.libraryActive")}
-                    </span>
-                  ) : (
-                    <>
+      {/* Always shown: Core is a theme too — the built-in look, edited like any other,
+          and what the site wears when no installed theme is live. */}
+      <div className="acp-card thm__card">
+        <div className="thm__card-title">{t("themes.libraryTitle")}</div>
+        <p className="thm__note">{t("themes.libraryHintPerTheme")}</p>
+        <div className="thm__library">
+          {(() => {
+            const coreLive = !(libraryQuery.data?.themes ?? []).some((x) => x.active);
+            /** Each theme is edited on its own — this opens Theme Studio on THIS one. */
+            const editLinks = (key: string) => (
+              <Link className="btn-ghost btn-sm" to={studioHref(key)} title={t("themes.openStudio")}>
+                <FontAwesomeIcon icon={faPalette} /> {t("themes.openStudio")}
+              </Link>
+            );
+            return (
+              <>
+                <div className={`thm__lib${coreLive ? " thm__lib--on" : ""}`}>
+                  <div className="thm__lib-shot thm__lib-shot--none"><FontAwesomeIcon icon={faPalette} /></div>
+                  <div className="thm__lib-body">
+                    <b>{t("themeScope.core")}</b>
+                    <span>{t("themes.coreHint")}</span>
+                  </div>
+                  <div className="thm__lib-actions">
+                    {editLinks(CORE_THEME_PARAM)}
+                    {coreLive ? (
+                      <span className="thm__lib-active">
+                        <FontAwesomeIcon icon={faCheck} /> {t("themes.libraryActive")}
+                      </span>
+                    ) : (
                       <button type="button" className="btn-primary btn-sm"
                         disabled={activateMut.isPending}
-                        onClick={() => activateMut.mutate(th.id)}>
+                        onClick={() => activateMut.mutate(CORE_THEME_PARAM)}>
                         {t("themes.libraryActivate")}
                       </button>
-                      {/* Only ever offered for a theme that is NOT active: removing
-                          the active one would leave the site wearing something with
-                          no baseline and no way back. The API refuses it too. */}
+                    )}
+                  </div>
+                </div>
+                {(libraryQuery.data?.themes ?? []).map((th) => (
+                  <div key={th.id} className={`thm__lib${th.active ? " thm__lib--on" : ""}`}>
+                    {th.screenshot
+                      ? <img className="thm__lib-shot" src={resolveImageSource(th.screenshot)} alt="" />
+                      : <div className="thm__lib-shot thm__lib-shot--none"><FontAwesomeIcon icon={faPalette} /></div>}
+                    <div className="thm__lib-body">
+                      <b>{th.name} {th.version}</b>
+                      <span>{t("themes.installedBy", { vendor: th.vendor || "—" })}</span>
+                    </div>
+                    <div className="thm__lib-actions">
+                      {editLinks(th.id)}
+                      {th.active ? (
+                        <span className="thm__lib-active">
+                          <FontAwesomeIcon icon={faCheck} /> {t("themes.libraryActive")}
+                        </span>
+                      ) : (
+                        <button type="button" className="btn-primary btn-sm"
+                          disabled={activateMut.isPending}
+                          onClick={() => activateMut.mutate(th.id)}>
+                          {t("themes.libraryActivate")}
+                        </button>
+                      )}
+                      {/* Removing the live theme puts the site on Core. Its own edits
+                          go with it — they were made for this theme only. */}
                       <button type="button" className="btn-ghost btn-sm"
+                        title={t("themes.remove")} aria-label={t("themes.remove")}
                         disabled={removeMut.isPending}
-                        onClick={() => removeMut.mutate(th.id)}>
+                        onClick={() => void confirmRemove(th)}>
                         <FontAwesomeIcon icon={faTrash} />
                       </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                    </div>
+                  </div>
+                ))}
+              </>
+            );
+          })()}
         </div>
-      )}
+      </div>
 
       {/* ── Install one ─────────────────────────────────────────────────── */}
       <div className="acp-card thm__card">

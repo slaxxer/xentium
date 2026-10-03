@@ -10,6 +10,7 @@ import { createErrorMiddleware, type ErrorLogEntry } from "@xentium/errors";
 import { isProd } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
 import { logger } from "../../infrastructure/logging/logger.js";
+import { errorGroupKey } from "./errorGroupKey.js";
 
 export const errorMiddleware = createErrorMiddleware({
   isProd,
@@ -25,6 +26,9 @@ export const errorMiddleware = createErrorMiddleware({
         context:   entry.context ? (entry.context as object) : undefined,
         requestId: entry.requestId ?? null,
         userId:    entry.userId ?? null,
+        method:    entry.method?.slice(0, 16) ?? null,
+        url:       entry.url ?? null,
+        groupKey:  errorGroupKey(entry.code, entry.message),
       },
     }).catch((e) => {
       logger.error({ err: e, code: entry.code }, "error_log_persist_failed");

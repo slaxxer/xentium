@@ -32,6 +32,9 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { slotRegistry } from "../../../plugins/slotRegistry";
 import { AccountCard, AccountRow } from "../components/AccountCard";
 import { SaveBar } from "../components/SaveBar";
+import { Username } from "../../../components/Username";
+import { primaryBadgeColor } from "../../../lib/groupBadge";
+import { RankBadge } from "../../../components/RankBadge";
 
 interface FieldDef {
   id: string;
@@ -376,14 +379,16 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
               {avatarSrc ? <img src={avatarSrc} alt="" /> : initials}
             </span>
             <div className="acct-preview__name">
-              <strong>{user?.displayName || user?.username}</strong>
+              <strong><Username username={user?.displayName || user?.username || ""} badgeColor={primaryBadgeColor(user?.visibleGroups)} /></strong>
               {user?.visibleGroups?.[0] && (
-                <span
-                  className="acct-preview__group"
-                  style={{ "--badge-color": user.visibleGroups[0].badgeColor ?? "var(--c-accent)" } as React.CSSProperties}
-                >
-                  {user.visibleGroups[0].badgeLabel ?? user.visibleGroups[0].name}
-                </span>
+                <RankBadge groupKey={user.visibleGroups[0].key} label={user.visibleGroups[0].badgeLabel ?? user.visibleGroups[0].name}>
+                  <span
+                    className="acct-preview__group"
+                    style={{ "--badge-color": user.visibleGroups[0].badgeColor ?? "var(--c-accent)" } as React.CSSProperties}
+                  >
+                    {user.visibleGroups[0].badgeLabel ?? user.visibleGroups[0].name}
+                  </span>
+                </RankBadge>
               )}
             </div>
             <span className="acct-preview__handle">

@@ -12,10 +12,12 @@ import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useAuth } from "../hooks/useAuth";
 import { Avatar } from "../components/Avatar";
-import { topGroups } from "../lib/groupBadge";
+import { primaryBadgeColor, topGroups } from "../lib/groupBadge";
+import { Username } from "../components/Username";
 import "./HomePage.scss";
 import { LayoutRenderer } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
+import { RankBadge } from "../components/RankBadge";
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
@@ -46,15 +48,19 @@ export function MeCard() {
     <section className="hf-mecard">
       <div className="hf-mecard__band" />
       <Avatar user={{ username: user.username, avatar: user.avatar }} size={62} online className="hf-mecard__ava" />
-      <div className="hf-mecard__name">{user.username}</div>
+      <div className="hf-mecard__name">
+        <Username username={user.username} badgeColor={primaryBadgeColor(user.visibleGroups)} />
+      </div>
       <div className="hf-mecard__handle">@{user.username}</div>
       {badges.length > 0 && (
         <div className="hf-mecard__badges">
           {badges.map((g) => (
-            <span key={g.id} className="hf-levelpill"
-              style={g.badgeColor ? { background: `${g.badgeColor}22`, color: g.badgeColor } : undefined}>
-              {g.badgeLabel ?? g.name}
-            </span>
+            <RankBadge key={g.id} groupKey={g.key} label={g.badgeLabel ?? g.name}>
+              <span className="hf-levelpill"
+                style={g.badgeColor ? { background: `${g.badgeColor}22`, color: g.badgeColor } : undefined}>
+                {g.badgeLabel ?? g.name}
+              </span>
+            </RankBadge>
           ))}
         </div>
       )}
@@ -152,14 +158,18 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
         <Avatar user={{ username: a.author.username, avatar: a.author.avatar }} size={44} />
         <div className="hf-post__id">
           <div className="hf-post__name">
-            <Link to={`/u/${a.author.username}`}>{a.author.username}</Link>
+            <Link to={`/u/${a.author.username}`}>
+              <Username username={a.author.username} badgeColor={a.author.badgeColor} />
+            </Link>
             {badges.map((g) => {
               const color = g.progression?.badgeColor ?? a.author.badgeColor ?? undefined;
               return (
-                <span key={g.id} className="hf-rolepill"
-                  style={color ? { background: `${color}22`, color } : undefined}>
-                  {g.progression?.badgeLabel ?? g.name}
-                </span>
+                <RankBadge key={g.id} groupKey={g.key} label={g.progression?.badgeLabel ?? g.name}>
+                  <span className="hf-rolepill"
+                    style={color ? { background: `${color}22`, color } : undefined}>
+                    {g.progression?.badgeLabel ?? g.name}
+                  </span>
+                </RankBadge>
               );
             })}
           </div>
@@ -297,7 +307,7 @@ export function SuggestedPeople() {
             <li key={p.id}>
               <Avatar user={{ username: p.username, avatar: p.avatar }} size={38} />
               <div className="hf-people__id">
-                <Link to={`/u/${p.username}`}><b>{p.username}</b></Link>
+                <Link to={`/u/${p.username}`}><b><Username username={p.username} badgeColor={p.badgeColor} /></b></Link>
                 {p.role && <span>{p.role}</span>}
               </div>
               <button

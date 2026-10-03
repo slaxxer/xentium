@@ -1,0 +1,33 @@
+/* The theme an Appearance editor edits. ACP controls; no font set. */
+.theme-scope {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+
+  &__label {
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  &__name { font-size: var(--fs-sm); font-weight: 700; }
+
+  &__state {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    color: var(--c-warn);
+    background: color-mix(in srgb, var(--c-warn) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c-warn) 40%, transparent);
+
+    &.is-live {
+      color: var(--c-success);
+      background: color-mix(in srgb, var(--c-success) 12%, transparent);
+      border-color: color-mix(in srgb, var(--c-success) 34%, transparent);
+    }
+  }
+}

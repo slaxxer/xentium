@@ -50,7 +50,7 @@
   &__head {
     flex: none;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
     padding: 16px 16px 13px;
@@ -62,13 +62,6 @@
       font-size: var(--fs-base);
       font-weight: 700;
       color: var(--c-fg);
-    }
-
-    p {
-      margin: 4px 0 0;
-      font-size: var(--fs-2xs);
-      color: var(--c-fg-subtle);
-      line-height: 1.5;
     }
   }
 
@@ -168,26 +161,6 @@
     font-size: var(--fs-sm);
     font-weight: 700;
     color: var(--c-fg);
-  }
-
-  /* Two badges, two facts. `--active` is what the READER wears and is filled, so it
-     reads as a state; the plain one is what the SITE wears and is quieter, because it
-     is context rather than something the reader did. */
-  &__badge {
-    flex: none;
-    font-size: var(--fs-2xs);
-    font-weight: 800;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    color: var(--c-accent);
-    background: var(--c-accent-soft);
-    padding: 2px 6px;
-    border-radius: 999px;
-
-    &--active {
-      color: var(--c-on-accent);
-      background: var(--c-accent);
-    }
   }
 
   /* Two lines at most. A 500-character description is allowed and would otherwise

@@ -22,7 +22,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faRotateLeft, faRotateRight, faXmark,
-  faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faSliders,
+  faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faSliders, faCube, faPalette,
   faCheck, faSpinner, faEllipsis, faArrowUpFromBracket,
   faChevronDown, faFileLines, faWindowMaximize, faArrowUpRightFromSquare,
   faClone, faTrash, faIcons,
@@ -35,7 +35,6 @@ import {
   isChromeTemplate,
   regionsFor,
   requiredBlocksFor,
-  templateAcceptsVariants,
   type BlockNode,
   type AudienceView,
   type BlockVariant,
@@ -47,14 +46,13 @@ import {
   type TemplateKey,
 } from "@xentium/contracts";
 import { api } from "../../../lib/api";
-import { pagesApi } from "../../../lib/pagesApi";
 import { articlesApi } from "../../../lib/articlesApi";
 import { authStore } from "../../../lib/authStore";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
 import { SchemaFields, defaultsFor, type FieldSchema } from "../../../components/SchemaFields";
-import { acceptsChild, getBlock } from "../../../layout/blockRegistry";
+import { acceptsChild, getBlock, hasSurface } from "../../../layout/blockRegistry";
 import { shortcutFor } from "../../../layout/editorShortcuts";
 import { LAYOUT_PREVIEW_PARAM, LAYOUT_EDITING_PARAM } from "../../../layout/useLayout";
 import {
@@ -69,6 +67,7 @@ import {
   removeBlock,
   updateBlockProps,
   updateBlockVariant,
+  updateBlockEdges,
   updateBlockClassName,
   updateBlockVisibility,
   updateBlockIconOverride,
@@ -78,6 +77,7 @@ import { useAutosave } from "../../../hooks/useAutosave";
 import { useLayoutHistory, type LayoutSnapshot } from "./useLayoutHistory";
 import { inspectorSideFor, type BlockBounds, type Side } from "../../../layout/inspectorSide";
 import { iconFor } from "../../../layout/blockIcons";
+import { dateFromMonthDay } from "../../../layout/edgeArt";
 import {
   BlockList,
   regionLabel,
@@ -87,8 +87,16 @@ import {
 } from "./LayoutTree";
 import { BlockVisibilityFields } from "./BlockVisibility";
 import { BlockCatalogue } from "./BlockCatalogue";
+import { SiteFramePopover, FRAME_QUERY_KEY } from "./SiteFramePopover";
+import { ThemeScopePicker } from "../components/ThemeScopePicker";
+import { PREVIEW_THEME_PARAM, useEditingTheme, withTheme } from "../../../lib/editingTheme";
+import type { SiteFrame } from "@xentium/contracts";
 import { BlockStyleFields } from "./BlockStyle";
 import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
+import { BlockEdgeArtFields } from "./BlockEdgeArt";
+import { CHROME_SETTINGS } from "./ChromeSettings";
+import { ThemeStyleFields, themeDraftCss, useThemeTokens } from "./ThemeStyle";
+import { InspectorFold } from "./InspectorFold";
 import "./LayoutEditorPage.scss";
 import { IconPicker } from "../../../components/IconPicker";
 
@@ -129,8 +137,8 @@ const INSPECTOR_WIDTH = 320;
 /**
  * Where each template previews.
  *
- * Only a FALLBACK for the three templates that render per instance — `page.detail`,
- * `profile` and `article.detail` need a real slug or username, resolved at runtime
+ * Only a FALLBACK for the two templates that render per instance — `profile` and
+ * `article.detail` need a real slug or username, resolved at runtime
  * below. Previously `profile` pointed at `/members` and `article.detail` at the
  * article index, so choosing either showed a page the blocks being arranged do not
  * even appear on.
@@ -139,7 +147,6 @@ const PREVIEW_ROUTE: Record<CoreTemplateKey, string> = {
   "home":           "/",
   "article.index":  "/articles",
   "article.detail": "/articles",
-  "page.detail":    "/",
   "profile":        "/members",
   "members":        "/members",
   // Chrome renders on every route, so any page previews it. "/" is the least
@@ -243,8 +250,22 @@ interface InstalledTheme {
   manifest: { name: string; version: string } | null;
 }
 
-export function LayoutEditorPage() {
-  const { t } = useTranslation("acp");
+/**
+ * The Layout Editor edits ONE theme's layouts — the one in `?theme=`, else the live
+ * one. Keyed by it, so switching themes starts fresh: undo history, selection and the
+ * open document all belong to the theme they were made in.
+ */
+export function LayoutEditorPage({ embedded }: {
+  /** Inside Theme Studio: no page header and no Publish of its own — the Studio has
+   *  one header and one Publish for layouts and styles together. */
+  embedded?: boolean;
+} = {}) {
+  const { key } = useEditingTheme();
+  return <LayoutEditorInner key={key ?? ""} themeKey={key} embedded={embedded} />;
+}
+
+function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; embedded?: boolean }) {
+  const { t, i18n } = useTranslation("acp");
   const qc = useQueryClient();
 
   const [templateKey, setTemplateKey] = useState<TemplateKey>("article.index");
@@ -271,9 +292,9 @@ export function LayoutEditorPage() {
    * mounted. Assigned on every render instead.
    */
   const pushAllRef = useRef<() => void>(() => {});
-  // "" = the template default. A variant is one instance of the template — a page
-  // slug for `page.detail`.
-  const [variant, setVariant] = useState<string>(DEFAULT_VARIANT);
+  // Always the template default: no template takes variants since custom pages were
+  // removed. Kept as a name because every request and preview message carries it.
+  const variant = DEFAULT_VARIANT;
   const [doc, setDoc] = useState<LayoutDocument | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
@@ -532,83 +553,24 @@ export function LayoutEditorPage() {
   const installedTheme = installedQuery.data;
 
   const templatesQuery = useQuery<TemplateInfo[]>({
-    queryKey: ["acp-layout-templates"],
-    queryFn:  () => api.get("/admin/layouts/templates"),
+    queryKey: ["acp-layout-templates", themeKey],
+    queryFn:  () => api.get(withTheme("/admin/layouts/templates", themeKey)),
   });
 
-  const qs = variant ? `?variant=${encodeURIComponent(variant)}` : "";
+  // The theme being edited, on every per-document request.
+  const qs = withTheme("", themeKey);
 
   const draftQuery = useQuery<LayoutDraftResponse>({
-    queryKey: ["acp-layout", templateKey, variant],
+    queryKey: ["acp-layout", templateKey, variant, themeKey],
     queryFn:  () => api.get(`/admin/layouts/${templateKey}${qs}`),
   });
   const draftDoc = draftQuery.data?.document;
 
   const statusQuery = useQuery<{ pending: LayoutSelector[] }>({
-    queryKey: ["acp-layout-status"],
-    queryFn:  () => api.get("/admin/layouts/draft-status"),
+    queryKey: ["acp-layout-status", themeKey],
+    queryFn:  () => api.get(withTheme("/admin/layouts/draft-status", themeKey)),
   });
 
-  // `page.detail` needs real pages: one to preview the template default against, and
-  // the full list to offer as variants. Fetched lazily so every other template costs
-  // nothing.
-  const supportsVariants = templateAcceptsVariants(templateKey);
-  const pagesQuery = useQuery({
-    queryKey: ["acp-layout-pages"],
-    // EVERY page, not just the published ones. A page's layout is most worth
-    // arranging BEFORE it goes live, and filtering to `published` meant a page
-    // created minutes ago — still a draft, as every new page is — simply did not
-    // appear, leaving "Default" as the only choice and no way to reach it.
-    queryFn:  () => pagesApi.list({ limit: 100 }),
-    enabled:  supportsVariants,
-    // Short, because the journey that lands here is "create a page, go and lay it
-    // out". A minute of cached list is a minute of the new page being missing.
-    staleTime: 5_000,
-  });
-  /**
-   * Alphabetical. The API orders by `updatedAt` — sensible for a management list,
-   * useless in a picker, where the question is "where is the page called X".
-   */
-  const pages = useMemo(
-    () => [...(pagesQuery.data?.data ?? [])].sort((a, b) => a.title.localeCompare(b.title)),
-    [pagesQuery.data],
-  );
-  /** More pages than one request returns; the picker would silently omit the rest. */
-  const pagesTruncated = (pagesQuery.data?.meta?.total ?? 0) > pages.length;
-
-  /** Variants that already carry their own stored document, to mark in the picker. */
-  const variantsQuery = useQuery<{ variant: string; scope: string }[]>({
-    queryKey: ["acp-layout-variants", templateKey],
-    queryFn:  () => api.get(`/admin/layouts/${templateKey}/variants`),
-    enabled:  supportsVariants,
-  });
-  const customised = new Set((variantsQuery.data ?? []).map((v) => v.variant));
-
-  /**
-   * How many pages the template default actually reaches.
-   *
-   * It is a FALLBACK, not a broadcast: `resolve()` returns a page's own document
-   * whenever it has one and only then looks at the default. So the reach is exactly
-   * the pages that have never been laid out individually — which is what the picker
-   * now says, because "all pages" read like an override and made editing it feel
-   * dangerous in a way it is not.
-   */
-  const inheritingCount = pages.filter((p) => !customised.has(p.slug)).length;
-  /** Suppressed until the lists land, so the count never flashes a wrong zero. */
-  const inheritingKnown = !!pagesQuery.data && !!variantsQuery.data;
-
-  /**
-   * Previewing the default renders against SOME page; previewing a variant must
-   * render against its own.
-   *
-   * A PUBLISHED one is preferred for the default, because `/p/:slug` refuses an
-   * unpublished page to everyone including an admin (`canViewPage` checks the status
-   * before it checks the viewer). Now that drafts are listed, taking the first page
-   * blindly would point the template default's preview at a 404 on any site whose
-   * most recent page happens to be a draft.
-   */
-  const previewPageSlug =
-    variant || (pages.find((p) => p.status === "published") ?? pages[0])?.slug;
 
   // `article.detail` needs a real article, or the preview shows the index and none of
   // the blocks being arranged.
@@ -789,6 +751,8 @@ export function LayoutEditorPage() {
     win.postMessage({ source: "xt-editor", type: "audience", audience: forAudience }, window.location.origin);
     win.postMessage({ source: "xt-editor", type: "iconMode", on: iconModeRef.current }, window.location.origin);
     win.postMessage({ source: "xt-editor", type: "tokens", css: styleCss }, window.location.origin);
+    if (liveFrame) win.postMessage({ source: "xt-editor", type: "frame", frame: liveFrame }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "previewDate", md: viewDateRef.current }, window.location.origin);
     // The preview draws a restricted block like any other — the chip is the only
     // place the condition shows — so it needs the words for it.
     win.postMessage(
@@ -818,7 +782,50 @@ export function LayoutEditorPage() {
    * publish, which defeats the point of editing colours against a live preview. The
    * panel hands over the CSS it would produce and the bridge injects it.
    */
-  const [styleCss, setStyleCss] = useState("");
+  const [variantCss, setVariantCss] = useState("");
+
+  /**
+   * The theme's staged GLOBAL tokens (Theme style tab, or the Style Editor), for the
+   * same reason. Kept here rather than in the tab so the preview still shows them
+   * after switching back to Block.
+   */
+  const { data: themeDraft } = useThemeTokens();
+  const styleCss = useMemo(
+    () => [themeDraftCss(themeDraft), variantCss].filter(Boolean).join("\n"),
+    [themeDraft, variantCss],
+  );
+
+  /** Which half of the inspector is showing. Kept across selections: someone tuning
+   *  the theme's look clicks from block to block to see it on each. */
+  const [inspectorTab, setInspectorTab] = useState<"block" | "theme">("block");
+  // Picking an icon in the preview opens its picker, which lives on the Block tab.
+  useEffect(() => { if (iconPick) setInspectorTab("block"); }, [iconPick]);
+
+  /**
+   * The working site frame, from the Site layout popover. Pushed like the document:
+   * the preview serves the draft frame, but an edit has to show before its autosave.
+   */
+  const [liveFrame, setLiveFrame] = useState<SiteFrame | null>(null);
+
+  /** "Viewing on": the date the preview pretends it is (`MM-DD`), or null for today. */
+  const [viewDate, setViewDate] = useState<string | null>(null);
+  const viewDateRef = useRef<string | null>(null);
+  viewDateRef.current = viewDate;
+
+  useEffect(() => {
+    previewRef.current?.contentWindow?.postMessage(
+      { source: "xt-editor", type: "previewDate", md: viewDate },
+      window.location.origin,
+    );
+  }, [viewDate]);
+
+  useEffect(() => {
+    if (!liveFrame) return;
+    previewRef.current?.contentWindow?.postMessage(
+      { source: "xt-editor", type: "frame", frame: liveFrame },
+      window.location.origin,
+    );
+  }, [liveFrame]);
 
   useEffect(() => {
     previewRef.current?.contentWindow?.postMessage(
@@ -907,8 +914,8 @@ export function LayoutEditorPage() {
    * `acp-layout-status` invalidation, so a header that just gained a block says 3.
    */
   const allDraftsQuery = useQuery<{ templates: Record<string, LayoutDocument> }>({
-    queryKey: ["acp-layout-all"],
-    queryFn:  () => api.get("/admin/layouts"),
+    queryKey: ["acp-layout-all", themeKey],
+    queryFn:  () => api.get(withTheme("/admin/layouts", themeKey)),
     staleTime: 30_000,
   });
 
@@ -963,8 +970,6 @@ export function LayoutEditorPage() {
       setDirty(JSON.stringify(docRef.current) !== savedJsonRef.current);
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
-      // A first save on a variant makes it "customised" in the picker.
-      qc.invalidateQueries({ queryKey: ["acp-layout-variants", templateKey] });
       // No preview reload: the working document is already pushed live, and a
       // reload would throw it away and re-fetch the same thing.
     },
@@ -980,10 +985,12 @@ export function LayoutEditorPage() {
   });
 
   const publish = useMutation({
-    mutationFn: () => api.post<{ published: LayoutSelector[] }>("/admin/layouts/publish"),
+    mutationFn: () => api.post<{ published: LayoutSelector[] }>(withTheme("/admin/layouts/publish", themeKey)),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
+      // The frame publishes with the layouts, and its draft row goes too.
+      qc.invalidateQueries({ queryKey: FRAME_QUERY_KEY });
       // Publishing clears the draft server-side, so the editor's copy is stale.
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       toast.success(
@@ -1015,7 +1022,6 @@ export function LayoutEditorPage() {
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
-      qc.invalidateQueries({ queryKey: ["acp-layout-variants", templateKey] });
       previewRef.current?.contentWindow?.location.reload();
       toast.success(t("layoutEditor.discardDone"));
     },
@@ -1023,7 +1029,7 @@ export function LayoutEditorPage() {
   });
 
   const revertTheme = useMutation({
-    mutationFn: () => api.post<LayoutDocument>(`/admin/layouts/${templateKey}/revert-theme`),
+    mutationFn: () => api.post<LayoutDocument>(withTheme(`/admin/layouts/${templateKey}/revert-theme`, themeKey)),
     onSuccess: () => {
       history.clear();
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
@@ -1042,7 +1048,6 @@ export function LayoutEditorPage() {
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
-      qc.invalidateQueries({ queryKey: ["acp-layout-variants", templateKey] });
       previewRef.current?.contentWindow?.location.reload();
       toast.success(t("layoutEditor.resetDone"));
     },
@@ -1490,7 +1495,7 @@ export function LayoutEditorPage() {
           type="button"
           className="lay__tab lay__tab--chrome"
           title={t("layoutEditor.chromeTabHint")}
-          onClick={() => { setTemplateKey(key); setVariant(DEFAULT_VARIANT); }}
+          onClick={() => setTemplateKey(key)}
         >
           {t(`layoutEditor.template.${key}`)}
           <span className="lay__tab-count">
@@ -1513,9 +1518,7 @@ export function LayoutEditorPage() {
     const ok = await openDialog({
       kind: "confirm", icon: "warning", danger: true,
       title: t("layoutEditor.resetTitle"),
-      // Resetting a variant drops back to the template default; resetting the default
-      // drops back to what shipped. Different enough to say out loud.
-      body:  variant ? t("layoutEditor.resetVariantBody") : t("layoutEditor.resetBody"),
+      body:  t("layoutEditor.resetBody"),
       confirmText: t("layoutEditor.reset"),
       cancelText:  t("layoutEditor.cancel"),
     });
@@ -1571,8 +1574,7 @@ export function LayoutEditorPage() {
   // header or footer, because those render on this page too and that is where the
   // admin just clicked one.
   const previewRoute =
-    previewPageKey === "page.detail"    && previewPageSlug    ? `/p/${encodeURIComponent(previewPageSlug)}`
-    : previewPageKey === "profile"        && previewUsername    ? `/u/${encodeURIComponent(previewUsername)}`
+    previewPageKey === "profile"        && previewUsername    ? `/u/${encodeURIComponent(previewUsername)}`
     : previewPageKey === "article.detail" && previewArticleSlug ? `/articles/${encodeURIComponent(previewArticleSlug)}`
     // A plugin says where its own page lives; core cannot know. `/` is the honest
     // fallback for a plugin that declared no route — it previews the chrome and shows
@@ -1586,18 +1588,39 @@ export function LayoutEditorPage() {
    * what is published. Without it the preview showed every template's staged state
    * at once, and a stale `chrome.header` draft read as the site header disappearing.
    */
+  /** The opening day of the first seasonal edge in the open document, for "Viewing on". */
+  const seasonStart: string | null = (() => {
+    const walk = (nodes: BlockNode[]): string | null => {
+      for (const n of nodes) {
+        const s = n.edges?.top?.season?.from ?? n.edges?.bottom?.season?.from;
+        if (s) return s;
+        const hit = n.children ? walk(n.children) : null;
+        if (hit) return hit;
+      }
+      return null;
+    };
+    return doc ? walk(Object.values(doc.regions).flat()) : null;
+  })();
+
   const previewSrc =
-    `${previewRoute}?${LAYOUT_PREVIEW_PARAM}=draft&${LAYOUT_EDITING_PARAM}=${encodeURIComponent(templateKey)}`;
+    `${previewRoute}?${LAYOUT_PREVIEW_PARAM}=draft&${LAYOUT_EDITING_PARAM}=${encodeURIComponent(templateKey)}`
+    // The theme being edited, so the preview renders ITS draft and stylesheet.
+    + (themeKey ? `&${PREVIEW_THEME_PARAM}=${encodeURIComponent(themeKey)}` : "");
 
   return (
     <div className="lay">
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.appearance")}</div>
-          <h1 className="acp-page-title">{t("layoutEditor.title")}</h1>
-        </div>
-      </div>
-      <p className="lay__intro">{t("layoutEditor.subtitle")}</p>
+      {!embedded && (
+        <>
+          <div className="acp-page-header">
+            <div className="acp-page-header__left">
+              <div className="acp-page-sub">{t("nav.appearance")}</div>
+              <h1 className="acp-page-title">{t("layoutEditor.title")}</h1>
+              <ThemeScopePicker />
+            </div>
+          </div>
+          <p className="lay__intro">{t("layoutEditor.subtitle")}</p>
+        </>
+      )}
 
       {/* Toolbar */}
       <div className="lay__bar">
@@ -1627,12 +1650,7 @@ export function LayoutEditorPage() {
           className="lay__template"
           aria-label={t("layoutEditor.documentLabel")}
           value={templateKey}
-          onChange={(e) => {
-            setTemplateKey(e.target.value as TemplateKey);
-            // A variant key belongs to one template; carrying a page slug over to
-            // `profile` would address a row that can never exist.
-            setVariant(DEFAULT_VARIANT);
-          }}
+          onChange={(e) => setTemplateKey(e.target.value as TemplateKey)}
         >
           {/* Three groups, because the list mixes three kinds of thing: chrome renders
               on EVERY page, core pages are one route each, and a plugin's pages exist
@@ -1670,39 +1688,6 @@ export function LayoutEditorPage() {
         </select>
         </div>
 
-        {/* Which INSTANCE of the template is being edited. Only shown for templates
-            that have instances: `page.detail` renders every custom page, so "Default"
-            is the arrangement they all inherit and a page name is that page's own.
-            A page with its own document is marked, so an admin can see at a glance
-            which ones deviate. */}
-        {supportsVariants && (
-          <select
-            className="acp-input lay__variant"
-            value={variant}
-            onChange={(e) => setVariant(e.target.value)}
-          >
-            <option value={DEFAULT_VARIANT}>
-              {t("layoutEditor.variantDefault")}
-              {inheritingKnown ? ` (${inheritingCount})` : ""}
-            </option>
-            {pages.map((p) => (
-              <option key={p.slug} value={p.slug}>
-                {p.title}
-                {/* Unpublished is worth saying: the layout is fully editable, but
-                    `/p/:slug` refuses an unpublished page to everyone, so the preview
-                    pane will show "not found" until the page goes live. Better to name
-                    that up front than to let it read as a broken editor. */}
-                {p.status !== "published" ? ` · ${t("layoutEditor.variantUnpublished")}` : ""}
-                {customised.has(p.slug) ? " ●" : ""}
-              </option>
-            ))}
-          </select>
-        )}
-
-        {/* One request's worth of pages. Saying so beats a picker that quietly ends. */}
-        {supportsVariants && pagesTruncated && (
-          <span className="lay__status">{t("layoutEditor.variantTruncated")}</span>
-        )}
 
         {/* The audience axis moved onto the CANVAS toolbar: it says who the page is
             drawn for, which is a property of what you are looking at rather than of
@@ -1756,6 +1741,10 @@ export function LayoutEditorPage() {
         </span>
 
         <div className="lay__bar-actions">
+          {/* How the whole site sits in the window. Site-wide, like Publish, which is
+              why it sits beside it rather than with the page's own controls. */}
+          <SiteFramePopover pageKey={previewPageKey} onLiveChange={setLiveFrame} themeKey={themeKey} />
+
           {/* THROWING WORK AWAY, behind a menu. All three undo something — a theme's
               version, the draft, the whole arrangement — and they sat in the toolbar
               at the same weight as Publish, which is the one button here that is used
@@ -1795,7 +1784,9 @@ export function LayoutEditorPage() {
             )}
           </div>
 
-          <button type="button" className="btn-primary btn-sm lay__publish"
+          {/* Embedded in Theme Studio the Studio's header publishes — layouts and
+              styles together — so this one is not drawn. */}
+          {!embedded && <button type="button" className="btn-primary btn-sm lay__publish"
             disabled={publish.isPending || pending.length === 0}
             onClick={() => publish.mutate()}>
             <FontAwesomeIcon icon={faArrowUpFromBracket} />
@@ -1804,7 +1795,7 @@ export function LayoutEditorPage() {
                 it promotes every pending draft, including templates not open here —
                 and the count is the only thing on screen that says so. */}
             {pending.length > 0 && <span className="lay__publish-count">{pending.length}</span>}
-          </button>
+          </button>}
         </div>
       </div>
 
@@ -1828,14 +1819,6 @@ export function LayoutEditorPage() {
         </div>
       )}
 
-      {/* The reach of what is about to be edited, stated where the editing happens.
-          Shown only on the fallback itself — on a page's own layout there is nothing
-          to warn about, since it affects exactly that page. */}
-      {supportsVariants && !variant && inheritingKnown && (
-        <p className="lay__variant-note">
-          {t("layoutEditor.variantDefaultNote", { count: inheritingCount })}
-        </p>
-      )}
 
       <div className="lay__grid">
         {/* THREE panes: what the page is made of, the page, and the selected block.
@@ -1899,6 +1882,24 @@ export function LayoutEditorPage() {
                 <FontAwesomeIcon icon={faUsers} /> {t("layoutEditor.audienceView.members")}
               </button>
             </div>
+
+            {/* Seasonal edge art is hidden most of the year, which is exactly when an
+                admin arranges things — so the canvas can pretend it is in season. */}
+            {/* Offered when the open document has seasonal art: "Today" and the first
+                season's opening day, which is when that art first shows. */}
+            {seasonStart && (
+              <>
+                <span className="lay__canvasbar-label">{t("layoutEditor.edge.viewingOn")}</span>
+                <div className="lay__seg" role="group" aria-label={t("layoutEditor.edge.viewingOn")}>
+                  <button type="button" className={!viewDate ? "is-on" : ""} onClick={() => setViewDate(null)}>
+                    {t("layoutEditor.edge.today")}
+                  </button>
+                  <button type="button" className={viewDate ? "is-on" : ""} onClick={() => setViewDate(seasonStart)}>
+                    {dateFromMonthDay(seasonStart).toLocaleDateString(i18n.language, { month: "short", day: "numeric" })}
+                  </button>
+                </div>
+              </>
+            )}
 
             <div className="lay__seg lay__seg--icons" role="group" aria-label={t("layoutEditor.deviceHint")}>
               {(Object.keys(DEVICES) as DeviceId[]).map((id) => (
@@ -2031,64 +2032,104 @@ export function LayoutEditorPage() {
               </button>
             </span>
           </div>
+          {/* Two tabs, as the design draws them: what this BLOCK is (its settings, who
+              sees it, its edge art) and the THEME it sits in (colourway, corners, glow
+              — tokens, saved in the appearance draft). The block's style variant sits
+              under Theme style: it chooses which of the theme's looks the block wears,
+              and its colours are theme tokens too. */}
+          <div className="lay__props-tabs" role="tablist" aria-label={t("layoutEditor.inspectorTabs")}>
+            <button type="button" role="tab" aria-selected={inspectorTab === "block"}
+              className={inspectorTab === "block" ? "is-on" : ""} onClick={() => setInspectorTab("block")}>
+              <FontAwesomeIcon icon={faCube} />{t("layoutEditor.tabBlock")}
+            </button>
+            <button type="button" role="tab" aria-selected={inspectorTab === "theme"}
+              className={inspectorTab === "theme" ? "is-on" : ""} onClick={() => setInspectorTab("theme")}>
+              <FontAwesomeIcon icon={faPalette} />{t("layoutEditor.tabTheme")}
+            </button>
+          </div>
           <div className="lay__props-body">
-              {/* Section labels, because the panel stacks three unrelated things: the
-                  block's OWN options, who sees it, and how it is painted. Without them
-                  a schema field and an audience radio read as one list. */}
-              {Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length > 0 && (
-                <div className="lay__props-section">{t("layoutEditor.sectionSettings")}</div>
-              )}
-              <SchemaFields
-                compact
-                schema={schemaFor(selected.node.type)}
-                values={selected.node.props}
-                onChange={(next) => updateProps(selected.node.id, next)}
-                // The background props get a picker, an uploader and a preview
-                // instead of a text box and a number — see BlockBackground.
-                omit={paintsBackground(selected.node.type) ? BACKGROUND_PROPS : undefined}
-              />
-              {Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length === 0 && (
-                <div className="acp-hint">{t("layoutEditor.noProps")}</div>
-              )}
-              {/* Whether a block paints is read from its SCHEMA, not from its name:
-                  `section` was the only one that did until the header band became a
-                  block of its own, and a second `type === "…"` check is how the two
-                  would have drifted. Keyed by block for the same reason BlockStyle
-                  is: switching selection must reset the panel, not carry one block's
-                  pending upload to another. */}
-              {paintsBackground(selected.node.type) && (
-                <BlockBackgroundFields
-                  // ⚠ NAMESPACED, not the bare block id. `BlockStyleFields` below is
-                  // a sibling in this same pane and already keys on that id — two
-                  // siblings sharing a key makes React warn and, as it documents,
-                  // DUPLICATE them: the panel doubled on every edit until the rail
-                  // held eight copies. Nothing in the saved document was ever wrong,
-                  // which is why only looking at it caught this.
-                  key={`bg:${selected.node.id}`}
-                  image={selected.node.props.backgroundImage as string | undefined}
-                  gradient={selected.node.props.backgroundGradient as string[] | undefined}
-                  angle={selected.node.props.backgroundAngle as number | undefined}
-                  onChange={(patch) => updateProps(selected.node.id, { ...selected.node.props, ...patch })}
-                  // The footer's surface belongs to the Style Editor's Footer panel;
-                  // whatever is set here is drawn OVER it, and clearing hands it back.
-                  inherits={STYLED_SURFACES.has(selected.node.type)}
-                />
-              )}
+            {inspectorTab === "block" ? (
+              <>
+              {(() => {
+                const about = t(`layoutEditor.blockDesc.${selected.node.type}`, { defaultValue: "" });
+                return about ? <p className="lay__props-about">{about}</p> : null;
+              })()}
+              <div className="lay__props-section">{t("layoutEditor.sectionSettings")}</div>
+              {(() => {
+                // The site chrome's three bands have their own panels (ChromeSettings),
+                // which also carry the structure settings: where search sits, the
+                // navbar's small logo, which end its links sit at.
+                const Chrome = CHROME_SETTINGS[selected.node.type];
+                if (Chrome && doc) {
+                  return (
+                    <>
+                      <Chrome key={`chrome:${selected.node.id}`} node={selected.node} regions={doc.regions}
+                        onProps={(next) => updateProps(selected.node.id, next)}
+                        onTree={(next) => applyTree(() => next)} />
+                    </>
+                  );
+                }
+                const hasProps = Object.keys(schemaFor(selected.node.type)?.properties ?? {}).length > 0;
+                return (
+                  <>
+                    <SchemaFields
+                      compact
+                      schema={schemaFor(selected.node.type)}
+                      values={selected.node.props}
+                      onChange={(next) => updateProps(selected.node.id, next)}
+                      // The background props get a picker, an uploader and a preview
+                      // instead of a text box and a number — see BlockBackground.
+                      omit={paintsBackground(selected.node.type) ? BACKGROUND_PROPS : undefined}
+                    />
+                    {!hasProps && <div className="acp-hint">{t("layoutEditor.noProps")}</div>}
+                    {/* Whether a block paints is read from its SCHEMA, not its name.
+                        ⚠ NAMESPACED key: BlockStyleFields below keys on the bare id, and
+                        two siblings sharing a key make React duplicate them. */}
+                    {paintsBackground(selected.node.type) && (
+                      <BlockBackgroundFields
+                        key={`bg:${selected.node.id}`}
+                        image={selected.node.props.backgroundImage as string | undefined}
+                        gradient={selected.node.props.backgroundGradient as string[] | undefined}
+                        angle={selected.node.props.backgroundAngle as number | undefined}
+                        onChange={(patch) => updateProps(selected.node.id, { ...selected.node.props, ...patch })}
+                        inherits={STYLED_SURFACES.has(selected.node.type)}
+                      />
+                    )}
+                  </>
+                );
+              })()}
+
+
               {/* A required block may be moved anywhere but never restricted: an
                   audience would achieve by hiding exactly what deletion is
                   forbidden to do. Refused by the API too. */}
-              {required.has(selected.node.type) ? (
-                <div className="acp-hint lay__vis-note">{t("layoutEditor.audienceRequired")}</div>
-              ) : (
-                <BlockVisibilityFields
-                  value={selected.node.visibility}
-                  onChange={(next) => updateVisibility(selected.node.id, next)}
-                />
+              <InspectorFold key={`vis:${selected.node.id}`} title={t("layoutEditor.whoSeesIt")}
+                active={!!selected.node.visibility}>
+                {required.has(selected.node.type) ? (
+                  <div className="acp-hint lay__vis-note">{t("layoutEditor.audienceRequired")}</div>
+                ) : (
+                  <BlockVisibilityFields bare
+                    value={selected.node.visibility}
+                    onChange={(next) => updateVisibility(selected.node.id, next)}
+                  />
+                )}
+              </InspectorFold>
+
+              {/* Edge art belongs to a SURFACE — a band, a card, a panel — not to a link
+                  or a button. Still offered where a block already has some, so it can
+                  be taken off again. */}
+              {(hasSurface(selected.node.type) || selected.node.edges) && (
+                <InspectorFold key={`edge:${selected.node.id}`} title={t("layoutEditor.edge.title")}
+                  active={!!(selected.node.edges?.top || selected.node.edges?.bottom)}>
+                  <BlockEdgeArtFields bare
+                    value={selected.node.edges}
+                    onChange={(next) => applyTree((r) => updateBlockEdges(r, selected.node.id, next))}
+                  />
+                </InspectorFold>
               )}
-              {/* One icon, picked in the preview.
-                  ⚠ Shown only while an icon of THIS block is picked — the override
-                  lives on the block, so offering the panel for a block whose icon was
-                  not clicked would write the override onto the wrong node. */}
+
+              {/* One icon, picked in the preview. Shown only while an icon of THIS block
+                  is picked — the override lives on the block. */}
               {iconPick && iconPick.id === selected.node.id && (
                 <div className="lay__iconpick" ref={iconPanelRef}>
                   <div className="acp-label">
@@ -2100,9 +2141,7 @@ export function LayoutEditorPage() {
                     onChange={(tok) => applyTree((r) =>
                       updateBlockIconOverride(r, iconPick.id, iconPick.slot, tok))}
                   />
-                  {/* ⚠ Clearing must be reachable: an override that cannot be undone
-                      without hand-editing the document is a trap, and the picker has
-                      no empty state of its own. */}
+                  {/* Clearing must be reachable: the picker has no empty state. */}
                   <button type="button" className="btn-ghost btn-sm"
                     disabled={!selected.node.iconOverrides?.[iconPick.slot]}
                     onClick={() => applyTree((r) =>
@@ -2112,18 +2151,23 @@ export function LayoutEditorPage() {
                 </div>
               )}
 
+              </>
+            ) : (
+              <ThemeStyleFields>
               {/* Click-to-scope: the block chooses a look, the panel edits what that
-                  look means. Keyed by block so switching selection resets the panel's
-                  pending edits rather than carrying them to another block. */}
-              <BlockStyleFields
-                key={selected.node.id}
-                variant={selected.node.variant}
-                onVariantChange={(next) => updateVariant(selected.node.id, next)}
-                className={selected.node.className}
-                onClassNameChange={(next) => updateClassName(selected.node.id, next)}
-                isContainer={!!getBlock(selected.node.type)?.container}
-                onPreviewCss={setStyleCss}
-              />
+                    look means. Keyed by block so switching selection resets it. */}
+                <BlockStyleFields
+                  key={selected.node.id}
+                  variant={selected.node.variant}
+                  onVariantChange={(next) => updateVariant(selected.node.id, next)}
+                  className={selected.node.className}
+                  onClassNameChange={(next) => updateClassName(selected.node.id, next)}
+                  isContainer={!!getBlock(selected.node.type)?.container}
+                  onPreviewCss={setVariantCss}
+                />
+
+              </ThemeStyleFields>
+            )}
           </div>
         </div>
         )}

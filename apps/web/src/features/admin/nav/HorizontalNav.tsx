@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AcpIcon } from "../pages/acpIcons";
-import type { NavItem } from "../useAcpNav";
+import { childMatches, type NavItem } from "../useAcpNav";
 
 // Two-tier horizontal ACP nav (the redesign default). Tier 1 = brand + primary
 // menu (groups open a dropdown of their pages; leaf items navigate directly).
@@ -24,7 +24,7 @@ function useOutside<T extends HTMLElement>(open: boolean, onClose: () => void) {
 
 function isItemActive(item: NavItem, path: string): boolean {
   if (item.to) return item.to === "/admin" ? path === "/admin" : path.startsWith(item.to);
-  return !!item.children?.some((c) => path.startsWith(c.to));
+  return !!item.children?.some((c) => childMatches(c, path));
 }
 
 function PrimaryCell({ item, active, openKey, setOpenKey }: {
@@ -56,7 +56,7 @@ function PrimaryCell({ item, active, openKey, setOpenKey }: {
         <div className="hnav__drop">
           <div className="hnav__droplabel">{t(item.label)}</div>
           {item.children.map((c) => {
-            const act = path.startsWith(c.to);
+            const act = childMatches(c, path);
             return (
               <Link key={c.to} to={c.to} className={`hnav__dropitem${act ? " is-active" : ""}`} onClick={() => setOpenKey(null)}>
                 <span className="hnav__dropic">{item.icon}</span>
@@ -111,7 +111,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
           <span className="hctx__div" />
           <div className="hctx__tabs acp-scroll">
             {section.children.map((c) => {
-              const act = path.startsWith(c.to);
+              const act = childMatches(c, path);
               return (
                 <Link key={c.to} to={c.to} className={`hctx__tab${act ? " is-active" : ""}`}>
                   {t(c.label)}

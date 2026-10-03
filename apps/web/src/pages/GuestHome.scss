@@ -91,6 +91,7 @@
   .gpresence {
     width: 100%; background: var(--card-bg); border: 1px solid var(--c-border);
     border-radius: var(--radius-lg); box-shadow: var(--shadow-card); padding: 18px;
+    clip-path: var(--clip-card);
   }
   .gpresence__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
   .gpresence__head b { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }

@@ -158,7 +158,7 @@ export function GroupsPage() {
                 </button>
                 <span className="gp-rank">#{rank}</span>
                 <span className="gp-name">
-                  <GroupGlyph icon={g.icon} color={color} />
+                  <GroupGlyph color={color} />
                   <span className="gp-name__main">
                     <span className="gp-name__line">
                       <Link to={`/admin/groups/${g.id}`} className="gp-name__title">{g.name}</Link>

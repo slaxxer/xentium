@@ -3,15 +3,13 @@
  *
  * A site has one active theme; a reader may choose another installed one for
  * themselves. That choice reaches the server as `?theme=<id>` on the public layouts
- * endpoint, and this is the resolution behind it. Three rules, and each of them is
- * something a plausible implementation gets wrong:
+ * endpoint, and this is the resolution behind it. Every theme carries its own edits:
  *
- *  - the theme's OWN documents where it ships one — not merged with the site's, which
- *    would be an arrangement nobody designed;
- *  - the SITE's document everywhere else, because a theme rarely ships all eight
- *    templates and the alternative is a bare code default on the pages it skipped;
- *  - the site's own layouts for an id naming nothing, because the choice lives in a
- *    cookie and a cookie outlives an uninstall.
+ *  - that theme AS THE ADMIN MADE IT — its own edited documents, then what it ships,
+ *    then the code default. Never another theme's arrangement: the active theme's
+ *    pages were built for different surfaces, and a mix is a page nobody designed;
+ *  - the active theme's layouts for an id naming nothing, because the choice lives in
+ *    a cookie and a cookie outlives an uninstall.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_VARIANT, type LayoutDocument } from "@xentium/contracts";
@@ -70,9 +68,8 @@ describe("a visitor wearing an installed theme", () => {
     expect(templates.home?.regions.main?.[0]?.id).toBe("theme-block");
   });
 
-  it("gets the SITE's document for a template the theme does not ship", async () => {
-    // The theme ships `home` and nothing else — every other page must still be the
-    // site's, not a bare code default.
+  it("still gets every template when the theme ships only some", async () => {
+    // The theme ships `home` and nothing else — every other page still renders.
     await installTheme({ home: themeHome("theme-block") });
     const { templates } = await layoutService.getPublishedAllForTheme(THEME);
     expect(templates.profile).toBeDefined();
@@ -88,12 +85,24 @@ describe("a visitor wearing an installed theme", () => {
     expect(ids).not.toContain("site-block");
   });
 
-  it("skips a template whose document does not parse, keeping the site's", async () => {
-    // ⚠ The code default is not what this theme ships, so a broken file must not
-    // replace an admin's page with an empty one.
+  it("treats a document that does not parse as not shipped — never another theme's page", async () => {
     await installTheme({ home: { templateKey: "home", regions: "not-an-object" } });
     const { templates } = await layoutService.getPublishedAllForTheme(THEME);
-    expect(templates.home?.regions.main?.[0]?.id).toBe("site-block");
+    expect(templates.home?.templateKey).toBe("home");
+    expect((templates.home?.regions.main ?? []).map((b) => b.id)).not.toContain("site-block");
+  });
+
+  it("carries the admin's edits to THAT theme", async () => {
+    await installTheme({ home: themeHome("theme-block") });
+    await prisma.layout.create({
+      data: {
+        themeKey: THEME, templateKey: "home", variant: DEFAULT_VARIANT, scope: "published",
+        document: doc("edited-block") as unknown as object,
+      },
+    });
+    bustThemeLayouts(THEME);
+    const { templates } = await layoutService.getPublishedAllForTheme(THEME);
+    expect(templates.home?.regions.main?.[0]?.id).toBe("edited-block");
   });
 });
 

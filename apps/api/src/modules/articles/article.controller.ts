@@ -2,7 +2,7 @@ import type { RequestHandler } from "express";
 import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
-import { CorePermissions } from "@xentium/contracts";
+import { CorePermissions, expandImplied } from "@xentium/contracts";
 import { articleService } from "./article.service.js";
 import { trackArticleView } from "./article.views.js";
 import { getSetting } from "../../shared/utils/settings.js";
@@ -20,7 +20,7 @@ async function viewerPerms(userId: string | undefined): Promise<Set<string>> {
     where: { group: { users: { some: { userId } } } },
     select: { permission: { select: { key: true } } },
   });
-  return new Set(rows.map((r) => r.permission.key));
+  return new Set(expandImplied(rows.map((r) => r.permission.key)));
 }
 
 export const articlesController = {

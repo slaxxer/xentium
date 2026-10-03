@@ -33,6 +33,7 @@
   display: flex;
   background: var(--card-bg);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-sm);
   padding: 5px;
   box-shadow: var(--shadow-card);
 }
@@ -250,6 +251,7 @@
 .mp-howto {
   background: var(--card-bg);
   border-radius: var(--radius-xl);
+  clip-path: var(--clip-card);
   box-shadow: var(--shadow-card);
   padding: 26px 30px;
   position: relative;

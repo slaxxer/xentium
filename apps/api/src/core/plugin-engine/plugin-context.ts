@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -10,6 +10,7 @@ import { acpPageRegistry } from "./acp-page-registry.js";
 import { securityScanRegistry } from "../security/security-scan-registry.js";
 import { authGuardRegistry, type AuthGuard } from "../auth-guard-registry/auth-guard-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
+import { reportTargetRegistry } from "../report-target-registry/report-target-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
 import { statRegistry } from "../stat-registry/stat-registry.js";
 import { necRegistry } from "../xec-registry/xec-registry.js";
@@ -134,6 +135,11 @@ export class PluginContextImpl implements PluginContext {
   registerSearchSource(source: SearchSource): void {
     searchRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin search source registered");
+  }
+
+  registerReportTarget(handler: ReportTargetHandler): void {
+    reportTargetRegistry.register(this.pluginId, handler);
+    logger.info({ pluginId: this.pluginId, kind: handler.kind }, "Plugin report target registered");
   }
 
   registerHomeFeedSource(source: HomeFeedSource): void {

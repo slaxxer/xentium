@@ -1,0 +1,42 @@
+/* A reading measure narrower than the content column, like an article. */
+.legal-view {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-block: 2.5rem 4rem;
+
+  &__head {
+    margin-bottom: 1.75rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--c-border);
+  }
+
+  &__title {
+    font-size: var(--fs-3xl);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--c-fg);
+    margin: 0 0 0.5rem;
+  }
+
+  &__meta {
+    margin: 0;
+    font-size: var(--fs-sm);
+    color: var(--c-fg-muted);
+
+    a { color: var(--c-accent); }
+  }
+
+  &__body {
+    font-size: var(--fs-read);
+    line-height: 1.7;
+    color: var(--c-fg);
+  }
+
+  &__state {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4rem 1.25rem;
+    text-align: center;
+    color: var(--c-fg-muted);
+  }
+}

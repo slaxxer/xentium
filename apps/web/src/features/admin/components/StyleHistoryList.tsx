@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { withTheme } from "../../../lib/editingTheme";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faRotateLeft } from "@fortawesome/free-solid-svg-icons";
@@ -81,12 +82,12 @@ function summarise(
  * now redirects here. Kept as its own component because a snapshot list is a
  * self-contained thing, not because a second surface renders it.
  */
-export function StyleHistoryList() {
+export function StyleHistoryList({ themeKey = null }: { themeKey?: string | null }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const { data: history = [], isLoading } = useQuery<StyleHistoryEntry[]>({
-    queryKey: ["acp-style-history"],
-    queryFn: () => api.get("/admin/style-history"),
+    queryKey: ["acp-style-history", themeKey],
+    queryFn: () => api.get(withTheme("/admin/style-history", themeKey)),
   });
 
   const restoreMut = useMutation({

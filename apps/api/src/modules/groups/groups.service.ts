@@ -101,6 +101,30 @@ export const groupsService = {
     return storage.publicUrl(relPath);
   },
 
+  /**
+   * The group's rank image, shown instead of its text badge when the site's rank
+   * display is "images". Stored beside the icons (`groups/rank-<id>.<ext>`); `ext`
+   * is the DETECTED type, as for the icon.
+   */
+  async uploadRankImage(groupId: string, buffer: Buffer, ext: string): Promise<string> {
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) throw XentiumError.notFound("Group not found");
+    const filename = `rank-${groupId}.${ext.replace(/^\./, "").toLowerCase()}`;
+    const relPath  = await storage.save("groups", filename, buffer);
+    await prisma.group.update({ where: { id: groupId }, data: { rankImage: relPath } });
+    if (group.rankImage && group.rankImage !== relPath) await storage.delete(group.rankImage).catch(() => {});
+    return storage.publicUrl(relPath);
+  },
+
+  /** Back to the text badge for this group. Idempotent. */
+  async removeRankImage(groupId: string): Promise<void> {
+    const group = await prisma.group.findUnique({ where: { id: groupId } });
+    if (!group) throw XentiumError.notFound("Group not found");
+    if (!group.rankImage) return;
+    await prisma.group.update({ where: { id: groupId }, data: { rankImage: null } });
+    await storage.delete(group.rankImage).catch(() => {});
+  },
+
   /** Back to the default glyph. Idempotent: a group with no icon is left as it is. */
   async removeIcon(groupId: string): Promise<void> {
     const group = await prisma.group.findUnique({ where: { id: groupId } });

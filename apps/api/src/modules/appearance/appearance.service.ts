@@ -6,6 +6,10 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 // /css right after a cross-process style publish must never get stale tokens.
 import { bustSettingsCache, getFreshSetting as readSetting } from "../../shared/utils/settings.js";
 import { publishStyleVersion } from "./appearance.sse.js";
+import {
+  ACTIVE_THEME_SETTING, CORE_PARAM, CORE_THEME, activeThemeKey, bustThemeBaseline, themeBaseline, themed,
+  type ThemeKey,
+} from "../themes/themeKey.js";
 
 /**
  * @deprecated There is one look. Kept only so `scopeCss` keeps its published
@@ -133,71 +137,46 @@ function assertParsableCss(css: string): void {
   }
 }
 
-// Scoped result of both themes' custom CSS, compiled at save time. Cached in a
-// setting so GET /api/appearance/css (public hot path, refetched by every open
-// client on each style-version bump) never runs a postcss parse per request.
-const CUSTOM_CSS_COMPILED_KEY = "appearance.custom_css_compiled";
-
-// ── Admin layer ──────────────────────────────────────────────────────────────
-// The admin's own token overrides, live and staged. ONE key each, because a site has
-// one look: these used to be `appearance.tokens.{light,dark}` pairs, written and read
-// together, and the dark half only ever existed to answer `prefers-color-scheme`.
-const TOKENS_KEY = "appearance.tokens";
-const LEGACY_TOKENS_KEY = "appearance.tokens.light";
-
-// Staged (draft) token overrides — the Style Editor writes here; they go live only
-// on publish (Run now or the scheduled appearance-publish job). /css serves live,
-// never the draft.
-const DRAFT_KEY = "appearance.tokens.draft";
-// ⚠ What a pre-collapse install stored. Read as a fallback so an existing site
-// keeps the look it had; the light side is what survives, because `:root` was
-// already the light palette and is what a site rendered untouched.
-const LEGACY_DRAFT_KEY = "appearance.tokens.draft.light";
-const DRAFT_BY_KEY    = "appearance.tokens.draft.by"; // user id who last edited the draft
-
-// ── Theme layer (inheritance) ────────────────────────────────────────────────
-// What an imported `.xttheme` shipped, kept SEPARATE from the admin's own overrides.
-// That separation is the whole of token inheritance: the served stylesheet is the theme
-// merged UNDER the admin's edits, so re-importing a newer version of the theme replaces
-// this layer and every tweak the admin made survives — per token, not per file.
+// ── Per-theme storage ────────────────────────────────────────────────────────
+// Every theme — each installed one and the built-in Core theme — carries its OWN
+// appearance: token overrides (live + draft), custom CSS, fonts. A key is suffixed
+// `@<themeId>`; Core keeps the historical unsuffixed keys, so a site that never
+// installed a theme reads exactly what it always stored.
 //
-// The alternative (importing straight into the admin layer) is what XenForo and WoltLab
-// both make you live with: customise a purchased style and an update either clobbers your
-// work or you never take the update.
-const THEME_KEY = "appearance.tokens.theme";
-const LEGACY_THEME_KEY = "appearance.tokens.theme.light";
-// An import STAGES the theme layer, exactly as an admin's own edits are staged: a theme
-// changes every page at once, which is precisely the change to preview before committing.
-// Promoted by the same `publishDraft` — one "publish appearance" verb, not two.
-const THEME_DRAFT_KEY = "appearance.tokens.theme.draft";
-const LEGACY_THEME_DRAFT_KEY = "appearance.tokens.theme.draft.light";
-/** The manifest of the installed theme, so the ACP can name what it is inheriting from. */
-const THEME_INSTALLED_KEY = "appearance.theme.installed";
-/** One level of undo for the last theme import — see `saveThemeRollback`. */
+// Under each theme's own edits sits what the theme SHIPPED (`themeBaseline`), read
+// from its library row. Core ships nothing: its baseline is `tokens.scss` itself.
+//
+// Switching the site's theme changes which key is live. Nothing is copied or merged
+// between themes, so going back to one restores exactly the edits made to it.
+
+const TOKENS_KEY = "appearance.tokens";
+const DRAFT_KEY = "appearance.tokens.draft";
+const DRAFT_BY_KEY = "appearance.tokens.draft.by"; // user id who last edited the draft
+const ADMIN_CSS_KEY = "appearance.custom_css_light";
+// The served blob, compiled at save time so `/css` never runs postcss per request.
+const CUSTOM_CSS_COMPILED_KEY = "appearance.custom_css_compiled";
+export const FONT_KEYS = {
+  family: "appearance.font.family",
+  weight: "appearance.font.weight",
+  size:   "appearance.font.size",
+} as const;
+
+// ⚠ Pre-collapse names (the light/dark era). Read as a fallback for CORE only — they
+// predate per-theme storage, which is why no other theme can have them — and retired
+// on the next write, or a stale light half would outlive the value that replaced it.
+const LEGACY_TOKENS_KEY = "appearance.tokens.light";
+const LEGACY_DRAFT_KEY = "appearance.tokens.draft.light";
+const LEGACY_CSS_KEY = "appearance.custom_css"; // the pre-theme single blob
+
+/** One level of undo for the last theme switch or update — see `ThemeRollback`. */
 const THEME_ROLLBACK_KEY = "appearance.theme.rollback";
 
-// ── Theme layer: custom CSS ──────────────────────────────────────────────────
-// Custom CSS was the one channel a theme did NOT layer. An import called
-// `saveCustomCss` with the package's contents, which overwrote the admin's own
-// stylesheet outright — unrecoverably, since unlike a layout no baseline was recorded,
-// and unlike a token there was nowhere else for it to live.
-//
-// So the theme's CSS gets its own layer, mirroring the token layer exactly: staged by an
-// import, promoted by the same `publishDraft`, and emitted BEFORE the admin's CSS so
-// that on an equally-specific rule the admin still wins. `resetAppearance` leaves it
-// alone for the same reason it leaves the token layer alone.
-const THEME_CSS_KEY = "appearance.custom_css.theme";
-const THEME_CSS_DRAFT_KEY = "appearance.custom_css.theme.draft";
-const LEGACY_THEME_CSS_KEY = "appearance.custom_css.theme.light";
-const LEGACY_THEME_CSS_DRAFT_KEY = "appearance.custom_css.theme.draft.light";
-
 /**
- * The served custom-CSS blob: the THEME layer first, the admin's own after it.
+ * The served custom-CSS blob: the THEME's stylesheet first, the admin's after it.
  *
- * Order is the whole of the inheritance. Both layers are scoped to the same theme root,
- * so two rules of equal specificity are decided by source order — putting the admin
- * last means their stylesheet wins exactly the way their tokens do, and a theme update
- * can never take a customisation away.
+ * Order is the inheritance. Both are scoped to the same root, so on rules of equal
+ * specificity source order decides — the admin's own CSS wins exactly the way their
+ * tokens do, and a theme update can never take a customisation away.
  */
 function compileCustomCss(admin: string, theme: string): string {
   return [scopeCustomCss(theme), scopeCustomCss(admin)]
@@ -211,19 +190,27 @@ export const DEFAULT_TOKENS = HEARTH_DEFAULT_TOKENS;
 
 export type { TokenMap, TokenSet };
 
-/** The appearance half of a theme-import rollback: setting key → prior value,
- *  where `null` means the setting did not exist and must be deleted again. */
-export type ThemeLayerSnapshot = Record<string, unknown>;
-
-/** Everything needed to put the site back the way it was before the last import. */
+/**
+ * One level of undo for the last theme change.
+ *
+ * Switching is just a change of which theme is live, so undoing it is switching back.
+ * An UPDATE of a theme (a new version over an installed one) also rewrote that theme's
+ * package and its untouched layouts, so it carries what it replaced.
+ */
 export interface ThemeRollback {
-  /** Type-only import: erased at compile time, so naming the layout service's row
-   *  shape here cannot create a runtime cycle between the two modules. */
-  layouts:  import("../layouts/layout.service.js").LayoutRowSnapshot[];
-  layers:   ThemeLayerSnapshot;
-  /** The theme that was installed before, for the ACP to name in the undo button. */
+  /** The theme that was live before. `''` = Core. */
+  previous: ThemeKey;
+  /** Its name, for the ACP's undo button. */
   replaced: string | null;
   at:       string;
+  update?: {
+    themeId: string;
+    /** The library row's payload and manifest before the update. */
+    payload:  unknown;
+    manifest: unknown;
+    /** That theme's layout rows before the update. Type-only import: no runtime cycle. */
+    layouts:  import("../layouts/layout.service.js").LayoutRowSnapshot[];
+  };
 }
 
 // Live-sync defaults. The interval is how often each open client polls the
@@ -234,23 +221,17 @@ const LIVE_REFRESH_MIN_SECONDS     = 2;
 const LIVE_REFRESH_MAX_SECONDS     = 60;
 
 /**
- * Built CSS per installed theme, for visitors wearing one.
- *
- * Keyed by theme id alone and never expired: a theme's payload is immutable once
- * installed — changing it means installing a new version, which replaces the row —
- * so unlike the live sheet there is no version to invalidate against. Cleared on
- * uninstall so a removed theme cannot go on being served from memory.
+ * Built stylesheet per theme, memoised on the style version: every change that
+ * affects any theme's output bumps the version, so one cheap read invalidates all.
  */
-const themeCssMemo = new Map<string, string>();
+const cssMemo = new Map<ThemeKey, { version: number; css: string }>();
 
-/** Forget a theme's built stylesheet — call when its row changes or goes away. */
+/** Forget built stylesheets — on install/uninstall, when a payload changes. */
 export function bustThemeCss(themeId?: string): void {
-  if (themeId) themeCssMemo.delete(themeId);
-  else themeCssMemo.clear();
+  if (themeId !== undefined) cssMemo.delete(themeId);
+  else cssMemo.clear();
+  bustThemeBaseline(themeId || undefined);
 }
-
-// Latest built live CSS, keyed by style version (per process; see getLiveCss).
-let liveCssMemo: { version: number; css: string } | null = null;
 
 export const appearanceService = {
   // Monotonic-ish marker bumped on every change that affects the served CSS.
@@ -270,55 +251,33 @@ export const appearanceService = {
     return readSetting<number>("appearance.style_version", 0);
   },
 
-  /** The served live stylesheet, memoized on the style version: every change
-   *  that affects output bumps the version (bumpStyleVersion), so one cheap
-   *  version read replaces the full token-load + build on repeat requests. */
+  /** The stylesheet visitors get: the ACTIVE theme's, published. */
   async getLiveCss(): Promise<string> {
+    return this.getCssFor(await activeThemeKey());
+  },
+
+  /** One theme's published stylesheet — its package under the admin's edits to it. */
+  async getCssFor(key: ThemeKey): Promise<string> {
     const version = await this.getStyleVersion();
-    if (liveCssMemo && liveCssMemo.version === version) return liveCssMemo.css;
-    const css = await this.buildCSS(await this.getEffectiveTokens());
-    liveCssMemo = { version, css };
+    const hit = cssMemo.get(key);
+    if (hit && hit.version === version) return hit.css;
+    const css = await this.buildCSS(await this.getEffectiveTokens(key), { key });
+    cssMemo.set(key, { version, css });
     return css;
   },
 
   /**
-   * The stylesheet for ONE INSTALLED THEME, for a visitor wearing it.
+   * The stylesheet for a VISITOR wearing an installed theme other than the site's.
    *
-   * ⚠ The theme's OWN tokens, with no admin layer over them. The admin's overrides
-   * were authored against the site's active theme — a colour chosen to sit on that
-   * theme's surface has no meaning on another one, and merging the two produces a
-   * palette neither theme has. A visitor choosing a theme gets it as its author
-   * shipped it; the site's own visitors get the site, admin edits and all.
-   *
-   * Returns null when the id names nothing installed, so the caller can fall back to
-   * the live sheet rather than serve a blank one: a cookie outlives an uninstall.
+   * That theme as the admin has made it — its package under the edits made to IT, not
+   * the active theme's edits, which were made for a different theme's surfaces.
+   * Returns null for an id naming nothing installed, so the caller falls back to the
+   * live sheet: a cookie outlives an uninstall.
    */
   async getThemeCss(themeId: string): Promise<string | null> {
-    const cached = themeCssMemo.get(themeId);
-    if (cached) return cached;
-
-    /*
-     * ⚠ Read straight from the row, NOT through `themeService`. That module already
-     * imports this one (activation applies tokens through `appearanceService`), so
-     * calling back the other way would close an import cycle for the sake of one
-     * `findUnique`.
-     */
-    const row = await prisma.theme.findUnique({
-      where: { id: themeId }, select: { payload: true },
-    });
-    const payload = (row?.payload ?? null) as { tokens?: unknown } | null;
-    if (!payload?.tokens) return null;
-
-    // ⚠ A package may still carry the old two-set shape. Take the light half —
-    // that is the palette a site actually rendered, so a stored theme keeps
-    // looking like itself rather than flipping to a scheme nobody ever saw.
-    const raw = payload.tokens as { light?: unknown; dark?: unknown } | unknown;
-    const one = (raw && typeof raw === "object" && ("light" in raw || "dark" in raw))
-      ? (raw as { light?: unknown }).light
-      : raw;
-    const css = await this.buildCSS(normalizeScoped(one));
-    themeCssMemo.set(themeId, css);
-    return css;
+    if (themeId === CORE_PARAM) return this.getCssFor(CORE_THEME);
+    const row = await prisma.theme.findUnique({ where: { id: themeId }, select: { id: true } });
+    return row ? this.getCssFor(themeId) : null;
   },
 
   async getLiveRefreshSeconds(): Promise<number> {
@@ -331,188 +290,116 @@ export const appearanceService = {
   // ── Custom CSS console ──────────────────────────────────────────────────────
   // Raw CSS authored by an admin (trusted boundary, admin.access only), per theme.
   // Scoped + appended after the token blocks in the served stylesheet so it can
-  // override anything. Served as text/css (never injected as HTML), so there is no
-  // XSS vector beyond what a site admin can already do.
-  async getCustomCss(): Promise<string> {
-    const [scoped, legacy] = await Promise.all([
-      // null = never written; "" = explicitly cleared, which must stick.
-      readSetting<string | null>("appearance.custom_css_light", null),
-      readSetting<string>("appearance.custom_css", ""), // the pre-theme single blob
-    ]);
-    // ⚠ The LIGHT key is the one that survives the collapse — it is what a site
-    // actually served, since `:root` was always the light palette. A dark
-    // stylesheet an admin wrote for a scheme nothing renders is deliberately not
-    // merged in: concatenating the two would produce rules that never applied
-    // together and have never been seen working.
-    return scoped ?? legacy;
+  // override anything. Served as text/css (never injected as HTML).
+
+  /** The admin's own stylesheet for one theme. */
+  async getCustomCss(key: ThemeKey): Promise<string> {
+    const own = await readSetting<string | null>(themed(ADMIN_CSS_KEY, key), null);
+    // null = never written; "" = explicitly cleared, which must stick.
+    if (own !== null || key) return own ?? "";
+    return readSetting<string>(LEGACY_CSS_KEY, "");
   },
 
-  /**
-   * ⚠ The stored key is still `appearance.custom_css_light`, and the name now lies:
-   * there is no light stylesheet, there is THE stylesheet. It is kept because
-   * `appearance.custom_css` is ALREADY taken by an older generation of this setting
-   * (the pre-scheme single blob, still read as the second fallback above) — renaming
-   * would mean a third generation and a third fallback, for nothing a user can see.
-   */
-  async saveCustomCss(css: string): Promise<void> {
+  async saveCustomCss(css: string, key: ThemeKey): Promise<void> {
     assertParsableCss(css);
-    // Recompiled against the LIVE theme layer, not a blank one: this writes the
-    // whole served blob, so dropping the theme half here would silently uninstall
-    // a theme's stylesheet the first time an admin touched their own.
-    const compiled = compileCustomCss(css, await this.getThemeCustomCss());
-    await prisma.$transaction([
-      prisma.setting.upsert({
-        where:  { key: "appearance.custom_css_light" },
-        update: { value: css },
-        create: { key: "appearance.custom_css_light", value: css },
-      }),
-      prisma.setting.upsert({
-        where:  { key: CUSTOM_CSS_COMPILED_KEY },
-        update: { value: compiled },
-        create: { key: CUSTOM_CSS_COMPILED_KEY, value: compiled },
-      }),
-    ]);
-    bustSettingsCache("appearance.custom_css_light");
-    bustSettingsCache(CUSTOM_CSS_COMPILED_KEY);
+    await prisma.setting.upsert({
+      where:  { key: themed(ADMIN_CSS_KEY, key) },
+      update: { value: css },
+      create: { key: themed(ADMIN_CSS_KEY, key), value: css },
+    });
+    bustSettingsCache(themed(ADMIN_CSS_KEY, key));
+    await this.recompileCustomCss(key);
     await this.bumpStyleVersion();
   },
 
-  /** Both layers, both themes, scoped and ready to append to the stylesheet. */
-  async buildCustomCss(): Promise<string> {
-    const compiled = await readSetting<string | null>(CUSTOM_CSS_COMPILED_KEY, null);
-    if (compiled !== null) return compiled;
-    // Raw CSS saved before compile-on-save existed (or the legacy single blob):
-    // compile once and persist so subsequent /css requests skip postcss entirely.
-    return this.recompileCustomCss();
+  /** What the theme's own package ships as its stylesheet. Core ships none. */
+  async getThemeCustomCss(key: ThemeKey): Promise<string> {
+    return (await themeBaseline(key)).customCss;
   },
 
-  /** The same blob a publish would produce, built from the STAGED theme layer.
-   *  Never cached: a draft changes on every import and is read only by a preview. */
-  async buildDraftCustomCss(): Promise<string> {
-    const [admin, theme] = await Promise.all([this.getCustomCss(), this.getThemeDraftCustomCss()]);
-    return compileCustomCss(admin, theme);
+  /** Both layers for one theme, scoped and ready to append to the stylesheet. */
+  async buildCustomCss(key: ThemeKey): Promise<string> {
+    const compiled = await readSetting<string | null>(themed(CUSTOM_CSS_COMPILED_KEY, key), null);
+    if (compiled !== null) return compiled;
+    return this.recompileCustomCss(key);
   },
 
   /**
-   * Rebuild and cache the served blob from whatever both layers currently hold.
-   *
-   * The cache is a single setting on the public hot path (`GET /appearance/css`), so
-   * every writer of EITHER layer has to come through here — a theme publish that
-   * skipped it would leave the site serving the previous theme's stylesheet until an
-   * admin happened to save their own CSS.
+   * Rebuild and cache one theme's served blob from both of its layers. Every writer of
+   * either layer — the console, an install or update of the theme — comes through here.
    */
-  async recompileCustomCss(): Promise<string> {
-    const [admin, theme] = await Promise.all([this.getCustomCss(), this.getThemeCustomCss()]);
+  async recompileCustomCss(key: ThemeKey): Promise<string> {
+    const [admin, theme] = await Promise.all([this.getCustomCss(key), this.getThemeCustomCss(key)]);
     const result = compileCustomCss(admin, theme);
-    await prisma.setting.upsert({
-      where:  { key: CUSTOM_CSS_COMPILED_KEY },
-      update: { value: result },
-      create: { key: CUSTOM_CSS_COMPILED_KEY, value: result },
-    });
-    bustSettingsCache(CUSTOM_CSS_COMPILED_KEY);
+    const k = themed(CUSTOM_CSS_COMPILED_KEY, key);
+    await prisma.setting.upsert({ where: { key: k }, update: { value: result }, create: { key: k, value: result } });
+    bustSettingsCache(k);
     return result;
   },
 
-  // ── Theme layer: custom CSS ───────────────────────────────────────────────
-
-  /** What the installed theme's stylesheet is, LIVE. Empty when nothing is published. */
-  async getThemeCustomCss(): Promise<string> {
-    const [current, legacy] = await Promise.all([
-      readSetting<string | null>(THEME_CSS_KEY, null),
-      readSetting<string | null>(LEGACY_THEME_CSS_KEY, null),
-    ]);
-    return current ?? legacy ?? "";
-  },
-
-  /** The staged theme stylesheet, falling back to the live one when nothing is staged. */
-  async getThemeDraftCustomCss(): Promise<string> {
-    const [current, legacy] = await Promise.all([
-      readSetting<string | null>(THEME_CSS_DRAFT_KEY, null),
-      readSetting<string | null>(LEGACY_THEME_CSS_DRAFT_KEY, null),
-    ]);
-    const staged = current ?? legacy;
-    // Nothing staged is not the same as staged-and-empty: the first falls back to
-    // what is live, the second is a theme that genuinely ships no stylesheet.
-    return staged === null || staged === undefined ? this.getThemeCustomCss() : staged;
-  },
-
-  /**
-   * Stage an imported theme's stylesheet. Nothing served changes until publish.
-   *
-   * The layer is overwritten WHOLE, including with an empty string — "this theme ships
-   * no stylesheet" is a fact about the theme, and it has to replace the previous
-   * theme's. That is safe here in a way it never was against the admin's key: this
-   * layer belongs to the theme.
-   */
-  /** The theme's stylesheet, LIVE and mirrored into the draft — same reasoning as
-   *  `saveThemeTokens`, and it must stay in step with it: a theme whose colours went
-   *  live while its stylesheet waited for a publish is a look it never had. */
-  async saveThemeCustomCss(css: string): Promise<void> {
-    const put = (key: string, value: string) => prisma.setting.upsert({
-      where: { key }, update: { value }, create: { key, value },
-    });
-
-    await prisma.$transaction([
-      put(THEME_CSS_KEY, css),
-      put(THEME_CSS_DRAFT_KEY, css),
-      // Retired for the same reason `saveThemeTokens` retires its pair: every reader
-      // falls back to these, and a stale half outliving the theme that wrote it is one
-      // deleted row away from being served again.
-      prisma.setting.deleteMany({
-        where: { key: { in: [LEGACY_THEME_CSS_KEY, LEGACY_THEME_CSS_DRAFT_KEY] } },
-      }),
-    ]);
-    for (const key of [THEME_CSS_KEY, THEME_CSS_DRAFT_KEY,
-                       LEGACY_THEME_CSS_KEY, LEGACY_THEME_CSS_DRAFT_KEY]) {
-      bustSettingsCache(key);
-    }
-    // The served blob is a cached setting on a public hot path — every writer of
-    // either layer comes through here, or the site keeps serving the old stylesheet.
-    await this.recompileCustomCss();
-  },
-
-  /** Scope a single raw blob for one theme — used by the live-preview endpoint. */
+  /** Scope a single raw blob — used by the live-preview endpoint. */
   scopeCss(css: string, _theme?: ThemeName): string {
     return scopeCustomCss(css);
   },
 
-  // Editor display: the SPARSE scope-keyed overrides exactly as saved (ADR-0003).
-  // The editor renders inherit↔override from this: a token present in a bucket is
-  // an explicit override; one that is absent is inherited (resolves via tokens.scss
-  // `var(--base)`), and the editor sources its display fallback from the registry /
-  // HEARTH_DEFAULT_TOKENS. Returning the raw sparse map (not merged with defaults)
-  // is what lets the editor distinguish the two states.
-  // The Style Editor edits the DRAFT. Returns draft overrides, falling back to the
-  // live overrides when no draft has been started yet (so opening the editor shows
-  // the current live theme as the starting point).
-  async getTokens(): Promise<ScopedTokenSet> {
-    return this.getDraftTokens();
+  // ── Fonts ─────────────────────────────────────────────────────────────────
+
+  async getFont(key: ThemeKey): Promise<{ family: string; weight: string; size: string }> {
+    const [family, weight, size] = await Promise.all([
+      readSetting<string>(themed(FONT_KEYS.family, key), ""),
+      readSetting<string>(themed(FONT_KEYS.weight, key), ""),
+      readSetting<string>(themed(FONT_KEYS.size, key), ""),
+    ]);
+    return { family: String(family ?? ""), weight: String(weight ?? ""), size: String(size ?? "") };
   },
 
-  async getDraftTokens(): Promise<ScopedTokenSet> {
-    const [current, legacy] = await Promise.all([
-      readSetting<unknown>(DRAFT_KEY, null),
-      readSetting<unknown>(LEGACY_DRAFT_KEY, null),
-    ]);
-    const staged = current ?? legacy;
-    if (staged === null) return this.getTokenOverrides(); // no draft → live
+  /** Live on save, as the font settings always were. */
+  async saveFont(font: Partial<{ family: string; weight: string; size: string }>, key: ThemeKey): Promise<void> {
+    for (const [field, value] of Object.entries(font) as [keyof typeof FONT_KEYS, string | undefined][]) {
+      if (value === undefined) continue;
+      const k = themed(FONT_KEYS[field], key);
+      await prisma.setting.upsert({ where: { key: k }, update: { value }, create: { key: k, value } });
+      bustSettingsCache(k);
+    }
+    await this.bumpStyleVersion();
+  },
+
+  // ── Tokens ────────────────────────────────────────────────────────────────
+  // The admin's overrides are SPARSE and scope-keyed (ADR-0003): a token present in
+  // a bucket is an explicit override, an absent one inherits. The Style Editor edits
+  // the DRAFT, which falls back to live when no draft has been started.
+
+  async getTokens(key: ThemeKey): Promise<ScopedTokenSet> {
+    return this.getDraftTokens(key);
+  },
+
+  /** A value that may have a Core-only pre-collapse fallback. `null` = nothing stored. */
+  async readOwn<T = unknown>(base: string, legacy: string, key: ThemeKey): Promise<T | null> {
+    const own = await readSetting<T | null>(themed(base, key), null);
+    if (own !== null || key) return own;
+    return readSetting<T | null>(legacy, null);
+  },
+
+  async getDraftTokens(key: ThemeKey): Promise<ScopedTokenSet> {
+    const staged = await this.readOwn(DRAFT_KEY, LEGACY_DRAFT_KEY, key);
+    if (staged === null) return this.getTokenOverrides(key); // no draft → live
     return normalizeScoped(staged);
   },
 
   // Save editor changes to the draft only — no version bump, no SSE push, no
-  // history entry. Nothing reaches the public site until publishDraft(). Records
-  // the editing admin so a scheduled (SYSTEM) publish can attribute the history entry.
-  async saveDraftTokens(tokens: ScopedTokenSet, savedById: string): Promise<void> {
+  // history entry. Records the editing admin so a scheduled (SYSTEM) publish can
+  // attribute the history entry.
+  async saveDraftTokens(tokens: ScopedTokenSet, savedById: string, key: ThemeKey): Promise<void> {
     await prisma.$transaction([
       prisma.setting.upsert({
-        where:  { key: DRAFT_KEY },
+        where:  { key: themed(DRAFT_KEY, key) },
         update: { value: tokens as unknown as object },
-        create: { key: DRAFT_KEY, value: tokens as unknown as object },
+        create: { key: themed(DRAFT_KEY, key), value: tokens as unknown as object },
       }),
       prisma.setting.upsert({
-        where:  { key: DRAFT_BY_KEY },
+        where:  { key: themed(DRAFT_BY_KEY, key) },
         update: { value: savedById },
-        create: { key: DRAFT_BY_KEY, value: savedById },
+        create: { key: themed(DRAFT_BY_KEY, key), value: savedById },
       }),
     ]);
   },
@@ -523,15 +410,15 @@ export const appearanceService = {
    * The Layout Editor's variant panel is a second writer of the same draft, and a
    * read-modify-write of the WHOLE token set from two surfaces loses whichever edit
    * landed first. So this patches a single bucket server-side: a `null` value clears
-   * that token, and a bucket left empty is deleted rather than stored as `{}` — the
-   * storage is sparse by design, and "pending" is a stringify comparison.
+   * that token, and a bucket left empty is deleted rather than stored as `{}`.
    */
   async saveDraftScope(
     scope: string,
     patch: Record<string, string | null>,
     savedById: string,
+    key: ThemeKey,
   ): Promise<ScopedTokenSet> {
-    const draft = await this.getDraftTokens();
+    const draft = await this.getDraftTokens(key);
     const next: ScopedTokenSet = { ...draft };
 
     const bucket: TokenMap = { ...(next[scope] ?? {}) };
@@ -542,74 +429,27 @@ export const appearanceService = {
     if (Object.keys(bucket).length === 0) delete next[scope];
     else next[scope] = bucket;
 
-    await this.saveDraftTokens(next, savedById);
+    await this.saveDraftTokens(next, savedById, key);
     return next;
   },
 
-  /**
-   * Is there anything staged that differs from what is live?
-   *
-   * BOTH layers count. A freshly imported theme has no admin-layer changes at all, so
-   * checking only that would report "nothing to publish" straight after an import and
-   * leave the admin with no way to apply it.
-   */
-  async getDraftStatus(): Promise<{ pending: boolean }> {
-    const [draftRaw, themeDraftRaw, themeCssDraft] = await Promise.all([
-      this.readStaged(DRAFT_KEY, LEGACY_DRAFT_KEY),
-      this.readStaged(THEME_DRAFT_KEY, LEGACY_THEME_DRAFT_KEY),
-      // The theme's staged STYLESHEET counts too, and it is not optional politeness:
-      // `publishDraft` returns early when nothing is pending, so a package carrying
-      // only `styles/custom.css` and no `tokens.json` would stage a stylesheet that
-      // could never be published — staged forever, invisible, with no way to apply it.
-      this.readStaged(THEME_CSS_DRAFT_KEY, LEGACY_THEME_CSS_DRAFT_KEY),
-    ]);
-
-    if (draftRaw === null && themeDraftRaw === null && themeCssDraft === null) {
-      return { pending: false };
-    }
-
-    const [live, themeLive] = await Promise.all([this.getTokenOverrides(), this.getThemeTokens()]);
-    if (draftRaw !== null
-      && JSON.stringify(normalizeScoped(draftRaw)) !== JSON.stringify(live)) {
-      return { pending: true };
-    }
-    if (themeDraftRaw !== null
-      && JSON.stringify(normalizeScoped(themeDraftRaw)) !== JSON.stringify(themeLive)) {
-      return { pending: true };
-    }
-    if (themeCssDraft !== null && themeCssDraft !== await this.getThemeCustomCss()) {
-      return { pending: true };
-    }
-    return { pending: false };
+  /** Is there a draft for this theme that differs from what is live? */
+  async getDraftStatus(key: ThemeKey): Promise<{ pending: boolean }> {
+    const staged = await this.readOwn(DRAFT_KEY, LEGACY_DRAFT_KEY, key);
+    if (staged === null) return { pending: false };
+    const live = await this.getTokenOverrides(key);
+    return { pending: JSON.stringify(normalizeScoped(staged)) !== JSON.stringify(live) };
   },
 
-  /** A staged value, preferring the current key and falling back to the
-   *  pre-collapse one. `null` means nothing is staged at all — which is a
-   *  different thing from staged-and-empty. */
-  async readStaged<T = unknown>(key: string, legacyKey: string): Promise<T | null> {
-    const [current, legacy] = await Promise.all([
-      readSetting<T | null>(key, null),
-      readSetting<T | null>(legacyKey, null),
-    ]);
-    return current ?? legacy ?? null;
-  },
-
-  // Promote the draft to live: writes the live tokens (+ history + version bump →
-  // SSE push to every client), then clears the draft so it mirrors live again.
-  // Returns false when there was nothing pending to publish.
-  // savedById defaults to the admin who last edited the draft — used by the
-  // scheduled (SYSTEM-triggered) appearance-publish job.
-  async publishDraft(savedById?: string, label?: string): Promise<boolean> {
-    const { pending } = await this.getDraftStatus();
+  // Promote one theme's draft to live: writes the live tokens (+ history + version
+  // bump → SSE push), then clears the draft so it mirrors live again. Returns false
+  // when there was nothing pending. savedById defaults to the admin who last edited
+  // the draft — the scheduled (SYSTEM-triggered) appearance-publish job relies on it.
+  async publishDraft(savedById: string | undefined, label: string | undefined, key: ThemeKey): Promise<boolean> {
+    const { pending } = await this.getDraftStatus(key);
     if (!pending) return false;
 
-    // Publishing is the decision the undo point existed to defer. Once the staged
-    // theme is live, the rollback covers only the staged scopes, so applying it would
-    // restore the old drafts and leave the new theme published — a state neither
-    // theme ever had. Dropped here rather than left to expire.
-    await this.clearThemeRollback();
-
-    let author = savedById ?? (await readSetting<string | null>(DRAFT_BY_KEY, null)) ?? undefined;
+    let author = savedById ?? (await readSetting<string | null>(themed(DRAFT_BY_KEY, key), null)) ?? undefined;
     if (author) {
       const exists = await prisma.user.findUnique({ where: { id: author }, select: { id: true } });
       if (!exists) author = undefined;
@@ -624,175 +464,139 @@ export const appearanceService = {
     }
     if (!author) return false; // no valid author to attribute — refuse rather than FK-crash
 
-    /**
-     * The theme layer is promoted FIRST and separately: it is not the admin's work, so it
-     * does not belong in the style-history snapshot, which exists so an admin can get
-     * their own edits back. Restoring a snapshot restores overrides and the theme layer
-     * keeps sitting underneath — exactly the inheritance behaviour wanted.
-     *
-     * Only when something is actually staged. Promoting unconditionally wrote two empty
-     * `{}` settings on every publish of a site that has no theme at all — rows that mean
-     * nothing and invite a reader to think a theme is installed.
-     */
-    const stagedTheme = await this.readStaged(THEME_DRAFT_KEY, LEGACY_THEME_DRAFT_KEY);
-    if (stagedTheme !== null) {
-      const themeDraft = await this.getThemeDraftTokens();
-      await prisma.setting.upsert({
-        where:  { key: THEME_KEY },
-        update: { value: themeDraft as unknown as object },
-        create: { key: THEME_KEY, value: themeDraft as unknown as object },
-      });
-    }
-
-    /**
-     * The theme's stylesheet is promoted on its OWN staged-ness, not the tokens'.
-     *
-     * A package may carry `styles/custom-*.css` and no `tokens.json`, or the reverse.
-     * Gating this on the token check above would silently strand one half of such a
-     * theme in the draft forever.
-     */
-    const stagedCss = await this.readStaged<string>(THEME_CSS_DRAFT_KEY, LEGACY_THEME_CSS_DRAFT_KEY);
-    const themeCssStaged = stagedCss !== null;
-    if (themeCssStaged) {
-      await prisma.setting.upsert({
-        where:  { key: THEME_CSS_KEY },
-        update: { value: stagedCss ?? "" },
-        create: { key: THEME_CSS_KEY, value: stagedCss ?? "" },
-      });
-      bustSettingsCache(THEME_CSS_KEY);
-    }
-
-    const draft = await this.getDraftTokens();
-    await this.saveTokens(draft, author, label ?? "Published appearance changes");
-    await prisma.setting.deleteMany({
-      // The pre-collapse keys go with them, or a stale staged value from before the
-      // upgrade would be read as a live draft forever.
-      where: { key: { in: [
-        DRAFT_KEY, DRAFT_BY_KEY, THEME_DRAFT_KEY, THEME_CSS_DRAFT_KEY,
-        LEGACY_DRAFT_KEY, LEGACY_THEME_DRAFT_KEY, LEGACY_THEME_CSS_DRAFT_KEY,
-      ] } },
-    });
-    // The served blob is a cache of both layers, so promoting the theme's half has to
-    // rebuild it. `saveTokens` already bumped the style version, and this runs before
-    // the request returns, so no client can observe the stale pair.
-    if (themeCssStaged) await this.recompileCustomCss();
+    const draft = await this.getDraftTokens(key);
+    await this.saveTokens(draft, author, label ?? "Published appearance changes", key);
+    const drop = [themed(DRAFT_KEY, key), themed(DRAFT_BY_KEY, key)];
+    // The pre-collapse draft goes with Core's, or it would be read as a draft forever.
+    if (!key) drop.push(LEGACY_DRAFT_KEY);
+    await prisma.setting.deleteMany({ where: { key: { in: drop } } });
     return true;
   },
 
-  // ── Theme layer ───────────────────────────────────────────────────────────
-
-  /** What the installed theme defines, LIVE. Empty when no theme has been published. */
-  async getThemeTokens(): Promise<ScopedTokenSet> {
-    return normalizeScoped(await this.readStaged(THEME_KEY, LEGACY_THEME_KEY));
-  },
-
-  /** The staged theme layer, falling back to the live one when no import is pending. */
-  async getThemeDraftTokens(): Promise<ScopedTokenSet> {
-    const staged = await this.readStaged(THEME_DRAFT_KEY, LEGACY_THEME_DRAFT_KEY);
-    if (staged === null) return this.getThemeTokens();
-    return normalizeScoped(staged);
+  /** What the theme's package defines. Core ships none. */
+  async getThemeTokens(key: ThemeKey): Promise<ScopedTokenSet> {
+    return normalizeScoped((await themeBaseline(key)).tokens);
   },
 
   /**
-   * Stage a theme's tokens. Called by a `.xttheme` import and by nothing else.
-   *
-   * Two properties, both deliberate. It writes the THEME layer, never the admin's — that
-   * separation is what makes an update non-destructive, per token. And it writes the
-   * layer's DRAFT, so an import changes nothing visitors see until publish, which is the
-   * same promise the layouts half of an import already makes.
+   * The tokens that reach the page for one theme: what it ships, with the admin's
+   * edits to it on top — per scope and per token, so recolouring one accent keeps the
+   * rest of the theme. Sparse on both sides.
    */
-  /**
-   * Put a theme's tokens on — LIVE, and mirrored into the draft.
-   *
-   * ⚠ It used to write the draft ONLY, which made activating a theme a two-step
-   * action: stage it here, then find Publish. Worse, going fully live took publishes
-   * in TWO different pages, because the layouts staged separately. Activating a theme
-   * is one atomic decision, not a set of edits being batched — draft→publish is an
-   * EDITING affordance and it was doing the wrong job here.
-   *
-   * The draft is written too, and that mirror is load-bearing: an admin with pending
-   * Style Editor edits previews `theme.draft ⊕ admin.draft`, so leaving the draft on
-   * the OLD theme would preview their staged edits against a theme that is no longer
-   * on the site.
-   */
-  async saveThemeTokens(tokens: ScopedTokenSet): Promise<void> {
-    const put = (key: string, value: unknown) => prisma.setting.upsert({
-      where:  { key },
-      update: { value: value as object },
-      create: { key, value: value as object },
-    });
+  async getEffectiveTokens(key: ThemeKey): Promise<ScopedTokenSet> {
+    const [theme, admin] = await Promise.all([this.getThemeTokens(key), this.getTokenOverrides(key)]);
+    return mergeLayers(theme, admin);
+  },
 
-    await prisma.$transaction([
-      put(THEME_KEY, tokens),
-      put(THEME_DRAFT_KEY, tokens),
-      // The pre-collapse rows are DELETED, not left behind: every reader falls back
-      // to them when the current key is absent, and a stale light half outliving the
-      // theme that wrote it would resurrect the old palette on the next read.
-      prisma.setting.deleteMany({ where: { key: { in: [LEGACY_THEME_KEY, LEGACY_THEME_DRAFT_KEY] } } }),
-    ]);
-    for (const key of [THEME_KEY, THEME_DRAFT_KEY, LEGACY_THEME_KEY, LEGACY_THEME_DRAFT_KEY]) {
-      bustSettingsCache(key);
-    }
+  /** Same, for the staged draft — what an editor's preview of that theme renders. */
+  async getEffectiveDraftTokens(key: ThemeKey): Promise<ScopedTokenSet> {
+    const [theme, admin] = await Promise.all([this.getThemeTokens(key), this.getDraftTokens(key)]);
+    return mergeLayers(theme, admin);
+  },
+
+  /** The admin's LIVE overrides for one theme, exactly as saved. */
+  async getTokenOverrides(key: ThemeKey): Promise<ScopedTokenSet> {
+    return normalizeScoped(await this.readOwn(TOKENS_KEY, LEGACY_TOKENS_KEY, key));
   },
 
   /**
-   * Everything an import is about to overwrite in the appearance layers.
-   *
-   * Both halves of each pair — LIVE and STAGED. An import writes the staged ones, but
-   * a discard that restored only those would leave the live theme layer holding a theme
-   * the admin decided against, which is exactly the state they were trying to leave.
+   * Drop the admin's edits to ONE theme: its tokens, draft, fonts and custom CSS. The
+   * theme's own package stays — "reset" drops MY edits, it does not uninstall the
+   * theme — and every other theme is untouched.
    */
-  async snapshotThemeLayers(): Promise<ThemeLayerSnapshot> {
-    // The pre-collapse keys are snapshotted too. An import DELETES them (see
-    // `saveThemeTokens`), so a rollback that only knew the current names would
-    // restore the theme layer and silently drop the legacy rows a not-yet-migrated
-    // site was still reading from.
+  async resetAppearance(key: ThemeKey): Promise<void> {
     const keys = [
-      THEME_KEY, THEME_DRAFT_KEY, THEME_CSS_KEY, THEME_CSS_DRAFT_KEY,
-      LEGACY_THEME_KEY, LEGACY_THEME_DRAFT_KEY,
-      LEGACY_THEME_CSS_KEY, LEGACY_THEME_CSS_DRAFT_KEY,
-      THEME_INSTALLED_KEY,
-    ];
-    const values = await Promise.all(keys.map((k) => readSetting<unknown>(k, null)));
-    return Object.fromEntries(keys.map((k, i) => [k, values[i]]));
-  },
-
-  /**
-   * Put the theme layers back exactly as the snapshot found them.
-   *
-   * ⚠ A key that was ABSENT is deleted, not written as null. `readSetting` treats a
-   * missing row and a null value the same on the way out, but they are not the same
-   * on the way in: `getThemeDraftCustomCss` falls back to the LIVE stylesheet only
-   * when both draft keys are absent, so writing nulls would pin an empty draft
-   * forever and silently blank a theme that is still installed.
-   */
-  async restoreThemeLayers(snapshot: ThemeLayerSnapshot): Promise<void> {
-    for (const [key, value] of Object.entries(snapshot)) {
-      if (value === null || value === undefined) {
-        await prisma.setting.deleteMany({ where: { key } });
-      } else {
-        await prisma.setting.upsert({
-          where:  { key },
-          update: { value: value as object },
-          create: { key, value: value as object },
-        });
-      }
-      bustSettingsCache(key);
+      TOKENS_KEY, DRAFT_KEY, DRAFT_BY_KEY, ADMIN_CSS_KEY, CUSTOM_CSS_COMPILED_KEY,
+      FONT_KEYS.family, FONT_KEYS.weight, FONT_KEYS.size,
+    ].map((k) => themed(k, key));
+    if (!key) {
+      keys.push(LEGACY_TOKENS_KEY, "appearance.tokens.dark", LEGACY_DRAFT_KEY,
+        "appearance.tokens.draft.dark", "appearance.custom_css_dark", LEGACY_CSS_KEY);
     }
-    // The served blob is a cached setting on a public hot path — every writer of
-    // either layer has to come back through here.
-    await this.recompileCustomCss();
+    await prisma.setting.deleteMany({ where: { key: { in: keys } } });
+    for (const k of keys) bustSettingsCache(k);
+    await this.recompileCustomCss(key);
     await this.bumpStyleVersion();
   },
 
-  /**
-   * Record what the site looked like immediately before a theme import.
-   *
-   * One row, one level, overwritten by the next import. Small enough for a setting:
-   * layout documents are tens of KB in total, and this is the same store the theme
-   * layers themselves live in, so a rollback can never end up in a different
-   * transaction from the thing it is rolling back.
-   */
+  /** Everything stored for one theme's appearance, for uninstall. */
+  async forgetTheme(key: ThemeKey): Promise<void> {
+    if (!key) return; // Core cannot be uninstalled
+    await prisma.setting.deleteMany({ where: { key: { endsWith: `@${key}` } } });
+    await prisma.styleHistory.deleteMany({ where: { themeKey: key } });
+    bustThemeCss(key);
+  },
+
+  async saveTokens(tokens: ScopedTokenSet, savedById: string, label: string | undefined, key: ThemeKey): Promise<void> {
+    await prisma.$transaction([
+      prisma.setting.upsert({
+        where:  { key: themed(TOKENS_KEY, key) },
+        update: { value: tokens as unknown as object },
+        create: { key: themed(TOKENS_KEY, key), value: tokens as unknown as object },
+      }),
+      // Core's pre-collapse rows are a READ FALLBACK, so a save has to retire them.
+      ...(key ? [] : [prisma.setting.deleteMany({
+        where: { key: { in: [LEGACY_TOKENS_KEY, "appearance.tokens.dark"] } },
+      })]),
+      prisma.styleHistory.create({
+        data: {
+          themeKey: key,
+          label:   label ?? new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
+          tokens:  tokens as unknown as object,
+          savedBy: { connect: { id: savedById } },
+        },
+      }),
+    ]);
+
+    // Twenty per theme — one busy theme must not push another's history out.
+    const oldest = await prisma.styleHistory.findMany({
+      where:   { themeKey: key },
+      orderBy: { createdAt: "desc" },
+      skip:    20,
+      select:  { id: true },
+    });
+    if (oldest.length > 0) {
+      await prisma.styleHistory.deleteMany({ where: { id: { in: oldest.map((r) => r.id) } } });
+    }
+
+    // Signal every open client to pull the new CSS.
+    await this.bumpStyleVersion();
+  },
+
+  /** Put a history entry back live — onto the theme it was published for. */
+  async restoreHistory(historyId: string, savedById: string): Promise<ScopedTokenSet> {
+    const entry = await prisma.styleHistory.findUniqueOrThrow({ where: { id: historyId } });
+    // A snapshot may predate either storage change: the two-palette shape, or flat
+    // (unscoped) maps before that. The light half is the one that survives.
+    const raw = entry.tokens as Record<string, unknown>;
+    const legacyPair = raw && typeof raw === "object" && ("light" in raw || "dark" in raw);
+    const tokens = normalizeScoped(legacyPair ? raw.light : raw);
+    await this.saveTokens(tokens, savedById, `Restored: ${entry.label}`, entry.themeKey);
+    return tokens;
+  },
+
+  // ── The active theme ──────────────────────────────────────────────────────
+
+  /** The live theme's manifest, or null when Core is live. */
+  async getInstalledTheme(): Promise<Record<string, unknown> | null> {
+    return readSetting<Record<string, unknown> | null>(ACTIVE_THEME_SETTING, null);
+  },
+
+  /** Make a theme live — `null` makes Core live. */
+  async setInstalledTheme(manifest: Record<string, unknown> | null): Promise<void> {
+    if (manifest === null) {
+      await prisma.setting.deleteMany({ where: { key: ACTIVE_THEME_SETTING } });
+    } else {
+      const value = { ...manifest, importedAt: new Date().toISOString() };
+      await prisma.setting.upsert({
+        where:  { key: ACTIVE_THEME_SETTING },
+        update: { value: value as object },
+        create: { key: ACTIVE_THEME_SETTING, value: value as object },
+      });
+    }
+    bustSettingsCache(ACTIVE_THEME_SETTING);
+  },
+
   async saveThemeRollback(value: ThemeRollback): Promise<void> {
     await prisma.setting.upsert({
       where:  { key: THEME_ROLLBACK_KEY },
@@ -803,185 +607,44 @@ export const appearanceService = {
   },
 
   async getThemeRollback(): Promise<ThemeRollback | null> {
-    return readSetting<ThemeRollback | null>(THEME_ROLLBACK_KEY, null);
+    const value = await readSetting<ThemeRollback | null>(THEME_ROLLBACK_KEY, null);
+    // A rollback recorded before per-theme storage restores layers that no longer
+    // exist; it is not offered.
+    return value && typeof value === "object" && "previous" in value ? value : null;
   },
 
-  /**
-   * Drop the undo point.
-   *
-   * Called on PUBLISH as well as on use. Once the staged theme is live, "undo the
-   * import" no longer describes anything safe: the rollback only ever covered the
-   * staged scopes, so applying it after a publish would restore the old drafts while
-   * leaving the new theme published — a state neither theme ever had.
-   */
   async clearThemeRollback(): Promise<void> {
     await prisma.setting.deleteMany({ where: { key: THEME_ROLLBACK_KEY } });
     bustSettingsCache(THEME_ROLLBACK_KEY);
   },
 
-  async getInstalledTheme(): Promise<Record<string, unknown> | null> {
-    return readSetting<Record<string, unknown> | null>(THEME_INSTALLED_KEY, null);
-  },
-
-  async setInstalledTheme(manifest: Record<string, unknown>): Promise<void> {
-    const value = { ...manifest, importedAt: new Date().toISOString() };
-    await prisma.setting.upsert({
-      where:  { key: THEME_INSTALLED_KEY },
-      update: { value: value as object },
-      create: { key: THEME_INSTALLED_KEY, value: value as object },
-    });
-    bustSettingsCache(THEME_INSTALLED_KEY);
-  },
-
   /**
-   * The tokens that actually reach the page: the theme layer with the admin's on top.
+   * Build one theme's stylesheet from a token set.
    *
-   * Merged per SCOPE and per TOKEN, so an admin who recoloured one accent keeps the rest
-   * of the theme. Sparse on both sides — an absent token inherits from `tokens.scss` as
-   * it always did.
+   * `opts.key` names the theme whose fonts and custom CSS go with the tokens — the
+   * caller already chose live or draft tokens; fonts and custom CSS have no draft.
    */
-  async getEffectiveTokens(): Promise<ScopedTokenSet> {
-    const [theme, admin] = await Promise.all([this.getThemeTokens(), this.getTokenOverrides()]);
-    return mergeLayers(theme, admin);
-  },
-
-  /** Same, for the staged draft — what the Style Editor's preview renders. Both layers
-   *  are the staged ones, so an imported theme is previewed under the admin's edits. */
-  async getEffectiveDraftTokens(): Promise<ScopedTokenSet> {
-    const [theme, admin] = await Promise.all([this.getThemeDraftTokens(), this.getDraftTokens()]);
-    return mergeLayers(theme, admin);
-  },
-
-  // Served stylesheet: ONLY admin-saved overrides (no default fallback), normalised
-  // to the scope-keyed shape. When an admin resets, these are deleted and the app
-  // inherits tokens.scss directly — the true "core design".
-  async getTokenOverrides(): Promise<ScopedTokenSet> {
-    return normalizeScoped(await this.readStaged(TOKENS_KEY, LEGACY_TOKENS_KEY));
-  },
-
-  // Wipe the ADMIN's appearance overrides. With no theme installed the app falls back to
-  // the bundled core (tokens.scss + index.scss); with one installed it falls back to the
-  // THEME, which is the point of the separate layer — "reset" drops my edits, it does not
-  // uninstall someone else's work. Bumps the version so all clients re-pull.
-  async resetAppearance(): Promise<void> {
-    await prisma.setting.deleteMany({
-      where: { key: { in: [
-        // NOT the theme layer (live or staged): "reset" drops MY edits, it does not
-        // uninstall the theme underneath them.
-        // The pre-collapse names go too — they are read as a fallback, so leaving
-        // them behind would make "reset" restore the old palette instead of clearing it.
-        TOKENS_KEY, LEGACY_TOKENS_KEY, "appearance.tokens.dark",
-        DRAFT_KEY, LEGACY_DRAFT_KEY, "appearance.tokens.draft.dark", DRAFT_BY_KEY,
-        "appearance.font.family",  "appearance.font.weight", "appearance.font.size",
-        // NOT the theme's stylesheet (live or staged), for the same reason the token
-        // layer survives: reset drops MY edits, it does not uninstall the theme.
-        "appearance.custom_css_light", "appearance.custom_css_dark", "appearance.custom_css",
-        CUSTOM_CSS_COMPILED_KEY,
-      ] } },
-    });
-    // Deleting the compiled cache is not enough: the next reader would rebuild it from
-    // both layers anyway, but doing it here means the theme's stylesheet is provably
-    // still being served the moment reset returns.
-    await this.recompileCustomCss();
-    await this.bumpStyleVersion();
-  },
-
-  async saveTokens(tokens: ScopedTokenSet, savedById: string, label?: string): Promise<void> {
-    await prisma.$transaction([
-      prisma.setting.upsert({
-        where:  { key: TOKENS_KEY },
-        update: { value: tokens as unknown as object },
-        create: { key: TOKENS_KEY, value: tokens as unknown as object },
-      }),
-      // The pre-collapse rows are a READ FALLBACK, so a save has to retire them or the
-      // old light half would keep winning for every token the new set leaves absent.
-      prisma.setting.deleteMany({
-        where: { key: { in: [LEGACY_TOKENS_KEY, "appearance.tokens.dark"] } },
-      }),
-      prisma.styleHistory.create({
-        data: {
-          label:   label ?? new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
-          tokens:  tokens as unknown as object,
-          savedBy: { connect: { id: savedById } },
-        },
-      }),
-    ]);
-
-    const oldest = await prisma.styleHistory.findMany({
-      orderBy: { createdAt: "desc" },
-      skip:    20,
-      select:  { id: true },
-    });
-    if (oldest.length > 0) {
-      await prisma.styleHistory.deleteMany({ where: { id: { in: oldest.map((r) => r.id) } } });
-    }
-
-    // Signal every open client to pull the new CSS within one poll interval.
-    await this.bumpStyleVersion();
-  },
-
-  async restoreHistory(historyId: string, savedById: string): Promise<ScopedTokenSet> {
-    const entry = await prisma.styleHistory.findUniqueOrThrow({ where: { id: historyId } });
-    // A snapshot may predate either storage change: the two-palette shape, or flat
-    // (unscoped) maps before that. `light` and `dark` are not scope names, so their
-    // presence at the top level is what identifies the older shape — and the light
-    // half is the one that survives, because it was always the palette a site rendered.
-    const raw = entry.tokens as Record<string, unknown>;
-    const legacyPair = raw && typeof raw === "object" && ("light" in raw || "dark" in raw);
-    const tokens = normalizeScoped(legacyPair ? raw.light : raw);
-    await this.saveTokens(tokens, savedById, `Restored: ${entry.label}`);
-    return tokens;
-  },
-
-  /**
-   * `opts.draft` builds the stylesheet a PREVIEW should see rather than the live one.
-   *
-   * Tokens are already the caller's choice — they pass the draft set in. The custom
-   * CSS was not: it always came from the compiled LIVE blob, so a preview of a staged
-   * theme rendered that theme's colours with the PREVIOUS theme's stylesheet. Harmless
-   * while the only preview was the token specimen page, and wrong the moment a whole
-   * theme is being previewed on the real site.
-   */
-  async buildCSS(tokens: ScopedTokenSet, opts?: { draft?: boolean }): Promise<string> {
-    const [family, weight, size, customCss] = await Promise.all([
-      readSetting("appearance.font.family", ""),
-      readSetting("appearance.font.weight", ""),
-      readSetting("appearance.font.size",   ""),
-      opts?.draft ? this.buildDraftCustomCss() : this.buildCustomCss(),
+  async buildCSS(tokens: ScopedTokenSet, opts: { key: ThemeKey }): Promise<string> {
+    const [{ family, weight, size }, customCss] = await Promise.all([
+      this.getFont(opts.key),
+      this.buildCustomCss(opts.key),
     ]);
 
     const decls = (map: TokenMap) =>
       Object.entries(map).map(([k, v]) => `  ${k}: ${v};`).join("\n");
 
     /**
-     * Where a global override lands: the document root, plus the opt-in class.
-     *
-     * This used to be a pair of helpers keyed by scheme, emitting `:root` +
-     * `[data-theme="light"]` for one palette and `[data-theme="dark"]` for the other.
-     * There is one palette now, so there is one root, and `[data-theme]` means nothing
-     * to this stylesheet any more.
-     *
-     * `.xt-site-tokens` is the mirror. The ACP re-declares the whole palette on
-     * `body.xt-acp` so the admin panel does not follow the site — which also cuts off
-     * the few places in there that must show what the SITE looks like (the Layout
-     * Editor's variant probe measures exactly that). That class is how such a surface
-     * asks for the site's palette back, and it only means that if these overrides reach
-     * it too: the bundled defaults alone would show the site as it was before anyone
-     * themed it.
+     * Where a global override lands: the document root, plus `.xt-site-tokens` — the
+     * class through which an ACP surface asks for the SITE's palette back (the ACP
+     * re-declares its own on `body.xt-acp`).
      */
     const ROOT_PREFIX  = ":root";
     const SITE_MIRROR  = ".xt-site-tokens";
 
-    // global → the root; a region scope → that region's selector under the root, so a
-    // re-scoped component token only cascades inside the region. Returns null for a
-    // scope this build does not know, and the caller SKIPS it. Returning the root
-    // instead — which this did — silently promoted an unrecognised bucket to a global
-    // override: a `.xttheme` naming a scope from a newer build would have recoloured
-    // the whole site.
+    // global → the root; a region scope → that region's selector under the root.
+    // Returns null for a scope this build does not know, and the caller SKIPS it —
+    // a `.xttheme` naming a scope from a newer build must not recolour the whole site.
     const selectorFor = (scope: string): string | null => {
-      // Only the global bucket is mirrored: a region scope names a selector that
-      // exists on the site (`.pub-nav`, `.app-main`), and a variant scope is emitted
-      // under `:root`, so it already reaches a probe anywhere in the document.
       const root = `${ROOT_PREFIX}, ${SITE_MIRROR}`;
       if (scope === "global") return root;
       const desc = SCOPE_SELECTOR[scope as ThemeScope];
@@ -992,18 +655,14 @@ export const appearanceService = {
     };
 
     // Shared with the Style Editor's live preview (@xentium/contracts) so the preview
-    // cannot render a different font from the one this serves. The ACP re-pins all
-    // four properties on `body.xt-acp`; a user's profile font overrides via inline
-    // :root vars.
+    // cannot render a different font from the one this serves.
     const fontExtras = fontRootDecls({ family, weight, size });
 
     const parts: string[] = [];
-    // Emit a block only when it has content — otherwise the app inherits the bundled
-    // core tokens. global first, so region scopes can override it.
+    // global first, so region scopes can override it.
     const scopes = ["global", ...Object.keys(tokens).filter((s) => s !== "global")];
     for (const scope of scopes) {
       let body = tokens[scope] ? decls(tokens[scope]!) : "";
-      // Font overrides ride on the global block.
       if (scope === "global" && fontExtras.length) {
         body = [body, fontExtras.join("\n")].filter(Boolean).join("\n");
       }
@@ -1014,7 +673,7 @@ export const appearanceService = {
     const bodyRule = fontBodyRule({ family, weight, size });
     if (bodyRule) parts.push(bodyRule);
 
-    // Admin custom CSS last — highest precedence, can override anything above.
+    // Custom CSS last — highest precedence, can override anything above.
     if (typeof customCss === "string" && customCss.trim()) {
       parts.push(`/* ── custom css ── */\n${customCss.trim()}`);
     }

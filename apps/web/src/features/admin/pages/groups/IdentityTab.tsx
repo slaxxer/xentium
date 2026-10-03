@@ -1,6 +1,7 @@
 import { useRef, type Dispatch, type SetStateAction } from "react";
 import { useTranslation } from "react-i18next";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { faCircleInfo, faEyeDropper, faImage, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../../components/Icon";
 import { Toggle } from "../../../../components/AcpControls";
@@ -11,8 +12,18 @@ import { openDialog } from "../../../../lib/dialog";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { toast } from "../../../../lib/toast";
 import { BADGE_SWATCHES, DEFAULT_BADGE_COLOR, glowShadow, isHexColor, type Group, type ProgressionData } from "./groupModel";
-import { GroupGlyph } from "./groupParts";
+import "../../../../components/RankBadge.scss";
 import type { GroupForm } from "./GroupDetailPage";
+
+/** ACP → Settings → Rank display, as the site applies it: anything but "image" is badges. */
+function useRankDisplay(): "badge" | "image" | undefined {
+  const { data } = useQuery({
+    queryKey: ["acp-setting", "groups.rank_display"],
+    queryFn: () => api.get<{ value: unknown }>("/admin/settings/groups.rank_display"),
+    select: (r) => (r?.value === "image" ? "image" as const : "badge" as const),
+  });
+  return data;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, Number.isFinite(v) ? v : 0));
 
@@ -27,6 +38,9 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
   const patch = (p: Partial<ProgressionData>) => setProg((cur) => cur && { ...cur, ...p });
   const color = prog.badgeColor && isHexColor(prog.badgeColor) ? prog.badgeColor : DEFAULT_BADGE_COLOR;
   const label = prog.badgeLabel || form.name || group.name;
+  // The preview shows what members see: the rank image when the site shows images
+  // and this group has one, the text badge otherwise.
+  const showRankImage = useRankDisplay() === "image" && !!group.rankImage;
 
   const confirmDelete = async () => {
     const ok = await openDialog({
@@ -111,8 +125,14 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
             <div className="gp-preview__main">
               <div className="gp-preview__line">
                 <span className="gp-preview__name" style={{ color, textShadow: glowShadow(prog, color) }}>{user?.username ?? "member"}</span>
-                <span className="gp-pill" style={{ color, background: `${color}20`, borderColor: `${color}40` }}>{label}</span>
+                {!showRankImage && (
+                  <span className="gp-pill" style={{ color, background: `${color}20`, borderColor: `${color}40` }}>{label}</span>
+                )}
               </div>
+              {/* A rank image goes UNDER the name, as on the profile. */}
+              {showRankImage && (
+                <img className="xt-rankimg gp-preview__rank" src={`/uploads/${group.rankImage}`} alt={label} title={label} />
+              )}
               <div className="gp-hint">{t("groups.identity.previewMeta")}</div>
               <p className="gp-preview__text">{t("groups.identity.previewText")}</p>
             </div>
@@ -120,7 +140,7 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
           <p className="gp-note"><FontAwesomeIcon icon={faCircleInfo} /> {t("groups.identity.precedenceNote", { n: rank })}</p>
         </section>
 
-        <IconCard group={group} color={color} />
+        <RankImageCard group={group} label={label} />
 
         {!group.isSystem && (
           <section className="gp-card gp-pad gp-danger">
@@ -160,47 +180,62 @@ function ColorRow({ value, fallback, onChange, compact, reset, resetLabel }: {
   );
 }
 
-function IconCard({ group, color }: { group: Group; color: string }) {
+/**
+ * The group's rank image: shown INSTEAD of its text badge everywhere a member's rank
+ * appears, while ACP → Settings → Rank display is "Images". A group without one keeps
+ * its badge even then, so images can be rolled out one group at a time.
+ */
+function RankImageCard({ group, label }: { group: Group; label: string }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
-  const done = () => qc.invalidateQueries({ queryKey: ["acp-groups-list"] });
+  const mode = useRankDisplay();
+  const done = () => {
+    void qc.invalidateQueries({ queryKey: ["acp-groups-list"] });
+    // What every page reads to swap badges for images.
+    void qc.invalidateQueries({ queryKey: ["legend-groups"] });
+  };
 
   const upload = useMutation({
-    mutationFn: (file: File) => { const fd = new FormData(); fd.append("file", file); return api.post(`/admin/groups/${group.id}/icon`, fd); },
-    onSuccess: () => { void done(); toast.success(t("groups.icon.uploaded")); },
+    mutationFn: (file: File) => { const fd = new FormData(); fd.append("file", file); return api.post(`/admin/groups/${group.id}/rank-image`, fd); },
+    onSuccess: () => { done(); toast.success(t("groups.rankImage.uploaded")); },
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
   const remove = useMutation({
-    mutationFn: () => api.delete(`/admin/groups/${group.id}/icon`),
-    onSuccess: () => { void done(); toast.success(t("groups.icon.removed")); },
+    mutationFn: () => api.delete(`/admin/groups/${group.id}/rank-image`),
+    onSuccess: () => { done(); toast.success(t("groups.rankImage.removed")); },
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
   const busy = upload.isPending || remove.isPending;
 
   return (
     <section className="gp-card gp-pad">
-      <h2 className="gp-section">{t("groups.icon.title")}</h2>
-      <div className="gp-icon-row">
-        {group.icon
-          ? <GroupGlyph icon={group.icon} color={color} size="lg" />
-          : <span className="gp-icon-empty"><FontAwesomeIcon icon={faImage} /></span>}
-        <div>
-          <div className="gp-icon-actions">
-            <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={() => input.current?.click()}>
-              {group.icon ? t("groups.icon.replace") : t("groups.icon.upload")}
+      <h2 className="gp-section">{t("groups.rankImage.title")}</h2>
+      <div className="gp-rankimg">
+        {group.rankImage
+          ? <img className="xt-rankimg" src={`/uploads/${group.rankImage}`} alt={label} title={label} />
+          : <span className="gp-rankimg__empty"><FontAwesomeIcon icon={faImage} /></span>}
+        <div className="gp-icon-actions">
+          <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={() => input.current?.click()}>
+            {group.rankImage ? t("groups.icon.replace") : t("groups.icon.upload")}
+          </button>
+          {group.rankImage && (
+            <button type="button" className="btn-ghost btn-sm gp-danger-text" disabled={busy} onClick={() => remove.mutate()}>
+              {t("groups.icon.remove")}
             </button>
-            {group.icon && (
-              <button type="button" className="btn-ghost btn-sm gp-danger-text" disabled={busy} onClick={() => remove.mutate()}>
-                {t("groups.icon.remove")}
-              </button>
-            )}
-          </div>
-          <div className="gp-hint">{t("groups.icon.hint")}</div>
+          )}
         </div>
-        <input ref={input} type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp"
-          onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) upload.mutate(f); }} />
       </div>
+      <div className="gp-hint">{t("groups.rankImage.hint")}</div>
+      {mode === "badge" && (
+        <div className="gp-hint gp-rankimg__mode">
+          <FontAwesomeIcon icon={faCircleInfo} /> {t("groups.rankImage.badgesActive")}{" "}
+          <Link to="/admin/settings">{t("groups.rankImage.openSettings")}</Link>
+        </div>
+      )}
+      <input ref={input} type="file" hidden accept="image/jpeg,image/png,image/gif,image/webp"
+        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) upload.mutate(f); }} />
     </section>
   );
 }
+

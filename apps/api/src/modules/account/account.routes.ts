@@ -27,7 +27,6 @@ accountRouter.get("/sessions", accountController.getSessions);
 accountRouter.delete("/sessions/:sessionId", accountController.revokeSession);
 accountRouter.get("/privacy", accountController.getPrivacy);
 accountRouter.patch("/privacy", accountController.updatePrivacy);
-accountRouter.get("/username-history", accountController.getUsernameHistory);
 accountRouter.get("/profile-fields", accountController.getProfileFieldValues);
 accountRouter.patch("/profile-fields", accountController.updateProfileFieldValues);
 accountRouter.post("/pin", accountController.setPin);

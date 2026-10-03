@@ -7,7 +7,6 @@ import App from "./app/App";
 import "./plugins/host-globals"; // sets window.__XENTIUM_HOST__ before any plugin bundle loads
 import "./layout/blocks/coreBlocks";   // registers the core block catalogue before first render
 import "./layout/blocks/chromeBlocks"; // navbar + footer blocks (ADR-0005 Amendment 1)
-import "./layout/blocks/pageDetailBlocks";   // page.detail: image / title / body
 import "./layout/blocks/pageTemplateBlocks"; // article.detail (deliberately whole-page)
 import "./layout/blocks/profileBlocks";      // profile, decomposed into movable pieces
 import "./layout/blocks/memberBlocks";       // members, decomposed into movable pieces

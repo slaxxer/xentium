@@ -178,3 +178,24 @@ describe("the followers strip", () => {
     expect(screen.getByText("128")).toBeTruthy();
   });
 });
+
+describe("the meta line under the name", () => {
+  const meta = () => document.querySelector(".profile-meta")?.textContent ?? "";
+  const withDob = (dob: unknown) => ctx({ profile: { ...PROFILE, dob } as ProfileContext["profile"] });
+
+  it("puts the age after member since, joined by a comma", () => {
+    renderRegion("main", withDob({ kind: "age", age: 20 }));
+    expect(meta()).toMatch(/, /);
+    expect(meta().split(", ")).toHaveLength(2);
+  });
+
+  it("shows the birthday instead when that is what the member chose", () => {
+    renderRegion("main", withDob({ kind: "birthday", month: 3, day: 5 }));
+    expect(meta().split(", ")).toHaveLength(2);
+  });
+
+  it("shows member since alone when the member hides it", () => {
+    renderRegion("main", withDob(null));
+    expect(meta()).not.toMatch(/, /);
+  });
+});

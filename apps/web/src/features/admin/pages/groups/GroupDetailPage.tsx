@@ -93,6 +93,9 @@ function GroupDetail({ id }: { id: string }) {
       if (fresh) qc.setQueryData(["group-progression", id], editableProgression(fresh));
       void invalidateList();
       void qc.invalidateQueries({ queryKey: ["acp-progression"] });
+      // The colour + glow every <Username> reads (BadgeShadowSync) and the footer legend:
+      // without this a changed glow only showed after a reload or five minutes.
+      void qc.invalidateQueries({ queryKey: ["legend-groups"] });
     },
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
@@ -168,7 +171,7 @@ function GroupDetail({ id }: { id: string }) {
 
       <header className="gp-card gp-detail-head">
         <div className="gp-detail-head__top">
-          <GroupGlyph icon={group.icon} color={color} size="lg" />
+          <GroupGlyph color={color} size="lg" />
           <div className="gp-detail-head__titles">
             <div className="gp-detail-head__line">
               <h1>{form.name || group.name}</h1>

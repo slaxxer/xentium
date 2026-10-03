@@ -353,6 +353,9 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { searchRegistry } = await import("../search-registry/search-registry.js");
   searchRegistry.deregister(pluginId);
 
+  const { reportTargetRegistry } = await import("../report-target-registry/report-target-registry.js");
+  reportTargetRegistry.deregister(pluginId);
+
   const { statRegistry } = await import("../stat-registry/stat-registry.js");
   statRegistry.deregister(pluginId);
 

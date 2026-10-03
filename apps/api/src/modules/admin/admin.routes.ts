@@ -3,6 +3,8 @@ import { requirePermission } from "../../shared/middleware/requirePermission.js"
 import { makeRateLimiter } from "../../shared/middleware/rateLimit.js";
 import { CorePermissions, XEC } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { errorLogController } from "./errorLog.controller.js";
+import { dashboardController } from "./dashboard.controller.js";
 import { adminController } from "./admin.controller.js";
 import { groupsRouter } from "../groups/groups.routes.js";
 import { adminProvidersHandler, adminProviderUpdateHandler } from "../auth/auth.methods.controller.js";
@@ -37,6 +39,7 @@ const marketplaceArtifactLimiter = makeRateLimiter("marketplace-artifact", 60 * 
 // Dashboard + health
 adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
 adminRouter.get("/dashboard/analytics", adminGuard, adminController.dashboardAnalytics);
+adminRouter.get("/dashboard/overview",  adminGuard, dashboardController.overview);
 adminRouter.get("/health",              adminGuard, adminController.health);
 
 // Users
@@ -104,6 +107,13 @@ adminRouter.delete("/license",         adminGuard, adminController.deactivateLic
 // Error log
 adminRouter.get("/error-log",    adminGuard, adminController.listErrorLog);
 adminRouter.delete("/error-log", adminGuard, adminController.clearErrorLog);
+// Grouped view (the ACP page). Declared before "/error-log/:id".
+adminRouter.get("/error-log/groups",                  adminGuard, errorLogController.listGroups);
+adminRouter.get("/error-log/stats",                   adminGuard, errorLogController.stats);
+adminRouter.get("/error-log/groups/:key/occurrences", adminGuard, errorLogController.occurrences);
+adminRouter.patch("/error-log/groups/:key",           adminGuard, errorLogController.setResolved);
+adminRouter.delete("/error-log/groups/:key",          adminGuard, errorLogController.deleteGroup);
+adminRouter.delete("/error-log/:id",                  adminGuard, errorLogController.deleteEntry);
 
 // Dev-only error simulator — lets an admin trigger a real backend error to verify
 // error_log persistence + the frontend fatal-halt UI. Never mounted in production.

@@ -1,4 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
+import { getDobForUser } from "./profileDob.js";
 import { userRepository } from "./users.repository.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
@@ -61,20 +62,6 @@ async function assertFollowListVisible(
   }
 }
 
-/** Resolve the visible DOB label for the profile header.
- *  Reads dobDisplay from the User row: 'hidden' | 'age' | 'birthday'. */
-async function getDobLabelForUser(userId: string, dobDisplay: string): Promise<string | null> {
-  if (dobDisplay === "hidden") return null;
-  const field = await prisma.userProfileField.findUnique({ where: { key: "date_of_birth" } });
-  if (!field) return null;
-  const value = await prisma.userProfileFieldValue.findUnique({
-    where: { userId_fieldId: { userId, fieldId: field.id } },
-  });
-  if (!value || !value.value || value.privacy === "nobody") return null;
-  // Pass the format directly — 'birthday' or default (age)
-  return formatDobValue(value.value, dobDisplay === "birthday" ? "birthday" : null);
-}
-
 export const userService = {
   async getPublicProfile(username: string, viewerId?: string) {
     const user = await userRepository.findByUsername(username);
@@ -98,7 +85,12 @@ export const userService = {
       viewerHasBlocked = await userRepository.isBlocking(viewerId, user.id);
     }
 
-    const dobLabel = await getDobLabelForUser(user.id, user.dobDisplay);
+    const dob = await getDobForUser(user.id, user.dobDisplay, !!viewerId);
+    // The older English string, kept for clients that still read `dobLabel`.
+    const dobLabel = !dob ? null
+      : dob.kind === "age" ? `${dob.age} years old`
+      : new Date(Date.UTC(2000, dob.month - 1, dob.day))
+          .toLocaleDateString("en-US", { month: "long", day: "numeric", timeZone: "UTC" });
     const dobDisplayFormat = user.dobDisplay === "hidden" ? null : user.dobDisplay;
 
     // Former usernames ("previously known as …"). Admin-controlled and NOT a
@@ -162,6 +154,7 @@ export const userService = {
       followerCount:     user.followerCount,
       followingCount:    user.followingCount,
       likeCountReceived: user.likeCountReceived,
+      dob,
       dobLabel,
       dobDisplayFormat,
       isOwn: isOwnProfile,

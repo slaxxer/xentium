@@ -133,7 +133,10 @@ export interface ProfileActionSlot {
   order?: number;
 }
 
-// ── ModCanvas section (registered by plugins, adds tabs to the mod panel) ─────
+// ── ModCanvas section (registered by plugins) ─────────────────────────────────
+// Since ModCanvas v1 (2026-10-02): a group in the navbar moderation shield's dropdown,
+// shown while `badgeCountFn` reports something waiting; picking it opens `component`
+// in a dialog. `onNav` closes that dialog.
 export interface ModCanvasSectionSlot {
   id: string;
   label: string;
@@ -165,7 +168,49 @@ export interface IpEnrichmentSlot {
   component: ComponentType<{ ip: string }>;
 }
 
-// ── ModCanvas user panel (rendered inline in the ModCanvas user mod-profile) ──
+// ── ModCanvas queue (registered by plugins) ───────────────────────────────────
+// A plugin's work list in the moderation shield — e.g. the forum's threads awaiting
+// approval. Each item is a ROW in the dropdown, beside reports and security cases;
+// picking one opens its page (`href`), marks it (`markKey` = the page's
+// `data-mod-target`) and shows a pill with the plugin's `actions`. Supersedes
+// `registerModCanvasSection` (a dialog) for anything that is a list of decisions.
+export interface ModQueueItem {
+  id: string;
+  title: string;
+  /** Second line: who / where. */
+  line?: string;
+  /** ISO time; the list is oldest first. */
+  createdAt: string;
+  href?: string | null;
+  /** The page's `data-mod-target` value for this item, to scroll to and mark it. */
+  markKey?: string | null;
+  /** A louder row (e.g. something urgent). */
+  hot?: boolean;
+}
+export interface ModQueueAction {
+  id: string;
+  label: string;
+  /** FontAwesome IconDefinition */
+  icon?: unknown;
+  tone?: "primary" | "danger" | "ghost";
+  /** Ask first. With `reasonLabel`, the dialog takes a reason, passed to `run`. */
+  confirm?: { title: string; body: string; reasonLabel?: string };
+  /** Do it; the returned text is shown as a success toast. Throw to report a failure. */
+  run(item: ModQueueItem, reason?: string): Promise<string | void>;
+}
+export interface ModQueueSlot {
+  id: string;
+  label: string;
+  /** FontAwesome IconDefinition */
+  icon: unknown;
+  /** Everything waiting, for this moderator. Polled while the site is open. */
+  fetchItems(): Promise<ModQueueItem[]>;
+  actions: ModQueueAction[];
+}
+
+// ── ModCanvas user panel ──────────────────────────────────────────────────────
+// ⚠ NOT RENDERED since ModCanvas v1 (2026-10-02): its host, the slide-over's Users
+// tab, was retired. Kept so a plugin that registers one keeps loading.
 // e.g. the shoutbox shows a "user is muted in the shoutbox" alert + Unmute button.
 // Core passes the selected user; the component fetches its own data and renders
 // nothing when there is nothing to show (not muted / not permitted).
@@ -216,6 +261,7 @@ class SlotRegistry {
   private pluginMetas:       PluginMeta[]            = [];
   private searchTabs:        SearchTabSlot[]         = [];
   private modCanvasSections: ModCanvasSectionSlot[]  = [];
+  private modQueues:         ModQueueSlot[]          = [];
   private userDetailPanels:  UserDetailPanelSlot[]    = [];
   private ipEnrichments:     IpEnrichmentSlot[]       = [];
   private modCanvasUserPanels: ModCanvasUserPanelSlot[] = [];
@@ -258,6 +304,7 @@ class SlotRegistry {
   registerRoute(route: PluginRoute)                         { this._own(route.path);  this.routes.push(route); }
   registerSearchTab(tab: SearchTabSlot)                     { this._own(tab.id);      this.searchTabs.push(tab); }
   registerModCanvasSection(section: ModCanvasSectionSlot)   { this._own(section.id);  this.modCanvasSections.push(section); }
+  registerModQueue(queue: ModQueueSlot)                     { this._own(queue.id);    this.modQueues.push(queue); }
   registerUserDetailPanel(panel: UserDetailPanelSlot)       { this._own(panel.id);    this.userDetailPanels.push(panel); }
   registerIpEnrichment(slot: IpEnrichmentSlot)              { this._own(slot.id);     this.ipEnrichments.push(slot); }
   registerModCanvasUserPanel(slot: ModCanvasUserPanelSlot)  { this._own(slot.id);     this.modCanvasUserPanels.push(slot); }
@@ -278,6 +325,7 @@ class SlotRegistry {
   }
   getSearchTabs()        { return [...this.searchTabs]; }
   getModCanvasSections() { return [...this.modCanvasSections]; }
+  getModQueues()         { return [...this.modQueues]; }
   getUserDetailPanels()  { return [...this.userDetailPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getIpEnrichments()     { return [...this.ipEnrichments]; }
   getModCanvasUserPanels() { return [...this.modCanvasUserPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
@@ -318,6 +366,7 @@ class SlotRegistry {
     this.pluginMetas       = this.pluginMetas.filter((m) => m.pluginId !== pluginId);
     this.searchTabs        = this.searchTabs.filter((t) => !this._ownedBy(t.id, pluginId));
     this.modCanvasSections = this.modCanvasSections.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.modQueues         = this.modQueues.filter((s) => !this._ownedBy(s.id, pluginId));
     this.userDetailPanels  = this.userDetailPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.ipEnrichments     = this.ipEnrichments.filter((s) => !this._ownedBy(s.id, pluginId));
     this.modCanvasUserPanels = this.modCanvasUserPanels.filter((s) => !this._ownedBy(s.id, pluginId));

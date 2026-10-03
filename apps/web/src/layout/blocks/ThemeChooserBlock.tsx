@@ -99,12 +99,7 @@ export function ThemeChooser() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="xt-themedlg__head">
-              <div>
-                <h2>{t("themeChooser.title", { defaultValue: "Themes" })}</h2>
-                <p>{t("themeChooser.note", {
-                  defaultValue: "Your choice, on this device. It changes nothing for anyone else.",
-                })}</p>
-              </div>
+              <h2>{t("themeChooser.title", { defaultValue: "Themes" })}</h2>
               <button type="button" className="xt-themedlg__x"
                 onClick={() => setOpen(false)}
                 title={t("themeChooser.close", { defaultValue: "Close" })}
@@ -137,21 +132,8 @@ export function ThemeChooser() {
                     <span className="xt-themecard__body">
                       <span className="xt-themecard__name">
                         {theme.name}
-                        {/* TWO different facts, and a reader can be looking at either.
-                            "Active" is what THIS READER is wearing; "Site" is what the
-                            admin chose for everyone. They coincide until the reader
-                            picks something else, which is exactly when telling them
-                            apart starts to matter. */}
-                        {worn && (
-                          <span className="xt-themecard__badge xt-themecard__badge--active">
-                            {t("themeChooser.activeBadge", { defaultValue: "Active" })}
-                          </span>
-                        )}
-                        {theme.active && (
-                          <span className="xt-themecard__badge">
-                            {t("themeChooser.siteBadge", { defaultValue: "Site" })}
-                          </span>
-                        )}
+                        {/* No "Active" / "Site" badges: the tick at the end of the row
+                            already says which theme is in use. */}
                       </span>
                       {/* Omitted rather than filled with the theme's own name back at
                           the reader: a theme without a description has nothing to say

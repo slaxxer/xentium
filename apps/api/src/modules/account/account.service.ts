@@ -209,14 +209,6 @@ export const accountService = {
     return merged;
   },
 
-  async getUsernameHistory(userId: string) {
-    return prisma.usernameHistory.findMany({
-      where: { userId },
-      orderBy: { changedAt: "desc" },
-      take: 20,
-    });
-  },
-
   async getProfileFieldValues(userId: string) {
     const [fields, values] = await Promise.all([
       prisma.userProfileField.findMany({ orderBy: { position: "asc" } }),

@@ -7,11 +7,13 @@ export * from './entitlement.js';
 export * from './marketplace.js';
 export * from './appearance.js';
 export * from './tokens.js';
-export * from './pages.js';
+export * from './themeStyle.js';
+export * from './legal.js';
 export * from './users.js';
 export * from './badges.js';
 export * from './icons.js';
 export * from './layout.js';
+export * from './siteFrame.js';
 export * from './composer.js';
 
 export type ThemeMode = 'light' | 'dark';

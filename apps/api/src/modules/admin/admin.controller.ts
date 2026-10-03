@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { resolveEditingKey } from "../themes/themeKey.js";
 import { adminCasesService } from "./adminCases.service.js";
 import { modSettingsService, modSettingsPatchSchema } from "./modSettings.service.js";
 import { modCanvasService, templateSchema } from "../moderation/modCanvas.service.js";
@@ -620,8 +621,8 @@ export const adminController = {
   }) as RequestHandler,
 
   // Style history
-  listStyleHistory: (async (_req, res) => {
-    res.json(await adminService.listStyleHistory());
+  listStyleHistory: (async (req, res) => {
+    res.json(await adminService.listStyleHistory(await resolveEditingKey(req.query.theme)));
   }) as RequestHandler,
 
   // Nav items

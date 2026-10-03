@@ -73,9 +73,9 @@ const META: Record<string, { sev: XecEntry["sev"]; domain: string }> = {
   "XEC-CORE-8001": { sev:"Error", domain:"Core" },
   "XEC-CORE-8002": { sev:"Warning", domain:"Core" },
   "XEC-CORE-8010": { sev:"Info", domain:"Core" },
-  // Pages
-  "XEC-PAGE-3501": { sev:"Info", domain:"Page" },
-  "XEC-PAGE-3502": { sev:"Warning", domain:"Page" },
+  // Legal documents
+  "XEC-LEGAL-3501": { sev:"Info", domain:"Legal" },
+  "XEC-LEGAL-3502": { sev:"Warning", domain:"Legal" },
   // Queue / background jobs
   "XEC-QUEUE-5000": { sev:"Error", domain:"Queue" },
   "XEC-QUEUE-5001": { sev:"Warning", domain:"Queue" },

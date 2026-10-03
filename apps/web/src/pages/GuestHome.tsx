@@ -6,6 +6,7 @@ import { timeAgo } from "../lib/time";
 import { articlesApi, type ArticleListItem, type ArticleCategoryNode } from "../lib/articlesApi";
 import { Avatar } from "../components/Avatar";
 import "./GuestHome.scss";
+import { Username } from "../components/Username";
 
 /* ============================================================================
    Guest-landing PIECES.
@@ -60,7 +61,7 @@ export interface OnlineData { total: number; users: { username: string; avatar: 
 export interface PopularTag { name: string; slug: string; count: number }
 export interface HomeFeedItem {
   id: string; title: string; link: string; excerpt?: string | null; categoryLabel?: string | null;
-  author?: { username: string; avatar: string | null } | null;
+  author?: { username: string; avatar: string | null; badgeColor?: string | null } | null;
   metric?: number; metricLabel?: string; replies?: number; views?: number; createdAt: string;
 }
 export interface GuestConfig {
@@ -110,7 +111,7 @@ function ArticleCard({ a, onGate }: { a: ArticleListItem; onGate: (k: string) =>
           {a.tags.slice(0, 3).map((tag) => <span className="gtag" key={tag.id}>{tag.name}</span>)}
           <span className="gbyline">
             <Avatar user={{ username: a.author.username, avatar: a.author.avatar }} size={22} />
-            <b>{a.author.username}</b><span className="gdotsep" /> {timeAgo(a.publishedAt ?? a.createdAt)}
+            <b><Username username={a.author.username} badgeColor={a.author.badgeColor} /></b><span className="gdotsep" /> {timeAgo(a.publishedAt ?? a.createdAt)}
           </span>
         </div>
       </div>
@@ -144,7 +145,9 @@ function ItemCard({ item, onGate }: { item: HomeFeedItem; onGate: (k: string) =>
         <div className="gthread__foot">
           <span className="gbyline">
             {item.author && <Avatar user={item.author} size={22} />}
-            <b>{item.author?.username ?? "Unknown"}</b><span className="gdotsep" /> {timeAgo(item.createdAt)}
+            <b>{item.author
+              ? <Username username={item.author.username} badgeColor={item.author.badgeColor} />
+              : "Unknown"}</b><span className="gdotsep" /> {timeAgo(item.createdAt)}
           </span>
         </div>
       </div>

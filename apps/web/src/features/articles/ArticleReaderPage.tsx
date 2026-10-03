@@ -28,6 +28,7 @@ import { topGroups, roleColor } from "../../lib/groupBadge";
 import "./ArticleReaderPage.scss";
 import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
+import { RankBadge } from "../../components/RankBadge";
 
 /** Small follow-button component that fetches initial follow state from the author's profile. */
 function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; authorUsername: string }) {
@@ -393,7 +394,7 @@ export function ArticleReaderContent() {
 
       {a.excerpt && <p className="ard__lede">{a.excerpt}</p>}
 
-      <div className="ard__body">
+      <div className="ard__body" data-mod-target={`article:${a.id}`}>
         <ArticleContent body={a.body} />
       </div>
 
@@ -434,8 +435,7 @@ export function ArticleReaderContent() {
                     {ordered.map(({ group: g }) => {
                       const color = roleColor(g.progression?.badgeColor, g.key) ?? "var(--c-accent)";
                       return (
-                        <span
-                          key={g.id}
+                        <RankBadge key={g.id} groupKey={g.key} label={g.progression?.badgeLabel ?? g.name}><span
                           style={{
                             display: "inline-flex", alignItems: "center", gap: 4,
                             padding: "2px 8px", borderRadius: 20,
@@ -446,7 +446,7 @@ export function ArticleReaderContent() {
                           }}
                         >
                           {g.progression?.badgeLabel ?? g.name}
-                        </span>
+                        </span></RankBadge>
                       );
                     })}
                   </div>
@@ -492,7 +492,7 @@ export function ArticleReaderContent() {
           const isLiked = commentLikes.has(c.id);
           const canLike = isAuthed && authUser?.id !== c.author.id && !c.deletedAt;
           return (
-            <div key={c.id} className="ard__comment">
+            <div key={c.id} className="ard__comment" data-mod-target={`article_comment:${c.id}`}>
               <UserAvatar user={c.author} size={36} className="avatar" />
               <div className="ard__comment-body">
                 <div className="ard__comment-head">

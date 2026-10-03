@@ -19,7 +19,6 @@ import {
   faKey, faLaptop, faMobileScreen, faEnvelope, faShieldHalved,
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import { Username } from "../../../components/Username";
 import { useAuth, applyLogout } from "../../../hooks/useAuth";
 import { authStore } from "../../../lib/authStore";
 import { api } from "../../../lib/api";
@@ -175,16 +174,8 @@ function ChangeEmailCard() {
 
 // ─── Username ─────────────────────────────────────────────────────────────────
 
-interface HistoryEntry {
-  id: string;
-  oldUsername: string;
-  newUsername: string;
-  changedAt: string;
-}
-
 function ChangeUsernameCard() {
   const { t } = useTranslation("account");
-  const { user } = useAuth();
   const [username, setUsername] = useState("");
 
   const mutation = useMutation({
@@ -197,22 +188,11 @@ function ChangeUsernameCard() {
     onError: (e) => toast.error(apiErrorMessage(e, t("security.usernameFailed"))),
   });
 
-  /** ⚠ In the SAME card as the change form — the history is the answer to "can I
-   *  change it yet", which was previously an accordion away from the question. */
-  const { data: history } = useQuery({
-    queryKey: ["account", "username-history"],
-    queryFn: () => api.get<HistoryEntry[]>("/account/username-history"),
-  });
-
   return (
     <AccountCard
       title={t("security.changeUsername")}
       desc={t("security.usernameCardDesc")}
     >
-      <p className="account-hint">
-        {t("security.current")}:{" "}
-        <strong>@<Username username={user?.username ?? ""} badgeColor={user?.visibleGroups[0]?.badgeColor} /></strong>
-      </p>
       <form
         className="acct-inline"
         onSubmit={(e) => {
@@ -235,19 +215,6 @@ function ChangeUsernameCard() {
         </button>
       </form>
 
-      <div className="acct-panel">
-        <span className="acct-panel__label">{t("security.usernameHistory")}</span>
-        {history?.length
-          ? history.map((h) => (
-              <div key={h.id} className="acct-panel__row">
-                <span className="acct-was">@{h.oldUsername}</span>
-                <span className="acct-arrow">→</span>
-                <span className="acct-now">@{h.newUsername}</span>
-                <span className="acct-when">{new Date(h.changedAt).toLocaleDateString()}</span>
-              </div>
-            ))
-          : <p className="account-hint">{t("security.noHistory")}</p>}
-      </div>
     </AccountCard>
   );
 }

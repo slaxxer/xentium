@@ -1,0 +1,24 @@
+/* Edge art — see `edgeArt.tsx`. */
+
+.xt-edge-host {
+  position: relative;
+}
+
+.xt-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: block;
+  pointer-events: none;
+  /* Above the neighbour an outward edge hangs over; below menus and dialogs. */
+  z-index: 4;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Decoration only: gone for anyone who asked for less motion or forced colours. */
+@media (prefers-reduced-motion: reduce), (forced-colors: active) {
+  .xt-edge { display: none; }
+}
