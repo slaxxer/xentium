@@ -1,6 +1,7 @@
 import { prisma } from "../../infrastructure/db.js";
 import { env } from "../../config/env.js";
 import { searchRegistry } from "../../core/search-registry/search-registry.js";
+import { withAuthorBadgeColors } from "../../shared/utils/userRef.js";
 
 function avatarUrl(path: string | null): string | null {
   return path ? `${env.APP_URL}/uploads/${path}` : null;
@@ -209,7 +210,8 @@ export const searchService = {
       wantUsers    ? searchService.searchUsers({ query, page, limit })                : { data: [], total: 0 },
       Promise.all(wantedSources.map(async (s) => {
         try {
-          return [s.id, await s.search(query, { isLoggedIn, page, limit })] as const;
+          const res = await s.search(query, { isLoggedIn, page, limit });
+          return [s.id, { ...res, data: await withAuthorBadgeColors(res.data) }] as const;
         } catch {
           return [s.id, { data: [], total: 0 }] as const;
         }

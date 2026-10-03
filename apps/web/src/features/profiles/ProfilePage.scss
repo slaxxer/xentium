@@ -21,6 +21,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
+  clip-path: var(--clip-card);
   margin-bottom: var(--sp-6);
   box-shadow: 0 6px 24px rgb(30 40 90 / 0.08);
 
@@ -49,7 +50,12 @@
   /* ⚠ A SQUIRCLE, not a circle — 30% is what the mockup draws, and it is the one
      shape on the page that is neither round nor the card's radius. */
   border-radius: 30%;
-  background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent));
+  /* ⚠ `--c-accent-soft` is a TRANSLUCENT tint, so the gradient alone let the cover
+     show through the avatar. An opaque base (the card, then the page) goes under it. */
+  background:
+    linear-gradient(135deg, var(--c-accent-soft), var(--c-accent)),
+    linear-gradient(var(--card-bg), var(--card-bg)),
+    var(--c-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,6 +97,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  /* Room above the name: it sat flush under the cover band, which cut off the top of
+     a group's username glow. */
+  padding-top: var(--sp-3);
 }
 
 .profile-joined {
@@ -117,11 +126,57 @@
   margin-top: 1px;
 }
 
+/* Rank images under the name (rank display = images). */
+.profile-rankimgs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-top: var(--sp-1);
+}
+
+/* Former usernames: a chevron beside the name, opening a small list. */
 .profile-formerly {
-  font-size: var(--fs-xs);
-  color: var(--c-fg-subtle);
-  font-style: italic;
-  margin-top: 3px;
+  position: relative;
+  align-self: center;
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-xs);
+    color: var(--c-fg-subtle);
+
+    &::-webkit-details-marker { display: none; }
+    &:hover { color: var(--c-fg); background: var(--c-bg-hover); }
+  }
+  &[open] summary svg { transform: rotate(180deg); }
+
+  &__menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 20;
+    min-width: 140px;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: var(--card-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-card);
+
+    li {
+      padding: 6px 8px;
+      font-size: var(--fs-sm);
+      color: var(--c-fg);
+    }
+  }
 }
 
 /* The name and its pills on one wrapping row — the mockup reads the rank beside
@@ -467,6 +522,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   transition: border-color 0.15s;
 
   &:hover { border-color: var(--c-accent-glow); }
@@ -500,7 +556,10 @@
 
 .profile-av-small {
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent));
+  background:
+    linear-gradient(135deg, var(--c-accent-soft), var(--c-accent)),
+    linear-gradient(var(--card-bg), var(--card-bg)),
+    var(--c-bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,6 +589,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--card-radius);
+  clip-path: var(--clip-card);
   padding: var(--sp-6);
 
   &__title {
@@ -720,6 +780,7 @@
     background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-lg);
+    clip-path: var(--clip-card);
     box-shadow: 0 6px 24px rgb(30 40 90 / 0.08);
     padding: var(--sp-4);
     text-decoration: none;
@@ -823,6 +884,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   padding: 24px;
 
   &__dob-row {
@@ -899,6 +961,7 @@
     color: var(--c-fg);
     padding: 6px 14px;
     border-radius: var(--radius-sm);
+    clip-path: var(--clip-sm);
     cursor: pointer;
     font: inherit;
     font-weight: 600;
@@ -1069,6 +1132,7 @@
   text-align: left;
   padding: var(--sp-4);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   border: 1px solid var(--card-border-color);
   background: var(--card-bg);
   font: inherit;

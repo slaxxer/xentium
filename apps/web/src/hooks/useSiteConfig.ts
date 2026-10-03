@@ -9,6 +9,8 @@ export interface SiteConfig {
   availableLandings: { value: string; label: string }[];
   /** Display name set during install (defaults to "Xentium"). */
   siteName: string;
+  /** The site description from Settings; the header block can show it as a tagline. */
+  siteTagline?: string;
   /** Canonical base URL set during install (e.g. "https://forum.example.com"); "" if unset. */
   siteUrl: string;
   /** Public auth-form config (login identifier + registration name collection). */

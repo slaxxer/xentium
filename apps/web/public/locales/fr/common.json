@@ -92,8 +92,6 @@
     "title": "Thèmes",
     "close": "Fermer",
     "inUse": "Utilisé",
-    "siteBadge": "Site",
-    "note": "Votre choix, sur cet appareil. Cela ne change rien pour les autres.",
     "activeBadge": "Actif"
   },
   "badges": {
@@ -181,5 +179,41 @@
     "hintDrop": "déposez des fichiers n'importe où",
     "words_one": "1 mot",
     "words_other": "{{count}} mots"
+  },
+  "footer": {
+    "whosOnline": "Qui est en ligne",
+    "onlineSentence": "{{count}} membres sont en ligne en ce moment, d’après l’activité des dernières minutes.",
+    "andMore": "+{{count}} autres",
+    "legend": "Légende",
+    "totalArticles": "Articles",
+    "members": "Membres",
+    "onlineNow": "En ligne",
+    "newestMember": "Dernier inscrit",
+    "uptime": "Disponibilité",
+    "uptimeHint": "Durée de fonctionnement du serveur depuis son dernier redémarrage",
+    "latency": "Latence",
+    "latencyHint": "Temps aller-retour jusqu’au serveur",
+    "stat": {
+      "threads": "Sujets",
+      "posts": "Messages"
+    },
+    "poweredBy": "© {{year}} Propulsé par <b>Xentium</b> Community",
+    "linksLabel": "Liens du pied de page"
+  },
+  "legal": {
+    "title": {
+      "imprint": "Mentions légales",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d’utilisation",
+      "disclaimer": "Avertissement"
+    },
+    "link": {
+      "imprint": "Mentions légales",
+      "privacy": "Confidentialité",
+      "terms": "Conditions",
+      "disclaimer": "Avertissement"
+    },
+    "lastUpdated": "Dernière mise à jour : {{date}}",
+    "edit": "Modifier"
   }
 }

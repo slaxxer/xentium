@@ -46,6 +46,8 @@ import { buildMentionSuggestion } from "./mentions";
 import { BlockPicker, OverflowTray, LinkPopover, EmojiPicker } from "./popovers";
 import { useComposerConfig } from "./useComposerConfig";
 import "./Composer.scss";
+import { Username } from "../Username";
+import { primaryBadgeColor } from "../../lib/groupBadge";
 
 export type ComposerVariant = "inline" | "panel" | "dock";
 
@@ -447,9 +449,13 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const stats = (
     <div className="nvc-stats">
       {mentions && <span><FontAwesomeIcon className="nvc-ic" icon={faAt} />{t("composer.hintMention")}</span>}
-      <span>
-        <kbd>{shortcut.replace("↵", "")}</kbd><kbd>↵</kbd>{t("composer.hintPost")}
-      </span>
+      {/* Only where Ctrl+Enter does something: a surface with no `onSubmit` (an
+          editor that autosaves) would be advertising a shortcut that is a no-op. */}
+      {onSubmit && (
+        <span>
+          <kbd>{shortcut.replace("↵", "")}</kbd><kbd>↵</kbd>{t("composer.hintPost")}
+        </span>
+      )}
       {canAttach && (
         <span><FontAwesomeIcon className="nvc-ic" icon={faPaperclip} />{t("composer.hintDrop")}</span>
       )}
@@ -511,7 +517,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               : (user?.username?.slice(0, 2).toUpperCase() ?? "?")}
           </span>
           <span className="nvc-head__as">
-            {t("composer.writingAs")} <strong>{user?.username}</strong>
+            {t("composer.writingAs")} <strong><Username username={user?.username ?? ""} badgeColor={primaryBadgeColor(user?.visibleGroups)} /></strong>
           </span>
           <span className="nvc-bar__gap" />
           <ModeToggle mode={mode} onMode={setMode} />

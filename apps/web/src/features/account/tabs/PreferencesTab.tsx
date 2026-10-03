@@ -97,12 +97,8 @@ function ThemeChoices() {
               </span>
               <span className="acct-themecard__name">
                 {theme.name}
-                {/* TWO different facts, and a reader can be looking at either. "Active"
-                    is what THEY are wearing; "Site" is what the admin chose for
-                    everyone. They coincide until the reader picks something else,
-                    which is exactly when telling them apart starts to matter. */}
-                {worn   && <span className="acct-themecard__badge is-on">{tc("themeChooser.activeBadge")}</span>}
-                {theme.active && <span className="acct-themecard__badge">{tc("themeChooser.siteBadge")}</span>}
+                {/* "Active" = what this reader is wearing. */}
+                {worn && <span className="acct-themecard__badge is-on">{tc("themeChooser.activeBadge")}</span>}
               </span>
               {/* Omitted rather than padded with the theme's own name back at the
                   reader: a theme with nothing to say about itself has the picture. */}
@@ -113,7 +109,6 @@ function ThemeChoices() {
           );
         })}
       </div>
-      <p className="acct-group__note">{tc("themeChooser.note")}</p>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { impliersOf } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 
 export const permissionsService = {
@@ -13,7 +14,8 @@ export const permissionsService = {
   async userHasPermission(userId: string, key: string): Promise<boolean> {
     const count = await prisma.groupPermission.count({
       where: {
-        permission: { key },
+        // Held directly, or through a key that implies it.
+        permission: { key: { in: [key, ...impliersOf(key)] } },
         group:      { users: { some: { userId } } },
       },
     });

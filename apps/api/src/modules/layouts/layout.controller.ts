@@ -7,11 +7,13 @@ import {
   type LayoutSelector,
 } from "@xentium/contracts";
 import { layoutService } from "./layout.service.js";
+import { resolveEditingKey } from "../themes/themeKey.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import {
   templateKeyParamSchema,
   variantQuerySchema,
   saveDraftSchema,
+  saveFrameSchema,
 } from "./layout.validation.js";
 
 /** Which stored document a request addresses: template from the path, variant from
@@ -21,6 +23,9 @@ function selectorOf(req: Request): LayoutSelector {
   const { variant } = variantQuerySchema.parse(req.query);
   return { templateKey, variant };
 }
+
+/** The theme an admin request edits: `?theme=` (an id, or `_core`), else the active one. */
+const themeOf = (req: Request) => resolveEditingKey(req.query.theme);
 
 export const layoutController = {
   /**
@@ -50,11 +55,11 @@ export const layoutController = {
    * disabled one's disappear — this endpoint is what the editor's picker is made of,
    * and it is the only place that knows a plugin template's label and preview route.
    */
-  templates: (async (_req, res) => {
+  templates: (async (req, res) => {
     // `hasTheme` decides whether the editor offers "Revert to theme" at all, and
     // `customised` is what an update would have kept — both belong to the catalogue the
     // editor already fetches rather than a second round trip per template.
-    const ownership = await layoutService.getOwnership();
+    const ownership = await layoutService.getOwnership(await themeOf(req));
     res.json(
       listTemplates().map((def) => ({
         key:     def.key,
@@ -73,20 +78,20 @@ export const layoutController = {
   }) as RequestHandler,
 
   /** Every template as the draft would render it — the preview iframe's source. */
-  draftAll: (async (_req, res) => {
-    res.json(await layoutService.getDraftAll());
+  draftAll: (async (req, res) => {
+    res.json(await layoutService.getDraftAll(await themeOf(req)));
   }) as RequestHandler,
 
   /** Variant keys that already carry their own document, for the editor's picker. */
   variants: (async (req, res) => {
     const { templateKey } = templateKeyParamSchema.parse(req.params);
-    res.json(await layoutService.listVariants(templateKey));
+    res.json(await layoutService.listVariants(templateKey, await themeOf(req)));
   }) as RequestHandler,
 
   /** Put a template back to what the installed theme ships, as a draft. */
   revertToTheme: (async (req, res) => {
     const { templateKey } = templateKeyParamSchema.parse(req.params);
-    const doc = await layoutService.revertToTheme(templateKey, req.userId!);
+    const doc = await layoutService.revertToTheme(templateKey, req.userId!, await themeOf(req));
     if (!doc) {
       // Not an error worth a 500, and not silent either: there is simply nothing to
       // inherit from, which the editor should say rather than appear to have acted.
@@ -97,7 +102,7 @@ export const layoutController = {
   }) as RequestHandler,
 
   getDraft: (async (req, res) => {
-    res.json(await layoutService.getDraft(selectorOf(req)));
+    res.json(await layoutService.getDraft(selectorOf(req), await themeOf(req)));
   }) as RequestHandler,
 
   saveDraft: (async (req, res) => {
@@ -106,25 +111,40 @@ export const layoutController = {
     // a different instruction from `null` ("there was no row"), so it must not be
     // normalised on the way in.
     res.json(await layoutService.saveDraft(
-      selectorOf(req), parsedBody.document, req.userId!, parsedBody.baseVersion,
+      selectorOf(req), parsedBody.document, req.userId!, parsedBody.baseVersion, await themeOf(req),
     ));
   }) as RequestHandler,
 
-  draftStatus: (async (_req, res) => {
-    res.json(await layoutService.getDraftStatus());
+  /** The site frame's draft, for the Layout Editor's Site layout popover. */
+  getFrame: (async (req, res) => {
+    res.json(await layoutService.getFrameDraft(await themeOf(req)));
+  }) as RequestHandler,
+
+  saveFrame: (async (req, res) => {
+    const body = saveFrameSchema.parse(req.body ?? {});
+    res.json(await layoutService.saveFrameDraft(body.frame, req.userId!, body.baseVersion, await themeOf(req)));
+  }) as RequestHandler,
+
+  /** Back to the theme's frame, or full width when the theme ships none. Staged. */
+  revertFrame: (async (req, res) => {
+    res.json(await layoutService.revertFrameToTheme(req.userId!, await themeOf(req)));
+  }) as RequestHandler,
+
+  draftStatus: (async (req, res) => {
+    res.json(await layoutService.getDraftStatus(await themeOf(req)));
   }) as RequestHandler,
 
   publish: (async (req, res) => {
-    res.json(await layoutService.publish(req.userId!));
+    res.json(await layoutService.publish(req.userId!, await themeOf(req)));
   }) as RequestHandler,
 
   discardDraft: (async (req, res) => {
-    await layoutService.discardDraft(selectorOf(req));
+    await layoutService.discardDraft(selectorOf(req), await themeOf(req));
     res.json({ ok: true });
   }) as RequestHandler,
 
   reset: (async (req, res) => {
-    await layoutService.reset(selectorOf(req));
+    await layoutService.reset(selectorOf(req), await themeOf(req));
     res.json({ ok: true });
   }) as RequestHandler,
 

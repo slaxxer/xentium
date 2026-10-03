@@ -7,10 +7,17 @@ export interface Permission {
 
 const PERM_META: Record<string, { label: string; domain: string }> = {
   "admin.access":               { label: "Access the admin panel",             domain: "Administration" },
+  "legal.manage":               { label: "Manage legal documents",             domain: "Administration" },
   "user.manage":                { label: "Manage user accounts",               domain: "Users" },
   "user.ban":                   { label: "Ban users",                          domain: "Users" },
   "group.manage":               { label: "Manage groups & permissions",        domain: "Users" },
   "progression.manage":         { label: "Manage the progression system",      domain: "Users" },
+  "badge.manage":               { label: "Edit the badge catalogue",           domain: "Users" },
+  "badge.assign":               { label: "Award badges to members",            domain: "Users" },
+  "profile.comment.create":     { label: "Post on profile walls",              domain: "Users" },
+  "profile.comment.delete.own": { label: "Delete own wall posts",              domain: "Users" },
+  "profile.comment.delete.wall":{ label: "Delete posts on own wall",           domain: "Users" },
+  "profile.comment.delete.any": { label: "Delete anyone's wall posts",         domain: "Users" },
   "article.create":             { label: "Write articles",                     domain: "Articles" },
   "article.edit.own":           { label: "Edit own articles",                  domain: "Articles" },
   "article.edit.any":           { label: "Edit anyone's articles",             domain: "Articles" },
@@ -23,17 +30,28 @@ const PERM_META: Record<string, { label: string; domain: string }> = {
   "article.comment.delete.any": { label: "Delete anyone's article comments",   domain: "Articles" },
   "article.revisions.view":     { label: "View article revision history",      domain: "Articles" },
   "article.revisions.restore":  { label: "Restore previous article versions",  domain: "Articles" },
+  "moderation.report.file":     { label: "Report content",                     domain: "Moderation" },
+  "moderation.report.manage":   { label: "Handle reports",                     domain: "Moderation" },
+  "moderation.warn.manage":     { label: "Warn members",                       domain: "Moderation" },
+  "moderation.ban.manage":      { label: "Ban and unban members",              domain: "Moderation" },
+  "moderation.cases.manage":    { label: "Work review cases",                  domain: "Moderation" },
+  "moderation.log.view":        { label: "View the moderation log",            domain: "Moderation" },
+  "moderation.settings":        { label: "Change moderation settings",         domain: "Moderation" },
   "message.send":               { label: "Send private messages",              domain: "Messaging" },
+  "admin.plugins":              { label: "Manage plugins in the admin panel",  domain: "Extensions" },
   "plugin.install":             { label: "Install plugins",                    domain: "Extensions" },
   "plugin.enable":              { label: "Enable & disable plugins",           domain: "Extensions" },
+  "system.tasks.manage":        { label: "Manage scheduled tasks",             domain: "System" },
 };
 
 export const DOMAIN_ORDER = [
   "Administration",
   "Users",
   "Articles",
+  "Moderation",
   "Messaging",
   "Extensions",
+  "System",
 ];
 
 export function enrichPerm(p: Permission): Permission {

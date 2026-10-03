@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { previewThemeKey } from "../lib/editingTheme";
 import { PubNav } from "../layouts/PubNav";
 import { SiteFooter } from "../layouts/SiteFooter";
 import { loadTokenCss, startStyleSync } from "../lib/liveStyle";
@@ -26,7 +27,9 @@ export function ThemePreview() {
 
   // Mirror AppLayout: inject the saved token overrides and keep them live-synced.
   useEffect(() => {
-    void loadTokenCss();
+    // Editing a theme that is not the live one: start from THAT theme's stylesheet,
+    // or the editor's draft paints over another theme's custom CSS.
+    void loadTokenCss({ draft: previewThemeKey() !== null });
     startStyleSync();
   }, []);
 

@@ -450,6 +450,39 @@ export const marketplaceService = {
   },
 
   /**
+   * What the ACP dashboard shows about updates and the licence: the same
+   * reconciled plugin list, pending-core rule and licence rule the badge uses,
+   * with the details the dashboard names (versions, domain, days left).
+   */
+  async getDashboardSignals() {
+    const { updates } = await readReconciledUpdates();
+    const core = await readCoreUpdateCache();
+    const license = await adminService.getActiveEntitlement();
+    const grants = countGrants(license?.entitlementJwt);
+    const attention = licenseAttention(license?.expiresAt ?? null, grants);
+    return {
+      pluginUpdates: updates.map((u) => ({
+        pluginId: u.pluginId,
+        name: u.name ?? u.pluginId,
+        from: u.installedVersion ?? null,
+        to: u.latestVersion,
+        critical: !!u.critical,
+      })),
+      core: pendingCore(core)
+        ? { from: XENTIUM_VERSION, to: core.latest.version, severity: core.highestSeverity ?? core.latest.severity }
+        : null,
+      license: {
+        connected: !!license,
+        grants,
+        domain: license?.domain ?? null,
+        expiringSoon: attention.expiringSoon,
+        expired: attention.expired,
+        daysLeft: attention.daysLeft,
+      },
+    };
+  },
+
+  /**
    * Aggregated "admin attention" signals for the frontend navbar ACP badge.
    * Persists (count > 0) until the work is done: pending plugin updates until
    * they're applied, plus the license when it's about to expire (or has). Kept

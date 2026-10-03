@@ -8,6 +8,8 @@ import { migrateRegionConsolidation } from "./modules/layouts/regionConsolidatio
 import { migrateHeaderBandBlocks } from "./modules/layouts/headerBandMigration.js";
 import { migratePageBandsIntoBody } from "./modules/layouts/pageBandMigration.js";
 import { migrateFooterBandBlocks } from "./modules/layouts/footerBandMigration.js";
+import { migrateToPerThemeAppearance } from "./modules/themes/perThemeMigration.js";
+import { migrateComposedChrome } from "./modules/layouts/composedChromeMigration.js";
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
@@ -72,6 +74,18 @@ export async function boot() {
     // also the only thing that gives an existing site the footer's own settings.
     await migrateFooterBandBlocks().catch((err: unknown) => {
       logger.error({ err }, "Footer carry-over failed — the footer renders without its band until it is re-run");
+    });
+    // One-time: the composed header (masthead holding the logo and the account
+    // buttons) and the split footer (links + text). Cosmetic if it fails: the old
+    // shapes still render.
+    await migrateComposedChrome().catch((err: unknown) => {
+      logger.error({ err }, "Composed header/footer carry-over failed — the header and footer keep their old shape");
+    });
+    // One-time: the single appearance layer becomes the ACTIVE theme's own, now that
+    // every theme is edited on its own. After the layout carry-overs above, so it
+    // moves documents already in their current shape.
+    await migrateToPerThemeAppearance().catch((err: unknown) => {
+      logger.error({ err }, "Per-theme appearance carry-over failed — the site keeps its look, but edits may sit under Core until it is re-run");
     });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();

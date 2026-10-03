@@ -16,6 +16,10 @@
 // disconnected is reconciled on reconnect.
 
 import { viewerThemeParam } from "./viewerTheme";
+import { previewThemeKey, withTheme } from "./editingTheme";
+
+/** The draft stylesheet of the theme a preview is showing (`__theme=`, else the active one). */
+const draftCssUrl = () => withTheme("/api/appearance/css?source=draft", previewThemeKey());
 
 const STYLE_ID = "xentium-custom-tokens";
 
@@ -53,7 +57,11 @@ export async function refreshTokenCss(): Promise<void> {
    * only job is to fix staleness.
    */
   const themed = loadedDraft ? "" : viewerThemeParam();
-  const qualifier = loadedDraft ? "source=draft&" : themed ? `${themed}&` : "";
+  if (loadedDraft) {
+    await fetchTokenCss(`${draftCssUrl()}&t=${Date.now()}`, { cache: "no-store" });
+    return;
+  }
+  const qualifier = themed ? `${themed}&` : "";
   await fetchTokenCss(`/api/appearance/css?${qualifier}t=${Date.now()}`, { cache: "no-store" });
 }
 
@@ -72,7 +80,7 @@ export async function loadTokenCss(opts: { draft?: boolean } = {}): Promise<void
   loadedDraft = !!opts.draft;
   if (!loadedDraft) adoptInlinedVersion();
   if (loadedDraft) {
-    await fetchTokenCss("/api/appearance/css?source=draft");
+    await fetchTokenCss(draftCssUrl());
     return;
   }
   /**

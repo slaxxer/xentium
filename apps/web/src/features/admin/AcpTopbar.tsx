@@ -29,7 +29,9 @@ export function AcpTopbar() {
   const match = NAV_INDEX
     .filter((n) => pathname === n.to || (n.to !== "/admin" && pathname.startsWith(n.to)))
     .sort((a, b) => b.to.length - a.to.length)[0];
-  const crumbKeys = ["topbar.breadcrumbRoot", match?.subKey, match?.labelKey].filter(Boolean) as string[];
+  // A page reached through another (the editors, through Themes) names that page too.
+  const crumbKeys = ["topbar.breadcrumbRoot", match?.subKey, match?.parentKey, match?.labelKey]
+    .filter(Boolean) as string[];
 
   return (
     <header className="acp-topbar acp-topbar--nav">

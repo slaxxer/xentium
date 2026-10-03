@@ -1,209 +1,240 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useBlocker, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { faTableCells, faTableColumns } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "../../../components/Icon";
 import { api } from "../../../lib/api";
-import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
-import { AutosaveStatus } from "../../../components/AutosaveStatus";
-import { groupByDomain, enrichPerm } from "../../../lib/permissions";
-import type { Permission } from "../../../lib/permissions";
+import { apiErrorMessage } from "../../../lib/swal";
+import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
+import { enrichPerm, groupByDomain, type Permission } from "../../../lib/permissions";
+import { isSensitive, keysOf, type Group } from "./groups/groupModel";
+import {
+  applyEdits, deltaOf, draftKeys, editsToMatch, pruneEdits, summarize, type Edits,
+} from "./permissions/permissionsModel";
+import { SplitView } from "./permissions/SplitView";
+import { MatrixView } from "./permissions/MatrixView";
+import "./groups/Groups.scss";
+import "./permissions/Permissions.scss";
 
-interface Group {
-  id: string;
-  name: string;
-  key: string;
-  isSystem: boolean;
-  permissions: { permission: Permission }[];
+/** Everything the two views read and the one way they change the draft. */
+export interface PermissionsCtx {
+  groups: Group[];
+  domains: [string, Permission[]][];
+  total: number;
+  saved: (groupId: string) => Set<string>;
+  draft: (groupId: string) => Set<string>;
+  edits: Edits;
+  /** Grant or revoke `keys`; asks first when a grant adds a sensitive key. */
+  request: (groupId: string, keys: string[], on: boolean) => void;
+  copyFrom: (groupId: string, sourceId: string) => void;
 }
 
 export function PermissionsPage() {
   const { t } = useTranslation("acp");
-  const queryClient = useQueryClient();
-  const [selectedId, setSelectedId] = useState("");
-  const [allowed, setAllowed] = useState<Set<string>>(new Set());
+  const qc = useQueryClient();
+  const [params, setParams] = useSearchParams();
+  const [edits, setEdits] = useState<Edits>({});
   const [saving, setSaving] = useState(false);
 
   const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
     queryKey: ["acp-groups-list"],
     queryFn: () => api.get("/admin/groups"),
   });
-
-  const { data: allPermissions = [], isLoading: permsLoading } = useQuery<Permission[]>({
+  const { data: rawPerms = [], isLoading: permsLoading } = useQuery<Permission[]>({
     queryKey: ["acp-permissions-all"],
     queryFn: () => api.get("/admin/permissions"),
   });
 
+  const perms = useMemo(() => rawPerms.map(enrichPerm), [rawPerms]);
+  const domains = useMemo(() => groupByDomain(rawPerms), [rawPerms]);
+
+  const savedMap = useMemo(() => new Map(groups.map((g) => [g.id, new Set(keysOf(g))])), [groups]);
+  const saved = useCallback((id: string) => savedMap.get(id) ?? new Set<string>(), [savedMap]);
+  const draft = useCallback((id: string) => draftKeys(saved(id), edits[id]), [saved, edits]);
+
+  // A refetch moves the baseline under the edits; drop the ones it made moot.
   useEffect(() => {
-    const gs = groups as Group[];
-    if (!selectedId && gs.length > 0 && gs[0]) {
-      setSelectedId(gs[0].id);
-    }
-  }, [groups, selectedId]);
-
-  useEffect(() => {
-    const gs = groups as Group[];
-    const sel = gs.find((g) => g.id === selectedId);
-    setAllowed(new Set(sel?.permissions.map((gp) => gp.permission.key) ?? []));
-  }, [selectedId, groups]);
-
-  const selected    = (groups as Group[]).find((g) => g.id === selectedId);
-  const grantedKeys = new Set(selected?.permissions.map((gp) => gp.permission.key) ?? []);
-
-  const dirty =
-    allowed.size !== grantedKeys.size ||
-    [...allowed].some((k) => !grantedKeys.has(k));
-
-  const sortedDomains = groupByDomain(allPermissions as Permission[]);
-
-  function toggle(key: string) {
-    if (!selectedId || saving) return;
-    setAllowed((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
+    setEdits((e) => {
+      const next = pruneEdits(e, (id) => savedMap.get(id));
+      return JSON.stringify(next) === JSON.stringify(e) ? e : next;
     });
-  }
+  }, [savedMap]);
 
-  async function handleSave() {
-    if (!selectedId || saving || !dirty) return;
-    const toGrant  = [...allowed].filter((k) => !grantedKeys.has(k));
-    const toRevoke = [...grantedKeys].filter((k) => !allowed.has(k));
-    setSaving(true);
-    try {
-      await Promise.all([
-        ...toGrant.map((k) => api.post(`/admin/groups/${selectedId}/permissions`, { key: k })),
-        ...toRevoke.map((k) => api.delete(`/admin/groups/${selectedId}/permissions/${k}`)),
-      ]);
-      queryClient.invalidateQueries({ queryKey: ["acp-groups-list"] });
-      swalToast(t("permissions.toastSaved"), "success");
-    } catch (e) {
-      swalToast(apiErrorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  }
+  const view = params.get("view") === "matrix" ? "matrix" : "split";
+  const selected = groups.find((g) => g.key === params.get("group")) ?? groups[0];
+  const setUrl = (next: { view?: "split" | "matrix"; group?: string }) => {
+    setParams((p) => {
+      const n = new URLSearchParams(p);
+      const v = next.view ?? view;
+      if (v === "matrix") n.set("view", "matrix"); else n.delete("view");
+      if (next.group) n.set("group", next.group);
+      return n;
+    }, { replace: true });
+  };
 
-  // Auto-save when the draft permission set diverges from the group's saved set.
-  // Sets aren't JSON-serializable, so compare sorted arrays. Switching groups
-  // re-seeds `allowed` (effect above), so both sides change together — no save.
-  useAutosave({
-    value:      [...allowed].sort(),
-    savedValue: selected ? [...grantedKeys].sort() : undefined,
-    onSave:     () => { void handleSave(); },
+  const labelOf = (key: string) => perms.find((p) => p.key === key)?.label ?? key;
+
+  const request = (groupId: string, keys: string[], on: boolean) => {
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return;
+    const apply = () => setEdits((e) => applyEdits(e, groupId, saved(groupId), keys, on));
+    if (!on) return apply();
+    // Only a grant that would ADD power asks: a key already saved, or already in
+    // the draft, has been confirmed once.
+    const current = draft(groupId);
+    const risky = keys.filter((k) => isSensitive(k) && !current.has(k) && !saved(groupId).has(k));
+    if (!risky.length) return apply();
+    void confirmSensitive(g, risky).then((ok) => { if (ok) apply(); });
+  };
+
+  const copyFrom = (groupId: string, sourceId: string) => {
+    const g = groups.find((x) => x.id === groupId);
+    if (!g) return;
+    const target = draft(sourceId);
+    const apply = () => setEdits((e) => editsToMatch(e, groupId, saved(groupId), target));
+    const current = draft(groupId);
+    const risky = [...target].filter((k) => isSensitive(k) && !current.has(k) && !saved(groupId).has(k));
+    if (!risky.length) return apply();
+    void confirmSensitive(g, risky).then((ok) => { if (ok) apply(); });
+  };
+
+  const confirmSensitive = (g: Group, keys: string[]) => openDialog({
+    kind: "confirm",
+    icon: "warning",
+    danger: true,
+    title: keys.length === 1
+      ? t("permissions.confirmOne", { label: labelOf(keys[0]!), group: g.name })
+      : t("permissions.confirmMany", { count: keys.length, group: g.name }),
+    bodyNode: (
+      <div className="pm-confirm">
+        <p>{t("permissions.confirmBody", { count: g._count.users })}</p>
+        <div className="pm-confirm__keys">{keys.map((k) => <code key={k}>{k}</code>)}</div>
+      </div>
+    ),
+    confirmText: keys.length === 1 ? t("permissions.confirmCtaOne") : t("permissions.confirmCtaMany", { count: keys.length }),
+    cancelText: t("permissions.cancel"),
   });
 
-  const isLoading = groupsLoading || permsLoading;
+  const summary = summarize(edits, saved);
+  const dirtyCount = summary.grants + summary.revokes;
+  const dirty = dirtyCount > 0;
 
-  if (isLoading) {
-    return <div style={{ padding: "2rem", color: "var(--c-fg-muted)" }}>{t("permissions.loading")}</div>;
+  const save = async () => {
+    if (saving || !dirty) return;
+    setSaving(true);
+    let failed = false;
+    for (const id of summary.groupIds) {
+      const delta = deltaOf(saved(id), edits[id]);
+      try {
+        const updated = await api.patch<Group>(`/admin/groups/${id}/permissions`, delta);
+        // Swap the new row in before dropping the edits, so the page never
+        // shows the old baseline for a frame between the two.
+        qc.setQueryData<Group[]>(["acp-groups-list"], (list) =>
+          list?.map((g) => (g.id === id ? { ...g, ...updated, _count: { ...g._count, ...updated._count } } : g)));
+        setEdits((e) => { const n = { ...e }; delete n[id]; return n; });
+      } catch (err) {
+        failed = true;
+        toast.error(apiErrorMessage(err));
+      }
+    }
+    void qc.invalidateQueries({ queryKey: ["acp-groups-list"] });
+    setSaving(false);
+    if (!failed) toast.success(t("permissions.toastSaved"));
+  };
+  const discard = () => setEdits({});
+
+  // Ctrl/Cmd+S saves wherever focus is; `/` jumps to the search box.
+  const saveRef = useRef(save);
+  saveRef.current = save;
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement | null)?.tagName ?? "";
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || (e.target as HTMLElement | null)?.isContentEditable;
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") { e.preventDefault(); void saveRef.current(); }
+      else if (e.key === "/" && !typing) { e.preventDefault(); searchRef.current?.focus(); }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // Unsaved edits survive neither a reload nor leaving the page — ask first.
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+  const blocker = useBlocker(({ currentLocation, nextLocation }) => dirty && currentLocation.pathname !== nextLocation.pathname);
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+    void openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: t("permissions.leaveTitle"),
+      body: t("permissions.leaveBody", { count: dirtyCount }),
+      confirmText: t("permissions.leaveConfirm"),
+      cancelText: t("permissions.stay"),
+    }).then((ok) => (ok ? blocker.proceed() : blocker.reset()));
+  }, [blocker, dirtyCount, t]);
+
+  if (groupsLoading || permsLoading) {
+    return <div className="pm-page"><div className="gp-empty">{t("permissions.loading")}</div></div>;
   }
 
+  const ctx: PermissionsCtx = { groups, domains, total: perms.length, saved, draft, edits, request, copyFrom };
+  const dirtyNames = groups.filter((g) => summary.groupIds.includes(g.id)).map((g) => g.name).join(", ");
+
   return (
-    <div>
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.accessControl")}</div>
-          <h1 className="acp-page-title">{t("nav.permissions")}</h1>
+    <div className="pm-page">
+      <div className="pg-head pm-head">
+        <div>
+          <p className="pg-eyebrow">{t("nav.accessControl")}</p>
+          <h1 className="pg-title">{t("nav.permissions")}</h1>
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div className="pm-head__actions">
+          <div className="acp-seg acp-seg--auto pm-viewswitch" role="tablist">
+            <button type="button" role="tab" aria-selected={view === "split"} className={view === "split" ? "is-on" : ""} onClick={() => setUrl({ view: "split" })}>
+              <FontAwesomeIcon icon={faTableColumns} className="pm-ic" /> {t("permissions.viewSplit")}
+            </button>
+            <button type="button" role="tab" aria-selected={view === "matrix"} className={view === "matrix" ? "is-on" : ""} onClick={() => setUrl({ view: "matrix" })}>
+              <FontAwesomeIcon icon={faTableCells} className="pm-ic" /> {t("permissions.viewMatrix")}
+            </button>
+          </div>
           <Link to="/admin/groups" className="btn-ghost btn-sm">{t("permissions.manageGroups")}</Link>
-          <AutosaveStatus saving={saving} />
+          <div className={`pm-status${saving ? " is-saving" : dirty ? " is-dirty" : ""}`} aria-live="polite">
+            <span className="pm-status__dot" />
+            {saving ? t("permissions.saving") : dirty ? t("permissions.unsaved", { count: dirtyCount }) : t("permissions.allSaved")}
+          </div>
         </div>
       </div>
 
-      {/* Group selector */}
-      <div className="acp-card" style={{ padding: "14px 20px", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg-muted)" }}>
-            {t("permissions.editingFor")}
-          </span>
-          <select
-            className="acp-select"
-            style={{ width: "auto", fontWeight: 700 }}
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-          >
-            {(groups as Group[]).map((g) => (
-              <option key={g.id} value={g.id}>{g.name}</option>
-            ))}
-          </select>
-          {selected && (
-            <span style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginLeft: "auto" }}>
-              {t("permissions.grantedCount", { granted: allowed.size, total: (allPermissions as Permission[]).length })}
+      {perms.length === 0 ? (
+        <div className="gp-card gp-empty">{t("permissions.empty")}</div>
+      ) : view === "split" && selected ? (
+        <SplitView ctx={ctx} selected={selected} onSelect={(g) => setUrl({ group: g.key })} searchRef={searchRef} />
+      ) : (
+        <MatrixView ctx={ctx} onOpen={(g) => setUrl({ view: "split", group: g.key })} searchRef={searchRef} />
+      )}
+
+      {(dirty || saving) && (
+        <div className="pm-savebar" role="region" aria-label={t("permissions.unsaved", { count: dirtyCount })}>
+          <span className="pm-savebar__dot" />
+          <div className="pm-savebar__text">
+            <strong>{t("permissions.unsaved", { count: dirtyCount })}</strong>
+            <span>
+              {[
+                summary.grants ? t("permissions.toGrant", { count: summary.grants }) : null,
+                summary.revokes ? t("permissions.toRevoke", { count: summary.revokes }) : null,
+              ].filter(Boolean).join(" · ")} {dirtyNames && t("permissions.inGroups", { groups: dirtyNames })}
             </span>
-          )}
-        </div>
-      </div>
-
-      {/* Domains */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {sortedDomains.map(([domain, perms]) => {
-          const domainGranted = perms.filter((p) => allowed.has(p.key)).length;
-          return (
-            <div key={domain} className="acp-card" style={{ padding: 0, overflow: "hidden" }}>
-              <div style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "12px 20px",
-                borderBottom: "1px solid var(--c-border)",
-              }}>
-                <div style={{ fontSize: "var(--fs-md)", fontWeight: 800, color: "var(--c-fg)" }}>
-                  {domain}
-                </div>
-                <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
-                  {t("permissions.domainGranted", { granted: domainGranted, total: perms.length })}
-                </div>
-              </div>
-              <div>
-                {perms.map((p, i) => {
-                  const ep = enrichPerm(p);
-                  const on = allowed.has(p.key);
-                  return (
-                    <div
-                      key={p.key}
-                      onClick={() => toggle(p.key)}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--c-bg-hover)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                      style={{
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "11px 20px",
-                        borderBottom: i < perms.length - 1 ? "1px solid var(--c-border)" : "none",
-                        background: "transparent",
-                        cursor: saving ? "wait" : "pointer",
-                        transition: "background .15s",
-                        userSelect: "none",
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg)" }}>{ep.label}</div>
-                        <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)", fontFamily: "monospace", marginTop: 2 }}>{p.key}</div>
-                      </div>
-                      <div style={{
-                        width: 40, height: 22, borderRadius: 100,
-                        background: on ? "var(--c-accent)" : "var(--c-border)",
-                        position: "relative", flexShrink: 0,
-                        transition: "background .2s",
-                      }}>
-                        <div style={{
-                          position: "absolute", top: 3, width: 16, height: 16,
-                          background: "#fff", borderRadius: "50%",
-                          left: on ? 21 : 3,
-                          transition: "left .2s",
-                        }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {(allPermissions as Permission[]).length === 0 && (
-        <div className="acp-card" style={{ textAlign: "center", padding: "3rem", color: "var(--c-fg-muted)" }}>
-          {t("permissions.empty")}
+          </div>
+          <kbd className="pm-kbd pm-kbd--dark">Ctrl S</kbd>
+          <button type="button" className="pm-savebar__discard" onClick={discard} disabled={saving}>{t("permissions.discard")}</button>
+          <button type="button" className="btn-primary btn-sm" onClick={() => void save()} disabled={saving}>
+            {saving ? t("permissions.saving") : t("permissions.save")}
+          </button>
         </div>
       )}
     </div>

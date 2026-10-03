@@ -65,7 +65,8 @@ export interface SearchResultItem {
   link:           string;                  // e.g. "/forum/thread/{slug}"
   excerpt?:       string | null;
   categoryLabel?: string | null;
-  author?:        { username: string; avatar: string | null } | null;
+  /** `badgeColor` is filled in by core from the username; a source need not send it. */
+  author?:        { username: string; avatar: string | null; badgeColor?: string | null } | null;
   metric?:        number;                   // primary count (e.g. replies)
   metricLabel?:   string;                   // e.g. "replies"
   tags?:          string[];
@@ -93,12 +94,45 @@ export interface HomeFeedItem {
   link:           string;                  // e.g. "/forum/thread/{slug}"
   excerpt?:       string | null;
   categoryLabel?: string | null;           // e.g. forum node / article category name
-  author?:        { username: string; avatar: string | null } | null;
+  /** `badgeColor` is filled in by core from the username; a source need not send it. */
+  author?:        { username: string; avatar: string | null; badgeColor?: string | null } | null;
   metric?:        number;                   // primary count shown in the votes box (likes/replies)
   metricLabel?:   string;                   // e.g. "likes" | "replies"
   replies?:       number;
   views?:         number;
   createdAt:      string;                   // ISO timestamp — used to merge sources by recency
+}
+
+/**
+ * What core needs to know about a piece of a plugin's content that was REPORTED.
+ *
+ * A plugin files reports through core's `POST /moderation/reports` with
+ * `targetType: "plugin-content"` and `targetId: "<pluginId>:<kind>:<id>"`. Core cannot
+ * read the plugin's tables, so without this a moderator saw only the reason: no
+ * author to warn or ban, no snapshot, no link to the content.
+ */
+export interface ReportTargetInfo {
+  /** The member who wrote it — makes Warn and Ban possible. */
+  authorId: string | null;
+  /** A plain-text copy of what it said, kept with the report. */
+  snapshot: string | null;
+  /** Where it is, as a moderator reads it — e.g. the thread title. */
+  where:    string | null;
+  /** A site-relative link that shows it, e.g. `/forum/thread/<slug>?page=2`. The page
+   *  should carry `data-mod-target="plugin-content:<targetId>"` on the item itself, so
+   *  ModCanvas can scroll to it and mark it. */
+  href:     string | null;
+}
+
+/** A kind of plugin content that can be reported (`registerReportTarget`). */
+export interface ReportTargetHandler {
+  /** The middle part of the target id — `"post"` in `"xentium-forum:post:<id>"`. */
+  kind: string;
+  /** Describe one item; null when it no longer exists. */
+  describe(id: string): Promise<ReportTargetInfo | null>;
+  /** Remove it (soft delete), on a moderator's behalf. Omit when it cannot be removed
+   *  from a report; ModCanvas then does not offer Remove. */
+  remove?(id: string, by: { actorId: string; reason: string }): Promise<void>;
 }
 
 /** A content source a plugin contributes to the home / guest feed. Core never
@@ -353,6 +387,12 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
 
   /** Register a home/guest feed content source. */
   registerHomeFeedSource(source: HomeFeedSource): void;
+
+  /** Describe (and optionally remove) a kind of this plugin's content when it is
+   *  reported, so ModCanvas can show it, link to it and act on its author.
+   *  Deregistered on disable. Optional on older cores — call it as
+   *  `ctx.registerReportTarget?.(…)`. */
+  registerReportTarget?(handler: ReportTargetHandler): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;

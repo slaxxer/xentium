@@ -111,9 +111,18 @@
   --radius-lg:   18px;   /* standard cards, side nav */
   --radius-xl:   22px;   /* hero "me" card, feed post cards */
   --radius-pill: 999px;
+  /* A group's rank image, where it replaces the text badge. Height only; the width
+     follows the image (a typical 160×31 banner draws ~145px wide at 28px). */
+  --rank-image-height: 28px;
   --card-radius:  var(--radius-lg);
   --btn-radius:   var(--radius-sm);
   --input-radius: var(--radius-md);
+  /* Chamfered corners (Layout Editor → Theme style). `none`, not a rectangle: a
+     clip-path of any shape cuts off a card's shadow, so the stock look has none. */
+  --corner-cut:    0px;
+  --corner-cut-sm: 0px;
+  --clip-card:     none;
+  --clip-sm:       none;
 
   /* Buttons — every button surface references these (NO gradients on controls).
      --btn-bg is a single solid colour; it defaults to the accent but is its own
@@ -238,4 +247,7 @@
   --shadow-inset-knob: 0 1px 3px rgba(0, 0, 0, 0.18);
   /* Branded accent glow (logomarks, CTAs) — theme-aware via --c-accent-glow. */
   --shadow-glow: 0 8px 24px var(--c-accent-glow);
+  /* Theme style → "Glow on accent elements": accent FILLS (primary buttons, accent
+     panels) wear it. Off by default. */
+  --glow-accent: none;
 }

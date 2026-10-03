@@ -32,6 +32,9 @@ const BY_TYPE: Record<string, BlockShape> = {
   footer: "stack",
   navbar: "chip",
   branding: "chip",
+  footerBar: "chip",
+  footerLinks: "chip",
+  footerText: "text",
   logo: "media",
   navLinks: "chip",
   search: "chip",
@@ -46,9 +49,6 @@ const BY_TYPE: Record<string, BlockShape> = {
   paragraph: "text",
   richText: "text",
   image: "media",
-  pageImage: "media",
-  pageTitle: "text",
-  pageBody: "text",
   articleIndex: "grid",
   articleDetail: "text",
   membersList: "list",
@@ -70,6 +70,27 @@ const BY_TYPE: Record<string, BlockShape> = {
   homeSuggestedPeople: "list",
   homePopularTags: "chip",
   homeYourCard: "stack",
+  homeMeCard: "stack",
+  homeSectionNav: "chip",
+  homeSpaces: "grid",
+  homeProgression: "chip",
+  pluginSlot: "chip",
+  membersTabs: "chip",
+  membersFilters: "chip",
+  membersHofStats: "grid",
+  membersHowTo: "text",
+  guestSurface: "stack",
+  guestHeroText: "text",
+  guestPresence: "list",
+  profileAvatar: "media",
+  profileCover: "media",
+  profileRank: "chip",
+  profileBadges: "chip",
+  profileVisitors: "list",
+  profileFollowers: "list",
+  profileIdentity: "text",
+  profileActions: "chip",
+  profileBio: "text",
 };
 
 /** What KIND of thing a block looks like, when nothing more specific is known. */
@@ -79,6 +100,9 @@ const BY_CATEGORY: Record<string, BlockShape> = {
   data: "grid",
   plugin: "grid",
 };
+
+/** The block types with a picture of their own (tests check core has one each). */
+export const SHAPE_TYPES: readonly string[] = Object.keys(BY_TYPE);
 
 export function shapeFor(type: string): BlockShape {
   const byType = BY_TYPE[type];

@@ -177,7 +177,7 @@ describe("the site chrome", () => {
    * `section` at the top of the body except a misleading name.
    */
   it("gives every page a body and a rail, in that order", () => {
-    for (const key of ["home", "article.index", "article.detail", "page.detail", "profile", "members"] as const) {
+    for (const key of ["home", "article.index", "article.detail", "profile", "members"] as const) {
       expect(regionsFor(key)).toEqual(["main", "aside"]);
     }
   });
@@ -193,21 +193,22 @@ describe("the site chrome", () => {
     expect(doc.regions.header!.map((b) => b.type)).toEqual(["header", "navbar"]);
   });
 
-  it("ships the band 250px tall, full width, with the logo in it", () => {
+  it("ships the composed masthead: 200px, the logo and the action group inside it", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
     const band = doc.regions.header![0]!;
-    expect(band.props.height).toBe(250);
-    expect(band.props.showLogo).toBe(true);
-    expect(band.props.backgroundGradient).toHaveLength(2);
+    expect(band.props.height).toBe(200);
+    expect(band.props.showLogo).toBe(false);
+    expect(band.props.showTagline).toBe(true);
+    expect(band.children?.map((c) => c.type)).toEqual([
+      "logo", "notifications", "headerWidgets", "adminLink", "userMenu", "search",
+    ]);
+    expect(band.props.backgroundGradient).toEqual(["#14162a", "#5865f2"]);
   });
 
-  it("ships the navbar without a light/dark toggle", () => {
+  it("ships the navbar with the links alone, and no light/dark toggle", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
     const navbar = doc.regions.header!.find((b) => b.type === "navbar")!;
-    expect(navbar.children!.map((c) => c.type)).toEqual([
-      "logo", "navLinks", "search", "headerWidgets",
-      "notifications", "adminLink", "userMenu",
-    ]);
+    expect(navbar.children!.map((c) => c.type)).toEqual(["navLinks"]);
   });
 
   /**
@@ -260,11 +261,10 @@ describe("the site chrome", () => {
    * the ABSENT case — never stored, for the same reason `variant` and `visibility`
    * are not: two equal layouts must compare equal, and draft-vs-live is a stringify.
    */
-  it("stores align only where it is not the start of the row", () => {
+  it("stores no align in the shipped header — the default is never written down", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
-    const children = doc.regions.header!.find((b) => b.type === "navbar")!.children!;
-    expect(children.find((c) => c.type === "logo")!.align).toBeUndefined();
-    expect(children.find((c) => c.type === "userMenu")!.align).toBe("right");
+    const all = doc.regions.header!.flatMap((b) => b.children ?? []);
+    expect(all.every((c) => c.align === undefined)).toBe(true);
   });
 
   /** A `section` is still placeable in the header — it is the generic band, and the

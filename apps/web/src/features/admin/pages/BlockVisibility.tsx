@@ -39,8 +39,11 @@ const DEFAULT: BlockVisibility = { audience: "everyone", groups: [] };
 export function BlockVisibilityFields({
   value,
   onChange,
+  bare,
 }: {
   value: BlockVisibility | undefined;
+  /** Inside a fold that already names it — no title of its own. */
+  bare?: boolean;
   /** `undefined` means "everyone" — the caller stores nothing in that case. */
   onChange: (next: BlockVisibility | undefined) => void;
 }) {
@@ -67,7 +70,7 @@ export function BlockVisibilityFields({
 
   return (
     <div className="lay__vis">
-      <div className="lay__vis-title">{t("layoutEditor.visibility")}</div>
+      {!bare && <div className="lay__vis-title">{t("layoutEditor.visibility")}</div>}
 
       {BLOCK_AUDIENCES.map((audience) => (
         <label className="lay__vis-row" key={audience}>

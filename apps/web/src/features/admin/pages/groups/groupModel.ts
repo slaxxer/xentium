@@ -19,6 +19,8 @@ export interface Group {
   name: string;
   key: string;
   icon: string | null;
+  /** Relative upload path of the rank image, or null. */
+  rankImage?: string | null;
   isSystem: boolean;
   displayOrder: number;
   showInTeam: boolean;

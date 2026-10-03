@@ -17,9 +17,10 @@ import { Avatar } from "../../../components/Avatar";
 import { useAuth } from "../../../hooks/useAuth";
 import {
   type Group, type ListUser, type UserCounts, BanDialog, type BanOutcome,
-  RolePill, StatusPill, FlagChip, topGroup, groupColor, lastSeenText,
+  RolePill, StatusPill, FlagChip, topGroup, lastSeenText,
 } from "./users/usersShared";
 import "./users/Users.scss";
+import { Username } from "../../../components/Username";
 
 interface PaginatedUsers {
   data: ListUser[];
@@ -273,7 +274,7 @@ export function UserListPage() {
                     <Avatar user={{ username: u.username, avatar: u.avatar }} size={36} online={u.online} />
                     <span className="usr-member__id">
                       <span className="usr-member__line">
-                        <b className="usr-member__name" style={g?.progression?.badgeColor ? { color: groupColor(g) } : undefined}>{u.username}</b>
+                        <b className="usr-member__name"><Username username={u.username} badgeColor={g?.progression?.badgeColor} /></b>
                         <FlagChip flags={u.flags} failed={u.failedSignins24h} />
                       </span>
                       <span className="usr-member__email">{u.email}</span>

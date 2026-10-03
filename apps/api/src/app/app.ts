@@ -15,7 +15,7 @@ import { accountRouter } from '../modules/account/account.routes.js';
 import { installerRouter } from "../modules/installer/installer.routes.js";
 import { articlesRouter, articleCommentsRouter } from "../modules/articles/article.routes.js";
 import { articleCategoriesRouter } from "../modules/article-categories/article-category.routes.js";
-import { pagesRouter, pagesAdminRouter } from "../modules/pages/page.routes.js";
+import { legalRouter, legalAdminRouter } from "../modules/legal/legal.routes.js";
 import { siteRouter } from "../modules/site/site.routes.js";
 import { themePublicRouter } from "../modules/themes/themePublic.routes.js";
 import { badgesAdminRouter, badgesPublicRouter } from "../modules/badges/badges.routes.js";
@@ -194,12 +194,12 @@ export function createApp(): Express {
   app.use("/api/articles", requireFeature("articles"), articlesRouter);
   app.use("/api/article-comments", requireFeature("articles"), articleCommentsRouter);
   app.use("/api/article-categories", requireFeature("articles"), articleCategoriesRouter);
-  app.use("/api/pages", pagesRouter);
+  app.use("/api/legal", legalRouter);
   // ACP action logging wraps every /api/admin/* router below it.
   app.use("/api/admin", acpActivityLogger);
   app.use("/api/admin", adminRouter);
   app.use("/api/admin/activity", activityAdminRouter);
-  app.use("/api/admin/pages", pagesAdminRouter);
+  app.use("/api/admin/legal", legalAdminRouter);
   app.use("/api/admin/badges", badgesAdminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);

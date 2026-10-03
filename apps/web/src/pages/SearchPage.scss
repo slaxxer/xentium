@@ -139,6 +139,7 @@
   gap: var(--sp-4);
   padding: var(--sp-4);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   text-decoration: none;
@@ -211,6 +212,7 @@
   gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-4);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   text-decoration: none;

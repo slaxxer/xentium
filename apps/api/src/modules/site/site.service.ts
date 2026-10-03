@@ -26,6 +26,7 @@ export const siteService = {
       "features.members.enabled":   true,
       "site.landing":               "home",
       "site.name":                  "Xentium",
+      "site.description":           "",
       "site.url":                   "",
       "auth.login_method":          "email",
       "registration.collect_name":  false,
@@ -64,6 +65,7 @@ export const siteService = {
 
     return {
       features, landing, availableLandings: landings, siteName, siteUrl,
+      siteTagline: s["site.description"],
       // Public auth-form config the SPA reads at boot (login + register forms).
       auth: {
         loginMethod: ["email", "username", "either"].includes(loginMethod) ? loginMethod : "email",

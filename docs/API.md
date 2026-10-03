@@ -159,7 +159,6 @@ All **Auth**.
 | GET | `/sessions` | Active sessions (device, IP, last seen). |
 | DELETE | `/sessions/:sessionId` | Revoke one session. |
 | GET / PATCH | `/privacy` | Read or update privacy settings (JSON). |
-| GET | `/username-history` | Your own username changes. |
 | GET / PATCH | `/profile-fields` | Read or update your custom field values (with per-field privacy). |
 | POST / DELETE | `/pin` | Set or turn off the login PIN. |
 | GET / PATCH | `/notifications` | Read or update notification preferences. |
@@ -223,6 +222,22 @@ All **Auth**.
 | PATCH | `/reorder` | Admin | Reorder / move. |
 | DELETE | `/:id` | Admin | Delete (handles child categories and articles). |
 
+## Legal documents: `/api/legal` (public) and `/api/admin/legal` (ACP)
+
+The site's imprint, privacy policy, terms and disclaimer. The set is fixed, keyed
+`imprint`, `privacy`, `terms` and `disclaimer`, and each one is shown at `/legal/<key>`
+once published. The ACP routes need `legal.manage`.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/legal` | Public | The published documents in footer order, as `{ key, publishedAt }`. |
+| GET | `/api/legal/:key` | Public | One published document: `{ key, body, publishedAt }`. 404 (`XEC-LEGAL-3501`) when it isn't published. |
+| GET | `/api/admin/legal` | ACP | All four, written or not: `{ key, draftBody, body, publishedAt, updatedAt, updatedBy }`. `body` is null while unpublished. |
+| PUT | `/api/admin/legal/:key/draft` | ACP | `{ draftBody }` (a TipTap doc). The editor autosaves here; nothing goes live. |
+| POST | `/api/admin/legal/:key/publish` | ACP | The draft goes live. A draft with no text is refused (`XEC-LEGAL-3502`). |
+| POST | `/api/admin/legal/:key/unpublish` | ACP | Takes it offline. The draft is kept. |
+| POST | `/api/admin/legal/:key/discard` | ACP | Resets the draft to the published text. |
+
 ## Search: `/api/search`
 
 | Method | Path | Auth | Description |
@@ -285,7 +300,7 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | POST | `/reports` | Auth | File a report (any target type). |
-| GET | `/summary` | Auth | Counts for the ModCanvas badges. |
+| GET | `/summary` | Auth | Counts for the moderation shield's red dot. |
 | GET | `/reports` | Perm:`moderation.report.manage` | The report queue. |
 | PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update a report's status. |
 | GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. Without an `expiresAt`, a warning gets the expiry set in Mod Settings. Each warning runs the escalation ladder. |
@@ -307,10 +322,10 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/css` | Public | The compiled token CSS the site loads, by scope (see below). `?source=draft` renders the draft instead (for the Style Editor's preview, never cached); `?theme=<id>` renders one installed theme for a reader who picked it. |
+| GET | `/css` | Public | The compiled token CSS the site loads, by scope (see below). `?source=draft` renders the draft instead (for Theme Studio's Colours & type preview, never cached); `?theme=<id>` renders one installed theme for a reader who picked it. |
 | GET | `/tokens` | Admin | `{ tokens, theme, installedTheme }`: the admin's layer and the theme's layer, **kept apart**. |
 | PUT | `/tokens` | Admin | Save the admin's tokens (`{ tokens, label? }`, a map by scope). Goes into the **draft**. |
-| PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ tokens: { "--x": "#fff" \| null } }`, where `null` clears a token. Returns the whole set. This exists for a second editor on the same draft (the Layout Editor's variant panel), because two screens both reading and writing the whole set would lose whichever edit landed first. |
+| PATCH | `/tokens/scope/:scope` | Admin | Merge ONE scope into the draft: `{ tokens: { "--x": "#fff" \| null } }`, where `null` clears a token. Returns the whole set. This exists for a second editor on the same draft (the Studio's Layout variant panel), because two screens both reading and writing the whole set would lose whichever edit landed first. |
 | GET / PUT | `/custom-css` | Admin | The admin's own stylesheet. |
 | GET | `/draft-status` | Admin | Whether there's an unpublished draft. |
 | POST | `/publish` | Admin | Publish the draft now. |

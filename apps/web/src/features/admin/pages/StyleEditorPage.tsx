@@ -17,6 +17,8 @@ import { useAutosave } from "../../../hooks/useAutosave";
 import { AutosaveStatus } from "../../../components/AutosaveStatus";
 import { refreshTokenCss } from "../../../lib/liveStyle";
 import { StyleHistoryList } from "../components/StyleHistoryList";
+import { ThemeScopePicker } from "../components/ThemeScopePicker";
+import { PREVIEW_THEME_PARAM, useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import {
   HEARTH_DEFAULT_TOKENS,
   TOKEN_REGISTRY,
@@ -45,7 +47,8 @@ import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/con
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
-type Tab = "tokens" | "branding" | "css" | "history";
+export type StyleTab = "tokens" | "branding" | "css" | "history";
+type Tab = StyleTab;
 
 interface StyleDraft {
   tokens: ScopedTokenSet;
@@ -97,9 +100,6 @@ const FONT_WEIGHTS = ["300", "400", "500", "600", "700", "800"] as const;
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 20;
 
-const FONT_SETTING_KEY    = "appearance.font.family";
-const FSIZE_SETTING_KEY   = "appearance.font.size";
-const FWEIGHT_SETTING_KEY = "appearance.font.weight";
 
 // The kinds the shadow control offers, in order. `raw` is not offered — it is only
 // reached by a value the controls cannot represent, and then edited as text.
@@ -199,7 +199,23 @@ function sectionVars(section: Section): string[] {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function StyleEditorPage() {
+/**
+ * The Style Editor edits ONE theme at a time — the one named in `?theme=`, else the
+ * live one. Keyed by it, so switching themes starts the editor fresh rather than
+ * carrying one theme's unsaved state onto another.
+ */
+export function StyleEditorPage({ embedded, tab }: {
+  /** Inside Theme Studio: no page header, no tabs and no Publish of its own — the
+   *  Studio has one header and one Publish for layouts and styles together. */
+  embedded?: boolean;
+  /** Which part to show when embedded (the Studio's mode). */
+  tab?: StyleTab;
+} = {}) {
+  const { key } = useEditingTheme();
+  return <StyleEditorInner key={key ?? ""} themeKey={key} embedded={embedded} forcedTab={tab} />;
+}
+
+function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string | null; embedded?: boolean; forcedTab?: StyleTab }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   // The tab lives in the URL so it can be linked and survives a refresh — and so
@@ -207,10 +223,13 @@ export function StyleEditorPage() {
   // rather than dropping you on Tokens.
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const [tab, setTab] = useState<Tab>(
+  const [ownTab, setTab] = useState<Tab>(
     () => (TABS.some((x) => x.id === tabParam) ? (tabParam as Tab) : "tokens"),
   );
+  // Embedded, the Studio's mode decides; the editor's own tab state is not consulted.
+  const tab: Tab = forcedTab ?? ownTab;
   const selectTab = (next: Tab) => {
+    if (forcedTab) return;
     setTab(next);
     // Tokens is the default, so it stays out of the URL; `replace` keeps tab
     // switching out of the back button's history.
@@ -251,7 +270,7 @@ export function StyleEditorPage() {
   const [themeCss, setThemeCss] = useState("");
 
   useEffect(() => {
-    api.get<{ css?: string; theme?: string }>("/appearance/custom-css")
+    api.get<{ css?: string; theme?: string }>(withTheme("/appearance/custom-css", themeKey))
       .then((r) => {
         setCustomCss(r?.css ?? ""); setCustomCssSaved(r?.css ?? "");
         setThemeCss(r?.theme ?? "");
@@ -270,7 +289,7 @@ export function StyleEditorPage() {
   }, [customCss]);
 
   const saveCustomCssMut = useMutation({
-    mutationFn: () => api.put("/appearance/custom-css", { css: customCss }),
+    mutationFn: () => api.put(withTheme("/appearance/custom-css", themeKey), { css: customCss }),
     onSuccess: async () => {
       setCustomCssSaved(customCss);
       await refreshTokenCss();
@@ -358,8 +377,8 @@ export function StyleEditorPage() {
     theme?: ScopedTokenSet;
     installedTheme?: { name?: string; version?: string } | null;
   }>({
-    queryKey: ["acp-tokens"],
-    queryFn:  () => api.get("/appearance/tokens"),
+    queryKey: ["acp-tokens", themeKey],
+    queryFn:  () => api.get(withTheme("/appearance/tokens", themeKey)),
   });
   // NOT merged into `tokens`: the editor writes back what it holds, so folding the theme
   // in would turn every theme value into an admin override and destroy the inheritance.
@@ -374,15 +393,13 @@ export function StyleEditorPage() {
   }, [saved]);
 
   useEffect(() => {
-    Promise.all([
-      api.get<{value?:unknown}>(`/admin/settings/${FONT_SETTING_KEY}`).catch(() => null),
-      api.get<{value?:unknown}>(`/admin/settings/${FSIZE_SETTING_KEY}`).catch(() => null),
-      api.get<{value?:unknown}>(`/admin/settings/${FWEIGHT_SETTING_KEY}`).catch(() => null),
-    ]).then(([fam, sz, wt]) => {
-      const f = (fam as any)?.value; if (f && FONTS.includes(f as any)) setFontFamily(f);
-      const s = (sz  as any)?.value; if (s) setFontSize(String(s));
-      const w = (wt  as any)?.value; if (w) setFontWeight(String(w));
-    }).catch(() => {}).finally(() => setFontsLoaded(true));
+    // This theme's own font — fonts belong to a theme, like its colours.
+    api.get<{ family?: string; size?: string; weight?: string }>(withTheme("/appearance/font", themeKey))
+      .then((font) => {
+        const f = font?.family; if (f && FONTS.includes(f as any)) setFontFamily(f);
+        if (font?.size) setFontSize(String(font.size));
+        if (font?.weight) setFontWeight(String(font.weight));
+      }).catch(() => {}).finally(() => setFontsLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -397,10 +414,12 @@ export function StyleEditorPage() {
       // wrote that stale font back over whoever changed it since. Tokens are one
       // setting holding the whole sparse draft, so that one is written whole.
       const snap = savedSnap;
-      const writes: Promise<unknown>[] = [api.put("/appearance/tokens", { tokens })];
-      if (snap?.fontFamily !== fontFamily) writes.push(api.put(`/admin/settings/${FONT_SETTING_KEY}`,    { value: fontFamily }));
-      if (snap?.fontSize   !== fontSize)   writes.push(api.put(`/admin/settings/${FSIZE_SETTING_KEY}`,   { value: fontSize   }));
-      if (snap?.fontWeight !== fontWeight) writes.push(api.put(`/admin/settings/${FWEIGHT_SETTING_KEY}`, { value: fontWeight }));
+      const writes: Promise<unknown>[] = [api.put(withTheme("/appearance/tokens", themeKey), { tokens })];
+      const font: Record<string, string> = {};
+      if (snap?.fontFamily !== fontFamily) font.family = fontFamily;
+      if (snap?.fontSize   !== fontSize)   font.size   = fontSize;
+      if (snap?.fontWeight !== fontWeight) font.weight = fontWeight;
+      if (Object.keys(font).length) writes.push(api.put(withTheme("/appearance/font", themeKey), font));
       await Promise.all(writes);
     },
     onSuccess: () => {
@@ -418,12 +437,12 @@ export function StyleEditorPage() {
   // Staged-publish: edits above are saved as a draft. Publishing (here or via the
   // scheduled "Publish appearance changes" job) promotes the draft to the live site.
   const { data: draftStatus } = useQuery<{ pending: boolean }>({
-    queryKey: ["acp-draft-status"],
-    queryFn:  () => api.get("/appearance/draft-status"),
+    queryKey: ["acp-draft-status", themeKey],
+    queryFn:  () => api.get(withTheme("/appearance/draft-status", themeKey)),
     refetchInterval: 15_000,
   });
   const publishMut = useMutation({
-    mutationFn: () => api.post("/appearance/publish", {}),
+    mutationFn: () => api.post(withTheme("/appearance/publish", themeKey), {}),
     onSuccess: async () => {
       await refreshTokenCss();
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
@@ -435,7 +454,7 @@ export function StyleEditorPage() {
   });
 
   const resetMut = useMutation({
-    mutationFn: () => api.post("/appearance/reset", {}),
+    mutationFn: () => api.post(withTheme("/appearance/reset", themeKey), {}),
     onSuccess: async () => {
       const empty: ScopedTokenSet = {};
       setTokens(empty);
@@ -585,11 +604,14 @@ export function StyleEditorPage() {
 
   return (
     <div className="se-page">
-      <div className="acp-page-header">
-        <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.appearance")}</div>
-          <h1 className="acp-page-title">{t("nav.styleEditor")}</h1>
-        </div>
+      <div className={embedded ? "se-embedded-bar" : "acp-page-header"}>
+        {!embedded && (
+          <div className="acp-page-header__left">
+            <div className="acp-page-sub">{t("nav.appearance")}</div>
+            <h1 className="acp-page-title">{t("nav.styleEditor")}</h1>
+            <ThemeScopePicker />
+          </div>
+        )}
 
         <div className="se-actions">
           {/* State first, on its own line: what is unsaved and what is unpublished are
@@ -617,7 +639,7 @@ export function StyleEditorPage() {
               <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
             </button>
 
-            <button
+            {!embedded && <button
               type="button"
               className="btn-primary se-act se-act--go"
               disabled={publishMut.isPending || !draftStatus?.pending}
@@ -626,7 +648,7 @@ export function StyleEditorPage() {
             >
               <FontAwesomeIcon icon={faCloudArrowUp} />
               {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -650,13 +672,13 @@ export function StyleEditorPage() {
         </div>
       )}
 
-      <div className="se-tabs">
+      {!embedded && <div className="se-tabs">
         {TABS.map((x) => (
           <button key={x.id} type="button" className={`se-tab${tab === x.id ? " is-on" : ""}`} onClick={() => selectTab(x.id)}>
             {t(x.label)}
           </button>
         ))}
-      </div>
+      </div>}
 
       {tab === "tokens" && (
         <>
@@ -726,6 +748,7 @@ export function StyleEditorPage() {
           {/* ── Canvas + inspector ───────────────────────────────────────────── */}
           <div className="se-work">
             <PreviewFrame
+              themeKey={themeKey}
               css={previewCss}
               extraCss={cssPreview}
               activeGroup={section.id}
@@ -993,7 +1016,7 @@ export function StyleEditorPage() {
         </div>
       )}
 
-      {tab === "history" && <StyleHistoryList />}
+      {tab === "history" && <StyleHistoryList themeKey={themeKey} />}
     </div>
   );
 }
@@ -1252,8 +1275,10 @@ export function previewOverlayRules({ activeGroup, hotspots, previewState }: {
   return rules.join("\n");
 }
 
-function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick }: {
+function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previewState, setPreviewState, onPick, themeKey }: {
   css: string; extraCss: string; activeGroup?: string;
+  /** The theme being edited — the specimen loads ITS stylesheet under the draft. */
+  themeKey: string | null;
   hotspots: boolean; setHotspots: (v: boolean) => void;
   previewState: PreviewState; setPreviewState: (s: PreviewState) => void;
   onPick: (group: string, scope: string) => void;
@@ -1261,6 +1286,9 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
   const { t } = useTranslation("acp");
   const ref = useRef<HTMLIFrameElement>(null);
   const onPickRef = useRef(onPick); onPickRef.current = onPick;
+  const previewSrc = themeKey
+    ? `/__theme-preview?${PREVIEW_THEME_PARAM}=${encodeURIComponent(themeKey)}`
+    : "/__theme-preview";
   const prevGroup = useRef<string | undefined>(undefined);
 
   // Inject token + overlay styles whenever inputs change; scroll to the active group
@@ -1348,7 +1376,7 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
         </div>
       </div>
       <div className="se-canvas__frame">
-        <iframe ref={ref} src="/__theme-preview" title={t("styleEditor.previewTitle")} />
+        <iframe ref={ref} src={previewSrc} title={t("styleEditor.previewTitle")} />
       </div>
     </div>
   );

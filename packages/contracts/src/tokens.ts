@@ -221,6 +221,7 @@ const FOUNDATION_TOKENS: TokenDef[] = [
   f("--shadow-lg",          "Large shadow",   "shadows", "shadow", { control: "shadow", inheritsFrom: "--shadow-pop" }),
   f("--shadow-glow",        "Glow",           "shadows", "shadow", { control: "text" }),
   f("--shadow-inset-knob",  "Switch knob",    "shadows", "shadow", { control: "text" }),
+  f("--glow-accent",        "Glow on accent elements", "shadows", "shadow", { control: "text" }),
 
   // Corners
   f("--radius-sm",   "Small corners",  "corners", "length", { control: "radius" }),
@@ -228,6 +229,13 @@ const FOUNDATION_TOKENS: TokenDef[] = [
   f("--radius-lg",   "Large corners",  "corners", "length", { control: "radius" }),
   f("--radius-xl",   "Extra-large corners", "corners", "length", { control: "radius" }),
   f("--radius-pill", "Pill corners",   "corners", "length", { control: "size", min: 0, max: 999 }),
+  // Chamfered corners (Theme style → Corners). A cut is a clip-path, so it sits in its
+  // own tokens: `none` by default, because a rectangle clip would still cut off every
+  // card's shadow. See `themeStyle.ts`.
+  f("--corner-cut",    "Corner cut (cards)",   "corners", "length", { control: "size", min: 0, max: 32 }),
+  f("--corner-cut-sm", "Corner cut (small)",   "corners", "length", { control: "size", min: 0, max: 16 }),
+  f("--clip-card",     "Card corner shape",    "corners", "keyword", { control: "text" }),
+  f("--clip-sm",       "Small corner shape",   "corners", "keyword", { control: "text" }),
 
   // Typography — the steps are `calc(<rem> * var(--fs-scale))`; the site-wide text size
   // is the Size control, which sets the scale. A step set here replaces its calc.
@@ -253,6 +261,8 @@ const FOUNDATION_TOKENS: TokenDef[] = [
   f("--nav-height",     "Navbar height",       "layout", "length", { control: "size", min: 44, max: 120 }),
   f("--content-max",    "Page width",          "layout", "length", { control: "size", min: 720, max: 1800 }),
   f("--content-narrow", "Narrow page width",   "layout", "length", { control: "size", min: 480, max: 1100 }),
+  // A group's rank image, where it replaces the text badge (ACP → Settings → Rank display).
+  f("--rank-image-height", "Rank image height", "layout", "length", { control: "size", min: 12, max: 64 }),
 
   // Button sizing sits with the button colours.
   f("--btn-pad-y", "Button padding (vertical)",   "button", "length", { kind: "component", control: "size", min: 0, max: 32, scopeable: true }),

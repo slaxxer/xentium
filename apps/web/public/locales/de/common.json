@@ -92,8 +92,6 @@
     "title": "Themes",
     "close": "Schließen",
     "inUse": "Aktiv",
-    "siteBadge": "Website",
-    "note": "Deine Wahl, auf diesem Gerät. Für alle anderen ändert sich nichts.",
     "activeBadge": "Aktiv"
   },
   "badges": {
@@ -181,5 +179,41 @@
     "hintDrop": "Dateien überall ablegen",
     "words_one": "1 Wort",
     "words_other": "{{count}} Wörter"
+  },
+  "footer": {
+    "whosOnline": "Wer ist online",
+    "onlineSentence": "Gerade sind {{count}} Mitglieder online, gemessen an der Aktivität der letzten Minuten.",
+    "andMore": "+{{count}} weitere",
+    "legend": "Legende",
+    "totalArticles": "Artikel",
+    "members": "Mitglieder",
+    "onlineNow": "Jetzt online",
+    "newestMember": "Neuestes Mitglied",
+    "uptime": "Laufzeit",
+    "uptimeHint": "Wie lange der Server seit dem letzten Neustart läuft",
+    "latency": "Latenz",
+    "latencyHint": "Antwortzeit bis zum Server und zurück",
+    "stat": {
+      "threads": "Themen",
+      "posts": "Beiträge"
+    },
+    "poweredBy": "© {{year}} Powered by <b>Xentium</b> Community",
+    "linksLabel": "Footer-Links"
+  },
+  "legal": {
+    "title": {
+      "imprint": "Impressum",
+      "privacy": "Datenschutzerklärung",
+      "terms": "Nutzungsbedingungen",
+      "disclaimer": "Haftungsausschluss"
+    },
+    "link": {
+      "imprint": "Impressum",
+      "privacy": "Datenschutz",
+      "terms": "Nutzungsbedingungen",
+      "disclaimer": "Haftungsausschluss"
+    },
+    "lastUpdated": "Zuletzt aktualisiert am {{date}}",
+    "edit": "Bearbeiten"
   }
 }

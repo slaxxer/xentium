@@ -38,3 +38,9 @@ export const saveDraftSchema = z.object({
    */
   baseVersion: z.string().datetime().nullish(),
 });
+
+/** The site frame's autosave. The frame itself is `siteFrameSchema`'s, in the service. */
+export const saveFrameSchema = z.object({
+  frame: z.unknown(),
+  baseVersion: z.string().datetime().nullish(),
+});

@@ -31,6 +31,8 @@
   font-weight: var(--btn-fw);
   line-height: 1.25;
   border-radius: var(--btn-radius);
+  /* Theme style → Corners (`none` unless chamfered). */
+  clip-path: var(--clip-sm);
   cursor: pointer;
 
   svg { display: block; flex-shrink: 0; }
@@ -41,6 +43,8 @@
   background: var(--btn-bg);
   color: var(--btn-fg);
   border: 1px solid transparent;
+  /* Theme style → "Glow on accent elements". */
+  box-shadow: var(--glow-accent);
   transition: opacity 0.15s;
 
   &:hover:not(:disabled) { opacity: 0.85; }

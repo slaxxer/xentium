@@ -63,6 +63,17 @@ export interface BlockDefinition<P = any, C = any> {
     /** Restrict to templates whose context this block needs. Omit = any. */
     allowedTemplates?: string[];
     /**
+     * Superseded: still RENDERS where a stored document has it, but is no longer offered
+     * for placing. The replacement is what the picker shows.
+     */
+    retired?: boolean;
+    /**
+     * The block paints a surface of its own — a band, a card, a panel — so a shape
+     * along its edge (edge art) has something to belong to. Links, buttons and text do
+     * not, and the editor does not offer edge art on them.
+     */
+    surface?: boolean;
+    /**
      * Container types this block may be placed inside. Omit to allow both region
      * level and any container.
      *
@@ -107,6 +118,11 @@ export function deregisterBlocksFor(pluginId: string): void {
   }
 }
 
+/** Whether a block paints a surface of its own (see `editorMeta.surface`). */
+export function hasSurface(type: string): boolean {
+  return !!blocks.get(type)?.editorMeta?.surface;
+}
+
 export function getBlock(type: string): BlockDefinition | undefined {
   return blocks.get(type);
 }
@@ -127,7 +143,7 @@ export function listPlaceableBlocks(templateKey: string, parentType?: string): B
   const parent = parentType ? blocks.get(parentType) : undefined;
   return listBlocks().filter((b) => {
     const meta = b.editorMeta;
-    if (!meta) return false;
+    if (!meta || meta.retired) return false;
     if (meta.allowedTemplates && !meta.allowedTemplates.includes(templateKey)) return false;
     if (parentType) {
       if (!parent?.container) return false;

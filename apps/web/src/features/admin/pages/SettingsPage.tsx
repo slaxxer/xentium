@@ -203,6 +203,7 @@ const SECTIONS: Section[] = [
       { i18nKey: "nameRequired", key: "registration.name_required", type: "toggle" },
       { i18nKey: "showPreviousUsernames", key: "profile.show_previous_usernames", type: "toggle" },
       { i18nKey: "previousUsernameDays",  key: "profile.previous_username_days",  type: "number", min: 0, max: 3650, step: 1 },
+      { i18nKey: "rankDisplay", key: "groups.rank_display", type: "select", optionsKey: "rankDisplay", values: ["badge", "image"] },
     ],
   },
   {
@@ -274,6 +275,7 @@ const DEFAULTS: Record<string, unknown> = {
   "registration.name_required":         false,
   "profile.show_previous_usernames":    true,
   "profile.previous_username_days":     90,
+  "groups.rank_display":                "badge",
   "articles.allow_comments":            true,
   "articles.require_comment_approval":  false,
   "articles.per_page":                  10,
@@ -361,6 +363,9 @@ export function SettingsPage() {
       qc.invalidateQueries({ queryKey: ["site-config"] });
       qc.invalidateQueries({ queryKey: ["pub-nav-items"] });
       qc.invalidateQueries({ queryKey: ["maintenance"] });
+      // Rank display (badges ↔ images) is read site-wide from the group legend.
+      qc.invalidateQueries({ queryKey: ["legend-groups"] });
+      qc.invalidateQueries({ queryKey: ["acp-setting", "groups.rank_display"] });
       swalToast(t("settings.toastSaved"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),

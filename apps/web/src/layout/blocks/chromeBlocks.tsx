@@ -16,7 +16,8 @@
  *    hardcoded component did, so the shipped defaults are byte-identical to what
  *    the site looked like before the layout system touched it.
  */
-import { blockPropSchemas, blockTypesIn } from "@xentium/contracts";
+import { Children, isValidElement, type ReactNode } from "react";
+import { blockPropSchemas, blockTypesIn, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";
@@ -26,9 +27,11 @@ import {
   NavNotifications, NavAdminLink, NavUserMenu,
 } from "../../layouts/PubNav";
 import {
-  FooterWhosOnline, FooterGroupLegend, FooterBoardStats, FooterBranding,
+  FooterWhosOnline, FooterGroupLegend, FooterBoardStats, FooterBranding, FooterLinks, FooterText, FooterBar,
 } from "../../layouts/SiteFooter";
 import { sectionBackground } from "./coreBlocks";
+import { isEditorPreview } from "../previewMode";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 import "./chromeBlocks.scss";
 
 const CHROME_HEADER = ["chrome.header"];
@@ -64,24 +67,66 @@ const CHROME_FOOTER = ["chrome.footer"];
  * what puts the masthead logo directly above the navbar's own instead of a few pixels
  * off. Those numbers live in `chromeBlocks.scss` next to the rule that uses them.
  */
-function SiteHeaderBlock({ props }: BlockProps<{
+/** The node a rendered child came from — `RenderNode` elements carry it as a prop. */
+const childNode = (child: ReactNode): BlockNode | undefined =>
+  isValidElement<{ node?: BlockNode }>(child) ? child.props.node : undefined;
+
+/** The masthead's account buttons — what "Buttons: Log in / account menu" switches. */
+const ACCOUNT_TYPES = new Set(["userMenu", "notifications", "headerWidgets", "adminLink"]);
+
+function SiteHeaderBlock({ props, children }: BlockProps<{
   height?: number; showLogo?: boolean; showWordmark?: boolean;
+  showMasthead?: boolean; logoAlign?: "left" | "center"; showTagline?: boolean; showButtons?: boolean;
+  backgroundMode?: "image" | "gradient";
   backgroundImage?: string; backgroundGradient?: string[]; backgroundAngle?: number;
 }>) {
-  const background = sectionBackground(props);
+  const { data: config } = useSiteConfig();
+  // Image mode draws the image over the gradient (which shows until one is chosen);
+  // gradient mode draws the gradient alone. Both values are kept either way.
+  const background = sectionBackground({
+    ...props,
+    backgroundImage: props.backgroundMode === "image" ? props.backgroundImage : "",
+  });
+
+  /*
+   * Hidden masthead: nothing on the site — the navbar carries the logo and account
+   * actions instead. In the editor a slim marker stays, or the block could not be
+   * clicked to switch it back on.
+   */
+  if (props.showMasthead === false) {
+    return isEditorPreview() ? <div className="xt-header xt-header--hidden">Masthead hidden</div> : null;
+  }
+
+  // The logo is the brand; everything else placed in the header is the action group.
+  const all = Children.toArray(children);
+  const logos = all.filter((c) => childNode(c)?.type === "logo");
+  // Buttons off: the account buttons leave the masthead (the navbar draws them).
+  const actions = all.filter((c) => {
+    const type = childNode(c)?.type;
+    return type !== "logo" && !(props.showButtons === false && type && ACCOUNT_TYPES.has(type));
+  });
+  // A header from before it was a container draws its own logo.
+  const legacyLogo = logos.length === 0 && props.showLogo !== false;
+  const tagline = props.showTagline ? config?.siteTagline?.trim() : "";
+  const centered = props.logoAlign === "center";
+
   return (
     <div
-      className={`xt-header${background ? " xt-header--bg" : ""}`}
+      className={`xt-header${background ? " xt-header--bg" : ""}${centered ? " xt-header--center" : ""}`}
+      data-bg={props.backgroundMode ?? "gradient"}
       style={{
         minHeight: `${props.height ?? 250}px`,
         ...(background ? { backgroundImage: background } : {}),
       }}
     >
-      {props.showLogo !== false && (
-        <div className="xt-header__inner">
-          <NavLogo showWordmark={props.showWordmark !== false} />
+      <div className="xt-header__inner">
+        <div className="xt-header__brand">
+          {logos}
+          {legacyLogo && <NavLogo showWordmark={props.showWordmark !== false} />}
+          {tagline && <p className="xt-header__tagline">{tagline}</p>}
         </div>
-      )}
+        {actions.length > 0 && <div className="xt-header__actions">{actions}</div>}
+      </div>
     </div>
   );
 }
@@ -89,20 +134,85 @@ function SiteHeaderBlock({ props }: BlockProps<{
 registerBlock({
   type:      "header",
   schema:    blockPropSchemas.header,
-  editorMeta: { label: "Header", category: "structure", allowedTemplates: CHROME_HEADER },
+  container: true,
+  editorMeta: { surface: true, label: "Header", category: "structure", allowedTemplates: CHROME_HEADER },
   component: SiteHeaderBlock,
 });
+
+/** The chrome's `header` block, wherever it sits. */
+function findHeader(doc: LayoutDocument | null | undefined): BlockNode | undefined {
+  const walk = (nodes: BlockNode[]): BlockNode | undefined => {
+    for (const n of nodes) {
+      if (n.type === "header") return n;
+      const hit = n.children && walk(n.children);
+      if (hit) return hit;
+    }
+    return undefined;
+  };
+  return doc ? walk(Object.values(doc.regions).flat()) : undefined;
+}
+
+/**
+ * What the navbar draws on the masthead's behalf while it is hidden. Plain components,
+ * not blocks: these are stand-ins for blocks that live in the header, and they go
+ * away the moment the masthead is back.
+ */
+const CARRIED: Record<string, () => ReactNode> = {
+  search:        () => <NavSearchBlock expanded={false} />,
+  headerWidgets: () => <>{slotRegistry.getHeaderWidgets().map((w) => <w.component key={w.id} />)}</>,
+  notifications: () => <NavNotifications />,
+  adminLink:     () => <NavAdminLink />,
+  userMenu:      () => <NavUserMenu />,
+};
+
+function NavbarBlock({ props, children }: BlockProps<{
+  sticky?: boolean; height?: number; tone?: "theme" | "dark" | "brand" | "light";
+}>) {
+  // The document from context, like `headerWidgets`: in the editor the unsaved one is
+  // on screen, and this has to agree with it.
+  const doc = useRenderedDocument();
+  const header = findHeader(doc);
+  const hp = (header?.props ?? {}) as { showMasthead?: boolean; showButtons?: boolean };
+  const mastheadShown = !!header && hp.showMasthead !== false;
+  const buttonsShown = mastheadShown && hp.showButtons !== false;
+
+  const own = new Set(Children.toArray(children).map((c) => childNode(c)?.type).filter(Boolean));
+  // Masthead hidden (or deleted): the small logo is forced on…
+  const needLogo = !mastheadShown && !own.has("logo");
+  // …and whatever the masthead held comes down into the strip: everything when it is
+  // hidden, the account buttons when only they are switched off.
+  const carried = header
+    ? [...new Set((header.children ?? []).map((n) => n.type))].filter((t) =>
+        CARRIED[t] && !own.has(t) && (!mastheadShown || (!buttonsShown && ACCOUNT_TYPES.has(t))))
+    : [];
+
+  const classes = [
+    "pub-nav",
+    props.sticky === false && "pub-nav--static",
+    props.tone && props.tone !== "theme" && `pub-nav--tone-${props.tone}`,
+  ].filter(Boolean).join(" ");
+
+  return (
+    <nav className={classes} style={props.height ? { ["--nav-height" as string]: `${props.height}px` } : undefined}>
+      <div className="pub-nav__inner">
+        {needLogo && <NavLogo showWordmark />}
+        {children}
+        {carried.length > 0 && (
+          <div className="pub-nav__carried">
+            {carried.map((t) => <span key={t} className="pub-nav__carried-item">{CARRIED[t]!()}</span>)}
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}
 
 registerBlock({
   type:      "navbar",
   schema:    blockPropSchemas.navbar,
   container: true,
-  editorMeta: { label: "Navbar", category: "structure", allowedTemplates: CHROME_HEADER },
-  component: ({ children }: BlockProps<Record<string, never>>) => (
-    <nav className="pub-nav">
-      <div className="pub-nav__inner">{children}</div>
-    </nav>
-  ),
+  editorMeta: { surface: true, label: "Navbar", category: "structure", allowedTemplates: CHROME_HEADER },
+  component: NavbarBlock,
 });
 
 registerBlock({
@@ -222,7 +332,7 @@ registerBlock({
   type:      "footer",
   schema:    blockPropSchemas.footer,
   container: true,
-  editorMeta: { label: "Footer", category: "structure", allowedTemplates: CHROME_FOOTER },
+  editorMeta: { surface: true, label: "Footer", category: "structure", allowedTemplates: CHROME_FOOTER },
   component: SiteFooterBlock,
 });
 
@@ -248,9 +358,35 @@ registerBlock({
 });
 
 registerBlock({
+  type:   "footerBar",
+  schema: blockPropSchemas.footerBar,
+  editorMeta: { label: "Footer bar", category: "content", allowedTemplates: CHROME_FOOTER },
+  component: ({ props }: BlockProps<{ showUptime: boolean; showThemeChooser: boolean }>) =>
+    <FooterBar showUptime={props.showUptime} showThemeChooser={props.showThemeChooser} />,
+});
+
+// Superseded by `footerBar`: still render where stored, no longer offered.
+registerBlock({
+  type:   "footerLinks",
+  schema: blockPropSchemas.footerLinks,
+  editorMeta: { label: "Footer links", category: "content", allowedTemplates: CHROME_FOOTER, retired: true },
+  component: ({ props }: BlockProps<{ showThemeChooser: boolean }>) =>
+    <FooterLinks showThemeChooser={props.showThemeChooser} />,
+});
+
+registerBlock({
+  type:   "footerText",
+  schema: blockPropSchemas.footerText,
+  editorMeta: { label: "Footer text", category: "content", allowedTemplates: CHROME_FOOTER, retired: true },
+  component: ({ props }: BlockProps<{ showUptime: boolean }>) => <FooterText showUptime={props.showUptime} />,
+});
+
+registerBlock({
   type:   "branding",
   schema: blockPropSchemas.branding,
-  editorMeta: { label: "Copyright & uptime", category: "content", allowedTemplates: CHROME_FOOTER },
-  component: ({ props }: BlockProps<{ showUptime: boolean; showThemeChooser: boolean }>) =>
-    <FooterBranding showUptime={props.showUptime} showThemeChooser={props.showThemeChooser} />,
+  // Superseded by `footerLinks` + `footerText`.
+  editorMeta: { label: "Copyright & uptime", category: "content", allowedTemplates: CHROME_FOOTER, retired: true },
+  component: ({ props }: BlockProps<{ showUptime: boolean; showThemeChooser: boolean }>) => (
+    <FooterBranding showUptime={props.showUptime} showThemeChooser={props.showThemeChooser} />
+  ),
 });
