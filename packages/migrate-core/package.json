@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-core",
-  "version": "1.0.0-alpha.9",
+  "version": "1.0.0-alpha.10",
   "private": true,
   "description": "Shared contract + loader for Xentium platform-migration adapters (§34). Adapters extract a source platform into the intermediate model; this package loads it into a Xentium database.",
   "type": "module",
