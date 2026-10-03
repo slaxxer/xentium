@@ -63,6 +63,7 @@
   --surface-border-width: 1px;
   --surface-radius:       var(--card-radius);
   --surface-shadow:       var(--shadow-card);
+  --surface-clip:         var(--clip-card);
 }
 
 .xt-v--muted {
@@ -71,6 +72,7 @@
   --surface-border-width: 0;
   --surface-radius:       var(--card-radius);
   --surface-shadow:       none;
+  --surface-clip:         var(--clip-card);
   --c-fg:                 var(--c-fg-muted);
   --c-fg-muted:           var(--c-fg-subtle);
 }
@@ -81,6 +83,7 @@
   --surface-border-width: 1px;
   --surface-radius:       var(--card-radius);
   --surface-shadow:       none;
+  --surface-clip:         var(--clip-card);
 }
 
 /* The reset. Nested inside another variant this is how an admin opts a block back
@@ -91,6 +94,7 @@
   --surface-border-width: 0;
   --surface-radius:       0;
   --surface-shadow:       none;
+  --surface-clip:         none;
 }
 
 /* ONE background per variant, two kinds of consumer.

@@ -80,7 +80,7 @@
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 9px 16px;
   padding: 16px clamp(20px, 5vw, 40px);
   border-top: 1px solid var(--c-rowline);
   max-width: var(--content-max);
@@ -94,18 +94,14 @@
     margin-right: 3px;
   }
 }
+/* A group in the legend: its name in the group's colour (and glow), nothing more —
+   no pill, no dot, so it reads like the names it explains. */
 .xt-grp {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 28px;
-  padding: 0 12px;
-  border-radius: var(--radius-pill);
   font-weight: 800;
   font-size: var(--fs-xs);
   white-space: nowrap;
-
-  &::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
 }
 
 .xt-stats {
@@ -192,4 +188,83 @@
   .xt-links { margin-left: 0; gap: 12px 16px; }
   .xt-bar { gap: 14px; }
   .xt-copyright { justify-content: flex-start; }
+}
+
+/* ── Footer links and footer text — the two halves of the footer bar ───────── */
+.xt-footlinks {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 18px clamp(20px, 5vw, 40px) 0;
+}
+.xt-footlinks__link {
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--footer-fg) 6%, transparent);
+  color: var(--footer-fg);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover { color: var(--c-accent); }
+}
+.xt-footlinks__theme { display: inline-flex; align-items: center; }
+
+/* Centred, always: the copyright is the one line every footer arrangement ends on.
+   A column, so the optional uptime line sits under it rather than pushing it off
+   centre. */
+.xt-foottext {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 14px clamp(20px, 5vw, 40px) 20px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--footer-fg-subtle);
+
+  b { color: var(--footer-fg); font-weight: 700; }
+}
+.xt-foottext__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ── The footer bar: links left, theme picker right, copyright under them ───── */
+.xt-footbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px clamp(20px, 5vw, 40px) 20px;
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+  }
+
+  &__theme { display: inline-flex; align-items: center; margin-left: auto; }
+
+  /* Inside the bar the copyright brings no padding of its own; a hairline sets it
+     apart from the row above. */
+  .xt-foottext {
+    padding: 12px 0 0;
+    border-top: 1px solid var(--footer-border-color);
+  }
+  &__top:empty + .xt-foottext { border-top: 0; padding-top: 0; }
+}
+
+.xt-footlinks__list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }

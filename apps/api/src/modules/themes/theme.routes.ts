@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { activeThemeKey, CORE_THEME, resolveEditingKey } from "./themeKey.js";
 import multer from "multer";
 import { z } from "zod";
 import { CorePermissions, THEME_ASSET_LIMITS, themeManifestSchema } from "@xentium/contracts";
@@ -8,6 +9,7 @@ import { XEC } from "../../shared/errors/xec.js";
 import { themeService } from "./theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
+import { publishTheme, studioStatus } from "./themeStudio.js";
 
 /**
  * `.xttheme` export / import (ADR-0005). Mounted under /api/admin so every
@@ -72,7 +74,7 @@ themeRouter.get("/installed", guard, async (_req, res, next) => {
   try {
     const [manifest, templates] = await Promise.all([
       appearanceService.getInstalledTheme(),
-      layoutService.getThemeLayer(),
+      activeThemeKey().then((k) => layoutService.getThemeLayer(k)),
     ]);
     res.json({ manifest, templates: Object.keys(templates), rollback: await themeService.getRollbackState() });
   } catch (err) { next(err); }
@@ -104,7 +106,30 @@ themeRouter.post("/library/:id/activate", guard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-/** Remove one from the library. Refuses the ACTIVE theme — see the service. */
+/**
+ * Theme Studio: one theme's layout and style drafts, read and published together.
+ * `?theme=` names the theme (absent = the live one, `_core` = Core).
+ */
+themeRouter.get("/studio/status", guard, async (req, res, next) => {
+  try {
+    res.json(await studioStatus(await resolveEditingKey(req.query.theme)));
+  } catch (err) { next(err); }
+});
+
+themeRouter.post("/studio/publish", guard, async (req, res, next) => {
+  try {
+    res.json(await publishTheme(req.userId!, await resolveEditingKey(req.query.theme)));
+  } catch (err) { next(err); }
+});
+
+/** Switch to the built-in Core theme. */
+themeRouter.post("/core/activate", guard, async (req, res, next) => {
+  try {
+    res.json(await themeService.activateTheme(CORE_THEME, req.userId!));
+  } catch (err) { next(err); }
+});
+
+/** Remove one from the library. Removing the live theme falls back to Core. */
 themeRouter.delete("/library/:id", guard, async (req, res, next) => {
   try {
     const { id } = themeIdParam.parse(req.params);
@@ -133,7 +158,8 @@ themeRouter.post("/discard", guard, async (req, res, next) => {
 themeRouter.post("/export", guard, screenshotUpload.single("screenshot"), async (req, res, next) => {
   try {
     const { tokensOnly, ...meta } = exportSchema.parse(req.body ?? {});
-    const buffer = await themeService.exportTheme(meta, { tokensOnly, screenshot: req.file?.buffer });
+    const themeKey = await resolveEditingKey(req.query.theme);
+    const buffer = await themeService.exportTheme(meta, { tokensOnly, screenshot: req.file?.buffer, themeKey });
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="${meta.id}-${meta.version}.xttheme"`);
     res.send(buffer);

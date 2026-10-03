@@ -31,7 +31,6 @@ export const CORE_TEMPLATE_KEYS = [
   'home',           // /
   'article.index',  // /articles
   'article.detail', // /articles/:slug
-  'page.detail',    // /p/:slug
   'profile',        // /u/:username
   'members',        // /members
   // Site chrome (Amendment 1). Not pages — rendered once by AppLayout on every
@@ -41,7 +40,7 @@ export const CORE_TEMPLATE_KEYS = [
   'chrome.footer',
 ] as const;
 
-/** One of the eight templates core itself ships. */
+/** One of the seven templates core itself ships. */
 export type CoreTemplateKey = (typeof CORE_TEMPLATE_KEYS)[number];
 
 /**
@@ -78,7 +77,6 @@ export const TEMPLATE_REGIONS = {
   'home':           ['main', 'aside'],
   'article.index':  ['main', 'aside'],
   'article.detail': ['main', 'aside'],
-  'page.detail':    ['main', 'aside'],
   'profile':        ['main', 'aside'],
   'members':        ['main', 'aside'],
   /*
@@ -143,26 +141,21 @@ export function missingRequiredBlocks(
 }
 
 // ── Variants ────────────────────────────────────────────────────────────────
-// A template describes a KIND of page. Some kinds have many instances — every
-// custom page renders through `page.detail` — and until variants they all shared
-// one arrangement. A variant is one instance's own document, resolved ahead of the
-// template default.
+// A template describes a KIND of page. Some kinds have many instances, and a
+// variant is one instance's own document, resolved ahead of the template default.
+// Resolution is exactly two steps deep, variant then default, with no cascade.
 //
-// This is the one axis deliberately added: an admin can give the About page its own
-// layout without inventing a template, so themes still never own routes. What it is
-// NOT is a template hierarchy — resolution is exactly two steps deep, variant then
-// default, with no cascade to reason about.
+// No template takes variants today: the only one that did was `page.detail`, which
+// went with the custom Pages feature (2026-10-02). The machinery stays so a later
+// template (article detail by category, profile by group) can opt in here.
 
 /**
  * Templates that accept variants, and what a variant key means for each.
  *
- * `page.detail`'s key is a page slug. Article detail could take a category or an
- * article slug later; profile could take a group. Anything absent here rejects a
- * variant outright rather than silently storing a row nothing will ever read.
+ * Article detail could take a category or an article slug later; profile could
+ * take a group. Anything absent here rejects a variant outright rather than silently storing a row nothing will ever read.
  */
-export const VARIANT_TEMPLATES = {
-  'page.detail': { keyKind: 'pageSlug' },
-} as const satisfies Partial<Record<TemplateKey, { keyKind: string }>>;
+export const VARIANT_TEMPLATES = {} as const satisfies Partial<Record<TemplateKey, { keyKind: string }>>;
 
 export type VariantTemplateKey = keyof typeof VARIANT_TEMPLATES;
 
@@ -517,6 +510,14 @@ export interface BlockNode {
    * that name in this block, in render order) → an icon token.
    */
   iconOverrides?: Record<string, string>;
+  /**
+   * Shapes drawn along the block's top and/or bottom edge — drips, peaks, a wave.
+   * Absent = none, and (same rule as `variant`) an empty value is never stored.
+   *
+   * NODE-LEVEL so a plugin's block can carry it without 50 prop schemas learning about
+   * it. The editor offers it only on blocks that paint a surface (`editorMeta.surface`).
+   */
+  edges?: BlockEdges;
 }
 
 /**
@@ -555,6 +556,9 @@ export const CORE_CONTAINER_TYPES = [
   // it replaced three regions, so what used to be region membership is now
   // parentage.
   'navbar',
+  // The masthead. A container since the composed header: the logo, and a right-hand
+  // group of account actions and search, are ITS children.
+  'header',
   // The footer band. A container for the same reason `navbar` is one: its children
   // ARE the footer's contents, and they have to sit ON the band that paints them.
   'footer',
@@ -812,6 +816,9 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
      * draw falls back to the icon the code asked for rather than to a hole.
      */
     iconOverrides: z.record(z.string().max(80), z.string().max(80)).optional(),
+
+    /** Edge art — see `edgeArtSchema`. Absent = none. */
+    edges: blockEdgesSchema.optional(),
   }),
 );
 
@@ -838,6 +845,58 @@ export const cssColorSchema = z
     /^(#[0-9a-fA-F]{3,8}|rgba?\([\d\s.,%/]+\)|hsla?\([\d\s.,%/a-z]+\)|var\(--[a-zA-Z0-9_-]+\))$/,
     'must be a hex, rgb(), hsl() or var(--token) colour',
   );
+
+// ── Edge art ────────────────────────────────────────────────────────────────
+// Decoration along a block's edge: a slant, a wave, mountain peaks, dripping paint,
+// or an image strip. Drawn by the renderer as an absolutely positioned layer that
+// never takes a click and is hidden from assistive technology.
+
+export const EDGE_SHAPES = ['slant', 'wave', 'peaks', 'drips', 'image'] as const;
+export type EdgeShape = (typeof EDGE_SHAPES)[number];
+
+/** `MM-DD`. A season recurs every year, so it has no year. */
+const monthDaySchema = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'must be MM-DD');
+
+export const EDGE_ART_LIMITS = { height: { min: 8, max: 120 } } as const;
+
+export const edgeArtSchema = z.object({
+  shape:     z.enum(EDGE_SHAPES),
+  /** `out` hangs over the neighbour; `in` sits over the block itself. */
+  direction: z.enum(['out', 'in']).default('out'),
+  /**
+   * One colour = a flat fill, two = a left-to-right gradient. `var(--c-*)` is allowed
+   * and is what a theme should use. Not used by `image`.
+   */
+  colors:    z.array(cssColorSchema).min(1).max(2).default(['var(--c-accent)']),
+  /** `image` only: an upload path, which travels in a `.xttheme` like any asset. */
+  image:     z.string().max(500).default(''),
+  fit:       z.enum(['repeat', 'stretch']).default('repeat'),
+  height:    z.number().int().min(EDGE_ART_LIMITS.height.min).max(EDGE_ART_LIMITS.height.max).default(32),
+  /** Mirror horizontally. */
+  mirror:    z.boolean().default(false),
+  /** Only in season: shown between these dates every year, hidden outside them. */
+  season:    z.object({ from: monthDaySchema, to: monthDaySchema }).optional(),
+});
+export type EdgeArt = z.infer<typeof edgeArtSchema>;
+
+export const blockEdgesSchema = z.object({
+  top:    edgeArtSchema.optional(),
+  bottom: edgeArtSchema.optional(),
+});
+export type BlockEdges = z.infer<typeof blockEdgesSchema>;
+
+/**
+ * Whether `date` falls inside a yearly season, both ends inclusive. A season may wrap
+ * the new year (`12-20` → `01-06`).
+ */
+export function inSeason(season: { from: string; to: string } | undefined, date: Date = new Date()): boolean {
+  if (!season) return true;
+  const md = `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  return season.from <= season.to
+    ? md >= season.from && md <= season.to
+    : md >= season.from || md <= season.to;
+}
+
 
 export const layoutDocumentSchema = z.object({
   // Shape, not membership: a plugin's template key is not knowable at compile time,
@@ -1088,12 +1147,6 @@ export const blockPropSchemas = {
     slotId: z.string().min(1).max(120),
   }),
 
-  // ── page.detail ─────────────────────────────────────────────────────────
-  // A custom page's own parts. Three blocks rather than one, because unlike the
-  // article index's filters/list/pagination they share no interaction state — and
-  // splitting them is what lets an admin put the title in the header region and
-  // the body beside a plugin block.
-
   // ── Whole-page blocks ───────────────────────────────────────────────────
   // One block per template for the pages adopted in bulk (2026-08-09). Each wraps
   // that page's existing component tree unchanged, so adopting the template is
@@ -1290,6 +1343,8 @@ export const blockPropSchemas = {
   profileIdentity: z.object({
     showHandle:  z.boolean().default(true).meta({ title: 'Show @handle' }),
     showJoined:  z.boolean().default(true).meta({ title: 'Show “member since”' }),
+    // The member's own Privacy choice still decides whether there is anything to show.
+    showAge:     z.boolean().default(true).meta({ title: 'Show age / birthday' }),
     showBadges:  z.boolean().default(true).meta({ title: 'Show group badges' }),
     // A former-usernames line is a moderation affordance as much as a courtesy, so
     // it is a deliberate choice rather than always-on.
@@ -1301,18 +1356,6 @@ export const blockPropSchemas = {
   profileStats:   z.object({}),
   profileTabs:    z.object({}),
   profileContent: z.object({}),
-
-  pageImage: z.object({}),
-
-  pageTitle: z.object({
-    // The level is an admin choice, since a title moved below other headings
-    // should not stay an h1. The TEXT never is: it is the page's own title, and a
-    // layout must not be able to rename a page.
-    level: z.union([z.literal(1), z.literal(2)]).default(1)
-      .meta({ title: 'Heading level' }),
-  }),
-
-  pageBody: z.object({}),
 
   // ── Site chrome (Amendment 1) ───────────────────────────────────────────
   // Every chrome block decides its OWN visibility: `userMenu` shows an avatar
@@ -1343,17 +1386,33 @@ export const blockPropSchemas = {
    * block is how a site chooses to have no band at all and run on the navbar alone —
    * the picker puts it back.
    *
-   * ⚠ Deliberately NOT a container. Everything a masthead holds in practice is the
-   * logo, and a band that accepts arbitrary blocks is a `section` — which still
-   * exists for exactly that.
+   * A CONTAINER since the composed header (2026-10-01): its `logo` child sits at the
+   * left or the centre with the site's tagline under it, and every other child — the
+   * account menu, search, the notification bell — forms the right-hand action group.
+   * A header with no `logo` child and `showLogo` on still draws the logo itself, which
+   * is how a document from before the change keeps rendering unchanged.
    */
   header: z.object({
+    /**
+     * Off hides the band. The navbar then carries the logo and the account actions
+     * itself (see the `navbar` block), so hiding the masthead never strands them.
+     */
+    showMasthead: z.boolean().default(true).meta({
+      title:       'Show the masthead',
+      description: 'Off: the band is hidden and the logo and account buttons move into the navbar.',
+    }),
+    logoAlign: z.enum(['left', 'center']).default('left').meta({ title: 'Logo' }),
+    showTagline: z.boolean().default(true).meta({
+      title:       'Show the tagline',
+      description: "The site description from Settings, under the logo.",
+    }),
+
     /**
      * A FLOOR, not a fixed height, for the same reason `section.minHeight` is one:
      * a longer wordmark, a bigger font from an accessibility setting or a translated
      * site name must push the band rather than be clipped by it.
      */
-    height: z.number().int().min(0).max(2000).default(250).meta({
+    height: z.number().int().min(0).max(2000).default(200).meta({
       title:       'Height (px)',
       description: 'The band grows if its content needs more. 0 = only as tall as the logo.',
     }),
@@ -1367,13 +1426,27 @@ export const blockPropSchemas = {
     }),
 
     /** Gradient stops, in order. Empty = no gradient; ONE colour paints a flat fill. */
-    backgroundGradient: z.array(cssColorSchema).max(3).default(['#2b1055', '#7597de']),
+    backgroundGradient: z.array(cssColorSchema).max(3).default(['#14162a', '#5865f2']),
 
     /** Gradient direction in degrees; 90 = left to right, which is how a wide band
      *  reads. Same units as `section` so the two panels behave identically. */
-    backgroundAngle: z.number().int().min(0).max(360).default(90),
+    backgroundAngle: z.number().int().min(0).max(360).default(150),
 
-    /** The logo, at the left of the band, aligned with the navbar's own. */
+    /**
+     * What paints the band: the uploaded image (over the gradient, which shows until
+     * one is chosen) or the gradient alone. Both values are kept either way, so
+     * switching back and forth loses nothing.
+     */
+    backgroundMode: z.enum(['image', 'gradient']).default('gradient'),
+
+    /**
+     * The masthead's account buttons (Log in for guests; bell, messages and the
+     * account menu for members). Off: they are drawn in the navbar instead — the
+     * account menu is the one way to sign in, so it is moved, never removed.
+     */
+    showButtons: z.boolean().default(true),
+
+    /** The BUILT-IN logo, for a header with no `logo` child — the pre-container shape. */
     showLogo: z.boolean().default(true).meta({
       title:       'Show the logo',
       description: 'At the left of the band, in line with the navbar below it.',
@@ -1384,7 +1457,25 @@ export const blockPropSchemas = {
     showWordmark: z.boolean().default(true).meta({ title: 'Show the site name too' }),
   }),
 
-  navbar: z.object({}),
+  /**
+   * The nav strip. Its CONTENTS are its children; these are how the strip itself looks.
+   *
+   * `sticky` is here and not in the site frame: the navbar is what sticks, and two
+   * switches for one behaviour is one too many.
+   */
+  navbar: z.object({
+    sticky: z.boolean().default(true).meta({
+      title:       'Sticky',
+      description: 'Stays at the top of the window while the page (and the masthead) scrolls.',
+    }),
+    /** 0 = the theme's `--nav-height`. */
+    height: z.number().int().min(0).max(120).default(0).meta({
+      title:       'Height (px)',
+      description: "0 = the theme's height. 52–84 suits most sites.",
+    }),
+    /** `theme` = the Style Editor's navbar colours; the rest are fixed looks. */
+    tone: z.enum(['theme', 'dark', 'brand', 'light']).default('theme').meta({ title: 'Colour' }),
+  }),
 
   logo: z.object({
     showWordmark: z.boolean().default(true)
@@ -1457,6 +1548,36 @@ export const blockPropSchemas = {
     showTopBorder: z.boolean().default(true).meta({ title: 'Line above the footer' }),
   }),
 
+  /**
+   * The footer's bottom row: the copyright line on one side, the footer links (ACP →
+   * Navigation, placement Footer) and the reader's theme picker on the other. The
+   * copyright text is fixed: `© {year} Powered by Xentium Community`.
+   */
+  /**
+   * The footer's bottom: the footer links on the left and the theme picker on the
+   * right, with the fixed copyright line under them.
+   */
+  footerBar: z.object({
+    showUptime: z.boolean().default(false).meta({ title: 'Show uptime and latency' }),
+    showThemeChooser: z.boolean().default(true).meta({
+      title:       'Show the theme picker',
+      description: 'Lets a reader choose between installed themes, for themselves only.',
+    }),
+  }),
+
+  /** ⚠ Superseded by `footerBar`; kept so stored documents still render. */
+  footerLinks: z.object({
+    showThemeChooser: z.boolean().default(true).meta({
+      title:       'Show the theme picker',
+      description: 'Lets a reader choose between installed themes, for themselves only.',
+    }),
+  }),
+
+  /** ⚠ Superseded by `footerBar`; kept so stored documents still render. */
+  footerText: z.object({
+    showUptime: z.boolean().default(false).meta({ title: 'Show uptime and latency' }),
+  }),
+
   whosOnline: z.object({
     maxNames: z.number().int().min(0).max(100).default(20)
       .meta({ title: 'Names to list', description: '0 shows the count only.' }),
@@ -1465,6 +1586,7 @@ export const blockPropSchemas = {
   groupLegend: z.object({}),
   boardStats: z.object({}),
 
+  /** ⚠ Superseded by `footerBar`; kept so stored documents still render. */
   branding: z.object({
     showUptime: z.boolean().default(true).meta({ title: 'Show uptime and latency' }),
     /**
@@ -1482,6 +1604,9 @@ export const blockPropSchemas = {
       title:       'Show the theme picker',
       description: 'Lets a reader choose between installed themes, for themselves only.',
     }),
+    linksAlign: z.enum(['left', 'center', 'right']).default('left').meta({ title: 'Footer links' }),
+    textAlign:  z.enum(['left', 'center', 'right']).default('center').meta({ title: 'Footer text' }),
+    order:      z.enum(['links', 'text']).default('links').meta({ title: 'First row' }),
   }),
 } as const;
 
@@ -1575,20 +1700,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
       aside: [],
     },
   },
-  // Reproduces PageReaderPage's previous hardcoded markup exactly — image, then
-  // title, then body — so adopting the template moves nothing until an admin moves
-  // it, and "Reset to default" restores precisely what shipped.
-  'page.detail': {
-    templateKey: 'page.detail', schemaVersion: LAYOUT_SCHEMA_VERSION,
-    regions: {
-      main:   [
-        node('p-image', 'pageImage'),
-        node('p-title', 'pageTitle', { level: 1 }),
-        node('p-body',  'pageBody'),
-      ],
-      aside:  [],
-    },
-  },
   // The profile card, composed the way an admin could have composed it — the
   // avatar in an `auto` track beside a flexible one holding identity, actions, bio
   // and stats. Reproduces the previous arrangement, and every piece is now movable.
@@ -1609,7 +1720,7 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
             ] },
             { ...node('pr-idcol', 'column', { width: '1' }), children: [
               node('pr-id', 'profileIdentity', {
-                showHandle: true, showJoined: true, showBadges: true, showFormerly: true,
+                showHandle: true, showJoined: true, showAge: true, showBadges: true, showFormerly: true,
               }),
             ] },
             { ...node('pr-actcol', 'column', { width: 'auto' }), children: [
@@ -1689,28 +1800,27 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     templateKey: 'chrome.header', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       header: [
-        // The band first, the navbar under it — the arrangement most sites start
-        // from, and one drag from the other one.
-        node('h-band', 'header', {
-          height: 250, showLogo: true, showWordmark: true,
-          backgroundGradient: ['#2b1055', '#7597de'], backgroundAngle: 90,
-        }),
+        // The composed header: a masthead holding the logo and the action group (search,
+        // the bell, messages, the account menu), with the navbar below it.
+        { ...node('h-band', 'header', {
+          height: 200, showLogo: false, showWordmark: true, showTagline: true,
+          backgroundGradient: ['#14162a', '#5865f2'], backgroundAngle: 150,
+        }), children: [
+          node('h-band-logo', 'logo', { showWordmark: true }),
+          node('h-notif', 'notifications'),
+          node('h-widgets', 'headerWidgets'),
+          node('h-admin', 'adminLink'),
+          node('h-user', 'userMenu'),
+          node('h-search', 'search', { expanded: false }),
+        ] },
         { ...node('h-navbar', 'navbar'), children: [
-          node('h-logo', 'logo', { showWordmark: true }),
           node('h-nav', 'navLinks'),
-          { ...node('h-search', 'search', { expanded: false }), align: 'right' as const },
-          { ...node('h-widgets', 'headerWidgets'), align: 'right' as const },
-          { ...node('h-notif',   'notifications'), align: 'right' as const },
-          { ...node('h-admin',   'adminLink'),     align: 'right' as const },
-          { ...node('h-user',    'userMenu'),      align: 'right' as const },
         ] },
       ],
     },
   },
-  // The site footer: ONE band block holding the four pieces, mirroring the header's
-  // `[band, navbar]`. Deleting the band means "no footer chrome" and the pieces can
-  // be dragged out of it to say exactly that; the shipped arrangement is what the
-  // hardcoded `.xt-foot` wrapper rendered before it was a block.
+  // The site footer: ONE band block holding its pieces. Links and text are separate
+  // blocks; where they sit and which comes first are the FOOTER's settings.
   'chrome.footer': {
     templateKey: 'chrome.footer', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
@@ -1719,7 +1829,7 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
           node('f-online', 'whosOnline', { maxNames: 20 }),
           node('f-legend', 'groupLegend'),
           node('f-stats',  'boardStats'),
-          node('f-brand',  'branding', { showUptime: true }),
+          node('f-bar',    'footerBar'),
         ] },
       ],
     },
@@ -1880,6 +1990,10 @@ export function collectAssetRefs(doc: { regions: Record<string, BlockNode[]> }):
         const value = node.props[prop];
         if (isPortableAssetRef(value)) out.add(value);
       }
+      // Edge art is node-level, so no prop schema flags its image.
+      for (const edge of [node.edges?.top, node.edges?.bottom]) {
+        if (edge && isPortableAssetRef(edge.image)) out.add(edge.image);
+      }
       if (node.children?.length) visit(node.children);
     }
   };
@@ -1899,6 +2013,11 @@ export function rewriteAssetRefs(
         if (!isPortableAssetRef(value)) continue;
         const next = map(value);
         if (next !== undefined) node.props[prop] = next;
+      }
+      for (const edge of [node.edges?.top, node.edges?.bottom]) {
+        if (!edge || !isPortableAssetRef(edge.image)) continue;
+        const next = map(edge.image);
+        if (next !== undefined) edge.image = next;
       }
       if (node.children?.length) visit(node.children);
     }

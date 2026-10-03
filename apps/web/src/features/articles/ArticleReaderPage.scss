@@ -312,6 +312,7 @@
     background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
+    clip-path: var(--clip-card);
     padding: 24px;
     margin-top: 32px;
   }
@@ -357,6 +358,7 @@
     background: var(--card-bg);
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
+    clip-path: var(--clip-card);
     padding: 18px;
     font-size: var(--fs-md);
     color: var(--c-fg-subtle);

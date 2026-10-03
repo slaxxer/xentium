@@ -92,8 +92,6 @@
     "title": "Temas",
     "close": "Fechar",
     "inUse": "Em uso",
-    "siteBadge": "Site",
-    "note": "A tua escolha, neste dispositivo. Não muda nada para os outros.",
     "activeBadge": "Ativo"
   },
   "badges": {
@@ -181,5 +179,41 @@
     "hintDrop": "larga ficheiros em qualquer lugar",
     "words_one": "1 palavra",
     "words_other": "{{count}} palavras"
+  },
+  "footer": {
+    "whosOnline": "Quem está online",
+    "onlineSentence": "Neste momento há {{count}} membros online, com base na atividade dos últimos minutos.",
+    "andMore": "+{{count}} mais",
+    "legend": "Legenda",
+    "totalArticles": "Artigos",
+    "members": "Membros",
+    "onlineNow": "Online agora",
+    "newestMember": "Membro mais recente",
+    "uptime": "Tempo ativo",
+    "uptimeHint": "Tempo que o servidor está a funcionar desde o último reinício",
+    "latency": "Latência",
+    "latencyHint": "Tempo de ida e volta até ao servidor",
+    "stat": {
+      "threads": "Tópicos",
+      "posts": "Mensagens"
+    },
+    "poweredBy": "© {{year}} Com tecnologia <b>Xentium</b> Community",
+    "linksLabel": "Ligações do rodapé"
+  },
+  "legal": {
+    "title": {
+      "imprint": "Informações legais",
+      "privacy": "Política de privacidade",
+      "terms": "Termos de serviço",
+      "disclaimer": "Isenção de responsabilidade"
+    },
+    "link": {
+      "imprint": "Informações legais",
+      "privacy": "Privacidade",
+      "terms": "Termos",
+      "disclaimer": "Isenção"
+    },
+    "lastUpdated": "Última atualização: {{date}}",
+    "edit": "Editar"
   }
 }

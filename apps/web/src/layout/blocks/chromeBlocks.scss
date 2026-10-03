@@ -8,9 +8,35 @@
    clipped by it. The background is composed by `sectionBackground()` (image over
    gradient), the same helper `section` uses, so both panels behave identically. */
 .xt-header {
+  /* The masthead's own colours, overridable by a theme. White on the darkened band,
+     as the composed-header design draws it. */
+  --xt-header-fg:            #ffffff;
+  --xt-header-fg-muted:      rgba(255, 255, 255, 0.82);
+  --xt-header-actions-bg:    rgba(20, 22, 42, 0.78);
+  --xt-header-actions-fg:    #e9ebff;
+  --xt-header-actions-line:  rgba(255, 255, 255, 0.13);
+  --xt-header-shade:         linear-gradient(180deg, rgba(20, 22, 42, 0.10) 0%, rgba(20, 22, 42, 0.55) 100%);
+
+  position: relative;
+  /* Above the sticky navbar (100) and the page. The action pill's backdrop blur makes
+     it a stacking context of its own, which traps the account, notification and
+     messages dropdowns inside it — so the BAND has to be the layer that wins, or the
+     menus open behind the navbar and the content below. */
+  z-index: 110;
   width: 100%;
   display: flex;
   align-items: center;
+  color: var(--xt-header-fg);
+
+  /* The shade that keeps white text readable on any picture. */
+  &--bg::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--xt-header-shade);
+    pointer-events: none;
+  }
+  > :not(.xt-edge) { position: relative; }
 
   &--bg {
     background-size: cover;
@@ -35,7 +61,197 @@
      `logo` markup renders at 32px in the navbar. */
   .pub-nav__logo { --xt-logo-h: 56px; }
 
-  .pub-nav__wordmark { font-size: var(--fs-2xl); }
+  .xt-header__brand .pub-nav__wordmark {
+    font-size: var(--fs-3xl);
+    color: var(--xt-header-fg);
+  }
+
+  /* ── the composed header: brand at the left (or centre), action group at the right */
+  &__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--sp-6);
+  }
+
+  &--center &__inner { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--sp-1);
+    min-width: 0;
+  }
+
+  &--center &__brand {
+    grid-column: 2;
+    align-items: center;
+    text-align: center;
+  }
+
+  &__tagline {
+    margin: 6px 0 0;
+    font-size: var(--fs-md);
+    font-weight: 600;
+    color: var(--xt-header-fg-muted);
+  }
+
+  /* The right-hand group: Log in (guests), the bell, messages, the account menu,
+     search. One dark pill with hairlines between the items, legible on any picture. */
+  &__actions {
+    grid-column: -2;
+    justify-self: end;
+    display: flex;
+    align-items: stretch;
+    border-radius: var(--radius-md);
+    overflow: visible;
+    background: var(--xt-header-actions-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    color: var(--xt-header-actions-fg);
+    --nav-fg: var(--xt-header-actions-fg);
+    --nav-fg-muted: var(--xt-header-actions-fg);
+    --nav-icon-btn-bg: transparent;
+    --nav-icon-btn-hover-bg: rgba(255, 255, 255, 0.08);
+
+    /* Each item, through its block wrapper, with a hairline before all but the first. */
+    > .xt-block > * {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: var(--fs-sm);
+      font-weight: 700;
+    }
+    > .xt-block ~ .xt-block > * { border-left: 1px solid var(--xt-header-actions-line); }
+
+    /* What the pieces paint with, redefined for the pill: the bell and plugin icons
+       use the field tokens inline, and the account menu and search use the muted
+       foreground. Redefining the tokens reaches all of them without touching each. */
+    --input-bg:           transparent;
+    --input-border-color: transparent;
+    --input-fg:           var(--xt-header-actions-fg);
+    --c-fg-muted:         var(--xt-header-actions-fg);
+    --c-fg:               var(--xt-header-actions-fg);
+
+    /* Every item fills the pill's height and centres its glyph, whatever fixed
+       size it has in the navbar. */
+    .pub-nav__icon-btn,
+    .pub-nav__icon-btn--acp,
+    .nav-search {
+      height: auto;
+      align-self: stretch;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    /* Search is an icon in the pill and opens into a field when focused. The input
+       stays focusable while collapsed — it covers the icon, invisibly — so a click
+       anywhere on it starts typing. */
+    .nav-search {
+      position: relative;
+      width: 34px;
+      padding: 0 10px;
+      cursor: pointer;
+    }
+    .nav-search:not(:focus-within) .nav-search__input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .nav-search:focus-within { width: 220px; }
+    .nav-search__hint { display: none; }
+
+    /* A guest's Log in (and Register) are plain items in the pill, not filled
+       buttons; the hairline separates them like any other item. */
+    .pub-nav__login-btn,
+    .pub-nav__register-btn {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 14px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      font-size: var(--fs-sm);
+      font-weight: 700;
+    }
+    .pub-nav__register-btn + .pub-nav__login-btn { border-left: 1px solid var(--xt-header-actions-line); }
+
+    /* The account item names you, as the design draws it. */
+    .pub-nav__avatar-name { font-size: var(--fs-sm); font-weight: 700; }
+    .pub-nav__avatar-btn { gap: 9px; }
+  }
+
+  /* Editor only: a hidden masthead keeps a clickable marker. */
+  &--hidden {
+    min-height: 0;
+    justify-content: center;
+    padding: 6px;
+    border-bottom: 1px dashed var(--c-border-hi);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+  }
+
+  @media (max-width: 640px) {
+    &__inner,
+    &--center &__inner { grid-template-columns: 1fr; }
+    &--center &__brand { grid-column: 1; }
+    &__actions { grid-column: 1; justify-self: stretch; justify-content: flex-end; }
+  }
+}
+
+/* ── the navbar's own settings ─────────────────────────────────────────────── */
+.pub-nav.pub-nav--static { position: relative; }
+
+/* What the masthead held, carried into the strip while it is hidden. Pushed to the
+   end unless something right-aligned already took the slack. */
+.pub-nav__carried {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-inline-start: auto;
+}
+.pub-nav__inner:has(> [data-xt-align="right"]) > .pub-nav__carried { margin-inline-start: 0; }
+.pub-nav__carried-item { display: contents; }
+
+/* Fixed looks. `theme` (no class) is the Style Editor's navbar. Declared as the same
+   custom properties the strip already reads, so a theme can retune any of them. */
+.pub-nav--tone-dark {
+  --nav-bg:               #14162a;
+  --nav-fg:               #ffffff;
+  --nav-fg-muted:         #9da2c4;
+  --nav-border-color:     rgba(255, 255, 255, 0.08);
+  --nav-active:           #7c84ff;
+  --nav-active-bg:        rgba(124, 132, 255, 0.15);
+  --nav-icon-btn-bg:      rgba(255, 255, 255, 0.045);
+  --nav-icon-btn-hover-bg: rgba(124, 132, 255, 0.15);
+  --c-fg:                 #ffffff;
+}
+.pub-nav--tone-brand {
+  --nav-bg:               var(--c-accent);
+  --nav-fg:               var(--c-on-accent);
+  --nav-fg-muted:         color-mix(in srgb, var(--c-on-accent) 82%, transparent);
+  --nav-border-color:     transparent;
+  --nav-active:           var(--c-on-accent);
+  --nav-active-bg:        color-mix(in srgb, var(--c-on-accent) 20%, transparent);
+  --nav-icon-btn-bg:      color-mix(in srgb, var(--c-on-accent) 14%, transparent);
+  --nav-icon-btn-hover-bg: color-mix(in srgb, var(--c-on-accent) 24%, transparent);
+  --c-fg:                 var(--c-on-accent);
+}
+.pub-nav--tone-light {
+  --nav-bg:               #ffffff;
+  --nav-fg:               #1a1c2e;
+  --nav-fg-muted:         #5b5e74;
+  --nav-border-color:     #e6e7f1;
+  --nav-active:           #5865f2;
+  --nav-active-bg:        #e7e9fd;
+  --nav-icon-btn-bg:      #f3f4fb;
+  --nav-icon-btn-hover-bg: #e7e9fd;
+  --c-fg:                 #1a1c2e;
 }
 
 /* ── the footer band ───────────────────────────────────────────────────────
@@ -76,3 +292,7 @@
      the hairline as well — and one drawn over a dark gradient reads as a seam. */
   &--noline { border-top: 0; }
 }
+
+/* Outside the masthead's action group, the account button is the avatar alone. */
+.pub-nav__avatar-name { display: none; }
+.xt-header__actions .pub-nav__avatar-name { display: inline; }

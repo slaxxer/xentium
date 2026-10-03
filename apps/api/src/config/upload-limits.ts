@@ -27,6 +27,12 @@ export const UPLOAD_LIMITS = {
     maxBytes: 512 * KB,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
   },
+  // A rank banner shown in place of a group's text badge (typically ~160×31).
+  // GIF allowed: animated rank images are a forum staple.
+  RANK_IMAGE: {
+    maxBytes: 512 * KB,
+    allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp"],
+  },
   // A member's own profile cover. 2 MB is what the design tells them on the
   // dropzone, and the number a member reads must be the number the server enforces.
   // GIF is allowed HERE so that "animated covers" can be granted per rank through

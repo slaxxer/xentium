@@ -1,358 +1,157 @@
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { FontAwesomeIcon } from "../../components/Icon";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
-import {
-  faShield, faXmark, faFlag, faClipboardList, faGear,
-  faMoon, faSun, faMagnifyingGlass, faCheckDouble, faUser, faFolderOpen,
-} from "@fortawesome/free-solid-svg-icons";
-import { api } from "../../lib/api";
-import { timeAgo } from "../../lib/time";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "../../components/Icon";
 import { useAuth } from "../../hooks/useAuth";
-import { useTheme } from "../../hooks/useTheme";
-import "./ModCanvas.scss";
 import { slotRegistry } from "../../plugins/slotRegistry";
-import { UsersSection } from "./UsersSection";
-import { CasesSection } from "./CasesSection";
-import { ReportsInspector } from "./ReportsInspector";
+import { isModerator, useModQueues, useOpenCases, useReportGroups } from "./modData";
+import { QueuePill } from "./QueuePill";
+import { modStore, useModStore } from "./modSession";
+import { ReportPill } from "./ReportPill";
+import { CasePill } from "./CasePill";
+import "./ModCanvas.scss";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface Summary  { pendingReports: number; openCases: number; activeWarnings: number; activeBans: number }
-interface LogEntry {
-  id: string; actorId: string | null; actorType: string; action: string;
-  targetType: string | null; targetId: string | null; reason: string | null; createdAt: string;
-  actorUsername: string | null; targetUsername: string | null; targetDetail: string | null;
-}
-interface Paged<T> { data: T[]; meta: { total: number } }
-
-type Section = "reports" | "cases" | "users" | "log" | string;
-
-const MOD_KEYS = new Set(["admin", "supermod", "moderator"]);
-
-const ACTION_LABELS: Record<string, string> = {
-  "ban.issued":                    "Issued ban",
-  "ban.lifted":                    "Lifted ban",
-  "ban.expired":                   "Ban expired",
-  "ban.auto_issued":               "Auto-ban (threshold)",
-  "case.ban_all":                  "Banned all (case)",
-  "warning.issued":                "Issued warning",
-  "warning.pardoned":              "Pardoned warning",
-  "warning.expired":               "Warning expired",
-  "report.resolved":               "Resolved report",
-  "report.dismissed":              "Dismissed report",
-  "report.reviewed":               "Reviewed report",
-  "report.updated":                "Updated report",
-  "report.reopened":               "Reopened report",
-  "report.claimed":                "Claimed report",
-  "report.unclaimed":              "Released report",
-  "article.deleted":               "Removed article",
-  "case.assigned":                 "Assigned case",
-  "case.unassigned":               "Unassigned case",
-  "comment.deleted":               "Deleted comment",
-  "profile_comment.deleted":       "Deleted profile comment",
-  "session.revoke_all":            "Logged out all sessions",
-  "security.exception_granted":    "Exception granted",
-  "security.exception_active":     "Exception matched",
-  "security.signals_whitelisted":  "Whitelisted signals",
-  "security.reviewed_signal_matched": "Reviewed signal matched",
-};
-function humanizeAction(a: string) {
-  return ACTION_LABELS[a] ?? a.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
-// ── Shared pieces ───────────────────────────────────────────────────────────────
-
-/** Consistent "nothing to do here" state for every ModCanvas tab — a calm
- *  double-check icon over the message. */
-function EmptyState({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mc-empty">
-      <FontAwesomeIcon icon={faCheckDouble} className="mc-empty__ic" />
-      <span>{children}</span>
-    </div>
-  );
-}
-
-function SectionHead({ title, sub, right }: { title: string; sub?: string; right?: React.ReactNode }) {
-  return (
-    <div className="mc-sechead">
-      <div>
-        <h3>{title}</h3>
-        {sub && <span>{sub}</span>}
-      </div>
-      {right}
-    </div>
-  );
-}
-
-function ActorAvatar({ entry, size }: { entry: LogEntry; size: "sm" | "md" }) {
-  const cls = size === "sm" ? "mc-log__ava" : "mc-act__ava";
-  return (
-    <div className={`${cls}${entry.actorType === "system" ? " is-system" : ""}`}>
-      <FontAwesomeIcon icon={entry.actorType === "system" ? faGear : faShield} />
-    </div>
-  );
-}
-
-function ActorName({ entry }: { entry: LogEntry }) {
-  return <b>{entry.actorType === "system" ? "SYSTEM" : (entry.actorUsername ?? entry.actorId?.slice(0, 10) ?? "mod")}</b>;
-}
-
-// ── Audit log ───────────────────────────────────────────────────────────────────
-
-function LogSection() {
-  const [filter, setFilter] = useState("");
-  const { data, isLoading } = useQuery<Paged<LogEntry>>({
-    queryKey: ["canvas-log"],
-    queryFn:  () => api.get("/moderation/log?limit=20"),
-  });
-
-  const rows = (data?.data ?? []).filter((e) => {
-    if (!filter.trim()) return true;
-    const hay = `${e.actorUsername ?? ""} ${humanizeAction(e.action)} ${e.targetUsername ?? ""} ${e.targetDetail ?? ""}`.toLowerCase();
-    return hay.includes(filter.toLowerCase());
-  });
-
-  return (
-    <div className="mc-pane">
-      <SectionHead
-        title="Audit log"
-        sub="Every moderator action, newest first"
-        right={(
-          <div className="mc-inp" style={{ display:"flex",alignItems:"center",gap:8,width:180,marginBottom:0,padding:"7px 12px" }}>
-            <FontAwesomeIcon icon={faMagnifyingGlass} style={{ color:"var(--c-fg-subtle)",fontSize:"var(--fs-xs)" }} />
-            <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filter log…"
-              style={{ border:"none",background:"none",outline:"none",font:"inherit",color:"var(--c-fg)",width:"100%" }} />
-          </div>
-        )}
-      />
-
-      {isLoading ? (
-        <div className="mc-empty">Loading…</div>
-      ) : !rows.length ? (
-        <EmptyState>No log entries.</EmptyState>
-      ) : (
-        <div className="mc-log">
-          {rows.map((e) => (
-            <div key={e.id} className="mc-log__row">
-              <ActorAvatar entry={e} size="sm" />
-              <p>
-                <ActorName entry={e} /> {humanizeAction(e.action)}
-                {e.targetUsername && <> <em>{e.targetUsername}</em></>}
-                {e.targetDetail && <span className="mc-log__detail"> · {e.targetDetail}</span>}
-              </p>
-              <span className="mc-log__time">{timeAgo(e.createdAt)}</span>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── Main ModCanvas ──────────────────────────────────────────────────────────────
+/** How long to wait for a reported item to appear on its page before giving up. */
+const FIND_MS = 8000;
 
 /**
- * The moderation console: a slide-over from the right, one tab strip in the header.
+ * ModCanvas v1 — moderation where the content is.
  *
- * Reports are a split inspector (list | detail + action composer) and every action
- * starts from a premade text. The texts are READ here; admins write them in
- * ACP → Moderation → Templates. The centred modal with a nav rail and a
- * dashboard it replaced is gone; its counts live on the tabs.
+ * The shield in the navbar (`ModShield`) lists what waits; picking an item starts a
+ * SESSION here: the page it belongs to opens, the reported item is scrolled to and
+ * marked, and an action pill sits at the bottom of the screen. The old slide-over
+ * console is gone; user tools, the audit log and the case list live in the ACP.
+ *
+ * Pages opt their content in with `data-mod-target="<targetType>:<targetId>"` — the
+ * same pair a report carries — so a plugin marks its own content the same way.
  */
 export function ModCanvas() {
   const { user } = useAuth();
+  const isMod = isModerator(user?.groups);
+  const { session, pluginSection } = useModStore();
   const location = useLocation();
   const navigate = useNavigate();
-  const { theme, toggle: toggleTheme } = useTheme();
 
-  const isMod = user?.groups.some((g) => MOD_KEYS.has(g.key)) ?? false;
+  const reports = useReportGroups(isMod && session?.kind === "report");
+  const cases = useOpenCases(isMod && session?.kind === "case");
+  const queues = useModQueues(isMod);
 
-  const [open,    setOpen]    = useState(false);
-  const [section, setSection] = useState<Section>("reports");
-  /** Set when the inspector opens a member's profile, so Users lands on them. */
-  const [usersFor, setUsersFor] = useState<string | null>(null);
+  const group = session?.kind === "report" ? reports.data?.find((g) => g.key === session.keys[session.index]) ?? null : null;
+  const kase = session?.kind === "case" ? cases.data?.find((c) => c.id === session.ids[session.index]) ?? null : null;
+  const queue = session?.kind === "queue" ? queues.find((q) => q.queue.id === session.queueId) ?? null : null;
+  const qitem = session?.kind === "queue" ? queue?.items.find((i) => i.id === session.ids[session.index]) ?? null : null;
+  const loaded = session?.kind === "report" ? !!reports.data
+    : session?.kind === "case" ? !!cases.data
+    : session?.kind === "queue" ? !!queue && !queue.loading : false;
+  const currentKey = session ? (session.kind === "report" ? session.keys[session.index] : session.ids[session.index]) : null;
+  const current = group ?? kase ?? qitem;
 
-  // ── Draggable trigger ──────────────────────────────────────────────────────
-  const BTN = 58; // button diameter px
-  const [pos, setPos] = useState({ x: 0, y: 0 });  // set on mount
-  const posRef   = useRef({ x: 0, y: 0 });
-  const dragging = useRef(false);
-  const hasMoved = useRef(false);
-  const dragOff  = useRef({ x: 0, y: 0 });
-
-  // Initialise to bottom-right after first paint
+  // `?modcanvas=…` opens the shield — how the ACP dashboard's "Review" sends a
+  // moderator here. Removed again so a reload or a shared link does not reopen it.
   useEffect(() => {
-    const x = window.innerWidth  - BTN / 2 - 26;
-    const y = window.innerHeight - BTN / 2 - 26;
-    posRef.current = { x, y };
-    setPos({ x, y });
-  }, []);
+    const params = new URLSearchParams(location.search);
+    if (!params.has("modcanvas") || !isMod) return;
+    modStore.setMenu(true);
+    params.delete("modcanvas");
+    const qs = params.toString();
+    navigate({ pathname: location.pathname, search: qs ? `?${qs}` : "", hash: location.hash }, { replace: true });
+  }, [location.search, location.pathname, location.hash, isMod, navigate]);
 
+  // Shift+M opens and closes the shield, as it did the old panel.
   useEffect(() => {
-    const onMove = (e: MouseEvent | TouchEvent) => {
-      if (!dragging.current) return;
-      const src = "touches" in e ? e.touches[0] : e;
-      const clientX = src!.clientX;
-      const clientY = src!.clientY;
-      const hw = BTN / 2;
-      const nx = Math.max(hw, Math.min(window.innerWidth  - hw, clientX - dragOff.current.x));
-      const ny = Math.max(hw, Math.min(window.innerHeight - hw, clientY - dragOff.current.y));
-      const dx = nx - posRef.current.x;
-      const dy = ny - posRef.current.y;
-      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) hasMoved.current = true;
-      posRef.current = { x: nx, y: ny };
-      setPos({ x: nx, y: ny });
+    if (!isMod) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target;
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || (t instanceof HTMLElement && t.isContentEditable)) return;
+      if (e.shiftKey && e.key === "M") modStore.setMenu(!modStore.get().menuOpen);
     };
-    const onUp = () => { dragging.current = false; };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup",   onUp);
-    window.addEventListener("touchmove", onMove, { passive: true });
-    window.addEventListener("touchend",  onUp);
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup",   onUp);
-      window.removeEventListener("touchmove", onMove as EventListener);
-      window.removeEventListener("touchend",  onUp);
-    };
-  }, []);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isMod]);
 
-  const onTriggerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    const clientX = "touches" in e ? e.touches[0]?.clientX ?? 0 : e.clientX;
-    const clientY = "touches" in e ? e.touches[0]?.clientY ?? 0 : e.clientY;
-    dragging.current = true;
-    hasMoved.current = false;
-    dragOff.current  = { x: clientX - posRef.current.x, y: clientY - posRef.current.y };
-  };
-
-  const onTriggerUp = () => {
-    if (!hasMoved.current) setOpen((v) => !v);
-  };
-
-  // ── Keyboard shortcut ──────────────────────────────────────────────────────
+  // Something another moderator already handled drops out: step past it.
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && open) { setOpen(false); return; }
-      if (e.shiftKey && e.key === "M" &&
-          !(e.target instanceof HTMLInputElement) &&
-          !(e.target instanceof HTMLTextAreaElement)) {
-        setOpen((v) => !v);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [open]);
+    if (session && loaded && !current) modStore.go(session.index + 1);
+  }, [session, loaded, current]);
 
-  // ── Context user ───────────────────────────────────────────────────────────
-  const profileMatch = location.pathname.match(/^\/u\/([^/]+)/);
-  const contextUsername = profileMatch?.[1] ?? "";
-
-  const { data: summary, refetch: refetchSummary } = useQuery<Summary>({
-    queryKey: ["mod-summary"],
-    queryFn:  () => api.get("/moderation/summary"),
-    refetchInterval: open ? 30000 : false,
-    enabled: isMod,
-  });
-  useEffect(() => { if (open) refetchSummary(); }, [open, refetchSummary]);
-
-  const pluginSections = slotRegistry.getModCanvasSections();
-  const [pluginBadgeCounts, setPluginBadgeCounts] = useState<Record<string, number>>({});
-
-  // Refresh plugin badge counts whenever the canvas opens
+  // Each item opens its own page — once per item, so a case's account chips can then
+  // move between the linked profiles without being pulled back.
+  const navigatedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (!isMod || !open) return;
-    pluginSections.forEach((s) => {
-      if (s.badgeCountFn) {
-        s.badgeCountFn().then((n) => setPluginBadgeCounts((prev) => ({ ...prev, [s.id]: n })));
-      }
-    });
-  }, [isMod, open]);
+    if (!currentKey || navigatedFor.current === currentKey) return;
+    const target = group?.href ?? qitem?.href
+      ?? (kase?.linkedUsers[0] ? `/u/${encodeURIComponent(kase.linkedUsers[0].username)}` : null);
+    if (!current) return;
+    navigatedFor.current = currentKey;
+    // A link may carry a query (`?page=3` on a forum thread): compare the whole of it.
+    if (target && target !== location.pathname + location.search) navigate(target);
+  }, [currentKey, current, group, kase, qitem, location.pathname, location.search, navigate]);
+  useEffect(() => { if (!session) navigatedFor.current = null; }, [session]);
 
-  const pluginBadgeTotal = Object.values(pluginBadgeCounts).reduce((a, b) => a + b, 0);
-  const badge = (summary?.pendingReports ?? 0) + (summary?.openCases ?? 0) + pluginBadgeTotal;
+  // Mark the reported item: scroll to it once and outline it until the session moves on.
+  const markKey = group ? `${group.targetType}:${group.targetId}` : qitem?.markKey ?? null;
+  const markLabel = group ? `Reported ×${group.reports.length}` : queue ? queue.queue.label : "";
+  useEffect(() => {
+    if (!markKey) return;
+    let el: HTMLElement | null = null;
+    const apply = () => {
+      const found = document.querySelector<HTMLElement>(`[data-mod-target="${CSS.escape(markKey)}"]`);
+      if (!found) return false;
+      el = found;
+      el.setAttribute("data-mc-reported", markLabel);
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      return true;
+    };
+    if (apply()) return () => el?.removeAttribute("data-mc-reported");
+    // Not rendered yet (the page is still loading): watch for it, for a while.
+    const obs = new MutationObserver(() => { if (apply()) obs.disconnect(); });
+    obs.observe(document.body, { childList: true, subtree: true });
+    const stop = setTimeout(() => obs.disconnect(), FIND_MS);
+    return () => { obs.disconnect(); clearTimeout(stop); el?.removeAttribute("data-mc-reported"); };
+  }, [markKey, markLabel, location.pathname]);
 
-  // Header tabs. Counts are always red badges; plugin sections sit before the log.
-  const TABS: { id: string; label: string; icon: IconProp; count?: number }[] = [
-    { id:"reports",   label:"Reports",   icon:faFlag,       count: summary?.pendingReports },
-    { id:"cases",     label:"Cases",     icon:faFolderOpen, count: summary?.openCases      },
-    { id:"users",     label:"Users",     icon:faUser                                       },
-    ...pluginSections.map((s) => ({ id: s.id, label: s.label, icon: s.icon as IconProp, count: pluginBadgeCounts[s.id] })),
-    { id:"log",       label:"Audit log", icon:faClipboardList                                },
-  ];
+  // Room at the bottom of the page, so the pill never covers the last thing on it.
+  const pillShown = !!current;
+  useEffect(() => {
+    document.body.classList.toggle("has-modpill", pillShown);
+    return () => document.body.classList.remove("has-modpill");
+  }, [pillShown]);
 
   if (!isMod) return null;
 
-  const openUser = (username: string) => { setUsersFor(username); setSection("users"); };
-  /**
-   * The texts are managed in the ACP (Moderation → Templates), by admins; ModCanvas only
-   * reads them. The link is offered to those who can open the ACP at all.
-   */
-  const canManageTemplates = user?.groups.some((g) => g.key === "admin") ?? false;
-  const manageTemplates = canManageTemplates
-    ? (id: string | null) => { setOpen(false); navigate(`/admin/mod-templates${id ? `?id=${encodeURIComponent(id)}` : ""}`); }
-    : null;
-  const split = section === "reports";
+  const plugin = pluginSection ? slotRegistry.getModCanvasSections().find((s) => s.id === pluginSection) : null;
+  const contextUsername = decodeURIComponent(location.pathname.match(/^\/u\/([^/]+)/)?.[1] ?? "");
 
   return (
     <>
-      <div className={`mc-scrim${open ? " is-open" : ""}`} onMouseDown={() => setOpen(false)} aria-hidden={!open} />
-      <aside className={`mc-panel${open ? " is-open" : ""}`} role="dialog" aria-modal="true" aria-label="ModCanvas moderation tools" aria-hidden={!open}>
-        {open && (
-          <>
-            <header className="mc-head">
-              <div className="mc-head__left">
-                <span className="mc-brand__mark" title={contextUsername ? `ModCanvas · ${contextUsername}` : "ModCanvas"}>
-                  <FontAwesomeIcon icon={faShield} />
-                </span>
-                <nav className="mc-tabs" aria-label="ModCanvas sections">
-                  {TABS.map((t) => (
-                    <button key={t.id} type="button" className={`mc-tab${section === t.id ? " is-on" : ""}`}
-                      onClick={() => { if (t.id === "users") setUsersFor(null); setSection(t.id); }}>
-                      <FontAwesomeIcon icon={t.icon} />
-                      <span>{t.label}</span>
-                      {(t.count ?? 0) > 0 && <em className="mc-tab__n">{t.count! > 99 ? "99+" : t.count}</em>}
-                    </button>
-                  ))}
-                </nav>
-              </div>
-              <div className="mc-head__right">
-                <button type="button" className="mc-iconbtn" onClick={toggleTheme} title="Toggle theme">
-                  <FontAwesomeIcon icon={theme === "dark" ? faSun : faMoon} />
-                </button>
-                <button type="button" className="mc-iconbtn" onClick={() => setOpen(false)} title="Close (Esc)">
-                  <FontAwesomeIcon icon={faXmark} />
-                </button>
-              </div>
+      {session?.kind === "report" && group && (
+        <div className="mcp-dock"><ReportPill key={group.key} group={group} position={session.index} total={session.keys.length} /></div>
+      )}
+      {session?.kind === "case" && kase && (
+        <div className="mcp-dock"><CasePill key={kase.id} c={kase} position={session.index} total={session.ids.length} /></div>
+      )}
+
+      {session?.kind === "queue" && queue && qitem && (
+        <div className="mcp-dock"><QueuePill key={qitem.id} queue={queue.queue} item={qitem} position={session.index} total={session.ids.length} /></div>
+      )}
+
+      {plugin && (
+        <div className="mcd-scrim" onMouseDown={() => modStore.openPlugin(null)}>
+          <div className="mcd" role="dialog" aria-modal="true" aria-label={plugin.label} onMouseDown={(e) => e.stopPropagation()}>
+            <header className="mcd__head">
+              <FontAwesomeIcon icon={plugin.icon as IconProp} />
+              <h2>{plugin.label}</h2>
+              <button type="button" className="mcp__round" aria-label="Close" onClick={() => modStore.openPlugin(null)}>
+                <FontAwesomeIcon icon={faXmark} />
+              </button>
             </header>
-
-            <div className={`mc-main${split ? " mc-main--split" : ""}`}>
-              {section === "reports"   && <ReportsInspector onManageTemplates={manageTemplates} onOpenUser={openUser} />}
-              {section === "users"     && <UsersSection key={usersFor ?? contextUsername} contextUsername={usersFor ?? contextUsername} />}
-              {section === "cases"     && <CasesSection />}
-              {section === "log"       && <LogSection />}
-              {pluginSections.map((s) => section === s.id && <s.component key={s.id} onNav={setSection} contextUsername={contextUsername} />)}
+            <div className="mcd__body">
+              <plugin.component onNav={() => modStore.openPlugin(null)} contextUsername={contextUsername} />
             </div>
-          </>
-        )}
-      </aside>
-
-      {/* Draggable floating trigger */}
-      <button
-        type="button"
-        className="mc-trigger"
-        title="ModCanvas (Shift+M)"
-        onMouseDown={onTriggerDown}
-        onMouseUp={onTriggerUp}
-        onTouchStart={onTriggerDown}
-        onTouchEnd={onTriggerUp}
-        style={{ left: pos.x - BTN / 2, top: pos.y - BTN / 2 }}
-      >
-        <FontAwesomeIcon icon={faShield} />
-        {badge > 0 && <em className="mc-trigger__n">{badge > 99 ? "99+" : badge}</em>}
-      </button>
+          </div>
+        </div>
+      )}
     </>
   );
 }

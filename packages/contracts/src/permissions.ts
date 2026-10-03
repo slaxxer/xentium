@@ -51,9 +51,9 @@ export const CorePermissions = {
   PROFILE_COMMENT_DELETE_WALL: "profile.comment.delete.wall",
   PROFILE_COMMENT_DELETE_ANY:  "profile.comment.delete.any",
 
-  // Pages (§page-system — custom static pages: TOS, privacy, imprint, …)
-  PAGE_MANAGE:  "page.manage",
-  PAGE_PUBLISH: "page.publish",
+  // Legal documents — terms, privacy, disclaimer, imprint. Admin-only by default:
+  // the text is the operator's legal statement.
+  LEGAL_MANAGE: "legal.manage",
 
   // Plugins
   PLUGIN_INSTALL: "plugin.install",
@@ -67,3 +67,28 @@ export const CorePermissions = {
 
 export type PermissionKey =
   (typeof CorePermissions)[keyof typeof CorePermissions];
+
+/**
+ * Keys that carry others with them: whoever may edit anyone's article may edit
+ * their own. Only the key an admin granted is stored; every check expands through
+ * this map (`expandImplied`), and the ACP shows the carried key as held but
+ * locked — revoking it would change nothing while the stronger key stays.
+ */
+export const PERMISSION_IMPLIES: Readonly<Record<string, readonly string[]>> = {
+  "article.edit.any":           ["article.edit.own"],
+  "article.delete.any":         ["article.delete.own"],
+  "article.comment.delete.any": ["article.comment.delete.own"],
+  "article.revisions.restore":  ["article.revisions.view"],
+};
+
+/** `keys` plus everything they imply, without duplicates. */
+export function expandImplied(keys: Iterable<string>): string[] {
+  const out = new Set(keys);
+  for (const k of [...out]) for (const implied of PERMISSION_IMPLIES[k] ?? []) out.add(implied);
+  return [...out];
+}
+
+/** The keys whose holder also holds `key` (never `key` itself). */
+export function impliersOf(key: string): string[] {
+  return Object.keys(PERMISSION_IMPLIES).filter((k) => PERMISSION_IMPLIES[k]!.includes(key));
+}

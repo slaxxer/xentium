@@ -76,6 +76,22 @@ export const groupsController = {
     res.json({ url });
   }) as RequestHandler,
 
+  uploadRankImage: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    if (!req.file) {
+      res.status(400).json({ code: "XEC-STORE-7000", message: "No file uploaded" });
+      return;
+    }
+    const url = await groupsService.uploadRankImage(id, req.file.buffer, req.file.detectedExt ?? "png");
+    res.json({ url });
+  }) as RequestHandler,
+
+  removeRankImage: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    await groupsService.removeRankImage(id);
+    res.json({ ok: true });
+  }) as RequestHandler,
+
   removeIcon: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     await groupsService.removeIcon(id);

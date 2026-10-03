@@ -38,7 +38,7 @@ const globalTokens = (global: Record<string, string>): ScopedTokenSet => ({ glob
 /** Serve `css` as the admin's custom CSS and return the built stylesheet. */
 async function withCustomCss(css: string): Promise<string> {
   settings.set("appearance.custom_css", css);
-  return appearanceService.buildCSS(globalTokens({}));
+  return appearanceService.buildCSS(globalTokens({}), { key: "" });
 }
 
 beforeEach(() => settings.clear());
@@ -71,7 +71,7 @@ describe("custom CSS stops at the admin panel", () => {
 
 describe("the site's palette, mirrored for surfaces that opt back in", () => {
   it("mirrors the global bucket onto .xt-site-tokens", async () => {
-    const css = await appearanceService.buildCSS(globalTokens({ "--c-accent": "#ff5c39" }));
+    const css = await appearanceService.buildCSS(globalTokens({ "--c-accent": "#ff5c39" }), { key: "" });
     expect(css).toContain(".xt-site-tokens");
     const rule = css.split("\n\n").find((b) => b.includes("--c-accent: #ff5c39;"))!;
     expect(rule).toContain(":root");
@@ -79,12 +79,12 @@ describe("the site's palette, mirrored for surfaces that opt back in", () => {
   });
 
   it("emits no `[data-theme]` selector at all — there is one look", async () => {
-    const css = await appearanceService.buildCSS(globalTokens({ "--c-accent": "#ff5c39" }));
+    const css = await appearanceService.buildCSS(globalTokens({ "--c-accent": "#ff5c39" }), { key: "" });
     expect(css).not.toContain("data-theme");
   });
 
   it("does NOT mirror a region scope — its selector already lives on the site", async () => {
-    const css = await appearanceService.buildCSS({ navbar: { "--nav-bg": "#000000" } });
+    const css = await appearanceService.buildCSS({ navbar: { "--nav-bg": "#000000" } }, { key: "" });
     expect(css).toContain(":root .pub-nav");
     expect(css).not.toContain(".xt-site-tokens .pub-nav");
   });

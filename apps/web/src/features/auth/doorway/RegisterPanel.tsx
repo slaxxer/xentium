@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, Navigate } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Trans, useTranslation } from "react-i18next";
+import { legalPath } from "@xentium/contracts";
 import { faCheck, faFingerprint, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { UserAvatar } from "../../../components/UserAvatar";
@@ -9,6 +10,7 @@ import { applyLogin, useAuth } from "../../../hooks/useAuth";
 import { useRegistrationStatus } from "../../../hooks/useRegistrationStatus";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { api } from "../../../lib/api";
+import { useLegalLinks } from "../../../lib/legalApi";
 import { AuthDoorway, useAuthMethods, useDoorwayStats } from "./AuthDoorway";
 import { apiErr, errorText } from "./authErrors";
 import { DigitsInput, FormError, OrDivider, PasswordInput, ProviderButtons } from "./pieces";
@@ -73,7 +75,11 @@ export function RegisterPanel() {
   const [pinOn, setPinOn] = useState(false);
   const [pin, setPin] = useState("");
   const [wantPasskey, setWantPasskey] = useState(false);
-  const [terms, setTerms] = useState<{ slug: string; title: string } | null>(null);
+  // Published terms / privacy policy. With either, joining asks the member to accept them.
+  const legal = useLegalLinks();
+  const hasTerms = legal.some((d) => d.key === "terms");
+  const hasPrivacy = legal.some((d) => d.key === "privacy");
+  const needsConsent = hasTerms || hasPrivacy;
   const [agreed, setAgreed] = useState(false);
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -86,7 +92,6 @@ export function RegisterPanel() {
 
   useEffect(() => {
     api.get<ProfileFieldDef[]>("/users/profile-fields").then((f) => setFields(f.filter((x) => x.showOnRegistration))).catch(() => {});
-    api.get<{ terms: { slug: string; title: string } | null }>("/pages/slots").then((s) => setTerms(s.terms)).catch(() => {});
   }, []);
   useEffect(() => { if (inviteRequired && !invite) setStep("invite"); }, [inviteRequired, invite]);
   useEffect(() => {
@@ -125,7 +130,7 @@ export function RegisterPanel() {
   const accountReady = isEmail(email) && isUsername(username) && emailAvail !== "taken" && userAvail !== "taken"
     && (!collectName || !nameRequired || !!name.trim())
     && requiredFields.every((f) => (values[f.id] ?? "").trim());
-  const securityReady = password.length >= 8 && strength >= 2 && (!pinOn || pin.length === 4) && (!terms || agreed);
+  const securityReady = password.length >= 8 && strength >= 2 && (!pinOn || pin.length === 4) && (!needsConsent || agreed);
 
   const redeem = (e: FormEvent) => {
     e.preventDefault();
@@ -327,10 +332,19 @@ export function RegisterPanel() {
             </div>
           )}
 
-          {terms && (
+          {needsConsent && (
             <label className="dw-check">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
-              <span>{t("door.reg.agree")} <Link to={`/p/${terms.slug}`} target="_blank" rel="noreferrer" className="dw-link">{terms.title}</Link></span>
+              <span>
+                <Trans
+                  t={t}
+                  i18nKey={hasTerms && hasPrivacy ? "door.reg.agreeBoth" : hasTerms ? "door.reg.agreeTerms" : "door.reg.agreePrivacy"}
+                  components={{
+                    terms:   <Link to={legalPath("terms")} target="_blank" rel="noreferrer" className="dw-link" />,
+                    privacy: <Link to={legalPath("privacy")} target="_blank" rel="noreferrer" className="dw-link" />,
+                  }}
+                />
+              </span>
             </label>
           )}
 

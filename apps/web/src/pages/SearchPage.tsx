@@ -7,6 +7,7 @@ import { UserAvatar } from "../components/UserAvatar";
 import { Username } from "../components/Username";
 import { roleColor } from "../lib/groupBadge";
 import "./SearchPage.scss";
+import { RankBadge } from "../components/RankBadge";
 
 type SearchType = "all" | "articles" | "users" | string;
 
@@ -28,7 +29,7 @@ interface UserResult {
 interface PluginSearchItem {
   id: string; title: string; link: string;
   excerpt?: string | null; categoryLabel?: string | null;
-  author?: { username: string; avatar: string | null } | null;
+  author?: { username: string; avatar: string | null; badgeColor?: string | null } | null;
   metric?: number; metricLabel?: string; tags?: string[]; createdAt: string;
 }
 
@@ -214,7 +215,7 @@ export function SearchPage() {
                         <h3 className="sr-article__title">{item.title}</h3>
                         {item.excerpt && <p className="sr-article__excerpt">{item.excerpt}</p>}
                         <div className="sr-article__meta">
-                          {item.author?.username && <><span>{t("search.by")} <strong>{item.author.username}</strong></span><span className="sr-dot">·</span></>}
+                          {item.author?.username && <><span>{t("search.by")} <strong><Username username={item.author.username} badgeColor={item.author.badgeColor} /></strong></span><span className="sr-dot">·</span></>}
                           {item.createdAt && <span>{timeAgo(item.createdAt, t)}</span>}
                           {item.metric != null && <><span className="sr-dot">·</span><span>💬 {item.metric}{item.metricLabel ? ` ${item.metricLabel}` : ""}</span></>}
                         </div>
@@ -252,7 +253,7 @@ export function SearchPage() {
                         {u.badgeLabel && (() => {
                           const c = roleColor(u.badgeColor, u.roleKey) ?? "var(--c-accent)";
                           return (
-                            <span
+                            <RankBadge groupKey={u.roleKey} label={u.badgeLabel}><span
                               className="sr-user__badge"
                               style={{
                                 background: `color-mix(in srgb, ${c} 14%, transparent)`,
@@ -261,7 +262,7 @@ export function SearchPage() {
                               }}
                             >
                               {u.badgeLabel}
-                            </span>
+                            </span></RankBadge>
                           );
                         })()}
                       </div>

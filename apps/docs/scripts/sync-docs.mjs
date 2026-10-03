@@ -167,15 +167,21 @@ function rewriteLinks(md, sourceFile) {
   return md.split("\n").map((line) => {
     if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; return line; }
     if (fenced) return line;
-    // Leave code spans alone: split on backtick runs, touch only the even parts.
-    return line.split(/(`+[^`]*`+)/).map((part, i) => i % 2 ? part : part.replace(
+    // Leave code spans alone: swap each for a placeholder, rewrite the links, put them
+    // back. A placeholder (not a split) because link TEXT may itself contain a code span
+    // — [`style-system.md` → Fonts](style-system.md#fonts) — and splitting on backticks
+    // cut such a link in half, so it was never rewritten and 404'd on the site.
+    const spans = [];
+    const masked = line.replace(/`+[^`]*`+/g, (m) => `\u0000${spans.push(m) - 1}\u0000`);
+    const out = masked.replace(
       /(!?)\[([^\]]*)\]\(([^)\s]+)\)/g,
       (all, bang, text, target) => {
         if (bang) return all; // images: none in the synced docs; leave as authored
         const to = rewrite(target, sourceFile);
         return to === null ? text : `[${text}](${to})`;
       },
-    )).join("");
+    );
+    return out.replace(/\u0000(\d+)\u0000/g, (_, i) => spans[Number(i)]);
   }).join("\n");
 }
 

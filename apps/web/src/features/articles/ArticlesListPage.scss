@@ -147,6 +147,7 @@
       color: var(--c-fg);
       padding: 7px 14px;
       border-radius: var(--radius-sm);
+      clip-path: var(--clip-sm);
       cursor: pointer;
       font-weight: 600;
       &:hover:not(:disabled) { color: var(--c-accent); border-color: var(--c-accent); }
@@ -162,6 +163,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   overflow: hidden;
   text-decoration: none;
   color: inherit;
@@ -226,6 +228,7 @@
   background: var(--card-bg);
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
+  clip-path: var(--clip-card);
   overflow: hidden;
   text-decoration: none;
   color: inherit;

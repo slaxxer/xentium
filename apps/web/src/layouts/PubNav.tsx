@@ -23,6 +23,8 @@ import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
+import { RankBadge } from "../components/RankBadge";
+import { ModShield } from "../features/modcp/ModShield";
 
 interface NavItem {
   id: string;
@@ -103,6 +105,8 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
         onClick={() => setOpen((v) => !v)}
       >
         <Avatar user={{ username: user.username, avatar: user.avatar }} size={36} online />
+        {/* Shown in the masthead's action group only (CSS), as the composed header draws it. */}
+        <Username className="pub-nav__avatar-name" username={user.username} badgeColor={primaryGroup?.badgeColor} />
         <FontAwesomeIcon icon={faChevronDown} className="pub-nav__avatar-caret" />
       </button>
 
@@ -117,7 +121,7 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
               {primaryGroup && (() => {
                 const color = primaryGroup.badgeColor ?? "var(--c-accent)";
                 return (
-                  <span
+                  <RankBadge groupKey={primaryGroup.key} label={primaryGroup.badgeLabel ?? primaryGroup.name}><span
                     className="pub-nav__dropdown-group"
                     style={{
                       display: "inline-flex", alignItems: "center", gap: 4,
@@ -127,7 +131,7 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
                     }}
                   >
                     {primaryGroup.badgeLabel ?? primaryGroup.name}
-                  </span>
+                  </span></RankBadge>
                 );
               })()}
             </div>
@@ -244,10 +248,13 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
 }
 
 
-/** Signed-in only — the block decides, not the admin. */
+/**
+ * Signed-in only — the block decides, not the admin. Moderators also get the
+ * ModCanvas shield beside the bell (it draws nothing for anyone else).
+ */
 export function NavNotifications() {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <NotificationBell /> : null;
+  return isAuthenticated ? <><ModShield /><NotificationBell /></> : null;
 }
 
 /** Admins only; the badge flags pending plugin updates or an expiring licence. */

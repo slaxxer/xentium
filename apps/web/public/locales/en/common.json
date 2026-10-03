@@ -87,7 +87,9 @@
     "stat": {
       "threads": "Threads",
       "posts": "Posts"
-    }
+    },
+    "poweredBy": "© {{year}} Powered by <b>Xentium</b> Community",
+    "linksLabel": "Footer links"
   },
   "actions": {
     "save": "Save",
@@ -152,8 +154,6 @@
     "title": "Themes",
     "close": "Close",
     "inUse": "In use",
-    "siteBadge": "Site",
-    "note": "Your choice, on this device. It changes nothing for anyone else.",
     "activeBadge": "Active"
   },
   "badges": {
@@ -241,5 +241,21 @@
     "hintDrop": "drop files anywhere",
     "words_one": "1 word",
     "words_other": "{{count}} words"
+  },
+  "legal": {
+    "title": {
+      "imprint": "Imprint",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "disclaimer": "Disclaimer"
+    },
+    "link": {
+      "imprint": "Imprint",
+      "privacy": "Privacy",
+      "terms": "Terms",
+      "disclaimer": "Disclaimer"
+    },
+    "lastUpdated": "Last updated {{date}}",
+    "edit": "Edit"
   }
 }

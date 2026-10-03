@@ -14,6 +14,7 @@ import { swalToast, apiErrorMessage } from "../../lib/swal";
 import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
 import "./MembersPage.scss";
+import { RankBadge } from "../../components/RankBadge";
 
 /* ── types ─────────────────────────────────────────────────────────────── */
 export type Metric = "posts" | "threads" | "likes" | "followers";
@@ -116,12 +117,15 @@ function RolePill({ m, sm }: { m: Member; sm?: boolean }) {
   // System group names are localized; custom groups keep their DB name.
   const label = m.roleKey ? t(`groups.${m.roleKey}`, { defaultValue: m.role }) : m.role;
   const cls = `mp-role${sm ? " mp-role--sm" : ""}`;
-  if (m.badgeColor) {
-    return <span className={cls} style={{ background: `${m.badgeColor}22`, color: m.badgeColor }}>{label}</span>;
-  }
   const variant = m.roleKey === "admin" ? "admin"
     : (m.roleKey === "supermod" || m.roleKey === "moderator") ? "mod" : "member";
-  return <span className={`${cls} mp-role--${variant}`}>{label}</span>;
+  return (
+    <RankBadge groupKey={m.roleKey} label={label}>
+      {m.badgeColor
+        ? <span className={cls} style={{ background: `${m.badgeColor}22`, color: m.badgeColor }}>{label}</span>
+        : <span className={`${cls} mp-role--${variant}`}>{label}</span>}
+    </RankBadge>
+  );
 }
 
 

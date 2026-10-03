@@ -14,6 +14,7 @@
  */
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
+  faCopyright, faLink, faAward, faEye, faHeart, faImagePortrait, faMedal,
   faAlignLeft, faAt, faBars, faBell, faBolt, faBoxesStacked, faChartSimple,
   faCircleHalfStroke, faCircleInfo, faCircleUser, faClipboardList, faColumns,
   faComments, faFeather, faFileLines, faFlag, faFolderTree, faGaugeHigh, faGripLines,
@@ -43,6 +44,9 @@ const BY_TYPE: Record<string, IconDefinition> = {
   footer: faWindowMinimize,
   navbar: faBars,
   branding: faFlag,
+  footerBar: faCopyright,
+  footerLinks: faLink,
+  footerText: faCopyright,
   logo: faFlag,
   navLinks: faBars,
   search: faMagnifyingGlass,
@@ -66,10 +70,6 @@ const BY_TYPE: Record<string, IconDefinition> = {
   articleIndex: faTableCells,
   articleDetail: faNewspaper,
   pluginSlot: faPuzzlePiece,
-  // page.detail
-  pageTitle: faHeading,
-  pageBody: faFileLines,
-  pageImage: faImage,
   // profile
   profileCard: faIdBadge,
   profileAvatar: faCircleUser,
@@ -103,6 +103,13 @@ const BY_TYPE: Record<string, IconDefinition> = {
   homeYourCard: faIdBadge,
   homeSectionNav: faFolderTree,
   homeSpaces: faBoxesStacked,
+  homeMeCard: faIdBadge,
+  // profile pieces
+  profileCover: faImagePortrait,
+  profileRank: faMedal,
+  profileBadges: faAward,
+  profileVisitors: faEye,
+  profileFollowers: faHeart,
 };
 
 /**
@@ -122,6 +129,9 @@ export const ALL_BLOCK_ICONS: readonly IconDefinition[] =
  * category. A type nothing knows about — a layout naming a block whose plugin is
  * disabled — still draws, as a puzzle piece, because the row has to render either way.
  */
+/** The block types with a glyph of their own (tests check core has one each). */
+export const ICON_TYPES: readonly string[] = Object.keys(BY_TYPE);
+
 export function iconFor(type: string): IconDefinition {
   const def = getBlock(type);
   const own = def?.editorMeta?.icon;

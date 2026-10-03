@@ -49,7 +49,7 @@ What's in core:
 - 📝 **Articles / CMS:** TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
 - 👤 **Users & social:** profiles, custom profile fields, follow/block, profile walls, and a progression system where levels are groups.
 - 🛡️ **Moderation:** reports, warnings, bans, an immutable log, thresholds and the floating ModCanvas tool. Built-in abuse detection (rapid logins, multi-accounts, registration bursts, ban evasion) opens review cases for a human. It never acts on its own.
-- 🎨 **Appearance:** a three-tier CSS token system, a live Style Editor, `.xttheme` packages, fonts and a nav manager.
+- 🎨 **Appearance:** a three-tier CSS token system, a live Theme Studio, `.xttheme` packages, fonts and a nav manager.
 - 🧱 **Layout editor:** arrange blocks in regions to decide what shows up on each page, in the navbar and in the footer. You drag in a tree or right in a live preview; edits autosave as a draft and go live when you publish. Layouts are data, so a theme can't run code.
 - 🔔 **Notifications:** one core service every module sends through (in-app and queued email).
 - 🧩 **Plugin engine:** install/enable/disable, sandboxed migrations, routes, permissions and ACP pages from plugins, plus registries you can hook into.
@@ -383,10 +383,11 @@ Plugin (onEnable)  ──registers──▶  core registry  ──core iterates�
 
 ## Layout system
 
-You'll find it at **ACP → Appearance → Layout Editor**. A page's structure is a stored
+You'll find it at **ACP → Appearance → Themes**, under **Layouts** on the theme you want to
+edit (each theme, and the built-in Core theme, has its own). A page's structure is a stored
 **document**, not compiled markup: for each **template**, an ordered list of **blocks** in
-each **region**. The Style Editor decides how things look; the Layout Editor decides what
-goes where.
+each **region**. Theme Studio edits both halves of a theme: how things look (Colours &
+type) and what goes where (Layout).
 
 ### Templates
 
@@ -520,7 +521,7 @@ export async function getThing(req: Request, res: Response) {
 
 On the web side the equivalents are `lib/toast.ts` (`toast.success/info/warning/error`,
 our own toasts: they stack, merge duplicates as ×N, pause on hover and take their
-colours from the Style Editor's Feedback tokens) and `lib/dialog.ts` (`openDialog`, a
+colours from the Feedback tokens in Theme Studio) and `lib/dialog.ts` (`openDialog`, a
 promise-based confirm/alert). `lib/swal.ts` is an old name that wraps both (sweetalert2
 is gone); new code imports `toast` and `openDialog` directly.
 

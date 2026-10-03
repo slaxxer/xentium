@@ -2,6 +2,7 @@ import { Worker } from "bullmq";
 import { prisma } from "../infrastructure/db.js";
 import { bullConnection, bullPrefix } from "../infrastructure/queue.js";
 import { getSettings } from "../shared/utils/settings.js";
+import { errorLogService } from "../modules/admin/errorLog.service.js";
 
 const QUEUE_NAME = "log-retention";
 
@@ -65,6 +66,8 @@ export async function processLogRetention(): Promise<void> {
       where: { createdAt: { lt: cutoff(errorDays) } },
     });
     if (count) results.push(`${count} error-log row(s) > ${errorDays}d`);
+    // Resolve marks for groups whose last row just aged out.
+    if (count) await errorLogService.pruneOrphanGroups();
   }
 
   if (loginDays > 0) {

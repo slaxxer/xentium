@@ -31,12 +31,14 @@ export interface PublicProfile {
   coverImage: string | null;
   bio: string | null;
   joinedDate: string;
-  groups: Array<{ id: string; name: string; icon: string | null; badgeColor: string | null; badgeLabel: string | null }>;
+  groups: Array<{ id: string; key?: string; name: string; icon: string | null; badgeColor: string | null; badgeLabel: string | null }>;
   postCount: number;
   articleCount: number;
   followerCount: number;
   followingCount: number;
   likeCountReceived: number;
+  /** Age or birthday as the member's privacy setting allows; null = show nothing. */
+  dob: { kind: "age"; age: number } | { kind: "birthday"; month: number; day: number } | null;
   dobLabel: string | null;
   dobDisplayFormat: string | null;
   isOwn: boolean;
@@ -332,12 +334,17 @@ export function InformationTab({
   profile: PublicProfile;
   fields: PublicProfileField[];
 }) {
-  const { t } = useTranslation("profiles");
+  const { t, i18n } = useTranslation("profiles");
   const hasBio = !!profile.bio;
-  const hasDob = !!profile.dobLabel;
+  const hasDob = !!profile.dob;
   const linkFields = fields.filter((f) => LINK_KEYS.has(f.key));
   const hasLinks = linkFields.length > 0;
-  const dobSectionLabel = profile.dobDisplayFormat === "age" ? t("age") : t("birthdate");
+  const dobSectionLabel = profile.dob?.kind === "age" ? t("age") : t("birthdate");
+  // Formatted here, in the reader's language — the API sends numbers, not English.
+  const dobValue = !profile.dob ? null
+    : profile.dob.kind === "age" ? t("yearsOld", { count: profile.dob.age })
+    : new Date(Date.UTC(2000, profile.dob.month - 1, profile.dob.day))
+        .toLocaleDateString(i18n.language, { month: "long", day: "numeric", timeZone: "UTC" });
 
   if (!hasDob && !hasBio && !hasLinks) {
     return (
@@ -350,7 +357,7 @@ export function InformationTab({
       {hasDob && (
         <div className="profile-info-card__dob-row">
           <span className="profile-info-card__label">{dobSectionLabel}</span>
-          <span className="profile-info-card__dob-value">{profile.dobLabel}</span>
+          <span className="profile-info-card__dob-value">{dobValue}</span>
         </div>
       )}
 
@@ -452,7 +459,8 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
           {data.comments.map((c) => {
             const hasLiked = viewerLikedIds.has(c.id);
             return (
-              <div key={c.id} className={`profile-wall__comment${c.deletedAt ? " profile-wall__comment--deleted" : ""}`}>
+              <div key={c.id} className={`profile-wall__comment${c.deletedAt ? " profile-wall__comment--deleted" : ""}`}
+                data-mod-target={`profile_comment:${c.id}`}>
                 {c.deletedAt ? (
                   <div className="profile-wall__tombstone">
                     <em>

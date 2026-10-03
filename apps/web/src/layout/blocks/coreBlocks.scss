@@ -155,6 +155,10 @@
   border: var(--surface-border-width, 0) solid var(--surface-border, transparent);
   border-radius: var(--surface-radius, 0);
   box-shadow: var(--surface-shadow, none);
+  /* Theme style → Corners: a painted section takes the theme's card cut. Not while it
+     carries edge art: the art hangs outside the box, and a clip would cut it off. */
+  clip-path: var(--surface-clip, none);
+  &:has(> .xt-edge) { clip-path: none; }
 
   &--full   { max-width: none; }
   &--wide   { max-width: 1280px; }

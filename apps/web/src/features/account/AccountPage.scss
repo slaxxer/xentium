@@ -35,7 +35,8 @@
   align-items: flex-end;
   justify-content: space-between;
   gap: var(--sp-6);
-  margin-bottom: var(--sp-7);
+  /* ⚠ Was `--sp-7`, which does not exist, so the header had no gap below it at all. */
+  margin-bottom: var(--sp-5);
   flex-wrap: wrap;
 
   h1 {
@@ -583,14 +584,6 @@
     font-size: var(--fs-xs);
     font-weight: 600;
     color: var(--c-fg-muted);
-  }
-
-  /* Under the control, not above it: it qualifies what you just did rather than
-     introducing it. */
-  &__note {
-    margin: var(--sp-3) 0 0;
-    font-size: var(--fs-xs);
-    color: var(--c-fg-subtle);
   }
 }
 

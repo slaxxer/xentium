@@ -1,0 +1,124 @@
+/* Edge art in the block inspector. The editor's own controls; no font set. */
+.lay-edge {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--c-warn);
+    display: inline-block;
+  }
+
+  &__shapes {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+
+  &__shape {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 5px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-sm);
+    background: var(--c-bg);
+    font: inherit;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+    text-align: left;
+    cursor: pointer;
+
+    &.is-on {
+      border-color: var(--c-accent);
+      color: var(--c-accent);
+      background: color-mix(in srgb, var(--c-accent) 10%, var(--c-bg));
+    }
+  }
+
+  &__mini {
+    position: relative;
+    display: grid;
+    place-items: center;
+    height: 26px;
+    border-radius: 5px;
+    background: var(--c-surface);
+    overflow: hidden;
+    color: var(--c-fg-subtle);
+
+    i {
+      position: absolute;
+      inset: 0 0 auto;
+      height: 18px;
+      background: currentColor;
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
+    }
+  }
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 8px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+
+    code { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
+  }
+
+  &__range input { width: 100%; margin: 0; accent-color: var(--c-accent); }
+
+  &__image {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__thumb {
+    width: 72px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-border);
+    background-size: auto 100%;
+    background-repeat: repeat-x;
+  }
+
+  &__check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+
+    > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+  }
+
+  &__season {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 6px 10px;
+    font-size: var(--fs-sm);
+  }
+
+  &__date {
+    display: flex;
+    gap: 6px;
+
+    input { width: 64px; }
+  }
+}
+
+/* The block has edge art — a marker in the structure tree. */
+.lay__edge-mark {
+  flex: none;
+  font-size: var(--fs-2xs);
+  color: var(--c-warn);
+}

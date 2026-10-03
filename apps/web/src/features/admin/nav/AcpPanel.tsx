@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AcpIcon } from "../pages/acpIcons";
-import type { NavItem } from "../useAcpNav";
+import { childMatches, type NavItem } from "../useAcpNav";
 import { AcpSearch } from "./AcpSearch";
 import { setAcpCollapsed } from "./acpChrome";
 
@@ -82,7 +82,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
                 it is the section itself — listing it again would be the same
                 word twice, so the rail cell is the whole control. */}
             {(section.children ?? []).map((child) => {
-              const active = pathname.startsWith(child.to);
+              const active = childMatches(child, pathname);
               return (
                 <Link
                   key={child.to}

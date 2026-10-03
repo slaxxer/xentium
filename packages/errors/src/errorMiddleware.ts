@@ -14,6 +14,9 @@ export interface ErrorLogEntry {
   context?: unknown;
   requestId?: string;
   userId?: string;
+  /** The request's method and URL, so an application can store them as columns. */
+  method?: string;
+  url?: string;
 }
 
 /** The two levels this middleware uses. Pino satisfies it as-is. */
@@ -82,7 +85,8 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
     // the bug that kept the Error Log permanently empty.
     const requestId = r.id != null ? String(r.id) : undefined;
     const userId = r.userId ?? undefined;
-    const where = { url: req.url, method: req.method };
+    // originalUrl: inside a mounted router `url` is relative to the mount point.
+    const where = { url: req.originalUrl || req.url, method: req.method };
 
     if (err instanceof XentiumError) {
       const severity: ErrorSeverity =
@@ -102,6 +106,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
           context: err.details ? { details: err.details, ...where } : where,
           requestId,
           userId,
+          ...where,
         });
       }
 
@@ -120,6 +125,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
         context: { ...where, issues: err.flatten() },
         requestId,
         userId,
+        ...where,
       });
 
       return res.status(422).json({
@@ -141,6 +147,7 @@ export function createErrorMiddleware(opts: ErrorMiddlewareOptions): ErrorReques
       context: { ...where, stack: (err as Error)?.stack?.split("\n").slice(0, 5) },
       requestId,
       userId,
+      ...where,
     });
 
     return res.status(500).json({

@@ -73,7 +73,7 @@ booleans, enums and unions of literals. Anything else is skipped instead of gues
 
 **Keep props coarse.** Every prop is forever. Stored documents, including ones inside
 themes you didn't write, have to keep working whenever a prop changes. Fine visual
-control belongs in Style Editor tokens, not in block props.
+control belongs in Theme Studio tokens, not in block props.
 
 **Leave out `editorMeta` to hide a block** from the picker while it still renders. That's
 handy for blocks that only your own default documents place.
@@ -134,7 +134,7 @@ the plugin again and everything is back the way the admin left it.
 You don't have to change anything for an admin to be able to move your UI. We mirror
 every `slotRegistry` contribution **as a layout block automatically**
 (`layout/slotBlocks.tsx`), so a header widget, layout widget or profile tab you
-registered long ago shows up in the Layout Editor's picker and can be placed anywhere its
+registered long ago shows up in the Studio's Layout picker and can be placed anywhere its
 template allows:
 
 | You registered | The block you get | Placeable on |
@@ -206,7 +206,7 @@ paints nothing:
 }
 ```
 
-Please **don't** add colour props to your block's schema. The Layout Editor's Style panel
+Please **don't** add colour props to your block's schema. The Theme style tab in the Studio's Layout mode
 edits the variant's tokens, so a colour set there stays consistent across every block
 using that variant and travels inside a `.xttheme`. A colour prop would be a hard-coded
 value on one block that no theme can restyle.
@@ -224,7 +224,7 @@ a FontAwesome Pro kit your icons are drawn in the site's chosen style.
 If you bundle your own copy of that package, you quietly opt out: your icons stay solid
 while the rest of the page changes. Keep it external.
 
-**An admin can replace any single icon.** In the Layout Editor's Icons mode, every icon on
+**An admin can replace any single icon.** In Theme Studio's Layout mode, with Icons switched on, every icon on
 the page is clickable, and the replacement is stored on the block node (`iconOverrides`,
 keyed `"<icon-name>#<n>"`, meaning the nth icon with that name your block drew, in render
 order). You don't do anything; it's applied inside the wrapper.
@@ -316,7 +316,7 @@ Nothing breaks and nothing is lost:
 That's why stored layouts survive version and plugin changes. Don't work around it by
 adding placeholder blocks to core.
 
-## Opening your own pages to the Layout Editor
+## Opening your own pages to Theme Studio
 
 A block is something an admin places on a page core already owns. A **layout template**
 is the other half: one of *your* pages, opened up so an admin can arrange it the same way.

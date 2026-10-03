@@ -20,6 +20,9 @@ import AdmZip from "adm-zip";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_LAYOUTS,
+  DEFAULT_SITE_FRAME,
+  siteFrameSchema,
+  type SiteFrame,
   THEME_ASSET_LIMITS,
   deregisterTemplatesFor,
   registerTemplate,
@@ -40,61 +43,95 @@ afterAll(async () => { await fs.rm(UPLOAD_DIR, { recursive: true, force: true })
 type Scoped = Record<string, Record<string, string>>;
 
 const published = { templates: {} as Record<TemplateKey, LayoutDocument>, variants: {} };
-const savedDrafts = new Map<string, LayoutDocument>();
-/** The inheritance layer: what the installed theme ships, per template. */
-const themeLayer = new Map<TemplateKey, LayoutDocument>();
 /** Which templates the admin has moved away from their baseline. */
 const customised = new Set<TemplateKey>();
+
+/*
+ * Views over the per-theme model. A theme's package lives in its library row and is
+ * what renders for every template the admin has not changed; there is no copy of it
+ * anywhere else. These read that, so a test can still ask "what does the site render
+ * for Home now" or "what is the theme's baseline" without knowing where it is stored.
+ */
+const activePayload = () => {
+  const id = appearance.installed?.id;
+  return id ? library.rows.get(String(id))?.payload : undefined;
+};
+const lastPayload = () => (library.last ? library.rows.get(library.last)?.payload : undefined);
+/** What the ACTIVE theme renders per template (not the ones the admin kept). */
+const renders = (template: string): LayoutDocument | undefined =>
+  customised.has(template as TemplateKey) ? undefined : activePayload()?.documents?.[template];
+const liveView = (suffix: string) => ({
+  get: (k: string) => renders(k.slice(0, k.length - suffix.length)),
+  has: (k: string) => !!renders(k.slice(0, k.length - suffix.length)),
+  keys: () => Object.keys(activePayload()?.documents ?? {}).filter((t) => renders(t)).map((t) => `${t}${suffix}`),
+  get size() { return this.keys().length; },
+});
+const savedDrafts = liveView("|");
+const livePublished = liveView("");
+/** What the most recently installed theme SHIPS, per template — its baseline. */
+const themeLayer = {
+  get: (k: string) => lastPayload()?.documents?.[k],
+  has: (k: string) => !!lastPayload()?.documents?.[k],
+  keys: () => Object.keys(lastPayload()?.documents ?? {}),
+};
+/** The site frame: published (for export), shipped, and what the active theme renders. */
+const frames = {
+  published: DEFAULT_SITE_FRAME as SiteFrame,
+  customised: false,
+  get theme(): SiteFrame | null { return lastPayload()?.frame ?? null; },
+  get applied(): SiteFrame | null {
+    const p = activePayload();
+    if (!p || frames.customised) return null;
+    return p.frame ?? DEFAULT_SITE_FRAME;
+  },
+};
 
 const appearance = {
   effective: {} as Scoped,
   customCss: "",
   installed: null as Record<string, unknown> | null,
-  savedThemeTokens: null as unknown,
+  /** The tokens / stylesheet the last installed theme SHIPS — its package. */
+  get savedThemeTokens(): unknown { return lastPayload()?.tokens ?? null; },
+  get savedThemeCustomCss(): string | null { return lastPayload()?.customCss ?? null; },
+  /** The admin's own stylesheet is never written by an install. */
   savedCustomCss: null as unknown,
   savedInstalled: null as Record<string, unknown> | null,
-  /** The theme's OWN stylesheet layer — what an import stages, under the admin's. */
   themeCustomCss: "",
-  savedThemeCustomCss: null as string | null,
   /** Applying a theme is LIVE, so it has to tell open clients. */
   styleVersionBumps: 0,
+  /** Which themes' stylesheets were rebuilt. */
+  recompiled: [] as string[],
 };
 
 vi.mock("../layouts/layout.service.js", () => ({
-  // The layout half of the same per-theme cache.
+  // The layout half of the per-theme caches.
   bustThemeLayouts: () => {},
   layoutService: {
-    getPublishedAll: async () => published,
-    saveDraft: async (
-      sel: { templateKey: TemplateKey; variant: string }, doc: LayoutDocument,
-    ) => { savedDrafts.set(`${sel.templateKey}|${sel.variant}`, doc); return doc; },
-    saveThemeLayer: async (key: TemplateKey, doc: LayoutDocument) => { themeLayer.set(key, doc); },
-    // A theme applies LIVE now: published and draft together, no publish step.
-    applyThemeDocument: async (key: TemplateKey, doc: LayoutDocument) => {
-      savedDrafts.set(`${key}|`, doc);
-      livePublished.set(key, doc);
+    // An export reads the PUBLISHED documents of the theme being exported.
+    getPublishedFor:   async () => published,
+    getPublishedFrame: async () => frames.published,
+    getThemeLayer:     async (key: string) => library.rows.get(key)?.payload?.documents ?? {},
+    // An UPDATE releases the templates still exactly as the old version shipped them,
+    // and reports the ones the admin changed — decided before the package is replaced.
+    releaseUntouched: async () => {
+      rollbackProbe.releasedBeforeReplace = library.rows.get(rollbackProbe.updating)?.payload;
+      return { kept: [...customised], frameKept: frames.customised };
     },
-    getThemeLayer: async () => Object.fromEntries(themeLayer),
-    getOwnership: async () => Object.fromEntries(
-      (Object.keys(DEFAULT_LAYOUTS) as TemplateKey[]).map((k) => [
-        k, { customised: customised.has(k), hasTheme: themeLayer.has(k) },
-      ]),
-    ),
-    // The undo point an import takes before it writes anything. Recorded here so a
-    // test can assert it was taken BEFORE the writes — the whole value of the
-    // rollback is that it captures the state the import is about to replace.
-    snapshotStagedScopes: async () => {
-      rollbackProbe.snapshotAt = savedDrafts.size + themeLayer.size;
-      return [...savedDrafts.entries()].map(([k, doc]) => ({
-        templateKey: k.split("|")[0]!, variant: "", scope: "draft" as const, document: doc,
-      }));
+    snapshotTheme: async (key: string) => {
+      rollbackProbe.snapshotOf = key;
+      return [{ templateKey: "home", variant: "", scope: "published", document: { probe: "before" } }];
     },
-    restoreStagedScopes: async (rows: { templateKey: string; document: unknown }[]) => {
+    restoreTheme: async (rows: { templateKey: string }[], _user: string, key: string) => {
       rollbackProbe.restoreCalled = true;
+      rollbackProbe.restoredKey = key;
       rollbackProbe.restored = rows.map((r) => r.templateKey);
     },
+    forgetTheme: async (key: string) => { forgotten.push(`layouts:${key}`); },
   },
 }));
+
+/** What uninstall cleared, in order. */
+const forgotten: string[] = [];
 
 vi.mock("../appearance/appearance.service.js", () => ({
   // Per-theme stylesheets are memoised by id; install and uninstall clear them, so
@@ -103,37 +140,33 @@ vi.mock("../appearance/appearance.service.js", () => ({
   appearanceService: {
     getEffectiveTokens: async () => appearance.effective,
     getCustomCss:       async () => appearance.customCss,
-    getInstalledTheme:  async () => appearance.installed,
-    saveThemeTokens:    async (t: unknown) => { appearance.savedThemeTokens = t; },
-    saveCustomCss:      async (c: unknown) => { appearance.savedCustomCss = c; },
     getThemeCustomCss:  async () => appearance.themeCustomCss,
-    getThemeTokens:     async () => appearance.savedThemeTokens ?? null,
-    saveThemeCustomCss: async (c: string) => {
-      appearance.savedThemeCustomCss = c;
-    },
-    // Also what the site now WEARS — an import compares against that to tell an
-    // update of the active theme from a new install.
-    setInstalledTheme:  async (m: Record<string, unknown>) => {
+    getInstalledTheme:  async () => appearance.installed,
+    // What the site now WEARS — `null` = Core.
+    setInstalledTheme:  async (m: Record<string, unknown> | null) => {
       appearance.savedInstalled = m;
       appearance.installed = m;
     },
+    recompileCustomCss: async (key: string) => { appearance.recompiled.push(key); return ""; },
     bumpStyleVersion:   async () => { appearance.styleVersionBumps = (appearance.styleVersionBumps ?? 0) + 1; },
-    snapshotThemeLayers: async () => ({ probe: "before" }),
-    restoreThemeLayers:  async (snap: unknown) => { rollbackProbe.layers = snap; },
-    saveThemeRollback:   async (v: unknown) => { rollbackProbe.saved = v; },
-    getThemeRollback:    async () => rollbackProbe.saved ?? null,
-    clearThemeRollback:  async () => { rollbackProbe.cleared = true; },
+    saveThemeRollback:  async (v: unknown) => { rollbackProbe.saved = v; },
+    getThemeRollback:   async () => rollbackProbe.saved ?? null,
+    clearThemeRollback: async () => { rollbackProbe.saved = null; rollbackProbe.cleared = true; },
+    forgetTheme:        async (key: string) => { forgotten.push(`appearance:${key}`); },
   },
+}));
+
+vi.mock("./themeKey.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./themeKey.js")>()),
+  activeThemeKey: async () => (appearance.installed?.id ? String(appearance.installed.id) : ""),
 }));
 
 /** What the import/discard pair did with the undo point. */
 const rollbackProbe: Record<string, any> = {};
 
-/** What a theme application actually PUBLISHED — the live half. */
-const livePublished = new Map<string, LayoutDocument>();
 
 /** An in-memory stand-in for `xcf_themes`. Only the operations the service uses. */
-const library = { rows: new Map<string, any>() };
+const library = { rows: new Map<string, any>(), last: null as string | null };
 
 vi.mock("../../infrastructure/db.js", () => ({
   prisma: {
@@ -147,11 +180,17 @@ vi.mock("../../infrastructure/db.js", () => ({
         return { count: 0 };
       },
       upsert: async ({ where, update, create }: any) => {
+        library.last = where.id;
         const existing = library.rows.get(where.id);
         const row = existing
           ? Object.assign(existing, update)
           : { installedAt: new Date(), activatedAt: null, ...create };
         library.rows.set(where.id, row);
+        return row;
+      },
+      update: async ({ where, data }: any) => {
+        const row = library.rows.get(where.id);
+        Object.assign(row, data);
         return row;
       },
       delete: async ({ where }: any) => { library.rows.delete(where.id); return {}; },
@@ -213,17 +252,19 @@ beforeEach(async () => {
   for (const key of Object.keys(DEFAULT_LAYOUTS) as CoreTemplateKey[]) {
     published.templates[key] = structuredClone(DEFAULT_LAYOUTS[key]) as LayoutDocument;
   }
-  savedDrafts.clear();
-  themeLayer.clear();
   customised.clear();
+  library.rows.clear();
+  library.last = null;
+  for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
+  frames.published = DEFAULT_SITE_FRAME;
+  frames.customised = false;
   appearance.effective = { global: {} };
   appearance.customCss = "";
   appearance.installed = null;
-  appearance.savedThemeTokens = null;
   appearance.savedCustomCss = null;
   appearance.savedInstalled = null;
   appearance.themeCustomCss = "";
-  appearance.savedThemeCustomCss = null;
+  appearance.recompiled = [];
   await fs.rm(path.join(UPLOAD_DIR, "themes"), { recursive: true, force: true });
 });
 
@@ -692,7 +733,6 @@ describe("theme inheritance", () => {
 
   it("KEEPS a template the admin customised, and applies the rest", async () => {
     await putOn(pkg(), "user-1");   // 1.0
-    savedDrafts.clear();
     customised.add("home");                            // the admin edited Home
 
     const report = await putOn(pkg({ version: "1.1.0" }), "user-1");
@@ -727,6 +767,98 @@ describe("theme inheritance", () => {
     const report = await putOn(pkg(), "user-1");
     expect(report.kept).toEqual([]);
     expect(report.replaced).toBeNull();
+  });
+});
+
+// ── Edge art ─────────────────────────────────────────────────────────────────
+
+describe("edge art", () => {
+  it("packs an edge image with the theme and repoints it on import", async () => {
+    await write("layouts/drips.png", PNG);
+    const header = structuredClone(DEFAULT_LAYOUTS["chrome.header"]) as LayoutDocument;
+    header.regions.header![1]!.edges = {
+      bottom: { shape: "image", image: "layouts/drips.png", direction: "out", colors: ["#000"],
+        fit: "repeat", height: 40, mirror: false, season: { from: "10-01", to: "11-01" } },
+    };
+    published.templates["chrome.header"] = header;
+
+    const exported = await themeService.exportTheme(META);
+    const zip = new AdmZip(exported);
+    expect(zip.getEntry(`${THEME_PATHS.assets}drips.png`)?.getData()).toEqual(PNG);
+    const packed = JSON.parse(zip.getEntry(`${THEME_PATHS.layouts}chrome.header.json`)!.getData().toString());
+    expect(packed.regions.header[1].edges.bottom.image).toBe("assets/drips.png");
+
+    await putOn(exported, "user-1");
+    const staged = savedDrafts.get("chrome.header|")!;
+    expect(staged.regions.header![1]!.edges?.bottom?.image).toBe(`themes/${META.id}/drips.png`);
+    expect(staged.regions.header![1]!.edges?.bottom?.season).toEqual({ from: "10-01", to: "11-01" });
+  });
+});
+
+// ── Site frame ───────────────────────────────────────────────────────────────
+
+describe("site frame", () => {
+  const boxed = (patch: Partial<SiteFrame> = {}): SiteFrame => siteFrameSchema.parse({
+    mode: "boxed", maxWidth: 1200, overrides: { home: "overlap" }, ...patch,
+  });
+
+  it("exports the live frame and imports it as the theme's baseline, applied", async () => {
+    frames.published = boxed();
+    const exported = await themeService.exportTheme(META);
+    const zip = new AdmZip(exported);
+    expect(JSON.parse(zip.getEntry(THEME_PATHS.frame)!.getData().toString())).toEqual(boxed());
+
+    frames.published = DEFAULT_SITE_FRAME;
+    await putOn(exported, "user-1");
+    expect(frames.theme).toEqual(boxed());
+    expect(frames.applied).toEqual(boxed());
+  });
+
+  it("carries the body background image and repoints it at the unpacked file", async () => {
+    await write("layouts/sky.png", PNG);
+    frames.published = boxed({ background: { ...DEFAULT_SITE_FRAME.background, type: "image", image: "layouts/sky.png" } });
+    const exported = await themeService.exportTheme(META);
+    const zip = new AdmZip(exported);
+    expect(zip.getEntry(`${THEME_PATHS.assets}sky.png`)?.getData()).toEqual(PNG);
+    expect(JSON.parse(zip.getEntry(THEME_PATHS.frame)!.getData().toString()).background.image)
+      .toBe("assets/sky.png");
+
+    await putOn(exported, "user-1");
+    expect(frames.applied?.background.image).toBe(`themes/${META.id}/sky.png`);
+  });
+
+  it("KEEPS a frame the admin customised, but records the new baseline", async () => {
+    frames.published = boxed();
+    const exported = await themeService.exportTheme(META);
+    frames.customised = true;
+    await putOn(exported, "user-1");
+    expect(frames.theme).toEqual(boxed());
+    expect(frames.applied).toBeNull();
+  });
+
+  it("a theme that ships no frame puts the site back to full width", async () => {
+    // Otherwise switching away from a boxed theme would leave the site boxed.
+    const zip = new AdmZip();
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0" })));
+    zip.addFile(`${THEME_PATHS.layouts}home.json`, Buffer.from(JSON.stringify(DEFAULT_LAYOUTS.home)));
+    await putOn(zip.toBuffer(), "user-1");
+    expect(frames.theme).toBeNull();
+    expect(frames.applied).toEqual(DEFAULT_SITE_FRAME);
+  });
+
+  it("refuses a frame outside the editor's ranges, before anything is written", async () => {
+    const zip = new AdmZip();
+    zip.addFile(THEME_PATHS.manifest, Buffer.from(JSON.stringify({ ...META, minXentiumVersion: "1.0" })));
+    zip.addFile(THEME_PATHS.frame, Buffer.from(JSON.stringify({ mode: "boxed", maxWidth: 99999 })));
+    await expect(putOn(zip.toBuffer(), "user-1")).rejects.toThrow(/frame\.json is invalid/);
+    expect(frames.theme).toBeNull();
+    expect(frames.applied).toBeNull();
+  });
+
+  it("a tokens-only package carries no frame", async () => {
+    frames.published = boxed();
+    const zip = new AdmZip(await themeService.exportTheme(META, { tokensOnly: true }));
+    expect(zip.getEntry(THEME_PATHS.frame)).toBeNull();
   });
 });
 
@@ -987,13 +1119,16 @@ describe("undoing an import", () => {
     for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
   });
 
-  it("takes the undo point BEFORE it writes anything", async () => {
-    // ⚠ The ordering is the whole feature. Snapshotting after the first write would
-    // capture the theme being installed as if it were what was there before, and
-    // "undo" would restore the thing it was meant to remove.
-    await putOn(themePackage(), "u1");
-    expect(rollbackProbe.saved).toBeTruthy();
-    expect(rollbackProbe.snapshotAt).toBe(0);
+  it("takes an update's undo point BEFORE the package is replaced", async () => {
+    // ⚠ The ordering is the whole feature: taken after the write, the undo point would
+    // capture the new version as if it were what was there before.
+    await putOn(themePackage({ version: "1.0.0" }), "u1");
+    const v1 = library.rows.get(META.id)!.payload;
+    rollbackProbe.updating = META.id;
+    await themeService.importTheme(themePackage({ version: "2.0.0" }), "u1");
+    expect(rollbackProbe.saved.update.payload).toEqual(v1);
+    // …and untouched layouts were released against the OLD package too.
+    expect(rollbackProbe.releasedBeforeReplace).toEqual(v1);
   });
 
   it("records the theme it replaced, so the undo can name it", async () => {
@@ -1002,37 +1137,24 @@ describe("undoing an import", () => {
     expect(rollbackProbe.saved.replaced).toBe("Old Theme");
   });
 
-  it("restores both halves and then drops the undo point", async () => {
-    await putOn(themePackage(), "u1");
+  it("undoes a SWITCH by switching back, and then drops the undo point", async () => {
+    await putOn(themePackage(), "u1");                 // Core → this theme
     const res = await themeService.discardImportedTheme("u1");
-
     expect(res.restored).toBe(true);
-    // Layouts AND appearance layers — an import writes both, so undoing only one
-    // leaves a site wearing half of a theme nobody chose.
-    expect(rollbackProbe.restoreCalled).toBe(true);
-    expect(rollbackProbe.layers).toEqual({ probe: "before" });
-    // Consumed: it describes a state that no longer exists once applied, and
-    // offering it twice would undo an import that has already been undone.
+    expect(appearance.installed).toBeNull();           // back on Core
+    // Consumed: offering it twice would undo something already undone.
     expect(rollbackProbe.cleared).toBe(true);
   });
 
-  it("puts back the drafts that existed before the import, and only those", async () => {
-    // The case the empty-site test cannot show: an admin who had already staged a
-    // layout must get THAT back, not the theme's version of it and not nothing.
-    savedDrafts.set("home|", DEFAULT_LAYOUTS.home as LayoutDocument);
-    await putOn(themePackage(), "u1");
+  it("undoes an UPDATE: the old package and that theme's own layouts come back", async () => {
+    await putOn(themePackage({ version: "1.0.0" }), "u1");
+    const v1 = structuredClone(library.rows.get(META.id)!.payload);
+    await themeService.importTheme(themePackage({ version: "2.0.0" }), "u1");
     await themeService.discardImportedTheme("u1");
+    expect(library.rows.get(META.id)!.payload).toEqual(v1);
+    expect(rollbackProbe.restoredKey).toBe(META.id);
     expect(rollbackProbe.restored).toEqual(["home"]);
-  });
-
-  it("restores an EMPTY set on a site that had staged nothing", async () => {
-    // Restoring "no staged rows" is the correct undo for a site with none — and it
-    // is the case a restore that only wrote rows back would get wrong, leaving every
-    // row the import created in place and undoing almost nothing.
-    await putOn(themePackage(), "u1");
-    await themeService.discardImportedTheme("u1");
-    expect(rollbackProbe.restoreCalled).toBe(true);
-    expect(rollbackProbe.restored).toEqual([]);
+    expect(appearance.installed?.id).toBe(META.id);    // still the live theme
   });
 
   it("is a no-op, not an error, when there is nothing to undo", async () => {
@@ -1119,13 +1241,13 @@ describe("the library", () => {
     await expect(themeService.activateTheme("nope", "u1")).rejects.toMatchObject({ httpStatus: 404 });
   });
 
-  it("⚠ refuses to uninstall the ACTIVE theme", async () => {
-    // Deleting it would leave the site wearing a theme with no record of where it
-    // came from, no baseline for "Revert to theme", and no way back — the exact
-    // state the library exists to prevent.
+  it("uninstalling the ACTIVE theme falls back to Core, and takes its own edits with it", async () => {
     await putOn(themePackage({ id: "aurora" }), "u1");
-    await expect(themeService.uninstallTheme("aurora")).rejects.toMatchObject({ httpStatus: 409 });
-    expect(library.rows.has("aurora")).toBe(true);
+    forgotten.length = 0;
+    await themeService.uninstallTheme("aurora");
+    expect(library.rows.has("aurora")).toBe(false);
+    expect(appearance.installed).toBeNull();
+    expect(forgotten).toEqual(["layouts:aurora", "appearance:aurora"]);
   });
 
   it("uninstalls one that is not active", async () => {
@@ -1135,28 +1257,6 @@ describe("the library", () => {
     expect([...library.rows.keys()]).toEqual(["meadow"]);
   });
 
-  /**
-   * Every install that predates the library is in this state: a theme is applied and
-   * the settings key names it, but no row exists — so the library would open empty on
-   * a site that visibly has a theme. The payload is reconstructed from what the theme
-   * left behind, which is exactly what an activation replays.
-   */
-  it("backfills a row for a theme installed before the library existed", async () => {
-    appearance.installed = { id: "legacy", name: "Legacy", version: "1.0.0", vendor: "V" };
-    themeLayer.set("home" as TemplateKey, DEFAULT_LAYOUTS.home as LayoutDocument);
-
-    await themeService.listThemes();
-    expect(library.rows.get("legacy")).toBeTruthy();
-    expect(library.rows.get("legacy")!.active).toBe(true);
-  });
-
-  it("does not backfill over a row that already exists", async () => {
-    await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
-    appearance.installed = { id: "aurora", name: "Aurora", version: "1.0.0" };
-    await themeService.listThemes();
-    expect(library.rows.get("aurora")!.version).toBe("1.0.0");
-    expect(library.rows.size).toBe(1);
-  });
 });
 
 /**
@@ -1173,7 +1273,6 @@ describe("the library", () => {
  */
 describe("applying a theme is live", () => {
   beforeEach(() => {
-    livePublished.clear();
     library.rows.clear();
     appearance.styleVersionBumps = 0;
   });
@@ -1197,11 +1296,12 @@ describe("applying a theme is live", () => {
     expect(themeLayer.has("home" as TemplateKey)).toBe(true);
   });
 
-  it("still leaves a customised template alone", async () => {
-    // Going live changes WHERE a theme's document lands, not the inheritance rule:
-    // an admin who arranged a page keeps their arrangement.
+  it("an UPDATE still leaves a customised template alone", async () => {
+    // An admin who arranged a page of this theme keeps their arrangement across a
+    // new version of it.
+    await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
     customised.add("home" as TemplateKey);
-    const report = await putOn(themePackage({ id: "aurora" }), "u1");
+    const report = await themeService.importTheme(themePackage({ id: "aurora", version: "1.1.0" }), "u1");
     expect(report.kept).toContain("home");
     expect(livePublished.has("home")).toBe(false);
   });
@@ -1220,20 +1320,19 @@ describe("applying a theme is live", () => {
     }, { id: "redline" }), "u1");
     expect(appearance.savedThemeCustomCss).toContain(".x");
 
+    // Each theme carries its own stylesheet; switching changes which one is served.
     await putOn(themePackage({ id: "plain" }), "u1");
-    expect(appearance.savedThemeCustomCss).toBe("");
-    expect(appearance.savedThemeTokens).toEqual({});
+    expect(activePayload()?.customCss ?? "").toBe("");
 
     await themeService.activateTheme("redline", "u1");
-    expect(appearance.savedThemeCustomCss).toContain(".x");
+    expect(activePayload()?.customCss).toContain(".x");
     await themeService.activateTheme("plain", "u1");
-    expect(appearance.savedThemeCustomCss).toBe("");
+    expect(activePayload()?.customCss ?? "").toBe("");
   });
 
   it("goes live on a SWITCH too, not only on import", async () => {
     await putOn(themePackage({ id: "aurora" }), "u1");
     await putOn(themePackage({ id: "meadow" }), "u1");
-    livePublished.clear();
     appearance.styleVersionBumps = 0;
 
     await themeService.activateTheme("aurora", "u1");
@@ -1254,7 +1353,6 @@ describe("applying a theme is live", () => {
 describe("installing is not switching", () => {
   beforeEach(() => {
     for (const k of Object.keys(rollbackProbe)) delete rollbackProbe[k];
-    livePublished.clear();
     library.rows.clear();
     appearance.styleVersionBumps = 0;
   });
@@ -1268,7 +1366,6 @@ describe("installing is not switching", () => {
     expect(library.rows.get("meadow")!.active).toBe(false);
     // Nothing a visitor sees moved: no layout published, no layer written, no push.
     expect(livePublished.size).toBe(0);
-    expect(appearance.savedThemeTokens).toBeNull();
     expect(appearance.savedInstalled).toBeNull();
     expect(appearance.styleVersionBumps).toBe(0);
     expect(rollbackProbe.saved).toBeUndefined();
@@ -1290,7 +1387,6 @@ describe("installing is not switching", () => {
 
   it("APPLIES an update to the theme the site is already wearing", async () => {
     await putOn(themePackage({ id: "aurora", version: "1.0.0" }), "u1");
-    livePublished.clear();
 
     const report = await themeService.importTheme(themePackage({ id: "aurora", version: "1.1.0" }), "u1");
     expect(report.activated).toBe(true);

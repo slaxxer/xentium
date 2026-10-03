@@ -43,7 +43,9 @@ import {
   regionsFor,
   validateBlockTree,
   type LayoutDocument,
-  type TemplateKey,
+  isPortableAssetRef,
+  siteFrameSchema,
+  type SiteFrame,
 } from "@xentium/contracts";
 import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
@@ -53,6 +55,8 @@ import { XEC } from "../../shared/errors/xec.js";
 import { XENTIUM_VERSION, compareBaseVersions } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
+import { activeThemeKey, CORE_THEME, type ThemeKey } from "./themeKey.js";
+import { composeDocuments } from "../layouts/composedChromeMigration.js";
 import {
   assertThemeCssSafe,
   collectCssUploadRefs,
@@ -385,8 +389,10 @@ export const themeService = {
       // only in custom CSS, and a storefront card that is confidently wrong about this
       // is worse than one that does not say. Absent = the schema's default, `light`.
       & Partial<Pick<ThemeManifestInput, "appearance">>,
-    opts: { tokensOnly?: boolean; screenshot?: Buffer } = {},
+    opts: { tokensOnly?: boolean; screenshot?: Buffer; themeKey?: ThemeKey } = {},
   ): Promise<Buffer> {
+    // The theme being exported: the one asked for, else the one visitors see.
+    const exportKey = opts.themeKey ?? await activeThemeKey();
     /**
      * The preview image, packed like any other asset and named in the manifest.
      *
@@ -417,7 +423,15 @@ export const themeService = {
       screenshotName = `screenshot.${detected.ext}`;
     }
 
+    // A theme's colourways are part of the THEME, not of the export form: exporting
+    // an installed theme again must not drop the sets its Theme style tab offers.
+    const source = exportKey
+      ? await prisma.theme.findUnique({ where: { id: exportKey }, select: { manifest: true } })
+      : null;
+    const colourways = (source?.manifest as { colourways?: unknown } | null)?.colourways;
+
     const manifest: ThemeManifestInput = themeManifestSchema.parse({
+      ...(Array.isArray(colourways) ? { colourways } : {}),
       ...meta,
       minXentiumVersion: XENTIUM_VERSION,
       schemaVersion:    LAYOUT_SCHEMA_VERSION,
@@ -425,24 +439,25 @@ export const themeService = {
       ...(screenshotName ? { screenshot: `${THEME_PATHS.assets}${screenshotName}` } : {}),
     });
 
-    const [layouts, tokens, customCss] = await Promise.all([
-      layoutService.getPublishedAll(),
+    const [layouts, tokens, customCss, frame] = await Promise.all([
+      layoutService.getPublishedFor(exportKey),
       // EFFECTIVE, not just the admin layer: an export is "the site as visitors see it",
       // and on a site with a theme installed most of the look lives in the theme layer.
       // Exporting the admin layer alone would produce a package that is only the diff.
-      appearanceService.getEffectiveTokens(),
+      appearanceService.getEffectiveTokens(exportKey),
       // EFFECTIVE, for the same reason the tokens above are: an export is "the site as
       // visitors see it", and on a site running a theme most of the stylesheet is the
       // theme's. Exporting the admin layer alone would drop it silently.
       (async () => {
         const [admin, theme] = await Promise.all([
-          appearanceService.getCustomCss(),
-          appearanceService.getThemeCustomCss(),
+          appearanceService.getCustomCss(exportKey),
+          appearanceService.getThemeCustomCss(exportKey),
         ]);
         // Theme layer first, admin second — the same order the site serves them in, so
         // an export of a customised theme keeps the customisation winning.
         return [theme, admin].filter((c) => c.trim()).join("\n\n");
       })(),
+      layoutService.getPublishedFrame(exportKey),
     ]);
 
     const zip = new AdmZip();
@@ -502,6 +517,31 @@ export const themeService = {
         return name ? `${THEME_PATHS.assets}${name}` : undefined;
       });
       zip.addFile(`${THEME_PATHS.layouts}${key}.json`, Buffer.from(JSON.stringify(doc, null, 2), "utf8"));
+    }
+
+    // ── Site frame ────────────────────────────────────────────────────────
+    // Always written with the layouts, even at full width: an export is the site as
+    // visitors see it, and "full width" is a choice the theme makes too. Its body
+    // background image travels like a section background does.
+    if (!opts.tokensOnly) {
+      const packed = structuredClone(frame);
+      const ref = packed.background.image;
+      if (isPortableAssetRef(ref)) {
+        let name = assetNames.get(ref);
+        if (!name) {
+          const buf = await readUpload(ref);
+          if (buf) {
+            const base = path.basename(ref).replace(/[^\w.-]/g, "_");
+            name = base;
+            for (let i = 2; used.has(name); i++) name = `${i}-${base}`;
+            used.add(name);
+            assetNames.set(ref, name);
+            zip.addFile(`${THEME_PATHS.assets}${name}`, buf);
+          }
+        }
+        if (name) packed.background.image = `${THEME_PATHS.assets}${name}`;
+      }
+      zip.addFile(THEME_PATHS.frame, Buffer.from(JSON.stringify(packed, null, 2), "utf8"));
     }
 
     // ── Tokens ────────────────────────────────────────────────────────────
@@ -579,8 +619,27 @@ export const themeService = {
     const rollback = await appearanceService.getThemeRollback();
     if (!rollback) return { restored: false, replaced: null };
 
-    await layoutService.restoreStagedScopes(rollback.layouts, userId);
-    await appearanceService.restoreThemeLayers(rollback.layers);
+    // An UPDATE replaced a theme's package and released its untouched layouts: put
+    // both back exactly as they were.
+    if (rollback.update) {
+      const { themeId, payload, manifest, layouts } = rollback.update;
+      const exists = await prisma.theme.findUnique({ where: { id: themeId }, select: { id: true } });
+      if (exists) {
+        await prisma.theme.update({
+          where: { id: themeId },
+          data:  { payload: payload as object, manifest: manifest as object },
+        });
+        bustThemeCss(themeId);
+        bustThemeLayouts(themeId);
+        await layoutService.restoreTheme(layouts, userId, themeId);
+        await appearanceService.recompileCustomCss(themeId);
+      }
+    }
+    // Then the theme that was live before — Core when it has since been removed.
+    const back = rollback.previous
+      && await prisma.theme.findUnique({ where: { id: rollback.previous }, select: { id: true } })
+      ? rollback.previous : CORE_THEME;
+    await this.setActive(back);
     await appearanceService.clearThemeRollback();
 
     return { restored: true, replaced: rollback.replaced };
@@ -599,8 +658,6 @@ export const themeService = {
   async importTheme(fileBuffer: Buffer, userId: string): Promise<ImportReport> {
     const { zip, manifest } = readManifest(fileBuffer);
     assertCompatible(manifest);
-    // What was installed before is read by `applyTheme`, which is the only thing that
-    // needs it — it reports the replacement and records the rollback point.
 
     // ── Parse everything BEFORE writing anything ──────────────────────────
     const documents: Partial<Record<string, LayoutDocument>> = {};
@@ -677,6 +734,24 @@ export const themeService = {
       // reporting a "template" whose key contains a slash.
       if (!key || key.includes("/")) continue;
       if (!(key in documents)) unknownTemplates.push(key);
+    }
+
+    // ── Site frame ────────────────────────────────────────────────────────
+    // Optional: a package from before frames existed has none, and wears full width.
+    let frame: SiteFrame | null = null;
+    const frameEntry = zip.getEntry(THEME_PATHS.frame);
+    if (frameEntry) {
+      let json: unknown;
+      try {
+        json = JSON.parse(readText(frameEntry, THEME_PATHS.frame));
+      } catch {
+        throw themeError(`${THEME_PATHS.frame} is not valid JSON`);
+      }
+      const parsed = siteFrameSchema.safeParse(json);
+      if (!parsed.success) {
+        throw themeError(`${THEME_PATHS.frame} is invalid: ${issueList(parsed.error)}`);
+      }
+      frame = parsed.data;
     }
 
     // Files a pre-collapse package carries that a one-look site cannot use. Collected,
@@ -759,7 +834,7 @@ export const themeService = {
     const packAssets = new Set(assets.map((a) => a.packName));
     assertThemeCssSafe(customCss, THEME_PATHS.custom, packAssets);
 
-    if (Object.keys(documents).length === 0 && !tokens && !hasCustomCss) {
+    if (Object.keys(documents).length === 0 && !tokens && !hasCustomCss && !frame) {
       throw themeError("Package contains no layouts and no styles");
     }
 
@@ -791,154 +866,93 @@ export const themeService = {
     for (const doc of Object.values(documents)) {
       if (doc) rewriteAssetRefs(doc, (ref) => assetPaths.get(ref));
     }
-
-    const payload: ThemePayload = {
-      documents: documents as Record<string, LayoutDocument>,
-      tokens:    tokens ?? null,
-      customCss: hasCustomCss ? rewriteCss(customCss) : null,
-    };
-
-    // INSTALLED, then — only for an update to the theme already being worn — ACTIVE.
-    // Two steps because the row has to survive the next import: before the library
-    // existed, installing a second theme destroyed the first.
-    const worn   = await appearanceService.getInstalledTheme();
-    const wornId = worn?.id ? String(worn.id) : null;
-    const activate = wornId === manifest.id;
-
-    await this.saveInstalledTheme(installedManifest, payload, userId, { activate });
-
-    const base = {
-      manifest,
-      unknownTemplates,
-      assetsImported: assets.length,
-      unknownBlocks: [...unknownBlocks],
-      ignoredFiles,
-    };
-
-    if (!activate) {
-      return {
-        ...base,
-        templates: [], kept: [], replaced: null,
-        tokensApplied: false, customCssApplied: false,
-        activated: false,
-        current: worn
-          ? { id: String(worn.id ?? ""), name: String(worn.name ?? worn.id ?? ""), version: String(worn.version ?? "") }
-          : null,
-      };
+    if (frame && isPortableAssetRef(frame.background.image)) {
+      frame.background.image = assetPaths.get(frame.background.image) ?? frame.background.image;
     }
 
-    const { applied, kept, replaced } = await this.applyTheme(installedManifest, payload, userId);
+    // A package built before the composed header and footer installs in the
+    // current shape, the same carry-over every stored site got.
+    const composed = composeDocuments(documents as Record<string, unknown>);
+    const payload: ThemePayload = {
+      documents: (composed ?? documents) as Record<string, LayoutDocument>,
+      tokens:    tokens ?? null,
+      customCss: hasCustomCss ? rewriteCss(customCss) : null,
+      frame,
+    };
 
+    /*
+     * INSTALL is not SWITCH. A new theme lands in the library beside the active one
+     * and the site does not change. Reinstalling one that is already here is an
+     * UPDATE of that theme: its own layouts the admin left as shipped follow the new
+     * version, the ones they changed are kept — decided against the OLD package, so it
+     * runs before the row is replaced.
+     */
+    const existing = await prisma.theme.findUnique({
+      where: { id: manifest.id }, select: { payload: true, manifest: true, active: true },
+    });
+    let kept: string[] = [];
+    if (existing) {
+      const worn = await appearanceService.getInstalledTheme();
+      await appearanceService.saveThemeRollback({
+        previous: await activeThemeKey(),
+        replaced: worn ? String(worn.name ?? worn.id ?? "") : null,
+        at:       new Date().toISOString(),
+        update: {
+          themeId:  manifest.id,
+          payload:  existing.payload,
+          manifest: existing.manifest,
+          layouts:  await layoutService.snapshotTheme(manifest.id),
+        },
+      });
+      kept = (await layoutService.releaseUntouched(manifest.id)).kept;
+    }
+
+    await this.saveInstalledTheme(installedManifest, payload, userId, { activate: !!existing?.active });
+    // The theme's stylesheet is part of its package, compiled with the admin's own.
+    await appearanceService.recompileCustomCss(manifest.id);
+    // An update changes what the theme looks like for anyone seeing it; a brand-new
+    // theme is seen by no one yet, so open tabs have nothing to refetch.
+    if (existing) await appearanceService.bumpStyleVersion();
+
+    const active = await appearanceService.getInstalledTheme();
+    const shipped = Object.keys(documents);
     return {
-      activated: true,
-      current: null,
       manifest,
-      templates: applied,
       unknownTemplates,
-      kept,
-      replaced,
-      tokensApplied: !!tokens,
-      customCssApplied: hasCustomCss,
       assetsImported: assets.length,
       unknownBlocks: [...unknownBlocks],
       ignoredFiles,
+      activated: !!existing?.active,
+      current: !existing?.active && active
+        ? { id: String(active.id ?? ""), name: String(active.name ?? active.id ?? ""), version: String(active.version ?? "") }
+        : null,
+      templates: shipped.filter((k) => !kept.includes(k)),
+      kept,
+      replaced: existing ? { id: manifest.id, name: String(existing.manifest && (existing.manifest as Record<string, unknown>).name || manifest.name), version: String((existing.manifest as Record<string, unknown>)?.version ?? "") } : null,
+      tokensApplied: !!tokens,
+      customCssApplied: hasCustomCss,
     };
   },
 
   /**
-   * Write a stored theme into the appearance layers and the draft.
-   *
-   * The half of an import that CHANGES the site, split out so activating a theme
-   * already in the library runs exactly the same code. Two paths that both "apply a
-   * theme" but drift apart is how one of them quietly stops staging the stylesheet.
-   *
-   * It goes LIVE — the theme layer, the published layouts and their drafts together.
-   * Putting a theme on is one decision; the undo point below is the way back.
+   * Make one theme the site's — or Core, with `''`. Nothing is copied: every theme
+   * already carries its own layouts and appearance, so switching is choosing which
+   * one visitors get, and switching back restores it exactly.
    */
-  async applyTheme(
-    manifest: Record<string, unknown>,
-    payload: ThemePayload,
-    userId: string,
-  ): Promise<{ applied: string[]; kept: string[]; replaced: { id: string; name: string; version: string } | null }> {
-    const previous = await appearanceService.getInstalledTheme();
-
-    /**
-     * Inheritance. Ownership is read BEFORE anything is written, because writing the
-     * new baseline is itself what would make a customised template look untouched.
-     */
-    const ownership = await layoutService.getOwnership();
-
-    /**
-     * THE ROLLBACK POINT. Taken after every check and before the first write, because
-     * this is the last instant at which the pre-application state still exists.
-     *
-     * Applying a theme restages the arrangement of every page at once, and until this
-     * existed there was no way back: `discard` is per-template and layouts only, and
-     * `resetAppearance` deliberately keeps the theme layer ("reset drops MY edits, it
-     * does not uninstall the theme"). So the only way to find out what a theme looked
-     * like was to accept it permanently.
-     *
-     * ⚠ ONE level. This is "undo what I just did", not version history — the library
-     * is what lets an admin go back to a theme from further back than that.
-     */
-    await appearanceService.saveThemeRollback({
-      layouts:  await layoutService.snapshotStagedScopes(),
-      layers:   await appearanceService.snapshotThemeLayers(),
-      replaced: previous ? String(previous.name ?? previous.id ?? "") : null,
-      at:       new Date().toISOString(),
-    });
-
-    const applied: string[] = [];
-    const kept: string[] = [];
-
-    for (const [key, doc] of Object.entries(payload.documents)) {
-      if (!doc) continue;
-      // The baseline is recorded either way: it is what the NEXT update compares
-      // against, and what "Revert to theme" restores.
-      await layoutService.saveThemeLayer(key as TemplateKey, doc, userId);
-
-      if (ownership[key]?.customised) {
-        kept.push(key);
-        continue;
-      }
-      // Template default, never a variant — a slug is site content, not the theme's.
-      // LIVE: activating a theme is the decision, not a change waiting to be
-      // published. Writes `published` and `draft` together — see applyThemeDocument.
-      await layoutService.applyThemeDocument(key as TemplateKey, doc, userId);
-      applied.push(key);
+  async setActive(key: ThemeKey): Promise<void> {
+    if (key) {
+      const row = await prisma.theme.findUnique({ where: { id: key }, select: { manifest: true } });
+      if (!row) return;
+      await prisma.$transaction([
+        prisma.theme.updateMany({ where: { active: true }, data: { active: false } }),
+        prisma.theme.update({ where: { id: key }, data: { active: true, activatedAt: new Date() } }),
+      ]);
+      await appearanceService.setInstalledTheme(row.manifest as Record<string, unknown>);
+    } else {
+      await prisma.theme.updateMany({ where: { active: true }, data: { active: false } });
+      await appearanceService.setInstalledTheme(null);
     }
-
-    /**
-     * Tokens go to the THEME layer, not the admin's draft — that is token-level
-     * inheritance: the served stylesheet is the theme merged UNDER the admin's own
-     * overrides, so an admin who recoloured one accent keeps exactly that and takes
-     * everything else the update brings.
-     */
-    // ⚠ WRITTEN EVEN WHEN ABSENT, as an empty layer. The theme layer belongs to the
-    // theme being put on, not a merge of every theme ever worn: skipping the write for
-    // a theme that ships no tokens left the PREVIOUS theme's palette on the site, and
-    // switching from a dark theme to a colours-less one stayed dark.
-    await appearanceService.saveThemeTokens(payload.tokens ?? {});
-
-    await appearanceService.setInstalledTheme(manifest);
-
-    /** The stylesheet gets the same treatment as the tokens: its own layer, so an
-     *  import can never destroy the admin's own CSS. */
-    // Same rule as the tokens: a theme with no stylesheet CLEARS the previous theme's,
-    // or its fonts and rules keep painting a site that has switched away from it.
-    await appearanceService.saveThemeCustomCss(payload.customCss ?? "");
-
-    // The theme is ON now, so every open tab has to hear about it. Reuses the style
-    // version the appearance SSE already carries — layouts ride the same channel.
     await appearanceService.bumpStyleVersion();
-
-    return {
-      applied,
-      kept,
-      replaced: previous
-        ? { id: String(previous.id ?? ""), name: String(previous.name ?? ""), version: String(previous.version ?? "") }
-        : null,
-    };
   },
 
   /** Add or update a library row — and, by default, make it the active one. Exactly
@@ -958,7 +972,6 @@ export const themeService = {
       manifest:    manifest as object,
       payload:     payload as unknown as object,
       active:      activate,
-      ...(activate ? { activatedAt: new Date() } : {}),
     };
     await prisma.$transaction([
       ...(activate ? [prisma.theme.updateMany({ where: { active: true }, data: { active: false } })] : []),
@@ -973,43 +986,8 @@ export const themeService = {
     ]);
     bustThemeCss(id);
     bustThemeLayouts(id);
-  },
-
-  /**
-   * Give the CURRENTLY installed theme a library row if it does not have one.
-   *
-   * Every install that predates the library is in exactly this state: a theme is
-   * applied and `appearance.theme.installed` names it, but nothing recorded the
-   * package, so the library would open empty on a site that visibly has a theme.
-   *
-   * The payload is reconstructed from what the theme itself left behind — the
-   * `theme`-scope layout rows, the theme token layer and the theme stylesheet. That
-   * IS the payload: those three are what an import writes and what an activation
-   * replays, so a backfilled row re-activates exactly like an imported one. Asset
-   * references in them were already rewritten at import, so nothing needs repointing.
-   *
-   * Runs on read, once, like the custom-CSS compile-on-read next door. Cheap after
-   * the first time: the row exists and the lookup short-circuits.
-   */
-  async backfillLibrary(): Promise<void> {
-    const installed = await appearanceService.getInstalledTheme();
-    const id = installed?.id ? String(installed.id) : null;
-    if (!id) return;
-
-    const existing = await prisma.theme.findUnique({ where: { id }, select: { id: true } });
-    if (existing) return;
-
-    const [documents, tokens, customCss] = await Promise.all([
-      layoutService.getThemeLayer(),
-      appearanceService.getThemeTokens(),
-      appearanceService.getThemeCustomCss(),
-    ]);
-
-    await this.saveInstalledTheme(installed as Record<string, unknown>, {
-      documents: documents as Record<string, LayoutDocument>,
-      tokens:    tokens ?? null,
-      customCss: customCss.trim() ? customCss : null,
-    }, "");
+    // The active theme's manifest is what the ACP names; an update renames it.
+    if (activate) await appearanceService.setInstalledTheme(manifest);
   },
 
   /** Everything installed here, newest first, with the active one flagged. */
@@ -1025,7 +1003,6 @@ export const themeService = {
     id: string; name: string; version: string; active: boolean;
     description: string | null; screenshot: string | null;
   }[]> {
-    await this.backfillLibrary();
     const rows = await prisma.theme.findMany({
       orderBy: [{ active: "desc" }, { name: "asc" }],
       // The manifest comes too, but only three of its fields are passed on: a reader
@@ -1067,7 +1044,6 @@ export const themeService = {
   },
 
   async listThemes() {
-    await this.backfillLibrary();
     const rows = await prisma.theme.findMany({
       orderBy: [{ active: "desc" }, { installedAt: "desc" }],
       // ⚠ NOT `payload`. It carries every layout document of every installed theme
@@ -1086,28 +1062,36 @@ export const themeService = {
   },
 
   /**
-   * Switch to a theme already in the library.
+   * Switch to a theme already in the library — or to Core, with `''`.
    *
-   * The point of the library: an admin who installed a second theme to look at it can
-   * go back to the first without the original file. Staged like an import, so it is
-   * previewable and undoable in exactly the same way.
+   * LIVE and one decision, with one level of undo: the theme that was live before.
    */
-  async activateTheme(id: string, userId: string) {
-    const row = await prisma.theme.findUnique({ where: { id } });
-    if (!row) {
+  async activateTheme(id: ThemeKey, _userId: string) {
+    const row = id ? await prisma.theme.findUnique({ where: { id } }) : null;
+    if (id && !row) {
       throw new XentiumError({
         code: XEC.API_NOT_FOUND, httpStatus: 404,
         message: `No theme "${id}" is installed here.`,
       });
     }
-
-    const manifest = row.manifest as Record<string, unknown>;
-    const payload  = row.payload as unknown as ThemePayload;
-
-    const result = await this.applyTheme(manifest, payload, userId);
-    await this.saveInstalledTheme(manifest, payload, userId);
-
-    return { id: row.id, name: row.name, version: row.version, ...result };
+    const previous = await activeThemeKey();
+    const worn = await appearanceService.getInstalledTheme();
+    if (previous !== id) {
+      await appearanceService.saveThemeRollback({
+        previous,
+        replaced: worn ? String(worn.name ?? worn.id ?? "") : null,
+        at:       new Date().toISOString(),
+      });
+    }
+    await this.setActive(id);
+    // The theme's own pages are what now shows — every theme carries its own edits, so
+    // nothing of the previous theme's is kept or replaced.
+    const shipped = Object.keys(((row?.payload ?? {}) as { documents?: Record<string, unknown> }).documents ?? {});
+    return {
+      id, name: row?.name ?? "Core", version: row?.version ?? "",
+      applied: shipped, kept: [] as string[],
+      replaced: worn ? { id: String(worn.id ?? ""), name: String(worn.name ?? ""), version: String(worn.version ?? "") } : null,
+    };
   },
 
   /**
@@ -1122,18 +1106,16 @@ export const themeService = {
    * reclaim the space.
    */
   async uninstallTheme(id: string): Promise<void> {
-    const row = await prisma.theme.findUnique({ where: { id }, select: { active: true, name: true } });
+    const row = await prisma.theme.findUnique({ where: { id }, select: { active: true } });
     if (!row) return;
-    if (row.active) {
-      throw new XentiumError({
-        code: XEC.API_CONFLICT, httpStatus: 409,
-        message: `"${row.name}" is the active theme. Switch to another one before removing it.`,
-      });
-    }
+    // Removing the live theme falls back to Core — the site is never without one.
+    if (row.active) await this.setActive(CORE_THEME);
+    // Its own edits go with it: they were made for this theme and nothing else.
+    await layoutService.forgetTheme(id);
+    await appearanceService.forgetTheme(id);
+    const rollback = await appearanceService.getThemeRollback();
+    if (rollback?.update?.themeId === id || rollback?.previous === id) await appearanceService.clearThemeRollback();
     await prisma.theme.delete({ where: { id } });
-    // ⚠ Both per-theme caches, or a visitor still wearing it goes on being served a
-    // stylesheet and layouts for a theme whose files were just deleted — the images
-    // 404 while everything else looks fine.
     bustThemeCss(id);
     bustThemeLayouts(id);
     await rm(path.join(env.UPLOAD_DIR, "themes", id), { recursive: true, force: true }).catch(() => {});
@@ -1146,4 +1128,6 @@ export interface ThemePayload {
   documents: Record<string, LayoutDocument>;
   tokens:    ScopedTokenSet | null;
   customCss: string | null;
+  /** Absent on payloads stored before frames existed — read as "ships none". */
+  frame?:    SiteFrame | null;
 }

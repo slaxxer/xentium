@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "../../../../components/Icon";
 import { groupByDomain, type Permission } from "../../../../lib/permissions";
 import { isSensitive, powerOf } from "./groupModel";
 import { PowerMeter } from "./groupParts";
+import { impliedBy } from "../permissions/permissionsModel";
 
 export function PermissionsTab({ allPermissions, keys, onChange }: {
   allPermissions: Permission[];
@@ -62,14 +63,20 @@ export function PermissionsTab({ allPermissions, keys, onChange }: {
             </div>
             {isOpen && (
               <div className="gp-perms">
-                {perms.map((p) => (
-                  <label key={p.key} className={`gp-perm${held.has(p.key) ? " is-on" : ""}`}>
-                    <input type="checkbox" checked={held.has(p.key)} onChange={() => toggleKey(p.key)} />
+                {perms.map((p) => {
+                  // Carried by a stronger key the group holds: shown held, not editable.
+                  const via = impliedBy(held, p.key);
+                  return (
+                  <label key={p.key} className={`gp-perm${held.has(p.key) || via ? " is-on" : ""}${via ? " is-implied" : ""}`}
+                    title={via ? t("permissions.impliedHint", { key: via }) : undefined}>
+                    <input type="checkbox" checked={held.has(p.key) || !!via} disabled={!!via} onChange={() => toggleKey(p.key)} />
                     <span className="gp-perm__label">{p.label}</span>
+                    {via && <span className="gp-perm__via">{t("permissions.impliedBy", { key: via })}</span>}
                     {isSensitive(p.key) && <span className="gp-sensitive gp-sensitive--sm">{t("groups.perms.sensitive")}</span>}
                     <code className="gp-perm__key">{p.key}</code>
                   </label>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

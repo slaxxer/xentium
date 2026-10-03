@@ -39,14 +39,14 @@ Components never use a raw colour. Everything reads a CSS custom property, in th
 | Tier | Example | Who changes it |
 |---|---|---|
 | 1 · primitives | `--primitive-blurple-600` | nobody; components never reference them |
-| 2 · semantic | `--c-bg`, `--c-accent`, `--c-fg-muted` | the Style Editor, themes |
+| 2 · semantic | `--c-bg`, `--c-accent`, `--c-fg-muted` | Theme Studio, themes |
 | 3 · component | `--card-bg`, `--nav-bg`, `--btn-radius` | themes; each defaults to a tier-2 token |
 
 Tier-3 tokens default to tier-2 ones (`--card-bg: var(--c-card)`), so when you recolour
 the palette, every component follows. If you override a component token, you break that
 link for that one component, which is usually what you want.
 
-**The Style Editor reaches every token.** Each token `_tokenDefaults.scss` declares has a
+**Theme Studio reaches every token.** Each token `_tokenDefaults.scss` declares has a
 row: the palette, regions and components, plus tints and states, typography, spacing,
 corners, shadows, page layout and the base palette. The editor reads each token's
 starting value from `_tokenDefaults.scss` itself, and `foundationCoverage.test.ts` fails
@@ -54,7 +54,7 @@ when you add a token to that file without registering it in `TOKEN_REGISTRY`
 (`packages/contracts/src/tokens.ts`).
 
 `HEARTH_DEFAULT_TOKENS` in `@xentium/contracts` mirrors the **editable** tokens from
-`tokens.scss`, so the API and the Style Editor agree on the defaults. `tokens.scss` is
+`tokens.scss`, so the API and Theme Studio agree on the defaults. `tokens.scss` is
 still what actually renders, so when you change an editable default there, change it in
 `HEARTH_DEFAULT_TOKENS` too.
 
@@ -78,7 +78,7 @@ token set in a region's scope only applies inside that region.
 We write every token value **as is** into the stylesheet we serve, so we validate it on
 the way in with `tokenMapSchema`: names have to be `--custom-properties`, and values can't
 contain `{ } < > ;`, because a stray brace would close the block. The same schema guards
-the Style Editor, the Layout Editor's variant panel, `.xttheme` imports and the
+Theme Studio (its token editor and the Layout mode's variant panel), `.xttheme` imports and the
 marketplace's preview renderer. Don't write a second copy of it.
 
 ### Text sizes
@@ -97,7 +97,7 @@ is `font-size: 100%` for that reason), and nothing on the site goes below 12px.
 | `--fs-read` | 17px | long reading: articles, forum posts, messages |
 | `--fs-lg` … `--fs-3xl` | 18–30px | headings |
 
-Every step is `calc(<size> * var(--fs-scale))`. The Style Editor's text size (Typography,
+Every step is `calc(<size> * var(--fs-scale))`. Theme Studio's text size (Typography,
 shown as a percentage) sets `--fs-scale`, so one control makes all text on the site
 bigger or smaller together. The ACP pins the scale to 1 and keeps its own sizes.
 
@@ -115,97 +115,198 @@ the block that actually paints (`--surface-*`). Every variant also points `--car
 friends at the same values, so one token changes both a section and a card. See
 [`theme-packages.md` → Style variants](theme-packages.md#style-variants).
 
+### Theme style: colourway, corners, glow
+
+The Studio's Layout inspector has two tabs. **Block** holds what belongs to the selected
+block: its settings, who sees it, and its edge art. **Theme style** holds the look the
+whole theme wears, plus the block's style variant, since a variant's colours are theme
+tokens too.
+
+Everything on the Theme style tab is a named set of tokens (`themeStyle.ts` in
+contracts). Choosing one patches the theme's appearance draft through the same
+`PATCH /appearance/tokens/scope/global` Theme Studio uses, so it is staged, published
+and exported like any other token edit:
+
+| Control | Tokens it writes |
+|---|---|
+| Colourway | whatever the theme's manifest lists for it (see [Colourways](theme-packages.md#colourways)) |
+| Corners: Rounded / Chamfered / Sharp | `--radius-sm/md/lg/xl`, `--corner-cut`, `--corner-cut-sm`, `--clip-card`, `--clip-sm` |
+| Glow on accent elements | `--glow-accent` |
+
+A value the theme already ships is **cleared, not copied**, so a later update of the
+theme can still move it (`patchFor`). The editor reads which choice is current from the
+tokens (`cornerModeOf`, `wears`). Corners set by hand to something else show no choice
+selected, and the tab says so.
+
+Chamfered corners are a `clip-path`, which is why they have their own tokens instead of
+riding on the radius: `--clip-card` and `--clip-sm` default to `none`, because any clip,
+even a plain rectangle, cuts off a card's shadow. Card surfaces read `--clip-card`;
+buttons, pills and tabs read `--clip-sm`; a painted `section` reads it through its
+variant (`--surface-clip`) and drops it while it carries edge art, which hangs outside the
+box. Surfaces that hold popovers (the composer, modals) don't clip at all, since a
+dropdown hanging outside the card would be cut off. Primary buttons wear `--glow-accent`.
+
+The preview serves the published stylesheet, so the page injects the theme's staged
+global tokens into it (`themeDraftCss`), on both tabs, beside the variant CSS.
+
+---
 ---
 
-## Layers: theme and admin
+## Every theme keeps its own work
 
-What we serve is two layers, merged **token by token**:
+Each installed theme, and the built-in **Core** theme, carries its own appearance:
+
+- layouts (every template, plus per-page layouts),
+- token overrides,
+- custom CSS,
+- the site font,
+- the site frame (boxed, floating and so on).
+
+You edit one theme at a time, and switching the site's theme only changes **which one
+visitors see**. Nothing is copied or merged between themes, so switching back to a theme
+gives you exactly the work you did on it.
+
+Core is the look Xentium ships with: the bundled `tokens.scss` and the built-in layouts.
+It's what the site wears when no installed theme is active, and you can edit it like any
+other theme.
+
+### Theme keys
+
+A **theme key** names the theme a read or write is about: `''` for Core, otherwise the
+installed theme's id. In a query string Core is `_core`, which can't collide with a theme
+id because ids start with a letter or a digit.
+
+- **Theme Studio** edits one theme. The theme lives in the page URL as `?theme=<key>`, so
+  **Open in Theme Studio** on the Themes page opens it on that theme and a reload keeps
+  it; the header names it (`ThemeScopePicker`). Without the parameter, the Studio works
+  on the active theme.
+- Every admin endpoint behind the editors takes the same `?theme=`. On the API,
+  `resolveEditingKey()` (`apps/api/src/modules/themes/themeKey.ts`) turns it into a key,
+  uses the active theme when it's missing, and refuses an id that isn't installed.
+- The editors' preview iframes are real site routes, so they carry the choice as
+  `__theme=<key>` and render that theme's draft and stylesheet
+  (`apps/web/src/lib/editingTheme.ts`). You can edit and preview a theme the site isn't
+  wearing.
+- Both editors remount when you change the picker, and every React Query key they use
+  includes the theme. The query cache outlives the remount, so a key without the theme
+  would show another theme's data.
+
+### A theme's package is the layer underneath
+
+What a theme **ships** (its library row's `payload` in `xcf_themes`) sits under your edits
+to it:
 
 ```
-theme layer   appearance.tokens.theme     what the installed theme shipped
-admin layer   appearance.tokens           what the admin changed in the Style Editor
-────────────
-served        getEffectiveTokens() = theme + admin   (the admin wins, token by token)
+what the theme ships    xcf_themes.payload            read-only, replaced by an update
+your edits              per-theme settings and rows   what the editors write
+──────────────────────
+served                  shipped + your edits
 ```
 
-That's what makes a theme update safe. If the admin recoloured one accent and the
-theme's next version changes twenty tokens, they get the other nineteen and keep their
-accent.
+- **Tokens** merge token by token: `getEffectiveTokens(key)` is the shipped set with your
+  overrides on top. If you recoloured one accent and the theme's next version changes
+  twenty tokens, you get the other nineteen and keep your accent.
+- **Custom CSS**: we emit the theme's stylesheet first and yours after it, so you win
+  when specificity is equal.
+- **Layouts** resolve per template: your row for that page, then your row for the
+  template, then what the theme ships, then the built-in default. A template you never
+  touched therefore follows the theme, including its updates.
+- **The site frame** resolves the same way: your frame, then the theme's `frame.json`,
+  then full width.
 
-- `GET /api/appearance/tokens` returns `{ tokens, theme, installedTheme }` with the two
-  layers **kept apart**. If we merged them there, the editor would write the theme's
-  values back as admin overrides, and the inheritance would be gone.
-- **Reset** on a token goes back to the theme's value, not stock Xentium. *Reset
-  appearance* clears the admin layer and keeps the theme.
-- **Custom CSS** works the same way: we emit the theme's stylesheet
-  (`appearance.custom_css.theme`) before the admin's own CSS, so the admin wins when
-  specificity is equal.
-- **Layouts** inherit per *template*, not per block. A template the admin changed away
-  from the theme's version is kept on update. See
-  [`theme-packages.md` → Inheritance](theme-packages.md#inheritance-updating-a-theme-without-losing-your-work).
+`GET /api/appearance/tokens?theme=<key>` returns `{ tokens, theme, installedTheme }` with
+your overrides and the shipped set **kept apart**. If we merged them there, the editor
+would write the theme's values back as your overrides and the theme underneath would stop
+mattering.
 
-### Draft and publish (Style Editor edits only)
+What the reset buttons do:
 
-The admin layer has a draft. Style Editor edits go into `appearance.tokens.draft` and go
-live when you **publish** (now, or on a schedule through the `appearance-publish` job).
-The editor previews `theme draft + admin draft` through
-`GET /api/appearance/css?source=draft`.
+| Button | What it does |
+|---|---|
+| **Reset** on one token | back to the theme's value (Core: the bundled default) |
+| **Reset appearance** | clears your tokens, fonts and custom CSS **for this theme** and keeps the theme |
+| **Reset** on a template (Theme Studio, Layout mode) | removes your layout, so the page shows what the theme ships (Core: the built-in default) |
+| **Revert to theme** on a template | stages the theme's version as a draft you can preview and publish |
 
-**Themes don't use draft and publish.** Putting on a theme is one decision, not a batch
-of edits; see [Switching is live](#switching-is-live).
+### Draft and publish
+
+Token edits and layout edits go into a **draft for the theme you're editing**. Theme
+Studio has **one Publish**, and it always puts both live together, the layouts and the
+colours they were designed with (`POST /api/admin/themes/studio/publish?theme=<key>`).
+The bar beside it counts both halves (`GET /api/admin/themes/studio/status`). The
+scheduled publish job does the same for every theme. Fonts, custom CSS and branding save
+live, as they always have.
+
+The previews read the draft: `GET /api/appearance/css?source=draft&theme=<key>` for the
+stylesheet, and `GET /api/admin/layouts?theme=<key>` for the layouts.
+
+Putting on a theme doesn't use draft and publish. It's one decision, not a batch of
+edits; see [Switching](#switching).
 
 ### Where it's stored
 
-| Key | What's in it |
+Per-theme settings are suffixed `@<themeId>`. **Core keeps the plain keys**, which is why
+a site that never installed a theme reads exactly what it always stored.
+
+| Key (Core / an installed theme) | What's in it |
 |---|---|
-| `appearance.tokens` / `.draft` | admin layer, live / draft |
-| `appearance.tokens.theme` / `.theme.draft` | theme layer (the draft mirrors live) |
-| `appearance.custom_css_light` | the admin's own CSS (the name is historical, see below) |
-| `appearance.custom_css.theme` / `.theme.draft` | the theme's stylesheet |
-| `appearance.custom_css_compiled` | both stylesheets, scoped and cached for serving |
-| `appearance.theme.installed` | the manifest of the theme the site is wearing |
+| `appearance.tokens` / `appearance.tokens@<id>` | your live token overrides |
+| `appearance.tokens.draft` / `…@<id>` | your token draft |
+| `appearance.custom_css_light` / `…@<id>` | your own CSS (the name is historical, see below) |
+| `appearance.custom_css_compiled` / `…@<id>` | the theme's and your CSS, scoped and cached for serving |
+| `appearance.font.family`, `.weight`, `.size` / `…@<id>` | the site font |
+| `xcf_layouts` rows with `theme_key` | your layouts and site frame (`@site-frame`), draft and published |
+| `xcf_style_history` rows with `theme_key` | published token snapshots, 20 per theme |
+| `appearance.theme.installed` | the manifest of the active theme; absent means Core is live |
 | `appearance.theme.rollback` | the one-step undo point (see [Undo](#undo)) |
 
-Before we went to one look, many of these keys came in `.light` / `.dark` pairs. We still
-**read the old keys as a fallback and delete them on the next write**, all through one
-helper, `appearanceService.readStaged(key, legacyKey)`. Reading them is how existing
-sites kept their look without a data migration. Deleting them stops a stale light value
-from winning again for every token the new set doesn't have. `light` and `dark` are never
-scope names, so if you see them at the top level of a stored value, you know it's the old
-format.
+Before we went to one look, some of Core's keys came in `.light` / `.dark` pairs. We
+still read those as a fallback **for Core only** (installed themes never had them) and
+delete them on the next write. `light` and `dark` are never scope names, so if you see
+them at the top level of a stored value, you know it's the old format.
 
 `appearance.custom_css_light` keeps its misleading name because `appearance.custom_css`
-is already taken by an even older version of the setting. Renaming it would mean a third
+is already taken by an even older version of the setting. Renaming it would mean another
 fallback, for nothing a user could notice.
+
+**Upgrading.** Sites from before per-theme storage had one layer of edits over whichever
+theme was active. On the first start after upgrading, `perThemeMigration.ts` moves that
+layer onto the theme that was active (or leaves it on Core when none was), so the live
+site looks exactly as it did. Every other installed theme starts as its package shipped
+it. A theme installed before the library existed gets a library row built from what it
+left behind.
 
 ---
 
 ## The stylesheet we serve
 
-`GET /api/appearance/css` is public and gets hit a lot. `appearanceService.buildCSS()`
-builds it from:
+`GET /api/appearance/css` is public and gets hit a lot. It serves the **active** theme's
+stylesheet, built per theme by `appearanceService.buildCSS()` from:
 
 1. one block per scope (`global` first, so regions can override it), with `global` on
    **`:root, .xt-site-tokens`**;
-2. the site font's rule, if one is set (see [Fonts](#fonts));
-3. the compiled custom CSS, the theme's first and the admin's last.
+2. the site font's rule, if that theme has one (see [Fonts](#fonts));
+3. the compiled custom CSS: the theme's first, yours last.
 
-We skip empty blocks. A site with no overrides gets an almost empty stylesheet and
-renders with the bundled `tokens.scss`.
+We skip empty blocks. A site on Core with no overrides gets an almost empty stylesheet
+and renders with the bundled `tokens.scss`.
 
-**Live updates.** Everything that writes to these settings bumps the style version.
+The built stylesheet is cached per theme against the style version, so a request costs
+one settings read until something changes.
+
+**Live updates.** Everything that changes what a theme looks like bumps the style version.
 Browsers follow it over `GET /api/appearance/stream` (SSE; `/version` is the polling
-fallback) and refetch the stylesheet, so every open tab changes when a theme or a
+fallback) and refetch the stylesheet, so every open tab updates when a switch or a
 published edit lands.
 
 **`.xt-site-tokens`** brings the *site's* palette back inside something that opted out of
-it. The ACP wraps the Layout Editor's variant probe in it, so the probe can measure what
+it. The ACP wraps the Studio's Layout variant probe in it, so the probe can measure what
 the site would actually paint.
 
 ### How custom CSS is scoped
 
-We scope the admin's CSS and the theme's CSS with postcss **when it's saved**, not on
-every request:
+We scope your CSS and the theme's CSS with postcss **when it's saved**, not on every
+request:
 
 - every rule gets anchored under **`body:not(.xt-acp)`**, so site CSS never reaches the
   admin panel;
@@ -220,61 +321,83 @@ the files end up), `data:` URLs and paths on the same site.
 
 ### Fonts
 
-The Style Editor font applies **to the whole site** (body and headings, `--ff-sans` and
-`--font-display`). Users can override it on their profile. The ACP always uses Poppins
-(`body.xt-acp` pins family, weight and size). A theme can ship its own font
-(`@font-face` in `styles/custom.css`, the file in `assets/`) and point `--font-display` at
-it with a token. Our Redline theme does exactly that with Oxanium.
+Theme Studio font belongs to the theme you're editing and applies to **that theme's
+whole site** (body and headings, `--ff-sans` and `--font-display`). Users can override it
+on their profile. The ACP always uses Poppins (`body.xt-acp` pins family, weight and
+size). It's stored per theme and saved through `GET`/`PUT /api/appearance/font?theme=<key>`.
+
+A theme can also ship its own font (`@font-face` in `styles/custom.css`, the file in
+`assets/`) and point `--font-display` at it with a token. Our Redline theme does that with
+Oxanium.
 
 ---
 
-## Themes on a site: install, switch, undo
+## Themes on a site: install, switch, update, undo
 
-A theme is **data**: layout documents, tokens, a stylesheet and images. There's no code,
-so installing one can't run anything; plugins are where code goes. Installed themes live
-in a **library** (`xcf_themes`, one row per theme, one of them active).
+A theme is **data**: layout documents, tokens, a stylesheet, a site frame and images.
+There's no code, so installing one can't run anything; plugins are where code goes.
+Installed themes live in a **library** (`xcf_themes`, one row per theme). One of them is
+active, or none, in which case Core is live.
 
 ### Installing is not switching
 
 | What you import | What happens |
 |---|---|
-| a **new** theme (any theme the site isn't wearing) | it's added to the library **inactive**, the site doesn't change, and we **ask** the admin |
-| an **update** to the theme the site is wearing | it's applied right away, with the usual inheritance |
-| an update to an **inactive** theme | its library entry is refreshed and it stays inactive |
+| a **new** theme | it's added to the library **inactive**, the site doesn't change, and we ask whether to switch |
+| a new version of a theme you already have | that theme is **updated** (see [Updating](#updating)); if it's the active one, visitors see the update right away |
 
 The question comes from the **switch prompt** (`offerThemeSwitch` in
 `features/admin/hooks/themeSwitchPrompt.tsx`). It shows the new theme's screenshot, its
 light/dark look, and *"Switch to X" / "Keep Y"* (or *"Keep the default look"* on a site
-without a theme). Every install path uses it: the upload on the Themes page, the
-Marketplace grid, and the owned-licence rows. The import report tells you which case
-happened through `activated` and `current`.
+on Core). Every install path uses it: the upload on the Themes page, the Marketplace grid,
+and the owned-licence rows. The import report tells you which case happened through
+`activated` and `current`.
 
-We ask because a site that changed its whole look when someone installed a theme to try
-it out was answering a question nobody had asked. And it costs nothing: "Switch" is the
-normal library activation.
+You don't have to switch to a theme to work on it. Open it from the Themes page (or pick
+it in the editors) and get it right before visitors see it.
 
-### Switching is live
+### Switching
 
-`POST /api/admin/themes/library/:id/activate` puts a theme on **live**: the theme layer,
-the published layouts and their drafts all at once, plus a style-version bump. There's no
-publish step.
+`POST /api/admin/themes/library/:id/activate` makes a theme the live one, and
+`POST /api/admin/themes/core/activate` goes back to Core. A switch is live straight away
+(there's no publish step) and bumps the style version.
 
-- **A switch replaces the theme layer; it never merges.** If the new theme has no tokens
-  or no stylesheet, the previous theme's are cleared, so its fonts and rules stop
-  painting the site. (Until 2026-09-19 that wasn't the case: switching away from a theme
-  with custom CSS left the CSS behind.)
-- **Layouts work differently, on purpose.** A template the new theme doesn't ship keeps
-  what the site had, and a template the admin customized is kept (see
-  [Layers](#layers-theme-and-admin)).
+Nothing is written apart from which theme is active. Every theme already holds its own
+layouts, tokens, CSS, font and frame, so a switch can't leave the previous theme's
+stylesheet or fonts behind, and it can't overwrite anything you did to the next one.
+
+### Updating
+
+When you import a new version of an installed theme:
+
+- templates you **never changed** (or changed back to exactly what the old version
+  shipped) follow the new version;
+- templates you **changed** are kept, and the import result lists them under `kept`;
+- tokens and custom CSS follow the new version wherever you didn't override them, because
+  your overrides sit on top of whatever the theme ships;
+- the site frame follows the same rule as a template.
+
+This is decided against the **old** package before it's replaced
+(`layoutService.releaseUntouched`), because after the update "the same as what it ships"
+would compare against the wrong version. See
+[`theme-packages.md` → Updating](theme-packages.md#updating-a-theme-without-losing-your-work).
 
 ### Undo
 
-Every activation saves an undo point first, and `POST /api/admin/themes/discard` restores
-exactly what it replaced (the layouts and both theme layers).
+`POST /api/admin/themes/discard` undoes the last theme change:
 
-**It only goes back one step.** The next activation overwrites it, so after two switches
-"undo" takes you back to the first, not the original. To go back further, activate the
-old theme from the library.
+- after a **switch**, it switches back to the theme that was live before (Core if that
+  theme has since been removed);
+- after an **update**, it puts back the old version of the package and that theme's
+  layouts as they were before the update.
+
+**It only goes back one step.** The next switch or update overwrites the undo point. To go
+back further, activate the old theme from the library.
+
+### Removing a theme
+
+Removing a theme deletes its package, its files and **every edit you made to it**, after a
+confirmation. If it's the active theme, the site switches to Core first.
 
 ---
 
@@ -289,17 +412,17 @@ alone and changes nothing on the server.
 - It's sent as `?theme=<id>` to `/api/appearance/css` and `/api/layouts`. The API checks
   it against the library, and an id that doesn't match anything falls back to the site's
   own theme.
-- A reader wearing another theme gets it **as its author shipped it**, without the admin
-  layer. The admin's overrides were picked for the site's theme and don't mean anything on
-  another one.
+- A reader wearing another theme gets it **as you've made it**: what the theme ships with
+  your published edits to that theme. Your edits to the active theme don't come along;
+  they were made for a different theme's surfaces.
 - It's offered in the footer (`ThemeChooserBlock`) and in Account → Preferences. They're
   **the same choice**: same cookie, same strings (`themeChooser.*`), same reload, and the
   same rule that **with fewer than two installed themes, neither shows up**. If you change
   one, change both.
 - Choosing the **site's own** theme **clears** the cookie instead of storing that theme's
-  id. Otherwise the reader would stay on it after the admin switches.
-- An installed theme is **offered to readers right away**, even if the admin kept their
-  current one. We decided against a separate "offer to readers" setting.
+  id. Otherwise the reader would stay on it after you switch.
+- An installed theme is **offered to readers right away**, even if you kept your current
+  one. We decided against a separate "offer to readers" setting.
 
 ---
 
@@ -320,14 +443,20 @@ alone and changes nothing on the server.
 
 ## Rules of thumb
 
-- **No hardcoded visual values** in components. Always use a token. The Style Editor only
+- **No hardcoded visual values** in components. Always use a token. Theme Studio only
   edits semantic tokens.
 - **Target blocks with `xt-b--<type>`** or your own `className` handle, not their inner
   classes. Never use `>`, `+` or `~` across a block boundary: every block sits in a
   `display: contents` wrapper, so the combinator quietly matches nothing.
 - **Check the stylesheet we actually serve**, not the docs. `curl /api/appearance/css`
-  tells you what visitors get.
-- **A theme screenshot taken on a dev site includes that site's admin layer** on top of
-  the theme. Neutralize the overridden tokens, or use a clean install.
-- Anything that writes a theme layer, a stylesheet or a layout has to bump the style
-  version, or open tabs keep the old look until they reload.
+  tells you what visitors get, and `curl '/api/appearance/css?theme=<id>'` what a reader
+  wearing that theme gets.
+- **Exporting a theme exports your edits to it.** `POST /api/admin/themes/export` packs
+  the active theme as you've made it (or the one in `?theme=`), so a screenshot or export
+  from a dev site includes whatever you changed there.
+- **Anything that writes a theme's tokens, stylesheet, font, frame or layouts has to bump
+  the style version**, or open tabs keep the old look until they reload.
+- **Pass the theme key.** Any new admin endpoint that reads or writes appearance takes
+  `?theme=` through `resolveEditingKey()`, and any new editor request goes through
+  `withTheme()`. A call without it quietly edits the active theme instead of the one on
+  screen.

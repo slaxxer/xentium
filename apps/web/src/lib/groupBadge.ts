@@ -28,3 +28,14 @@ export function roleColor(
   if (roleKey === "supermod" || roleKey === "moderator") return "var(--c-accent)";
   return undefined;
 }
+
+/**
+ * The colour a member's NAME is drawn in: their highest-precedence group's badge.
+ * The navbar, the home card and the composer all ask this, so a signed-in member's
+ * own name looks the same (colour and glow) wherever it appears.
+ */
+export function primaryBadgeColor(
+  groups: ReadonlyArray<{ displayOrder?: number; badgeColor: string | null }> | undefined,
+): string | null {
+  return topGroups([...(groups ?? [])], (g) => g.displayOrder, 1)[0]?.badgeColor ?? null;
+}

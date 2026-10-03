@@ -92,8 +92,6 @@
     "title": "Temas",
     "close": "Cerrar",
     "inUse": "En uso",
-    "siteBadge": "Sitio",
-    "note": "Tu elección, en este dispositivo. No cambia nada para los demás.",
     "activeBadge": "Activo"
   },
   "badges": {
@@ -181,5 +179,41 @@
     "hintDrop": "suelta archivos donde quieras",
     "words_one": "1 palabra",
     "words_other": "{{count}} palabras"
+  },
+  "footer": {
+    "whosOnline": "Quién está conectado",
+    "onlineSentence": "Ahora mismo hay {{count}} miembros conectados, según la actividad de los últimos minutos.",
+    "andMore": "+{{count}} más",
+    "legend": "Leyenda",
+    "totalArticles": "Artículos",
+    "members": "Miembros",
+    "onlineNow": "Conectados ahora",
+    "newestMember": "Miembro más reciente",
+    "uptime": "Tiempo activo",
+    "uptimeHint": "Tiempo que lleva el servidor en marcha desde el último reinicio",
+    "latency": "Latencia",
+    "latencyHint": "Tiempo de ida y vuelta hasta el servidor",
+    "stat": {
+      "threads": "Temas",
+      "posts": "Mensajes"
+    },
+    "poweredBy": "© {{year}} Funciona con <b>Xentium</b> Community",
+    "linksLabel": "Enlaces del pie"
+  },
+  "legal": {
+    "title": {
+      "imprint": "Aviso legal",
+      "privacy": "Política de privacidad",
+      "terms": "Términos del servicio",
+      "disclaimer": "Descargo de responsabilidad"
+    },
+    "link": {
+      "imprint": "Aviso legal",
+      "privacy": "Privacidad",
+      "terms": "Términos",
+      "disclaimer": "Descargo"
+    },
+    "lastUpdated": "Última actualización: {{date}}",
+    "edit": "Editar"
   }
 }
