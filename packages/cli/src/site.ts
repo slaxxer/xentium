@@ -199,5 +199,22 @@ export function compareSemver(a: string, b: string): number {
   if (x.pre === y.pre) return 0;
   if (!x.pre) return 1;
   if (!y.pre) return -1;
-  return x.pre > y.pre ? 1 : -1;
+  // Identifier by identifier, numbers numerically: "alpha.10" is newer than
+  // "alpha.9", which a plain string compare gets backwards.
+  const xs = x.pre.split(".");
+  const ys = y.pre.split(".");
+  for (let i = 0; i < Math.max(xs.length, ys.length); i++) {
+    const p = xs[i];
+    const q = ys[i];
+    if (p === undefined) return -1;
+    if (q === undefined) return 1;
+    if (p === q) continue;
+    const pn = /^\d+$/.test(p);
+    const qn = /^\d+$/.test(q);
+    if (pn && qn) return Number(p) > Number(q) ? 1 : -1;
+    if (pn) return -1;
+    if (qn) return 1;
+    return p > q ? 1 : -1;
+  }
+  return 0;
 }
