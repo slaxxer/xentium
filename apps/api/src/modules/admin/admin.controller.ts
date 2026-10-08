@@ -174,6 +174,19 @@ export const adminController = {
   }) as RequestHandler,
 
   // Users
+  createUser: (async (req, res) => {
+    // The registration rules, so an account made here could have been made there.
+    const body = z.object({
+      email:    z.string().email().max(255),
+      username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, - and _"),
+      password: z.string().min(8).max(128),
+      groupId:  z.string().min(1).max(64).optional(),
+      displayName: z.string().trim().max(80).optional(),
+      verified: z.boolean().default(true),
+    }).parse(req.body);
+    res.status(201).json(await adminService.createUser(body));
+  }) as RequestHandler,
+
   listUsers: (async (req, res) => {
     const q = listUsersSchema.parse(req.query);
     res.json(await adminService.listUsers(q));

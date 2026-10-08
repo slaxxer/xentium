@@ -43,6 +43,11 @@ every one of its routes answers `404 XEC-PLUGIN-2020` without running your code.
 anything in core's UI calls a plugin route, it has to cope with that route not being
 there.
 
+To decide something rather than refuse a request, ask
+`ctx.host.permissions?.has(userId, "your.permission")`. It gives the same answer
+`requirePermission` acts on, implied permissions included. It is optional, because older
+hosts don't have it, so check before calling.
+
 Use the host's `middleware` (`requireAuth`, `optionalAuth`, `requirePermission`) rather
 than parsing tokens yourself. `req.userId` is what the rest of the platform means by "the
 caller".
@@ -199,6 +204,22 @@ These are covered in [Plugin-authored layout blocks](plugin-blocks.md): `blockRe
 for real blocks, `ctx.registerLayoutTemplate` to open one of your own pages to the Layout
 Editor, and the `slotRegistry` contributions (header widget, layout widget, profile tab)
 that core turns into placeable blocks for you.
+
+### Pages and header widgets (`slotRegistry.registerRoute`, `registerHeaderWidget`)
+
+A header widget is for signed-in members only. Core hides it from guests wherever it is
+drawn (the masthead, its own block, the navbar), so your component doesn't need to check.
+
+A public page is open to everyone unless you say otherwise. If it only makes sense for a
+member (an inbox, a settings page), pass `requiresAuth: true`. A guest who opens it is
+sent to sign in and brought back afterwards:
+
+```ts
+slotRegistry.registerRoute({ path: "/messages", component: MessagesPage, layout: "public", requiresAuth: true });
+```
+
+This only decides who can open the page. Your API routes still need `requireAuth`, since
+anyone can call them directly.
 
 ### Icons
 

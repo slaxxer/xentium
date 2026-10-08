@@ -11,6 +11,7 @@
  * belongs to the card rather than to a row inside it.
  */
 import type { ReactNode } from "react";
+import { Toggle } from "../../../components/Toggle";
 
 export function AccountCard({
   title, desc, aside, danger, children,
@@ -80,17 +81,6 @@ export function AccountSwitch({
 }: {
   on: boolean; onToggle: () => void; disabled?: boolean; label?: string;
 }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      aria-label={label}
-      disabled={disabled}
-      className={`account-toggle__btn${on ? " account-toggle__btn--on" : ""}`}
-      onClick={onToggle}
-    >
-      <span className="account-toggle__knob" />
-    </button>
-  );
+  // The one switch (components/Toggle) — the account page no longer draws its own.
+  return <Toggle on={on} onToggle={onToggle} disabled={disabled} label={label} />;
 }

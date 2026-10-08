@@ -1,6 +1,7 @@
 # Plugin-authored layout blocks
 
-This page is the contract for writing layout blocks in a plugin. For the idea behind
+This page is the contract for writing layout blocks in a plugin (for decorating a block's
+edges, see [Plugin edge art](./plugin-edge-art.md)). For the idea behind
 layouts, read [The layout system](../README.md#layout-system) first.
 
 Xentium has exactly two kinds of extension:

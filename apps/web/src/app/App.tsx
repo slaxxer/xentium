@@ -68,6 +68,7 @@ import { UpdatesPage }     from "../features/admin/pages/UpdatesPage";
 import { UploadPage }      from "../features/admin/pages/UploadPage";
 import { LicensePage }     from "../features/admin/pages/LicensePage";
 // ACP pages — system
+import { MembersOnly } from "../components/MembersOnly";
 import { ErrorReferencePage }    from "../features/admin/pages/ErrorReferencePage";
 import { ErrorLogPage }          from "../features/admin/pages/ErrorLogPage";
 import { MigrationHistoryPage }  from "../features/admin/pages/MigrationHistoryPage";
@@ -357,7 +358,7 @@ function buildRouter() {
           // Plugin public routes (registered by plugins via slotRegistry)
           ...slotRegistry.getRoutes("public").map((r) => ({
             path: r.path,
-            element: <r.component />,
+            element: r.requiresAuth ? <MembersOnly><r.component /></MembersOnly> : <r.component />,
           })),
         ],
       },

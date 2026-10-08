@@ -18,7 +18,7 @@ import {
 } from "../../lib/articlesApi";
 import { Composer } from "../../components/composer/Composer";
 import { Avatar } from "../../components/Avatar";
-import { authStore } from "../../lib/authStore";
+import { authStore, userCan } from "../../lib/authStore";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { apiErrorMessage } from "../../lib/swal";
 import { toast } from "../../lib/toast";
@@ -36,12 +36,12 @@ const EMPTY_BODY: JSONContent = { type: "doc", content: [{ type: "paragraph" }] 
  */
 const ARTICLE_EXTENSIONS = [Image.configure({ inline: false, HTMLAttributes: { class: "article-editor__image" } })];
 
-const STAFF_GROUP_KEYS = new Set(["admin", "supermod", "moderator"]);
 const PUBLISH_MIN_WORDS = 10;
 const EXCERPT_SOFT_MAX = 160;
 
-function viewerIsStaff(user: { groups?: Array<{ key: string }> } | null | undefined): boolean {
-  return user?.groups?.some((g) => STAFF_GROUP_KEYS.has(g.key)) ?? false;
+/** May edit someone else's article — the key the update endpoint checks. */
+function viewerIsStaff(user: Parameters<typeof userCan>[0]): boolean {
+  return userCan(user, "article.edit.any");
 }
 
 /**

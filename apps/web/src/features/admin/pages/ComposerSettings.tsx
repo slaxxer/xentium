@@ -19,8 +19,6 @@ import {
   type ComposerConfig, type ComposerPlacement, type ComposerToolId,
 } from "@xentium/contracts";
 import { api } from "../../../lib/api";
-import { toast } from "../../../lib/toast";
-import { apiErrorMessage } from "../../../lib/swal";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle } from "../../../components/AcpControls";
@@ -54,10 +52,13 @@ export function ComposerSettings() {
       qc.setQueryData([...COMPOSER_CONFIG_KEY], fresh);
       setTouched(false);
     },
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
-  useAutosave({ value: form, savedValue: saved, onSave: (v) => save.mutate(v) });
+  useAutosave({
+    value: form, savedValue: saved, label: t("composer.title"),
+    onSave: (v) => save.mutateAsync(v),
+    onDiscard: () => { setForm(saved); setTouched(false); },
+  });
 
   const { tools } = resolveComposerConfig(form);
   const placementOf = (id: ComposerToolId): ComposerPlacement =>

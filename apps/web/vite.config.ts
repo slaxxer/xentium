@@ -64,6 +64,9 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 5173,
+    // The dev instance can be reached through dev.xentium.org (nginx on the VPS →
+    // an SSH tunnel to this machine). Vite refuses unknown Host headers otherwise.
+    allowedHosts: ['dev.xentium.org'],
     proxy: { "/api": "http://localhost:4000", "/uploads": "http://localhost:4000" },
   },
   optimizeDeps: { exclude: ["@xentium/ui", "@xentium/contracts", "@xentium/sdk"] },

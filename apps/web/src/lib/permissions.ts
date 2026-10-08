@@ -37,6 +37,7 @@ const PERM_META: Record<string, { label: string; domain: string }> = {
   "moderation.cases.manage":    { label: "Work review cases",                  domain: "Moderation" },
   "moderation.log.view":        { label: "View the moderation log",            domain: "Moderation" },
   "moderation.settings":        { label: "Change moderation settings",         domain: "Moderation" },
+  "moderation.protected":       { label: "Counts as staff (cannot be warned or banned)", domain: "Moderation" },
   "message.send":               { label: "Send private messages",              domain: "Messaging" },
   "admin.plugins":              { label: "Manage plugins in the admin panel",  domain: "Extensions" },
   "plugin.install":             { label: "Install plugins",                    domain: "Extensions" },
@@ -59,7 +60,11 @@ export function enrichPerm(p: Permission): Permission {
   if (meta) return { ...p, label: meta.label, domain: meta.domain };
   const prefix = p.key.split(".")[0] ?? "other";
   const domain = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-  const label  = p.key.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  // A plugin registers a real label ("Reply to closed threads"); core keys store
+  // their constant name (ADMIN_ACCESS) and all have PERM_META above.
+  const label  = p.label && /[a-z]/.test(p.label)
+    ? p.label
+    : p.key.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   return { ...p, label, domain };
 }
 

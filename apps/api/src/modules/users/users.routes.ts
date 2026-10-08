@@ -46,6 +46,8 @@ usersRouter.get("/:username", optionalAuth, usersController.getPublicProfile);
  * non-admin progression route and it answers about the caller, not about a profile.
  */
 usersRouter.get("/:id/progression", usersController.getProgression);
+// Warnings, bans and IPs: the member and staff only; everyone else gets 403.
+usersRouter.get("/:id/standing", requireAuth, usersController.getStanding);
 
 /**
  * Who has looked at this profile lately.

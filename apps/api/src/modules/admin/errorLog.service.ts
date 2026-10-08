@@ -20,6 +20,8 @@ export interface GroupFilter {
   q?: string;
   /** One group — the drawer's own summary, wherever the list is paged. */
   key?: string;
+  /** Only groups this member (a user id) ran into. */
+  userId?: string;
 }
 
 interface GroupRow {
@@ -75,6 +77,9 @@ function whereOf(f: GroupFilter): Prisma.Sql {
   if (f.key) conds.push(Prisma.sql`e.group_key = ${f.key}`);
   if (f.severity) conds.push(Prisma.sql`e.severity = ${f.severity}`);
   if (f.domain) conds.push(Prisma.sql`e.code LIKE ${`XEC-${escapeLike(f.domain.toUpperCase())}-%`}`);
+  if (f.userId) {
+    conds.push(Prisma.sql`e.group_key IN (SELECT x.group_key FROM xcf_error_log x WHERE x.user_id = ${f.userId})`);
+  }
   if (f.q?.trim()) {
     // Matched against every occurrence, but the group keeps all its rows: a
     // request id finds the group, it does not shrink it to one occurrence.
@@ -117,7 +122,73 @@ const domainOf = (code: string) => code.split("-")[1] ?? "";
 /** Now, as the UTC wall-clock `created_at` is stored in (timestamp without zone). */
 const NOW_UTC = Prisma.sql`(now() AT TIME ZONE 'UTC')`;
 
+/** A member as the error-reference page names them: by username, any case. */
+async function findMember(username: string) {
+  return prisma.user.findFirst({
+    where: { username: { equals: username.trim(), mode: "insensitive" } },
+    select: { id: true, username: true },
+  });
+}
+
 export const errorLogService = {
+  findMember,
+
+  /**
+   * ACP → System → Error reference: what the server logged for one code in the last
+   * `days` — every occurrence, or one member's. Counts come back for both scopes so
+   * the page can offer the switch; `items` are the chosen scope's, newest first.
+   * A member who does not exist is reported as such (`member: null`), not as an error.
+   */
+  async codeOccurrences(opts: { code: string; member?: string; days: number; scope: "member" | "all"; limit: number }) {
+    const since = new Date(Date.now() - opts.days * 86400e3);
+    const member = opts.member?.trim() ? await findMember(opts.member) : null;
+    const base: Prisma.ErrorLogWhereInput = { code: opts.code, createdAt: { gte: since } };
+    const mineWhere: Prisma.ErrorLogWhereInput = { ...base, userId: member?.id ?? "-" };
+    const showMine = !!opts.member?.trim() && opts.scope === "member";
+    const [all, mine, people, rows] = await Promise.all([
+      prisma.errorLog.count({ where: base }),
+      member ? prisma.errorLog.count({ where: mineWhere }) : Promise.resolve(0),
+      // Guests count as one "person": the page says "at 4 members", not "at 3 + guests".
+      prisma.errorLog.groupBy({ by: ["userId"], where: base }),
+      prisma.errorLog.findMany({
+        where: showMine ? mineWhere : base,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: opts.limit,
+        select: { id: true, method: true, url: true, requestId: true, userId: true, context: true, createdAt: true },
+      }),
+    ]);
+    const ids = [...new Set(rows.map((r) => r.userId).filter((id): id is string => !!id))];
+    const users = ids.length
+      ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, username: true, avatar: true } })
+      : [];
+    const byId = new Map(users.map((u) => [u.id, u]));
+    return {
+      member,
+      counts: { all, mine, people: people.length },
+      items: rows.map((r) => {
+        const u = r.userId ? byId.get(r.userId) : undefined;
+        return { ...r, user: u ? { username: u.username, avatar: u.avatar } : null };
+      }),
+    };
+  },
+
+  /** The last few DISTINCT codes the server logged — what a member most likely just sent you. */
+  async recentCodes(limit: number) {
+    const rows = await prisma.$queryRaw<Array<{ code: string; lastAt: Date; userId: string | null; day: number }>>`
+      SELECT DISTINCT ON (e.code) e.code, e.created_at AS "lastAt", e.user_id AS "userId",
+             (SELECT count(*)::int FROM xcf_error_log d
+               WHERE d.code = e.code AND d.created_at >= ${NOW_UTC} - interval '24 hours') AS "day"
+      FROM xcf_error_log e
+      ORDER BY e.code, e.created_at DESC`;
+    const top = rows.sort((a, b) => +b.lastAt - +a.lastAt).slice(0, limit);
+    const ids = [...new Set(top.map((r) => r.userId).filter((id): id is string => !!id))];
+    const users = ids.length ? await prisma.user.findMany({ where: { id: { in: ids } }, select: { id: true, username: true } }) : [];
+    return top.map((r) => ({
+      code: r.code, lastAt: r.lastAt, count24h: r.day,
+      username: users.find((u) => u.id === r.userId)?.username ?? null,
+    }));
+  },
+
   async listGroups(f: GroupFilter & { status: GroupStatus; page: number; pageSize: number }) {
     const groups = await allGroups(f);
     const counts = {

@@ -101,6 +101,11 @@ const appearance = {
   styleVersionBumps: 0,
   /** Which themes' stylesheets were rebuilt. */
   recompiled: [] as string[],
+  /** Colourways: what the theme offers, what it ships, and what was written / restored. */
+  colourways: undefined as Array<{ id: string; name: string; tokens: Record<string, string> }> | undefined,
+  shipped: undefined as Scoped | undefined,
+  patched: undefined as unknown,
+  restoredTokens: undefined as unknown,
 };
 
 vi.mock("../layouts/layout.service.js", () => ({
@@ -139,6 +144,14 @@ vi.mock("../appearance/appearance.service.js", () => ({
   bustThemeCss: () => {},
   appearanceService: {
     getEffectiveTokens: async () => appearance.effective,
+    // A theme's colourways and the last-edited lookups label the undo point.
+    getColourways:      async () => appearance.colourways ?? [],
+    getThemeTokens:     async () => appearance.shipped ?? {},
+    patchLiveScope:     async (scope: string, patch: Record<string, string | null>, _by: string, label: string, key: string) => {
+      appearance.patched = { scope, patch, label, key };
+      return { live: { global: { "--c-accent": "#before" } }, draft: null };
+    },
+    restoreTokens:      async (snapshot: unknown, _by: string, key: string) => { appearance.restoredTokens = { snapshot, key }; },
     getCustomCss:       async () => appearance.customCss,
     getThemeCustomCss:  async () => appearance.themeCustomCss,
     getInstalledTheme:  async () => appearance.installed,
@@ -195,6 +208,9 @@ vi.mock("../../infrastructure/db.js", () => ({
       },
       delete: async ({ where }: any) => { library.rows.delete(where.id); return {}; },
     },
+    styleHistory: { findFirst: async () => null },
+    layout:       { findFirst: async () => null },
+    setting:      { findFirst: async () => null },
     // The service's transaction is a list of already-issued promises.
     $transaction: async (ops: Promise<unknown>[]) => Promise.all(ops),
   },
@@ -1411,5 +1427,44 @@ describe("installing is not switching", () => {
     expect(library.rows.get("meadow")!.active).toBe(true);
     expect([...livePublished.keys()]).toContain("home");
     expect(rollbackProbe.saved).toBeTruthy();
+  });
+});
+
+
+describe("colourways from the Themes page", () => {
+  beforeEach(() => {
+    appearance.installed = { id: "aurora", name: "Aurora", version: "2.1.0" };
+    library.rows.set("aurora", { id: "aurora", name: "Aurora", active: true, manifest: {}, payload: {} } as never);
+    appearance.colourways = [
+      { id: "mint", name: "Mint", tokens: { "--c-accent": "#2fbf8f" } },
+      { id: "coral", name: "Coral", tokens: { "--c-accent": "#ff6f61", "--c-accent2": "#ffd166" } },
+    ];
+    // The theme ships Coral's second accent: storing it again would be a copy, not an edit.
+    appearance.shipped = { global: { "--c-accent2": "#ffd166" } };
+    appearance.effective = { global: { "--c-accent": "#2fbf8f" } };
+  });
+  afterEach(() => {
+    appearance.colourways = undefined;
+    appearance.shipped = undefined;
+    library.rows.delete("aurora");
+  });
+
+  it("writes only what differs from what the theme ships, live, and names the undo", async () => {
+    await themeService.wearColourway("coral", "u1");
+    expect(appearance.patched).toEqual({
+      scope: "global", key: "aurora", label: "Colourway: Coral",
+      patch: { "--c-accent": "#ff6f61", "--c-accent2": null },
+    });
+    expect(rollbackProbe.saved).toMatchObject({ previous: "aurora", replaced: "Aurora · Mint", tokens: { key: "aurora" } });
+  });
+
+  it("refuses a colourway the theme does not have", async () => {
+    await expect(themeService.wearColourway("nope", "u1")).rejects.toThrow(/no colourway/);
+  });
+
+  it("undo puts the colours back", async () => {
+    await themeService.wearColourway("coral", "u1");
+    await themeService.discardImportedTheme("u1");
+    expect(appearance.restoredTokens).toMatchObject({ key: "aurora", snapshot: { live: { global: { "--c-accent": "#before" } }, draft: null } });
   });
 });

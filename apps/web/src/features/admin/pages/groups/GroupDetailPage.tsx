@@ -5,7 +5,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { faArrowLeft, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../../components/Icon";
 import { SaveChip } from "../../../../components/SaveChip";
-import { useAnySaving, useAutosave } from "../../../../hooks/useAutosave";
+import { useAutosave } from "../../../../hooks/useAutosave";
+import { DraftFailure } from "../../../../hooks/useDraft";
 import { api } from "../../../../lib/api";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { toast } from "../../../../lib/toast";
@@ -85,7 +86,6 @@ function GroupDetail({ id }: { id: string }) {
   const saveGroup = useMutation({
     mutationFn: (v: GroupForm) => api.patch(`/admin/groups/${id}`, { name: v.name.trim(), showInTeam: v.showInTeam }),
     onSuccess: invalidateList,
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
   const saveProg = useMutation({
     mutationFn: (v: ProgressionData) => api.patch(`/admin/progression/${id}`, v) as Promise<Record<string, unknown>>,
@@ -97,7 +97,6 @@ function GroupDetail({ id }: { id: string }) {
       // without this a changed glow only showed after a reload or five minutes.
       void qc.invalidateQueries({ queryKey: ["legend-groups"] });
     },
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
   // Permissions are NOT a draft. Each change is sent as grant/revoke of just
   // those keys: replacing the whole set from a copy taken when the page opened
@@ -124,17 +123,32 @@ function GroupDetail({ id }: { id: string }) {
     onSettled: invalidateList,
   });
 
-  // A name under two characters, or a half-typed colour, is a draft the server
-  // would refuse: hold it back until it is valid instead of toasting on every key.
+  // A name under two characters, or a half-typed colour, is a draft the server would
+  // refuse. It still counts as a change; saving it fails with the reason instead.
   const formValid = !!form && form.name.trim().length >= 2;
   const progValid = !!prog && (!prog.badgeColor || isHexColor(prog.badgeColor))
     && (!prog.badgeShadowColor || isHexColor(prog.badgeShadowColor));
 
-  useAutosave({ value: form, savedValue: formValid ? savedForm : undefined, onSave: (v) => v && formValid && saveGroup.mutate(v) });
-  useAutosave({ value: prog, savedValue: progValid ? progression : undefined, onSave: (v) => v && progValid && saveProg.mutate(v) });
+  useAutosave({
+    value: form, savedValue: savedForm ?? undefined, label: t("groups.tabs.identity"), section: group?.name,
+    onSave: (v) => {
+      if (!v) return undefined;
+      if (!formValid) throw new DraftFailure(t("groups.fields.nameTooShort"));
+      return saveGroup.mutateAsync(v);
+    },
+    onDiscard: () => { if (savedForm) setForm(savedForm); },
+  });
+  useAutosave({
+    value: prog, savedValue: progression, label: t("groups.tabs.progression"), section: group?.name,
+    onSave: (v) => {
+      if (!v) return undefined;
+      if (!progValid) throw new DraftFailure(t("savebar.invalidColor"));
+      return saveProg.mutateAsync(v);
+    },
+    onDiscard: () => { if (progression) setProg(progression); },
+  });
 
-  const pluginSaving = useAnySaving();
-  const saving = saveGroup.isPending || saveProg.isPending || savePerms.isPending || pluginSaving;
+  const saving = savePerms.isPending;
 
   const remove = useMutation({
     mutationFn: () => api.delete(`/admin/groups/${id}`),

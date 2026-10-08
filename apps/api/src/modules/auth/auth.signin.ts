@@ -5,6 +5,8 @@ import { redis, rkey } from "../../infrastructure/redis.js";
 import { authGuardRegistry } from "../../core/auth-guard-registry/auth-guard-registry.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
+import { CorePermissions } from "@xentium/contracts";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
 import { setRefreshCookie } from "../../shared/http/cookies.js";
 import { verifyPassword } from "./auth.password.js";
 import { createSession } from "./auth.tokens.js";
@@ -43,13 +45,10 @@ const PIN_TICKET_MAX_ATTEMPTS = 5;
 interface PinTicket { userId: string; method: SignInMethod; persistent: boolean; attempts: number }
 const ticketKey = (ticket: string) => rkey(`auth:pin-ticket:${ticket}`);
 
-/** Staff = admin / supermod / moderator. Passed to guards so THEY decide whether
- *  a policy exempts staff; core takes no view. */
+/** Staff = holds `moderation.protected` (ACP → Permissions). Passed to guards so
+ *  THEY decide whether a policy exempts staff; core takes no view. */
 export async function isStaffUser(userId: string): Promise<boolean> {
-  const groups = await prisma.userGroup.findMany({
-    where: { userId }, select: { group: { select: { key: true } } },
-  });
-  return groups.some((ug) => ["admin", "supermod", "moderator"].includes(ug.group.key));
+  return hasPermission(userId, CorePermissions.MODERATION_PROTECTED);
 }
 
 /** The active ban on an account, if any — the same rule the password path applies. */

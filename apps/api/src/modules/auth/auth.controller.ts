@@ -11,6 +11,7 @@ import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
+import { effectivePermissions } from "../../shared/middleware/requirePermission.js";
 
 
 
@@ -241,5 +242,11 @@ export async function meHandler(req: Request, res: Response) {
   // (Filtering groups here previously made "hide my Administrator badge" also
   // revoke ACP access client-side — BUGS.md #1.) Badges shown to OTHER viewers
   // are still filtered server-side in the profile/article/user endpoints.
-  res.json({ user: { ...user, avatar: resolveAvatar(user.avatar) } });
+  //
+  // `permissions` is the user's EFFECTIVE keys, so the browser asks "may this user do
+  // X?" instead of "is this user in group Y?" — group names are the admin's to rename
+  // and re-grant in ACP → Permissions, and a UI that checks them drifts from what the
+  // server enforces. It is a hint for what to SHOW; every endpoint still checks.
+  const permissions = await effectivePermissions(user.id);
+  res.json({ user: { ...user, avatar: resolveAvatar(user.avatar), permissions } });
 }

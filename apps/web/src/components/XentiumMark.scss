@@ -1,0 +1,34 @@
+/* The Xentium icon. The box's gradient is the site's to set (Theme Studio → Colours &
+   type → Logo icon: `--logo-icon-from` / `--logo-icon-to`; one colour twice = flat),
+   defaulting to the brand's own (public/brand/README). */
+.xt-mark {
+  --xt-mark-from:  var(--logo-icon-from, #f26b1d);
+  --xt-mark-to:    var(--logo-icon-to, #e0336b);
+  --xt-mark-glyph: #ffffff;
+
+  /* The ACP and the installer show XENTIUM's icon, not the site's: always the brand colours. */
+  &--brand {
+    --xt-mark-from: #f26b1d;
+    --xt-mark-to:   #e0336b;
+  }
+
+  display: block;
+  flex-shrink: 0;
+
+  &__from  { stop-color: var(--xt-mark-from); }
+  &__to    { stop-color: var(--xt-mark-to); }
+  &__glyph { stroke: var(--xt-mark-glyph); }
+}
+
+/* Theme Studio → Colours → Logo icon. A BORDER and a SHADOW that follow the logo's
+   own shape (drop-shadow traces the alpha, so a round PNG gets a round ring and the
+   tile a rounded one). Both default to transparent: nothing changes until an admin
+   picks a colour. The four 1.5px offsets make the outline; the last is the shadow. */
+.xt-logo-fx {
+  filter:
+    drop-shadow(1.5px 0 0 var(--logo-icon-border, transparent))
+    drop-shadow(-1.5px 0 0 var(--logo-icon-border, transparent))
+    drop-shadow(0 1.5px 0 var(--logo-icon-border, transparent))
+    drop-shadow(0 -1.5px 0 var(--logo-icon-border, transparent))
+    drop-shadow(0 4px 12px var(--logo-icon-shadow, transparent));
+}

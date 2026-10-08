@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import { faPlus, faTrash, faCopy, faSquareCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { useAutosave, useAnySaving, sameValue } from "../../../hooks/useAutosave";
+import { sameValue } from "../../../hooks/useAutosave";
+import { DraftFailure, useDraft, useDraftStore, type DraftChange } from "../../../hooks/useDraft";
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
@@ -152,6 +153,8 @@ const SECTIONS: Section[] = [
       { i18nKey: "siteDescription", key: "site.description", type: "text",     placeholderKey: "siteDescription" },
       { i18nKey: "defaultLanguage", key: "site.locale",      type: "language" },
       { i18nKey: "timezone",        key: "site.timezone",    type: "timezone" },
+      { i18nKey: "timeFormat",      key: "site.time_format", type: "select", values: ["auto", "24h", "12h"], optionsKey: "timeFormat" },
+      { i18nKey: "dateFormat",      key: "site.date_format", type: "select", values: ["medium", "long", "numeric", "iso"], optionsKey: "dateFormat" },
     ],
   },
   {
@@ -231,6 +234,37 @@ const SECTIONS: Section[] = [
   // server configuration sits alongside the templates it renders.
 ];
 
+/** The Maintenance card is a custom body, so its keys name their labels here. */
+const MAINTENANCE_LABELS: Record<string, string> = {
+  "maintenance.enabled":          "master",
+  "maintenance.allowed_groups":   "allowedGroups",
+  "maintenance.title":            "headline",
+  "maintenance.message":          "reason",
+  "maintenance.progress_mode":    "mode",
+  "maintenance.progress_label":   "bar",
+  "maintenance.progress_percent": "bar",
+  "maintenance.steps":            "steps",
+  "maintenance.current_step":     "steps",
+  "maintenance.eta":              "eta",
+  "maintenance.countdown":        "countdown",
+  "maintenance.auto_refresh":     "autoRefresh",
+  "maintenance.background":       "background",
+  "maintenance.services":         "services",
+  "maintenance.links":            "links",
+  "maintenance.staff_link":       "staffLink",
+};
+
+/** Which section each key lives in, and its row definition when it has one. */
+const KEY_SECTION = new Map<string, Section>();
+const KEY_FIELD = new Map<string, SectionField>();
+for (const section of SECTIONS) {
+  for (const f of section.fields ?? []) { KEY_SECTION.set(f.key, section); KEY_FIELD.set(f.key, f); }
+  for (const k of section.keys ?? []) KEY_SECTION.set(k, section);
+}
+
+/** The id this page's draft registers under — so it recognises its own errors. */
+const DRAFT_ID = "acp-settings";
+
 // Default values used until the API responds
 const DEFAULTS: Record<string, unknown> = {
   "beta.enabled":                       false,
@@ -241,6 +275,8 @@ const DEFAULTS: Record<string, unknown> = {
   "site.description":                   "",
   "site.locale":                        "en",
   "site.timezone":                      "UTC",
+  "site.time_format":                   "auto",
+  "site.date_format":                   "medium",
   "features.articles.enabled":          true,
   "features.home.enabled":              true,
   "features.members.enabled":           true,
@@ -353,23 +389,29 @@ export function SettingsPage() {
     // the DATA changes, not on every refetch that returns the same rows.
   }, [settings]);
 
-  const saveMutation = useMutation({
-    mutationFn: (entries: Array<[string, unknown]>) =>
-      Promise.all(entries.map(([key, value]) =>
-        api.put(`/admin/settings/${encodeURIComponent(key)}`, { value }))),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-settings"] });
-      // Feature flags / landing affect the public site + nav immediately.
-      qc.invalidateQueries({ queryKey: ["site-config"] });
-      qc.invalidateQueries({ queryKey: ["pub-nav-items"] });
-      qc.invalidateQueries({ queryKey: ["maintenance"] });
-      // Rank display (badges ↔ images) is read site-wide from the group legend.
-      qc.invalidateQueries({ queryKey: ["legend-groups"] });
-      qc.invalidateQueries({ queryKey: ["acp-setting", "groups.rank_display"] });
-      swalToast(t("settings.toastSaved"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
+  /**
+   * Save the given keys, one request each — so a failure can name the setting that
+   * failed, and the bar can take the admin to it. Every key that did save is
+   * invalidated either way; only the failed ones stay unsaved.
+   */
+  const saveKeys = useCallback(async (entries: Array<[string, unknown]>) => {
+    const results = await Promise.allSettled(entries.map(([key, value]) =>
+      api.put(`/admin/settings/${encodeURIComponent(key)}`, { value })));
+    qc.invalidateQueries({ queryKey: ["acp-settings"] });
+    // Feature flags / landing affect the public site + nav immediately.
+    qc.invalidateQueries({ queryKey: ["site-config"] });
+    qc.invalidateQueries({ queryKey: ["pub-nav-items"] });
+    qc.invalidateQueries({ queryKey: ["maintenance"] });
+    // Rank display (badges ↔ images) is read site-wide from the group legend.
+    qc.invalidateQueries({ queryKey: ["legend-groups"] });
+    qc.invalidateQueries({ queryKey: ["acp-setting", "groups.rank_display"] });
+    const failed = results.findIndex((r) => r.status === "rejected");
+    if (failed >= 0) {
+      const reason = (results[failed] as PromiseRejectedResult).reason;
+      const code = (reason as { detail?: { error?: { code?: string } } })?.detail?.error?.code;
+      throw new DraftFailure(apiErrorMessage(reason), code, entries[failed]![0]);
+    }
+  }, [qc]);
 
   function set(key: string, value: unknown) {
     setDraft(p => ({ ...p, [key]: value }));
@@ -384,24 +426,67 @@ export function SettingsPage() {
     ? Object.fromEntries(GENERAL_KEYS.map(k => [k, k in rawAll ? rawAll[k] : DEFAULTS[k]]))
     : undefined;
 
+  /** A value as the review list and the row marker show it. */
+  const formatValue = useCallback((key: string, v: unknown): string => {
+    const f = KEY_FIELD.get(key);
+    if (typeof v === "boolean") return v ? t("savebar.on") : t("savebar.off");
+    if (v === "" || v === null || v === undefined) return t("savebar.empty");
+    if (f?.type === "select" && f.optionsKey) return t(`settings.options.${f.optionsKey}.${String(v)}`);
+    if (f?.type === "language") return LOCALES.find((l) => l.value === v)?.label ?? String(v);
+    if (f?.type === "group") return allGroups.find((g) => g.key === v)?.name ?? String(v);
+    if (f?.type === "datetime") { const d = new Date(String(v)); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(); }
+    if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? (x as { label?: string; name?: string }).label ?? (x as { name?: string }).name ?? "…" : String(x))).join(", ") || t("savebar.empty");
+    if (typeof v === "object") return "…";
+    return typeof v === "string" ? `“${v}”` : String(v);
+  }, [t, allGroups]);
+
+  const labelOf = useCallback((key: string): string => {
+    const f = KEY_FIELD.get(key);
+    if (f) return t(`settings.fields.${f.i18nKey}.label`);
+    const m = MAINTENANCE_LABELS[key];
+    return m ? t(`settings.maintenance.${m}.label`) : key;
+  }, [t]);
+
+  const savedRef = useRef(generalSaved);
+  savedRef.current = generalSaved;
+
   /**
-   * Save only the keys that actually changed.
-   *
-   * This used to PUT the whole page — 42 keys — for a single toggle, which is
-   * what made a stale tab destructive rather than merely wrong: one save stamped
-   * every setting on the page over whatever the server held. Sending just the
-   * edits means a save can only ever affect what was edited.
+   * Register the page's changes with the save bar. Only the keys that changed are
+   * sent — this used to PUT all 42 keys for one toggle, which is what made a stale
+   * tab destructive: one save stamped every setting over whatever the server held.
    */
-  useAutosave({
+  useDraft({
+    id: DRAFT_ID,
     value: generalDraft,
     savedValue: generalSaved,
     onSave: (d) => {
-      const changed = Object.entries(d).filter(([key, value]) => !sameValue(value, generalSaved?.[key]));
-      if (changed.length) saveMutation.mutate(changed);
+      const changed = Object.entries(d).filter(([key, value]) => !sameValue(value, savedRef.current?.[key]));
+      return changed.length ? saveKeys(changed) : Promise.resolve();
     },
+    onDiscard: () => setDraft((prev) => ({ ...prev, ...savedRef.current })),
+    describe: (value, saved): DraftChange[] => Object.keys(value)
+      .filter((key) => !sameValue(value[key], saved[key]))
+      .map((key) => ({
+        key,
+        label: labelOf(key),
+        section: KEY_SECTION.has(key) ? t(`settings.sections.${KEY_SECTION.get(key)!.id}.title`) : undefined,
+        from: formatValue(key, saved[key]),
+        to: formatValue(key, value[key]),
+        revert: () => set(key, savedRef.current?.[key]),
+      })),
   });
 
-  const tzOptions = TIMEZONES.map((tz) => ({ value: tz, label: tz }));
+  /** Keys with an unsaved change, for the row and section markers. */
+  const changedKeys = new Set(GENERAL_KEYS.filter((k) => generalSaved && !sameValue(draft[k], generalSaved[k])));
+  const store = useDraftStore();
+  const fieldError = store.status === "error" && store.error?.draftId === DRAFT_ID ? store.error : null;
+
+  // "visitor" first: each reader sees times in their own zone — the right default for
+  // a community spread across the world; a fixed zone is for one that is not.
+  const tzOptions = [
+    { value: "visitor", label: t("settings.options.timezone.visitor") },
+    ...TIMEZONES.map((tz) => ({ value: tz, label: tz })),
+  ];
 
   function renderControl(f: SectionField) {
     const val = draft[f.key];
@@ -501,8 +586,13 @@ export function SettingsPage() {
   }
 
   const pluginSections = slotRegistry.getSettingsSections();
-  const panelSaving    = useAnySaving();
   const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
+
+  // A failed save takes the admin to the setting that failed.
+  useEffect(() => {
+    const section = fieldError?.field ? KEY_SECTION.get(fieldError.field) : undefined;
+    if (section) setActiveSection(section.id);
+  }, [fieldError?.field]);
 
   /**
    * Switch section, rather than scroll to it.
@@ -528,9 +618,9 @@ export function SettingsPage() {
           <h1 className="pg-title">{t("settings.title")}</h1>
           <p className="pg-sub">{t("settings.subtitle")}</p>
         </div>
-        {/* One indicator for the whole page. Plugin sections report into it via
-            `useReportSaving` rather than rendering a second chip of their own. */}
-        <SaveChip saving={saveMutation.isPending || panelSaving} />
+        {/* One indicator for the whole page — it speaks for every draft on it,
+            plugin sections included. */}
+        <SaveChip saving={false} />
       </div>
 
 
@@ -546,6 +636,9 @@ export function SettingsPage() {
               >
                 <AcpIcon name={s.icon} size={17} />
                 <span>{t(`settings.sections.${s.id}.title`)}</span>
+                {[...changedKeys].some((k) => KEY_SECTION.get(k) === s) && (
+                  <i className="set-secnav__dirty" aria-label={t("savebar.region")} />
+                )}
               </button>
             ))}
             {/* Plugin sections sit under core's, marked with the extensions icon
@@ -583,15 +676,27 @@ export function SettingsPage() {
                   <MaintenanceSettings draft={draft} set={set} groups={allGroups} />
                 ) : (
                 <div className="set-rows">
-                  {(section.fields ?? []).map((f) => (
-                    <div key={f.key} className="set-row">
-                      <div>
-                        <div className="set-row__label">{t(`settings.fields.${f.i18nKey}.label`)}</div>
-                        <div className="set-row__desc">{t(`settings.fields.${f.i18nKey}.desc`)}</div>
+                  {(section.fields ?? []).map((f) => {
+                    const changed = changedKeys.has(f.key);
+                    const failed = fieldError?.field === f.key;
+                    return (
+                      <div key={f.key} className={`set-row${changed ? " is-dirty" : ""}${failed ? " is-error" : ""}`}>
+                        <div>
+                          <div className="set-row__label">{t(`settings.fields.${f.i18nKey}.label`)}</div>
+                          <div className="set-row__desc">{t(`settings.fields.${f.i18nKey}.desc`)}</div>
+                          {/* What is live right now, and the way back to it. */}
+                          {changed && (
+                            <div className="set-row__saved">
+                              {t("savebar.savedAs", { value: formatValue(f.key, generalSaved?.[f.key]) })}
+                              <button type="button" onClick={() => set(f.key, generalSaved?.[f.key])}>{t("savebar.revert")}</button>
+                            </div>
+                          )}
+                          {failed && <div className="set-row__error">{fieldError.message}</div>}
+                        </div>
+                        <div className="set-row__control">{renderControl(f)}</div>
                       </div>
-                      <div className="set-row__control">{renderControl(f)}</div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 )}
                 {section.id === "registration" && draft["auth.registration_mode"] === "invite" && (

@@ -11,7 +11,11 @@ import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import { presentFrame, usePageTemplate, useSiteFrame } from "../layout/siteFrame";
 import "./AppLayout.scss";
 
-/** Keeps the <link rel="icon"> in sync with the uploaded favicon. */
+/**
+ * Keeps the favicon in sync with the uploaded one. Without an upload, index.html's
+ * Xentium icon stays. With one, EVERY icon link points at it — a browser prefers the
+ * SVG link over the .ico, so changing only the first would leave the Xentium icon up.
+ */
 function useFavicon() {
   const { data } = useQuery<{ iconUrl: string | null }>({
     queryKey: ["pub-branding"],
@@ -20,13 +24,18 @@ function useFavicon() {
   });
   useEffect(() => {
     if (!data?.iconUrl) return;
-    let link = document.querySelector<HTMLLinkElement>("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement("link");
+    const links = [...document.querySelectorAll<HTMLLinkElement>("link[rel~='icon']")];
+    if (links.length === 0) {
+      const link = document.createElement("link");
       link.rel = "icon";
       document.head.appendChild(link);
+      links.push(link);
     }
-    link.href = data.iconUrl;
+    for (const link of links) {
+      link.removeAttribute("type");
+      link.removeAttribute("sizes");
+      link.href = data.iconUrl;
+    }
   }, [data?.iconUrl]);
 }
 

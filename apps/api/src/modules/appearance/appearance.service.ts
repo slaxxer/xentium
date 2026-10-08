@@ -1,6 +1,6 @@
 import { prisma } from "../../infrastructure/db.js";
 import postcss from "postcss";
-import { HEARTH_DEFAULT_TOKENS, XEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
+import { HEARTH_DEFAULT_TOKENS, XEC, SCOPE_SELECTOR, fontRootDecls, fontBodyRule, colourwaySchema, type Colourway, type TokenMap, type TokenSet, type ThemeScope, type ScopedTokens, type ScopedTokenSet } from "@xentium/contracts";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 // Appearance reads bypass the settings TTL cache on purpose: a client refetching
 // /css right after a cross-process style publish must never get stale tokens.
@@ -203,6 +203,11 @@ export interface ThemeRollback {
   /** Its name, for the ACP's undo button. */
   replaced: string | null;
   at:       string;
+  /**
+   * A colourway was made live: one theme's own colours before it, live and draft, so
+   * undo puts them back. `draft` null = there was no draft.
+   */
+  tokens?: { key: ThemeKey; live: ScopedTokenSet; draft: ScopedTokenSet | null };
   update?: {
     themeId: string;
     /** The library row's payload and manifest before the update. */
@@ -221,16 +226,27 @@ const LIVE_REFRESH_MIN_SECONDS     = 2;
 const LIVE_REFRESH_MAX_SECONDS     = 60;
 
 /**
- * Built stylesheet per theme, memoised on the style version: every change that
- * affects any theme's output bumps the version, so one cheap read invalidates all.
+ * Built stylesheet per theme (and per colourway a visitor picked of it), memoised on
+ * the style version: every change that affects any theme's output bumps the version,
+ * so one cheap read invalidates all.
  */
-const cssMemo = new Map<ThemeKey, { version: number; css: string }>();
+const cssMemo = new Map<string, { version: number; css: string }>();
+const memoKey = (key: ThemeKey, colourway: string | null) => (colourway ? `${key}#${colourway}` : key);
 
 /** Forget built stylesheets — on install/uninstall, when a payload changes. */
 export function bustThemeCss(themeId?: string): void {
-  if (themeId !== undefined) cssMemo.delete(themeId);
-  else cssMemo.clear();
+  if (themeId !== undefined) {
+    for (const k of [...cssMemo.keys()]) {
+      if (k === themeId || k.startsWith(`${themeId}#`)) cssMemo.delete(k);
+    }
+  } else cssMemo.clear();
   bustThemeBaseline(themeId || undefined);
+}
+
+/** A colourway id as a visitor's cookie or query string carries it; anything else is ignored. */
+export function parseColourwayId(raw: unknown): string | null {
+  const id = colourwaySchema.shape.id.safeParse(raw);
+  return id.success ? id.data : null;
 }
 
 export const appearanceService = {
@@ -252,18 +268,46 @@ export const appearanceService = {
   },
 
   /** The stylesheet visitors get: the ACTIVE theme's, published. */
-  async getLiveCss(): Promise<string> {
-    return this.getCssFor(await activeThemeKey());
+  async getLiveCss(colourway: string | null = null): Promise<string> {
+    return this.getCssFor(await activeThemeKey(), colourway);
   },
 
-  /** One theme's published stylesheet — its package under the admin's edits to it. */
-  async getCssFor(key: ThemeKey): Promise<string> {
+  /**
+   * One theme's published stylesheet — its package under the admin's edits to it.
+   *
+   * `colourway` is a VISITOR's pick of the colourways the theme ships: its tokens go
+   * over the global scope, on top of the admin's edits, because choosing an accent is
+   * the one thing the reader asked for. An id the theme does not ship is ignored — the
+   * cookie outlives a theme update that renamed or dropped it.
+   */
+  async getCssFor(key: ThemeKey, colourway: string | null = null): Promise<string> {
+    const cw = colourway ? (await this.getColourways(key)).find((c) => c.id === colourway) ?? null : null;
+    const memo = memoKey(key, cw?.id ?? null);
     const version = await this.getStyleVersion();
-    const hit = cssMemo.get(key);
+    const hit = cssMemo.get(memo);
     if (hit && hit.version === version) return hit.css;
-    const css = await this.buildCSS(await this.getEffectiveTokens(key), { key });
-    cssMemo.set(key, { version, css });
+    const tokens = await this.getEffectiveTokens(key);
+    const worn = cw ? { ...tokens, global: { ...tokens.global, ...cw.tokens } } : tokens;
+    const css = await this.buildCSS(worn, { key });
+    cssMemo.set(memo, { version, css });
     return css;
+  },
+
+  /**
+   * The colourways a theme ships, from its manifest. Core ships none.
+   *
+   * Each entry is checked on its own: one malformed colourway in a package costs that
+   * colourway, not the theme's others.
+   */
+  async getColourways(key: ThemeKey): Promise<Colourway[]> {
+    if (!key) return [];
+    const row = await prisma.theme.findUnique({ where: { id: key }, select: { manifest: true } });
+    const raw = (row?.manifest as { colourways?: unknown } | null)?.colourways;
+    if (!Array.isArray(raw)) return [];
+    return raw.flatMap((c) => {
+      const parsed = colourwaySchema.safeParse(c);
+      return parsed.success ? [parsed.data] : [];
+    });
   },
 
   /**
@@ -274,10 +318,10 @@ export const appearanceService = {
    * Returns null for an id naming nothing installed, so the caller falls back to the
    * live sheet: a cookie outlives an uninstall.
    */
-  async getThemeCss(themeId: string): Promise<string | null> {
-    if (themeId === CORE_PARAM) return this.getCssFor(CORE_THEME);
+  async getThemeCss(themeId: string, colourway: string | null = null): Promise<string | null> {
+    if (themeId === CORE_PARAM) return this.getCssFor(CORE_THEME, colourway);
     const row = await prisma.theme.findUnique({ where: { id: themeId }, select: { id: true } });
-    return row ? this.getCssFor(themeId) : null;
+    return row ? this.getCssFor(themeId, colourway) : null;
   },
 
   async getLiveRefreshSeconds(): Promise<number> {
@@ -471,6 +515,50 @@ export const appearanceService = {
     if (!key) drop.push(LEGACY_DRAFT_KEY);
     await prisma.setting.deleteMany({ where: { key: { in: drop } } });
     return true;
+  },
+
+  /**
+   * Change one scope of a theme's LIVE colours in one step — a colourway made live from
+   * the Themes page — and the draft with it, when there is one: a draft is a full copy
+   * of the colours, and publishing it later must not quietly undo this.
+   *
+   * Returns what was there before, for undo.
+   */
+  async patchLiveScope(
+    scope: string,
+    patch: Record<string, string | null>,
+    savedById: string,
+    label: string,
+    key: ThemeKey,
+  ): Promise<{ live: ScopedTokenSet; draft: ScopedTokenSet | null }> {
+    const apply = (set: ScopedTokenSet): ScopedTokenSet => {
+      const bucket: TokenMap = { ...(set[scope] ?? {}) };
+      for (const [cssVar, value] of Object.entries(patch)) {
+        if (value === null) delete bucket[cssVar];
+        else bucket[cssVar] = value;
+      }
+      const next: ScopedTokenSet = { ...set };
+      if (Object.keys(bucket).length === 0) delete next[scope];
+      else next[scope] = bucket;
+      return next;
+    };
+    const live = await this.getTokenOverrides(key);
+    const staged = await this.readOwn(DRAFT_KEY, LEGACY_DRAFT_KEY, key);
+    const draft = staged === null ? null : normalizeScoped(staged);
+    await this.saveTokens(apply(live), savedById, label, key);
+    if (draft) await this.saveDraftTokens(apply(draft), savedById, key);
+    return { live, draft };
+  },
+
+  /** Put a theme's live colours (and its draft) back as `patchLiveScope` found them. */
+  async restoreTokens(snapshot: { live: ScopedTokenSet; draft: ScopedTokenSet | null }, savedById: string, key: ThemeKey): Promise<void> {
+    await this.saveTokens(snapshot.live, savedById, "Undo colourway", key);
+    if (snapshot.draft) await this.saveDraftTokens(snapshot.draft, savedById, key);
+    else {
+      const drop = [themed(DRAFT_KEY, key), themed(DRAFT_BY_KEY, key)];
+      await prisma.setting.deleteMany({ where: { key: { in: drop } } });
+      for (const k of drop) bustSettingsCache(k);
+    }
   },
 
   /** What the theme's package defines. Core ships none. */

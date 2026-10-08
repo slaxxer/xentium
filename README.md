@@ -651,9 +651,9 @@ const plugin: PluginDefinition = {
     await ctx.registerNavItem({ label: "Things", url: "/things", position: 5 });
 
     // An ACP sidebar page (listed by GET /api/admin/registered-pages).
-    // Settings pages in the ACP AUTOSAVE (useAutosave + SaveChip from the
-    // host globals), with no Save button, like core's. Secrets (API keys) are the
-    // exception: give them an explicit Set/Remove.
+    // Settings pages in the ACP join the SAVE BAR (useDraft + SaveChip from the
+    // host globals), with no Save button of their own, like core's. Secrets (API
+    // keys) are the exception: give them an explicit Set/Remove.
     ctx.registerAcpPage({ section: "My Plugin", label: "Things", path: "/admin/things" });
 
     // Notification types (for the preferences UI) + XEC error codes (for the Error Reference)
@@ -713,28 +713,32 @@ the home feed? Register a **source** that returns normalized items (`SearchResul
 way your plugin can be installed, disabled or removed, and core just works with whatever
 is registered at the moment.
 
-### ACP pages autosave
+### ACP settings save through the save bar
 
-Settings pages in our ACP don't have a Save button. They save as you change things and
-show a status indicator. Your plugin's admin pages should do the same, or they'll feel
-out of place. Externalize the two host bridges in your `vite.config.ts`:
+Nothing in our ACP goes live until the admin saves. Every settings surface on a page
+registers its changes, and one save bar at the bottom of the screen saves or discards
+them all; leaving with unsaved changes asks first. Your plugin's admin pages join the
+same bar, or they'll feel out of place. Externalize the two host bridges in your
+`vite.config.ts`:
 
 ```ts
-"@web/hooks/useAutosave":         `${H}.webUseAutosave`,
+"@web/hooks/useDraft":            `${H}.webUseDraft`,
 "@web/components/SaveChip":       `${H}.webSaveChip`,
 ```
 
 ```tsx
 const saveMut = useMutation({ mutationFn: (v: Settings) => api.put(`${BASE}/admin/settings`, v) });
-useAutosave({ value: form, savedValue: data, onSave: (v) => { if (v) saveMut.mutate(v); } });
-// …and render <SaveChip saving={saveMut.isPending} /> in the header.
+useDraft({ value: form, savedValue: data, label: "My plugin",
+           onSave: (v) => saveMut.mutateAsync(v), onDiscard: () => setForm(data) });
+// …and render <SaveChip saving={false} /> in a standalone page's header.
 ```
 
 That goes for settings pages **and** per-group panels registered through the
 `groupConfigPanel` slot. Per-group config (permissions, progression) belongs there,
 because it then shows up as a tab on core's own group page instead of a page of its
-own. Keep an explicit button for **create/edit dialogs**, **secrets** (never
-autosave a half-typed credential; use Set/Remove) and **destructive actions**.
+own. Keep an explicit button for **create/edit dialogs**, **secrets** (never part of a
+draft; use Set/Remove) and **destructive actions**. Plugins built for the old autosave
+(`useAutosave`) join the bar without a rebuild.
 
 📖 **The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
 path: [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).**

@@ -12,6 +12,7 @@ import { processCoreUpdateCheck } from './jobs/coreUpdateCheck.js';
 import { processAnnouncementCheck } from './jobs/announcementCheck.js';
 import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
+import { startGeoipRefreshWorker }            from './jobs/geoipRefresh.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
 import { attachFailureHandler }               from './jobs/jobFailure.js';
 import { SCHEDULED_JOBS, getJobConfig, applyJobSchedule, removeRetiredSchedulers } from './jobs/scheduledJobs.js';
@@ -39,6 +40,7 @@ function startWorkers() {
     attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
     attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
     attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
+    attachFailureHandler(startGeoipRefreshWorker(),           'geoip-refresh'),
     attachFailureHandler(startScheduledTaskWorker(),          'scheduled-task'),
   );
 }

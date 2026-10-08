@@ -1,12 +1,14 @@
 import { useEditor, EditorContent, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
+import { AlignPerBlock } from "../../../components/composer/alignPerBlock";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Highlight from "@tiptap/extension-highlight";
 import Subscript from "@tiptap/extension-subscript";
 import Superscript from "@tiptap/extension-superscript";
 import Image from "@tiptap/extension-image";
+import Mention from "@tiptap/extension-mention";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import "./ArticleEditor.scss";
@@ -18,12 +20,24 @@ import "./ArticleEditor.scss";
 export const RICH_EXTENSIONS = [
   StarterKit.configure({ link: { openOnClick: false, autolink: true } }),
   TextAlign.configure({ types: ["heading", "paragraph"] }),
+  AlignPerBlock,
   TaskList,
   TaskItem.configure({ nested: true }),
   Highlight,
   Subscript,
   Superscript,
   Image.configure({ inline: false, HTMLAttributes: { class: "article-editor__image" } }),
+  // An article body is written in the Composer, where @mentions are on by default.
+  // Without the node here the renderer DROPPED a mention from the published article.
+  // Display only (no suggestion popup): the same link the Composer writes.
+  Mention.configure({
+    renderHTML({ node }) {
+      return ["a", {
+        href: `/u/${node.attrs.id}`, class: "nvc-mention", "data-type": "mention", "data-id": node.attrs.id,
+      }, `@${node.attrs.label ?? node.attrs.id}`];
+    },
+    renderText({ node }) { return `@${node.attrs.label ?? node.attrs.id}`; },
+  }),
 ];
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };

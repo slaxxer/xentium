@@ -336,6 +336,14 @@ export interface PluginHost extends BasePluginHost {
    * thresholds and limits for its own content, keyed by the group id this
    * returns.
    */
+  /**
+   * Ask whether a user holds a permission (implied permissions included) — the same
+   * answer `middleware.requirePermission` acts on, for code that must decide rather
+   * than refuse. OPTIONAL: older hosts do not provide it, so check before calling.
+   */
+  permissions?: {
+    has: (userId: string, key: string) => Promise<boolean>;
+  };
   progression: {
     /** The group whose progression config governs `userId` — their highest rung
      *  on the ladder — or null when the user is not on it. */

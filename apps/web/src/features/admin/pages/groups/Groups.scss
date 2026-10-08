@@ -220,7 +220,7 @@
   padding: 14px 0; border-top: 1px solid var(--c-border);
   &__title { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
   &--first { justify-content: space-between; padding-top: 0; border-top: 0; border-bottom: 1px solid var(--c-border); margin-bottom: 14px; }
-  .sw { margin-top: 2px; }
+  .xt-toggle, .sw { margin-top: 2px; }
 }
 
 .gp-glow {

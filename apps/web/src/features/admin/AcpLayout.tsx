@@ -1,8 +1,9 @@
-import { useEffect, useRef } from "react";
+import { Fragment, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { api } from "../../lib/api";
 import { openPanelDialog } from "../../lib/dialog";
 import { CoreUpdateDialogBody, isPrerelease, type CoreUpdate, type PluginUpdateRow } from "./components/coreUpdateParts";
@@ -17,6 +18,8 @@ import { HorizontalNav } from "./nav/HorizontalNav";
 import { AcpRailShell } from "./nav/AcpRailShell";
 import { useAcpLayout } from "./nav/acpChrome";
 import { IconScope } from "../../lib/iconScope";
+import { AcpSaveBar } from "./AcpSaveBar";
+import { useDraftEpoch } from "../../hooks/useDraft";
 
 // The ACP wears one of two navigation chromes, chosen per admin in the user
 // menu and remembered in localStorage (nav/acpChrome.ts):
@@ -40,7 +43,8 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
     return <div className="acp-loading">{t("sidebar.loading")}</div>;
   }
 
-  const hasAdminAccess = user?.groups?.some((g) => g.key === "admin");
+  // The same key every /api/admin route requires — ACP → Permissions decides.
+  const hasAdminAccess = userCan(user, "admin.access");
 
   if (!user || !hasAdminAccess) {
     return (
@@ -289,14 +293,19 @@ function AcpShell() {
   const nav = useAcpNav();
   const layout = useAcpLayout();
   useAcpAlerts();
+  // A discard that some surface could not reset itself remounts the page, which
+  // re-seeds every form from the server (see `useDraft`).
+  const draftEpoch = useDraftEpoch();
 
   const content = (
     <main className="acp-content">
       {/* A crashing ACP page must not take the nav with it — an admin needs
           a way to click somewhere else. Clears on navigation. */}
       <RouteErrorBoundary variant="inline">
-        <Outlet />
+        <Fragment key={draftEpoch}><Outlet /></Fragment>
       </RouteErrorBoundary>
+      {/* ONE save bar for every settings surface on every ACP page. */}
+      <AcpSaveBar />
     </main>
   );
 

@@ -72,6 +72,51 @@
     code { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
   }
 
+  /* ── For extension sections too ─────────────────────────────────────────
+     A plugin's inspector section builds from these and core's own controls
+     (`lay__seg`, `lay__props-section`, `lay-edge__row`, `lay-edge__check`,
+     `lay-edge__range`, `acp-hint`) — never its own fonts or sizes. */
+
+  /* A labelled row of chips: presets and the like. */
+  &__chips {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+
+    > div { display: flex; flex-wrap: wrap; gap: 6px; }
+  }
+
+  &__chip {
+    padding: 3px 9px;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: var(--c-bg);
+    font: inherit;
+    font-size: var(--fs-2xs);
+    color: var(--c-fg-muted);
+    cursor: pointer;
+
+    &:hover { border-color: var(--c-accent); color: var(--c-accent); }
+  }
+
+  /* A segmented control with more options than fit one row. */
+  &__wrap { flex-wrap: wrap; }
+
+  /* A small text action under a control ("use the default colour"). */
+  &__reset { align-self: flex-start; }
+
+  /* The edge names a shape whose plugin is off. */
+  &__missing {
+    margin: 0;
+    padding: 8px 10px;
+    border: 1px dashed var(--c-border);
+    border-radius: var(--radius-sm);
+    font-size: var(--fs-sm);
+    color: var(--c-fg-muted);
+  }
+
   &__range input { width: 100%; margin: 0; accent-color: var(--c-accent); }
 
   &__image {

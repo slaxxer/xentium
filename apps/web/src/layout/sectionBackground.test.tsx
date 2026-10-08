@@ -200,7 +200,7 @@ describe("the site chrome", () => {
     expect(band.props.showLogo).toBe(false);
     expect(band.props.showTagline).toBe(true);
     expect(band.children?.map((c) => c.type)).toEqual([
-      "logo", "notifications", "headerWidgets", "adminLink", "userMenu", "search",
+      "logo", "modTool", "notifications", "headerWidgets", "adminLink", "userMenu", "search",
     ]);
     expect(band.props.backgroundGradient).toEqual(["#14162a", "#5865f2"]);
   });

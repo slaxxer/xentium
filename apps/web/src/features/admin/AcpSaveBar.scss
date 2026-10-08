@@ -1,0 +1,267 @@
+/* The ACP save bar — see AcpSaveBar.tsx. Every colour is a token; the bar is dark on
+   the light ACP (`--c-fg` as its background, the same precedent as the segmented
+   control's active pill) and a raised card on the dark one. */
+
+.acp-savebar {
+  position: fixed;
+  bottom: 24px;
+  z-index: 60;
+  display: flex;
+  justify-content: center;
+  padding: 0 28px;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+.acp-savebar__bar {
+  --sb-bg: var(--c-fg);
+  --sb-fg: var(--c-bg);
+  --sb-muted: color-mix(in srgb, var(--c-bg) 62%, var(--c-fg));
+  --sb-line: color-mix(in srgb, var(--c-bg) 14%, transparent);
+  --sb-accent: color-mix(in srgb, var(--c-accent) 55%, var(--c-bg));
+
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  background: var(--sb-bg);
+  color: var(--sb-fg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+  transform: translateY(calc(100% + 40px));
+  opacity: 0;
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1), opacity 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+
+  .acp-savebar.is-visible & {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  &.is-shaking { animation: acp-savebar-shake 380ms ease-out; }
+}
+
+/* The dark ACP: the page is already dark, so the bar becomes a raised card. */
+[data-theme="dark"] body.xt-acp .acp-savebar__bar {
+  --sb-bg: var(--c-card);
+  --sb-fg: var(--c-fg);
+  --sb-muted: var(--c-fg-muted);
+  --sb-line: var(--c-border-hi);
+  --sb-accent: var(--c-accent);
+  border: 1px solid var(--c-border-hi);
+}
+
+@keyframes acp-savebar-shake {
+  0%, 100% { translate: 0; }
+  20% { translate: -8px; }
+  40% { translate: 8px; }
+  60% { translate: -5px; }
+  80% { translate: 5px; }
+}
+
+.acp-savebar__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 10px 10px 10px 18px;
+  box-sizing: border-box;
+}
+
+.acp-savebar__ind {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+
+  &.is-warn { background: var(--c-warn); }
+  &.is-success { background: var(--c-success); }
+  &.is-danger { background: var(--c-danger); }
+  &.is-spin {
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--sb-line);
+    border-top-color: var(--sb-fg);
+    animation: savechip-spin 0.7s linear infinite;
+  }
+}
+
+.acp-savebar__text {
+  flex: 1;
+  min-width: 0;
+
+  p { margin: 0; }
+}
+
+.acp-savebar__title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+
+.acp-savebar__sub {
+  margin-top: 1px !important;
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  color: var(--sb-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.acp-savebar__review-btn,
+.acp-savebar__ghost,
+.acp-savebar__stay {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--btn-h);
+  border-radius: var(--btn-radius);
+  font: inherit;
+  font-weight: var(--btn-fw);
+  font-size: var(--btn-fs);
+  cursor: pointer;
+}
+
+.acp-savebar__review-btn {
+  padding: 0 10px;
+  border: 0;
+  background: none;
+  color: var(--sb-accent);
+
+  &:hover { color: var(--sb-fg); }
+}
+
+.acp-savebar__ghost {
+  padding: 0 var(--btn-pad-x);
+  background: transparent;
+  border: 1px solid var(--sb-line);
+  color: var(--sb-fg);
+
+  &:hover:not(:disabled) { border-color: var(--sb-accent); }
+  &:disabled { opacity: 0.6; cursor: default; }
+}
+
+.acp-savebar__save {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* Height, padding and type come from .btn-primary — the same tokens as Discard. */
+
+  &.is-saving { opacity: 0.6; }
+
+  kbd {
+    font: inherit;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 6px;
+    background: color-mix(in srgb, currentColor 18%, transparent);
+  }
+
+  .savechip__spin { border-color: color-mix(in srgb, currentColor 30%, transparent); border-top-color: currentColor; }
+}
+
+.acp-savebar__stay {
+  justify-content: center;
+  width: var(--btn-h);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--sb-muted);
+
+  &:hover { color: var(--sb-fg); }
+}
+
+/* ── Review list ───────────────────────────────────────────────────────────── */
+
+.acp-savebar__review {
+  padding: 14px 10px 4px 18px;
+  border-bottom: 1px solid var(--sb-line);
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0 8px 8px 0;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+
+    & + li { border-top: 1px solid var(--sb-line); }
+    &.is-error strong { color: var(--c-danger); }
+  }
+}
+
+.acp-savebar__review-label {
+  margin: 0 0 4px;
+  font-weight: 600;
+  font-size: var(--fs-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--sb-muted);
+}
+
+.acp-savebar__item {
+  flex: 1;
+  min-width: 0;
+
+  p { margin: 0; }
+  strong { font-weight: 600; font-size: var(--fs-md); }
+  span { font-size: var(--fs-xs); color: var(--sb-muted); }
+}
+
+.acp-savebar__diff {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px !important;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+
+  s {
+    max-width: 45%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--sb-muted);
+  }
+  em {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: normal;
+    color: var(--sb-accent);
+  }
+  svg { flex: none; color: var(--sb-muted); }
+}
+
+.acp-savebar__revert {
+  flex: none;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--sb-line);
+  background: transparent;
+  color: var(--sb-fg);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  cursor: pointer;
+
+  &:hover:not(:disabled) { border-color: var(--sb-accent); }
+}
+
+/* Phones: the text gives way to the actions. */
+@media (max-width: 640px) {
+  .acp-savebar { padding: 0 12px; bottom: 12px; }
+  .acp-savebar__sub, .acp-savebar__review-btn { display: none; }
+  .acp-savebar__save kbd { display: none; }
+}

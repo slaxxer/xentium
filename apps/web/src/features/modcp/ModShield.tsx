@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from "../../components/Icon";
 import { api } from "../../lib/api";
 import { timeAgo } from "../../lib/time";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { typeLabel } from "./modTemplates";
 import {
@@ -25,7 +26,7 @@ import "./ModCanvas.scss";
  */
 export function ModShield() {
   const { user } = useAuth();
-  const isMod = isModerator(user?.groups);
+  const isMod = isModerator(user);
   const { menuOpen, pluginSection } = useModStore();
   const ref = useRef<HTMLDivElement>(null);
 
@@ -72,7 +73,7 @@ export function ModShield() {
   const reportRows = reports.data ?? [];
   const caseRows = cases.data ?? [];
   const loading = reports.isLoading || cases.isLoading;
-  const isAdmin = user?.groups.some((g) => g.key === "admin") ?? false;
+  const isAdmin = userCan(user, "admin.access");
   const nothing = !loading && reportRows.length === 0 && caseRows.length === 0 && pluginTotal === 0;
 
   return (

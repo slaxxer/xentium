@@ -124,7 +124,9 @@ export function MarketplacePage() {
   // Which half of the catalogue is on screen. Two grids rather than one mixed
   // one: a plugin card asks "is it enabled", a theme card asks "is it the look
   // this site is wearing", and the two questions have no shared answer.
-  const [kind, setKind] = useState<ProductKind>("plugin");
+  // `?kind=theme` opens on themes — the Themes page links here for more of them.
+  const [kind, setKind] = useState<ProductKind>(() =>
+    new URLSearchParams(window.location.search).get("kind") === "theme" ? "theme" : "plugin");
 
   // The catalogue searches server-side, so the term belongs in the request, not
   // in a filter over what happened to arrive. Debounced so typing does not fire

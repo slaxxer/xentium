@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { LayoutDocument } from "@xentium/contracts";
-import { composeFooter, composeHeader } from "./composedChromeMigration.js";
+import { composeDocuments, composeFooter, composeHeader } from "./composedChromeMigration.js";
 
 const header = (headerChildren: unknown[] | undefined, navChildren: unknown[], headerProps = {}): LayoutDocument => ({
   templateKey: "chrome.header", schemaVersion: 1,
@@ -20,7 +20,7 @@ describe("composing a stored header", () => {
     ]))!;
     const [band, navbar] = out.regions.header!;
     expect(band!.props.showLogo).toBe(false);
-    expect(band!.children!.map((c) => c.type)).toEqual(["logo", "notifications", "userMenu", "search"]);
+    expect(band!.children!.map((c) => c.type)).toEqual(["logo", "modTool", "notifications", "userMenu", "search"]);
     expect(band!.children![0]!.props).toEqual({ showWordmark: false });
     // Alignment is a navbar concept and does not travel.
     expect(band!.children!.every((c) => c.align === undefined)).toBe(true);
@@ -54,6 +54,51 @@ describe("an untouched header", () => {
     (old.regions.header![1]!.children![0]!.props as Record<string, unknown>).showWordmark = true;
     (old.regions.header![1]!.children![2]!.props as Record<string, unknown>).expanded = false;
     expect(composeHeader(old)).toEqual(DEFAULT_LAYOUTS["chrome.header"]);
+  });
+});
+
+describe("splitting the moderation tool out of the bell", () => {
+  it("turns the previous shipped header into today's default exactly", async () => {
+    const { DEFAULT_LAYOUTS } = await import("@xentium/contracts");
+    const before = structuredClone(DEFAULT_LAYOUTS["chrome.header"]);
+    const band = before.regions.header![0]!;
+    band.children = band.children!.filter((c) => c.type !== "modTool");
+    expect(composeHeader(before)).toEqual(DEFAULT_LAYOUTS["chrome.header"]);
+  });
+
+  it("puts it just before the bell with the bell's audience, alignment and variant", () => {
+    const bell = {
+      id: "b", type: "notifications", props: {}, align: "right", variant: "accent",
+      visibility: { audience: "groups", groups: ["g1"] },
+    };
+    const out = composeHeader(header([leaf("l", "logo"), bell, leaf("u", "userMenu")], []))!;
+    const kids = out.regions.header![0]!.children!;
+    expect(kids.map((c) => c.type)).toEqual(["logo", "modTool", "notifications", "userMenu"]);
+    expect(kids[1]).toEqual({
+      id: "b-mod", type: "modTool", props: {}, align: "right", variant: "accent",
+      visibility: { audience: "groups", groups: ["g1"] },
+    });
+  });
+
+  it("finds a bell left in the navbar, and never reuses an id", () => {
+    const out = composeHeader(header([leaf("l", "logo"), leaf("u", "userMenu"), leaf("b-mod", "search")],
+      [leaf("b", "notifications", "right")]))!;
+    const navbar = out.regions.header![1]!.children!;
+    expect(navbar.map((c) => [c.id, c.type])).toEqual([["b-mod2", "modTool"], ["b", "notifications"]]);
+  });
+
+  it("leaves a header that already places one, and a header without a bell", () => {
+    expect(composeHeader(header([leaf("l", "logo"), leaf("u", "userMenu")], [
+      leaf("m", "modTool", "right"), leaf("b", "notifications", "right"),
+    ]))).toBeNull();
+    expect(composeHeader(header([leaf("l", "logo"), leaf("u", "userMenu")], []))).toBeNull();
+  });
+
+  it("is applied to a theme package's header, so an older package installs split", () => {
+    const pkg = { "chrome.header": header([leaf("l", "logo"), leaf("h-notif", "notifications"), leaf("u", "userMenu")], []) };
+    const out = composeDocuments(pkg)!;
+    expect((out["chrome.header"] as LayoutDocument).regions.header![0]!.children!.map((c) => c.id))
+      .toEqual(["l", "h-mod", "h-notif", "u"]);
   });
 });
 

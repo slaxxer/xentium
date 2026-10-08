@@ -502,6 +502,13 @@
     color: var(--c-fg-subtle);
   }
 
+  /* "Viewing at": an hour, sized to the bar's segmented controls. */
+  &__canvasbar-select {
+    width: auto;
+    padding: 3px 8px;
+    font-size: var(--fs-2xs);
+  }
+
   &__canvasbar-width {
     font-size: var(--fs-2xs);
     font-weight: 600;

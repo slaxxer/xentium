@@ -1,0 +1,10 @@
+@use "richContent" as rich;
+
+/* Rich text after posting — forum posts, messages, comments. Put `xt-rich` on the
+   element the stored HTML is rendered into, and it reads exactly as it did in the
+   editor (the same rules: styles/_richContent.scss). The container keeps its own
+   font size and colour. */
+.xt-rich {
+  overflow-wrap: anywhere;
+  @include rich.rich-content;
+}

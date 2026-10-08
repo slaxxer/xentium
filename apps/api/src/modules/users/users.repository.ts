@@ -1,3 +1,4 @@
+import { staffGroupKeys } from "../../shared/utils/staff.js";
 import { prisma } from "../../infrastructure/db.js";
 import { withResolvedAvatar, withResolvedAvatarList, resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { getOnlineUserIds } from "../../shared/utils/presence.js";
@@ -82,7 +83,6 @@ const CONNECTION_USER_SELECT = {
   },
 } as const;
 
-const STAFF_KEY_LIST = ["admin", "supermod", "moderator"] as const;
 
 export const userRepository = {
   // Get user by ID (internal)
@@ -326,6 +326,9 @@ export const userRepository = {
           ] }
         : {}),
     };
+
+    // "Staff" = the groups holding moderation.protected (ACP → Permissions).
+    const STAFF_KEY_LIST = [...(await staffGroupKeys())];
 
     // Filter rail selection.
     let filterWhere: any = {};

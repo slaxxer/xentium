@@ -40,6 +40,7 @@ const BY_TYPE: Record<string, BlockShape> = {
   search: "chip",
   themeToggle: "chip",
   notifications: "chip",
+  modTool: "chip",
   adminLink: "chip",
   userMenu: "chip",
   headerWidgets: "chip",

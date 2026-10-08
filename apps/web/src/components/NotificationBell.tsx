@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "./Icon";
-import { faGear } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faGear } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { slotRegistry } from "../plugins/slotRegistry";
@@ -87,10 +87,8 @@ export function NotificationBell() {
         }}
         aria-label="Notifications"
       >
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-          <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-        </svg>
+        {/* fa-solid fa-bell — through the kit-aware icon, so an icon kit / style restyles it too. */}
+        <FontAwesomeIcon icon={faBell} style={{ fontSize: "var(--fs-md)" }} />
         {unread > 0 && (
           <span style={{
             position: "absolute", top: -4, right: -4,

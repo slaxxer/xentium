@@ -5,10 +5,8 @@ import { faDiscord, faGithub, faGoogle } from "@fortawesome/free-brands-svg-icon
 import { faCheck, faCopy, faFingerprint } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { Toggle } from "../../../components/AcpControls";
-import { useAutosave, useReportSaving } from "../../../hooks/useAutosave";
+import { useAutosave } from "../../../hooks/useAutosave";
 import { api } from "../../../lib/api";
-import { toast } from "../../../lib/toast";
-import { apiErrorMessage } from "../../../lib/swal";
 
 // ACP → Settings → Login: sign-in providers and passkeys.
 //
@@ -65,10 +63,13 @@ function ProviderCard({ row }: { row: ProviderRow }) {
     mutationFn: (body: Partial<{ enabled: boolean; clientId: string; clientSecret: string | null }>) =>
       api.patch<Response>(`/admin/auth-providers/${row.provider}`, body),
     onSuccess: (fresh) => qc.setQueryData<Response>(["acp-auth-providers"], (old) => old && { ...old, providers: fresh.providers }),
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
-  useReportSaving(patch.isPending);
-  useAutosave({ value: draft, savedValue: saved, onSave: (v) => patch.mutate(v) });
+  // The secret is not part of the draft: it keeps its own Set/Remove, which save at once.
+  useAutosave({
+    value: draft, savedValue: saved, label: meta.name, section: t("settings.sections.login.title"),
+    onSave: (v) => patch.mutateAsync(v),
+    onDiscard: () => setDraft({ enabled: row.enabled, clientId: row.clientId }),
+  });
 
   const ready = !!row.clientId && row.secretSet;
   const copy = () => {

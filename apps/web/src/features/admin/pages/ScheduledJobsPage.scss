@@ -76,10 +76,8 @@
   width: 100%;
   margin-bottom: var(--sp-4);
   /* A small button reads as a letterbox once it is full-width, so this one
-     squares up its box. It sets the SIZE TOKEN rather than the padding: the
-     shared class no longer hard-sets anything, so there is nothing left to
-     out-shout, and the button keeps every other property of its variant. */
-  --btn-pad-y: var(--sp-3);
+     takes the standard ACP height (a SIZE TOKEN, not padding). */
+  --btn-h: 38px;
 }
 
 .ctask-empty {

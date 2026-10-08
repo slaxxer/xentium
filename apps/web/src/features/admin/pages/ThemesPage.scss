@@ -1,243 +1,411 @@
-/* Appearance → Themes, plus the export dialog's form (rendered by DialogHost, so it
-   is styled here rather than inside the dialog's own stylesheet). */
+/* Appearance → Themes. Every value is an ACP token; only the theme MOCKS paint in a
+   theme's own colours, which arrive as data (`--m-*`, set inline). */
 
-.thm {
-  &__intro {
-    margin: 0 0 var(--sp-4);
-    font-size: var(--fs-sm);
-    color: var(--c-fg-subtle);
-    max-width: 70ch;
-  }
+.thm { max-width: 1100px; }
 
-  &__card {
-    padding: var(--sp-4);
-    margin-bottom: var(--sp-4);
-  }
-
-  &__card-title {
-    font-size: var(--fs-2xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--c-fg-subtle);
-    margin-bottom: var(--sp-3);
-  }
-
-  &__installed {
-    display: flex;
-    align-items: center;
-    gap: var(--sp-3);
-
-    svg { font-size: var(--fs-xl); color: var(--c-accent); }
-    b { display: block; font-size: var(--fs-md); }
-    span { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
-  }
-
-  /* Fixed box, cropped: the row is a name and a date beside a picture, and a
-     screenshot of an arbitrary aspect ratio would otherwise set the row's height. */
-  &__shot {
-    width: 96px;
-    height: 60px;
-    flex: none;
-    object-fit: cover;
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
-  }
-
-  &__note {
-    margin: var(--sp-3) 0 0;
-    font-size: var(--fs-sm);
-    color: var(--c-fg-subtle);
-    max-width: 80ch;
-  }
-
-  /* The result of the most sweeping change the ACP offers — it stays put. */
-  &__report {
-    margin-top: var(--sp-4);
-    padding: var(--sp-3) var(--sp-4);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    background: var(--c-bg);
-
-    ul { margin: 0; padding-left: 1.1rem; }
-    li { font-size: var(--fs-sm); margin: 2px 0; }
-  }
-
-  &__report-title {
-    font-size: var(--fs-xs);
-    font-weight: 700;
-    margin-bottom: var(--sp-2);
-  }
-
-  &__warn {
-    color: var(--c-warning, var(--c-fg));
-    svg { margin-right: 4px; }
-  }
-}
-
-/* ── Export dialog form ─────────────────────────────────────────────────── */
-
-.thm-form {
-  text-align: left;
-
-  &__hint {
-    margin: 0 0 var(--sp-3);
-    font-size: var(--fs-sm);
-    color: var(--c-fg-subtle);
-  }
-
-  /* Two columns so eight fields do not become a very tall dialog; collapses on
-     narrow viewports where a single column reads better anyway. */
-  &__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--sp-3);
-
-    @media (max-width: 560px) {
-      grid-template-columns: minmax(0, 1fr);
-    }
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    font-size: var(--fs-xs);
-    color: var(--c-fg-subtle);
-
-    .acp-input { width: 100%; font-size: var(--fs-sm); }
-  }
-
-  &__req { color: var(--c-danger); font-style: normal; }
-
-  /* The preview picker sits below the grid, full width: it is the one field with
-     something to show back, and a thumbnail in a half-width column is unreadable. */
-  &__shot {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin-top: var(--sp-4);
-    font-size: var(--fs-xs);
-    color: var(--c-fg-subtle);
-
-    input[type="file"] { font-size: var(--fs-xs); color: var(--c-fg); }
-    em { font-style: normal; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
-  }
-
-  &__shot-preview {
-    margin-top: var(--sp-2);
-    /* Capped rather than sized: a screenshot is any aspect ratio the author's
-       browser window was, and letting it drive the dialog's height makes the
-       confirm button scroll away. */
-    max-width: 100%;
-    max-height: 160px;
-    width: auto;
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
-    object-fit: contain;
-  }
-
-  /* Two mutually exclusive answers, so a pair of buttons rather than a select: the
-     chosen one is readable without opening anything, which is the whole point of
-     declaring the look in the first place. */
-  &__look {
-    display: flex;
-    gap: var(--sp-2);
-    margin-top: 2px;
-  }
-
-  &__lookBtn {
-    flex: 1;
-    padding: 8px 10px;
-    font: inherit;
-    font-size: var(--fs-sm);
-    color: var(--c-fg);
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-
-    &:hover { border-color: var(--c-accent); }
-
-    /* Not colour alone — `aria-pressed` carries it for a reader, and the border
-       weight carries it for anyone who cannot tell these two backgrounds apart. */
-    &.is-on {
-      color: var(--c-accent);
-      border-color: var(--c-accent);
-      background: var(--c-accent-soft);
-      font-weight: 600;
-    }
-  }
-
-  &__check {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--sp-2);
-    margin-top: var(--sp-4);
-    cursor: pointer;
-
-    input { margin-top: 3px; }
-    b { display: block; font-size: var(--fs-sm); color: var(--c-fg); }
-    em { display: block; font-style: normal; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
-  }
-}
-
-.thm__actions {
+.thm__head-actions {
+  margin-left: auto;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 14px;
+  align-self: flex-end;
 }
 
-/* The library: every theme installed here, active one first. */
-.thm__library { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+/* ── The live theme ────────────────────────────────────────────────────────── */
 
-.thm__lib {
-  display: flex;
+.thm-live {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  padding: 22px;
+  margin-bottom: 30px;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-card);
   align-items: center;
-  gap: 14px;
-  padding: 10px 12px;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  background: var(--c-bg);
 
-  &--on { border-color: var(--c-accent); background: var(--c-accent-soft); }
+  @media (max-width: 900px) { grid-template-columns: 1fr; }
 }
 
-.thm__lib-shot {
-  width: 72px;
-  height: 46px;
-  flex: none;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-  background: var(--c-surface);
+.thm-live__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--c-success) 14%, transparent);
+  color: var(--c-success);
+  font-weight: 700;
+  font-size: var(--fs-xs);
 
-  &--none {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--c-fg-subtle);
+  i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+}
+
+.thm-live__name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 12px;
+
+  h2 { margin: 0; font-family: var(--font-display); font-size: var(--fs-3xl); font-weight: 800; color: var(--c-fg); }
+  span { font-weight: 600; color: var(--c-fg-muted); }
+}
+
+.thm-live__by { margin: 4px 0 0; font-weight: 600; color: var(--c-fg-muted); }
+
+.thm-live__facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px 22px;
+  margin: 18px 0 0;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--c-border);
+  font-size: var(--fs-sm);
+
+  dt { color: var(--c-fg-subtle); font-weight: 600; }
+  dd { margin: 0; font-weight: 600; color: var(--c-fg); }
+}
+
+.thm-swatches {
+  display: flex;
+  gap: 6px;
+
+  i {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 14%, transparent);
+  }
+
+  /* Overlapping, on a card. */
+  &--stack {
+    gap: 0;
+    i { width: 16px; height: 16px; margin-left: -5px; box-shadow: 0 0 0 2px var(--card-bg); }
   }
 }
 
-.thm__lib-body {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.thm-live__variants { margin-top: 18px; }
 
-  b { font-size: var(--fs-md); }
-  span { font-size: var(--fs-xs); color: var(--c-fg-muted); }
+.thm-live__variants-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-fg-subtle);
+
+  span:last-child { color: var(--c-fg-muted); }
 }
 
-.thm__lib-actions { display: flex; align-items: center; gap: 6px; }
+.thm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
-.thm__lib-active {
+.thm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 12px 0 6px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-pill);
+  background: var(--c-surface);
+  color: var(--c-fg);
+  font: inherit;
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+
+  i { width: 20px; height: 20px; border-radius: 50%; }
+  b { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.05em; color: var(--c-success); }
+
+  &:hover { border-color: var(--c-border-hi); }
+  &.is-on { border-color: var(--c-accent); background: var(--c-accent-soft); }
+}
+
+.thm-live__preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--c-accent-soft);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-fg);
+
+  div { display: flex; gap: 8px; }
+}
+
+.thm-live__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+
+  a, button { display: inline-flex; align-items: center; gap: 8px; }
+}
+
+.thm-live__note {
+  margin: 10px 0 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-subtle);
+}
+
+/* ── The library ──────────────────────────────────────────────────────────── */
+
+.thm-lib__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+
+  h2 { margin: 0; font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 700; color: var(--c-fg); }
+}
+
+.thm-lib__count {
+  min-width: 24px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  text-align: center;
+}
+
+.thm-lib__hint { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted); }
+
+.thm-lib__market {
+  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: var(--fs-xs);
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--c-accent);
+
+  &:hover { color: var(--c-fg); }
 }
+
+.thm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.thm-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-card);
+}
+
+.thm-card__shot { border-bottom: 1px solid var(--c-border); }
+
+.thm-card__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px 16px;
+}
+
+.thm-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.thm-card__titles { min-width: 0; }
+
+.thm-card__name {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+
+  b { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
+  span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
+}
+
+.thm-card__by {
+  margin: 2px 0 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.thm-card__variants {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+
+  span { margin-left: 4px; }
+}
+
+.thm-dot {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-fg) 12%, transparent);
+
+  &.is-on { box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 3.5px var(--c-accent); }
+}
+
+.thm-card__dates {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-subtle);
+}
+
+.thm-card__actions {
+  margin-top: auto;
+  padding-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.thm-card__remove {
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--c-fg-subtle);
+  cursor: pointer;
+
+  &:hover { background: color-mix(in srgb, var(--c-danger) 12%, transparent); color: var(--c-danger); }
+}
+
+/* "Remove Ember?" — over the card it is about, not in a dialog away from it. */
+.thm-card__confirm {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 16px;
+  background: var(--card-bg);
+  border-top: 1px solid var(--c-border);
+  box-shadow: 0 -10px 24px color-mix(in srgb, var(--c-fg) 8%, transparent);
+
+  p { margin: 0 0 4px; font-size: var(--fs-sm); color: var(--c-fg-muted); }
+  b { color: var(--c-fg); }
+  div { display: flex; gap: 8px; margin-top: 10px; }
+}
+
+/* ── A theme, drawn in its own colours ─────────────────────────────────────── */
+
+.thm-mock {
+  display: flex;
+  flex-direction: column;
+  gap: 8%;
+  aspect-ratio: 16 / 10;
+  padding: 0 0 6%;
+  background: var(--m-bg);
+  overflow: hidden;
+
+  b, i, span { display: block; border-radius: 99px; }
+}
+
+.thm-mock--lg {
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--c-fg) 18%, transparent);
+}
+
+.thm-mock__nav {
+  display: flex;
+  align-items: center;
+  gap: 4%;
+  padding: 3% 5%;
+  background: var(--m-surface);
+
+  i { width: 4.5%; aspect-ratio: 1; border-radius: 50%; background: var(--m-accent); }
+  b { width: 8%; height: 5px; background: color-mix(in srgb, var(--m-fg) 22%, transparent); }
+  span { margin-left: auto; width: 11%; height: 9px; background: var(--m-accent); }
+}
+
+.thm-mock__hero {
+  margin: 0 5%;
+  padding: 5%;
+  border-radius: 10px;
+  background: var(--m-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  b:first-child { width: 42%; height: 9px; background: color-mix(in srgb, var(--m-surface) 92%, transparent); }
+  b:nth-child(2) { width: 28%; height: 6px; background: color-mix(in srgb, var(--m-surface) 55%, transparent); }
+  span { width: 13%; height: 12px; margin-top: 6px; background: var(--m-fg); }
+}
+
+.thm-mock__cards {
+  flex: 1;
+  margin: 0 5%;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 3%;
+
+  div {
+    padding: 8%;
+    border-radius: 8px;
+    background: var(--m-surface);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  b { height: 5px; background: color-mix(in srgb, var(--m-fg) 16%, transparent); }
+  b:first-child { width: 40%; height: 7px; background: var(--m-accent2); }
+  b:nth-child(2) { width: 80%; }
+  b:nth-child(3) { width: 60%; }
+}
+
+.thm-mock--sm {
+  .thm-mock__hero { padding: 4% 5%; gap: 5px; span { display: none; } }
+  .thm-mock__cards b:nth-child(3) { display: none; }
+}
+
+/* ── Import report ────────────────────────────────────────────────────────── */
+
+.thm__report {
+  margin-bottom: 24px;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-sm);
+
+  ul { margin: 8px 0 0; padding-left: 18px; color: var(--c-fg-muted); font-weight: 600; }
+  li + li { margin-top: 4px; }
+}
+
+.thm__report-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  b { font-family: var(--font-display); font-size: var(--fs-md); color: var(--c-fg); }
+}
+
+.thm__report-close {
+  border: 0;
+  background: none;
+  color: var(--c-fg-subtle);
+  cursor: pointer;
+
+  &:hover { color: var(--c-fg); }
+}
+
+.thm__warn { color: var(--c-warn); }

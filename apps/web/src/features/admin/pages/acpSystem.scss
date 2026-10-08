@@ -52,6 +52,11 @@
   color: var(--c-fg-muted);
 }
 .savechip.is-saving { color: var(--c-fg); }
+/* The ACP's save bar states (see AcpSaveBar): unsaved, and a save that failed. */
+.savechip.is-dirty { color: var(--c-fg); }
+.savechip.is-dirty .savechip__dot { background: var(--c-warn); }
+.savechip.is-error { color: var(--c-danger); }
+.savechip.is-error .savechip__dot { background: var(--c-danger); }
 .savechip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success); flex: none; }
 .savechip.is-saved .savechip__dot { animation: savechip-dotpulse 1.6s ease-out; }
 @keyframes savechip-dotpulse {
@@ -261,33 +266,7 @@
 .sel__opt .ic { margin-left: auto; color: var(--c-accent); }
 
 /* toggle */
-.sw {
-  --w: 48px; --h: 28px;
-  width: var(--w);
-  height: var(--h);
-  flex: none;
-  border: none;
-  padding: 0;
-  border-radius: var(--radius-pill);
-  background: var(--c-border-hi);
-  position: relative;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-.sw::after {
-  content: "";
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--c-on-accent);
-  box-shadow: var(--shadow-inset-knob);
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.sw.is-on { background: var(--c-accent); }
-.sw.is-on::after { transform: translateX(20px); }
+/* The switch: components/Toggle (`.xt-toggle`); `.sw` is kept for older plugin markup there too. */
 
 /* number stepper */
 .stepper {
@@ -398,7 +377,7 @@
     font-weight: 600; font-size: var(--fs-sm); color: var(--c-fg-muted);
     margin-top: 2px; line-height: 1.45;
   }
-  .sw { margin-left: auto; flex: none; }
+  .xt-toggle, .sw { margin-left: auto; flex: none; }
 }
 
 /* Card-head "site is live / offline" pill */
@@ -602,3 +581,64 @@
   font-family: var(--ff-mono); font-size: var(--fs-xs); color: var(--c-fg);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
+
+/* ── unsaved changes (the ACP save bar) ──────────────────────────────────────── */
+
+/* A section with unsaved changes: a dot at the end of its nav entry. */
+.set-secnav__dirty {
+  margin-left: auto;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c-warn);
+}
+
+/* A changed row: a dot before its label, and what is saved right now under it. */
+.set-row.is-dirty .set-row__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--c-warn);
+  }
+}
+
+.set-row__saved {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  color: var(--c-fg-subtle);
+
+  button {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    font-weight: 700;
+    color: var(--c-accent);
+    cursor: pointer;
+
+    &:hover { color: var(--c-fg); }
+  }
+}
+
+/* A setting the server refused. */
+.set-row__error {
+  margin-top: 6px;
+  font-weight: 600;
+  font-size: var(--fs-xs);
+  color: var(--c-danger);
+}
+.set-row.is-error .inp,
+.set-row.is-error .acp-input { border-color: var(--c-danger); }

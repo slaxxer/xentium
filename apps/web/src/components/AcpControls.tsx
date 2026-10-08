@@ -4,20 +4,12 @@ import { useTranslation } from "react-i18next";
  * The ACP's settings-row form controls. Shared rather than duplicated so every
  * `set-row__control` across the admin renders the same element — a page that
  * hand-rolls a look-alike input is how ACP screens drift apart.
- * Styling lives in acpSystem.scss (`.sw`, `.inp`, `.stepper`).
+ * Styling lives in acpSystem.scss (`.inp`, `.stepper`); the switch in components/Toggle.scss.
  */
 
-export function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      className={`sw${on ? " is-on" : ""}`}
-      onClick={onToggle}
-    />
-  );
-}
+/** The switch now lives in Toggle.tsx; re-exported here because pages and plugins
+ *  (through the `webAcpControls` host global) import it from AcpControls. */
+export { Toggle, ToggleGlyph } from "./Toggle";
 
 export function TextField({
   value, onChange, placeholder, type = "text",
