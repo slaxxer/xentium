@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-xenforo",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "private": true,
   "description": "XenForo 2.x → Xentium migration adapter (§34, Wave 1). Connects directly to the XenForo MySQL database. Requires the xentium-forum plugin on the target.",
   "type": "module",
