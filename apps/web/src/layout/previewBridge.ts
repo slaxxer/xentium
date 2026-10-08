@@ -44,7 +44,7 @@ import { acceptsChild } from "./blockRegistry";
 import { shortcutFor } from "./editorShortcuts";
 import { setLivePreviewDocument, setPreviewAudience } from "./useLayout";
 import { setLivePreviewFrame } from "./siteFrame";
-import { setPreviewDate } from "./edgeArt";
+import { setPreviewDate, setPreviewHour } from "./edgeArt";
 
 /**
  * ⚠ Icon mode HIJACKS the click, so it is off by default and the editor turns it on
@@ -563,6 +563,11 @@ export function installPreviewBridge(): () => void {
     // "Viewing on": the date seasonal edge art is judged against; null = today.
     if (data.type === "previewDate") {
       setPreviewDate((e.data as { md?: string | null }).md ?? null);
+    }
+    // "Viewing at": the hour time-of-day edge art is judged against; null = now.
+    if (data.type === "previewHour") {
+      const hour = (e.data as { hour?: unknown }).hour;
+      setPreviewHour(typeof hour === "number" && hour >= 0 && hour <= 23 ? Math.floor(hour) : null);
     }
     // The editor's unsaved site frame, from the Site layout popover.
     if (data.type === "frame") {

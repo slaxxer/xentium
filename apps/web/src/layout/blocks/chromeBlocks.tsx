@@ -24,7 +24,7 @@ import { useRenderedDocument } from "../LayoutRenderer";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import {
   NavLogo, NavPrimaryLinks, NavSearchBlock,
-  NavNotifications, NavAdminLink, NavUserMenu,
+  NavNotifications, NavModTool, NavAdminLink, NavUserMenu,
 } from "../../layouts/PubNav";
 import {
   FooterWhosOnline, FooterGroupLegend, FooterBoardStats, FooterBranding, FooterLinks, FooterText, FooterBar,
@@ -33,6 +33,7 @@ import { sectionBackground } from "./coreBlocks";
 import { isEditorPreview } from "../previewMode";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 import "./chromeBlocks.scss";
+import { MemberWidget } from "../../components/MembersOnly";
 
 const CHROME_HEADER = ["chrome.header"];
 const CHROME_FOOTER = ["chrome.footer"];
@@ -72,7 +73,7 @@ const childNode = (child: ReactNode): BlockNode | undefined =>
   isValidElement<{ node?: BlockNode }>(child) ? child.props.node : undefined;
 
 /** The masthead's account buttons — what "Buttons: Log in / account menu" switches. */
-const ACCOUNT_TYPES = new Set(["userMenu", "notifications", "headerWidgets", "adminLink"]);
+const ACCOUNT_TYPES = new Set(["userMenu", "modTool", "notifications", "headerWidgets", "adminLink"]);
 
 function SiteHeaderBlock({ props, children }: BlockProps<{
   height?: number; showLogo?: boolean; showWordmark?: boolean;
@@ -159,8 +160,9 @@ function findHeader(doc: LayoutDocument | null | undefined): BlockNode | undefin
  */
 const CARRIED: Record<string, () => ReactNode> = {
   search:        () => <NavSearchBlock expanded={false} />,
-  headerWidgets: () => <>{slotRegistry.getHeaderWidgets().map((w) => <w.component key={w.id} />)}</>,
-  notifications: () => <NavNotifications />,
+  headerWidgets: () => <MemberWidget>{slotRegistry.getHeaderWidgets().map((w) => <w.component key={w.id} />)}</MemberWidget>,
+  modTool:       () => <NavModTool />,
+  notifications: () => <BellBlock />,
   adminLink:     () => <NavAdminLink />,
   userMenu:      () => <NavUserMenu />,
 };
@@ -237,11 +239,34 @@ registerBlock({
   component: ({ props }: BlockProps<{ expanded: boolean }>) => <NavSearchBlock expanded={props.expanded} />,
 });
 
+/**
+ * The bell — and, for a header that does not place a `modTool` block, the moderation
+ * shield beside it.
+ *
+ * The shield used to be part of this block. Saved headers and the layouts themes ship
+ * were written then, so a document that has no `modTool` of its own keeps getting the
+ * shield here; once one is placed, this is the bell alone. Same rule as `headerWidgets`
+ * and the plugin icons placed on their own: never both, never neither.
+ */
+function BellBlock() {
+  // The document from context: in the editor the unsaved one is on screen.
+  const doc = useRenderedDocument();
+  const placesModTool = !!doc && blockTypesIn(doc).has("modTool");
+  return <NavNotifications withModTool={!placesModTool} />;
+}
+
+registerBlock({
+  type:   "modTool",
+  schema: blockPropSchemas.modTool,
+  editorMeta: { label: "Moderation tool", category: "content", allowedTemplates: CHROME_HEADER },
+  component: () => <NavModTool />,
+});
+
 registerBlock({
   type:   "notifications",
   schema: blockPropSchemas.notifications,
   editorMeta: { label: "Notification bell", category: "content", allowedTemplates: CHROME_HEADER },
-  component: () => <NavNotifications />,
+  component: () => <BellBlock />,
 });
 
 registerBlock({
@@ -270,11 +295,11 @@ registerBlock({
     const doc = useRenderedDocument();
     const placed = individuallyPlacedSlotIds(doc ? blockTypesIn(doc) : [], "headerWidget");
     return (
-      <>
+      <MemberWidget>
         {slotRegistry.getHeaderWidgets()
           .filter((w) => !placed.has(w.id))
           .map((w) => <w.component key={w.id} />)}
-      </>
+      </MemberWidget>
     );
   },
 });

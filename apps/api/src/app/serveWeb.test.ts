@@ -29,11 +29,27 @@ describe("injectThemeCss", () => {
     const themed = vi.spyOn(appearanceService, "getThemeCss").mockResolvedValue(":root{--mine:1}");
 
     const mine = await injectThemeCss(HTML, req("a=1; xt_theme=redline"));
-    expect(themed).toHaveBeenCalledWith("redline");
+    expect(themed).toHaveBeenCalledWith("redline", null);
     expect(mine).toContain('<style id="xentium-custom-tokens">:root{--mine:1}</style>');
 
     themed.mockResolvedValue(null);
     expect(await injectThemeCss(HTML, req("xt_theme=gone"))).toContain('data-style-version="7">:root{--live:1}');
+  });
+
+  it("passes the visitor's colourway on, and drops one that is not a colourway id", async () => {
+    vi.spyOn(appearanceService, "getStyleVersion").mockResolvedValue(7);
+    const themed = vi.spyOn(appearanceService, "getThemeCss").mockResolvedValue(":root{--mine:1}");
+    const live = vi.spyOn(appearanceService, "getLiveCss").mockResolvedValue(":root{--live:1}");
+
+    await injectThemeCss(HTML, req("xt_theme=vanguard; xt_cw=ember"));
+    expect(themed).toHaveBeenCalledWith("vanguard", "ember");
+
+    // On the site's own theme the colourway rides the LIVE sheet, which keeps its version.
+    expect(await injectThemeCss(HTML, req("xt_cw=ember"))).toContain('data-style-version="7"');
+    expect(live).toHaveBeenCalledWith("ember");
+
+    await injectThemeCss(HTML, req("xt_cw=%3Cx%3E"));
+    expect(live).toHaveBeenLastCalledWith(null);
   });
 
   it("cannot be broken out of, and leaves $-patterns in the CSS alone", async () => {

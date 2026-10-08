@@ -9,10 +9,9 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
-import { apiErrorMessage } from "../../../lib/swal";
-import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { useAutosave, sameValue } from "../../../hooks/useAutosave";
+import { DraftFailure } from "../../../hooks/useDraft";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, NumberStepper } from "../../../components/AcpControls";
 import "./ModSettingsPage.scss";
@@ -119,10 +118,8 @@ export function ModSettingsPage() {
   const save = useMutation({
     mutationFn: (patch: Partial<Draft>) => api.patch<ModSettings>("/admin/mod-settings", patch),
     onSuccess: (res) => qc.setQueryData(["acp-mod-settings"], res),
-    onError: (e) => {
-      toast.error(apiErrorMessage(e));
-      qc.invalidateQueries({ queryKey: ["acp-mod-settings"] });
-    },
+    // The bar reports the failure; the refetch shows what the server really has.
+    onError: () => { void qc.invalidateQueries({ queryKey: ["acp-mod-settings"] }); },
   });
 
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -157,7 +154,7 @@ export function ModSettingsPage() {
     value: draft ? normalise(draft) : saved,
     savedValue: saved,
     onSave: (d) => {
-      if (!d || !saved) return;
+      if (!d || !saved) return undefined;
       const patch: Partial<Draft> = {};
       for (const k of SECTIONS) {
         if (sameValue(d[k], saved[k])) continue;
@@ -166,8 +163,14 @@ export function ModSettingsPage() {
         if (k === "bans" && bansProblem(d.bans)) continue;
         (patch as Record<Section, unknown>)[k] = d[k];
       }
-      if (Object.keys(patch).length) save.mutate(patch);
+      // An impossible section was held back above; the page already says why, and the
+      // bar says it again rather than reporting a save that did not happen.
+      if (ladderProblem(d.ladder)) throw new DraftFailure(t(`modSettings.ladder.issue.${ladderProblem(d.ladder)}`));
+      if (bansProblem(d.bans)) throw new DraftFailure(t(`modSettings.bans.issue.${bansProblem(d.bans)}`));
+      return Object.keys(patch).length ? save.mutateAsync(patch) : undefined;
     },
+    onDiscard: () => { if (data) setDraft(draftOf(data)); },
+    label: t("modSettings.title"),
   });
 
   const set = <K extends Section>(k: K, v: Draft[K]) => setDraft((d) => (d ? { ...d, [k]: v } : d));

@@ -30,7 +30,7 @@ import {
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { useDebouncedSave } from "../../../hooks/useAutosave";
 import { withTheme } from "../../../lib/editingTheme";
 import { Toggle } from "../../../components/AcpControls";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
@@ -128,7 +128,7 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
     },
   });
 
-  useAutosave({
+  useDebouncedSave({
     value: frame,
     savedValue: query.data ? parseSiteFrame(query.data.frame) : undefined,
     onSave: (v) => { if (v) save.mutate(v); },

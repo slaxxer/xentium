@@ -44,6 +44,11 @@ export const CorePermissions = {
   MODERATION_CASES_MANAGE:   "moderation.cases.manage",
   MODERATION_LOG_VIEW:       "moderation.log.view",
   MODERATION_SETTINGS:       "moderation.settings",
+  // Who counts as STAFF: cannot be warned or banned, is skipped by a case's
+  // "Ban all", is exempt where a sign-in guard exempts staff, and is listed under
+  // the members page's Staff filter. A permission, not a list of group names, so a
+  // site that adds its own team group decides in ACP → Permissions.
+  MODERATION_PROTECTED:      "moderation.protected",
 
   // Profile comments (§40)
   PROFILE_COMMENT_CREATE:      "profile.comment.create",

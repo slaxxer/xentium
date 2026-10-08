@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
@@ -11,7 +11,7 @@ import { timeAgo } from "../../../lib/time";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { sameValue, useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import {
   DURATIONS, DURATION_LABEL, DURATION_TEXT, MODES, fillSegments,
@@ -56,7 +56,12 @@ export function ModTemplatesPage() {
     queryFn: () => api.get("/admin/mod-templates"),
   });
   const [search, setSearch] = useState("");
-  const [saving, setSaving] = useState(false);
+  /**
+   * Edited templates, by id — every one, not just the open one: picking another
+   * template is not leaving the page, so an unsaved edit must survive it. The save
+   * bar saves them all.
+   */
+  const [edits, setEdits] = useState<Record<string, Draft>>({});
   const selected = params.get("id");
   const select = (id: string | null) => setParams((p) => { if (id) p.set("id", id); else p.delete("id"); return p; }, { replace: true });
 
@@ -68,6 +73,54 @@ export function ModTemplatesPage() {
 
   // ModCanvas reads the same texts; keep its copy in step with every change here.
   const touched = () => qc.invalidateQueries({ queryKey: ["mod-templates"] });
+
+  /** What the server has for every template being edited — the draft's baseline. */
+  const saved = useMemo(() => {
+    if (isLoading) return undefined;
+    return Object.fromEntries(Object.keys(edits).flatMap((id) => {
+      const tpl = templates.find((x) => x.id === id);
+      return tpl ? [[id, draftOf(tpl)]] : [];
+    }));
+  }, [templates, edits, isLoading]);
+  const savedRef = useRef(saved);
+  savedRef.current = saved;
+  const dropEdit = (id: string) => setEdits((p) => { const { [id]: _gone, ...rest } = p; return rest; });
+
+  const saveAll = useMutation({
+    mutationFn: (changed: Array<[string, Draft]>) => Promise.all(changed.map(([id, d]) =>
+      api.patch<Template>(`/admin/mod-templates/${id}`, payloadOf(d)))),
+    onSuccess: (rows) => {
+      qc.setQueryData<AdminTemplate[]>(KEY, (old) => (old ?? []).map((x) => {
+        const row = rows.find((r) => r.id === x.id);
+        return row ? { ...x, ...row } : x;
+      }));
+      // The server tidies what it stores (trimmed, defaults filled): start those
+      // templates over from what it kept.
+      setEdits((p) => Object.fromEntries(Object.entries(p).filter(([id]) => !rows.some((r) => r.id === id))));
+      touched();
+    },
+  });
+
+  useAutosave({
+    // Compared as what would be SENT, so trailing spaces alone are not a change.
+    value: Object.fromEntries(Object.entries(edits).map(([id, d]) => [id, payloadOf(d)])),
+    savedValue: saved && Object.fromEntries(Object.entries(saved).map(([id, d]) => [id, payloadOf(d)])),
+    onSave: () => {
+      const changed = Object.entries(edits).filter(([id, d]) => savedRef.current?.[id] && !sameValue(payloadOf(d), payloadOf(savedRef.current[id]!)));
+      return changed.length ? saveAll.mutateAsync(changed) : undefined;
+    },
+    onDiscard: () => setEdits({}),
+    describe: (value, base) => Object.keys(value)
+      .filter((id) => !sameValue(value[id], base[id]))
+      .map((id) => ({
+        key: id,
+        label: edits[id]?.name || t("modTemplates.untitled"),
+        section: t("modTemplates.title"),
+        from: base[id]?.name ?? "",
+        to: value[id]!.name,
+        revert: () => dropEdit(id),
+      })),
+  });
 
   const create = useMutation({
     mutationFn: (body: object) => api.post<AdminTemplate>("/admin/mod-templates", body),
@@ -108,7 +161,7 @@ export function ModTemplatesPage() {
           <h1 className="pg-title">{t("modTemplates.title")}</h1>
           <p className="pg-sub">{t("modTemplates.sub")}</p>
         </div>
-        <SaveChip saving={saving} />
+        <SaveChip saving={false} />
       </div>
 
       <div className="mtp-layout">
@@ -161,10 +214,11 @@ export function ModTemplatesPage() {
             <Editor
               key={current.id}
               template={current}
-              onSaving={setSaving}
+              draft={edits[current.id] ?? draftOf(current)}
+              onDraft={(d) => setEdits((p) => ({ ...p, [current.id]: d }))}
               onChanged={touched}
               onDuplicate={() => create.mutate({ ...payloadOf(draftOf(current)), name: t("modTemplates.copyName", { name: current.name }) })}
-              onDeleted={() => { select(null); touched(); }}
+              onDeleted={() => { dropEdit(current.id); select(null); touched(); }}
             />
           ) : !isLoading && (
             <p className="mtp-muted mtp-pad">{t("modTemplates.empty")}</p>
@@ -175,29 +229,19 @@ export function ModTemplatesPage() {
   );
 }
 
-function Editor({ template, onSaving, onChanged, onDuplicate, onDeleted }: {
+/** One template's form. Its edits are the PAGE's (`draft` / `onDraft`), so they survive picking another template. */
+function Editor({ template, draft, onDraft, onDuplicate, onDeleted }: {
   template: AdminTemplate;
-  onSaving: (v: boolean) => void;
+  draft: Draft;
+  onDraft: (next: Draft) => void;
   onChanged: () => void;
   onDuplicate: () => void;
   onDeleted: () => void;
 }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  const [draft, setDraft] = useState<Draft>(() => draftOf(template));
   const textRef = useRef<HTMLTextAreaElement>(null);
-  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft((d) => ({ ...d, [k]: v }));
-
-  const save = useMutation({
-    mutationFn: (d: Draft) => api.patch<Template>(`/admin/mod-templates/${template.id}`, payloadOf(d)),
-    onSuccess: (row) => {
-      qc.setQueryData<AdminTemplate[]>(KEY, (old) => (old ?? []).map((x) => (x.id === row.id ? { ...x, ...row } : x)));
-      onChanged();
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
-  });
-  useEffect(() => { onSaving(save.isPending); }, [save.isPending, onSaving]);
-  useAutosave({ value: payloadOf(draft), savedValue: payloadOf(draftOf(template)), onSave: () => save.mutate(draft), delay: 700 });
+  const set = <K extends keyof Draft>(k: K, v: Draft[K]) => onDraft({ ...draft, [k]: v });
 
   const remove = useMutation({
     mutationFn: () => api.delete(`/admin/mod-templates/${template.id}`),
@@ -268,7 +312,7 @@ function Editor({ template, onSaving, onChanged, onDuplicate, onDeleted }: {
         <div className="acp-seg">
           {MODES.map((m) => (
             <button key={m} type="button" className={draft.mode === m ? "is-on" : ""}
-              onClick={() => setDraft((d) => ({ ...d, mode: m, defaultDuration: m === "ban" ? (d.defaultDuration ?? "7d") : null }))}>
+              onClick={() => onDraft({ ...draft, mode: m, defaultDuration: m === "ban" ? (draft.defaultDuration ?? "7d") : null })}>
               {t(`modTemplates.mode.${m}`)}
             </button>
           ))}

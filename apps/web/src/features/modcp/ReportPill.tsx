@@ -11,6 +11,7 @@ import { api } from "../../lib/api";
 import { toast } from "../../lib/toast";
 import { apiErrorMessage } from "../../lib/swal";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import {
   DURATIONS, DURATION_LABEL, DURATION_TEXT, MODES, MODE_LABEL, fill, suggest, typeLabel,
   type Duration, type Mode, type Template,
@@ -43,7 +44,7 @@ const isTyping = (t: EventTarget | null) =>
 export function ReportPill({ group, position, total }: { group: ReportGroup; position: number; total: number }) {
   const qc = useQueryClient();
   const { user } = useAuth();
-  const isAdmin = user?.groups.some((g) => g.key === "admin") ?? false;
+  const isAdmin = userCan(user, "admin.access");
   const { data: templates = [] } = useQuery<Template[]>({
     queryKey: ["mod-templates"],
     queryFn: () => api.get("/moderation/templates"),

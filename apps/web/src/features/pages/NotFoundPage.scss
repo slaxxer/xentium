@@ -152,3 +152,6 @@
     &__ghost { top: auto; bottom: 8%; right: -6%; transform: none; }
   }
 }
+
+/* An uploaded site logo in place of the Xentium mark. */
+.nf__logo-img { display: block; height: 36px; width: auto; max-width: 220px; object-fit: contain; }

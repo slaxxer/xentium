@@ -4,10 +4,11 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faGripVertical, faPencil, faTrash,
-  faToggleOn, faToggleOff, faSave, faExternalLinkAlt,
+  faSave, faExternalLinkAlt,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
+import { Toggle } from "../../../components/Toggle";
 
 interface NavItem {
   id: string;
@@ -322,17 +323,11 @@ export function NavigationPage() {
 
                 {/* Active toggle */}
                 <div>
-                  <button
-                    type="button"
-                    onClick={() => updateMutation.mutate({ id: item.id, data: { isActive: !item.isActive } })}
-                    style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                    title={item.isActive ? t("navigation.deactivate") : t("navigation.activate")}
-                  >
-                    <FontAwesomeIcon
-                      icon={item.isActive ? faToggleOn : faToggleOff}
-                      style={{ fontSize: "1.375rem", color: item.isActive ? "var(--c-accent)" : "var(--c-fg-muted)" }}
-                    />
-                  </button>
+                  <Toggle
+                    on={item.isActive}
+                    onToggle={() => updateMutation.mutate({ id: item.id, data: { isActive: !item.isActive } })}
+                    label={item.isActive ? t("navigation.deactivate") : t("navigation.activate")}
+                  />
                 </div>
 
                 {/* Actions */}

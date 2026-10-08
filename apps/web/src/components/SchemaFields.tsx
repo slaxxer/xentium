@@ -12,6 +12,7 @@
 import { useTranslation } from "react-i18next";
 import "./SchemaFields.scss";
 import { IconPicker } from "./IconPicker";
+import { ToggleGlyph } from "./Toggle";
 
 /** The JSON Schema subset our Zod contracts actually produce. */
 export interface SchemaProp {
@@ -143,7 +144,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
         if (prop.type === "boolean") {
           // A SWITCH, when the caller asked for one: still a real checkbox, so it
           // keeps the label association, the focus ring and the keyboard behaviour —
-          // only its appearance changes.
+          // only its appearance changes, to the one toggle glyph (components/Toggle).
           if (compact) {
             return (
               <label className="sf-switch" key={key}>
@@ -153,7 +154,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                 </span>
                 <input type="checkbox" checked={Boolean(value)}
                   onChange={(e) => set(key, e.target.checked)} />
-                <span className="sf-switch__track" aria-hidden="true" />
+                <span className="sf-switch__track" aria-hidden="true"><ToggleGlyph on={Boolean(value)} /></span>
               </label>
             );
           }

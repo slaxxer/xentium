@@ -77,6 +77,11 @@ export interface PluginRoute {
   path: string;
   component: ComponentType<any>;
   layout: "public" | "acp";
+  /**
+   * Public pages only: members only. A guest is sent to sign in and brought back.
+   * (ACP routes are behind the admin gate already.) Absent = anyone may open it.
+   */
+  requiresAuth?: boolean;
 }
 
 // ── Header widget (registered by plugins, rendered in the top-nav action cluster) ─

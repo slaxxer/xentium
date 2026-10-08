@@ -11,12 +11,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const user = { value: null as unknown };
-vi.mock("../lib/authStore", () => ({ authStore: { get user() { return user.value; } } }));
+vi.mock("../lib/authStore", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/authStore")>()),
+  authStore: { get user() { return user.value; } },
+}));
 
 const { previewSample, showsSampleData } = await import("./previewSample");
 
-const staff  = { groups: [{ key: "admin" }] };
-const member = { groups: [{ key: "member" }] };
+// Staff = holds admin.access (what the editor itself requires), not a group name.
+const staff  = { groups: [{ key: "member" }], permissions: ["admin.access"] };
+const member = { groups: [{ key: "member" }], permissions: ["article.create"] };
 
 function at(search: string) {
   Object.defineProperty(window, "location", {
@@ -62,11 +66,12 @@ describe("who sees sample data", () => {
     expect(showsSampleData()).toBe(false);
   });
 
-  it("counts supermods and moderators as staff", () => {
+  /** ⚠ The permission decides, not the group's name: a renamed or custom group counts. */
+  it("follows the permission, never the group name", () => {
     at("?__layout=draft");
-    for (const key of ["admin", "supermod", "moderator"]) {
-      user.value = { groups: [{ key }] };
-      expect(showsSampleData(), key).toBe(true);
-    }
+    user.value = { groups: [{ key: "editors" }], permissions: ["admin.access"] };
+    expect(showsSampleData()).toBe(true);
+    user.value = { groups: [{ key: "admin" }], permissions: [] };
+    expect(showsSampleData()).toBe(false);
   });
 });

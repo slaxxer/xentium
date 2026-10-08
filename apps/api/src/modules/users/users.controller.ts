@@ -7,6 +7,7 @@ import { progressionService } from "../progression/progression.service.js";
 import { getProfileVisitors, recordProfileView } from "./profileViews.js";
 import { permissionsService } from "../permissions/permissions.service.js";
 import { prisma } from "../../infrastructure/db.js";
+import { getStanding } from "../moderation/standing.js";
 import {
   getProfileParamsSchema,
   followParamsSchema,
@@ -109,6 +110,12 @@ export const usersController = {
   }),
 
   /** A member's ladder standing, for the profile's rank rail. Public. */
+  /** The profile's Warnings tab — the member and staff only (see moderation/standing.ts). */
+  getStanding: (async (req, res) => {
+    const { id } = followParamsSchema.parse(req.params);
+    res.json(await getStanding(id, req.userId!));
+  }),
+
   getProgression: (async (req, res) => {
     const { id } = followParamsSchema.parse(req.params);
     res.json(await progressionService.getProfileProgression(id));

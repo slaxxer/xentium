@@ -10,7 +10,7 @@ import {
   faRightFromBracket,
   faArrowUpRightFromSquare,
   faMagnifyingGlass,
-  faCircleNodes,
+  faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { NotificationBell } from "../components/NotificationBell";
 import { AcpStatusBadge } from "../components/AcpStatusBadge";
@@ -19,12 +19,16 @@ import { Avatar } from "../components/Avatar";
 import { topGroups } from "../lib/groupBadge";
 // UserAvatar replaced by the Hearth Avatar throughout the nav
 import { useAuth, applyLogout } from "../hooks/useAuth";
+import { userCan } from "../lib/authStore";
 import { useRegistrationStatus } from "../hooks/useRegistrationStatus";
 import { api } from "../lib/api";
 import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
 import { RankBadge } from "../components/RankBadge";
 import { ModShield } from "../features/modcp/ModShield";
+import { SignInMenu } from "../features/auth/doorway/SignInMenu";
+import { useBranding } from "../hooks/useBranding";
+import { SiteLogo } from "../components/SiteLogo";
 
 interface NavItem {
   id: string;
@@ -58,17 +62,9 @@ function useNavItems(isAuthenticated: boolean) {
   );
 }
 
-function useBranding() {
-  return useQuery<{ navbarUrl: string | null; iconUrl: string | null; logoText: string | null }>({
-    queryKey: ["pub-branding"],
-    queryFn:  () => api.get("/appearance/branding"),
-    staleTime: 300_000, // 5 min — branding rarely changes
-  });
-}
-
-/** Show ACP tab for administrators and moderators. */
-function hasAcpAccess(groups: Array<{ key: string }>) {
-  return groups.some((g) => g.key === "admin" || g.key === "supermod" || g.key === "moderator");
+/** The ACP entry, for whoever holds the key every ACP route requires. */
+function hasAcpAccess(user: Parameters<typeof userCan>[0]) {
+  return userCan(user, "admin.access");
 }
 
 function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
@@ -222,46 +218,48 @@ function NavSearch({ alwaysOpen = false }: { alwaysOpen?: boolean }) {
   );
 }
 
-/** Logo — image if set, otherwise logoText or the default wordmark. */
+/** Logo — the uploaded image, otherwise the Xentium mark with the logo text or the default wordmark. */
 export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   const { data: branding } = useBranding();
   return (
     <NavLink to="/" className="pub-nav__logo">
-      {branding?.navbarUrl ? (
-        /* Sized by CSS, not inline: the same block now sits in the nav strip AND in
-           a masthead band, and a hardcoded 32px made a 250px band render a logo the
-           size of a favicon. `--xt-logo-h` lets the context say how big, which is
-           also the codebase's own rule about visual values living in tokens. */
-        <img
-          className="pub-nav__logo-img"
-          src={branding.navbarUrl}
-          alt={branding.logoText ?? "Home"}
-        />
-      ) : (
-        <>
-          <span className="pub-nav__logomark" aria-hidden><FontAwesomeIcon icon={faCircleNodes} /></span>
-          {showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "xentium"}</span>}
-        </>
-      )}
+      {/* The image is sized by CSS, not inline: the same block sits in the nav strip AND
+          in a masthead band, and `--xt-logo-h` lets the context say how big (the
+          codebase's rule about visual values living in tokens). */}
+      <SiteLogo
+        imgClassName="pub-nav__logo-img"
+        markClassName="pub-nav__mark"
+        wordmark={showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "xentium"}</span>}
+      />
     </NavLink>
   );
 }
 
 
 /**
- * Signed-in only — the block decides, not the admin. Moderators also get the
- * ModCanvas shield beside the bell (it draws nothing for anyone else).
+ * Signed-in only — the block decides, not the admin.
+ *
+ * `withModTool` puts the ModCanvas shield beside the bell, which is where it lived
+ * before it became a block of its own (`modTool`). The block passes it only for a
+ * document that does not place the shield itself.
  */
-export function NavNotifications() {
+export function NavNotifications({ withModTool = false }: { withModTool?: boolean }) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <><ModShield /><NotificationBell /></> : null;
+  if (!isAuthenticated) return null;
+  return withModTool ? <><ModShield /><NotificationBell /></> : <NotificationBell />;
+}
+
+/** The ModCanvas shield. Moderators only — it draws nothing for anyone else. */
+export function NavModTool() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <ModShield /> : null;
 }
 
 /** Admins only; the badge flags pending plugin updates or an expiring licence. */
 export function NavAdminLink() {
   const { t } = useTranslation("common");
   const { user, isAuthenticated } = useAuth();
-  if (!isAuthenticated || !user || !hasAcpAccess(user.groups)) return null;
+  if (!isAuthenticated || !user || !hasAcpAccess(user)) return null;
   return (
     <NavLink
       to="/admin"
@@ -285,9 +283,15 @@ export function NavUserMenu() {
   return (
     <>
       {registrationOpen && (
-        <NavLink to="/register" className="pub-nav__register-btn">{t("nav.register")}</NavLink>
+        // Icons, not words: the guest's two doors take no more room than the member's
+        // icons beside them. The name stays as the accessible label and the tooltip.
+        <NavLink to="/register" className="pub-nav__register-btn pub-nav__guest-ico"
+          aria-label={t("nav.register")} title={t("nav.register")}>
+          <FontAwesomeIcon icon={faUserPlus} />
+        </NavLink>
       )}
-      <NavLink to="/login" className="pub-nav__login-btn">{t("nav.signIn")}</NavLink>
+      {/* Opens a sign-in form under the button: the visitor stays on the page. */}
+      <SignInMenu className="pub-nav__login-btn pub-nav__guest-ico" />
     </>
   );
 }

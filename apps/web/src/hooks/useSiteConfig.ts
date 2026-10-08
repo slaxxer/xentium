@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
+import type { TimeConfig } from "../lib/datetime";
 
 export type FeatureKey = "articles" | "home" | "members";
 
@@ -13,6 +14,8 @@ export interface SiteConfig {
   siteTagline?: string;
   /** Canonical base URL set during install (e.g. "https://forum.example.com"); "" if unset. */
   siteUrl: string;
+  /** How dates and times are written (ACP → System Settings → General). */
+  time?: TimeConfig;
   /** Public auth-form config (login identifier + registration name collection). */
   auth: {
     loginMethod: "email" | "username" | "either";

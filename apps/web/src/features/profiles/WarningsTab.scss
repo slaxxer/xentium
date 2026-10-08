@@ -1,0 +1,197 @@
+/* Profile → Warnings. Tokens only; the cards wear the site's card shape (and its
+   chamfer, when the theme cuts corners). */
+
+.std { display: flex; flex-direction: column; gap: var(--sp-4); }
+.std-muted { color: var(--c-fg-muted); font-size: var(--fs-sm); margin: 0; }
+
+.std-card {
+  padding: var(--sp-5) var(--sp-6);
+  border: 1px solid var(--c-border);
+  border-radius: var(--card-radius);
+  clip-path: var(--clip-card);
+  background: var(--card-bg);
+
+  @media (max-width: 640px) { padding: var(--sp-4); }
+}
+
+.std-h {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 var(--sp-3);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 800;
+  color: var(--c-fg);
+  svg { color: var(--c-fg-muted); }
+}
+
+.std-staff {
+  margin-left: auto;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+}
+
+.std-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--c-fg-muted);
+  svg { color: var(--c-success); }
+}
+
+/* ── "One more warning and…" ─────────────────────────────────────────────── */
+
+.std-alert {
+  display: flex;
+  gap: 14px;
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid color-mix(in srgb, var(--c-warn) 45%, transparent);
+  border-radius: var(--card-radius);
+  clip-path: var(--clip-card);
+  background: color-mix(in srgb, var(--c-warn) 12%, var(--card-bg));
+  color: var(--c-fg);
+
+  b { display: block; font-size: var(--fs-md); font-weight: 800; }
+  p { margin: 2px 0 0; font-size: var(--fs-sm); color: var(--c-fg-muted); line-height: 1.55; }
+
+  &--severe {
+    border-color: color-mix(in srgb, var(--c-danger) 45%, transparent);
+    background: color-mix(in srgb, var(--c-danger) 10%, var(--card-bg));
+    .std-alert__icon { color: var(--c-danger); }
+  }
+}
+.std-alert__icon { flex: none; margin-top: 3px; font-size: var(--fs-lg); color: var(--c-warn); }
+
+/* ── Summary + ladder ─────────────────────────────────────────────────────── */
+
+.std-summary { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-4) var(--sp-6); }
+
+.std-summary__count {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+}
+.std-summary__n { font-family: var(--font-display); font-size: var(--fs-3xl); font-weight: 800; color: var(--c-fg); line-height: 1; }
+.std-summary__note { flex-basis: 100%; font-size: var(--fs-xs); }
+
+.std-ladder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: 6px 12px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    clip-path: var(--clip-sm);
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+    b { font-size: var(--fs-sm); color: var(--c-fg); }
+  }
+  .is-next { border-color: var(--c-warn); background: color-mix(in srgb, var(--c-warn) 10%, transparent); }
+  .is-reached { border-color: var(--c-danger); background: color-mix(in srgb, var(--c-danger) 8%, transparent); }
+}
+
+/* ── Lists ────────────────────────────────────────────────────────────────── */
+
+.std-group + .std-group { margin-top: var(--sp-4); }
+.std-group__h {
+  margin: 0 0 8px;
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+  &--active { color: var(--c-warn); }
+}
+
+.std-list { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
+
+.std-item {
+  padding: 12px 14px;
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-border-hi);
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+
+  &--active { border-left-color: var(--c-warn); }
+  &--expired, &--pardoned { opacity: 0.72; }
+  &--pardoned { border-left-color: var(--c-success); }
+}
+.std-item__reason { margin: 0 0 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg); white-space: pre-wrap; }
+.std-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  font-size: var(--fs-xs);
+  color: var(--c-fg-muted);
+}
+.std-who { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: var(--c-fg); }
+
+/* How much of the warning's life is left. */
+.std-bar {
+  display: block;
+  height: 4px;
+  margin-top: 10px;
+  border-radius: var(--radius-pill);
+  background: var(--c-border);
+  overflow: hidden;
+  i { display: block; height: 100%; background: var(--c-warn); }
+}
+
+.std-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c-bg-hover);
+  font-weight: 700;
+  color: var(--c-fg-muted);
+  &--live { background: var(--c-danger-soft); color: var(--c-danger); }
+  &--warn { background: color-mix(in srgb, var(--c-warn) 15%, transparent); color: var(--c-warn); }
+}
+
+/* ── IPs ──────────────────────────────────────────────────────────────────── */
+
+.std-ips { display: flex; flex-direction: column; font-size: var(--fs-sm); }
+.std-ips__row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) minmax(120px, 1fr) minmax(140px, 1.2fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--c-border);
+  code { font-family: var(--ff-mono); font-size: var(--fs-xs); color: var(--c-fg); }
+
+  &--head {
+    padding-top: 0;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+
+  @media (max-width: 640px) {
+    grid-template-columns: 1fr auto;
+    &--head { display: none; }
+  }
+}
+.std-credit { margin: 10px 0 0; font-size: var(--fs-2xs); color: var(--c-fg-subtle); a { color: inherit; } }

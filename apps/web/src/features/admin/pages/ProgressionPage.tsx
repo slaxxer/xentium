@@ -4,11 +4,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faGripVertical, faPencil, faUsers,
-  faToggleOn, faToggleOff, faPlus,
+  faPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage } from "../../../lib/swal";
-import { AutosaveStatus } from "../../../components/AutosaveStatus";
+import { SaveChip } from "../../../components/SaveChip";
+import { useAutosave } from "../../../hooks/useAutosave";
+import { Toggle } from "../../../components/Toggle";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -142,12 +144,8 @@ function GroupProgressionModal({
                 <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.onLadder")}</div>
                 <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{t("progression.onLadderDesc")}</div>
               </div>
-              <button type="button" onClick={() => setForm(p => ({ ...p, isProgressionGroup: !p.isProgressionGroup }))} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                <FontAwesomeIcon
-                  icon={form.isProgressionGroup ? faToggleOn : faToggleOff}
-                  style={{ fontSize: "1.625rem", color: form.isProgressionGroup ? "var(--c-accent)" : "var(--c-fg-muted)" }}
-                />
-              </button>
+              <Toggle on={!!form.isProgressionGroup} label={t("progression.onLadder")}
+                onToggle={() => setForm(p => ({ ...p, isProgressionGroup: !p.isProgressionGroup }))} />
             </div>
 
             {/* Ladder position */}
@@ -211,19 +209,6 @@ function GroupProgressionModal({
   );
 }
 
-// ── Toggle helper ──────────────────────────────────────────────────────────
-
-function Toggle({ on, onToggle }: { on: boolean; onToggle: () => void }) {
-  return (
-    <button type="button" onClick={onToggle} style={{ background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-      <FontAwesomeIcon
-        icon={on ? faToggleOn : faToggleOff}
-        style={{ fontSize: "1.625rem", color: on ? "var(--c-accent)" : "var(--c-fg-muted)" }}
-      />
-    </button>
-  );
-}
-
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export function ProgressionPage() {
@@ -246,7 +231,16 @@ export function ProgressionPage() {
   });
 
   const ladder   = data?.ladder   ?? [];
-  const settings = data?.settings ?? { enabled: true, notifyOnPromote: true, showProgressBar: true, thresholdLogic: "and" };
+  const savedSettings = data?.settings;
+
+  /**
+   * The global settings are a draft for the save bar. Untouched keys follow the
+   * server; the reorder and ladder actions below are not part of it — they are
+   * structural actions and save as they happen.
+   */
+  const [settingsDraft, setSettingsDraft] = useState<GlobalSettings | null>(null);
+  const settings: GlobalSettings = settingsDraft ?? savedSettings ?? { enabled: true, notifyOnPromote: true, showProgressBar: true, thresholdLogic: "and" };
+  const setSetting = (patch: Partial<GlobalSettings>) => setSettingsDraft({ ...settings, ...patch });
 
   // Groups not yet on the ladder
   const offLadder = allGroups.filter(g => !g.progression?.isProgressionGroup);
@@ -255,11 +249,38 @@ export function ProgressionPage() {
 
   const settingsMutation = useMutation({
     mutationFn: (patch: Partial<GlobalSettings>) => api.patch("/admin/progression/settings", patch),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-progression"] });
-      swalToast(t("progression.toastSettingsSaved"), "success");
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ["acp-progression"] });
+      setSettingsDraft(null);
     },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+
+  const SETTING_LABELS: Record<keyof GlobalSettings, string> = {
+    enabled: t("progression.gEnabled"),
+    notifyOnPromote: t("progression.gNotify"),
+    showProgressBar: t("progression.gBar"),
+    thresholdLogic: t("progression.thresholdLogic"),
+  };
+  const show = (k: keyof GlobalSettings, v: unknown) =>
+    k === "thresholdLogic" ? t(v === "or" ? "progression.logicOr" : "progression.logicAnd") : t(v ? "savebar.on" : "savebar.off");
+
+  useAutosave({
+    value: settings,
+    savedValue: savedSettings,
+    // Only the keys that changed.
+    onSave: (v) => {
+      const patch = Object.fromEntries((Object.keys(v) as Array<keyof GlobalSettings>)
+        .filter((k) => v[k] !== savedSettings?.[k]).map((k) => [k, v[k]]));
+      return Object.keys(patch).length ? settingsMutation.mutateAsync(patch) : undefined;
+    },
+    onDiscard: () => setSettingsDraft(null),
+    describe: (v, saved) => (Object.keys(SETTING_LABELS) as Array<keyof GlobalSettings>)
+      .filter((k) => v[k] !== saved[k])
+      .map((k) => ({
+        key: k, label: SETTING_LABELS[k], section: t("progression.globalHeading"),
+        from: show(k, saved[k]), to: show(k, v[k]),
+        revert: () => setSettingsDraft((d) => (d ? { ...d, [k]: saved[k] } : d)),
+      })),
   });
 
   const reorderMutation = useMutation({
@@ -367,7 +388,7 @@ export function ProgressionPage() {
           <div className="acp-page-sub">{t("nav.accessControl")}</div>
           <h1 className="acp-page-title">{t("nav.progression")}</h1>
         </div>
-        <AutosaveStatus saving={settingsMutation.isPending} />
+        <SaveChip saving={false} />
       </div>
 
       {/* Global settings */}
@@ -387,7 +408,7 @@ export function ProgressionPage() {
             </div>
             <Toggle
               on={settings[key] as boolean}
-              onToggle={() => settingsMutation.mutate({ [key]: !settings[key] })}
+              onToggle={() => setSetting({ [key]: !settings[key] })}
             />
           </div>
         ))}
@@ -399,7 +420,7 @@ export function ProgressionPage() {
           <select
             className="acp-select"
             value={settings.thresholdLogic}
-            onChange={e => settingsMutation.mutate({ thresholdLogic: e.target.value as "and" | "or" })}
+            onChange={e => setSetting({ thresholdLogic: e.target.value as "and" | "or" })}
             style={{ width: "auto" }}
           >
             <option value="and">{t("progression.logicAnd")}</option>

@@ -126,6 +126,14 @@
 }
 select.el-select { width: auto; height: 40px; border-radius: 14px; }
 
+/* "Only this member" — set by a link from the error reference; click to drop it. */
+.el-member {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 14px;
+  border: 1px solid var(--c-accent); background: var(--c-accent-soft); color: var(--c-accent);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
+  &:hover { color: var(--c-fg); }
+}
+
 .el-seg {
   display: flex; gap: 2px; padding: 3px; border-radius: 12px;
   background: var(--c-card); border: 1px solid var(--c-border);

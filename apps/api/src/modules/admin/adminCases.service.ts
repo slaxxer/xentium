@@ -11,10 +11,10 @@ import { Prisma } from "../../generated/prisma/client.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { extractBadgeColor, primaryGroupOrder } from "../../shared/utils/userRef.js";
-import { buildPaginationMeta } from "@xentium/contracts";
+import { buildPaginationMeta, CorePermissions } from "@xentium/contracts";
+import { staffGroupKeys } from "../../shared/utils/staff.js";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
 
-/** Staff are never banned from a case — the same set banCaseUsers skips. */
-const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
 
 export type CaseStatusFilter = "open" | "reviewed" | "all";
 export type CaseSort = "new" | "old";
@@ -141,9 +141,11 @@ export const adminCasesService = {
     ]);
     const last = new Map(lastLogins.map((r) => [r.user_id, r]));
     const banned = new Set(activeBans.map((b) => b.userId));
+    // Staff are never banned from a case — the same set banCaseUsers skips.
+    const staffKeys = await staffGroupKeys();
 
     return new Map(users.map((u) => {
-      const staff = u.groups.some((g) => STAFF_KEYS.has(g.group.key));
+      const staff = u.groups.some((g) => staffKeys.has(g.group.key));
       const status: AccountStatus = staff ? "staff" : banned.has(u.id) ? "banned" : u.isActive ? "active" : "inactive";
       const l = last.get(u.id);
       return [u.id, {
@@ -198,7 +200,8 @@ export const adminCasesService = {
         select: { id: true, username: true, avatar: true, groups: { select: { group: { select: { key: true } } } } },
       });
       if (!user) throw XentiumError.notFound("User not found");
-      if (!user.groups.some((g) => STAFF_KEYS.has(g.group.key))) {
+      // Whoever may work cases may be assigned one — ACP → Permissions decides.
+      if (!(await hasPermission(user.id, CorePermissions.MODERATION_CASES_MANAGE))) {
         throw XentiumError.forbidden("Only staff can be assigned a case");
       }
       assignee = { id: user.id, username: user.username, avatar: resolveAvatar(user.avatar) };

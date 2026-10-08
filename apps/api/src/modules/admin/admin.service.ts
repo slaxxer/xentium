@@ -18,6 +18,8 @@ import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
 import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
+import { hashPassword } from "../auth/auth.password.js";
+import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
 import { adminUsersService } from "./adminUsers.service.js";
 
@@ -254,6 +256,46 @@ export const adminService = {
       }),
       () => prisma.loginEvent.count({ where }),
     );
+  },
+
+  /**
+   * An account made by an admin in the ACP — the same account registration would
+   * make (same uniqueness rules, same password hashing, the default group unless
+   * one is picked), minus the email code: the admin vouches for the address, so it
+   * is verified unless they say otherwise.
+   */
+  async createUser(input: {
+    email: string; username: string; password: string;
+    groupId?: string; displayName?: string; verified: boolean;
+  }) {
+    const email = input.email.trim().toLowerCase();
+    const username = input.username.trim();
+    const [byEmail, byName] = await Promise.all([
+      prisma.user.findUnique({ where: { email }, select: { id: true } }),
+      prisma.user.findFirst({ where: { username: { equals: username, mode: "insensitive" } }, select: { id: true } }),
+    ]);
+    if (byEmail) throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+    if (byName) throw new XentiumError({ code: "XEC-AUTH-2002", httpStatus: 409, message: "Username is already taken" });
+
+    const group = input.groupId
+      ? await prisma.group.findUnique({ where: { id: input.groupId }, select: { id: true } })
+      : await prisma.group.findFirst({ where: { key: String(await getSetting("auth.default_group", "member")) }, select: { id: true } });
+    if (input.groupId && !group) throw XentiumError.notFound("Group not found");
+
+    const passwordHash = await hashPassword(input.password);
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email, username, passwordHash,
+          displayName: input.displayName?.trim() || null,
+          isActive: true,
+          emailVerifiedAt: input.verified ? new Date() : null,
+        },
+        select: { id: true, username: true },
+      });
+      if (group) await tx.userGroup.create({ data: { userId: user.id, groupId: group.id } });
+      return user;
+    });
   },
 
   async setUserGroups(userId: string, groupIds: string[]) {
@@ -517,6 +559,9 @@ export const adminService = {
     "site.description":                    "",
     "site.locale":                         "en",
     "site.timezone":                       "UTC",
+    // How times read on the site: auto = the language's own 12/24-hour habit.
+    "site.time_format":                    "auto",
+    "site.date_format":                    "medium",
     "auth.registration_mode":              "open",
     "auth.allow_registration":             true,
     "auth.require_email_verification":     true,

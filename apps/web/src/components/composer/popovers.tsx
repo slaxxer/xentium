@@ -2,13 +2,14 @@
  * The composer's four popovers: block picker, overflow tray, link editor, emoji.
  *
  * ⚠ All four anchor to the ACTION BAR, which is at the bottom of the surface, so all
- * four open UPWARDS. That is the one thing they have in common and the reason they
- * live together.
+ * four open UPWARDS (downwards only when there is no room above). They are drawn in
+ * <body> (see `Popover`) so no clipping ancestor can cut them off.
  *
  * ⚠ Each closes on Escape and on a click outside — `useDismiss`. A popover you can
  * only close by completing it is how a toolbar becomes a trap.
  */
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { Editor } from "@tiptap/react";
 import { FontAwesomeIcon } from "../Icon";
@@ -39,12 +40,70 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
+/** How far a popover keeps from its button and from the window's edges. */
+const GAP = 6;
+const EDGE = 8;
+
+/**
+ * A composer popover, drawn at the top of the page and placed by its button.
+ *
+ * ⚠ PORTALLED. Inside the surface it was clipped by any ancestor that clips — the
+ * forum's reply card and post cards do (`overflow: hidden`) — so the More tools tray
+ * opened with its top cut off. It now lives in <body>, fixed to the spot its button is
+ * on screen: upwards as before (the bar is at the bottom of the surface), downwards
+ * when there is no room above, and pushed back inside the window at the sides. It
+ * follows the page while it is open.
+ *
+ * The anchor is the element the popover is rendered INTO (its parent in the composer's
+ * markup — the More button's wrapper, the block picker, the dock), found through a
+ * zero-size marker left in its place.
+ */
 function Popover({ children, wide, onClose }: { children: ReactNode; wide?: boolean; onClose: () => void }) {
   const ref = useDismiss(onClose);
+  const marker = useRef<HTMLSpanElement>(null);
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const place = () => {
+      const anchor = marker.current?.parentElement;
+      const pop = ref.current;
+      if (!anchor || !pop) return;
+      const a = anchor.getBoundingClientRect();
+      const { width, height } = pop.getBoundingClientRect();
+      const left = Math.max(EDGE, Math.min(a.left, window.innerWidth - width - EDGE));
+      const roomAbove = a.top - GAP - EDGE;
+      const roomBelow = window.innerHeight - a.bottom - GAP - EDGE;
+      setPos(height <= roomAbove || roomAbove >= roomBelow
+        ? { left, bottom: window.innerHeight - a.top + GAP }
+        : { left, top: a.bottom + GAP });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [ref]);
+
   return (
-    <div ref={ref} className={`nvc-pop${wide ? " nvc-pop--wide" : ""}`} role="dialog">
-      {children}
-    </div>
+    <>
+      <span ref={marker} hidden />
+      {createPortal(
+        <div
+          ref={ref}
+          className={`nvc-pop nvc-pop--floating${wide ? " nvc-pop--wide" : ""}`}
+          role="dialog"
+          // Measured on the first pass (invisible), then placed.
+          style={pos
+            ? { position: "fixed", left: pos.left, top: pos.top ?? "auto", bottom: pos.bottom ?? "auto" }
+            : { position: "fixed", left: 0, top: 0, visibility: "hidden" }}
+        >
+          {children}
+        </div>,
+        document.body,
+      )}
+    </>
   );
 }
 

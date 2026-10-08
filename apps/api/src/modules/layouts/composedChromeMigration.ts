@@ -10,6 +10,12 @@
  * masthead's built-in logo, every button in the navbar, the old branding row), so the
  * header and footer an admin edits would not be the ones the design describes.
  *
+ * The moderation tool (ModCanvas shield) used to be drawn by the `notifications` block,
+ * beside the bell. It is its own block now (`modTool`), and a header that does not
+ * place one gets it inserted just before its bell, carrying the bell's audience,
+ * alignment and style variant, so the two show as separate icons. The renderer still
+ * draws the shield from the bell for any document this never reached.
+ *
  * Every theme's rows, every scope. Flag-guarded and non-destructive in the ways that
  * matter: an account button is MOVED, never dropped (the account menu is required);
  * a masthead that already holds actions is left as arranged.
@@ -20,10 +26,11 @@ import { bustSettingsCache, getSetting } from "../../shared/utils/settings.js";
 import { logger } from "../../infrastructure/logging/logger.js";
 
 // v2: the footer's bottom row became one `footerBar` (2026-10-02).
-export const COMPOSED_CHROME_MIGRATED = "layout.composedChromeMigrated.v2";
+// v3: the moderation tool split out of the bell into its own block (2026-10-06).
+export const COMPOSED_CHROME_MIGRATED = "layout.composedChromeMigrated.v3";
 
 /** What the masthead's action group holds, in the order the design draws it. */
-const ACTION_TYPES = ["notifications", "headerWidgets", "adminLink", "userMenu", "search"];
+const ACTION_TYPES = ["modTool", "notifications", "headerWidgets", "adminLink", "userMenu", "search"];
 
 const stripThemeToggle = (nodes: BlockNode[]): BlockNode[] =>
   nodes.filter((n) => n.type !== "themeToggle")
@@ -53,6 +60,41 @@ const OLD_DEFAULT_HEADER: BlockNode[] = [
   ] },
 ];
 
+const placesModTool = (nodes: BlockNode[]): boolean =>
+  nodes.some((n) => n.type === "modTool" || (!!n.children && placesModTool(n.children)));
+
+const allIds = (nodes: BlockNode[], into = new Set<string>()): Set<string> => {
+  for (const n of nodes) { into.add(n.id); if (n.children) allIds(n.children, into); }
+  return into;
+};
+
+/**
+ * Put a `modTool` block just before the first bell, unless the document already places
+ * one. Mutates `region`; returns whether it changed.
+ *
+ * The shipped default's bell (`h-notif`) gets the shipped default's id (`h-mod`), so an
+ * untouched header comes out EQUAL to today's default rather than customised for ever.
+ */
+export function splitModTool(region: BlockNode[]): boolean {
+  if (placesModTool(region)) return false;
+  const ids = allIds(region);
+
+  const insert = (nodes: BlockNode[]): boolean => {
+    const at = nodes.findIndex((n) => n.type === "notifications");
+    if (at >= 0) {
+      const bell = nodes[at]!;
+      let id = bell.id === "h-notif" ? "h-mod" : `${bell.id}-mod`;
+      for (let i = 2; ids.has(id); i++) id = `${bell.id}-mod${i}`;
+      // Everything that says WHERE and FOR WHOM the bell shows; never its children or props.
+      const { id: _id, type: _type, props: _props, children: _children, ...placement } = bell;
+      nodes.splice(at, 0, { id, type: "modTool", props: {}, ...placement });
+      return true;
+    }
+    return nodes.some((n) => !!n.children && insert(n.children));
+  };
+  return insert(region);
+}
+
 /** The header document in the composed shape, or null when it already is. */
 export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
   /*
@@ -73,7 +115,7 @@ export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
 
   const header = stripped.find((n) => n.type === "header");
   const navbar = stripped.find((n) => n.type === "navbar");
-  if (!header) return changed ? next : null;
+  if (!header) return splitModTool(stripped) || changed ? next : null;
 
   const props = header.props as { showLogo?: boolean; showWordmark?: boolean };
   header.children ??= [];
@@ -96,6 +138,7 @@ export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
       changed = true;
     }
   }
+  if (splitModTool(stripped)) changed = true;
   return changed ? next : null;
 }
 

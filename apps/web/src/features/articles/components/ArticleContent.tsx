@@ -13,7 +13,7 @@ export function ArticleContent({ body }: Props) {
     extensions: RICH_EXTENSIONS,
     content: (body && typeof body === "object") ? (body as never) : { type: "doc", content: [] },
     editable: false,
-    editorProps: { attributes: { class: "article-editor__content prose" } },
+    editorProps: { attributes: { class: "article-editor__content prose xt-rich" } },
   });
 
   useEffect(() => {

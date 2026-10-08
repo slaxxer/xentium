@@ -19,7 +19,7 @@ import {
   faCircleHalfStroke, faCircleInfo, faCircleUser, faClipboardList, faColumns,
   faComments, faFeather, faFileLines, faFlag, faFolderTree, faGaugeHigh, faGripLines,
   faHeading, faIdBadge, faImage, faLayerGroup, faListCheck, faMagnifyingGlass,
-  faNewspaper, faPeopleGroup, faPuzzlePiece, faRankingStar, faRectangleAd, faShieldHalved,
+  faNewspaper, faPeopleGroup, faPuzzlePiece, faRankingStar, faRectangleAd, faShield, faShieldHalved,
   faSliders, faSquare, faTableCells, faTag, faTrophy, faUser, faUserGroup, faUsers,
   faWindowMaximize, faWindowMinimize,
 } from "@fortawesome/free-solid-svg-icons";
@@ -53,6 +53,7 @@ const BY_TYPE: Record<string, IconDefinition> = {
   themeToggle: faCircleHalfStroke,
   headerWidgets: faBoxesStacked,
   notifications: faBell,
+  modTool: faShield,
   adminLink: faShieldHalved,
   userMenu: faCircleUser,
   whosOnline: faUsers,

@@ -80,6 +80,15 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     description: "Prunes old rows from the activity log (page visits and ACP actions have separate windows), error log, and login events. Windows are the retention.* settings (days; 0 keeps a table forever). Dialog acknowledgments are stored separately and are never affected.",
     defaultCron: "45 3 * * *", minIntervalSec: 60 * 60,
   },
+  {
+    // The IP → country database behind the moderator view of a member's IPs. Data, not
+    // a service: one download a month, every lookup stays on this server.
+    key: "geoip-refresh", schedulerId: "geoip-refresh-monthly",
+    queue: queues.geoipRefresh, jobName: "geoip-refresh",
+    label: "IP country database",
+    description: "Downloads DB-IP's free IP-to-country database (CC BY 4.0) so moderators can see which country a member's IP address belongs to. Lookups happen on this server; no IP is sent anywhere. Monthly; 'Run now' fetches it straight away.",
+    defaultCron: "17 4 5 * *", minIntervalSec: 24 * 60 * 60,
+  },
 ];
 
 export type ScheduleMode = "interval" | "daily" | "cron";

@@ -91,6 +91,52 @@
   }
 }
 
+/* ── a theme, with its colourways under it ────────────────────────────────── */
+.xt-themeopt {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The colourway chips: indented to the text column, so they read as belonging to the
+   card above rather than as a second list. */
+.xt-themecw {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 8px;
+
+  &__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px 4px 5px;
+    border: 1px solid var(--c-border);
+    border-radius: 999px;
+    background: var(--c-bg);
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover, &:focus-visible { border-color: var(--c-accent); color: var(--c-fg); }
+    &.is-on { border-color: var(--c-accent); color: var(--c-fg); background: var(--c-accent-soft); }
+  }
+
+  /* Background ring with the accents inside: the same three colours Theme Studio's
+     colourway tiles show. */
+  &__dot {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: 999px;
+    border: 1px solid var(--c-border);
+
+    span { width: 7px; height: 7px; border-radius: 999px; }
+  }
+}
+
 /* ── a theme's card ────────────────────────────────────────────────────────── */
 /* A ROW: thumbnail, then what the theme is called and what it says about itself.
    Big enough to tell two themes apart, small enough that a list of them is a list. */

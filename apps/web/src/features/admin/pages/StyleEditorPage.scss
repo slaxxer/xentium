@@ -744,19 +744,6 @@
 
 /* ── Branding tab ─────────────────────────────────────────────────────────── */
 
-.se-brand {
-  background: var(--card-bg);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-lg);
-  padding: 24px;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  align-items: start;
-}
-@media (max-width: 980px) { .se-brand { grid-template-columns: minmax(0, 1fr); } }
-.se-brand__h { font-size: var(--fs-base); font-weight: 800; color: var(--c-fg); margin-bottom: 4px; }
-.se-brand__p { font-size: var(--fs-sm); color: var(--c-fg-muted); margin: 0 0 14px; }
 .se-brand__input {
   width: 100%;
   height: 42px;
@@ -768,66 +755,207 @@
   font-family: inherit;
   font-size: var(--fs-md);
   font-weight: 700;
+  &:disabled { opacity: 0.6; }
 }
-.se-brand__specimen {
-  margin-top: 14px;
+
+.br { display: flex; flex-direction: column; gap: 20px; }
+
+.br-card {
+  padding: 24px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  @media (max-width: 640px) { padding: 16px; }
+}
+
+.br-title { margin: 0; font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; color: var(--c-fg); }
+.br-h { display: block; font-size: var(--fs-base); font-weight: 800; color: var(--c-fg); }
+.br-p { margin: 2px 0 10px; font-size: var(--fs-sm); color: var(--c-fg-muted); }
+.br-note { margin: 8px 0 0; font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+.br-field { min-width: 0; }
+.br-inline { display: flex; gap: 8px; }
+
+/* Identity: the preview on the left, what sets it on the right. */
+.br-identity {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+  gap: 28px;
+  align-items: start;
+  @media (max-width: 1080px) { grid-template-columns: minmax(0, 1fr); }
+}
+
+.br-controls { display: flex; flex-direction: column; gap: 18px; }
+
+/* ── The preview ─────────────────────────────────────────────────────────── */
+
+.br-preview {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   padding: 14px;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-lg);
   background: var(--c-bg);
   border: 1px solid var(--c-border);
+}
+
+.br-preview__label {
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-fg-subtle);
+}
+
+/* The masthead, in the site's own band colours (inline), white on a shade like the real one. */
+.br-mast {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.se-brand__mark {
-  width: 34px;
-  height: 34px;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 132px;
+  padding: 0 22px;
   border-radius: var(--radius-md);
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
-  flex: none;
+  overflow: hidden;
+  background: linear-gradient(150deg, color-mix(in srgb, var(--c-accent) 20%, #14162a), color-mix(in srgb, var(--c-accent) 70%, #14162a));
+  background-size: cover;
+  background-position: center;
+  color: #fff;
+  &::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(20, 22, 42, 0.1), rgba(20, 22, 42, 0.5)); }
 }
-.se-brand__word {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 1.375rem;
-  letter-spacing: -0.02em;
-  color: var(--c-fg);
-  min-width: 0;
+.br-mast__brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.br-mast__word {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.br-mast__img { display: block; height: 44px; max-width: 240px; width: auto; object-fit: contain; }
+.br-mast__pill {
+  display: flex;
+  gap: 1px;
+  border-radius: 10px;
+  overflow: hidden;
+  i { width: 30px; height: 30px; background: rgba(20, 22, 42, 0.7); }
+  @media (max-width: 480px) { display: none; }
 }
 
-.se-drop {
-  position: relative;
-  height: 150px;
+.br-places { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: stretch; }
+
+/* A browser tab: where the favicon and the site name are seen most. */
+.br-tab {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0;
+  padding: 10px 10px 0;
   border-radius: var(--radius-md);
-  border: 1px dashed var(--c-border);
-  background: var(--c-bg);
-  display: grid;
-  place-items: center;
-  text-align: center;
-  padding: 12px;
-  cursor: pointer;
+  background: color-mix(in srgb, var(--c-fg) 8%, var(--card-bg));
 }
-.se-drop.is-over { border-color: var(--c-accent); background: var(--c-accent-soft); }
-.se-drop__t { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-muted); }
-.se-drop__s { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
-.se-drop img { max-height: 96px; max-width: 100%; object-fit: contain; }
-.se-drop__x {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 26px;
-  height: 26px;
-  border-radius: 8px;
-  border: 1px solid var(--c-border);
+.br-tab__dots { display: flex; gap: 5px; margin-bottom: 10px; i { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in srgb, var(--c-fg) 22%, transparent); } }
+.br-tab__tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 240px;
+  padding: 9px 12px;
+  border-radius: 10px 10px 0 0;
   background: var(--card-bg);
-  color: var(--c-danger);
   font-size: var(--fs-xs);
-  cursor: pointer;
+  font-weight: 600;
+  color: var(--c-fg);
+  > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.br-fav { display: block; flex: none; width: 16px; height: 16px; object-fit: contain; }
+
+/* A phone's home screen. */
+.br-home {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 104px;
+  padding: 12px 8px;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--c-fg) 8%, var(--card-bg));
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  color: var(--c-fg);
+  > span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}
+.br-home__icon { display: block; width: 52px; height: 52px; border-radius: 12px; object-fit: cover; }
+
+/* ── An uploadable file ───────────────────────────────────────────────────── */
+
+.br-asset {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: var(--c-bg);
+  transition: border-color 0.15s, background 0.15s;
+
+  &.is-over { border-style: dashed; border-color: var(--c-accent); background: var(--c-accent-soft); }
+
+  @media (max-width: 520px) {
+    grid-template-columns: auto minmax(0, 1fr);
+    .br-asset__actions { grid-column: 1 / -1; }
+  }
+}
+.br-asset__thumb {
   display: grid;
   place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  img { max-width: 80%; max-height: 80%; object-fit: contain; }
+  &--wide { width: 96px; }
+}
+.br-asset__text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.br-asset__state { font-size: var(--fs-xs); font-weight: 700; color: var(--c-accent); }
+.br-asset__hint { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
+.br-asset__actions { display: flex; gap: 6px; button { display: inline-flex; align-items: center; gap: 6px; } }
+.br-asset__remove { color: var(--c-danger); }
+
+/* "Logo icon colours" — a way into Colours & type, where they live. */
+.br-jump {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--c-fg-subtle);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  > span { display: flex; flex-direction: column; }
+  b { font-size: var(--fs-sm); font-weight: 800; color: var(--c-fg); }
+  small { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+  &:hover { border-color: var(--c-accent); color: var(--c-accent); }
+}
+
+/* Icons: the FontAwesome kit and style, side by side. */
+.br-icons__head { margin-bottom: 14px; }
+.br-icons__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 28px;
+  @media (max-width: 900px) { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Custom CSS tab ───────────────────────────────────────────────────────── */
@@ -931,3 +1059,31 @@
   background: var(--c-bg);
 }
 .se-hist__tag.is-live { color: var(--c-success); background: color-mix(in srgb, var(--c-success) 12%, transparent); }
+
+/* Logo icon section: the mark wearing the staged border/shadow, beside what they do. */
+.se-logo-fx {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--c-border);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-subtle);
+}
+
+/* Icon size, under the type controls: a label with a sample icon, and the stepper. */
+.se-iconsize {
+  margin-top: 10px;
+  justify-content: space-between;
+}
+.se-iconsize__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-fg);
+  svg { color: var(--c-accent); }
+}

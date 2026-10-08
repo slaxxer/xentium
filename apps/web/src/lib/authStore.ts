@@ -21,6 +21,15 @@ export interface AuthUser {
   // `groups` minus `hiddenBadges` — use this for the user's OWN badge display so
   // hiding a badge never removes the group from identity/role checks (BUGS.md #1).
   visibleGroups: AuthUser["groups"];
+  // Effective permission keys (implied expanded) — gate UI on these, never on group
+  // keys: who holds what is configured in ACP → Permissions. Optional so a stale
+  // cached payload without it reads as "no permissions", not a crash.
+  permissions?: string[];
+}
+
+/** May this user do `key`? A UI hint — the endpoint enforces it regardless. */
+export function userCan(user: AuthUser | null | undefined, key: string): boolean {
+  return !!user?.permissions?.includes(key);
 }
 
 export interface AuthSnapshot {

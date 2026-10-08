@@ -5,12 +5,14 @@ import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { sameValue, useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import "./acpSystem.scss";
 import "./EmailPage.scss";
+
+interface TemplateDraft { subject: string; body: string }
 
 interface Template {
   key: string;
@@ -95,7 +97,12 @@ export function EmailPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [section, setSection] = useState("server");
-  const [draft, setDraft] = useState<{ subject: string; body: string } | null>(null);
+  /**
+   * Edited templates, by key — ALL of them, not just the open one. Switching section
+   * is not leaving the page, so an unsaved template must survive it; the save bar
+   * saves every edited template at once.
+   */
+  const [tplEdits, setTplEdits] = useState<Record<string, TemplateDraft>>({});
   const [testTo, setTestTo] = useState("");
 
   const { data: settings = [] } = useQuery<Setting[]>({
@@ -137,13 +144,30 @@ export function EmailPage() {
       qc.invalidateQueries({ queryKey: ["acp-settings"] });
       qc.invalidateQueries({ queryKey: ["acp-email-status"] });
     },
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
+  const serverSavedRef = useRef(serverSaved);
+  serverSavedRef.current = serverSaved;
   useAutosave({
     value: Object.keys(serverDraft).length ? serverDraft : undefined,
     savedValue: serverSaved,
-    onSave: (d) => { if (d) settingsMut.mutate(Object.entries(d)); },
+    // Only the fields that changed are sent.
+    onSave: (d) => {
+      if (!d) return undefined;
+      const changed = Object.entries(d).filter(([k, v]) => !sameValue(v, serverSavedRef.current?.[k]));
+      return changed.length ? settingsMut.mutateAsync(changed) : undefined;
+    },
+    onDiscard: () => { if (serverSavedRef.current) setServerDraft(serverSavedRef.current); },
+    describe: (value, saved) => SERVER_FIELDS
+      .filter((f) => value && saved && !sameValue(value[f.key], saved[f.key]))
+      .map((f) => ({
+        key: f.key,
+        label: t(`settings.fields.${f.i18nKey}.label`),
+        section: t("email.server.title"),
+        from: String(saved?.[f.key] ?? ""),
+        to: String(value?.[f.key] ?? ""),
+        revert: () => setServerDraft((p) => ({ ...p, [f.key]: serverSavedRef.current?.[f.key] })),
+      })),
   });
 
   const settingsMap = useMemo(
@@ -156,40 +180,57 @@ export function EmailPage() {
     () => templates.find(x => x.key === section) ?? null,
     [templates, section],
   );
+  const savedTpl = (tpl: Template): TemplateDraft => ({ subject: tpl.subject, body: tpl.body });
+  const draft: TemplateDraft | null = active ? tplEdits[active.key] ?? savedTpl(active) : null;
+  const setDraft = (next: TemplateDraft) => {
+    if (active) setTplEdits((p) => ({ ...p, [active.key]: next }));
+  };
 
-  // Seed the draft once per section. The ref is what makes `templates` safe to
-  // depend on: without it, every refetch of the list would re-seed and wipe out
-  // whatever the admin was part-way through typing.
-  const seededFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (seededFor.current === section) return;
-    if (section === "server") { setDraft(null); seededFor.current = section; return; }
-    const tpl = templates.find(x => x.key === section);
-    if (tpl) {
-      setDraft({ subject: tpl.subject, body: tpl.body });
-      seededFor.current = section;
-    }
-  }, [section, templates]);
+  /** What the server has for every template being edited — the draft's baseline. */
+  const tplSaved = useMemo(() => {
+    if (!templates.length) return undefined;
+    return Object.fromEntries(Object.keys(tplEdits).flatMap((k) => {
+      const tpl = templates.find((x) => x.key === k);
+      return tpl ? [[k, savedTpl(tpl)]] : [];
+    }));
+  }, [templates, tplEdits]);
+  const tplSavedRef = useRef(tplSaved);
+  tplSavedRef.current = tplSaved;
 
   const saveMut = useMutation({
-    mutationFn: (v: { subject: string; body: string }) =>
-      api.put(`/admin/email/templates/${section}`, v),
+    mutationFn: (changed: Array<[string, TemplateDraft]>) =>
+      Promise.all(changed.map(([key, v]) => api.put(`/admin/email/templates/${key}`, v))),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["acp-email-templates"] }),
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
   useAutosave({
-    value: draft,
-    savedValue: active ? { subject: active.subject, body: active.body } : undefined,
-    onSave: (d) => { if (d && active) saveMut.mutate(d); },
+    value: tplEdits,
+    savedValue: tplSaved,
+    onSave: (edits) => {
+      const changed = Object.entries(edits).filter(([k, v]) => !sameValue(v, tplSavedRef.current?.[k]));
+      return changed.length ? saveMut.mutateAsync(changed) : undefined;
+    },
+    onDiscard: () => setTplEdits({}),
+    describe: (value, saved) => Object.keys(value)
+      .filter((k) => !sameValue(value[k], saved[k]))
+      .map((k) => {
+        const subjectChanged = value[k]!.subject !== saved[k]?.subject;
+        return {
+          key: k,
+          label: t(`email.keys.${k}`),
+          section: t("email.title"),
+          from: subjectChanged ? saved[k]?.subject ?? "" : t("email.subject"),
+          to: subjectChanged ? value[k]!.subject : t("savebar.bodyEdited"),
+          revert: () => setTplEdits((p) => { const { [k]: _gone, ...rest } = p; return rest; }),
+        };
+      }),
   });
 
   const resetMut = useMutation<Template, unknown, string>({
     mutationFn: (key: string) => api.post(`/admin/email/templates/${key}/reset`, {}) as Promise<Template>,
     onSuccess: (r) => {
-      // seededFor already points at this section, so the effect will not
-      // re-seed — set the draft directly from the server's response.
-      setDraft({ subject: r.subject, body: r.body });
+      // Back to the default: nothing of this template is left unsaved.
+      setTplEdits((p) => { const { [r.key]: _gone, ...rest } = p; return rest; });
       qc.invalidateQueries({ queryKey: ["acp-email-templates"] });
       toast.success(t("email.resetDone"));
     },
@@ -231,7 +272,6 @@ export function EmailPage() {
     }
   }
 
-  const saving = settingsMut.isPending || saveMut.isPending;
 
   return (
     <div style={{ maxWidth: 1100 }}>
@@ -241,7 +281,7 @@ export function EmailPage() {
           <h1 className="pg-title">{t("email.title")}</h1>
           <p className="pg-sub">{t("email.subtitle")}</p>
         </div>
-        <SaveChip saving={saving} />
+        <SaveChip saving={false} />
       </div>
 
       <div className="set-layout">

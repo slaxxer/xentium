@@ -1,3 +1,5 @@
+@use "../../styles/richContent" as rich;
+
 /**
  * The Composer.
  *
@@ -183,48 +185,7 @@
     color: var(--c-fg-subtle);
   }
 
-  > * + * { margin-top: 0.7em; }
-
-  h1 { font-size: 1.5em; font-weight: 700; }
-  h2 { font-size: 1.3em; font-weight: 700; }
-  h3 { font-size: 1.1em; font-weight: 700; }
-
-  ul, ol { padding-left: 1.2em; }
-  ul { list-style: disc; }
-  ol { list-style: decimal; }
-
-  blockquote {
-    padding: 8px 14px;
-    border-left: 3px solid var(--c-accent);
-    background: var(--c-accent-soft);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    color: var(--c-fg-muted);
-    font-style: italic;
-  }
-
-  pre {
-    padding: 12px 14px;
-    border-radius: var(--radius-sm);
-    background: var(--c-bg);
-    border: 1px solid var(--c-border);
-    font-family: var(--ff-mono, monospace);
-    font-size: 0.9em;
-    overflow-x: auto;
-  }
-
-  code { font-family: var(--ff-mono, monospace); font-size: 0.9em; }
-
-  hr { border: none; border-top: 1px solid var(--c-border); margin: 1em 0; }
-
-  mark { background: color-mix(in srgb, var(--c-warn) 35%, transparent); color: inherit; }
-
-  ul[data-type="taskList"] {
-    list-style: none;
-    padding-left: 0;
-
-    li { display: flex; align-items: flex-start; gap: 8px; }
-    input { margin-top: 6px; }
-  }
+  @include rich.rich-content;
 }
 
 /* A mention, in the editor and in the preview. */
@@ -240,6 +201,10 @@
   color: var(--c-fg);
 
   &__empty { color: var(--c-fg-subtle); font-style: italic; }
+
+  /* The surface draws the whole post (renderPreview): it brings its own type, and
+     starts below the floating Write / Preview switch rather than under it. */
+  &--surface { font-size: inherit; line-height: inherit; padding-top: var(--sp-8); }
 }
 
 /* ── The dock: action bar + its popovers ───────────────────────────────────── */
@@ -500,6 +465,10 @@
   box-shadow: var(--shadow-pop);
 
   &--wide { min-width: 288px; }
+
+  /* In <body>, placed by script (Popover): above the page's own layers and the
+     sticky bars, below dialogs (500). */
+  &--floating { z-index: 450; }
 
   &__label {
     padding: 6px 10px 4px;

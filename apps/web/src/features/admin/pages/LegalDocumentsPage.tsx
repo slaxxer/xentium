@@ -13,7 +13,7 @@ import { legalApi, LEGAL_LINKS_KEY } from "../../../lib/legalApi";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
-import { sameValue, useAutosave } from "../../../hooks/useAutosave";
+import { sameValue, useDebouncedSave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import Image from "@tiptap/extension-image";
 import type { JSONContent } from "@tiptap/react";
@@ -74,7 +74,7 @@ export function LegalDocumentsPage() {
           <h1 className="pg-title">{t("legal.title")}</h1>
           <p className="pg-sub">{t("legal.subtitle")}</p>
         </div>
-        <SaveChip saving={saveMut.isPending} />
+        <SaveChip saving={saveMut.isPending} autosave />
       </div>
 
       <div className="set-layout">
@@ -114,7 +114,7 @@ function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (
   const saved = doc.draftBody ?? EMPTY_DOC;
   const [draft, setDraft] = useState<unknown>(saved);
 
-  useAutosave({ value: draft, savedValue: saved, onSave });
+  useDebouncedSave({ value: draft, savedValue: saved, onSave });
 
   const live = doc.publishedAt !== null;
   const pending = live && !sameValue(draft, doc.body);

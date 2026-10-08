@@ -42,6 +42,9 @@ import * as webForumEditor from "@web/components/ForumEditor";
 // adapters shipped bundles already import.
 import * as webComposer from "@web/components/composer/Composer";
 import * as webUseAutosave from "@web/hooks/useAutosave";
+// ACP drafts and the save bar. `webUseAutosave.useAutosave` is the same hook under its
+// old name, so shipped plugin panels joined the save bar without a rebuild.
+import * as webUseDraft from "@web/hooks/useDraft";
 import * as webAutosaveStatus from "@web/components/AutosaveStatus";
 // The canonical autosave indicator. `webAutosaveStatus` is an alias for it and
 // stays exposed because existing plugin bundles import that name.
@@ -54,6 +57,7 @@ import * as webSaveChip from "@web/components/SaveChip";
 // `@web/*` alias does not cover, and inventing a namespace for one icon set is
 // not worth it — plugins already have FontAwesome through `FaReact`.
 import * as webAcpControls from "@web/components/AcpControls";
+import * as webDateTime from "@web/lib/datetime";
 import * as webToast from "@web/lib/toast";
 import * as webDialog from "@web/lib/dialog";
 // Exposed from day one (ADR-0005) even though no plugin registers a block yet:
@@ -69,6 +73,12 @@ import * as webLayoutRenderer from "@web/layout/LayoutRenderer";
 // `useLayoutDocument` — a plugin's page component is a HOST container like core's:
 // it resolves the document, resolves its own data, and hands both to the renderer.
 import * as webUseLayout from "@web/layout/useLayout";
+// Edge art. The registry is where a plugin adds shapes and draws edges itself; the
+// drawing module is what it builds from (`edgeMask`, `edgePlacement`…), so a plugin's
+// edge sits exactly where core's would. Both MUST be the host's copies — a bundled
+// registry is a Map nothing reads.
+import * as webEdgeRegistry from "@web/layout/edgeRegistry";
+import * as webEdgeArt from "@web/layout/edgeArt";
 
 const HOST = {
   React,
@@ -99,15 +109,22 @@ const HOST = {
   webForumEditor,
   webComposer,
   webUseAutosave,
+  webUseDraft,
   webAutosaveStatus,
   webSaveChip,
   webAcpControls,
+  // Dates and times in the site's zone and format (ACP → System Settings). A plugin
+  // reads it off the host at runtime and falls back to the browser's own format when
+  // an older host lacks it.
+  webDateTime,
   webToast,
   webDialog,
   webBlockRegistry,
   webLayoutTemplateRegistry,
   webLayoutRenderer,
   webUseLayout,
+  webEdgeRegistry,
+  webEdgeArt,
 };
 
 declare global {

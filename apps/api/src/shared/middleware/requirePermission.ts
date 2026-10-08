@@ -92,6 +92,17 @@ export function requireAnyPermission(...keys: PermissionKey[]): RequestHandler {
  * The same check, for a route whose required permission depends on its INPUT — the
  * ModCanvas action endpoint needs warn, ban or report rights depending on the mode.
  */
+/** Whether the user holds `key` (implied permissions included) — the same answer
+ *  `requirePermission` acts on, for code that must DECIDE rather than refuse. */
+/** The user's effective keys (implied ones expanded) — what `/auth/me` hands the browser. */
+export async function effectivePermissions(userId: string): Promise<string[]> {
+  return loadEffective(userId);
+}
+
+export async function hasPermission(userId: string, key: PermissionKey): Promise<boolean> {
+  return (await loadEffective(userId)).includes(key);
+}
+
 export async function assertPermission(userId: string, key: PermissionKey): Promise<void> {
   const effective = await loadEffective(userId);
   if (!effective.includes(key)) throw permissionDeniedError([key]);

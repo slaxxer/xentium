@@ -36,6 +36,7 @@
 import { z } from "zod";
 import { slotRegistry } from "../plugins/slotRegistry";
 import { registerBlock } from "./blockRegistry";
+import { MemberWidget } from "../components/MembersOnly";
 
 /** Prefix for every derived type, so they are recognisable and never collide. */
 export const SLOT_BLOCK_PREFIX = "slot.";
@@ -81,7 +82,8 @@ export function registerSlotBlocks(): void {
         // A header widget is chrome; it has no page context to read.
         allowedTemplates: ["chrome.header"],
       },
-      component: () => <Widget />,
+      // Members only, wherever the admin placed it (see MemberWidget).
+      component: () => <MemberWidget><Widget /></MemberWidget>,
     });
   }
 

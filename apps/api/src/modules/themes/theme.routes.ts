@@ -99,10 +99,40 @@ themeRouter.get("/library", guard, async (_req, res, next) => {
 
 /** Switch to a theme already installed here. Staged like an import — previewable,
  *  and undoable — so activating is not a commitment either. */
+const colourwayBody = z.object({ colourway: z.string().regex(/^[a-z0-9-]+$/).max(40).optional() });
+
 themeRouter.post("/library/:id/activate", guard, async (req, res, next) => {
   try {
     const { id } = themeIdParam.parse(req.params);
-    res.json(await themeService.activateTheme(id, req.userId!));
+    const { colourway } = colourwayBody.parse(req.body ?? {});
+    res.json(await themeService.activateTheme(id, req.userId!, colourway));
+  } catch (err) { next(err); }
+});
+
+/**
+ * Everything the Themes page draws: Core and every installed theme with its colours,
+ * its colourways and which it wears, when it was last edited — and the undo point.
+ */
+themeRouter.get("/overview", guard, async (_req, res, next) => {
+  try {
+    const themes = await themeService.listThemes();
+    const [core, ...summaries] = await Promise.all([
+      themeService.summarize(CORE_THEME),
+      ...themes.map((th) => themeService.summarize(th.id)),
+    ]);
+    res.json({
+      core,
+      themes: themes.map((th, i) => ({ ...th, ...summaries[i]! })),
+      rollback: await themeService.getRollbackState(),
+    });
+  } catch (err) { next(err); }
+});
+
+/** Make one of the live theme's colourways the one it wears. Live; undoable. */
+themeRouter.post("/colourway", guard, async (req, res, next) => {
+  try {
+    const { colourway } = z.object({ colourway: z.string().regex(/^[a-z0-9-]+$/).max(40) }).parse(req.body ?? {});
+    res.json(await themeService.wearColourway(colourway, req.userId!));
   } catch (err) { next(err); }
 });
 

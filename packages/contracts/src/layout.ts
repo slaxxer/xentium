@@ -847,20 +847,63 @@ export const cssColorSchema = z
   );
 
 // ── Edge art ────────────────────────────────────────────────────────────────
-// Decoration along a block's edge: a slant, a wave, mountain peaks, dripping paint,
-// or an image strip. Drawn by the renderer as an absolutely positioned layer that
-// never takes a click and is hidden from assistive technology.
+// Decoration along a block's edge: a slant, a curve, waves, teeth, scallops, mountain
+// peaks, dripping paint, or an image strip. Drawn by the renderer as an absolutely
+// positioned layer that never takes a click and is hidden from assistive technology.
+//
+// Plugins extend it in two ways (see `docs/plugin-edge-art.md`): they register more
+// SHAPES, named `<namespace>.<name>` like a plugin block type, and they keep their own
+// settings under `ext.<namespace>`. Both are kept in the document while the plugin is
+// off — an edge whose shape is not registered draws its `fallback`, or nothing.
 
-export const EDGE_SHAPES = ['slant', 'wave', 'peaks', 'drips', 'image'] as const;
-export type EdgeShape = (typeof EDGE_SHAPES)[number];
+export const CORE_EDGE_SHAPES = [
+  'slant', 'curve', 'wave', 'zigzag', 'scallops', 'peaks', 'drips', 'image',
+  /**
+   * No outline at all: the edge only carries what plugins draw on it (`ext`) — a sky,
+   * particles. The editor's "None" becomes this instead of deleting an edge that still
+   * has plugin settings. On a site without those plugins it draws nothing.
+   */
+  'blank',
+] as const;
+export type CoreEdgeShape = (typeof CORE_EDGE_SHAPES)[number];
+
+/** A plugin's shape: `<namespace>.<name>`, lowercase. */
+export const PLUGIN_EDGE_SHAPE = /^[a-z][a-z0-9-]{0,30}\.[a-z][a-z0-9-]{0,30}$/;
+export type EdgeShape = CoreEdgeShape | `${string}.${string}`;
+
+/** Core's repeating shapes and how many units each draws when `count` is absent. */
+export const EDGE_DEFAULT_COUNT: Partial<Record<CoreEdgeShape, number>> = {
+  wave: 8, zigzag: 24, scallops: 16,
+};
+
+export const EDGE_ART_LIMITS = {
+  height:       { min: 8, max: 120 },
+  count:        { min: 2, max: 48 },
+  opacity:      { min: 10, max: 100 },
+  /** 0 = hidden on phones. */
+  mobileHeight: { min: 0, max: 120 },
+  /** Bytes of JSON one edge's `ext` may hold, all plugins together. */
+  ext:          4096,
+} as const;
+
+/** Below this width an edge uses its `mobileHeight`. */
+export const EDGE_MOBILE_BREAKPOINT = 640;
+
+/**
+ * Plugin-owned settings, one object per namespace. OPAQUE to core on purpose, like a
+ * plugin block's props: the plugin parses its own on render and ignores what it cannot
+ * read. Core only bounds it — a document is untrusted input (a purchased `.xttheme` is
+ * a second way into the table) — and keeps it while the plugin is off.
+ */
+export const edgeExtSchema = z
+  .record(z.string().regex(/^[a-z][a-z0-9-]{0,30}$/), z.record(z.string(), z.unknown()))
+  .refine((v) => JSON.stringify(v).length <= EDGE_ART_LIMITS.ext, `edge ext may hold at most ${EDGE_ART_LIMITS.ext} bytes`);
 
 /** `MM-DD`. A season recurs every year, so it has no year. */
 const monthDaySchema = z.string().regex(/^(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/, 'must be MM-DD');
 
-export const EDGE_ART_LIMITS = { height: { min: 8, max: 120 } } as const;
-
 export const edgeArtSchema = z.object({
-  shape:     z.enum(EDGE_SHAPES),
+  shape:     z.union([z.enum(CORE_EDGE_SHAPES), z.string().regex(PLUGIN_EDGE_SHAPE)]) as z.ZodType<EdgeShape>,
   /** `out` hangs over the neighbour; `in` sits over the block itself. */
   direction: z.enum(['out', 'in']).default('out'),
   /**
@@ -876,6 +919,25 @@ export const edgeArtSchema = z.object({
   mirror:    z.boolean().default(false),
   /** Only in season: shown between these dates every year, hidden outside them. */
   season:    z.object({ from: monthDaySchema, to: monthDaySchema }).optional(),
+
+  // The options below are OPTIONAL with no default, on purpose: absent means the
+  // stock look, and a document saved before they existed must not parse into one with
+  // new keys — that would read as an edit nobody made.
+
+  /** Repeating shapes only: how many units across. */
+  count:        z.number().int().min(EDGE_ART_LIMITS.count.min).max(EDGE_ART_LIMITS.count.max).optional(),
+  /** Percent. */
+  opacity:      z.number().int().min(EDGE_ART_LIMITS.opacity.min).max(EDGE_ART_LIMITS.opacity.max).optional(),
+  /** Height on phones (below `EDGE_MOBILE_BREAKPOINT`); 0 hides it there. */
+  mobileHeight: z.number().int().min(EDGE_ART_LIMITS.mobileHeight.min).max(EDGE_ART_LIMITS.mobileHeight.max).optional(),
+  /**
+   * A PLUGIN shape's stand-in: what a site without that plugin draws. Absent = nothing.
+   * Only a drawn core shape — an image would need an upload nobody made, and `blank`
+   * is what "absent" already means.
+   */
+  fallback:     z.enum(CORE_EDGE_SHAPES).exclude(['image', 'blank']).optional(),
+  /** Plugin-owned settings — see `edgeExtSchema`. */
+  ext:          edgeExtSchema.optional(),
 });
 export type EdgeArt = z.infer<typeof edgeArtSchema>;
 
@@ -1496,6 +1558,13 @@ export const blockPropSchemas = {
   // lets the control vanish without taking the rest of the header with it.
   themeToggle: z.object({}),
   notifications: z.object({}),
+  /**
+   * The moderation tool (ModCanvas shield) — moderators only; it draws nothing for
+   * anyone else. Its own block so it sits in its own place beside the bell. A
+   * document that does not place one yet still gets the shield from `notifications`,
+   * which is where it lived before, so no saved header or theme loses it.
+   */
+  modTool: z.object({}),
   adminLink: z.object({}),
 
   /** Renders every `slotRegistry.registerHeaderWidget` in one place — the
@@ -1801,12 +1870,13 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     regions: {
       header: [
         // The composed header: a masthead holding the logo and the action group (search,
-        // the bell, messages, the account menu), with the navbar below it.
+        // the moderation tool, the bell, messages, the account menu), with the navbar below it.
         { ...node('h-band', 'header', {
           height: 200, showLogo: false, showWordmark: true, showTagline: true,
           backgroundGradient: ['#14162a', '#5865f2'], backgroundAngle: 150,
         }), children: [
           node('h-band-logo', 'logo', { showWordmark: true }),
+          node('h-mod', 'modTool'),
           node('h-notif', 'notifications'),
           node('h-widgets', 'headerWidgets'),
           node('h-admin', 'adminLink'),

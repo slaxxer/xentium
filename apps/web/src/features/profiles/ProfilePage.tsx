@@ -8,6 +8,7 @@ import { FontAwesomeIcon } from "../../components/Icon";
 import { faHeart, faGlobe, faCodeBranch, faHashtag } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { swalToast, swalConfirm, apiErrorMessage } from "../../lib/swal";
 import {
   articlesApi,
@@ -491,7 +492,7 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
                         )}
                       </div>
                       <div
-                        className="profile-wall__comment-text"
+                        className="profile-wall__comment-text xt-rich"
                         dangerouslySetInnerHTML={{ __html: c.body }}
                       />
                       <div className="profile-wall__comment-footer">
@@ -531,9 +532,11 @@ export function ProfilePage() {
   // Honor a ?tab= deep-link (e.g. from the ModCanvas user stat boxes), but only
   // if it resolves to a tab that actually exists for this install.
   const requestedTab = searchParams.get("tab");
-  const validTabIds = new Set<string>([...STATIC_TAB_IDS, ...pluginTabsInit.map((p) => p.id)]);
+  // "warnings" is allowed here; whether THIS viewer may open it is checked once the
+  // profile has loaded (below), and anyone else lands on Articles.
+  const validTabIds = new Set<string>([...STATIC_TAB_IDS, "warnings", ...pluginTabsInit.map((p) => p.id)]);
   const [tab, setTab] = useState<Tab>(requestedTab && validTabIds.has(requestedTab) ? requestedTab : "articles");
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: viewer } = useAuth();
   const queryClient = useQueryClient();
   const layout = useLayoutDocument("profile");
 
@@ -580,9 +583,16 @@ export function ProfilePage() {
   });
 
   const pluginTabs = slotRegistry.getProfileTabs();
+  // The Warnings tab: the member's own, and staff's. Nobody else learns it exists —
+  // the server refuses them too (GET /users/:id/standing), this only spares the button.
+  const isStaffViewer = userCan(viewer, "moderation.warn.manage");
+  const canSeeStanding = !!profile && (profile.isOwn || isStaffViewer);
+  // Warnings goes LAST, after any plugin tabs (Forum…): it is the member's private
+  // record, not part of what the profile shows everyone.
   const TABS = [
     ...STATIC_TAB_IDS.map((id) => ({ id, label: t(`tabs.${id}`) })),
     ...pluginTabs.map((pt) => ({ id: pt.id, label: pt.label })),
+    ...(canSeeStanding ? [{ id: "warnings", label: t("tabs.warnings") }] : []),
   ];
 
   // Plugin profile stats — hooks MUST be before any early returns
@@ -681,7 +691,7 @@ export function ProfilePage() {
   const context: ProfileContext = {
     profile,
     isAuthenticated,
-    tab,
+    tab: tab === "warnings" && !canSeeStanding ? "articles" : tab,
     setTab: (id: string) => setTab(id as Tab),
     tabs: TABS,
     stats,

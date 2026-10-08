@@ -41,8 +41,16 @@ activityRouter.post("/visit", optionalAuth, async (req, res, next) => {
 export const activityAdminRouter: Router = Router();
 const listSchema = z.object({
   page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(30),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
   category: z.enum(["page_visit", "acp_action"]).optional(),
+  q: z.string().trim().max(200).optional(),
+  user: z.string().max(64).optional(),
+  ip: z.string().max(64).optional(),
+  since: z.coerce.date().optional(),
+  // Comma-separated: `methods=POST,PATCH`.
+  methods: z.string().max(60).optional()
+    .transform((v) => (v ? v.split(",").filter((m) => ["POST", "PUT", "PATCH", "DELETE"].includes(m)) : undefined)),
+  result: z.enum(["ok", "err"]).optional(),
 });
 activityAdminRouter.get(
   "/",
@@ -50,8 +58,22 @@ activityAdminRouter.get(
   requirePermission(CorePermissions.ADMIN_ACCESS),
   async (req, res, next) => {
     try {
-      const { page, limit, category } = listSchema.parse(req.query);
-      res.json(await activityService.list({ page, limit, category }));
+      const { user, q, ...rest } = listSchema.parse(req.query);
+      res.json(await activityService.list({ ...rest, ...(q ? { q } : {}), ...(user ? { userId: user } : {}) }));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/** What the filter menus offer. */
+activityAdminRouter.get(
+  "/facets",
+  requireAuth,
+  requirePermission(CorePermissions.ADMIN_ACCESS),
+  async (_req, res, next) => {
+    try {
+      res.json(await activityService.facets());
     } catch (err) {
       next(err);
     }

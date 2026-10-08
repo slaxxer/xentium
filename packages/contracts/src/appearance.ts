@@ -79,6 +79,14 @@ export const HEARTH_DEFAULT_TOKENS: TokenMap = {
   // default here or the row renders empty and "Inherited" names nothing.
   "--c-info":         "#38bdf8",
   "--c-update":       "#414144",
+  // The logo icon (Style Editor → Logo icon): the default mark's box gradient, and a
+  // border and shadow around whichever logo the site shows (transparent = off).
+  "--logo-icon-from":   "#f26b1d",
+  "--logo-icon-to":     "#e0336b",
+  "--logo-icon-border": "transparent",
+  // Every site icon's size, apart from the text size (Colours & type → Icon size).
+  "--icon-scale":       "1",
+  "--logo-icon-shadow": "transparent",
   "--btn-bg":         "#5865f2",
   "--card-radius":    "18px",
   "--btn-radius":     "10px",

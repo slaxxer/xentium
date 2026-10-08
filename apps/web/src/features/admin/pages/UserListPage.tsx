@@ -6,7 +6,7 @@ import type { BadgeRow } from "@xentium/contracts";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faBan, faUnlock, faChevronRight, faMagnifyingGlass, faUserGroup, faAward,
-  faRightFromBracket, faXmark, faCheck, faTriangleExclamation,
+  faRightFromBracket, faXmark, faCheck, faTriangleExclamation, faUserPlus,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -20,6 +20,7 @@ import {
   RolePill, StatusPill, FlagChip, topGroup, lastSeenText,
 } from "./users/usersShared";
 import "./users/Users.scss";
+import { CreateUserDialog } from "./users/CreateUserDialog";
 import { Username } from "../../../components/Username";
 
 interface PaginatedUsers {
@@ -74,6 +75,7 @@ async function pickDialog(title: string, body: string, placeholder: string, opti
 export function UserListPage() {
   const { t } = useTranslation("acp");
   const navigate = useNavigate();
+  const [creating, setCreating] = useState(false);
   const qc = useQueryClient();
   const { user: me } = useAuth();
 
@@ -201,7 +203,15 @@ export function UserListPage() {
             )}
           </div>
         )}
+        <button type="button" className="btn-primary usr-create-btn" onClick={() => setCreating(true)}>
+          <FontAwesomeIcon icon={faUserPlus} /> {t("users.create.button")}
+        </button>
       </div>
+
+      {creating && (
+        <CreateUserDialog onClose={() => setCreating(false)}
+          onCreated={(id) => { setCreating(false); navigate(`/admin/users/${id}`); }} />
+      )}
 
       {/* Command bar */}
       <div className="usr-bar">
