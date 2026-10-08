@@ -36,7 +36,8 @@
     background: var(--xt-header-shade);
     pointer-events: none;
   }
-  > :not(.xt-edge) { position: relative; }
+  /* Above the shade — but not edge art, which positions itself. */
+  > :not(.xt-edge, .xt-edge-layer) { position: relative; }
 
   &--bg {
     background-size: cover;

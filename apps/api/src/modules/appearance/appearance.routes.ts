@@ -5,7 +5,7 @@ import { requirePermission } from "../../shared/middleware/requirePermission.js"
 import { CorePermissions, SCOPE_SELECTOR, scopedTokensSchema, tokenMapSchema,
          DEFAULT_ICON_STYLE, isIconStyle,
          COMPOSER_TOOL_IDS, COMPOSER_DEFAULT_CONFIG, resolveComposerConfig } from "@xentium/contracts";
-import { appearanceService } from "./appearance.service.js";
+import { appearanceService, parseColourwayId } from "./appearance.service.js";
 import { addSseClient } from "./appearance.sse.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { prisma } from "../../infrastructure/db.js";
@@ -44,8 +44,14 @@ appearanceRouter.get("/css", async (req, res, next) => {
      * choice undone by a mechanism designed to fix staleness.
      */
     const wanted = typeof req.query.theme === "string" ? req.query.theme : "";
+    /**
+     * A colourway the visitor picked of the theme they wear (lib/viewerTheme.ts).
+     * Validated against that theme's manifest when the sheet is built, so an id it
+     * does not ship is simply not applied.
+     */
+    const colourway = draft ? null : parseColourwayId(req.query.colourway);
     if (!draft && wanted) {
-      const themed = await appearanceService.getThemeCss(wanted);
+      const themed = await appearanceService.getThemeCss(wanted, colourway);
       if (themed !== null) {
         res.setHeader("Content-Type", "text/css; charset=utf-8");
         res.setHeader("Cache-Control", "no-cache");
@@ -64,7 +70,9 @@ appearanceRouter.get("/css", async (req, res, next) => {
       const key = await resolveEditingKey(req.query.theme);
       css = await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens(key), { key });
     } else {
-      css = await appearanceService.getLiveCss();
+      // Still the LIVE sheet with a colourway over it, so it keeps its version stamp:
+      // an admin's publish must still reach a reader who only changed the accent.
+      css = await appearanceService.getLiveCss(colourway);
     }
     res.setHeader("Content-Type", "text/css; charset=utf-8");
     /**

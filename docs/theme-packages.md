@@ -121,6 +121,13 @@ Editor, and it publishes the same way. So:
 The tile in the editor is drawn from `--c-bg`, `--c-accent` and `--c-accent2`, so set
 those three in each colourway.
 
+Visitors get the colourways too. When a theme ships two or more, the theme chooser in the
+footer lists them under the theme, and a reader can wear any of them. Their pick only
+changes what they see, it's kept in a cookie, and its tokens go over your global tokens and
+the admin's edits. A colourway that matches what the theme already wears is marked as
+current, and picking it clears the reader's choice, so they follow the admin's colourway
+from then on.
+
 ## Tokens
 
 `tokens.json` is the file to write. It's the full set of tokens by scope, and it's one

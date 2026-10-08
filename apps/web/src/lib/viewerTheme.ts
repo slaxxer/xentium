@@ -35,6 +35,8 @@ export function viewerThemeId(): string | null {
 /** Choose a theme, or pass null to go back to the site's own. */
 export function setViewerTheme(id: string | null): void {
   if (typeof document === "undefined") return;
+  // A colourway belongs to the theme it was picked from; a new theme starts on its own.
+  setViewerColourway(null);
   const base = `${COOKIE}=`;
   document.cookie = id
     ? `${base}${encodeURIComponent(id)}; path=/; max-age=${MAX_AGE_DAYS * 86400}; SameSite=Lax`
@@ -51,4 +53,48 @@ export function setViewerTheme(id: string | null): void {
 export function viewerThemeParam(): string {
   const id = viewerThemeId();
   return id ? `theme=${encodeURIComponent(id)}` : "";
+}
+
+/**
+ * The COLOURWAY this visitor picked of the theme they wear, if any.
+ *
+ * A theme may ship several (Vanguard ships four accents). Same rules as the theme
+ * cookie: theirs alone, a cookie so the server can inline the right stylesheet, and
+ * validated server-side against the worn theme's manifest — an id it does not ship
+ * is not applied. Cleared whenever the theme changes, because a colourway belongs
+ * to the theme it was picked from.
+ */
+const CW_COOKIE = "xt_cw";
+const VALID_CW = /^[a-z0-9-]{1,40}$/;
+
+export function viewerColourwayId(): string | null {
+  if (typeof document === "undefined") return null;
+  const hit = document.cookie.split("; ").find((row) => row.startsWith(`${CW_COOKIE}=`));
+  if (!hit) return null;
+  const raw = decodeURIComponent(hit.slice(CW_COOKIE.length + 1));
+  return VALID_CW.test(raw) ? raw : null;
+}
+
+/** Pick a colourway, or pass null to wear the theme's own. */
+export function setViewerColourway(id: string | null): void {
+  if (typeof document === "undefined") return;
+  const base = `${CW_COOKIE}=`;
+  document.cookie = id
+    ? `${base}${encodeURIComponent(id)}; path=/; max-age=${MAX_AGE_DAYS * 86400}; SameSite=Lax`
+    : `${base}; path=/; max-age=0; SameSite=Lax`;
+}
+
+/**
+ * The query for the STYLESHEET: the theme (as `viewerThemeParam`) plus the colourway.
+ *
+ * ⚠ Only the stylesheet takes the colourway. Layouts do not depend on it, and
+ * `viewerThemeParam()` doubles as "is this the site's own sheet?" in the live-style
+ * reconcile — a reader who only changed the accent still wears the live sheet and
+ * must still receive the admin's publishes.
+ */
+export function viewerStyleParam(): string {
+  const parts = [viewerThemeParam()];
+  const cw = viewerColourwayId();
+  if (cw) parts.push(`colourway=${encodeURIComponent(cw)}`);
+  return parts.filter(Boolean).join("&");
 }

@@ -106,6 +106,27 @@ that sets its own pixel size won't grow with the rest of the site. On touch scre
 fields never go below 16px, because anything smaller makes iOS Safari zoom the page when
 you tap into it.
 
+### The logo icon
+
+Every install ships with the Xentium icon (`apps/web/public/brand`, plus `favicon.ico` and
+`manifest.webmanifest` at the root). It is the default logo in the header, on the sign-in,
+maintenance and 404 pages, and the default favicon. An admin's uploaded logo or favicon
+(Theme Studio, Branding) replaces it. The ACP and the installer always show the Xentium icon.
+
+`--logo-icon-from` and `--logo-icon-to` colour the default icon's box (its gradient;
+the same colour twice makes it flat). They do nothing to an uploaded logo, and the ACP
+and the installer ignore them. Two more tokens dress the site's logo, whichever it is:
+`--logo-icon-border` and `--logo-icon-shadow` (Theme Studio, Colours & type, Logo icon).
+Both default to `transparent`. They are drawn with `drop-shadow`, so they follow the logo's shape: a
+round PNG gets a round ring. A theme can set them like any other colour.
+
+### Icon size
+
+`--icon-scale` (1 = stock) scales every icon on the site without touching the text size
+(Theme Studio, Colours & type, Icon size: 70% to 200%). Site icons carry the `xt-ico`
+class from the shared icon component and are scaled with `zoom`, so icons that set their
+own size inline scale too, kit icons included. The admin panel never carries the class.
+
 ### Style variants
 
 A block can have `variant: surface | muted | accent | plain`. A variant is a named

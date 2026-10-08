@@ -46,6 +46,8 @@ import {
   isPortableAssetRef,
   siteFrameSchema,
   type SiteFrame,
+  wears,
+  HEARTH_DEFAULT_TOKENS,
 } from "@xentium/contracts";
 import { env } from "../../config/env.js";
 import { prisma } from "../../infrastructure/db.js";
@@ -370,6 +372,40 @@ function readManifest(fileBuffer: Buffer): { zip: AdmZip; manifest: ThemeManifes
   return { zip, manifest: parsed.data };
 }
 
+/** A colourway as the public theme chooser sees it. */
+export interface VisitorColourway { id: string; name: string; swatch: string[] }
+
+// ── The Themes page: what each theme looks like, and what it is wearing ─────────
+
+/** The five colours a theme card draws: its background, surfaces, accents and text. */
+export interface ThemePalette { bg: string; surface: string; accent: string; accent2: string; fg: string }
+const PALETTE_TOKENS: Record<keyof ThemePalette, string> = {
+  bg: "--c-bg", surface: "--c-surface", accent: "--c-accent", accent2: "--c-accent2", fg: "--c-fg",
+};
+
+/** A token's value with `var(--x)` references followed — swatches need a colour, not a name. */
+function resolveToken(name: string, map: TokenMap, depth = 0): string {
+  const raw = map[name] ?? HEARTH_DEFAULT_TOKENS[name] ?? "";
+  const ref = /^var\(\s*(--[a-zA-Z0-9_-]+)\s*(?:,\s*([^)]+))?\)$/.exec(raw.trim());
+  if (!ref || depth > 6) return raw;
+  const next = resolveToken(ref[1]!, map, depth + 1);
+  return next || (ref[2]?.trim() ?? "");
+}
+
+const paletteOf = (global: TokenMap): ThemePalette =>
+  Object.fromEntries(Object.entries(PALETTE_TOKENS).map(([k, v]) => [k, resolveToken(v, global)])) as unknown as ThemePalette;
+
+/** What `?theme=` / the API calls a theme: Core is `''`. */
+interface ThemeSummary {
+  key: ThemeKey;
+  palette: ThemePalette;
+  colourways: Array<{ id: string; name: string; accent: string; accent2: string }>;
+  /** The colourway the theme wears now — null when the admin's colours match none. */
+  wornColourway: string | null;
+  /** The last time anything of this theme was edited: colours, layouts or settings. */
+  editedAt: string | null;
+}
+
 export const themeService = {
   /** What this package claims to be. The download gate's check, and nothing more —
    *  a package that passes here can still be refused by the full import. */
@@ -635,6 +671,15 @@ export const themeService = {
         await appearanceService.recompileCustomCss(themeId);
       }
     }
+    // A colourway made live: that theme's colours as they were.
+    if (rollback.tokens) {
+      const { key, ...snapshot } = rollback.tokens;
+      const exists = !key || await prisma.theme.findUnique({ where: { id: key }, select: { id: true } });
+      if (exists) {
+        await appearanceService.restoreTokens(snapshot, userId, key);
+        bustThemeCss(key);
+      }
+    }
     // Then the theme that was live before — Core when it has since been removed.
     const back = rollback.previous
       && await prisma.theme.findUnique({ where: { id: rollback.previous }, select: { id: true } })
@@ -646,12 +691,15 @@ export const themeService = {
   },
 
   /** Is there a theme import that can still be walked back? */
-  async getRollbackState(): Promise<{ available: boolean; replaced: string | null; at: string | null }> {
+  async getRollbackState(): Promise<{ available: boolean; replaced: string | null; at: string | null; update: boolean }> {
     const rollback = await appearanceService.getThemeRollback();
     return {
       available: !!rollback,
       replaced:  rollback?.replaced ?? null,
       at:        rollback?.at ?? null,
+      // Undoing an UPDATE puts the old package's layouts back over that theme's pages,
+      // which can lose edits made since; a switch or a colourway loses nothing.
+      update:    !!rollback?.update,
     };
   },
 
@@ -1002,6 +1050,7 @@ export const themeService = {
   async listThemesForVisitors(): Promise<{
     id: string; name: string; version: string; active: boolean;
     description: string | null; screenshot: string | null;
+    colourways: VisitorColourway[]; wornColourway: string | null;
   }[]> {
     const rows = await prisma.theme.findMany({
       orderBy: [{ active: "desc" }, { name: "asc" }],
@@ -1011,8 +1060,20 @@ export const themeService = {
       // the admin's library.
       select: { id: true, name: true, version: true, active: true, manifest: true },
     });
-    return rows.map(({ manifest, ...row }) => {
+    return Promise.all(rows.map(async ({ manifest, ...row }) => {
       const m = (manifest ?? {}) as Record<string, unknown>;
+      const colourways = await appearanceService.getColourways(row.id);
+      /**
+       * The colourway the theme wears with no pick from the visitor — the shipped
+       * one, or whichever the admin chose for it. Null when the admin's edits match
+       * none of them. The chooser marks it, and picking it CLEARS the visitor's
+       * choice rather than storing it, so they go on following the site.
+       */
+      let wornColourway: string | null = null;
+      if (colourways.length) {
+        const global = (await appearanceService.getEffectiveTokens(row.id)).global ?? {};
+        wornColourway = colourways.find((c) => wears(c.tokens, global))?.id ?? null;
+      }
       return {
         ...row,
         description: typeof m.description === "string" ? m.description : null,
@@ -1020,8 +1081,15 @@ export const themeService = {
         // path to this install's uploads. A theme with none is normal, and the
         // chooser draws a placeholder rather than a broken image.
         screenshot:  typeof m.screenshot === "string" ? m.screenshot : null,
+        // Three colours each, enough to draw a swatch — not the whole token map.
+        colourways: colourways.map((c) => ({
+          id: c.id, name: c.name,
+          swatch: [c.tokens["--c-bg"], c.tokens["--c-accent"], c.tokens["--c-accent2"]]
+            .filter((v): v is string => typeof v === "string"),
+        })),
+        wornColourway,
       };
-    });
+    }));
   },
 
   /**
@@ -1041,6 +1109,78 @@ export const themeService = {
     return (row.payload ?? {}) as {
       tokens?: unknown; documents?: Record<string, unknown>; customCss?: unknown;
     };
+  },
+
+  /**
+   * One theme as the Themes page draws it: its colours, its colourways and which it
+   * wears, and when it was last edited. For Core too (`''`).
+   */
+  async summarize(key: ThemeKey): Promise<ThemeSummary> {
+    const global = (await appearanceService.getEffectiveTokens(key)).global ?? {};
+    const colourways = await appearanceService.getColourways(key);
+    const suffix = key ? `@${key}` : null;
+    const [history, layout, setting] = await Promise.all([
+      prisma.styleHistory.findFirst({ where: { themeKey: key }, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+      prisma.layout.findFirst({ where: { themeKey: key }, orderBy: { updatedAt: "desc" }, select: { updatedAt: true } }),
+      prisma.setting.findFirst({
+        // An installed theme's edits are the settings suffixed with its id. Core's are
+        // unsuffixed — and so are site-wide keys a SWITCH writes (which theme is live,
+        // the undo point), so Core counts only its colours, custom CSS and fonts.
+        where: suffix
+          ? { key: { endsWith: suffix } }
+          : {
+              OR: ["appearance.tokens", "appearance.custom_css", "appearance.font."].map((p) => ({ key: { startsWith: p } })),
+              NOT: { key: { contains: "@" } },
+            },
+        orderBy: { updatedAt: "desc" }, select: { updatedAt: true },
+      }),
+    ]);
+    const times = [history?.createdAt, layout?.updatedAt, setting?.updatedAt].filter((d): d is Date => !!d);
+    return {
+      key,
+      palette: paletteOf(global),
+      colourways: colourways.map((c) => {
+        const worn = { ...global, ...c.tokens };
+        return { id: c.id, name: c.name, accent: resolveToken("--c-accent", worn), accent2: resolveToken("--c-accent2", worn) };
+      }),
+      wornColourway: colourways.find((c) => wears(c.tokens, global))?.id ?? null,
+      editedAt: times.length ? new Date(Math.max(...times.map((d) => d.getTime()))).toISOString() : null,
+    };
+  },
+
+  /** A theme by its name and, when it wears one, its colourway: "Aurora · Mint". */
+  async labelOf(key: ThemeKey, fallbackName?: string | null): Promise<string> {
+    const row = key ? await prisma.theme.findUnique({ where: { id: key }, select: { name: true } }) : null;
+    const name = row?.name ?? fallbackName ?? "Core";
+    const { colourways, wornColourway } = await this.summarize(key);
+    const cw = colourways.find((c) => c.id === wornColourway);
+    return cw ? `${name} · ${cw.name}` : name;
+  },
+
+  /**
+   * Make one of a theme's colourways the one it wears — LIVE, like a theme switch, and
+   * undoable the same way. Writes only the tokens the colourway sets: a token equal to
+   * what the theme ships clears the admin's override instead of storing a copy.
+   */
+  async applyColourway(key: ThemeKey, colourwayId: string, userId: string) {
+    const cw = (await appearanceService.getColourways(key)).find((c) => c.id === colourwayId);
+    if (!cw) {
+      throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: `This theme has no colourway "${colourwayId}".` });
+    }
+    const shipped = (await appearanceService.getThemeTokens(key)).global ?? {};
+    const patch = Object.fromEntries(Object.entries(cw.tokens).map(([k, v]) => [k, shipped[k] === v ? null : v]));
+    return appearanceService.patchLiveScope("global", patch, userId, `Colourway: ${cw.name}`, key);
+  },
+
+  /** Make a colourway of the LIVE theme live. One level of undo, like a switch. */
+  async wearColourway(colourwayId: string, userId: string) {
+    const key = await activeThemeKey();
+    const replaced = await this.labelOf(key);
+    const before = await this.applyColourway(key, colourwayId, userId);
+    await appearanceService.saveThemeRollback({
+      previous: key, replaced, at: new Date().toISOString(), tokens: { key, ...before },
+    });
+    return this.summarize(key);
   },
 
   async listThemes() {
@@ -1066,7 +1206,7 @@ export const themeService = {
    *
    * LIVE and one decision, with one level of undo: the theme that was live before.
    */
-  async activateTheme(id: ThemeKey, _userId: string) {
+  async activateTheme(id: ThemeKey, userId: string, colourway?: string) {
     const row = id ? await prisma.theme.findUnique({ where: { id } }) : null;
     if (id && !row) {
       throw new XentiumError({
@@ -1076,11 +1216,17 @@ export const themeService = {
     }
     const previous = await activeThemeKey();
     const worn = await appearanceService.getInstalledTheme();
-    if (previous !== id) {
+    const replaced = await this.labelOf(previous, worn ? String(worn.name ?? worn.id ?? "") : null);
+    // Switching straight into one of the theme's colourways: its colours change too,
+    // so undo has to put those back as well as the theme.
+    const current = colourway ? (await this.summarize(id)).wornColourway : null;
+    const before = colourway && colourway !== current ? await this.applyColourway(id, colourway, userId) : null;
+    if (previous !== id || before) {
       await appearanceService.saveThemeRollback({
         previous,
-        replaced: worn ? String(worn.name ?? worn.id ?? "") : null,
+        replaced,
         at:       new Date().toISOString(),
+        ...(before ? { tokens: { key: id, ...before } } : {}),
       });
     }
     await this.setActive(id);

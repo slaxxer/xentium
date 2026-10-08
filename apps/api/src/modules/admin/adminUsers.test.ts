@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { adminUsersService, FAILED_SIGNIN_FLAG } from "./adminUsers.service.js";
+import { adminService } from "./admin.service.js";
 
 const PREFIX = "usrprobe";
 const GROUP_KEYS = [`${PREFIX}_a`, `${PREFIX}_b`, `${PREFIX}_admin`];
@@ -143,5 +144,39 @@ describe("group membership", () => {
   it("refuses a group that does not exist", async () => {
     await expect(adminUsersService.patchUserGroups(ids.active, ["no-such-group"], [], ids.installer))
       .rejects.toThrow(/Group not found/);
+  });
+});
+
+describe("creating a user from the ACP", () => {
+  const input = (name: string, extra: Record<string, unknown> = {}) => ({
+    username: `${PREFIX}_${name}`, email: `${PREFIX}_${name}@Example.test`, password: "correct horse battery", verified: true, ...extra,
+  });
+
+  it("makes an active, verified account in the picked group, with a real hash", async () => {
+    const { id } = await adminService.createUser(input("made", { groupId: groups[`${PREFIX}_a`] }));
+    const row = await prisma.user.findUniqueOrThrow({ where: { id }, include: { groups: true } });
+    expect(row.email).toBe(`${PREFIX}_made@example.test`);
+    expect(row.isActive).toBe(true);
+    expect(row.emailVerifiedAt).not.toBeNull();
+    expect(row.passwordHash).toMatch(/^\$argon2/);
+    expect(row.groups.map((g) => g.groupId)).toEqual([groups[`${PREFIX}_a`]]);
+  });
+
+  it("leaves the address unverified when asked", async () => {
+    const { id } = await adminService.createUser(input("unverified", { verified: false }));
+    expect((await prisma.user.findUniqueOrThrow({ where: { id } })).emailVerifiedAt).toBeNull();
+  });
+
+  it("refuses a taken email or username, whatever the case", async () => {
+    await expect(adminService.createUser(input("x", { email: `${PREFIX}_ACTIVE@example.test` })))
+      .rejects.toMatchObject({ code: "XEC-AUTH-2001" });
+    await expect(adminService.createUser(input("x", { username: `${PREFIX}_ACTIVE` })))
+      .rejects.toMatchObject({ code: "XEC-AUTH-2002" });
+  });
+
+  it("refuses a group that does not exist", async () => {
+    await expect(adminService.createUser(input("nogroup", { groupId: "00000000-0000-0000-0000-000000000000" })))
+      .rejects.toMatchObject({ httpStatus: 404 });
+    expect(await prisma.user.count({ where: { username: `${PREFIX}_nogroup` } })).toBe(0);
   });
 });

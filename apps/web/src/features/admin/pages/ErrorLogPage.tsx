@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { faMagnifyingGlass, faRotateRight, faTrash, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faMagnifyingGlass, faRotateRight, faTrash, faUser, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -31,9 +31,15 @@ export function ErrorLogPage() {
   const [params, setParams] = useSearchParams();
   const [severity, setSeverity] = useState<Severity | null>(null);
   const [domain, setDomain] = useState("");
-  const [queryInput, setQueryInput] = useState("");
-  const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<GroupStatus>("open");
+  // A link can arrive with a search, a member and a status (the error reference's
+  // "All entries by … in the error log"); they are read once, then the page owns them.
+  const [queryInput, setQueryInput] = useState(() => params.get("q") ?? "");
+  const [query, setQuery] = useState(() => (params.get("q") ?? "").trim());
+  const [member, setMember] = useState(() => params.get("user") ?? "");
+  const [status, setStatus] = useState<GroupStatus>(() => {
+    const s = params.get("status") as GroupStatus | null;
+    return s && STATUSES.includes(s) ? s : "open";
+  });
   const [range, setRange] = useState<Range>("24h");
   const [page, setPage] = useState(1);
   const selectedKey = params.get("group");
@@ -45,19 +51,20 @@ export function ErrorLogPage() {
     return () => clearTimeout(id);
   }, [queryInput]);
   // Any filter change starts over at page 1.
-  useEffect(() => setPage(1), [severity, domain, query, status]);
+  useEffect(() => setPage(1), [severity, domain, query, status, member]);
 
   const stats = useQuery<StatsResponse>({
     queryKey: ["acp-error-log", "stats", range],
     queryFn: () => api.get(`/admin/error-log/stats?range=${range}&tzOffset=${new Date().getTimezoneOffset()}`),
   });
   const groups = useQuery<GroupsResponse>({
-    queryKey: ["acp-error-log", "groups", severity, domain, query, status, page],
+    queryKey: ["acp-error-log", "groups", severity, domain, query, status, member, page],
     queryFn: () => {
       const p = new URLSearchParams({ status, page: String(page), pageSize: String(PAGE_SIZE) });
       if (severity) p.set("severity", severity);
       if (domain) p.set("domain", domain);
       if (query) p.set("q", query);
+      if (member) p.set("user", member);
       return api.get(`/admin/error-log/groups?${p}`);
     },
     placeholderData: (prev) => prev,
@@ -157,6 +164,11 @@ export function ErrorLogPage() {
               </button>
             )}
           </label>
+          {member && (
+            <button type="button" className="el-member" onClick={() => setMember("")} aria-label={t("errorLog.clearMember", { name: member })}>
+              <FontAwesomeIcon icon={faUser} className="el-ic" /> {member} <FontAwesomeIcon icon={faXmark} className="el-ic" />
+            </button>
+          )}
           <select className="acp-select el-select" value={domain} onChange={(e) => setDomain(e.target.value)} aria-label={t("errorLog.allDomains")}>
             <option value="">{t("errorLog.allDomains")}</option>
             {domains.map((d) => <option key={d} value={d}>{d}</option>)}

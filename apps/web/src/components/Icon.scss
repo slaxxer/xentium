@@ -1,0 +1,5 @@
+/* The theme's icon size (`--icon-scale`, 1 = stock), on site icons only — the ACP's
+   never carry `xt-ico`. `zoom`, not font-size: many icons set their own size inline
+   (`style={{ fontSize: … }}`), which would win over a font-size here; zoom scales the
+   icon whatever size it was given, kit icons and bundled SVGs alike. */
+.xt-ico { zoom: var(--icon-scale, 1); }

@@ -28,7 +28,7 @@ const FIND_MS = 8000;
  */
 export function ModCanvas() {
   const { user } = useAuth();
-  const isMod = isModerator(user?.groups);
+  const isMod = isModerator(user);
   const { session, pluginSection } = useModStore();
   const location = useLocation();
   const navigate = useNavigate();

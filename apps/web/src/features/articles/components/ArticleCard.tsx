@@ -1,5 +1,6 @@
 // apps/web/src/features/articles/components/ArticleCard.tsx
 import "./ArticleCard.scss";
+import { useDateTime } from "../../../lib/datetime";
 
 interface Article {
   slug: string; title: string; excerpt: string;
@@ -7,6 +8,7 @@ interface Article {
 }
 
 export function ArticleCard({ article }: { article: Article }) {
+  const dt = useDateTime();
   return (
     <div className="article-card">
       <div className="article-category">{article.category}</div>
@@ -14,7 +16,7 @@ export function ArticleCard({ article }: { article: Article }) {
         <a href={`/articles/${article.slug}`}>{article.title}</a>
       </h3>
       <div className="article-meta">
-        <span>{new Date(article.publishedAt).toLocaleDateString()}</span>
+        <span><time dateTime={article.publishedAt}>{dt.date(article.publishedAt)}</time></span>
         <span>{article.readTime} min read</span>
         <span>{article.views} views</span>
       </div>

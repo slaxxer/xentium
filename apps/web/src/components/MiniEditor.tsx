@@ -13,7 +13,7 @@
  * ⚠ `variant="inline"` — this is the comments-and-wall editor, which is the variant
  * that collapses to one row until it is needed.
  */
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useImperativeHandle, useRef, type ReactNode } from "react";
 import { Composer, type ComposerHandle, type ComposerVariant } from "./composer/Composer";
 
 export interface MiniEditorHandle {
@@ -40,11 +40,13 @@ interface MiniEditorProps {
   variant?: ComposerVariant;
   /** `dock`: Enter sends, Shift+Enter is a newline. */
   enterSends?: boolean;
+  /** Passed to the Composer: what Preview shows (e.g. a post card). */
+  renderPreview?: (html: string) => ReactNode;
 }
 
 export const MiniEditor = forwardRef<MiniEditorHandle, MiniEditorProps>(
   ({ onChange, placeholder, disabled, onSubmit, className, initialHtml,
-     variant = "panel", enterSends }, ref) => {
+     variant = "panel", enterSends, renderPreview }, ref) => {
     const inner = useRef<ComposerHandle>(null);
 
     // The old two-method handle, forwarded onto the composer's larger one.
@@ -64,6 +66,7 @@ export const MiniEditor = forwardRef<MiniEditorHandle, MiniEditorProps>(
          */
         variant={variant}
         enterSends={enterSends}
+        renderPreview={renderPreview}
         onChange={onChange}
         placeholder={placeholder}
         initialHtml={initialHtml}

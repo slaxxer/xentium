@@ -6,6 +6,7 @@ import {
   faCopy, faCheck, faBookOpen, faListUl,
 } from "@fortawesome/free-solid-svg-icons";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { formatReport, type ClientErrorReport } from "../../lib/clientErrors";
 import "./ErrorScreen.scss";
 
@@ -46,7 +47,7 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
   const { user } = useAuth();
   const [copied, setCopied] = useState(false);
 
-  const isAdmin     = !!user?.groups?.some((g) => g.key === "admin");
+  const isAdmin     = userCan(user, "admin.access");
   const showDetails = isAdmin || import.meta.env.DEV;
   const isChunk     = report.kind === "chunk";
 

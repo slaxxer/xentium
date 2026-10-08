@@ -105,7 +105,7 @@ export function RegisterPanel() {
 
   if (!open && !inviteRequired) {
     return (
-      <AuthDoorway>
+      <AuthDoorway corner="signIn">
         <div className="dw-state">
           <span className="dw-state__icon"><FontAwesomeIcon icon={faLock} /></span>
           <h1>{closedTitle ?? t("door.closed.title")}</h1>
@@ -195,7 +195,7 @@ export function RegisterPanel() {
 
   if (step === "invite") {
     return (
-      <AuthDoorway>
+      <AuthDoorway corner="signIn">
         <div className="dw-state dw-state--left">
           <span className="dw-state__icon"><FontAwesomeIcon icon={faLock} /></span>
           <h1>{closedTitle ?? t("door.invite.title")}</h1>
@@ -219,7 +219,7 @@ export function RegisterPanel() {
 
   if (step === "done") {
     return (
-      <AuthDoorway tabs={false}>
+      <AuthDoorway corner="home">
         {progress}
         <div className="dw-state">
           <span className="dw-welcome-avatar">
@@ -239,7 +239,7 @@ export function RegisterPanel() {
   }
 
   return (
-    <AuthDoorway>
+    <AuthDoorway corner="signIn">
       {progress}
 
       {step === "account" && (

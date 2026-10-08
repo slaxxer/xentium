@@ -354,3 +354,6 @@
 @media (prefers-reduced-motion: reduce) {
   .mt__bg, .mt-badge i, .mt-step__dot, .mt-login { animation: none; }
 }
+
+/* An uploaded site logo in place of the Xentium mark. */
+.mt__logo-img { display: block; height: 36px; width: auto; max-width: 220px; object-fit: contain; }

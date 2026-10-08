@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
-  faXmark, faRotateLeft, faRotateRight, faCloudArrowUp,
+  faRotateLeft, faRotateRight, faCloudArrowUp,
   faMagnifyingGlass, faSliders, faObjectGroup, faArrowTurnDown,
-  faArrowUp, faArrowDown, faArrowLeft, faArrowRight,
+  faArrowUp, faArrowDown, faArrowLeft, faArrowRight, faUpload, faStar,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { looksLikeKit } from "../../../lib/iconKit";
 import { toast } from "../../../lib/toast";
-import { useAutosave } from "../../../hooks/useAutosave";
-import { AutosaveStatus } from "../../../components/AutosaveStatus";
+import { useDebouncedSave } from "../../../hooks/useAutosave";
+import { SaveChip } from "../../../components/SaveChip";
 import { refreshTokenCss } from "../../../lib/liveStyle";
 import { StyleHistoryList } from "../components/StyleHistoryList";
 import { ThemeScopePicker } from "../components/ThemeScopePicker";
@@ -34,16 +34,21 @@ import {
   fontBodyRule,
 } from "@xentium/contracts";
 import {
-  SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, tokenLabel,
+  SECTIONS, SECTION_BY_ID, BOARD, SCOPE_OPTIONS, SCOPE_LABEL, LOGO_ROWS, tokenLabel,
   type Section,
 } from "./styleTokens";
 import { STYLESHEET_DEFAULTS, resolveColor } from "./tokenDefaults";
+import { studioHref } from "./studioLinks";
+import { useSiteConfig } from "../../../hooks/useSiteConfig";
+import { useLayoutDocument } from "../../../layout/useLayout";
+import { sectionBackground } from "../../../layout/blocks/sectionBackground";
 import {
   parseShadow, formatShadow, shadowValueFor, SHADOW_SEED,
   type ShadowKind, type ShadowParts,
 } from "./shadowValue";
 import "./StyleEditorPage.scss";
 import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
+import { XentiumMark } from "../../../components/XentiumMark";
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
@@ -99,6 +104,10 @@ const FONTS = FONT_FAMILIES;
 const FONT_WEIGHTS = ["300", "400", "500", "600", "700", "800"] as const;
 const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 20;
+/** Icon size, as a multiple of stock: 70% to 200% in steps of 10. */
+const ICON_SCALE_MIN = 0.7;
+const ICON_SCALE_MAX = 2;
+const ICON_SCALE_STEP = 0.1;
 
 
 // The kinds the shadow control offers, in order. `raw` is not offered — it is only
@@ -222,6 +231,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
   // the retired `/admin/style-history` route can redirect straight to History
   // rather than dropping you on Tokens.
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const tabParam = searchParams.get("tab");
   const [ownTab, setTab] = useState<Tab>(
     () => (TABS.some((x) => x.id === tabParam) ? (tabParam as Tab) : "tokens"),
@@ -476,7 +486,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
     if (ok) resetMut.mutate();
   };
 
-  useAutosave({ value: draft, savedValue: savedSnap, onSave: () => saveMut.mutate(), delay: 1200 });
+  useDebouncedSave({ value: draft, savedValue: savedSnap, onSave: () => saveMut.mutate(), delay: 1200 });
 
   if (isLoading || !tokens) return <div className="acp-card acp-empty">{t("styleEditor.loading")}</div>;
 
@@ -500,6 +510,15 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
     if (next?.kind !== "component") setScope("global"); // reset picker off component sections
   }
 
+  // From another tab (Branding's "Logo icon colours") straight to a token section.
+  // Embedded, the Studio's mode decides the tab, so the Studio is switched instead —
+  // this component stays mounted across modes, so the picked section survives.
+  function jumpTo(id: string) {
+    selectSection(id);
+    if (forcedTab) navigate(studioHref(themeKey, "style"));
+    else selectTab("tokens");
+  }
+
   // 3b — a click in the preview iframe picks a surface. `group` is the clicked
   // surface's data-component/data-region (which doubles as a section id); `pickScope`
   // is the enclosing region so clicking a button *in the navbar* preselects scope Navbar.
@@ -520,6 +539,15 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
       return { ...prev, [s]: { ...(prev[s] ?? {}), [cssVar]: value } };
     });
   }
+  // The icon size token, read and written like any global token; stock (1) is stored
+  // as no override at all, so "back to 100%" leaves nothing behind.
+  const iconScale = Math.round((Number(display("--icon-scale", "global").value) || 1) * 10) / 10;
+  function setIconScale(next: number) {
+    const v = Math.round(Math.min(ICON_SCALE_MAX, Math.max(ICON_SCALE_MIN, next)) * 10) / 10;
+    if (v === 1) clearOverride("global", "--icon-scale");
+    else setOverride("global", "--icon-scale", String(v));
+  }
+
   function clearOverride(s: ThemeScope, cssVar: string) {
     setTokens((prev) => {
       if (!prev) return prev;
@@ -627,7 +655,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                 </button>
               </div>
             )}
-            <AutosaveStatus saving={saveMut.isPending} />
+            <SaveChip saving={saveMut.isPending} autosave />
           </div>
 
           <div className="se-actions__row">
@@ -740,6 +768,24 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                     ))}
                   </div>
                   <div className="se-type__hint">{t("styleEditor.fontScope")}</div>
+                  {/* ICON SIZE — apart from the text size: an admin who wants bigger icons
+                      should not have to make every word bigger to get them. A theme token
+                      (`--icon-scale`), so it is drafted, published and per theme like a colour. */}
+                  <div className="se-type__row se-iconsize">
+                    <span className="se-iconsize__label">
+                      <FontAwesomeIcon icon={faStar} /> {t("styleEditor.iconSize")}
+                    </span>
+                    <div className="se-step">
+                      <button type="button" aria-label={t("styleEditor.iconSmaller")}
+                        disabled={iconScale <= ICON_SCALE_MIN}
+                        onClick={() => setIconScale(iconScale - ICON_SCALE_STEP)}>−</button>
+                      <span className="se-step__v" title={t("styleEditor.iconSize")}>{Math.round(iconScale * 100)}%</span>
+                      <button type="button" aria-label={t("styleEditor.iconBigger")}
+                        disabled={iconScale >= ICON_SCALE_MAX}
+                        onClick={() => setIconScale(iconScale + ICON_SCALE_STEP)}>+</button>
+                    </div>
+                  </div>
+                  <div className="se-type__hint">{t("styleEditor.iconSizeHint")}</div>
                 </div>
               </div>
             </div>
@@ -839,6 +885,13 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                   );
                 })}
 
+                {section.id === "logo" && (
+                  <div className="se-logo-fx">
+                    <XentiumMark size={40} className="xt-logo-fx" />
+                    <span>{t("styleEditor.secLogoHint")}</span>
+                  </div>
+                )}
+
                 {/* Feedback colours drive the toast system — fire live samples to preview. */}
                 {section.kind === "feedback" && (
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
@@ -874,81 +927,117 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
       )}
 
       {tab === "branding" && (
-        <div className="se-brand">
-          <div>
-            <div className="se-brand__h">{t("styleEditor.logoText")}</div>
-            <p className="se-brand__p">{t("styleEditor.logoTextHint")}</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input className="se-brand__input" value={logoText} onChange={(e) => setLogoText(e.target.value)}
-                placeholder={t("styleEditor.logoPlaceholder")} />
-              <button type="button" className="btn-primary btn-sm" onClick={() => saveLogoTextMut.mutate()} disabled={saveLogoTextMut.isPending}>
-                {t("styleEditor.save")}
+        // The STAGED logo-icon colours, on the whole tab: the preview and every
+        // default thumbnail show the icon as it will look once published.
+        <div className="br" style={Object.fromEntries(LOGO_ROWS.map((r) => [r.cssVar, display(r.cssVar, "global").value])) as React.CSSProperties}>
+          {/* ── Identity: what the site is called and how it looks, previewed where it
+              shows up — the header, a browser tab, a phone's home screen. */}
+          <section className="br-card br-identity">
+            <BrandingPreview
+              logoText={logoText}
+              navbarUrl={branding?.navbarUrl ?? null}
+              iconUrl={branding?.iconUrl ?? null}
+            />
+
+            <div className="br-controls">
+              <div className="br-field">
+                <label className="br-h" htmlFor="br-logo-text">{t("styleEditor.logoText")}</label>
+                <p className="br-p">{t("styleEditor.logoTextHint")}</p>
+                <div className="br-inline">
+                  <input id="br-logo-text" className="se-brand__input" value={logoText} onChange={(e) => setLogoText(e.target.value)}
+                    placeholder={t("styleEditor.logoPlaceholder")} />
+                  <button type="button" className="btn-primary btn-sm"
+                    onClick={() => saveLogoTextMut.mutate()}
+                    disabled={saveLogoTextMut.isPending || logoText === (branding?.logoText ?? "")}>
+                    {t("styleEditor.save")}
+                  </button>
+                </div>
+              </div>
+
+              <BrandAsset
+                label={t("styleEditor.navbarLogo")} hint={t("styleEditor.navbarLogoHint")}
+                currentUrl={branding?.navbarUrl ?? null} accept="image/png,image/svg+xml,image/webp" wide
+                onUpload={(f) => uploadBrandingMut.mutate({ variant: "navbar", file: f })}
+                onDelete={() => deleteBrandingMut.mutate("navbar")}
+                busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
+              />
+              <BrandAsset
+                label={t("styleEditor.favicon")} hint={t("styleEditor.faviconHint")}
+                currentUrl={branding?.iconUrl ?? null} accept="image/png,image/x-icon,image/svg+xml"
+                onUpload={(f) => uploadBrandingMut.mutate({ variant: "icon", file: f })}
+                onDelete={() => deleteBrandingMut.mutate("icon")}
+                busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
+              />
+
+              <button type="button" className="br-jump" onClick={() => jumpTo("logo")}>
+                <XentiumMark size={22} className="xt-logo-fx" />
+                <span>
+                  <b>{t("styleEditor.brandIconColours")}</b>
+                  <small>{t("styleEditor.brandIconColoursHint")}</small>
+                </span>
+                <FontAwesomeIcon icon={faArrowRight} />
               </button>
             </div>
-            <div className="se-brand__specimen">
-              <span className="se-brand__mark" />
-              <span className="se-brand__word">{logoText || t("styleEditor.logoPlaceholder")}</span>
-            </div>
-          </div>
+          </section>
 
-          <div>
-            <div className="se-brand__h">{t("styleEditor.iconKit")}</div>
-            <p className="se-brand__p">{t("styleEditor.iconKitHint")}</p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input className="se-brand__input" value={iconKit} onChange={(e) => setIconKit(e.target.value)}
-                placeholder={t("styleEditor.iconKitPlaceholder")} spellCheck={false} />
-              <button type="button" className="btn-primary btn-sm" onClick={() => saveIconKitMut.mutate()} disabled={saveIconKitMut.isPending}>
-                {t("styleEditor.save")}
-              </button>
+          {/* ── Icons: the glyph set every icon on the site and in the ACP is drawn from. */}
+          <section className="br-card br-icons">
+            <div className="br-icons__head">
+              <h2 className="br-title">{t("styleEditor.brandIconsTitle")}</h2>
+              <p className="br-p">{t("styleEditor.brandIconsLede")}</p>
             </div>
-            <p className="se-brand__p">{t("styleEditor.iconKitLicence")}</p>
+            <div className="br-icons__grid">
+              <div className="br-field">
+                <label className="br-h" htmlFor="br-kit">{t("styleEditor.iconKit")}</label>
+                <p className="br-p">{t("styleEditor.iconKitHint")}</p>
+                <div className="br-inline">
+                  <input id="br-kit" className="se-brand__input" value={iconKit} onChange={(e) => setIconKit(e.target.value)}
+                    placeholder={t("styleEditor.iconKitPlaceholder")} spellCheck={false} />
+                  <button type="button" className="btn-primary btn-sm"
+                    onClick={() => saveIconKitMut.mutate()}
+                    disabled={saveIconKitMut.isPending || iconKit === (branding?.iconKitUrl ?? "")}>
+                    {t("styleEditor.save")}
+                  </button>
+                </div>
+                <p className="br-note">{t("styleEditor.iconKitLicence")}</p>
+              </div>
 
-            <div className="se-brand__h" style={{ marginTop: "var(--sp-4)" }}>{t("styleEditor.iconStyle")}</div>
-            {/* ⚠ Only meaningful with a kit: every style but Solid is Pro, and naming
-                one with no kit loaded would emit a class nothing defines. The select
-                is disabled rather than hidden so the capability is discoverable. */}
-            <p className="se-brand__p">{t("styleEditor.iconStyleHint")}</p>
-            <select
-              className="se-brand__input"
-              value={branding?.iconStyle ?? "solid"}
-              disabled={!branding?.iconKitUrl || saveIconStyleMut.isPending}
-              onChange={(e) => saveIconStyleMut.mutate(e.target.value)}
-            >
-              {/* ⚠ Grouped by FAMILY, and the style names are NOT translated — they
-                  are FontAwesome's own product names, the same words the admin just
-                  read on their kit page. Only the group headings are localised. */}
-              {(["classic", "duotone", "sharp", "sharpDuotone", "proPlus"] as IconStyleGroup[]).map((g) => (
-                <optgroup key={g} label={t(`styleEditor.iconGroup_${g}`)}>
-                  {ICON_STYLE_DEFS.filter((d) => d.group === g).map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.id === "solid" ? `${d.label} ${t("styleEditor.iconStyleBundled")}` : d.label}
-                    </option>
+              <div className="br-field">
+                <label className="br-h" htmlFor="br-style">{t("styleEditor.iconStyle")}</label>
+                {/* ⚠ Only meaningful with a kit: every style but Solid is Pro, and naming
+                    one with no kit loaded would emit a class nothing defines. The select
+                    is disabled rather than hidden so the capability is discoverable. */}
+                <p className="br-p">{t("styleEditor.iconStyleHint")}</p>
+                <select
+                  id="br-style"
+                  className="se-brand__input"
+                  value={branding?.iconStyle ?? "solid"}
+                  disabled={!branding?.iconKitUrl || saveIconStyleMut.isPending}
+                  onChange={(e) => saveIconStyleMut.mutate(e.target.value)}
+                >
+                  {/* ⚠ Grouped by FAMILY, and the style names are NOT translated — they
+                      are FontAwesome's own product names, the same words the admin just
+                      read on their kit page. Only the group headings are localised. */}
+                  {(["classic", "duotone", "sharp", "sharpDuotone", "proPlus"] as IconStyleGroup[]).map((g) => (
+                    <optgroup key={g} label={t(`styleEditor.iconGroup_${g}`)}>
+                      {ICON_STYLE_DEFS.filter((d) => d.group === g).map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.id === "solid" ? `${d.label} ${t("styleEditor.iconStyleBundled")}` : d.label}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
-                </optgroup>
-              ))}
-            </select>
-            {/* ⚠ The Pro+ families are stylised sets, not a weight of the whole
-                library. An icon they have no glyph for simply does not draw, and
-                there is nothing to fall back to — so say it before it happens. */}
-            {iconStyleDef(branding?.iconStyle ?? "solid")?.full === false && (
-              <p className="se-brand__p">{t("styleEditor.iconStylePartial")}</p>
-            )}
-          </div>
-
-          <BrandingSlot
-            label={t("styleEditor.navbarLogo")} hint={t("styleEditor.navbarLogoHint")}
-            currentUrl={branding?.navbarUrl ?? null} accept="image/png,image/svg+xml,image/webp"
-            onUpload={(f) => uploadBrandingMut.mutate({ variant: "navbar", file: f })}
-            onDelete={() => deleteBrandingMut.mutate("navbar")}
-            busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
-          />
-          <BrandingSlot
-            label={t("styleEditor.favicon")} hint={t("styleEditor.faviconHint")}
-            currentUrl={branding?.iconUrl ?? null} accept="image/png,image/x-icon,image/svg+xml"
-            onUpload={(f) => uploadBrandingMut.mutate({ variant: "icon", file: f })}
-            onDelete={() => deleteBrandingMut.mutate("icon")}
-            busy={uploadBrandingMut.isPending || deleteBrandingMut.isPending}
-          />
+                </select>
+                {!branding?.iconKitUrl && <p className="br-note">{t("styleEditor.iconStyleNeedsKit")}</p>}
+                {/* ⚠ The Pro+ families are stylised sets, not a weight of the whole
+                    library. An icon they have no glyph for simply does not draw, and
+                    there is nothing to fall back to — so say it before it happens. */}
+                {iconStyleDef(branding?.iconStyle ?? "solid")?.full === false && (
+                  <p className="br-note">{t("styleEditor.iconStylePartial")}</p>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       )}
 
@@ -1382,11 +1471,61 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
   );
 }
 
-// ── BrandingSlot ──────────────────────────────────────────────────────────────
+// ── Branding ──────────────────────────────────────────────────────────────────
 
-function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, busy }: {
+/**
+ * The brand where visitors meet it: the masthead (in the site's own band colours),
+ * a browser tab and a phone's home screen. The tab sets the STAGED logo-icon colours
+ * around it, so a change in Colours & type shows here before it is published.
+ */
+function BrandingPreview({ logoText, navbarUrl, iconUrl }: {
+  logoText: string; navbarUrl: string | null; iconUrl: string | null;
+}) {
+  const { t } = useTranslation("acp");
+  const { data: site } = useSiteConfig();
+  const doc = useLayoutDocument("chrome.header");
+  const band = (doc.regions.header ?? []).find((b) => b.type === "header");
+  const background = band ? sectionBackground(band.props as Parameters<typeof sectionBackground>[0]) : undefined;
+  const name = logoText || t("styleEditor.logoPlaceholder");
+  const siteName = site?.siteName || name;
+  const favicon = iconUrl
+    ? <img className="br-fav" src={iconUrl} alt="" />
+    : <XentiumMark size={16} className="br-fav" />;
+
+  return (
+    <div className="br-preview">
+      <span className="br-preview__label">{t("styleEditor.brandPreview")}</span>
+
+      <div className="br-mast" style={background ? { backgroundImage: background } : undefined}>
+        <span className="br-mast__brand">
+          {navbarUrl
+            ? <img className="xt-logo-fx br-mast__img" src={navbarUrl} alt="" />
+            : <><XentiumMark size={40} className="xt-logo-fx" /><span className="br-mast__word">{name}</span></>}
+        </span>
+        <span className="br-mast__pill" aria-hidden><i /><i /><i /></span>
+      </div>
+
+      <div className="br-places">
+        <div className="br-tab" aria-label={t("styleEditor.brandTab")}>
+          <span className="br-tab__dots" aria-hidden><i /><i /><i /></span>
+          <span className="br-tab__tab">{favicon}<span>{siteName}</span></span>
+        </div>
+        <div className="br-home" aria-label={t("styleEditor.brandHome")}>
+          {iconUrl ? <img className="br-home__icon" src={iconUrl} alt="" /> : <XentiumMark size={52} className="br-home__icon" />}
+          <span>{siteName}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One uploadable brand file: what is live now (the upload, or the shipped Xentium
+ * default), and Upload / Replace / Remove. The whole row takes a dropped file too.
+ */
+function BrandAsset({ label, hint, currentUrl, accept, onUpload, onDelete, busy, wide = false }: {
   label: string; hint: string; currentUrl: string | null; accept: string;
-  onUpload: (f: File) => void; onDelete: () => void; busy: boolean;
+  onUpload: (f: File) => void; onDelete: () => void; busy: boolean; wide?: boolean;
 }) {
   const { t } = useTranslation("acp");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -1402,32 +1541,32 @@ function BrandingSlot({ label, hint, currentUrl, accept, onUpload, onDelete, bus
   };
 
   return (
-    <div>
-      <div className="se-brand__h">{label}</div>
-      <p className="se-brand__p">{hint}</p>
-      <div
-        className={`se-drop${over ? " is-over" : ""}`}
-        onClick={() => !busy && inputRef.current?.click()}
-        onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-        onDragLeave={() => setOver(false)}
-        onDrop={(e) => { e.preventDefault(); setOver(false); if (!busy) take(e.dataTransfer.files[0]); }}
-      >
-        {currentUrl ? (
-          <>
-            <img src={currentUrl} alt={label} />
-            <button type="button" className="se-drop__x" disabled={busy} title={t("styleEditor.remove")}
-              onClick={(e) => { e.stopPropagation(); onDelete(); }}>
-              <FontAwesomeIcon icon={faXmark} />
-            </button>
-          </>
-        ) : (
-          <div>
-            <div className="se-drop__t">{t("styleEditor.dropImage")}</div>
-            <div className="se-drop__s">{t("styleEditor.orBrowse")}</div>
-          </div>
+    <div
+      className={`br-asset${over ? " is-over" : ""}`}
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); if (!busy) take(e.dataTransfer.files[0]); }}
+    >
+      <span className={`br-asset__thumb${wide ? " br-asset__thumb--wide" : ""}`}>
+        {currentUrl ? <img src={currentUrl} alt="" /> : <XentiumMark size={wide ? 30 : 34} />}
+      </span>
+      <span className="br-asset__text">
+        <span className="br-h">{label}</span>
+        <span className="br-asset__state">{currentUrl ? t("styleEditor.brandCustom") : t("styleEditor.brandDefault")}</span>
+        <span className="br-asset__hint">{hint} · {t("styleEditor.brandDrop")}</span>
+      </span>
+      <span className="br-asset__actions">
+        <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+          <FontAwesomeIcon icon={faUpload} /> {currentUrl ? t("styleEditor.brandReplace") : t("styleEditor.brandUpload")}
+        </button>
+        {currentUrl && (
+          <button type="button" className="btn-ghost btn-sm br-asset__remove" disabled={busy} onClick={onDelete}
+            title={t("styleEditor.brandRemoveHint")}>
+            {t("styleEditor.remove")}
+          </button>
         )}
-      </div>
-      <input ref={inputRef} type="file" accept={accept} style={{ display: "none" }}
+      </span>
+      <input ref={inputRef} type="file" accept={accept} hidden
         onChange={(e) => { take(e.target.files?.[0]); e.target.value = ""; }} />
     </div>
   );

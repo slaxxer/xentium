@@ -53,14 +53,14 @@ export function DigitsInput({ length, value, onChange, secret, label }: {
   );
 }
 
-export function PasswordInput({ value, onChange, autoComplete, id, autoFocus }: {
-  value: string; onChange: (v: string) => void; autoComplete: string; id: string; autoFocus?: boolean;
+export function PasswordInput({ value, onChange, autoComplete, id, autoFocus, invalid }: {
+  value: string; onChange: (v: string) => void; autoComplete: string; id: string; autoFocus?: boolean; invalid?: boolean;
 }) {
   const { t } = useTranslation("auth");
   const [show, setShow] = useState(false);
   return (
     <div className="dw-input-wrap">
-      <input id={id} className="dw-input" type={show ? "text" : "password"} value={value} autoComplete={autoComplete}
+      <input id={id} className={`dw-input${invalid ? " is-invalid" : ""}`} type={show ? "text" : "password"} value={value} autoComplete={autoComplete}
         autoFocus={autoFocus} onChange={(e) => onChange(e.target.value)} required />
       <button type="button" className="dw-input-toggle" onClick={() => setShow(!show)} aria-pressed={show}>
         {show ? t("door.hide") : t("door.show")}
@@ -72,10 +72,23 @@ export function PasswordInput({ value, onChange, autoComplete, id, autoFocus }: 
 const PROVIDER_ICON = { google: faGoogle, github: faGithub, discord: faDiscord } as const;
 const PROVIDER_NAME = { google: "Google", github: "GitHub", discord: "Discord" } as const;
 
-export function ProviderButtons({ providers, onPick, busy }: {
-  providers: Array<keyof typeof PROVIDER_ICON>; onPick: (p: string) => void; busy: string | null;
+/** `iconOnly`: square buttons named by their label, for the masthead dropdown. */
+export function ProviderButtons({ providers, onPick, busy, iconOnly = false }: {
+  providers: Array<keyof typeof PROVIDER_ICON>; onPick: (p: string) => void; busy: string | null; iconOnly?: boolean;
 }) {
   if (providers.length === 0) return null;
+  if (iconOnly) {
+    return (
+      <>
+        {providers.map((p) => (
+          <button key={p} type="button" className="dw-btn dw-btn--ghost dw-btn--square" disabled={!!busy} onClick={() => onPick(p)}
+            aria-label={PROVIDER_NAME[p]} title={PROVIDER_NAME[p]}>
+            <FontAwesomeIcon icon={PROVIDER_ICON[p]} />
+          </button>
+        ))}
+      </>
+    );
+  }
   return (
     <div className="dw-providers" data-count={providers.length}>
       {providers.map((p) => (
@@ -87,12 +100,13 @@ export function ProviderButtons({ providers, onPick, busy }: {
   );
 }
 
-export function PasskeyButton({ onClick, busy }: { onClick: () => void; busy: boolean }) {
+/** `short`: just "Passkey", beside icon-only provider buttons. */
+export function PasskeyButton({ onClick, busy, short = false }: { onClick: () => void; busy: boolean; short?: boolean }) {
   const { t } = useTranslation("auth");
   return (
-    <button type="button" className="dw-btn dw-btn--ghost dw-btn--wide" onClick={onClick} disabled={busy}>
+    <button type="button" className={`dw-btn dw-btn--ghost${short ? " dw-grow" : " dw-btn--wide"}`} onClick={onClick} disabled={busy}>
       <FontAwesomeIcon icon={faFingerprint} className="dw-accent" />
-      {busy ? t("door.passkey.waiting") : t("door.passkey.signIn")}
+      {busy ? t("door.passkey.waiting") : short ? t("door.passkey.short") : t("door.passkey.signIn")}
     </button>
   );
 }

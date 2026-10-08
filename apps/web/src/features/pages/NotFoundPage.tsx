@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "../../components/Icon";
-import { faHouse, faArrowLeft, faTriangleExclamation, faComments } from "@fortawesome/free-solid-svg-icons";
+import { faHouse, faArrowLeft, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
 import "./NotFoundPage.scss";
+import { SiteLogo } from "../../components/SiteLogo";
 
 /** Editorial "Hearth" 404 — full-viewport, standalone (no nav/footer chrome).
  *  Theme follows the app's global theme; no per-page toggle. */
@@ -20,10 +21,7 @@ export function NotFoundPage() {
       <div className="nf__ghost" aria-hidden="true">404</div>
 
       <a className="nf__brand" href="/" aria-label="Xentium home">
-        <span className="nf__logomark" aria-hidden="true">
-          <FontAwesomeIcon icon={faComments} />
-        </span>
-        <span className="nf__wordmark">Xentium</span>
+        <SiteLogo size={36} imgClassName="nf__logo-img" wordmark={<span className="nf__wordmark">Xentium</span>} />
       </a>
 
       <div className="nf__content">

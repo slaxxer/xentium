@@ -199,10 +199,15 @@
     margin-top: 20px;
   }
   &__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* The ACP's one button height (--btn-h) when opened there; padding on the site. */
+    height: var(--btn-h, auto);
     padding: 8px 20px;
     font: inherit;
     font-size: var(--fs-sm);
-    font-weight: 700;
+    font-weight: var(--btn-fw, 600);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: filter 0.15s;

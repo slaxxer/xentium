@@ -4,21 +4,41 @@
   position: relative;
 }
 
+/* The box: where the edge sits and how tall it is. The painted fill lives inside it. */
 .xt-edge {
   position: absolute;
   left: 0;
   right: 0;
   display: block;
+  height: var(--xt-edge-h);
   pointer-events: none;
   /* Above the neighbour an outward edge hangs over; below menus and dialogs. */
   z-index: 4;
+}
+
+/* The painted fill. Every path hangs down from its top edge, so the fill does too. A
+   plugin drawing its own fills may set its own height and width inline. */
+.xt-edge__fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
 }
 
-/* Decoration only: gone for anyone who asked for less motion or forced colours. */
-@media (prefers-reduced-motion: reduce), (forced-colors: active) {
-  .xt-edge { display: none; }
+/* Phones: the edge's own phone height when it has one. A phone height of 0 hides the
+   edge there — and anything a plugin draws beside it, which carries the same class. */
+@media (max-width: 639.98px) {
+  .xt-edge { height: var(--xt-edge-h-sm, var(--xt-edge-h)); }
+  .xt-edge--phone-hidden { display: none; }
+}
+
+/* Forced colours would flatten it into a solid block of system colour. */
+@media (forced-colors: active) {
+  .xt-edge,
+  .xt-edge-layer { display: none; }
 }

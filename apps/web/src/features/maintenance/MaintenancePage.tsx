@@ -13,6 +13,7 @@ import { apiErrorMessage } from "../../lib/swal";
 import { useSiteConfig } from "../../hooks/useSiteConfig";
 import type { MaintenanceLinkIcon, MaintenanceStatus } from "./useMaintenance";
 import "./MaintenancePage.scss";
+import { SiteLogo } from "../../components/SiteLogo";
 
 /**
  * The footer links carry an icon *key*, never a class name: the app imports
@@ -79,8 +80,8 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
 
       <div className="mt__wrap">
         <div className="mt__brand">
-          <span className="mt__logomark"><FontAwesomeIcon icon={faComments} /></span>
-          <span className="mt__wordmark">{siteConfig?.siteName || "Xentium"}</span>
+          <SiteLogo size={34} imgClassName="mt__logo-img"
+            wordmark={<span className="mt__wordmark">{siteConfig?.siteName || "Xentium"}</span>} />
         </div>
 
         <section className="mt-card">

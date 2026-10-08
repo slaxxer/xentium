@@ -180,7 +180,14 @@
 
   &__zone--center { justify-content: center; }
 
-  /* Logo — gradient logomark + wordmark (Hearth) */
+  /* Logo — the Xentium mark (or the uploaded logo) + wordmark. The mark follows the
+     context's logo height, capped: a 56px masthead logo is an image's size, not a tile's. */
+  &__mark {
+    width: min(var(--xt-logo-h, 32px), 48px);
+    height: auto;
+    aspect-ratio: 1;
+  }
+
 
   &__logomark {
     width: 34px;
@@ -400,6 +407,15 @@
     transition: opacity 0.15s, transform 0.1s;
 
     &:hover { opacity: 0.88; transform: translateY(-1px); }
+  }
+
+  /* A guest's Register / Sign in are icons (PubNav): even squares beside each other. */
+  &__guest-ico {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: 11px;
+    font-size: var(--fs-md);
   }
 
   /* ── Profile avatar + dropdown ─────────── */
@@ -721,8 +737,12 @@
    * and below every page on any site that themes its content region (ADR-0003).
    *
    * An admin who wants more still drops a `spacer` in; it adds to this.
+   *
+   * Named `--main-gap` so a page that wants a bar FLUSH under the header (a plugin
+   * page's title bar, say) can cancel exactly this gap above it and give it back below.
    */
-  padding-block: var(--sp-8);
+  --main-gap: var(--sp-8);
+  padding-block: var(--main-gap);
 }
 
 /* ── Footer ─────────────────────────────────────────── */

@@ -22,7 +22,7 @@ import { XEC } from "../../shared/errors/xec.js";
 import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentLimits.js";
-import { requirePermission } from "../../shared/middleware/requirePermission.js";
+import { requirePermission, hasPermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
@@ -41,6 +41,8 @@ const host: PluginHost = {
     requirePermission: (key: string) => requirePermission(key as never),
   },
   progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
+  // Ask instead of refuse: e.g. "may this member still reply to a closed thread?".
+  permissions: { has: (userId: string, key: string) => hasPermission(userId, key as never) },
   utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns } },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
@@ -73,18 +75,21 @@ export class PluginContextImpl implements PluginContext {
 
   async registerPermissions(perms: PermissionDeclaration[]): Promise<void> {
     for (const perm of perms) {
-      await prisma.permission.upsert({
+      const existing = await prisma.permission.findUnique({ where: { key: perm.key }, select: { id: true } });
+      const permission = await prisma.permission.upsert({
         where:  { key: perm.key },
         update: { label: perm.label },
         create: { key: perm.key, label: perm.label },
       });
 
-      // Apply defaults to groups (only on first install — don't re-apply if already set)
+      // Default groups ONCE — when the permission is first created. This runs on every
+      // enable, i.e. every boot: re-applying it re-granted a permission an admin had
+      // taken away in ACP → Permissions at the next restart. After the first time the
+      // ACP is the only thing that decides who holds it.
+      if (existing) continue;
       for (const groupKey of perm.defaults ?? []) {
         const group = await prisma.group.findUnique({ where: { key: groupKey } });
         if (!group) continue;
-        const permission = await prisma.permission.findUnique({ where: { key: perm.key } });
-        if (!permission) continue;
         await prisma.groupPermission.upsert({
           where:  { groupId_permissionId: { groupId: group.id, permissionId: permission.id } },
           update: {},

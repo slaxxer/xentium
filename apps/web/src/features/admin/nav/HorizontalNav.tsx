@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AcpIcon } from "../pages/acpIcons";
+import { XentiumMark } from "../../../components/XentiumMark";
 import { childMatches, type NavItem } from "../useAcpNav";
 
 // Two-tier horizontal ACP nav (the redesign default). Tier 1 = brand + primary
@@ -82,7 +83,7 @@ export function HorizontalNav({ nav }: { nav: NavItem[] }) {
     <>
       <header className="hnav">
         <div className="hnav__brand">
-          <div className="acp-logomark"><AcpIcon name="dashboard" size={18} /></div>
+          <XentiumMark size={34} title="Xentium" brand />
           <div>
             <div className="hnav__name">xentium</div>
             <div className="hnav__tag">{t("sidebar.adminPanel")}</div>

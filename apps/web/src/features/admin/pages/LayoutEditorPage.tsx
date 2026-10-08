@@ -73,7 +73,7 @@ import {
   updateBlockIconOverride,
   type Regions,
 } from "../../../layout/blockTree";
-import { useAutosave } from "../../../hooks/useAutosave";
+import { useDebouncedSave } from "../../../hooks/useAutosave";
 import { useLayoutHistory, type LayoutSnapshot } from "./useLayoutHistory";
 import { inspectorSideFor, type BlockBounds, type Side } from "../../../layout/inspectorSide";
 import { iconFor } from "../../../layout/blockIcons";
@@ -94,6 +94,7 @@ import type { SiteFrame } from "@xentium/contracts";
 import { BlockStyleFields } from "./BlockStyle";
 import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import { BlockEdgeArtFields } from "./BlockEdgeArt";
+import { edgeExtensions } from "../../../layout/edgeRegistry";
 import { CHROME_SETTINGS } from "./ChromeSettings";
 import { ThemeStyleFields, themeDraftCss, useThemeTokens } from "./ThemeStyle";
 import { InspectorFold } from "./InspectorFold";
@@ -753,6 +754,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
     win.postMessage({ source: "xt-editor", type: "tokens", css: styleCss }, window.location.origin);
     if (liveFrame) win.postMessage({ source: "xt-editor", type: "frame", frame: liveFrame }, window.location.origin);
     win.postMessage({ source: "xt-editor", type: "previewDate", md: viewDateRef.current }, window.location.origin);
+    win.postMessage({ source: "xt-editor", type: "previewHour", hour: viewHourRef.current }, window.location.origin);
     // The preview draws a restricted block like any other — the chip is the only
     // place the condition shows — so it needs the words for it.
     win.postMessage(
@@ -818,6 +820,18 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       window.location.origin,
     );
   }, [viewDate]);
+
+  /** "Viewing at": the hour the preview pretends it is (0–23), or null for now. */
+  const [viewHour, setViewHour] = useState<number | null>(null);
+  const viewHourRef = useRef<number | null>(null);
+  viewHourRef.current = viewHour;
+
+  useEffect(() => {
+    previewRef.current?.contentWindow?.postMessage(
+      { source: "xt-editor", type: "previewHour", hour: viewHour },
+      window.location.origin,
+    );
+  }, [viewHour]);
 
   useEffect(() => {
     if (!liveFrame) return;
@@ -886,7 +900,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
    * Publish stays explicit because going live is the deliberate act; keeping the
    * draft current is not.
    */
-  useAutosave({
+  useDebouncedSave({
     value: doc,
     savedValue: draftDoc,
     delay: 700,
@@ -1602,6 +1616,26 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
     return doc ? walk(Object.values(doc.regions).flat()) : null;
   })();
 
+  /**
+   * Whether the open document has edge art that changes with the time of day — only a
+   * plugin's can, and the plugin says so (`usesTime`). Offers "Viewing at" when it does.
+   */
+  const usesTime: boolean = (() => {
+    const timed = edgeExtensions().filter((x) => x.usesTime);
+    if (!doc || timed.length === 0) return false;
+    const walk = (nodes: BlockNode[]): boolean => nodes.some((n) =>
+      [n.edges?.top, n.edges?.bottom].some((e) => e && timed.some((x) => x.usesTime!(e.ext?.[x.namespace])))
+      || (n.children ? walk(n.children) : false));
+    return walk(Object.values(doc.regions).flat());
+  })();
+
+  // While the preview is "in season", follow the season: a preset or a date edit moves
+  // the opening day, and the button is labelled with the NEW one — previewing the old
+  // date under that label showed an edge that never appeared.
+  useEffect(() => {
+    if (viewDate && viewDate !== seasonStart) setViewDate(seasonStart);
+  }, [seasonStart, viewDate]);
+
   const previewSrc =
     `${previewRoute}?${LAYOUT_PREVIEW_PARAM}=draft&${LAYOUT_EDITING_PARAM}=${encodeURIComponent(templateKey)}`
     // The theme being edited, so the preview renders ITS draft and stylesheet.
@@ -1898,6 +1932,21 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
                     {dateFromMonthDay(seasonStart).toLocaleDateString(i18n.language, { month: "short", day: "numeric" })}
                   </button>
                 </div>
+              </>
+            )}
+
+            {/* Time-of-day art (a sun by day, stars by night) follows each visitor's clock,
+                so the canvas can pretend it is another hour. */}
+            {(usesTime || viewHour !== null) && (
+              <>
+                <span className="lay__canvasbar-label">{t("layoutEditor.edge.viewingAt")}</span>
+                <select className="acp-input lay__canvasbar-select" aria-label={t("layoutEditor.edge.viewingAt")}
+                  value={viewHour ?? ""} onChange={(e) => setViewHour(e.target.value === "" ? null : Number(e.target.value))}>
+                  <option value="">{t("layoutEditor.edge.now")}</option>
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <option key={h} value={h}>{`${String(h).padStart(2, "0")}:00`}</option>
+                  ))}
+                </select>
               </>
             )}
 

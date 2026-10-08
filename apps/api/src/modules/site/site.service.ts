@@ -14,6 +14,17 @@ export async function isFeatureEnabled(feature: FeatureKey): Promise<boolean> {
 
 interface LandingOption { value: string; label: string }
 
+/** An IANA time zone the runtime knows, or null for "each visitor's own". */
+function validZone(zone: unknown): string | null {
+  if (typeof zone !== "string" || !zone || zone === "visitor") return null;
+  try {
+    new Intl.DateTimeFormat("en", { timeZone: zone });
+    return zone;
+  } catch {
+    return null;
+  }
+}
+
 export const siteService = {
   /** Public site config: feature flags + the resolved landing route + the set of
    *  landing destinations that actually exist right now (enabled core sections +
@@ -31,6 +42,9 @@ export const siteService = {
       "auth.login_method":          "email",
       "registration.collect_name":  false,
       "registration.name_required": false,
+      "site.timezone":              "visitor",
+      "site.time_format":           "auto",
+      "site.date_format":           "medium",
     });
     const features = Object.fromEntries(
       FEATURE_KEYS.map((f) => [f, !!s[`features.${f}.enabled`]]),
@@ -66,6 +80,14 @@ export const siteService = {
     return {
       features, landing, availableLandings: landings, siteName, siteUrl,
       siteTagline: s["site.description"],
+      // How dates and times are written across the site (posts, articles, messages):
+      // the admin's zone — or null, each visitor's own — and the formats. Normalised
+      // here because the settings endpoint stores whatever it is sent.
+      time: {
+        zone: validZone(s["site.timezone"]),
+        timeFormat: ["auto", "24h", "12h"].includes(s["site.time_format"]) ? s["site.time_format"] : "auto",
+        dateFormat: ["medium", "long", "numeric", "iso"].includes(s["site.date_format"]) ? s["site.date_format"] : "medium",
+      },
       // Public auth-form config the SPA reads at boot (login + register forms).
       auth: {
         loginMethod: ["email", "username", "either"].includes(loginMethod) ? loginMethod : "email",

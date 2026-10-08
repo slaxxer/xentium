@@ -22,9 +22,19 @@ import { useIconSlotScope, useIconSlot } from "../layout/iconSlots";
 import { bundledIcon } from "../lib/iconCatalogue";
 import { parseIconToken, iconStyleClasses } from "@xentium/contracts";
 import { isEditorPreview } from "../layout/previewMode";
+import "./Icon.scss";
 
 /** Props we translate into kit classes. Everything else falls back to the free set. */
 const SPIN_CLASS = "fa-spin";
+
+/**
+ * Site icons wear `xt-ico`, which scales them by the theme's ICON SIZE (Theme Studio →
+ * Colours & type → Icon size, `--icon-scale`) independently of the text size. Never
+ * in the ACP: the admin panel keeps its own sizes whatever a theme does. Styles: Icon.scss.
+ */
+const SITE_SCALE = "xt-ico";
+const withScale = (className: string | undefined, inAcp: boolean) =>
+  inAcp ? className : [className, SITE_SCALE].filter(Boolean).join(" ");
 
 /**
  * Read the icon's name out of whatever was passed.
@@ -78,6 +88,7 @@ export function FontAwesomeIcon(props: FontAwesomeIconProps) {
         .filter(Boolean).join(" ");
       return (
         <span
+          className={SITE_SCALE}
           style={props.style}
           {...mark}
           dangerouslySetInnerHTML={{ __html: `<i class="${oc}"></i>` }}
@@ -85,14 +96,14 @@ export function FontAwesomeIcon(props: FontAwesomeIconProps) {
       );
     }
     const bundled = bundledIcon(override.name);
-    if (bundled) return <FaIcon {...props} icon={bundled} {...mark} />;
+    if (bundled) return <FaIcon {...props} className={withScale(props.className, false)} icon={bundled} {...mark} />;
   }
 
   const styleClasses = inAcp ? null : siteStyle;
   const name = styleClasses ? ownName : null;
 
   // No kit, no style, or an icon we cannot name: draw exactly what we always drew.
-  if (!styleClasses || !name) return <FaIcon {...props} {...mark} />;
+  if (!styleClasses || !name) return <FaIcon {...props} className={withScale(props.className, inAcp)} {...mark} />;
 
   const cls = [styleClasses, `fa-${name}`, props.spin ? SPIN_CLASS : null, props.className]
     .filter(Boolean)
@@ -112,6 +123,7 @@ export function FontAwesomeIcon(props: FontAwesomeIconProps) {
    */
   return (
     <span
+      className={SITE_SCALE}
       style={props.style}
       {...mark}
       dangerouslySetInnerHTML={{ __html: `<i class="${cls}"></i>` }}

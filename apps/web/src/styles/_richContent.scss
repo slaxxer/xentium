@@ -1,0 +1,52 @@
+// What rich text LOOKS like: in the editor (Composer's .nvc-content) and wherever a
+// post, message or comment is shown after posting (.xt-rich, styles/rich.scss).
+// ONE definition, so a member's formatting looks the same before and after they post.
+@mixin rich-content {
+  > * + * { margin-top: 0.7em; }
+
+  h1 { font-size: 1.5em; font-weight: 700; }
+  h2 { font-size: 1.3em; font-weight: 700; }
+  h3 { font-size: 1.1em; font-weight: 700; }
+
+  ul, ol { padding-left: 1.2em; }
+  ul { list-style: disc; }
+  ol { list-style: decimal; }
+
+  blockquote {
+    padding: 8px 14px;
+    border-left: 3px solid var(--c-accent);
+    background: var(--c-accent-soft);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    color: var(--c-fg-muted);
+    font-style: italic;
+  }
+
+  pre {
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    font-family: var(--ff-mono, monospace);
+    font-size: 0.9em;
+    overflow-x: auto;
+  }
+
+  code { font-family: var(--ff-mono, monospace); font-size: 0.9em; }
+
+  hr { border: none; border-top: 1px solid var(--c-border); margin: 1em 0; }
+
+  mark { background: color-mix(in srgb, var(--c-warn) 35%, transparent); color: inherit; }
+
+  ul[data-type="taskList"] {
+    list-style: none;
+    padding-left: 0;
+
+    li { display: flex; align-items: flex-start; gap: 8px; }
+    input { margin-top: 6px; }
+  }
+
+  sub, sup { font-size: 0.75em; line-height: 0; }
+  a { color: var(--c-accent); text-decoration: underline; }
+  a.nvc-mention { text-decoration: none; font-weight: 600; }
+  ul[data-type="taskList"] label { display: inline-flex; }
+}

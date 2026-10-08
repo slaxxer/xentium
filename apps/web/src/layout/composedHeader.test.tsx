@@ -7,9 +7,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { edgeArtSchema, type BlockNode, type LayoutDocument } from "@xentium/contracts";
+import { CORE_EDGE_SHAPES, EDGE_ART_LIMITS, edgeArtSchema, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
-import { dateFromMonthDay, edgeShows, edgeStyle } from "./edgeArt";
+import { dateFromMonthDay, edgeFill, edgePath, edgeShows, edgeStyle, resolveEdgeShape } from "./edgeArt";
+import { deregisterEdgeFor, registerEdgeExtension, registerEdgeShape } from "./edgeRegistry";
 import { placeBetween, updateBlockEdges, findNode, type Regions } from "./blockTree";
 import { hasSurface } from "./blockRegistry";
 import "./blocks/guestBlocks";
@@ -79,6 +80,17 @@ describe("the composed header", () => {
   });
 });
 
+/** Every y coordinate in a path of absolute M/L/H/V/Q/C commands. */
+function yCoords(d: string): number[] {
+  const ys: number[] = [];
+  for (const [, cmd, args] of d.matchAll(/([MLHVQCZ])([^MLHVQCZ]*)/g)) {
+    const n = args!.trim().split(/[\s,]+/).filter(Boolean).map(Number);
+    if (cmd === "V") ys.push(...n);
+    else if (cmd !== "H" && cmd !== "Z") ys.push(...n.filter((_, i) => i % 2 === 1));
+  }
+  return ys;
+}
+
 describe("edge art", () => {
   const drips = edgeArtSchema.parse({ shape: "drips", height: 40 });
 
@@ -103,6 +115,34 @@ describe("edge art", () => {
     expect(edgeShows(seasonal, dateFromMonthDay("10-01"))).toBe(true);
   });
 
+  it("every shape draws a closed outline inside its band, at any repeat count", () => {
+    for (const shape of CORE_EDGE_SHAPES) {
+      if (shape === "image" || shape === "blank") continue;
+      for (const count of [undefined, 2, 48]) {
+        const d = edgePath(shape, 1200, 40, { count, phase: 0.5 });
+        expect(d.startsWith("M"), shape).toBe(true);
+        expect(d.endsWith("Z"), shape).toBe(true);
+        const ys = yCoords(d);
+        expect(ys.every(Number.isFinite), shape).toBe(true);
+        // Nothing above the edge, nothing deeper than twice the band (the curve's control point).
+        expect(Math.min(...ys), shape).toBeGreaterThanOrEqual(0);
+        expect(Math.max(...ys), shape).toBeLessThanOrEqual(80);
+      }
+    }
+  });
+
+  it("an edge saved before the new options parses without them, so it is not an edit", () => {
+    expect(Object.keys(drips).sort()).toEqual(["colors", "direction", "fit", "height", "image", "mirror", "shape"]);
+    expect(edgeFill(drips)).not.toHaveProperty("opacity");
+    expect(edgeStyle(drips, "bottom")).not.toHaveProperty("opacity");
+  });
+
+  it("height travels as a custom property so the phone height can win under the breakpoint", () => {
+    const style = edgeStyle({ ...drips, mobileHeight: 0 }, "bottom") as Record<string, unknown>;
+    expect(style.height).toBeUndefined();
+    expect(style["--xt-edge-h"]).toBe("40px");
+    expect(style["--xt-edge-h-sm"]).toBe("0px");
+  });
   it("clearing both edges removes the field, so an undone edit is not pending", () => {
     const regions: Regions = { header: [navbar([])] };
     const withArt = updateBlockEdges(regions, "n", { bottom: drips });
@@ -110,6 +150,77 @@ describe("edge art", () => {
     const cleared = updateBlockEdges(withArt, "n", { bottom: undefined });
     expect(JSON.stringify(cleared)).toBe(JSON.stringify(regions));
   });
+});
+
+describe("edge art from plugins", () => {
+  afterEach(() => deregisterEdgeFor("test-plugin"));
+  const bottomEdge = (edge: Record<string, unknown>) =>
+    draw(doc([{ ...navbar([]), edges: { bottom: edgeArtSchema.parse(edge) } }])).container;
+
+  it("a plugin shape is a namespaced name; core keeps its own", () => {
+    expect(edgeArtSchema.safeParse({ shape: "fx.icicles" }).success).toBe(true);
+    expect(edgeArtSchema.safeParse({ shape: "icicles" }).success).toBe(false);
+    expect(() => registerEdgeShape({ id: "icicles", pluginId: "test-plugin", labelKey: "x", path: () => "" })).toThrow();
+    // A bare name that is not core's needs a plugin; a plugin cannot take a core name.
+    expect(() => registerEdgeShape({ id: "sparkle", labelKey: "x", path: () => "" })).toThrow();
+    expect(() => registerEdgeShape({ id: "wave", pluginId: "test-plugin", labelKey: "x", path: () => "" })).toThrow();
+  });
+
+  it("draws a registered plugin shape like a core one", () => {
+    registerEdgeShape({ id: "test.box", pluginId: "test-plugin", labelKey: "x", path: (W, H) => `M0 0 H${W} V${H} H0 Z` });
+    expect(edgePath("test.box", 100, 10)).toBe("M0 0 H100 V10 H0 Z");
+    expect(bottomEdge({ shape: "test.box" }).querySelector(".xt-edge__fill")).not.toBeNull();
+  });
+
+  it("with its plugin off, an edge draws its fallback — or nothing — and keeps everything", () => {
+    const stored = edgeArtSchema.parse({ shape: "test.box", fallback: "wave", ext: { test: { glitter: true } } });
+    expect(resolveEdgeShape(stored)).toBe("wave");
+    expect(resolveEdgeShape({ ...stored, fallback: undefined })).toBeNull();
+    expect(bottomEdge({ shape: "test.box" }).querySelector(".xt-edge")).toBeNull();
+    expect(bottomEdge({ shape: "test.box", fallback: "wave" }).querySelector(".xt-edge__fill")).not.toBeNull();
+    // Nothing is dropped on the way through the schema.
+    expect(edgeArtSchema.parse(stored)).toEqual(stored);
+  });
+
+  it("a band drawn twice over with a period repeats exactly — what a seamless slide needs", () => {
+    // A unit that writes its own index as its depth, so the path spells the sequence.
+    registerEdgeShape({
+      id: "test.index", pluginId: "test-plugin", labelKey: "x", defaultCount: 3,
+      unit: { base: () => 0, unit: (x, _w, _H, i) => ` L ${x} ${i}` },
+    });
+    const indices = (opts: { count: number; period?: number }) =>
+      [...edgePath("test.index", 600, 10, opts).matchAll(/L \S+ (\d+)/g)].map((m) => Number(m[1]));
+    // One unit of overhang at each end, so a shifted band still covers the edge.
+    expect(indices({ count: 6 })).toEqual([0, 1, 2, 3, 4, 5, 0, 1]);
+    expect(indices({ count: 6, period: 3 })).toEqual([0, 1, 2, 0, 1, 2, 0, 1]);
+  });
+
+  it("a blank edge draws no outline but keeps what plugins carry", () => {
+    const blank = edgeArtSchema.parse({ shape: "blank", ext: { test: { sky: true } } });
+    expect(resolveEdgeShape(blank)).toBe("blank");
+    expect(edgeFill(blank)).toBeNull();
+    expect(edgePath("blank", 100, 10)).toBe("");
+    // "blank" is what absent already means, so it is never a stand-in.
+    expect(edgeArtSchema.safeParse({ shape: "test.box", fallback: "blank" }).success).toBe(false);
+  });
+
+  it("plugin settings are opaque but bounded", () => {
+    expect(edgeArtSchema.safeParse({ shape: "wave", ext: { fx: { any: ["thing", 1] } } }).success).toBe(true);
+    expect(edgeArtSchema.safeParse({ shape: "wave", ext: { fx: { big: "x".repeat(EDGE_ART_LIMITS.ext) } } }).success).toBe(false);
+    expect(edgeArtSchema.safeParse({ shape: "wave", ext: { "Bad NS": {} } }).success).toBe(false);
+  });
+
+  it("an extension may draw the edge itself, with core's drawing to hand", () => {
+    registerEdgeExtension({
+      namespace: "test", pluginId: "test-plugin",
+      render: ({ ext, drawCore }) => ext ? <span className="xt-edge-layer test-extra">{drawCore()}</span> : null,
+    });
+    // Without its settings it declines, and core draws.
+    expect(bottomEdge({ shape: "wave" }).querySelector(".test-extra")).toBeNull();
+    const drawn = bottomEdge({ shape: "wave", ext: { test: { on: true } } });
+    expect(drawn.querySelector(".test-extra > .xt-edge > .xt-edge__fill")).not.toBeNull();
+  });
+
 });
 
 describe("placing search and the account menu", () => {

@@ -15,7 +15,7 @@
 // and the server resends the current version on connect, so a change missed while
 // disconnected is reconciled on reconnect.
 
-import { viewerThemeParam } from "./viewerTheme";
+import { viewerStyleParam, viewerThemeParam } from "./viewerTheme";
 import { previewThemeKey, withTheme } from "./editingTheme";
 
 /** The draft stylesheet of the theme a preview is showing (`__theme=`, else the active one). */
@@ -56,7 +56,7 @@ export async function refreshTokenCss(): Promise<void> {
    * the reader would be snapped out of the theme they chose by a mechanism whose
    * only job is to fix staleness.
    */
-  const themed = loadedDraft ? "" : viewerThemeParam();
+  const themed = loadedDraft ? "" : viewerStyleParam();
   if (loadedDraft) {
     await fetchTokenCss(`${draftCssUrl()}&t=${Date.now()}`, { cache: "no-store" });
     return;
@@ -91,7 +91,7 @@ export async function loadTokenCss(opts: { draft?: boolean } = {}): Promise<void
    * it likes and this client will not pull itself back to the site's own theme. That
    * is the point — the reader's choice must survive the admin publishing.
    */
-  const themed = viewerThemeParam();
+  const themed = viewerStyleParam();
   await fetchTokenCss(themed ? `/api/appearance/css?${themed}` : "/api/appearance/css");
 }
 

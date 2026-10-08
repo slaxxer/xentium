@@ -53,6 +53,7 @@ import { toast } from "../../lib/toast";
 import { apiErrorMessage } from "../../lib/swal";
 import { useRankImages } from "../../lib/rankImage";
 import "../../components/RankBadge.scss";
+import { WarningsTab } from "../../features/profiles/WarningsTab";
 import {
   InformationTab,
   ProfileArticlesTab,
@@ -718,6 +719,7 @@ registerBlock({
         {tab === "followers"   && <UserList userId={profile.id} type="followers" />}
         {tab === "following"   && <UserList userId={profile.id} type="following" />}
         {tab === "information" && <InformationTab profile={profile} fields={infoFields} />}
+        {tab === "warnings"    && <WarningsTab profileId={profile.id} username={profile.username} isOwn={profile.isOwn} />}
         {slotRegistry.getProfileTabs().map((pt) =>
           tab === pt.id && (
             <pt.component key={pt.id} profileId={profile.id}

@@ -35,43 +35,13 @@
     pointer-events: none;
   }
 
-  &__track {
-    position: relative;
-    flex: none;
-    width: 38px;
-    height: 22px;
-    border-radius: 999px;
-    background: var(--c-bg-hover);
-    border: 1px solid var(--c-border);
-    transition: background 0.14s ease, border-color 0.14s ease;
-
-    &::after {
-      content: "";
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 16px;
-      height: 16px;
-      border-radius: 999px;
-      background: var(--c-fg-subtle);
-      transition: transform 0.14s ease, background 0.14s ease;
-    }
-  }
-
-  input:checked ~ &__track {
-    background: var(--c-accent);
-    border-color: var(--c-accent);
-
-    &::after {
-      transform: translateX(16px);
-      background: var(--c-on-accent);
-    }
-  }
+  /* The toggle glyph (components/Toggle) stands in for the hidden checkbox. */
+  &__track { flex: none; display: inline-flex; border-radius: var(--radius-sm); }
 
   /* The ring follows the hidden input onto the thing that stands in for it. */
   input:focus-visible ~ &__track {
     outline: 2px solid var(--c-accent);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 }
 

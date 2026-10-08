@@ -634,6 +634,7 @@ table.acp-table {
   font-size: var(--btn-fs);
   font-weight: var(--btn-fw);
   line-height: 1.25;
+  height: var(--btn-h, auto);
   border-radius: var(--btn-radius);
   cursor: pointer;
   color: var(--c-danger);

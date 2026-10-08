@@ -17,6 +17,7 @@ import {
 import { articlesApi } from "../../lib/articlesApi";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { swalToast, apiErrorMessage } from "../../lib/swal";
 import { ArticleContent } from "./components/ArticleContent";
 import { Composer, type ComposerHandle } from "../../components/composer/Composer";
@@ -29,6 +30,7 @@ import "./ArticleReaderPage.scss";
 import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
 import { RankBadge } from "../../components/RankBadge";
+import { useDateTime } from "../../lib/datetime";
 
 /** Small follow-button component that fetches initial follow state from the author's profile. */
 function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; authorUsername: string }) {
@@ -70,6 +72,8 @@ function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; au
 
 export function ArticleReaderContent() {
   const { t } = useTranslation(["articles", "common"]);
+  // Dates + times in the site's zone and format (ACP → System Settings).
+  const dt = useDateTime();
   const { slug = "" } = useParams<{ slug: string }>();
   const qc = useQueryClient();
   const { user: authUser, isAuthenticated, isLoading: authLoading } = useAuth();
@@ -110,8 +114,8 @@ export function ArticleReaderContent() {
   const [liked, setLiked] = useState(false);
   const [disliked, setDisliked] = useState(false);
 
-  const MOD_KEYS = new Set(["admin", "supermod", "moderator"]);
-  const isMod = authUser?.groups.some((g) => MOD_KEYS.has(g.key)) ?? false;
+  // The mod bar's one tool is Warn — shown to whoever the warn endpoint accepts.
+  const isMod = userCan(authUser, "moderation.warn.manage");
 
   const [showWarn, setShowWarn]       = useState(false);
   const [warnReason, setWarnReason]   = useState("");
@@ -325,9 +329,7 @@ export function ArticleReaderContent() {
           <Username className="ard__meta-name" username={a.author.username} badgeColor={a.author.badgeColor} />
           <div className="ard__meta-sub">
             {a.publishedAt
-              ? new Date(a.publishedAt).toLocaleDateString(undefined, {
-                  year: "numeric", month: "long", day: "numeric",
-                })
+              ? <time dateTime={a.publishedAt}>{dt.dateTime(a.publishedAt)}</time>
               : t("reader.draft")}
             {" · "}
             <FontAwesomeIcon icon={faClock} /> {t("reader.minRead", { n: a.readTime })}
@@ -498,9 +500,7 @@ export function ArticleReaderContent() {
                 <div className="ard__comment-head">
                   <Username className="ard__comment-name" username={c.author.username} badgeColor={c.author.badgeColor} />
                   <span className="ard__comment-time">
-                    {new Date(c.createdAt).toLocaleString(undefined, {
-                      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-                    })}
+                    <time dateTime={c.createdAt}>{dt.stamp(c.createdAt)}</time>
                   </span>
                   {c.editedAt && <span className="ard__comment-edited">· {t("reader.edited")}</span>}
                 </div>
@@ -510,13 +510,13 @@ export function ArticleReaderContent() {
                       {t("reader.tombstoneBase", { user: c.author.username })}
                       {c.deletedByUsername ? t("reader.tombstoneBy", { mod: c.deletedByUsername }) : ""}
                       {" · "}
-                      {new Date(c.deletedAt).toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })}
+                      {dt.date(c.deletedAt)}
                       {c.deletedReason ? t("reader.tombstoneReason", { reason: c.deletedReason }) : ""}
                     </em>
                   </div>
                 ) : (
                   <div
-                    className="ard__comment-text"
+                    className="ard__comment-text xt-rich"
                     dangerouslySetInnerHTML={{ __html: c.body ?? "" }}
                   />
                 )}

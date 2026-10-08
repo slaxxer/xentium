@@ -35,6 +35,7 @@ const MOD_PERMS = [
   CorePermissions.PROFILE_COMMENT_DELETE_WALL,
   CorePermissions.PROFILE_COMMENT_DELETE_ANY,
   CorePermissions.BADGE_ASSIGN,
+  CorePermissions.MODERATION_PROTECTED,
 ];
 
 const GRANTS: Record<string, string[]> = {
@@ -61,6 +62,7 @@ const GRANTS: Record<string, string[]> = {
     CorePermissions.PROFILE_COMMENT_DELETE_WALL,
     CorePermissions.PROFILE_COMMENT_DELETE_ANY,
     CorePermissions.BADGE_ASSIGN,
+    CorePermissions.MODERATION_PROTECTED,
   ],
   // Deviation from §33 strict reading: the mockup shows "Write" button to all
   // logged-in users, so Member also gets article authoring on their own content.
@@ -77,7 +79,20 @@ const GRANTS: Record<string, string[]> = {
   ],
 };
 
+/**
+ * Runs on every boot (and once from the installer). It CREATES what is missing and
+ * changes nothing that exists:
+ *  - a permission's default groups are granted only when that permission is first
+ *    created, so a new key reaches existing sites once, and a grant an admin
+ *    revoked in ACP → Permissions stays revoked;
+ *  - a system group is created if absent, never renamed.
+ * ⚠ Until 2026-10-08 both were upserts that re-applied on every restart, which undid
+ * every revocation of a default and every rename of a system group.
+ */
 export async function registerCorePermissions() {
+  const existing = new Set(
+    (await prisma.permission.findMany({ select: { key: true } })).map((p) => p.key),
+  );
   for (const [key, label] of Object.entries(CorePermissions).map(
     ([k, v]) => [v, k] as const,
   )) {
@@ -91,11 +106,12 @@ export async function registerCorePermissions() {
   for (const g of GROUPS) {
     const group = await prisma.group.upsert({
       where: { key: g.key },
-      update: { name: g.name },
+      update: {},
       create: { key: g.key, name: g.name, isSystem: true },
     });
 
     for (const permKey of GRANTS[g.key] ?? []) {
+      if (existing.has(permKey)) continue;
       const perm = await prisma.permission.findUniqueOrThrow({
         where: { key: permKey },
       });

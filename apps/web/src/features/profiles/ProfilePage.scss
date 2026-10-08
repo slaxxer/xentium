@@ -1,4 +1,8 @@
 .profile-page {
+  /* The height of the head row's line — the action buttons' height — shared by the
+     name row and the actions so the two sit on one line. */
+  --profile-row-h: 38px;
+
   /* ⚠ The site's own content width, not a narrower one of its own. The profile was
      capped at 900px from before it had a rail; against the mockup that squeezed the
      body into a column narrower than the article cards it holds. */
@@ -34,6 +38,29 @@
     border-top: 0;
     border-radius: 0 0 var(--card-radius) var(--card-radius);
     padding-top: 0;
+
+    /* ⚠ Chamfered corners (Theme style → Corners). The cover and this card are ONE
+       shape, so the shape's top-right cut belongs to the COVER (see .profile-cover)
+       and the card keeps only its bottom-left one. The stock `--clip-card` cut this
+       card's top-right corner on the seam — a notch halfway down the shape — and,
+       being a clip, sliced off the avatar that overlaps the cover from below.
+       So this polygon is OPEN upwards (the avatar rises above the card's box) and
+       reaches past the sides and bottom (the card's shadow is not cut).
+       `--_e` is how far the chamfer line reaches outside the box: the full 40px when
+       there is a cut, 0 when there is none — and `--_f` folds the bottom-left corner
+       back out to the box's outside corner in that case, so Rounded and Sharp get no
+       clipping at all from this rule. */
+    --_e: min(calc(var(--corner-cut, 0px) * 100), 40px);
+    --_f: calc(40px - var(--_e));
+    clip-path: polygon(
+      -40px -160px,
+      calc(100% + 40px) -160px,
+      calc(100% + 40px) calc(100% + 40px),
+      calc(var(--corner-cut, 0px) + var(--_e) - var(--_f)) calc(100% + 40px),
+      calc(var(--corner-cut, 0px) + var(--_e) - var(--_f)) calc(100% + var(--_e) + var(--_f)),
+      calc(-1 * var(--_e) - var(--_f)) calc(100% - var(--corner-cut, 0px) - var(--_e) + var(--_f)),
+      -40px calc(100% - var(--corner-cut, 0px) - var(--_e) + var(--_f))
+    );
   }
 
   /* `md` is the padding this card always had, so the shipped default is identical. */
@@ -187,6 +214,11 @@
   align-items: baseline;
   flex-wrap: wrap;
   gap: var(--sp-2) 10px;
+  /* ONE line with the action buttons beside it (`.profile-actions`): both are at least
+     the buttons' height and centre on it, so the name, its pills and Follow / message
+     / block read as a single row whatever the name's size. */
+  min-height: var(--profile-row-h);
+  align-content: center;
 }
 
 /* `@handle · Member since …` — one line, replacing three stacked paragraphs. */
@@ -234,6 +266,10 @@
   align-items: center;
   gap: var(--sp-2);
   flex-shrink: 0;
+  /* On the name's line: the same offset from the top as `.profile-identity`'s
+     padding, and the same row height as `.profile-titlerow`. */
+  margin-top: var(--sp-3);
+  min-height: var(--profile-row-h);
 }
 
 /* Square icon button used by core Block and plugin actions (e.g. message) */
@@ -984,6 +1020,16 @@
   width: 100%;
   border-radius: var(--card-radius) var(--card-radius) 0 0;
   overflow: hidden;
+  /* The top of the cover + card shape: under chamfered corners it carries the
+     shape's top-right cut (the card below keeps the bottom-left one). With no cut
+     (`--corner-cut: 0px`, Rounded / Sharp) this is the full box — no change. */
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--corner-cut, 0px)) 0,
+    100% var(--corner-cut, 0px),
+    100% 100%,
+    0 100%
+  );
   /* A member who has uploaded nothing is the normal case, so the default is a band
      drawn from the site's own palette — an empty one reads as broken. */
   background: linear-gradient(120deg, var(--c-accent), var(--c-accent2));

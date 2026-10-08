@@ -22,6 +22,7 @@ vi.mock("./appearance.service.js", () => ({
     buildCSS:                async () => ":root { --c-accent: #ff5c39; }",
     getEffectiveDraftTokens: async () => ({ light: {}, dark: {} }),
   },
+  parseColourwayId: () => null,
 }));
 
 const { appearanceRouter } = await import("./appearance.routes.js");

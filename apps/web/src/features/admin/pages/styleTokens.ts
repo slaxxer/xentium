@@ -38,6 +38,20 @@ export const FEEDBACK_ROWS: ColorRow[] = [
   { l: "styleEditor.rowUpdate", cssVar: "--c-update" },
 ];
 
+/**
+ * The logo icon: the default mark's box colours (its gradient), and a border and a
+ * shadow that trace the logo's own shape (`.xt-logo-fx`). Border and shadow are
+ * transparent by default and apply to an uploaded logo too; the box colours only
+ * exist on the default mark.
+ */
+export const LOGO_ROWS: ColorRow[] = [
+  // The default icon's box: its gradient, start to end. The same colour twice is a flat box.
+  { l: "styleEditor.rowLogoFrom", cssVar: "--logo-icon-from" },
+  { l: "styleEditor.rowLogoTo", cssVar: "--logo-icon-to" },
+  { l: "styleEditor.rowLogoBorder", cssVar: "--logo-icon-border" },
+  { l: "styleEditor.rowLogoShadow", cssVar: "--logo-icon-shadow" },
+];
+
 /** The editor's groups, in the order the Jump-to list offers them. */
 export type SectionKind = "palette" | "text" | "feedback" | "region" | "component" | "foundation";
 export interface Section {
@@ -53,6 +67,7 @@ export const SECTIONS: Section[] = [
   { id: "palette",  label: "styleEditor.secPalette",  kind: "palette",   rows: PALETTE_ROWS },
   { id: "text",     label: "styleEditor.secText",     kind: "text",      rows: TEXT_ROWS },
   { id: "feedback", label: "styleEditor.secFeedback", kind: "feedback",  rows: FEEDBACK_ROWS },
+  { id: "logo",     label: "styleEditor.secLogo",     kind: "palette",   rows: LOGO_ROWS },
   { id: "tints",    label: "styleEditor.secTints",    kind: "foundation", group: "tints" },
   { id: "navbar",   label: "styleEditor.secNavbar",   kind: "region",    group: "navbar" },
   { id: "content",  label: "styleEditor.secContent",  kind: "region",    group: "content" },
@@ -107,6 +122,12 @@ export const BOARD: BoardCluster[] = [
     { section: "feedback", cssVar: "--c-danger" },
     { section: "feedback", cssVar: "--c-info" },
   ]},
+  { heading: "styleEditor.secLogo", tiles: [
+    { section: "logo", cssVar: "--logo-icon-from" },
+    { section: "logo", cssVar: "--logo-icon-to" },
+    { section: "logo", cssVar: "--logo-icon-border" },
+    { section: "logo", cssVar: "--logo-icon-shadow" },
+  ]},
 ];
 
 /**
@@ -145,7 +166,7 @@ export const SCOPE_LABEL: Record<string, string> =
 // Layout Editor's shorter "Text".
 const KEYED_LABEL: Record<string, string> = Object.fromEntries([
   ...VARIANT_TOKEN_ROWS.map((r) => [r.cssVar, r.label]),
-  ...[...PALETTE_ROWS, ...TEXT_ROWS, ...FEEDBACK_ROWS].map((r) => [r.cssVar, r.l]),
+  ...[...PALETTE_ROWS, ...TEXT_ROWS, ...FEEDBACK_ROWS, ...LOGO_ROWS].map((r) => [r.cssVar, r.l]),
 ]);
 
 /**

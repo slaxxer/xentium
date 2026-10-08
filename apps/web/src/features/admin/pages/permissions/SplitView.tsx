@@ -9,6 +9,7 @@ import { DEFAULT_BADGE_COLOR, isSensitive, powerOf, type Group } from "../groups
 import { GroupGlyph, PowerMeter } from "../groups/groupParts";
 import type { PermissionsCtx } from "../PermissionsPage";
 import { changeOf, effectiveKeys, impliedBy, matchesQuery, type SplitFilter } from "./permissionsModel";
+import { ToggleGlyph } from "../../../../components/Toggle";
 
 const FILTERS: SplitFilter[] = ["all", "granted", "off", "sensitive", "changed"];
 
@@ -130,7 +131,7 @@ export function SplitView({ ctx, selected, onSelect, searchRef }: {
                           )}
                         </span>
                         {via && <FontAwesomeIcon icon={faLock} className="pm-ic pm-tile__lock" />}
-                        <span className={`pm-sw${isHeld ? " is-on" : via ? " is-implied" : ""}`} aria-hidden />
+                        <ToggleGlyph on={isHeld} implied={!isHeld && !!via} />
                       </button>
                     );
                   })}

@@ -23,10 +23,11 @@ const STACK: { key: string; value: string }[] = [
 ];
 
 const RESOURCES: { key: string; icon: string; href: string }[] = [
-  { key: "docs",        icon: "book",      href: "https://xentium.org/docs" },
-  { key: "github",      icon: "github",    href: "https://github.com/nodevo/nodevo" },
-  { key: "changelog",   icon: "changelog", href: "https://xentium.org/changelog" },
-  { key: "marketplace", icon: "bag",       href: "https://xentium.org/plugins" },
+  { key: "docs",        icon: "book",      href: "https://doc.xentium.org/" },
+  { key: "github",      icon: "github",    href: "https://github.com/slaxxer/xentium" },
+  // Every release publishes its notes as a GitHub release (release.yml).
+  { key: "changelog",   icon: "changelog", href: "https://github.com/slaxxer/xentium/releases" },
+  { key: "marketplace", icon: "bag",       href: "https://plugins.xentium.org/" },
 ];
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));

@@ -22,14 +22,27 @@
  * offer three options is a dialog pretending to be a page — the thumbnail only has
  * to be big enough to tell two themes apart, and the description reads better on one
  * line beside it than under a picture.
+ *
+ * COLOURWAYS: a theme that ships more than one (Vanguard's four accents) gets a row of
+ * chips under its card. On the theme being worn a chip recolours in place — only the
+ * stylesheet changes, so there is nothing to reload for. On another theme it switches
+ * to that theme in that colourway, which reloads like any theme switch.
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../components/Icon";
 import { faPalette, faXmark, faCheck } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
-import { setViewerTheme, viewerThemeId } from "../../lib/viewerTheme";
+import { setViewerColourway, setViewerTheme, viewerColourwayId, viewerThemeId } from "../../lib/viewerTheme";
+import { refreshTokenCss } from "../../lib/liveStyle";
 import "./ThemeChooserBlock.scss";
+
+interface ThemeColourway {
+  id: string;
+  name: string;
+  /** Background, accent, second accent — whichever the colourway sets. */
+  swatch: string[];
+}
 
 interface InstalledTheme {
   id: string;
@@ -38,6 +51,9 @@ interface InstalledTheme {
   active: boolean;
   description: string | null;
   screenshot: string | null;
+  colourways?: ThemeColourway[];
+  /** The colourway the theme wears with no pick from the visitor, if it matches one. */
+  wornColourway?: string | null;
 }
 
 export function ThemeChooser() {
@@ -45,6 +61,9 @@ export function ThemeChooser() {
   const [themes, setThemes] = useState<InstalledTheme[] | null>(null);
   const [open, setOpen] = useState(false);
   const chosen = viewerThemeId();
+  // State, not a read per render: picking a colourway on the worn theme does not
+  // reload, so the chips have to learn about it from here.
+  const [pickedCw, setPickedCw] = useState(viewerColourwayId);
 
   useEffect(() => {
     let alive = true;
@@ -63,16 +82,44 @@ export function ThemeChooser() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Nothing to choose BETWEEN is not a choice: one installed theme means the site's
-  // own, and an icon that opens a dialog with one card in it is furniture.
-  if (!themes || themes.length < 2) return null;
+  // Nothing to choose BETWEEN is not a choice: one installed theme with one look means
+  // the site's own, and an icon that opens a dialog with one card in it is furniture.
+  // One theme with several colourways IS a choice.
+  if (!themes) return null;
+  if (themes.length < 2 && !themes.some((x) => (x.colourways?.length ?? 0) > 1)) return null;
 
   const siteTheme = themes.find((x) => x.active);
   /** What is being worn: the reader's pick, or the site's own when they have none. */
   const wearing = chosen ?? siteTheme?.id ?? "";
 
-  const choose = (id: string | null) => {
-    setViewerTheme(id);
+  // ⚠ The SITE's theme clears the cookie rather than storing its id. Storing it would
+  // pin the reader to today's active theme, and they would go on wearing it after the
+  // admin switched — having chosen "the site's theme", which is the one thing that
+  // then would not follow the site.
+  const cookieFor = (theme: InstalledTheme) => (theme.active ? null : theme.id);
+
+  const choose = (theme: InstalledTheme) => {
+    setViewerTheme(cookieFor(theme));
+    window.location.reload();
+  };
+
+  /**
+   * Wear `theme` in colourway `cw`.
+   *
+   * Picking the colourway the theme already wears CLEARS the choice instead of storing
+   * it, for the same reason as the site's theme above: the reader then follows the
+   * admin's colourway if it changes, rather than being frozen on today's.
+   */
+  const chooseColourway = (theme: InstalledTheme, cw: string) => {
+    const next = cw === theme.wornColourway ? null : cw;
+    if (theme.id === wearing) {
+      setViewerColourway(next);
+      setPickedCw(next);
+      void refreshTokenCss();
+      return;
+    }
+    setViewerTheme(cookieFor(theme));
+    setViewerColourway(next);
     window.location.reload();
   };
 
@@ -111,18 +158,18 @@ export function ThemeChooser() {
             <div className="xt-themedlg__list">
               {themes.map((theme) => {
                 const worn = theme.id === wearing;
+                const colourways = theme.colourways ?? [];
+                // Only the worn theme has a colourway in use. The reader's pick, else
+                // the one the theme wears on its own.
+                const wornCw = worn ? (pickedCw && colourways.some((c) => c.id === pickedCw)
+                  ? pickedCw : theme.wornColourway ?? null) : null;
                 return (
+                  <div key={theme.id} className={`xt-themeopt${worn ? " is-worn" : ""}`}>
                   <button
-                    key={theme.id}
                     type="button"
                     className={`xt-themecard${worn ? " is-worn" : ""}`}
                     aria-current={worn}
-                    // ⚠ The SITE's theme clears the cookie rather than storing its id.
-                    // Storing it would pin the reader to today's active theme, and
-                    // they would go on wearing it after the admin switched — having
-                    // chosen "the site's theme", which is the one thing that then
-                    // would not follow the site.
-                    onClick={() => choose(theme.active ? null : theme.id)}
+                    onClick={() => choose(theme)}
                   >
                     <span className="xt-themecard__shot">
                       {theme.screenshot
@@ -150,6 +197,27 @@ export function ThemeChooser() {
                       </span>
                     )}
                   </button>
+                  {colourways.length > 1 && (
+                    <div className="xt-themecw" role="radiogroup"
+                      aria-label={t("themeChooser.colourways", { defaultValue: "{{theme}} colourways", theme: theme.name })}>
+                      {colourways.map((cw) => {
+                        const on = cw.id === wornCw;
+                        const [bg, ...accents] = cw.swatch;
+                        return (
+                          <button key={cw.id} type="button" role="radio" aria-checked={on}
+                            className={`xt-themecw__chip${on ? " is-on" : ""}`}
+                            onClick={() => chooseColourway(theme, cw.id)}>
+                            {/* The colourway's own colours, as data — the dot IS the preview. */}
+                            <span className="xt-themecw__dot" style={{ background: bg }} aria-hidden>
+                              {accents.map((c, i) => <span key={i} style={{ background: c }} />)}
+                            </span>
+                            {cw.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                  </div>
                 );
               })}
             </div>

@@ -21,7 +21,7 @@
  * switched off appears nowhere. See `useComposerConfig`.
  */
 import {
-  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState,
+  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -29,6 +29,7 @@ import type { AnyExtension, JSONContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Mention from "@tiptap/extension-mention";
 import TextAlign from "@tiptap/extension-text-align";
+import { AlignPerBlock } from "./alignPerBlock";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import Highlight from "@tiptap/extension-highlight";
@@ -121,6 +122,12 @@ export interface ComposerProps {
    */
   submitInBar?: boolean;
   /**
+   * What Preview shows. Without it, the editor's own formatting; with it, the
+   * surface draws the post as it will look once posted (e.g. a whole post card
+   * with the writer's name, groups and stats). Gets the editor's current HTML.
+   */
+  renderPreview?: (html: string) => ReactNode;
+  /**
    * Where the tool row sits.
    *
    * ⚠ `bottom` is the redesign's default and the reason the composer exists: chrome
@@ -147,7 +154,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   disabled, onSubmit, submitLabel, busy,
   onCancel, minHeight, className, replyTo, onDismissReply,
   canAttach, onAttach, enterSends, submitInBar = true,
-  toolbarPosition = "bottom", showStats,
+  toolbarPosition = "bottom", showStats, renderPreview,
 }, ref) {
   const { t } = useTranslation("common");
   const { user } = useAuth();
@@ -191,6 +198,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         link: { openOnClick: false, autolink: true },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
+      AlignPerBlock,
       TaskList,
       TaskItem.configure({ nested: true }),
       Highlight,
@@ -587,14 +595,18 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
              * its schema — not free text from a user. The server sanitises again on
              * write (`sanitizeRichText`), which is where the real boundary is.
              */
-            <div
-              className="nvc-preview"
-              dangerouslySetInnerHTML={{
-                __html: editor?.isEmpty
-                  ? `<p class="nvc-preview__empty">${t("composer.previewEmpty")}</p>`
-                  : (editor?.getHTML() ?? ""),
-              }}
-            />
+            renderPreview && !editor?.isEmpty
+              ? <div className="nvc-preview nvc-preview--surface">{renderPreview(editor?.getHTML() ?? "")}</div>
+              : (
+                <div
+                  className="nvc-preview xt-rich"
+                  dangerouslySetInnerHTML={{
+                    __html: editor?.isEmpty
+                      ? `<p class="nvc-preview__empty">${t("composer.previewEmpty")}</p>`
+                      : (editor?.getHTML() ?? ""),
+                  }}
+                />
+              )
           )}
       </div>
 

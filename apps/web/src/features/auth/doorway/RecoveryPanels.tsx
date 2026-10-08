@@ -34,7 +34,7 @@ export function ForgotPanel() {
   };
 
   return (
-    <AuthDoorway tabs={false}>
+    <AuthDoorway>
       <Link to="/login" className="dw-link dw-back">← {t("door.backToSignIn")}</Link>
       <div className="dw-head">
         <h1>{sent ? t("door.forgot.sentTitle") : t("door.forgot.title")}</h1>
@@ -78,7 +78,7 @@ function TicketPin({ ticket, onDone }: { ticket: string; onDone: (res: SignInRes
     } finally { setBusy(false); }
   };
   return (
-    <AuthDoorway tabs={false}>
+    <AuthDoorway>
       <div className="dw-head">
         <h1>{t("door.pin.title")}</h1>
         <p>{t("door.pin.sub")}</p>
@@ -125,7 +125,7 @@ export function MagicLinkLanding() {
   };
 
   return (
-    <AuthDoorway tabs={false}>
+    <AuthDoorway>
       <div className="dw-state">
         <span className="dw-state__icon"><FontAwesomeIcon icon={faWandMagicSparkles} /></span>
         <h1>{t("door.landing.title")}</h1>
@@ -169,7 +169,7 @@ export function SignInComplete() {
   }
   if (isAuthenticated) return <Navigate to={to} replace />;
   return (
-    <AuthDoorway tabs={false}>
+    <AuthDoorway>
       <div className="dw-state">
         <span className="dw-spinner" aria-hidden />
         <h1>{stuck ? t("door.complete.stuckTitle") : t("door.complete.title")}</h1>
@@ -206,7 +206,7 @@ export function ResetPanel() {
   };
 
   return (
-    <AuthDoorway tabs={false}>
+    <AuthDoorway>
       <div className="dw-head">
         <h1>{done ? t("door.reset.doneTitle") : t("door.reset.title")}</h1>
         <p>{done ? t("door.reset.doneSub") : t("door.reset.sub")}</p>

@@ -1,3 +1,4 @@
+import { userCan, type AuthUser } from "../../lib/authStore";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { slotRegistry, type ModQueueItem, type ModQueueSlot } from "../../plugins/slotRegistry";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -41,8 +42,9 @@ export interface ModCase {
 
 export interface ModSummary { pendingReports: number; openCases: number; activeWarnings: number; activeBans: number }
 
-const MOD_KEYS = new Set(["admin", "supermod", "moderator"]);
-export const isModerator = (groups: { key: string }[] | undefined) => !!groups?.some((g) => MOD_KEYS.has(g.key));
+/** Works the moderation queues: reports or review cases (ACP → Permissions). */
+export const isModerator = (user: AuthUser | null | undefined) =>
+  userCan(user, "moderation.report.manage") || userCan(user, "moderation.cases.manage");
 
 // ── Queries ───────────────────────────────────────────────────────────────────
 // Oldest first everywhere: the dropdown says "Oldest waits longest", and a session

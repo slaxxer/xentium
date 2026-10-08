@@ -106,3 +106,62 @@ describe("grouped error log", () => {
     expect(await prisma.errorLogGroup.count({ where: { key: g!.key } })).toBe(0);
   });
 });
+
+describe("the error reference's lookup", () => {
+  let mara = "", jonas = "";
+  beforeEach(async () => {
+    await prisma.user.deleteMany({ where: { username: { in: ["grp_mara", "grp_jonas"] } } });
+    mara = (await prisma.user.create({ data: { username: "grp_mara", email: "grp_mara@example.test", passwordHash: "x" } })).id;
+    jonas = (await prisma.user.create({ data: { username: "grp_jonas", email: "grp_jonas@example.test", passwordHash: "x" } })).id;
+    await row("boom", 5, { userId: mara, requestId: "r1" });
+    await row("boom", 50, { userId: mara });
+    await row("boom", 30, { userId: jonas });
+    await row("boom", 10);                          // a guest
+    await row("boom", 60 * 24 * 9, { userId: mara }); // outside seven days
+  });
+  afterEach(async () => {
+    await prisma.errorLog.deleteMany({ where: { code: CODE } });
+    await prisma.user.deleteMany({ where: { username: { in: ["grp_mara", "grp_jonas"] } } });
+  });
+
+  const lookup = (member: string | undefined, scope: "member" | "all", days = 7) =>
+    errorLogService.codeOccurrences({ code: CODE, member, days, scope, limit: 50 });
+
+  it("counts one member's and everyone's occurrences in the range", async () => {
+    const r = await lookup("GRP_MARA", "member");
+    expect(r.member?.username).toBe("grp_mara");
+    expect(r.counts).toEqual({ all: 4, mine: 2, people: 3 });
+    expect(r.items.map((i) => i.user?.username)).toEqual(["grp_mara", "grp_mara"]);
+    expect(r.items[0]?.requestId).toBe("r1");
+  });
+
+  it("lists everyone's, newest first, with guests unnamed", async () => {
+    const r = await lookup("grp_mara", "all");
+    expect(r.items.map((i) => i.user?.username ?? null)).toEqual(["grp_mara", null, "grp_jonas", "grp_mara"]);
+  });
+
+  it("narrows to the last day", async () => {
+    expect((await lookup(undefined, "all", 1)).counts.all).toBe(4);
+  });
+
+  it("reports a member who does not exist without failing", async () => {
+    const r = await lookup("nobody_here", "member");
+    expect(r.member).toBeNull();
+    expect(r.counts.mine).toBe(0);
+    expect(r.items).toEqual([]);
+  });
+
+  it("filters the grouped log to one member", async () => {
+    const groups = await errorLogService.listGroups({ domain: "GRPTEST", userId: jonas, status: "all", page: 1, pageSize: 25 });
+    expect(groups.items).toHaveLength(1);
+    const none = await errorLogService.listGroups({ domain: "GRPTEST", userId: "-", status: "all", page: 1, pageSize: 25 });
+    expect(none.items).toHaveLength(0);
+  });
+
+  it("lists the latest codes, one row each", async () => {
+    const recent = await errorLogService.recentCodes(50);
+    const mine = recent.filter((r) => r.code === CODE);
+    expect(mine).toHaveLength(1);
+    expect(mine[0]).toMatchObject({ username: "grp_mara", count24h: 4 });
+  });
+});

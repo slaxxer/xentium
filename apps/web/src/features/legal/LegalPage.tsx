@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 import { isLegalDocumentKey } from "@xentium/contracts";
 import { legalApi } from "../../lib/legalApi";
 import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 import { ArticleContent } from "../articles/components/ArticleContent";
 import "./LegalPage.scss";
 
@@ -35,8 +36,8 @@ export function LegalPage() {
 
   const doc = query.data;
   const updated = new Date(doc.publishedAt).toLocaleDateString(i18n.language, { dateStyle: "long" });
-  // legal.manage is admin-only by default; an edit link others would only meet a 403 behind.
-  const canEdit = user?.groups?.some((g) => g.key === "admin") ?? false;
+  // An edit link only for those the editor would not 403.
+  const canEdit = userCan(user, "legal.manage");
 
   return (
     <article className="legal-view">

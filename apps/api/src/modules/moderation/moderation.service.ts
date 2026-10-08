@@ -1,4 +1,4 @@
-import { buildPaginationMeta } from "@xentium/contracts";
+import { buildPaginationMeta, CorePermissions } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
@@ -8,6 +8,7 @@ import { humanizeCaseType, describeCaseSignal, type ReportTargetType, type Thres
 import { getModPolicy, warningExpiry, checkBanLength } from "./moderationPolicy.js";
 import { describeTarget } from "./reportTarget.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
+import { staffGroupKeys } from "../../shared/utils/staff.js";
 
 
 // Find the most recent unresolved case linking a user (used to decide whether a
@@ -191,7 +192,7 @@ export const moderationService = {
     if (!user) throw XentiumError.notFound("User not found");
     if (data.userId === data.issuedById) throw XentiumError.forbidden("Cannot warn yourself");
 
-    const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
+    const STAFF_KEYS = await staffGroupKeys();
     const staffGroup = user.groups.find((ug) => STAFF_KEYS.has(ug.group.key));
     if (staffGroup) {
       throw XentiumError.forbidden(`You cannot warn a ${staffGroup.group.name} member`);
@@ -416,7 +417,7 @@ export const moderationService = {
    * ban and in the mod log, and told to the member.
    */
   async banCaseUsers(caseId: string, actorId: string, reason?: string) {
-    const STAFF_KEYS  = new Set(["admin", "supermod", "moderator"]);
+    const STAFF_KEYS  = await staffGroupKeys();
     const BAN_REASON  = reason?.trim() || "Multi-account policy violation — multiple accounts detected on the same device";
 
     const existing = await prisma.moderationCase.findUnique({ where: { id: caseId } });
@@ -506,9 +507,10 @@ export const moderationService = {
    *  and alerts the mod team. Returns the banned usernames. Opt-in (§15 override)
    *  — the caller checks `moderation.auto_ban_multiaccounts` before invoking. */
   async autoBanMultiaccounts(userIds: string[], reason: string): Promise<string[]> {
-    const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
+    const STAFF_KEYS = await staffGroupKeys();
+    // "The oldest admin" = the longest-standing holder of admin.access.
     const admin = await prisma.user.findFirst({
-      where:   { groups: { some: { group: { key: "admin" } } } },
+      where:   { groups: { some: { group: { permissions: { some: { permission: { key: CorePermissions.ADMIN_ACCESS } } } } } } },
       orderBy: { createdAt: "asc" },
       select:  { id: true },
     });
@@ -890,7 +892,7 @@ export const moderationService = {
     if (!user) throw XentiumError.notFound("User not found");
     if (data.userId === data.issuedById) throw XentiumError.forbidden("Cannot ban yourself");
 
-    const STAFF_KEYS = new Set(["admin", "supermod", "moderator"]);
+    const STAFF_KEYS = await staffGroupKeys();
     const staffGroup = user.groups.find((ug) => STAFF_KEYS.has(ug.group.key));
     if (staffGroup) throw XentiumError.forbidden(`You cannot ban a ${staffGroup.group.name} member`);
 

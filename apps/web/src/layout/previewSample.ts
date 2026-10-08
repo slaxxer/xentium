@@ -19,13 +19,12 @@
  * Draft LAYOUTS are already permission-gated server-side; this is the matching gate
  * for invented CONTENT, which the server cannot refuse because it never sends it.
  */
-import { authStore } from "../lib/authStore";
+import { authStore, userCan } from "../lib/authStore";
 import { isLayoutPreview } from "./useLayout";
 
-/** Staff — the same test the ACP entry point uses. */
+/** Whoever may open the editor — the same key the ACP entry point checks. */
 function viewerIsStaff(): boolean {
-  const groups = authStore.user?.groups ?? [];
-  return groups.some((g) => g.key === "admin" || g.key === "supermod" || g.key === "moderator");
+  return userCan(authStore.user, "admin.access");
 }
 
 /**

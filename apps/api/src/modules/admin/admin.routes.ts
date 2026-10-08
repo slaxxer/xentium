@@ -44,6 +44,7 @@ adminRouter.get("/health",              adminGuard, adminController.health);
 
 // Users
 adminRouter.get("/users", adminGuard, adminController.listUsers);
+adminRouter.post("/users", adminGuard, adminController.createUser);
 adminRouter.get("/users/:id", adminGuard, adminController.getUserDetail);
 adminRouter.get("/users/:id/login-events", adminGuard, adminController.listUserLoginEvents);
 adminRouter.put("/users/:id/groups", adminGuard, adminController.setUserGroups);
@@ -110,6 +111,8 @@ adminRouter.delete("/error-log", adminGuard, adminController.clearErrorLog);
 // Grouped view (the ACP page). Declared before "/error-log/:id".
 adminRouter.get("/error-log/groups",                  adminGuard, errorLogController.listGroups);
 adminRouter.get("/error-log/stats",                   adminGuard, errorLogController.stats);
+adminRouter.get("/error-log/lookup",                  adminGuard, errorLogController.lookup);
+adminRouter.get("/error-log/recent-codes",            adminGuard, errorLogController.recentCodes);
 adminRouter.get("/error-log/groups/:key/occurrences", adminGuard, errorLogController.occurrences);
 adminRouter.patch("/error-log/groups/:key",           adminGuard, errorLogController.setResolved);
 adminRouter.delete("/error-log/groups/:key",          adminGuard, errorLogController.deleteGroup);

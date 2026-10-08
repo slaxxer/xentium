@@ -3,7 +3,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { env, isProd } from "../config/env.js";
 import { getSettings } from "../shared/utils/settings.js";
-import { appearanceService } from "../modules/appearance/appearance.service.js";
+import { appearanceService, parseColourwayId } from "../modules/appearance/appearance.service.js";
 import { layoutService } from "../modules/layouts/layout.service.js";
 
 /** Escapes a string for safe interpolation into a double-quoted HTML attribute. */
@@ -56,13 +56,17 @@ export function injectSeoMeta(
 /** The `<style>` the client's live style sync owns (lib/liveStyle.ts `STYLE_ID`). */
 const TOKEN_STYLE_ID = "xentium-custom-tokens";
 
+/** One cookie's decoded value, or null. */
+function cookie(req: Request, name: string): string | null {
+  const hit = (req.headers.cookie ?? "").split(/;\s*/).find((c) => c.startsWith(`${name}=`));
+  if (!hit) return null;
+  try { return decodeURIComponent(hit.slice(name.length + 1)); } catch { return null; }
+}
+
 /** The theme a visitor chose for themselves (lib/viewerTheme.ts), from the request's cookie. */
 function viewerTheme(req: Request): string | null {
-  const hit = (req.headers.cookie ?? "").split(/;\s*/).find((c) => c.startsWith("xt_theme="));
-  if (!hit) return null;
-  let raw: string;
-  try { raw = decodeURIComponent(hit.slice("xt_theme=".length)); } catch { return null; }
-  return /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(raw) ? raw : null;
+  const raw = cookie(req, "xt_theme");
+  return raw && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(raw) ? raw : null;
 }
 
 /**
@@ -79,10 +83,12 @@ function viewerTheme(req: Request): string | null {
  */
 export async function injectThemeCss(html: string, req: Request): Promise<string> {
   const wanted = viewerTheme(req);
-  let css: string | null = wanted ? await appearanceService.getThemeCss(wanted) : null;
+  // The colourway the visitor picked of that theme, same as `/css?colourway=`.
+  const colourway = parseColourwayId(cookie(req, "xt_cw"));
+  let css: string | null = wanted ? await appearanceService.getThemeCss(wanted, colourway) : null;
   let version: number | null = null;
   if (css === null) {
-    css = await appearanceService.getLiveCss();
+    css = await appearanceService.getLiveCss(colourway);
     version = await appearanceService.getStyleVersion();
   }
   if (!css) return html;
