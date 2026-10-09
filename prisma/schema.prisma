@@ -1086,9 +1086,8 @@ model InviteCode {
   @@map("xcf_invite_codes")
 }
 
-// BetaCode / BetaAccessLog lived here. The beta gate is a plugin now
-// (`xentium-launch`), which owns `launch_codes` and `launch_access_log`; its
-// install migration copies any rows these tables still held. Core keeps no
+// BetaCode / BetaAccessLog lived here. Core no longer has a beta gate — a site
+// gate is a plugin's job (see the plugin gates in App.tsx) — so it keeps no
 // schema for a feature it no longer has an opinion about.
 
 model NavItem {

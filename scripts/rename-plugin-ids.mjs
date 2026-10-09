@@ -36,7 +36,6 @@ const RENAMES = {
   "nodevo-messaging":           "xentium-messaging",
   "nodevo-shoutbox":            "xentium-shoutbox",
   "nodevo-advanced-moderation": "xentium-advanced-moderation",
-  "nodevo-launch":              "xentium-launch",
 };
 
 const APPLY = process.argv.includes("--apply");

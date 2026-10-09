@@ -51,8 +51,8 @@ export interface RootGateSlot {
  *
  * The counterpart to `groupConfigPanel`, and it exists for the same reason: some
  * plugin configuration belongs beside the core setting it extends, not in a
- * top-level nav section of its own. A launch/waitlist plugin configures the
- * beta gate — an admin looking for it looks under Settings → Beta, not under a
+ * top-level nav section of its own. A plugin that adds a site gate (a beta, a
+ * waitlist) configures it where an admin looks for access settings, not under a
  * separate heading three groups further down.
  *
  * It appears exactly like one of core's own: an entry in the "on this page" nav

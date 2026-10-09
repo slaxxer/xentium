@@ -1,5 +1,5 @@
 /**
- * Capture the storefront gallery images for the five official plugins.
+ * Capture the storefront gallery images for the official plugins.
  *
  * Not a test and not part of the suite: it drives a real logged-in browser over
  * the dev instance and writes PNGs next to each plugin's `assets/`, which is
@@ -66,10 +66,6 @@ const SHOTS = [
   ["xentium-shoutbox",  "shoutbox-acp.png", "admin@xentium.test", "/admin/shoutbox", 0],
   ["xentium-advanced-moderation", "advmod-acp.png", "admin@xentium.test", "/admin/advmod", 0],
   ["xentium-advanced-moderation", "advmod-detection.png", "admin@xentium.test", "/admin/advmod", 0, "Detection"],
-  ["xentium-launch",    "launch-landing.png", null,               "/launch", 0],
-  // The funnel below the hero, not the ACP form: what a buyer is shopping for is
-  // the page their visitors will see.
-  ["xentium-launch",    "launch-perks.png", null,                 "/launch", 900],
 ];
 
 const convos = await conversations();

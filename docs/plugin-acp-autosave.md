@@ -7,7 +7,7 @@ weights, sizes and spacing. An admin shouldn't be able to tell which parts of th
 came from a plugin.
 
 The only way that holds up is to use core's own classes and components instead of
-copying them. Numbers picked by hand always drift; our own launch plugin ended up with
+copying them. Numbers picked by hand always drift; one of our own plugins ended up with
 weight 700 where core uses 600, and at font sizes core doesn't use anywhere.
 
 **Don't set `font-family`, `font-weight` or `font-size` in a plugin's ACP panel.** Use

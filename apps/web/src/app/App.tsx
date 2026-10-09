@@ -221,9 +221,9 @@ function useRouterPathname(router: ReturnType<typeof buildRouter>): string {
  * Plugin gates, composed around the whole app.
  *
  * Core no longer knows what a beta is. A gate is a POLICY — "may this visitor
- * see the site at all" — and policies belong to whatever implements them; the
- * private-beta one now lives in the launch plugin, which registers here. With no
- * plugin registered this renders its children and costs nothing.
+ * see the site at all" — and policies belong to whatever implements them: a plugin
+ * that wants one (a private beta, a waitlist) registers it here. With no plugin
+ * registered this renders its children and costs nothing.
  *
  * `pathname` is threaded down because a gate wraps the router and therefore has
  * no `useLocation` of its own. Gates nest in `order`, outermost first, so the
