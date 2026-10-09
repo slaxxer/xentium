@@ -23,7 +23,8 @@
  * publish silently taking the `latest` tag. Both are guarded below.
  */
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -138,24 +139,26 @@ console.log("Building…");
 const filters = remaining.flatMap((n) => ["--filter", `@xentium/${n}`]);
 run("pnpm", [...filters, "build"], { stdio: "inherit" });
 
+// Packed by pnpm, published by npm. pnpm is what rewrites `workspace:*` to the
+// real version, so the tarball must come from it; npm is what speaks npm's
+// Trusted Publishing (the release workflow's token-free login), which pnpm's
+// publish is not documented to. Same bytes either way: npm publishes the tarball
+// pnpm made, it does not repack it.
 console.log("\nPublishing…");
-run(
-  "pnpm",
-  [
-    "-r",
-    ...filters,
-    "publish",
-    "--tag",
-    tag,
-    // The repo tags releases itself; pnpm's own git checks would refuse a
-    // perfectly good publish for want of a tag it expects to create.
-    "--no-git-checks",
+const packDir = mkdtempSync(join(tmpdir(), "xentium-framework-"));
+for (const name of remaining) {
+  const dir = join(ROOT, "packages", name);
+  const before = new Set(readdirSync(packDir));
+  run("pnpm", ["pack", "--pack-destination", packDir], { cwd: dir, stdio: ["ignore", "pipe", "inherit"] });
+  const tgz = readdirSync(packDir).find((f) => f.endsWith(".tgz") && !before.has(f));
+  if (!tgz) fail(`pnpm pack produced no tarball for @xentium/${name}`);
+  run("npm", [
+    "publish", join(packDir, tgz), "--tag", tag, "--access", "public",
     ...(provenance ? ["--provenance"] : []),
     ...(otp ? ["--otp", otp] : []),
     ...(dryRun ? ["--dry-run"] : []),
-  ],
-  { stdio: "inherit" },
-);
+  ], { stdio: "inherit" });
+}
 
 if (dryRun) {
   console.log("\nDry run — nothing was published.");

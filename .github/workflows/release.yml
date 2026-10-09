@@ -9,11 +9,19 @@
 # Actions tab. Run it by hand with dry-run first if you want to see the tarball
 # contents without burning a version number: npm never lets a version be reused.
 #
-# What it needs once, in repo settings:
-#   NPM_TOKEN — a granular npm automation token with publish rights on the
-#               @xentium scope and on the `xentium` + `create-xentium` names.
-#               Automation tokens bypass 2FA, which is why publishing from CI
-#               works at all.
+# How it signs in to npm: TRUSTED PUBLISHING, no token. npm trusts this workflow
+# by its OIDC identity (`id-token: write` below), so nothing long-lived sits in
+# the repo secrets. Since 2026-07-31 npm refuses dist-tag changes from 2FA-bypass
+# tokens and is taking direct publishing away from them, so a token cannot do
+# this job any more anyway.
+#
+# What it needs once, on npmjs.com, for EACH of the ten packages
+# (package → Settings → Trusted Publisher → GitHub Actions):
+#   repository  slaxxer/xentium      workflow  release.yml      environment  (empty)
+#   ✓ Allow npm dist-tag             (needed for the `latest` move below)
+#
+# And npm ≥ 11.21 on the runner: 11.5.1 for trusted publishing, 11.21 for
+# dist-tag over OIDC. Node comes from .nvmrc (24 ≥ the 22.14 npm requires).
 #
 # Provenance (a signed, public attestation linking the tarball to this workflow
 # run) needs the SOURCE REPOSITORY to be public, because the attestation goes to
@@ -40,6 +48,10 @@ on:
         description: "npm dist-tag override (default: the prerelease id, else latest)"
         type: string
         default: ""
+      latest:
+        description: "Also point `latest` at this version on all ten packages"
+        type: boolean
+        default: true
 
 # Two releases publishing at once would race for the same version numbers.
 concurrency:
@@ -52,7 +64,7 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write # attach the tarballs to the GitHub release
-      id-token: write # npm provenance, once the repo is public
+      id-token: write # npm Trusted Publishing (and provenance, once the repo is public)
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -64,6 +76,9 @@ jobs:
           node-version-file: .nvmrc
           registry-url: https://registry.npmjs.org
           cache: pnpm
+
+      # Trusted publishing needs npm 11.5.1+, and dist-tag over OIDC 11.21+.
+      - run: npm install -g npm@^11.21.0 && npm --version
 
       - run: pnpm install --frozen-lockfile
 
@@ -95,12 +110,14 @@ jobs:
 
       - name: Publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # No NODE_AUTH_TOKEN: npm signs in with the workflow's OIDC identity.
           PROVENANCE: ${{ steps.provenance.outputs.flag }}
           EVENT: ${{ github.event_name }}
           DRY_RUN: ${{ inputs.dry_run }}
           ONLY: ${{ inputs.only }}
           NPM_TAG: ${{ inputs.tag }}
+          # A tag push always moves `latest`; a manual run follows its checkbox.
+          LATEST: ${{ github.event_name == 'push' || inputs.latest }}
         run: |
           set -euo pipefail
           args=""
@@ -111,6 +128,7 @@ jobs:
           if [ "${DRY_RUN:-}" = "true" ]; then args="$args --dry-run"; fi
           if [ -n "${ONLY:-}" ] && [ "$ONLY" != "all" ]; then args="$args --only=$ONLY"; fi
           if [ -n "${NPM_TAG:-}" ]; then args="$args --tag=$NPM_TAG"; fi
+          if [ "${LATEST:-}" = "true" ]; then args="$args --latest"; fi
           node scripts/publish-release.mjs ${PROVENANCE:-} $args
 
       # The tarballs are how a server without the published names is installed

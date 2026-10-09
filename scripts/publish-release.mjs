@@ -6,6 +6,7 @@
  *   node scripts/publish-release.mjs --dry-run         # show what would happen
  *   node scripts/publish-release.mjs --provenance      # what CI runs
  *   node scripts/publish-release.mjs --only=server
+ *   node scripts/publish-release.mjs --provenance --latest   # also point `latest` at it
  *
  * ONE script for all four, because a release is one act: every workspace package
  * carries the same version (scripts/set-version.mjs keeps them in lockstep), and
@@ -51,6 +52,16 @@ const provenance = flag("provenance");
 const only = value("only");
 const expectVersion = value("expect-version");
 const tagOverride = value("tag");
+/**
+ * Also point `latest` at this version on every package, after a real publish.
+ *
+ * The prerelease id stays the PUBLISH tag (so a failed run never leaves `latest`
+ * on a half-published version); `latest` moves only once all ten are up. During
+ * the alpha this is what we want — npmjs.com and a bare `npm install xentium`
+ * show the newest build — and moving it by hand now needs a 2FA confirmation per
+ * package, while the release workflow can do it with its Trusted Publishing login.
+ */
+const promoteLatest = flag("latest");
 
 const run = (cmd, args, opts = {}) => {
   const out = execFileSync(cmd, args, { cwd: ROOT, encoding: "utf8", ...opts });
@@ -180,18 +191,40 @@ for (const { part, name, dir } of INSTALLERS) {
     skipped.push(name);
     continue;
   }
-  // pnpm, not npm: it rewrites `workspace:*` to the real version at pack time.
-  // `--no-git-checks` because the repo tags releases itself, and pnpm would
-  // otherwise refuse a perfectly good publish for want of a tag it expects to
-  // create.
-  run("pnpm", ["--filter", name, "publish", "--tag", tag, "--no-git-checks",
+  // The tarball pnpm just packed, published by npm: pnpm rewrote `workspace:*`,
+  // and npm is what speaks Trusted Publishing (see release-framework.mjs).
+  const tgz = join(OUT, `${name}-${version}.tgz`);
+  if (!existsSync(tgz)) fail(`expected ${tgz} from pnpm pack`);
+  run("npm", ["publish", tgz, "--tag", tag, "--access", "public",
     ...(provenance ? ["--provenance"] : []),
     ...(dryRun ? ["--dry-run"] : []),
   ], { stdio: "inherit" });
   published.push(name);
 }
 
-// ── 7. What is left to do, which is the part that reaches admins ─────────────
+// ── 7. Point `latest` at it (opt-in) ─────────────────────────────────────────
+// Only after every part is up, and only for a full release: moving `latest` on a
+// partial run would point it at a version some packages do not have.
+const ALL_PACKAGES = [
+  "@xentium/contracts", "@xentium/errors", "@xentium/server-kit", "@xentium/auth",
+  "@xentium/plugin-engine", "@xentium/plugin-kit", "@xentium/plugin-sdk",
+  "@xentium/server", "xentium", "create-xentium",
+];
+if (promoteLatest && tag !== "latest") {
+  heading("latest");
+  if (dryRun) {
+    console.log(`would point latest at ${version} on ${ALL_PACKAGES.length} packages`);
+  } else if (only && only !== "all") {
+    console.log("skipped: --latest only applies to a full release (no --only)");
+  } else {
+    for (const name of ALL_PACKAGES) {
+      if (!isPublished(name)) fail(`${name}@${version} is not on the registry`, "latest was not moved on any package after this one");
+      run("npm", ["dist-tag", "add", `${name}@${version}`, "latest"], { stdio: "inherit" });
+    }
+  }
+}
+
+// ── 8. What is left to do, which is the part that reaches admins ─────────────
 heading("done");
 if (ranFramework) console.log("framework:  see above");
 if (published.length) console.log(`published: ${published.join(", ")}`);
