@@ -1,4 +1,4 @@
-import { compareBaseVersions } from "../../config/version.js";
+import { meetsMinimum, withinMaximum } from "../../config/version.js";
 
 /**
  * Which installed plugins refuse the core version we are about to offer.
@@ -8,9 +8,8 @@ import { compareBaseVersions } from "../../config/version.js";
  * than after the site is in maintenance mode. `xentium update` runs the same
  * test against the same declarations, so the ACP and the CLI cannot disagree.
  *
- * Compared on major.minor, the way `assertCompatible` does at enable time — a
- * plugin declaring `minXentiumVersion: "1.2"` means the 1.2 line, not 1.2.0
- * exactly.
+ * The same reading `assertCompatible` uses at enable time — a plugin declaring
+ * `minXentiumVersion: "1.2"` means the 1.2 line, while "1.2.0-alpha.4" is exact.
  *
  * A plugin that declares nothing is NOT blocked. We have no idea what it
  * supports, and refusing every core update because an old plugin was vague
@@ -37,8 +36,8 @@ export function pluginsBlocking(version: string, installed: InstalledManifest[])
     const min = plugin.manifest?.minXentiumVersion;
     const max = plugin.manifest?.maxXentiumVersion;
     if (!min) continue;
-    const tooOld = compareBaseVersions(version, min) < 0;
-    const tooNew = !!max && compareBaseVersions(version, max) > 0;
+    const tooOld = !meetsMinimum(version, min);
+    const tooNew = !!max && !withinMaximum(version, max);
     if (tooOld || tooNew) {
       const supports = !max ? `${min}+` : max === min ? min : `${min}–${max}`;
       blockers.push({ id: plugin.id, name: plugin.name, supports });

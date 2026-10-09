@@ -1989,6 +1989,19 @@
       "applying": "Dateien werden installiert…",
       "migrating": "Migrationen werden angewendet…",
       "enabling": "Wird aktiviert…"
+    },
+    "advisories": {
+      "title_one": "{{count}} Sicherheitshinweis betrifft diese Seite",
+      "title_other": "{{count}} Sicherheitshinweise betreffen diese Seite",
+      "affects": "Betrifft {{range}}",
+      "fixedIn": "Behoben in {{version}}",
+      "noFix": "Noch keine Korrektur veröffentlicht",
+      "severity": {
+        "low": "Niedrig",
+        "medium": "Mittel",
+        "high": "Hoch",
+        "critical": "Kritisch"
+      }
     }
   },
   "coreUpdate": {

@@ -1,12 +1,13 @@
 import { z } from "zod";
 import { XentiumError, XEC } from "@xentium/errors";
-import { compareBaseVersions } from "./version.js";
+import { meetsMinimum, withinMaximum } from "./version.js";
 
 export const manifestSchema = z.object({
   id:                 z.string().regex(/^[a-z0-9-]+$/, "id must be kebab-case"),
   name:               z.string().min(1),
   version:            z.string().regex(/^\d+\.\d+\.\d+/, "version must be semver"),
   vendor:             z.string().min(1),
+  // "1.0", "1.0.0" or "1.0.0-alpha.11" — see `meetsMinimum` for what each means.
   minXentiumVersion:   z.string().regex(/^\d+\.\d+/, "minXentiumVersion must be semver"),
   maxXentiumVersion:   z.string().regex(/^\d+\./, "maxXentiumVersion must be semver").optional(),
   licenseRequired:    z.boolean().default(false),
@@ -49,19 +50,19 @@ export function validateManifest(raw: unknown, hostVersion: string): PluginManif
 
 /**
  * Compatibility check (§10 lifecycle step 4): the plugin's declared
- * min/maxXentiumVersion window must contain the host version. Base versions
- * only — a 1.0.0-alpha build accepts plugins targeting 1.0, and prerelease
- * identifiers never affect the comparison.
+ * min/maxXentiumVersion window must contain the host version. A bound written
+ * without a prerelease names a release line (a 1.0.0-alpha build accepts a plugin
+ * targeting 1.0); one written with a prerelease is exact (see `meetsMinimum`).
  */
 export function assertCompatible(manifest: PluginManifest, hostVersion: string): void {
-  if (compareBaseVersions(hostVersion, manifest.minXentiumVersion) < 0) {
+  if (!meetsMinimum(hostVersion, manifest.minXentiumVersion)) {
     throw new XentiumError({
       code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,
       message: `Plugin "${manifest.id}" requires Xentium ${manifest.minXentiumVersion}+ (this is ${hostVersion})`,
     });
   }
-  if (manifest.maxXentiumVersion && compareBaseVersions(hostVersion, manifest.maxXentiumVersion) > 0) {
+  if (manifest.maxXentiumVersion && !withinMaximum(hostVersion, manifest.maxXentiumVersion)) {
     throw new XentiumError({
       code: XEC.PLUGIN_INCOMPATIBLE,
       httpStatus: 422,

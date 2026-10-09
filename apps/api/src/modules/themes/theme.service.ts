@@ -54,7 +54,7 @@ import { prisma } from "../../infrastructure/db.js";
 import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
-import { XENTIUM_VERSION, compareBaseVersions } from "../../config/version.js";
+import { XENTIUM_VERSION, meetsMinimum, withinMaximum } from "../../config/version.js";
 import { appearanceService, bustThemeCss, type ScopedTokenSet, type TokenMap } from "../appearance/appearance.service.js";
 import { layoutService, bustThemeLayouts } from "../layouts/layout.service.js";
 import { activeThemeKey, CORE_THEME, type ThemeKey } from "./themeKey.js";
@@ -193,10 +193,10 @@ function adoptStylePack(raw: unknown, zip: AdmZip): unknown {
 }
 
 function assertCompatible(m: ThemeManifestInput) {
-  if (compareBaseVersions(XENTIUM_VERSION, m.minXentiumVersion) < 0) {
+  if (!meetsMinimum(XENTIUM_VERSION, m.minXentiumVersion)) {
     throw themeError(`Theme "${m.id}" requires Xentium ${m.minXentiumVersion}+ (this is ${XENTIUM_VERSION})`);
   }
-  if (m.maxXentiumVersion && compareBaseVersions(XENTIUM_VERSION, m.maxXentiumVersion) > 0) {
+  if (m.maxXentiumVersion && !withinMaximum(XENTIUM_VERSION, m.maxXentiumVersion)) {
     throw themeError(`Theme "${m.id}" supports Xentium up to ${m.maxXentiumVersion} (this is ${XENTIUM_VERSION})`);
   }
 }

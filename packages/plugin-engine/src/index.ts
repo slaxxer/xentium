@@ -20,7 +20,7 @@
 export { manifestSchema, validateManifest, assertCompatible, createManifestValidator } from "./manifest.js";
 export type { PluginManifest } from "./manifest.js";
 
-export { baseVersion, compareBaseVersions } from "./version.js";
+export { baseVersion, compareBaseVersions, compareVersions, meetsMinimum, withinMaximum } from "./version.js";
 
 export { pluginRegistry, PluginRegistry } from "./registry.js";
 export type { LoadedPlugin, PluginLoadError } from "./registry.js";

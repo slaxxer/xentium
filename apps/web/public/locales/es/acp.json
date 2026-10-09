@@ -1989,6 +1989,19 @@
       "applying": "Instalando archivos…",
       "migrating": "Aplicando migraciones…",
       "enabling": "Activando…"
+    },
+    "advisories": {
+      "title_one": "{{count}} aviso de seguridad afecta a este sitio",
+      "title_other": "{{count}} avisos de seguridad afectan a este sitio",
+      "affects": "Afecta a {{range}}",
+      "fixedIn": "Corregido en {{version}}",
+      "noFix": "Aún no hay corrección publicada",
+      "severity": {
+        "low": "Baja",
+        "medium": "Media",
+        "high": "Alta",
+        "critical": "Crítica"
+      }
     }
   },
   "coreUpdate": {

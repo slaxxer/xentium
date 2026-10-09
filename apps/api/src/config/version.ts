@@ -37,4 +37,4 @@ export const XENTIUM_VERSION: string = readVersion();
  * pure, and the plugin compatibility check is its only consumer. Re-exported
  * here so existing imports keep working.
  */
-export { baseVersion, compareBaseVersions } from "@xentium/plugin-engine";
+export { baseVersion, compareBaseVersions, meetsMinimum, withinMaximum } from "@xentium/plugin-engine";

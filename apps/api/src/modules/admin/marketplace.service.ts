@@ -15,6 +15,7 @@ import { processUpdateCheck } from "../../jobs/updateCheck.js";
 import { readCoreUpdateCache, type CoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
 import { readAnnouncementCache, pendingAnnouncement } from "../../jobs/announcementCheck.js";
 import { XENTIUM_VERSION } from "../../config/version.js";
+import { compareVersions } from "@xentium/plugin-engine";
 import { cliSiteDir } from "../../config/envProbe.js";
 import { pluginsBlocking, type InstalledManifest } from "./coreCompat.js";
 import { pluginService } from "../plugins/plugin.service.js";
@@ -117,6 +118,16 @@ async function downloadAndVerifyArtifact(
   return buffer;
 }
 
+export interface CachedAdvisory {
+  id: string;
+  pluginId: string;
+  name: string;
+  severity: string;
+  affects: string;
+  fixedIn: string | null;
+  summary: string | null;
+}
+
 interface CachedUpdate {
   pluginId:          string;
   name?:             string;
@@ -135,19 +146,22 @@ interface CachedUpdate {
  * plugin is still installed AND its current installed version is older than the
  * offered version; the installed version is refreshed for accurate display.
  */
-async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setSince?: string; updates: CachedUpdate[] }> {
+async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setSince?: string; updates: CachedUpdate[]; advisories: CachedAdvisory[] }> {
   const raw = await getSetting<string>("marketplace.updates", "");
-  if (!raw) return { checkedAt: null, updates: [] };
+  if (!raw) return { checkedAt: null, updates: [], advisories: [] };
 
-  let parsed: { checkedAt?: string | null; setSince?: string; updates?: CachedUpdate[] };
+  let parsed: { checkedAt?: string | null; setSince?: string; updates?: CachedUpdate[]; advisories?: CachedAdvisory[] };
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return { checkedAt: null, updates: [] };
+    return { checkedAt: null, updates: [], advisories: [] };
   }
 
   const cached = Array.isArray(parsed.updates) ? parsed.updates : [];
-  if (!cached.length) return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates: [] };
+  const cachedAdvisories = Array.isArray(parsed.advisories) ? parsed.advisories : [];
+  if (!cached.length && !cachedAdvisories.length) {
+    return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates: [], advisories: [] };
+  }
 
   const installed = await prisma.installedPlugin.findMany({ select: { id: true, installedVersion: true } });
   const byId = new Map(installed.map((p) => [p.id, p.installedVersion]));
@@ -159,7 +173,15 @@ async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setS
     })
     .map((u) => ({ ...u, installedVersion: byId.get(u.pluginId) ?? u.installedVersion }));
 
-  return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates };
+  // Same reconciliation for advisories: one the admin has just fixed by updating
+  // (installed ≥ fixedIn) or removed with its plugin is gone now, not tomorrow.
+  const advisories = cachedAdvisories.filter((a) => {
+    const current = byId.get(a.pluginId);
+    if (current === undefined) return false;
+    return !a.fixedIn || compareVersions(current, a.fixedIn) < 0;
+  });
+
+  return { checkedAt: parsed.checkedAt ?? null, setSince: parsed.setSince, updates, advisories };
 }
 
 /**
@@ -435,7 +457,7 @@ export const marketplaceService = {
    * engage — not just dismiss it.
    */
   async getUpdates(userId?: string) {
-    const { checkedAt, setSince, updates } = await readReconciledUpdates();
+    const { checkedAt, setSince, updates, advisories } = await readReconciledUpdates();
 
     // No pending updates → nothing to acknowledge. A missing setSince (pre-anchor
     // cache) is treated as unacknowledged so the dialog still nudges until the next
@@ -446,7 +468,7 @@ export const marketplaceService = {
         ? await activityService.hasVisitedSince(userId, "/admin/updates", new Date(setSince))
         : false;
     }
-    return { checkedAt, setSince, updates, acknowledged, core: await getCoreUpdate(userId) };
+    return { checkedAt, setSince, updates, advisories, acknowledged, core: await getCoreUpdate(userId) };
   },
 
   /**

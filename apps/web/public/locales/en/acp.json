@@ -2159,6 +2159,19 @@
       "applying": "Installing files…",
       "migrating": "Applying migrations…",
       "enabling": "Enabling…"
+    },
+    "advisories": {
+      "title_one": "{{count}} security advisory affects this site",
+      "title_other": "{{count}} security advisories affect this site",
+      "affects": "Affects {{range}}",
+      "fixedIn": "Fixed in {{version}}",
+      "noFix": "No fix released yet",
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "critical": "Critical"
+      }
     }
   },
   "coreUpdate": {

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { faCloudArrowDown, faCircleCheck, faTriangleExclamation } from "@fortawesome/free-solid-svg-icons";
+import { faCloudArrowDown, faCircleCheck, faTriangleExclamation, faShieldHalved } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../../lib/api";
 import { runStreamedJob } from "../../../lib/streamProgress";
+import "./UpdatesPage.scss";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -16,12 +17,19 @@ interface PluginUpdate {
   changelog?:        string;
 }
 
+/** A published security advisory against a version this site runs. */
+interface Advisory {
+  id: string; pluginId: string; name: string;
+  severity: "low" | "medium" | "high" | "critical" | string;
+  affects: string; fixedIn: string | null; summary: string | null;
+}
+
 export function UpdatesPage() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const { data, isLoading } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[] }>({
+  const { data, isLoading } = useQuery<{ checkedAt: string | null; updates: PluginUpdate[]; advisories?: Advisory[] }>({
     queryKey:  ["acp-marketplace-updates"],
     queryFn:   () => api.get("/admin/marketplace/updates"),
     staleTime: 5 * 60_000,
@@ -67,6 +75,7 @@ export function UpdatesPage() {
   }
 
   const updates = data?.updates ?? [];
+  const advisories = data?.advisories ?? [];
 
   return (
     <div>
@@ -76,6 +85,8 @@ export function UpdatesPage() {
           <h1 className="acp-page-title">{t("updates.title")}</h1>
         </div>
       </div>
+
+      {advisories.length > 0 && <Advisories items={advisories} />}
 
       {isLoading ? (
         <div className="acp-card acp-empty">{t("updates.loading")}</div>
@@ -141,6 +152,41 @@ export function UpdatesPage() {
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+const SEVERITY_ORDER = ["critical", "high", "medium", "low"];
+
+/**
+ * Security advisories against what this site runs — what is wrong, which versions,
+ * and the version that fixes it. Shown even when no update exists yet, because
+ * "there is no fix, here is what to do meanwhile" is exactly when an admin needs it.
+ */
+function Advisories({ items }: { items: Advisory[] }) {
+  const { t } = useTranslation("acp");
+  const sorted = [...items].sort((a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity));
+  return (
+    <div className="acp-card upd-adv">
+      <div className="upd-adv__head">
+        <FontAwesomeIcon icon={faShieldHalved} />
+        <span>{t("updates.advisories.title", { count: items.length })}</span>
+      </div>
+      {sorted.map((a) => (
+        <div key={a.id} className={`upd-adv__row upd-adv__row--${a.severity}`}>
+          <div className="upd-adv__line">
+            <strong>{a.name}</strong>
+            <span className="upd-adv__sev">{t(`updates.advisories.severity.${a.severity}`, { defaultValue: a.severity })}</span>
+            <code>{a.id}</code>
+          </div>
+          <div className="upd-adv__meta">
+            {t("updates.advisories.affects", { range: a.affects })}
+            {" · "}
+            {a.fixedIn ? t("updates.advisories.fixedIn", { version: a.fixedIn }) : t("updates.advisories.noFix")}
+          </div>
+          {a.summary && <p className="upd-adv__text">{a.summary}</p>}
+        </div>
+      ))}
     </div>
   );
 }

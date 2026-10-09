@@ -1,0 +1,59 @@
+// Security advisories on the Updates page.
+.upd-adv {
+  padding: var(--sp-5) var(--sp-6);
+  margin-bottom: var(--sp-4);
+  border: 1px solid color-mix(in srgb, var(--c-danger) 35%, transparent);
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-base);
+    font-weight: 800;
+    color: var(--c-fg);
+    margin-bottom: var(--sp-3);
+    svg { color: var(--c-danger); }
+  }
+
+  &__row {
+    --_sev: var(--c-fg-muted);
+    padding: var(--sp-3) 0;
+    border-top: 1px solid var(--c-border);
+    &--medium { --_sev: var(--c-warn); }
+    &--high, &--critical { --_sev: var(--c-danger); }
+  }
+
+  &__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    font-size: var(--fs-sm);
+    color: var(--c-fg);
+    code { font-family: var(--ff-mono, monospace); font-size: var(--fs-xs); color: var(--c-fg-muted); }
+  }
+
+  &__sev {
+    padding: 2px var(--sp-2);
+    border-radius: var(--radius-full, 999px);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    color: var(--_sev);
+    background: color-mix(in srgb, var(--_sev) 16%, transparent);
+  }
+
+  &__meta {
+    margin-top: var(--sp-1);
+    font-size: var(--fs-xs);
+    font-family: var(--ff-mono, monospace);
+    color: var(--c-fg-muted);
+  }
+
+  &__text {
+    margin: var(--sp-2) 0 0;
+    font-size: var(--fs-sm);
+    line-height: 1.6;
+    color: var(--c-fg-muted);
+    white-space: pre-wrap;
+  }
+}

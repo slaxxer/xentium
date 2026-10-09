@@ -69,7 +69,7 @@ async function runUpdateCheck(): Promise<void> {
 
   interface CheckResponse {
     updates:    { id: string; latestVersion: string; critical?: boolean }[];
-    advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null }[];
+    advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null; summary?: string }[];
     token?:     string;
   }
 
@@ -132,7 +132,19 @@ async function runUpdateCheck(): Promise<void> {
     if (prev?.setSince && prevHash === setHash) setSince = prev.setSince; // unchanged set → keep the original anchor
   } catch { /* malformed prior cache → treat as a new set */ }
 
-  const value = JSON.stringify({ checkedAt: new Date().toISOString(), setSince, updates });
+  // The advisories themselves, for the Updates page — until now they only flipped
+  // `critical` above, so an admin was told to hurry without being told why, and an
+  // advisory with no fix yet was not shown at all. The marketplace already sends
+  // only those matching the installed version.
+  const advisories = (body.advisories ?? [])
+    .filter((a) => byId.has(a.target))
+    .map((a) => ({
+      id: a.id, pluginId: a.target, name: byId.get(a.target)?.name ?? a.target,
+      severity: a.severity, affects: a.affects, fixedIn: a.fixedIn ?? null,
+      summary: typeof a.summary === "string" ? a.summary.slice(0, 1000) : null,
+    }));
+
+  const value = JSON.stringify({ checkedAt: new Date().toISOString(), setSince, updates, advisories });
   await prisma.setting.upsert({
     where:  { key: UPDATES_SETTING },
     update: { value },
