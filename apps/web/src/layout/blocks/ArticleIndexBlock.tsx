@@ -20,6 +20,7 @@ import type { ArticleListItem } from "../../lib/articlesApi";
 import { UserAvatar } from "../../components/UserAvatar";
 import { Username } from "../../components/Username";
 import type { BlockProps } from "../blockRegistry";
+import { uiLocale } from "../../lib/i18n";
 
 type View = "grid" | "list";
 
@@ -140,7 +141,7 @@ export function ArticleIndexBlock({ props, context }: BlockProps<Props, ArticleI
 
 function formatShortDate(iso: string | null): string {
   if (!iso) return "Draft";
-  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return new Date(iso).toLocaleDateString(uiLocale(), { month: "short", day: "numeric" });
 }
 
 function ArticleGridCard({ a, draft }: { a: ArticleListItem; draft?: boolean }) {

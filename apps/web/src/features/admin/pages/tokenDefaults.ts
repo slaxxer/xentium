@@ -4,13 +4,13 @@
  * `_tokenDefaults.scss` is the source of truth for the site's defaults; the Style
  * Editor used to keep a hand-written copy of about twenty of them, so any token outside
  * that copy showed an empty row. Reading the file itself (the three blocks the site
- * applies: primitives, the light palette, components) means a token added there has a
+ * applies: primitives, the light palette, components, then the core look) means a token added there has a
  * starting value in the editor the moment it exists.
  */
 import source from "../../../styles/_tokenDefaults.scss?raw";
 
 /** The mixins the SITE applies, in the order it applies them (styles/tokens.scss). */
-const SITE_MIXINS = ["primitives", "palette-light", "components"];
+const SITE_MIXINS = ["primitives", "palette-light", "components", "core-look"];
 
 export function parseTokenDefaults(scss: string, mixins: string[] = SITE_MIXINS): Record<string, string> {
   const out: Record<string, string> = {};

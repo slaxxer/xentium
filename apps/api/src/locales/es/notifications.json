@@ -1,0 +1,119 @@
+{
+  "newFollower": {
+    "title": "Nuevo seguidor",
+    "body": "{{name}} ha empezado a seguirte."
+  },
+  "profileComment": {
+    "title": "Nuevo comentario en tu perfil",
+    "body": "{{name}} ha publicado en tu perfil."
+  },
+  "profileReply": {
+    "title": "Nueva respuesta a tu comentario",
+    "body": "{{name}} respondió a tu comentario en el perfil de {{owner}}."
+  },
+  "mentionProfile": {
+    "title": "Te han mencionado",
+    "body": "{{name}} te ha mencionado en un comentario en el perfil de {{owner}}."
+  },
+  "profileCommentLiked": {
+    "title": "A alguien le gusta tu comentario",
+    "body": "A {{name}} le ha gustado tu comentario en el perfil de {{owner}}."
+  },
+  "articleCommentLiked": {
+    "title": "A alguien le gusta tu comentario",
+    "body": "A {{name}} le ha gustado tu comentario."
+  },
+  "badgeGranted": {
+    "title": "¡Has recibido la insignia «{{badge}}»!",
+    "body": "Ya está en tu perfil, a la vista de quien lo visite."
+  },
+  "badgeGrantedNote": {
+    "title": "¡Has recibido la insignia «{{badge}}»!"
+  },
+  "badgeEarned": {
+    "title": "¡Has conseguido la insignia «{{badge}}»!",
+    "body": "Ya está en tu perfil, a la vista de quien lo visite."
+  },
+  "banPermanent": {
+    "title": "Tu cuenta ha sido suspendida de forma permanente"
+  },
+  "banTemporary": {
+    "title": "Tu cuenta ha sido suspendida temporalmente"
+  },
+  "banSuspended": {
+    "title": "Tu cuenta ha sido suspendida"
+  },
+  "banCasePolicy": {
+    "title": "Tu cuenta ha sido suspendida de forma permanente",
+    "body": "Infracción de la norma de cuentas múltiples: se han detectado varias cuentas en el mismo dispositivo"
+  },
+  "banLifted": {
+    "title": "Se ha levantado la suspensión de tu cuenta",
+    "body": "Se ha retirado tu suspensión. Ya puedes iniciar sesión."
+  },
+  "banEnded": {
+    "title": "Tu suspensión ha terminado",
+    "body": "Tu suspensión temporal ha caducado. Ya puedes volver a iniciar sesión."
+  },
+  "contentRemoved": {
+    "title": "Tu contenido ha sido eliminado"
+  },
+  "reportReviewed": {
+    "title": "Tu denuncia ha sido revisada",
+    "body": "Un moderador ha revisado tu denuncia y no ha encontrado ninguna infracción. Gracias por avisar."
+  },
+  "newCase": {
+    "title": "Nuevo caso de revisión",
+    "body": "Se ha detectado un patrón sospechoso que requiere la revisión de un moderador."
+  },
+  "caseUserBanned": {
+    "title": "Cuenta señalada bloqueada",
+    "body": "{{name}} ({{caseType}}) ha sido bloqueado."
+  },
+  "caseUserBannedNoType": {
+    "title": "Cuenta señalada bloqueada",
+    "body": "{{name}} (de un caso de revisión) ha sido bloqueado."
+  },
+  "newReport": {
+    "title": "Nueva denuncia recibida",
+    "body": "Se ha presentado una denuncia sobre {{target}}."
+  },
+  "ladderBanPermanent": {
+    "title": "Escala de advertencias alcanzada",
+    "body": "{{name}} ha llegado a {{count}} advertencias y ha sido bloqueado de forma permanente."
+  },
+  "ladderBanTemporary": {
+    "title": "Escala de advertencias alcanzada",
+    "body": "{{name}} ha llegado a {{count}} advertencias y ha sido bloqueado durante {{days}} días."
+  },
+  "ladderNotify": {
+    "title": "Escala de advertencias alcanzada",
+    "body": "{{name}} ha llegado a {{count}} advertencias y conviene revisarlo."
+  },
+  "warningIssued": {
+    "title": "Has recibido una advertencia"
+  },
+  "warningPardoned": {
+    "title": "Se ha retirado una advertencia",
+    "body": "Se ha eliminado una de tus advertencias."
+  },
+  "passwordChanged": {
+    "title": "Tu contraseña ha cambiado",
+    "body": "Se acaba de restablecer la contraseña de tu cuenta. Si no has sido tú, contacta de inmediato con un administrador."
+  },
+  "jobFailure": {
+    "title": "Ha fallado una tarea en segundo plano",
+    "body": "Una tarea de «{{queue}}» ha fallado tras agotar los reintentos. Revisa Sistema → Registro de errores."
+  },
+  "promoted": {
+    "title": "¡Has ascendido a {{rank}}!",
+    "body": "Has alcanzado un nuevo nivel. Sigue participando para desbloquear aún más."
+  },
+  "targets": {
+    "article": "un artículo",
+    "article_comment": "un comentario de artículo",
+    "profile_comment": "un comentario de perfil",
+    "user": "un miembro",
+    "plugin-content": "contenido de un plugin"
+  }
+}

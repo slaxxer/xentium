@@ -1,8 +1,6 @@
-import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Outlet } from "react-router-dom";
-import { api } from "../lib/api";
 import { PubNav } from "./PubNav";
+import { SiteBars } from "./SiteBars";
 import { SiteFooter } from "./SiteFooter";
 import { ModCanvas } from "../features/modcp/ModCanvas";
 import { LevelUpDialog } from "../features/progression/LevelUpDialog";
@@ -10,37 +8,9 @@ import { LayoutWidgetOutlet } from "../plugins/LayoutWidgetOutlet";
 import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import { presentFrame, usePageTemplate, useSiteFrame } from "../layout/siteFrame";
 import "./AppLayout.scss";
-
-/**
- * Keeps the favicon in sync with the uploaded one. Without an upload, index.html's
- * Xentium icon stays. With one, EVERY icon link points at it — a browser prefers the
- * SVG link over the .ico, so changing only the first would leave the Xentium icon up.
- */
-function useFavicon() {
-  const { data } = useQuery<{ iconUrl: string | null }>({
-    queryKey: ["pub-branding"],
-    queryFn:  () => api.get("/appearance/branding"),
-    staleTime: 300_000,
-  });
-  useEffect(() => {
-    if (!data?.iconUrl) return;
-    const links = [...document.querySelectorAll<HTMLLinkElement>("link[rel~='icon']")];
-    if (links.length === 0) {
-      const link = document.createElement("link");
-      link.rel = "icon";
-      document.head.appendChild(link);
-      links.push(link);
-    }
-    for (const link of links) {
-      link.removeAttribute("type");
-      link.removeAttribute("sizes");
-      link.href = data.iconUrl;
-    }
-  }, [data?.iconUrl]);
-}
+import { UserHoverCardHost } from "../components/UserHoverCard";
 
 export function AppLayout() {
-  useFavicon();
   const frame = presentFrame(useSiteFrame(), usePageTemplate());
 
   /*
@@ -58,6 +28,9 @@ export function AppLayout() {
     <div className={frame.className} style={frame.style} data-frame={frame.mode}>
       <div className="app-frame">
         <PubNav />
+        {/* Under the navbar and inside the frame, so it takes the frame's width:
+            edge to edge in `full`, the box's width in boxed layouts. */}
+        <SiteBars />
         <div className="app-frame__body">
           <div className="app-frame__box">
             <main className="app-main">
@@ -76,6 +49,9 @@ export function AppLayout() {
       </div>
       <ModCanvas />
       <LevelUpDialog />
+      {/* Hover a username or avatar anywhere on the site: the profile miniature.
+          Inside the router (its links need it), outside the ACP. */}
+      <UserHoverCardHost />
     </div>
   );
 }

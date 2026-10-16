@@ -551,6 +551,41 @@
     flex: none;
   }
 
+  /* Blocks | Layers — the rail's two views. */
+  &__railtabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    padding: 3px;
+    margin-bottom: var(--sp-3);
+    border-radius: 999px;
+    background: var(--c-bg);
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 0;
+      border-radius: 999px;
+      background: none;
+      font: inherit;
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--c-fg-muted);
+      cursor: pointer;
+
+      &:hover { color: var(--c-fg); }
+
+      &.is-on {
+        background: var(--c-surface);
+        color: var(--c-accent);
+        box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+      }
+    }
+  }
+
   &__tree {
     background: var(--card-bg);
     border: 1px solid var(--card-border-color);

@@ -10,13 +10,15 @@
  * The server always re-validates. This form is a convenience, never the guarantee.
  */
 import { useTranslation } from "react-i18next";
+import { hostText } from "../lib/coreText";
 import "./SchemaFields.scss";
 import { IconPicker } from "./IconPicker";
 import { ToggleGlyph } from "./Toggle";
+import { ImageField, RichTextField } from "./SchemaFieldControls";
 
 /** The JSON Schema subset our Zod contracts actually produce. */
 export interface SchemaProp {
-  /** A hint the editor may honour: currently "icon". */
+  /** A hint the editor may honour: "icon", "image", "richtext", "datetime". */
   format?: string;
   type?:        string;
   title?:       string;
@@ -86,7 +88,7 @@ export function defaultsFor(schema: FieldSchema | null | undefined): FieldValues
   return out;
 }
 
-export function SchemaFields({ schema, values, onChange, omit, compact }: {
+export function SchemaFields({ schema, values, onChange, omit, compact, textKey }: {
   schema: FieldSchema | null | undefined;
   values: FieldValues;
   onChange: (next: FieldValues) => void;
@@ -113,6 +115,12 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
    * server validation.
    */
   compact?: boolean;
+  /**
+   * Where this schema's titles, descriptions and option names are translated, under
+   * `acp:core` — e.g. `blocks.section.props`. Each falls back to what the schema
+   * itself says, so a plugin's form (no such entries) reads exactly as it did.
+   */
+  textKey?: string;
 }) {
   const { t } = useTranslation("acp");
   const hidden = new Set(omit ?? []);
@@ -131,8 +139,22 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
         const prop = normalize(rawProp);
         // Unsupported types are skipped rather than guessed at — a half-rendered
         // control that posts the wrong shape is worse than no control.
+        const tx = (field: string, fallback: string) => textKey ? hostText(`${textKey}.${key}.${field}`, fallback) : fallback;
+        // Rich text has no JSON-schema type (it is a document), so it is matched by
+        // its format before the primitive check would skip it.
+        if (prop.format === "richtext") {
+          return (
+            <div className="acp-form-field" key={key}>
+              <label className="acp-label">{tx("title", prop.title ?? prettify(key))}</label>
+              <RichTextField value={values[key]} onChange={(json) => set(key, json)} />
+              {prop.description && <div className="acp-hint">{tx("description", prop.description)}</div>}
+            </div>
+          );
+        }
         if (!SUPPORTED.has(prop.type ?? "")) return null;
-        const label = prop.title ?? prettify(key);
+        const label = tx("title", prop.title ?? prettify(key));
+        const description = prop.description ? tx("description", prop.description) : undefined;
+        const optLabel = (opt: unknown) => tx(`enum.${String(opt)}`, String(opt));
         const value = values[key] ?? prop.default;
         const numeric = prop.type === "number" || prop.type === "integer";
         // A value the primitive control cannot represent — e.g. a LocalizedText
@@ -150,7 +172,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
               <label className="sf-switch" key={key}>
                 <span className="sf-switch__text">
                   <b>{label}</b>
-                  {prop.description && <span className="acp-hint">{prop.description}</span>}
+                  {description && <span className="acp-hint">{description}</span>}
                 </span>
                 <input type="checkbox" checked={Boolean(value)}
                   onChange={(e) => set(key, e.target.checked)} />
@@ -164,7 +186,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                 onChange={(e) => set(key, e.target.checked)} style={{ marginTop: 3 }} />
               <span>
                 <b style={{ fontSize: "var(--fs-sm)" }}>{label}</b>
-                {prop.description && <div className="acp-hint" style={{ marginTop: 2 }}>{prop.description}</div>}
+                {description && <div className="acp-hint" style={{ marginTop: 2 }}>{description}</div>}
               </span>
             </label>
           );
@@ -188,7 +210,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                       className={on ? "is-on" : ""}
                       aria-pressed={on}
                       onClick={() => set(key, numeric ? Number(opt) : opt)}>
-                      {String(opt)}
+                      {optLabel(opt)}
                     </button>
                   );
                 })}
@@ -197,7 +219,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
               <select className="acp-input" value={String(value ?? "")}
                 onChange={(e) => set(key, numeric ? Number(e.target.value) : e.target.value)}>
                 {prop.enum.map((opt) => (
-                  <option key={String(opt)} value={String(opt)}>{String(opt)}</option>
+                  <option key={String(opt)} value={String(opt)}>{optLabel(opt)}</option>
                 ))}
               </select>
             ) : prop.type === "string" && prop.format === "icon" ? (
@@ -209,6 +231,13 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                 value={nonPrimitive ? "" : String(value ?? "")}
                 onChange={(tok) => set(key, tok)}
               />
+            ) : prop.type === "string" && prop.format === "datetime" ? (
+              /* Stored as the picker gives it ("2026-12-24T18:00"), read in the viewer's zone. */
+              <input className="acp-input" type="datetime-local"
+                value={nonPrimitive ? "" : String(value ?? "")}
+                onChange={(e) => set(key, e.target.value || undefined)} />
+            ) : prop.type === "string" && prop.format === "image" ? (
+              <ImageField value={nonPrimitive ? "" : String(value ?? "")} onChange={(v) => set(key, v || undefined)} />
             ) : prop.type === "string" ? (
               <input className="acp-input"
                 value={nonPrimitive ? "" : String(value ?? "")}
@@ -222,7 +251,7 @@ export function SchemaFields({ schema, values, onChange, omit, compact }: {
                 // message about types rather than about the missing value.
                 onChange={(e) => set(key, e.target.value === "" ? undefined : Number(e.target.value))} />
             )}
-            {prop.description && <div className="acp-hint">{prop.description}</div>}
+            {description && <div className="acp-hint">{description}</div>}
           </div>
         );
       })}

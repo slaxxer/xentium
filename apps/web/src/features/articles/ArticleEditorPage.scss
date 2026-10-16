@@ -1,23 +1,37 @@
 /* =========================================================
-   Create / edit article — full-width canvas, slide-over details.
+   Create / edit article — a page in the site's own layout (frame, header, footer),
+   the editor as one card at the content width, slide-over details.
    Source: nodevo-redesign/Create article redesign. Site tokens only.
 
    Prefix `aed`: a stylesheet stays in the document once loaded, so a root class
    shared with another editor would let one restyle the other.
    ========================================================= */
 
+/* One card at the site's content width, like any page's: it follows the theme's
+   frame (boxed, centred, flush) because AppLayout draws that around it. */
 .aed {
-  flex: 1;
-  min-height: 0;
+  --aed-gutter: var(--sp-6);
+  width: calc(100% - 2 * var(--aed-gutter));
+  max-width: calc(var(--content-max) - 2 * var(--aed-gutter));
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  background: var(--c-bg);
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--card-radius);
   color: var(--c-fg);
+
+  @media (max-width: 640px) { --aed-gutter: var(--sp-4); }
 }
 
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
 
+/* Save and Publish stay in reach on a long article: the bar sticks under the navbar. */
 .aed-top {
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 20;
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -70,7 +84,7 @@
   &--primary {
     border: none; padding: 0 16px; font-weight: 700;
     background: var(--btn-bg); color: var(--btn-fg);
-    box-shadow: 0 2px 12px var(--c-accent-glow);
+    box-shadow: var(--shadow-glow);
     &:hover { color: var(--btn-fg); filter: brightness(1.06); }
     /* Still clickable: pressing it points at what is missing. */
     &.is-blocked { opacity: 0.55; box-shadow: none; }
@@ -87,10 +101,11 @@
 
 /* ── Stage: canvas + details ─────────────────────────────────────────────── */
 
-.aed-stage { flex: 1; min-height: 0; position: relative; display: flex; }
+.aed-stage { min-height: 60vh; position: relative; display: flex; }
 
+/* The page scrolls, not the canvas. */
 .aed-canvas {
-  flex: 1; min-width: 0; overflow: auto;
+  flex: 1; min-width: 0;
   &__in { max-width: 820px; margin: 0 auto; padding: 44px 32px 120px; }
 }
 
@@ -152,13 +167,15 @@ textarea.aed-input { resize: vertical; line-height: 1.5; }
 
 /* ── Details panel ───────────────────────────────────────────────────────── */
 
+/* The details slide over the WINDOW, above the header: the editor is a page in the
+   flow now, so its own box can be far taller than the screen. */
 .aed-scrim {
-  position: absolute; inset: 0; z-index: 20;
+  position: fixed; inset: 0; z-index: 1000;
   background: color-mix(in srgb, var(--c-bg) 55%, transparent);
 }
 
 .aed-panel {
-  position: absolute; top: 0; right: 0; bottom: 0; z-index: 30;
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 1001;
   width: 380px; max-width: 92%;
   display: flex; flex-direction: column;
   background: var(--c-surface); border-left: 1px solid var(--c-border);
@@ -249,8 +266,13 @@ textarea.aed-input { resize: vertical; line-height: 1.5; }
 /* ── Wide screens: the panel sits beside the canvas instead of over it ──── */
 
 @media (min-width: 1280px) {
+  /* Docked beside the canvas: sticks under the top bar while the page scrolls, and
+     scrolls its own body. Its own stacking, so the sticky top bar stays above it. */
   .aed-panel {
-    position: relative; box-shadow: none; flex: none;
+    position: sticky; top: calc(var(--nav-height) + 60px); bottom: auto; z-index: auto;
+    align-self: flex-start;
+    max-height: calc(100vh - var(--nav-height) - 60px);
+    box-shadow: none; flex: none;
     transform: none; visibility: visible; display: none;
     &.is-open { display: flex; }
   }

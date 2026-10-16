@@ -29,6 +29,8 @@ export interface ArticleListItem {
   tags: { id: string; name: string; slug: string }[];
   createdAt: Date;
   updatedAt: Date;
+  /** The signed-in viewer's own state, on lists. Absent for guests. */
+  viewer?: { liked: boolean; saved: boolean };
 }
 
 export interface ArticleDetail extends ArticleListItem {

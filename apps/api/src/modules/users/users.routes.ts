@@ -70,6 +70,8 @@ usersRouter.put("/profile-comments/:commentId", requireAuth, usersController.upd
 usersRouter.delete("/profile-comments/:commentId", requireAuth, usersController.deleteProfileComment);
 usersRouter.post("/profile-comments/:commentId/like", requireAuth, usersController.likeProfileComment);
 usersRouter.delete("/profile-comments/:commentId/like", requireAuth, usersController.unlikeProfileComment);
+usersRouter.post("/profile-comments/:commentId/dislike", requireAuth, usersController.dislikeProfileComment);
+usersRouter.delete("/profile-comments/:commentId/dislike", requireAuth, usersController.undislikeProfileComment);
 
 // Profile field values for a public profile (auth-aware for privacy filtering)
 usersRouter.get("/:id/profile-fields", optionalAuth, usersController.getUserProfileFields);

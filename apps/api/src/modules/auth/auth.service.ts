@@ -11,6 +11,7 @@ import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { recipientLocale } from "../../shared/i18n/serverText.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
  *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
@@ -189,7 +190,8 @@ export async function checkAvailability(
   };
 }
 
-export async function sendRegistrationCode(email: string): Promise<void> {
+/** `localeHint`: the page's language — there is no account yet to take one from. */
+export async function sendRegistrationCode(email: string, localeHint?: string): Promise<void> {
   // Check email not already taken
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -203,7 +205,7 @@ export async function sendRegistrationCode(email: string): Promise<void> {
     ...(await siteVars()),
     code,
     expiry_minutes: String(Math.round(REG_CODE_TTL / 60)),
-  });
+  }, await recipientLocale({ hint: localeHint }));
   const sent = await sendEmail(email, subject, html);
 
   if (!sent) {
@@ -310,6 +312,9 @@ export async function register(
         passwordHash: hash,
         isActive: true,
         emailVerifiedAt: new Date(),
+        // The controller refused this sign-up unless the form's consent box was ticked
+        // (when there is anything to consent to).
+        legalAcceptedAt: new Date(),
         loginPinEnabled: loginPinEnabled && !!pinHash,
         loginPinHash: pinHash ?? null,
       },
@@ -371,7 +376,7 @@ export async function register(
  * the email exists (§43 — account enumeration prevention). When the account is
  * found and active, a single-use DB-backed token is created and emailed.
  */
-export async function requestPasswordReset(email: string): Promise<void> {
+export async function requestPasswordReset(email: string, localeHint?: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user || !user.isActive) return; // silent no-op — never leak existence
 
@@ -391,7 +396,7 @@ export async function requestPasswordReset(email: string): Promise<void> {
     ...(await siteVars()),
     reset_url: link,
     expiry_minutes: String(Math.round(RESET_TOKEN_TTL_MS / 60_000)),
-  });
+  }, await recipientLocale({ userId: user.id, hint: localeHint }));
   const sent = await sendEmail(email, reset.subject, reset.html);
   if (!sent) {
     // Dev fallback — see sendRegistrationCode for why this writes to stderr.
@@ -461,6 +466,7 @@ export async function confirmPasswordReset(
     userId:   row.userId,
     type:     "auth.password_changed",
     title:    "Your password was changed",
+    i18n:     { key: "common:notify.passwordChanged" },
     body:     "Your account password was just reset. If this wasn't you, contact an administrator immediately.",
     channels: ["in_app", "email"],
   }).catch(() => null);

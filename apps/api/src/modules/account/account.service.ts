@@ -7,6 +7,7 @@ import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { env } from "../../config/env.js";
+import { recipientLocale } from "../../shared/i18n/serverText.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
 
@@ -260,7 +261,7 @@ export const accountService = {
     });
   },
 
-  async requestEmailChange(userId: string, currentPassword: string, newEmail: string) {
+  async requestEmailChange(userId: string, currentPassword: string, newEmail: string, localeHint?: string) {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new XentiumError({ code: "XEC-USER-1001", httpStatus: 404, message: "User not found" });
 
@@ -292,7 +293,7 @@ export const accountService = {
       code,
       new_email: newEmail,
       expiry_minutes: "30",
-    });
+    }, await recipientLocale({ userId, hint: localeHint }));
     await sendEmail(newEmail, subject, html);
 
     return { codeSent: true };

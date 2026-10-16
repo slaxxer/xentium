@@ -40,6 +40,8 @@
   },
   "maintenance": {
     "badge": "Maintenance in progress",
+    "defaultTitle": "Down for a quick tune-up.",
+    "defaultMessage": "We're making the community better. We'll be back shortly.",
     "teamAccess": "Team access",
     "signInToBypass": "Maintenance mode is active. Sign in to bypass.",
     "notAuthorized": "Your account isn't allowed to bypass maintenance.",
@@ -73,8 +75,13 @@
   },
   "footer": {
     "whosOnline": "Who's online",
-    "onlineSentence": "There are {{count}} members online right now, based on activity over the past few minutes.",
     "andMore": "+{{count}} more",
+    "statMembers_one": "{{count}} member online",
+    "statMembers_other": "{{count}} members online",
+    "statGuests_one": "{{count}} guest",
+    "statGuests_other": "{{count}} guests",
+    "statRecord_one": "Record: {{count}} visitor on {{date}} at {{time}}",
+    "statRecord_other": "Record: {{count}} visitors on {{date}} at {{time}}",
     "legend": "Legend",
     "totalArticles": "Articles",
     "members": "Members",
@@ -103,7 +110,8 @@
     "loading": "Loading…",
     "search": "Search",
     "decrease": "Decrease",
-    "increase": "Increase"
+    "increase": "Increase",
+    "ok": "OK"
   },
   "nav": {
     "home": "Home",
@@ -120,7 +128,8 @@
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
     "adminPanel": "Admin panel",
-    "adminAttention": "Something in the admin panel needs your attention"
+    "adminAttention": "Something in the admin panel needs your attention",
+    "homeAria": "Go to the home page"
   },
   "search": {
     "short": "Search",
@@ -147,6 +156,58 @@
       "subtitle": "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
       "ctaPrimary": "Join the conversation",
       "ctaSecondary": "Browse as guest"
+    },
+    "gate": {
+      "vote": "Create an account to like topics",
+      "post": "Sign up to start a new topic",
+      "more": "Create a free account to read everything",
+      "default": "Create a free account to do that"
+    },
+    "signUpFree": "Sign up free",
+    "stats": {
+      "members": "Members",
+      "posts": "Posts",
+      "today": "New today"
+    },
+    "presence": {
+      "title": "Happening right now",
+      "live": "Live",
+      "postedIn": "posted in {{category}}",
+      "postedInCommunity": "posted in the community"
+    },
+    "card": {
+      "likes_one": "like",
+      "likes_other": "likes",
+      "replies_one": "reply",
+      "replies_other": "replies",
+      "views_one": "view",
+      "views_other": "views",
+      "signUpToLike": "Sign up to like",
+      "signUp": "Sign up",
+      "unknown": "Unknown"
+    },
+    "feed": {
+      "latest": "Latest",
+      "top": "Top",
+      "topics_one": "{{count}} topic",
+      "topics_other": "{{count}} topics",
+      "newTopic": "New topic",
+      "newPost": "New post",
+      "allCategories": "All categories",
+      "loading": "Loading…",
+      "empty": "No topics here yet.",
+      "moreAll": "<b>Create a free account</b> to see all {{formatted}} posts",
+      "moreRead": "<b>Create a free account</b> to read everything"
+    },
+    "rail": {
+      "joinTitle": "Join {{site}}",
+      "joinText": "It's free. Post, reply, like what you read and get notified when people respond.",
+      "createAccount": "Create free account",
+      "alreadyMember": "Already a member?",
+      "logIn": "Log in",
+      "categories": "Categories",
+      "onlineNow": "Online now · {{count}}",
+      "trendingTags": "Trending tags"
     }
   },
   "themeChooser": {
@@ -203,13 +264,6 @@
     "linkNewTab": "Open in new tab",
     "linkApply": "Apply",
     "linkRemove": "Remove",
-    "emojiSearch": "Search emoji",
-    "emojiGroup": {
-      "common": "Frequently used",
-      "faces": "Faces",
-      "hands": "Hands",
-      "things": "Objects"
-    },
     "tool": {
       "bold": "Bold",
       "italic": "Italic",
@@ -240,7 +294,10 @@
     "hintPost": "to post",
     "hintDrop": "drop files anywhere",
     "words_one": "1 word",
-    "words_other": "{{count}} words"
+    "words_other": "{{count}} words",
+    "emojiNone": "No emojis yet.",
+    "emojiManage": "Add some in the ACP",
+    "emojiOther": "Other"
   },
   "legal": {
     "title": {
@@ -257,5 +314,363 @@
     },
     "lastUpdated": "Last updated {{date}}",
     "edit": "Edit"
+  },
+  "modcanvas": {
+    "shield": {
+      "label": "Moderation",
+      "labelWaiting": "Moderation, {{count}} waiting",
+      "title": "Moderation (Shift+M)",
+      "oldest": "Oldest waits longest",
+      "loading": "Loading…",
+      "nothing": "Nothing is waiting.",
+      "reports": "Reports",
+      "security": "Security",
+      "pluginLine": "{{count}} waiting · open to review",
+      "acpLink": "Moderation in the ACP",
+      "acpLinkSub": "cases, users, log"
+    },
+    "report": {
+      "region": "Report actions",
+      "action": "Action",
+      "modes": {
+        "warn": "Warn",
+        "ban": "Ban",
+        "delete": "Remove",
+        "dismiss": "Dismiss"
+      },
+      "durations": {
+        "1h": "1h",
+        "24h": "24h",
+        "7d": "7d",
+        "30d": "30d",
+        "perm": "Perm."
+      },
+      "premade": "Premade texts",
+      "premadeHead": "{{mode}} · premade texts",
+      "suggested": "Suggested",
+      "empty": "No texts for this action yet.",
+      "adminsWrite": "Admins write these in ACP → Moderation → Templates",
+      "pick": "Premade text",
+      "working": "Working…",
+      "next": "Next report",
+      "sub": "{{user}} · {{type}}",
+      "send": {
+        "warn": "Send warning",
+        "banPerm": "Ban permanently",
+        "ban": "Ban {{duration}}",
+        "delete": "Remove",
+        "dismiss_one": "Dismiss",
+        "dismiss_other": "Dismiss reports"
+      },
+      "toast": {
+        "resolved_one": "report resolved",
+        "resolved_other": "{{count}} reports resolved",
+        "warned": "Warning sent to {{user}} · {{closed}}",
+        "banned": "{{user}} banned ({{duration}}) · {{closed}}",
+        "removed": "Content removed · {{closed}}",
+        "dismissed_one": "Report dismissed",
+        "dismissed_other": "Reports dismissed",
+        "theAuthor": "the author",
+        "undo": "Undo"
+      }
+    },
+    "case": {
+      "region": "Security case actions",
+      "accounts": "Linked accounts",
+      "signals": "Signals",
+      "noSignals": "No signals were recorded.",
+      "signalsFoot": "Detection never acts on its own. Allow records an exception, and Ban all bans every linked account.",
+      "signalCount_one": "{{count}} signal",
+      "signalCount_other": "{{count}} signals",
+      "allow": "Allow",
+      "banAll": "Ban all",
+      "next": "Next case",
+      "allowed": "{{title}} allowed",
+      "banned": "Banned {{count}}",
+      "bannedSkipped": "Banned {{count}}, {{skipped}} skipped",
+      "confirmTitle": "Ban all linked accounts?",
+      "confirmBody": "{{names}} will be banned and signed out. Staff and accounts already banned are skipped.",
+      "everyLinked": "Every linked account",
+      "ip": "IP: {{ip}}"
+    },
+    "queue": {
+      "actions": "{{label}} actions",
+      "next": "Next"
+    },
+    "common": {
+      "close": "Close",
+      "working": "Working…"
+    },
+    "canvas": {
+      "reported": "Reported ×{{count}}"
+    },
+    "data": {
+      "report": "Report",
+      "profile": "Profile",
+      "by": "{{kind}} by {{user}}",
+      "types": {
+        "article_comment": "comment",
+        "profile_comment": "profile comment",
+        "user": "profile",
+        "article": "article"
+      },
+      "caseTitle": {
+        "multi_account_suspicion": "Multiaccounting",
+        "rapid_login_attempts": "Rapid Login",
+        "ban_evasion_suspicion": "Ban Evasion",
+        "registration_burst": "Registration Burst",
+        "impossible_travel": "Impossible Travel",
+        "other": "Case"
+      },
+      "caseReason": {
+        "multi_account_suspicion": "Same device cookie",
+        "rapid_login_attempts": "Failed logins, same IP",
+        "ban_evasion_suspicion": "New account near a ban",
+        "registration_burst": "Registrations, same IP",
+        "impossible_travel": "Impossible travel",
+        "other": "Security case"
+      },
+      "caseSummary": {
+        "multi_account_suspicion": "{{who}} share the same device cookie",
+        "rapid_login_attempts": "repeated failed logins from the same IP ({{who}})",
+        "ban_evasion_suspicion": "{{who}}: new account near a ban from the same IP",
+        "registration_burst_one": "{{count}} account registered from the same IP",
+        "registration_burst_other": "{{count}} accounts registered from the same IP",
+        "registration_burst_unknown": "Several accounts registered from the same IP",
+        "impossible_travel": "{{who}}: logins too far apart to be the same person"
+      },
+      "who": {
+        "multiple": "multiple accounts",
+        "pair": "{{a}} and {{b}}",
+        "list": "{{list}} and {{last}}"
+      },
+      "signal": {
+        "deviceCookie": "Shared Device Cookie",
+        "failedLogins": "Rapid Failed Logins, Same IP",
+        "banEvasion": "Possible Ban Evasion",
+        "registrations": "Registration Burst, Same IP",
+        "sameIp": "Same IP Address"
+      },
+      "severity": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
+    }
+  },
+  "fatal": {
+    "title": "Something went wrong",
+    "lead": "The server hit an unexpected error and the page can’t continue safely. Copy the error code below and look it up in the Error Reference for the cause and a suggested fix.",
+    "copyCode": "Copy error code",
+    "copy": "Copy",
+    "copied": "Copied",
+    "lookUp": "Look up in Error Reference",
+    "reload": "Reload page",
+    "hintBefore": "Error Reference lives in ",
+    "hintPath": "ACP → System → Error Reference",
+    "hintAfter": ". This incident has also been recorded in the Error Log."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "loading": "Loading…",
+    "empty": "No notifications"
+  },
+  "toastHost": {
+    "dismiss": "Dismiss",
+    "region": "Notifications"
+  },
+  "online": {
+    "word": "online",
+    "now": "Online now",
+    "prev": "Prev",
+    "next": "Next"
+  },
+  "profileFields": {
+    "date_of_birth": "Date of birth",
+    "website": "Website"
+  },
+  "notify": {
+    "newFollower": {
+      "title": "New follower",
+      "body": "{{name}} started following you."
+    },
+    "profileComment": {
+      "title": "New comment on your profile",
+      "body": "{{name}} posted on your profile."
+    },
+    "profileReply": {
+      "title": "New reply to your comment",
+      "body": "{{name}} replied to your comment on {{owner}}'s profile."
+    },
+    "mentionProfile": {
+      "title": "You were mentioned",
+      "body": "{{name}} mentioned you in a comment on {{owner}}'s profile."
+    },
+    "profileCommentLiked": {
+      "title": "Someone liked your comment",
+      "body": "{{name}} liked your comment on {{owner}}'s profile."
+    },
+    "articleCommentLiked": {
+      "title": "Someone liked your comment",
+      "body": "{{name}} liked your comment."
+    },
+    "badgeGranted": {
+      "title": "You've been given the \"{{badge}}\" badge!",
+      "body": "It's on your profile now, for everyone who visits."
+    },
+    "badgeGrantedNote": {
+      "title": "You've been given the \"{{badge}}\" badge!"
+    },
+    "badgeEarned": {
+      "title": "You've earned the \"{{badge}}\" badge!",
+      "body": "It's on your profile now, for everyone who visits."
+    },
+    "banPermanent": {
+      "title": "Your account has been permanently suspended"
+    },
+    "banTemporary": {
+      "title": "Your account has been temporarily suspended"
+    },
+    "banSuspended": {
+      "title": "Your account has been suspended"
+    },
+    "banCasePolicy": {
+      "title": "Your account has been permanently suspended",
+      "body": "Multi-account policy violation — multiple accounts detected on the same device"
+    },
+    "banLifted": {
+      "title": "Your account suspension has been lifted",
+      "body": "Your suspension has been removed. You can now log in."
+    },
+    "banEnded": {
+      "title": "Your suspension has ended",
+      "body": "Your temporary suspension has expired. You may now log in again."
+    },
+    "contentRemoved": {
+      "title": "Your content was removed"
+    },
+    "reportReviewed": {
+      "title": "Your report was reviewed",
+      "body": "A moderator looked at your report and found no rule broken. Thanks for flagging it."
+    },
+    "newCase": {
+      "title": "New review case",
+      "body": "A suspicious pattern was detected and requires moderator review."
+    },
+    "caseUserBanned": {
+      "title": "Flagged account banned",
+      "body": "{{name}} ({{caseType}}) was banned."
+    },
+    "caseUserBannedNoType": {
+      "title": "Flagged account banned",
+      "body": "{{name}} (a review case) was banned."
+    },
+    "newReport": {
+      "title": "New report filed",
+      "body": "A report has been filed for {{target}}."
+    },
+    "ladderBanPermanent": {
+      "title": "Warning ladder reached",
+      "body": "{{name}} reached {{count}} warnings and was banned permanently."
+    },
+    "ladderBanTemporary": {
+      "title": "Warning ladder reached",
+      "body": "{{name}} reached {{count}} warnings and was banned for {{days}} days."
+    },
+    "ladderNotify": {
+      "title": "Warning ladder reached",
+      "body": "{{name}} reached {{count}} warnings and needs a look."
+    },
+    "warningIssued": {
+      "title": "You have received a warning"
+    },
+    "warningPardoned": {
+      "title": "A warning has been pardoned",
+      "body": "One of your warnings has been removed."
+    },
+    "passwordChanged": {
+      "title": "Your password was changed",
+      "body": "Your account password was just reset. If this wasn't you, contact an administrator immediately."
+    },
+    "jobFailure": {
+      "title": "Background job failed",
+      "body": "A \"{{queue}}\" job failed after exhausting retries. Check System → Error Log."
+    },
+    "promoted": {
+      "title": "You've been promoted to {{rank}}!",
+      "body": "You've reached a new level. Keep participating to unlock even more."
+    },
+    "targets": {
+      "article": "an article",
+      "article_comment": "an article comment",
+      "profile_comment": "a profile comment",
+      "user": "a member",
+      "plugin-content": "plugin content"
+    }
+  },
+  "siteBar": {
+    "maintenance": "Maintenance mode is on. Only staff can see the site.",
+    "turnOff": "Turn it off",
+    "dismiss": "Dismiss"
+  },
+  "userCard": {
+    "loading": "Loading…",
+    "banned": "Banned",
+    "memberSince": "Member since {{date}}",
+    "posts": "Posts",
+    "followers": "Followers",
+    "likes": "Likes",
+    "viewProfile": "View profile"
+  },
+  "presence": {
+    "online": "Online",
+    "offline": "Offline"
+  },
+  "blockRender": {
+    "failed": "Block “{{type}}” failed to render.",
+    "unavailable": "Block “{{type}}” is unavailable.",
+    "mastheadHidden": "Masthead hidden"
+  },
+  "themePreview": {
+    "aside": "Aside",
+    "sidebarSurface": "Sidebar surface",
+    "sidePanels": "Rails & side panels",
+    "buttons": "Buttons",
+    "primary": "Primary",
+    "ghost": "Ghost",
+    "danger": "Danger",
+    "cards": "Cards",
+    "cardTitle": "Card title",
+    "cardBody": "Background, border, radius and shadow all read from the card token group.",
+    "secondCard": "Second card",
+    "secondCardBody": "Two cards so spacing and elevation are easy to judge while editing.",
+    "fields": "Fields",
+    "textInput": "Text input",
+    "firstOption": "First option",
+    "secondOption": "Second option",
+    "menu": "Menu",
+    "menuItem": "Menu item",
+    "anotherItem": "Another item",
+    "hoverMe": "Hover me",
+    "sortButtons": "Sort buttons",
+    "active": "Active",
+    "newest": "Newest",
+    "specimenValue": "Specimen value",
+    "specimenMultiline": "Multi-line field specimen."
+  },
+  "groupAccess": {
+    "public": "Public — everyone including guests",
+    "members": "Members only — logged-in users",
+    "level": "Level N+ — progression ladder minimum",
+    "groups": "Specific groups",
+    "noGroups": "No groups available",
+    "shortcuts": "Shortcuts:",
+    "staff": "Staff (Mods+)",
+    "allMembers": "All members",
+    "ifNoAccess": "If no access:",
+    "hide": "Hide entirely",
+    "locked": "Show locked notice",
+    "inheritedLabel": "Inherited restriction:",
+    "inheritedBody": "This node cannot be less restrictive than its parent."
   }
 }

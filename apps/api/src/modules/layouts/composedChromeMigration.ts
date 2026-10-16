@@ -27,7 +27,8 @@ import { logger } from "../../infrastructure/logging/logger.js";
 
 // v2: the footer's bottom row became one `footerBar` (2026-10-02).
 // v3: the moderation tool split out of the bell into its own block (2026-10-06).
-export const COMPOSED_CHROME_MIGRATED = "layout.composedChromeMigrated.v3";
+// v4: the account menu became a container holding the icons beside it (2026-10-11).
+export const COMPOSED_CHROME_MIGRATED = "layout.composedChromeMigrated.v4";
 
 /** What the masthead's action group holds, in the order the design draws it. */
 const ACTION_TYPES = ["modTool", "notifications", "headerWidgets", "adminLink", "userMenu", "search"];
@@ -95,6 +96,32 @@ export function splitModTool(region: BlockNode[]): boolean {
   return insert(region);
 }
 
+/** What sits in the account menu: the member's icons, search, and any plugin's icon. */
+const inAccountMenu = (type: string): boolean =>
+  ["modTool", "notifications", "headerWidgets", "adminLink", "search"].includes(type)
+  || type.startsWith("slot.headerWidget.");
+
+/**
+ * Move the icons that sit BESIDE an account menu inside it, in the order they were in.
+ * Mutates `nodes` (any container's children, the masthead's or the navbar's); returns
+ * whether it changed. A menu that already holds something is left as arranged.
+ *
+ * The icons were siblings that happened to share the masthead's pill; as the menu's
+ * children they are one block to move, and the avatar is drawn after them. Alignment
+ * is a navbar concept and means nothing inside the menu, so it is dropped from them.
+ */
+export function nestAccountMenu(nodes: BlockNode[]): boolean {
+  let changed = false;
+  for (const n of nodes) if (n.children && nestAccountMenu(n.children)) changed = true;
+  const menu = nodes.find((n) => n.type === "userMenu");
+  if (!menu || menu.children?.length) return changed;
+  const moving = nodes.filter((n) => n !== menu && inAccountMenu(n.type));
+  if (!moving.length) return changed;
+  menu.children = moving.map(({ align: _align, ...n }) => n);
+  for (const m of moving) nodes.splice(nodes.indexOf(m), 1);
+  return true;
+}
+
 /** The header document in the composed shape, or null when it already is. */
 export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
   /*
@@ -115,7 +142,11 @@ export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
 
   const header = stripped.find((n) => n.type === "header");
   const navbar = stripped.find((n) => n.type === "navbar");
-  if (!header) return splitModTool(stripped) || changed ? next : null;
+  if (!header) {
+    if (splitModTool(stripped)) changed = true;
+    if (nestAccountMenu(stripped)) changed = true;
+    return changed ? next : null;
+  }
 
   const props = header.props as { showLogo?: boolean; showWordmark?: boolean };
   header.children ??= [];
@@ -139,6 +170,7 @@ export function composeHeader(doc: LayoutDocument): LayoutDocument | null {
     }
   }
   if (splitModTool(stripped)) changed = true;
+  if (nestAccountMenu(stripped)) changed = true;
   return changed ? next : null;
 }
 

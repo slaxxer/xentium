@@ -1,0 +1,119 @@
+/* The profile miniature (UserHoverCard.tsx). Fixed to the window, above everything
+   but dialogs; colours from the page's own tokens so it wears the site's theme. */
+.xt-user-card {
+  position: fixed;
+  z-index: 900;
+  overflow: hidden;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--card-radius, var(--radius-lg));
+  box-shadow: var(--shadow-pop);
+  color: var(--c-fg);
+  animation: xt-user-card-in 0.14s ease-out;
+
+  &__cover {
+    height: 56px;
+    background: var(--c-accent);
+    background-size: cover;
+    background-position: center;
+  }
+
+  &__body { padding: 0 var(--sp-4) var(--sp-4); }
+
+  /* Only the avatar rises into the cover; the name stays on the card, legible on
+     any cover picture. */
+  &__head {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-3);
+  }
+
+  /* The avatar sits on the cover, ringed in the card's colour. */
+  &__ava {
+    flex: none;
+    margin-top: -28px;
+    border-radius: 50%;
+    box-shadow: 0 0 0 3px var(--c-card);
+    line-height: 0;
+  }
+
+  &__who {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    min-width: 0;
+    padding-top: var(--sp-2);
+  }
+
+  /* ⚠ No overflow clipping here: it cut the group glow's blur (a text-shadow) off at
+     the box. A long name wraps instead. */
+  &__name {
+    font-weight: 700;
+    font-size: var(--fs-base);
+    text-decoration: none;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  &__handle { font-size: var(--fs-xs); color: var(--c-fg-muted); }
+
+  &__group {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    color: var(--g, var(--c-fg-muted));
+    background: color-mix(in srgb, var(--g, var(--c-fg-muted)) 14%, transparent);
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: var(--sp-3) 0 0;
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+  }
+  &__banned { color: var(--c-danger); font-weight: 700; }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-2);
+    margin: var(--sp-3) 0 0;
+
+    div {
+      padding: var(--sp-2);
+      border-radius: var(--radius-md);
+      background: var(--c-surface, var(--c-bg));
+      text-align: center;
+    }
+    dt { font-size: var(--fs-2xs); color: var(--c-fg-muted); }
+    dd { margin: 0; font-weight: 800; font-size: var(--fs-sm); }
+  }
+
+  &__cta {
+    display: block;
+    margin-top: var(--sp-3);
+    padding: var(--sp-2);
+    border-radius: var(--radius-md);
+    text-align: center;
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--btn-fg);
+    background: var(--btn-bg);
+    &:hover { opacity: 0.9; }
+  }
+
+  &__loading { margin: var(--sp-3) 0 0; font-size: var(--fs-sm); color: var(--c-fg-muted); }
+}
+
+@keyframes xt-user-card-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .xt-user-card { animation: none; }
+}

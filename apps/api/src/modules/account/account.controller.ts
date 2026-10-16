@@ -1,6 +1,7 @@
 import type { RequestHandler } from "express";
 import { accountService } from "./account.service.js";
 import { assertProfileImageAllowed } from "./profileImageLimits.js";
+import { requestLocaleHint } from "../../shared/i18n/serverText.js";
 import {
   updateProfileSchema,
   changeUsernameSchema,
@@ -62,7 +63,7 @@ export const accountController = {
   requestEmailChange: (async (req, res) => {
     const userId = req.userId!;
     const { currentPassword, newEmail } = changeEmailSchema.parse(req.body);
-    const result = await accountService.requestEmailChange(userId, currentPassword, newEmail);
+    const result = await accountService.requestEmailChange(userId, currentPassword, newEmail, requestLocaleHint(req));
     res.json(result);
   }),
 

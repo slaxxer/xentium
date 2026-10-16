@@ -6,6 +6,7 @@ import { faCloudArrowDown, faCircleCheck, faTriangleExclamation, faShieldHalved 
 import { api } from "../../../lib/api";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import "./UpdatesPage.scss";
+import { uiLocale } from "../../../lib/i18n";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -96,7 +97,7 @@ export function UpdatesPage() {
           <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)", marginBottom: 6 }}>{t("updates.emptyTitle")}</div>
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)" }}>
             {data?.checkedAt
-              ? t("updates.emptyCheckedAt", { date: new Date(data.checkedAt).toLocaleString() })
+              ? t("updates.emptyCheckedAt", { date: new Date(data.checkedAt).toLocaleString(uiLocale()) })
               : t("updates.emptyHint")}
           </div>
         </div>

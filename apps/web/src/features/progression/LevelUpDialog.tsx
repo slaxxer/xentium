@@ -20,6 +20,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { isEditorPreview } from "../../layout/previewMode";
 import "./LevelUpDialog.scss";
+import { uiLocale } from "../../lib/i18n";
 
 interface LevelUp {
   id: string;
@@ -128,7 +129,7 @@ function Celebration({ level, onClose }: { level: LevelUp; onClose: () => void }
               {level.unlocks.map((u, i) => (
                 <li key={u.key} style={{ animationDelay: `${0.9 + i * 0.08}s` }}>
                   <FontAwesomeIcon icon={faCheck} />
-                  {t(`rank.unlock.${u.key}`, { count: u.value, value: u.value.toLocaleString(), defaultValue: `${u.value} ${u.key}` })}
+                  {t(`rank.unlock.${u.key}`, { count: u.value, value: u.value.toLocaleString(uiLocale()), defaultValue: `${u.value} ${u.key}` })}
                 </li>
               ))}
             </ul>

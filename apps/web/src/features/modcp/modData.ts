@@ -6,6 +6,7 @@ import {
   faFlag, faPlaneDeparture, faRightToBracket, faUserPlus, faUserSecret, faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
+import i18n from "../../lib/i18n";
 
 // ── Wire types ────────────────────────────────────────────────────────────────
 
@@ -92,52 +93,47 @@ export function useModQueues(enabled: boolean): { queue: ModQueueSlot; items: Mo
 }
 
 // ── Labels ────────────────────────────────────────────────────────────────────
+// Read through the shared i18n instance: these are called from render, so they
+// follow the moderator's language the same way `t()` in a component does.
 
-/** The reason most reporters gave — a report's title. */
+const tr = (key: string, opts?: Record<string, unknown>) => String(i18n.t(`common:modcanvas.data.${key}`, opts as never));
+
+/** The reason most reporters gave — a report's title. Reporters' own words, untranslated. */
 export function topReason(g: ReportGroup): string {
   const tally = new Map<string, number>();
   for (const r of g.reports) tally.set(r.reason, (tally.get(r.reason) ?? 0) + 1);
-  return [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "Report";
+  return [...tally.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? tr("report");
 }
+
+const CASE_TYPES = ["multi_account_suspicion", "rapid_login_attempts", "ban_evasion_suspicion", "registration_burst", "impossible_travel"];
+const known = (type: string) => CASE_TYPES.includes(type) ? type : "other";
 
 /** Mirrors `humanizeCaseType` in the API's moderation.types.ts. */
 export function caseTitle(type: string): string {
-  switch (type) {
-    case "multi_account_suspicion": return "Multiaccounting";
-    case "rapid_login_attempts":    return "Rapid Login";
-    case "ban_evasion_suspicion":   return "Ban Evasion";
-    case "registration_burst":      return "Registration Burst";
-    case "impossible_travel":       return "Impossible Travel";
-    default:                        return "Case";
-  }
+  return tr(`caseTitle.${known(type)}`);
 }
 
 /** Mirrors `describeCaseSignal` in the API's moderation.types.ts. */
 export function caseSummary(c: ModCase): string {
   const names = c.linkedUsers.map((u) => u.username);
   const who = names.length > 2
-    ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`
-    : names.join(" and ") || "multiple accounts";
-  switch (c.type) {
-    case "multi_account_suspicion": return `${who} share the same device cookie`;
-    case "rapid_login_attempts":    return `repeated failed logins from the same IP (${who})`;
-    case "ban_evasion_suspicion":   return `${who}: new account near a ban from the same IP`;
-    case "registration_burst":      return `${names.length || "Several"} accounts registered from the same IP`;
-    case "impossible_travel":       return `${who}: logins too far apart to be the same person`;
-    default:                        return who;
+    ? tr("who.list", { list: names.slice(0, -1).join(", "), last: names[names.length - 1] })
+    : names.length === 2 ? tr("who.pair", { a: names[0], b: names[1] })
+    : names[0] ?? tr("who.multiple");
+  if (c.type === "registration_burst") {
+    return names.length ? tr("caseSummary.registration_burst", { count: names.length }) : tr("caseSummary.registration_burst_unknown");
   }
+  return CASE_TYPES.includes(c.type) ? tr(`caseSummary.${c.type}`, { who }) : who;
 }
 
 /** The short "why" under a case's title in its pill. */
 export function caseReasonShort(type: string): string {
-  switch (type) {
-    case "multi_account_suspicion": return "Same device cookie";
-    case "rapid_login_attempts":    return "Failed logins, same IP";
-    case "ban_evasion_suspicion":   return "New account near a ban";
-    case "registration_burst":      return "Registrations, same IP";
-    case "impossible_travel":       return "Impossible travel";
-    default:                        return "Security case";
-  }
+  return tr(`caseReason.${known(type)}`);
+}
+
+/** A case's severity (low | medium | high) in the moderator's language. */
+export function severityLabel(severity: string): string {
+  return i18n.exists(`common:modcanvas.data.severity.${severity}`) ? tr(`severity.${severity}`) : severity;
 }
 
 export function caseIcon(type: string): IconDefinition {
@@ -151,22 +147,35 @@ export function caseIcon(type: string): IconDefinition {
   }
 }
 
-/** A raw signal as a moderator reads it. */
+/** A raw signal as a moderator reads it. Unrecognised ones are shown as stored. */
 export function humanizeSignal(s: string): string {
   const l = s.toLowerCase();
-  if (l.includes("device cookie") || l.includes("shared by"))               return "Shared Device Cookie";
-  if (l.includes("failed login"))                                            return "Rapid Failed Logins, Same IP";
-  if ((l.includes("within") && l.includes("ban")) || l.includes("evasion"))  return "Possible Ban Evasion";
-  if (l.includes("registration") || l.includes("registrations"))            return "Registration Burst, Same IP";
-  if (l.includes("same ip") || l.includes("from ip"))                       return "Same IP Address";
+  if (l.includes("device cookie") || l.includes("shared by"))               return tr("signal.deviceCookie");
+  if (l.includes("failed login"))                                            return tr("signal.failedLogins");
+  if ((l.includes("within") && l.includes("ban")) || l.includes("evasion"))  return tr("signal.banEvasion");
+  if (l.includes("registration") || l.includes("registrations"))            return tr("signal.registrations");
+  if (l.includes("same ip") || l.includes("from ip"))                       return tr("signal.sameIp");
   return s;
+}
+
+/**
+ * What kind of thing was reported, in the moderator's language. NOT `typeLabel`:
+ * that one fills `{type}` inside the admin-written message the MEMBER receives, and
+ * must stay in the language those texts are written in.
+ */
+export function targetTypeLabel(targetType: string, targetId?: string): string {
+  if (targetType === "plugin-content" && targetId) {
+    const kind = targetId.split(":")[1];
+    if (kind) return kind.replace(/[_-]/g, " ");
+  }
+  return i18n.exists(`common:modcanvas.data.types.${targetType}`) ? tr(`types.${targetType}`) : targetType.replace(/[_-]/g, " ");
 }
 
 /** "Comment by nightowl · Getting started…" — a report row's second line. */
 export function reportLine(g: ReportGroup, type: string): string {
   // A reported PROFILE has no separate author: "theo's profile" says it all.
-  if (g.targetType === "user") return g.where ?? "Profile";
+  if (g.targetType === "user") return g.where ?? tr("profile");
   const kind = type.charAt(0).toUpperCase() + type.slice(1);
-  const by = g.author ? `${kind} by ${g.author.username}` : kind;
+  const by = g.author ? tr("by", { kind, user: g.author.username }) : kind;
   return g.where ? `${by} · ${g.where}` : by;
 }

@@ -10,6 +10,7 @@ import { GroupGlyph, PowerMeter } from "../groups/groupParts";
 import type { PermissionsCtx } from "../PermissionsPage";
 import { changeOf, effectiveKeys, impliedBy, matchesQuery, type SplitFilter } from "./permissionsModel";
 import { ToggleGlyph } from "../../../../components/Toggle";
+import { permissionDomainLabel } from "../../../../lib/coreText";
 
 const FILTERS: SplitFilter[] = ["all", "granted", "off", "sensitive", "changed"];
 
@@ -95,7 +96,7 @@ export function SplitView({ ctx, selected, onSelect, searchRef }: {
                 <button type="button" className="pm-domain__toggle" aria-expanded={open} disabled={narrowing}
                   onClick={() => setCollapsed((c) => ({ ...c, [domain]: !c[domain] }))}>
                   <FontAwesomeIcon icon={faChevronDown} className={`gp-chev${open ? "" : " is-closed"}`} />
-                  <span className="gp-domain__name">{domain}</span>
+                  <span className="gp-domain__name">{permissionDomainLabel(domain)}</span>
                   {sens > 0 && <span className="gp-sensitive">{t("permissions.sensitiveCount", { count: sens })}</span>}
                 </button>
                 <button type="button" className="gp-domain__all" onClick={() => request(gid, ps.map((p) => p.key), !allHeld)}>

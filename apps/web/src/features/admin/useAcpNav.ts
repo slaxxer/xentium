@@ -7,6 +7,7 @@ import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
 import { useUploadAllowed } from "./hooks/useUploadAllowed";
+import { pluginTextKey } from "../../lib/coreText";
 
 export interface NavChild {
   label: string;
@@ -61,6 +62,7 @@ export const ACP_NAV: NavItem[] = [
       { label: "nav.articles", to: "/admin/articles" },
       { label: "nav.categories", to: "/admin/categories" },
       { label: "nav.legal", to: "/admin/legal" },
+      { label: "nav.emojis", to: "/admin/emojis" },
     ],
   },
   {
@@ -154,7 +156,9 @@ export function useAcpNav(): NavItem[] {
   const { data: uploadAllowed } = useUploadAllowed();
 
   const pluginSectionMap = pluginPages.reduce<Record<string, NavChild[]>>((acc, page) => {
-    (acc[page.section] ??= []).push({ label: page.label, to: page.path });
+    // Rendered through t(): a plugin's translation key when it ships one, else its literal label.
+    const own = pluginTextKey(`acpPages.${page.path.replace(/^\/admin\//, "")}`);
+    (acc[page.section] ??= []).push({ label: own ?? page.label, to: page.path });
     return acc;
   }, {});
 
@@ -186,7 +190,7 @@ export function useAcpNav(): NavItem[] {
   const toNavItem = (section: string, children: NavChild[]): NavItem => {
     const meta = slotRegistry.getPluginMetaBySectionName(section);
     return {
-      label: section,
+      label: pluginTextKey(`acpSections.${section}`) ?? section,
       icon: meta?.icon
         ? createElement(FontAwesomeIcon, { icon: meta.icon as never })
         : createElement(FontAwesomeIcon, { icon: faPuzzlePiece }),

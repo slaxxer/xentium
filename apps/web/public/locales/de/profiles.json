@@ -34,7 +34,6 @@
   "pageOf": "Seite {{page}} von {{total}}",
   "noFollowers": "Noch keine Follower.",
   "noFollowing": "Folgt noch niemandem.",
-  "newArticle": "+ Neuer Artikel",
   "loadingArticles": "Artikel werden geladen…",
   "emptyOwn": "Du hast noch nichts veröffentlicht.",
   "emptyOther": "{{username}} hat noch keine Artikel veröffentlicht.",
@@ -55,14 +54,26 @@
   "noComments": "Noch keine Kommentare.",
   "postError": "Kommentar konnte nicht gesendet werden. Bitte erneut versuchen.",
   "deleteError": "Kommentar konnte nicht gelöscht werden. Bitte erneut versuchen.",
+  "delete": "Löschen",
+  "cancel": "Abbrechen",
+  "deleteConfirmTitle": "Diesen Kommentar löschen?",
+  "deleteConfirmBody": "Der Kommentar und alle Antworten darauf werden von der Pinnwand entfernt.",
+  "reply": "Antworten",
+  "replyPlaceholder": "Antworte {{username}}…",
+  "report": "Melden",
+  "reportTitle": "Kommentar melden",
+  "reportSub": "Sag den Moderatoren, was mit diesem Kommentar nicht stimmt.",
+  "reportPlaceholder": "Beschreibe das Problem…",
+  "reportSubmit": "Meldung senden",
+  "reportSent": "Meldung gesendet. Danke!",
+  "reportError": "Die Meldung konnte nicht gesendet werden.",
+  "reportTooShort": "Bitte beschreibe das Problem in ein paar Worten.",
   "likeError": "Like konnte nicht aktualisiert werden. Bitte erneut versuchen.",
-  "deleteComment": "Kommentar löschen",
   "edited": "bearbeitet",
   "like": "Gefällt mir",
   "unlike": "Gefällt mir nicht mehr",
-  "tombstoneBase": "Kommentar von {{user}} wurde gelöscht",
-  "tombstoneBy": " von {{mod}}",
-  "tombstoneReason": " · Grund: {{reason}}",
+  "dislike": "Gefällt mir nicht",
+  "undislike": "„Gefällt mir nicht“ entfernen",
   "banned": "Gesperrt",
   "permanentlyBanned": "Dauerhaft gesperrt",
   "rank": {
@@ -96,10 +107,7 @@
   },
   "likeCount": "{{n}} Likes",
   "visitors": {
-    "title": "Letzte Besucher",
-    "summary_one": "{{count}} Besucher diese Woche",
-    "summary_other": "{{count}} Besucher diese Woche",
-    "last": "zuletzt: {{ago}}"
+    "title": "Letzte Besucher"
   },
   "cover": {
     "dropTitle": "Headerbild hierher ziehen oder auswählen",
@@ -178,5 +186,10 @@
     "geoCredit": "IP-Geolokalisierung von DB-IP",
     "geoMissing": "Länder erscheinen, sobald die IP-Länderdatenbank geladen ist.",
     "geoMissingLink": "Geplante Aufgaben → IP-Länderdatenbank"
-  }
+  },
+  "formerlyKnownAs": "Früher bekannt als {{names}}",
+  "cantRateOwnComment": "Deinen eigenen Kommentar kannst du nicht bewerten",
+  "signInToRate": "Zum Bewerten anmelden",
+  "lastSeen": "Zuletzt gesehen {{when}}",
+  "lastSeenOn": "Zuletzt gesehen {{date}}"
 }

@@ -147,6 +147,12 @@ vi.mock("../appearance/appearance.service.js", () => ({
     // A theme's colourways and the last-edited lookups label the undo point.
     getColourways:      async () => appearance.colourways ?? [],
     getThemeTokens:     async () => appearance.shipped ?? {},
+    // The real one: what a theme ships, under the admin's edits (Core: its first colourway).
+    colourwayBaseline:  async () => {
+      const shipped = ((appearance.shipped ?? {}) as { global?: Record<string, string> }).global ?? {};
+      const effective = { ...shipped, ...((appearance.effective ?? {}) as { global?: Record<string, string> }).global };
+      return { shipped, effective };
+    },
     patchLiveScope:     async (scope: string, patch: Record<string, string | null>, _by: string, label: string, key: string) => {
       appearance.patched = { scope, patch, label, key };
       return { live: { global: { "--c-accent": "#before" } }, draft: null };

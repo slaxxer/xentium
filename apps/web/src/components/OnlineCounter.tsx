@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { UserAvatar } from "./UserAvatar";
@@ -26,6 +27,7 @@ interface OnlineData {
 }
 
 export function OnlineCounter() {
+  const { t } = useTranslation("common", { keyPrefix: "online" });
   const [open, setOpen] = useState(false);
   const [page, setPage] = useState(1);
   const ref             = useRef<HTMLDivElement>(null);
@@ -76,7 +78,7 @@ export function OnlineCounter() {
           }} />
         </span>
         <span style={{ fontWeight: 600, color: "var(--c-success)" }}>{total}</span>
-        <span>online</span>
+        <span>{t("word")}</span>
       </button>
 
       {open && total > 0 && (
@@ -89,7 +91,7 @@ export function OnlineCounter() {
           zIndex: 50,
         }}>
           <div style={{ padding: "4px 14px 8px", fontSize: "var(--fs-2xs)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.07em", color: "var(--c-fg-muted)", borderBottom: "1px solid var(--c-border)", marginBottom: 4 }}>
-            Online now
+            {t("now")}
           </div>
 
           {users.map((u) => (
@@ -114,7 +116,7 @@ export function OnlineCounter() {
                 onClick={() => setPage((p) => p - 1)}
                 style={{ background: "none", border: "none", cursor: page === 1 ? "not-allowed" : "pointer", color: page === 1 ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "2px 4px", opacity: page === 1 ? 0.4 : 1, fontFamily: "inherit" }}
               >
-                ‹ Prev
+                ‹ {t("prev")}
               </button>
               <span style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }}>
                 {page} / {totalPages}
@@ -125,7 +127,7 @@ export function OnlineCounter() {
                 onClick={() => setPage((p) => p + 1)}
                 style={{ background: "none", border: "none", cursor: page === totalPages ? "not-allowed" : "pointer", color: page === totalPages ? "var(--c-fg-muted)" : "var(--c-accent)", fontSize: "var(--fs-sm)", fontWeight: 600, padding: "2px 4px", opacity: page === totalPages ? 0.4 : 1, fontFamily: "inherit" }}
               >
-                Next ›
+                {t("next")} ›
               </button>
             </div>
           )}

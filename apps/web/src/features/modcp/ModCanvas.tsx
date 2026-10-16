@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../components/Icon";
@@ -27,6 +28,7 @@ const FIND_MS = 8000;
  * same pair a report carries — so a plugin marks its own content the same way.
  */
 export function ModCanvas() {
+  const { t } = useTranslation("common", { keyPrefix: "modcanvas" });
   const { user } = useAuth();
   const isMod = isModerator(user);
   const { session, pluginSection } = useModStore();
@@ -91,7 +93,7 @@ export function ModCanvas() {
 
   // Mark the reported item: scroll to it once and outline it until the session moves on.
   const markKey = group ? `${group.targetType}:${group.targetId}` : qitem?.markKey ?? null;
-  const markLabel = group ? `Reported ×${group.reports.length}` : queue ? queue.queue.label : "";
+  const markLabel = group ? t("canvas.reported", { count: group.reports.length }) : queue ? queue.queue.label : "";
   useEffect(() => {
     if (!markKey) return;
     let el: HTMLElement | null = null;
@@ -142,7 +144,7 @@ export function ModCanvas() {
             <header className="mcd__head">
               <FontAwesomeIcon icon={plugin.icon as IconProp} />
               <h2>{plugin.label}</h2>
-              <button type="button" className="mcp__round" aria-label="Close" onClick={() => modStore.openPlugin(null)}>
+              <button type="button" className="mcp__round" aria-label={t("common.close")} onClick={() => modStore.openPlugin(null)}>
                 <FontAwesomeIcon icon={faXmark} />
               </button>
             </header>

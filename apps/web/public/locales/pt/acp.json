@@ -39,7 +39,9 @@
     "composer": "Editor",
     "modTemplates": "Modelos",
     "themeStudio": "Theme Studio",
-    "legal": "Jurídico"
+    "legal": "Jurídico",
+    "activityLog": "Registo de atividade",
+    "emojis": "Emojis"
   },
   "sidebar": {
     "adminPanel": "Painel de administração",
@@ -96,6 +98,14 @@
         "title": "Geral",
         "desc": "Identidade e idioma da tua comunidade."
       },
+      "features": {
+        "title": "Site e funcionalidades",
+        "desc": "Ativa ou desativa secções principais e escolhe o que a página inicial mostra. Uma secção desativada fica oculta em todo o lado e devolve 404; os teus dados são mantidos e voltam ao reativá-la."
+      },
+      "maintenance": {
+        "title": "Modo de manutenção",
+        "desc": "Coloca o site offline para todos exceto um grupo escolhido, e diz aos visitantes o que se passa."
+      },
       "registration": {
         "title": "Registo",
         "desc": "Controla como novos membros aderem."
@@ -111,12 +121,36 @@
       "members": {
         "title": "Membros",
         "desc": "Definições de diretório e reconhecimento."
+      },
+      "login": {
+        "title": "Início de sessão",
+        "desc": "Como os membros iniciam sessão, e proteção contra tentativas falhadas."
+      },
+      "alert": {
+        "title": "Aviso do site",
+        "desc": "Uma mensagem numa barra no topo de cada página, acima do cabeçalho. Durante a manutenção, a equipa também vê aí o aviso de manutenção."
       }
     },
     "fields": {
       "siteName": {
         "label": "Nome do site",
         "desc": "Apresentado no cabeçalho, nos títulos de página e nos e-mails."
+      },
+      "featuresArticles": {
+        "label": "Artigos",
+        "desc": "A secção de CMS / blog. Quando desativada, /articles e a sua API devolvem 404."
+      },
+      "featuresHome": {
+        "label": "Feed inicial",
+        "desc": "O feed inicial para quem tem sessão iniciada na raiz do site. Quando desativado, a raiz redireciona para a tua página de entrada."
+      },
+      "featuresMembers": {
+        "label": "Diretório de membros",
+        "desc": "A lista pública de membros. Quando desativada, /members devolve 404 (os perfis continuam acessíveis)."
+      },
+      "landing": {
+        "label": "Página de entrada",
+        "desc": "Para onde a raiz do site (/) envia os visitantes. Só aparecem secções ativas e plugins instalados."
       },
       "siteUrl": {
         "label": "URL do site",
@@ -182,6 +216,38 @@
         "label": "Endereço do remetente",
         "desc": "O remetente mostrado no correio de saída."
       },
+      "loginMethod": {
+        "label": "Identificador de acesso",
+        "desc": "Se os membros iniciam sessão com o e-mail, o nome de utilizador ou qualquer um dos dois."
+      },
+      "lockoutEnabled": {
+        "label": "Bloquear após tentativas falhadas",
+        "desc": "Bloqueia temporariamente o acesso após demasiadas tentativas falhadas."
+      },
+      "lockoutMaxAttempts": {
+        "label": "Máx. de tentativas falhadas",
+        "desc": "Tentativas falhadas permitidas antes de a conta ser bloqueada temporariamente."
+      },
+      "lockoutDuration": {
+        "label": "Duração do bloqueio (minutos)",
+        "desc": "Quanto tempo o acesso fica bloqueado depois de atingido o limite."
+      },
+      "collectName": {
+        "label": "Pedir um nome no registo",
+        "desc": "Pede aos novos membros um nome de exibição (p. ex. o nome completo) mostrado no perfil."
+      },
+      "nameRequired": {
+        "label": "Nome obrigatório",
+        "desc": "Torna o nome obrigatório no registo (só quando é pedido um nome)."
+      },
+      "showPreviousUsernames": {
+        "label": "Mostrar nomes de utilizador anteriores",
+        "desc": "Mostra no perfil os nomes de utilizador anteriores recentes de um membro. Os membros não o podem ocultar."
+      },
+      "previousUsernameDays": {
+        "label": "Período dos nomes anteriores (dias)",
+        "desc": "Quanto tempo um nome anterior fica visível após uma alteração. 0 = todo o histórico."
+      },
       "smtpUser": {
         "label": "Utilizador SMTP",
         "desc": "Deixe vazio se enviar através de um servidor de e-mail local que não exige autenticação."
@@ -209,7 +275,40 @@
       "dateFormat": {
         "label": "Formato da data",
         "desc": "Como as datas aparecem em posts, artigos e mensagens."
+      },
+      "alertEnabled": {
+        "label": "Mostrar o aviso",
+        "desc": "Desligado oculta-o em todo o lado; o texto mantém-se."
+      },
+      "alertMessage": {
+        "label": "Mensagem",
+        "desc": "Mostrada tal como a escreves. Até 500 caracteres."
+      },
+      "alertTone": {
+        "label": "Cor",
+        "desc": "Quão urgente parece."
+      },
+      "alertLinkLabel": {
+        "label": "Texto da ligação",
+        "desc": "Opcional. Vazio mostra o próprio endereço."
+      },
+      "alertLinkUrl": {
+        "label": "Endereço da ligação",
+        "desc": "Opcional. Uma página deste site (/forum) ou um endereço https:// completo."
+      },
+      "alertAudience": {
+        "label": "Quem o vê",
+        "desc": "Todos, só visitantes sem sessão iniciada ou só membros."
+      },
+      "alertDismissible": {
+        "label": "Pode ser fechado",
+        "desc": "Cada visitante pode ocultá-lo; uma mensagem nova volta a aparecer."
       }
+    },
+    "landing": {
+      "home": "Feed inicial",
+      "articles": "Artigos",
+      "members": "Membros"
     },
     "placeholders": {
       "siteName": "O meu site Xentium",
@@ -218,7 +317,10 @@
       "smtpHost": "smtp.exemplo.com",
       "fromAddress": "no-reply@exemplo.com",
       "smtpUser": "no-reply@example.com",
-      "fromName": "Nodelab"
+      "fromName": "Nodelab",
+      "alertMessage": "Vamos atualizar o fórum no domingo às 20:00.",
+      "alertLinkLabel": "Saber mais",
+      "alertLinkUrl": "/articles/upgrade"
     },
     "options": {
       "regMode": {
@@ -240,6 +342,11 @@
         "threads": "Mais tópicos",
         "followers": "Mais seguidores"
       },
+      "loginMethod": {
+        "email": "Endereço de e-mail",
+        "username": "Nome de utilizador",
+        "either": "E-mail ou nome de utilizador"
+      },
       "rankDisplay": {
         "badge": "Distintivos",
         "image": "Imagens de posto"
@@ -257,6 +364,17 @@
         "long": "7 de outubro de 2026",
         "numeric": "07/10/2026 (pelo idioma)",
         "iso": "2026-10-07"
+      },
+      "alertTone": {
+        "info": "Destaque",
+        "success": "Verde (boas notícias)",
+        "warning": "Âmbar (atenção)",
+        "danger": "Vermelho (urgente)"
+      },
+      "alertAudience": {
+        "everyone": "Todos",
+        "guests": "Só visitantes",
+        "members": "Só membros"
       }
     },
     "toastSaved": "Definições guardadas!",
@@ -267,6 +385,103 @@
       "saved": "Guardado",
       "removed": "Removido",
       "placeholder": "Introduza um novo valor"
+    },
+    "maintenance": {
+      "pill": {
+        "offline": "Site offline · só equipa",
+        "live": "O site está online"
+      },
+      "master": {
+        "label": "Modo de manutenção",
+        "desc": "Todos fora dos grupos permitidos veem o ecrã de manutenção. Os administradores passam sempre."
+      },
+      "groups": {
+        "access": "Quem pode passar",
+        "copy": "O que os visitantes leem",
+        "progress": "Progresso",
+        "timing": "Tempos",
+        "look": "Aspeto da página",
+        "extras": "Extras"
+      },
+      "allowedGroups": {
+        "label": "Grupos permitidos",
+        "desc": "Estes grupos podem iniciar sessão e usar o site durante a manutenção.",
+        "adminLocked": "Os administradores têm sempre acesso durante a manutenção."
+      },
+      "headline": {
+        "label": "Título",
+        "desc": "O título grande no ecrã de manutenção."
+      },
+      "reason": {
+        "label": "Motivo",
+        "desc": "Uma explicação curta e humana de porque o site está em baixo."
+      },
+      "mode": {
+        "label": "Como o progresso é mostrado",
+        "desc": "Passos com nome leem-se melhor em trabalhos longos; uma barra chega para algo rápido.",
+        "options": {
+          "steps": "Passos",
+          "bar": "Barra",
+          "hidden": "Oculto"
+        }
+      },
+      "steps": {
+        "label": "Passos",
+        "desc": "Dá nome a cada fase do trabalho. Marca aquela em que estás; os visitantes veem-no ao vivo.",
+        "add": "Adicionar passo",
+        "new": "Novo passo",
+        "remove": "Remover passo",
+        "markCurrent": "Marcar como passo atual"
+      },
+      "bar": {
+        "label": "Texto e preenchimento da barra",
+        "desc": "Texto ao lado da barra e quanto está cheia (0–100). A 0 a barra fica oculta."
+      },
+      "eta": {
+        "label": "De volta (previsão)",
+        "desc": "Controla a contagem decrescente e a hora de regresso. Deixa vazio para ocultar ambas."
+      },
+      "countdown": {
+        "label": "Contagem decrescente ao vivo",
+        "desc": "Mostra horas / minutos / segundos até à hora prevista."
+      },
+      "autoRefresh": {
+        "label": "Atualizar ao regressar",
+        "desc": "Os visitantes entram no site assim que a manutenção termina, sem recarregar."
+      },
+      "background": {
+        "label": "Fundo",
+        "desc": "Ambos seguem as cores de destaque do teu site.",
+        "options": {
+          "aurora": "Aurora",
+          "solid": "Sólido"
+        }
+      },
+      "services": {
+        "label": "Serviços afetados",
+        "desc": "Listados no ecrã de manutenção. Clica num estado para o alternar.",
+        "add": "Adicionar serviço",
+        "new": "Novo serviço",
+        "remove": "Remover serviço",
+        "cycle": "Alterar estado",
+        "states": {
+          "offline": "Offline",
+          "degraded": "Degradado",
+          "operational": "Operacional"
+        }
+      },
+      "links": {
+        "label": "Onde acompanhar as novidades",
+        "desc": "Mostrados como pequenas ligações com ícone no rodapé do ecrã de manutenção.",
+        "add": "Adicionar ligação",
+        "remove": "Remover ligação",
+        "cycleIcon": "Alterar ícone"
+      },
+      "staffLink": {
+        "label": "Ligação de acesso da equipa",
+        "desc": "Uma ligação discreta no rodapé abre o painel de acesso. Se a ocultares, a equipa usa /login diretamente."
+      },
+      "adminAlways": "Os administradores sempre têm acesso durante a manutenção"
     }
   },
   "invite": {
@@ -600,7 +815,13 @@
     "deleteEntry": "Excluir entrada",
     "noContext": "Nenhum contexto registrado.",
     "loadOlder": "Carregar ocorrências anteriores",
-    "clearMember": "Mostrar todos os membros, não só {{name}}"
+    "clearMember": "Mostrar todos os membros, não só {{name}}",
+    "dev": {
+      "label": "Simulação DEV:",
+      "crash": "500 não tratado (crítico), aciona a parada fatal",
+      "xec": "XentiumError 500, aciona a parada fatal",
+      "notFound": "404, apenas aviso"
+    }
   },
   "errorRef": {
     "title": "Referência de erros",
@@ -1571,7 +1792,8 @@
     },
     "used_one": "Usado {{count}} vez",
     "used_other": "Usado {{count}} vezes",
-    "edited": "editado por último por {{name}} {{when}}"
+    "edited": "editado por último por {{name}} {{when}}",
+    "newText": "Olá {user}, "
   },
   "modCases": {
     "sub": "Moderação",
@@ -1779,23 +2001,33 @@
       "group": "Grupos"
     }
   },
-  "styleHistory": {
+  "studioHistory": {
+    "scheduled": "Publicado (agendado)",
+    "undoColourway": "Variação de cores desfeita",
+    "colourway": "Variação de cores: {{name}}",
+    "restored": "Restaurado: {{label}}",
     "loading": "Carregando…",
-    "empty": "Ainda não há instantâneos de estilo salvos.",
+    "empty": "Nada publicado ainda. Cada publicação aparece aqui.",
     "by": "por",
     "restore": "Restaurar",
-    "restoreConfirmTitle": "Restaurar \"{{label}}\"?",
-    "restoreConfirmBody": "Isso substituirá as configurações de estilo atuais.",
-    "restoreConfirmBtn": "Restaurar",
-    "toastRestored": "Estilo restaurado e aplicado.",
-    "sumInitial_one": "{{count}} token neste instantâneo",
-    "sumInitial_other": "{{count}} tokens neste instantâneo",
-    "sumNone": "Sem alterações de tokens",
-    "sumMore_one": "{{list}} e mais {{count}}",
-    "sumMore_other": "{{list}} e mais {{count}}",
-    "tagCurrent": "Atual",
-    "tagSnapshot": "Instantâneo",
-    "currentHint": "Este é o estilo atual."
+    "restoreHint": "Trazer de volta como rascunho. Nada entra no ar até você publicar.",
+    "liveHint": "Isto é o que está no ar agora.",
+    "confirmTitle": "Restaurar a versão de {{when}}?",
+    "confirmRevision": "Os layouts, cores, fonte e CSS próprio dela viram o rascunho deste tema e substituem o rascunho atual. O site no ar só muda quando você publicar.",
+    "confirmColours": "As cores dela viram o rascunho deste tema e substituem as cores do rascunho atual. O site no ar só muda quando você publicar.",
+    "staged": "Restaurado como rascunho. Revise nas pré-visualizações e publique.",
+    "published": "Publicado",
+    "colourChange": "Cores alteradas",
+    "coloursOnly": "Só cores",
+    "layouts_one": "{{count}} layout",
+    "layouts_other": "{{count}} layouts",
+    "tokens_one": "{{count}} alteração de cor ou tipografia",
+    "tokens_other": "{{count}} alterações de cor ou tipografia",
+    "font": "fonte",
+    "css": "CSS próprio",
+    "tagLive": "No ar",
+    "tagPublish": "Publicação",
+    "tagColours": "Cores"
   },
   "installed": {
     "title": "Plugins instalados",
@@ -2503,6 +2735,13 @@
     "badgeEarnedHint": "Concedido automaticamente por cumprir os requisitos. Retirá-lo só dura até à próxima passagem se continuar a cumpri-los."
   },
   "styleEditor": {
+    "fontSiteDefault": "Padrão (Bricolage Grotesque + Figtree)",
+    "previewSurface": "O que a pré-visualização mostra",
+    "previewPage": "Página",
+    "surface": {
+      "components": "Componentes",
+      "page": "Página"
+    },
     "rowBg": "Fundo",
     "rowSurface": "Superfície",
     "rowCard": "Cartão",
@@ -2528,7 +2767,8 @@
     "secButton": "Botão",
     "secCard": "Cartão",
     "secField": "Campo",
-    "secMenu": "Menu",
+    "secMenu": "Menus e listas",
+    "secUserMenu": "Menu do utilizador",
     "secSegment": "Botões de ordenação",
     "secBranding": "Marca",
     "secCustomCss": "CSS personalizado",
@@ -2544,20 +2784,16 @@
     "kComponent": "Componente",
     "editEvery": "Editando todas as instâncias deste componente.",
     "editOnly": "Editando apenas instâncias de {{region}} — substitui o valor global dentro dessa região.",
-    "toastCss": "CSS personalizado aplicado em todo o site.",
+    "cssDraftSaved": "Salvo no rascunho. Entra no ar quando você publicar.",
     "toastLogoText": "Texto do logo salvo.",
     "toastUploaded": "Enviado.",
     "toastRemoved": "Removido.",
     "toastDraft": "Rascunho salvo — publique para aplicá-lo ao vivo.",
-    "toastPublished": "Publicado — suas alterações agora estão no ar para todos.",
     "toastReset": "Aparência redefinida — herdando o design base.",
     "resetTitle": "Redefinir a aparência para o design base?",
     "resetText": "Restaura os tokens de tema e fontes padrão e limpa o seu CSS personalizado para claro e escuro. Isto não pode ser desfeito.",
     "reset": "Redefinir",
     "loading": "Carregando…",
-    "publishHint": "Aplicar as alterações preparadas ao site ao vivo agora",
-    "publishing": "Publicando…",
-    "publishNow": "Publicar agora",
     "logoText": "Texto do logo (alternativa quando não há imagem)",
     "logoPlaceholder": "xentium",
     "save": "Salvar",
@@ -2565,10 +2801,10 @@
     "navbarLogoHint": "PNG, SVG ou WebP · máx. 2 MB · recomendado 160×40 px",
     "favicon": "Favicon / Ícone do site",
     "faviconHint": "PNG, ICO ou SVG · máx. 2 MB · recomendado 64×64 px",
-    "cssIntro": "CSS bruto para o tema que você está vendo — com escopo e aplicado após os tokens para substituir qualquer regra. Alterne o seu tema com o botão da barra superior para editar o outro. As alterações têm pré-visualização ao vivo; “Aplicar e salvar” armazena ambos os temas e os publica para todos os visitantes.",
+    "cssIntro": "CSS próprio para este tema, aplicado depois dos tokens para poder sobrescrever qualquer regra. É salvo no rascunho enquanto você digita e aparece nas pré-visualizações; Publicar coloca no ar junto com as cores e os layouts.",
     "cssThemeLayer": "Um tema instalado também traz a sua própria folha de estilos. É aplicada antes desta, por isso as tuas regras ganham — e nada do que escreveres aqui se perde quando o tema for atualizado.",
     "saving": "Salvando…",
-    "applySave": "Aplicar e salvar",
+    "cssInvalid": "Este CSS não pode ser lido e não foi salvo. Verifique chaves ou aspas sem fechar.",
     "unsaved": "Alterações não salvas — pré-visualizando ao vivo",
     "saved": "Salvo",
     "charCount": "{{count}} / 100.000 caracteres",
@@ -2586,11 +2822,7 @@
     "fontSize": "Tamanho base",
     "forceState": "Forçar este estado no espécime",
     "previewTitle": "Pré-visualização do tema ao vivo",
-    "tabTokens": "Tokens",
-    "tabHistory": "Histórico",
     "draft": "Rascunho",
-    "unpublishedN_one": "{{count}} alteração por publicar",
-    "unpublishedN_other": "{{count}} alterações por publicar",
     "diffReview": "Rever",
     "diffHide": "Ocultar",
     "diffTitle": "O que a publicação vai alterar",
@@ -2637,6 +2869,7 @@
       "content-bg": "Fundo do conteúdo",
       "content-border-color": "Contorno do conteúdo",
       "footer-bg": "Fundo do rodapé",
+      "footer-fg-strong": "Texto forte do rodapé",
       "footer-fg": "Texto do rodapé",
       "footer-fg-subtle": "Texto subtil do rodapé",
       "footer-border-color": "Contorno do rodapé",
@@ -2700,6 +2933,7 @@
       "fs-2xl": "Título · grande (24px)",
       "fs-3xl": "Título · enorme (30px)",
       "font-display": "Fonte dos títulos",
+      "font-headline": "Fonte dos títulos",
       "font-body": "Fonte do texto",
       "ff-mono": "Fonte de código",
       "nav-height": "Altura da barra",
@@ -2744,7 +2978,15 @@
       "corner-cut-sm": "Corte do canto (pequeno)",
       "clip-card": "Forma do canto dos cartões",
       "clip-sm": "Forma do canto (pequena)",
-      "glow-accent": "Brilho nos elementos de destaque"
+      "glow-accent": "Brilho nos elementos de destaque",
+      "menu-fg-muted": "Texto secundário do menu",
+      "menu-fw": "Espessura do texto do menu",
+      "menu-title-fw": "Espessura dos títulos do menu",
+      "usermenu-bg": "Fundo do menu do utilizador",
+      "usermenu-fg": "Texto do menu do utilizador",
+      "usermenu-line": "Divisórias do menu do utilizador",
+      "usermenu-fw": "Peso do texto do menu do utilizador",
+      "usermenu-radius": "Raio do menu do utilizador"
     },
     "shCustom": "Personalizada",
     "shDirection": "Cai",
@@ -2807,11 +3049,18 @@
     "iconSize": "Tamanho dos ícones",
     "iconSmaller": "Ícones menores",
     "iconBigger": "Ícones maiores",
-    "iconSizeHint": "Ajusta todos os ícones do site sem mudar o tamanho do texto. O painel de administração mantém o seu."
+    "iconSizeHint": "Ajusta todos os ícones do site sem mudar o tamanho do texto. O painel de administração mantém o seu.",
+    "weight": {
+      "300": "Leve",
+      "400": "Normal",
+      "500": "Média",
+      "600": "Seminegrito",
+      "700": "Negrito",
+      "800": "Extranegrito",
+      "900": "Black"
+    }
   },
   "layoutEditor": {
-    "title": "Editor de esquema",
-    "subtitle": "Componha o que aparece em cada página. Os blocos vêm de um catálogo fixo, por isso um esquema são dados — nunca pode executar código. As alterações ficam em rascunho até publicar.",
     "structure": "Estrutura",
     "preview": "Pré-visualização",
     "blockSettings": "Definições do bloco",
@@ -2922,9 +3171,14 @@
     "variantNote": "Uma variante é um estilo com nome definido pelo tema, não uma cor neste bloco — todos os blocos com a mesma variante mantêm-se iguais, em claro e escuro. É guardada com o layout.",
     "classNameLabel": "Classe CSS",
     "classNameNote": "Um identificador opcional para o teu próprio CSS, por exemplo nav-tile. Aplica o estilo através dele — .nav-tile > * ou .nav-tile img — porque o identificador em si não pinta nada. É guardado com o layout.",
+    "headingFont": "Fonte dos títulos",
+    "headingFontSite": "Fonte do site",
+    "headingFontNote": "Muda a fonte dos títulos deste bloco (e dos blocos dentro dele) em relação ao resto da página.",
     "variantLeaf": "Este bloco não tem superfície própria. Define o estilo na secção ou cartão que o contém e este bloco acompanha-o.",
     "variantScope": "{{variant}}",
     "variantTokenNote": "Estas cores pertencem à variante, por isso mudam todos os blocos que a usam. Ficam no rascunho de aparência — publica no Editor de Estilo.",
+    "menuTokensNote": "Pertencem ao tema: todos os menus suspensos do site usam-nos, não só este bloco. Ficam pendentes com as outras alterações do Theme Studio até publicares.",
+    "dropdownStyle": "Estilo do menu suspenso e do menu do utilizador",
     "tokPanelBg": "Fundo do painel",
     "tokPanelBorder": "Contorno do painel",
     "tokText": "Texto",
@@ -2950,10 +3204,6 @@
     "documentLabel": "Documento",
     "undo": "Anular",
     "redo": "Refazer",
-    "publish": "Publicar",
-    "publishing": "A publicar…",
-    "published": "{{count}} modelo(s) publicado(s).",
-    "nothingPending": "Nada para publicar.",
     "reset": "Repor",
     "resetTitle": "Repor este modelo?",
     "resetBody": "O seu layout deste modelo é removido e a página mostra o que este tema traz (Core: o padrão embutido). Não pode ser desfeito.",
@@ -3207,6 +3457,19 @@
       "glow": "Brilho nos elementos de destaque",
       "tokens": "Tokens",
       "staged": "Guardado no rascunho de aparência, como qualquer alteração de token. Publique-o no Editor de estilos."
+    },
+    "imagePlaceholder": "Carrega, ou indica um caminho / endereço https://",
+    "richTextPlaceholder": "Escreve o texto…",
+    "library": {
+      "tabs": "Blocos e camadas",
+      "blocks": "Blocos",
+      "layers": "Camadas",
+      "insertHere": "Escolha um bloco para o local marcado.",
+      "clear": "Limpar pesquisa",
+      "hint": "Arraste um bloco para a página ou clique nele para o adicionar depois do bloco selecionado.",
+      "browseAll": "Explorar com descrições",
+      "addHere": "Adicionar um bloco aqui",
+      "notHere": "{{block}} não cabe aí. Selecione um bloco ou marque um local onde caiba."
     }
   },
   "groups": {
@@ -3378,16 +3641,17 @@
       "sourceTitle": "Origem do painel",
       "source": "Registado como painel de grupo por {{plugin}}, por isso aparece aqui em vez de numa página própria do ACP. Guarda sozinho e reporta ao indicador desta página.",
       "disable": "Os valores vivem nas tabelas próprias de {{plugin}}. Desativar o plugin esconde este separador mas mantém o que definiste."
-    }
+    },
+    "previewName": "membro"
   },
   "email": {
     "eyebrow": "Sistema",
     "title": "E-mail",
-    "subtitle": "Configure o servidor de correio e edite as mensagens enviadas por este site. As alterações são guardadas automaticamente.",
+    "subtitle": "Configura o servidor de correio e edita as mensagens que este site envia.",
     "subject": "Assunto",
-    "body": "Conteúdo (HTML)",
+    "body": "Conteúdo",
     "placeholders": "Marcadores",
-    "insert": "Acrescentar ao conteúdo",
+    "insert": "Inserir no cursor",
     "customized": "Personalizado",
     "reset": "Repor predefinição",
     "resetTitle": "Repor este modelo?",
@@ -3413,9 +3677,12 @@
     },
     "templateDesc": "Assunto e conteúdo desta mensagem.",
     "subjectDesc": "Texto simples. Os marcadores são substituídos.",
-    "bodyDesc": "HTML. Os valores inseridos nos marcadores são escapados automaticamente.",
+    "bodyDesc": "Formata-o como uma publicação. O nome do site, o layout e os botões são adicionados no envio, e os marcadores são preenchidos.",
     "testTitle": "Enviar mensagem de teste",
-    "testDesc": "Envia o modelo de teste SMTP para o endereço que escolher."
+    "testDesc": "Envia o modelo de teste SMTP para o endereço que escolher.",
+    "legacy": "Este modelo foi guardado como HTML puro numa versão anterior e continua a ser enviado assim. Repõe o predefinido para o editares aqui.",
+    "langDefault": "Sem alterações, este e-mail é enviado no idioma de cada membro. Assim que o editares, todos recebem a tua versão.",
+    "langCustom": "A tua versão é enviada a todos tal como está. Repõe-a para que cada membro receba a predefinida no seu idioma."
   },
   "themes": {
     "title": "Temas",
@@ -3531,7 +3798,8 @@
     "removeNamed": "Remover {{name}}",
     "nowLive": "{{name}} agora está no ar para os visitantes.",
     "backTo": "De volta a {{name}}.",
-    "exportedNamed": "{{file}} exportado."
+    "exportedNamed": "{{file}} exportado.",
+    "defaultThemeName": "Meu tema"
   },
   "owned": {
     "title": "As tuas licenças",
@@ -3709,7 +3977,13 @@
     "notBundled": "Não é um ícone incluído. Precisa do kit do site, senão não será desenhado.",
     "bundled": "Ícones incluídos",
     "noMatches": "Nenhum ícone corresponde.",
-    "needsName": "Escolha primeiro um ícone — um estilo sozinho não tem a que se aplicar."
+    "needsName": "Escolha primeiro um ícone — um estilo sozinho não tem a que se aplicar.",
+    "searchKit": "Pesquisar {{count}} ícones do kit…",
+    "kitIcons": "Ícones do teu kit",
+    "checking": "A verificar que ícones este estilo desenha…",
+    "noKitMatches": "Nenhum ícone neste estilo corresponde.",
+    "showMore": "Mostrar mais (faltam {{count}})",
+    "partialFiltered": "Uma família estilizada: só são listados os ícones que desenha."
   },
   "composer": {
     "eyebrow": "Aspeto",
@@ -3990,6 +4264,7 @@
     "layoutChanges_other": "{{count}} layouts",
     "styleChanges_one": "{{count}} alteração de estilo",
     "styleChanges_other": "{{count}} alterações de estilo",
+    "cssStaged": "CSS próprio",
     "upToDate": "Está tudo publicado",
     "publish": "Publicar",
     "publishing": "A publicar…",
@@ -4031,6 +4306,14 @@
     "bodyEdited": "Texto da mensagem editado"
   },
   "activity": {
+    "all": "Toda a atividade",
+    "movements": "Movimentos",
+    "acpActions": "Ações do ACP",
+    "colTime": "Hora",
+    "colIp": "IP",
+    "loading": "A carregar…",
+    "empty": "Ainda não há atividade registada",
+    "pagination": "Página {{page}} de {{totalPages}}, {{total}} entradas",
     "lede": "Quem fez o quê no painel de administração, mais recentes primeiro.",
     "colActor": "Quem",
     "colAction": "Ação",
@@ -4148,5 +4431,869 @@
       "genericChange": "Alterou {{area}}",
       "genericDelete": "Excluiu de {{area}}"
     }
+  },
+  "core": {
+    "blocks": {
+      "section": {
+        "label": "Secção",
+        "props": {
+          "backgroundImage": {
+            "title": "Imagem de fundo",
+            "description": "Caminho de envio ou URL. Deixa vazio para nenhuma."
+          },
+          "minHeight": {
+            "title": "Altura mínima (px)",
+            "description": "0 = tão alto como o conteúdo. Uma faixa mais alta centra o conteúdo."
+          },
+          "width": {
+            "title": "Largura",
+            "enum": {
+              "full": "Largura total",
+              "wide": "Larga",
+              "normal": "Normal",
+              "narrow": "Estreita"
+            }
+          },
+          "padding": {
+            "title": "Espaçamento interno",
+            "enum": {
+              "none": "Nenhum",
+              "sm": "Pequeno",
+              "md": "Médio",
+              "lg": "Grande"
+            }
+          }
+        }
+      },
+      "columns": {
+        "label": "Colunas",
+        "props": {
+          "gap": {
+            "title": "Espaçamento",
+            "enum": {
+              "sm": "Pequeno",
+              "md": "Médio",
+              "lg": "Grande"
+            }
+          }
+        }
+      },
+      "column": {
+        "label": "Coluna",
+        "props": {
+          "width": {
+            "title": "Largura da coluna",
+            "description": "«Auto» ajusta-se ao conteúdo, «Lateral»/«Calha» são as duas larguras de coluna do site, os números são partes relativas.",
+            "enum": {
+              "1": "1",
+              "2": "2",
+              "3": "3",
+              "auto": "Auto",
+              "sidebar": "Lateral",
+              "rail": "Calha"
+            }
+          },
+          "sticky": {
+            "title": "Fixar ao deslizar a página"
+          }
+        }
+      },
+      "spacer": {
+        "label": "Espaçador",
+        "props": {
+          "size": {
+            "title": "Tamanho",
+            "enum": {
+              "sm": "Pequeno",
+              "md": "Médio",
+              "lg": "Grande",
+              "xl": "Muito grande"
+            }
+          }
+        }
+      },
+      "eyebrow": {
+        "label": "Antetítulo",
+        "props": {
+          "text": {
+            "title": "Etiqueta"
+          },
+          "align": {
+            "title": "Alinhamento",
+            "enum": {
+              "start": "Esquerda",
+              "center": "Centro"
+            }
+          }
+        }
+      },
+      "heading": {
+        "label": "Título",
+        "props": {
+          "icon": {
+            "title": "Ícone"
+          },
+          "align": {
+            "title": "Alinhamento",
+            "enum": {
+              "start": "Esquerda",
+              "center": "Centro"
+            }
+          },
+          "text": {
+            "title": "Texto"
+          },
+          "eyebrow": {
+            "title": "Sobretítulo"
+          },
+          "level": {
+            "title": "Nível"
+          }
+        }
+      },
+      "richText": {
+        "label": "Texto formatado",
+        "props": {
+          "content": {
+            "title": "Texto"
+          }
+        }
+      },
+      "image": {
+        "label": "Imagem",
+        "props": {
+          "source": {
+            "title": "Imagem"
+          },
+          "href": {
+            "title": "Liga a",
+            "description": "Um caminho como /forum ou um URL completo. Deixa vazio para uma imagem simples."
+          },
+          "alt": {
+            "title": "Texto alternativo"
+          },
+          "ratio": {
+            "title": "Proporção",
+            "enum": {
+              "auto": "Original",
+              "16:9": "16:9",
+              "4:3": "4:3",
+              "1:1": "1:1"
+            }
+          }
+        }
+      },
+      "articleIndex": {
+        "label": "Índice de artigos",
+        "props": {
+          "defaultView": {
+            "title": "Visualização padrão",
+            "enum": {
+              "grid": "Grade",
+              "list": "Lista"
+            }
+          },
+          "showFilters": {
+            "title": "Mostrar filtros"
+          }
+        }
+      },
+      "pluginSlot": {
+        "label": "Área de plugin",
+        "props": {
+          "slotId": {
+            "title": "ID do slot"
+          }
+        }
+      },
+      "membersTabs": {
+        "label": "Separadores de membros"
+      },
+      "membersFilters": {
+        "label": "Pesquisa e filtros",
+        "props": {
+          "showSearch": {
+            "title": "Mostrar o campo de pesquisa"
+          },
+          "showSort": {
+            "title": "Mostrar as opções de ordenação"
+          }
+        }
+      },
+      "membersList": {
+        "label": "Lista de membros",
+        "props": {
+          "showCount": {
+            "title": "Mostrar a contagem e a linha de online"
+          }
+        }
+      },
+      "membersTeam": {
+        "label": "Equipa",
+        "props": {
+          "showNote": {
+            "title": "Mostrar a nota explicativa"
+          }
+        }
+      },
+      "membersHofStats": {
+        "label": "Estatísticas da comunidade"
+      },
+      "membersPodium": {
+        "label": "Pódio"
+      },
+      "membersHowTo": {
+        "label": "Como subir"
+      },
+      "guestSurface": {
+        "label": "Entrada de visitantes"
+      },
+      "guestBody": {
+        "label": "Corpo de visitantes"
+      },
+      "guestHero": {
+        "label": "Painel de destaque",
+        "props": {
+          "backgroundImage": {
+            "title": "Imagem de fundo",
+            "description": "Caminho de envio ou URL. Deixa vazio para o gradiente por omissão."
+          },
+          "overlay": {
+            "title": "Sobreposição",
+            "description": "Escurece ou clareia a imagem para o texto continuar legível.",
+            "enum": {
+              "none": "Nenhuma",
+              "light": "Claro",
+              "dark": "Escuro"
+            }
+          }
+        }
+      },
+      "guestHeroText": {
+        "label": "Texto de destaque e botões",
+        "props": {
+          "badge": {
+            "title": "Texto do distintivo",
+            "description": "Acompanha o número de pessoas online."
+          },
+          "title": {
+            "title": "Título principal"
+          },
+          "subtitle": {
+            "title": "Subtítulo",
+            "description": "«{members}» é substituído pelo número de membros."
+          },
+          "ctaPrimary": {
+            "title": "Botão principal"
+          },
+          "ctaSecondary": {
+            "title": "Botão secundário"
+          },
+          "showStats": {
+            "title": "Mostrar os contadores de membros / publicações"
+          }
+        }
+      },
+      "guestPresence": {
+        "label": "A acontecer agora",
+        "props": {
+          "rows": {
+            "title": "Linhas de atividade"
+          }
+        }
+      },
+      "guestFeed": {
+        "label": "Feed de visitantes",
+        "props": {
+          "showCategories": {
+            "title": "Mostrar o filtro de categorias"
+          }
+        }
+      },
+      "guestRail": {
+        "label": "Coluna de visitantes",
+        "props": {
+          "showCategories": {
+            "title": "Mostrar categorias"
+          },
+          "showOnline": {
+            "title": "Mostrar quem está online"
+          },
+          "showTags": {
+            "title": "Mostrar tags populares"
+          }
+        }
+      },
+      "homeMeCard": {
+        "label": "O teu cartão"
+      },
+      "homeSectionNav": {
+        "label": "Navegação de secções"
+      },
+      "homeSpaces": {
+        "label": "Espaços"
+      },
+      "homeFeed": {
+        "label": "Feed"
+      },
+      "homeProgression": {
+        "label": "Progresso de patente"
+      },
+      "homeHotThreads": {
+        "label": "Tópicos em alta"
+      },
+      "homePopularTags": {
+        "label": "Tags populares"
+      },
+      "homeSuggestedPeople": {
+        "label": "Pessoas sugeridas"
+      },
+      "articleDetail": {
+        "label": "Artigo"
+      },
+      "profileCard": {
+        "label": "Cartão de perfil",
+        "props": {
+          "padding": {
+            "title": "Espaçamento interno",
+            "enum": {
+              "none": "Nenhum",
+              "sm": "Pequeno",
+              "md": "Médio",
+              "lg": "Grande"
+            }
+          }
+        }
+      },
+      "profileAvatar": {
+        "label": "Avatar",
+        "props": {
+          "size": {
+            "title": "Tamanho do avatar",
+            "enum": {
+              "sm": "Pequeno",
+              "md": "Médio",
+              "lg": "Grande"
+            }
+          },
+          "overlap": {
+            "title": "Sobrepor à capa",
+            "description": "Sobrepõe o avatar à faixa acima. Para usar por baixo de uma capa."
+          }
+        }
+      },
+      "profileCover": {
+        "label": "Faixa de capa",
+        "props": {
+          "height": {
+            "title": "Altura (px)",
+            "description": "A faixa por trás do cabeçalho do perfil."
+          },
+          "backgroundImage": {
+            "title": "Imagem de fundo",
+            "description": "Caminho de envio ou URL. Desenhada por cima do gradiente."
+          },
+          "backgroundGradient": {
+            "title": "Gradiente"
+          },
+          "backgroundAngle": {
+            "title": "Direção"
+          }
+        }
+      },
+      "profileRank": {
+        "label": "Progresso de patente",
+        "props": {
+          "showUnlocks": {
+            "title": "Mostrar o que a próxima patente desbloqueia",
+            "description": "Os limites que o próximo degrau aumenta. Oculto se não houver próximo degrau."
+          }
+        }
+      },
+      "profileBadges": {
+        "label": "Insígnias",
+        "props": {
+          "max": {
+            "title": "Insígnias a mostrar",
+            "description": "Acima deste número, as restantes resumem-se a uma contagem."
+          },
+          "size": {
+            "title": "Tamanho das insígnias",
+            "enum": {
+              "sm": "Pequeno",
+              "md": "Médio"
+            }
+          }
+        }
+      },
+      "profileVisitors": {
+        "label": "Visitantes recentes",
+        "props": {
+          "max": {
+            "title": "Avatares a mostrar"
+          }
+        }
+      },
+      "profileFollowers": {
+        "label": "Faixa de seguidores",
+        "props": {
+          "max": {
+            "title": "Avatares a mostrar"
+          }
+        }
+      },
+      "profileIdentity": {
+        "label": "Nome e insígnias",
+        "props": {
+          "showHandle": {
+            "title": "Mostrar @utilizador"
+          },
+          "showJoined": {
+            "title": "Mostrar «membro desde»"
+          },
+          "showAge": {
+            "title": "Mostrar idade / aniversário"
+          },
+          "showBadges": {
+            "title": "Mostrar insígnias de grupo"
+          },
+          "showFormerly": {
+            "title": "Mostrar nomes de utilizador anteriores"
+          }
+        }
+      },
+      "profileActions": {
+        "label": "Seguir e bloquear"
+      },
+      "profileBio": {
+        "label": "Biografia"
+      },
+      "profileStats": {
+        "label": "Estatísticas"
+      },
+      "profileTabs": {
+        "label": "Separadores do perfil"
+      },
+      "profileContent": {
+        "label": "Conteúdo dos separadores do perfil"
+      },
+      "header": {
+        "label": "Cabeçalho",
+        "props": {
+          "showMasthead": {
+            "title": "Mostrar o cabeçalho",
+            "description": "Desligado: a faixa fica oculta e o logótipo e os botões da conta passam para a barra de navegação."
+          },
+          "logoAlign": {
+            "title": "Logótipo",
+            "enum": {
+              "left": "Esquerda",
+              "center": "Centro"
+            }
+          },
+          "showTagline": {
+            "title": "Mostrar o slogan",
+            "description": "A descrição do site das Definições, por baixo do logótipo."
+          },
+          "height": {
+            "title": "Altura (px)",
+            "description": "A faixa cresce se o conteúdo precisar. 0 = só tão alta como o logótipo."
+          },
+          "backgroundImage": {
+            "title": "Imagem de fundo",
+            "description": "Caminho de envio ou URL. Desenhada por cima do gradiente. Deixa vazio para nenhuma."
+          },
+          "showLogo": {
+            "title": "Mostrar o logótipo",
+            "description": "À esquerda da faixa, alinhado com a barra de navegação abaixo."
+          },
+          "showWordmark": {
+            "title": "Mostrar também o nome do site"
+          }
+        }
+      },
+      "navbar": {
+        "label": "Barra de navegação",
+        "props": {
+          "sticky": {
+            "title": "Fixa",
+            "description": "Fica no topo da janela enquanto a página (e o cabeçalho) desliza."
+          },
+          "height": {
+            "title": "Altura (px)",
+            "description": "0 = a altura do tema. 52–84 serve a maioria dos sites."
+          },
+          "tone": {
+            "title": "Cor",
+            "enum": {
+              "theme": "Tema",
+              "dark": "Escuro",
+              "brand": "Marca",
+              "light": "Claro"
+            }
+          }
+        }
+      },
+      "logo": {
+        "label": "Logótipo",
+        "props": {
+          "showWordmark": {
+            "title": "Mostrar o nome do site junto ao logótipo"
+          }
+        }
+      },
+      "navLinks": {
+        "label": "Ligações de navegação"
+      },
+      "search": {
+        "label": "Pesquisa",
+        "props": {
+          "expanded": {
+            "title": "Sempre expandido",
+            "description": "Caso contrário, o campo abre ao clicar."
+          }
+        }
+      },
+      "notifications": {
+        "label": "Sino de notificações",
+        "props": {
+          "icon": {
+            "title": "Ícone"
+          }
+        }
+      },
+      "modTool": {
+        "label": "Ferramenta de moderação",
+        "props": {
+          "icon": {
+            "title": "Ícone"
+          }
+        }
+      },
+      "adminLink": {
+        "label": "Ligação ao painel de administração"
+      },
+      "headerWidgets": {
+        "label": "Ícones de plugins"
+      },
+      "userMenu": {
+        "label": "Menu da conta"
+      },
+      "footer": {
+        "label": "Rodapé",
+        "props": {
+          "minHeight": {
+            "title": "Altura mínima (px)",
+            "description": "A faixa cresce com o conteúdo. 0 = só a altura necessária."
+          },
+          "backgroundImage": {
+            "title": "Imagem de fundo",
+            "description": "Caminho de envio ou URL. Desenhada por cima do gradiente. Deixa vazio para nenhuma."
+          },
+          "showTopBorder": {
+            "title": "Linha acima do rodapé"
+          }
+        }
+      },
+      "footerBar": {
+        "label": "Barra do rodapé",
+        "props": {
+          "showUptime": {
+            "title": "Mostrar tempo ativo e latência"
+          },
+          "showThemeChooser": {
+            "title": "Mostrar o seletor de temas",
+            "description": "Permite a cada leitor escolher entre os temas instalados, só para si."
+          }
+        }
+      },
+      "footerLinks": {
+        "label": "Ligações do rodapé",
+        "props": {
+          "showThemeChooser": {
+            "title": "Mostrar o seletor de temas",
+            "description": "Permite a cada leitor escolher entre os temas instalados, só para si."
+          }
+        }
+      },
+      "footerText": {
+        "label": "Texto do rodapé",
+        "props": {
+          "showUptime": {
+            "title": "Mostrar tempo ativo e latência"
+          }
+        }
+      },
+      "whosOnline": {
+        "label": "Quem está online",
+        "props": {
+          "maxNames": {
+            "title": "Nomes a listar",
+            "description": "0 mostra só o número."
+          }
+        }
+      },
+      "groupLegend": {
+        "label": "Legenda dos grupos"
+      },
+      "boardStats": {
+        "label": "Estatísticas do fórum"
+      },
+      "branding": {
+        "label": "Copyright e tempo ativo",
+        "props": {
+          "showUptime": {
+            "title": "Mostrar tempo ativo e latência"
+          },
+          "showThemeChooser": {
+            "title": "Mostrar o seletor de temas",
+            "description": "Permite a cada leitor escolher entre os temas instalados, só para si."
+          },
+          "linksAlign": {
+            "title": "Ligações do rodapé",
+            "enum": {
+              "left": "Esquerda",
+              "center": "Centro",
+              "right": "Direita"
+            }
+          },
+          "textAlign": {
+            "title": "Texto do rodapé",
+            "enum": {
+              "left": "Esquerda",
+              "center": "Centro",
+              "right": "Direita"
+            }
+          },
+          "order": {
+            "title": "Primeira linha",
+            "enum": {
+              "links": "Ligações",
+              "text": "Texto"
+            }
+          }
+        }
+      },
+      "themeToggle": {
+        "label": "Alternador de tema"
+      },
+      "slotLayoutWidget": {
+        "props": {
+          "outlet": {
+            "title": "Local",
+            "description": "Os widgets de plugins escolhem em que local aparecem. Escolha o que este widget espera.",
+            "enum": {
+              "aside": "Barra lateral",
+              "top": "Topo",
+              "home-top": "Topo da página inicial",
+              "forum-top": "Topo do fórum"
+            }
+          }
+        }
+      }
+    },
+    "jobs": {
+      "security-analysis": {
+        "label": "Análises de segurança",
+        "description": "Executa os padrões base de deteção de abusos do núcleo e as análises de segurança registadas pelos plugins."
+      },
+      "ban-expiry": {
+        "label": "Expiração de banimentos",
+        "description": "Termina os banimentos temporários expirados e retira o estado de banido."
+      },
+      "warning-expiry": {
+        "label": "Expiração de avisos",
+        "description": "Faz expirar os avisos vencidos e recalcula os limiares de moderação."
+      },
+      "update-check": {
+        "label": "Sincronização com o marketplace",
+        "description": "Atualiza os direitos de licença (aplica-se uma tolerância de 30 dias), reporta os plugins instalados e guarda para o ACP as atualizações disponíveis, alertas críticos e avisos de renovação. A hora por omissão varia por instalação; define uma para a substituir."
+      },
+      "log-retention": {
+        "label": "Retenção de registos",
+        "description": "Remove linhas antigas do registo de atividade (visitas e ações do ACP têm períodos separados), do registo de erros e dos eventos de início de sessão. Os períodos são as definições retention.* (dias; 0 guarda uma tabela para sempre). As confirmações de diálogos são guardadas à parte e nunca são tocadas."
+      },
+      "geoip-refresh": {
+        "label": "Base de dados de países por IP",
+        "description": "Descarrega a base de dados gratuita de IP para país da DB-IP (CC BY 4.0) para os moderadores verem de que país é o IP de um membro. As consultas são feitas neste servidor; nenhum IP é enviado. Mensal; «Executar agora» descarrega-a de imediato."
+      }
+    },
+    "actions": {
+      "system": {
+        "award-badges": {
+          "label": "Atribuir insígnias conquistadas",
+          "description": "Atribui qualquer insígnia cujos limiares um membro atinja agora. Só contam insígnias com o sistema de recompensas ativo, e nada é retirado: uma insígnia conquistada mantém-se. Os limiares de um plugin desativado são ignorados até ser reativado.",
+          "params": {
+            "batch": {
+              "title": "Membros por execução",
+              "description": "Quantos membros analisar de cada vez. A execução seguinte continua com os restantes."
+            }
+          }
+        },
+        "prune-notifications": {
+          "label": "Limpar notificações",
+          "description": "Elimina notificações antigas, com períodos separados para as lidas e as nunca abertas. Um período a 0 guarda essa metade para sempre. As preferências e contadores de não lidas só mudam pelas linhas removidas.",
+          "params": {
+            "readDays": {
+              "title": "Eliminar lidas após (dias)",
+              "description": "Notificações que o utilizador já leu. 0 guarda-as para sempre."
+            },
+            "unreadDays": {
+              "title": "Eliminar não lidas após (dias)",
+              "description": "Notificações que o utilizador nunca abriu. Dá-lhes um período maior: ainda têm algo a dizer. 0 guarda-as para sempre."
+            }
+          }
+        },
+        "prune-profile-views": {
+          "label": "Limpar visitantes do perfil",
+          "description": "Faz expirar a lista de «visitantes recentes» dos perfis. Uma visita mais antiga que o período é esquecida, para o cartão mostrar quem passou recentemente e não um registo permanente de quem viu quem. Põe 0 para guardar todas. Os TOTAIS de visualizações do perfil são contadores e nunca diminuem.",
+          "params": {
+            "days": {
+              "title": "Esquecer visitas com mais de (dias)",
+              "description": "Uma visita sai do cartão de visitantes quando atinge esta idade. 0 guarda todas para sempre."
+            }
+          }
+        },
+        "purge-deleted-content": {
+          "label": "Limpar conteúdo eliminado",
+          "description": "Remove de vez artigos e comentários que estejam no lixo há mais do que o período escolhido. Comentários eliminados que ainda têm respostas ativas nunca são limpos, porque levariam as respostas. Os envios de artigos são recuperados à parte por «Limpar envios órfãos». Não pode ser desfeito: faz primeiro um ensaio.",
+          "params": {
+            "days": {
+              "title": "Eliminar após (dias)",
+              "description": "Só limpa registos que estejam no lixo há mais tempo do que isto. Até lá podem ser restaurados."
+            },
+            "scope": {
+              "title": "Âmbito",
+              "description": "Limitar a limpeza a um tipo de conteúdo.",
+              "enum": {
+                "all": "Tudo",
+                "articles": "Artigos",
+                "article_comments": "Comentários de artigos",
+                "profile_comments": "Comentários de perfil"
+              }
+            }
+          }
+        },
+        "purge-orphaned-uploads": {
+          "label": "Limpar envios órfãos",
+          "description": "Elimina ficheiros das pastas de envio do núcleo (avatares, capas, grupos, temas, artigos, páginas, layouts) a que nenhum registo aponta: avatares e ícones de grupo substituídos e restos de artigos eliminados e das páginas personalizadas removidas. As imagens inseridas em artigos e textos legais e os ficheiros de registos eliminados de forma reversível são mantidos; as pastas dos plugins nunca são tocadas. Faz sempre primeiro um ensaio: ficheiros eliminados não se recuperam.",
+          "params": {
+            "graceHours": {
+              "title": "Período de tolerância (horas)",
+              "description": "Nunca elimina um ficheiro mais recente do que isto. Protege envios cujo registo ainda está a ser escrito."
+            },
+            "scope": {
+              "title": "Âmbito",
+              "description": "Limita a varredura a uma pasta de envios. Útil para verificar uma área antes de correr tudo.",
+              "enum": {
+                "all": "Tudo",
+                "avatars": "Avatares",
+                "covers": "Capas",
+                "articles": "Artigos",
+                "pages": "Páginas",
+                "groups": "Grupos",
+                "themes": "Temas",
+                "layouts": "Layouts"
+              }
+            }
+          }
+        },
+        "recompute-counters": {
+          "label": "Recalcular contadores",
+          "description": "Recalcula os contadores desnormalizados (artigos, comentários, gostos, seguidores) a partir das linhas de origem e corrige desvios. Repetível e não destrutivo. Não toca nos contadores de mensagens e tópicos do fórum (do plugin de fórum) nem nas visualizações de artigos (telemetria, não derivável)."
+        },
+        "trim-article-revisions": {
+          "label": "Reduzir revisões de artigos",
+          "description": "Mantém só as revisões mais recentes de cada artigo e elimina as restantes. Cada gravação guarda uma cópia completa do corpo, por isso um artigo muito editado acumula-as sem fim. O artigo publicado não é uma revisão e nunca é afetado.",
+          "params": {
+            "keep": {
+              "title": "Revisões a manter",
+              "description": "Quantas das revisões mais recentes manter por artigo. As mais antigas são removidas."
+            }
+          }
+        }
+      }
+    },
+    "domains": {
+      "System": "Sistema",
+      "Administration": "Administração",
+      "Users": "Utilizadores",
+      "Articles": "Artigos",
+      "Moderation": "Moderação",
+      "Messaging": "Mensagens",
+      "Extensions": "Extensões"
+    },
+    "permissions": {
+      "admin.access": "Aceder ao painel de administração",
+      "legal.manage": "Gerir documentos legais",
+      "user.manage": "Gerir contas de utilizador",
+      "user.ban": "Banir utilizadores",
+      "group.manage": "Gerir grupos e permissões",
+      "progression.manage": "Gerir o sistema de progressão",
+      "badge.manage": "Editar o catálogo de emblemas",
+      "badge.assign": "Atribuir emblemas a membros",
+      "profile.comment.create": "Publicar em murais de perfil",
+      "profile.comment.delete.own": "Eliminar as próprias publicações no mural",
+      "profile.comment.delete.wall": "Eliminar publicações no próprio mural",
+      "profile.comment.delete.any": "Eliminar publicações de mural de qualquer pessoa",
+      "article.create": "Escrever artigos",
+      "article.edit.own": "Editar os próprios artigos",
+      "article.edit.any": "Editar artigos de qualquer pessoa",
+      "article.publish": "Publicar artigos",
+      "article.delete.own": "Eliminar os próprios artigos",
+      "article.delete.any": "Eliminar artigos de qualquer pessoa",
+      "article.comment.create": "Comentar artigos",
+      "article.comment.edit.own": "Editar os próprios comentários em artigos",
+      "article.comment.delete.own": "Eliminar os próprios comentários em artigos",
+      "article.comment.delete.any": "Eliminar comentários em artigos de qualquer pessoa",
+      "article.revisions.view": "Ver o histórico de revisões de artigos",
+      "article.revisions.restore": "Restaurar versões anteriores de artigos",
+      "moderation.report.file": "Denunciar conteúdo",
+      "moderation.report.manage": "Tratar denúncias",
+      "moderation.warn.manage": "Avisar membros",
+      "moderation.ban.manage": "Banir e desbanir membros",
+      "moderation.cases.manage": "Tratar casos de revisão",
+      "moderation.log.view": "Ver o registo de moderação",
+      "moderation.settings": "Alterar as definições de moderação",
+      "moderation.protected": "Conta como equipa (não pode ser avisado nem banido)",
+      "message.send": "Enviar mensagens privadas",
+      "admin.plugins": "Gerir plugins no painel de administração",
+      "plugin.install": "Instalar plugins",
+      "plugin.enable": "Ativar e desativar plugins",
+      "system.tasks.manage": "Gerir tarefas agendadas",
+      "emoji.manage": "Gerir emojis"
+    }
+  },
+  "emojis": {
+    "title": "Emojis",
+    "subtitle": "Os emojis que os membros podem usar no editor: artigos, comentários, mural, posts do fórum e mensagens. Envie imagens e dê a cada uma um :shortcode: e uma categoria.",
+    "count_one": "emoji",
+    "count_other": "emojis",
+    "upload": "Enviar emojis",
+    "pendingTitle_one": "{{count}} emoji para adicionar",
+    "pendingTitle_other": "{{count}} emojis para adicionar",
+    "category": "Categoria",
+    "categoryPlaceholder": "ex.: Rostos",
+    "shortcode": "Shortcode",
+    "name": "Nome",
+    "discard": "Deixar este de fora",
+    "rules": "PNG, GIF ou WebP, até 256 KB. Imagens quadradas ficam melhores. Shortcodes: 2–32 caracteres de a–z, 0–9, _ - +.",
+    "cancel": "Cancelar",
+    "add_one": "Adicionar {{count}} emoji",
+    "add_other": "Adicionar {{count}} emojis",
+    "adding": "Adicionando…",
+    "added_one": "{{count}} emoji adicionado",
+    "added_other": "{{count}} emojis adicionados",
+    "someFailed_one": "{{count}} não pôde ser adicionado — veja a linha",
+    "someFailed_other": "{{count}} não puderam ser adicionados — veja as linhas",
+    "empty": "Ainda não há emojis. Envie alguns e eles aparecem no seletor de emojis do editor em todo lugar.",
+    "uncategorised": "Sem categoria",
+    "edit": "Editar",
+    "remove": "Remover",
+    "removeTitle": "Remover :{{code}}:?",
+    "removeBody": "Ele sai do seletor de emojis. Posts que já o usam continuam a mostrá-lo, e o shortcode fica reservado.",
+    "removed": "Emoji removido",
+    "saved": "Emoji salvo",
+    "save": "Salvar"
   }
 }

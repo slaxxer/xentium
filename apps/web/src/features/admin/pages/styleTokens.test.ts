@@ -71,7 +71,7 @@ describe("editor coverage", () => {
 describe("locale parity", () => {
   const expected = {
     styleEditor: Object.keys(en.styleEditor!).sort(),
-    styleHistory: Object.keys(en.styleHistory!).sort(),
+    studioHistory: Object.keys(en.studioHistory!).sort(),
     tok: Object.keys(en.styleEditor!.tok as object).sort(),
   };
 
@@ -79,7 +79,7 @@ describe("locale parity", () => {
     it(`${locale} has the same Style Editor keys as en`, () => {
       const d = acp(locale);
       expect(Object.keys(d.styleEditor!).sort()).toEqual(expected.styleEditor);
-      expect(Object.keys(d.styleHistory!).sort()).toEqual(expected.styleHistory);
+      expect(Object.keys(d.studioHistory!).sort()).toEqual(expected.studioHistory);
       expect(Object.keys(d.styleEditor!.tok as object).sort()).toEqual(expected.tok);
     });
   }

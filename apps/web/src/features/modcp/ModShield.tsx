@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { faCheckDouble, faFlag, faGear, faShield, faShieldHalved } from "@fortawesome/free-solid-svg-icons";
+import { TokenIcon } from "../../components/TokenIcon";
 import { FontAwesomeIcon } from "../../components/Icon";
 import { api } from "../../lib/api";
 import { timeAgo } from "../../lib/time";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { slotRegistry } from "../../plugins/slotRegistry";
-import { typeLabel } from "./modTemplates";
 import {
-  caseIcon, caseSummary, caseTitle, isModerator, reportLine, topReason, useModQueues, useOpenCases, useReportGroups,
+  caseIcon, caseSummary, caseTitle, isModerator, reportLine, severityLabel, targetTypeLabel, topReason, useModQueues, useOpenCases, useReportGroups,
   type ModSummary,
 } from "./modData";
 import { modStore, useModStore } from "./modSession";
@@ -24,7 +25,9 @@ import "./ModCanvas.scss";
  * Plugin sections (the forum's thread approvals) get their own group and open in a
  * dialog. Moderators only.
  */
-export function ModShield() {
+/** `icon`: a glyph chosen in the layout editor (the `modTool` block), else the shield. */
+export function ModShield({ icon }: { icon?: string } = {}) {
+  const { t } = useTranslation("common", { keyPrefix: "modcanvas.shield" });
   const { user } = useAuth();
   const isMod = isModerator(user);
   const { menuOpen, pluginSection } = useModStore();
@@ -79,29 +82,29 @@ export function ModShield() {
   return (
     <div className="mcs" ref={ref}>
       <button type="button" className={`mcs__btn${menuOpen ? " is-open" : ""}`}
-        aria-label={waiting ? `Moderation, ${waiting} waiting` : "Moderation"} aria-expanded={menuOpen}
-        title="Moderation (Shift+M)" onClick={() => modStore.setMenu(!menuOpen)}>
-        <FontAwesomeIcon icon={faShield} />
+        aria-label={waiting ? t("labelWaiting", { count: waiting }) : t("label")} aria-expanded={menuOpen}
+        title={t("title")} onClick={() => modStore.setMenu(!menuOpen)}>
+        {icon ? <TokenIcon token={icon} /> : <FontAwesomeIcon icon={faShield} />}
         {waiting > 0 && <span className="mcs__dot" aria-hidden />}
       </button>
 
       {menuOpen && (
-        <div className="mcs__menu" role="menu">
+        <div className="mcs__menu xt-pop" role="menu">
           <div className="mcs__head">
-            <span>Moderation {waiting > 0 && <em>({waiting})</em>}</span>
-            <small>Oldest waits longest</small>
+            <span>{t("label")} {waiting > 0 && <em>({waiting})</em>}</span>
+            <small>{t("oldest")}</small>
           </div>
 
           <div className="mcs__list">
             {loading ? (
-              <div className="mcs__state">Loading…</div>
+              <div className="mcs__state">{t("loading")}</div>
             ) : nothing ? (
-              <div className="mcs__state"><FontAwesomeIcon icon={faCheckDouble} /> Nothing is waiting.</div>
+              <div className="mcs__state"><FontAwesomeIcon icon={faCheckDouble} /> {t("nothing")}</div>
             ) : (
               <>
                 {reportRows.length > 0 && (
                   <>
-                    <div className="mcs__group"><FontAwesomeIcon icon={faFlag} /> Reports <span>{reportRows.length}</span></div>
+                    <div className="mcs__group"><FontAwesomeIcon icon={faFlag} /> {t("reports")} <span>{reportRows.length}</span></div>
                     {reportRows.map((g, i) => {
                       const hot = g.reports.length > 1;
                       return (
@@ -113,7 +116,7 @@ export function ModShield() {
                               {topReason(g)}
                               {hot && <span className="mcs__tag">×{g.reports.length}</span>}
                             </span>
-                            <span className="mcs__line">{reportLine(g, typeLabel(g.targetType, g.targetId))}</span>
+                            <span className="mcs__line">{reportLine(g, targetTypeLabel(g.targetType, g.targetId))}</span>
                             <span className="mcs__time">{timeAgo(g.firstReportedAt)}</span>
                           </span>
                         </button>
@@ -124,7 +127,7 @@ export function ModShield() {
 
                 {caseRows.length > 0 && (
                   <>
-                    <div className="mcs__group"><FontAwesomeIcon icon={faShieldHalved} /> Security <span>{caseRows.length}</span></div>
+                    <div className="mcs__group"><FontAwesomeIcon icon={faShieldHalved} /> {t("security")} <span>{caseRows.length}</span></div>
                     {caseRows.map((c, i) => {
                       const hot = c.severity === "high";
                       return (
@@ -134,7 +137,7 @@ export function ModShield() {
                           <span className="mcs__body">
                             <span className="mcs__title">
                               {caseTitle(c.type)}
-                              <span className={`mcs__tag${hot ? "" : " mcs__tag--neutral"}`}>{c.severity}</span>
+                              <span className={`mcs__tag${hot ? "" : " mcs__tag--neutral"}`}>{severityLabel(c.severity)}</span>
                             </span>
                             <span className="mcs__line">{caseSummary(c)}</span>
                             <span className="mcs__time">{timeAgo(c.createdAt)}</span>
@@ -170,7 +173,7 @@ export function ModShield() {
                       <span className="mcs__ic"><FontAwesomeIcon icon={s.icon as IconProp} /></span>
                       <span className="mcs__body">
                         <span className="mcs__title">{s.label}</span>
-                        <span className="mcs__line">{pluginCounts[s.id]} waiting · open to review</span>
+                        <span className="mcs__line">{t("pluginLine", { count: pluginCounts[s.id] })}</span>
                       </span>
                     </button>
                   </div>
@@ -182,8 +185,8 @@ export function ModShield() {
           {isAdmin && (
             <Link to="/admin/cases" className="mcs__foot" onClick={() => modStore.setMenu(false)}>
               <FontAwesomeIcon icon={faGear} />
-              <span>Moderation in the ACP</span>
-              <small>cases, users, log</small>
+              <span>{t("acpLink")}</span>
+              <small>{t("acpLinkSub")}</small>
             </Link>
           )}
         </div>

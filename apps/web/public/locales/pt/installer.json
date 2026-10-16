@@ -198,7 +198,8 @@
       "fair": "Razoável",
       "good": "Boa",
       "strong": "Forte"
-    }
+    },
+    "username_placeholder": "Administrador"
   },
   "finalize": {
     "title": "Quando quiseres",

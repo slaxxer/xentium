@@ -17,7 +17,11 @@ import { faCheck, faLink } from "@fortawesome/free-solid-svg-icons";
 import {
   COMPOSER_TOOLS, COMPOSER_BLOCKS, currentBlock, type ComposerBlockId,
 } from "./composerTools";
-import type { ComposerToolId, ResolvedComposerTool } from "@xentium/contracts";
+import { CorePermissions, type ComposerToolId, type EmojiRow, type ResolvedComposerTool } from "@xentium/contracts";
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../../lib/api";
+import { useAuth } from "../../hooks/useAuth";
+import { userCan } from "../../lib/authStore";
 
 /** Escape, or a click anywhere outside, closes it. */
 function useDismiss(onClose: () => void) {
@@ -303,54 +307,55 @@ export function LinkPopover({ editor, onClose }: { editor: Editor; onClose: () =
 /* ── Emoji ───────────────────────────────────────────────────────────────── */
 
 /**
- * A curated set, inserted as text.
- *
- * ⚠ No dependency and no picker library: emoji are characters, the editor already
- * stores unicode, and an emoji-data package is ~1 MB for a grid. GIFs and stickers
- * (the design's other two tabs) need an external service and an API key — there is
- * no Tenor integration, so the tab that cannot work is not drawn. See `docs`.
+ * The site's OWN emojis — the images an admin uploaded (ACP → Content → Emojis),
+ * grouped by their category. There is no built-in set: what a community can post is
+ * the community's call. With none configured the picker says so, and points an admin
+ * at the page.
  */
-const EMOJI: Record<string, string[]> = {
-  common: ["👍", "🎉", "🔥", "✅", "👀", "🙏", "😂", "🤔", "❤️", "😅", "💯", "🚀"],
-  faces:  ["😀", "😉", "😍", "😎", "🙃", "😴", "😭", "😡", "🤯", "🥳", "😬", "🤗"],
-  hands:  ["👋", "🤝", "👏", "🙌", "💪", "✌️", "🤞", "👌", "🫡", "🤙", "☝️", "👇"],
-  things: ["💡", "📌", "📎", "🔧", "🐛", "📦", "⚠️", "⭐", "🏆", "🎯", "⏰", "🔒"],
-};
+export function useSiteEmojis() {
+  return useQuery({
+    queryKey: ["emojis"],
+    queryFn: () => api.get<EmojiRow[]>("/emojis"),
+    staleTime: 5 * 60_000,
+  });
+}
 
-export function EmojiPicker({ onPick, onClose }: { onPick: (emoji: string) => void; onClose: () => void }) {
+export function EmojiPicker({ onPick, onClose }: { onPick: (emoji: EmojiRow) => void; onClose: () => void }) {
   const { t } = useTranslation("common");
-  const [query, setQuery] = useState("");
+  const { user } = useAuth();
+  const { data: emojis = [], isLoading } = useSiteEmojis();
 
-  // Searching flattens the groups: with a query, "which group" stops being useful.
-  const groups = query.trim()
-    ? { search: Object.values(EMOJI).flat() }
-    : EMOJI;
+  // In the order the server sends (category, then position).
+  const groups = new Map<string, EmojiRow[]>();
+  for (const e of emojis) groups.set(e.category, [...(groups.get(e.category) ?? []), e]);
 
   return (
     <Popover wide onClose={onClose}>
-      <input
-        className="nvc-emoji__search"
-        autoFocus
-        value={query}
-        placeholder={t("composer.emojiSearch")}
-        aria-label={t("composer.emojiSearch")}
-        onChange={(e) => setQuery(e.target.value)}
-      />
-      {Object.entries(groups).map(([group, list]) => (
-        <div key={group}>
-          {group !== "search" && (
-            <div className="nvc-pop__label">{t(`composer.emojiGroup.${group}`)}</div>
+      {!isLoading && emojis.length === 0 && (
+        <p className="nvc-emoji__none">
+          {t("composer.emojiNone")}
+          {userCan(user, CorePermissions.EMOJI_MANAGE) && (
+            <> <a href="/admin/emojis">{t("composer.emojiManage")}</a></>
+          )}
+        </p>
+      )}
+      {[...groups.entries()].map(([group, list]) => (
+        <div key={group || "_"}>
+          {emojis.some((e) => e.category) && (
+            <div className="nvc-pop__label">{group || t("composer.emojiOther")}</div>
           )}
           <div className="nvc-emoji__grid">
             {list.map((emoji) => (
               <button
-                key={emoji}
+                key={emoji.id}
                 type="button"
                 className="nvc-emoji__cell"
+                title={`:${emoji.shortcode}:`}
+                aria-label={emoji.name}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => { onPick(emoji); onClose(); }}
               >
-                {emoji}
+                <img src={emoji.url} alt="" loading="lazy" />
               </button>
             ))}
           </div>

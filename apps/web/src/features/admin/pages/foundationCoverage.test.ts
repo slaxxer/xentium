@@ -46,7 +46,7 @@ describe("Style Editor coverage", () => {
   });
 
   it("reads defaults from the stylesheet, comments and all", () => {
-    expect(STYLESHEET_DEFAULTS["--c-accent-soft"]).toBe("#e7e9fd");
+    expect(STYLESHEET_DEFAULTS["--c-accent-soft"]).toBe("#e3f2ef");
     expect(STYLESHEET_DEFAULTS["--radius-pill"]).toBe("999px");
     expect(parseTokenDefaults("@mixin components {\n  --a: 1px; // note\n  /* x */ --b: var(--a);\n}", ["components"]))
       .toEqual({ "--a": "1px", "--b": "var(--a)" });

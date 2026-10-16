@@ -23,6 +23,7 @@ import {
   type BlockEdges,
   type BlockNode,
   type BlockVariant,
+  type HeadingFont,
   type BlockVisibility,
 } from "@xentium/contracts";
 
@@ -353,6 +354,23 @@ export function updateBlockClassName(
   const { node } = findNode(next, id)!;
   if (!cleaned) delete node.className;
   else node.className = cleaned;
+  return next;
+}
+
+/**
+ * Set or clear the face a block's headings are set in. Same absence rule as the
+ * variant: the site's own font is no field at all.
+ */
+export function updateBlockHeadingFont(
+  regions: Regions,
+  id: string,
+  font: HeadingFont | undefined,
+): Regions {
+  if (!findNode(regions, id)) return regions;
+  const next = clone(regions);
+  const { node } = findNode(next, id)!;
+  if (!font) delete node.headingFont;
+  else node.headingFont = font;
   return next;
 }
 

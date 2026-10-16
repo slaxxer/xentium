@@ -23,14 +23,15 @@ const CORE_LANDING_I18N: Record<string, string> = {
   "/members": "settings.landing.members",
 };
 import "./acpSystem.scss";
+import { uiLocale } from "../../../lib/i18n";
 
 // ── i18n locales bundled in v1 (§60.6) ───────────────────────────────────────
 const LOCALES = [
   { value: "en", label: "English" },
-  { value: "de", label: "Deutsch (German)" },
-  { value: "es", label: "Español (Spanish)" },
-  { value: "fr", label: "Français (French)" },
-  { value: "pt", label: "Português (Portuguese)" },
+  { value: "de", label: "Deutsch" },
+  { value: "es", label: "Español" },
+  { value: "fr", label: "Français" },
+  { value: "pt", label: "Português" },
 ];
 
 // ── Common timezones ──────────────────────────────────────────────────────────
@@ -188,6 +189,20 @@ const SECTIONS: Section[] = [
     ],
   },
   {
+    // One bar at the very top of the site — the same place staff are told the site
+    // is in maintenance. The text is the admin's own, shown as written.
+    id: "alert", icon: "megaphone",
+    fields: [
+      { i18nKey: "alertEnabled",     key: "alert.enabled",     type: "toggle" },
+      { i18nKey: "alertMessage",     key: "alert.message",     type: "text",   placeholderKey: "alertMessage" },
+      { i18nKey: "alertTone",        key: "alert.tone",        type: "select", optionsKey: "alertTone", values: ["info", "success", "warning", "danger"] },
+      { i18nKey: "alertLinkLabel",   key: "alert.link_label",  type: "text",   placeholderKey: "alertLinkLabel" },
+      { i18nKey: "alertLinkUrl",     key: "alert.link_url",    type: "text",   placeholderKey: "alertLinkUrl" },
+      { i18nKey: "alertAudience",    key: "alert.audience",    type: "select", optionsKey: "alertAudience", values: ["everyone", "guests", "members"] },
+      { i18nKey: "alertDismissible", key: "alert.dismissible", type: "toggle" },
+    ],
+  },
+  {
     id: "login", icon: "shield",
     fields: [
       { i18nKey: "loginMethod",       key: "auth.login_method",              type: "select", optionsKey: "loginMethod", values: ["email", "username", "either"] },
@@ -283,12 +298,13 @@ const DEFAULTS: Record<string, unknown> = {
   "site.landing":                       "home",
   "maintenance.enabled":                false,
   "maintenance.allowed_groups":         ["admin"],
-  "maintenance.title":                  "Down for a quick tune-up.",
-  "maintenance.message":                "We're making the community better. We'll be back shortly.",
+  // Empty = the core default, shown translated (placeholder here, text on the page).
+  "maintenance.title":                  "",
+  "maintenance.message":                "",
   // "bar" keeps installs that predate the progress modes exactly as they were:
   // a bar that only appears once the percentage is above zero.
   "maintenance.progress_mode":          "bar",
-  "maintenance.progress_label":         "In progress",
+  "maintenance.progress_label":         "",
   "maintenance.progress_percent":       0,
   "maintenance.steps":                  [],
   "maintenance.current_step":           1,
@@ -299,6 +315,13 @@ const DEFAULTS: Record<string, unknown> = {
   "maintenance.services":               [],
   "maintenance.links":                  [],
   "maintenance.staff_link":             true,
+  "alert.enabled":                      false,
+  "alert.message":                      "",
+  "alert.tone":                         "info",
+  "alert.link_label":                   "",
+  "alert.link_url":                     "",
+  "alert.audience":                     "everyone",
+  "alert.dismissible":                  true,
   "auth.registration_mode":             "open",
   "auth.allow_registration":            true,
   "auth.require_email_verification":    true,
@@ -434,7 +457,7 @@ export function SettingsPage() {
     if (f?.type === "select" && f.optionsKey) return t(`settings.options.${f.optionsKey}.${String(v)}`);
     if (f?.type === "language") return LOCALES.find((l) => l.value === v)?.label ?? String(v);
     if (f?.type === "group") return allGroups.find((g) => g.key === v)?.name ?? String(v);
-    if (f?.type === "datetime") { const d = new Date(String(v)); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(); }
+    if (f?.type === "datetime") { const d = new Date(String(v)); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(uiLocale()); }
     if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? (x as { label?: string; name?: string }).label ?? (x as { name?: string }).name ?? "…" : String(x))).join(", ") || t("savebar.empty");
     if (typeof v === "object") return "…";
     return typeof v === "string" ? `“${v}”` : String(v);
@@ -543,7 +566,7 @@ export function SettingsPage() {
                   type="button"
                   onClick={() => !isAdmin && toggle(g.key)}
                   disabled={isAdmin}
-                  title={isAdmin ? "Administrators always have access during maintenance" : undefined}
+                  title={isAdmin ? t("settings.maintenance.adminAlways") : undefined}
                   style={{
                     display: "inline-flex", alignItems: "center", gap: 8, padding: "7px 12px",
                     borderRadius: 8, cursor: isAdmin ? "default" : "pointer", fontSize: "var(--fs-sm)", fontWeight: 600,
@@ -586,7 +609,11 @@ export function SettingsPage() {
   }
 
   const pluginSections = slotRegistry.getSettingsSections();
-  const [activeSection, setActiveSection] = useState(SECTIONS[0]!.id);
+  // `?section=maintenance` opens that section — the site's maintenance bar links here.
+  const [activeSection, setActiveSection] = useState(() => {
+    const wanted = new URLSearchParams(window.location.search).get("section");
+    return SECTIONS.some((s) => s.id === wanted) ? wanted! : SECTIONS[0]!.id;
+  });
 
   // A failed save takes the admin to the setting that failed.
   useEffect(() => {

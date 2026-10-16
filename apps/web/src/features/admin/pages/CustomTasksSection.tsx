@@ -8,6 +8,8 @@ import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
 import { SchemaFields, defaultsFor, type FieldSchema, type FieldValues } from "../../../components/SchemaFields";
+import { uiLocale } from "../../../lib/i18n";
+import { hostText } from "../../../lib/coreText";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 
@@ -46,7 +48,7 @@ const TZS = ["UTC", "America/New_York", "America/Chicago", "America/Los_Angeles"
 
 /** Short form: the aside has no room for a weekday + full date. */
 const fmtShort = (iso: string) =>
-  new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleString(uiLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 
 const statusClass = (status: string | null) =>
   `ctask__status ctask__status--${
@@ -114,12 +116,13 @@ function TaskDialog({ task, actions, onClose }: {
         <div className="acp-form-field">
           <label className="acp-label">{t("tasks.action")}</label>
           <select className="acp-input" value={actionKey} onChange={(e) => pickAction(e.target.value)}>
-            {actions.map((a) => <option key={a.key} value={a.key}>{a.domain} — {a.label}</option>)}
+            {actions.map((a) => <option key={a.key} value={a.key}>{hostText(`domains.${a.domain}`, a.domain)} — {hostText(`actions.${a.key}.label`, a.label)}</option>)}
           </select>
-          {action && <div className="acp-hint">{action.description}</div>}
+          {action && <div className="acp-hint">{hostText(`actions.${action.key}.description`, action.description)}</div>}
         </div>
 
-        <SchemaFields schema={action?.paramsSchema} values={params} onChange={setParams} />
+        <SchemaFields schema={action?.paramsSchema} values={params} onChange={setParams}
+          textKey={action ? `actions.${action.key}.params` : undefined} />
 
         {action?.destructive && (
           <div style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: 10, borderRadius: 8, background: "color-mix(in srgb, var(--c-danger) 12%, transparent)", marginBottom: 14 }}>
@@ -273,7 +276,7 @@ function TaskCard({ task, onEdit }: { task: TaskView; onEdit: () => void }) {
       </div>
 
       <div className="ctask__meta">
-        {task.actionLabel}
+        {hostText(`actions.${task.actionKey}.label`, task.actionLabel)}
         <br />
         <code>{task.cron}</code> · {task.schedule.tz ?? "UTC"}
         {task.enabled && task.nextRuns[0] && <><br />{t("tasks.next")}: {fmtShort(task.nextRuns[0])}</>}

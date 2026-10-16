@@ -1,5 +1,6 @@
 import { prisma } from "../db.js";
 import { getSetting } from "../../shared/utils/settings.js";
+import { serverText, type ServerLocale } from "../../shared/i18n/serverText.js";
 
 /**
  * Outbound mail templates.
@@ -35,112 +36,106 @@ export interface EmailTemplateDef {
   placeholders: readonly string[];
 }
 
-const SHELL_OPEN =
-  `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">`;
-const BRAND =
+/*
+ * A template body is CONTENT — headings, paragraphs, lists, links — written in the
+ * ACP with our editor. The frame around it (width, font, brand line) and the
+ * inline styles email clients need are added here at send time, so an admin
+ * formats a message without writing HTML and every message keeps one look.
+ *
+ * Buttons and the code box are placeholders (`{{reset_button}}`, `{{code_box}}`):
+ * markup no editor should be asked to author, rendered from their value here.
+ */
+const FRAME_OPEN =
+  `<div style="font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">` +
   `<div style="margin-bottom:24px"><span style="font-size:20px;font-weight:800;letter-spacing:-0.03em">{{site_name}}</span></div>`;
+const FRAME_CLOSE = `</div>`;
 
-export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateDef> = {
-  notification: {
-    subject: "{{title}} — {{site_name}}",
-    placeholders: ["site_name", "site_url", "title", "body", "link_url", "link_button", "username"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:20px;font-weight:700;margin:0 0 10px;color:#0d0d22">{{title}}</h2>
-  <p style="color:#4a4a7a;margin:0 0 20px;line-height:1.6;font-size:15px">{{body}}</p>
-  {{link_button}}
-  <hr style="border:none;border-top:1px solid #e7e7f1;margin:28px 0 16px">
-  <p style="color:#9ca3af;font-size:12px;margin:0">
-    You're receiving this because you have notifications enabled. Manage your preferences in Account Settings.
-  </p>
-</div>`,
-  },
-
-  password_reset: {
-    subject: "Reset your {{site_name}} password",
-    placeholders: ["site_name", "site_url", "reset_url", "username", "expiry_minutes"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Reset your password</h2>
-  <p style="color:#6b7280;margin:0 0 24px;line-height:1.6">
-    We received a request to reset your password. Click the button below to choose a new one.
-    This link expires in {{expiry_minutes}} minutes and can only be used once.
-  </p>
-  <a href="{{reset_url}}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px">Reset password →</a>
-  <p style="color:#9ca3af;font-size:13px;margin:24px 0 0">
-    If you didn't request this, you can safely ignore this email — your password will stay the same.
-  </p>
-</div>`,
-  },
-
-  magic_link: {
-    subject: "Your sign-in link for {{site_name}}",
-    placeholders: ["site_name", "site_url", "login_url", "username", "expiry_minutes"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Sign in to {{site_name}}</h2>
-  <p style="color:#6b7280;margin:0 0 24px;line-height:1.6">
-    Click the button below to sign in. This link expires in {{expiry_minutes}} minutes and can only be used once.
-  </p>
-  <a href="{{login_url}}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px">Sign in →</a>
-  <p style="color:#9ca3af;font-size:13px;margin:24px 0 0">
-    If you didn't ask for this, ignore this email. Nobody can sign in without the link.
-  </p>
-</div>`,
-  },
-
-  email_verify: {
-    subject: "Verify your email — {{site_name}}",
-    placeholders: ["site_name", "site_url", "code", "username", "expiry_minutes"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Verify your email</h2>
-  <p style="color:#6b7280;margin:0 0 28px;line-height:1.6">
-    Enter this code in the registration form to complete your account setup.
-    It expires in {{expiry_minutes}} minutes.
-  </p>
-  <div style="background:#f5f5fb;border:1px solid #e7e7f1;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px">
-    <span style="font-size:36px;font-weight:800;letter-spacing:0.18em;color:#1a1a2e">{{code}}</span>
-  </div>
-  <p style="color:#9ca3af;font-size:13px;margin:0">
-    If you didn't request this, you can safely ignore this email.
-  </p>
-</div>`,
-  },
-
-  email_change: {
-    subject: "Your email change verification code — {{site_name}}",
-    placeholders: ["site_name", "site_url", "code", "username", "new_email", "expiry_minutes"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Confirm your new email</h2>
-  <p style="color:#6b7280;margin:0 0 28px;line-height:1.6">
-    Enter this code to confirm {{new_email}} as your new email address.
-    It expires in {{expiry_minutes}} minutes.
-  </p>
-  <div style="background:#f5f5fb;border:1px solid #e7e7f1;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px">
-    <span style="font-size:36px;font-weight:800;letter-spacing:0.18em;color:#1a1a2e">{{code}}</span>
-  </div>
-  <p style="color:#9ca3af;font-size:13px;margin:0">
-    If you didn't request this, you can safely ignore this email — your address is unchanged.
-  </p>
-</div>`,
-  },
-
-  smtp_test: {
-    subject: "SMTP test — {{site_name}}",
-    placeholders: ["site_name", "site_url"],
-    body: `${SHELL_OPEN}
-  ${BRAND}
-  <h2 style="font-size:22px;font-weight:700;margin:0 0 8px">Outbound mail works</h2>
-  <p style="color:#6b7280;margin:0 0 24px;line-height:1.6">
-    This is the test message from {{site_name}}. If you are reading it, the SMTP
-    settings in your ACP are correct and mail is leaving the server.
-  </p>
-  <p style="color:#9ca3af;font-size:13px;margin:0">Sent from {{site_url}}</p>
-</div>`,
-  },
+/** What each template can use; the texts themselves live in `locales/<lng>/email.json`. */
+const PLACEHOLDERS: Record<EmailTemplateKey, readonly string[]> = {
+  notification:   ["site_name", "site_url", "title", "body", "link_url", "link_button", "username"],
+  password_reset: ["site_name", "site_url", "reset_url", "reset_button", "username", "expiry_minutes"],
+  magic_link:     ["site_name", "site_url", "login_url", "login_button", "username", "expiry_minutes"],
+  email_verify:   ["site_name", "site_url", "code", "code_box", "username", "expiry_minutes"],
+  email_change:   ["site_name", "site_url", "code", "code_box", "username", "new_email", "expiry_minutes"],
+  smtp_test:      ["site_name", "site_url"],
 };
+
+/** The shipped template in one language (English when that language lacks it). */
+export function defaultTemplate(key: EmailTemplateKey, locale: ServerLocale = "en"): EmailTemplateDef {
+  return {
+    subject:      serverText(locale, "email", `templates.${key}.subject`),
+    body:         serverText(locale, "email", `templates.${key}.body`),
+    placeholders: PLACEHOLDERS[key],
+  };
+}
+
+/** The shipped templates in English — the source language. */
+export const EMAIL_TEMPLATE_DEFAULTS: Record<EmailTemplateKey, EmailTemplateDef> =
+  Object.fromEntries(EMAIL_TEMPLATE_KEYS.map((k) => [k, defaultTemplate(k)])) as Record<EmailTemplateKey, EmailTemplateDef>;
+
+/**
+ * A body saved before templates became editor content: a whole HTML document with
+ * its own inline-styled wrapper. It is sent exactly as written, never framed twice,
+ * and the ACP offers Reset rather than loading it into the editor.
+ */
+export function isLegacyBody(body: string): boolean {
+  return /^\s*<div\s+style=/i.test(body);
+}
+
+/** Inline styles for what the editor writes; email clients ignore <style> blocks. */
+const CONTENT_STYLES: Record<string, string> = {
+  h1: "font-size:24px;font-weight:700;margin:0 0 10px;color:#0d0d22",
+  h2: "font-size:20px;font-weight:700;margin:0 0 10px;color:#0d0d22",
+  h3: "font-size:16px;font-weight:700;margin:0 0 8px;color:#0d0d22",
+  p: "color:#4a4a7a;margin:0 0 16px;line-height:1.6;font-size:15px",
+  ul: "color:#4a4a7a;margin:0 0 16px;padding-left:22px;line-height:1.6;font-size:15px",
+  ol: "color:#4a4a7a;margin:0 0 16px;padding-left:22px;line-height:1.6;font-size:15px",
+  li: "margin:0 0 4px",
+  blockquote: "margin:0 0 16px;padding:8px 14px;border-left:3px solid #e7e7f1;color:#6b7280",
+  hr: "border:none;border-top:1px solid #e7e7f1;margin:24px 0 16px",
+  a: "color:#7c6af7",
+  code: "font-family:ui-monospace,monospace;background:#f5f5fb;padding:1px 5px;border-radius:4px",
+};
+
+/** Give each known tag its email style, ahead of any style it already carries (alignment). */
+export function styleContent(html: string): string {
+  return html.replace(/<(h1|h2|h3|p|ul|ol|li|blockquote|hr|a|code)(\s[^>]*)?>/gi, (whole, tag: string, attrs = "") => {
+    const base = CONTENT_STYLES[tag.toLowerCase()];
+    if (!base) return whole;
+    if (/\sstyle\s*=\s*"/i.test(attrs)) {
+      return `<${tag}${attrs.replace(/\sstyle\s*=\s*"/i, ` style="${base};`)}>`;
+    }
+    return `<${tag}${attrs} style="${base}">`;
+  });
+}
+
+/** A block placeholder alone in a paragraph stands in for that paragraph (no <div> inside <p>). */
+function unwrapBlockPlaceholders(html: string): string {
+  return html.replace(/<p(?:\s[^>]*)?>\s*(\{\{\s*[a-z0-9_]+_(?:button|box)\s*\}\})\s*<\/p>/gi, "$1");
+}
+
+/** The large one-time code, centred in its box. */
+export function renderCodeBox(code: string | undefined): string {
+  if (!code) return "";
+  return `<div style="background:#f5f5fb;border:1px solid #e7e7f1;border-radius:12px;padding:28px;text-align:center;margin-bottom:28px">` +
+    `<span style="font-size:36px;font-weight:800;letter-spacing:0.18em;color:#1a1a2e">${escapeHtml(code)}</span></div>`;
+}
+
+/** Buttons and boxes rendered from the values they stand for, unless the caller sent its own. */
+function blockVars(vars: Record<string, string | undefined>, locale: ServerLocale): Record<string, string> {
+  return {
+    reset_button: renderLinkButton(vars.reset_url, serverText(locale, "email", "buttons.reset")),
+    login_button: renderLinkButton(vars.login_url, serverText(locale, "email", "buttons.signIn")),
+    code_box:     renderCodeBox(vars.code),
+  };
+}
+
+/** Content → a ready-to-send body: styled, placeholders filled, inside the frame. */
+export function renderEmailBody(body: string, vars: Record<string, string | undefined>, locale: ServerLocale = "en"): string {
+  const all = { ...blockVars(vars, locale), ...vars };
+  if (isLegacyBody(body)) return substitutePlaceholders(body, all);
+  return substitutePlaceholders(FRAME_OPEN + styleContent(unwrapBlockPlaceholders(body)) + FRAME_CLOSE, all);
+}
 
 export function escapeHtml(s: string): string {
   return String(s)
@@ -175,8 +170,8 @@ export function substitutePlaceholders(
     const name = rawName.toLowerCase();
     if (!(name in vars)) return whole;
     const value = vars[name] ?? "";
-    // `_button` placeholders are host-rendered HTML fragments, not user data.
-    if (name.endsWith("_button")) return value;
+    // `_button` / `_box` placeholders are host-rendered HTML fragments, not user data.
+    if (name.endsWith("_button") || name.endsWith("_box")) return value;
     if (URL_PLACEHOLDER.test(name)) return escapeHtml(isSafeUrl(value) ? value : "");
     return escapeHtml(value);
   });
@@ -186,13 +181,17 @@ export function isEmailTemplateKey(v: string): v is EmailTemplateKey {
   return (EMAIL_TEMPLATE_KEYS as readonly string[]).includes(v);
 }
 
-/** The effective template: the admin override if one exists, else the default. */
+/**
+ * The effective template: the admin's own version if there is one (sent as written,
+ * in whatever language they wrote it), else the shipped one in `locale`.
+ */
 export async function getEffectiveTemplate(
   key: EmailTemplateKey,
+  locale: ServerLocale = "en",
 ): Promise<{ subject: string; body: string; customized: boolean }> {
   const row = await prisma.emailTemplate.findUnique({ where: { key } });
   if (row) return { subject: row.subject, body: row.body, customized: true };
-  const def = EMAIL_TEMPLATE_DEFAULTS[key];
+  const def = defaultTemplate(key, locale);
   return { subject: def.subject, body: def.body, customized: false };
 }
 
@@ -200,13 +199,14 @@ export async function getEffectiveTemplate(
 export async function renderEmailTemplate(
   key: EmailTemplateKey,
   vars: Record<string, string | undefined>,
+  locale: ServerLocale = "en",
 ): Promise<{ subject: string; html: string }> {
-  const tpl = await getEffectiveTemplate(key);
+  const tpl = await getEffectiveTemplate(key, locale);
   return {
     // Subjects are plain text; escaping there would surface literal &amp; in
     // the client's subject line, so strip tags instead.
     subject: substitutePlaceholders(tpl.subject, vars).replace(/<[^>]*>/g, "").trim(),
-    html: substitutePlaceholders(tpl.body, vars),
+    html: renderEmailBody(tpl.body, vars, locale),
   };
 }
 
@@ -225,5 +225,5 @@ export async function siteVars(): Promise<{ site_name: string; site_url: string 
 /** The purple CTA used by the notification default when a link is present. */
 export function renderLinkButton(url: string | undefined, label = "View →"): string {
   if (!url || !isSafeUrl(url)) return "";
-  return `<a href="${escapeHtml(url)}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px;margin-top:8px">${escapeHtml(label)}</a>`;
+  return `<p style="margin:0 0 20px"><a href="${escapeHtml(url)}" style="display:inline-block;background:#7c6af7;color:#fff;text-decoration:none;padding:11px 22px;border-radius:8px;font-weight:700;font-size:14px">${escapeHtml(label)}</a></p>`;
 }

@@ -1,3 +1,5 @@
+import { permissionLabel } from "./coreText";
+
 export interface Permission {
   id: string;
   key: string;
@@ -8,6 +10,7 @@ export interface Permission {
 const PERM_META: Record<string, { label: string; domain: string }> = {
   "admin.access":               { label: "Access the admin panel",             domain: "Administration" },
   "legal.manage":               { label: "Manage legal documents",             domain: "Administration" },
+  "emoji.manage":               { label: "Manage custom emojis",               domain: "Administration" },
   "user.manage":                { label: "Manage user accounts",               domain: "Users" },
   "user.ban":                   { label: "Ban users",                          domain: "Users" },
   "group.manage":               { label: "Manage groups & permissions",        domain: "Users" },
@@ -57,7 +60,8 @@ export const DOMAIN_ORDER = [
 
 export function enrichPerm(p: Permission): Permission {
   const meta = PERM_META[p.key];
-  if (meta) return { ...p, label: meta.label, domain: meta.domain };
+  // `domain` stays the English grouping key; show it through permissionDomainLabel.
+  if (meta) return { ...p, label: permissionLabel(p.key, meta.label), domain: meta.domain };
   const prefix = p.key.split(".")[0] ?? "other";
   const domain = prefix.charAt(0).toUpperCase() + prefix.slice(1);
   // A plugin registers a real label ("Reply to closed threads"); core keys store
@@ -65,7 +69,7 @@ export function enrichPerm(p: Permission): Permission {
   const label  = p.label && /[a-z]/.test(p.label)
     ? p.label
     : p.key.replace(/[._]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return { ...p, label, domain };
+  return { ...p, label: permissionLabel(p.key, label), domain };
 }
 
 export function groupByDomain(permissions: Permission[]): [string, Permission[]][] {

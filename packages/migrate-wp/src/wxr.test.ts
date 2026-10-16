@@ -62,3 +62,23 @@ describe("WXR extractor", () => {
     expect(parsed.skipped.some((s) => s.entity === "comment" && s.sourceId === "503")).toBe(true);
   });
 });
+
+describe("WordPress redirects", async () => {
+  const { wordpressAdapter } = await import("./index.js");
+  const { resolveOldAddress, OWN_ADDRESS_SAMPLES } = await import("@xentium/migrate-core");
+  const spec = await wordpressAdapter.redirects!({ file: FIXTURE });
+
+  it.each([
+    ["/blog/2020/01/hello-world/", "article", "100"],
+    ["/blog/2020/01/hello-world", "article", "100"],
+    ["/blog/?p=101", "article", "101"],
+    ["/?p=104&preview=true", "article", "104"],
+    ["/blog/author/alice/", "user", "1"],
+  ])("%s → %s %s", (uri, entity, id) => {
+    expect(resolveOldAddress(spec, uri)).toEqual({ entity, id });
+  });
+
+  it("leaves our own addresses alone", () => {
+    for (const uri of OWN_ADDRESS_SAMPLES) expect(resolveOldAddress(spec, uri), uri).toBeNull();
+  });
+});

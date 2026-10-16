@@ -61,12 +61,18 @@ export interface MaintenanceStatus {
   allowedGroups: string[]; // group keys allowed to sign in / bypass (admin always allowed)
 }
 
+/*
+ * The visitor-facing texts default to EMPTY: an empty title, message or bar label is
+ * the core default, and the maintenance page shows it from its translations in each
+ * visitor's language. Only what an admin types is sent as written. The API stays
+ * locale-agnostic.
+ */
 const DEFAULTS = {
   enabled: false,
-  title: "Down for a quick tune-up.",
-  message: "We're making the community better. We'll be back shortly.",
+  title: "",
+  message: "",
   progressMode: "bar" as MaintenanceProgressMode,
-  progressLabel: "In progress",
+  progressLabel: "",
   progressPercent: 0,
   steps: [] as string[],
   currentStep: 1,
@@ -79,6 +85,21 @@ const DEFAULTS = {
   staffLink: true,
   allowedGroups: ["admin"],
 };
+
+/** The English defaults this file used to send, which the settings page also saved
+ *  verbatim when an admin left a field alone. They are core text, not the admin's
+ *  words, so they read as unset and each visitor gets the translation instead. */
+const FORMER_DEFAULT_TEXT = new Set([
+  "Down for a quick tune-up.",
+  "We're making the community better. We'll be back shortly.",
+  "In progress",
+]);
+
+/** An admin-written text, or "" when it is unset or a former core default. */
+function ownText(v: unknown): string {
+  const s = typeof v === "string" ? v.trim() : "";
+  return FORMER_DEFAULT_TEXT.has(s) ? "" : s;
+}
 
 /** Settings hold whatever the ACP last wrote, so every structured value is
  *  re-checked here rather than trusted into the public response. */
@@ -169,11 +190,11 @@ export const maintenanceService = {
 
     return {
       enabled: !!s["maintenance.enabled"],
-      title: String(s["maintenance.title"] ?? DEFAULTS.title),
-      message: String(s["maintenance.message"] ?? DEFAULTS.message),
+      title: ownText(s["maintenance.title"]),
+      message: ownText(s["maintenance.message"]),
       progress: {
         mode: oneOf(s["maintenance.progress_mode"], ["steps", "bar", "hidden"] as const, DEFAULTS.progressMode),
-        label: String(s["maintenance.progress_label"] ?? DEFAULTS.progressLabel),
+        label: ownText(s["maintenance.progress_label"]),
         percent: Math.max(0, Math.min(100, Number(s["maintenance.progress_percent"]) || 0)),
         steps,
         currentStep,

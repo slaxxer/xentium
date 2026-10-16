@@ -5,6 +5,7 @@ import { renderEmailTemplate, renderLinkButton, siteVars } from "../../infrastru
 import { notificationRepository } from "./notification.repository.js";
 import type { DispatchOptions, NotificationPreferenceResolved } from "./notification.types.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
+import { hasServerText, recipientLocale, serverText, type ServerLocale } from "../../shared/i18n/serverText.js";
 
 type StoredPreference = {
   typePattern:  string;
@@ -32,6 +33,22 @@ function resolvePreference(prefs: StoredPreference[], type: string): Notificatio
   return { inAppEnabled: best.inAppEnabled, emailEnabled: best.emailEnabled };
 }
 
+/**
+ * A core notification's title/body in the recipient's language. Core keys
+ * (`common:notify.*`) have a server copy; a plugin's key does not, and a part the
+ * key leaves out (someone's own words) keeps the stored text.
+ */
+function emailText(opts: DispatchOptions, locale: ServerLocale): { title: string; body: string } {
+  const key = opts.i18n?.key;
+  if (!key?.startsWith("common:notify.")) return { title: opts.title, body: opts.body };
+  const path = key.slice("common:notify.".length);
+  const pick = (part: "title" | "body", stored: string) =>
+    hasServerText("notifications", `${path}.${part}`)
+      ? serverText(locale, "notifications", `${path}.${part}`, opts.i18n?.params)
+      : stored;
+  return { title: pick("title", opts.title), body: pick("body", opts.body) };
+}
+
 export const notificationService = {
   async dispatch(opts: DispatchOptions): Promise<void> {
     const prefs    = (await notificationRepository.findPreferencesForUser(opts.userId)) as StoredPreference[];
@@ -41,7 +58,7 @@ export const notificationService = {
     const wantsEmail = opts.channels.includes("email")  && resolved.emailEnabled;
 
     // Enrich meta with sender avatar/username for display in the notification bell
-    let meta = opts.meta ?? {};
+    let meta: Record<string, unknown> = opts.i18n ? { ...opts.meta, i18n: opts.i18n } : (opts.meta ?? {});
     if (opts.senderUserId) {
       const sender = await prisma.user.findUnique({
         where:  { id: opts.senderUserId },
@@ -82,13 +99,15 @@ export const notificationService = {
         select: { email: true },
       });
       if (user?.email) {
+        const locale = await recipientLocale({ userId: opts.userId });
+        const text = emailText(opts, locale);
         const { subject, html } = await renderEmailTemplate("notification", {
           ...(await siteVars()),
-          title:       opts.title,
-          body:        opts.body,
+          title:       text.title,
+          body:        text.body,
           link_url:    opts.link,
-          link_button: renderLinkButton(opts.link),
-        });
+          link_button: renderLinkButton(opts.link, serverText(locale, "email", "buttons.view")),
+        }, locale);
 
         await queues.emailNotification.add("email-notification", {
           to: user.email,

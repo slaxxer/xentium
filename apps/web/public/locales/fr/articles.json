@@ -13,7 +13,10 @@
     "prev": "← Précédent",
     "next": "Suivant →",
     "pageOf": "Page {{page}} sur {{total}}",
-    "minRead": "{{n}} min"
+    "minRead": "{{n}} min",
+    "views_one": "{{count}} vue",
+    "views_other": "{{count}} vues",
+    "views_many": "{{count}} vues"
   },
   "reader": {
     "loading": "Chargement…",
@@ -64,7 +67,9 @@
     "noComments": "Aucun commentaire pour le moment.",
     "tombstoneBase": "Le commentaire de {{user}} a été supprimé",
     "tombstoneBy": " par {{mod}}",
-    "tombstoneReason": " · Motif : {{reason}}"
+    "tombstoneReason": " · Motif : {{reason}}",
+    "cantRateOwnComment": "Vous ne pouvez pas noter votre propre commentaire",
+    "signInToRate": "Connectez-vous pour noter"
   },
   "editor": {
     "saveError": "Impossible d'enregistrer. Réessayez.",
@@ -135,7 +140,19 @@
       "codeBlock": "Bloc de code",
       "hr": "Ligne horizontale",
       "undo": "Annuler",
-      "redo": "Rétablir"
+      "redo": "Rétablir",
+      "underline": "Souligner",
+      "highlight": "Surligner",
+      "subscript": "Indice",
+      "superscript": "Exposant",
+      "alignLeft": "Aligner à gauche",
+      "alignCenter": "Centrer",
+      "alignRight": "Aligner à droite",
+      "alignJustify": "Justifier",
+      "taskList": "Liste de tâches",
+      "code": "Code en ligne",
+      "link": "Lien",
+      "image": "Insérer une image"
     },
     "savedToast": "Enregistré",
     "unpublishedToast": "Repassé en brouillon",

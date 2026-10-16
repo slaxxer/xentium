@@ -8,7 +8,7 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { api } from "../../../lib/api";
 import { useLegalLinks } from "../../../lib/legalApi";
-import { SUPPORTED_LOCALES, setLocale, type LocaleCode } from "../../../lib/i18n";
+import { SUPPORTED_LOCALES, setLocale, type LocaleCode, uiLocale } from "../../../lib/i18n";
 import { useRegistrationStatus } from "../../../hooks/useRegistrationStatus";
 import { useBranding } from "../../../hooks/useBranding";
 import { SiteLogo } from "../../../components/SiteLogo";
@@ -122,7 +122,7 @@ function Corner({ kind }: { kind: DoorwayCorner }) {
 
 function StatsStrip({ data }: { data: DoorwayStats }) {
   const { t } = useTranslation("auth");
-  const fmt = (n: number) => n.toLocaleString();
+  const fmt = (n: number) => n.toLocaleString(uiLocale());
   const others = Math.max(0, data.joinedThisWeek - Math.min(2, data.recent.length));
   return (
     <div className="dw-strip">

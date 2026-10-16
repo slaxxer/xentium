@@ -32,6 +32,7 @@ export interface PrivacySettings {
   whoCanFollow?: "everyone" | "nobody";
   showFollowersPublic?: boolean;
   showFollowingPublic?: boolean;
+  showLastSeen?: boolean;
   hideBlockedContent?: boolean;
   profileVisibility?: "everyone" | "members";
   postHistoryVisibility?: "everyone" | "members" | "nobody";
@@ -44,6 +45,7 @@ export const PRIVACY_DEFAULTS: Required<PrivacySettings> = {
   whoCanFollow: "everyone",
   showFollowersPublic: true,
   showFollowingPublic: true,
+  showLastSeen: true,
   hideBlockedContent: false,
   profileVisibility: "everyone",
   postHistoryVisibility: "everyone",
@@ -357,6 +359,17 @@ export function PrivacyTab() {
               on={form.settings.showFollowingPublic}
               label={t("privacy.showFollowing")}
               onToggle={() => setSetting({ showFollowingPublic: !form.settings.showFollowingPublic })}
+            />
+          }
+        />
+        <AccountRow
+          label={t("privacy.showLastSeen")}
+          desc={t("privacy.showLastSeenDesc")}
+          control={
+            <AccountSwitch
+              on={form.settings.showLastSeen}
+              label={t("privacy.showLastSeen")}
+              onToggle={() => setSetting({ showLastSeen: !form.settings.showLastSeen })}
             />
           }
         />

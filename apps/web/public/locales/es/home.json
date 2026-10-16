@@ -1,11 +1,14 @@
 {
   "nav": {
     "following": "Siguiendo",
-    "myThreads": "Mis temas",
-    "liked": "Me gusta"
+    "myThreads": "Mis artículos",
+    "liked": "Me gusta",
+    "saved": "Guardados"
   },
   "spaces": {
-    "title": "Tus espacios"
+    "title": "Tus espacios",
+    "follow": "Seguir {{name}}",
+    "unfollow": "Dejar de seguir {{name}}"
   },
   "composer": {
     "placeholder": "Comparte algo con la comunidad…",
@@ -21,14 +24,37 @@
     "untitled": "(sin título)",
     "share": "Compartir",
     "save": "Guardar",
-    "saved": "Guardado"
+    "saved": "Guardado",
+    "copyLink": "Copiar enlace",
+    "linkCopied": "Enlace copiado",
+    "copyFailed": "No se pudo copiar el enlace",
+    "followCategory": "Seguir {{name}}",
+    "unfollowCategory": "Dejar de seguir {{name}}",
+    "followTag": "Seguir #{{name}}",
+    "unfollowTag": "Dejar de seguir #{{name}}",
+    "edit": "Editar artículo",
+    "report": "Reportar",
+    "ownArticle": "Tu propio artículo",
+    "like": "Me gusta",
+    "unlike": "Quitar me gusta",
+    "signInFirst": "Inicia sesión para hacerlo."
   },
   "feed": {
     "latest": "Recientes",
     "following": "Siguiendo",
     "top": "Top de la semana",
     "loading": "Cargando…",
-    "empty": "Aún no hay artículos. ¡Sé el primero en publicar!"
+    "empty": "Aún no hay artículos. ¡Sé el primero en publicar!",
+    "title": {
+      "liked": "Artículos que te gustan",
+      "saved": "Artículos guardados",
+      "mine": "Tus artículos"
+    },
+    "backToAll": "Volver a todos los artículos",
+    "empty_following": "Sigue una categoría o una etiqueta (la estrella en Tus espacios o el menú «…» de un artículo) y sus artículos aparecerán aquí.",
+    "empty_liked": "Los artículos que te gustan aparecen aquí.",
+    "empty_saved": "Los artículos que guardas aparecen aquí.",
+    "empty_mine": "Los artículos que publicas aparecen aquí."
   },
   "progression": {
     "topReached": "Nivel máximo alcanzado",
@@ -58,5 +84,10 @@
   },
   "tags": {
     "title": "Etiquetas populares"
+  },
+  "meCard": {
+    "posts": "publicaciones",
+    "followers": "seguidores",
+    "following": "siguiendo"
   }
 }

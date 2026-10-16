@@ -70,6 +70,13 @@ describe("scheduled job default jitter", () => {
     expect(RETIRED_SCHEDULERS.map((r) => r.schedulerId)).toContain("license-refresh-daily");
   });
 
+  it("no longer auto-publishes theme drafts, and tears the old schedule down", () => {
+    // Drafts autosave, so a timed publish put unfinished work live unseen.
+    expect(getJobDef("appearance-publish")).toBeUndefined();
+    const retired = RETIRED_SCHEDULERS.find((r) => r.schedulerId === "appearance-publish-repeat");
+    expect(retired?.jobKey).toBe("appearance-publish");
+  });
+
   it("is stable across calls for the same install", async () => {
     const a = await getJobConfig(marketplaceSync);
     const b = await getJobConfig(marketplaceSync);

@@ -28,7 +28,14 @@
     "badgesOverCap": "More than 3 are on — only the 3 highest-precedence ones will show.",
     "reading": "Reading & motion",
     "readingDesc": "Kept in this browser.",
-    "appliedNote": "Everything here applies the moment you pick it"
+    "appliedNote": "Everything here applies the moment you pick it",
+    "fontDesc": {
+      "Poppins": "Geometric and friendly (site base)",
+      "Nunito": "Warm & friendly",
+      "Montserrat": "Geometric & versatile",
+      "OpenSans": "Clean, neutral & readable",
+      "Ubuntu": "Humanist and approachable"
+    }
   },
   "profile": {
     "bioSection": "Bio",
@@ -145,7 +152,9 @@
     "rowCommentDesc": "Posts on your profile",
     "rowFollow": "Who can follow me",
     "rowFollowDesc": "New followers",
-    "displayNameDesc": "Your @handle never changes"
+    "displayNameDesc": "Your @handle never changes",
+    "showLastSeen": "Show when I was last here",
+    "showLastSeenDesc": "Your profile says when you were last active, like “Last seen 3h ago”."
   },
   "security": {
     "emailAddress": "Email Address",

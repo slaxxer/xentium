@@ -6,8 +6,8 @@
   margin: 0 0 4px;
   padding: 10px 13px;
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--c-warning) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-warning) 38%, transparent);
+  background: color-mix(in srgb, var(--c-warn) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-warn) 38%, transparent);
   font-size: var(--fs-sm);
   line-height: 1.5;
 }
@@ -22,7 +22,11 @@
   margin-left: auto;
 }
 
-.em-danger { color: var(--c-danger); }
+// Which language the template goes out in.
+.em-lang { margin-top: 4px; color: var(--c-fg-subtle); }
+
+// Reset sits at the right of the card head, away from the title.
+.em-danger { color: var(--c-danger); margin-left: auto; }
 
 .em-secret {
   display: flex;
@@ -40,8 +44,9 @@
 }
 
 // Subject/body need the full card width, so the row stacks instead of using
-// the default label-left / control-right split.
-.em-row-stack {
+// the default label-left / control-right split. Two classes: this sheet loads
+// before acpSystem.scss, and `.set-row`'s grid won a tie on one.
+.set-row.em-row-stack {
   display: block;
 
   .set-row__control { margin-top: 9px; }
@@ -50,19 +55,10 @@
 .em-full {
   width: 100%;
 
+  // The control column right-aligns; the subject and the editor take the row.
+  &.set-row__control { justify-content: stretch; }
+  > * { width: 100%; }
   .inp { width: 100%; }
-}
-
-.em-body {
-  width: 100%;
-  min-height: 320px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: var(--fs-sm);
-  line-height: 1.6;
-  resize: vertical;
-  white-space: pre;
-  overflow-wrap: normal;
-  overflow-x: auto;
 }
 
 .em-ph {

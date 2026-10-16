@@ -11,6 +11,7 @@ import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { SaveChip } from "../../../components/SaveChip";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { Toggle } from "../../../components/Toggle";
+import { uiLocale } from "../../../lib/i18n";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -526,7 +527,7 @@ export function ProgressionPage() {
                   {/* User count */}
                   <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
                     <FontAwesomeIcon icon={faUsers} style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)" }} />
-                    {entry.userCount.toLocaleString()}
+                    {entry.userCount.toLocaleString(uiLocale())}
                   </div>
 
                   {/* Edit */}

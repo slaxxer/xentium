@@ -10,7 +10,6 @@ import { startSecurityAnalysisWorker }        from './jobs/securityAnalysis.js';
 import { startUpdateCheckWorker, processUpdateCheck } from './jobs/updateCheck.js';
 import { processCoreUpdateCheck } from './jobs/coreUpdateCheck.js';
 import { processAnnouncementCheck } from './jobs/announcementCheck.js';
-import { startAppearancePublishWorker }       from './jobs/appearancePublish.js';
 import { startLogRetentionWorker }            from './jobs/logRetention.js';
 import { startGeoipRefreshWorker }            from './jobs/geoipRefresh.js';
 import { startScheduledTaskWorker, reconcileScheduledTasks } from './jobs/scheduledTask.js';
@@ -38,7 +37,6 @@ function startWorkers() {
     attachFailureHandler(startWarningExpiryWorker(),          'warning-expiry'),
     attachFailureHandler(startSecurityAnalysisWorker(),       'security-analysis'),
     attachFailureHandler(startUpdateCheckWorker(),            'update-check'),
-    attachFailureHandler(startAppearancePublishWorker(),      'appearance-publish'),
     attachFailureHandler(startLogRetentionWorker(),           'log-retention'),
     attachFailureHandler(startGeoipRefreshWorker(),           'geoip-refresh'),
     attachFailureHandler(startScheduledTaskWorker(),          'scheduled-task'),

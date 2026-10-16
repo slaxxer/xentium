@@ -1,7 +1,8 @@
 import { useSyncExternalStore } from "react";
 
 export const FONTS = [
-  { value: "Poppins",    label: "Poppins",    desc: "Geometric and friendly (site base)", stack: "Poppins, sans-serif"     },
+  { value: "Figtree",    label: "Figtree",    desc: "Warm and clear (site base)",         stack: '"Figtree", system-ui, sans-serif' },
+  { value: "Poppins",    label: "Poppins",    desc: "Geometric and friendly",             stack: "Poppins, sans-serif"     },
   { value: "Nunito",     label: "Nunito",     desc: "Warm & friendly",                    stack: "Nunito, sans-serif"      },
   { value: "Montserrat", label: "Montserrat", desc: "Geometric & versatile",              stack: "Montserrat, sans-serif"  },
   { value: "Open Sans",  label: "Open Sans",  desc: "Clean, neutral & readable",          stack: '"Open Sans", sans-serif' },
@@ -31,11 +32,13 @@ function applyFont(value: FontChoice) {
     // bug that made the site font invisible to every visitor.
     root.style.removeProperty("--ff-sans");
     root.style.removeProperty("--font-display");
+    root.style.removeProperty("--font-headline");
     return;
   }
   // Personal override wins over the site font — body AND headings.
   root.style.setProperty("--ff-sans", found.stack);
   root.style.setProperty("--font-display", found.stack);
+  root.style.setProperty("--font-headline", found.stack);
 }
 
 let _font: FontChoice = getStored();

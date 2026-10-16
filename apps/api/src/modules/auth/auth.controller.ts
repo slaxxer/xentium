@@ -12,6 +12,7 @@ import { getSetting } from "../../shared/utils/settings.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { effectivePermissions } from "../../shared/middleware/requirePermission.js";
+import { legalService } from "../legal/legal.service.js";
 
 
 
@@ -23,6 +24,7 @@ function uaOf(req: Request): string | null {
 
 import { completePinStep, isStaffUser, respondSignIn } from "./auth.signin.js";
 import { consumeMagicLink, requestMagicLink } from "./magicLink.service.js";
+import { requestLocaleHint } from "../../shared/i18n/serverText.js";
 
 /**
  * Public — the frontend uses this to show or hide the register button.
@@ -54,7 +56,7 @@ export async function registrationStatusHandler(req: Request, res: Response) {
 export async function sendCodeHandler(req: Request, res: Response) {
   const parsed = sendCodeSchema.parse(req.body);
 
-  await sendRegistrationCode(parsed.email);
+  await sendRegistrationCode(parsed.email, requestLocaleHint(req));
   res.json({ sent: true });
 }
 
@@ -69,6 +71,11 @@ export async function registerHandler(req: Request, res: Response) {
   const parsed = registerSchema.parse(req.body);
 
   const { email, username, password, emailCode, loginPinEnabled, loginPin, fields, inviteCode, name } = parsed;
+  // The form asks for consent while terms or a privacy policy are published; the server
+  // holds it to that, since the account records that it was given.
+  if (!parsed.acceptLegal && await legalService.consentRequired()) {
+    throw new XentiumError({ code: XEC.AUTH_LEGAL_CONSENT_REQUIRED, httpStatus: 422, message: "Accept the terms and the privacy policy to register" });
+  }
   const meta           = getRequestMeta(req, res);
   const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, name);
   setRefreshCookie(res, result.refreshToken);
@@ -135,7 +142,7 @@ export async function checkInviteHandler(req: Request, res: Response) {
 /** Email a one-time sign-in link. Always 200: the answer must not reveal who has an account. */
 export async function magicLinkRequestHandler(req: Request, res: Response) {
   const { email, remember } = magicLinkRequestSchema.parse(req.body);
-  await requestMagicLink(email, remember);
+  await requestMagicLink(email, remember, requestLocaleHint(req));
   res.json({ ok: true });
 }
 
@@ -180,7 +187,7 @@ export async function refreshHandler(req: Request, res: Response) {
 export async function requestPasswordResetHandler(req: Request, res: Response) {
   const parsed = requestPasswordResetSchema.parse(req.body);
 
-  await requestPasswordReset(parsed.email);
+  await requestPasswordReset(parsed.email, requestLocaleHint(req));
   res.json({ ok: true });
 }
 
@@ -224,6 +231,7 @@ export async function meHandler(req: Request, res: Response) {
       dobDisplay: true,
       preferredLocale: true,
       hiddenBadges: true,
+      legalAcceptedAt: true,
       groups: {
         orderBy: primaryGroupOrder,
         include: {
@@ -248,5 +256,15 @@ export async function meHandler(req: Request, res: Response) {
   // and re-grant in ACP → Permissions, and a UI that checks them drifts from what the
   // server enforces. It is a hint for what to SHOW; every endpoint still checks.
   const permissions = await effectivePermissions(user.id);
-  res.json({ user: { ...user, avatar: resolveAvatar(user.avatar), permissions } });
+  // Never accepted (imported, or created by an admin or a sign-in provider) while terms
+  // or a privacy policy are published: the site asks once before anything else.
+  const { legalAcceptedAt, ...rest } = user;
+  const needsLegalConsent = !legalAcceptedAt && await legalService.consentRequired();
+  res.json({ user: { ...rest, avatar: resolveAvatar(user.avatar), permissions, needsLegalConsent } });
+}
+
+/** The one-time "accept to continue" prompt, answered. */
+export async function legalConsentHandler(req: Request, res: Response) {
+  await prisma.user.update({ where: { id: req.userId! }, data: { legalAcceptedAt: new Date() } });
+  res.status(204).end();
 }

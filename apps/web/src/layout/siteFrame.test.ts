@@ -7,7 +7,7 @@ import { presentFrame } from "./siteFrame";
 
 describe("presentFrame", () => {
   it("full width adds no box and no properties — the page renders as it always did", () => {
-    const p = presentFrame(DEFAULT_SITE_FRAME, "home");
+    const p = presentFrame({ ...DEFAULT_SITE_FRAME, mode: "full" }, "home");
     expect(p.className).toBe("app-layout app-layout--frame-full");
     expect(p.style).toEqual({});
   });

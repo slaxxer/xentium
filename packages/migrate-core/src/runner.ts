@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import pg from "pg";
+import { pagesOf, sizeOf, type Rows } from "./batches.js";
 import { XentiumLoader, missingPlugins } from "./loader.js";
 import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationReporter, MigrationSummary } from "./types.js";
 
@@ -11,6 +12,8 @@ export interface RunOptions {
   /** How the run was started, connection strings masked — the ACP offers it
    *  back as the dry-run and re-run commands. Never pass a secret here. */
   command?: string;
+  /** Xentium's upload folder, for avatars. */
+  uploadsDir?: string;
 }
 
 /**
@@ -45,16 +48,32 @@ export async function runMigration(
 
     if (options.dryRun) {
       const extract = await adapter.extract(source, reporter);
+      // A paged list reads every page once, so its skips are reported and its count is
+      // real; nothing is kept, so a dry run of a huge board fits in memory too.
+      const counted = async <T,>(rows: Rows<T> | undefined): Promise<number> => {
+        let n = 0;
+        for await (const page of pagesOf(rows)) n += page.length;
+        return n;
+      };
       reporter.info("Dry run — nothing was written. Counts below reflect what a real run would import.");
       const counts: Record<string, number> = {
+        groups: extract.groups?.length ?? 0,
         users: extract.users.length,
         categories: extract.categories.length,
         articles: extract.articles.length,
         comments: extract.comments.length,
       };
       if (extract.forumNodes) counts.forumNodes = extract.forumNodes.length;
+      if (extract.prefixes) counts.prefixes = extract.prefixes.length;
       if (extract.threads) counts.threads = extract.threads.length;
-      if (extract.posts) counts.posts = extract.posts.length;
+      if (extract.posts) counts.posts = await counted(extract.posts);
+      if (extract.subscriptions) counts.subscriptions = extract.subscriptions.length;
+      if (extract.bans) counts.bans = extract.bans.length;
+      if (extract.warnings) counts.warnings = extract.warnings.length;
+      if (extract.profileComments) counts.profileComments = extract.profileComments.length;
+      if (extract.conversations) counts.conversations = extract.conversations.length;
+      if (extract.messages) counts.messages = await counted(extract.messages);
+      if (extract.postLikes) counts.postLikes = await counted(extract.postLikes);
       return {
         counts,
         errors: extract.skipped,
@@ -82,6 +101,7 @@ export async function runMigration(
       await pool.query(`UPDATE xcf_migration_runs SET source_info = $2 WHERE id = $1`, [runId, extract.sourceInfo]);
 
       loader = new XentiumLoader(pool, adapter.name, runId, recorder);
+      loader.uploadsDir = options.uploadsDir ?? null;
       await loader.loadAll(extract, adapter.requiredPlugins ?? []);
     } catch (err) {
       // Hard failure (lost DB, bad source, …): the log row must not stay
@@ -120,13 +140,13 @@ export async function runMigration(
 
 /** What each entity is called in the log. Keys match the loader's counts. */
 const ENTITY_WORDS: Record<string, string> = {
-  users: "users", categories: "categories", articles: "articles", comments: "comments",
-  forumNodes: "forum nodes", threads: "threads", posts: "posts",
+  groups: "member groups", users: "users", categories: "categories", articles: "articles", comments: "comments",
+  forumNodes: "forum nodes", prefixes: "thread prefixes", threads: "threads", posts: "posts",
   blocks: "blocks", follows: "follows", postLikes: "likes",
 };
 
 /** The order the loader works through them (loader.loadAll). */
-const LOAD_ORDER = ["users", "categories", "articles", "comments", "forumNodes", "threads", "posts", "blocks", "follows", "postLikes"] as const;
+const LOAD_ORDER = ["groups", "users", "categories", "articles", "comments", "forumNodes", "prefixes", "threads", "posts", "blocks", "follows", "postLikes"] as const;
 
 /** A heartbeat older than the ACP's threshold (2 min) reads as a dead run. */
 const HEARTBEAT_MS = 5_000;
@@ -194,11 +214,11 @@ class RunRecorder implements MigrationReporter {
   /** Every entity this run will load, at zero, so the ACP shows the whole plan. */
   plan(extract: ExtractResult): void {
     const sizes: Record<string, number> = {
-      users: extract.users.length, categories: extract.categories.length,
+      groups: extract.groups?.length ?? 0, users: extract.users.length, categories: extract.categories.length,
       articles: extract.articles.length, comments: extract.comments.length,
-      forumNodes: extract.forumNodes?.length ?? 0, threads: extract.threads?.length ?? 0,
-      posts: extract.posts?.length ?? 0, blocks: extract.blocks?.length ?? 0,
-      follows: extract.follows?.length ?? 0, postLikes: extract.postLikes?.length ?? 0,
+      forumNodes: extract.forumNodes?.length ?? 0, prefixes: extract.prefixes?.length ?? 0, threads: extract.threads?.length ?? 0,
+      posts: sizeOf(extract.posts), blocks: extract.blocks?.length ?? 0,
+      follows: extract.follows?.length ?? 0, postLikes: sizeOf(extract.postLikes),
     };
     for (const key of LOAD_ORDER) {
       if (sizes[key]! > 0) this.entities[key] = { done: 0, total: sizes[key]! };

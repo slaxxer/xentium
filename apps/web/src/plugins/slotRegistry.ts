@@ -90,7 +90,27 @@ export interface PluginRoute {
 // dropdown (mirror NotificationBell). Lower `order` renders further left.
 export interface HeaderWidgetSlot {
   id: string;
-  component: ComponentType;
+  /** Receives the glyph an admin picked for its block in the layout editor (a TokenIcon
+   *  token), or nothing — draw your own default then. */
+  component: ComponentType<{ icon?: string }>;
+  order?: number;
+  /** The block's name in the layout editor ("Messages"); a getter may translate it. */
+  label?: string;
+}
+
+// ── User menu item (registered by plugins, rendered in the signed-in member's
+// avatar dropdown between "Account settings" and "Sign out") ─────────────────
+// A plain link, not a component: the menu owns the markup, so every entry looks
+// and behaves like core's own (closing on click, keyboard, the danger divider).
+export interface UserMenuItemSlot {
+  id: string;
+  /** A getter may translate it at render. */
+  label: string;
+  /** An in-app path ("/membership"). */
+  to: string;
+  /** FontAwesome IconDefinition. */
+  icon?: unknown;
+  /** Lower renders higher. */
   order?: number;
 }
 
@@ -107,6 +127,13 @@ export interface PluginMeta {
   acpSectionPosition?: "after-content" | "after-moderation";
   /** Notification type strings (or prefixes ending with ".") that should show a system icon */
   systemNotificationPrefixes?: string[];
+  /**
+   * Notification types (or prefixes ending with ".") a MODERATOR's action triggers —
+   * an approval, a rejection, a removal. The bell draws them with the moderation
+   * shield (user rule 2026-10-12: every member notification from the mod tool wears
+   * it), and this wins over `systemNotificationPrefixes`.
+   */
+  moderationNotificationPrefixes?: string[];
 }
 
 // ── Search tab (registered by plugins, rendered in SearchPage) ────────────────
@@ -273,6 +300,7 @@ class SlotRegistry {
   private profileStats:      ProfileStatSlot[]        = [];
   private profileActions:    ProfileActionSlot[]      = [];
   private headerWidgets:     HeaderWidgetSlot[]       = [];
+  private userMenuItems:     UserMenuItemSlot[]       = [];
   private layoutWidgets:     LayoutWidgetSlot[]       = [];
   private groupConfigPanels: GroupConfigPanelSlot[]   = [];
 
@@ -316,6 +344,7 @@ class SlotRegistry {
   registerProfileStat(stat: ProfileStatSlot)                { this._own(stat.id);     this.profileStats.push(stat); }
   registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
   registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
+  registerUserMenuItem(slot: UserMenuItemSlot)              { this._own(slot.id);     this.userMenuItems.push(slot); }
   registerLayoutWidget(slot: LayoutWidgetSlot)              { this._own(slot.id);     this.layoutWidgets.push(slot); }
   registerGroupConfigPanel(slot: GroupConfigPanelSlot)      { this._own(slot.id);     this.groupConfigPanels.push(slot); }
 
@@ -337,6 +366,7 @@ class SlotRegistry {
   getProfileStats()      { return [...this.profileStats]; }
   getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getUserMenuItems()     { return [...this.userMenuItems].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getLayoutWidgets()     { return [...this.layoutWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getGroupConfigPanels() { return [...this.groupConfigPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
 
@@ -363,6 +393,11 @@ class SlotRegistry {
     return [...this.coreSystemPrefixes, ...pluginPrefixes];
   }
 
+  /** Core's moderation notifications plus every plugin's: these get the shield in the bell. */
+  getModerationNotificationPrefixes(): string[] {
+    return ["moderation.", ...this.pluginMetas.flatMap((m) => m.moderationNotificationPrefixes ?? [])];
+  }
+
   deregister(pluginId: string) {
     this.profileTabs       = this.profileTabs.filter((s) => !this._ownedBy(s.id, pluginId));
     this.accountSections   = this.accountSections.filter((s) => !this._ownedBy(s.id, pluginId));
@@ -378,6 +413,7 @@ class SlotRegistry {
     this.profileStats      = this.profileStats.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
     this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.userMenuItems     = this.userMenuItems.filter((s) => !this._ownedBy(s.id, pluginId));
     this.layoutWidgets     = this.layoutWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this.groupConfigPanels = this.groupConfigPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });

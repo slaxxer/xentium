@@ -16,6 +16,7 @@ import { installerRouter } from "../modules/installer/installer.routes.js";
 import { articlesRouter, articleCommentsRouter } from "../modules/articles/article.routes.js";
 import { articleCategoriesRouter } from "../modules/article-categories/article-category.routes.js";
 import { legalRouter, legalAdminRouter } from "../modules/legal/legal.routes.js";
+import { emojiRouter, emojiAdminRouter } from "../modules/emojis/emojis.routes.js";
 import { siteRouter } from "../modules/site/site.routes.js";
 import { themePublicRouter } from "../modules/themes/themePublic.routes.js";
 import { badgesAdminRouter, badgesPublicRouter } from "../modules/badges/badges.routes.js";
@@ -43,7 +44,7 @@ import { prisma } from "../infrastructure/db.js";
 import { globalApiLimiter } from "../shared/middleware/rateLimit.js";
 import { mountWebApp } from "./serveWeb.js";
 
-const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts'];
+const ALLOWED_UPLOAD_DIRS = ['avatars', 'covers', 'articles', 'pages', 'groups', 'forum-attachments', 'themes', 'layouts', 'emojis'];
 
 export function createApp(): Express {
   const app = express();
@@ -195,11 +196,13 @@ export function createApp(): Express {
   app.use("/api/article-comments", requireFeature("articles"), articleCommentsRouter);
   app.use("/api/article-categories", requireFeature("articles"), articleCategoriesRouter);
   app.use("/api/legal", legalRouter);
+  app.use("/api/emojis", emojiRouter);
   // ACP action logging wraps every /api/admin/* router below it.
   app.use("/api/admin", acpActivityLogger);
   app.use("/api/admin", adminRouter);
   app.use("/api/admin/activity", activityAdminRouter);
   app.use("/api/admin/legal", legalAdminRouter);
+  app.use("/api/admin/emojis", emojiAdminRouter);
   app.use("/api/admin/badges", badgesAdminRouter);
   app.use("/api/notifications", notificationRouter);
   app.use("/api/online",        onlineRouter);

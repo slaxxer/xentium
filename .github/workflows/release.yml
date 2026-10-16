@@ -59,7 +59,15 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # The full backbone check on the commit being released. A tag used to be
+  # trusted to have passed it already; nothing checked that it had.
+  checks:
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: read
+
   publish:
+    needs: checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -90,11 +98,9 @@ jobs:
       # that way. It needs no database: generate only reads the schema.
       - run: pnpm db:generate
 
-      # Not the full backbone check: `pnpm test` needs Postgres and Redis, and a
-      # tagged commit has already been through them. The builds are not skipped —
-      # publish-release.mjs runs them, because the build IS the artifact.
-      - run: pnpm typecheck
-      - run: pnpm lint
+      # Typecheck, lint and tests already passed in the `checks` job above, on
+      # this same commit. The builds are not skipped — publish-release.mjs runs
+      # them, because the build IS the artifact.
 
       - name: Decide on provenance
         id: provenance

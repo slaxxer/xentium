@@ -1,0 +1,33 @@
+{
+  "templates": {
+    "notification": {
+      "subject": "{{title}} · {{site_name}}",
+      "body": "<h2>{{title}}</h2><p>{{body}}</p><p>{{link_button}}</p><hr><p>Recibes este correo porque tienes las notificaciones activadas. Puedes cambiar tus preferencias en la configuración de la cuenta.</p>"
+    },
+    "password_reset": {
+      "subject": "Restablece tu contraseña de {{site_name}}",
+      "body": "<h2>Restablece tu contraseña</h2><p>Hemos recibido una solicitud para restablecer tu contraseña. Pulsa el botón de abajo para elegir una nueva. Este enlace caduca en {{expiry_minutes}} minutos y solo se puede usar una vez.</p><p>{{reset_button}}</p><p>Si no lo has solicitado tú, puedes ignorar este correo: tu contraseña seguirá siendo la misma.</p>"
+    },
+    "magic_link": {
+      "subject": "Tu enlace de inicio de sesión para {{site_name}}",
+      "body": "<h2>Inicia sesión en {{site_name}}</h2><p>Pulsa el botón de abajo para iniciar sesión. Este enlace caduca en {{expiry_minutes}} minutos y solo se puede usar una vez.</p><p>{{login_button}}</p><p>Si no lo has pedido tú, ignora este correo. Nadie puede iniciar sesión sin el enlace.</p>"
+    },
+    "email_verify": {
+      "subject": "Verifica tu correo · {{site_name}}",
+      "body": "<h2>Verifica tu correo</h2><p>Introduce este código en el formulario de registro para terminar de crear tu cuenta. Caduca en {{expiry_minutes}} minutos.</p><p>{{code_box}}</p><p>Si no lo has solicitado tú, puedes ignorar este correo.</p>"
+    },
+    "email_change": {
+      "subject": "Tu código para cambiar el correo · {{site_name}}",
+      "body": "<h2>Confirma tu nuevo correo</h2><p>Introduce este código para confirmar {{new_email}} como tu nueva dirección de correo. Caduca en {{expiry_minutes}} minutos.</p><p>{{code_box}}</p><p>Si no lo has solicitado tú, puedes ignorar este correo: tu dirección no cambia.</p>"
+    },
+    "smtp_test": {
+      "subject": "Prueba de SMTP · {{site_name}}",
+      "body": "<h2>El correo saliente funciona</h2><p>Este es el mensaje de prueba de {{site_name}}. Si lo estás leyendo, la configuración SMTP del ACP es correcta y el correo sale del servidor.</p><p>Enviado desde {{site_url}}</p>"
+    }
+  },
+  "buttons": {
+    "view": "Ver →",
+    "reset": "Restablecer contraseña →",
+    "signIn": "Iniciar sesión →"
+  }
+}

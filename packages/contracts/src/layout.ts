@@ -518,7 +518,40 @@ export interface BlockNode {
    * it. The editor offers it only on blocks that paint a surface (`editorMeta.surface`).
    */
   edges?: BlockEdges;
+  /**
+   * The face this block's HEADINGS are set in (`h1`–`h6` and `.xt-headline` inside it),
+   * apart from the rest of the page. Absent = the site's own, and — same rule as
+   * `variant` — the default is never stored.
+   *
+   * Node-level, on the same `display: contents` wrapper the variant uses, so it works
+   * on any block, a plugin's included. A block nested inside inherits it unless it
+   * sets its own. Only real headings change: a card title drawn as a styled `div`
+   * stays in the UI face.
+   */
+  headingFont?: HeadingFont;
 }
+
+/**
+ * Faces a block's headings may be set in — the fonts the app bundles. A fixed list,
+ * not a free string: the value becomes a CSS `font-family`, and a document is
+ * untrusted input (an imported `.xttheme`).
+ */
+export const HEADING_FONTS = [
+  'Bricolage Grotesque', 'Figtree', 'Poppins', 'Nunito', 'Montserrat', 'Open Sans', 'Ubuntu', 'JetBrains Mono',
+] as const;
+export type HeadingFont = (typeof HEADING_FONTS)[number];
+
+/** The `font-family` each heading font is set with. */
+export const HEADING_FONT_STACKS: Record<HeadingFont, string> = {
+  'Bricolage Grotesque': '"Bricolage Grotesque", "Figtree", sans-serif',
+  'Figtree':        '"Figtree", system-ui, sans-serif',
+  'Poppins':        '"Poppins", sans-serif',
+  'Nunito':         '"Nunito", sans-serif',
+  'Montserrat':     '"Montserrat", sans-serif',
+  'Open Sans':      '"Open Sans", sans-serif',
+  'Ubuntu':         '"Ubuntu", sans-serif',
+  'JetBrains Mono': '"JetBrains Mono", ui-monospace, monospace',
+};
 
 /**
  * How deep nesting may go, counting a region's own blocks as depth 1.
@@ -562,6 +595,10 @@ export const CORE_CONTAINER_TYPES = [
   // The footer band. A container for the same reason `navbar` is one: its children
   // ARE the footer's contents, and they have to sit ON the band that paints them.
   'footer',
+  // The account menu: the member's icons (moderation, bell, plugin icons, admin link,
+  // search) are ITS children, drawn in one row before the avatar — one block to move,
+  // not six siblings that happen to sit together.
+  'userMenu',
   // The guest landing's surface and its two styled grids — see `guestBlocks.tsx`.
   'guestSurface', 'guestHero', 'guestBody',
 ] as const;
@@ -819,6 +856,9 @@ export const blockNodeSchema: z.ZodType<BlockNode> = z.lazy(() =>
 
     /** Edge art — see `edgeArtSchema`. Absent = none. */
     edges: blockEdgesSchema.optional(),
+
+    /** The face of this block's headings — see `BlockNode.headingFont`. Absent = the site's. */
+    headingFont: z.enum(HEADING_FONTS).optional(),
   }),
 );
 
@@ -1169,13 +1209,13 @@ export const blockPropSchemas = {
   }),
 
   richText: z.object({
-    /** ProseMirror JSON, same shape as `articles.body`. */
-    content: z.unknown(),
+    /** ProseMirror JSON, same shape as `articles.body`. Edited with the Composer. */
+    content: z.unknown().meta({ title: 'Text', format: 'richtext' }),
   }),
 
   image: z.object({
     /** Upload path (`articles/<id>/x.png`) or a context reference (`article.featuredImage`). */
-    source: z.string().min(1).meta({ title: 'Image', asset: true }),
+    source: z.string().min(1).meta({ title: 'Image', asset: true, format: 'image' }),
     alt:    localizedTextSchema.optional(),
     ratio:  z.enum(['auto', '16:9', '4:3', '1:1']).default('auto'),
     /**
@@ -1557,14 +1597,17 @@ export const blockPropSchemas = {
   // must keep PARSING; the renderer skips an unregistered type, which is what
   // lets the control vanish without taking the rest of the header with it.
   themeToggle: z.object({}),
-  notifications: z.object({}),
+  /** Optional glyph instead of the bell (`format: "icon"` → the editor's icon picker;
+   *  absent = the default, never stored). */
+  notifications: z.object({ icon: z.string().optional().meta({ title: 'Icon', format: 'icon' }) }),
   /**
    * The moderation tool (ModCanvas shield) — moderators only; it draws nothing for
    * anyone else. Its own block so it sits in its own place beside the bell. A
    * document that does not place one yet still gets the shield from `notifications`,
    * which is where it lived before, so no saved header or theme loses it.
    */
-  modTool: z.object({}),
+  /** Optional glyph instead of the shield. */
+  modTool: z.object({ icon: z.string().optional().meta({ title: 'Icon', format: 'icon' }) }),
   adminLink: z.object({}),
 
   /** Renders every `slotRegistry.registerHeaderWidget` in one place — the
@@ -1649,7 +1692,7 @@ export const blockPropSchemas = {
 
   whosOnline: z.object({
     maxNames: z.number().int().min(0).max(100).default(20)
-      .meta({ title: 'Names to list', description: '0 shows the count only.' }),
+      .meta({ title: 'Names to list', description: '0 hides the names; the counts line stays.' }),
   }),
 
   groupLegend: z.object({}),
@@ -1869,19 +1912,23 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     templateKey: 'chrome.header', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       header: [
-        // The composed header: a masthead holding the logo and the action group (search,
-        // the moderation tool, the bell, messages, the account menu), with the navbar below it.
+        // The core look is ONE plain row: the masthead is switched off, so the navbar
+        // draws the logo, the links and everything the masthead holds — the account
+        // menu with the moderation tool, the bell, messages, the admin link and search.
+        // Switching the masthead on (Theme Studio) brings back a band above the navbar
+        // with exactly these pieces in it.
         { ...node('h-band', 'header', {
-          height: 200, showLogo: false, showWordmark: true, showTagline: true,
-          backgroundGradient: ['#14162a', '#5865f2'], backgroundAngle: 150,
+          height: 200, showLogo: false, showWordmark: true, showTagline: true, showMasthead: false,
         }), children: [
           node('h-band-logo', 'logo', { showWordmark: true }),
-          node('h-mod', 'modTool'),
-          node('h-notif', 'notifications'),
-          node('h-widgets', 'headerWidgets'),
-          node('h-admin', 'adminLink'),
-          node('h-user', 'userMenu'),
-          node('h-search', 'search', { expanded: false }),
+          // The account menu holds the icons; the avatar is drawn after them.
+          { ...node('h-user', 'userMenu'), children: [
+            node('h-mod', 'modTool'),
+            node('h-notif', 'notifications'),
+            node('h-widgets', 'headerWidgets'),
+            node('h-admin', 'adminLink'),
+            node('h-search', 'search', { expanded: false }),
+          ] },
         ] },
         { ...node('h-navbar', 'navbar'), children: [
           node('h-nav', 'navLinks'),

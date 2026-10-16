@@ -62,3 +62,25 @@ describe("the dangerous still goes", () => {
     expect(sanitizeRichText('<span class="evil">x</span>')).toBe("<span>x</span>");
   });
 });
+
+describe("custom emojis", () => {
+  it("keeps an emoji image exactly as the editor writes it", () => {
+    const html = '<p>hi <img class="xt-emoji" src="/uploads/emojis/0b6e2f.png" alt=":wave:" title=":wave:" data-code="wave" /></p>';
+    expect(sanitizeRichText(html)).toBe(html);
+  });
+
+  it("drops any other image: no class, another folder, another site, a path trick", () => {
+    for (const img of [
+      '<img src="/uploads/emojis/a.png" alt="x" />',
+      '<img class="xt-emoji" src="/uploads/avatars/a.png" />',
+      '<img class="xt-emoji" src="https://tracker.example/p.gif" />',
+      '<img class="xt-emoji" src="/uploads/emojis/../avatars/a.png" />',
+      '<img class="xt-emoji other" src="/uploads/emojis/a.png" />',
+      '<img class="xt-emoji" src="/uploads/emojis/a.png" onerror="alert(1)" />',
+    ]) {
+      const out = sanitizeRichText(`<p>${img}</p>`);
+      if (img.includes("onerror")) expect(out).not.toContain("onerror");
+      else expect(out).toBe("<p></p>");
+    }
+  });
+});

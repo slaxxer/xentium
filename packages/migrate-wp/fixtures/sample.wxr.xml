@@ -6,6 +6,7 @@
   xmlns:wp="http://wordpress.org/export/1.2/">
 <channel>
   <title>Fixture Blog</title>
+  <link>https://fixture.test/blog</link>
   <wp:wxr_version>1.2</wp:wxr_version>
 
   <wp:author>
@@ -48,6 +49,7 @@
 
   <item>
     <title><![CDATA[Hello World 🎉 — with “smart quotes”]]></title>
+    <link>https://fixture.test/blog/2020/01/hello-world/</link>
     <dc:creator><![CDATA[alice]]></dc:creator>
     <content:encoded><![CDATA[<h2>Welcome</h2><p>This post has <strong>bold</strong>, <em>italic</em> and a <a href="https://xentium.org">link</a>.</p><ul><li>First</li><li>Second</li></ul><blockquote><p>Quoted wisdom.</p></blockquote><pre>console.log("hi");</pre><figure><img src="https://fixture.test/img.png" alt="A picture" /></figure>]]></content:encoded>
     <excerpt:encoded><![CDATA[A rich-content post.]]></excerpt:encoded>
@@ -109,6 +111,7 @@
 
   <item>
     <title><![CDATA[Plain wpautop post]]></title>
+    <link>https://fixture.test/blog/?p=101</link>
     <dc:creator><![CDATA[bob]]></dc:creator>
     <content:encoded><![CDATA[First paragraph stored the WordPress way.
 

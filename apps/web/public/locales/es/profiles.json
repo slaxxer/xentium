@@ -34,7 +34,6 @@
   "pageOf": "Página {{page}} de {{total}}",
   "noFollowers": "Aún no hay seguidores.",
   "noFollowing": "Aún no sigue a nadie.",
-  "newArticle": "+ Nuevo artículo",
   "loadingArticles": "Cargando artículos…",
   "emptyOwn": "Aún no has publicado nada.",
   "emptyOther": "{{username}} aún no ha publicado ningún artículo.",
@@ -55,14 +54,26 @@
   "noComments": "Aún no hay comentarios.",
   "postError": "No se pudo publicar el comentario. Inténtalo de nuevo.",
   "deleteError": "No se pudo eliminar el comentario. Inténtalo de nuevo.",
+  "delete": "Eliminar",
+  "cancel": "Cancelar",
+  "deleteConfirmTitle": "¿Eliminar este comentario?",
+  "deleteConfirmBody": "El comentario y sus respuestas se quitan del muro.",
+  "reply": "Responder",
+  "replyPlaceholder": "Responde a {{username}}…",
+  "report": "Denunciar",
+  "reportTitle": "Denunciar comentario",
+  "reportSub": "Cuenta a los moderadores qué problema tiene este comentario.",
+  "reportPlaceholder": "Describe el problema…",
+  "reportSubmit": "Enviar denuncia",
+  "reportSent": "Denuncia enviada. Gracias.",
+  "reportError": "No se pudo enviar la denuncia.",
+  "reportTooShort": "Describe el problema en unas palabras.",
   "likeError": "No se pudo actualizar el me gusta. Inténtalo de nuevo.",
-  "deleteComment": "Eliminar comentario",
   "edited": "editado",
   "like": "Me gusta",
   "unlike": "Ya no me gusta",
-  "tombstoneBase": "El comentario de {{user}} fue eliminado",
-  "tombstoneBy": " por {{mod}}",
-  "tombstoneReason": " · Motivo: {{reason}}",
+  "dislike": "No me gusta",
+  "undislike": "Quitar «No me gusta»",
   "banned": "Bloqueado",
   "permanentlyBanned": "Bloqueado permanentemente",
   "rank": {
@@ -96,10 +107,7 @@
   },
   "likeCount": "{{n}} me gusta",
   "visitors": {
-    "title": "Visitantes recientes",
-    "summary_one": "{{count}} visitante esta semana",
-    "summary_other": "{{count}} visitantes esta semana",
-    "last": "última: {{ago}}"
+    "title": "Visitantes recientes"
   },
   "cover": {
     "dropTitle": "Suelta una imagen de cabecera, o examina",
@@ -178,5 +186,10 @@
     "geoCredit": "Geolocalización IP de DB-IP",
     "geoMissing": "Los países aparecen cuando se descarga la base de datos de países por IP.",
     "geoMissingLink": "Tareas programadas → Base de datos de países por IP"
-  }
+  },
+  "formerlyKnownAs": "Antes conocido como {{names}}",
+  "cantRateOwnComment": "No puedes valorar tu propio comentario",
+  "signInToRate": "Inicia sesión para valorar",
+  "lastSeen": "Visto {{when}}",
+  "lastSeenOn": "Visto por última vez en {{date}}"
 }

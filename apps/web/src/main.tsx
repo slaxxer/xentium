@@ -13,6 +13,15 @@ import "./layout/blocks/memberBlocks";       // members, decomposed into movable
 import "./layout/blocks/homeBlocks";         // home, decomposed into movable pieces
 import "./layout/blocks/guestBlocks";        // the guest landing, likewise
 import "./styles/index.scss";
+// Figtree + Bricolage Grotesque: the core look's text and heading faces.
+import "@fontsource/figtree/400.css";
+import "@fontsource/figtree/500.css";
+import "@fontsource/figtree/600.css";
+import "@fontsource/figtree/700.css";
+import "@fontsource/bricolage-grotesque/500.css";
+import "@fontsource/bricolage-grotesque/600.css";
+import "@fontsource/bricolage-grotesque/700.css";
+import "@fontsource/bricolage-grotesque/800.css";
 import "@fontsource/jetbrains-mono/400.css";
 import "@fontsource/jetbrains-mono/700.css";
 import "@fontsource/montserrat/400.css";

@@ -32,7 +32,7 @@ const cut = (v: string) =>
  */
 export const CORNER_PRESETS: Record<CornerMode, TokenMap> = {
   rounded: {
-    '--radius-sm': '10px', '--radius-md': '14px', '--radius-lg': '18px', '--radius-xl': '22px',
+    '--radius-sm': '8px', '--radius-md': '10px', '--radius-lg': '14px', '--radius-xl': '16px',
     '--corner-cut': '0px', '--corner-cut-sm': '0px', '--clip-card': 'none', '--clip-sm': 'none',
   },
   chamfered: {

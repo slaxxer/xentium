@@ -3,7 +3,7 @@
   "version": "1.0.0-alpha.11",
   "private": true,
   "type": "module",
-  "description": "The developer wiki — doc.xentium.org. Static; built from docs/ + README + hand-written guides.",
+  "description": "The developer wiki \u2014 doc.xentium.org. Static; built from docs/ + README + hand-written guides.",
   "scripts": {
     "sync": "node scripts/sync-docs.mjs",
     "dev": "node scripts/sync-docs.mjs && astro dev --port 4321",
@@ -11,8 +11,11 @@
     "preview": "astro preview"
   },
   "dependencies": {
-    "@astrojs/markdown-remark": "^7.3.1",
+    "@astrojs/markdown-remark": "^7.3.2",
     "@astrojs/starlight": "0.42.2",
+    "@fontsource/bricolage-grotesque": "^5.3.0",
+    "@fontsource/figtree": "^5.3.0",
+    "@fontsource/jetbrains-mono": "^5.3.0",
     "astro": "7.3.3"
   }
 }

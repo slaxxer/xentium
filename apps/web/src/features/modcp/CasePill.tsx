@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   faBan, faChevronRight, faChevronUp, faTriangleExclamation, faUserCheck, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
@@ -11,7 +12,7 @@ import { toast } from "../../lib/toast";
 import { openDialog } from "../../lib/dialog";
 import { apiErrorMessage } from "../../lib/swal";
 import { timeAgo } from "../../lib/time";
-import { caseIcon, caseReasonShort, caseTitle, humanizeSignal, type ModCase } from "./modData";
+import { caseIcon, caseReasonShort, caseTitle, humanizeSignal, severityLabel, type ModCase } from "./modData";
 import { modStore } from "./modSession";
 
 /**
@@ -20,6 +21,8 @@ import { modStore } from "./modSession";
  * like the premade-text menu, then Allow or Ban all. Detection never acts on its own.
  */
 export function CasePill({ c, position, total }: { c: ModCase; position: number; total: number }) {
+  const { t } = useTranslation("common", { keyPrefix: "modcanvas.case" });
+  const { t: tc } = useTranslation("common", { keyPrefix: "modcanvas.common" });
   const qc = useQueryClient();
   const navigate = useNavigate();
   const location = useLocation();
@@ -28,8 +31,8 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
   const viewing = decodeURIComponent(location.pathname.match(/^\/u\/([^/]+)/)?.[1] ?? "");
 
   const signals = [
-    ...(Array.isArray(c.signals) ? c.signals : []).map(humanizeSignal),
-    ...(c.ipAddresses ?? []).map((ip) => `IP: ${ip}`),
+    ...(Array.isArray(c.signals) ? c.signals : []).map((s) => ({ text: humanizeSignal(s), mono: false })),
+    ...(c.ipAddresses ?? []).map((ip) => ({ text: t("ip", { ip }), mono: true })),
   ];
   const high = c.severity === "high";
 
@@ -51,7 +54,7 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
 
   const allow = useMutation({
     mutationFn: () => api.patch(`/moderation/cases/${c.id}`, { status: "reviewed" }),
-    onSuccess: () => done(`${caseTitle(c.type)} allowed`),
+    onSuccess: () => done(t("allowed", { title: caseTitle(c.type) })),
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
   const banAll = useMutation({
@@ -59,7 +62,7 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
     onSuccess: (results) => {
       const banned = results.filter((r) => !r.skipped).length;
       const skipped = results.filter((r) => r.skipped).length;
-      done(`Banned ${banned}${skipped ? `, ${skipped} skipped` : ""}`);
+      done(skipped ? t("bannedSkipped", { count: banned, skipped }) : t("banned", { count: banned }));
     },
     onError: (e) => toast.error(apiErrorMessage(e)),
   });
@@ -68,9 +71,9 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
     const names = c.linkedUsers.map((u) => u.username).join(", ");
     const ok = await openDialog({
       kind: "confirm", icon: "warning", danger: true,
-      title: "Ban all linked accounts?",
-      body: `${names || "Every linked account"} will be banned and signed out. Staff and accounts already banned are skipped.`,
-      confirmText: "Ban all",
+      title: t("confirmTitle"),
+      body: t("confirmBody", { names: names || t("everyLinked") }),
+      confirmText: t("banAll"),
     });
     if (ok) banAll.mutate();
   };
@@ -78,13 +81,13 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
   const busy = allow.isPending || banAll.isPending;
 
   return (
-    <div className="mcp" role="region" aria-label="Security case actions">
+    <div className="mcp" role="region" aria-label={t("region")}>
       <div className="mcp__id">
         <span className={`mcp__ic${high ? " mcp__ic--danger" : ""}`}><FontAwesomeIcon icon={caseIcon(c.type)} /></span>
         <div className="mcp__idtext">
           <span className="mcp__title">
             {caseTitle(c.type)}
-            <span className={`mcp__count${high ? "" : " mcp__count--neutral"}`}>{c.severity}</span>
+            <span className={`mcp__count${high ? "" : " mcp__count--neutral"}`}>{severityLabel(c.severity)}</span>
           </span>
           <span className="mcp__sub">{caseReasonShort(c.type)} · {timeAgo(c.createdAt)}</span>
         </div>
@@ -93,7 +96,7 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
       <span className="mcp__rule" />
 
       {c.linkedUsers.length > 0 && (
-        <div className="mcp__seg" aria-label="Linked accounts">
+        <div className="mcp__seg" aria-label={t("accounts")}>
           {c.linkedUsers.map((u) => (
             <button key={u.id} type="button" className={`mcp__user${viewing.toLowerCase() === u.username.toLowerCase() ? " is-on" : ""}`}
               onClick={() => navigate(`/u/${encodeURIComponent(u.username)}`)}>
@@ -107,37 +110,37 @@ export function CasePill({ c, position, total }: { c: ModCase; position: number;
       <div className="mcp__menuwrap" ref={menuRef}>
         {signalsOpen && (
           <div className="mcp-menu mcp-menu--narrow">
-            <div className="mcp-menu__head">Signals</div>
+            <div className="mcp-menu__head">{t("signals")}</div>
             <ul className="mcp-menu__signals">
               {signals.map((s, i) => (
-                <li key={i}><FontAwesomeIcon icon={faTriangleExclamation} /> <span className={s.startsWith("IP: ") ? "is-mono" : ""}>{s}</span></li>
+                <li key={i}><FontAwesomeIcon icon={faTriangleExclamation} /> <span className={s.mono ? "is-mono" : ""}>{s.text}</span></li>
               ))}
-              {signals.length === 0 && <li>No signals were recorded.</li>}
+              {signals.length === 0 && <li>{t("noSignals")}</li>}
             </ul>
-            <div className="mcp-menu__foot">Detection never acts on its own. Allow records an exception, and Ban all bans every linked account.</div>
+            <div className="mcp-menu__foot">{t("signalsFoot")}</div>
           </div>
         )}
         <button type="button" className="mcp__pick" aria-expanded={signalsOpen} onClick={() => setSignalsOpen((v) => !v)}>
           <FontAwesomeIcon icon={faTriangleExclamation} className="mcp__pick-muted" />
-          <span>{signals.length} signal{signals.length === 1 ? "" : "s"}</span>
+          <span>{t("signalCount", { count: signals.length })}</span>
           <FontAwesomeIcon icon={faChevronUp} className="mcp__pick-chev" />
         </button>
       </div>
 
       <button type="button" className="mcp-send mcp-send--ghost" disabled={busy} onClick={() => allow.mutate()}>
-        <FontAwesomeIcon icon={faUserCheck} /> Allow
+        <FontAwesomeIcon icon={faUserCheck} /> {t("allow")}
       </button>
       <button type="button" className="mcp-send mcp-send--danger" disabled={busy || c.linkedUsers.length === 0} onClick={confirmBan}>
-        <FontAwesomeIcon icon={faBan} /> Ban all
+        <FontAwesomeIcon icon={faBan} /> {t("banAll")}
       </button>
 
       <span className="mcp__rule" />
       <span className="mcp__pos">{position + 1}/{total}</span>
-      <button type="button" className="mcp__round" aria-label="Next case" disabled={position + 1 >= total}
+      <button type="button" className="mcp__round" aria-label={t("next")} disabled={position + 1 >= total}
         onClick={() => modStore.go(position + 1)}>
         <FontAwesomeIcon icon={faChevronRight} />
       </button>
-      <button type="button" className="mcp__round" aria-label="Close" onClick={modStore.close}>
+      <button type="button" className="mcp__round" aria-label={tc("close")} onClick={modStore.close}>
         <FontAwesomeIcon icon={faXmark} />
       </button>
     </div>

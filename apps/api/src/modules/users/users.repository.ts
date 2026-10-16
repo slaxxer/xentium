@@ -141,45 +141,55 @@ export const userRepository = {
   },
 
   // Profile comments
-  async createProfileComment(data: { profileUserId: string; authorId: string; body: string }) {
+  async createProfileComment(data: { profileUserId: string; authorId: string; body: string; parentId?: string }) {
     return prisma.profileComment.create({ data: { ...data, body: sanitizeRichText(data.body) } });
   },
 
+  /**
+   * A page of the wall: top-level comments, newest first, each with ALL its replies,
+   * oldest first (a conversation reads down). Paging and `total` count top-level ones.
+   * A deleted comment is simply gone — no tombstone, no name of who removed it — and
+   * a deleted top-level comment takes its replies with it.
+   */
   async getProfileComments(profileUserId: string, page: number, limit: number, hiddenAuthorIds: string[] = []) {
     const skip = (page - 1) * limit;
     const authorFilter = hiddenAuthorIds.length ? { authorId: { notIn: hiddenAuthorIds } } : {};
-    const [comments, total] = await Promise.all([
-      prisma.profileComment.findMany({
-        where:   { profileUserId, ...authorFilter },
-        include: {
-          author: {
-            select: {
-              id: true, username: true, avatar: true,
-              groups: {
-                orderBy: primaryGroupOrder,
-                include: {
-                  group: { select: { progression: { select: { badgeColor: true } } } },
-                },
-              },
+    const include = {
+      author: {
+        select: {
+          id: true, username: true, avatar: true,
+          groups: {
+            orderBy: primaryGroupOrder,
+            include: {
+              group: { select: { progression: { select: { badgeColor: true } } } },
             },
           },
-          deletedBy: { select: { id: true, username: true } },
+        },
+      },
+    } as const;
+    const [comments, total] = await Promise.all([
+      prisma.profileComment.findMany({
+        where:   { profileUserId, parentId: null, deletedAt: null, ...authorFilter },
+        include: {
+          ...include,
+          replies: { where: { deletedAt: null, ...authorFilter }, include, orderBy: { createdAt: "asc" } },
         },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
-      prisma.profileComment.count({ where: { profileUserId, deletedAt: null, ...authorFilter } }),
+      prisma.profileComment.count({ where: { profileUserId, parentId: null, deletedAt: null, ...authorFilter } }),
     ]);
+    type Row = (typeof comments)[number] | (typeof comments)[number]["replies"][number];
+    const shape = <T extends Row>(c: T) => ({
+      ...c,
+      author: {
+        ...withResolvedAvatar(c.author),
+        badgeColor: c.author.groups[0]?.group.progression?.badgeColor ?? null,
+      },
+    });
     return {
-      comments: comments.map((c) => ({
-        ...c,
-        author: {
-          ...withResolvedAvatar(c.author),
-          badgeColor: c.author.groups[0]?.group.progression?.badgeColor ?? null,
-        },
-        deletedByUsername: c.deletedBy?.username ?? null,
-      })),
+      comments: comments.map((c) => ({ ...shape(c), replies: c.replies.map(shape) })),
       total,
     };
   },

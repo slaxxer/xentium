@@ -11,14 +11,19 @@
     "lint": "eslint src"
   },
   "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "@xentium/config": "workspace:*",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "react-i18next": "^17.0.16",
+    "i18next": "^26.4.4"
   },
   "dependencies": {
     "@xentium/contracts": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:"
+  },
+  "peerDependencies": {
+    "react-i18next": "^17.0.16"
   }
 }

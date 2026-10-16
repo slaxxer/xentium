@@ -193,16 +193,20 @@ describe("the site chrome", () => {
     expect(doc.regions.header!.map((b) => b.type)).toEqual(["header", "navbar"]);
   });
 
-  it("ships the composed masthead: 200px, the logo and the action group inside it", () => {
+  it("ships the composed masthead switched OFF (one row), holding the logo and the account menu", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
     const band = doc.regions.header![0]!;
     expect(band.props.height).toBe(200);
     expect(band.props.showLogo).toBe(false);
     expect(band.props.showTagline).toBe(true);
-    expect(band.children?.map((c) => c.type)).toEqual([
-      "logo", "modTool", "notifications", "headerWidgets", "adminLink", "userMenu", "search",
+    expect(band.children?.map((c) => c.type)).toEqual(["logo", "userMenu"]);
+    // The icons are the account menu's own, drawn before the avatar.
+    expect(band.children![1]!.children!.map((c) => c.type)).toEqual([
+      "modTool", "notifications", "headerWidgets", "adminLink", "search",
     ]);
-    expect(band.props.backgroundGradient).toEqual(["#14162a", "#5865f2"]);
+    // The core look is one row: the navbar draws all of it, and nothing is painted.
+    expect(band.props.showMasthead).toBe(false);
+    expect(band.props.backgroundGradient).toBeUndefined();
   });
 
   it("ships the navbar with the links alone, and no light/dark toggle", () => {

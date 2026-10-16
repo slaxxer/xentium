@@ -1,0 +1,119 @@
+{
+  "newFollower": {
+    "title": "Novo seguidor",
+    "body": "{{name}} começou a seguir-te."
+  },
+  "profileComment": {
+    "title": "Novo comentário no teu perfil",
+    "body": "{{name}} publicou no teu perfil."
+  },
+  "profileReply": {
+    "title": "Nova resposta ao seu comentário",
+    "body": "{{name}} respondeu ao seu comentário no perfil de {{owner}}."
+  },
+  "mentionProfile": {
+    "title": "Foste mencionado",
+    "body": "{{name}} mencionou-te num comentário no perfil de {{owner}}."
+  },
+  "profileCommentLiked": {
+    "title": "Alguém gostou do teu comentário",
+    "body": "{{name}} gostou do teu comentário no perfil de {{owner}}."
+  },
+  "articleCommentLiked": {
+    "title": "Alguém gostou do teu comentário",
+    "body": "{{name}} gostou do teu comentário."
+  },
+  "badgeGranted": {
+    "title": "Recebeste o emblema «{{badge}}»!",
+    "body": "Já está no teu perfil, à vista de quem o visitar."
+  },
+  "badgeGrantedNote": {
+    "title": "Recebeste o emblema «{{badge}}»!"
+  },
+  "badgeEarned": {
+    "title": "Conquistaste o emblema «{{badge}}»!",
+    "body": "Já está no teu perfil, à vista de quem o visitar."
+  },
+  "banPermanent": {
+    "title": "A tua conta foi suspensa permanentemente"
+  },
+  "banTemporary": {
+    "title": "A tua conta foi suspensa temporariamente"
+  },
+  "banSuspended": {
+    "title": "A tua conta foi suspensa"
+  },
+  "banCasePolicy": {
+    "title": "A tua conta foi suspensa permanentemente",
+    "body": "Violação da regra de contas múltiplas: foram detetadas várias contas no mesmo dispositivo"
+  },
+  "banLifted": {
+    "title": "A suspensão da tua conta foi levantada",
+    "body": "A tua suspensão foi retirada. Já podes iniciar sessão."
+  },
+  "banEnded": {
+    "title": "A tua suspensão terminou",
+    "body": "A tua suspensão temporária expirou. Já podes voltar a iniciar sessão."
+  },
+  "contentRemoved": {
+    "title": "O teu conteúdo foi removido"
+  },
+  "reportReviewed": {
+    "title": "A tua denúncia foi analisada",
+    "body": "Um moderador analisou a tua denúncia e não encontrou nenhuma infração. Obrigado por avisares."
+  },
+  "newCase": {
+    "title": "Novo caso de revisão",
+    "body": "Foi detetado um padrão suspeito que requer a revisão de um moderador."
+  },
+  "caseUserBanned": {
+    "title": "Conta sinalizada banida",
+    "body": "{{name}} ({{caseType}}) foi banido."
+  },
+  "caseUserBannedNoType": {
+    "title": "Conta sinalizada banida",
+    "body": "{{name}} (de um caso de revisão) foi banido."
+  },
+  "newReport": {
+    "title": "Nova denúncia recebida",
+    "body": "Foi apresentada uma denúncia sobre {{target}}."
+  },
+  "ladderBanPermanent": {
+    "title": "Escala de avisos atingida",
+    "body": "{{name}} atingiu {{count}} avisos e foi banido permanentemente."
+  },
+  "ladderBanTemporary": {
+    "title": "Escala de avisos atingida",
+    "body": "{{name}} atingiu {{count}} avisos e foi banido durante {{days}} dias."
+  },
+  "ladderNotify": {
+    "title": "Escala de avisos atingida",
+    "body": "{{name}} atingiu {{count}} avisos e precisa de ser analisado."
+  },
+  "warningIssued": {
+    "title": "Recebeste um aviso"
+  },
+  "warningPardoned": {
+    "title": "Um aviso foi perdoado",
+    "body": "Um dos teus avisos foi removido."
+  },
+  "passwordChanged": {
+    "title": "A tua palavra-passe foi alterada",
+    "body": "A palavra-passe da tua conta acabou de ser reposta. Se não foste tu, contacta imediatamente um administrador."
+  },
+  "jobFailure": {
+    "title": "Falhou uma tarefa em segundo plano",
+    "body": "Uma tarefa de «{{queue}}» falhou depois de esgotar as tentativas. Consulta Sistema → Registo de erros."
+  },
+  "promoted": {
+    "title": "Foste promovido a {{rank}}!",
+    "body": "Alcançaste um novo nível. Continua a participar para desbloquear ainda mais."
+  },
+  "targets": {
+    "article": "um artigo",
+    "article_comment": "um comentário de artigo",
+    "profile_comment": "um comentário de perfil",
+    "user": "um membro",
+    "plugin-content": "conteúdo de um plugin"
+  }
+}

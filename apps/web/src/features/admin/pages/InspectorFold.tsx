@@ -9,13 +9,15 @@ import { useState, type ReactNode } from "react";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faChevronRight } from "@fortawesome/free-solid-svg-icons";
 
-export function InspectorFold({ title, active, children }: {
+export function InspectorFold({ title, active, defaultOpen, children }: {
   title: string;
   /** The block uses this — draws the dot and opens the fold to begin with. */
   active?: boolean;
+  /** Open to begin with, without the dot. */
+  defaultOpen?: boolean;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState(!!active);
+  const [open, setOpen] = useState(!!active || !!defaultOpen);
   return (
     <div className={`lay-fold${open ? " is-open" : ""}`}>
       <button type="button" className="lay-fold__head" aria-expanded={open} onClick={() => setOpen((o) => !o)}>

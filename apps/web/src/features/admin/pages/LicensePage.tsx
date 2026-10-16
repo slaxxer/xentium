@@ -12,6 +12,7 @@ import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { OwnedLicenses, rowIsLive, type OwnedLicense } from "../components/OwnedLicenses";
 import "./LicensePage.scss";
+import { uiLocale } from "../../../lib/i18n";
 
 /** The install's stored entitlement DOCUMENT (`xcf_entitlements`), not a licence.
  *  The marketplace issues one on every activation, including for an account that
@@ -67,7 +68,7 @@ function parseEntitlements(jwt: string): string[] {
 }
 
 const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  new Date(iso).toLocaleDateString(uiLocale(), { month: "short", day: "numeric", year: "numeric" });
 
 /** Warn this many days out. Matches the expiry dialog's own threshold so the
  *  page and the nag cannot disagree about what "soon" means. */

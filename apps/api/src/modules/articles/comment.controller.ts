@@ -4,7 +4,7 @@ import { permissionsService } from "../permissions/permissions.service.js";
 import {
   articleLikeService,
   articleDislikeService,
-  commentLikeService,
+  commentLikeService, commentDislikeService,
   commentService,
 } from "./comment.service.js";
 import {
@@ -77,6 +77,16 @@ export const commentsController = {
     const userId = req.userId!;
     const result = await articleDislikeService.undislike(articleId, userId);
     res.json(result);
+  }),
+
+  dislikeComment: (async (req, res) => {
+    const { commentId } = commentIdParamSchema.parse(req.params);
+    res.json(await commentDislikeService.dislike(commentId, req.userId!));
+  }),
+
+  undislikeComment: (async (req, res) => {
+    const { commentId } = commentIdParamSchema.parse(req.params);
+    res.json(await commentDislikeService.undislike(commentId, req.userId!));
   }),
 
   likeComment: (async (req, res) => {

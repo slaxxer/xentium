@@ -186,10 +186,29 @@ gets the control for free. `heading` is the reference.
 
 ### The picker's two parts
 
-The **grid** shows what core ships; those icons draw on every install. The **name
-field** reaches anything else the kit has.
+Without a kit, the **grid** shows what core ships; those icons draw on every install.
+The **name field** reaches anything else.
 
-The grid renders with the *raw* FontAwesome component, not the site's style. It's the
+With a CSS-mode kit loaded, the grid shows **the kit's own catalogue** instead
+(`lib/kitIconCatalogue.ts`). The kit puts its stylesheet in the page, with one rule per
+icon (`.fa-star { --fa: "\f005" }`), and we read the names from there. Nothing is
+shipped or fetched for this, so it lists exactly what that site's licence draws. You
+pick a style first, and the grid draws every icon in that style. The style is held
+until you pick an icon, because a style on its own isn't a token.
+
+Two filters keep blanks out of that grid:
+
+- **Brand logos** only draw in the Brands style, which the picker leaves out, so
+  they're removed.
+- A **Pro+ family** only covers part of the library, and its font draws a crossed box
+  for a name it doesn't have. We draw every glyph to a canvas and fingerprint it. A
+  drawing that several names share is that placeholder, and one that matches a plain
+  text font is a letter or number icon the family lacks. Both are hidden.
+
+An SVG-mode kit has no such stylesheet, so the picker falls back to the bundled grid
+and the name field.
+
+The bundled grid renders with the *raw* FontAwesome component, not the site's style. It's the
 one place in the app that's exempt from our lint rule. Drawing ~80 bundled names in a
 partial Pro+ family would fill the grid with missing-glyph boxes and make it impossible
 to pick a *shape*. The preview above the grid shows the real styling, and it's the only

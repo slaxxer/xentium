@@ -28,15 +28,15 @@
  */
 import { FontAwesomeIcon } from "../../components/Icon";
 import {
-  faLock, faUserSlash, faUserCheck, faChevronRight, faChevronDown, faEye,
+  faLock, faUserSlash, faUserCheck, faChevronRight, faChevronDown,
   faImage, faXmark, faCloudArrowUp,
 } from "@fortawesome/free-solid-svg-icons";
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { blockPropSchemas } from "@xentium/contracts";
 import { Username } from "../../components/Username";
+import "../../components/Avatar.scss";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { sectionBackground } from "./coreBlocks";
@@ -47,8 +47,8 @@ import {
   previewSample, SAMPLE_BADGES, SAMPLE_FOLLOWERS, SAMPLE_VISITORS,
 } from "../previewSample";
 import { RankProgress, useRankFor } from "../../features/progression/rank";
-import { timeAgo } from "../../lib/time";
 import { api } from "../../lib/api";
+import { timeAgo } from "../../lib/time";
 import { toast } from "../../lib/toast";
 import { apiErrorMessage } from "../../lib/swal";
 import { useRankImages } from "../../lib/rankImage";
@@ -61,6 +61,7 @@ import {
   UserList,
   type ProfileContext,
 } from "../../features/profiles/ProfilePage";
+import { uiLocale } from "../../lib/i18n";
 
 type Ctx<P = unknown> = BlockProps<P, ProfileContext>;
 
@@ -87,11 +88,18 @@ registerBlock({
   editorMeta: { label: "Avatar", category: "data", ...ON_PROFILE },
   component: ({ props, context }: Ctx<{ size: string; overlap: boolean }>) => {
     const { profile } = context;
+    const { t } = useTranslation("common");
     return (
       <div className={`profile-av profile-av--${props.size}${props.overlap ? " profile-av--overlap" : ""}`}>
         {profile.avatar
           ? <img src={profile.avatar} alt={profile.username} />
           : <span>{profile.username.charAt(0).toUpperCase()}</span>}
+        {profile.online && (
+          <span className="profile-av__pres" role="status" aria-label={t("online.word")} title={t("online.word")}>
+            {/* The same breathing ring as every other avatar's online dot (Avatar.scss). */}
+            <span className="hearth-ava__pulse" aria-hidden="true" />
+          </span>
+        )}
       </div>
     );
   },
@@ -136,6 +144,14 @@ function FormerUsernames({ names }: { names: Array<{ username: string; changedAt
   );
 }
 
+/** "Last seen 3h ago" for the past month, "Last seen March 2019" before that. */
+function lastSeenLabel(at: string, t: (k: string, o?: Record<string, unknown>) => string, lang: string): string {
+  const days = (Date.now() - new Date(at).getTime()) / 86_400_000;
+  return days < 30
+    ? t("lastSeen", { when: timeAgo(at) })
+    : t("lastSeenOn", { date: new Date(at).toLocaleDateString(lang, { year: "numeric", month: "long" }) });
+}
+
 registerBlock({
   type:   "profileIdentity",
   schema: blockPropSchemas.profileIdentity,
@@ -174,10 +190,13 @@ registerBlock({
     // "Member since September 2026, 20 years old" — one clause about the member, so
     // a comma; the @handle stays a separate piece behind the dot.
     const about = [joined, dob].filter(Boolean).join(", ");
+    // Absent while they're online (the avatar's dot says so) or when they hide it.
+    const lastSeen = profile.lastSeenAt ? lastSeenLabel(profile.lastSeenAt, t, i18n.language) : null;
 
     const meta = [
       props.showHandle && usesFullName ? `@${profile.username}` : null,
       about || null,
+      lastSeen,
     ].filter(Boolean);
 
     return (
@@ -305,7 +324,7 @@ registerBlock({
         <div key={label}
           className={`profile-stat${onClick ? " profile-stat--clickable" : ""}`}
           onClick={onClick}>
-          <span className="profile-stat__value">{value.toLocaleString()}</span>
+          <span className="profile-stat__value">{value.toLocaleString(uiLocale())}</span>
           <span className="profile-stat__label">{label}</span>
         </div>
       ))}
@@ -591,7 +610,12 @@ registerBlock({
       <button type="button" className="profile-strip" onClick={() => setTab("followers")}>
         {/* Title with the chevron the mockup uses to say the card is a link. */}
         <span className="profile-rail__head">
-          <span className="profile-rail__title">{t("stat.followers")}</span>
+          {/* ⚠ The PROFILE's counter, not the length of this strip — the strip is
+              five avatars and the badge is how many there really are. */}
+          <span className="profile-strip__label">
+            <span className="profile-rail__title">{t("stat.followers")}</span>
+            <span className="profile-strip__badge">{total.toLocaleString(uiLocale())}</span>
+          </span>
           <FontAwesomeIcon icon={faChevronRight} className="profile-strip__more" />
         </span>
         <span className="profile-strip__row">
@@ -604,9 +628,6 @@ registerBlock({
               </span>
             ))}
           </span>
-          {/* ⚠ The PROFILE's counter, not the length of this strip — the strip is
-              five avatars and the number is how many there really are. */}
-          <span className="profile-strip__count">{total.toLocaleString()}</span>
         </span>
       </button>
     );
@@ -614,7 +635,7 @@ registerBlock({
 });
 
 /**
- * RECENT VISITORS — who has looked at this profile lately.
+ * RECENT VISITORS — the faces of who has looked at this profile lately.
  *
  * ⚠ Public, by the site's decision: the card sits in the rail every visitor sees, and
  * it names members only. A guest leaves no name, so a guest moves the total and
@@ -633,17 +654,15 @@ registerBlock({
     const data = real?.items.length ? real : previewSample(SAMPLE_VISITORS);
     if (!data?.items.length) return null;
 
-    // "+N" counts the named visitors this card is NOT showing — not the all-time
-    // total, which includes guests and would make the badge meaningless.
-    const hidden = Math.max(0, data.visitors - data.items.length);
-
+    // Faces and how many people they stand for; no "+N", no caption. The badge counts
+    // named VISITORS, not `totalViews` — that includes guests and repeat visits, so it
+    // would not be the number of people the faces are a sample of.
     return (
       <div className="profile-strip profile-strip--static">
         <span className="profile-rail__head">
-          <span className="profile-rail__title">{t("visitors.title")}</span>
-          <span className="profile-visitors__views">
-            <FontAwesomeIcon icon={faEye} />
-            {data.totalViews.toLocaleString()}
+          <span className="profile-strip__label">
+            <span className="profile-rail__title">{t("visitors.title")}</span>
+            <span className="profile-strip__badge">{data.visitors.toLocaleString(uiLocale())}</span>
           </span>
         </span>
 
@@ -656,18 +675,8 @@ registerBlock({
                   : <em>{u.username.charAt(0).toUpperCase()}</em>}
               </span>
             ))}
-            {hidden > 0 && <span className="profile-strip__av profile-strip__av--more">+{hidden}</span>}
           </span>
         </span>
-
-        <p className="profile-strip__caption">
-          {t("visitors.summary", { count: data.thisWeek })}
-          {/* `timeAgo` is the one relative-time formatter in the app — localised
-              through the `time` block of the common namespace.
-              ⚠ NOT compact: compact drops the "ago" and the mockup's line reads
-              "last: 4m ago". A bare "4m" beside a date is ambiguous. */}
-          {data.lastAt && ` · ${t("visitors.last", { ago: timeAgo(data.lastAt) })}`}
-        </p>
       </div>
     );
   },
@@ -683,12 +692,6 @@ registerBlock({
   schema: blockPropSchemas.profileTabs,
   editorMeta: { label: "Profile tabs", category: "data", ...ON_PROFILE, wide: true },
   component: ({ context }: Ctx) => {
-    const { t } = useTranslation("profiles");
-    // ⚠ "New Article" lives on the TAB ROW, as the mockup draws it, which means it
-    // belongs to this block rather than to the articles tab beneath it. The two are
-    // separately movable blocks, so a negative margin pulling one onto the other's
-    // line breaks the moment an admin puts something between them.
-    const canWrite = context.profile.isOwn && context.tab === "articles";
     return (
       <div className="profile-tabs">
         {context.tabs.map((item) => (
@@ -698,9 +701,6 @@ registerBlock({
             {item.label}
           </button>
         ))}
-        {canWrite && (
-          <Link to="/articles/new" className="profile-tabs__new">{t("newArticle")}</Link>
-        )}
       </div>
     );
   },

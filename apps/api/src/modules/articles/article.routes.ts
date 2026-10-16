@@ -6,6 +6,7 @@ import { uploadSingle } from "../../shared/middleware/upload.js";
 import { CorePermissions } from "@xentium/contracts";
 import { articlesController } from "./article.controller.js";
 import { commentsController } from "./comment.controller.js";
+import { articleEngagementController as engagement } from "./article.engagement.js";
 
 export const articlesRouter: Router = Router();
 export const articleCommentsRouter: Router = Router();
@@ -18,6 +19,14 @@ articlesRouter.get("/me", requireAuth, articlesController.listMine);
 
 // Popular tags — static segment, placed before /:slug.
 articlesRouter.get("/tags/popular", articlesController.popularTags);
+
+// The categories and tags the member follows (their Following feed), and following one.
+// Static segments, before /:slug.
+articlesRouter.get("/topics/following", requireAuth, engagement.followedTopics);
+articlesRouter.post("/categories/:id/follow", requireAuth, engagement.followCategory);
+articlesRouter.delete("/categories/:id/follow", requireAuth, engagement.unfollowCategory);
+articlesRouter.post("/tags/:id/follow", requireAuth, engagement.followTag);
+articlesRouter.delete("/tags/:id/follow", requireAuth, engagement.unfollowTag);
 
 articlesRouter.get("/:slug", optionalAuth, articlesController.getBySlug);
 
@@ -66,6 +75,10 @@ articlesRouter.delete("/:id/like", requireAuth, commentsController.unlike);
 articlesRouter.post("/:id/dislike", requireAuth, commentsController.dislike);
 articlesRouter.delete("/:id/dislike", requireAuth, commentsController.undislike);
 
+// Saving an article for later (home → Saved)
+articlesRouter.post("/:id/bookmark", requireAuth, engagement.save);
+articlesRouter.delete("/:id/bookmark", requireAuth, engagement.unsave);
+
 // Comment edit/delete/like — mounted under /api/article-comments
 articleCommentsRouter.patch(
   "/:commentId",
@@ -87,3 +100,5 @@ articleCommentsRouter.delete(
   requireAuth,
   commentsController.unlikeComment,
 );
+articleCommentsRouter.post("/:commentId/dislike", requireAuth, commentsController.dislikeComment);
+articleCommentsRouter.delete("/:commentId/dislike", requireAuth, commentsController.undislikeComment);

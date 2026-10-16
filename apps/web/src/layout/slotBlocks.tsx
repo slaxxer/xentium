@@ -43,6 +43,14 @@ export const SLOT_BLOCK_PREFIX = "slot.";
 
 export const isSlotBlockType = (type: string): boolean => type.startsWith(SLOT_BLOCK_PREFIX);
 
+/**
+ * Where a block's setting texts live under `acp:core.blocks`. Every layout widget
+ * shares ONE schema (the outlet picker) that core wrote, so they share one entry;
+ * every other type is its own key.
+ */
+export const blockTextType = (type: string): string =>
+  type.startsWith(`${SLOT_BLOCK_PREFIX}layoutWidget.`) ? "slotLayoutWidget" : type;
+
 /** The block type derived for one contribution. */
 export const slotBlockType = (kind: string, id: string): string =>
   `${SLOT_BLOCK_PREFIX}${kind}.${id}`;
@@ -58,7 +66,7 @@ const OUTLETS = ["aside", "top", "home-top", "forum-top"] as const;
 
 const layoutWidgetSchema = z.object({
   outlet: z.enum(OUTLETS).default("aside").meta({
-    title: "Render as outlet",
+    title: "Outlet",
     description: "Plugin widgets choose which outlet they appear in. Pick the one this widget expects.",
   }),
 });
@@ -75,15 +83,17 @@ export function registerSlotBlocks(): void {
     registerBlock({
       type:     slotBlockType("headerWidget", widget.id),
       pluginId: slotRegistry.ownerOf(widget.id),
-      schema:   z.object({}),
+      // The icon picker, like core's bell and shield: the widget draws the chosen glyph
+      // (a plugin that ignores the prop simply keeps its own).
+      schema:   z.object({ icon: z.string().optional().meta({ title: "Icon", format: "icon" }) }),
       editorMeta: {
-        label: widget.id,
+        label: widget.label ?? widget.id,
         category: "plugin",
         // A header widget is chrome; it has no page context to read.
         allowedTemplates: ["chrome.header"],
       },
       // Members only, wherever the admin placed it (see MemberWidget).
-      component: () => <MemberWidget><Widget /></MemberWidget>,
+      component: ({ props }) => <MemberWidget><Widget icon={(props as { icon?: string }).icon} /></MemberWidget>,
     });
   }
 

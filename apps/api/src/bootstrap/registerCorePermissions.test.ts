@@ -52,6 +52,27 @@ describe("registerCorePermissions", () => {
     expect(await staffGroupKeys()).not.toContain("moderator");
   });
 
+  it("gives a newly created system group its default precedence and badge colour", async () => {
+    await prisma.group.delete({ where: { key: "supermod" } });
+    await registerCorePermissions();
+    const g = await prisma.group.findUniqueOrThrow({ where: { key: "supermod" }, include: { progression: true } });
+    expect(g.progression?.badgeColor).toBe("#e0702a");
+    expect(g.displayOrder).toBe(2);
+    // The recreated group holds no grants (defaults go only to a NEW permission), so
+    // give every core permission back to its default groups, as on a fresh install.
+    await prisma.permission.deleteMany({ where: { key: { in: Object.values(CorePermissions) } } });
+    await registerCorePermissions();
+  });
+
+  it("keeps a badge colour an admin changed or cleared", async () => {
+    const mod = await prisma.group.findUniqueOrThrow({ where: { key: "moderator" } });
+    await prisma.groupProgression.upsert({
+      where: { groupId: mod.id }, update: { badgeColor: null }, create: { groupId: mod.id, badgeColor: null },
+    });
+    await registerCorePermissions();
+    expect((await prisma.groupProgression.findUniqueOrThrow({ where: { groupId: mod.id } })).badgeColor).toBeNull();
+  });
+
   it("does not rename a system group back", async () => {
     await prisma.group.update({ where: { key: "moderator" }, data: { name: "Crew" } });
     await registerCorePermissions();

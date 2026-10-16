@@ -32,7 +32,7 @@ export interface PermissionsCtx {
 }
 
 export function PermissionsPage() {
-  const { t } = useTranslation("acp");
+  const { t, i18n } = useTranslation("acp");
   const qc = useQueryClient();
   const [params, setParams] = useSearchParams();
   const [edits, setEdits] = useState<Edits>({});
@@ -47,8 +47,9 @@ export function PermissionsPage() {
     queryFn: () => api.get("/admin/permissions"),
   });
 
-  const perms = useMemo(() => rawPerms.map(enrichPerm), [rawPerms]);
-  const domains = useMemo(() => groupByDomain(rawPerms), [rawPerms]);
+  // Names are translated, so a language switch recomputes them.
+  const perms = useMemo(() => rawPerms.map(enrichPerm), [rawPerms, i18n.language]);
+  const domains = useMemo(() => groupByDomain(rawPerms), [rawPerms, i18n.language]);
 
   const savedMap = useMemo(() => new Map(groups.map((g) => [g.id, new Set(keysOf(g))])), [groups]);
   const saved = useCallback((id: string) => savedMap.get(id) ?? new Set<string>(), [savedMap]);

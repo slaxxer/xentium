@@ -1,0 +1,119 @@
+{
+  "newFollower": {
+    "title": "New follower",
+    "body": "{{name}} started following you."
+  },
+  "profileComment": {
+    "title": "New comment on your profile",
+    "body": "{{name}} posted on your profile."
+  },
+  "profileReply": {
+    "title": "New reply to your comment",
+    "body": "{{name}} replied to your comment on {{owner}}'s profile."
+  },
+  "mentionProfile": {
+    "title": "You were mentioned",
+    "body": "{{name}} mentioned you in a comment on {{owner}}'s profile."
+  },
+  "profileCommentLiked": {
+    "title": "Someone liked your comment",
+    "body": "{{name}} liked your comment on {{owner}}'s profile."
+  },
+  "articleCommentLiked": {
+    "title": "Someone liked your comment",
+    "body": "{{name}} liked your comment."
+  },
+  "badgeGranted": {
+    "title": "You've been given the \"{{badge}}\" badge!",
+    "body": "It's on your profile now, for everyone who visits."
+  },
+  "badgeGrantedNote": {
+    "title": "You've been given the \"{{badge}}\" badge!"
+  },
+  "badgeEarned": {
+    "title": "You've earned the \"{{badge}}\" badge!",
+    "body": "It's on your profile now, for everyone who visits."
+  },
+  "banPermanent": {
+    "title": "Your account has been permanently suspended"
+  },
+  "banTemporary": {
+    "title": "Your account has been temporarily suspended"
+  },
+  "banSuspended": {
+    "title": "Your account has been suspended"
+  },
+  "banCasePolicy": {
+    "title": "Your account has been permanently suspended",
+    "body": "Multi-account policy violation — multiple accounts detected on the same device"
+  },
+  "banLifted": {
+    "title": "Your account suspension has been lifted",
+    "body": "Your suspension has been removed. You can now log in."
+  },
+  "banEnded": {
+    "title": "Your suspension has ended",
+    "body": "Your temporary suspension has expired. You may now log in again."
+  },
+  "contentRemoved": {
+    "title": "Your content was removed"
+  },
+  "reportReviewed": {
+    "title": "Your report was reviewed",
+    "body": "A moderator looked at your report and found no rule broken. Thanks for flagging it."
+  },
+  "newCase": {
+    "title": "New review case",
+    "body": "A suspicious pattern was detected and requires moderator review."
+  },
+  "caseUserBanned": {
+    "title": "Flagged account banned",
+    "body": "{{name}} ({{caseType}}) was banned."
+  },
+  "caseUserBannedNoType": {
+    "title": "Flagged account banned",
+    "body": "{{name}} (a review case) was banned."
+  },
+  "newReport": {
+    "title": "New report filed",
+    "body": "A report has been filed for {{target}}."
+  },
+  "ladderBanPermanent": {
+    "title": "Warning ladder reached",
+    "body": "{{name}} reached {{count}} warnings and was banned permanently."
+  },
+  "ladderBanTemporary": {
+    "title": "Warning ladder reached",
+    "body": "{{name}} reached {{count}} warnings and was banned for {{days}} days."
+  },
+  "ladderNotify": {
+    "title": "Warning ladder reached",
+    "body": "{{name}} reached {{count}} warnings and needs a look."
+  },
+  "warningIssued": {
+    "title": "You have received a warning"
+  },
+  "warningPardoned": {
+    "title": "A warning has been pardoned",
+    "body": "One of your warnings has been removed."
+  },
+  "passwordChanged": {
+    "title": "Your password was changed",
+    "body": "Your account password was just reset. If this wasn't you, contact an administrator immediately."
+  },
+  "jobFailure": {
+    "title": "Background job failed",
+    "body": "A \"{{queue}}\" job failed after exhausting retries. Check System → Error Log."
+  },
+  "promoted": {
+    "title": "You've been promoted to {{rank}}!",
+    "body": "You've reached a new level. Keep participating to unlock even more."
+  },
+  "targets": {
+    "article": "an article",
+    "article_comment": "an article comment",
+    "profile_comment": "a profile comment",
+    "user": "a member",
+    "plugin-content": "plugin content"
+  }
+}

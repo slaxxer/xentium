@@ -26,7 +26,7 @@ const commentInclude = {
   deletedBy: {
     select: { id: true, username: true },
   },
-  _count: { select: { likes: true } },
+  _count: { select: { likes: true, dislikes: true } },
 } satisfies Prisma.ArticleCommentInclude;
 
 type CommentRow = Prisma.ArticleCommentGetPayload<{ include: typeof commentInclude }>;
@@ -43,6 +43,9 @@ interface CommentNode {
   editedAt: Date | null;
   createdAt: Date;
   likeCount: number;
+  dislikeCount: number;
+  /** How the signed-in viewer reacted (thumbs up / down). Absent for guests. */
+  viewerReaction?: "like" | "dislike" | null;
   replies: CommentNode[];
 }
 
@@ -64,6 +67,7 @@ function shapeRow(row: CommentRow): CommentNode {
     editedAt:          row.editedAt,
     createdAt:         row.createdAt,
     likeCount:         row._count.likes,
+    dislikeCount:      row._count.dislikes,
     replies:           [],
   };
 }
@@ -134,6 +138,19 @@ export const commentService = {
       shaped.replies = byParent.get(row.id) ?? [];
       return shaped;
     });
+
+    // The viewer's own thumbs, so a reload shows what they already gave.
+    if (viewerId) {
+      const all = [...data, ...data.flatMap((c) => c.replies)];
+      const ids = all.map((c) => c.id);
+      const [likes, dislikes] = await Promise.all([
+        prisma.articleCommentLike.findMany({ where: { userId: viewerId, commentId: { in: ids } }, select: { commentId: true } }),
+        prisma.articleCommentDislike.findMany({ where: { userId: viewerId, commentId: { in: ids } }, select: { commentId: true } }),
+      ]);
+      const liked = new Set(likes.map((l) => l.commentId));
+      const disliked = new Set(dislikes.map((d) => d.commentId));
+      for (const c of all) c.viewerReaction = liked.has(c.id) ? "like" : disliked.has(c.id) ? "dislike" : null;
+    }
 
     return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
@@ -397,8 +414,17 @@ export const articleLikeService = {
   },
 };
 
+/** A comment's thumbs, after a change. */
+async function commentReactionCounts(commentId: string): Promise<{ likeCount: number; dislikeCount: number }> {
+  const [likeCount, dislikeCount] = await Promise.all([
+    prisma.articleCommentLike.count({ where: { commentId } }),
+    prisma.articleCommentDislike.count({ where: { commentId } }),
+  ]);
+  return { likeCount, dislikeCount };
+}
+
 export const commentLikeService = {
-  async like(commentId: string, userId: string): Promise<{ likeCount: number }> {
+  async like(commentId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
     const comment = await prisma.articleComment.findUnique({
       where: { id: commentId },
       select: { authorId: true, deletedAt: true, articleId: true },
@@ -413,6 +439,8 @@ export const commentLikeService = {
 
     let isNew = false;
     await prisma.$transaction(async (tx) => {
+      // A thumbs-up replaces a thumbs-down: one or the other, never both.
+      await tx.articleCommentDislike.deleteMany({ where: { commentId, userId } });
       try {
         await tx.articleCommentLike.create({ data: { commentId, userId } });
         isNew = true;
@@ -430,13 +458,16 @@ export const commentLikeService = {
 
     if (isNew && comment.authorId !== userId) {
       const liker = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
-      if (liker) {
+      // ⚠ The reader is addressed by SLUG; a link by id opened "not found".
+      const article = await prisma.article.findUnique({ where: { id: comment.articleId }, select: { slug: true } });
+      if (liker && article) {
         await notificationService.dispatch({
           userId:       comment.authorId,
           type:         "article.comment_liked",
           title:        "Someone liked your comment",
+          i18n:         { key: "common:notify.articleCommentLiked", params: { name: liker.username } },
           body:         `${liker.username} liked your comment.`,
-          link:         `/articles/${comment.articleId}`,
+          link:         `/articles/${encodeURIComponent(article.slug)}?comment=${commentId}`,
           meta:         { commentId, likerId: userId },
           senderUserId: userId,
           channels:     ["in_app"],
@@ -444,16 +475,15 @@ export const commentLikeService = {
       }
     }
 
-    const likeCount = await prisma.articleCommentLike.count({ where: { commentId } });
-    return { likeCount };
+    return commentReactionCounts(commentId);
   },
 
-  async unlike(commentId: string, userId: string): Promise<{ likeCount: number }> {
+  async unlike(commentId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
     const comment = await prisma.articleComment.findUnique({
       where: { id: commentId },
       select: { authorId: true },
     });
-    if (!comment) return { likeCount: 0 };
+    if (!comment) return { likeCount: 0, dislikeCount: 0 };
 
     await prisma.$transaction(async (tx) => {
       const deleted = await tx.articleCommentLike.deleteMany({ where: { commentId, userId } });
@@ -464,8 +494,42 @@ export const commentLikeService = {
       });
     });
 
-    const likeCount = await prisma.articleCommentLike.count({ where: { commentId } });
-    return { likeCount };
+    return commentReactionCounts(commentId);
+  },
+};
+
+/**
+ * Thumbs-down on a comment. No notification (nobody is told they were disliked) and
+ * no effect on the author's received likes beyond the like it replaces.
+ */
+export const commentDislikeService = {
+  async dislike(commentId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
+    const comment = await prisma.articleComment.findUnique({
+      where: { id: commentId },
+      select: { authorId: true, deletedAt: true },
+    });
+    if (!comment || comment.deletedAt) {
+      throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: "Comment not found" });
+    }
+    if (comment.authorId === userId) {
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 400, message: "Cannot dislike your own comment" });
+    }
+    await prisma.$transaction(async (tx) => {
+      // A thumbs-down replaces a thumbs-up, and takes back the like it counted.
+      const removed = await tx.articleCommentLike.deleteMany({ where: { commentId, userId } });
+      if (removed.count > 0) {
+        await tx.user.update({ where: { id: comment.authorId }, data: { likeCountReceived: { decrement: 1 } } });
+      }
+      await tx.articleCommentDislike.upsert({
+        where: { commentId_userId: { commentId, userId } }, update: {}, create: { commentId, userId },
+      });
+    });
+    return commentReactionCounts(commentId);
+  },
+
+  async undislike(commentId: string, userId: string): Promise<{ likeCount: number; dislikeCount: number }> {
+    await prisma.articleCommentDislike.deleteMany({ where: { commentId, userId } });
+    return commentReactionCounts(commentId);
   },
 };
 

@@ -37,9 +37,7 @@
   inset: 0 0 auto;
   z-index: -1;
   height: var(--dw-band-height);
-  background:
-    radial-gradient(60% 80% at 85% 10%, color-mix(in srgb, var(--c-accent) 55%, transparent), transparent 70%),
-    linear-gradient(150deg, color-mix(in srgb, var(--c-accent) 18%, #14162a), color-mix(in srgb, var(--c-accent) 70%, #14162a));
+  background: var(--c-accent);
   background-size: cover;
   background-position: center;
 
@@ -82,7 +80,7 @@
     width: 32px;
     height: 32px;
     border-radius: 9px;
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+    background: var(--c-accent);
     color: var(--c-on-accent);
   }
   &__img { display: block; height: 36px; max-width: 200px; width: auto; object-fit: contain; }

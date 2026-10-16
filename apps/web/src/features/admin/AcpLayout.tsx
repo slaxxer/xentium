@@ -20,6 +20,7 @@ import { useAcpLayout } from "./nav/acpChrome";
 import { IconScope } from "../../lib/iconScope";
 import { AcpSaveBar } from "./AcpSaveBar";
 import { useDraftEpoch } from "../../hooks/useDraft";
+import { uiLocale } from "../../lib/i18n";
 
 // The ACP wears one of two navigation chromes, chosen per admin in the user
 // menu and remembered in localStorage (nav/acpChrome.ts):
@@ -239,7 +240,7 @@ function useAcpAlerts() {
       if (status!.licenseDomain) rows.push({ label: t("license.expiryDialogDomain"), value: status!.licenseDomain });
       rows.push({
         label:  t("license.expiryDialogExpires"),
-        value:  status!.licenseExpiresAt ? new Date(status!.licenseExpiresAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }) : "—",
+        value:  status!.licenseExpiresAt ? new Date(status!.licenseExpiresAt).toLocaleDateString(uiLocale(), { year: "numeric", month: "long", day: "numeric" }) : "—",
         marker: expired ? t("license.expiryDialogExpiredMarker") : t("license.expiryDialogInDays", { count: Math.max(status!.licenseDaysLeft ?? 0, 0) }),
       });
 

@@ -29,6 +29,7 @@ export type ThemeScope =
 export type TokenGroup =
   | "global" | "navbar" | "content" | "footer" | "aside"   // palette + regions
   | "button" | "card" | "field" | "menu" | "segment"       // components
+  | "usermenu"                                              // the header's action pill
   // Foundation: everything else the site is built from. Every token `_tokenDefaults.scss`
   // declares is in the registry, so the Style Editor can reach all of it.
   | "tints" | "shadows" | "corners" | "type" | "spacing" | "layout" | "base";
@@ -40,7 +41,7 @@ export interface TokenDef {
   kind: TokenKind;
   group: TokenGroup;
   /** Compound editor control this token folds into (else a plain row). */
-  control?: "border" | "shadow" | "radius" | "size" | "text";
+  control?: "border" | "shadow" | "radius" | "size" | "text" | "weight";
   /** `size` only: the slider's ends, in px. A length needs a range to be draggable,
    *  and the sensible range for a rail is not the sensible range for a radius. */
   min?: number;
@@ -139,6 +140,7 @@ const REGION_TOKENS: TokenDef[] = [
   { var: "--content-border-color", label: "Content border",     type: "color", kind: "region", group: "content", control: "border", inheritsFrom: "--c-border", editable: true },
   // Footer
   { var: "--footer-bg",           label: "Footer background", type: "color", kind: "region", group: "footer", inheritsFrom: "--c-surface", editable: true },
+  { var: "--footer-fg-strong",    label: "Footer strong text",type: "color", kind: "region", group: "footer", inheritsFrom: "--c-fg", editable: true },
   { var: "--footer-fg",           label: "Footer text",       type: "color", kind: "region", group: "footer", inheritsFrom: "--c-fg-muted", editable: true },
   { var: "--footer-fg-subtle",    label: "Footer subtle text",type: "color", kind: "region", group: "footer", inheritsFrom: "--c-fg-subtle", editable: true },
   { var: "--footer-border-color", label: "Footer border",     type: "color", kind: "region", group: "footer", control: "border", inheritsFrom: "--c-border", editable: true },
@@ -183,6 +185,20 @@ const COMPONENT_TOKENS: TokenDef[] = [
   { var: "--menu-border-color",   label: "Menu border",     type: "color",  kind: "component", group: "menu", control: "border", inheritsFrom: "--c-border", scopeable: true, editable: true },
   { var: "--menu-item-hover-bg",  label: "Menu item hover", type: "color",  kind: "component", group: "menu", inheritsFrom: "--c-bg-hover", scopeable: true, state: "hover", editable: true },
   { var: "--menu-radius",         label: "Menu radius",     type: "length", kind: "component", group: "menu", control: "radius", scopeable: true, editable: true },
+  // The header dropdowns (account menu, notifications, moderation shield, plugin
+  // dropdowns like messages) read these too: secondary text and the two weights.
+  { var: "--menu-fg-muted",       label: "Menu secondary text", type: "color", kind: "component", group: "menu", inheritsFrom: "--c-fg-muted", scopeable: true, editable: true },
+  { var: "--menu-fw",             label: "Menu text weight",    type: "keyword", kind: "component", group: "menu", control: "weight", scopeable: true, editable: true },
+  { var: "--menu-title-fw",       label: "Menu title weight",   type: "keyword", kind: "component", group: "menu", control: "weight", scopeable: true, editable: true },
+
+  // User menu: the header's action pill (moderation shield, bell, plugin icons, search,
+  // ACP link, avatar). Its dropdowns are "menu" above; this is the pill they open from.
+  // Global only: the pill sits in the masthead, which no region scope reaches.
+  { var: "--usermenu-bg",     label: "User menu background", type: "color",   kind: "component", group: "usermenu", editable: true },
+  { var: "--usermenu-fg",     label: "User menu text",       type: "color",   kind: "component", group: "usermenu", editable: true },
+  { var: "--usermenu-line",   label: "User menu dividers",   type: "color",   kind: "component", group: "usermenu", editable: true },
+  { var: "--usermenu-fw",     label: "User menu text weight", type: "keyword", kind: "component", group: "usermenu", control: "weight", editable: true },
+  { var: "--usermenu-radius", label: "User menu radius",     type: "length",  kind: "component", group: "usermenu", control: "radius", inheritsFrom: "--radius-md", editable: true },
 
   // Segment / sort buttons (e.g. the /members sort control)
   { var: "--seg-bg",        label: "Sort button bg",        type: "color", kind: "component", group: "segment", inheritsFrom: "--c-bg", editable: true },
@@ -250,6 +266,7 @@ const FOUNDATION_TOKENS: TokenDef[] = [
   f("--fs-2xl",  "Heading · large (24px)",  "type", "length", { control: "text" }),
   f("--fs-3xl",  "Heading · huge (30px)",   "type", "length", { control: "text" }),
   f("--font-display", "Heading font",        "type", "keyword", { control: "text" }),
+  f("--font-headline", "Headline font",      "type", "keyword", { control: "text" }),
   f("--font-body",    "Body font",           "type", "keyword", { control: "text" }),
   f("--ff-mono",      "Code font",           "type", "keyword", { control: "text" }),
 

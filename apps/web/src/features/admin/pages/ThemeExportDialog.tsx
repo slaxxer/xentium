@@ -116,7 +116,7 @@ function ThemeExportForm({ initial, onChange }: {
               className="acp-input"
               type={type ?? "text"}
               value={value[key]}
-              placeholder={placeholder}
+              placeholder={key === "name" ? t("themes.defaultThemeName") : placeholder}
               onChange={(e) => set({ [key]: e.target.value } as Partial<ThemeExportMeta>)}
             />
           </label>
@@ -194,7 +194,8 @@ const REQUIRED: TextField[] = ["id", "name", "version", "vendor"];
  * `null` when the admin cancels.
  */
 export async function openThemeExportDialog(t: TFunction): Promise<ThemeExportMeta | null> {
-  const draft: ThemeExportMeta = { ...BLANK };
+  // The pre-filled name is in the admin's language; the id stays a slug.
+  const draft: ThemeExportMeta = { ...BLANK, name: t("themes.defaultThemeName") };
 
   for (;;) {
     const confirmed = await openDialog({

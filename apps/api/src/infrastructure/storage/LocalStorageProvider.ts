@@ -29,7 +29,7 @@ import { env } from "../../config/env.js";
  * files are REFERENCED becomes a directory whose contents are all orphans, and the
  * purge deletes them on a schedule long after anyone connects the two.
  */
-export const ALLOWED_UPLOAD_DIRS = ["avatars", "covers", "articles", "pages", "groups", "themes", "layouts"] as const;
+export const ALLOWED_UPLOAD_DIRS = ["avatars", "covers", "articles", "pages", "groups", "themes", "layouts", "emojis"] as const;
 
 export { LocalStorageProvider };
 

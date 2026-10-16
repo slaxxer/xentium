@@ -113,3 +113,54 @@ CREATE TABLE phpbb_zebra (
 );
 -- bob foes olduser (→ block); alice friends bob (NOT mapped)
 INSERT INTO phpbb_zebra VALUES (3, 4, 0, 1), (2, 3, 1, 0);
+
+-- Private messages: alice → bob, bob replies (same chain via root_level), and a group
+-- message from root to alice and bob that bob deleted his copy of.
+CREATE TABLE phpbb_privmsgs (
+  msg_id INT PRIMARY KEY, root_level INT NOT NULL DEFAULT 0, author_id INT NOT NULL, message_time INT NOT NULL,
+  message_subject VARCHAR(255) NOT NULL, message_text MEDIUMTEXT NOT NULL, bbcode_uid VARCHAR(8) NOT NULL DEFAULT ''
+);
+INSERT INTO phpbb_privmsgs VALUES
+  (1, 0, 2, 1700000000, 'Q&amp;A night', 'Coming <s>tonight</s>?', ''),
+  (2, 1, 3, 1700000100, 'Re: Q&amp;A night', 'Sure!', ''),
+  (3, 0, 1, 1700000200, 'Team note', 'Hi both', '');
+CREATE TABLE phpbb_privmsgs_to (msg_id INT NOT NULL, user_id INT NOT NULL, author_id INT NOT NULL, pm_deleted TINYINT NOT NULL DEFAULT 0);
+INSERT INTO phpbb_privmsgs_to VALUES (1, 3, 2, 0), (2, 2, 3, 0), (3, 2, 1, 0), (3, 3, 1, 1);
+
+-- Personal info, topic watches and bans. Expect: alice born 1990-03-05 with a website,
+-- bob's "0-0-0" birthday ignored; alice watches topic 10 (kept) and 12 (skipped topic,
+-- so no subscription); olduser banned permanently, an IP-only ban and an expired ban ignored.
+ALTER TABLE phpbb_users ADD COLUMN user_birthday VARCHAR(10) NOT NULL DEFAULT '';
+UPDATE phpbb_users SET user_birthday = ' 5- 3-1990' WHERE user_id = 2;
+UPDATE phpbb_users SET user_birthday = ' 0- 0-   0' WHERE user_id = 3;
+CREATE TABLE phpbb_profile_fields_data (user_id INT PRIMARY KEY, pf_phpbb_website VARCHAR(255) NOT NULL DEFAULT '');
+INSERT INTO phpbb_profile_fields_data VALUES (2, 'https://alice.example'), (3, 'javascript:alert(1)');
+CREATE TABLE phpbb_topics_watch (topic_id INT NOT NULL, user_id INT NOT NULL, notify_status TINYINT NOT NULL DEFAULT 0);
+INSERT INTO phpbb_topics_watch VALUES (10, 2, 0), (12, 2, 0), (11, 3, 0);
+CREATE TABLE phpbb_banlist (ban_id INT PRIMARY KEY, ban_userid INT NOT NULL DEFAULT 0, ban_ip VARCHAR(40) NOT NULL DEFAULT '', ban_start INT NOT NULL, ban_end INT NOT NULL DEFAULT 0, ban_exclude TINYINT NOT NULL DEFAULT 0, ban_reason VARCHAR(255) NOT NULL DEFAULT '', ban_give_reason VARCHAR(255) NOT NULL DEFAULT '');
+INSERT INTO phpbb_banlist VALUES (1, 4, '', 1690000000, 0, 0, 'spam', 'Spamming &amp; abuse'), (2, 0, '10.0.0.1', 1690000000, 0, 0, '', ''), (3, 3, '', 1600000000, 1600100000, 0, 'old', 'old');
+
+-- Avatars (files under --files): alice has an uploaded avatar; bob's "avatar" is a
+-- text file with a .png name and must be refused; root uses a remote avatar (stays out).
+INSERT INTO phpbb_config VALUES ('avatar_path', 'images/avatars/upload'), ('avatar_salt', 'abc123salt');
+ALTER TABLE phpbb_users ADD COLUMN user_avatar VARCHAR(255) NOT NULL DEFAULT '', ADD COLUMN user_avatar_type VARCHAR(255) NOT NULL DEFAULT '';
+UPDATE phpbb_users SET user_avatar = '2_1700000000.png', user_avatar_type = 'avatar.driver.upload' WHERE user_id = 2;
+UPDATE phpbb_users SET user_avatar = '3_1700000000.png', user_avatar_type = 'avatar.driver.upload' WHERE user_id = 3;
+UPDATE phpbb_users SET user_avatar = 'https://x.test/a.png', user_avatar_type = 'avatar.driver.remote' WHERE user_id = 1;
+
+-- Warnings expire after 3650 days on this board: bob's recent one stays, the 2001 one is long gone.
+INSERT INTO phpbb_config VALUES ('warnings_expire_days', '3650');
+CREATE TABLE phpbb_log (log_id INT PRIMARY KEY, user_id INT, log_operation VARCHAR(255), log_data MEDIUMTEXT);
+INSERT INTO phpbb_log VALUES (1, 1, 'LOG_USER_WARNING_BODY', 'a:1:{i:0;s:21:"Rude &amp; off-topic!";}'), (2, 1, 'LOG_USER_WARNING_BODY', 'a:1:{i:0;s:3:"old";}');
+CREATE TABLE phpbb_warnings (warning_id INT PRIMARY KEY, user_id INT, post_id INT, log_id INT, warning_time INT);
+INSERT INTO phpbb_warnings VALUES (1, 3, 0, 1, UNIX_TIMESTAMP() - 86400), (2, 3, 0, 2, 1000000000);
+
+-- Member groups: phpBB's own are type 3 (special); "Donors &amp; friends" is a custom one.
+-- bob (3) is in it; alice's request (2) is still pending, so she isn't.
+ALTER TABLE phpbb_groups ADD COLUMN group_type TINYINT NOT NULL DEFAULT 3;
+INSERT INTO phpbb_groups VALUES (7, 'Donors &amp; friends', 0);
+INSERT INTO phpbb_user_group VALUES (3, 7, 0), (2, 7, 1);
+
+-- Last visits: user 2 was last here in 2019, user 3 never logged in (0).
+ALTER TABLE phpbb_users ADD COLUMN user_lastvisit INT UNSIGNED NOT NULL DEFAULT 0;
+UPDATE phpbb_users SET user_lastvisit = 1560000000 WHERE user_id = 2;

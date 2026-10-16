@@ -2,6 +2,7 @@ import { buildPaginationMeta, CorePermissions } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { notificationService } from "../notifications/notification.service.js";
+import type { NotificationText } from "../notifications/notification.types.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
 import { humanizeCaseType, describeCaseSignal, type ReportTargetType, type ThresholdRule } from "./moderation.types.js";
@@ -41,6 +42,9 @@ async function notifyCaseManagersOfBan(username: string, caseType: string | null
         type:     "mod.case_user_banned",
         title:    "Flagged account banned",
         body:     `${username} (${label}) was banned.`,
+        i18n:     caseType
+          ? { key: "common:notify.caseUserBanned", params: { name: username, caseType } }
+          : { key: "common:notify.caseUserBannedNoType", params: { name: username } },
         link:     "/admin/cases",
         channels: ["in_app"],
       })),
@@ -94,6 +98,7 @@ async function notifyPermHolders(permKey: string, opts: {
   type:  string;
   title: string;
   body:  string;
+  i18n?: NotificationText;
   link?: string;
 }) {
   const perm = await prisma.permission.findUnique({ where: { key: permKey }, select: { id: true } });
@@ -115,10 +120,20 @@ async function notifyPermHolders(permKey: string, opts: {
         title:    opts.title,
         body:     opts.body,
         link:     opts.link,
+        i18n:     opts.i18n,
         channels: ["in_app"],
       }),
     ),
   );
+}
+
+/**
+ * Where a warning's notification takes its member: their own profile's Warnings tab,
+ * with that warning highlighted.
+ */
+async function warningLink(userId: string, warningId: string): Promise<string> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { username: true } });
+  return user ? `/u/${encodeURIComponent(user.username)}?tab=warnings&warning=${warningId}` : "/account";
 }
 
 export const moderationService = {
@@ -141,7 +156,8 @@ export const moderationService = {
       type:  "mod.new_report",
       title: "New report filed",
       body:  `A report has been filed for ${data.targetType} content.`,
-      link:  "/admin/moderation/reports",
+      i18n:  { key: "common:notify.newReport", params: { target: data.targetType } },
+      link:  "/?modcanvas=reports",   // the moderation shield's report list (the old ACP page is gone)
     });
 
     return report;
@@ -222,8 +238,10 @@ export const moderationService = {
       userId:   data.userId,
       type:     "moderation.warning_issued",
       title:    "You have received a warning",
+      i18n:     { key: "common:notify.warningIssued" },
       body:     data.reason,
-      link:     "/account/security",
+      link:     await warningLink(data.userId, warning.id),
+      meta:     { warningId: warning.id },
       channels: ["in_app", "email"],
     });
 
@@ -254,8 +272,10 @@ export const moderationService = {
       userId:   warning.userId,
       type:     "moderation.warning_pardoned",
       title:    "A warning has been pardoned",
+      i18n:     { key: "common:notify.warningPardoned" },
       body:     "One of your warnings has been removed.",
-      link:     "/account/security",
+      link:     await warningLink(warning.userId, warning.id),
+      meta:     { warningId: warning.id },
       channels: ["in_app"],
     });
   },
@@ -312,6 +332,12 @@ export const moderationService = {
       type:  "mod.warning_ladder",
       title: "Warning ladder reached",
       body:  `${user?.username ?? "A member"} reached ${count} warnings and ${outcome}.`,
+      i18n:  {
+        key: step.action === "ban_permanent" ? "common:notify.ladderBanPermanent"
+          : step.action === "ban_temporary" ? "common:notify.ladderBanTemporary"
+          : "common:notify.ladderNotify",
+        params: { name: user?.username ?? "?", count, days: step.banDays ?? 0 },
+      },
       link:  `/admin/users/${userId}`,
     });
   },
@@ -351,6 +377,7 @@ export const moderationService = {
       userId,
       type:     "moderation.ban_issued",
       title:    "Your account has been suspended",
+      i18n:     { key: "common:notify.banSuspended" },
       body:     reason,
       channels: ["in_app", "email"],
     });
@@ -469,6 +496,8 @@ export const moderationService = {
         type:     "moderation.ban_issued",
         title:    "Your account has been permanently suspended",
         body:     BAN_REASON,
+        // No reason typed = core's own default reason, which then translates too.
+        i18n:     { key: reason?.trim() ? "common:notify.banPermanent" : "common:notify.banCasePolicy" },
         channels: ["in_app"],
       });
       results.push({ userId: user.id, username: user.username, skipped: false });
@@ -506,7 +535,7 @@ export const moderationService = {
    *  records SYSTEM. Bans every non-staff, not-already-banned account permanently
    *  and alerts the mod team. Returns the banned usernames. Opt-in (§15 override)
    *  — the caller checks `moderation.auto_ban_multiaccounts` before invoking. */
-  async autoBanMultiaccounts(userIds: string[], reason: string): Promise<string[]> {
+  async autoBanMultiaccounts(userIds: string[], reason: string, textKey?: string): Promise<string[]> {
     const STAFF_KEYS = await staffGroupKeys();
     // "The oldest admin" = the longest-standing holder of admin.access.
     const admin = await prisma.user.findFirst({
@@ -541,6 +570,8 @@ export const moderationService = {
         type:     "moderation.ban_issued",
         title:    "Your account has been permanently suspended",
         body:     reason,
+        // The caller's reason as a translation (`<ns>:…` with .title/.body), when it has one.
+        i18n:     { key: textKey ?? "common:notify.banPermanent" },
         channels: ["in_app"],
       });
       banned.push(user.username);
@@ -922,6 +953,7 @@ export const moderationService = {
       userId:   data.userId,
       type:     "moderation.ban_issued",
       title:    data.type === "permanent" ? "Your account has been permanently suspended" : "Your account has been temporarily suspended",
+      i18n:     { key: data.type === "permanent" ? "common:notify.banPermanent" : "common:notify.banTemporary" },
       body:     data.reason,
       channels: ["in_app", "email"],
     });
@@ -1108,6 +1140,7 @@ export const moderationService = {
       userId:   ban.userId,
       type:     "moderation.ban_lifted",
       title:    "Your account suspension has been lifted",
+      i18n:     { key: "common:notify.banLifted" },
       body:     "Your suspension has been removed. You can now log in.",
       channels: ["in_app"],
     });

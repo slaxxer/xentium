@@ -7,7 +7,7 @@
  * Publish buttons let an admin put a redesigned page live without the colours it was
  * designed with. So there is ONE Publish here, and it always publishes both: the
  * theme's layout draft and its style draft together (`POST /admin/themes/studio/
- * publish`). The scheduled publish job does the same.
+ * publish`).
  *
  * The editors themselves are the existing ones, embedded: each drops its own header,
  * tabs and Publish. Once a mode has been opened it stays mounted (hidden), so going
@@ -57,7 +57,7 @@ export function StudioRedirect({ from }: { from: "layout" | "style" }) {
   return <Navigate to={`/admin/theme-studio${qs ? `?${qs}` : ""}`} replace />;
 }
 
-interface StudioStatus { layouts: LayoutSelector[]; styleChanges: number; pending: boolean }
+interface StudioStatus { layouts: LayoutSelector[]; styleChanges: number; cssPending?: boolean; pending: boolean }
 
 export function ThemeStudioPage() {
   const { t } = useTranslation("acp");
@@ -99,7 +99,7 @@ export function ThemeStudioPage() {
       await refreshTokenCss();
       // Everything either editor reads about drafts and live state.
       for (const k of ["studio-status", "acp-layout-status", "acp-layout-all", "acp-layout",
-        "acp-draft-status", "acp-style-history", "acp-layout-frame"]) {
+        "acp-draft-status", "studio-history", "acp-layout-frame"]) {
         qc.invalidateQueries({ queryKey: [k] });
       }
       const n = res.layouts.length;
@@ -130,7 +130,8 @@ export function ThemeStudioPage() {
             {status?.pending
               ? t("studio.pending", {
                   layouts: t("studio.layoutChanges", { count: layouts }),
-                  styles: t("studio.styleChanges", { count: styles }),
+                  styles: t("studio.styleChanges", { count: styles })
+                    + (status.cssPending ? ` · ${t("studio.cssStaged")}` : ""),
                 })
               : t("studio.upToDate")}
           </span>
@@ -151,6 +152,7 @@ export function ThemeStudioPage() {
             {t(`studio.mode.${m}`)}
             {m === "layout" && layouts > 0 && <span className="studio__count">{layouts}</span>}
             {m === "style" && styles > 0 && <span className="studio__count">{styles}</span>}
+            {m === "css" && status?.cssPending && <span className="studio__count" aria-label={t("studio.cssStaged")}>•</span>}
           </button>
         ))}
       </div>
@@ -158,13 +160,13 @@ export function ThemeStudioPage() {
       {/* Keyed by theme so switching themes remounts both editors. */}
       <div key={key ?? ""}>
         {(layoutOpened || mode === "layout") && (
-          <div hidden={mode !== "layout"}><LayoutEditorPage embedded /></div>
+          <div hidden={mode !== "layout"}><LayoutEditorPage /></div>
         )}
         {(styleTab || mode !== "layout") && (
           // ONE style editor for the four style modes: they are tabs of the same
           // component, sharing its draft and its preview state.
           <div hidden={mode === "layout"}>
-            <StyleEditorPage embedded tab={mode === "layout" ? styleTab! : STYLE_TAB[mode]} />
+            <StyleEditorPage tab={mode === "layout" ? styleTab! : STYLE_TAB[mode]} />
           </div>
         )}
       </div>

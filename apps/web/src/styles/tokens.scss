@@ -23,6 +23,9 @@
 /* Tier 3 — component tokens */
 :root { @include defaults.components; }
 
+/* The core look, over the three tiers above. The ACP does not include it. */
+:root { @include defaults.core-look; }
+
 /* ── The site's palette, restored inside a surface that does not follow it ─────
    The ACP re-declares every token on `body.xt-acp` so the admin panel keeps its own
    look. Anything in there that must show the SITE's colours — the Layout Editor's
@@ -33,6 +36,7 @@
   @include defaults.primitives;
   @include defaults.palette-light;
   @include defaults.components;
+  @include defaults.core-look;
 }
 
 

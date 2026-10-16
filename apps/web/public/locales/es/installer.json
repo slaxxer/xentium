@@ -198,7 +198,8 @@
       "fair": "Aceptable",
       "good": "Buena",
       "strong": "Fuerte"
-    }
+    },
+    "username_placeholder": "Administrador"
   },
   "finalize": {
     "title": "Cuando tú quieras",

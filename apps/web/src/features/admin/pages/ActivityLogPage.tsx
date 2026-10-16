@@ -23,6 +23,7 @@ import { useAcpNav, type NavItem } from "../useAcpNav";
 import { browserOf, humanize } from "./activityHumanize";
 import type { PaginationMeta } from "@xentium/contracts";
 import "./ActivityLogPage.scss";
+import { uiLocale } from "../../../lib/i18n";
 
 type Category = "page_visit" | "acp_action";
 const METHODS = ["POST", "PUT", "PATCH", "DELETE"] as const;
@@ -165,7 +166,7 @@ function MenuOption({ on, onPick, children }: { on: boolean; onPick: () => void;
   );
 }
 
-const time = (d: string) => new Date(d).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+const time = (d: string) => new Date(d).toLocaleTimeString(uiLocale(), { hour: "numeric", minute: "2-digit", second: "2-digit" });
 
 export function ActivityLogPage() {
   const { t, i18n } = useTranslation("acp");
@@ -348,7 +349,7 @@ export function ActivityLogPage() {
           {tabs.map((tab) => (
             <button key={tab.key || "all"} type="button" role="tab" aria-selected={category === tab.key}
               className={category === tab.key ? "is-on" : ""} onClick={() => refilter(setCategory)(tab.key)}>
-              {tab.label}{tab.count != null && <span className="act-tabs__n">{tab.count.toLocaleString()}</span>}
+              {tab.label}{tab.count != null && <span className="act-tabs__n">{tab.count.toLocaleString(uiLocale())}</span>}
             </button>
           ))}
         </div>
@@ -455,7 +456,7 @@ export function ActivityLogPage() {
 
         {data?.meta && data.meta.total > 0 && (
           <Pager page={page} totalPages={data.meta.totalPages} onPage={setPage}
-            label={t("activity.pagination", { page: data.meta.page, totalPages: data.meta.totalPages, total: data.meta.total.toLocaleString() })} />
+            label={t("activity.pagination", { page: data.meta.page, totalPages: data.meta.totalPages, total: data.meta.total.toLocaleString(uiLocale()) })} />
         )}
       </div>
     </div>

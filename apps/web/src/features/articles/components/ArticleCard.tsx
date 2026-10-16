@@ -1,4 +1,5 @@
 // apps/web/src/features/articles/components/ArticleCard.tsx
+import { useTranslation } from "react-i18next";
 import "./ArticleCard.scss";
 import { useDateTime } from "../../../lib/datetime";
 
@@ -8,6 +9,7 @@ interface Article {
 }
 
 export function ArticleCard({ article }: { article: Article }) {
+  const { t } = useTranslation("articles");
   const dt = useDateTime();
   return (
     <div className="article-card">
@@ -17,8 +19,8 @@ export function ArticleCard({ article }: { article: Article }) {
       </h3>
       <div className="article-meta">
         <span><time dateTime={article.publishedAt}>{dt.date(article.publishedAt)}</time></span>
-        <span>{article.readTime} min read</span>
-        <span>{article.views} views</span>
+        <span>{t("reader.minRead", { n: article.readTime })}</span>
+        <span>{t("list.views", { count: article.views })}</span>
       </div>
       <p className="article-excerpt">{article.excerpt}</p>
     </div>

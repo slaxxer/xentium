@@ -22,6 +22,7 @@ export async function notifyCaseModerators(): Promise<void> {
         userId:   h.userId,
         type:     "mod.new_case",
         title:    "New review case",
+        i18n:     { key: "common:notify.newCase" },
         body:     "A suspicious pattern was detected and requires moderator review.",
         link:     "/admin/cases",
         channels: ["in_app"],

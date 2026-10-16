@@ -1,0 +1,26 @@
+{
+  "name": "@xentium/migrate-vbulletin",
+  "version": "1.0.0-alpha.11",
+  "private": true,
+  "description": "vBulletin 3, 4, 5 and 6 \u2192 Xentium migration adapter. Connects directly to the vBulletin MySQL database and detects the layout. Requires the xentium-forum plugin on the target.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src",
+    "test": "vitest run",
+    "migrate": "tsx src/run.ts"
+  },
+  "dependencies": {
+    "@xentium/migrate-core": "workspace:*",
+    "mysql2": "^3.24.5"
+  },
+  "devDependencies": {
+    "@xentium/config": "workspace:*",
+    "tsx": "^4.23.15",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

@@ -144,10 +144,10 @@ export function ErrorLogPage() {
 
         {import.meta.env.DEV && (
           <div className="el-dev">
-            <span>DEV simulate:</span>
-            <button type="button" className="btn-ghost btn-sm" title="Unhandled 500 (critical), trips the fatal halt" onClick={() => void simulate("critical")}>500</button>
-            <button type="button" className="btn-ghost btn-sm" title="XentiumError 500, trips the fatal halt" onClick={() => void simulate("xentium500")}>XEC 500</button>
-            <button type="button" className="btn-ghost btn-sm" title="404, toast only" onClick={() => void simulate("notfound")}>404</button>
+            <span>{t("errorLog.dev.label")}</span>
+            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.crash")} onClick={() => void simulate("critical")}>500</button>
+            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.xec")} onClick={() => void simulate("xentium500")}>XEC 500</button>
+            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.notFound")} onClick={() => void simulate("notfound")}>404</button>
           </div>
         )}
 

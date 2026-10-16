@@ -1,4 +1,13 @@
 {
+  "pageNotFound": "Page introuvable",
+  "notFound": {
+    "eyebrow": "Page introuvable",
+    "title": "Rien ne vit à cette adresse.",
+    "lead": "Le lien est peut-être cassé, ou la page a déménagé. Retournons vers un endroit qui existe.",
+    "home": "Retour à l'accueil",
+    "back": "Retour",
+    "footLabel": "Erreur 404 · Xentium"
+  },
   "actions": {
     "save": "Enregistrer",
     "cancel": "Annuler",
@@ -11,7 +20,8 @@
     "loading": "Chargement…",
     "search": "Rechercher",
     "decrease": "Diminuer",
-    "increase": "Augmenter"
+    "increase": "Augmenter",
+    "ok": "OK"
   },
   "nav": {
     "home": "Accueil",
@@ -28,7 +38,8 @@
     "switchToLight": "Passer au thème clair",
     "switchToDark": "Passer au thème sombre",
     "adminPanel": "Panneau dʼadministration",
-    "adminAttention": "Quelque chose attend votre attention dans le panneau d'administration"
+    "adminAttention": "Quelque chose attend votre attention dans le panneau d'administration",
+    "homeAria": "Aller à l’accueil"
   },
   "search": {
     "short": "Rechercher",
@@ -55,6 +66,62 @@
       "subtitle": "Posez des questions, montrez vos réalisations, façonnez la feuille de route et apprenez de {members} créateurs. La lecture est ouverte à tous.",
       "ctaPrimary": "Rejoindre la conversation",
       "ctaSecondary": "Parcourir en invité"
+    },
+    "gate": {
+      "vote": "Créez un compte pour aimer des sujets",
+      "post": "Inscrivez-vous pour lancer un nouveau sujet",
+      "more": "Créez un compte gratuit pour tout lire",
+      "default": "Créez un compte gratuit pour faire cela"
+    },
+    "signUpFree": "Inscription gratuite",
+    "stats": {
+      "members": "Membres",
+      "posts": "Publications",
+      "today": "Nouveaux aujourd'hui"
+    },
+    "presence": {
+      "title": "En ce moment",
+      "live": "En direct",
+      "postedIn": "a publié dans {{category}}",
+      "postedInCommunity": "a publié dans la communauté"
+    },
+    "card": {
+      "likes_one": "j'aime",
+      "likes_many": "j'aime",
+      "likes_other": "j'aime",
+      "replies_one": "réponse",
+      "replies_many": "réponses",
+      "replies_other": "réponses",
+      "views_one": "vue",
+      "views_many": "vues",
+      "views_other": "vues",
+      "signUpToLike": "Inscrivez-vous pour aimer",
+      "signUp": "S'inscrire",
+      "unknown": "Inconnu"
+    },
+    "feed": {
+      "latest": "Récents",
+      "top": "Populaires",
+      "topics_one": "{{count}} sujet",
+      "topics_many": "{{count}} sujets",
+      "topics_other": "{{count}} sujets",
+      "newTopic": "Nouveau sujet",
+      "newPost": "Nouvelle publication",
+      "allCategories": "Toutes les catégories",
+      "loading": "Chargement…",
+      "empty": "Aucun sujet pour l'instant.",
+      "moreAll": "<b>Créez un compte gratuit</b> pour voir les {{formatted}} publications",
+      "moreRead": "<b>Créez un compte gratuit</b> pour tout lire"
+    },
+    "rail": {
+      "joinTitle": "Rejoignez {{site}}",
+      "joinText": "C'est gratuit. Publiez, répondez, aimez ce que vous lisez et soyez averti quand on vous répond.",
+      "createAccount": "Créer un compte gratuit",
+      "alreadyMember": "Déjà membre ?",
+      "logIn": "Se connecter",
+      "categories": "Catégories",
+      "onlineNow": "En ligne · {{count}}",
+      "trendingTags": "Tags populaires"
     }
   },
   "errorPage": {
@@ -86,6 +153,41 @@
     "metaMessage": "Message",
     "hint": "Si cela se reproduit, transmettez la référence ci-dessus à un administrateur — le rapport copié contient tout ce qu’il faut pour remonter la piste.",
     "footLabel": "Erreur applicative · Xentium"
+  },
+  "maintenance": {
+    "badge": "Maintenance en cours",
+    "defaultTitle": "Petite pause pour une mise au point.",
+    "defaultMessage": "Nous améliorons la communauté. Nous revenons très vite.",
+    "teamAccess": "Accès équipe",
+    "signInToBypass": "Le mode maintenance est actif. Connectez-vous pour le contourner.",
+    "notAuthorized": "Votre compte n'est pas autorisé à contourner la maintenance.",
+    "email": "E-mail",
+    "emailPlaceholder": "vous@exemple.fr",
+    "password": "Mot de passe",
+    "pin": "PIN de connexion",
+    "signIn": "Se connecter",
+    "signingIn": "Connexion…",
+    "signInError": "Échec de la connexion. Vérifiez vos identifiants.",
+    "authorizedOnly": "Personnel autorisé uniquement",
+    "autoUpdates": "Se met à jour toute seule",
+    "hours": "Heures",
+    "minutes": "Minutes",
+    "seconds": "Secondes",
+    "backOnlineAround": "De retour vers {{time}}",
+    "whatWereDoing": "Ce que nous faisons",
+    "stepCaption": "Étape {{current}} sur {{total}}",
+    "stepInProgress": "En cours",
+    "stepDone": "Terminé",
+    "stepQueued": "En attente",
+    "affectedServices": "Services concernés",
+    "service": {
+      "offline": "Hors ligne",
+      "degraded": "Dégradé",
+      "operational": "Opérationnel"
+    },
+    "updatesLabel": "Actualités :",
+    "staffSignIn": "Connexion équipe",
+    "autoRefreshNote": "Cette page se recharge d'elle-même dès que nous avons terminé, inutile de l'actualiser."
   },
   "themeChooser": {
     "open": "Choisir un thème",
@@ -141,13 +243,6 @@
     "linkNewTab": "Ouvrir dans un nouvel onglet",
     "linkApply": "Appliquer",
     "linkRemove": "Retirer",
-    "emojiSearch": "Chercher un emoji",
-    "emojiGroup": {
-      "common": "Fréquents",
-      "faces": "Visages",
-      "hands": "Mains",
-      "things": "Objets"
-    },
     "tool": {
       "bold": "Gras",
       "italic": "Italique",
@@ -178,12 +273,20 @@
     "hintPost": "pour publier",
     "hintDrop": "déposez des fichiers n'importe où",
     "words_one": "1 mot",
-    "words_other": "{{count}} mots"
+    "words_other": "{{count}} mots",
+    "emojiNone": "Pas encore d’emojis.",
+    "emojiManage": "En ajouter dans l’ACP",
+    "emojiOther": "Autres"
   },
   "footer": {
     "whosOnline": "Qui est en ligne",
-    "onlineSentence": "{{count}} membres sont en ligne en ce moment, d’après l’activité des dernières minutes.",
     "andMore": "+{{count}} autres",
+    "statMembers_one": "{{count}} membre en ligne",
+    "statMembers_other": "{{count}} membres en ligne",
+    "statGuests_one": "{{count}} invité",
+    "statGuests_other": "{{count}} invités",
+    "statRecord_one": "Record : {{count}} visiteur le {{date}} à {{time}}",
+    "statRecord_other": "Record : {{count}} visiteurs le {{date}} à {{time}}",
     "legend": "Légende",
     "totalArticles": "Articles",
     "members": "Membres",
@@ -215,5 +318,368 @@
     },
     "lastUpdated": "Dernière mise à jour : {{date}}",
     "edit": "Modifier"
+  },
+  "modcanvas": {
+    "shield": {
+      "label": "Modération",
+      "labelWaiting": "Modération, {{count}} en attente",
+      "title": "Modération (Maj+M)",
+      "oldest": "Le plus ancien attend le plus",
+      "loading": "Chargement…",
+      "nothing": "Rien en attente.",
+      "reports": "Signalements",
+      "security": "Sécurité",
+      "pluginLine": "{{count}} en attente · ouvrir pour examiner",
+      "acpLink": "Modération dans l’ACP",
+      "acpLinkSub": "cas, membres, journal"
+    },
+    "report": {
+      "region": "Actions du signalement",
+      "action": "Action",
+      "modes": {
+        "warn": "Avertir",
+        "ban": "Bannir",
+        "delete": "Retirer",
+        "dismiss": "Classer"
+      },
+      "durations": {
+        "1h": "1 h",
+        "24h": "24 h",
+        "7d": "7 j",
+        "30d": "30 j",
+        "perm": "Perm."
+      },
+      "premade": "Textes prédéfinis",
+      "premadeHead": "{{mode}} · textes prédéfinis",
+      "suggested": "Suggéré",
+      "empty": "Aucun texte pour cette action pour l’instant.",
+      "adminsWrite": "Les admins les rédigent dans ACP → Modération → Modèles",
+      "pick": "Texte prédéfini",
+      "working": "En cours…",
+      "next": "Signalement suivant",
+      "sub": "{{user}} · {{type}}",
+      "send": {
+        "warn": "Envoyer l’avertissement",
+        "banPerm": "Bannir définitivement",
+        "ban": "Bannir {{duration}}",
+        "delete": "Retirer",
+        "dismiss_one": "Classer",
+        "dismiss_many": "Classer les signalements",
+        "dismiss_other": "Classer les signalements"
+      },
+      "toast": {
+        "resolved_one": "signalement traité",
+        "resolved_many": "{{count}} signalements traités",
+        "resolved_other": "{{count}} signalements traités",
+        "warned": "Avertissement envoyé à {{user}} · {{closed}}",
+        "banned": "{{user}} banni ({{duration}}) · {{closed}}",
+        "removed": "Contenu retiré · {{closed}}",
+        "dismissed_one": "Signalement classé",
+        "dismissed_many": "Signalements classés",
+        "dismissed_other": "Signalements classés",
+        "theAuthor": "la personne autrice",
+        "undo": "Annuler"
+      }
+    },
+    "case": {
+      "region": "Actions du cas de sécurité",
+      "accounts": "Comptes liés",
+      "signals": "Signaux",
+      "noSignals": "Aucun signal n’a été enregistré.",
+      "signalsFoot": "La détection n’agit jamais seule. « Autoriser » enregistre une exception, « Tout bannir » bannit chaque compte lié.",
+      "signalCount_one": "{{count}} signal",
+      "signalCount_many": "{{count}} signaux",
+      "signalCount_other": "{{count}} signaux",
+      "allow": "Autoriser",
+      "banAll": "Tout bannir",
+      "next": "Cas suivant",
+      "allowed": "{{title}} autorisé",
+      "banned": "{{count}} bannis",
+      "bannedSkipped": "{{count}} bannis, {{skipped}} ignorés",
+      "confirmTitle": "Bannir tous les comptes liés ?",
+      "confirmBody": "{{names}} seront bannis et déconnectés. L’équipe et les comptes déjà bannis sont ignorés.",
+      "everyLinked": "Tous les comptes liés",
+      "ip": "IP : {{ip}}"
+    },
+    "queue": {
+      "actions": "Actions : {{label}}",
+      "next": "Suivant"
+    },
+    "common": {
+      "close": "Fermer",
+      "working": "En cours…"
+    },
+    "canvas": {
+      "reported": "Signalé ×{{count}}"
+    },
+    "data": {
+      "report": "Signalement",
+      "profile": "Profil",
+      "by": "{{kind}} de {{user}}",
+      "types": {
+        "article_comment": "commentaire",
+        "profile_comment": "commentaire de profil",
+        "user": "profil",
+        "article": "article"
+      },
+      "caseTitle": {
+        "multi_account_suspicion": "Comptes multiples",
+        "rapid_login_attempts": "Connexions rapides",
+        "ban_evasion_suspicion": "Contournement de bannissement",
+        "registration_burst": "Vague d’inscriptions",
+        "impossible_travel": "Voyage impossible",
+        "other": "Cas"
+      },
+      "caseReason": {
+        "multi_account_suspicion": "Même cookie d’appareil",
+        "rapid_login_attempts": "Connexions échouées, même IP",
+        "ban_evasion_suspicion": "Nouveau compte près d’un bannissement",
+        "registration_burst": "Inscriptions, même IP",
+        "impossible_travel": "Voyage impossible",
+        "other": "Cas de sécurité"
+      },
+      "caseSummary": {
+        "multi_account_suspicion": "{{who}} partagent le même cookie d’appareil",
+        "rapid_login_attempts": "connexions échouées répétées depuis la même IP ({{who}})",
+        "ban_evasion_suspicion": "{{who}} : nouveau compte près d’un bannissement depuis la même IP",
+        "registration_burst_one": "{{count}} compte inscrit depuis la même IP",
+        "registration_burst_many": "{{count}} comptes inscrits depuis la même IP",
+        "registration_burst_other": "{{count}} comptes inscrits depuis la même IP",
+        "registration_burst_unknown": "Plusieurs comptes inscrits depuis la même IP",
+        "impossible_travel": "{{who}} : connexions trop éloignées pour être la même personne"
+      },
+      "who": {
+        "multiple": "plusieurs comptes",
+        "pair": "{{a}} et {{b}}",
+        "list": "{{list}} et {{last}}"
+      },
+      "signal": {
+        "deviceCookie": "Cookie d’appareil partagé",
+        "failedLogins": "Connexions échouées rapides, même IP",
+        "banEvasion": "Contournement de bannissement possible",
+        "registrations": "Vague d’inscriptions, même IP",
+        "sameIp": "Même adresse IP"
+      },
+      "severity": {
+        "low": "Faible",
+        "medium": "Moyenne",
+        "high": "Élevée"
+      }
+    }
+  },
+  "fatal": {
+    "title": "Un problème est survenu",
+    "lead": "Le serveur a rencontré une erreur inattendue et la page ne peut pas continuer en toute sécurité. Copiez le code d’erreur ci-dessous et recherchez-le dans la Référence des erreurs pour connaître la cause et une solution.",
+    "copyCode": "Copier le code d’erreur",
+    "copy": "Copier",
+    "copied": "Copié",
+    "lookUp": "Rechercher dans la Référence des erreurs",
+    "reload": "Recharger la page",
+    "hintBefore": "La Référence des erreurs se trouve dans ",
+    "hintPath": "ACP → Système → Référence des erreurs",
+    "hintAfter": ". Cet incident a aussi été enregistré dans le Journal des erreurs."
+  },
+  "notifications": {
+    "title": "Notifications",
+    "loading": "Chargement…",
+    "empty": "Aucune notification"
+  },
+  "toastHost": {
+    "dismiss": "Fermer",
+    "region": "Notifications"
+  },
+  "online": {
+    "word": "en ligne",
+    "now": "En ligne maintenant",
+    "prev": "Précédent",
+    "next": "Suivant"
+  },
+  "profileFields": {
+    "date_of_birth": "Date de naissance",
+    "website": "Site web"
+  },
+  "notify": {
+    "newFollower": {
+      "title": "Nouvel abonné",
+      "body": "{{name}} a commencé à vous suivre."
+    },
+    "profileComment": {
+      "title": "Nouveau commentaire sur votre profil",
+      "body": "{{name}} a publié sur votre profil."
+    },
+    "profileReply": {
+      "title": "Nouvelle réponse à votre commentaire",
+      "body": "{{name}} a répondu à votre commentaire sur le profil de {{owner}}."
+    },
+    "mentionProfile": {
+      "title": "Vous avez été mentionné",
+      "body": "{{name}} vous a mentionné dans un commentaire sur le profil de {{owner}}."
+    },
+    "profileCommentLiked": {
+      "title": "Quelqu'un a aimé votre commentaire",
+      "body": "{{name}} a aimé votre commentaire sur le profil de {{owner}}."
+    },
+    "articleCommentLiked": {
+      "title": "Quelqu'un a aimé votre commentaire",
+      "body": "{{name}} a aimé votre commentaire."
+    },
+    "badgeGranted": {
+      "title": "Vous avez reçu le badge « {{badge}} » !",
+      "body": "Il figure désormais sur votre profil, visible par tous les visiteurs."
+    },
+    "badgeGrantedNote": {
+      "title": "Vous avez reçu le badge « {{badge}} » !"
+    },
+    "badgeEarned": {
+      "title": "Vous avez obtenu le badge « {{badge}} » !",
+      "body": "Il figure désormais sur votre profil, visible par tous les visiteurs."
+    },
+    "banPermanent": {
+      "title": "Votre compte a été suspendu définitivement"
+    },
+    "banTemporary": {
+      "title": "Votre compte a été suspendu temporairement"
+    },
+    "banSuspended": {
+      "title": "Votre compte a été suspendu"
+    },
+    "banCasePolicy": {
+      "title": "Votre compte a été suspendu définitivement",
+      "body": "Violation de la règle sur les comptes multiples : plusieurs comptes détectés sur le même appareil"
+    },
+    "banLifted": {
+      "title": "La suspension de votre compte a été levée",
+      "body": "Votre suspension a été retirée. Vous pouvez à nouveau vous connecter."
+    },
+    "banEnded": {
+      "title": "Votre suspension a pris fin",
+      "body": "Votre suspension temporaire a expiré. Vous pouvez à nouveau vous connecter."
+    },
+    "contentRemoved": {
+      "title": "Votre contenu a été supprimé"
+    },
+    "reportReviewed": {
+      "title": "Votre signalement a été examiné",
+      "body": "Un modérateur a examiné votre signalement et n'a constaté aucune infraction. Merci de l'avoir signalé."
+    },
+    "newCase": {
+      "title": "Nouveau cas à examiner",
+      "body": "Un comportement suspect a été détecté et doit être examiné par un modérateur."
+    },
+    "caseUserBanned": {
+      "title": "Compte signalé banni",
+      "body": "{{name}} ({{caseType}}) a été banni."
+    },
+    "caseUserBannedNoType": {
+      "title": "Compte signalé banni",
+      "body": "{{name}} (issu d'un cas à examiner) a été banni."
+    },
+    "newReport": {
+      "title": "Nouveau signalement",
+      "body": "Un signalement a été déposé pour {{target}}."
+    },
+    "ladderBanPermanent": {
+      "title": "Palier d'avertissements atteint",
+      "body": "{{name}} a atteint {{count}} avertissements et a été banni définitivement."
+    },
+    "ladderBanTemporary": {
+      "title": "Palier d'avertissements atteint",
+      "body": "{{name}} a atteint {{count}} avertissements et a été banni pour {{days}} jours."
+    },
+    "ladderNotify": {
+      "title": "Palier d'avertissements atteint",
+      "body": "{{name}} a atteint {{count}} avertissements et mérite un examen."
+    },
+    "warningIssued": {
+      "title": "Vous avez reçu un avertissement"
+    },
+    "warningPardoned": {
+      "title": "Un avertissement a été levé",
+      "body": "L'un de vos avertissements a été retiré."
+    },
+    "passwordChanged": {
+      "title": "Votre mot de passe a été modifié",
+      "body": "Le mot de passe de votre compte vient d'être réinitialisé. Si ce n'était pas vous, contactez immédiatement un administrateur."
+    },
+    "jobFailure": {
+      "title": "Échec d'une tâche en arrière-plan",
+      "body": "Une tâche « {{queue}} » a échoué après épuisement des tentatives. Consultez Système → Journal des erreurs."
+    },
+    "promoted": {
+      "title": "Vous avez été promu au rang {{rank}} !",
+      "body": "Vous avez atteint un nouveau niveau. Continuez à participer pour débloquer encore plus."
+    },
+    "targets": {
+      "article": "un article",
+      "article_comment": "un commentaire d'article",
+      "profile_comment": "un commentaire de profil",
+      "user": "un membre",
+      "plugin-content": "du contenu d'extension"
+    }
+  },
+  "siteBar": {
+    "maintenance": "Le mode maintenance est activé. Seule l'équipe peut voir le site.",
+    "turnOff": "Le désactiver",
+    "dismiss": "Fermer"
+  },
+  "userCard": {
+    "loading": "Chargement…",
+    "banned": "Banni",
+    "memberSince": "Membre depuis le {{date}}",
+    "posts": "Messages",
+    "followers": "Abonnés",
+    "likes": "J’aime",
+    "viewProfile": "Voir le profil"
+  },
+  "presence": {
+    "online": "En ligne",
+    "offline": "Hors ligne"
+  },
+  "blockRender": {
+    "failed": "Le bloc « {{type}} » n’a pas pu s’afficher.",
+    "unavailable": "Le bloc « {{type}} » n’est pas disponible.",
+    "mastheadHidden": "Bandeau masqué"
+  },
+  "themePreview": {
+    "aside": "Latéral",
+    "sidebarSurface": "Surface latérale",
+    "sidePanels": "Rails et panneaux latéraux",
+    "buttons": "Boutons",
+    "primary": "Principal",
+    "ghost": "Discret",
+    "danger": "Danger",
+    "cards": "Cartes",
+    "cardTitle": "Titre de la carte",
+    "cardBody": "Le fond, la bordure, l’arrondi et l’ombre proviennent du groupe de jetons des cartes.",
+    "secondCard": "Deuxième carte",
+    "secondCardBody": "Deux cartes pour juger facilement l’espacement et l’élévation pendant l’édition.",
+    "fields": "Champs",
+    "textInput": "Champ de texte",
+    "firstOption": "Première option",
+    "secondOption": "Deuxième option",
+    "menu": "Menu",
+    "menuItem": "Élément de menu",
+    "anotherItem": "Autre élément",
+    "hoverMe": "Survolez-moi",
+    "sortButtons": "Boutons de tri",
+    "active": "Actif",
+    "newest": "Plus récents",
+    "specimenValue": "Valeur d’exemple",
+    "specimenMultiline": "Exemple de champ multiligne."
+  },
+  "groupAccess": {
+    "public": "Public — tout le monde, invités compris",
+    "members": "Membres uniquement — utilisateurs connectés",
+    "level": "Niveau N+ — minimum de l’échelle de progression",
+    "groups": "Groupes spécifiques",
+    "noGroups": "Aucun groupe disponible",
+    "shortcuts": "Raccourcis :",
+    "staff": "Équipe (modérateurs+)",
+    "allMembers": "Tous les membres",
+    "ifNoAccess": "Sans accès :",
+    "hide": "Masquer entièrement",
+    "locked": "Afficher un avis de verrouillage",
+    "inheritedLabel": "Restriction héritée :",
+    "inheritedBody": "Ce nœud ne peut pas être moins restrictif que son parent."
   }
 }

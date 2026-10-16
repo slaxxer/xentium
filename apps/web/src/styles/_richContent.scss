@@ -4,6 +4,17 @@
 @mixin rich-content {
   > * + * { margin-top: 0.7em; }
 
+  /* A custom emoji: an image at text size, on the text's baseline. */
+  img.xt-emoji {
+    display: inline-block;
+    width: auto;
+    height: 1.35em;
+    max-width: 3em;
+    margin: 0 0.05em;
+    vertical-align: -0.3em;
+    object-fit: contain;
+  }
+
   h1 { font-size: 1.5em; font-weight: 700; }
   h2 { font-size: 1.3em; font-weight: 700; }
   h3 { font-size: 1.1em; font-weight: 700; }

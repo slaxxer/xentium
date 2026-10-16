@@ -1,3 +1,5 @@
+import { storage } from "../../infrastructure/storage/LocalStorageProvider.js";
+import { articleEngagementService } from "./article.engagement.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
@@ -352,7 +354,9 @@ export const articleService = {
     viewerId: string | undefined,
     viewerCanEditAny: boolean,
   ): Promise<ArticleDetail> {
-    const article = await articleRepository.findBySlug(slug);
+    // An id is accepted too: notifications sent before they linked by slug pointed
+    // at `/articles/<id>`. The same visibility check applies either way.
+    const article = (await articleRepository.findBySlug(slug)) ?? (await articleRepository.findById(slug));
     if (!article || !canViewArticle(article, viewerId, viewerCanEditAny)) {
       throw new XentiumError({
         code: XEC.ARTICLE_NOT_FOUND,
@@ -378,8 +382,15 @@ export const articleService = {
       feed,
       hiddenAuthorIds,
     });
+    const items = data.map(shapeListItem);
+    // The viewer's own state per card — liked, saved — so a heart starts filled when
+    // the member already liked the article.
+    if (viewerId) {
+      const state = await articleEngagementService.viewerState(items.map((i) => i.id), viewerId);
+      for (const item of items) item.viewer = state.get(item.id);
+    }
     return {
-      data: data.map(shapeListItem),
+      data: items,
       meta: buildPaginationMeta({ page, limit, total }),
     };
   },
@@ -450,6 +461,12 @@ export const articleService = {
       data: { featuredImage: relPath },
       include: articleInclude,
     });
+    // The replaced picture, now that nothing points at it. Only one under this
+    // article's own directory — never a path some other row might share.
+    const previous = existing.featuredImage;
+    if (previous && previous !== relPath && previous.startsWith(`articles/${articleId}/`)) {
+      await storage.delete(previous).catch(() => { /* already gone: nothing to free */ });
+    }
     return shapeDetail(updated);
   },
 };

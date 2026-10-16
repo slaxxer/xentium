@@ -15,12 +15,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "pg": "^8.21.0"
+    "pg": "^8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "^8",
+    "@types/pg": "^8.23.1",
     "@xentium/config": "workspace:*",
-    "tsup": "^8",
+    "tsup": "^8.5.1",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

@@ -12,10 +12,13 @@ import { LayoutRegion } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
 import "./SiteFooter.scss";
 import { useBadgeShadows } from "../lib/badgeShadow";
+import { uiLocale } from "../lib/i18n";
+import { pluginNavLabel } from "../lib/coreText";
+import { useDateTime } from "../lib/datetime";
 
 interface LegendGroup { name: string; key: string; badgeColor: string | null }
 interface OnlineUser { username: string; groupKey: string; badgeColor: string | null }
-interface OnlineData { total: number; users?: OnlineUser[] }
+interface OnlineData { total: number; users?: OnlineUser[]; guests?: number; record?: { count: number; at: string } | null }
 interface Stats { members: number; articles: number; today: number; newestMember: string | null }
 interface FooterNavItem { id: string; label: string; url: string; openInNewTab: boolean; visibility: string; placement?: string }
 interface FooterStat { id: string; label: string; value: number }
@@ -41,15 +44,21 @@ function formatUptime(total: number): string {
  * Markup is moved verbatim, so the shipped default renders exactly as before.
  */
 
-/** Who is here right now. `maxNames: 0` shows the count only. */
+/** Who is here right now: the names, then the counts and the record. `maxNames: 0` hides the names. */
 export function FooterWhosOnline({ maxNames = MAX_NAMES }: { maxNames?: number }) {
   const { t } = useTranslation("common");
+  const dt = useDateTime();
+  // ⚠ Only once sign-in has resolved: this poll is also how a GUEST is counted, and a
+  // member whose token had not arrived yet would be counted as one.
+  const { isLoading: authLoading } = useAuth();
   const { data: online } = useQuery<OnlineData>({
     queryKey: ["online-count"],
     queryFn: () => api.get("/online"),
     refetchInterval: 60_000,
     placeholderData: { total: 0, users: [] },
+    enabled: !authLoading,
   });
+  const record = online?.record ?? null;
 
   const users = online?.users ?? [];
   const shown = users.slice(0, maxNames);
@@ -61,9 +70,6 @@ export function FooterWhosOnline({ maxNames = MAX_NAMES }: { maxNames?: number }
       <p className="xt-eyebrow">
         <span className="xt-online-dot" aria-hidden="true" /> {t("footer.whosOnline")}
       </p>
-      <p className="xt-sentence">
-        {t("footer.onlineSentence", { count: online?.total ?? 0 })}
-      </p>
       {shown.length > 0 && (
         <div className="xt-names">
           {shown.map((u, i) => (
@@ -71,12 +77,24 @@ export function FooterWhosOnline({ maxNames = MAX_NAMES }: { maxNames?: number }
               <Link className="xt-on" to={`/u/${u.username}`} style={{ color: nameColor(u.badgeColor) }}>
                 <Username username={u.username} badgeColor={u.badgeColor} />
               </Link>
-              {i < shown.length - 1 && <span className="xt-sep">·</span>}
+              {i < shown.length - 1 && <span className="xt-comma">,</span>}
             </Fragment>
           ))}
-          {extra > 0 && <span className="xt-on xt-on--more"> · {t("footer.andMore", { count: extra })}</span>}
+          {extra > 0 && <span className="xt-on xt-on--more"> {t("footer.andMore", { count: extra })}</span>}
         </div>
       )}
+      {/* Members and guests here now, and the most there have ever been at once. */}
+      {/* The "·" between items is drawn by CSS on the item AFTER it, so a wrapped line
+          never ends on a lone dot. */}
+      <p className="xt-onstats">
+        <span className="xt-onstat">{t("footer.statMembers", { count: online?.total ?? 0 })}</span>
+        <span className="xt-onstat">{t("footer.statGuests", { count: online?.guests ?? 0 })}</span>
+        {record && (
+          <span className="xt-onstat xt-onstat--record" title={dt.dateTime(record.at)}>
+            {t("footer.statRecord", { count: record.count, date: dt.date(record.at), time: dt.time(record.at) })}
+          </span>
+        )}
+      </p>
     </div>
   );
 }
@@ -124,11 +142,11 @@ export function FooterBoardStats() {
   const { data: meta } = useFooterMeta();
   return (
     <div className="xt-stats">
-      <div className="xt-stat xt-stat--accent"><b>{(stats?.articles ?? 0).toLocaleString()}</b><span>{t("footer.totalArticles")}</span></div>
-      <div className="xt-stat"><b>{(stats?.members ?? 0).toLocaleString()}</b><span>{t("footer.members")}</span></div>
+      <div className="xt-stat xt-stat--accent"><b>{(stats?.articles ?? 0).toLocaleString(uiLocale())}</b><span>{t("footer.totalArticles")}</span></div>
+      <div className="xt-stat"><b>{(stats?.members ?? 0).toLocaleString(uiLocale())}</b><span>{t("footer.members")}</span></div>
       {(meta?.stats ?? []).map((s) => (
         <div key={s.id} className="xt-stat">
-          <b>{s.value.toLocaleString()}</b>
+          <b>{s.value.toLocaleString(uiLocale())}</b>
           <span>{t(`footer.stat.${s.id}`, { defaultValue: s.label })}</span>
         </div>
       ))}
@@ -178,7 +196,7 @@ function FooterLinkList({ links }: { links: FooterNavItem[] }) {
     <nav className="xt-footlinks__list" aria-label={t("footer.linksLabel")}>
       {links.map((item) =>
         item.url.startsWith("/") ? (
-          <Link key={item.id} className="xt-footlinks__link" to={item.url}>{item.label}</Link>
+          <Link key={item.id} className="xt-footlinks__link" to={item.url}>{pluginNavLabel(item.url, item.label)}</Link>
         ) : (
           <a key={item.id} className="xt-footlinks__link" href={item.url}
             {...(item.openInNewTab ? { target: "_blank", rel: "noreferrer" } : {})}>

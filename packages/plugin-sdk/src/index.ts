@@ -361,8 +361,10 @@ export interface PluginHost extends BasePluginHost {
      *  security-analysis cases. `type` is a free string (e.g. "impossible_travel"). */
     createCase: (opts: { type: string; severity: "low" | "medium" | "high"; signals: string[]; userIds: string[] }) => Promise<void>;
     /** Permanently ban all non-staff, not-already-banned accounts in the set
-     *  (system-attributed). Returns the banned usernames. Used by paid auto-ban. */
-    autoBanMultiaccounts: (userIds: string[], reason: string) => Promise<string[]>;
+     *  (system-attributed). Returns the banned usernames. Used by paid auto-ban.
+     *  `textKey` (optional): the member's notification as a translation in your
+     *  namespace (`"advmod:notify.autoBan"`, with .title/.body). */
+    autoBanMultiaccounts: (userIds: string[], reason: string, textKey?: string) => Promise<string[]>;
   };
 
   utils: BasePluginHost["utils"] & {

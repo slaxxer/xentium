@@ -28,7 +28,14 @@
     "badgesOverCap": "Hay más de 3 activas: solo se mostrarán las 3 de mayor precedencia.",
     "reading": "Lectura y movimiento",
     "readingDesc": "Se guarda en este navegador.",
-    "appliedNote": "Todo aquí se aplica en el momento en que lo eliges"
+    "appliedNote": "Todo aquí se aplica en el momento en que lo eliges",
+    "fontDesc": {
+      "Poppins": "Geométrica y amable (fuente base del sitio)",
+      "Nunito": "Cálida y amable",
+      "Montserrat": "Geométrica y versátil",
+      "OpenSans": "Limpia, neutra y legible",
+      "Ubuntu": "Humanista y cercana"
+    }
   },
   "profile": {
     "bioSection": "Biografía",
@@ -125,6 +132,9 @@
     "showFollowingDesc": "Cualquiera puede ver a quién sigues",
     "saved": "¡Configuración de privacidad guardada!",
     "saveError": "No se pudo guardar. Inténtalo de nuevo.",
+    "displayNameLabel": "Nombre que se muestra en tu perfil",
+    "displayNameUsername": "Nombre de usuario",
+    "displayNameFull": "Nombre completo",
     "whoTitle": "Quién puede ver qué",
     "whoDesc": "Todas las decisiones de visibilidad de tu cuenta, en una lista.",
     "wallTitle": "Muro y social",
@@ -142,7 +152,9 @@
     "rowCommentDesc": "Mensajes en tu perfil",
     "rowFollow": "Quién puede seguirme",
     "rowFollowDesc": "Nuevos seguidores",
-    "displayNameDesc": "Tu @usuario nunca cambia"
+    "displayNameDesc": "Tu @usuario nunca cambia",
+    "showLastSeen": "Mostrar cuándo estuve por última vez",
+    "showLastSeenDesc": "Tu perfil indica cuándo estuviste activo por última vez, como «Visto hace 3 h»."
   },
   "security": {
     "emailAddress": "Correo electrónico",

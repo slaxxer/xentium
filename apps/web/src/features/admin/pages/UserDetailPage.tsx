@@ -26,6 +26,8 @@ import {
 import "./UserDetailPage.scss";
 import "./users/Users.scss";
 import { Username } from "../../../components/Username";
+import { uiLocale } from "../../../lib/i18n";
+import { fieldLabel } from "../../../lib/coreText";
 
 // ── Copyable mono ID chip ─────────────────────────────────────────────────────
 
@@ -111,7 +113,7 @@ interface UserDetail {
 type Tab = "overview" | "access" | "badges" | "security";
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+  return new Date(d).toLocaleDateString(uiLocale(), { year: "numeric", month: "long", day: "numeric" });
 }
 
 /** "20+" once a list reaches the server's cap, so a count never under-reports. */
@@ -184,7 +186,7 @@ function SecurityActivity({ userId }: { userId: string }) {
                         <span className="up-mono up-dev__cookie">{ev.deviceCookieId ? ev.deviceCookieId.slice(0, 13) : "—"}</span>
                       </span>
                     </td>
-                    <td className="up-when">{new Date(ev.createdAt).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
+                    <td className="up-when">{new Date(ev.createdAt).toLocaleString(uiLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</td>
                   </tr>
                 ))}
               </tbody>
@@ -632,7 +634,7 @@ export function UserDetailPage() {
                 <div className="up-kv">
                   {user.profileFields.map(({ field, value }) => (
                     <div key={field.id} className="up-kv__row">
-                      <span className="up-kv__k">{field.label}</span>
+                      <span className="up-kv__k">{fieldLabel(field)}</span>
                       <span className="up-kv__v">{value ? value : <span className="up-empty">{t("userDetail.notSet")}</span>}</span>
                     </div>
                   ))}

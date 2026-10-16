@@ -34,7 +34,6 @@
   "pageOf": "Page {{page}} of {{total}}",
   "noFollowers": "No followers yet.",
   "noFollowing": "No following yet.",
-  "newArticle": "+ New Article",
   "loadingArticles": "Loading articles…",
   "emptyOwn": "You haven’t published anything yet.",
   "emptyOther": "{{username}} hasn’t published any articles yet.",
@@ -55,14 +54,26 @@
   "noComments": "No comments yet.",
   "postError": "Could not post comment. Try again.",
   "deleteError": "Could not delete comment. Try again.",
+  "delete": "Delete",
+  "cancel": "Cancel",
+  "deleteConfirmTitle": "Delete this comment?",
+  "deleteConfirmBody": "The comment and any replies to it are removed from the wall.",
+  "reply": "Reply",
+  "replyPlaceholder": "Reply to {{username}}…",
+  "report": "Report",
+  "reportTitle": "Report comment",
+  "reportSub": "Tell the moderators what is wrong with this comment.",
+  "reportPlaceholder": "Describe the issue…",
+  "reportSubmit": "Send report",
+  "reportSent": "Report sent. Thank you.",
+  "reportError": "Could not send the report.",
+  "reportTooShort": "Please describe the issue in a few words.",
   "likeError": "Could not update like. Try again.",
-  "deleteComment": "Delete comment",
   "edited": "edited",
   "like": "Like",
   "unlike": "Unlike",
-  "tombstoneBase": "Comment by {{user}} was deleted",
-  "tombstoneBy": " by {{mod}}",
-  "tombstoneReason": " · Reason: {{reason}}",
+  "dislike": "Dislike",
+  "undislike": "Remove dislike",
   "banned": "Banned",
   "permanentlyBanned": "Permanently banned",
   "formerlyKnownAs": "Previously known as {{names}}",
@@ -97,10 +108,7 @@
   },
   "likeCount": "{{n}} likes",
   "visitors": {
-    "title": "Recent visitors",
-    "summary_one": "{{count}} visitor this week",
-    "summary_other": "{{count}} visitors this week",
-    "last": "last: {{ago}}"
+    "title": "Recent visitors"
   },
   "cover": {
     "dropTitle": "Drop a header image, or browse",
@@ -179,5 +187,9 @@
     "geoCredit": "IP geolocation by DB-IP",
     "geoMissing": "Countries appear once the IP country database is downloaded.",
     "geoMissingLink": "Scheduled Tasks → IP country database"
-  }
+  },
+  "cantRateOwnComment": "You can't rate your own comment",
+  "signInToRate": "Sign in to rate",
+  "lastSeen": "Last seen {{when}}",
+  "lastSeenOn": "Last seen {{date}}"
 }

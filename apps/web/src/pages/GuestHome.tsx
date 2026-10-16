@@ -1,12 +1,15 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { Trans, useTranslation } from "react-i18next";
+import i18n from "../lib/i18n";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { articlesApi, type ArticleListItem, type ArticleCategoryNode } from "../lib/articlesApi";
 import { Avatar } from "../components/Avatar";
 import "./GuestHome.scss";
 import { Username } from "../components/Username";
+import { useSiteConfig } from "../hooks/useSiteConfig";
 
 /* ============================================================================
    Guest-landing PIECES.
@@ -54,7 +57,7 @@ function hashIndex(key: string, mod: number) {
 const catColor = (key: string) => CAT_COLORS[hashIndex(key, CAT_COLORS.length)]!;
 const catIcon = (id: string) => CAT_ICONS[hashIndex(id, CAT_ICONS.length)]!;
 const hexSoft = (hex: string) => `color-mix(in srgb, ${hex} 13%, transparent)`;
-const fmt = (n: number | undefined) => (n == null ? "—" : n.toLocaleString());
+const fmt = (n: number | undefined) => (n == null ? "—" : n.toLocaleString(i18n.language));
 
 export interface Stats { members: number; articles: number; today: number }
 export interface OnlineData { total: number; users: { username: string; avatar: string | null }[] }
@@ -84,21 +87,29 @@ export const DEFAULT_CONFIG: GuestConfig = {
   availableSources: [{ id: "articles", label: "Articles" }],
 };
 
-export const GATE_COPY: Record<string, string> = {
-  vote: "Create an account to like topics",
-  post: "Sign up to start a new topic",
-  more: "Create a free account to read everything",
-  default: "Create a free account to do that",
-};
+/** The sign-up prompt a locked action raises, in the visitor's language. */
+const GATE_KINDS = ["vote", "post", "more"];
+export function gateCopy(kind: string): string {
+  return i18n.t(`common:guestHome.gate.${GATE_KINDS.includes(kind) ? kind : "default"}`);
+}
 
 // ── cards ───────────────────────────────────────────────────────────────────────
 function ArticleCard({ a, onGate }: { a: ArticleListItem; onGate: (k: string) => void }) {
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.card" });
   const color = a.category ? catColor(a.category.id) : "var(--c-accent)";
   return (
-    <article className="gthread">
-      <button className="gvotes" title="Sign up to like" onClick={(e) => { e.stopPropagation(); onGate("vote"); }}>
-        <span className="gvotes__n">{a.likeCount}</span><span className="gvotes__l">likes</span>
+    <article className={`gthread${a.featuredImage ? " gthread--media" : ""}`}>
+      <button className="gvotes" title={t("signUpToLike")} onClick={(e) => { e.stopPropagation(); onGate("vote"); }}>
+        <span className="gvotes__n">{a.likeCount}</span><span className="gvotes__l">{t("likes", { count: a.likeCount })}</span>
       </button>
+      {/* The article's own picture, as on the members' feed. Decorative: the title
+          beside it is the link's text, so the image is a second way in, hidden from
+          screen readers. */}
+      {a.featuredImage && (
+        <Link to={`/articles/${a.slug}`} className="gthread__media" tabIndex={-1} aria-hidden="true">
+          <img src={`/uploads/${a.featuredImage}`} alt="" loading="lazy" />
+        </Link>
+      )}
       <div className="gthread__main">
         {a.category && (
           <div className="gthread__meta">
@@ -117,8 +128,8 @@ function ArticleCard({ a, onGate }: { a: ArticleListItem; onGate: (k: string) =>
       </div>
       <div className="gthread__side">
         <div className="gthread__stats">
-          <div className="gministat"><b>{a.commentCount}</b><span>replies</span></div>
-          <div className="gministat"><b>{a.viewCount}</b><span>views</span></div>
+          <div className="gministat"><b>{a.commentCount}</b><span>{t("replies", { count: a.commentCount })}</span></div>
+          <div className="gministat"><b>{a.viewCount}</b><span>{t("views", { count: a.viewCount })}</span></div>
         </div>
       </div>
     </article>
@@ -127,12 +138,13 @@ function ArticleCard({ a, onGate }: { a: ArticleListItem; onGate: (k: string) =>
 
 /** Generic card for any plugin-provided feed item (normalized HomeFeedItem). */
 function ItemCard({ item, onGate }: { item: HomeFeedItem; onGate: (k: string) => void }) {
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.card" });
   const color = item.categoryLabel ? catColor(item.categoryLabel) : "var(--c-accent)";
   const hasStats = item.replies != null || item.views != null;
   return (
     <article className="gthread">
-      <button className="gvotes" title="Sign up" onClick={(e) => { e.stopPropagation(); onGate("vote"); }}>
-        <span className="gvotes__n">{item.metric ?? 0}</span><span className="gvotes__l">{item.metricLabel ?? "likes"}</span>
+      <button className="gvotes" title={t("signUp")} onClick={(e) => { e.stopPropagation(); onGate("vote"); }}>
+        <span className="gvotes__n">{item.metric ?? 0}</span><span className="gvotes__l">{item.metricLabel ?? t("likes", { count: item.metric ?? 0 })}</span>
       </button>
       <div className="gthread__main">
         {item.categoryLabel && (
@@ -147,15 +159,15 @@ function ItemCard({ item, onGate }: { item: HomeFeedItem; onGate: (k: string) =>
             {item.author && <Avatar user={item.author} size={22} />}
             <b>{item.author
               ? <Username username={item.author.username} badgeColor={item.author.badgeColor} />
-              : "Unknown"}</b><span className="gdotsep" /> {timeAgo(item.createdAt)}
+              : t("unknown")}</b><span className="gdotsep" /> {timeAgo(item.createdAt)}
           </span>
         </div>
       </div>
       {hasStats && (
         <div className="gthread__side">
           <div className="gthread__stats">
-            {item.replies != null && <div className="gministat"><b>{item.replies}</b><span>replies</span></div>}
-            {item.views != null && <div className="gministat"><b>{item.views}</b><span>views</span></div>}
+            {item.replies != null && <div className="gministat"><b>{item.replies}</b><span>{t("replies", { count: item.replies })}</span></div>}
+            {item.views != null && <div className="gministat"><b>{item.views}</b><span>{t("views", { count: item.views })}</span></div>}
           </div>
         </div>
       )}
@@ -175,6 +187,7 @@ function FeedMore({ onGate, label }: { onGate: (k: string) => void; label: React
 
 // ── single-source articles feed (rich: tabs + category chips) ────────────────────
 export function ArticleFeed({ onGate, categories, totalArticles, showCategories }: { onGate: (k: string) => void; categories: ArticleCategoryNode[]; totalArticles: number | undefined; showCategories: boolean }) {
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.feed" });
   const [tab, setTab] = useState<"latest" | "top">("latest");
   const [cat, setCat] = useState<string | null>(null);
 
@@ -183,7 +196,7 @@ export function ArticleFeed({ onGate, categories, totalArticles, showCategories 
     queryFn: () => articlesApi.list({ page: 1, limit: 10, feed: tab, categoryId: cat ?? undefined }),
   });
   const list = data?.data ?? [];
-  const TABS: { id: "latest" | "top"; label: string }[] = [{ id: "latest", label: "Latest" }, { id: "top", label: "Top" }];
+  const TABS: { id: "latest" | "top"; label: string }[] = [{ id: "latest", label: t("latest") }, { id: "top", label: t("top") }];
 
   return (
     <div className="gfeed">
@@ -191,13 +204,13 @@ export function ArticleFeed({ onGate, categories, totalArticles, showCategories 
         <div className="gtabs">
           {TABS.map((tb) => <button key={tb.id} className={`gtab${tab === tb.id ? " is-active" : ""}`} onClick={() => setTab(tb.id)}>{tb.label}</button>)}
         </div>
-        <span className="gfeed__count">{list.length} {list.length === 1 ? "topic" : "topics"}</span>
-        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> New topic</button>
+        <span className="gfeed__count">{t("topics", { count: list.length })}</span>
+        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> {t("newTopic")}</button>
       </div>
 
       {showCategories && categories.length > 0 && (
         <div className="gchips">
-          <button className={`gchip${cat === null ? " is-active" : ""}`} onClick={() => setCat(null)}>All categories</button>
+          <button className={`gchip${cat === null ? " is-active" : ""}`} onClick={() => setCat(null)}>{t("allCategories")}</button>
           {categories.slice(0, 8).map((c) => (
             <button key={c.id} className={`gchip${cat === c.id ? " is-active" : ""}`} onClick={() => setCat(cat === c.id ? null : c.id)}>
               <i style={{ background: catColor(c.id) }} />{c.name}
@@ -208,19 +221,20 @@ export function ArticleFeed({ onGate, categories, totalArticles, showCategories 
 
       <div className="gthreads">
         {isLoading
-          ? <div className="gloadmore" style={{ justifyContent: "center" }}>Loading…</div>
+          ? <div className="gloadmore" style={{ justifyContent: "center" }}>{t("loading")}</div>
           : list.length
             ? list.map((a) => <ArticleCard key={a.id} a={a} onGate={onGate} />)
-            : <div className="gloadmore" style={{ justifyContent: "center" }}>No topics here yet.</div>}
+            : <div className="gloadmore" style={{ justifyContent: "center" }}>{t("empty")}</div>}
       </div>
 
-      {list.length > 0 && <FeedMore onGate={onGate} label={<><b>Create a free account</b> to see all {fmt(totalArticles)} posts</>} />}
+      {list.length > 0 && <FeedMore onGate={onGate} label={<Trans t={t} i18nKey="moreAll" values={{ count: totalArticles ?? 0, formatted: fmt(totalArticles) }} components={{ b: <b /> }} />} />}
     </div>
   );
 }
 
 // ── merged feed (multiple sources / any plugin source), newest-first ─────────────
 export function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k: string) => void }) {
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.feed" });
   const wantArticles = sources.includes("articles");
   const pluginSources = sources.filter((s) => s !== "articles");
 
@@ -250,19 +264,19 @@ export function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k:
   return (
     <div className="gfeed">
       <div className="gfeed__bar">
-        <span className="gfeed__count">{items.length} {items.length === 1 ? "topic" : "topics"}</span>
-        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> New post</button>
+        <span className="gfeed__count">{t("topics", { count: items.length })}</span>
+        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> {t("newPost")}</button>
       </div>
       <div className="gthreads">
         {loading
-          ? <div className="gloadmore" style={{ justifyContent: "center" }}>Loading…</div>
+          ? <div className="gloadmore" style={{ justifyContent: "center" }}>{t("loading")}</div>
           : items.length
             ? items.map((u) => u.kind === "article"
                 ? <ArticleCard key={`a-${u.a.id}`} a={u.a} onGate={onGate} />
                 : <ItemCard key={`i-${u.item.id}`} item={u.item} onGate={onGate} />)
-            : <div className="gloadmore" style={{ justifyContent: "center" }}>No topics here yet.</div>}
+            : <div className="gloadmore" style={{ justifyContent: "center" }}>{t("empty")}</div>}
       </div>
-      {items.length > 0 && <FeedMore onGate={onGate} label={<><b>Create a free account</b> to read everything</>} />}
+      {items.length > 0 && <FeedMore onGate={onGate} label={<Trans t={t} i18nKey="moreRead" components={{ b: <b /> }} />} />}
     </div>
   );
 }
@@ -275,6 +289,8 @@ export function Rail({
   categories: ArticleCategoryNode[]; online: OnlineData | undefined; tags: PopularTag[];
   sections: GuestConfig["sections"];
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.rail" });
+  const siteName = useSiteConfig().data?.siteName || "Xentium";
   const onlineUsers = online?.users ?? [];
   const shown = onlineUsers.slice(0, 9);
   const extra = (online?.total ?? onlineUsers.length) - shown.length;
@@ -282,17 +298,17 @@ export function Rail({
     <aside className="grail">
       <div className="gcard gjoin">
         <div className="gcard__pad">
-          <h3>Join xentium</h3>
-          <p>It's free. Post, reply, like what you read and get notified when people respond.</p>
-          <button className="btn btn--primary btn--block" onClick={onRegister}>Create free account</button>
-          <div className="gjoin__alt">Already a member? <a onClick={onLogin}>Log in</a></div>
+          <h3>{t("joinTitle", { site: siteName })}</h3>
+          <p>{t("joinText")}</p>
+          <button className="btn btn--primary btn--block" onClick={onRegister}>{t("createAccount")}</button>
+          <div className="gjoin__alt">{t("alreadyMember")} <a onClick={onLogin}>{t("logIn")}</a></div>
         </div>
       </div>
 
       {sections.categories && categories.length > 0 && (
         <div className="gcard">
           <div className="gcard__pad">
-            <h4 className="gcard__title">Categories</h4>
+            <h4 className="gcard__title">{t("categories")}</h4>
             {categories.slice(0, 6).map((c) => {
               const color = catColor(c.id);
               return (
@@ -309,7 +325,7 @@ export function Rail({
       {sections.online && onlineUsers.length > 0 && (
         <div className="gcard">
           <div className="gcard__pad">
-            <h4 className="gcard__title">Online now · {online?.total ?? onlineUsers.length}</h4>
+            <h4 className="gcard__title">{t("onlineNow", { count: online?.total ?? onlineUsers.length })}</h4>
             <div className="gonline__avatars">
               {shown.map((u) => <Avatar key={u.username} user={{ username: u.username, avatar: u.avatar }} size={30} online />)}
               {extra > 0 && <span className="gava-more" style={{ marginLeft: 0 }}>+{extra}</span>}
@@ -321,7 +337,7 @@ export function Rail({
       {sections.tags && tags.length > 0 && (
         <div className="gcard">
           <div className="gcard__pad">
-            <h4 className="gcard__title">Trending tags</h4>
+            <h4 className="gcard__title">{t("trendingTags")}</h4>
             <div className="gtagcloud">
               {tags.map((tag) => <Link className="gtag" key={tag.slug} to={`/search?q=${encodeURIComponent(tag.name)}`}>{tag.name}</Link>)}
             </div>

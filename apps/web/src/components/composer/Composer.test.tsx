@@ -203,3 +203,33 @@ describe("a JSON surface", () => {
     expect(screen.queryByText("composer.hintMention")).toBeNull();
   });
 });
+
+describe("dropping files", () => {
+  const file = new File(["x"], "shot.png", { type: "image/png" });
+  const drag = (files: File[]) => ({ dataTransfer: { types: ["Files"], files, dropEffect: "none" } });
+
+  it("hands dropped files to the caller, highlighting while dragged over", () => {
+    const onDropFiles = vi.fn();
+    const { container } = mount(<Composer toolbarPosition="top" canAttach onAttach={() => {}} onDropFiles={onDropFiles} />);
+    const shell = container.querySelector(".nvc")!;
+
+    fireEvent.dragEnter(shell, drag([file]));
+    expect(shell.classList.contains("is-dropping")).toBe(true);
+    fireEvent.drop(shell, drag([file]));
+
+    expect(onDropFiles).toHaveBeenCalledWith([file]);
+    expect(shell.classList.contains("is-dropping")).toBe(false);
+    expect(screen.getByText("composer.hintDrop")).toBeTruthy();
+  });
+
+  it("does not take a drop, or offer one, where the caller has nowhere to put it", () => {
+    const onDropFiles = vi.fn();
+    const { container } = mount(<Composer toolbarPosition="top" canAttach={false} onDropFiles={onDropFiles} />);
+    const shell = container.querySelector(".nvc")!;
+    fireEvent.dragEnter(shell, drag([file]));
+    fireEvent.drop(shell, drag([file]));
+    expect(onDropFiles).not.toHaveBeenCalled();
+    expect(shell.classList.contains("is-dropping")).toBe(false);
+    expect(screen.queryByText("composer.hintDrop")).toBeNull();
+  });
+});

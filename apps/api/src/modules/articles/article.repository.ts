@@ -57,7 +57,7 @@ export const articleRepository = {
     categoryId?: string;
     authorId?: string;
     viewerId?: string;
-    feed?: "latest" | "following" | "top";
+    feed?: "latest" | "following" | "top" | "liked" | "saved" | "mine";
     hiddenAuthorIds?: string[];
   }) {
     // Visibility filter:
@@ -72,18 +72,34 @@ export const articleRepository = {
         }
       : { visibility: "public" };
 
-    // Feed mode (home chips). "following" needs the viewer's followed authors;
-    // "top" ranks by likes within the last 7 days. Default = latest (chronological).
+    // Feed mode (home chips and menu). "following" is the categories and tags the
+    // viewer follows; "liked", "saved" and "mine" are the viewer's own lists. "top"
+    // ranks by likes within the last 7 days. Default = latest (chronological).
     let feedWhere: Prisma.ArticleWhereInput = {};
     let orderBy: Prisma.ArticleOrderByWithRelationInput = { publishedAt: "desc" };
 
+    const personal = opts.feed === "following" || opts.feed === "liked" || opts.feed === "saved" || opts.feed === "mine";
+    if (personal && !opts.viewerId) return { data: [], total: 0 };
+    const viewerId = opts.viewerId!;
+
     if (opts.feed === "following") {
-      if (!opts.viewerId) return { data: [], total: 0 };
-      const follows = await prisma.userFollow.findMany({
-        where: { followerId: opts.viewerId },
-        select: { followingId: true },
-      });
-      feedWhere = { authorId: { in: follows.map((f) => f.followingId) } };
+      const [cats, tags] = await Promise.all([
+        prisma.articleCategoryFollow.findMany({ where: { userId: viewerId }, select: { categoryId: true } }),
+        prisma.tagFollow.findMany({ where: { userId: viewerId }, select: { tagId: true } }),
+      ]);
+      if (cats.length === 0 && tags.length === 0) return { data: [], total: 0 };
+      feedWhere = {
+        OR: [
+          ...(cats.length ? [{ categoryId: { in: cats.map((c) => c.categoryId) } }] : []),
+          ...(tags.length ? [{ tags: { some: { tagId: { in: tags.map((t) => t.tagId) } } } }] : []),
+        ],
+      };
+    } else if (opts.feed === "liked") {
+      feedWhere = { likes: { some: { userId: viewerId } } };
+    } else if (opts.feed === "saved") {
+      feedWhere = { bookmarks: { some: { userId: viewerId } } };
+    } else if (opts.feed === "mine") {
+      feedWhere = { authorId: viewerId };
     } else if (opts.feed === "top") {
       const weekAgo = new Date(Date.now() - 7 * 86_400_000);
       feedWhere = { publishedAt: { gte: weekAgo } };
@@ -100,9 +116,10 @@ export const articleRepository = {
       status: "published",
       deletedAt: null,
       ...(opts.categoryId ? { categoryId: opts.categoryId } : {}),
-      ...(authorConds.length ? { AND: authorConds } : {}),
-      ...feedWhere,
-      ...visibilityFilter,
+      // ANDed, never spread: the feed and the visibility rule can BOTH be an `OR`
+      // (followed categories or tags; public-or-own), and spreading one over the other
+      // silently dropped the feed's.
+      AND: [...authorConds, feedWhere, visibilityFilter],
     };
     const [data, total] = await Promise.all([
       prisma.article.findMany({

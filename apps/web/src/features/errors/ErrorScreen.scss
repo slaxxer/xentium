@@ -32,7 +32,7 @@
     background: var(--c-accent-soft, rgba(124, 106, 247, 0.12));
   }
   &--chunk &__ghost {
-    background: linear-gradient(150deg, var(--c-accent, #7c6af7), var(--c-accent2, #2bd4ee));
+    background: var(--c-accent, #7c6af7);
     -webkit-background-clip: text;
     background-clip: text;
   }
@@ -50,7 +50,7 @@
     /* Smaller than the 404's, on purpose: this glyph is a WORD, not three
        digits, so the same size would run a whole letter off the screen. */
     font-size: clamp(150px, 24vw, 330px);
-    background: linear-gradient(150deg, var(--c-danger, #ef4444), var(--c-accent, #7c6af7));
+    background: var(--c-danger, #ef4444);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -185,8 +185,8 @@
     &--primary {
       background: var(--c-accent, #7c6af7);
       color: var(--c-on-accent, #fff);
-      box-shadow: 0 10px 26px -8px var(--c-accent, #7c6af7);
-      &:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -8px var(--c-accent, #7c6af7); }
+      box-shadow: var(--shadow-glow, none);
+      &:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow, none); }
     }
     &--ghost {
       background: transparent;

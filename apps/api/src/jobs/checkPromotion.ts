@@ -139,6 +139,7 @@ export async function processCheckPromotion(
       userId,
       type:  "progression.promoted",
       title: `You've been promoted to ${badgeName}!`,
+      i18n:  { key: "common:notify.promoted", params: { rank: badgeName } },
       body:  `You've reached a new level. Keep participating to unlock even more.`,
       link:  "/account",
       channels: ["in_app"],

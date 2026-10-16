@@ -80,7 +80,7 @@
   /* ⚠ `--c-accent-soft` is a TRANSLUCENT tint, so the gradient alone let the cover
      show through the avatar. An opaque base (the card, then the page) goes under it. */
   background:
-    linear-gradient(135deg, var(--c-accent-soft), var(--c-accent)),
+    linear-gradient(var(--c-accent), var(--c-accent)),
     linear-gradient(var(--card-bg), var(--card-bg)),
     var(--c-bg);
   display: flex;
@@ -89,11 +89,26 @@
   font-weight: 800;
   color: var(--c-on-accent);
   flex-shrink: 0;
-  overflow: hidden;
+  /* Not clipped: the online dot sits ON the corner. The image takes the shape itself. */
+  position: relative;
 
-  &--sm { width: 64px;  height: 64px;  font-size: 1rem; }
-  &--md { width: 96px;  height: 96px;  font-size: 1.4rem; }
-  &--lg { width: 120px; height: 120px; font-size: 2.2rem; }
+  &--sm { width: 64px;  height: 64px;  font-size: 1rem; --pres: 14px; }
+  &--md { width: 96px;  height: 96px;  font-size: 1.4rem; --pres: 18px; }
+  &--lg { width: 120px; height: 120px; font-size: 2.2rem; --pres: 20px; }
+
+  /* Online now: a dot on the squircle's lower corner, cut out of the avatar by a ring
+     in the card's own colour (as every avatar's presence dot is), so it reads as a mark
+     ON the avatar rather than part of the picture. */
+  &__pres {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: var(--pres, 16px);
+    height: var(--pres, 16px);
+    border-radius: 50%;
+    background: var(--avatar-presence);
+    box-shadow: 0 0 0 3px var(--card-bg);
+  }
 
   /* Lifted over the band above it, with a ring in the page's own background so it
      reads as sitting ON the cover rather than punched through it.
@@ -117,6 +132,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: inherit;
   }
 }
 
@@ -404,28 +420,11 @@
   flex-wrap: wrap;
   gap: var(--sp-2);
   margin-bottom: var(--sp-5);
-
-  /* Pushed to the far end of the row, exactly as the mockup's spacer does it. */
-  &__new {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    margin-left: auto;
-    background: var(--btn-bg);
-    color: var(--btn-fg);
-    padding: 9px 16px;
-    border-radius: var(--radius-md);
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    text-decoration: none;
-    transition: opacity 0.15s;
-    &:hover { opacity: 0.87; }
-  }
 }
 
 /* Pills, per the mockup: an inactive tab is a raised card, the active one is a
    solid slug in the page's strongest foreground. Not the accent — the accent is
-   already spent on the rank, the New Article button and every link on the page,
+   already spent on the rank and every link on the page,
    and a fourth use of it stops meaning "this one". */
 .profile-tab {
   padding: 9px 18px;
@@ -593,7 +592,7 @@
 .profile-av-small {
   border-radius: 50%;
   background:
-    linear-gradient(135deg, var(--c-accent-soft), var(--c-accent)),
+    linear-gradient(var(--c-accent), var(--c-accent)),
     linear-gradient(var(--card-bg), var(--card-bg)),
     var(--c-bg);
   display: flex;
@@ -635,44 +634,37 @@
     margin-bottom: var(--sp-5);
   }
 
-  &__compose {
-    display: flex;
-    gap: var(--sp-3);
-    margin-bottom: var(--sp-6);
-    align-items: flex-start;
-  }
-
-  &__compose-inner {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-2);
-  }
+  /* The Composer: the same room under it as the form it replaced kept, so the first
+     comment does not sit flush against the editor. */
+  &__composer { margin-bottom: var(--sp-6); }
 
   &__comments {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-4);
+    gap: var(--sp-5);
+  }
+
+  /* A comment and its replies. */
+  &__thread {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+  }
+
+  /* Replies sit indented under their comment, behind a hairline that ties them to it. */
+  &__replies {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    margin-left: calc(36px + var(--sp-3));
+    padding-left: var(--sp-4);
+    border-left: 2px solid var(--c-border);
   }
 
   &__comment {
     display: flex;
     gap: var(--sp-3);
     align-items: flex-start;
-
-    &--deleted {
-      display: block;
-    }
-  }
-
-  &__tombstone {
-    padding: 8px 12px;
-    border-left: 3px solid var(--c-danger);
-    background: color-mix(in srgb, var(--c-danger) 8%, transparent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: var(--fs-sm);
-    color: var(--c-fg-muted);
-    em { font-style: italic; }
   }
 
   &__comment-body {
@@ -701,18 +693,48 @@
     color: var(--c-fg-muted);
   }
 
-  &__comment-delete {
+  /* Report and Delete, at the end of the footer row beside the like count. */
+  &__comment-actions {
     margin-left: auto;
-    font-size: var(--fs-base);
-    color: var(--c-fg-muted);
-    line-height: 1;
-    padding: 0 var(--sp-1);
-    border-radius: var(--radius-sm);
-    transition: color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+  }
 
-    &:hover {
-      color: var(--c-danger);
-      background: var(--c-danger-soft, rgba(248, 113, 113, 0.1));
+  &__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: var(--fs-xs);
+    color: var(--c-fg-muted);
+    cursor: pointer;
+    transition: color 0.15s;
+
+    &:hover { color: var(--c-fg); }
+    &--danger:hover { color: var(--c-danger); }
+    &:disabled { opacity: 0.5; cursor: default; }
+  }
+
+  &__report {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    text-align: left;
+
+    textarea {
+      width: 100%;
+      resize: vertical;
+      padding: var(--sp-3);
+      border: 1px solid var(--input-border-color);
+      border-radius: var(--radius-md);
+      background: var(--input-bg);
+      color: var(--input-fg, var(--c-fg));
+      font: inherit;
+      font-size: var(--fs-sm);
     }
   }
 
@@ -736,29 +758,50 @@
     color: var(--c-fg-subtle);
   }
 
+  /* Thumbs up / down are small chips, without a border on the wall: the thumbs-down
+     shows red only when it is yours. */
+  &__like-btn,
+  &__like-count {
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 2px 9px;
+  }
+
   &__like-btn {
     font-size: var(--fs-xs);
     color: var(--c-fg-muted);
     background: none;
-    border: none;
     cursor: pointer;
-    padding: 0;
     font-family: inherit;
     transition: color 0.15s;
     display: flex;
     align-items: center;
     gap: 3px;
 
-    &:hover { color: var(--c-accent); }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    &:disabled { opacity: 0.5; cursor: pointer; }
 
+    /* Up is green, down is red: on hover, and once it is yours. */
+    &:hover:not(:disabled) { color: var(--c-success); }
     &.is-liked {
-      color: var(--c-accent);
+      color: var(--c-success);
+      background: var(--c-success-soft);
+      font-weight: 600;
+    }
+
+    &--dislike:hover:not(:disabled) { color: var(--c-danger); }
+    &.is-disliked {
+      color: var(--c-danger);
+      background: var(--c-danger-soft);
       font-weight: 600;
     }
   }
 
   &__like-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    /* Like every thumb: a pointer, and the title says why it can't be used. */
+    cursor: pointer;
     font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
   }
@@ -836,7 +879,7 @@
     height: 104px;
     flex-shrink: 0;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--c-accent-soft), var(--c-accent) 55%, var(--c-accent2));
+    background: var(--c-accent);
     overflow: hidden;
 
     &--img {
@@ -1032,7 +1075,7 @@
   );
   /* A member who has uploaded nothing is the normal case, so the default is a band
      drawn from the site's own palette — an empty one reads as broken. */
-  background: linear-gradient(120deg, var(--c-accent), var(--c-accent2));
+  background: var(--c-accent);
 
   /* The mockup's two passes over the band: a soft highlight thrown from the top
      left, and a vignette that darkens the edges so the card below reads as sitting
@@ -1048,12 +1091,12 @@
   }
 
   &::before {
-    background: radial-gradient(120% 140% at 12% 8%, rgb(255 255 255 / 0.28), transparent 55%);
+    background: none;
   }
 
   &::after {
     border-radius: inherit;
-    box-shadow: inset 0 0 20px 20px rgb(0 0 0 / 0.28);
+    box-shadow: none;
     z-index: 2;
   }
 
@@ -1198,9 +1241,6 @@
     &:hover { border-color: var(--card-border-color); }
   }
 
-  /* ⚠ NOT space-between. The mockup sets the count immediately after the last
-     avatar; pushed to the far edge it reads as a separate figure rather than as
-     the size of the group it labels. */
   &__row {
     display: flex;
     align-items: center;
@@ -1232,31 +1272,22 @@
     em  { font-style: normal; }
   }
 
-  &__count {
-    margin-left: 10px;
-    font-size: var(--fs-sm);
-    font-weight: 700;
-    color: var(--c-fg);
-  }
-
   &__more { font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
 
-  /* "18 visitors this week · last: 4m ago" */
-  &__caption {
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    color: var(--c-fg-subtle);
-    margin: 10px 0 0;
+  /* The title and its count travel together; the chevron keeps the far edge. */
+  &__label { display: inline-flex; align-items: center; gap: var(--sp-2); }
+
+  /* The follower total, beside the title it counts. */
+  &__badge {
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 7px;
+    border-radius: var(--radius-pill);
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
   }
 
-  /* The overflow bubble at the end of the row. Flat and outlined rather than
-     tinted, so it reads as a count and not as one more person. */
-  &__av--more {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    color: var(--c-fg-muted);
-    font-size: var(--fs-2xs);
-  }
 }
 
 /**
@@ -1267,15 +1298,6 @@
  * the heading and the awards sat on one line. A block placed in `main` cannot
  * borrow a class scoped to a card it does not live in.
  */
-.profile-visitors__views {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  color: var(--c-fg-subtle);
-}
-
 .profile-awards {
   /* A rail card in its own right — the mockup gives badges the same white panel the
      rank and the ladder get. */

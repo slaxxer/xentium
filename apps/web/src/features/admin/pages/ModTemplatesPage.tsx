@@ -172,7 +172,7 @@ export function ModTemplatesPage() {
               <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("modTemplates.search")} />
             </label>
             <button type="button" className="btn-primary btn-sm" disabled={create.isPending}
-              onClick={() => create.mutate({ mode: "warn", name: t("modTemplates.newName"), text: "Hi {user}, " })}>
+              onClick={() => create.mutate({ mode: "warn", name: t("modTemplates.newName"), text: t("modTemplates.newText") })}>
               <FontAwesomeIcon icon={faPlus} /> {t("modTemplates.new")}
             </button>
           </div>

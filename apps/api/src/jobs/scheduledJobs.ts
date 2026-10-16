@@ -21,7 +21,7 @@ export interface ScheduledJobDef {
   description:    string;
   defaultCron:    string;
   minIntervalSec: number;   // guardrail: reject schedules that fire more often than this
-  defaultEnabled?: boolean; // default true; set false for opt-in jobs (e.g. appearance publish)
+  defaultEnabled?: boolean; // default true; set false for opt-in jobs
   /** Spread this job's DEFAULT time across the day, per install (see jitteredDailyTime).
    *  For jobs that call an external service on a schedule every install ships
    *  identically. An admin-set time is never jittered. */
@@ -64,14 +64,6 @@ export const SCHEDULED_JOBS: ScheduledJobDef[] = [
     label: "Marketplace sync",
     description: "Refreshes license entitlements (30-day grace applies), then reports the installed plugin inventory and caches available updates, critical flags and renewal warnings for the ACP. The default time is spread per install; set an explicit one to override.",
     defaultCron: "30 2 * * *", minIntervalSec: 60 * 60, jitterDefault: true,
-  },
-  {
-    key: "appearance-publish", schedulerId: "appearance-publish-repeat",
-    queue: queues.appearancePublish, jobName: "appearance-publish",
-    label: "Publish theme changes",
-    description: "Applies every theme's staged (draft) Theme Studio changes, layouts and styles together, to the live site at the scheduled time. Disabled by default — use 'Run now' to publish immediately, or enable a schedule to auto-publish pending drafts.",
-    defaultCron: "0 3 * * *", minIntervalSec: 5 * 60,
-    defaultEnabled: false,
   },
   {
     key: "log-retention", schedulerId: "log-retention-daily",
@@ -182,15 +174,25 @@ export function previewRuns(pattern: string, tz: string | undefined, minInterval
  * They can be dropped once every install has booted at least once past the
  * release that retired them.
  */
-export const RETIRED_SCHEDULERS: { schedulerId: string; queue: Queue; since: string }[] = [
+export const RETIRED_SCHEDULERS: { schedulerId: string; queue: Queue; since: string; /** Its `jobs.<key>` setting, deleted too. */ jobKey?: string }[] = [
   // Merged into "update-check" (now "Marketplace sync") — one job does both halves.
   { schedulerId: "license-refresh-daily", queue: queues.licenseRefresh, since: "2026-08-22" },
+  // Auto-published every theme's whole draft on a timer. Drafts autosave all the
+  // time, so a schedule put half-finished work live with nobody looking. Publishing
+  // is the Theme Studio's Publish, after the admin has seen what goes live.
+  { schedulerId: "appearance-publish-repeat", queue: queues.appearancePublish, since: "2026-10-15", jobKey: "appearance-publish" },
 ];
 
 /** Tear down retired schedulers. Best-effort: never blocks boot. */
 export async function removeRetiredSchedulers(): Promise<void> {
   for (const r of RETIRED_SCHEDULERS) {
     await r.queue.removeJobScheduler(r.schedulerId).catch(() => {});
+    if (r.jobKey) {
+      // The saved schedule would otherwise sit in `settings` describing a job that no
+      // longer exists. Best-effort like the rest: a boot never fails over it.
+      await prisma.setting.deleteMany({ where: { key: settingKey(r.jobKey) } }).catch(() => {});
+      bustSettingsCache(settingKey(r.jobKey));
+    }
   }
 }
 

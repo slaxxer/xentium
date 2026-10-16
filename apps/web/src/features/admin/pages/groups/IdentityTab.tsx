@@ -124,7 +124,7 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
             {user && <UserAvatar user={user} size={34} />}
             <div className="gp-preview__main">
               <div className="gp-preview__line">
-                <span className="gp-preview__name" style={{ color, textShadow: glowShadow(prog, color) }}>{user?.username ?? "member"}</span>
+                <span className="gp-preview__name" style={{ color, textShadow: glowShadow(prog, color) }}>{user?.username ?? t("groups.previewName")}</span>
                 {!showRankImage && (
                   <span className="gp-pill" style={{ color, background: `${color}20`, borderColor: `${color}40` }}>{label}</span>
                 )}

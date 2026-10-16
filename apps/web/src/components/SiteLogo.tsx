@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { ReactNode } from "react";
 import { useBranding } from "../hooks/useBranding";
 import { XentiumMark } from "./XentiumMark";
@@ -17,8 +18,9 @@ export function SiteLogo({ size = 32, wordmark, imgClassName = "", markClassName
   markClassName?: string;
 }) {
   const { data: branding } = useBranding();
+  const { t } = useTranslation("common");
   if (branding?.navbarUrl) {
-    return <img className={`xt-logo-fx ${imgClassName}`} src={branding.navbarUrl} alt={branding.logoText ?? "Home"} />;
+    return <img className={`xt-logo-fx ${imgClassName}`} src={branding.navbarUrl} alt={branding.logoText ?? t("nav.home")} />;
   }
   return (
     <>

@@ -396,6 +396,10 @@
 
 .xt-richtext {
   color: var(--c-fg);
+
+  /* ArticleContent reuses the article editor's surface, and with it the editor's
+     400px typing area. A block is as tall as its text. */
+  .article-editor__content { min-height: 0; }
 }
 
 /* ── editor preview affordances ──────────────────────────────────────────── */
@@ -473,6 +477,24 @@
   &:hover { background: rgb(255 255 255 / 0.4); }
 }
 
+/* The breadcrumb in the selected chip: parents as buttons, the block itself as text. */
+.xt-preview-label__crumb {
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  opacity: 0.82;
+  cursor: pointer;
+
+  &:hover { opacity: 1; background: rgb(255 255 255 / 0.18); }
+}
+.xt-preview-label__sep { opacity: 0.6; }
+.xt-preview-label__gap { width: 4px; }
+.xt-preview-label__act:disabled { opacity: 0.35; cursor: default; }
+
 .xt-preview-dropline {
   position: absolute;
   display: none;
@@ -482,6 +504,65 @@
   border-radius: 2px;
   background: var(--c-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-accent) 25%, transparent);
+}
+
+/* The container a drop goes INTO, so "inside the section" and "after it" differ. */
+.xt-preview-dropzone {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 2147482999;
+  border: 1.5px dashed var(--c-accent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--c-accent) 6%, transparent);
+}
+
+/* While anything is dragged, every region of the page shows where it is — an empty
+   rail is otherwise an invisible target. */
+html.xt-dragging [data-xt-region]:not([data-xt-block]) {
+  outline: 1px dashed color-mix(in srgb, var(--c-accent) 40%, transparent);
+  outline-offset: 2px;
+}
+
+/* "Add a block here", under the hovered block. Takes pointer events — it is a button. */
+.xt-preview-plus {
+  position: absolute;
+  display: none;
+  place-items: center;
+  z-index: 2147483003;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: var(--c-accent);
+  color: var(--c-on-accent);
+  font: 700 15px/1 var(--ff-sans, sans-serif);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--c-accent) 45%, transparent);
+  cursor: pointer;
+
+  &:hover { transform: scale(1.1); }
+}
+
+/* The marked spot: where the next library pick lands. Pulses so it reads as waiting. */
+.xt-preview-insertmark {
+  position: absolute;
+  display: none;
+  pointer-events: none;
+  z-index: 2147483002;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--c-accent);
+  animation: xt-insertmark 1.1s ease-in-out infinite;
+}
+
+@keyframes xt-insertmark {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xt-preview-insertmark { animation: none; }
 }
 
 /* ── renderer diagnostics ────────────────────────────────────────────────── */

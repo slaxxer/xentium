@@ -1,4 +1,4 @@
-import i18n from "./i18n";
+import i18n, { uiLocale } from "./i18n";
 
 // The one relative-time formatter (previously ~10 per-page copies, several
 // hardcoding English). Localized via the `time` block in the common namespace.
@@ -17,7 +17,7 @@ export function timeAgo(
   const date = typeof input === "string" ? new Date(input) : input;
   const tr = (key: string, n?: number) => i18n.t(`time.${key}`, { ns: "common", n });
   const shortDate = () =>
-    date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    date.toLocaleDateString(uiLocale(), { month: "short", day: "numeric" });
 
   const m = Math.floor((Date.now() - date.getTime()) / 60_000);
   const h = Math.floor(m / 60);

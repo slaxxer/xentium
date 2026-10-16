@@ -23,7 +23,7 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import {
   faPlus, faRotateLeft, faRotateRight, faXmark,
   faDesktop, faTabletScreenButton, faMobileScreenButton, faEye, faUsers, faSliders, faCube, faPalette,
-  faCheck, faSpinner, faEllipsis, faArrowUpFromBracket,
+  faCheck, faSpinner, faEllipsis,
   faChevronDown, faFileLines, faWindowMaximize, faArrowUpRightFromSquare,
   faClone, faTrash, faIcons,
 } from "@fortawesome/free-solid-svg-icons";
@@ -42,6 +42,7 @@ import {
   type LayoutDocument,
   type LayoutDraftResponse,
   type LayoutSelector,
+  type HeadingFont,
   type CoreTemplateKey,
   type TemplateKey,
 } from "@xentium/contracts";
@@ -54,6 +55,7 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { SchemaFields, defaultsFor, type FieldSchema } from "../../../components/SchemaFields";
 import { acceptsChild, getBlock, hasSurface } from "../../../layout/blockRegistry";
 import { shortcutFor } from "../../../layout/editorShortcuts";
+import { blockTextType } from "../../../layout/slotBlocks";
 import { LAYOUT_PREVIEW_PARAM, LAYOUT_EDITING_PARAM } from "../../../layout/useLayout";
 import {
   canNestInto,
@@ -68,7 +70,7 @@ import {
   updateBlockProps,
   updateBlockVariant,
   updateBlockEdges,
-  updateBlockClassName,
+  updateBlockClassName, updateBlockHeadingFont,
   updateBlockVisibility,
   updateBlockIconOverride,
   type Regions,
@@ -87,11 +89,12 @@ import {
 } from "./LayoutTree";
 import { BlockVisibilityFields } from "./BlockVisibility";
 import { BlockCatalogue } from "./BlockCatalogue";
-import { SiteFramePopover, FRAME_QUERY_KEY } from "./SiteFramePopover";
-import { ThemeScopePicker } from "../components/ThemeScopePicker";
+import { BlockLibrary } from "./BlockLibrary";
+import { SiteFramePopover } from "./SiteFramePopover";
 import { PREVIEW_THEME_PARAM, useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import type { SiteFrame } from "@xentium/contracts";
 import { BlockStyleFields } from "./BlockStyle";
+import { BlockMenuStyle, menuGroupsFor } from "./BlockMenuStyle";
 import { BlockBackgroundFields, BACKGROUND_PROPS } from "./BlockBackground";
 import { BlockEdgeArtFields } from "./BlockEdgeArt";
 import { edgeExtensions } from "../../../layout/edgeRegistry";
@@ -100,6 +103,7 @@ import { ThemeStyleFields, themeDraftCss, useThemeTokens } from "./ThemeStyle";
 import { InspectorFold } from "./InspectorFold";
 import "./LayoutEditorPage.scss";
 import { IconPicker } from "../../../components/IconPicker";
+import { blockLabel, pluginText } from "../../../lib/coreText";
 
 /**
  * The three canvas widths, and what they are for.
@@ -256,16 +260,14 @@ interface InstalledTheme {
  * one. Keyed by it, so switching themes starts fresh: undo history, selection and the
  * open document all belong to the theme they were made in.
  */
-export function LayoutEditorPage({ embedded }: {
-  /** Inside Theme Studio: no page header and no Publish of its own — the Studio has
-   *  one header and one Publish for layouts and styles together. */
-  embedded?: boolean;
-} = {}) {
+export function LayoutEditorPage() {
+  // Only Theme Studio renders it: the Studio owns the page header and the one Publish
+  // for layouts and styles together.
   const { key } = useEditingTheme();
-  return <LayoutEditorInner key={key ?? ""} themeKey={key} embedded={embedded} />;
+  return <LayoutEditorInner key={key ?? ""} themeKey={key} />;
 }
 
-function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; embedded?: boolean }) {
+function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
   const { t, i18n } = useTranslation("acp");
   const qc = useQueryClient();
 
@@ -385,6 +387,21 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
    */
   const [browseTarget, setBrowseTarget] =
     useState<{ region: string; parentId: string | null } | null>(null);
+
+  /**
+   * The rail's tab. BLOCKS is the library — the way to add — and the default, because
+   * the page itself is now where blocks are selected and arranged. LAYERS is the whole
+   * tree: still needed for what the canvas cannot show (a spacer, a block hidden from
+   * the audience in view, a disabled plugin's block) and for keyboard users.
+   */
+  const [railTab, setRailTab] = useState<"blocks" | "layers">("blocks");
+
+  /**
+   * A spot marked on the page (the `+` under a block, or an empty region clicked):
+   * the next library pick lands exactly there. Cleared once something lands, or when
+   * the document changes underneath it.
+   */
+  const [insertTarget, setInsertTarget] = useState<DropAt | null>(null);
 
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const [inspectorSide, setInspectorSide] = useState<Side>("right");
@@ -556,6 +573,8 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
   const templatesQuery = useQuery<TemplateInfo[]>({
     queryKey: ["acp-layout-templates", themeKey],
     queryFn:  () => api.get(withTheme("/admin/layouts/templates", themeKey)),
+    // A plugin's template name in the reader's language when the plugin ships one.
+    select:   (rows) => rows.map((r) => r.pluginId && r.label ? { ...r, label: pluginText(`templates.${r.key}`, r.label) } : r),
   });
 
   // The theme being edited, on every per-document request.
@@ -636,6 +655,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
         action?: "undo" | "redo";
         left?: number; right?: number;
         slot?: string;
+        blockType?: string; delta?: number;
       };
 
       if (msg?.source !== "xt-preview") return;
@@ -690,11 +710,30 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       // An empty region was clicked in the preview. Open the SAME add-block picker
       // the region's own `+` opens — the key is `r:<region>`, so there is one picker
       // and one code path whichever surface asked for it.
+      // Marks the region as the next pick's spot and opens the library on it — the
+      // same thing the `+` under a block does, for a region that has no block yet.
       if (msg.type === "addTo" && msg.region) {
         if (msg.templateKey && msg.templateKey !== templateKeyRef.current) {
           setTemplateKey(msg.templateKey as TemplateKey);
+          latest.current.browse(msg.region!, null);
+          return;
         }
-        latest.current.browse(msg.region!, null);
+        latest.current.markEnd(msg.region!);
+      }
+
+      // A block dragged in from the library and dropped on the page.
+      if (msg.type === "insert" && msg.blockType && msg.region && typeof msg.index === "number") {
+        latest.current.insertAt(msg.blockType, {
+          region: msg.region, parentId: msg.parentId ?? null, index: msg.index,
+        });
+      }
+
+      // The `+` under a block: the next pick goes straight after it.
+      if (msg.type === "insertAfter" && msg.id) latest.current.markAfter(msg.id);
+
+      // The chip's up/down — the same one-step move the tree's arrows make.
+      if (msg.type === "nudge" && msg.id && typeof msg.delta === "number") {
+        latest.current.nudge(msg.id, msg.delta);
       }
 
       if (msg.type === "move" && msg.id && msg.region && typeof msg.index === "number") {
@@ -764,6 +803,13 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
           guests:  t("layoutEditor.audience.guests"),
           members: t("layoutEditor.audience.members"),
           groups:  t("layoutEditor.audience.groups"),
+        },
+        chip: {
+          up:        t("layoutEditor.moveUp"),
+          down:      t("layoutEditor.moveDown"),
+          duplicate: t("layoutEditor.duplicateBlock"),
+          remove:    t("layoutEditor.removeBlock"),
+          insert:    t("layoutEditor.library.addHere"),
         },
       },
       window.location.origin,
@@ -865,11 +911,21 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
    * A chip that offered a delete this editor would refuse is worse than none.
    */
   useEffect(() => {
-    const node = selectedId ? findNode(docRef.current?.regions ?? {}, selectedId)?.node : null;
+    const regionsNow = docRef.current?.regions ?? {};
+    const found = selectedId ? findNode(regionsNow, selectedId) : null;
+    const node = found?.node ?? null;
+    // The breadcrumb, outermost first: each parent, then the block itself.
+    const crumbs: { id: string; label: string }[] = [];
+    for (let at = found; at; at = at.parentId ? findNode(regionsNow, at.parentId) : null) {
+      crumbs.unshift({ id: at.node.id, label: blockLabel(at.node.type) });
+    }
     previewRef.current?.contentWindow?.postMessage(
       {
         source: "xt-editor", type: "highlight", id: selectedId,
-        label: node ? getBlock(node.type)?.editorMeta?.label ?? node.type : null,
+        label: node ? blockLabel(node.type) : null,
+        crumbs,
+        canUp:   !!found && found.index > 0,
+        canDown: !!found && found.index < found.list.length - 1,
         // ⚠ Asked of the registry directly, not of the `required` set below: this
         // effect is declared above it, and reading it here would be a use before
         // declaration. Same source, same answer.
@@ -877,7 +933,32 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       },
       window.location.origin,
     );
-  }, [selectedId, templateKey]);
+  }, [selectedId, templateKey, doc]);
+
+  /**
+   * The marked spot, drawn on the page as a pulsing line. Described by its
+   * neighbours rather than an index, because the page knows blocks, not positions.
+   */
+  useEffect(() => {
+    let mark: Record<string, string | null> | null = null;
+    if (insertTarget && doc) {
+      const list = insertTarget.parentId == null
+        ? doc.regions[insertTarget.region] ?? []
+        : findNode(doc.regions, insertTarget.parentId)?.node.children ?? [];
+      mark = {
+        afterId:  list[insertTarget.index - 1]?.id ?? null,
+        beforeId: insertTarget.index === 0 ? list[0]?.id ?? null : null,
+        parentId: insertTarget.parentId,
+        region:   insertTarget.region,
+      };
+    }
+    previewRef.current?.contentWindow?.postMessage(
+      { source: "xt-editor", type: "insertMark", mark }, window.location.origin,
+    );
+  }, [insertTarget, doc]);
+
+  /** A marked spot belongs to one document. */
+  useEffect(() => { setInsertTarget(null); }, [templateKey, variant]);
 
   /**
    * Push the working document to the preview on every change, so an edit is
@@ -983,6 +1064,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       versionRef.current = res.version;
       setDirty(JSON.stringify(docRef.current) !== savedJsonRef.current);
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
       // No preview reload: the working document is already pushed live, and a
       // reload would throw it away and re-fetch the same thing.
@@ -996,24 +1078,6 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       }
       toast.error(apiErrorMessage(e));
     },
-  });
-
-  const publish = useMutation({
-    mutationFn: () => api.post<{ published: LayoutSelector[] }>(withTheme("/admin/layouts/publish", themeKey)),
-    onSuccess: (res) => {
-      qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
-      qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
-      // The frame publishes with the layouts, and its draft row goes too.
-      qc.invalidateQueries({ queryKey: FRAME_QUERY_KEY });
-      // Publishing clears the draft server-side, so the editor's copy is stale.
-      qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
-      toast.success(
-        res.published.length
-          ? t("layoutEditor.published", { count: res.published.length })
-          : t("layoutEditor.nothingPending"),
-      );
-    },
-    onError: (e) => toast.error(apiErrorMessage(e)),
   });
 
   /**
@@ -1035,6 +1099,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       history.clear();
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
       previewRef.current?.contentWindow?.location.reload();
       toast.success(t("layoutEditor.discardDone"));
@@ -1048,6 +1113,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       history.clear();
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-templates"] });
       toast.success(t("layoutEditor.revertedTheme"));
@@ -1061,6 +1127,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       history.clear();
       qc.invalidateQueries({ queryKey: ["acp-layout", templateKey, variant] });
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       qc.invalidateQueries({ queryKey: ["acp-layout-all"] });
       previewRef.current?.contentWindow?.location.reload();
       toast.success(t("layoutEditor.resetDone"));
@@ -1140,7 +1207,14 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
     browse: (region: string, parentId: string | null) => void;
     duplicate: (id: string) => void;
     remove: (id: string) => void;
-  }>({ applyTree, undo: undoEdit, redo: redoEdit, browse, duplicate: () => {}, remove: () => {} });
+    insertAt: (type: string, at: DropAt) => void;
+    markAfter: (id: string) => void;
+    markEnd: (region: string) => void;
+    nudge: (id: string, delta: number) => void;
+  }>({
+    applyTree, undo: undoEdit, redo: redoEdit, browse, duplicate: () => {}, remove: () => {},
+    insertAt: () => {}, markAfter: () => {}, markEnd: () => {}, nudge: () => {},
+  });
 
   /**
    * Ctrl/Cmd+Z and Ctrl/Cmd+Shift+Z (Ctrl+Y too, for the Windows muscle memory).
@@ -1198,6 +1272,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
       setMenuOpen(false);
+      setInsertTarget(null);
       const el = e.target as HTMLElement | null;
       if (el && /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) return;
       setInspectorOpen(false);
@@ -1219,6 +1294,79 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
       : findNode(doc.regions, parentId)?.node.children ?? [];
     applyTree((r) => insertBlock(r, node, { region, parentId, index: siblings.length }));
     setSelectedId(node.id);
+  };
+
+  /**
+   * Add a block at an exact spot — a drop on the page, or the marked `+`.
+   *
+   * Returns whether it landed. `insertBlock` refuses (returns the same tree) for a
+   * container that does not take the type or a depth breach, and a refused add must
+   * not select a block that does not exist.
+   */
+  const addBlockAt = (type: string, at: DropAt): boolean => {
+    const current = docRef.current;
+    if (!current) return false;
+    const node = makeNode(type, collectIds(current.regions));
+    applyTree((r) => insertBlock(r, node, at));
+    if (docRef.current === current) return false;
+    setSelectedId(node.id);
+    setInsertTarget(null);
+    return true;
+  };
+
+  /**
+   * Where a CLICKED library block goes, in order of how deliberately it was asked for:
+   * the marked spot; inside the selected container when only a container takes it (a
+   * Column into Columns); straight after the selected block; the end of the open region.
+   * The first spot that accepts the type wins.
+   */
+  const placeBlock = (type: string) => {
+    const current = docRef.current;
+    if (!current) return;
+    const typeAt = (parentId: string | null) =>
+      parentId == null ? null : findNode(current.regions, parentId)?.node.type ?? null;
+    const candidates: DropAt[] = [];
+    if (insertTarget) candidates.push(insertTarget);
+    const sel = selectedIdRef.current ? findNode(current.regions, selectedIdRef.current) : null;
+    if (sel) {
+      if (getBlock(sel.node.type)?.container && acceptsChild(sel.node.type, type)) {
+        const inside = { region: sel.region, parentId: sel.node.id, index: sel.node.children?.length ?? 0 };
+        if (!acceptsChild(typeAt(sel.parentId), type)) candidates.push(inside);
+        candidates.push({ region: sel.region, parentId: sel.parentId, index: sel.index + 1 }, inside);
+      } else {
+        candidates.push({ region: sel.region, parentId: sel.parentId, index: sel.index + 1 });
+      }
+    }
+    candidates.push({ region: openRegion, parentId: null, index: (current.regions[openRegion] ?? []).length });
+    for (const at of candidates) {
+      if (!acceptsChild(typeAt(at.parentId), type)) continue;
+      if (addBlockAt(type, at)) return;
+    }
+    toast.warning(t("layoutEditor.library.notHere", { block: blockLabel(type) }));
+  };
+
+  /** The `+` under a block: mark the spot straight after it and open the library. */
+  const markAfter = (id: string) => {
+    const at = findNode(docRef.current?.regions ?? {}, id);
+    if (!at) return;
+    setInsertTarget({ region: at.region, parentId: at.parentId, index: at.index + 1 });
+    setRailTab("blocks");
+  };
+
+  /** An empty region clicked on the page: mark its end and open the library. */
+  const markEnd = (region: string) => {
+    const list = docRef.current?.regions[region] ?? [];
+    setActiveRegion(region);
+    setInsertTarget({ region, parentId: null, index: list.length });
+    setRailTab("blocks");
+  };
+
+  /** Tell the page which library block is being dragged, so it can aim the drop. */
+  const announceDrag = (type: string | null) => {
+    previewRef.current?.contentWindow?.postMessage(
+      type ? { source: "xt-editor", type: "dragNew", blockType: type } : { source: "xt-editor", type: "dragNewEnd" },
+      window.location.origin,
+    );
   };
 
   /**
@@ -1289,7 +1437,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
     const ok = await openDialog({
       kind: "confirm", icon: "warning", danger: true,
       title: t("layoutEditor.removeTreeTitle", {
-        block: getBlock(type)?.editorMeta?.label ?? type,
+        block: blockLabel(type),
       }),
       body: t("layoutEditor.removeTreeBody", { count }),
       confirmText: t("layoutEditor.removeBlock"),
@@ -1312,6 +1460,8 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
   latest.current = {
     applyTree, undo: undoEdit, redo: redoEdit, browse,
     duplicate: duplicateNode, remove: removeNode,
+    insertAt: (type, at) => { addBlockAt(type, at); },
+    markAfter, markEnd, nudge,
   };
 
   const updateProps = (id: string, props: Record<string, unknown>) => {
@@ -1331,6 +1481,10 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
 
   const updateClassName = (id: string, className: string | undefined) => {
     applyTree((r) => updateBlockClassName(r, id, className));
+  };
+
+  const updateHeadingFont = (id: string, font: HeadingFont | undefined) => {
+    applyTree((r) => updateBlockHeadingFont(r, id, font));
   };
 
   // ── Drag handling ─────────────────────────────────────────────────────────
@@ -1643,19 +1797,6 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
 
   return (
     <div className="lay">
-      {!embedded && (
-        <>
-          <div className="acp-page-header">
-            <div className="acp-page-header__left">
-              <div className="acp-page-sub">{t("nav.appearance")}</div>
-              <h1 className="acp-page-title">{t("layoutEditor.title")}</h1>
-              <ThemeScopePicker />
-            </div>
-          </div>
-          <p className="lay__intro">{t("layoutEditor.subtitle")}</p>
-        </>
-      )}
-
       {/* Toolbar */}
       <div className="lay__bar">
         {/* THE DOCUMENT, named with the route it draws.
@@ -1818,18 +1959,6 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
             )}
           </div>
 
-          {/* Embedded in Theme Studio the Studio's header publishes — layouts and
-              styles together — so this one is not drawn. */}
-          {!embedded && <button type="button" className="btn-primary btn-sm lay__publish"
-            disabled={publish.isPending || pending.length === 0}
-            onClick={() => publish.mutate()}>
-            <FontAwesomeIcon icon={faArrowUpFromBracket} />
-            {publish.isPending ? t("layoutEditor.publishing") : t("layoutEditor.publish")}
-            {/* How many DOCUMENTS go live, not how many edits. Publish is site-wide —
-                it promotes every pending draft, including templates not open here —
-                and the count is the only thing on screen that says so. */}
-            {pending.length > 0 && <span className="lay__publish-count">{pending.length}</span>}
-          </button>}
         </div>
       </div>
 
@@ -1861,38 +1990,56 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
             "what about this one" — and putting it under the tree meant every
             selection scrolled the thing you were selecting out of view. */}
         <div className="lay__rail">
-        {/* ── Structure ─────────────────────────────────────────────────── */}
         <div className="lay__tree">
-          <div className="lay__pane-title">
-            {t("layoutEditor.structure")}
-            <span className="lay__pane-count">
-              {t("layoutEditor.blockCount", { count: (doc?.regions[openRegion] ?? []).length })}
-            </span>
-          </div>
-          {regionTabs()}
-          {/* The `+` stays, beside the open region's name: the library below is the
-              browsing path, this is the keyboard one — press it, type three letters,
-              Enter. Neither is a substitute for the other. */}
-          <div className="lay__region-head">
-            <span>{regionLabel(openRegion, templateKey, t)}</span>
-            <button type="button" className="btn-ghost btn-sm"
-              onClick={() => setBrowseTarget({ region: openRegion, parentId: null })}
-              title={t("layoutEditor.addBlock")}>
-              <FontAwesomeIcon icon={faPlus} />
+          {/* Blocks to add, or the whole tree. The canvas is where blocks are selected
+              and arranged now; the tree stays one tab away for everything the canvas
+              cannot show, and as the keyboard path. */}
+          <div className="lay__railtabs" role="tablist" aria-label={t("layoutEditor.library.tabs")}>
+            <button type="button" role="tab" aria-selected={railTab === "blocks"}
+              className={railTab === "blocks" ? "is-on" : ""} onClick={() => setRailTab("blocks")}>
+              {t("layoutEditor.library.blocks")}
+            </button>
+            <button type="button" role="tab" aria-selected={railTab === "layers"}
+              className={railTab === "layers" ? "is-on" : ""} onClick={() => setRailTab("layers")}>
+              {t("layoutEditor.library.layers")}
+              <span className="lay__tab-count">
+                {Object.values(doc?.regions ?? {}).reduce((n, list) => n + (list?.length ?? 0), 0)}
+              </span>
             </button>
           </div>
-          {regionPanel(openRegion)}
 
-          {/* Into the catalogue. The rail used to carry a second card listing every
-              block as a grid of names — a 288px column can show what a block is
-              CALLED and nothing else, which is the one thing the tree beside it
-              already says. The dialog has room for a block's shape and a sentence
-              about it, so the rail keeps the structure and hands off the browsing. */}
-          <button type="button" className="lay__browse"
-            onClick={() => setBrowseTarget({ region: openRegion, parentId: null })}>
-            <FontAwesomeIcon icon={faPlus} />
-            {t("layoutEditor.browseBlocks")}
-          </button>
+          {railTab === "blocks" ? (
+            <BlockLibrary
+              templateKey={templateKey}
+              inserting={!!insertTarget}
+              onPick={placeBlock}
+              onDragStartType={(type) => announceDrag(type)}
+              onDragEndType={() => announceDrag(null)}
+              onCancelInsert={() => setInsertTarget(null)}
+              onBrowseAll={() => setBrowseTarget(insertTarget
+                ? { region: insertTarget.region, parentId: insertTarget.parentId }
+                : { region: openRegion, parentId: null })}
+            />
+          ) : (
+            <>
+              <div className="lay__pane-title">
+                {t("layoutEditor.structure")}
+                <span className="lay__pane-count">
+                  {t("layoutEditor.blockCount", { count: (doc?.regions[openRegion] ?? []).length })}
+                </span>
+              </div>
+              {regionTabs()}
+              <div className="lay__region-head">
+                <span>{regionLabel(openRegion, templateKey, t)}</span>
+                <button type="button" className="btn-ghost btn-sm"
+                  onClick={() => setBrowseTarget({ region: openRegion, parentId: null })}
+                  title={t("layoutEditor.addBlock")}>
+                  <FontAwesomeIcon icon={faPlus} />
+                </button>
+              </div>
+              {regionPanel(openRegion)}
+            </>
+          )}
         </div>
         </div>
 
@@ -2054,7 +2201,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
                 <FontAwesomeIcon icon={iconFor(selected.node.type)} />
               </span>
               <span className="lay__props-text">
-                <b>{getBlock(selected.node.type)?.editorMeta?.label ?? selected.node.type}</b>
+                <b>{blockLabel(selected.node.type)}</b>
                 <code>{selected.node.type} · {regionLabel(selected.region, templateKey, t)}</code>
               </span>
             </span>
@@ -2124,6 +2271,8 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
                     <SchemaFields
                       compact
                       schema={schemaFor(selected.node.type)}
+                      // Core blocks' setting texts are translated; a plugin block's are its own.
+                      textKey={`blocks.${blockTextType(selected.node.type)}.props`}
                       values={selected.node.props}
                       onChange={(next) => updateProps(selected.node.id, next)}
                       // The background props get a picker, an uploader and a preview
@@ -2148,6 +2297,18 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
                 );
               })()}
 
+
+              {/* The header's dropdowns + the pill they open from: theme tokens, offered
+                  where the admin clicks them (the preview opens the dropdown too). */}
+              {(() => {
+                const groups = menuGroupsFor(selected.node.type);
+                return groups && (
+                  <InspectorFold key={`menu:${selected.node.id}`} defaultOpen
+                    title={t("layoutEditor.dropdownStyle")}>
+                    <BlockMenuStyle groups={groups} />
+                  </InspectorFold>
+                );
+              })()}
 
               {/* A required block may be moved anywhere but never restricted: an
                   audience would achieve by hiding exactly what deletion is
@@ -2211,6 +2372,8 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
                   onVariantChange={(next) => updateVariant(selected.node.id, next)}
                   className={selected.node.className}
                   onClassNameChange={(next) => updateClassName(selected.node.id, next)}
+                  headingFont={selected.node.headingFont}
+                  onHeadingFontChange={(next) => updateHeadingFont(selected.node.id, next)}
                   isContainer={!!getBlock(selected.node.type)?.container}
                   onPreviewCss={setVariantCss}
                 />
@@ -2228,7 +2391,7 @@ function LayoutEditorInner({ themeKey, embedded }: { themeKey: string | null; em
           <button type="button" className={`lay__props-chip lay__props-chip--${inspectorSide}`}
             onClick={() => setInspectorOpen(true)}>
             <FontAwesomeIcon icon={faSliders} />
-            {getBlock(selected.node.type)?.editorMeta?.label ?? selected.node.type}
+            {blockLabel(selected.node.type)}
           </button>
         )}
         </div>

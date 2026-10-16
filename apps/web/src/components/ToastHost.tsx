@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import i18n from "../lib/i18n";
 import { FontAwesomeIcon } from "./Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { faCircleCheck, faCircleInfo, faTriangleExclamation, faCircleXmark, faXmark } from "@fortawesome/free-solid-svg-icons";
@@ -46,7 +47,7 @@ function ToastCard({ t }: { t: ToastItem }) {
         )}
       </div>
       {t.count > 1 && <span className="xt-toast__count">×{t.count}</span>}
-      <button type="button" className="xt-toast__close" aria-label="Dismiss" onClick={() => toast.dismiss(t.id)}>
+      <button type="button" className="xt-toast__close" aria-label={i18n.t("common:toastHost.dismiss")} onClick={() => toast.dismiss(t.id)}>
         <FontAwesomeIcon icon={faXmark} />
       </button>
       {/* key restarts the countdown animation when a dedup resets the timer */}
@@ -59,7 +60,7 @@ export function ToastHost() {
   const toasts = useSyncExternalStore(subscribeToasts, getToasts, getToasts);
   if (toasts.length === 0) return null;
   return (
-    <div className="xt-toasts" role="region" aria-label="Notifications">
+    <div className="xt-toasts" role="region" aria-label={i18n.t("common:toastHost.region")}>
       {toasts.map((t) => <ToastCard key={t.id} t={t} />)}
     </div>
   );

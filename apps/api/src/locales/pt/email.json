@@ -1,0 +1,33 @@
+{
+  "templates": {
+    "notification": {
+      "subject": "{{title}} · {{site_name}}",
+      "body": "<h2>{{title}}</h2><p>{{body}}</p><p>{{link_button}}</p><hr><p>Recebes este e-mail porque tens as notificações ativadas. Podes alterar as tuas preferências nas definições da conta.</p>"
+    },
+    "password_reset": {
+      "subject": "Repõe a tua palavra-passe do {{site_name}}",
+      "body": "<h2>Repõe a tua palavra-passe</h2><p>Recebemos um pedido para repor a tua palavra-passe. Clica no botão abaixo para escolher uma nova. Esta ligação expira em {{expiry_minutes}} minutos e só pode ser usada uma vez.</p><p>{{reset_button}}</p><p>Se não foste tu a pedir, podes ignorar este e-mail: a tua palavra-passe continua a mesma.</p>"
+    },
+    "magic_link": {
+      "subject": "A tua ligação de início de sessão no {{site_name}}",
+      "body": "<h2>Inicia sessão no {{site_name}}</h2><p>Clica no botão abaixo para iniciar sessão. Esta ligação expira em {{expiry_minutes}} minutos e só pode ser usada uma vez.</p><p>{{login_button}}</p><p>Se não foste tu a pedir, ignora este e-mail. Ninguém consegue iniciar sessão sem a ligação.</p>"
+    },
+    "email_verify": {
+      "subject": "Verifica o teu e-mail · {{site_name}}",
+      "body": "<h2>Verifica o teu e-mail</h2><p>Introduz este código no formulário de registo para concluir a criação da conta. Expira em {{expiry_minutes}} minutos.</p><p>{{code_box}}</p><p>Se não foste tu a pedir, podes ignorar este e-mail.</p>"
+    },
+    "email_change": {
+      "subject": "O teu código para alterar o e-mail · {{site_name}}",
+      "body": "<h2>Confirma o teu novo e-mail</h2><p>Introduz este código para confirmar {{new_email}} como o teu novo endereço de e-mail. Expira em {{expiry_minutes}} minutos.</p><p>{{code_box}}</p><p>Se não foste tu a pedir, podes ignorar este e-mail: o teu endereço não muda.</p>"
+    },
+    "smtp_test": {
+      "subject": "Teste de SMTP · {{site_name}}",
+      "body": "<h2>O envio de e-mail funciona</h2><p>Esta é a mensagem de teste do {{site_name}}. Se a estás a ler, as definições de SMTP no ACP estão corretas e o correio está a sair do servidor.</p><p>Enviado a partir de {{site_url}}</p>"
+    }
+  },
+  "buttons": {
+    "view": "Ver →",
+    "reset": "Repor palavra-passe →",
+    "signIn": "Iniciar sessão →"
+  }
+}

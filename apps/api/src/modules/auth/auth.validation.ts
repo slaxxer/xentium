@@ -52,6 +52,8 @@ export const registerSchema = z.object({
   loginPinEnabled: z.boolean().optional().default(false),
   loginPin: z.string().regex(/^\d{4}$/).optional(),
   inviteCode: z.string().optional(),
+  /** The sign-up form's "I accept the terms / privacy policy" box. Required while either is published. */
+  acceptLegal: z.boolean().optional(),
   fields: z
     .array(
       z.object({

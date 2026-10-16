@@ -39,7 +39,9 @@
     "composer": "Editor",
     "modTemplates": "Vorlagen",
     "themeStudio": "Theme Studio",
-    "legal": "Rechtliches"
+    "legal": "Rechtliches",
+    "activityLog": "Aktivitätsprotokoll",
+    "emojis": "Emojis"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -96,6 +98,14 @@
         "title": "Allgemein",
         "desc": "Identität und Sprache deiner Community."
       },
+      "features": {
+        "title": "Seite & Funktionen",
+        "desc": "Schalte Kernbereiche ein oder aus und wähle, was die Startseite zeigt. Ein deaktivierter Bereich verschwindet überall und liefert 404. Deine Daten bleiben erhalten und sind beim erneuten Aktivieren wieder da."
+      },
+      "maintenance": {
+        "title": "Wartungsmodus",
+        "desc": "Nimm die Seite für alle außer einer gewählten Gruppe offline und sag Besuchern, was gerade passiert."
+      },
       "registration": {
         "title": "Registrierung",
         "desc": "Steuere, wie neue Mitglieder beitreten."
@@ -111,12 +121,36 @@
       "members": {
         "title": "Mitglieder",
         "desc": "Verzeichnis- und Anerkennungseinstellungen."
+      },
+      "login": {
+        "title": "Anmeldung",
+        "desc": "Wie sich Mitglieder anmelden, und Schutz vor Fehlversuchen."
+      },
+      "alert": {
+        "title": "Seitenhinweis",
+        "desc": "Eine Nachricht in einer Leiste ganz oben auf jeder Seite, über dem Header. Im Wartungsmodus sieht das Team dort auch den Wartungshinweis."
       }
     },
     "fields": {
       "siteName": {
         "label": "Seitenname",
         "desc": "Wird in der Kopfzeile, in Seitentiteln und E-Mails angezeigt."
+      },
+      "featuresArticles": {
+        "label": "Artikel",
+        "desc": "Der CMS-/Blog-Bereich. Wenn aus, liefern /articles und seine API 404."
+      },
+      "featuresHome": {
+        "label": "Start-Feed",
+        "desc": "Der Feed für angemeldete Mitglieder auf der Startadresse. Wenn aus, leitet die Startadresse auf deine Landingpage weiter."
+      },
+      "featuresMembers": {
+        "label": "Mitgliederverzeichnis",
+        "desc": "Die öffentliche Mitgliederliste. Wenn aus, liefert /members 404 (Profile bleiben erreichbar)."
+      },
+      "landing": {
+        "label": "Landingpage",
+        "desc": "Wohin die Startadresse (/) Besucher schickt. Hier erscheinen nur aktive Bereiche und installierte Plugins."
       },
       "siteUrl": {
         "label": "Seiten-URL",
@@ -182,6 +216,38 @@
         "label": "Absenderadresse",
         "desc": "Der Absender, der bei ausgehenden E-Mails angezeigt wird."
       },
+      "loginMethod": {
+        "label": "Anmeldekennung",
+        "desc": "Ob sich Mitglieder mit E-Mail, Benutzername oder beidem anmelden."
+      },
+      "lockoutEnabled": {
+        "label": "Nach Fehlversuchen sperren",
+        "desc": "Sperrt die Anmeldung vorübergehend nach zu vielen Fehlversuchen."
+      },
+      "lockoutMaxAttempts": {
+        "label": "Max. Fehlversuche",
+        "desc": "Erlaubte Fehlversuche, bevor das Konto vorübergehend gesperrt wird."
+      },
+      "lockoutDuration": {
+        "label": "Sperrdauer (Minuten)",
+        "desc": "Wie lange die Anmeldung gesperrt bleibt, sobald das Limit erreicht ist."
+      },
+      "collectName": {
+        "label": "Bei der Registrierung einen Namen abfragen",
+        "desc": "Neue Mitglieder nach einem Anzeigenamen fragen (z. B. ihrem vollen Namen), der im Profil steht."
+      },
+      "nameRequired": {
+        "label": "Name ist Pflicht",
+        "desc": "Macht den Namen bei der Registrierung zur Pflicht (nur wenn ein Name abgefragt wird)."
+      },
+      "showPreviousUsernames": {
+        "label": "Frühere Benutzernamen anzeigen",
+        "desc": "Zeigt die letzten früheren Benutzernamen eines Mitglieds im Profil. Mitglieder können das nicht ausblenden."
+      },
+      "previousUsernameDays": {
+        "label": "Zeitraum für frühere Namen (Tage)",
+        "desc": "Wie lange ein früherer Benutzername nach einer Änderung sichtbar bleibt. 0 = gesamter Verlauf."
+      },
       "smtpUser": {
         "label": "SMTP-Benutzername",
         "desc": "Leer lassen, wenn über einen lokalen Mailserver ohne Anmeldung gesendet wird."
@@ -209,7 +275,40 @@
       "dateFormat": {
         "label": "Datumsformat",
         "desc": "Wie Daten bei Beiträgen, Artikeln und Nachrichten geschrieben werden."
+      },
+      "alertEnabled": {
+        "label": "Hinweis anzeigen",
+        "desc": "Aus blendet ihn überall aus; der Text bleibt erhalten."
+      },
+      "alertMessage": {
+        "label": "Nachricht",
+        "desc": "Wird so angezeigt, wie du sie schreibst. Bis zu 500 Zeichen."
+      },
+      "alertTone": {
+        "label": "Farbe",
+        "desc": "Wie dringend er wirkt."
+      },
+      "alertLinkLabel": {
+        "label": "Linktext",
+        "desc": "Optional. Leer zeigt die Adresse selbst."
+      },
+      "alertLinkUrl": {
+        "label": "Linkadresse",
+        "desc": "Optional. Eine Seite dieser Website (/forum) oder eine vollständige https://-Adresse."
+      },
+      "alertAudience": {
+        "label": "Wer ihn sieht",
+        "desc": "Alle, nur nicht angemeldete Besucher oder nur Mitglieder."
+      },
+      "alertDismissible": {
+        "label": "Kann geschlossen werden",
+        "desc": "Jeder Besucher kann ihn ausblenden; eine neue Nachricht erscheint wieder."
       }
+    },
+    "landing": {
+      "home": "Start-Feed",
+      "articles": "Artikel",
+      "members": "Mitglieder"
     },
     "placeholders": {
       "siteName": "Meine Xentium-Seite",
@@ -218,7 +317,10 @@
       "smtpHost": "smtp.beispiel.de",
       "fromAddress": "no-reply@beispiel.de",
       "smtpUser": "no-reply@example.com",
-      "fromName": "Nodelab"
+      "fromName": "Nodelab",
+      "alertMessage": "Am Sonntag um 20 Uhr aktualisieren wir das Forum.",
+      "alertLinkLabel": "Mehr erfahren",
+      "alertLinkUrl": "/articles/upgrade"
     },
     "options": {
       "regMode": {
@@ -240,6 +342,11 @@
         "threads": "Meiste Themen",
         "followers": "Meiste Follower"
       },
+      "loginMethod": {
+        "email": "E-Mail-Adresse",
+        "username": "Benutzername",
+        "either": "E-Mail oder Benutzername"
+      },
       "rankDisplay": {
         "badge": "Abzeichen",
         "image": "Rangbilder"
@@ -257,6 +364,17 @@
         "long": "7. Oktober 2026",
         "numeric": "07.10.2026 (nach Sprache)",
         "iso": "2026-10-07"
+      },
+      "alertTone": {
+        "info": "Akzent",
+        "success": "Grün (gute Nachricht)",
+        "warning": "Gelb (Hinweis)",
+        "danger": "Rot (dringend)"
+      },
+      "alertAudience": {
+        "everyone": "Alle",
+        "guests": "Nur Gäste",
+        "members": "Nur Mitglieder"
       }
     },
     "toastSaved": "Einstellungen gespeichert!",
@@ -267,6 +385,103 @@
       "saved": "Gespeichert",
       "removed": "Entfernt",
       "placeholder": "Neuen Wert eingeben"
+    },
+    "maintenance": {
+      "pill": {
+        "offline": "Seite offline · nur Team",
+        "live": "Seite ist online"
+      },
+      "master": {
+        "label": "Wartungsmodus",
+        "desc": "Alle außerhalb der erlaubten Gruppen sehen den Wartungsbildschirm. Admins kommen immer durch."
+      },
+      "groups": {
+        "access": "Wer durchkommt",
+        "copy": "Was Besucher lesen",
+        "progress": "Fortschritt",
+        "timing": "Zeitplan",
+        "look": "Aussehen der Seite",
+        "extras": "Extras"
+      },
+      "allowedGroups": {
+        "label": "Erlaubte Gruppen",
+        "desc": "Diese Gruppen können sich während der Wartung anmelden und die Seite nutzen.",
+        "adminLocked": "Administratoren haben während der Wartung immer Zugang."
+      },
+      "headline": {
+        "label": "Überschrift",
+        "desc": "Die große Überschrift auf dem Wartungsbildschirm."
+      },
+      "reason": {
+        "label": "Grund",
+        "desc": "Eine kurze, verständliche Erklärung, warum die Seite offline ist."
+      },
+      "mode": {
+        "label": "Wie der Fortschritt gezeigt wird",
+        "desc": "Benannte Schritte lesen sich bei längerer Arbeit besser; für einen kurzen Eingriff reicht ein Balken.",
+        "options": {
+          "steps": "Schritte",
+          "bar": "Balken",
+          "hidden": "Ausgeblendet"
+        }
+      },
+      "steps": {
+        "label": "Schritte",
+        "desc": "Benenne jede Phase der Arbeit. Markiere die aktuelle, Besucher sehen das live.",
+        "add": "Schritt hinzufügen",
+        "new": "Neuer Schritt",
+        "remove": "Schritt entfernen",
+        "markCurrent": "Als aktuellen Schritt markieren"
+      },
+      "bar": {
+        "label": "Balkentext & Füllung",
+        "desc": "Text neben dem Balken und wie voll er ist (0–100). Bei 0 ist der Balken ausgeblendet."
+      },
+      "eta": {
+        "label": "Wieder online (voraussichtlich)",
+        "desc": "Steuert den Countdown und die „Wieder online“-Zeit. Leer lassen, um beides auszublenden."
+      },
+      "countdown": {
+        "label": "Live-Countdown",
+        "desc": "Zeigt Stunden / Minuten / Sekunden bis zum voraussichtlichen Ende."
+      },
+      "autoRefresh": {
+        "label": "Automatisch neu laden, wenn fertig",
+        "desc": "Besucher landen auf der Seite, sobald die Wartung endet, ohne neu zu laden."
+      },
+      "background": {
+        "label": "Hintergrund",
+        "desc": "Beide folgen den Akzentfarben deiner Seite.",
+        "options": {
+          "aurora": "Aurora",
+          "solid": "Einfarbig"
+        }
+      },
+      "services": {
+        "label": "Betroffene Dienste",
+        "desc": "Werden auf dem Wartungsbildschirm aufgelistet. Klicke auf einen Status, um ihn zu wechseln.",
+        "add": "Dienst hinzufügen",
+        "new": "Neuer Dienst",
+        "remove": "Dienst entfernen",
+        "cycle": "Status ändern",
+        "states": {
+          "offline": "Offline",
+          "degraded": "Eingeschränkt",
+          "operational": "In Betrieb"
+        }
+      },
+      "links": {
+        "label": "Wo es Neuigkeiten gibt",
+        "desc": "Erscheinen als kleine Symbol-Links in der Fußzeile des Wartungsbildschirms.",
+        "add": "Link hinzufügen",
+        "remove": "Link entfernen",
+        "cycleIcon": "Symbol ändern"
+      },
+      "staffLink": {
+        "label": "Link zur Team-Anmeldung",
+        "desc": "Ein unauffälliger Link in der Fußzeile öffnet die Anmeldung. Blendest du ihn aus, nutzt das Team direkt /login."
+      },
+      "adminAlways": "Administratoren haben während der Wartung immer Zugriff"
     }
   },
   "invite": {
@@ -600,7 +815,13 @@
     "deleteEntry": "Eintrag löschen",
     "noContext": "Kein Kontext aufgezeichnet.",
     "loadOlder": "Ältere Vorkommen laden",
-    "clearMember": "Alle Mitglieder zeigen, nicht nur {{name}}"
+    "clearMember": "Alle Mitglieder zeigen, nicht nur {{name}}",
+    "dev": {
+      "label": "DEV-Simulation:",
+      "crash": "Unbehandelter 500er (kritisch), löst den Notstopp aus",
+      "xec": "XentiumError 500, löst den Notstopp aus",
+      "notFound": "404, nur Hinweis"
+    }
   },
   "errorRef": {
     "title": "Fehlerreferenz",
@@ -1571,7 +1792,8 @@
     },
     "used_one": "{{count}}-mal verwendet",
     "used_other": "{{count}}-mal verwendet",
-    "edited": "zuletzt bearbeitet von {{name}} {{when}}"
+    "edited": "zuletzt bearbeitet von {{name}} {{when}}",
+    "newText": "Hallo {user}, "
   },
   "modCases": {
     "sub": "Moderation",
@@ -1779,23 +2001,33 @@
       "group": "Gruppen"
     }
   },
-  "styleHistory": {
-    "loading": "Wird geladen…",
-    "empty": "Noch keine gespeicherten Stil-Schnappschüsse.",
+  "studioHistory": {
+    "scheduled": "Veröffentlicht (geplant)",
+    "undoColourway": "Farbvariante rückgängig gemacht",
+    "colourway": "Farbvariante: {{name}}",
+    "restored": "Wiederhergestellt: {{label}}",
+    "loading": "Lädt…",
+    "empty": "Noch nichts veröffentlicht. Jede Veröffentlichung erscheint hier.",
     "by": "von",
     "restore": "Wiederherstellen",
-    "restoreConfirmTitle": "„{{label}}“ wiederherstellen?",
-    "restoreConfirmBody": "Dadurch werden die aktuellen Stileinstellungen überschrieben.",
-    "restoreConfirmBtn": "Wiederherstellen",
-    "toastRestored": "Stil wiederhergestellt und angewendet.",
-    "sumInitial_one": "{{count}} Token in diesem Schnappschuss",
-    "sumInitial_other": "{{count}} Tokens in diesem Schnappschuss",
-    "sumNone": "Keine Token-Änderungen",
-    "sumMore_one": "{{list}} und {{count}} weiteres",
-    "sumMore_other": "{{list}} und {{count}} weitere",
-    "tagCurrent": "Aktuell",
-    "tagSnapshot": "Schnappschuss",
-    "currentHint": "Das ist der aktuelle Stil."
+    "restoreHint": "Als Entwurf zurückholen. Live geht erst etwas, wenn du veröffentlichst.",
+    "liveHint": "Das ist gerade live.",
+    "confirmTitle": "Version vom {{when}} wiederherstellen?",
+    "confirmRevision": "Layouts, Farben, Schrift und eigenes CSS dieser Version werden zum Entwurf dieses Themes und ersetzen den aktuellen Entwurf. Die Live-Seite ändert sich erst beim Veröffentlichen.",
+    "confirmColours": "Die Farben dieser Version werden zum Entwurf dieses Themes und ersetzen die aktuell vorgemerkten Farben. Die Live-Seite ändert sich erst beim Veröffentlichen.",
+    "staged": "Als Entwurf wiederhergestellt. Prüfe ihn in den Vorschauen und veröffentliche dann.",
+    "published": "Veröffentlicht",
+    "colourChange": "Farben geändert",
+    "coloursOnly": "Nur Farben",
+    "layouts_one": "{{count}} Layout",
+    "layouts_other": "{{count}} Layouts",
+    "tokens_one": "{{count}} Farb- oder Schriftänderung",
+    "tokens_other": "{{count}} Farb- oder Schriftänderungen",
+    "font": "Schrift",
+    "css": "eigenes CSS",
+    "tagLive": "Live",
+    "tagPublish": "Veröffentlichung",
+    "tagColours": "Farben"
   },
   "installed": {
     "title": "Installierte Plugins",
@@ -2503,6 +2735,13 @@
     "badgeEarnedHint": "Automatisch vergeben, weil die Anforderungen erfüllt sind. Ein Zurücknehmen hält nur bis zum nächsten Durchlauf, solange die Anforderungen erfüllt bleiben."
   },
   "styleEditor": {
+    "fontSiteDefault": "Standard (Bricolage Grotesque + Figtree)",
+    "previewSurface": "Was die Vorschau zeigt",
+    "previewPage": "Seite",
+    "surface": {
+      "components": "Komponenten",
+      "page": "Seite"
+    },
     "rowBg": "Hintergrund",
     "rowSurface": "Oberfläche",
     "rowCard": "Karte",
@@ -2528,7 +2767,8 @@
     "secButton": "Schaltfläche",
     "secCard": "Karte",
     "secField": "Feld",
-    "secMenu": "Menü",
+    "secMenu": "Menüs & Dropdowns",
+    "secUserMenu": "Benutzermenü",
     "secSegment": "Sortier-Schaltflächen",
     "secBranding": "Branding",
     "secCustomCss": "Eigenes CSS",
@@ -2544,20 +2784,16 @@
     "kComponent": "Komponente",
     "editEvery": "Bearbeitet jede Instanz dieser Komponente.",
     "editOnly": "Bearbeitet nur {{region}}-Instanzen — überschreibt den globalen Wert in diesem Bereich.",
-    "toastCss": "Eigenes CSS site-weit angewendet.",
+    "cssDraftSaved": "Im Entwurf gespeichert. Geht beim Veröffentlichen live.",
     "toastLogoText": "Logo-Text gespeichert.",
     "toastUploaded": "Hochgeladen.",
     "toastRemoved": "Entfernt.",
     "toastDraft": "Entwurf gespeichert — veröffentlichen, um ihn live anzuwenden.",
-    "toastPublished": "Veröffentlicht — deine Änderungen sind jetzt für alle live.",
     "toastReset": "Erscheinungsbild zurückgesetzt — erbt das Kern-Design.",
     "resetTitle": "Erscheinungsbild auf das Kern-Design zurücksetzen?",
     "resetText": "Stellt die Standard-Theme-Token und -Schriften wieder her und löscht dein eigenes CSS für Hell und Dunkel. Dies kann nicht rückgängig gemacht werden.",
     "reset": "Zurücksetzen",
     "loading": "Wird geladen…",
-    "publishHint": "Gestaffelte Änderungen jetzt auf die Live-Website anwenden",
-    "publishing": "Wird veröffentlicht…",
-    "publishNow": "Jetzt veröffentlichen",
     "logoText": "Logo-Text (Fallback, wenn kein Bild gesetzt ist)",
     "logoPlaceholder": "xentium",
     "save": "Speichern",
@@ -2565,10 +2801,10 @@
     "navbarLogoHint": "PNG, SVG oder WebP · max. 2 MB · empfohlen 160×40 px",
     "favicon": "Favicon / Website-Symbol",
     "faviconHint": "PNG, ICO oder SVG · max. 2 MB · empfohlen 64×64 px",
-    "cssIntro": "Rohes CSS für das Theme, das du gerade ansiehst — nach den Token gescoped & angewendet, sodass es jede Regel überschreibt. Wechsle dein Theme über den Umschalter oben, um das andere zu bearbeiten. Änderungen werden live vorgeschaut; „Anwenden & Speichern“ speichert beide Themes und veröffentlicht sie für alle Besucher.",
+    "cssIntro": "Eigenes CSS für dieses Theme, nach den Tokens angewendet, damit es jede Regel überschreiben kann. Es wird beim Tippen im Entwurf gespeichert und in den Vorschauen gezeigt; Veröffentlichen bringt es zusammen mit Farben und Layouts live.",
     "cssThemeLayer": "Ein installiertes Theme bringt ebenfalls ein Stylesheet mit. Es wird vor diesem angewendet, deine Regeln gewinnen also — und beim Theme-Update wird nichts davon überschrieben.",
     "saving": "Wird gespeichert…",
-    "applySave": "Anwenden & Speichern",
+    "cssInvalid": "Dieses CSS ist nicht lesbar und wurde nicht gespeichert. Prüfe offene Klammern oder Anführungszeichen.",
     "unsaved": "Ungespeicherte Änderungen — Live-Vorschau",
     "saved": "Gespeichert",
     "charCount": "{{count}} / 100.000 Zeichen",
@@ -2586,11 +2822,7 @@
     "fontSize": "Basis-Schriftgröße",
     "forceState": "Diesen Zustand am Muster erzwingen",
     "previewTitle": "Live-Theme-Vorschau",
-    "tabTokens": "Tokens",
-    "tabHistory": "Verlauf",
     "draft": "Entwurf",
-    "unpublishedN_one": "{{count}} unveröffentlichte Änderung",
-    "unpublishedN_other": "{{count}} unveröffentlichte Änderungen",
     "diffReview": "Prüfen",
     "diffHide": "Ausblenden",
     "diffTitle": "Was beim Veröffentlichen geändert wird",
@@ -2637,6 +2869,7 @@
       "content-bg": "Inhalt Hintergrund",
       "content-border-color": "Inhalt Rahmen",
       "footer-bg": "Fußzeile Hintergrund",
+      "footer-fg-strong": "Kräftiger Footer-Text",
       "footer-fg": "Fußzeile Text",
       "footer-fg-subtle": "Fußzeile dezenter Text",
       "footer-border-color": "Fußzeile Rahmen",
@@ -2700,6 +2933,7 @@
       "fs-2xl": "Überschrift · groß (24px)",
       "fs-3xl": "Überschrift · sehr groß (30px)",
       "font-display": "Überschriftenschrift",
+      "font-headline": "Schrift für Schlagzeilen",
       "font-body": "Textschrift",
       "ff-mono": "Code-Schrift",
       "nav-height": "Höhe der Navigationsleiste",
@@ -2744,7 +2978,15 @@
       "corner-cut-sm": "Eckenschnitt (klein)",
       "clip-card": "Eckenform der Karten",
       "clip-sm": "Eckenform (klein)",
-      "glow-accent": "Leuchten auf Akzentelementen"
+      "glow-accent": "Leuchten auf Akzentelementen",
+      "menu-fg-muted": "Menü-Nebentext",
+      "menu-fw": "Menü-Schriftstärke",
+      "menu-title-fw": "Menü-Titelstärke",
+      "usermenu-bg": "Benutzermenü Hintergrund",
+      "usermenu-fg": "Benutzermenü Text",
+      "usermenu-line": "Benutzermenü Trennlinien",
+      "usermenu-fw": "Benutzermenü Schriftstärke",
+      "usermenu-radius": "Benutzermenü Eckenradius"
     },
     "shCustom": "Eigene",
     "shDirection": "Fällt",
@@ -2807,11 +3049,18 @@
     "iconSize": "Icon-Größe",
     "iconSmaller": "Kleinere Icons",
     "iconBigger": "Größere Icons",
-    "iconSizeHint": "Skaliert alle Icons der Seite, ohne die Schriftgröße zu ändern. Der Admin-Bereich behält seine eigene."
+    "iconSizeHint": "Skaliert alle Icons der Seite, ohne die Schriftgröße zu ändern. Der Admin-Bereich behält seine eigene.",
+    "weight": {
+      "300": "Leicht",
+      "400": "Normal",
+      "500": "Mittel",
+      "600": "Halbfett",
+      "700": "Fett",
+      "800": "Extrafett",
+      "900": "Schwarz"
+    }
   },
   "layoutEditor": {
-    "title": "Layout-Editor",
-    "subtitle": "Lege fest, was auf jeder Seite erscheint. Blöcke stammen aus einem festen Katalog — ein Layout ist Daten und kann niemals Code ausführen. Änderungen bleiben im Entwurf, bis du sie veröffentlichst.",
     "structure": "Struktur",
     "preview": "Vorschau",
     "blockSettings": "Block-Einstellungen",
@@ -2922,9 +3171,14 @@
     "variantNote": "Eine Variante ist ein benannter Look aus dem Theme, keine Farbe an diesem Block — alle Blöcke mit derselben Variante bleiben einheitlich, in Hell und Dunkel. Wird mit dem Layout gespeichert.",
     "classNameLabel": "CSS-Klasse",
     "classNameNote": "Ein optionaler Anker für eigenes CSS, z. B. nav-tile. Gestalte darüber — .nav-tile > * oder .nav-tile img — der Anker selbst zeichnet nichts. Wird mit dem Layout gespeichert.",
+    "headingFont": "Schrift der Überschriften",
+    "headingFontSite": "Schrift der Seite",
+    "headingFontNote": "Setzt die Überschriften in diesem Block (und in den Blöcken darin) anders als den Rest der Seite.",
     "variantLeaf": "Dieser Block hat keine eigene Fläche. Setze den Stil an der Sektion oder Karte, die ihn enthält — dieser Block folgt dann automatisch.",
     "variantScope": "{{variant}}",
     "variantTokenNote": "Diese Farben gehören zur Variante und ändern damit jeden Block, der sie nutzt. Sie liegen im Entwurf des Erscheinungsbilds — Veröffentlichen im Style-Editor.",
+    "menuTokensNote": "Diese Werte gehören zum Theme: Jedes Dropdown der Seite nutzt sie, nicht nur dieser Block. Sie warten mit deinen anderen Theme-Studio-Änderungen auf das Veröffentlichen.",
+    "dropdownStyle": "Stil von Dropdown & Benutzermenü",
     "tokPanelBg": "Panel-Hintergrund",
     "tokPanelBorder": "Panel-Rahmen",
     "tokText": "Text",
@@ -2950,10 +3204,6 @@
     "documentLabel": "Dokument",
     "undo": "Rückgängig",
     "redo": "Wiederholen",
-    "publish": "Veröffentlichen",
-    "publishing": "Wird veröffentlicht…",
-    "published": "{{count}} Vorlage(n) veröffentlicht.",
-    "nothingPending": "Nichts zu veröffentlichen.",
     "reset": "Zurücksetzen",
     "resetTitle": "Vorlage zurücksetzen?",
     "resetBody": "Dein Layout für diese Vorlage wird entfernt, und die Seite zeigt, was dieses Theme mitbringt (Core: die eingebaute Vorgabe). Das lässt sich nicht rückgängig machen.",
@@ -3207,6 +3457,19 @@
       "glow": "Leuchten auf Akzentelementen",
       "tokens": "Tokens",
       "staged": "Im Erscheinungsbild-Entwurf vorgemerkt, wie jede Token-Änderung. Veröffentliche ihn im Style Editor."
+    },
+    "imagePlaceholder": "Hochladen oder Pfad / https://-Adresse",
+    "richTextPlaceholder": "Text schreiben…",
+    "library": {
+      "tabs": "Blöcke und Ebenen",
+      "blocks": "Blöcke",
+      "layers": "Ebenen",
+      "insertHere": "Wähle einen Block für die markierte Stelle.",
+      "clear": "Suche leeren",
+      "hint": "Zieh einen Block auf die Seite oder klick ihn an, um ihn hinter dem ausgewählten Block einzufügen.",
+      "browseAll": "Mit Beschreibungen durchsuchen",
+      "addHere": "Hier einen Block einfügen",
+      "notHere": "{{block}} passt dort nicht hin. Wähle einen Block oder markiere eine passende Stelle."
     }
   },
   "groups": {
@@ -3378,16 +3641,17 @@
       "sourceTitle": "Herkunft",
       "source": "Von {{plugin}} als Gruppenbereich registriert, deshalb erscheint es hier statt als eigene ACP-Seite. Es speichert selbst und meldet sich in der Anzeige dieser Seite.",
       "disable": "Die Werte liegen in den eigenen Tabellen von {{plugin}}. Wird das Plugin deaktiviert, verschwindet dieser Tab, die Einstellungen bleiben erhalten."
-    }
+    },
+    "previewName": "mitglied"
   },
   "email": {
     "eyebrow": "System",
     "title": "E-Mail",
-    "subtitle": "Mailserver konfigurieren und die von dieser Website versendeten Nachrichten bearbeiten. Änderungen werden automatisch gespeichert.",
+    "subtitle": "Mailserver konfigurieren und die von dieser Website versendeten Nachrichten bearbeiten.",
     "subject": "Betreff",
-    "body": "Inhalt (HTML)",
+    "body": "Inhalt",
     "placeholders": "Platzhalter",
-    "insert": "An den Inhalt anhängen",
+    "insert": "An der Cursorposition einfügen",
     "customized": "Angepasst",
     "reset": "Auf Standard zurücksetzen",
     "resetTitle": "Diese Vorlage zurücksetzen?",
@@ -3413,9 +3677,12 @@
     },
     "templateDesc": "Betreff und Inhalt dieser Nachricht.",
     "subjectDesc": "Reiner Text. Platzhalter werden ersetzt.",
-    "bodyDesc": "HTML. In Platzhalter eingesetzte Werte werden automatisch escaped.",
+    "bodyDesc": "Formatiere ihn wie einen Beitrag. Seitenname, Layout und Buttons kommen beim Versand dazu, Platzhalter werden ausgefüllt.",
     "testTitle": "Testnachricht senden",
-    "testDesc": "Sendet die SMTP-Testvorlage an eine Adresse deiner Wahl."
+    "testDesc": "Sendet die SMTP-Testvorlage an eine Adresse deiner Wahl.",
+    "legacy": "Diese Vorlage wurde von einer früheren Version als reines HTML gespeichert und wird weiterhin genau so versendet. Setze sie auf den Standard zurück, um sie hier zu bearbeiten.",
+    "langDefault": "Unverändert geht diese E-Mail in der Sprache jedes Mitglieds raus. Sobald du sie bearbeitest, erhalten alle deine Fassung.",
+    "langCustom": "Deine Fassung geht so an alle. Setze sie zurück, damit jedes Mitglied den Standard in seiner Sprache erhält."
   },
   "themes": {
     "title": "Themes",
@@ -3531,7 +3798,8 @@
     "removeNamed": "{{name}} entfernen",
     "nowLive": "{{name}} ist jetzt für Besucher live.",
     "backTo": "Zurück zu {{name}}.",
-    "exportedNamed": "{{file}} exportiert."
+    "exportedNamed": "{{file}} exportiert.",
+    "defaultThemeName": "Mein Theme"
   },
   "owned": {
     "title": "Deine Lizenzen",
@@ -3709,7 +3977,13 @@
     "notBundled": "Kein mitgeliefertes Icon. Es benötigt das Kit der Website und wird sonst nicht gezeichnet.",
     "bundled": "Mitgelieferte Icons",
     "noMatches": "Kein passendes Icon.",
-    "needsName": "Wähle zuerst ein Icon — ein Stil allein hat nichts, worauf er wirken kann."
+    "needsName": "Wähle zuerst ein Icon — ein Stil allein hat nichts, worauf er wirken kann.",
+    "searchKit": "{{count}} Kit-Icons durchsuchen…",
+    "kitIcons": "Icons in deinem Kit",
+    "checking": "Prüfe, welche Icons dieser Stil zeichnet…",
+    "noKitMatches": "Kein Icon in diesem Stil passt.",
+    "showMore": "Mehr anzeigen (noch {{count}})",
+    "partialFiltered": "Eine stilisierte Familie: Es werden nur die Icons gezeigt, die sie zeichnet."
   },
   "composer": {
     "eyebrow": "Aussehen",
@@ -3990,6 +4264,7 @@
     "layoutChanges_other": "{{count}} Layouts",
     "styleChanges_one": "{{count}} Stiländerung",
     "styleChanges_other": "{{count}} Stiländerungen",
+    "cssStaged": "eigenes CSS",
     "upToDate": "Alles ist live",
     "publish": "Veröffentlichen",
     "publishing": "Wird veröffentlicht…",
@@ -4031,6 +4306,14 @@
     "bodyEdited": "Nachrichtentext bearbeitet"
   },
   "activity": {
+    "all": "Alle Aktivitäten",
+    "movements": "Bewegungen",
+    "acpActions": "ACP-Aktionen",
+    "colTime": "Zeit",
+    "colIp": "IP",
+    "loading": "Wird geladen…",
+    "empty": "Noch keine Aktivität erfasst",
+    "pagination": "Seite {{page}} von {{totalPages}}, {{total}} Einträge",
     "lede": "Wer im Adminbereich was getan hat, neueste zuerst.",
     "colActor": "Wer",
     "colAction": "Aktion",
@@ -4148,5 +4431,869 @@
       "genericChange": "{{area}} geändert",
       "genericDelete": "Aus {{area}} gelöscht"
     }
+  },
+  "core": {
+    "blocks": {
+      "section": {
+        "label": "Abschnitt",
+        "props": {
+          "backgroundImage": {
+            "title": "Hintergrundbild",
+            "description": "Upload-Pfad oder URL. Leer lassen für keins."
+          },
+          "minHeight": {
+            "title": "Mindesthöhe (px)",
+            "description": "0 = so hoch wie der Inhalt. Ein höheres Band zentriert seinen Inhalt."
+          },
+          "width": {
+            "title": "Breite",
+            "enum": {
+              "full": "Volle Breite",
+              "wide": "Breit",
+              "normal": "Normal",
+              "narrow": "Schmal"
+            }
+          },
+          "padding": {
+            "title": "Innenabstand",
+            "enum": {
+              "none": "Keiner",
+              "sm": "Klein",
+              "md": "Mittel",
+              "lg": "Groß"
+            }
+          }
+        }
+      },
+      "columns": {
+        "label": "Spalten",
+        "props": {
+          "gap": {
+            "title": "Abstand",
+            "enum": {
+              "sm": "Klein",
+              "md": "Mittel",
+              "lg": "Groß"
+            }
+          }
+        }
+      },
+      "column": {
+        "label": "Spalte",
+        "props": {
+          "width": {
+            "title": "Spurbreite",
+            "description": "„Auto“ passt sich dem Inhalt an, „Seitenleiste“/„Leiste“ sind die zwei Leistenbreiten der Seite, Zahlen sind relative Anteile.",
+            "enum": {
+              "1": "1",
+              "2": "2",
+              "3": "3",
+              "auto": "Auto",
+              "sidebar": "Seitenleiste",
+              "rail": "Leiste"
+            }
+          },
+          "sticky": {
+            "title": "Beim Scrollen fixieren"
+          }
+        }
+      },
+      "spacer": {
+        "label": "Abstand",
+        "props": {
+          "size": {
+            "title": "Größe",
+            "enum": {
+              "sm": "Klein",
+              "md": "Mittel",
+              "lg": "Groß",
+              "xl": "Sehr groß"
+            }
+          }
+        }
+      },
+      "eyebrow": {
+        "label": "Dachzeile",
+        "props": {
+          "text": {
+            "title": "Beschriftung"
+          },
+          "align": {
+            "title": "Ausrichtung",
+            "enum": {
+              "start": "Links",
+              "center": "Mitte"
+            }
+          }
+        }
+      },
+      "heading": {
+        "label": "Überschrift",
+        "props": {
+          "icon": {
+            "title": "Symbol"
+          },
+          "align": {
+            "title": "Ausrichtung",
+            "enum": {
+              "start": "Links",
+              "center": "Mitte"
+            }
+          },
+          "text": {
+            "title": "Text"
+          },
+          "eyebrow": {
+            "title": "Überzeile"
+          },
+          "level": {
+            "title": "Ebene"
+          }
+        }
+      },
+      "richText": {
+        "label": "Formatierter Text",
+        "props": {
+          "content": {
+            "title": "Text"
+          }
+        }
+      },
+      "image": {
+        "label": "Bild",
+        "props": {
+          "source": {
+            "title": "Bild"
+          },
+          "href": {
+            "title": "Verlinkt auf",
+            "description": "Ein Pfad wie /forum oder eine vollständige URL. Leer lassen für ein einfaches Bild."
+          },
+          "alt": {
+            "title": "Alternativtext"
+          },
+          "ratio": {
+            "title": "Seitenverhältnis",
+            "enum": {
+              "auto": "Original",
+              "16:9": "16:9",
+              "4:3": "4:3",
+              "1:1": "1:1"
+            }
+          }
+        }
+      },
+      "articleIndex": {
+        "label": "Artikelübersicht",
+        "props": {
+          "defaultView": {
+            "title": "Standardansicht",
+            "enum": {
+              "grid": "Raster",
+              "list": "Liste"
+            }
+          },
+          "showFilters": {
+            "title": "Filter anzeigen"
+          }
+        }
+      },
+      "pluginSlot": {
+        "label": "Plugin-Bereich",
+        "props": {
+          "slotId": {
+            "title": "Slot-ID"
+          }
+        }
+      },
+      "membersTabs": {
+        "label": "Mitglieder-Reiter"
+      },
+      "membersFilters": {
+        "label": "Suche & Filter",
+        "props": {
+          "showSearch": {
+            "title": "Suchfeld anzeigen"
+          },
+          "showSort": {
+            "title": "Sortieroptionen anzeigen"
+          }
+        }
+      },
+      "membersList": {
+        "label": "Mitgliederliste",
+        "props": {
+          "showCount": {
+            "title": "Anzahl und Online-Zeile anzeigen"
+          }
+        }
+      },
+      "membersTeam": {
+        "label": "Team",
+        "props": {
+          "showNote": {
+            "title": "Erklärenden Hinweis anzeigen"
+          }
+        }
+      },
+      "membersHofStats": {
+        "label": "Community-Statistik"
+      },
+      "membersPodium": {
+        "label": "Siegertreppchen"
+      },
+      "membersHowTo": {
+        "label": "So steigst du auf"
+      },
+      "guestSurface": {
+        "label": "Gäste-Startseite"
+      },
+      "guestBody": {
+        "label": "Gastbereich"
+      },
+      "guestHero": {
+        "label": "Hero-Bereich",
+        "props": {
+          "backgroundImage": {
+            "title": "Hintergrundbild",
+            "description": "Upload-Pfad oder URL. Leer lassen für den Standardverlauf."
+          },
+          "overlay": {
+            "title": "Überlagerung",
+            "description": "Dunkelt das Bild ab oder hellt es auf, damit Text lesbar bleibt.",
+            "enum": {
+              "none": "Keine",
+              "light": "Hell",
+              "dark": "Dunkel"
+            }
+          }
+        }
+      },
+      "guestHeroText": {
+        "label": "Hero-Text & Buttons",
+        "props": {
+          "badge": {
+            "title": "Badge-Text",
+            "description": "Folgt der aktuellen Online-Zahl."
+          },
+          "title": {
+            "title": "Schlagzeile"
+          },
+          "subtitle": {
+            "title": "Unterzeile",
+            "description": "„{members}“ wird durch die Mitgliederzahl ersetzt."
+          },
+          "ctaPrimary": {
+            "title": "Haupt-Button"
+          },
+          "ctaSecondary": {
+            "title": "Zweiter Button"
+          },
+          "showStats": {
+            "title": "Mitglieder- / Beitragszähler anzeigen"
+          }
+        }
+      },
+      "guestPresence": {
+        "label": "Gerade los",
+        "props": {
+          "rows": {
+            "title": "Aktivitätszeilen"
+          }
+        }
+      },
+      "guestFeed": {
+        "label": "Gäste-Feed",
+        "props": {
+          "showCategories": {
+            "title": "Kategoriefilter anzeigen"
+          }
+        }
+      },
+      "guestRail": {
+        "label": "Gäste-Seitenleiste",
+        "props": {
+          "showCategories": {
+            "title": "Kategorien anzeigen"
+          },
+          "showOnline": {
+            "title": "Anzeigen, wer online ist"
+          },
+          "showTags": {
+            "title": "Beliebte Tags anzeigen"
+          }
+        }
+      },
+      "homeMeCard": {
+        "label": "Deine Karte"
+      },
+      "homeSectionNav": {
+        "label": "Bereichsnavigation"
+      },
+      "homeSpaces": {
+        "label": "Bereiche"
+      },
+      "homeFeed": {
+        "label": "Feed"
+      },
+      "homeProgression": {
+        "label": "Rangfortschritt"
+      },
+      "homeHotThreads": {
+        "label": "Heiße Themen"
+      },
+      "homePopularTags": {
+        "label": "Beliebte Tags"
+      },
+      "homeSuggestedPeople": {
+        "label": "Vorgeschlagene Personen"
+      },
+      "articleDetail": {
+        "label": "Artikel"
+      },
+      "profileCard": {
+        "label": "Profilkarte",
+        "props": {
+          "padding": {
+            "title": "Innenabstand",
+            "enum": {
+              "none": "Keiner",
+              "sm": "Klein",
+              "md": "Mittel",
+              "lg": "Groß"
+            }
+          }
+        }
+      },
+      "profileAvatar": {
+        "label": "Avatar",
+        "props": {
+          "size": {
+            "title": "Avatargröße",
+            "enum": {
+              "sm": "Klein",
+              "md": "Mittel",
+              "lg": "Groß"
+            }
+          },
+          "overlap": {
+            "title": "Titelbild überlappen",
+            "description": "Hebt den Avatar über das Band darüber. Für den Einsatz unter einem Titelbild."
+          }
+        }
+      },
+      "profileCover": {
+        "label": "Titelband",
+        "props": {
+          "height": {
+            "title": "Höhe (px)",
+            "description": "Das Band hinter dem Profilkopf."
+          },
+          "backgroundImage": {
+            "title": "Hintergrundbild",
+            "description": "Upload-Pfad oder URL. Wird über den Verlauf gelegt."
+          },
+          "backgroundGradient": {
+            "title": "Verlauf"
+          },
+          "backgroundAngle": {
+            "title": "Richtung"
+          }
+        }
+      },
+      "profileRank": {
+        "label": "Rangfortschritt",
+        "props": {
+          "showUnlocks": {
+            "title": "Zeigen, was der nächste Rang freischaltet",
+            "description": "Die Grenzen, die die nächste Stufe anhebt. Ausgeblendet, wenn es keine nächste Stufe gibt."
+          }
+        }
+      },
+      "profileBadges": {
+        "label": "Abzeichen",
+        "props": {
+          "max": {
+            "title": "Angezeigte Abzeichen",
+            "description": "Darüber hinaus werden die übrigen zu einer Zahl zusammengefasst."
+          },
+          "size": {
+            "title": "Abzeichengröße",
+            "enum": {
+              "sm": "Klein",
+              "md": "Mittel"
+            }
+          }
+        }
+      },
+      "profileVisitors": {
+        "label": "Letzte Besucher",
+        "props": {
+          "max": {
+            "title": "Angezeigte Avatare"
+          }
+        }
+      },
+      "profileFollowers": {
+        "label": "Follower-Leiste",
+        "props": {
+          "max": {
+            "title": "Angezeigte Avatare"
+          }
+        }
+      },
+      "profileIdentity": {
+        "label": "Name & Abzeichen",
+        "props": {
+          "showHandle": {
+            "title": "@Handle anzeigen"
+          },
+          "showJoined": {
+            "title": "„Mitglied seit“ anzeigen"
+          },
+          "showAge": {
+            "title": "Alter / Geburtstag anzeigen"
+          },
+          "showBadges": {
+            "title": "Gruppenabzeichen anzeigen"
+          },
+          "showFormerly": {
+            "title": "Frühere Benutzernamen anzeigen"
+          }
+        }
+      },
+      "profileActions": {
+        "label": "Folgen & blockieren"
+      },
+      "profileBio": {
+        "label": "Biografie"
+      },
+      "profileStats": {
+        "label": "Statistik"
+      },
+      "profileTabs": {
+        "label": "Profil-Reiter"
+      },
+      "profileContent": {
+        "label": "Inhalt der Profil-Reiter"
+      },
+      "header": {
+        "label": "Kopfbereich",
+        "props": {
+          "showMasthead": {
+            "title": "Kopfband anzeigen",
+            "description": "Aus: Das Band ist ausgeblendet, Logo und Konto-Buttons wandern in die Navigationsleiste."
+          },
+          "logoAlign": {
+            "title": "Logo",
+            "enum": {
+              "left": "Links",
+              "center": "Mitte"
+            }
+          },
+          "showTagline": {
+            "title": "Slogan anzeigen",
+            "description": "Die Seitenbeschreibung aus den Einstellungen, unter dem Logo."
+          },
+          "height": {
+            "title": "Höhe (px)",
+            "description": "Das Band wächst, wenn der Inhalt mehr braucht. 0 = nur so hoch wie das Logo."
+          },
+          "backgroundImage": {
+            "title": "Hintergrundbild",
+            "description": "Upload-Pfad oder URL. Wird über den Verlauf gelegt. Leer lassen für keins."
+          },
+          "showLogo": {
+            "title": "Logo anzeigen",
+            "description": "Links im Band, bündig mit der Navigationsleiste darunter."
+          },
+          "showWordmark": {
+            "title": "Auch den Seitennamen anzeigen"
+          }
+        }
+      },
+      "navbar": {
+        "label": "Navigationsleiste",
+        "props": {
+          "sticky": {
+            "title": "Fixiert",
+            "description": "Bleibt oben im Fenster, während die Seite (und das Kopfband) scrollt."
+          },
+          "height": {
+            "title": "Höhe (px)",
+            "description": "0 = die Höhe des Themes. 52–84 passt zu den meisten Seiten."
+          },
+          "tone": {
+            "title": "Farbe",
+            "enum": {
+              "theme": "Theme",
+              "dark": "Dunkel",
+              "brand": "Markenfarbe",
+              "light": "Hell"
+            }
+          }
+        }
+      },
+      "logo": {
+        "label": "Logo",
+        "props": {
+          "showWordmark": {
+            "title": "Seitennamen neben dem Logo anzeigen"
+          }
+        }
+      },
+      "navLinks": {
+        "label": "Navigationslinks"
+      },
+      "search": {
+        "label": "Suche",
+        "props": {
+          "expanded": {
+            "title": "Immer ausgeklappt",
+            "description": "Sonst öffnet sich das Feld beim Anklicken."
+          }
+        }
+      },
+      "notifications": {
+        "label": "Benachrichtigungsglocke",
+        "props": {
+          "icon": {
+            "title": "Symbol"
+          }
+        }
+      },
+      "modTool": {
+        "label": "Moderationswerkzeug",
+        "props": {
+          "icon": {
+            "title": "Symbol"
+          }
+        }
+      },
+      "adminLink": {
+        "label": "Link zum Adminbereich"
+      },
+      "headerWidgets": {
+        "label": "Plugin-Symbole"
+      },
+      "userMenu": {
+        "label": "Kontomenü"
+      },
+      "footer": {
+        "label": "Fußzeile",
+        "props": {
+          "minHeight": {
+            "title": "Mindesthöhe (px)",
+            "description": "Das Band wächst mit seinem Inhalt. 0 = nur so hoch wie nötig."
+          },
+          "backgroundImage": {
+            "title": "Hintergrundbild",
+            "description": "Upload-Pfad oder URL. Wird über den Verlauf gelegt. Leer lassen für keins."
+          },
+          "showTopBorder": {
+            "title": "Linie über der Fußzeile"
+          }
+        }
+      },
+      "footerBar": {
+        "label": "Fußleiste",
+        "props": {
+          "showUptime": {
+            "title": "Laufzeit und Latenz anzeigen"
+          },
+          "showThemeChooser": {
+            "title": "Theme-Auswahl anzeigen",
+            "description": "Lässt Lesende zwischen installierten Themes wählen, nur für sich selbst."
+          }
+        }
+      },
+      "footerLinks": {
+        "label": "Fußzeilen-Links",
+        "props": {
+          "showThemeChooser": {
+            "title": "Theme-Auswahl anzeigen",
+            "description": "Lässt Lesende zwischen installierten Themes wählen, nur für sich selbst."
+          }
+        }
+      },
+      "footerText": {
+        "label": "Fußzeilentext",
+        "props": {
+          "showUptime": {
+            "title": "Laufzeit und Latenz anzeigen"
+          }
+        }
+      },
+      "whosOnline": {
+        "label": "Wer ist online",
+        "props": {
+          "maxNames": {
+            "title": "Aufgelistete Namen",
+            "description": "0 zeigt nur die Anzahl."
+          }
+        }
+      },
+      "groupLegend": {
+        "label": "Gruppenlegende"
+      },
+      "boardStats": {
+        "label": "Forenstatistik"
+      },
+      "branding": {
+        "label": "Copyright & Laufzeit",
+        "props": {
+          "showUptime": {
+            "title": "Laufzeit und Latenz anzeigen"
+          },
+          "showThemeChooser": {
+            "title": "Theme-Auswahl anzeigen",
+            "description": "Lässt Lesende zwischen installierten Themes wählen, nur für sich selbst."
+          },
+          "linksAlign": {
+            "title": "Fußzeilen-Links",
+            "enum": {
+              "left": "Links",
+              "center": "Mitte",
+              "right": "Rechts"
+            }
+          },
+          "textAlign": {
+            "title": "Fußzeilentext",
+            "enum": {
+              "left": "Links",
+              "center": "Mitte",
+              "right": "Rechts"
+            }
+          },
+          "order": {
+            "title": "Erste Zeile",
+            "enum": {
+              "links": "Links",
+              "text": "Text"
+            }
+          }
+        }
+      },
+      "themeToggle": {
+        "label": "Theme-Umschalter"
+      },
+      "slotLayoutWidget": {
+        "props": {
+          "outlet": {
+            "title": "Ausgabeort",
+            "description": "Plugin-Widgets bestimmen, an welchem Ausgabeort sie erscheinen. Wähle den, den dieses Widget erwartet.",
+            "enum": {
+              "aside": "Seitenleiste",
+              "top": "Oben",
+              "home-top": "Oben auf der Startseite",
+              "forum-top": "Oben im Forum"
+            }
+          }
+        }
+      }
+    },
+    "jobs": {
+      "security-analysis": {
+        "label": "Sicherheitsscans",
+        "description": "Führt die Basis-Muster zur Missbrauchserkennung des Kerns aus, dazu alle von Plugins registrierten Sicherheitsscans."
+      },
+      "ban-expiry": {
+        "label": "Ablauf von Sperren",
+        "description": "Beendet befristete Sperren, deren Ende erreicht ist, und hebt den Sperrstatus auf."
+      },
+      "warning-expiry": {
+        "label": "Ablauf von Verwarnungen",
+        "description": "Lässt Verwarnungen nach ihrem Ablaufdatum verfallen und berechnet die Moderationsschwellen neu."
+      },
+      "update-check": {
+        "label": "Marketplace-Abgleich",
+        "description": "Aktualisiert die Lizenzberechtigungen (30 Tage Schonfrist), meldet dann die installierten Plugins und speichert verfügbare Updates, kritische Hinweise und Verlängerungswarnungen für das ACP. Die Standardzeit ist je Installation gestreut; eine feste Zeit überschreibt sie."
+      },
+      "log-retention": {
+        "label": "Protokoll-Aufbewahrung",
+        "description": "Entfernt alte Einträge aus dem Aktivitätsprotokoll (Seitenaufrufe und ACP-Aktionen haben getrennte Zeitfenster), dem Fehlerprotokoll und den Anmeldeereignissen. Die Fenster sind die retention.*-Einstellungen (Tage; 0 behält eine Tabelle für immer). Dialog-Bestätigungen werden getrennt gespeichert und nie angerührt."
+      },
+      "geoip-refresh": {
+        "label": "IP-Länderdatenbank",
+        "description": "Lädt die kostenlose IP-zu-Land-Datenbank von DB-IP (CC BY 4.0), damit Moderatoren sehen, zu welchem Land die IP-Adresse eines Mitglieds gehört. Abfragen laufen auf diesem Server; keine IP wird irgendwohin gesendet. Monatlich; „Jetzt ausführen“ lädt sie sofort."
+      }
+    },
+    "actions": {
+      "system": {
+        "award-badges": {
+          "label": "Verdiente Abzeichen vergeben",
+          "description": "Vergibt jedes Abzeichen, dessen Schwellen ein Mitglied jetzt erreicht. Berücksichtigt werden nur Abzeichen mit eingeschaltetem Belohnungssystem, und nichts wird je entzogen: ein verdientes Abzeichen bleibt. Schwellen eines deaktivierten Plugins werden übersprungen, bis es wieder aktiv ist.",
+          "params": {
+            "batch": {
+              "title": "Mitglieder pro Lauf",
+              "description": "Wie viele Mitglieder pro Lauf geprüft werden. Der nächste Lauf macht mit dem Rest weiter."
+            }
+          }
+        },
+        "prune-notifications": {
+          "label": "Benachrichtigungen bereinigen",
+          "description": "Löscht alte Benachrichtigungen, mit getrennten Zeitfenstern für gelesene und nie geöffnete. Ein Fenster von 0 behält diese Hälfte für immer. Benachrichtigungseinstellungen und Ungelesen-Zähler ändern sich nur um die entfernten Einträge.",
+          "params": {
+            "readDays": {
+              "title": "Gelesene löschen nach (Tagen)",
+              "description": "Benachrichtigungen, die schon gelesen wurden. 0 behält sie für immer."
+            },
+            "unreadDays": {
+              "title": "Ungelesene löschen nach (Tagen)",
+              "description": "Benachrichtigungen, die nie geöffnet wurden. Gib ihnen ein längeres Zeitfenster, sie haben dem Mitglied noch etwas zu sagen. 0 behält sie für immer."
+            }
+          }
+        },
+        "prune-profile-views": {
+          "label": "Profilbesucher bereinigen",
+          "description": "Lässt die Liste „Letzte Besucher“ auf Profilen altern. Ein Besuch, der älter als das Zeitfenster ist, wird vergessen, damit die Karte zeigt, wer kürzlich da war, und kein dauerhaftes Protokoll ist, wer wen angesehen hat. 0 behält jeden Besuch. Die GESAMTZAHL der Profilaufrufe ist ein Zähler und wird dadurch nie verringert.",
+          "params": {
+            "days": {
+              "title": "Besuche vergessen nach (Tagen)",
+              "description": "Ein Besuch verschwindet von der Besucherkarte, sobald er so alt ist. 0 behält jeden Besuch für immer."
+            }
+          }
+        },
+        "purge-deleted-content": {
+          "label": "Gelöschte Inhalte bereinigen",
+          "description": "Entfernt Artikel und Kommentare endgültig, die länger als das gewählte Zeitfenster im Papierkorb liegen. Gelöschte Kommentare mit noch aktiven Antworten werden nie bereinigt, sonst gingen die Antworten mit. Artikel-Uploads räumt „Verwaiste Uploads bereinigen“ separat auf. Das lässt sich nicht rückgängig machen: zuerst als Probelauf starten.",
+          "params": {
+            "days": {
+              "title": "Löschen nach (Tagen)",
+              "description": "Nur Einträge bereinigen, die länger im Papierkorb liegen. Bis dahin lassen sie sich wiederherstellen."
+            },
+            "scope": {
+              "title": "Bereich",
+              "description": "Die Bereinigung auf eine Inhaltsart beschränken.",
+              "enum": {
+                "all": "Alle",
+                "articles": "Artikel",
+                "article_comments": "Artikelkommentare",
+                "profile_comments": "Profilkommentare"
+              }
+            }
+          }
+        },
+        "purge-orphaned-uploads": {
+          "label": "Verwaiste Uploads bereinigen",
+          "description": "Löscht Dateien in den Upload-Ordnern des Kerns (Avatare, Titelbilder, Gruppen, Themes, Artikel, Seiten, Layouts), auf die kein Eintrag mehr verweist: ersetzte Avatare und Gruppensymbole sowie Reste gelöschter Artikel und der entfernten eigenen Seiten. Bilder, die in Artikeln und Rechtstexten eingebettet sind, und Dateien weich gelöschter Einträge bleiben erhalten; Upload-Ordner von Plugins werden nie angerührt. Immer zuerst als Probelauf starten: gelöschte Dateien lassen sich nicht wiederherstellen.",
+          "params": {
+            "graceHours": {
+              "title": "Schonfrist (Stunden)",
+              "description": "Nie eine Datei löschen, die jünger ist. Schützt Uploads, deren Eintrag gerade noch geschrieben wird."
+            },
+            "scope": {
+              "title": "Bereich",
+              "description": "Den Durchlauf auf einen Upload-Ordner beschränken. Praktisch, um einen Bereich zu prüfen, bevor alles läuft.",
+              "enum": {
+                "all": "Alle",
+                "avatars": "Avatare",
+                "covers": "Titelbilder",
+                "articles": "Artikel",
+                "pages": "Seiten",
+                "groups": "Gruppen",
+                "themes": "Themes",
+                "layouts": "Layouts"
+              }
+            }
+          }
+        },
+        "recompute-counters": {
+          "label": "Zähler neu berechnen",
+          "description": "Berechnet zwischengespeicherte Zähler (Artikel, Kommentare, Likes, Follower) aus ihren Quelldaten neu und korrigiert Abweichungen. Wiederholbar und zerstört nichts. Beitrags- und Themenzähler des Forums (gehören dem Forum-Plugin) und Artikelaufrufe (Messwerte, nicht ableitbar) bleiben unberührt."
+        },
+        "trim-article-revisions": {
+          "label": "Artikelrevisionen kürzen",
+          "description": "Behält nur die neuesten Revisionen jedes Artikels und löscht den Rest. Jedes Speichern legt eine vollständige Kopie des Artikeltexts ab, ein oft bearbeiteter Artikel sammelt also unbegrenzt viele an. Der veröffentlichte Artikel ist keine Revision und bleibt immer unberührt.",
+          "params": {
+            "keep": {
+              "title": "Zu behaltende Revisionen",
+              "description": "Wie viele der neuesten Revisionen je Artikel behalten werden. Ältere werden entfernt."
+            }
+          }
+        }
+      }
+    },
+    "domains": {
+      "System": "System",
+      "Administration": "Administration",
+      "Users": "Benutzer",
+      "Articles": "Artikel",
+      "Moderation": "Moderation",
+      "Messaging": "Nachrichten",
+      "Extensions": "Erweiterungen"
+    },
+    "permissions": {
+      "admin.access": "Admin-Bereich aufrufen",
+      "legal.manage": "Rechtstexte verwalten",
+      "user.manage": "Benutzerkonten verwalten",
+      "user.ban": "Benutzer sperren",
+      "group.manage": "Gruppen & Berechtigungen verwalten",
+      "progression.manage": "Fortschrittssystem verwalten",
+      "badge.manage": "Abzeichen-Katalog bearbeiten",
+      "badge.assign": "Abzeichen an Mitglieder vergeben",
+      "profile.comment.create": "Auf Profilpinnwände schreiben",
+      "profile.comment.delete.own": "Eigene Pinnwand-Beiträge löschen",
+      "profile.comment.delete.wall": "Beiträge auf der eigenen Pinnwand löschen",
+      "profile.comment.delete.any": "Pinnwand-Beiträge aller löschen",
+      "article.create": "Artikel schreiben",
+      "article.edit.own": "Eigene Artikel bearbeiten",
+      "article.edit.any": "Artikel aller bearbeiten",
+      "article.publish": "Artikel veröffentlichen",
+      "article.delete.own": "Eigene Artikel löschen",
+      "article.delete.any": "Artikel aller löschen",
+      "article.comment.create": "Artikel kommentieren",
+      "article.comment.edit.own": "Eigene Artikelkommentare bearbeiten",
+      "article.comment.delete.own": "Eigene Artikelkommentare löschen",
+      "article.comment.delete.any": "Artikelkommentare aller löschen",
+      "article.revisions.view": "Versionsverlauf von Artikeln ansehen",
+      "article.revisions.restore": "Frühere Artikelversionen wiederherstellen",
+      "moderation.report.file": "Inhalte melden",
+      "moderation.report.manage": "Meldungen bearbeiten",
+      "moderation.warn.manage": "Mitglieder verwarnen",
+      "moderation.ban.manage": "Mitglieder sperren und entsperren",
+      "moderation.cases.manage": "Prüffälle bearbeiten",
+      "moderation.log.view": "Moderationsprotokoll ansehen",
+      "moderation.settings": "Moderationseinstellungen ändern",
+      "moderation.protected": "Zählt als Team (kann nicht verwarnt oder gesperrt werden)",
+      "message.send": "Private Nachrichten senden",
+      "admin.plugins": "Plugins im Admin-Bereich verwalten",
+      "plugin.install": "Plugins installieren",
+      "plugin.enable": "Plugins aktivieren & deaktivieren",
+      "system.tasks.manage": "Geplante Aufgaben verwalten",
+      "emoji.manage": "Emojis verwalten"
+    }
+  },
+  "emojis": {
+    "title": "Emojis",
+    "subtitle": "Die Emojis, die Mitglieder im Editor verwenden können: Artikel, Kommentare, Pinnwand, Forenbeiträge und Nachrichten. Lade Bilder hoch und gib jedem einen :shortcode: und eine Kategorie.",
+    "count_one": "Emoji",
+    "count_other": "Emojis",
+    "upload": "Emojis hochladen",
+    "pendingTitle_one": "{{count}} Emoji hinzufügen",
+    "pendingTitle_other": "{{count}} Emojis hinzufügen",
+    "category": "Kategorie",
+    "categoryPlaceholder": "z. B. Gesichter",
+    "shortcode": "Shortcode",
+    "name": "Name",
+    "discard": "Dieses weglassen",
+    "rules": "PNG, GIF oder WebP, bis 256 KB. Quadratische Bilder sehen am besten aus. Shortcodes: 2–32 Zeichen aus a–z, 0–9, _ - +.",
+    "cancel": "Abbrechen",
+    "add_one": "{{count}} Emoji hinzufügen",
+    "add_other": "{{count}} Emojis hinzufügen",
+    "adding": "Wird hinzugefügt…",
+    "added_one": "{{count}} Emoji hinzugefügt",
+    "added_other": "{{count}} Emojis hinzugefügt",
+    "someFailed_one": "{{count}} konnte nicht hinzugefügt werden – siehe Zeile",
+    "someFailed_other": "{{count}} konnten nicht hinzugefügt werden – siehe Zeilen",
+    "empty": "Noch keine Emojis. Lade welche hoch, dann erscheinen sie überall in der Emoji-Auswahl des Editors.",
+    "uncategorised": "Ohne Kategorie",
+    "edit": "Bearbeiten",
+    "remove": "Entfernen",
+    "removeTitle": ":{{code}}: entfernen?",
+    "removeBody": "Es verschwindet aus der Emoji-Auswahl. Beiträge, die es schon verwenden, zeigen es weiter, und sein Shortcode bleibt reserviert.",
+    "removed": "Emoji entfernt",
+    "saved": "Emoji gespeichert",
+    "save": "Speichern"
   }
 }

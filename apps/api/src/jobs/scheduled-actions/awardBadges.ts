@@ -99,6 +99,7 @@ export async function runAwardBadges(params: Params, ctx: ActionRunCtx): Promise
             userId: u.id,
             type:   "badge.earned",
             title:  `You've earned the "${badge.name}" badge!`,
+            i18n:   { key: "common:notify.badgeEarned", params: { badge: badge.name } },
             body:   "It's on your profile now, for everyone who visits.",
             link:   `/u/${u.username}`,
             channels: ["in_app"],

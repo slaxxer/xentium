@@ -32,5 +32,6 @@
   "XEC-PLUGIN-2020": "This plugin isn't available.",
   "XEC-LICENSE-9001": "No valid license for this plugin.",
   "XEC-LICENSE-9002": "This license has expired.",
-  "generic": "Something went wrong. Please try again."
+  "generic": "Something went wrong. Please try again.",
+  "XEC-AUTH-2011": "Please accept the terms and the privacy policy to continue."
 }

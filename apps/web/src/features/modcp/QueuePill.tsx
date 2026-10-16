@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import type { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { faChevronRight, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../components/Icon";
@@ -37,6 +38,7 @@ function ReasonField({ body, label, onChange }: { body: string; label: string; o
 export function QueuePill({ queue, item, position, total }: {
   queue: ModQueueSlot; item: ModQueueItem; position: number; total: number;
 }) {
+  const { t } = useTranslation("common", { keyPrefix: "modcanvas" });
   const qc = useQueryClient();
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -73,7 +75,7 @@ export function QueuePill({ queue, item, position, total }: {
   };
 
   return (
-    <div className="mcp" role="region" aria-label={`${queue.label} actions`}>
+    <div className="mcp" role="region" aria-label={t("queue.actions", { label: queue.label })}>
       <div className="mcp__id">
         <span className={`mcp__ic${item.hot ? " mcp__ic--danger" : ""}`}><FontAwesomeIcon icon={queue.icon as IconProp} /></span>
         <div className="mcp__idtext">
@@ -89,17 +91,17 @@ export function QueuePill({ queue, item, position, total }: {
 
       {queue.actions.map((a) => (
         <button key={a.id} type="button" className={`mcp-send ${TONE[a.tone ?? "ghost"]}`} disabled={!!busy} onClick={() => void run(a)}>
-          {a.icon ? <FontAwesomeIcon icon={a.icon as IconProp} /> : null} {busy === a.id ? "Working…" : a.label}
+          {a.icon ? <FontAwesomeIcon icon={a.icon as IconProp} /> : null} {busy === a.id ? t("common.working") : a.label}
         </button>
       ))}
 
       <span className="mcp__rule" />
       <span className="mcp__pos">{position + 1}/{total}</span>
-      <button type="button" className="mcp__round" aria-label="Next" disabled={position + 1 >= total}
+      <button type="button" className="mcp__round" aria-label={t("queue.next")} disabled={position + 1 >= total}
         onClick={() => modStore.go(position + 1)}>
         <FontAwesomeIcon icon={faChevronRight} />
       </button>
-      <button type="button" className="mcp__round" aria-label="Close" onClick={modStore.close}>
+      <button type="button" className="mcp__round" aria-label={t("common.close")} onClick={modStore.close}>
         <FontAwesomeIcon icon={faXmark} />
       </button>
     </div>

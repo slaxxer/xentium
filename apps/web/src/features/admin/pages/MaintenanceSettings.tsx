@@ -12,6 +12,13 @@ import type {
   MaintenanceProgressMode, MaintenanceService, MaintenanceServiceStatus,
 } from "../../maintenance/useMaintenance";
 
+/** English defaults an older settings page saved verbatim; they are core text, not the admin's. */
+const FORMER_DEFAULT_TEXT = new Set([
+  "Down for a quick tune-up.",
+  "We're making the community better. We'll be back shortly.",
+  "In progress",
+]);
+
 /**
  * ACP → System → Settings → Maintenance mode.
  *
@@ -67,6 +74,9 @@ export function MaintenanceSettings({ draft, set, groups }: Props) {
   const tr = (k: string) => t(`settings.maintenance.${k}`);
 
   const str  = (k: string, d = "") => (typeof draft[k] === "string" ? (draft[k] as string) : d);
+  /** A visitor-facing text: empty when it is the core default, so the field shows the
+   *  translated default as its placeholder (mirrors `ownText` in maintenance.service). */
+  const text = (k: string) => (FORMER_DEFAULT_TEXT.has(str(k).trim()) ? "" : str(k));
   const bool = (k: string, d = true) => (draft[k] === undefined ? d : draft[k] !== false);
 
   const enabled     = draft["maintenance.enabled"] === true;
@@ -136,17 +146,17 @@ export function MaintenanceSettings({ draft, set, groups }: Props) {
       <Group title={tr("groups.copy")} />
       <Row label={tr("headline.label")} desc={tr("headline.desc")}>
         <TextField
-          value={str("maintenance.title")}
+          value={text("maintenance.title")}
           onChange={(v) => set("maintenance.title", v)}
-          placeholder={tr("headline.placeholder")}
+          placeholder={t("common:maintenance.defaultTitle")}
         />
       </Row>
       <Row label={tr("reason.label")} desc={tr("reason.desc")} align="start">
         <textarea
           className="inp mnt-textarea"
           rows={3}
-          value={str("maintenance.message")}
-          placeholder={tr("reason.placeholder")}
+          value={text("maintenance.message")}
+          placeholder={t("common:maintenance.defaultMessage")}
           onChange={(e) => set("maintenance.message", e.target.value)}
         />
       </Row>
@@ -207,9 +217,9 @@ export function MaintenanceSettings({ draft, set, groups }: Props) {
         <Row label={tr("bar.label")} desc={tr("bar.desc")}>
           <div className="mnt-bar-row">
             <TextField
-              value={str("maintenance.progress_label")}
+              value={text("maintenance.progress_label")}
               onChange={(v) => set("maintenance.progress_label", v)}
-              placeholder={tr("bar.placeholder")}
+              placeholder={t("common:maintenance.stepInProgress")}
             />
             <NumberStepper
               value={Number(draft["maintenance.progress_percent"] ?? 0)}

@@ -6,6 +6,9 @@ import {
   EMAIL_TEMPLATE_DEFAULTS,
   EMAIL_TEMPLATE_KEYS,
   isEmailTemplateKey,
+  isLegacyBody,
+  renderEmailBody,
+  styleContent,
 } from "./email-templates.js";
 
 describe("substitutePlaceholders", () => {
@@ -114,5 +117,47 @@ describe("shipped defaults", () => {
   it("recognises only real template keys", () => {
     expect(isEmailTemplateKey("password_reset")).toBe(true);
     expect(isEmailTemplateKey("not_a_template")).toBe(false);
+  });
+});
+
+describe("renderEmailBody", () => {
+  const vars = { site_name: "Acme", reset_url: "https://a.test/r?t=1", code: "123456", title: "<b>x</b>" };
+
+  it("puts editor content inside the frame with the brand line", () => {
+    const html = renderEmailBody("<p>Hello</p>", vars);
+    expect(html.startsWith("<div style=")).toBe(true);
+    expect(html).toContain(">Acme</span>");
+    expect(html).toContain("Hello</p>");
+  });
+
+  it("styles the tags the editor writes, keeping their own alignment", () => {
+    expect(styleContent("<h2>Hi</h2>")).toMatch(/^<h2 style="font-size:20px/);
+    expect(styleContent(`<p style="text-align: center">x</p>`)).toMatch(/style="color:#4a4a7a[^"]*;text-align: center"/);
+  });
+
+  it("renders a button placeholder from its url, replacing its paragraph", () => {
+    const html = renderEmailBody("<p>{{reset_button}}</p>", vars);
+    expect(html).toContain(`href="https://a.test/r?t=1"`);
+    expect(html).toContain("Reset password →");
+    expect(html).not.toMatch(/<p style="[^"]*"><p/);
+  });
+
+  it("renders the code box with an escaped code", () => {
+    expect(renderEmailBody("<p>{{code_box}}</p>", vars)).toContain(">123456</span>");
+    expect(renderEmailBody("{{code_box}}", { code: "<i>" })).toContain("&lt;i&gt;");
+  });
+
+  it("still escapes values in content", () => {
+    expect(renderEmailBody("<h2>{{title}}</h2>", vars)).toContain("&lt;b&gt;x&lt;/b&gt;");
+  });
+
+  it("sends a body saved as a whole HTML document exactly as written", () => {
+    const legacy = `<div style="x"><p>{{site_name}}</p></div>`;
+    expect(isLegacyBody(legacy)).toBe(true);
+    expect(renderEmailBody(legacy, vars)).toBe(`<div style="x"><p>Acme</p></div>`);
+  });
+
+  it("ships no default as a legacy document", () => {
+    for (const key of EMAIL_TEMPLATE_KEYS) expect(isLegacyBody(EMAIL_TEMPLATE_DEFAULTS[key].body), key).toBe(false);
   });
 });

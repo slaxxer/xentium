@@ -13,7 +13,9 @@
     "prev": "← Zurück",
     "next": "Weiter →",
     "pageOf": "Seite {{page}} von {{total}}",
-    "minRead": "{{n}} Min."
+    "minRead": "{{n}} Min.",
+    "views_one": "{{count}} Aufruf",
+    "views_other": "{{count}} Aufrufe"
   },
   "reader": {
     "loading": "Wird geladen…",
@@ -64,7 +66,9 @@
     "noComments": "Noch keine Kommentare.",
     "tombstoneBase": "Kommentar von {{user}} wurde gelöscht",
     "tombstoneBy": " von {{mod}}",
-    "tombstoneReason": " · Grund: {{reason}}"
+    "tombstoneReason": " · Grund: {{reason}}",
+    "cantRateOwnComment": "Deinen eigenen Kommentar kannst du nicht bewerten",
+    "signInToRate": "Zum Bewerten anmelden"
   },
   "editor": {
     "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
@@ -135,7 +139,19 @@
       "codeBlock": "Codeblock",
       "hr": "Trennlinie",
       "undo": "Rückgängig",
-      "redo": "Wiederholen"
+      "redo": "Wiederholen",
+      "underline": "Unterstreichen",
+      "highlight": "Hervorheben",
+      "subscript": "Tiefgestellt",
+      "superscript": "Hochgestellt",
+      "alignLeft": "Linksbündig",
+      "alignCenter": "Zentrieren",
+      "alignRight": "Rechtsbündig",
+      "alignJustify": "Blocksatz",
+      "taskList": "Aufgabenliste",
+      "code": "Inline-Code",
+      "link": "Link",
+      "image": "Bild einfügen"
     },
     "savedToast": "Gespeichert",
     "unpublishedToast": "Zurück zu den Entwürfen",

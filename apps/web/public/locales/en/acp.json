@@ -40,7 +40,8 @@
     "badges": "Badges",
     "composer": "Composer",
     "modTemplates": "Templates",
-    "themeStudio": "Theme Studio"
+    "themeStudio": "Theme Studio",
+    "emojis": "Emojis"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -124,6 +125,10 @@
       "login": {
         "title": "Login",
         "desc": "How members sign in, and failed-attempt protection."
+      },
+      "alert": {
+        "title": "Site alert",
+        "desc": "A message in a bar at the very top of every page, above the header. While the site is in maintenance, staff see the maintenance notice there too."
       }
     },
     "fields": {
@@ -270,6 +275,34 @@
       "dateFormat": {
         "label": "Date format",
         "desc": "How dates are written on posts, articles and messages."
+      },
+      "alertEnabled": {
+        "label": "Show the alert",
+        "desc": "Off hides it everywhere; the text is kept."
+      },
+      "alertMessage": {
+        "label": "Message",
+        "desc": "Shown as you write it, to everyone it is meant for. Up to 500 characters."
+      },
+      "alertTone": {
+        "label": "Colour",
+        "desc": "How urgent it looks."
+      },
+      "alertLinkLabel": {
+        "label": "Link text",
+        "desc": "Optional. Empty shows the address itself."
+      },
+      "alertLinkUrl": {
+        "label": "Link address",
+        "desc": "Optional. A page on this site (/forum) or a full https:// address."
+      },
+      "alertAudience": {
+        "label": "Who sees it",
+        "desc": "Everyone, only visitors who are not signed in, or only members."
+      },
+      "alertDismissible": {
+        "label": "Can be closed",
+        "desc": "Each visitor can hide it; a new message shows again."
       }
     },
     "landing": {
@@ -284,7 +317,10 @@
       "smtpHost": "smtp.example.com",
       "fromAddress": "no-reply@example.com",
       "smtpUser": "no-reply@example.com",
-      "fromName": "Nodelab"
+      "fromName": "Nodelab",
+      "alertMessage": "We're upgrading the forum on Sunday at 20:00.",
+      "alertLinkLabel": "Read more",
+      "alertLinkUrl": "/articles/upgrade"
     },
     "options": {
       "regMode": {
@@ -328,6 +364,17 @@
         "long": "7 October 2026",
         "numeric": "07/10/2026 (by language)",
         "iso": "2026-10-07"
+      },
+      "alertTone": {
+        "info": "Accent",
+        "success": "Green (good news)",
+        "warning": "Amber (heads-up)",
+        "danger": "Red (urgent)"
+      },
+      "alertAudience": {
+        "everyone": "Everyone",
+        "guests": "Guests only",
+        "members": "Members only"
       }
     },
     "toastSaved": "Settings saved!",
@@ -363,13 +410,11 @@
       },
       "headline": {
         "label": "Headline",
-        "desc": "The large heading on the maintenance screen.",
-        "placeholder": "Down for a quick tune-up."
+        "desc": "The large heading on the maintenance screen."
       },
       "reason": {
         "label": "Reason",
-        "desc": "A short, human explanation of why the site is down.",
-        "placeholder": "We're making the community better. We'll be back shortly."
+        "desc": "A short, human explanation of why the site is down."
       },
       "mode": {
         "label": "How progress is shown",
@@ -390,8 +435,7 @@
       },
       "bar": {
         "label": "Bar label & fill",
-        "desc": "Text beside the bar, and how full it is (0–100). At 0 the bar is hidden.",
-        "placeholder": "Migrating database"
+        "desc": "Text beside the bar, and how full it is (0–100). At 0 the bar is hidden."
       },
       "eta": {
         "label": "Back online (ETA)",
@@ -436,7 +480,8 @@
       "staffLink": {
         "label": "Staff sign-in link",
         "desc": "A discreet link in the footer opens the sign-in panel. Hide it and staff use /login directly."
-      }
+      },
+      "adminAlways": "Administrators always have access during maintenance"
     }
   },
   "invite": {
@@ -770,7 +815,13 @@
     "deleteEntry": "Delete entry",
     "noContext": "No context recorded.",
     "loadOlder": "Load older occurrences",
-    "clearMember": "Show every member, not only {{name}}"
+    "clearMember": "Show every member, not only {{name}}",
+    "dev": {
+      "label": "DEV simulate:",
+      "crash": "Unhandled 500 (critical), trips the fatal halt",
+      "xec": "XentiumError 500, trips the fatal halt",
+      "notFound": "404, toast only"
+    }
   },
   "errorRef": {
     "title": "Error Reference",
@@ -1741,7 +1792,8 @@
     },
     "used_one": "Used {{count}} time",
     "used_other": "Used {{count}} times",
-    "edited": "last edited by {{name}} {{when}}"
+    "edited": "last edited by {{name}} {{when}}",
+    "newText": "Hi {user}, "
   },
   "modCases": {
     "sub": "Moderation",
@@ -1949,23 +2001,33 @@
       "group": "Groups"
     }
   },
-  "styleHistory": {
+  "studioHistory": {
+    "scheduled": "Published (scheduled)",
+    "undoColourway": "Colourway undone",
+    "colourway": "Colourway: {{name}}",
+    "restored": "Restored: {{label}}",
     "loading": "Loading…",
-    "empty": "No saved style snapshots yet.",
+    "empty": "Nothing published yet. Every Publish shows up here.",
     "by": "by",
     "restore": "Restore",
-    "restoreConfirmTitle": "Restore \"{{label}}\"?",
-    "restoreConfirmBody": "This will overwrite the current style settings.",
-    "restoreConfirmBtn": "Restore",
-    "toastRestored": "Style restored and applied.",
-    "sumInitial_one": "{{count}} token in this snapshot",
-    "sumInitial_other": "{{count}} tokens in this snapshot",
-    "sumNone": "No token changes",
-    "sumMore_one": "{{list}} and {{count}} more",
-    "sumMore_other": "{{list}} and {{count}} more",
-    "tagCurrent": "Current",
-    "tagSnapshot": "Snapshot",
-    "currentHint": "This is the current style."
+    "restoreHint": "Put this back as the draft. Nothing goes live until you publish.",
+    "liveHint": "This is what is live now.",
+    "confirmTitle": "Restore the version from {{when}}?",
+    "confirmRevision": "Its layouts, colours, font and custom CSS become this theme's draft, replacing what is staged now. The live site does not change until you publish.",
+    "confirmColours": "Its colours become this theme's draft, replacing the colours staged now. The live site does not change until you publish.",
+    "staged": "Restored as the draft. Review it in the previews, then publish.",
+    "published": "Published",
+    "colourChange": "Colours changed",
+    "coloursOnly": "Colours only",
+    "layouts_one": "{{count}} layout",
+    "layouts_other": "{{count}} layouts",
+    "tokens_one": "{{count}} colour or type change",
+    "tokens_other": "{{count}} colour or type changes",
+    "font": "font",
+    "css": "custom CSS",
+    "tagLive": "Live",
+    "tagPublish": "Publish",
+    "tagColours": "Colours"
   },
   "installed": {
     "title": "Installed Plugins",
@@ -2800,6 +2862,13 @@
     "badgeEarnedHint": "Granted automatically for meeting this badge's requirements. Revoking it only lasts until the next sweep if they still qualify."
   },
   "styleEditor": {
+    "fontSiteDefault": "Site default (Bricolage Grotesque + Figtree)",
+    "previewSurface": "What the preview shows",
+    "previewPage": "Page",
+    "surface": {
+      "components": "Components",
+      "page": "Page"
+    },
     "rowBg": "Background",
     "rowSurface": "Surface",
     "rowCard": "Card",
@@ -2825,7 +2894,8 @@
     "secButton": "Button",
     "secCard": "Card",
     "secField": "Field",
-    "secMenu": "Menu",
+    "secMenu": "Menus & dropdowns",
+    "secUserMenu": "User menu",
     "secSegment": "Sort buttons",
     "secBranding": "Branding",
     "secCustomCss": "Custom CSS",
@@ -2841,20 +2911,16 @@
     "kComponent": "Component",
     "editEvery": "Editing every instance of this component.",
     "editOnly": "Editing only {{region}} instances — overrides the global value inside that region.",
-    "toastCss": "Custom CSS applied site-wide.",
+    "cssDraftSaved": "Saved to the draft. Goes live when you publish.",
     "toastLogoText": "Logo text saved.",
     "toastUploaded": "Uploaded.",
     "toastRemoved": "Removed.",
     "toastDraft": "Draft saved — publish to apply it live.",
-    "toastPublished": "Published — your changes are now live for everyone.",
     "toastReset": "Appearance reset — inheriting the core design.",
     "resetTitle": "Reset appearance to the core design?",
     "resetText": "Restores the default theme tokens and fonts, and clears your custom CSS for both light and dark. This cannot be undone.",
     "reset": "Reset",
     "loading": "Loading…",
-    "publishHint": "Apply staged changes to the live site now",
-    "publishing": "Publishing…",
-    "publishNow": "Publish now",
     "logoText": "Logo Text (fallback when no image is set)",
     "logoPlaceholder": "xentium",
     "save": "Save",
@@ -2862,10 +2928,10 @@
     "navbarLogoHint": "PNG, SVG or WebP · max 2 MB · recommended 160×40 px",
     "favicon": "Favicon / Site Icon",
     "faviconHint": "PNG, ICO or SVG · max 2 MB · recommended 64×64 px",
-    "cssIntro": "Raw CSS for the theme you're viewing — scoped & applied after the tokens so it overrides any rule. Switch your theme with the top-bar toggle to edit the other one. Edits preview live; Apply & Save stores both themes and pushes them to every visitor.",
+    "cssIntro": "Raw CSS for this theme, applied after the tokens so it can override any rule. It saves to the draft as you type and shows in the previews; Publish puts it live with the colours and layouts.",
     "cssThemeLayer": "An installed theme also ships a stylesheet. It is applied before this one, so your rules here win — and nothing you write is overwritten when the theme updates.",
     "saving": "Saving…",
-    "applySave": "Apply & Save",
+    "cssInvalid": "This CSS can't be read, so it isn't saved. Check for an unclosed bracket or quote.",
     "unsaved": "Unsaved changes — previewing live",
     "saved": "Saved",
     "charCount": "{{count}} / 100,000 chars",
@@ -2883,11 +2949,7 @@
     "fontSize": "Base Font Size",
     "forceState": "Force this state on the specimen",
     "previewTitle": "Live theme preview",
-    "tabTokens": "Tokens",
-    "tabHistory": "History",
     "draft": "Draft",
-    "unpublishedN_one": "{{count}} unpublished change",
-    "unpublishedN_other": "{{count}} unpublished changes",
     "diffReview": "Review",
     "diffHide": "Hide",
     "diffTitle": "What Publish will change",
@@ -2934,6 +2996,7 @@
       "content-bg": "Content background",
       "content-border-color": "Content border",
       "footer-bg": "Footer background",
+      "footer-fg-strong": "Footer strong text",
       "footer-fg": "Footer text",
       "footer-fg-subtle": "Footer subtle text",
       "footer-border-color": "Footer border",
@@ -2997,6 +3060,7 @@
       "fs-2xl": "Heading · large (24px)",
       "fs-3xl": "Heading · huge (30px)",
       "font-display": "Heading font",
+      "font-headline": "Headline font",
       "font-body": "Body font",
       "ff-mono": "Code font",
       "nav-height": "Navbar height",
@@ -3041,7 +3105,15 @@
       "corner-cut-sm": "Corner cut (small)",
       "clip-card": "Card corner shape",
       "clip-sm": "Small corner shape",
-      "glow-accent": "Glow on accent elements"
+      "glow-accent": "Glow on accent elements",
+      "menu-fg-muted": "Menu secondary text",
+      "menu-fw": "Menu text weight",
+      "menu-title-fw": "Menu title weight",
+      "usermenu-bg": "User menu background",
+      "usermenu-fg": "User menu text",
+      "usermenu-line": "User menu dividers",
+      "usermenu-fw": "User menu text weight",
+      "usermenu-radius": "User menu radius"
     },
     "shCustom": "Custom",
     "shDirection": "Falls",
@@ -3104,11 +3176,18 @@
     "iconSize": "Icon size",
     "iconSmaller": "Smaller icons",
     "iconBigger": "Bigger icons",
-    "iconSizeHint": "Scales every icon on the site without changing the text size. The admin panel keeps its own."
+    "iconSizeHint": "Scales every icon on the site without changing the text size. The admin panel keeps its own.",
+    "weight": {
+      "300": "Light",
+      "400": "Regular",
+      "500": "Medium",
+      "600": "Semibold",
+      "700": "Bold",
+      "800": "Extra bold",
+      "900": "Black"
+    }
   },
   "layoutEditor": {
-    "title": "Layout Editor",
-    "subtitle": "Compose what appears on each page. Blocks come from a fixed catalogue, so a layout is data — it can never run code. Changes stay in a draft until you publish.",
     "structure": "Structure",
     "preview": "Preview",
     "blockSettings": "Block settings",
@@ -3219,9 +3298,14 @@
     "variantNote": "A variant is a named look defined by the theme, not a colour on this block — every block set to the same variant stays in step, in both light and dark. Saved with the layout.",
     "classNameLabel": "CSS class",
     "classNameNote": "An optional handle for your own CSS, e.g. nav-tile. Style through it — .nav-tile > * or .nav-tile img — since the handle itself paints nothing. Saved with the layout.",
+    "headingFont": "Heading font",
+    "headingFontSite": "Site font",
+    "headingFontNote": "Sets the headings in this block (and in blocks inside it) apart from the rest of the page.",
     "variantLeaf": "This block has no surface of its own. Set the style on the section or card that holds it, and this block follows it.",
     "variantScope": "{{variant}}",
     "variantTokenNote": "These colours belong to the variant, so they change every block using it. They are staged in the appearance draft — publish under Style Editor.",
+    "menuTokensNote": "These belong to the theme: every dropdown on the site uses them, not just this block. They are staged with your other Theme Studio changes until you publish.",
+    "dropdownStyle": "Dropdown & user menu style",
     "tokPanelBg": "Panel background",
     "tokPanelBorder": "Panel border",
     "tokText": "Text",
@@ -3247,10 +3331,6 @@
     "documentLabel": "Document",
     "undo": "Undo",
     "redo": "Redo",
-    "publish": "Publish",
-    "publishing": "Publishing…",
-    "published": "Published {{count}} template(s).",
-    "nothingPending": "Nothing to publish.",
     "reset": "Reset",
     "resetTitle": "Reset this template?",
     "resetBody": "Your layout for this template is removed, and the page shows what this theme ships (Core: the built-in default). This cannot be undone.",
@@ -3504,6 +3584,19 @@
       "glow": "Glow on accent elements",
       "tokens": "Tokens",
       "staged": "Staged in the appearance draft, like any token edit. Publish it from the Style Editor."
+    },
+    "imagePlaceholder": "Upload, or a path / https:// address",
+    "richTextPlaceholder": "Write the text…",
+    "library": {
+      "tabs": "Blocks and layers",
+      "blocks": "Blocks",
+      "layers": "Layers",
+      "insertHere": "Pick a block to add at the marked spot.",
+      "clear": "Clear search",
+      "hint": "Drag a block onto the page, or click it to add it after the selected block.",
+      "browseAll": "Browse with descriptions",
+      "addHere": "Add a block here",
+      "notHere": "{{block}} can't go there. Select a block or mark a spot where it fits."
     }
   },
   "groups": {
@@ -3675,16 +3768,17 @@
       "sourceTitle": "Panel source",
       "source": "Registered as a group panel by {{plugin}}, so it appears here instead of as a separate ACP page. It saves on its own and reports into this page's indicator.",
       "disable": "Its values live in {{plugin}}'s own tables. Disabling the plugin hides this tab but keeps what you set."
-    }
+    },
+    "previewName": "member"
   },
   "email": {
     "eyebrow": "System",
     "title": "Email",
-    "subtitle": "Configure the mail server and edit the messages this site sends. Changes save automatically.",
+    "subtitle": "Configure the mail server and edit the messages this site sends.",
     "subject": "Subject",
-    "body": "Body (HTML)",
+    "body": "Content",
     "placeholders": "Placeholders",
-    "insert": "Append to the body",
+    "insert": "Insert at the cursor",
     "customized": "Customised",
     "reset": "Reset to default",
     "resetTitle": "Reset this template?",
@@ -3710,9 +3804,12 @@
     },
     "templateDesc": "Subject and body used when this message is sent.",
     "subjectDesc": "Plain text. Placeholders are substituted.",
-    "bodyDesc": "HTML. Values substituted into placeholders are escaped automatically.",
+    "bodyDesc": "Format it like a post. The site name, layout and buttons are added when the email is sent, and placeholders are filled in.",
     "testTitle": "Send a test message",
-    "testDesc": "Delivers the SMTP test template to an address of your choice."
+    "testDesc": "Delivers the SMTP test template to an address of your choice.",
+    "legacy": "This template was saved as raw HTML by an earlier version and is still sent exactly like that. Reset it to the default to edit it here.",
+    "langDefault": "Unchanged, this email goes out in each member's language. Once you edit it, your version goes to everyone.",
+    "langCustom": "Your version goes to everyone as written. Reset it to send each member the default in their language."
   },
   "themes": {
     "title": "Themes",
@@ -3828,7 +3925,8 @@
     "removeNamed": "Remove {{name}}",
     "nowLive": "{{name}} is now live for visitors.",
     "backTo": "Back to {{name}}.",
-    "exportedNamed": "Exported {{file}}."
+    "exportedNamed": "Exported {{file}}.",
+    "defaultThemeName": "My theme"
   },
   "owned": {
     "title": "Your licences",
@@ -4006,7 +4104,13 @@
     "notBundled": "Not one of the icons core ships. It needs the site's kit, and will not draw without one.",
     "bundled": "Bundled icons",
     "noMatches": "No bundled icon matches.",
-    "needsName": "Choose an icon first — a style on its own has nothing to apply to."
+    "needsName": "Choose an icon first — a style on its own has nothing to apply to.",
+    "searchKit": "Search {{count}} kit icons…",
+    "kitIcons": "Icons in your kit",
+    "checking": "Checking which icons this style draws…",
+    "noKitMatches": "No icon in this style matches.",
+    "showMore": "Show more ({{count}} left)",
+    "partialFiltered": "A stylised family: only the icons it draws are listed."
   },
   "composer": {
     "eyebrow": "Appearance",
@@ -4287,6 +4391,7 @@
     "layoutChanges_other": "{{count}} layouts",
     "styleChanges_one": "{{count}} style change",
     "styleChanges_other": "{{count}} style changes",
+    "cssStaged": "custom CSS",
     "upToDate": "Everything is live",
     "publish": "Publish",
     "publishing": "Publishing…",
@@ -4326,5 +4431,869 @@
     "off": "Off",
     "invalidColor": "Enter colours as #RRGGBB.",
     "bodyEdited": "Message text edited"
+  },
+  "core": {
+    "blocks": {
+      "section": {
+        "label": "Section",
+        "props": {
+          "backgroundImage": {
+            "title": "Background image",
+            "description": "Upload path or URL. Leave empty for none."
+          },
+          "minHeight": {
+            "title": "Minimum height (px)",
+            "description": "0 = as tall as its content. A taller band centres its content."
+          },
+          "width": {
+            "title": "Width",
+            "enum": {
+              "full": "Full width",
+              "wide": "Wide",
+              "normal": "Normal",
+              "narrow": "Narrow"
+            }
+          },
+          "padding": {
+            "title": "Padding",
+            "enum": {
+              "none": "None",
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            }
+          }
+        }
+      },
+      "columns": {
+        "label": "Columns",
+        "props": {
+          "gap": {
+            "title": "Gap",
+            "enum": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            }
+          }
+        }
+      },
+      "column": {
+        "label": "Column",
+        "props": {
+          "width": {
+            "title": "Track width",
+            "description": "“auto” fits the content, “sidebar”/“rail” are the site’s two rail widths, numbers are relative shares.",
+            "enum": {
+              "1": "1",
+              "2": "2",
+              "3": "3",
+              "auto": "Auto",
+              "sidebar": "Sidebar",
+              "rail": "Rail"
+            }
+          },
+          "sticky": {
+            "title": "Stick while the page scrolls"
+          }
+        }
+      },
+      "spacer": {
+        "label": "Spacer",
+        "props": {
+          "size": {
+            "title": "Size",
+            "enum": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large",
+              "xl": "Extra large"
+            }
+          }
+        }
+      },
+      "eyebrow": {
+        "label": "Eyebrow label",
+        "props": {
+          "text": {
+            "title": "Label"
+          },
+          "align": {
+            "title": "Alignment",
+            "enum": {
+              "start": "Left",
+              "center": "Centre"
+            }
+          }
+        }
+      },
+      "heading": {
+        "label": "Heading",
+        "props": {
+          "icon": {
+            "title": "Icon"
+          },
+          "align": {
+            "title": "Alignment",
+            "enum": {
+              "start": "Left",
+              "center": "Centre"
+            }
+          },
+          "text": {
+            "title": "Text"
+          },
+          "eyebrow": {
+            "title": "Eyebrow label"
+          },
+          "level": {
+            "title": "Level"
+          }
+        }
+      },
+      "richText": {
+        "label": "Rich text",
+        "props": {
+          "content": {
+            "title": "Text"
+          }
+        }
+      },
+      "image": {
+        "label": "Image",
+        "props": {
+          "source": {
+            "title": "Image"
+          },
+          "href": {
+            "title": "Links to",
+            "description": "A path like /forum, or a full URL. Leave empty for a plain image."
+          },
+          "alt": {
+            "title": "Alt text"
+          },
+          "ratio": {
+            "title": "Aspect ratio",
+            "enum": {
+              "auto": "Original",
+              "16:9": "16:9",
+              "4:3": "4:3",
+              "1:1": "1:1"
+            }
+          }
+        }
+      },
+      "articleIndex": {
+        "label": "Article index",
+        "props": {
+          "defaultView": {
+            "title": "Default view",
+            "enum": {
+              "grid": "Grid",
+              "list": "List"
+            }
+          },
+          "showFilters": {
+            "title": "Show filters"
+          }
+        }
+      },
+      "pluginSlot": {
+        "label": "Plugin area",
+        "props": {
+          "slotId": {
+            "title": "Slot ID"
+          }
+        }
+      },
+      "membersTabs": {
+        "label": "Members tabs"
+      },
+      "membersFilters": {
+        "label": "Search & filters",
+        "props": {
+          "showSearch": {
+            "title": "Show the search field"
+          },
+          "showSort": {
+            "title": "Show the sort choices"
+          }
+        }
+      },
+      "membersList": {
+        "label": "Member list",
+        "props": {
+          "showCount": {
+            "title": "Show the count and online line"
+          }
+        }
+      },
+      "membersTeam": {
+        "label": "Team",
+        "props": {
+          "showNote": {
+            "title": "Show the explanatory note"
+          }
+        }
+      },
+      "membersHofStats": {
+        "label": "Community stats"
+      },
+      "membersPodium": {
+        "label": "Podium"
+      },
+      "membersHowTo": {
+        "label": "How to climb"
+      },
+      "guestSurface": {
+        "label": "Guest landing"
+      },
+      "guestBody": {
+        "label": "Guest body"
+      },
+      "guestHero": {
+        "label": "Hero panel",
+        "props": {
+          "backgroundImage": {
+            "title": "Background image",
+            "description": "Upload path or URL. Leave empty for the default gradient."
+          },
+          "overlay": {
+            "title": "Overlay",
+            "description": "Darkens or lightens the image so text stays readable.",
+            "enum": {
+              "none": "None",
+              "light": "Light",
+              "dark": "Dark"
+            }
+          }
+        }
+      },
+      "guestHeroText": {
+        "label": "Hero text & buttons",
+        "props": {
+          "badge": {
+            "title": "Badge text",
+            "description": "Follows the live online count."
+          },
+          "title": {
+            "title": "Headline"
+          },
+          "subtitle": {
+            "title": "Sub-headline",
+            "description": "“{members}” is replaced with the member count."
+          },
+          "ctaPrimary": {
+            "title": "Primary button"
+          },
+          "ctaSecondary": {
+            "title": "Secondary button"
+          },
+          "showStats": {
+            "title": "Show the member / post counters"
+          }
+        }
+      },
+      "guestPresence": {
+        "label": "Happening right now",
+        "props": {
+          "rows": {
+            "title": "Activity rows"
+          }
+        }
+      },
+      "guestFeed": {
+        "label": "Guest feed",
+        "props": {
+          "showCategories": {
+            "title": "Show the category filter"
+          }
+        }
+      },
+      "guestRail": {
+        "label": "Guest rail",
+        "props": {
+          "showCategories": {
+            "title": "Show categories"
+          },
+          "showOnline": {
+            "title": "Show who is online"
+          },
+          "showTags": {
+            "title": "Show popular tags"
+          }
+        }
+      },
+      "homeMeCard": {
+        "label": "Your card"
+      },
+      "homeSectionNav": {
+        "label": "Section nav"
+      },
+      "homeSpaces": {
+        "label": "Spaces"
+      },
+      "homeFeed": {
+        "label": "Feed"
+      },
+      "homeProgression": {
+        "label": "Rank progress"
+      },
+      "homeHotThreads": {
+        "label": "Hot threads"
+      },
+      "homePopularTags": {
+        "label": "Popular tags"
+      },
+      "homeSuggestedPeople": {
+        "label": "Suggested people"
+      },
+      "articleDetail": {
+        "label": "Article"
+      },
+      "profileCard": {
+        "label": "Profile card",
+        "props": {
+          "padding": {
+            "title": "Padding",
+            "enum": {
+              "none": "None",
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            }
+          }
+        }
+      },
+      "profileAvatar": {
+        "label": "Avatar",
+        "props": {
+          "size": {
+            "title": "Avatar size",
+            "enum": {
+              "sm": "Small",
+              "md": "Medium",
+              "lg": "Large"
+            }
+          },
+          "overlap": {
+            "title": "Overlap the cover",
+            "description": "Lifts the avatar over the band above it. For use under a cover."
+          }
+        }
+      },
+      "profileCover": {
+        "label": "Cover band",
+        "props": {
+          "height": {
+            "title": "Height (px)",
+            "description": "The band behind the profile header."
+          },
+          "backgroundImage": {
+            "title": "Background image",
+            "description": "Upload path or URL. Drawn over the gradient."
+          },
+          "backgroundGradient": {
+            "title": "Gradient"
+          },
+          "backgroundAngle": {
+            "title": "Direction"
+          }
+        }
+      },
+      "profileRank": {
+        "label": "Rank progress",
+        "props": {
+          "showUnlocks": {
+            "title": "Show what the next rank unlocks",
+            "description": "The limits the next rung raises. Hidden when there is no next rung."
+          }
+        }
+      },
+      "profileBadges": {
+        "label": "Badges",
+        "props": {
+          "max": {
+            "title": "Badges to show",
+            "description": "Beyond this many, the rest collapse into a count."
+          },
+          "size": {
+            "title": "Badge size",
+            "enum": {
+              "sm": "Small",
+              "md": "Medium"
+            }
+          }
+        }
+      },
+      "profileVisitors": {
+        "label": "Recent visitors",
+        "props": {
+          "max": {
+            "title": "Avatars to show"
+          }
+        }
+      },
+      "profileFollowers": {
+        "label": "Followers strip",
+        "props": {
+          "max": {
+            "title": "Avatars to show"
+          }
+        }
+      },
+      "profileIdentity": {
+        "label": "Name & badges",
+        "props": {
+          "showHandle": {
+            "title": "Show @handle"
+          },
+          "showJoined": {
+            "title": "Show “member since”"
+          },
+          "showAge": {
+            "title": "Show age / birthday"
+          },
+          "showBadges": {
+            "title": "Show group badges"
+          },
+          "showFormerly": {
+            "title": "Show previous usernames"
+          }
+        }
+      },
+      "profileActions": {
+        "label": "Follow & block"
+      },
+      "profileBio": {
+        "label": "Bio"
+      },
+      "profileStats": {
+        "label": "Stats"
+      },
+      "profileTabs": {
+        "label": "Profile tabs"
+      },
+      "profileContent": {
+        "label": "Profile tab content"
+      },
+      "header": {
+        "label": "Header",
+        "props": {
+          "showMasthead": {
+            "title": "Show the masthead",
+            "description": "Off: the band is hidden and the logo and account buttons move into the navbar."
+          },
+          "logoAlign": {
+            "title": "Logo",
+            "enum": {
+              "left": "Left",
+              "center": "Centre"
+            }
+          },
+          "showTagline": {
+            "title": "Show the tagline",
+            "description": "The site description from Settings, under the logo."
+          },
+          "height": {
+            "title": "Height (px)",
+            "description": "The band grows if its content needs more. 0 = only as tall as the logo."
+          },
+          "backgroundImage": {
+            "title": "Background image",
+            "description": "Upload path or URL. Drawn over the gradient. Leave empty for none."
+          },
+          "showLogo": {
+            "title": "Show the logo",
+            "description": "At the left of the band, in line with the navbar below it."
+          },
+          "showWordmark": {
+            "title": "Show the site name too"
+          }
+        }
+      },
+      "navbar": {
+        "label": "Navbar",
+        "props": {
+          "sticky": {
+            "title": "Sticky",
+            "description": "Stays at the top of the window while the page (and the masthead) scrolls."
+          },
+          "height": {
+            "title": "Height (px)",
+            "description": "0 = the theme's height. 52–84 suits most sites."
+          },
+          "tone": {
+            "title": "Colour",
+            "enum": {
+              "theme": "Theme",
+              "dark": "Dark",
+              "brand": "Brand",
+              "light": "Light"
+            }
+          }
+        }
+      },
+      "logo": {
+        "label": "Logo",
+        "props": {
+          "showWordmark": {
+            "title": "Show site name next to the logo"
+          }
+        }
+      },
+      "navLinks": {
+        "label": "Navigation links"
+      },
+      "search": {
+        "label": "Search",
+        "props": {
+          "expanded": {
+            "title": "Always expanded",
+            "description": "Otherwise the field opens when clicked."
+          }
+        }
+      },
+      "notifications": {
+        "label": "Notification bell",
+        "props": {
+          "icon": {
+            "title": "Icon"
+          }
+        }
+      },
+      "modTool": {
+        "label": "Moderation tool",
+        "props": {
+          "icon": {
+            "title": "Icon"
+          }
+        }
+      },
+      "adminLink": {
+        "label": "Admin panel link"
+      },
+      "headerWidgets": {
+        "label": "Plugin icons"
+      },
+      "userMenu": {
+        "label": "Account menu"
+      },
+      "footer": {
+        "label": "Footer",
+        "props": {
+          "minHeight": {
+            "title": "Minimum height (px)",
+            "description": "The band grows with its contents. 0 = only as tall as they need."
+          },
+          "backgroundImage": {
+            "title": "Background image",
+            "description": "Upload path or URL. Drawn over the gradient. Leave empty for none."
+          },
+          "showTopBorder": {
+            "title": "Line above the footer"
+          }
+        }
+      },
+      "footerBar": {
+        "label": "Footer bar",
+        "props": {
+          "showUptime": {
+            "title": "Show uptime and latency"
+          },
+          "showThemeChooser": {
+            "title": "Show the theme picker",
+            "description": "Lets a reader choose between installed themes, for themselves only."
+          }
+        }
+      },
+      "footerLinks": {
+        "label": "Footer links",
+        "props": {
+          "showThemeChooser": {
+            "title": "Show the theme picker",
+            "description": "Lets a reader choose between installed themes, for themselves only."
+          }
+        }
+      },
+      "footerText": {
+        "label": "Footer text",
+        "props": {
+          "showUptime": {
+            "title": "Show uptime and latency"
+          }
+        }
+      },
+      "whosOnline": {
+        "label": "Who's online",
+        "props": {
+          "maxNames": {
+            "title": "Names to list",
+            "description": "0 shows the count only."
+          }
+        }
+      },
+      "groupLegend": {
+        "label": "Group legend"
+      },
+      "boardStats": {
+        "label": "Board stats"
+      },
+      "branding": {
+        "label": "Copyright & uptime",
+        "props": {
+          "showUptime": {
+            "title": "Show uptime and latency"
+          },
+          "showThemeChooser": {
+            "title": "Show the theme picker",
+            "description": "Lets a reader choose between installed themes, for themselves only."
+          },
+          "linksAlign": {
+            "title": "Footer links",
+            "enum": {
+              "left": "Left",
+              "center": "Centre",
+              "right": "Right"
+            }
+          },
+          "textAlign": {
+            "title": "Footer text",
+            "enum": {
+              "left": "Left",
+              "center": "Centre",
+              "right": "Right"
+            }
+          },
+          "order": {
+            "title": "First row",
+            "enum": {
+              "links": "Links",
+              "text": "Text"
+            }
+          }
+        }
+      },
+      "themeToggle": {
+        "label": "Theme toggle"
+      },
+      "slotLayoutWidget": {
+        "props": {
+          "outlet": {
+            "title": "Outlet",
+            "description": "Plugin widgets choose which outlet they appear in. Pick the one this widget expects.",
+            "enum": {
+              "aside": "Sidebar",
+              "top": "Top",
+              "home-top": "Top of home",
+              "forum-top": "Top of forum"
+            }
+          }
+        }
+      }
+    },
+    "jobs": {
+      "security-analysis": {
+        "label": "Security scans",
+        "description": "Runs the core baseline abuse-detection patterns (§15) plus any plugin-registered security scans."
+      },
+      "ban-expiry": {
+        "label": "Ban expiry",
+        "description": "Expires temporary bans whose end time has passed and clears the user's banned status."
+      },
+      "warning-expiry": {
+        "label": "Warning expiry",
+        "description": "Expires warnings past their expiry date and recalculates moderation thresholds."
+      },
+      "update-check": {
+        "label": "Marketplace sync",
+        "description": "Refreshes license entitlements (30-day grace applies), then reports the installed plugin inventory and caches available updates, critical flags and renewal warnings for the ACP. The default time is spread per install; set an explicit one to override."
+      },
+      "log-retention": {
+        "label": "Log retention",
+        "description": "Prunes old rows from the activity log (page visits and ACP actions have separate windows), error log, and login events. Windows are the retention.* settings (days; 0 keeps a table forever). Dialog acknowledgments are stored separately and are never affected."
+      },
+      "geoip-refresh": {
+        "label": "IP country database",
+        "description": "Downloads DB-IP's free IP-to-country database (CC BY 4.0) so moderators can see which country a member's IP address belongs to. Lookups happen on this server; no IP is sent anywhere. Monthly; 'Run now' fetches it straight away."
+      }
+    },
+    "actions": {
+      "system": {
+        "award-badges": {
+          "label": "Award earned badges",
+          "description": "Grants any badge whose thresholds a member now meets. Only badges with the reward system switched on are considered, and nothing is ever taken away — a badge already earned stays earned. Thresholds belonging to a disabled plugin are skipped until it is enabled again.",
+          "params": {
+            "batch": {
+              "title": "Members per run",
+              "description": "How many members to examine each time. The next run picks up the rest."
+            }
+          }
+        },
+        "prune-notifications": {
+          "label": "Prune notifications",
+          "description": "Deletes old notifications, with separate windows for ones the user has read and ones they never opened. Set a window to 0 to keep that half forever. Notification preferences and unread counts are not affected beyond the rows removed.",
+          "params": {
+            "readDays": {
+              "title": "Delete read after (days)",
+              "description": "Notifications the user has already read. 0 keeps them forever."
+            },
+            "unreadDays": {
+              "title": "Delete unread after (days)",
+              "description": "Notifications the user never opened. Give these a longer window — they still owe the user something. 0 keeps them forever."
+            }
+          }
+        },
+        "prune-profile-views": {
+          "label": "Prune profile visitors",
+          "description": "Ages out the 'recent visitors' list on member profiles. A visit older than the window is forgotten, so the card stays a record of who has been by lately rather than a permanent log of who looked at whom. Set to 0 to keep every visit. Profile view TOTALS are counters and are never reduced by this.",
+          "params": {
+            "days": {
+              "title": "Forget visits older than (days)",
+              "description": "A visit drops off the visitor card once it is this old. 0 keeps every visit forever."
+            }
+          }
+        },
+        "purge-deleted-content": {
+          "label": "Purge deleted content",
+          "description": "Permanently removes articles and comments that have been in the trash longer than the chosen window. Soft-deleted comments that still have live replies are never purged, because deleting them would take the replies with them. Article uploads are reclaimed separately by \"Purge orphaned uploads\". This cannot be undone — dry-run it first.",
+          "params": {
+            "days": {
+              "title": "Delete after (days)",
+              "description": "Only purge records that have been in the trash longer than this. Until then they stay restorable."
+            },
+            "scope": {
+              "title": "Scope",
+              "description": "Limit the purge to one kind of content.",
+              "enum": {
+                "all": "All",
+                "articles": "Articles",
+                "article_comments": "Article comments",
+                "profile_comments": "Profile comments"
+              }
+            }
+          }
+        },
+        "purge-orphaned-uploads": {
+          "label": "Purge orphaned uploads",
+          "description": "Deletes files in the core upload folders (avatars, covers, groups, themes, articles, pages, layouts) that no record points at any more — replaced avatars and group icons, and the leftovers of deleted articles and of the removed custom pages. Inline images referenced from article and legal-document bodies and files belonging to soft-deleted records are kept, and plugin upload folders are never touched. Always dry-run this first: deleted files cannot be recovered.",
+          "params": {
+            "graceHours": {
+              "title": "Grace period (hours)",
+              "description": "Never delete a file younger than this. Protects uploads whose owning record is still being written."
+            },
+            "scope": {
+              "title": "Scope",
+              "description": "Limit the sweep to one upload folder. Useful for checking one area before running the lot.",
+              "enum": {
+                "all": "All",
+                "avatars": "Avatars",
+                "covers": "Covers",
+                "articles": "Articles",
+                "pages": "Pages",
+                "groups": "Groups",
+                "themes": "Themes",
+                "layouts": "Layouts"
+              }
+            }
+          }
+        },
+        "recompute-counters": {
+          "label": "Recompute counters",
+          "description": "Recomputes denormalized counters (article/comment/like/follower counts) from their source rows and repairs any drift. Idempotent and non-destructive. Does not touch forum post/thread counts (owned by the forum plugin) or article view counts (telemetry, not derivable)."
+        },
+        "trim-article-revisions": {
+          "label": "Trim article revisions",
+          "description": "Keeps only the most recent revisions of each article and deletes the rest. Every save stores a full copy of the article body, so a frequently edited article accumulates them indefinitely. The live article is not a revision and is never affected.",
+          "params": {
+            "keep": {
+              "title": "Revisions to keep",
+              "description": "How many of the most recent revisions to keep for each article. Older ones are removed."
+            }
+          }
+        }
+      }
+    },
+    "domains": {
+      "System": "System",
+      "Administration": "Administration",
+      "Users": "Users",
+      "Articles": "Articles",
+      "Moderation": "Moderation",
+      "Messaging": "Messaging",
+      "Extensions": "Extensions"
+    },
+    "permissions": {
+      "admin.access": "Access the admin panel",
+      "legal.manage": "Manage legal documents",
+      "user.manage": "Manage user accounts",
+      "user.ban": "Ban users",
+      "group.manage": "Manage groups & permissions",
+      "progression.manage": "Manage the progression system",
+      "badge.manage": "Edit the badge catalogue",
+      "badge.assign": "Award badges to members",
+      "profile.comment.create": "Post on profile walls",
+      "profile.comment.delete.own": "Delete own wall posts",
+      "profile.comment.delete.wall": "Delete posts on own wall",
+      "profile.comment.delete.any": "Delete anyone's wall posts",
+      "article.create": "Write articles",
+      "article.edit.own": "Edit own articles",
+      "article.edit.any": "Edit anyone's articles",
+      "article.publish": "Publish articles",
+      "article.delete.own": "Delete own articles",
+      "article.delete.any": "Delete anyone's articles",
+      "article.comment.create": "Post comments on articles",
+      "article.comment.edit.own": "Edit own article comments",
+      "article.comment.delete.own": "Delete own article comments",
+      "article.comment.delete.any": "Delete anyone's article comments",
+      "article.revisions.view": "View article revision history",
+      "article.revisions.restore": "Restore previous article versions",
+      "moderation.report.file": "Report content",
+      "moderation.report.manage": "Handle reports",
+      "moderation.warn.manage": "Warn members",
+      "moderation.ban.manage": "Ban and unban members",
+      "moderation.cases.manage": "Work review cases",
+      "moderation.log.view": "View the moderation log",
+      "moderation.settings": "Change moderation settings",
+      "moderation.protected": "Counts as staff (cannot be warned or banned)",
+      "message.send": "Send private messages",
+      "admin.plugins": "Manage plugins in the admin panel",
+      "plugin.install": "Install plugins",
+      "plugin.enable": "Enable & disable plugins",
+      "system.tasks.manage": "Manage scheduled tasks",
+      "emoji.manage": "Manage emojis"
+    }
+  },
+  "emojis": {
+    "title": "Emojis",
+    "subtitle": "The emojis members can use in the editor: articles, comments, the wall, forum posts and messages. Upload images, give each a :shortcode: and a category.",
+    "count_one": "emoji",
+    "count_other": "emojis",
+    "upload": "Upload emojis",
+    "pendingTitle_one": "{{count}} emoji to add",
+    "pendingTitle_other": "{{count}} emojis to add",
+    "category": "Category",
+    "categoryPlaceholder": "e.g. Faces",
+    "shortcode": "Shortcode",
+    "name": "Name",
+    "discard": "Leave this one out",
+    "rules": "PNG, GIF or WebP, up to 256 KB. Square images look best. Shortcodes are 2–32 of a–z, 0–9, _ - +.",
+    "cancel": "Cancel",
+    "add_one": "Add {{count}} emoji",
+    "add_other": "Add {{count}} emojis",
+    "adding": "Adding…",
+    "added_one": "{{count}} emoji added",
+    "added_other": "{{count}} emojis added",
+    "someFailed_one": "{{count}} could not be added — see the row",
+    "someFailed_other": "{{count}} could not be added — see the rows",
+    "empty": "No emojis yet. Upload some and they appear in the editor’s emoji picker everywhere.",
+    "uncategorised": "Uncategorised",
+    "edit": "Edit",
+    "remove": "Remove",
+    "removeTitle": "Remove :{{code}}:?",
+    "removeBody": "It leaves the emoji picker. Posts that already use it keep showing it, and its shortcode stays reserved.",
+    "removed": "Emoji removed",
+    "saved": "Emoji saved",
+    "save": "Save"
   }
 }

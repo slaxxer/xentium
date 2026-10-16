@@ -70,6 +70,7 @@ async function onFinalFailure(queueName: string, job: Job | undefined, err: Erro
           userId,
           type:     "system.job_failure",
           title:    "Background job failed",
+          i18n:     { key: "common:notify.jobFailure", params: { queue: queueName } },
           body:     `A "${queueName}" job failed after exhausting retries. Check System → Error Log.`,
           link:     "/admin/error-log",
           channels: ["in_app", "email"],

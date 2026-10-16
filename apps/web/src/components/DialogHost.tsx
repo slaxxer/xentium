@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { FontAwesomeIcon } from "./Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -20,6 +21,7 @@ const ICONS: Record<DialogIcon, IconDefinition> = {
 export function DialogHost() {
   const dialog = useSyncExternalStore(subscribeDialog, getDialog, getDialog);
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const { t } = useTranslation("common");
 
   const isProgress = dialog?.kind === "progress";
   const prog = dialog?.progress;
@@ -95,13 +97,13 @@ export function DialogHost() {
                 className={`xt-dialog__btn xt-dialog__btn--primary${isDanger ? " is-danger" : ""}`}
                 onClick={() => resolveDialog(true)}
               >
-                {dialog.confirmText ?? "Close"}
+                {dialog.confirmText ?? t("actions.close")}
               </button>
             ) : (
               <>
                 {dialog.kind === "confirm" && (
                   <button type="button" className="xt-dialog__btn xt-dialog__btn--ghost" onClick={() => resolveDialog(false)}>
-                    {dialog.cancelText ?? "Cancel"}
+                    {dialog.cancelText ?? t("actions.cancel")}
                   </button>
                 )}
                 <button
@@ -109,7 +111,7 @@ export function DialogHost() {
                   className={`xt-dialog__btn xt-dialog__btn--primary${isDanger ? " is-danger" : ""}`}
                   onClick={() => resolveDialog(true)}
                 >
-                  {dialog.confirmText ?? "OK"}
+                  {dialog.confirmText ?? t("actions.ok")}
                 </button>
               </>
             )}

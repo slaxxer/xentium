@@ -312,6 +312,36 @@ export function EdgeArtLayer({ edges, wrapper }: { edges: BlockEdges; wrapper: H
 
   const top = edgeShows(edges.top, on) ? edges.top : undefined;
   const bottom = edgeShows(edges.bottom, on) ? edges.bottom : undefined;
+
+  // How far an OUTWARD top edge reaches above the box, as variables on it, so a block
+  // that must not cover what is above it (the footer) can keep that much room.
+  // Drawing stays the same either way: an outward edge still hangs over its neighbour.
+  const outTop = top && top.direction === "out" && top.shape !== "blank" ? top : undefined;
+  useLayoutEffect(() => {
+    if (!host) return;
+    if (!outTop) {
+      host.style.removeProperty("--xt-edge-out-top");
+      host.style.removeProperty("--xt-edge-out-top-sm");
+      return;
+    }
+    host.style.setProperty("--xt-edge-out-top", `${outTop.height}px`);
+    host.style.setProperty("--xt-edge-out-top-sm", `${outTop.mobileHeight ?? outTop.height}px`);
+  }, [host, outTop?.height, outTop?.mobileHeight, !!outTop]);
+
+  // The same for an OUTWARD bottom edge: the navbar keeps that much room below it, so
+  // its edge does not cover the alert bar or the page under it.
+  const outBottom = bottom && bottom.direction === "out" && bottom.shape !== "blank" ? bottom : undefined;
+  useLayoutEffect(() => {
+    if (!host) return;
+    if (!outBottom) {
+      host.style.removeProperty("--xt-edge-out-bottom");
+      host.style.removeProperty("--xt-edge-out-bottom-sm");
+      return;
+    }
+    host.style.setProperty("--xt-edge-out-bottom", `${outBottom.height}px`);
+    host.style.setProperty("--xt-edge-out-bottom-sm", `${outBottom.mobileHeight ?? outBottom.height}px`);
+  }, [host, outBottom?.height, outBottom?.mobileHeight, !!outBottom]);
+
   if (!host || (!top && !bottom)) return null;
 
   return createPortal(

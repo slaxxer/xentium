@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faBan, faCheck, faChevronRight, faChevronUp, faFlag, faMinus, faTrash,
@@ -13,10 +14,10 @@ import { apiErrorMessage } from "../../lib/swal";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import {
-  DURATIONS, DURATION_LABEL, DURATION_TEXT, MODES, MODE_LABEL, fill, suggest, typeLabel,
+  DURATIONS, DURATION_TEXT, MODES, fill, suggest, typeLabel,
   type Duration, type Mode, type Template,
 } from "./modTemplates";
-import { topReason, type ReportGroup } from "./modData";
+import { targetTypeLabel, topReason, type ReportGroup } from "./modData";
 import { modStore } from "./modSession";
 
 /** Long enough to reach for Undo; a plain success toast is gone in 3.5s. */
@@ -25,7 +26,9 @@ const UNDO_MS = 8000;
 const MODE_ICON: Record<Mode, IconDefinition> = { warn: faTriangleExclamation, ban: faBan, delete: faTrash, dismiss: faMinus };
 
 /** What goes with Remove or Dismiss when no premade text exists for it. The server
- *  wants a message for every action; warn and ban never fall back, they need a text. */
+ *  wants a message for every action; warn and ban never fall back, they need a text.
+ *  ⚠ Not translated with the interface: this is the note the MEMBER receives, the
+ *  same kind of content as the admin-written premade texts. */
 const FALLBACK: Record<Mode, string> = {
   warn: "", ban: "",
   delete: "Removed by a moderator.",
@@ -42,6 +45,10 @@ const isTyping = (t: EventTarget | null) =>
  * ACP → Moderation → Templates.
  */
 export function ReportPill({ group, position, total }: { group: ReportGroup; position: number; total: number }) {
+  const { t } = useTranslation("common", { keyPrefix: "modcanvas.report" });
+  const { t: tc } = useTranslation("common", { keyPrefix: "modcanvas.common" });
+  const modeLabel = (m: Mode) => t(`modes.${m}`);
+  const durLabel = (d: Duration) => t(`durations.${d}`);
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = userCan(user, "admin.access");
@@ -53,7 +60,10 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
   const author = group.author;
   const hasAuthor = !!author;
   const count = group.reports.length;
+  // `type` fills `{type}` in the member's message (template language); `shownType`
+  // is what the moderator reads.
   const type = typeLabel(group.targetType, group.targetId);
+  const shownType = targetTypeLabel(group.targetType, group.targetId);
   const suggestion = useMemo(() => suggest(templates, group.reports.map((r) => r.reason), hasAuthor), [templates, group, hasAuthor]);
 
   const [mode, setMode] = useState<Mode | null>(null);
@@ -111,14 +121,14 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
       ...(effMode === "ban" ? { duration: effDuration } : {}),
     }),
     onSuccess: () => {
-      const closed = count > 1 ? `${count} reports resolved` : "report resolved";
-      const who = author?.username ?? "the author";
-      const msg = effMode === "warn" ? `Warning sent to ${who} · ${closed}`
-        : effMode === "ban" ? `${who} banned (${DURATION_LABEL[effDuration]}) · ${closed}`
-        : effMode === "delete" ? `Content removed · ${closed}`
-        : `Report${count > 1 ? "s" : ""} dismissed`;
+      const closed = t("toast.resolved", { count });
+      const who = author?.username ?? t("toast.theAuthor");
+      const msg = effMode === "warn" ? t("toast.warned", { user: who, closed })
+        : effMode === "ban" ? t("toast.banned", { user: who, duration: durLabel(effDuration), closed })
+        : effMode === "delete" ? t("toast.removed", { closed })
+        : t("toast.dismissed", { count });
       // Only a dismissal is undone by reopening; a warning or ban has its own pardon/lift.
-      toast.success(msg, effMode === "dismiss" ? { duration: UNDO_MS, action: { label: "Undo", onClick: () => void reopen() } } : undefined);
+      toast.success(msg, effMode === "dismiss" ? { duration: UNDO_MS, action: { label: t("toast.undo"), onClick: () => void reopen() } } : undefined);
       qc.invalidateQueries({ queryKey: ["canvas-inspector"] });
       qc.invalidateQueries({ queryKey: ["mod-summary"] });
       qc.invalidateQueries({ queryKey: ["mod-templates"] });
@@ -128,10 +138,10 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
   });
 
   const submit: Record<Mode, { label: string; cls: string }> = {
-    warn:    { label: "Send warning", cls: "mcp-send--warn" },
-    ban:     { label: effDuration === "perm" ? "Ban permanently" : `Ban ${DURATION_LABEL[effDuration]}`, cls: "mcp-send--danger" },
-    delete:  { label: "Remove", cls: "mcp-send--danger" },
-    dismiss: { label: count > 1 ? "Dismiss reports" : "Dismiss", cls: "mcp-send--neutral" },
+    warn:    { label: t("send.warn"), cls: "mcp-send--warn" },
+    ban:     { label: effDuration === "perm" ? t("send.banPerm") : t("send.ban", { duration: durLabel(effDuration) }), cls: "mcp-send--danger" },
+    delete:  { label: t("send.delete"), cls: "mcp-send--danger" },
+    dismiss: { label: t("send.dismiss", { count }), cls: "mcp-send--neutral" },
   };
   // Warn and ban carry the text to the member, so they need one; remove and dismiss
   // can go without.
@@ -139,7 +149,7 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
   const disabled = !can(effMode) || act.isPending || (needsText && !template);
 
   return (
-    <div className="mcp" role="region" aria-label="Report actions">
+    <div className="mcp" role="region" aria-label={t("region")}>
       <div className="mcp__id">
         <span className="mcp__ic mcp__ic--danger"><FontAwesomeIcon icon={faFlag} /></span>
         <div className="mcp__idtext">
@@ -147,76 +157,76 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
             {topReason(group)}
             {count > 1 && <span className="mcp__count">×{count}</span>}
           </span>
-          <span className="mcp__sub">{author ? `${author.username} · ${type}` : group.where ?? type}</span>
+          <span className="mcp__sub">{author ? t("sub", { user: author.username, type: shownType }) : group.where ?? shownType}</span>
         </div>
       </div>
 
       <span className="mcp__rule" />
 
-      <div className="mcp__seg" role="radiogroup" aria-label="Action">
+      <div className="mcp__seg" role="radiogroup" aria-label={t("action")}>
         {MODES.map((m) => (
           <button key={m} type="button" role="radio" aria-checked={effMode === m}
             className={effMode === m ? "is-on" : ""} disabled={!can(m)} onClick={() => pick(m)}>
-            <FontAwesomeIcon icon={MODE_ICON[m]} /> {MODE_LABEL[m]}
+            <FontAwesomeIcon icon={MODE_ICON[m]} /> {modeLabel(m)}
           </button>
         ))}
       </div>
 
       <div className="mcp__menuwrap" ref={menuRef}>
         {menu && (
-          <div className="mcp-menu" role="listbox" aria-label="Premade texts">
-            <div className="mcp-menu__head">{MODE_LABEL[effMode]} · premade texts</div>
+          <div className="mcp-menu" role="listbox" aria-label={t("premade")}>
+            <div className="mcp-menu__head">{t("premadeHead", { mode: modeLabel(effMode) })}</div>
             {effMode === "ban" && (
               <div className="mcp-menu__dur">
                 {DURATIONS.map((d) => (
                   <button key={d} type="button" className={effDuration === d ? "is-on" : ""} onClick={() => setDuration(d)}>
-                    {DURATION_LABEL[d]}
+                    {durLabel(d)}
                   </button>
                 ))}
               </div>
             )}
             <div className="mcp-menu__list">
-              {inMode.map((t, i) => (
-                <button key={t.id} type="button" role="option" aria-selected={template?.id === t.id}
-                  className={`mcp-menu__row${template?.id === t.id ? " is-on" : ""}`} onClick={() => pickTemplate(t)}>
+              {inMode.map((tpl, i) => (
+                <button key={tpl.id} type="button" role="option" aria-selected={template?.id === tpl.id}
+                  className={`mcp-menu__row${template?.id === tpl.id ? " is-on" : ""}`} onClick={() => pickTemplate(tpl)}>
                   {i < 9 && <kbd>{i + 1}</kbd>}
                   <span className="mcp-menu__body">
                     <span className="mcp-menu__name">
-                      {t.name}
-                      {suggestion?.id === t.id && <span className="mcp-menu__sug"><FontAwesomeIcon icon={faWandMagicSparkles} /> Suggested</span>}
+                      {tpl.name}
+                      {suggestion?.id === tpl.id && <span className="mcp-menu__sug"><FontAwesomeIcon icon={faWandMagicSparkles} /> {t("suggested")}</span>}
                     </span>
-                    <span className="mcp-menu__preview">{fill(t.text, vars)}</span>
+                    <span className="mcp-menu__preview">{fill(tpl.text, vars)}</span>
                   </span>
-                  {template?.id === t.id && <FontAwesomeIcon icon={faCheck} className="mcp-menu__check" />}
+                  {template?.id === tpl.id && <FontAwesomeIcon icon={faCheck} className="mcp-menu__check" />}
                 </button>
               ))}
-              {inMode.length === 0 && <p className="mcp-menu__empty">No texts for this action yet.</p>}
+              {inMode.length === 0 && <p className="mcp-menu__empty">{t("empty")}</p>}
             </div>
             <div className="mcp-menu__foot">
               {isAdmin
-                ? <Link to={`/admin/mod-templates${template ? `?id=${encodeURIComponent(template.id)}` : ""}`}>Admins write these in ACP → Moderation → Templates</Link>
-                : "Admins write these in ACP → Moderation → Templates"}
+                ? <Link to={`/admin/mod-templates${template ? `?id=${encodeURIComponent(template.id)}` : ""}`}>{t("adminsWrite")}</Link>
+                : t("adminsWrite")}
             </div>
           </div>
         )}
         <button type="button" className="mcp__pick" aria-expanded={menu} onClick={() => setMenu((v) => !v)}>
           {suggestion?.id === template?.id && template && <FontAwesomeIcon icon={faWandMagicSparkles} className="mcp__pick-sug" />}
-          <span>{template?.name ?? "Premade text"}</span>
+          <span>{template?.name ?? t("pick")}</span>
           <FontAwesomeIcon icon={faChevronUp} className="mcp__pick-chev" />
         </button>
       </div>
 
       <button type="button" className={`mcp-send ${submit[effMode].cls}`} disabled={disabled} onClick={() => act.mutate()}>
-        <FontAwesomeIcon icon={MODE_ICON[effMode]} /> {act.isPending ? "Working…" : submit[effMode].label}
+        <FontAwesomeIcon icon={MODE_ICON[effMode]} /> {act.isPending ? tc("working") : submit[effMode].label}
       </button>
 
       <span className="mcp__rule" />
       <span className="mcp__pos">{position + 1}/{total}</span>
-      <button type="button" className="mcp__round" aria-label="Next report" disabled={position + 1 >= total}
+      <button type="button" className="mcp__round" aria-label={t("next")} disabled={position + 1 >= total}
         onClick={() => modStore.go(position + 1)}>
         <FontAwesomeIcon icon={faChevronRight} />
       </button>
-      <button type="button" className="mcp__round" aria-label="Close" onClick={modStore.close}>
+      <button type="button" className="mcp__round" aria-label={tc("close")} onClick={modStore.close}>
         <FontAwesomeIcon icon={faXmark} />
       </button>
     </div>

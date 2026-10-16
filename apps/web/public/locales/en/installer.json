@@ -198,7 +198,8 @@
       "fair": "Fair",
       "good": "Good",
       "strong": "Strong"
-    }
+    },
+    "username_placeholder": "Administrator"
   },
   "finalize": {
     "title": "Ready when you are",

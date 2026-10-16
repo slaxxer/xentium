@@ -53,10 +53,58 @@ starting value from `_tokenDefaults.scss` itself, and `foundationCoverage.test.t
 when you add a token to that file without registering it in `TOKEN_REGISTRY`
 (`packages/contracts/src/tokens.ts`).
 
+### The core look
+
+The look every install starts with is deliberately basic: a neutral light page, white
+surfaces with hairlines, a plain white header and footer, one deep teal accent and no
+gradients. Figtree sets everything; Bricolage Grotesque sets only the big headlines
+(`--font-headline`: any `h1` and `.xt-headline`). It's a starting point you build on with
+Theme Studio and the layout blocks, not a finished design.
+
+It's a fourth mixin in `_tokenDefaults.scss`, `core-look`, applied after the three tiers
+on `:root` and `.xt-site-tokens`. The ACP includes the three tiers but not `core-look`, so
+the admin panel keeps its own look. Its structure is the code-default layouts in
+`packages/contracts`: the header is the navbar block alone (the masthead is off, so the
+navbar carries the logo, links, icons and account menu), the footer is the footer block
+with who's online, the group legend, the board stats and the footer bar, and the site
+frame is full width. A site that stored its own keeps them.
+
+Some rules follow from it:
+
+- **One accent.** `--c-accent2` is the same hue as `--c-accent`, deeper. Buttons, links,
+  tabs, the default logo mark (`--logo-icon-from` and `--logo-icon-to` both point at the
+  accent) and the favicon move together. The status colours keep clear of it: grass
+  green, amber, red and slate blue. Core ships no colourways.
+- **No gradients in core.** Avatars and empty covers are solid colours, buttons are flat,
+  and `--shadow-glow` is `none`. Gradients you choose yourself still work.
+- **Cards get their edge from `--shadow-card`**, a faint 1px ring.
+- **The footer has its own text colours** (`--footer-fg-strong`, `--footer-fg`,
+  `--footer-fg-subtle`, `--footer-accent`), and icons carried into the navbar use the
+  navbar's icon tokens, so a theme can paint either band dark without the pieces inside
+  turning unreadable.
+- **An outward edge keeps its room.** Edge art pointing down out of the navbar pushes what
+  follows down by its height (`--xt-edge-out-bottom`), the same way an upward footer edge
+  does (`--xt-edge-out-top`).
+
+### Xentium Dark
+
+Every install ships a second theme, **Xentium Dark** (`xentium-dark`): the core look on
+deep neutral surfaces with the same single teal accent. It's a theme, not a mode, so it
+follows the one-look rule above. It ships tokens and `color-scheme: dark` only, so it uses
+Core's layouts. Text on its light accent is dark (`--c-on-accent`). Core is listed in the
+chooser as "Xentium" while it's the site's theme.
+
+It's added to the library at boot and by the installer (`bundledThemes.ts`), **inactive**,
+so readers can wear it straight away and no site switches to it by itself. It's added
+once: `themes.bundled.xentium-dark` records the version. If you uninstall it, it stays
+gone. A newer bundled version replaces the package of the row we added and keeps it
+active if you made it the site's theme. A package you imported yourself under the same id
+is never touched.
+
 `HEARTH_DEFAULT_TOKENS` in `@xentium/contracts` mirrors the **editable** tokens from
 `tokens.scss`, so the API and Theme Studio agree on the defaults. `tokens.scss` is
-still what actually renders, so when you change an editable default there, change it in
-`HEARTH_DEFAULT_TOKENS` too.
+still what actually renders, so when you change an editable default there (for core,
+that's the `core-look` mixin), change it in `HEARTH_DEFAULT_TOKENS` too.
 
 ### Scopes
 
@@ -115,7 +163,9 @@ maintenance and 404 pages, and the default favicon. An admin's uploaded logo or 
 
 `--logo-icon-from` and `--logo-icon-to` colour the default icon's box (its gradient;
 the same colour twice makes it flat). They do nothing to an uploaded logo, and the ACP
-and the installer ignore them. Two more tokens dress the site's logo, whichever it is:
+and the installer ignore them. The default favicon follows them too: once they differ
+from the brand colours, the app draws the favicon in them (`lib/siteFavicon.ts`) and
+redraws it whenever the token stylesheet changes. An uploaded favicon always wins. Two more tokens dress the site's logo, whichever it is:
 `--logo-icon-border` and `--logo-icon-shadow` (Theme Studio, Colours & type, Logo icon).
 Both default to `transparent`. They are drawn with `drop-shadow`, so they follow the logo's shape: a
 round PNG gets a round ring. A theme can set them like any other colour.
@@ -126,6 +176,38 @@ round PNG gets a round ring. A theme can set them like any other colour.
 (Theme Studio, Colours & type, Icon size: 70% to 200%). Site icons carry the `xt-ico`
 class from the shared icon component and are scaled with `zoom`, so icons that set their
 own size inline scale too, kit icons included. The admin panel never carries the class.
+
+### Header dropdowns and the user menu
+
+Two token groups style the header's action bar and what opens from it. Both are in
+Theme Studio, Colours & type.
+
+**Menus & dropdowns** (`--menu-*`) style every dropdown: the account menu, the
+notifications list, the moderation shield and plugin dropdowns. Background, text,
+secondary text, border, item hover, radius, and two weights: `--menu-fw` for ordinary
+text and `--menu-title-fw` for headings and unread items. The weights use a select
+(Light 300 to Black 900), the `weight` control in the token registry.
+
+**User menu** (`--usermenu-*`) styles the bar itself, the one dark pill in the masthead
+that holds the shield, the bell, plugin icons, search and the avatar: background, text,
+dividers, weight and radius. It's global only. The masthead isn't inside any region
+scope, so "Apply to" isn't offered for this section (or for any section without a
+scopeable token).
+
+A dropdown doesn't need to know about any of this. Give its panel the `xt-pop` class and
+paint it with the ordinary tokens (`--c-card`, `--c-fg`, `--c-fg-muted`, `--c-border`,
+`--c-surface`). The `xt-dropdown-tokens` mixin in `chromeBlocks.scss` points those at
+the `--menu-*` values inside every `.xt-pop`. Inside the pill it also catches a panel
+that paints `background: var(--c-card)` inline, so an older plugin dropdown follows
+without a rebuild.
+
+**Click to edit.** Both Theme Studio previews let a dropdown's trigger through, so the
+dropdown opens. A trigger is any `button[aria-expanded]` outside an open `.xt-pop`;
+everything inside the open dropdown stays inert. In Colours & type, clicking an open
+dropdown selects Menus & dropdowns and clicking the pill selects User menu. In the
+layout editor, clicking a header icon selects its block and opens its dropdown, and the
+block's settings show a "Dropdown & user menu style" section with both groups. Those are
+still theme tokens, saved to the theme's draft, not props on the block.
 
 ### Style variants
 
@@ -254,9 +336,38 @@ What the reset buttons do:
 Token edits and layout edits go into a **draft for the theme you're editing**. Theme
 Studio has **one Publish**, and it always puts both live together, the layouts and the
 colours they were designed with (`POST /api/admin/themes/studio/publish?theme=<key>`).
-The bar beside it counts both halves (`GET /api/admin/themes/studio/status`). The
-scheduled publish job does the same for every theme. Fonts, custom CSS and branding save
-live, as they always have.
+The bar beside it counts both halves (`GET /api/admin/themes/studio/status`). There is
+no timed publish: drafts save on their own, so a schedule would put half-finished work
+live with nobody looking.
+
+The font and the custom CSS are part of the same draft. The font editor and the CSS
+console autosave into it (`PUT /api/appearance/font` and `PUT /api/appearance/custom-css`
+write the draft and `GET` reads it back), the previews show them, and Publish puts them
+live with everything else. The CSS console refuses a sheet it can't parse and tells you
+so instead of saving it. Branding (logo, favicon, icon kit) still saves live.
+
+### History
+
+Every publish records a **revision** for the theme: its layouts and site frame, colours,
+font and custom CSS as they went live, plus a summary of what changed. Theme Studio's
+History mode lists them, mixed by date with older colour-only entries, such as a
+colourway applied from the Themes page (`GET /api/admin/themes/studio/history`). We keep
+30 revisions per theme.
+
+**Restore never goes live by itself.** It puts the entry back as the theme's draft
+(`POST /api/admin/themes/studio/history/<kind>/<id>/stage`). You look at it in the
+previews, then publish. A template that was inherited at the time comes back as
+inherited.
+
+### Clicking a page to style it
+
+In Colours & type, the preview can show the **Components** specimen or a real **Page**
+of the site, in the theme's draft. Click anything on the page and the inspector opens the
+section for it, in the scope around it: a button in the footer opens Button scoped to the
+footer, a card inside an accent section opens Card in `variant.accent`, the search box
+opens Field. Clicks never reach the page itself, so links don't navigate. The mapping
+lives in `stylePagePick.ts` and reads the same selectors the stylesheet scopes tokens with
+(`SCOPE_SELECTOR`).
 
 The previews read the draft: `GET /api/appearance/css?source=draft&theme=<key>` for the
 stylesheet, and `GET /api/admin/layouts?theme=<key>` for the layouts.
@@ -343,9 +454,22 @@ the files end up), `data:` URLs and paths on the same site.
 ### Fonts
 
 Theme Studio font belongs to the theme you're editing and applies to **that theme's
-whole site** (body and headings, `--ff-sans` and `--font-display`). Users can override it
+whole site**: body, UI headings and headlines (`--ff-sans`, `--font-display` and
+`--font-headline`). With no font chosen, core uses Figtree for text and UI headings
+(`--font-display`: card titles, stats, labels) and Bricolage Grotesque for headlines
+(`--font-headline`: any `h1` and anything with `.xt-headline`). Users can override it
 on their profile. The ACP always uses Poppins (`body.xt-acp` pins family, weight and
 size). It's stored per theme and saved through `GET`/`PUT /api/appearance/font?theme=<key>`.
+
+**A block can set its headings in another face.** In the Layout editor, a block's Style
+panel has a Heading font picker (Bricolage Grotesque, Figtree, Poppins, Nunito,
+Montserrat, Open Sans, Ubuntu, JetBrains Mono, or the site font). It's stored on the block node as
+`headingFont`, like `variant`, so it works on any block, a plugin's too, and a theme
+package carries it. The renderer puts `--xt-heading-font` and `.xt-hf` on the block's
+wrapper, and one rule in `styles/index.scss` sets `h1`–`h6` and `.xt-headline` inside it.
+Blocks nested inside inherit it unless they set their own. Only real headings change: a
+title drawn as a styled `div` keeps the UI face. The list is fixed (`HEADING_FONTS` in
+contracts) because the value becomes CSS and a document can come from an imported theme.
 
 A theme can also ship its own font (`@font-face` in `styles/custom.css`, the file in
 `assets/`) and point `--font-display` at it with a token. Our Redline theme does that with

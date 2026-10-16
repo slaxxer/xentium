@@ -8,6 +8,7 @@ import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
+import { isUserOnline } from "../../shared/utils/presence.js";
 
 function formatDobValue(value: string, format: string | null): string {
   const date = new Date(value);
@@ -61,6 +62,9 @@ async function assertFollowListVisible(
     throw new XentiumError({ code: "XEC-USER-4014", httpStatus: 403, message: "This list is private" });
   }
 }
+
+/** A link to one comment on a wall: the Wall tab, scrolled to that comment and outlined. */
+const wallLink = (owner: string, commentId: string) => `/u/${encodeURIComponent(owner)}?tab=wall&comment=${commentId}`;
 
 export const userService = {
   async getPublicProfile(username: string, viewerId?: string) {
@@ -123,6 +127,12 @@ export const userService = {
 
     // Ban state for the public profile badge. Permanent bans use the 9999-12-31 sentinel.
     const isBanned = !!user.bannedUntil && user.bannedUntil.getTime() > Date.now();
+    const online = !isBanned && await isUserOnline(user.id);
+    // "Last seen", while they're not here now — unless they keep it to themselves
+    // (Account → Privacy). A banned member reads as never seen, like they read offline.
+    const lastSeenAt = online || isBanned || privacy.showLastSeen === false
+      ? null
+      : (await prisma.user.findUnique({ where: { id: user.id }, select: { lastSeenAt: true } }))?.lastSeenAt ?? null;
     const isPermanentBan = isBanned && user.bannedUntil!.getUTCFullYear() >= 9999;
 
     return {
@@ -162,6 +172,9 @@ export const userService = {
       viewerHasBlocked,
       isBanned,
       isPermanentBan,
+      // The same presence the members list and "online now" show; a banned member reads offline.
+      online,
+      lastSeenAt,
     };
   },
 
@@ -184,6 +197,7 @@ export const userService = {
         userId:        followingId,
         type:          "social.new_follower",
         title:         "New follower",
+        i18n:          { key: "common:notify.newFollower", params: { name: follower.username } },
         body:          `${follower.username} started following you.`,
         link:          `/u/${follower.username}`,
         meta:          { followerId },
@@ -202,11 +216,32 @@ export const userService = {
     });
   },
 
-  async createProfileComment(profileUserId: string, authorId: string, body: string) {
-    if (profileUserId === authorId) {
+  /**
+   * Post on a wall, or reply to a comment on it (`parentId`). Replies are one level
+   * deep: answering a reply files the answer under the same top-level comment. The
+   * wall's owner may not START a comment on their own wall, but may reply on it.
+   */
+  async createProfileComment(profileUserId: string, authorId: string, body: string, parentId?: string) {
+    let parent: { id: string; authorId: string } | null = null;
+    if (parentId) {
+      const p = await prisma.profileComment.findUnique({
+        where:  { id: parentId },
+        select: { id: true, authorId: true, profileUserId: true, parentId: true, deletedAt: true },
+      });
+      if (!p || p.profileUserId !== profileUserId || p.deletedAt) {
+        throw new XentiumError({ code: 'XEC-USER-4015', httpStatus: 404, message: 'The comment you are replying to is gone' });
+      }
+      const top = p.parentId
+        ? await prisma.profileComment.findUnique({ where: { id: p.parentId }, select: { id: true, authorId: true } })
+        : p;
+      if (!top) throw new XentiumError({ code: 'XEC-USER-4015', httpStatus: 404, message: 'The comment you are replying to is gone' });
+      // Who is NOTIFIED is the author of the comment actually answered, even when it is
+      // filed under its top-level comment.
+      parent = { id: top.id, authorId: p.authorId };
+    } else if (profileUserId === authorId) {
       throw new XentiumError({ code: 'XEC-USER-4002', httpStatus: 400, message: 'Cannot comment on your own profile' });
     }
-    const comment = await userRepository.createProfileComment({ profileUserId, authorId, body });
+    const comment = await userRepository.createProfileComment({ profileUserId, authorId, body, ...(parent ? { parentId: parent.id } : {}) });
 
     const [author, profileOwner] = await Promise.all([
       userRepository.findById(authorId),
@@ -214,26 +249,46 @@ export const userService = {
     ]);
 
     if (author && profileOwner) {
-      // Notify the profile owner
-      await notificationService.dispatch({
-        userId:       profileUserId,
-        type:         "profile.comment_posted",
-        title:        "New comment on your profile",
-        body:         `${author.username} posted on your profile.`,
-        link:         `/u/${profileOwner.username}`,
-        meta:         { commentId: comment.id, authorId },
-        senderUserId: authorId,
-        channels:     ["in_app", "email"],
-      });
+      const notified = new Set<string>([authorId]);
+      // A reply tells the member answered.
+      if (parent && !notified.has(parent.authorId)) {
+        notified.add(parent.authorId);
+        await notificationService.dispatch({
+          userId:       parent.authorId,
+          type:         "profile.comment_reply",
+          title:        "New reply to your comment",
+          i18n:         { key: "common:notify.profileReply", params: { name: author.username, owner: profileOwner.username } },
+          body:         `${author.username} replied to your comment on ${profileOwner.username}'s profile.`,
+          link:         wallLink(profileOwner.username, comment.id),
+          meta:         { commentId: comment.id, parentId: parent.id, authorId },
+          senderUserId: authorId,
+          channels:     ["in_app", "email"],
+        });
+      }
+      // The wall's owner hears of everything on their wall they did not write.
+      if (!notified.has(profileUserId)) {
+        notified.add(profileUserId);
+        await notificationService.dispatch({
+          userId:       profileUserId,
+          type:         "profile.comment_posted",
+          title:        "New comment on your profile",
+          i18n:         { key: "common:notify.profileComment", params: { name: author.username } },
+          body:         `${author.username} posted on your profile.`,
+          link:         wallLink(profileOwner.username, comment.id),
+          meta:         { commentId: comment.id, authorId },
+          senderUserId: authorId,
+          channels:     ["in_app", "email"],
+        });
+      }
 
-      // Notify mentioned users (skip author and profile owner — they already get a notif)
+      // Notify mentioned users (skip everyone already notified above)
       const mentionedUsernames = extractMentions(body);
       if (mentionedUsernames.length > 0) {
         const mentionedUsers = await prisma.user.findMany({
           where: {
             username: { in: mentionedUsernames, mode: "insensitive" },
             isActive: true,
-            id: { notIn: [authorId, profileUserId] },
+            id: { notIn: [...notified] },
           },
           select: { id: true },
         });
@@ -243,8 +298,9 @@ export const userService = {
               userId:       u.id,
               type:         "mention.profile_comment",
               title:        "You were mentioned",
+              i18n:         { key: "common:notify.mentionProfile", params: { name: author.username, owner: profileOwner.username } },
               body:         `${author.username} mentioned you in a comment on ${profileOwner.username}'s profile.`,
-              link:         `/u/${profileOwner.username}`,
+              link:         wallLink(profileOwner.username, comment.id),
               meta:         { commentId: comment.id, authorId },
               senderUserId: authorId,
               channels:     ["in_app", "email"],
@@ -376,9 +432,11 @@ export const userService = {
         if (err?.code === 'P2002') return; // already liked, idempotent
         throw err;
       }
+      // A like replaces this member's dislike.
+      const undisliked = await tx.profileCommentDislike.deleteMany({ where: { commentId, userId } });
       await tx.profileComment.update({
         where: { id: commentId },
-        data: { likeCount: { increment: 1 } },
+        data: { likeCount: { increment: 1 }, ...(undisliked.count ? { dislikeCount: { decrement: 1 } } : {}) },
       });
       await tx.user.update({
         where: { id: comment.authorId },
@@ -394,8 +452,9 @@ export const userService = {
           userId:       comment.authorId,
           type:         'profile.comment_liked',
           title:        'Someone liked your comment',
+          i18n:         { key: "common:notify.profileCommentLiked", params: { name: liker.username, owner: profileOwner.username } },
           body:         `${liker.username} liked your comment on ${profileOwner.username}'s profile.`,
-          link:         `/u/${profileOwner.username}`,
+          link:         wallLink(profileOwner.username, commentId),
           meta:         { commentId, likerId: userId },
           senderUserId: userId,
           channels:     ['in_app'],
@@ -422,6 +481,47 @@ export const userService = {
         where: { id: comment.authorId },
         data: { likeCountReceived: { decrement: 1 } },
       });
+    });
+  },
+
+  /**
+   * A dislike: replaces this member's like, never notifies anyone, and is not counted
+   * against the author anywhere but on the comment itself.
+   */
+  async dislikeProfileComment(commentId: string, userId: string): Promise<void> {
+    const comment = await prisma.profileComment.findUnique({
+      where: { id: commentId },
+      select: { id: true, authorId: true, deletedAt: true },
+    });
+    if (!comment || comment.deletedAt) {
+      throw new XentiumError({ code: 'XEC-USER-4007', httpStatus: 404, message: 'Comment not found' });
+    }
+    if (comment.authorId === userId) {
+      throw new XentiumError({ code: 'XEC-USER-4016', httpStatus: 400, message: 'Cannot dislike your own comment' });
+    }
+    await prisma.$transaction(async (tx) => {
+      try {
+        await tx.profileCommentDislike.create({ data: { commentId, userId } });
+      } catch (err: any) {
+        if (err?.code === 'P2002') return; // already disliked, idempotent
+        throw err;
+      }
+      const unliked = await tx.profileCommentLike.deleteMany({ where: { commentId, userId } });
+      await tx.profileComment.update({
+        where: { id: commentId },
+        data: { dislikeCount: { increment: 1 }, ...(unliked.count ? { likeCount: { decrement: 1 } } : {}) },
+      });
+      if (unliked.count) {
+        await tx.user.update({ where: { id: comment.authorId }, data: { likeCountReceived: { decrement: 1 } } });
+      }
+    });
+  },
+
+  async undislikeProfileComment(commentId: string, userId: string): Promise<void> {
+    await prisma.$transaction(async (tx) => {
+      const deleted = await tx.profileCommentDislike.deleteMany({ where: { commentId, userId } });
+      if (deleted.count === 0) return;
+      await tx.profileComment.update({ where: { id: commentId }, data: { dislikeCount: { decrement: 1 } } });
     });
   },
 

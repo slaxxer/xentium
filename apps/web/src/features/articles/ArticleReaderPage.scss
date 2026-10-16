@@ -6,7 +6,7 @@
   border-radius: 50%;
   font-weight: 700;
   color: var(--c-on-accent);
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  background: var(--c-accent);
   flex-shrink: 0;
 }
 
@@ -45,7 +45,7 @@
   padding: 8px 18px;
   border-radius: var(--radius-sm);
   font-size: var(--fs-sm);
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  background: var(--c-accent);
   color: var(--c-on-accent);
   transition: opacity 0.15s;
 
@@ -144,7 +144,8 @@
       color: var(--c-accent);
       border-color: var(--c-accent-glow);
     }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* Still a pointer when it can't be used (your own article): the title says why. */
+    &:disabled { opacity: 0.5; cursor: pointer; }
 
     &.is-active {
       background: var(--c-accent-soft);
@@ -154,6 +155,17 @@
     &--accent {
       color: var(--c-accent);
       border-color: var(--c-accent-glow);
+    }
+    &--like {
+      &.is-active {
+        background: var(--c-success-soft);
+        border-color: color-mix(in oklab, var(--c-success), transparent 50%);
+        color: var(--c-success);
+      }
+      &:hover:not(:disabled) {
+        color: var(--c-success);
+        border-color: color-mix(in oklab, var(--c-success), transparent 50%);
+      }
     }
     &--dislike {
       &.is-active {
@@ -411,7 +423,7 @@
   &__comment-footer {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 14px;
     margin-top: 8px;
   }
   &__comment-like {
@@ -421,20 +433,35 @@
     font-size: var(--fs-xs);
     color: var(--c-fg-subtle);
     background: none;
-    border: none;
     cursor: pointer;
-    padding: 2px 0;
     font-family: inherit;
-    transition: color 0.15s;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
 
     &:hover:not(:disabled) { color: var(--c-accent); }
-    &:disabled { opacity: 0.5; cursor: not-allowed; }
+    /* Every thumb is a pointer, the counts you can't use too (your own comment, or
+       signed out): their title says why, and a pointer there invites the hover. */
+    &:disabled { opacity: 0.5; cursor: pointer; }
     &.is-liked {
       color: var(--c-accent);
       font-weight: 600;
     }
     &--static {
-      cursor: default;
+      cursor: pointer;
+    }
+
+    /* Thumbs up / down are small chips, without a border: the thumbs-down shows red
+       only when it is yours. */
+    border: none;
+    border-radius: var(--radius-pill);
+    padding: 2px 9px;
+    /* Up is green, down is red: on hover, and once it is yours. */
+    &--like {
+      &:hover:not(:disabled) { color: var(--c-success); }
+      &.is-liked { color: var(--c-success); background: var(--c-success-soft); }
+    }
+    &--dislike {
+      &:hover:not(:disabled) { color: var(--c-danger); }
+      &.is-liked { color: var(--c-danger); background: var(--c-danger-soft); }
     }
   }
   &__empty { color: var(--c-fg-subtle); padding: 1rem 0; }

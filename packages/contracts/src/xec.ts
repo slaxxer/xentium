@@ -40,6 +40,7 @@ export const XEC = {
   AUTH_LOCKED_OUT: "XEC-AUTH-1040",        // failed-login lockout (429) — details carry username/ip
   AUTH_NAME_REQUIRED: "XEC-AUTH-2004",
   AUTH_REGISTRATION_CLOSED: "XEC-AUTH-2010",
+  AUTH_LEGAL_CONSENT_REQUIRED: "XEC-AUTH-2011", // terms / privacy published and not accepted
 
   // Permissions / RBAC
   PERM_DENIED: "XEC-PERM-1001",

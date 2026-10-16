@@ -10,6 +10,8 @@ import { migratePageBandsIntoBody } from "./modules/layouts/pageBandMigration.js
 import { migrateFooterBandBlocks } from "./modules/layouts/footerBandMigration.js";
 import { migrateToPerThemeAppearance } from "./modules/themes/perThemeMigration.js";
 import { migrateComposedChrome } from "./modules/layouts/composedChromeMigration.js";
+import { ensureBundledThemes } from "./modules/themes/bundledThemes.js";
+import { ensureDefaultEmojis } from "./modules/emojis/defaultEmojis.js";
 import { seedDefaultNavItems } from './bootstrap/seedDefaultNavItems.js';
 import { bootstrapOfficialPlugins } from './bootstrap/bootstrapOfficialPlugins.js';
 import { initializeEnabledPlugins } from './core/plugin-engine/plugin-engine.js';
@@ -86,6 +88,14 @@ export async function boot() {
     // moves documents already in their current shape.
     await migrateToPerThemeAppearance().catch((err: unknown) => {
       logger.error({ err }, "Per-theme appearance carry-over failed — the site keeps its look, but edits may sit under Core until it is re-run");
+    });
+    // Themes every install ships with (Xentium Dark), added once and never switched to.
+    await ensureBundledThemes().catch((err: unknown) => {
+      logger.error({ err }, "Bundled theme setup failed — Xentium Dark is not offered until it is re-run");
+    });
+    // The default smileys, added once; after that the admin owns them.
+    await ensureDefaultEmojis().catch((err: unknown) => {
+      logger.error({ err }, "Default emoji setup failed — the picker starts empty until it is re-run");
     });
     await bootstrapOfficialPlugins();
     await initializeEnabledPlugins();

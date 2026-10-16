@@ -25,6 +25,8 @@ export interface AuthUser {
   // keys: who holds what is configured in ACP → Permissions. Optional so a stale
   // cached payload without it reads as "no permissions", not a crash.
   permissions?: string[];
+  /** Never accepted the published terms / privacy policy: asked once (LegalConsentGate). */
+  needsLegalConsent?: boolean;
 }
 
 /** May this user do `key`? A UI hint — the endpoint enforces it regardless. */

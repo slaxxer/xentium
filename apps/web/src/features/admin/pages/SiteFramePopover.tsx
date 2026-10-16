@@ -115,6 +115,7 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
       // refetch would round-trip to learn what we just sent.
       qc.setQueryData([...FRAME_QUERY_KEY, themeKey], res);
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
     },
     onError: (e) => {
       // Someone else saved the frame first. Theirs wins; saying so beats a silent
@@ -139,6 +140,7 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
     onSuccess: (res) => {
       qc.setQueryData([...FRAME_QUERY_KEY, themeKey], res);
       qc.invalidateQueries({ queryKey: ["acp-layout-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
     },
     onError: (e) => toast.error(apiErrorMessage(e)),
   });

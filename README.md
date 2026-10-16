@@ -801,7 +801,8 @@ them.
 | `@xentium/migrate-wp` | WordPress, from a **WXR export file** (wp-admin → Tools → Export). You don't need a WordPress install or database access. | ✅ Available |
 | `@xentium/migrate-phpbb` | phpBB 3.1+, over a direct **MySQL connection**. The `xentium-forum` plugin must be installed and enabled on the target (we check before anything runs). Users keep their passwords. | ✅ Available |
 | `@xentium/migrate-xenforo` | XenForo 2.x, over a direct **MySQL connection**. Needs the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
-| vBulletin, WoltLab Suite | direct database connection | Planned |
+| `@xentium/migrate-vbulletin` | vBulletin 3, 4, 5 and 6, over a direct **MySQL connection** (we detect the version). Needs the `xentium-forum` plugin on the target. Users keep their passwords. | ✅ Available |
+| `@xentium/migrate-woltlab` | WoltLab Suite 5 and 6 with or without Burning Board, and Burning Board 4, over a direct **MySQL connection**. Brings members, articles and the forum. Needs the `xentium-forum` plugin on the target. Users keep their passwords. | ✅ Available |
 
 ### Running a migration
 
@@ -816,23 +817,52 @@ pnpm --filter @xentium/migrate-wp migrate -- \
 pnpm --filter @xentium/migrate-wp migrate -- --file my-export.xml --db "postgresql://…"
 
 # Forums: point at the board's MySQL database instead of a file
-# (same flags for @xentium/migrate-xenforo; --prefix overrides the table prefix)
+# (same flags for @xentium/migrate-xenforo, -vbulletin and -woltlab;
+#  --prefix overrides the table prefix; for WoltLab it's the instance number, e.g. 1)
 pnpm --filter @xentium/migrate-phpbb migrate -- \
   --source-db "mysql://user:pass@host:3306/phpbb" \
   --db "postgresql://…" --dry-run
+
+# Avatars are files on the old site. Point --files at the old site's folder and
+# --uploads at Xentium's upload folder (UPLOAD_DIR); without them, the run reports how
+# many avatars are waiting, and running again with both flags brings just those over.
+pnpm --filter @xentium/migrate-phpbb migrate -- \
+  --source-db "mysql://…" --db "postgresql://…" \
+  --files /var/www/old-forum --uploads /srv/xentium/var/uploads
 ```
 
 The target has to be an **installed** Xentium (run the wizard first). Migrations can be
 **resumed**: we track every imported item in an import map, so if a run is interrupted,
 the next one continues where it stopped instead of creating duplicates. Accounts that
-match an existing user by email are merged into that user.
+match an existing user by email are merged into that user. Big boards are fine: posts,
+private messages and likes are read and written in pages of 2,000, so a board with
+millions of posts needs no more memory than a small one.
+
+### Keeping your old links working
+
+Add `--redirects <folder>` to the real run and we write two files there once the import
+is done: an nginx file that sends every old address (threads, posts, boards, members,
+articles) to its new page with a permanent redirect, and a CSV of the same list for any
+other web server. The top of the nginx file says where each part goes. Posts land on the
+right page of their thread, scrolled to the post. We know every platform's URL styles,
+with or without friendly URLs and in any folder, and WordPress permalinks come from the
+export itself.
+
+```bash
+pnpm --filter @xentium/migrate-phpbb migrate -- \
+  --source-db "mysql://…" --db "postgresql://…" --redirects /srv/xentium/redirects
+
+# Write them again later without importing anything (say, after changing the forum's
+# posts per page): the same command with --redirects-only
+```
 
 ### What carries over
 
-- **Users:** accounts, display names, join dates and a best-effort role mapping (admins → Administrator, moderators → Moderator). Where the source has password hashes (the database adapters; for XenForo we pull them out of its serialized auth data), users **keep their passwords**: we check the old hash on their first login and quietly upgrade it to argon2. WXR exports don't contain hashes, so WordPress users reset their password once.
-- **Content:** categories with their hierarchy, posts/articles (converted to the TipTap format; headings, lists, quotes, code, images and links survive), tags and member comments (threaded one level deep). For forums: the whole node tree, threads (locked, pinned, view counts) and posts with their BBCode converted.
-- **Social graph** where the source has one: XenForo **reactions become likes** (every reaction type turns into a like), **follows carry over 1:1** and ignores become blocks. phpBB foes become blocks. phpBB's *friend* flag is a private buddy list, so we don't turn it into public follows. A block cancels follows in both directions, as it does in Xentium, and we recount every like and follower total.
-- **Not migrated:** themes and styling (Xentium has its own appearance system), the old platform's plugins, private messages, guest comments (comments on Xentium need an account), and, in this version, media files and attachments (we link to them by URL but don't download them). The migration report lists everything we skipped and why.
+- **Users:** accounts, display names, join dates and a best-effort role mapping (admins → Administrator, moderators → Moderator). The old board's **other member groups** (VIP, Donors and so on) are recreated by name with members in them, but with **no permissions**: what a group may do differs too much between platforms, so you grant it under ACP → Users → Groups. A name you already use for a group that grants something gets the platform in brackets, so nobody gains rights by accident. Their **last visit** on the old site shows as "Last seen" on their profile, and **smiley codes** in posts and messages (`:)`, `:D`, `:lol:`…) become emoji, leaving code and links as written. Imported members never saw your terms, so while you have terms or a privacy policy published, each of them is asked once to accept them on their first visit (declining signs them out). Where the source has password hashes (the database adapters; for XenForo we pull them out of its serialized auth data), users **keep their passwords**: we check the old hash on their first login and quietly upgrade it to argon2. WXR exports don't contain hashes, so WordPress users reset their password once. **Personal info** comes too: date of birth (only full dates) and website, into Xentium's own profile fields. **Avatars** are copied when you pass `--files` and `--uploads` (vBulletin can also keep them in its database): only real JPEG, PNG, GIF or WebP images up to 2 MB, like a normal upload. **Bans** and **warnings** still in force carry over (XenForo, phpBB, vBulletin; WoltLab's warning system isn't public), under the moderator who issued them where they came over too; expired, reversed and pardoned ones stay out. A username that's already taken gets a suffix, and the report lists every rename.
+- **Content:** categories with their hierarchy, posts/articles (converted to the TipTap format; headings, lists, quotes, code, images and links survive), tags and member comments (threaded one level deep). For forums: the whole node tree, threads (locked, pinned, view counts, tags, and their **prefix**: XenForo and vBulletin prefixes and WoltLab labels become thread prefixes with their colour and boards) and posts with their BBCode converted. **Posts and messages arrive in exactly the HTML our editor saves** (paragraphs, code blocks, editor links), so they look like native posts and editing one changes nothing; outside images become links, as the editor keeps no outside images in posts. **Thread subscriptions** carry over for the threads that came over. **Profile wall posts** with their replies (XenForo, vBulletin, WoltLab) and **WoltLab article comments**, on the articles that came over, come too.
+- **Social graph** where the source has one: XenForo **reactions become likes** (every reaction type turns into a like), **follows carry over 1:1** and ignores become blocks. phpBB foes become blocks. vBulletin 5/6 positive reputation on a post becomes a like and member follows carry over; vBulletin ignore lists become blocks. WoltLab reactions on posts become likes, and its follows and ignores carry over. phpBB's *friend* flag is a private buddy list, so we don't turn it into public follows. A block cancels follows in both directions, as it does in Xentium, and we recount every like and follower total.
+- **Private messages** (phpBB, XenForo, vBulletin, WoltLab) become conversations when the `xentium-messaging` plugin is enabled on the target; without it they're counted and reported, and a later run brings them over. Each conversation goes only to its participants, ones a member deleted or hid arrive archived, ones they left show them as having left, and imported conversations count as read. vBulletin 3/4 and phpBB store single messages, so we group their reply chains back into conversations.
+- **Not migrated:** themes and styling (Xentium has its own appearance system), the old platform's plugins, guest comments and guest forum posts (posts on Xentium need an account), signatures, polls, custom profile fields, and attachments (imported posts link to them by URL). The migration report lists everything we skipped and why.
 
 ---
 
@@ -852,5 +882,24 @@ More in [CONTRIBUTING.md](./CONTRIBUTING.md) and in the developer docs at
 
 ## License
 
-MIT, see [LICENSE](./LICENSE). The open-source core is free to use. Our official paid
-plugins are licensed separately, and they never gate a core feature.
+**The core is MIT**, see [LICENSE](./LICENSE). That covers everything in this repository
+and the npm packages built from it (`@xentium/server`, `create-xentium`, the `xentium`
+CLI and the framework packages). You can use, change and redistribute it, commercially
+too, as long as the licence notice stays with it.
+
+**The official plugins and themes are not.** The paid plugins and themes we sell on
+[plugins.xentium.org](https://plugins.xentium.org) are proprietary. Their source is not in
+this repository, and they are licensed per domain under the marketplace's terms. Buying one
+lets you run it on your licensed site; it doesn't let you share, resell or republish it.
+
+A few things to know:
+
+- **Core never needs a paid plugin.** Every core feature works without one, and a
+  lapsed licence never breaks your site.
+- **Your own plugins and themes are yours.** The plugin SDK and the framework packages
+  are MIT, so you can build on them and license what you make however you like, paid or
+  open source.
+- **Third-party plugins and themes** are licensed by their authors, not by us.
+- **Dependencies** keep their own licences (fonts under the SIL Open Font License,
+  Font Awesome Free under its own terms, and so on). We never bundle Font Awesome Pro; you
+  add your own kit, see [`docs/icon-kits.md`](./docs/icon-kits.md).

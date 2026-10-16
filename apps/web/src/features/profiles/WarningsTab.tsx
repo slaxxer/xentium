@@ -7,14 +7,16 @@
  * alert that says so before it happens. Staff also see the member's bans and the IP
  * addresses they used, with the country each belongs to.
  */
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import {
   faTriangleExclamation, faShieldHalved, faGavel, faNetworkWired, faCircleCheck, faUsers,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../components/Icon";
 import { UserAvatar } from "../../components/UserAvatar";
+import { Username } from "../../components/Username";
 import { api } from "../../lib/api";
 import "./WarningsTab.scss";
 
@@ -22,12 +24,12 @@ type Status = "active" | "expired" | "pardoned";
 interface Warning {
   id: string; reason: string; status: Status;
   createdAt: string; expiresAt: string | null; pardonedAt: string | null; pardonedBy: string | null;
-  issuedBy: { username: string; avatar?: string | null };
+  issuedBy: { username: string; avatar?: string | null; badgeColor?: string | null };
 }
 interface Step { warningCount: number; action: "notify" | "ban_temporary" | "ban_permanent"; banDays: number | null }
 interface Ban {
   id: string; type: "temporary" | "permanent"; reason: string; status: string;
-  expiresAt: string | null; createdAt: string; issuedBy: { username: string };
+  expiresAt: string | null; createdAt: string; issuedBy: { username: string; badgeColor?: string | null };
 }
 interface Ip { ip: string; country: string | null; firstSeen: string; lastSeen: string; uses: number; otherAccounts: number }
 interface Standing {
@@ -51,6 +53,27 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
     queryKey: ["profile-standing", profileId],
     queryFn: () => api.get(`/users/${profileId}/standing`),
   });
+
+  // `?warning=<id>` (from the warning's notification): that one is scrolled to.
+  const [params] = useSearchParams();
+  const focusId = params.get("warning");
+  useEffect(() => {
+    if (!focusId || !data) return;
+    document.getElementById(`warning-${focusId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+  }, [focusId, data]);
+
+  /** "Issued by <name>", the name in its group's colour (and glow), linking to the profile. */
+  const issuedBy = (who: { username: string; badgeColor?: string | null }) => {
+    const MARK = "\u0001";
+    const [before = "", after = ""] = t("standing.issuedBy", { name: MARK }).split(MARK);
+    return (
+      <>
+        {before}
+        <Username username={who.username} badgeColor={who.badgeColor ?? null} href={`/u/${encodeURIComponent(who.username)}`} className="std-who__name" />
+        {after}
+      </>
+    );
+  };
 
   if (isLoading) return <p className="std-muted">{t("standing.loading")}</p>;
   if (error || !data) return <p className="std-muted">{t("standing.error")}</p>;
@@ -119,12 +142,13 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
                 const total = w.expiresAt ? new Date(w.expiresAt).getTime() - new Date(w.createdAt).getTime() : 0;
                 const left = w.expiresAt ? Math.max(0, new Date(w.expiresAt).getTime() - Date.now()) : 0;
                 return (
-                  <li key={w.id} className={`std-item std-item--${w.status}`}>
+                  <li key={w.id} id={`warning-${w.id}`}
+                    className={`std-item std-item--${w.status}`}>
                     <p className="std-item__reason">{w.reason}</p>
                     <div className="std-item__meta">
                       <span className="std-who">
                         <UserAvatar user={{ username: w.issuedBy.username, avatar: w.issuedBy.avatar ?? null }} size={20} />
-                        {t("standing.issuedBy", { name: w.issuedBy.username })}
+                        {issuedBy(w.issuedBy)}
                       </span>
                       <span>{date(w.createdAt)}</span>
                       {w.status === "active" && (w.expiresAt
@@ -155,13 +179,13 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
           {data.bans.length === 0 ? <p className="std-empty">{t("standing.noBans")}</p> : (
             <ul className="std-list">
               {data.bans.map((b) => (
-                <li key={b.id} className={`std-item std-item--${b.status === "active" ? "active" : "expired"}`}>
+                <li key={b.id} className={`std-item std-item--ban std-item--${b.status === "active" ? "active" : "expired"}`}>
                   <p className="std-item__reason">{b.reason}</p>
                   <div className="std-item__meta">
                     <span className={`std-tag${b.status === "active" ? " std-tag--live" : ""}`}>
                       {b.type === "permanent" ? t("standing.banPermanentShort") : t("standing.banTemporaryShort")} · {t(`standing.banStatus.${b.status}`, { defaultValue: b.status })}
                     </span>
-                    <span>{t("standing.issuedBy", { name: b.issuedBy.username })}</span>
+                    <span>{issuedBy(b.issuedBy)}</span>
                     <span>{date(b.createdAt)}{b.expiresAt && ` → ${date(b.expiresAt)}`}</span>
                   </div>
                 </li>

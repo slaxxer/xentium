@@ -186,6 +186,8 @@ export const badgesService = {
           userId: user.id,
           type:   "badge.granted",
           title:  `You've been given the "${badge.name}" badge!`,
+          // A note is the awarder's own words — then only the title is ours.
+          i18n:   { key: note?.trim() ? "common:notify.badgeGrantedNote" : "common:notify.badgeGranted", params: { badge: badge.name } },
           body:   note?.trim()
             ? note.trim()
             : "It's on your profile now, for everyone who visits.",

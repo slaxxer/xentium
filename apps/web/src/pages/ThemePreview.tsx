@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useEffect, useRef } from "react";
 import { previewThemeKey } from "../lib/editingTheme";
 import { PubNav } from "../layouts/PubNav";
@@ -15,7 +16,9 @@ import "./ThemePreview.scss";
  * `data-region` / `data-component` / `data-group` to know which token group to edit.
  *
  * Clicks are suppressed in the capture phase so the specimen never navigates or
- * mutates anything — links, buttons and the nav dropdown are inert here. The editor
+ * mutates anything — links and buttons are inert here. The one exception is a
+ * dropdown TRIGGER (`button[aria-expanded]`): the header's dropdowns open, so the
+ * editor can select and style them. The editor
  * adds its own selection listener on top (Phase 3); suppression only blocks the
  * default actions, it does not block reading the event target.
  *
@@ -23,6 +26,7 @@ import "./ThemePreview.scss";
  * are reflected without a reload while the editor is open.
  */
 export function ThemePreview() {
+  const { t } = useTranslation("common");
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Mirror AppLayout: inject the saved token overrides and keep them live-synced.
@@ -38,6 +42,11 @@ export function ThemePreview() {
     const el = rootRef.current;
     if (!el) return;
     const suppress = (e: MouseEvent) => {
+      // A dropdown's own trigger is let through, so the header's dropdowns open here
+      // and can be clicked and styled. Only the trigger: what is INSIDE an open
+      // dropdown (links, mark-read, mod actions) stays inert like everything else.
+      const t = e.target as Element | null;
+      if (t?.closest?.("button[aria-expanded]") && !t.closest(".xt-pop")) return;
       e.preventDefault();
       e.stopPropagation();
     };
@@ -57,66 +66,66 @@ export function ThemePreview() {
         {/* Aside rail. Region theming is token-based (`--aside-bg`), so this needs no
             borrowed class — `.tp-rail` styles itself. */}
         <aside className="tp-rail" data-region="aside" data-group="aside">
-          <span className="tp-rail__h">Aside</span>
-          <span className="tp-rail__row">Sidebar surface</span>
-          <span className="tp-rail__row">Rails &amp; side panels</span>
+          <span className="tp-rail__h">{t("themePreview.aside")}</span>
+          <span className="tp-rail__row">{t("themePreview.sidebarSurface")}</span>
+          <span className="tp-rail__row">{t("themePreview.sidePanels")}</span>
         </aside>
 
         <div className="tp-content">
           {/* Buttons */}
           <section>
-            <h2 className="tp-sec__title">Buttons</h2>
+            <h2 className="tp-sec__title">{t("themePreview.buttons")}</h2>
             <div className="tp-row">
-              <button type="button" className="btn-primary" data-component="button" data-group="button">Primary</button>
-              <button type="button" className="btn-ghost"   data-component="button" data-group="button">Ghost</button>
-              <button type="button" className="btn-danger"  data-component="button" data-group="button">Danger</button>
+              <button type="button" className="btn-primary" data-component="button" data-group="button">{t("themePreview.primary")}</button>
+              <button type="button" className="btn-ghost"   data-component="button" data-group="button">{t("themePreview.ghost")}</button>
+              <button type="button" className="btn-danger"  data-component="button" data-group="button">{t("themePreview.danger")}</button>
             </div>
           </section>
 
           {/* Cards */}
           <section>
-            <h2 className="tp-sec__title">Cards</h2>
+            <h2 className="tp-sec__title">{t("themePreview.cards")}</h2>
             <div className="tp-row">
               <div className="tp-card" data-component="card" data-group="card">
-                <div className="tp-card__h">Card title</div>
-                <p className="tp-card__p">Background, border, radius and shadow all read from the card token group.</p>
+                <div className="tp-card__h">{t("themePreview.cardTitle")}</div>
+                <p className="tp-card__p">{t("themePreview.cardBody")}</p>
               </div>
               <div className="tp-card" data-component="card" data-group="card">
-                <div className="tp-card__h">Second card</div>
-                <p className="tp-card__p">Two cards so spacing and elevation are easy to judge while editing.</p>
+                <div className="tp-card__h">{t("themePreview.secondCard")}</div>
+                <p className="tp-card__p">{t("themePreview.secondCardBody")}</p>
               </div>
             </div>
           </section>
 
           {/* Fields */}
           <section>
-            <h2 className="tp-sec__title">Fields</h2>
+            <h2 className="tp-sec__title">{t("themePreview.fields")}</h2>
             <div className="tp-fields">
-              <input className="tp-field" type="text" placeholder="Text input" defaultValue="Specimen value" data-component="field" data-group="field" />
+              <input className="tp-field" type="text" placeholder={t("themePreview.textInput")} defaultValue={t("themePreview.specimenValue")} data-component="field" data-group="field" />
               <select className="tp-field" data-component="field" data-group="field" defaultValue="b">
-                <option value="a">First option</option>
-                <option value="b">Second option</option>
+                <option value="a">{t("themePreview.firstOption")}</option>
+                <option value="b">{t("themePreview.secondOption")}</option>
               </select>
-              <textarea className="tp-field" rows={3} defaultValue="Multi-line field specimen." data-component="field" data-group="field" />
+              <textarea className="tp-field" rows={3} defaultValue={t("themePreview.specimenMultiline")} data-component="field" data-group="field" />
             </div>
           </section>
 
           {/* Menu — statically open */}
           <section>
-            <h2 className="tp-sec__title">Menu</h2>
+            <h2 className="tp-sec__title">{t("themePreview.menu")}</h2>
             <div className="tp-menu" data-component="menu" data-group="menu">
-              <button type="button" className="tp-menu__item">Menu item</button>
-              <button type="button" className="tp-menu__item">Another item</button>
-              <button type="button" className="tp-menu__item">Hover me</button>
+              <button type="button" className="tp-menu__item">{t("themePreview.menuItem")}</button>
+              <button type="button" className="tp-menu__item">{t("themePreview.anotherItem")}</button>
+              <button type="button" className="tp-menu__item">{t("themePreview.hoverMe")}</button>
             </div>
           </section>
 
           {/* Sort / segment buttons */}
           <section>
-            <h2 className="tp-sec__title">Sort buttons</h2>
+            <h2 className="tp-sec__title">{t("themePreview.sortButtons")}</h2>
             <div className="tp-seg" data-component="segment" data-group="segment">
-              <button type="button" className="tp-seg__btn is-on">Active</button>
-              <button type="button" className="tp-seg__btn">Newest</button>
+              <button type="button" className="tp-seg__btn is-on">{t("themePreview.active")}</button>
+              <button type="button" className="tp-seg__btn">{t("themePreview.newest")}</button>
               <button type="button" className="tp-seg__btn">A–Z</button>
             </div>
           </section>

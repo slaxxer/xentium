@@ -57,6 +57,15 @@ export const wordpressAdapter: MigrateAdapter = {
     );
     return parsed;
   },
+
+  /** `?p=12` links by pattern; pretty permalinks and author pages from the export itself. */
+  async redirects(source: AdapterSource) {
+    if (!source.file) throw new Error("WordPress adapter needs --file <export.xml>");
+    return {
+      patterns: [{ entity: "article", regex: String.raw`^/(?:[^?]*/)?(?:index\.php)?\?(?:[^#]*[&;])?p=(?<id>\d+)` }],
+      exact: parseWxr(source.file).permalinks,
+    };
+  },
 };
 
 export { parseWxr } from "./wxr.js";

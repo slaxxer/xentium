@@ -6,12 +6,22 @@ export const getProfileParamsSchema = z.object({
   username: z.string().min(3).max(50),
 });
 
+/** `?preview=1`: a glance (the hover card), not a visit — nothing is recorded. */
+export const getProfileQuerySchema = z.object({
+  preview: z.enum(["1", "true"]).optional(),
+});
+
 export const followParamsSchema = z.object({
   id: z.string().uuid(),
 });
 
 export const createCommentSchema = z.object({
   body: z.string().min(1).max(2000),
+});
+
+/** A new wall comment; `parentId` makes it a reply. */
+export const createProfileCommentSchema = createCommentSchema.extend({
+  parentId: z.string().cuid().optional(),
 });
 
 // ProfileComment ids are cuid (Prisma @default(cuid())), NOT uuid — validating

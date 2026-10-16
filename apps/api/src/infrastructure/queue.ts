@@ -23,6 +23,7 @@ export const queues = {
   securityAnalysis:       new Queue('security-analysis',        queueOpts),
   licenseRefresh:         new Queue('license-refresh',           queueOpts),
   updateCheck:            new Queue('update-check',              queueOpts),
+  // Retired 2026-10-15; kept only so RETIRED_SCHEDULERS can remove its scheduler.
   appearancePublish:      new Queue('appearance-publish',        queueOpts),
   logRetention:           new Queue('log-retention',             queueOpts),
   geoipRefresh:           new Queue('geoip-refresh',             queueOpts),

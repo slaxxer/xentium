@@ -1,49 +1,81 @@
 ---
-title: Xentium developer docs
-description: Build plugins and themes for Xentium, work on its core, or run it on your own server.
+title: Xentium documentation
+description: Run Xentium on your own server, build plugins and themes for it, or move your community over from another platform.
 template: splash
-hero:
-  tagline: Everything we know about building plugins and themes for Xentium, working on its core, and running it on your own server.
-  actions:
-    - text: Get started
-      link: /start/introduction/
-      icon: right-arrow
-    - text: Write a plugin
-      link: /plugins/guide/
-      variant: minimal
-    - text: GitHub
-      link: https://github.com/slaxxer/xentium
-      icon: external
-      variant: minimal
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+<div class="xd-hero">
+  <div>
+    <p class="xd-eyebrow">Xentium 1.0 · alpha</p>
+    <h1 id="_top">Run it. Build on it. Switch to it.</h1>
+    <p class="xd-lede">
+      Xentium is an open-source community platform: forum, articles, members and a design
+      you shape block by block. This is everything we know about running it, extending it,
+      and moving to it from the software you use today.
+    </p>
+    <div class="xd-actions">
+      <a class="xd-btn xd-btn--primary" href="/start/introduction/">Get started</a>
+      <a class="xd-btn" href="/admin/installing/">Install on a server</a>
+      <a class="xd-btn" href="https://github.com/slaxxer/xentium">GitHub</a>
+    </div>
+  </div>
+  <figure class="xd-term" aria-label="Installing Xentium">
+    <div class="xd-term__bar" aria-hidden="true"><span></span><span></span><span></span></div>
+    <pre><span class="xd-prompt">$ </span>npm create xentium@latest my-community
+<span class="xd-dim"># then open the installer in your browser</span>
+<span class="xd-prompt">$ </span>npx xentium status
+<span class="xd-prompt">$ </span>npx xentium doctor</pre>
+  </figure>
+</div>
 
-<CardGrid stagger>
-  <Card title="Start here" icon="rocket">
-    What Xentium is, how to [install it from source](/start/install/), and how the
-    [workspace](/start/workspace/) is laid out.
-  </Card>
-  <Card title="Plugins" icon="puzzle">
-    Plugins are **code**: routes, migrations, permissions and blocks.
-    Start with [writing a plugin](/plugins/guide/), then read about
-    [layout blocks](/plugins/blocks/) and [extension points](/plugins/extension-points/).
-  </Card>
-  <Card title="Themes & styling" icon="seti:css">
-    Themes are **data**: tokens, layouts and a stylesheet, never code. Read
-    [how the style system works](/themes/style-system/), then the
-    [`.xttheme` format](/themes/packages/).
-  </Card>
-  <Card title="Server admins" icon="laptop">
-    [Installing on a server](/admin/installing/), [updating](/admin/updating/), and
-    [running Xentium in production](/admin/production/): systemd, nginx, HTTPS, and
-    the settings the API won't start without.
-  </Card>
-  <Card title="Reference" icon="open-book">
-    The [REST API](/reference/api/), the [marketplace protocol](/reference/marketplace-protocol/)
-    and the [framework packages on npm](/reference/packages/).
-  </Card>
-  <Card title="Contributing" icon="github">
-    [How we work](/contributing/), and what we look for when we review a pull request.
-  </Card>
-</CardGrid>
+<h2 class="xd-section-title">Where do you want to start?</h2>
+
+<div class="xd-doors">
+  <a class="xd-door" href="/admin/installing/">
+    <span class="xd-door__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01"></path></svg>
+    </span>
+    <strong>Run Xentium</strong>
+    <span>Install it on your server, keep it updated, and run it in production with systemd, nginx and HTTPS.</span>
+    <span class="xd-door__more">Installing on a server →</span>
+  </a>
+  <a class="xd-door" href="/plugins/guide/">
+    <span class="xd-door__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6l-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"></path></svg>
+    </span>
+    <strong>Build on Xentium</strong>
+    <span>Plugins are code: routes, permissions, ACP pages and blocks. Themes are data: tokens, layouts and a stylesheet.</span>
+    <span class="xd-door__more">Writing a plugin →</span>
+  </a>
+  <a class="xd-door" href="/switch/compare/">
+    <span class="xd-door__icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h13l-3-3M20 17H7l3 3"></path></svg>
+    </span>
+    <strong>Switch to Xentium</strong>
+    <span>How Xentium compares with WordPress, phpBB, XenForo, WoltLab and vBulletin, and what our free migration tools bring over.</span>
+    <span class="xd-door__more">Xentium compared →</span>
+  </a>
+</div>
+
+<div class="xd-switch">
+  <div>
+    <h2>Coming from another platform?</h2>
+    <p>Our migration tools move a WordPress site, a phpBB board, or a XenForo, vBulletin or WoltLab forum today. Users keep their passwords where the old hashes allow it.</p>
+    <p class="xd-switch__from"><span>WordPress</span><span>phpBB</span><span>XenForo</span><span>vBulletin</span><span>WoltLab</span></p>
+  </div>
+  <div class="xd-actions" style="margin-top: 0">
+    <a class="xd-btn xd-btn--primary" href="/switch/compare/">Compare honestly</a>
+    <a class="xd-btn" href="/guides/migrating/">See what moves over</a>
+  </div>
+</div>
+
+<h2 class="xd-section-title">Often read</h2>
+
+<ul class="xd-links">
+  <li><a href="/start/introduction/">What is Xentium<small>The idea, the stack, what's in core</small></a></li>
+  <li><a href="/concepts/layouts/">The layout system<small>Pages as blocks, themes as data</small></a></li>
+  <li><a href="/themes/style-system/">The style system<small>Tokens, Theme Studio, packages</small></a></li>
+  <li><a href="/plugins/extension-points/">Plugin extension points<small>Every place a plugin can hook in</small></a></li>
+  <li><a href="/admin/updating/">Updating Xentium<small>Releases, the update check, rollbacks</small></a></li>
+  <li><a href="/reference/api/">REST API<small>Endpoints, errors, pagination</small></a></li>
+</ul>

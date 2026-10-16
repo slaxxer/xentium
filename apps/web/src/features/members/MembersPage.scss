@@ -232,14 +232,14 @@
 }
 .mp-podium-wrap::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 120px;
-  background: linear-gradient(120deg, var(--c-accent-soft), var(--c-accent2-soft));
+  background: var(--c-accent-soft);
 }
 .mp-podium-head { position: relative; text-align: center; margin-bottom: 26px; }
 .mp-podium-head h2 { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 700; margin: 0 0 5px; color: var(--c-fg); }
 .mp-podium-head span { font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 .mp-podium { position: relative; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; align-items: end; max-width: 760px; margin: 0 auto; }
 .mp-spot { display: flex; flex-direction: column; align-items: center; text-align: center; background: var(--c-bg); border-radius: var(--radius-lg); padding: 22px 16px 20px; }
-.mp-spot--1 { padding-top: 30px; background: linear-gradient(180deg, rgba(244, 183, 64, .14), var(--c-bg) 60%); }
+.mp-spot--1 { padding-top: 30px; background: var(--c-bg); }
 .mp-spot__medal { font-size: 1.625rem; margin-bottom: 8px; }
 .mp-spot--1 .mp-spot__medal { font-size: 2rem; }
 .mp-spot__ava { border-radius: 50%; }
@@ -259,7 +259,7 @@
 }
 .mp-howto::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 6px;
-  background: linear-gradient(90deg, var(--c-accent2), var(--c-accent));
+  background: var(--c-accent);
 }
 .mp-howto__title { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; margin: 4px 0 8px; color: var(--c-fg); }
 .mp-howto__intro { font-size: var(--fs-base); font-weight: 600; line-height: 1.55; color: var(--c-fg-subtle); margin: 0 0 18px; }

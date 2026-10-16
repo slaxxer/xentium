@@ -404,6 +404,7 @@ export const adminService = {
       userId:   opts.userId,
       type:     "moderation.ban_issued",
       title:    opts.type === "permanent" ? "Your account has been permanently suspended" : "Your account has been temporarily suspended",
+      i18n:     { key: opts.type === "permanent" ? "common:notify.banPermanent" : "common:notify.banTemporary" },
       body:     opts.reason,
       channels: ["in_app", "email"],
     });
@@ -439,6 +440,7 @@ export const adminService = {
       userId,
       type:     "moderation.ban_lifted",
       title:    "Your account suspension has been lifted",
+      i18n:     { key: "common:notify.banLifted" },
       body:     "Your suspension has been removed. You can now log in.",
       channels: ["in_app"],
     });
@@ -552,7 +554,7 @@ export const adminService = {
 
   // ── Settings ──────────────────────────────────────────────────────────────
 
-  // Default values for structured admin settings (§60, §26, CLAUDE.md)
+  // Default values for structured admin settings (§60, §26)
   SETTING_DEFAULTS: {
     "site.name":                           "My Xentium Site",
     "site.url":                            "",

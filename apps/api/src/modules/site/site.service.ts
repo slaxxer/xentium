@@ -25,6 +25,35 @@ function validZone(zone: unknown): string | null {
   }
 }
 
+const ALERT_TONES = ["info", "success", "warning", "danger"] as const;
+const ALERT_AUDIENCES = ["everyone", "guests", "members"] as const;
+
+/** The value when it is one of `allowed`, else the first (the default). */
+function pick<T extends string>(allowed: readonly T[], v: unknown): T {
+  return (allowed as readonly unknown[]).includes(v) ? (v as T) : allowed[0]!;
+}
+
+/**
+ * The site alert: one bar at the very top of every public page, written by an
+ * admin and shown as written. Normalised here because the settings endpoint
+ * stores whatever it is sent — a link only to http(s) or a path on this site.
+ * Off or empty = null, so nothing is drawn.
+ */
+function siteAlert(s: Record<string, unknown>) {
+  const message = String(s["alert.message"] ?? "").trim().slice(0, 500);
+  if (s["alert.enabled"] !== true || !message) return null;
+  const url = String(s["alert.link_url"] ?? "").trim();
+  const safeUrl = /^https?:\/\//i.test(url) || /^\/(?!\/)/.test(url) ? url : "";
+  const label = String(s["alert.link_label"] ?? "").trim().slice(0, 80);
+  return {
+    message,
+    tone:        pick(ALERT_TONES, s["alert.tone"]),
+    audience:    pick(ALERT_AUDIENCES, s["alert.audience"]),
+    dismissible: s["alert.dismissible"] !== false,
+    link:        safeUrl ? { url: safeUrl, label: label || safeUrl } : null,
+  };
+}
+
 export const siteService = {
   /** Public site config: feature flags + the resolved landing route + the set of
    *  landing destinations that actually exist right now (enabled core sections +
@@ -45,6 +74,13 @@ export const siteService = {
       "site.timezone":              "visitor",
       "site.time_format":           "auto",
       "site.date_format":           "medium",
+      "alert.enabled":              false,
+      "alert.message":              "",
+      "alert.tone":                 "info",
+      "alert.link_label":           "",
+      "alert.link_url":             "",
+      "alert.audience":             "everyone",
+      "alert.dismissible":          true,
     });
     const features = Object.fromEntries(
       FEATURE_KEYS.map((f) => [f, !!s[`features.${f}.enabled`]]),
@@ -88,6 +124,7 @@ export const siteService = {
         timeFormat: ["auto", "24h", "12h"].includes(s["site.time_format"]) ? s["site.time_format"] : "auto",
         dateFormat: ["medium", "long", "numeric", "iso"].includes(s["site.date_format"]) ? s["site.date_format"] : "medium",
       },
+      alert: siteAlert(s),
       // Public auth-form config the SPA reads at boot (login + register forms).
       auth: {
         loginMethod: ["email", "username", "either"].includes(loginMethod) ? loginMethod : "email",

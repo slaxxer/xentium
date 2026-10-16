@@ -1,12 +1,20 @@
 /* Forum-style site footer — adapted from the redesign reference to the app's
-   --c-* token set. Group colors come from each group's badgeColor (live data). */
+   --c-* token set. Group colors come from each group's badgeColor (live data).
+   ⚠ Its rows add NO side padding: the footer region already sits in the page frame,
+   so text and rules line up with the page content. A second inset here pushed the
+   text 40px in and drew the copyright rule shorter than the others. */
 .xt-foot {
+  /* Rules between the footer's rows, from the footer's own text colour, so they read on
+     a light footer and a dark one alike (the page's row colour glared on ink). */
+  --xt-foot-rule: color-mix(in srgb, var(--footer-fg) 18%, transparent);
   background: var(--footer-bg);
   border-top: 1px solid var(--footer-border-color);
   font-family: var(--font-body);
+  /* Its own text colour: inheriting the page's drew dark numbers on a dark band. */
+  color: var(--footer-fg-strong);
 
   &__online {
-    padding: 26px clamp(20px, 5vw, 40px) 22px;
+    padding: 26px 0 22px;
     max-width: var(--content-max);
     margin: 0 auto;
   }
@@ -24,7 +32,7 @@
   text-transform: uppercase;
   color: var(--footer-fg-subtle);
 
-  svg { color: var(--c-accent); }
+  svg { color: var(--footer-accent); }
 }
 
 /* Breathing green presence dot (replaces the who's-online icon). */
@@ -57,12 +65,17 @@
   .xt-online-dot::after { animation: none; }
 }
 
-.xt-sentence {
-  font-weight: 700;
-  font-size: var(--fs-md);
-  color: var(--footer-fg);
-  line-height: 1.6;
-  margin: 0 0 12px;
+/* The line under the names: members and guests now, and the record. */
+.xt-names + .xt-onstats { margin-top: 12px; }
+.xt-onstats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--footer-fg-subtle);
 }
 
 .xt-names { line-height: 2.1; }
@@ -75,14 +88,22 @@
   &--more { color: var(--footer-fg-subtle); }
 }
 .xt-sep { color: var(--footer-fg-subtle); font-weight: 700; margin: 0 3px; }
+.xt-comma { color: var(--footer-fg-subtle); margin-right: 6px; }
+.xt-onstat { white-space: nowrap; }
+.xt-onstat + .xt-onstat::before { content: "·"; font-weight: 700; margin-right: 8px; }
+/* On a phone the record takes its own line, without a leading dot. */
+@media (max-width: 680px) {
+  .xt-onstat--record { flex-basis: 100%; white-space: normal; }
+  .xt-onstat--record::before { content: none !important; }
+}
 
 .xt-legend {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 9px 16px;
-  padding: 16px clamp(20px, 5vw, 40px);
-  border-top: 1px solid var(--c-rowline);
+  padding: 16px 0;
+  border-top: 1px solid var(--xt-foot-rule);
   max-width: var(--content-max);
   margin: 0 auto;
 
@@ -108,17 +129,20 @@
   display: flex;
   flex-wrap: wrap;
   gap: clamp(22px, 4vw, 38px);
-  padding: 18px clamp(20px, 5vw, 40px);
-  border-top: 1px solid var(--c-rowline);
-  background: var(--c-bg);
+  padding: 18px 0;
+  border-top: 1px solid var(--xt-foot-rule);
+  // The footer's own band shows through: a page-coloured strip read as a white slab
+  // on a dark footer.
+  background: transparent;
   max-width: var(--content-max);
   margin: 0 auto;
 }
 .xt-stat {
   b { display: block; font-family: var(--font-display); font-weight: 700; font-size: var(--fs-xl); letter-spacing: -0.02em; text-align: center }
   span { font-weight: 700; font-size: var(--fs-xs); color: var(--footer-fg-subtle); }
-  a { color: inherit; text-decoration: none; &:hover { color: var(--c-accent); } }
-  &--accent b { color: var(--c-accent); }
+  a { color: inherit; text-decoration: none; &:hover { color: var(--footer-accent); } }
+  /* The footer's own accent: the page's can be too dark for an ink band. */
+  &--accent b { color: var(--footer-accent); }
 }
 
 .xt-bar {
@@ -126,7 +150,7 @@
   align-items: center;
   gap: 18px;
   flex-wrap: wrap;
-  padding: 16px clamp(20px, 5vw, 40px);
+  padding: 16px 0;
   border-top: 1px solid var(--footer-border-color);
   max-width: var(--content-max);
   margin: 0 auto;
@@ -136,14 +160,14 @@
 .xt-links--grow { flex: 1; }
 /* …and this is the fallback when there are no links at all. */
 .xt-themepick { margin-left: auto; display: inline-flex; align-items: center; }
-.xt-brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--c-fg); }
+.xt-brand { display: flex; align-items: center; gap: 11px; text-decoration: none; color: var(--footer-fg-strong); }
 .xt-logomark {
   width: 34px;
   height: 34px;
   border-radius: 11px;
   flex: none;
   color: var(--c-on-accent);
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  background: var(--c-accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -158,7 +182,7 @@
   flex-wrap: wrap;
 
   a { font-family: var(--font-display); font-weight: 500; font-size: var(--fs-sm); color: var(--footer-fg); text-decoration: none; }
-  a:hover { color: var(--c-accent); }
+  a:hover { color: var(--footer-accent); }
 }
 
 .xt-copyright {
@@ -167,7 +191,7 @@
   justify-content: space-between;
   gap: 14px;
   flex-wrap: wrap;
-  padding: 12px clamp(20px, 5vw, 40px);
+  padding: 12px 0;
   border-top: 1px solid var(--footer-border-color);
   max-width: var(--content-max);
   margin: 0 auto;
@@ -196,7 +220,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 18px clamp(20px, 5vw, 40px) 0;
+  padding: 18px 0 0;
 }
 .xt-footlinks__link {
   padding: 6px 10px;
@@ -207,7 +231,7 @@
   font-weight: 600;
   text-decoration: none;
 
-  &:hover { color: var(--c-accent); }
+  &:hover { color: var(--footer-accent); }
 }
 .xt-footlinks__theme { display: inline-flex; align-items: center; }
 
@@ -220,7 +244,7 @@
   align-items: center;
   gap: 4px;
   text-align: center;
-  padding: 14px clamp(20px, 5vw, 40px) 20px;
+  padding: 14px 0 20px;
   font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--footer-fg-subtle);
@@ -241,7 +265,7 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px clamp(20px, 5vw, 40px) 20px;
+  padding: 16px 0 20px;
 
   &__top {
     display: flex;

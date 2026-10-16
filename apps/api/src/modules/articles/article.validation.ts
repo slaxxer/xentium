@@ -47,7 +47,9 @@ export const listArticlesQuerySchema = paginatedRequestSchema.extend({
   categoryId: z.string().cuid2().optional(),
   authorId: z.string().optional(),
   q: z.string().trim().min(1).max(100).optional(),
-  feed: z.enum(["latest", "following", "top"]).optional(),
+  // following = the categories and tags the viewer follows; liked / saved / mine are
+  // the viewer's own lists (home menu). All but latest and top need a signed-in viewer.
+  feed: z.enum(["latest", "following", "top", "liked", "saved", "mine"]).optional(),
 });
 
 export type CreateArticleInput = z.infer<typeof createArticleSchema>;

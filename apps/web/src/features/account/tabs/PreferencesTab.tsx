@@ -282,7 +282,7 @@ export function PreferencesTab() {
                   onClick={() => setFont(f.value)}
                 >
                   <strong>{f.label}</strong>
-                  <span>{f.desc}</span>
+                  <span>{t(`preferences.fontDesc.${f.value.replace(/ /g, "")}`, { defaultValue: f.desc })}</span>
                 </button>
               ))}
             </div>

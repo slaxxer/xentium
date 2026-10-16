@@ -1,10 +1,12 @@
+import i18n from "i18next";
+import { LegalConsentGate } from "../features/auth/LegalConsentGate";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
 import { ToastHost } from "../components/ToastHost";
 import { DialogHost } from "../components/DialogHost";
 import { AppLayout } from "../layouts/AppLayout";
-import { EditorLayout } from "../layouts/EditorLayout";
+import { RequireSignIn } from "../layouts/RequireSignIn";
 import { ProfilePage } from "../features/profiles/ProfilePage";
 import { MembersPage } from "../features/members/MembersPage";
 import { AccountPage } from "../features/account/AccountPage";
@@ -30,6 +32,7 @@ import { setRankImages } from "../lib/rankImage";
 import { useAuth } from "../hooks/useAuth";
 import { useActivityLogger } from "../hooks/useActivityLogger";
 import { loadTokenCss, startStyleSync, onStyleVersionChange } from "../lib/liveStyle";
+import { syncFavicon, TOKENS_APPLIED_EVENT } from "../lib/siteFavicon";
 import { LAYOUTS_QUERY_KEY, isDraftLayout, isLayoutPreview } from "../layout/useLayout";
 import { installPreviewBridge } from "../layout/previewBridge";
 import { slotRegistry } from "../plugins/slotRegistry";
@@ -48,6 +51,7 @@ import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
 import { ArticlesPage }      from "../features/admin/pages/ArticlesPage";
 import { CategoriesPage }    from "../features/admin/pages/CategoriesPage";
 import { LegalDocumentsPage } from "../features/admin/pages/LegalDocumentsPage";
+import { EmojisPage } from "../features/admin/pages/EmojisPage";
 import { SettingsPage }      from "../features/admin/pages/SettingsPage";
 import { EmailPage } from "../features/admin/pages/EmailPage";
 import { AboutPage }         from "../features/admin/pages/AboutPage";
@@ -91,11 +95,15 @@ const queryClient = new QueryClient({
   },
 });
 
-const LOADING = (
-  <div style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", color: "var(--c-fg-muted)" }}>
-    Loading…
-  </div>
-);
+// A component, not a constant element: the text is read when it renders, in the
+// reader's language, not once when this module loads.
+function Loading() {
+  return (
+    <div style={{ display: "flex", minHeight: "100dvh", alignItems: "center", justifyContent: "center", color: "var(--c-fg-muted)" }}>
+      {i18n.t("common:actions.loading")}
+    </div>
+  );
+}
 
 function InstallRoute() {
   const { data, isLoading, error } = useInstallStatus();
@@ -105,7 +113,7 @@ function InstallRoute() {
   // user off the completion screen onto "/". Leaving is the user's click.
   const lockedOpen = useRef(false);
   if (lockedOpen.current) return <InstallPage />;
-  if (isLoading) return LOADING;
+  if (isLoading) return <Loading />;
   if (data?.installed || (error as any)?.status === 410) return <Navigate to="/" replace />;
   lockedOpen.current = true;
   return <InstallPage />;
@@ -174,8 +182,8 @@ function AppGuard() {
   // so AppGuard doesn't issue a <Navigate> and cause a re-render loop.
   if (INSTALL_PATHS.has(pathname)) return null;
 
-  if (isLoading) return LOADING;
-  if ((error as any)?.status === 410 || data?.installed) return <><CanonicalManager /><Outlet /></>;
+  if (isLoading) return <Loading />;
+  if ((error as any)?.status === 410 || data?.installed) return <><CanonicalManager /><LegalConsentGate /><Outlet /></>;
   return <Navigate to="/install" replace />;
 }
 
@@ -185,7 +193,7 @@ function NotFound() { return <NotFoundPage />; }
  *  (e.g. /forum on a forum-only install). */
 function RootRoute() {
   const { data, isLoading } = useSiteConfig();
-  if (isLoading) return LOADING;
+  if (isLoading) return <Loading />;
   const landing = data?.landing ?? "home";
   if (landing === "home") return <HomePage />;
   return <Navigate to={landing} replace />;
@@ -195,7 +203,7 @@ function RootRoute() {
  *  (the backend also 404s the API). */
 function FeatureGate({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
   const { data, isLoading } = useSiteConfig();
-  if (isLoading) return LOADING;
+  if (isLoading) return <Loading />;
   if (data && !data.features[feature]) return <NotFoundPage />;
   return <>{children}</>;
 }
@@ -251,7 +259,7 @@ function buildRouter() {
   // nearest one, so these four cover the whole tree and nothing can fall
   // through to the framework's developer-facing default screen. Errors under a
   // layout are caught closer, by the layout's own boundary, so the chrome
-  // survives (see AppLayout/AcpLayout/EditorLayout).
+  // survives (see AppLayout/AcpLayout).
   { path: "/install",   element: <InstallRoute />, errorElement: <RouteErrorPage /> },
   { path: "/installer", element: <InstallRoute />, errorElement: <RouteErrorPage /> },
   // ADR-0003 Phase 2 — Style Editor specimen iframe. Top-level (no AppGuard) so it
@@ -269,13 +277,6 @@ function buildRouter() {
       { path: "/register",        element: <RegisterPanel /> },
       { path: "/forgot-password", element: <ForgotPanel /> },
       { path: "/reset-password",  element: <ResetPanel /> },
-      {
-        element: <EditorLayout />,
-        children: [
-          { path: "/articles/new",       element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
-          { path: "/articles/:slug/edit",element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
-        ],
-      },
       // ── ACP ──────────────────────────────────────────────────────────────
       {
         path: "/admin",
@@ -294,6 +295,7 @@ function buildRouter() {
           { path: "articles",         element: <ArticlesPage /> },
           { path: "categories",       element: <CategoriesPage /> },
           { path: "legal",            element: <LegalDocumentsPage /> },
+          { path: "emojis",           element: <EmojisPage /> },
           // Custom pages removed 2026-10-02; legal documents are what they were used for.
           { path: "pages",            element: <Navigate to="/admin/legal" replace /> },
           { path: "settings",         element: <SettingsPage /> },
@@ -354,6 +356,15 @@ function buildRouter() {
           { path: "/account",         element: <AccountPage /> },
           { path: "/articles",                element: <FeatureGate feature="articles"><ArticlesListPage /></FeatureGate> },
           { path: "/articles/:slug",          element: <FeatureGate feature="articles"><ArticleReaderPage /></FeatureGate> },
+          // Writing an article happens inside the site's layout (frame, header, footer)
+          // like every other page; only a member may.
+          {
+            element: <RequireSignIn />,
+            children: [
+              { path: "/articles/new",        element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
+              { path: "/articles/:slug/edit", element: <FeatureGate feature="articles"><ArticleEditorPage /></FeatureGate> },
+            ],
+          },
           { path: "/legal/:key",              element: <LegalPage /> },
           // Plugin public routes (registered by plugins via slotRegistry)
           ...slotRegistry.getRoutes("public").map((r) => ({
@@ -383,7 +394,7 @@ function MaintenanceGate({ children }: { children: React.ReactNode }) {
 
   const allowed = !!user && user.groups.some((g) => m.allowedGroups.includes(g.key) || g.key === "admin");
   if (allowed) return <>{children}</>;
-  if (isLoading) return LOADING;
+  if (isLoading) return <Loading />;
 
   return (
     <MaintenancePage
@@ -414,6 +425,32 @@ function BadgeShadowSync() {
   return null;
 }
 
+/**
+ * Keeps the favicon in sync with the site on EVERY screen (the maintenance page and
+ * the ACP render outside AppLayout): the uploaded icon, else the Xentium mark in the
+ * site's Logo icon colours (lib/siteFavicon). Re-drawn whenever the token stylesheet
+ * changes, so a published recolour reaches open tabs too.
+ */
+function FaviconSync() {
+  const { data: install, error: installError } = useInstallStatus();
+  const installed = !!install?.installed || (installError as any)?.status === 410;
+  const { data } = useQuery<{ iconUrl: string | null }>({
+    queryKey: ["pub-branding"],
+    queryFn:  () => api.get("/appearance/branding"),
+    staleTime: 300_000,
+    enabled:   installed,
+  });
+  const iconUrl = data?.iconUrl;
+  useEffect(() => {
+    if (!installed) return;
+    const sync = () => syncFavicon(iconUrl);
+    sync();
+    window.addEventListener(TOKENS_APPLIED_EVENT, sync);
+    return () => window.removeEventListener(TOKENS_APPLIED_EVENT, sync);
+  }, [installed, iconUrl]);
+  return null;
+}
+
 export default function App() {
   // useState initializer runs at first render — AFTER bootstrap() has
   // imported enabled plugin web entries and registered their routes.
@@ -421,6 +458,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BadgeShadowSync />
+      <FaviconSync />
       {/* Outermost net. The gates below live OUTSIDE the router, so their
           crashes have no errorElement to reach — without this they'd blank the
           document. Inside the provider so the screen can still read auth. */}

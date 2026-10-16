@@ -11,6 +11,7 @@ import { runStreamedJob } from "../../../lib/streamProgress";
 import { toast } from "../../../lib/toast";
 import { themeInstallMessage } from "../hooks/themeInstallResult";
 import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
+import { uiLocale } from "../../../lib/i18n";
 
 /**
  * What this site's marketplace account owns, and where each licence stands here.
@@ -47,7 +48,7 @@ export interface OwnedLicense {
 }
 
 const fmtDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  new Date(iso).toLocaleDateString(uiLocale(), { month: "short", day: "numeric", year: "numeric" });
 
 /** A seat is only spent by a production install, so an unlimited licence
  *  (seats === null) never shows a ratio it cannot exceed. */

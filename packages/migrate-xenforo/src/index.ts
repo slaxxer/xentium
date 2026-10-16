@@ -1,6 +1,7 @@
 import mysql from "mysql2/promise";
 import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { extractXenforo, xfVersion } from "./extract.js";
+import { xenforoRedirects } from "./redirects.js";
 
 const DEFAULT_PREFIX = "xf_";
 
@@ -41,7 +42,7 @@ export const xenforoAdapter: MigrateAdapter = {
       const warnings = [
         "XenForo's per-node permission overrides cannot be represented in Xentium's flat RBAC — admins map to Administrator, moderators to Moderator, everyone else to Member (§34, lossy by design).",
         "Users with XenForo's native bcrypt hashes keep their passwords (verified on first login, upgraded to argon2). Accounts on legacy import schemes reset once.",
-        "Attachments, private conversations and media embeds are not migrated in this version (embeds become plain links).",
+        "Conversations become private conversations when the xentium-messaging plugin is enabled on the target (otherwise they're counted and skipped). Attachments are not migrated in this version; media embeds become plain links.",
         "Reactions migrate as likes: every reaction type (love, haha, …) collapses to a Xentium like. Follows and ignores (→ blocks) migrate 1:1.",
       ];
       const missing: string[] = [];
@@ -61,7 +62,11 @@ export const xenforoAdapter: MigrateAdapter = {
 
   async extract(source: AdapterSource, reporter: MigrationReporter): Promise<ExtractResult> {
     if (!source.db) throw new Error("XenForo adapter needs --source-db mysql://…");
-    return extractXenforo({ db: source.db, tablePrefix: source.tablePrefix ?? DEFAULT_PREFIX }, reporter);
+    return extractXenforo({ db: source.db, tablePrefix: source.tablePrefix ?? DEFAULT_PREFIX, filesDir: source.filesDir }, reporter);
+  },
+
+  async redirects() {
+    return xenforoRedirects;
   },
 };
 

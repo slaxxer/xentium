@@ -5,13 +5,18 @@
  * own JS context. This module runs INSIDE that document and talks to the editor
  * over `postMessage`:
  *
- *   preview → editor   nv:select   an admin clicked a block
- *                      nv:move     an admin dragged a block to a new position
- *                      nv:iconPick an admin clicked ONE icon, while icon mode is on
- *   editor  → preview  nv:iconMode   turn icon picking on or off
- *                      nv:highlight  the tree selection changed
- *                      nv:tokens     staged variant tokens, so a colour edit is
- *                                    visible before it is published
+ *   preview → editor   nv:select      an admin clicked a block
+ *                      nv:move        an admin dragged a block to a new position
+ *                      nv:insert      an admin dropped a NEW block from the library
+ *                      nv:insertAfter an admin pressed the `+` under a block
+ *                      nv:nudge       the chip's up/down
+ *                      nv:iconPick    an admin clicked ONE icon, while icon mode is on
+ *   editor  → preview  nv:iconMode    turn icon picking on or off
+ *                      nv:highlight   the tree selection changed (with its breadcrumb)
+ *                      nv:dragNew     a library tile is being dragged — its type
+ *                      nv:insertMark  where the next library pick lands, or nothing
+ *                      nv:tokens      staged variant tokens, so a colour edit is
+ *                                     visible before it is published
  *
  * Why an overlay instead of styling the block: each block is wrapped in a
  * `display: contents` element so the preview's layout is identical to the live
@@ -20,10 +25,17 @@
  * separate, absolutely positioned frame over it. Nothing about the page's own
  * styling is touched, which is the point: the preview must not lie.
  *
- * Dragging happens entirely within this document (both source and target are
- * here), so it uses ordinary HTML5 drag events. Only the RESULT crosses the
+ * Dragging a block happens entirely within this document (both source and target
+ * are here), so it uses ordinary HTML5 drag events. Only the RESULT crosses the
  * frame boundary, as a single `nv:move` message — the editor owns the document
  * and remains the single source of truth.
+ *
+ * A NEW block is dragged from the editor's library, outside this document. The
+ * browser delivers that drag's events in here all the same (same origin), but a
+ * drag's data cannot be read until it is dropped — so the editor announces the
+ * block's type with `nv:dragNew` when the drag starts, and this document resolves
+ * the landing spot with exactly the rules a move uses. The drop comes back as
+ * `nv:insert`.
  *
  * ## Where a drop lands, once blocks can nest
  *
@@ -57,6 +69,17 @@ const OVERLAY_ID = "xt-preview-overlay";
 const TOKENS_ID = "xt-preview-tokens";
 const LABEL_ID = "xt-preview-label";
 const LINE_ID = "xt-preview-dropline";
+const ZONE_ID = "xt-preview-dropzone";
+const PLUS_ID = "xt-preview-plus";
+const MARK_ID = "xt-preview-insertmark";
+
+/** The chip's glyphs. Constant SVG, so setting them as markup injects nothing. */
+const GLYPH = {
+  up:   '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+  down: '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>',
+  duplicate: '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 00-1-1H5a1 1 0 00-1 1v10a1 1 0 001 1h3"/></svg>',
+  remove: '<svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+} as const;
 
 type Msg =
   /**
@@ -92,6 +115,19 @@ type Msg =
    */
   | { source: "xt-preview"; type: "duplicate"; id: string }
   | { source: "xt-preview"; type: "remove"; id: string }
+  /** The chip's up/down: one step within the block's own list. */
+  | { source: "xt-preview"; type: "nudge"; id: string; delta: number }
+  /** A library block was dropped here: what, and where, in the editor's terms. */
+  | {
+      source: "xt-preview";
+      type: "insert";
+      blockType: string;
+      region: string;
+      parentId: string | null;
+      index: number;
+    }
+  /** The `+` under a block: the next library pick goes straight after it. */
+  | { source: "xt-preview"; type: "insertAfter"; id: string }
   /**
    * This document's bridge is listening.
    *
@@ -169,6 +205,12 @@ export function resolveDropParent(
   from: Element | null,
   draggedType: string,
   dragged: HTMLElement | null,
+  /**
+   * The OPEN document. The page also renders the site header and footer, which are
+   * other documents — a drop must never aim into one, or the editor would be handed
+   * a region its document does not have. Omitted, every document is a candidate.
+   */
+  template?: string | null,
 ): DropParent | null {
   let el: Element | null = from;
   while (el) {
@@ -181,7 +223,8 @@ export function resolveDropParent(
     const parentType = cand.dataset.xtType ?? null;
     const region = cand.dataset.xtRegion;
     const selfOrInside = !!dragged && (dragged === cand || dragged.contains(cand));
-    if (region && !selfOrInside && acceptsChild(parentType, draggedType)) {
+    const otherDocument = !!template && cand.dataset.xtTemplate !== template;
+    if (region && !selfOrInside && !otherDocument && acceptsChild(parentType, draggedType)) {
       return { parentId, region, el: cand };
     }
     el = cand.parentElement;
@@ -200,10 +243,53 @@ function ensure(id: string, className: string): HTMLElement {
   return el;
 }
 
+const REOPEN_KEY = "xt-preview-reopen";
+
+/**
+ * Open again the dropdown whose trigger was clicked just before this preview loaded
+ * (see the click handler). Waits for the block to render; gives up after a few
+ * seconds, and ignores a note older than that — it belongs to a click, not a visit.
+ */
+function reopenTrigger(): () => void {
+  // ⚠ The note is removed only once it is used or stale, never on read: in dev,
+  // StrictMode installs the bridge twice and the first install's cleanup would
+  // otherwise take the note with it.
+  const forget = () => { try { sessionStorage.removeItem(REOPEN_KEY); } catch { /* ignore */ } };
+  let note: { id?: string; index?: number; at?: number } | null = null;
+  try { note = JSON.parse(sessionStorage.getItem(REOPEN_KEY) ?? "null"); } catch { /* nothing to reopen */ }
+  if (!note?.id || typeof note.index !== "number") return () => {};
+  const { id, index, at = 0 } = note;
+  const timer = window.setInterval(() => {
+    if (Date.now() - at > 5000) { forget(); window.clearInterval(timer); return; }
+    const w = document.querySelector(`[data-xt-block="${CSS.escape(id)}"]`);
+    const btn = w?.querySelectorAll<HTMLButtonElement>("button[aria-expanded]")[index];
+    if (btn) {
+      forget();
+      window.clearInterval(timer);
+      if (btn.getAttribute("aria-expanded") === "false") btn.click();
+    }
+  }, 150);
+  return () => window.clearInterval(timer);
+}
+
 export function installPreviewBridge(): () => void {
   const overlay = ensure(OVERLAY_ID, "xt-preview-overlay");
   const label = ensure(LABEL_ID, "xt-preview-label");
   const line = ensure(LINE_ID, "xt-preview-dropline");
+  const zone = ensure(ZONE_ID, "xt-preview-dropzone");
+  const mark = ensure(MARK_ID, "xt-preview-insertmark");
+  const plus = (() => {
+    let el = document.getElementById(PLUS_ID) as HTMLButtonElement | null;
+    if (!el) {
+      el = document.createElement("button");
+      el.id = PLUS_ID;
+      el.type = "button";
+      el.className = "xt-preview-plus";
+      el.textContent = "+";
+      document.body.appendChild(el);
+    }
+    return el;
+  })();
 
   let hovered: HTMLElement | null = null;
   let selectedId: string | null = null;
@@ -230,6 +316,20 @@ export function installPreviewBridge(): () => void {
   let reportedFor: string | null = null;
   let dragId: string | null = null;
   let drop: { region: string; parentId: string | null; index: number } | null = null;
+  /** The library block being dragged in from the editor, announced by `nv:dragNew`. */
+  let newType: string | null = null;
+  /** The open document's template key, from the pushed document. */
+  let openTemplate: string | null = null;
+  /** The selected block's ancestors then itself, and whether it can move up/down. */
+  let crumbs: { id: string; label: string }[] = [];
+  let canUp = false;
+  let canDown = false;
+  /** Words for the chip and the `+`, in the admin's language (sent with `labels`). */
+  let chipLabels: Record<string, string> = {};
+  /** Where the next library pick lands, as the editor last said. */
+  let insertMark: { afterId?: string | null; beforeId?: string | null; parentId?: string | null; region?: string } | null = null;
+  /** The block the `+` currently belongs to. */
+  let plusFor: string | null = null;
 
   const wrapperFrom = (target: EventTarget | null): HTMLElement | null =>
     (target as Element | null)?.closest?.("[data-xt-block]") as HTMLElement | null;
@@ -295,39 +395,143 @@ export function installPreviewBridge(): () => void {
     }
 
     label.style.pointerEvents = "auto";
-    const name = document.createElement("span");
-    name.textContent = selectedLabel ?? wrapper.dataset.xtType ?? "block";
-    label.append(name);
-
     const id = wrapper.dataset.xtBlock;
+
+    // The breadcrumb: the parents, then the block. A parent is otherwise nearly
+    // impossible to click — every point inside it belongs to one of its children.
+    const trail = crumbs.length && crumbs[crumbs.length - 1]!.id === id
+      ? crumbs
+      : [{ id: id ?? "", label: selectedLabel ?? wrapper.dataset.xtType ?? "block" }];
+    trail.slice(-3).forEach((c, i, arr) => {
+      if (i > 0) {
+        const sep = document.createElement("span");
+        sep.className = "xt-preview-label__sep";
+        sep.textContent = "›";
+        label.append(sep);
+      }
+      if (i === arr.length - 1) {
+        const name = document.createElement("span");
+        name.className = "xt-preview-label__name";
+        name.textContent = c.label;
+        label.append(name);
+        return;
+      }
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "xt-preview-label__crumb";
+      b.textContent = c.label;
+      b.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        selectedId = c.id;
+        post({ source: "xt-preview", type: "select", id: c.id, templateKey: openTemplate ?? undefined });
+        redraw();
+      });
+      label.append(b);
+    });
+
     if (!id) return;
 
-    const action = (kind: "duplicate" | "remove", glyph: string) => {
+    const action = (kind: "up" | "down" | "duplicate" | "remove", onClick: () => void, enabled = true) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "xt-preview-label__act";
-      b.textContent = glyph;
-      b.title = kind;
+      b.innerHTML = GLYPH[kind];
+      const name = chipLabels[kind] ?? kind;
+      b.title = name;
+      b.setAttribute("aria-label", name);
+      b.disabled = !enabled;
       b.addEventListener("click", (e) => {
         // The chip sits ON the block; without this the click would also select it.
         e.preventDefault();
         e.stopPropagation();
-        post({ source: "xt-preview", type: kind, id });
+        onClick();
       });
       return b;
     };
 
-    label.append(action("duplicate", "⧉"));
+    const gap = document.createElement("span");
+    gap.className = "xt-preview-label__gap";
+    label.append(gap);
+    label.append(action("up", () => post({ source: "xt-preview", type: "nudge", id, delta: -1 }), canUp));
+    label.append(action("down", () => post({ source: "xt-preview", type: "nudge", id, delta: 1 }), canDown));
+    label.append(action("duplicate", () => post({ source: "xt-preview", type: "duplicate", id })));
     // Required blocks are moved, never removed — the editor refuses it, so the chip
     // must not offer it.
-    if (selectedRemovable) label.append(action("remove", "🗑"));
+    if (selectedRemovable) label.append(action("remove", () => post({ source: "xt-preview", type: "remove", id })));
   }
 
   const redraw = () => {
     const target = hovered ?? (selectedId ? wrapperById(selectedId) : null);
     frame(target, !hovered && !!selectedId);
+    drawPlus();
+    drawMark();
     reportBounds();
   };
+
+  /**
+   * The `+` under the hovered block: "put the next block right here".
+   *
+   * Only for the open document's blocks (`data-xt-drag`), and never during a drag —
+   * the drop line is already saying where things go. Pressing it marks the spot and
+   * the editor opens its library aimed at it.
+   */
+  function drawPlus() {
+    const w = hovered;
+    const rect = w && w.dataset.xtDrag && !dragId && !newType ? boxOf(w) : null;
+    if (!rect || !w) { plus.style.display = "none"; plusFor = null; return; }
+    plusFor = w.dataset.xtBlock ?? null;
+    plus.style.display = "grid";
+    plus.title = chipLabels.insert ?? "+";
+    plus.setAttribute("aria-label", chipLabels.insert ?? "+");
+    Object.assign(plus.style, {
+      top:  `${rect.bottom + window.scrollY - 11}px`,
+      left: `${rect.left + window.scrollX + rect.width / 2 - 11}px`,
+    });
+  }
+
+  /**
+   * The marked spot, as a line, until the next pick lands or the editor clears it.
+   * Anchored to a neighbouring block when there is one, else to the container or
+   * region it goes into.
+   */
+  function drawMark() {
+    if (!insertMark) { mark.style.display = "none"; return; }
+    const { afterId, beforeId, parentId, region } = insertMark;
+    let top: number | null = null;
+    let r: DOMRect | null = null;
+    const after = afterId ? wrapperById(afterId) : null;
+    const before = beforeId ? wrapperById(beforeId) : null;
+    if (after && (r = boxOf(after))) top = r.bottom + 4;
+    else if (before && (r = boxOf(before))) top = r.top - 4;
+    else {
+      const host = parentId
+        ? wrapperById(parentId)
+        : allWrappers().find((el) => el.dataset.xtRegion === region && el.dataset.xtTemplate === openTemplate)?.closest("[data-xt-region]:not([data-xt-block])") as HTMLElement | null;
+      r = host ? (boxOf(host) ?? host.getBoundingClientRect()) : null;
+      if (r) top = r.top + r.height / 2;
+    }
+    if (top == null || !r) { mark.style.display = "none"; return; }
+    mark.style.display = "block";
+    Object.assign(mark.style, {
+      top:   `${top + window.scrollY - 1}px`,
+      left:  `${r.left + window.scrollX}px`,
+      width: `${r.width}px`,
+    });
+  }
+
+  /** The container a drop will land in, outlined, so "inside" and "beside" differ visibly. */
+  function drawZone(el: HTMLElement | null) {
+    const r = el ? (boxOf(el) ?? el.getBoundingClientRect()) : null;
+    if (!r || r.width === 0) { zone.style.display = "none"; return; }
+    zone.style.display = "block";
+    Object.assign(zone.style, {
+      top:    `${r.top + window.scrollY}px`,
+      left:   `${r.left + window.scrollX}px`,
+      width:  `${r.width}px`,
+      height: `${r.height}px`,
+    });
+  }
 
   /**
    * Tell the editor where the selection is.
@@ -354,6 +558,8 @@ export function installPreviewBridge(): () => void {
 
   // ── hover ────────────────────────────────────────────────────────────────
   const onOver = (e: MouseEvent) => {
+    // Moving onto the `+` must not count as leaving the block it belongs to.
+    if (e.target === plus) return;
     const w = wrapperFrom(e.target);
     if (w === hovered) return;
     hovered = w;
@@ -402,9 +608,25 @@ export function installPreviewBridge(): () => void {
 
     const w = wrapperFrom(e.target);
     if (!w?.dataset.xtBlock) return;
-    // Selecting must not also follow a link or submit something in the preview.
-    e.preventDefault();
-    e.stopPropagation();
+    // A dropdown's trigger (the bell, the shield, the avatar, a plugin's header
+    // button) selects its block AND opens the dropdown, so the admin sees what they
+    // are styling. Everything else — and anything inside an open dropdown — must not
+    // follow a link or submit something in the preview.
+    const target = e.target as Element | null;
+    const trigger = !!target?.closest?.("button[aria-expanded]") && !target.closest(".xt-pop");
+    if (!trigger) {
+      e.preventDefault();
+      e.stopPropagation();
+    } else if (e.isTrusted) {
+      // Selecting a header block from a page switches the editor to the header's
+      // document, which reloads this preview and closes the dropdown just opened.
+      // Remember the trigger so the reloaded preview opens it again (reopenTrigger).
+      const btn = target!.closest("button[aria-expanded]")!;
+      const index = [...w.querySelectorAll("button[aria-expanded]")].indexOf(btn);
+      try {
+        sessionStorage.setItem(REOPEN_KEY, JSON.stringify({ id: w.dataset.xtBlock, index, at: Date.now() }));
+      } catch { /* storage off: the second click opens it */ }
+    }
     selectedId = w.dataset.xtBlock;
     // The block's own document travels with the id. Clicking the masthead band or a
     // navbar item is how an admin edits the HEADER — the editor opens that document
@@ -416,36 +638,61 @@ export function installPreviewBridge(): () => void {
     redraw();
   };
 
-  // ── drag within the preview ──────────────────────────────────────────────
+  const onPlus = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (plusFor) post({ source: "xt-preview", type: "insertAfter", id: plusFor });
+  };
+
+  // ── drag within the preview, and in from the library ─────────────────────
   const onDragStart = (e: DragEvent) => {
     const w = wrapperFrom(e.target);
     if (!w?.dataset.xtBlock) return;
     dragId = w.dataset.xtBlock;
     e.dataTransfer?.setData("text/plain", dragId);
     if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    document.documentElement.classList.add("xt-dragging");
+    plus.style.display = "none";
   };
 
   const onDragOver = (e: DragEvent) => {
-    if (!dragId) return;
-    const dragged = wrapperById(dragId);
-    const target = resolveDropParent(e.target as Element | null, dragged?.dataset.xtType ?? "", dragged);
-    if (!target) { line.style.display = "none"; return; }
+    if (!dragId && !newType) return;
+    // Near the top or bottom edge the page scrolls itself, so a block can be taken
+    // to a spot below the fold — a drag cannot use the wheel.
+    const EDGE = 48;
+    if (e.clientY < EDGE) window.scrollBy(0, -Math.ceil((EDGE - e.clientY) / 3));
+    else if (e.clientY > window.innerHeight - EDGE) window.scrollBy(0, Math.ceil((e.clientY - window.innerHeight + EDGE) / 3));
+    const dragged = dragId ? wrapperById(dragId) : null;
+    const type = dragId ? dragged?.dataset.xtType ?? "" : newType!;
+    const target = resolveDropParent(e.target as Element | null, type, dragged, openTemplate);
+    if (!target) { line.style.display = "none"; drawZone(null); drop = null; return; }
 
     e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+    if (e.dataTransfer) e.dataTransfer.dropEffect = dragId ? "move" : "copy";
+    document.documentElement.classList.add("xt-dragging");
 
+    // The dragged block stays in the list: `moveBlock` takes the index as the list
+    // is BEFORE the block is lifted out, which is exactly what this counts.
     const siblings = childrenOf(target.parentId, target.region);
     const w = wrapperFrom(e.target);
 
     // Appending is the default, so hovering a container's own padding — rather
-    // than one of its children — puts the block at the end of it.
+    // than one of its children — puts the block at the end of it. Side by side
+    // (the tracks of a `columns` row) the halves are left and right, not top and
+    // bottom.
+    const across = target.el.dataset.xtType === "columns";
     let index = siblings.length;
     if (w) {
-      const i = siblings.indexOf(w);
-      const rect = boxOf(w);
-      if (i !== -1 && rect) index = i + (e.clientY > rect.top + rect.height / 2 ? 1 : 0);
+      const own = siblings.find((s) => s === w || s.contains(w));
+      const i = own ? siblings.indexOf(own) : -1;
+      const rect = own ? boxOf(own) : null;
+      if (i !== -1 && rect) {
+        const after = across ? e.clientX > rect.left + rect.width / 2 : e.clientY > rect.top + rect.height / 2;
+        index = i + (after ? 1 : 0);
+      }
     }
     drop = { region: target.region, parentId: target.parentId, index };
+    drawZone(target.parentId ? target.el : null);
 
     // Draw the insertion line where the block will actually land.
     const at = siblings[Math.min(index, siblings.length - 1)];
@@ -453,38 +700,67 @@ export function installPreviewBridge(): () => void {
     if (rect) {
       const atEnd = index >= siblings.length;
       line.style.display = "block";
-      Object.assign(line.style, {
-        top:   `${(atEnd ? rect.bottom : rect.top) + window.scrollY}px`,
-        left:  `${rect.left + window.scrollX}px`,
-        width: `${rect.width}px`,
-      });
+      if (across) {
+        Object.assign(line.style, {
+          top:    `${rect.top + window.scrollY}px`,
+          left:   `${(atEnd ? rect.right + 4 : rect.left - 5) + window.scrollX}px`,
+          width:  "3px",
+          height: `${rect.height}px`,
+        });
+      } else {
+        Object.assign(line.style, {
+          top:    `${(atEnd ? rect.bottom + 3 : rect.top - 4) + window.scrollY}px`,
+          left:   `${rect.left + window.scrollX}px`,
+          width:  `${rect.width}px`,
+          height: "",
+        });
+      }
     } else {
       // An empty container or region has no sibling to anchor to; the drop
       // parent's own box is the honest place to show the line.
       const r = (boxOf(target.el) ?? target.el.getBoundingClientRect());
       line.style.display = "block";
       Object.assign(line.style, {
-        top:   `${r.top + window.scrollY}px`,
-        left:  `${r.left + window.scrollX}px`,
-        width: `${r.width}px`,
+        top:    `${r.top + r.height / 2 + window.scrollY}px`,
+        left:   `${r.left + window.scrollX}px`,
+        width:  `${r.width}px`,
+        height: "",
       });
     }
   };
 
   const onDrop = (e: DragEvent) => {
-    if (!dragId || !drop) return;
+    if (!drop || (!dragId && !newType)) return;
     e.preventDefault();
-    post({
-      source: "xt-preview", type: "move", id: dragId,
-      region: drop.region, parentId: drop.parentId, index: drop.index,
-    });
+    if (dragId) {
+      post({
+        source: "xt-preview", type: "move", id: dragId,
+        region: drop.region, parentId: drop.parentId, index: drop.index,
+      });
+    } else if (newType) {
+      post({
+        source: "xt-preview", type: "insert", blockType: newType,
+        region: drop.region, parentId: drop.parentId, index: drop.index,
+      });
+    }
     endDrag();
+  };
+
+  /** A drag that leaves the page (back to the editor) shows no stale line. */
+  const onDragLeave = (e: DragEvent) => {
+    if (e.relatedTarget) return;
+    line.style.display = "none";
+    drawZone(null);
+    drop = null;
   };
 
   function endDrag() {
     dragId = null;
+    newType = null;
     drop = null;
     line.style.display = "none";
+    drawZone(null);
+    document.documentElement.classList.remove("xt-dragging");
   }
 
   /**
@@ -508,8 +784,24 @@ export function installPreviewBridge(): () => void {
     const data = e.data as { source?: string; type?: string; id?: string | null };
     if (data?.source !== "xt-editor") return;
     if (data.type === "labels") {
-      audienceLabels = (e.data as { audience?: Record<string, string> }).audience ?? {};
+      const d = e.data as { audience?: Record<string, string>; chip?: Record<string, string> };
+      audienceLabels = d.audience ?? {};
+      chipLabels = d.chip ?? {};
       redraw();
+    }
+
+    // A library tile is being dragged in the editor: from now until it ends, a drag
+    // over this page is that block. Cleared on `dragNewEnd` as well as on drop — a
+    // drag released over the editor never reaches this document at all.
+    if (data.type === "dragNew") {
+      newType = (e.data as { blockType?: string }).blockType ?? null;
+      plus.style.display = "none";
+    }
+    if (data.type === "dragNewEnd") endDrag();
+
+    if (data.type === "insertMark") {
+      insertMark = (e.data as { mark?: typeof insertMark }).mark ?? null;
+      drawMark();
     }
 
     /**
@@ -526,9 +818,15 @@ export function installPreviewBridge(): () => void {
 
     if (data.type === "highlight") {
       selectedId = data.id ?? null;
-      const d = e.data as { label?: string; removable?: boolean };
+      const d = e.data as {
+        label?: string; removable?: boolean;
+        crumbs?: { id: string; label: string }[]; canUp?: boolean; canDown?: boolean;
+      };
       selectedLabel = d.label ?? null;
       selectedRemovable = d.removable === true;
+      crumbs = d.crumbs ?? [];
+      canUp = d.canUp === true;
+      canDown = d.canDown === true;
       redraw();
     }
 
@@ -579,6 +877,7 @@ export function installPreviewBridge(): () => void {
     if (data.type === "document") {
       const d = e.data as { templateKey?: TemplateKey; variant?: string; document?: LayoutDocument };
       if (d.templateKey && d.document) {
+        openTemplate = d.templateKey;
         // The variant travels with the document: previewing one page's own layout
         // must not bleed into the template default's preview, or vice versa.
         setLivePreviewDocument(d.templateKey, d.document, d.variant || undefined);
@@ -610,6 +909,8 @@ export function installPreviewBridge(): () => void {
   document.addEventListener("dragover", onDragOver);
   document.addEventListener("drop", onDrop);
   document.addEventListener("dragend", endDrag);
+  document.addEventListener("dragleave", onDragLeave);
+  plus.addEventListener("click", onPlus);
   document.addEventListener("keydown", onKeyDown);
   window.addEventListener("message", onMessage);
   // ⚠ AFTER the listener is attached, never before: this is the whole point of the
@@ -618,7 +919,10 @@ export function installPreviewBridge(): () => void {
   window.addEventListener("scroll", redraw, true);
   window.addEventListener("resize", redraw);
 
+  const stopReopen = reopenTrigger();
+
   return () => {
+    stopReopen();
     document.removeEventListener("mouseover", onOver, true);
     document.removeEventListener("mouseleave", onLeave);
     document.removeEventListener("click", onClick, true);
@@ -626,11 +930,14 @@ export function installPreviewBridge(): () => void {
     document.removeEventListener("dragover", onDragOver);
     document.removeEventListener("drop", onDrop);
     document.removeEventListener("dragend", endDrag);
+    document.removeEventListener("dragleave", onDragLeave);
+    plus.removeEventListener("click", onPlus);
     document.removeEventListener("keydown", onKeyDown);
     window.removeEventListener("message", onMessage);
     window.removeEventListener("scroll", redraw, true);
     window.removeEventListener("resize", redraw);
-    overlay.remove(); label.remove(); line.remove();
+    overlay.remove(); label.remove(); line.remove(); zone.remove(); mark.remove(); plus.remove();
+    document.documentElement.classList.remove("xt-dragging");
     delete document.documentElement.dataset.xtEditor;
   };
 }

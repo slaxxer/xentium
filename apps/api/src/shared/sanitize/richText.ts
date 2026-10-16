@@ -28,7 +28,12 @@ const ALLOWED_TAGS = [
   "label", "input",
   "blockquote", "pre", "code",
   "a", "span",
+  // A custom emoji (ACP → Content → Emojis) — and ONLY that: see `exclusiveFilter`.
+  "img",
 ];
+
+/** An emoji image's `src`: our own emoji directory, a plain file name, nothing else. */
+const EMOJI_SRC = /^\/uploads\/emojis\/[\w.-]+$/;
 
 const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: ALLOWED_TAGS,
@@ -41,6 +46,7 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     ul: ["data-type"],
     li: ["data-type", "data-checked"],
     input: ["type", "checked", "disabled"],
+    img: ["src", "alt", "title", "class", "data-code"],
     // Alignment is an inline style — the only style allowed, and only these values.
     ...Object.fromEntries(ALIGNABLE.map((tag) => [tag, ["style"]])),
   },
@@ -50,6 +56,7 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     span: ["nvc-mention", "mention"],
     code: [/^language-[\w-]+$/],
     pre: [/^language-[\w-]+$/],
+    img: ["xt-emoji"],
   },
   // Only safe link protocols — blocks javascript:, data:, vbscript:, etc.
   allowedSchemes: ["http", "https", "mailto"],
@@ -65,8 +72,12 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     }),
   },
   // Only a checkbox may be an input (the transform above has already made every
-  // input one; this keeps that true if the transform ever changes).
-  exclusiveFilter: (frame) => frame.tag === "input" && frame.attribs.type !== "checkbox",
+  // input one; this keeps that true if the transform ever changes). And the only image
+  // is a custom emoji from our own emoji directory: a post cannot carry a tracker
+  // pixel or someone else's picture by dressing it up as one.
+  exclusiveFilter: (frame) =>
+    (frame.tag === "input" && frame.attribs.type !== "checkbox")
+    || (frame.tag === "img" && (frame.attribs.class !== "xt-emoji" || !EMOJI_SRC.test(frame.attribs.src ?? ""))),
   // Drop the contents of disallowed tags entirely (e.g. <script>…</script>),
   // rather than keeping the inner text.
   disallowedTagsMode: "discard",

@@ -15,6 +15,8 @@ import { AuthDoorway, useAuthMethods, useDoorwayStats } from "./AuthDoorway";
 import { apiErr, errorText } from "./authErrors";
 import { DigitsInput, FormError, OrDivider, PasswordInput, ProviderButtons } from "./pieces";
 import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported, startProvider } from "./signInClient";
+import { uiLocale } from "../../../lib/i18n";
+import { fieldLabel } from "../../../lib/coreText";
 
 interface ProfileFieldDef {
   id: string; key: string; label: string; type: string; placeholder: string | null;
@@ -166,6 +168,7 @@ export function RegisterPanel() {
         name: collectName && name.trim() ? name.trim() : undefined,
         loginPinEnabled: pinOn && pin.length === 4, loginPin: pinOn && pin.length === 4 ? pin : undefined,
         inviteCode: invite || undefined,
+        acceptLegal: needsConsent ? agreed : undefined,
         fields: fields.filter((f) => (values[f.id] ?? "").trim())
           .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim(), privacy: "public" as const })),
       });
@@ -246,7 +249,7 @@ export function RegisterPanel() {
         <>
           <div className="dw-head">
             <h1>{t("door.reg.accountTitle")}</h1>
-            <p>{stats ? t("door.reg.accountSub", { count: stats.members, formatted: stats.members.toLocaleString(), site: stats.siteName }) : " "}</p>
+            <p>{stats ? t("door.reg.accountSub", { count: stats.members, formatted: stats.members.toLocaleString(uiLocale()), site: stats.siteName }) : " "}</p>
           </div>
           {providers.length > 0 && (
             <div className="dw-quick">
@@ -281,7 +284,7 @@ export function RegisterPanel() {
             )}
             {[...requiredFields, ...optionalFields].map((f) => (
               <label key={f.id} className="dw-field">
-                <span className="dw-label">{f.label} {!f.requiredOnRegistration && <em>{t("door.optional")}</em>}</span>
+                <span className="dw-label">{fieldLabel(f)} {!f.requiredOnRegistration && <em>{t("door.optional")}</em>}</span>
                 <input className="dw-input" type={f.type === "date" ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
                   value={values[f.id] ?? ""} placeholder={f.placeholder ?? ""} required={f.requiredOnRegistration}
                   onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))} />

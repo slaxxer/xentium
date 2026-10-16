@@ -1,10 +1,15 @@
 {
   "nav": {
     "following": "Following",
-    "myThreads": "My threads",
-    "liked": "Liked"
+    "myThreads": "My articles",
+    "liked": "Liked",
+    "saved": "Saved"
   },
-  "spaces": { "title": "Your spaces" },
+  "spaces": {
+    "title": "Your spaces",
+    "follow": "Follow {{name}}",
+    "unfollow": "Unfollow {{name}}"
+  },
   "composer": {
     "placeholder": "Share something with the community…",
     "article": "Article",
@@ -19,14 +24,37 @@
     "untitled": "(untitled)",
     "share": "Share",
     "save": "Save",
-    "saved": "Saved"
+    "saved": "Saved",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied",
+    "copyFailed": "Could not copy the link",
+    "followCategory": "Follow {{name}}",
+    "unfollowCategory": "Unfollow {{name}}",
+    "followTag": "Follow #{{name}}",
+    "unfollowTag": "Unfollow #{{name}}",
+    "edit": "Edit article",
+    "report": "Report",
+    "ownArticle": "Your own article",
+    "like": "Like",
+    "unlike": "Remove like",
+    "signInFirst": "Sign in to do that."
   },
   "feed": {
     "latest": "Latest",
     "following": "Following",
     "top": "Top this week",
     "loading": "Loading…",
-    "empty": "No articles yet. Be the first to publish!"
+    "empty": "No articles yet. Be the first to publish!",
+    "title": {
+      "liked": "Articles you liked",
+      "saved": "Saved articles",
+      "mine": "Your articles"
+    },
+    "backToAll": "Back to all articles",
+    "empty_following": "Follow a category or a tag (the star in Your spaces, or an article’s “…” menu) and its articles show up here.",
+    "empty_liked": "Articles you like show up here.",
+    "empty_saved": "Articles you save show up here.",
+    "empty_mine": "Articles you publish show up here."
   },
   "progression": {
     "topReached": "Top level reached",
@@ -41,7 +69,9 @@
       "likes": "likes"
     }
   },
-  "online": { "title": "Online now" },
+  "online": {
+    "title": "Online now"
+  },
   "suggested": {
     "title": "Suggested people",
     "follow": "+ Follow",
@@ -52,5 +82,12 @@
     "replies_one": "{{count}} reply",
     "replies_other": "{{count}} replies"
   },
-  "tags": { "title": "Popular tags" }
+  "tags": {
+    "title": "Popular tags"
+  },
+  "meCard": {
+    "posts": "posts",
+    "followers": "followers",
+    "following": "following"
+  }
 }

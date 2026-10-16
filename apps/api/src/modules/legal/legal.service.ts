@@ -36,6 +36,11 @@ export const legalService = {
       .map((k) => ({ key: k, publishedAt: byKey.get(k)!.toISOString() }));
   },
 
+  /** Whether joining (and staying) asks for consent: terms or a privacy policy is published. */
+  async consentRequired(): Promise<boolean> {
+    return (await this.listPublished()).some((d) => d.key === "terms" || d.key === "privacy");
+  },
+
   async getPublished(key: LegalDocumentKey): Promise<PublicLegalDocument> {
     const row = await prisma.legalDocument.findUnique({ where: { key } });
     if (!row || row.body === null || !row.publishedAt) throw notFound();

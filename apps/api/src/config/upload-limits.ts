@@ -57,6 +57,12 @@ export const UPLOAD_LIMITS = {
     maxBytes: 5 * MB,
     allowedMimeTypes: ["image/jpeg", "image/png", "image/gif", "image/webp", "image/avif"],
   },
+  // A custom emoji (ACP → Content → Emojis): drawn at text size, so small. GIF for
+  // animated ones; no SVG (it is markup, and these land inside posts).
+  EMOJI: {
+    maxBytes: 256 * KB,
+    allowedMimeTypes: ["image/png", "image/gif", "image/webp"],
+  },
   PLUGIN_PACKAGE: {
     maxBytes: 50 * MB,
     allowedMimeTypes: ["application/zip", "application/octet-stream"],

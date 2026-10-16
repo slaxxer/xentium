@@ -655,7 +655,7 @@
      exactly what the `profileCover` block falls back to on the profile itself. */
   &__cover {
     height: 72px;
-    background: linear-gradient(140deg, var(--c-accent), var(--c-accent-2, var(--c-info)));
+    background: var(--c-accent);
     background-size: cover;
     background-position: center;
   }

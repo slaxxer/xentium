@@ -1,11 +1,14 @@
 {
   "nav": {
     "following": "Abonnements",
-    "myThreads": "Mes sujets",
-    "liked": "Jʼaime"
+    "myThreads": "Mes articles",
+    "liked": "Jʼaime",
+    "saved": "Enregistrés"
   },
   "spaces": {
-    "title": "Vos espaces"
+    "title": "Vos espaces",
+    "follow": "Suivre {{name}}",
+    "unfollow": "Ne plus suivre {{name}}"
   },
   "composer": {
     "placeholder": "Partagez quelque chose avec la communauté…",
@@ -21,14 +24,37 @@
     "untitled": "(sans titre)",
     "share": "Partager",
     "save": "Enregistrer",
-    "saved": "Enregistré"
+    "saved": "Enregistré",
+    "copyLink": "Copier le lien",
+    "linkCopied": "Lien copié",
+    "copyFailed": "Impossible de copier le lien",
+    "followCategory": "Suivre {{name}}",
+    "unfollowCategory": "Ne plus suivre {{name}}",
+    "followTag": "Suivre #{{name}}",
+    "unfollowTag": "Ne plus suivre #{{name}}",
+    "edit": "Modifier l’article",
+    "report": "Signaler",
+    "ownArticle": "Votre propre article",
+    "like": "J’aime",
+    "unlike": "Retirer le j’aime",
+    "signInFirst": "Connectez-vous pour cela."
   },
   "feed": {
     "latest": "Récents",
     "following": "Abonnements",
     "top": "Top de la semaine",
     "loading": "Chargement…",
-    "empty": "Aucun article pour lʼinstant. Soyez le premier à publier !"
+    "empty": "Aucun article pour lʼinstant. Soyez le premier à publier !",
+    "title": {
+      "liked": "Articles que vous aimez",
+      "saved": "Articles enregistrés",
+      "mine": "Vos articles"
+    },
+    "backToAll": "Retour à tous les articles",
+    "empty_following": "Suivez une catégorie ou un tag (l’étoile dans Vos espaces, ou le menu « … » d’un article) et ses articles apparaîtront ici.",
+    "empty_liked": "Les articles que vous aimez apparaissent ici.",
+    "empty_saved": "Les articles que vous enregistrez apparaissent ici.",
+    "empty_mine": "Les articles que vous publiez apparaissent ici."
   },
   "progression": {
     "topReached": "Niveau maximum atteint",
@@ -58,5 +84,10 @@
   },
   "tags": {
     "title": "Tags populaires"
+  },
+  "meCard": {
+    "posts": "publications",
+    "followers": "abonnés",
+    "following": "abonnements"
   }
 }

@@ -56,9 +56,9 @@ const host: PluginHost = {
       const { createModerationCase } = await import("../../modules/moderation/moderationCase.service.js");
       await createModerationCase(opts);
     },
-    autoBanMultiaccounts: async (userIds: string[], reason: string) => {
+    autoBanMultiaccounts: async (userIds: string[], reason: string, textKey?: string) => {
       const { moderationService } = await import("../../modules/moderation/moderation.service.js");
-      return moderationService.autoBanMultiaccounts(userIds, reason);
+      return moderationService.autoBanMultiaccounts(userIds, reason, textKey);
     },
   },
 };
@@ -228,6 +228,7 @@ export class PluginContextImpl implements PluginContext {
       body:     opts.body,
       link:     opts.link,
       channels: opts.channels,
+      i18n:     opts.i18n,
     });
   }
 }

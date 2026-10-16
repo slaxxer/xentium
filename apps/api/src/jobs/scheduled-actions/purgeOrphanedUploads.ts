@@ -118,7 +118,7 @@ async function refsInLayouts(): Promise<string[]> {
  * anything that might be a reference is treated as one.
  */
 async function collectReferenced(): Promise<Set<string>> {
-  const [users, covers, groups, rankImages, logos, articles, articleBodyRefs, legalBodyRefs, legalDraftRefs, layoutRefs] = await Promise.all([
+  const [users, covers, groups, rankImages, logos, articles, articleBodyRefs, legalBodyRefs, legalDraftRefs, layoutRefs, emojis] = await Promise.all([
     prisma.user.findMany({ where: { avatar: { not: null } }, select: { avatar: true } }),
     prisma.user.findMany({ where: { coverImage: { not: null } }, select: { coverImage: true } }),
     prisma.group.findMany({ where: { icon: { not: null } }, select: { icon: true } }),
@@ -134,6 +134,9 @@ async function collectReferenced(): Promise<Set<string>> {
     // ONLY in the document — no column points at them — so without this the files
     // have no reference anywhere and the sweep treats them all as orphans.
     refsInLayouts(),
+    // Every emoji's image, RETIRED ones too: a retired emoji leaves the picker but
+    // posts that used it still show the file.
+    prisma.emoji.findMany({ select: { image: true } }),
   ]);
 
   const set = new Set<string>();
@@ -154,6 +157,7 @@ async function collectReferenced(): Promise<Set<string>> {
   legalBodyRefs.forEach(add);
   legalDraftRefs.forEach(add);
   layoutRefs.forEach(add);
+  emojis.forEach((e) => add(e.image));
   return set;
 }
 

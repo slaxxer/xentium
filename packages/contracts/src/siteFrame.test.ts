@@ -10,7 +10,7 @@ import {
 import { templateKeySchema } from './layout.js';
 
 describe('site frame', () => {
-  it('defaults to full width — the layout every site had before frames', () => {
+  it('defaults to full width — the core look; frame modes are for themes and admins', () => {
     expect(DEFAULT_SITE_FRAME.mode).toBe('full');
     expect(DEFAULT_SITE_FRAME.overrides).toEqual({});
   });
@@ -49,7 +49,9 @@ describe('site frame', () => {
   });
 
   it('builds the background: flat, linear, radial, and an image over the gradient', () => {
-    const bg = DEFAULT_SITE_FRAME.background;
+    // Flat, from the palette.
+    expect(frameBackgroundCss(DEFAULT_SITE_FRAME.background)).toBe('linear-gradient(var(--c-bg-hover), var(--c-bg-hover))');
+    const bg = { ...DEFAULT_SITE_FRAME.background, type: 'gradient' as const, stops: ['#14162a', '#5865f2'], angle: 150 };
     expect(frameBackgroundCss({ ...bg, type: 'color', color: '#123' })).toBe('linear-gradient(#123, #123)');
     expect(frameBackgroundCss(bg)).toBe('linear-gradient(150deg, #14162a 0%, #5865f2 100%)');
     expect(frameBackgroundCss({ ...bg, radial: true, stops: ['#a', '#b', '#c'] as string[] }))

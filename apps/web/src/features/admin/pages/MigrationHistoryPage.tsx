@@ -17,6 +17,7 @@ import {
 } from "./migrationHistory/model";
 import "./acpSystem.scss";
 import "./MigrationHistory.scss";
+import { uiLocale } from "../../../lib/i18n";
 
 // ACP → System → Migration History: every schema deploy and platform import,
 // as a list you can filter and a detail pane with the run's log. A running
@@ -391,7 +392,7 @@ function Detail({ run, status, dur, fmt }: {
                   {complete && <FontAwesomeIcon icon={faCheck} />}
                 </div>
                 <div className="mh-count__value">
-                  {p.done.toLocaleString()} <span className="mh-count__total">/ {p.total.toLocaleString()}</span>
+                  {p.done.toLocaleString(uiLocale())} <span className="mh-count__total">/ {p.total.toLocaleString(uiLocale())}</span>
                 </div>
                 <div className="mh-bar"><span style={{ width: `${Math.min(100, p.total ? (p.done / p.total) * 100 : 100)}%` }} /></div>
               </div>
@@ -403,12 +404,12 @@ function Detail({ run, status, dur, fmt }: {
   } else if (!core && run.summary && Object.keys(run.summary).length) {
     const total = Object.values(run.summary).reduce((a, n) => a + n, 0);
     counts = (
-      <Section title={t("migrations.counts.imported")} aux={t("migrations.counts.importedAux", { count: total, formatted: total.toLocaleString() })}>
+      <Section title={t("migrations.counts.imported")} aux={t("migrations.counts.importedAux", { count: total, formatted: total.toLocaleString(uiLocale()) })}>
         <div className="mh-counts">
           {inLoadOrder(Object.keys(run.summary)).map((k) => [k, run.summary![k]!] as const).map(([k, n]) => (
             <div key={k} className="mh-count">
               <div className="mh-count__label">{t(`migrations.entities.${entityKey(k)}`, { defaultValue: k })}</div>
-              <div className="mh-count__value">{n.toLocaleString()}</div>
+              <div className="mh-count__value">{n.toLocaleString(uiLocale())}</div>
             </div>
           ))}
         </div>

@@ -4,6 +4,14 @@ import type { TimeConfig } from "../lib/datetime";
 
 export type FeatureKey = "articles" | "home" | "members";
 
+export interface SiteAlert {
+  message: string;
+  tone: "info" | "success" | "warning" | "danger";
+  audience: "everyone" | "guests" | "members";
+  dismissible: boolean;
+  link: { url: string; label: string } | null;
+}
+
 export interface SiteConfig {
   features: Record<FeatureKey, boolean>;
   landing: string;
@@ -16,6 +24,8 @@ export interface SiteConfig {
   siteUrl: string;
   /** How dates and times are written (ACP → System Settings → General). */
   time?: TimeConfig;
+  /** The admin's site alert (Settings → Site alert); null when off or empty. */
+  alert?: SiteAlert | null;
   /** Public auth-form config (login identifier + registration name collection). */
   auth: {
     loginMethod: "email" | "username" | "either";

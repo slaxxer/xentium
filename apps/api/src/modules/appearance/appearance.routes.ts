@@ -68,7 +68,7 @@ appearanceRouter.get("/css", async (req, res, next) => {
       // The draft of the theme an editor is previewing (`?theme=`, else the active one):
       // what it ships, under the admin's staged edits to it.
       const key = await resolveEditingKey(req.query.theme);
-      css = await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens(key), { key });
+      css = await appearanceService.buildCSS(await appearanceService.getEffectiveDraftTokens(key), { key, draft: true });
     } else {
       // Still the LIVE sheet with a colourway over it, so it keeps its version stamp:
       // an admin's publish must still reach a reader who only changed the accent.
@@ -160,8 +160,8 @@ appearanceRouter.put("/tokens", adminGuard, async (req, res, next) => {
       label:  z.string().optional(),
     }).parse(req.body);
 
-    // Edits land in the DRAFT — they go live only on publish (Run now or the
-    // scheduled appearance-publish job). No version bump here, so other clients
+    // Edits land in the DRAFT — they go live only on the Theme Studio's Publish.
+    // No version bump here, so other clients
     // keep seeing the published theme until publish.
     await appearanceService.saveDraftTokens(body.tokens, req.userId!, await themeOf(req));
     res.json({ ok: true });
@@ -203,20 +203,21 @@ appearanceRouter.get("/custom-css", adminGuard, async (req, res, next) => {
     // concatenated would save the theme's stylesheet as the admin's own, and the next
     // theme update would have nothing left to inherit. `theme` is additive, and it is
     // the STAGED layer so the console agrees with the preview during the window between
-    // importing a theme and publishing it.
+    // importing a theme and publishing it. `css` is the admin's DRAFT (the live sheet
+    // while nothing is staged): the console edits what Publish will put live.
     const [admin, theme] = await Promise.all([
-      appearanceService.getCustomCss(key),
+      appearanceService.getDraftCustomCss(key),
       appearanceService.getThemeCustomCss(key),
     ]);
     res.json({ css: admin, theme });
   } catch (err) { next(err); }
 });
 
-// Admin — save raw per-theme custom CSS (trusted boundary; bumps style version → live sync)
+// Admin — stage raw per-theme custom CSS. Goes live with the Theme Studio's Publish.
 appearanceRouter.put("/custom-css", adminGuard, async (req, res, next) => {
   try {
     const body = z.object({ css: z.string().max(100_000) }).parse(req.body);
-    await appearanceService.saveCustomCss(body.css, await themeOf(req));
+    await appearanceService.saveDraftCustomCss(body.css, await themeOf(req));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });
@@ -252,10 +253,11 @@ appearanceRouter.post("/reset", adminGuard, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Admin — one theme's site font (family / weight / size). Live on save, as it always was.
+// Admin — one theme's site font (family / weight / size), as STAGED: the editor edits
+// the draft, and the Theme Studio's Publish puts it live with the colours.
 appearanceRouter.get("/font", adminGuard, async (req, res, next) => {
   try {
-    res.json(await appearanceService.getFont(await themeOf(req)));
+    res.json(await appearanceService.getDraftFont(await themeOf(req)));
   } catch (err) { next(err); }
 });
 
@@ -266,7 +268,7 @@ appearanceRouter.put("/font", adminGuard, async (req, res, next) => {
       weight: z.string().max(10).optional(),
       size:   z.string().max(10).optional(),
     }).parse(req.body ?? {});
-    await appearanceService.saveFont(body, await themeOf(req));
+    await appearanceService.saveDraftFont(body, await themeOf(req));
     res.json({ ok: true });
   } catch (err) { next(err); }
 });

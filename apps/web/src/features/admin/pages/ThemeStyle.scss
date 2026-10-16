@@ -186,6 +186,8 @@
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    /* A button centres by default, which shows once a long title wraps. */
+    text-align: start;
     color: var(--c-fg-subtle);
     background: none;
     border: none;

@@ -1,0 +1,33 @@
+{
+  "templates": {
+    "notification": {
+      "subject": "{{title}} — {{site_name}}",
+      "body": "<h2>{{title}}</h2><p>{{body}}</p><p>{{link_button}}</p><hr><p>You're receiving this because you have notifications enabled. Manage your preferences in Account Settings.</p>"
+    },
+    "password_reset": {
+      "subject": "Reset your {{site_name}} password",
+      "body": "<h2>Reset your password</h2><p>We received a request to reset your password. Click the button below to choose a new one. This link expires in {{expiry_minutes}} minutes and can only be used once.</p><p>{{reset_button}}</p><p>If you didn't request this, you can safely ignore this email — your password will stay the same.</p>"
+    },
+    "magic_link": {
+      "subject": "Your sign-in link for {{site_name}}",
+      "body": "<h2>Sign in to {{site_name}}</h2><p>Click the button below to sign in. This link expires in {{expiry_minutes}} minutes and can only be used once.</p><p>{{login_button}}</p><p>If you didn't ask for this, ignore this email. Nobody can sign in without the link.</p>"
+    },
+    "email_verify": {
+      "subject": "Verify your email — {{site_name}}",
+      "body": "<h2>Verify your email</h2><p>Enter this code in the registration form to complete your account setup. It expires in {{expiry_minutes}} minutes.</p><p>{{code_box}}</p><p>If you didn't request this, you can safely ignore this email.</p>"
+    },
+    "email_change": {
+      "subject": "Your email change verification code — {{site_name}}",
+      "body": "<h2>Confirm your new email</h2><p>Enter this code to confirm {{new_email}} as your new email address. It expires in {{expiry_minutes}} minutes.</p><p>{{code_box}}</p><p>If you didn't request this, you can safely ignore this email — your address is unchanged.</p>"
+    },
+    "smtp_test": {
+      "subject": "SMTP test — {{site_name}}",
+      "body": "<h2>Outbound mail works</h2><p>This is the test message from {{site_name}}. If you are reading it, the SMTP settings in your ACP are correct and mail is leaving the server.</p><p>Sent from {{site_url}}</p>"
+    }
+  },
+  "buttons": {
+    "view": "View →",
+    "reset": "Reset password →",
+    "signIn": "Sign in →"
+  }
+}

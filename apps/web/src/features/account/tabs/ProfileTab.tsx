@@ -16,6 +16,7 @@
  * it cannot flatter. Only the bio and the links follow what is being typed, because
  * those are the values on this page.
  */
+import { formatBytes } from "../../../lib/bytes";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -35,6 +36,8 @@ import { SaveBar } from "../components/SaveBar";
 import { Username } from "../../../components/Username";
 import { primaryBadgeColor } from "../../../lib/groupBadge";
 import { RankBadge } from "../../../components/RankBadge";
+import { uiLocale } from "../../../lib/i18n";
+import { fieldLabel } from "../../../lib/coreText";
 
 interface FieldDef {
   id: string;
@@ -71,9 +74,7 @@ type Values = Record<string, Entry>;
 
 /** Bytes as a member reads them — the rank limit is stored in bytes. */
 function readableSize(bytes: number): string {
-  return bytes >= 1_048_576
-    ? `${Math.round((bytes / 1_048_576) * 10) / 10} MB`
-    : `${Math.round(bytes / 1024)} KB`;
+  return formatBytes(bytes);
 }
 
 export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
@@ -286,7 +287,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                 key={e.field.id}
                 variant="link"
                 htmlFor={`lf-${e.field.id}`}
-                label={e.field.label}
+                label={fieldLabel(e.field)}
                 control={
                   <span className="acct-inputwrap">
                     <FontAwesomeIcon className="acct-ic" icon={LINK_ICONS[e.field.key] ?? faLink} />
@@ -316,7 +317,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
               const isDob = f.key === "date_of_birth";
               return (
                 <div key={f.id} className="acct-row acct-row--field">
-                  <label className="acct-row__label" htmlFor={`pf-${f.id}`}>{f.label}</label>
+                  <label className="acct-row__label" htmlFor={`pf-${f.id}`}>{fieldLabel(f)}</label>
                   <input
                     id={`pf-${f.id}`}
                     className="account-input"
@@ -328,7 +329,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                   <select
                     className="account-select"
                     value={cur.privacy}
-                    aria-label={t("profile.fieldVisibility", { label: f.label })}
+                    aria-label={t("profile.fieldVisibility", { label: fieldLabel(f) })}
                     onChange={(ev) => setEntry(f.id, { privacy: ev.target.value })}
                   >
                     {PRIVACY_OPTIONS.map((o) => (
@@ -394,7 +395,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
             <span className="acct-preview__handle">
               @{user?.username}
               {user?.createdAt && ` · ${t("profile.joined", {
-                date: new Date(user.createdAt).toLocaleDateString(undefined, { month: "long", year: "numeric" }),
+                date: new Date(user.createdAt).toLocaleDateString(uiLocale(), { month: "long", year: "numeric" }),
               })}`}
             </span>
             <p className={`acct-preview__bio${bio.trim() ? "" : " is-empty"}`}>

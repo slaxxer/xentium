@@ -28,6 +28,7 @@ import {
   type TemplateKey,
 } from "@xentium/contracts";
 import { getBlock } from "../../../layout/blockRegistry";
+import { blockLabel } from "../../../lib/coreText";
 
 /** Where a dragged block would land. `parentId: null` is the region's own list. */
 export interface DropAt { region: string; parentId: string | null; index: number }
@@ -203,8 +204,8 @@ export function TreeNode({
         <span className="lay__node-label">
           {/* `title` because the rail is 288px and nests: a long label ellipsises,
               and the full one has to stay reachable without opening anything. */}
-          <span className="lay__node-name" title={def?.editorMeta?.label ?? node.type}>
-            {def?.editorMeta?.label ?? node.type}
+          <span className="lay__node-name" title={blockLabel(node.type)}>
+            {blockLabel(node.type)}
             {!def && <em> · {ctx.t("layoutEditor.unavailable")}</em>}
           </span>
           {/* The TYPE, under the name. A label is what a block is called and a type is

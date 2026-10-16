@@ -27,6 +27,7 @@ export function UserAvatar({ user, size = 36, className }: UserAvatarProps) {
         alt={user.username}
         style={{ ...style, objectFit: "cover" }}
         className={className}
+        data-user-card={user.username}
       />
     );
   }
@@ -36,6 +37,7 @@ export function UserAvatar({ user, size = 36, className }: UserAvatarProps) {
       className={`ua-initials${className ? ` ${className}` : ""}`}
       style={{ ...style, fontSize: size * 0.36 }}
       aria-label={user.username}
+      data-user-card={user.username}
     >
       {initials}
     </div>

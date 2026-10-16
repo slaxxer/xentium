@@ -21,7 +21,7 @@
  * switched off appears nowhere. See `useComposerConfig`.
  */
 import {
-  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type ReactNode,
+  forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState, type DragEvent, type ReactNode,
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useEditor, EditorContent } from "@tiptap/react";
@@ -45,6 +45,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { COMPOSER_TOOLS } from "./composerTools";
 import { buildMentionSuggestion } from "./mentions";
 import { BlockPicker, OverflowTray, LinkPopover, EmojiPicker } from "./popovers";
+import { EmojiNode } from "./emojiNode";
 import { useComposerConfig } from "./useComposerConfig";
 import "./Composer.scss";
 import { Username } from "../Username";
@@ -59,6 +60,8 @@ export interface ComposerHandle {
   getJSON:    () => JSONContent | null;
   isEmpty:    () => boolean;
   setContent: (html: string) => void;
+  /** Plain text at the cursor (an email placeholder); emits an update like typing does. */
+  insertText: (text: string) => void;
   clear:      () => void;
   focus:      () => void;
 }
@@ -83,6 +86,11 @@ export interface ComposerProps {
    * extension set, which has none). Hides the tool and the hint as well. Default on.
    */
   mentions?:   boolean;
+  /**
+   * Off where a surface will never take a file, so the paperclip is not drawn at all
+   * rather than drawn disabled (a layout's rich text block). Default on.
+   */
+  attachments?: boolean;
   disabled?:   boolean;
   /** Ctrl/⌘+Enter, and the primary button. */
   onSubmit?:   () => void;
@@ -110,6 +118,15 @@ export interface ComposerProps {
    */
   canAttach?:  boolean;
   onAttach?:   () => void;
+  /**
+   * Files dropped anywhere on the editor, when `canAttach`. The caller takes them
+   * the same way as files picked through the paperclip. Absent = dropping a file
+   * does nothing (and the footer does not offer it).
+   *
+   * ⚠ Taken in the CAPTURE phase and stopped there: otherwise ProseMirror sees the
+   * drop too and the browser opens the file in place of the page.
+   */
+  onDropFiles?: (files: File[]) => void;
   /** `dock` only: Enter sends, Shift+Enter is a newline. */
   enterSends?: boolean;
   /**
@@ -150,18 +167,18 @@ function shortcutLabel(): string {
 
 export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Composer({
   variant = "panel",
-  onChange, placeholder, initialHtml, initialJson, onChangeJson, extraExtensions, mentions = true,
+  onChange, placeholder, initialHtml, initialJson, onChangeJson, extraExtensions, mentions = true, attachments = true,
   disabled, onSubmit, submitLabel, busy,
   onCancel, minHeight, className, replyTo, onDismissReply,
-  canAttach, onAttach, enterSends, submitInBar = true,
+  canAttach, onAttach, onDropFiles, enterSends, submitInBar = true,
   toolbarPosition = "bottom", showStats, renderPreview,
 }, ref) {
   const { t } = useTranslation("common");
   const { user } = useAuth();
   const { config, tools: allTools } = useComposerConfig();
   const tools = useMemo(
-    () => (mentions ? allTools : allTools.filter((x) => x.id !== "mention")),
-    [allTools, mentions],
+    () => allTools.filter((x) => (mentions || x.id !== "mention") && (attachments || x.id !== "attach")),
+    [allTools, mentions, attachments],
   );
 
   /** `inline` starts closed; every other variant is open from the start. */
@@ -205,6 +222,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       Subscript,
       Superscript,
       Placeholder.configure({ placeholder: placeholder ?? t("composer.placeholder") }),
+      // The site's own emojis (ACP → Content → Emojis), inline images.
+      EmojiNode,
       /**
        * ⚠ Mentions on EVERY surface now, unless an admin switched them off. The
        * extension has to be present from the start: TipTap's extension list is fixed
@@ -288,6 +307,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
     getJSON:    () => editor?.getJSON() ?? null,
     isEmpty:    () => editor?.isEmpty ?? true,
     setContent: (html) => { editor?.commands.setContent(html); onChange?.(html); },
+    insertText: (text) => { editor?.chain().focus().insertContent({ type: "text", text }).run(); },
     clear:      () => {
       editor?.commands.clearContent(true);
       onChange?.("");
@@ -454,6 +474,43 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
    * beside it), and printing them twice is how the old editors ended up with a dead
    * "Ctrl+Enter to post" string nobody maintained.
    */
+  /* ── Dropping files ─────────────────────────────────────────────────────── */
+
+  const canDrop = !!(canAttach && onDropFiles && !disabled);
+  const [dropping, setDropping] = useState(false);
+  // dragenter/dragleave fire for every child the pointer crosses; count them so the
+  // highlight does not flicker off over the toolbar.
+  const dragDepth = useRef(0);
+  const carriesFiles = (e: DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
+  const dropHandlers = canDrop ? {
+    onDragEnterCapture: (e: DragEvent) => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      dragDepth.current += 1;
+      setDropping(true);
+    },
+    onDragOverCapture: (e: DragEvent) => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "copy";
+    },
+    onDragLeaveCapture: (e: DragEvent) => {
+      if (!carriesFiles(e)) return;
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setDropping(false);
+    },
+    onDropCapture: (e: DragEvent) => {
+      if (!carriesFiles(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragDepth.current = 0;
+      setDropping(false);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length) onDropFiles!(files);
+    },
+  } : {};
+
   const stats = (
     <div className="nvc-stats">
       {mentions && <span><FontAwesomeIcon className="nvc-ic" icon={faAt} />{t("composer.hintMention")}</span>}
@@ -464,7 +521,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           <kbd>{shortcut.replace("↵", "")}</kbd><kbd>↵</kbd>{t("composer.hintPost")}
         </span>
       )}
-      {canAttach && (
+      {canDrop && (
         <span><FontAwesomeIcon className="nvc-ic" icon={faPaperclip} />{t("composer.hintDrop")}</span>
       )}
       <span className="nvc-stats__count">
@@ -513,8 +570,10 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         "nvc",
         `nvc--${variant}`,
         disabled ? "is-disabled" : "",
+        dropping ? "is-dropping" : "",
         className ?? "",
       ].filter(Boolean).join(" ")}
+      {...dropHandlers}
     >
       {/* Who is writing, and Write / Preview. The inline variant only. */}
       {variant === "inline" && (
@@ -558,7 +617,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           {popover === "emoji" && (
             <div className="nvc-dock__pop">
               <EmojiPicker onClose={() => setPopover(null)}
-                onPick={(emoji) => editor?.chain().focus().insertContent(emoji).run()} />
+                onPick={(emoji) => editor?.chain().focus().insertContent({ type: "xtEmoji", attrs: { src: emoji.url, code: emoji.shortcode } }).run()} />
             </div>
           )}
         </div>
@@ -622,7 +681,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             <div className="nvc-dock__pop">
               <EmojiPicker
                 onClose={() => setPopover(null)}
-                onPick={(emoji) => editor?.chain().focus().insertContent(emoji).run()}
+                onPick={(emoji) => editor?.chain().focus().insertContent({ type: "xtEmoji", attrs: { src: emoji.url, code: emoji.shortcode } }).run()}
               />
             </div>
           )}

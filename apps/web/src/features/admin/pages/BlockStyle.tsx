@@ -39,6 +39,9 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import { faRotateRight } from "@fortawesome/free-solid-svg-icons";
 import {
   BLOCK_VARIANTS,
+  HEADING_FONTS,
+  HEADING_FONT_STACKS,
+  type HeadingFont,
   VARIANT_TOKEN_ROWS,
   variantClass,
   variantScopeId,
@@ -108,6 +111,8 @@ export function BlockStyleFields({
   onVariantChange,
   className,
   onClassNameChange,
+  headingFont,
+  onHeadingFontChange,
   /** True for a block that can hold others — the ones a surface makes sense on. */
   isContainer,
   /** CSS for the preview iframe, so a token edit is visible before it is saved. */
@@ -120,6 +125,9 @@ export function BlockStyleFields({
    *  image tile is the case it exists for. */
   className: string | undefined;
   onClassNameChange: (next: string | undefined) => void;
+  /** `undefined` = the site's own heading face. Any block, like the handle. */
+  headingFont: HeadingFont | undefined;
+  onHeadingFontChange: (next: HeadingFont | undefined) => void;
   isContainer: boolean;
   onPreviewCss: (css: string) => void;
 }) {
@@ -245,6 +253,28 @@ export function BlockStyleFields({
           }}
         />
         <p className="acp-hint lay__vis-note">{t("layoutEditor.classNameNote")}</p>
+      </div>
+
+      {/* The face this block's headings are set in, apart from the rest of the page.
+          Any block: a section passes it to everything inside, a single heading block
+          takes it alone. Each option is drawn in its own face. */}
+      <div className="lay__style-class">
+        <label className="acp-label" htmlFor="xt-block-heading-font">
+          {t("layoutEditor.headingFont")}
+        </label>
+        <select
+          id="xt-block-heading-font"
+          className="acp-input"
+          value={headingFont ?? ""}
+          style={headingFont ? { fontFamily: HEADING_FONT_STACKS[headingFont] } : undefined}
+          onChange={(e) => onHeadingFontChange((e.target.value || undefined) as HeadingFont | undefined)}
+        >
+          <option value="">{t("layoutEditor.headingFontSite")}</option>
+          {HEADING_FONTS.map((f) => (
+            <option key={f} value={f} style={{ fontFamily: HEADING_FONT_STACKS[f] }}>{f}</option>
+          ))}
+        </select>
+        <p className="acp-hint lay__vis-note">{t("layoutEditor.headingFontNote")}</p>
       </div>
 
       {!isContainer ? (

@@ -52,10 +52,12 @@ export const FRAME_LIMITS = {
 } as const;
 
 export const siteFrameBackgroundSchema = z.object({
-  type:   z.enum(FRAME_BACKGROUNDS).default('gradient'),
-  color:  cssColorSchema.default('#1b1e36'),
+  // Flat, and from the palette: what a boxed page sits on once an admin picks a box.
+  // The stops are only what a switch to "gradient" starts from.
+  type:   z.enum(FRAME_BACKGROUNDS).default('color'),
+  color:  cssColorSchema.default('var(--c-bg-hover)'),
   /** Two or three stops. `var(--c-*)` is allowed, and is what a theme should use. */
-  stops:  z.array(cssColorSchema).min(2).max(3).default(['#14162a', '#5865f2']),
+  stops:  z.array(cssColorSchema).min(2).max(3).default(['var(--c-bg-hover)', 'var(--c-border)']),
   angle:  z.number().int().min(0).max(360).default(150),
   radial: z.boolean().default(false),
   /**
@@ -69,6 +71,7 @@ export const siteFrameBackgroundSchema = z.object({
 });
 
 export const siteFrameSchema = z.object({
+  // The core look is full width: the frame modes are there for a theme or an admin.
   mode:      z.enum(FRAME_MODES).default('full'),
   maxWidth:  z.number().int().min(FRAME_LIMITS.maxWidth.min).max(FRAME_LIMITS.maxWidth.max).default(1280),
   radius:    z.number().int().min(FRAME_LIMITS.radius.min).max(FRAME_LIMITS.radius.max).default(18),

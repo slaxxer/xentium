@@ -38,7 +38,7 @@ import { Username } from "../../components/Username";
 import {
   ArticleFeed,
   DEFAULT_CONFIG,
-  GATE_COPY,
+  gateCopy,
   Icon,
   MergedFeed,
   Rail,
@@ -94,9 +94,10 @@ function GuestSurface({ children }: { children?: React.ReactNode }) {
   const [toast, setToast] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const navigate = useNavigate();
+  const { t } = useTranslation("common", { keyPrefix: "guestHome" });
 
   const gate = useCallback((kind: string) => {
-    setToast(GATE_COPY[kind] ?? GATE_COPY.default!);
+    setToast(gateCopy(kind));
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => setToast(""), 4200);
   }, []);
@@ -109,7 +110,7 @@ function GuestSurface({ children }: { children?: React.ReactNode }) {
         <div className={`gtoast${toast ? " is-show" : ""}`}>
           <Icon name="sparkles" size={18} />
           <b>{toast || ""}</b>
-          <button onClick={() => { setToast(""); navigate("/register"); }}>Sign up free</button>
+          <button onClick={() => { setToast(""); navigate("/register"); }}>{t("signUpFree")}</button>
         </div>
       </div>
     </GateContext.Provider>
@@ -152,6 +153,7 @@ function GuestHeroText({ props }: BlockProps<{
   ctaPrimary: LocalizedText; ctaSecondary: LocalizedText; showStats: boolean;
 }>) {
   const navigate = useNavigate();
+  const { t } = useTranslation("common", { keyPrefix: "guestHome.stats" });
   const stats = useStats();
   const online = useOnline();
 
@@ -179,9 +181,9 @@ function GuestHeroText({ props }: BlockProps<{
       </div>
       {props.showStats && (
         <div className="ghero__stats">
-          <div className="gstat"><div className="gstat__n">{stats?.members ?? 0}</div><div className="gstat__l">Members</div></div>
-          <div className="gstat"><div className="gstat__n">{stats?.articles ?? 0}</div><div className="gstat__l">Posts</div></div>
-          <div className="gstat"><div className="gstat__n">{stats?.today ?? 0}</div><div className="gstat__l">New today</div></div>
+          <div className="gstat"><div className="gstat__n">{stats?.members ?? 0}</div><div className="gstat__l">{t("members")}</div></div>
+          <div className="gstat"><div className="gstat__n">{stats?.articles ?? 0}</div><div className="gstat__l">{t("posts")}</div></div>
+          <div className="gstat"><div className="gstat__n">{stats?.today ?? 0}</div><div className="gstat__l">{t("today")}</div></div>
         </div>
       )}
     </div>
@@ -199,7 +201,8 @@ registerBlock({
   type:   "guestPresence",
   schema: blockPropSchemas.guestPresence,
   editorMeta: { label: "Happening right now", category: "data", ...ON_HOME },
-  component: ({ props }: BlockProps<{ rows: number }>) => {
+  component: function GuestPresence({ props }: BlockProps<{ rows: number }>) {
+    const { t } = useTranslation("common", { keyPrefix: "guestHome.presence" });
     const recent = useQuery({
       queryKey: ["guest-recent"],
       queryFn: () => articlesApi.list({ page: 1, limit: 3, feed: "latest" }),
@@ -209,12 +212,12 @@ registerBlock({
     return (
       <div className="ghero__side">
         <div className="gpresence">
-          <div className="gpresence__head"><b>Happening right now</b><span className="gpresence__live"><i />Live</span></div>
+          <div className="gpresence__head"><b>{t("title")}</b><span className="gpresence__live"><i />{t("live")}</span></div>
           {recent.slice(0, props.rows).map((a) => (
             <div className="gpresence__row" key={a.id}>
               <Avatar user={{ username: a.author.username, avatar: a.author.avatar }} size={38} />
               <div className="gpresence__txt">
-                <b><Username username={a.author.username} badgeColor={a.author.badgeColor} /></b><span>posted in {a.category?.name ?? "the community"}</span>
+                <b><Username username={a.author.username} badgeColor={a.author.badgeColor} /></b><span>{a.category ? t("postedIn", { category: a.category.name }) : t("postedInCommunity")}</span>
               </div>
               <span className="gpresence__dot" />
             </div>
@@ -272,21 +275,26 @@ registerBlock({
       queryKey: ["popular-tags"], queryFn: () => articlesApi.popularTags(),
     }).data ?? [];
 
+    // Every guest style is scoped under `.guest-home`, which the surface draws — and
+    // the shipped home puts this rail in the page's `aside`, outside the surface. The
+    // `--part` modifier takes the scope without the surface's width and padding.
     return (
-      <Rail
-        onRegister={() => navigate("/register")}
-        onLogin={() => navigate("/login")}
-        categories={categories}
-        online={online}
-        tags={tags}
-        // `Rail` still takes the old `sections` shape; the toggles that used to be
-        // one setting are per-block props now. `stats`/`presence` are not its
-        // business — those are their own blocks.
-        sections={{
-          stats: false, presence: false,
-          categories: props.showCategories, online: props.showOnline, tags: props.showTags,
-        }}
-      />
+      <div className="guest-home guest-home--part">
+        <Rail
+          onRegister={() => navigate("/register")}
+          onLogin={() => navigate("/login")}
+          categories={categories}
+          online={online}
+          tags={tags}
+          // `Rail` still takes the old `sections` shape; the toggles that used to be
+          // one setting are per-block props now. `stats`/`presence` are not its
+          // business — those are their own blocks.
+          sections={{
+            stats: false, presence: false,
+            categories: props.showCategories, online: props.showOnline, tags: props.showTags,
+          }}
+        />
+      </div>
     );
   },
 });

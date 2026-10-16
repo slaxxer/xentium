@@ -11,10 +11,13 @@ coverage/
 playwright-report/
 **/src/generated/
 CLAUDE.md
+LAST_CODEBASEUPDATE.md
 /PLUGINS
 /UPDATES
 /docs/adr/
 /docs/architecture-review.md
+/docs/security-detection.md
+/docs/rename-to-xentium.md
 # IDE
 .idea/
 d0cs

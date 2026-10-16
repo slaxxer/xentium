@@ -96,6 +96,10 @@ const REPAIRS: CounterRepair[] = [
     label: "profile_comments.like_count", table: "xcf_profile_comments", column: "like_count",
     correct: `(SELECT COUNT(*) FROM xcf_profile_comment_likes pl WHERE pl.comment_id = t.id)`,
   },
+  {
+    label: "profile_comments.dislike_count", table: "xcf_profile_comments", column: "dislike_count",
+    correct: `(SELECT COUNT(*) FROM xcf_profile_comment_dislikes pd WHERE pd.comment_id = t.id)`,
+  },
 ];
 
 /** Rows whose stored counter disagrees with the recomputed value. */

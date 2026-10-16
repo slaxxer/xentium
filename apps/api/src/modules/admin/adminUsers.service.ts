@@ -91,7 +91,7 @@ async function onlineIds(ids: string[]): Promise<Set<string>> {
  * cannot disagree about what "flagged" means.
  */
 const DERIVED = Prisma.sql`
-  (SELECT max(s."lastUsedAt") FROM xcf_sessions s WHERE s."userId" = u.id) AS last_seen,
+  GREATEST(u.last_seen_at, (SELECT max(s."lastUsedAt") FROM xcf_sessions s WHERE s."userId" = u.id)) AS last_seen,
   (SELECT count(*)::int FROM xcf_login_events e
      WHERE e."userId" = u.id AND e.success = false
        AND e."createdAt" > now() - interval '24 hours') AS failed24,

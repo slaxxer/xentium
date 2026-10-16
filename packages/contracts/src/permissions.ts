@@ -60,6 +60,9 @@ export const CorePermissions = {
   // the text is the operator's legal statement.
   LEGAL_MANAGE: "legal.manage",
 
+  // Custom emojis the editor offers (ACP → Content → Emojis). Admin-only by default.
+  EMOJI_MANAGE: "emoji.manage",
+
   // Plugins
   PLUGIN_INSTALL: "plugin.install",
   PLUGIN_ENABLE: "plugin.enable",

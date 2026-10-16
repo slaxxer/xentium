@@ -4,10 +4,16 @@ import { redis, rkey } from "../../infrastructure/redis.js";
 import { ONLINE_TTL_MS } from "../../shared/middleware/requireAuth.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { primaryGroupOrder } from "../../shared/utils/userRef.js";
+import { optionalAuth } from "../../shared/middleware/requireAuth.js";
+import { countGuests, noteRecord, touchGuest } from "../../shared/utils/onlineStats.js";
 
 export const onlineRouter: Router = Router();
 
-onlineRouter.get("/", async (_req, res) => {
+/**
+ * Who is here: members (with names and groups), how many guests, and the record of
+ * visitors at once. The footer's poll is also how a guest is counted (`touchGuest`).
+ */
+onlineRouter.get("/", optionalAuth, async (req, res) => {
   try {
     const now   = Date.now();
     const since = now - ONLINE_TTL_MS;
@@ -16,8 +22,12 @@ onlineRouter.get("/", async (_req, res) => {
     await redis.zremrangebyscore(rkey("online:users"), 0, since);
     const onlineIds = await redis.zrangebyscore(rkey("online:users"), since, "+inf");
 
+    await touchGuest(req);
+    const guests = await countGuests();
+    const record = await noteRecord(onlineIds.length + guests);
+
     if (onlineIds.length === 0) {
-      return res.json({ total: 0, groups: [] });
+      return res.json({ total: 0, groups: [], users: [], guests, record });
     }
 
     const users = await prisma.user.findMany({
@@ -79,8 +89,10 @@ onlineRouter.get("/", async (_req, res) => {
       total:  onlineIds.length,
       groups: [...groupMap.values()].sort((a, b) => b.count - a.count),
       users:  userList.sort((a, b) => a.username.localeCompare(b.username)),
+      guests,
+      record,
     });
   } catch {
-    res.json({ total: 0, groups: [] });
+    res.json({ total: 0, groups: [], guests: 0, record: null });
   }
 });

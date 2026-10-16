@@ -4,6 +4,7 @@ import { redis, rkey } from "../../infrastructure/redis.js";
 import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { finishSignIn, type SignInContext, type SignInResult } from "./auth.signin.js";
+import { recipientLocale } from "../../shared/i18n/serverText.js";
 
 /**
  * "Email me a sign-in link": a one-time link that signs the member in.
@@ -26,7 +27,7 @@ interface Pending { userId: string; persistent: boolean }
  * Always resolves the same way, whether or not the address has an account —
  * the answer must not tell anyone who is registered here.
  */
-export async function requestMagicLink(email: string, persistent: boolean): Promise<void> {
+export async function requestMagicLink(email: string, persistent: boolean, localeHint?: string): Promise<void> {
   const user = await prisma.user.findFirst({
     where: { email: { equals: email.trim(), mode: "insensitive" } },
     select: { id: true, email: true, username: true, isActive: true },
@@ -43,7 +44,7 @@ export async function requestMagicLink(email: string, persistent: boolean): Prom
     login_url: link,
     username: user.username,
     expiry_minutes: String(MAGIC_LINK_TTL_SEC / 60),
-  });
+  }, await recipientLocale({ userId: user.id, hint: localeHint }));
   const sent = await sendEmail(user.email, mail.subject, mail.html);
   if (!sent) {
     // Dev fallback, as for reset links: without SMTP the link goes to stderr.

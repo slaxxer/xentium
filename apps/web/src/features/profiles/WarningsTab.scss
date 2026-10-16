@@ -124,14 +124,16 @@
 
 .std-item {
   padding: 12px 14px;
-  border: 1px solid var(--c-border);
-  border-left: 3px solid var(--c-border-hi);
+  /* One even border round the whole box, in the state's colour (no heavier left edge). */
+  border: 1px solid var(--c-border-hi);
   border-radius: var(--radius-md);
   background: var(--c-bg);
 
-  &--active { border-left-color: var(--c-warn); }
+  &--active { border-color: var(--c-warn); }
   &--expired, &--pardoned { opacity: 0.72; }
-  &--pardoned { border-left-color: var(--c-success); }
+  &--pardoned { border-color: var(--c-success); }
+  /* A ban in force is the stronger sanction: red, where an active warning is orange. */
+  &--ban#{&}--active { border-color: var(--c-danger); }
 }
 .std-item__reason { margin: 0 0 6px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg); white-space: pre-wrap; }
 .std-item__meta {

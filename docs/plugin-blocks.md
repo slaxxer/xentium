@@ -148,6 +148,10 @@ The mirrored block carries your `pluginId`, so disabling your plugin removes it,
 admin's document keeps the node, since an unknown type is skipped and kept. Enable it
 again and it comes back where they put it.
 
+**Header widget blocks get an Icon field.** The admin can swap your widget's icon from
+the block's settings; your component receives it as `icon`. See
+[header widgets](plugin-registries.md#pages-and-header-widgets-slotregistryregisterroute-registerheaderwidget).
+
 **Layout widgets keep their outlet check.** Your component still gets an `outlet` and
 still decides whether to render; changing that would blank out every existing widget.
 The difference is that the *admin* now picks which outlet the block renders as. They

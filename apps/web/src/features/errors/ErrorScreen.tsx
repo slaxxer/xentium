@@ -9,6 +9,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { formatReport, type ClientErrorReport } from "../../lib/clientErrors";
 import "./ErrorScreen.scss";
+import { uiLocale } from "../../lib/i18n";
 
 /** A chunk failure auto-reloads at most once a minute — a missing bundle that
  *  stays missing (a broken deploy) must not put the tab in a reload loop. */
@@ -196,7 +197,7 @@ export function ErrorScreen({ report, variant = "full", onRetry }: ErrorScreenPr
               <dt>{t("errorPage.metaRoute", { defaultValue: "Route" })}</dt>
               <dd>{report.route || "—"}</dd>
               <dt>{t("errorPage.metaTime", { defaultValue: "Time" })}</dt>
-              <dd>{new Date(report.at).toLocaleString()}</dd>
+              <dd>{new Date(report.at).toLocaleString(uiLocale())}</dd>
               <dt>{t("errorPage.metaMessage", { defaultValue: "Message" })}</dt>
               <dd className="xt-err__meta-msg">{report.message}</dd>
             </dl>

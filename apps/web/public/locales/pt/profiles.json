@@ -34,7 +34,6 @@
   "pageOf": "Página {{page}} de {{total}}",
   "noFollowers": "Ainda não há seguidores.",
   "noFollowing": "Ainda não segue ninguém.",
-  "newArticle": "+ Novo artigo",
   "loadingArticles": "A carregar artigos…",
   "emptyOwn": "Ainda não publicou nada.",
   "emptyOther": "{{username}} ainda não publicou nenhum artigo.",
@@ -55,14 +54,26 @@
   "noComments": "Ainda não há comentários.",
   "postError": "Não foi possível publicar o comentário. Tente novamente.",
   "deleteError": "Não foi possível eliminar o comentário. Tente novamente.",
+  "delete": "Excluir",
+  "cancel": "Cancelar",
+  "deleteConfirmTitle": "Excluir este comentário?",
+  "deleteConfirmBody": "O comentário e as respostas a ele são removidos do mural.",
+  "reply": "Responder",
+  "replyPlaceholder": "Responda a {{username}}…",
+  "report": "Denunciar",
+  "reportTitle": "Denunciar comentário",
+  "reportSub": "Diga aos moderadores o que há de errado com este comentário.",
+  "reportPlaceholder": "Descreva o problema…",
+  "reportSubmit": "Enviar denúncia",
+  "reportSent": "Denúncia enviada. Obrigado.",
+  "reportError": "Não foi possível enviar a denúncia.",
+  "reportTooShort": "Descreva o problema em poucas palavras.",
   "likeError": "Não foi possível atualizar o gosto. Tente novamente.",
-  "deleteComment": "Eliminar comentário",
   "edited": "editado",
   "like": "Gosto",
   "unlike": "Já não gosto",
-  "tombstoneBase": "O comentário de {{user}} foi eliminado",
-  "tombstoneBy": " por {{mod}}",
-  "tombstoneReason": " · Motivo: {{reason}}",
+  "dislike": "Não gostei",
+  "undislike": "Remover «Não gostei»",
   "banned": "Banido",
   "permanentlyBanned": "Banido permanentemente",
   "rank": {
@@ -96,10 +107,7 @@
   },
   "likeCount": "{{n}} gostos",
   "visitors": {
-    "title": "Visitantes recentes",
-    "summary_one": "{{count}} visitante esta semana",
-    "summary_other": "{{count}} visitantes esta semana",
-    "last": "último: {{ago}}"
+    "title": "Visitantes recentes"
   },
   "cover": {
     "dropTitle": "Larga uma imagem de cabeçalho, ou procura",
@@ -178,5 +186,10 @@
     "geoCredit": "Geolocalização de IP por DB-IP",
     "geoMissing": "Os países aparecem quando o banco de dados de países por IP for baixado.",
     "geoMissingLink": "Tarefas agendadas → Banco de países por IP"
-  }
+  },
+  "formerlyKnownAs": "Anteriormente conhecido como {{names}}",
+  "cantRateOwnComment": "Você não pode avaliar o seu próprio comentário",
+  "signInToRate": "Entre para avaliar",
+  "lastSeen": "Visto {{when}}",
+  "lastSeenOn": "Visto pela última vez em {{date}}"
 }

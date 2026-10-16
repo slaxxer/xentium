@@ -35,12 +35,14 @@ import {
   regionsFor,
   blockTypeClass,
   variantClass,
+  HEADING_FONT_STACKS,
   type AudienceView,
   type BlockNode,
   type BlockViewer,
   type LayoutDocument,
   type TemplateKey,
 } from "@xentium/contracts";
+import i18n from "i18next";
 import { authStore } from "../lib/authStore";
 import { getBlock } from "./blockRegistry";
 import { editingTemplate, isEditorPreview, isLayoutPreview, usePreviewAudience } from "./useLayout";
@@ -127,7 +129,13 @@ const CONTENTS = { display: "contents" } as const;
 
 // ── Per-block error boundary ────────────────────────────────────────────────
 
-interface BoundaryProps { blockType: string; children: ReactNode }
+interface BoundaryProps {
+  blockType: string;
+  /** The block's stored props. A new value clears a failure, so fixing the setting
+   *  that broke a block brings it back without reloading the preview. */
+  resetKey: unknown;
+  children: ReactNode;
+}
 interface BoundaryState { failed: boolean }
 
 class BlockBoundary extends Component<BoundaryProps, BoundaryState> {
@@ -135,6 +143,10 @@ class BlockBoundary extends Component<BoundaryProps, BoundaryState> {
 
   static getDerivedStateFromError(): BoundaryState {
     return { failed: true };
+  }
+
+  componentDidUpdate(prev: BoundaryProps) {
+    if (this.state.failed && prev.resetKey !== this.props.resetKey) this.setState({ failed: false });
   }
 
   componentDidCatch(error: unknown) {
@@ -146,7 +158,7 @@ class BlockBoundary extends Component<BoundaryProps, BoundaryState> {
   render() {
     if (this.state.failed) {
       return isEditorPreview()
-        ? <div className="xt-block-error">Block “{this.props.blockType}” failed to render.</div>
+        ? <div className="xt-block-error">{i18n.t("common:blockRender.failed", { type: this.props.blockType })}</div>
         : null;
     }
     return this.props.children;
@@ -206,7 +218,7 @@ function RenderNode({
   // re-enabling the plugin restores it exactly where the admin put it.
   if (!def) {
     return isEditorPreview()
-      ? <div className="xt-block-missing">Block “{node.type}” is unavailable.</div>
+      ? <div className="xt-block-missing">{i18n.t("common:blockRender.unavailable", { type: node.type })}</div>
       : null;
   }
 
@@ -232,7 +244,7 @@ function RenderNode({
    * actually draws the icon, which is the block an admin clicked.
    */
   const rendered = (
-    <BlockBoundary blockType={node.type}>
+    <BlockBoundary blockType={node.type} resetKey={node.props}>
       <IconSlotProvider blockId={node.id} overrides={node.iconOverrides}>
         <Block props={props as never} context={context} children={children} />
       </IconSlotProvider>
@@ -289,7 +301,16 @@ function RenderNode({
    * `data-xt-block` cannot answer it — the renderer stamps that in the EDITOR only,
    * so a rule written against it would collapse every track on the real page.
    */
-  const wrapperClass = ['xt-block', blockTypeClass(node.type), variant, custom]
+  /**
+   * The block's heading face, on the same wrapper: a custom property the wrapper
+   * passes down, and `xt-hf` so `styles/index.scss` applies it to the headings inside.
+   * The stack comes from a fixed map — never the stored string — so a document cannot
+   * write arbitrary CSS here.
+   */
+  const headingStack = node.headingFont ? HEADING_FONT_STACKS[node.headingFont] : undefined;
+  const style = headingStack ? { ...CONTENTS, ["--xt-heading-font" as string]: headingStack } : CONTENTS;
+
+  const wrapperClass = ['xt-block', blockTypeClass(node.type), variant, custom, headingStack && 'xt-hf']
     .filter(Boolean).join(' ');
 
   /**
@@ -311,7 +332,7 @@ function RenderNode({
   // page an admin is looking at, and clicking one of their blocks is how you get to
   // edit it. `data-xt-template` is what lets the bridge say which document to open.
   if (!isEditorPreview()) {
-    return <div ref={wrapperRef} className={wrapperClass} style={CONTENTS} {...align}>{rendered}</div>;
+    return <div ref={wrapperRef} className={wrapperClass} style={style} {...align}>{rendered}</div>;
   }
   return (
     <div
@@ -340,7 +361,7 @@ function RenderNode({
       // Shown in the preview even when the audience excludes the admin looking at
       // it, so the flag is how anything downstream can tell it is conditional.
       {...(restricted ? { "data-xt-restricted": node.visibility!.audience } : {})}
-      style={CONTENTS}
+      style={style}
     >
       {rendered}
     </div>

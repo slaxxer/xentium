@@ -14,6 +14,7 @@ describe("site font CSS", () => {
     expect(fontRootDecls({ family: "Nunito" })).toEqual([
       "  --ff-sans: Nunito, sans-serif;",
       "  --font-display: Nunito, sans-serif;",
+      "  --font-headline: Nunito, sans-serif;",
     ]);
   });
 

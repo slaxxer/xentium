@@ -234,7 +234,7 @@ describe("per-theme token layers", () => {
 
   it("reports pending per theme", async () => {
     settings.set(`appearance.tokens.draft@${T}`, { global: { "--c-accent": "#x" } });
-    expect(await appearanceService.getDraftStatus(T)).toEqual({ pending: true });
-    expect(await appearanceService.getDraftStatus("")).toEqual({ pending: false });
+    expect(await appearanceService.getDraftStatus(T)).toMatchObject({ pending: true });
+    expect(await appearanceService.getDraftStatus("")).toMatchObject({ pending: false });
   });
 });

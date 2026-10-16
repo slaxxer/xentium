@@ -47,6 +47,15 @@ body {
 
 /* Typography helpers — Poppins for structure (headings/names/nav), Nunito for voice. */
 h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); line-height: 1.3; font-weight: 700; }
+/* Headlines: page titles and the titles of what members write (articles, threads,
+   feed items) — `.xt-headline` for one that is not an h1. Bricolage Grotesque in the core look;
+   follows the admin's font when one is chosen. */
+h1, .xt-headline { font-family: var(--font-headline, var(--font-display)); font-weight: 600; letter-spacing: -0.01em; }
+/* A block's own heading face (Layout → block → Style → Heading font). The renderer puts
+   `--xt-heading-font` and `.xt-hf` on the block's wrapper; this sets the headings inside
+   it. Two classes' worth of specificity, so it outranks a component's own
+   `.x__title { font-family }` without `!important`. */
+.xt-hf :is(h1, h2, h3, h4, h5, h6, .xt-headline) { font-family: var(--xt-heading-font); }
 p { line-height: 1.7; }
 code, kbd, pre { font-family: var(--ff-mono); font-size: 0.9em; }
 pre { overflow-x: auto; }
@@ -60,7 +69,7 @@ pre { overflow-x: auto; }
 
 /* UserAvatar initials fallback */
 .ua-initials {
-  background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+  background: var(--c-accent);
   color: var(--c-on-accent);
   display: flex;
   align-items: center;

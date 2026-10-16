@@ -1,0 +1,103 @@
+// ACP → Content → Emojis. Core's ACP tokens and controls; only this page's layout here.
+.emj-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.emj-headside { display: flex; align-items: center; gap: 14px; }
+.emj-count { color: var(--c-fg-muted); font-size: var(--fs-sm); b { color: var(--c-fg); } }
+
+.emj-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  span { font-size: var(--fs-2xs); font-weight: 700; color: var(--c-fg-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .is-invalid { border-color: var(--c-danger); }
+}
+
+/* Chosen files, before they are added. */
+.emj-pending {
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  &__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; h2 { margin: 0; font-size: var(--fs-md); } }
+  &__list { display: flex; flex-direction: column; gap: 8px; }
+  &__row {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: end;
+    img { width: 32px; height: 32px; object-fit: contain; align-self: center; }
+    &.has-error { padding: 8px; border-radius: var(--radius-sm); background: var(--c-danger-soft); }
+  }
+  &__error { grid-column: 2 / -1; margin: 0; color: var(--c-danger); font-size: var(--fs-xs); }
+  &__foot { display: flex; align-items: center; gap: 10px; .acp-hint { margin: 0 auto 0 0; } }
+}
+
+.emj-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  padding: 40px;
+  border: 1px dashed var(--c-border);
+  border-radius: var(--radius-lg);
+  color: var(--c-fg-muted);
+  p { margin: 0; text-align: center; max-width: 52ch; }
+}
+
+.emj-group__title {
+  margin: 0 0 10px;
+  font-size: var(--fs-sm);
+  span { color: var(--c-fg-subtle); font-weight: 600; margin-left: 4px; }
+}
+
+.emj-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.emj-tile {
+  position: relative;
+  background: var(--card-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+
+  &__main {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 14px 10px 12px;
+    border-radius: inherit;
+    &:hover { background: var(--c-bg-hover); }
+    img { width: 36px; height: 36px; object-fit: contain; }
+    code { font-size: var(--fs-xs); color: var(--c-fg); max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  }
+  &__name { font-size: var(--fs-2xs); color: var(--c-fg-muted); }
+
+  &__remove {
+    position: absolute; top: 6px; right: 6px;
+    width: 26px; height: 26px;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg-subtle);
+    opacity: 0;
+    &:hover { color: var(--c-danger); background: var(--c-danger-soft); }
+  }
+  &:hover &__remove, &__remove:focus-visible { opacity: 1; }
+
+  &--edit {
+    grid-column: span 2;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px;
+    img { width: 32px; height: 32px; object-fit: contain; }
+  }
+  &__actions { display: flex; justify-content: flex-end; gap: 8px; }
+}

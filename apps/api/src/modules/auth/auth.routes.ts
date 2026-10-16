@@ -1,6 +1,6 @@
 import { Router } from "express";
 import {
-  loginHandler, pinStepHandler, checkInviteHandler, magicLinkRequestHandler, magicLinkConsumeHandler, refreshHandler, logoutHandler, meHandler,
+  loginHandler, pinStepHandler, checkInviteHandler, magicLinkRequestHandler, magicLinkConsumeHandler, legalConsentHandler, refreshHandler, logoutHandler, meHandler,
   registerHandler, sendCodeHandler, checkAvailabilityHandler, registrationStatusHandler,
   requestPasswordResetHandler, confirmPasswordResetHandler,
 } from "./auth.controller.js";
@@ -60,3 +60,4 @@ authRouter.post("/password-reset", resetLimiter, requestPasswordResetHandler);
 authRouter.post("/password-reset/confirm", resetLimiter, confirmPasswordResetHandler);
 authRouter.post("/logout", logoutHandler);
 authRouter.get("/me", requireAuth, meHandler);
+authRouter.post("/legal-consent", requireAuth, legalConsentHandler);

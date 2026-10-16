@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { api } from "../../../lib/api";
+import { uiLocale } from "../../../lib/i18n";
 import { toast } from "../../../lib/toast";
 import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -9,6 +10,7 @@ import { sameValue, useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
+import { Composer, type ComposerHandle } from "../../../components/composer/Composer";
 import "./acpSystem.scss";
 import "./EmailPage.scss";
 
@@ -20,9 +22,30 @@ interface Template {
   body: string;
   placeholders: string[];
   customized: boolean;
+  /** Saved as a whole HTML document by an older version: sent as written, not editable here. */
+  legacy: boolean;
   updatedAt: string | null;
   defaultSubject: string;
   defaultBody: string;
+  /** The shipped version in every language; untouched, each member gets their own. */
+  defaults?: Record<string, TemplateDraft>;
+}
+
+/**
+ * The body in our editor. It reads `initial` once: the parent remounts it (by `key`)
+ * on a template switch, a discard or a reset, so typing never re-feeds the editor
+ * and moves the cursor.
+ */
+function TemplateBodyEditor({ initial, onChange, editorRef }: {
+  initial: string;
+  onChange: (html: string) => void;
+  editorRef: React.Ref<ComposerHandle>;
+}) {
+  const [start] = useState(initial);
+  return (
+    <Composer ref={editorRef} variant="panel" toolbarPosition="top" minHeight={280}
+              mentions={false} submitInBar={false} initialHtml={start} onChange={onChange} />
+  );
 }
 
 interface SmtpStatus { configured: boolean; reachable: boolean; error: string | null }
@@ -103,6 +126,9 @@ export function EmailPage() {
    * saves every edited template at once.
    */
   const [tplEdits, setTplEdits] = useState<Record<string, TemplateDraft>>({});
+  /** Bumped when the open body is replaced from outside (discard, revert, reset). */
+  const [editorEpoch, setEditorEpoch] = useState(0);
+  const bodyEditor = useRef<ComposerHandle>(null);
   const [testTo, setTestTo] = useState("");
 
   const { data: settings = [] } = useQuery<Setting[]>({
@@ -180,7 +206,9 @@ export function EmailPage() {
     () => templates.find(x => x.key === section) ?? null,
     [templates, section],
   );
-  const savedTpl = (tpl: Template): TemplateDraft => ({ subject: tpl.subject, body: tpl.body });
+  /** An untouched template opens in the admin's language; editing it makes that version the site's. */
+  const savedTpl = (tpl: Template): TemplateDraft =>
+    !tpl.customized && tpl.defaults?.[uiLocale()] ? tpl.defaults[uiLocale()]! : { subject: tpl.subject, body: tpl.body };
   const draft: TemplateDraft | null = active ? tplEdits[active.key] ?? savedTpl(active) : null;
   const setDraft = (next: TemplateDraft) => {
     if (active) setTplEdits((p) => ({ ...p, [active.key]: next }));
@@ -210,7 +238,7 @@ export function EmailPage() {
       const changed = Object.entries(edits).filter(([k, v]) => !sameValue(v, tplSavedRef.current?.[k]));
       return changed.length ? saveMut.mutateAsync(changed) : undefined;
     },
-    onDiscard: () => setTplEdits({}),
+    onDiscard: () => { setTplEdits({}); setEditorEpoch((n) => n + 1); },
     describe: (value, saved) => Object.keys(value)
       .filter((k) => !sameValue(value[k], saved[k]))
       .map((k) => {
@@ -221,7 +249,10 @@ export function EmailPage() {
           section: t("email.title"),
           from: subjectChanged ? saved[k]?.subject ?? "" : t("email.subject"),
           to: subjectChanged ? value[k]!.subject : t("savebar.bodyEdited"),
-          revert: () => setTplEdits((p) => { const { [k]: _gone, ...rest } = p; return rest; }),
+          revert: () => {
+            setTplEdits((p) => { const { [k]: _gone, ...rest } = p; return rest; });
+            setEditorEpoch((n) => n + 1);
+          },
         };
       }),
   });
@@ -231,7 +262,8 @@ export function EmailPage() {
     onSuccess: (r) => {
       // Back to the default: nothing of this template is left unsaved.
       setTplEdits((p) => { const { [r.key]: _gone, ...rest } = p; return rest; });
-      qc.invalidateQueries({ queryKey: ["acp-email-templates"] });
+      // The editor reopens on the default once the list has it.
+      qc.invalidateQueries({ queryKey: ["acp-email-templates"] }).then(() => setEditorEpoch((n) => n + 1));
       toast.success(t("email.resetDone"));
     },
     onError: (e) => toast.error(apiErrorMessage(e)),
@@ -357,6 +389,7 @@ export function EmailPage() {
                 <div className="set-card__titles">
                   <h3>{t(`email.keys.${active.key}`)}</h3>
                   <p>{t("email.templateDesc")}</p>
+                  <p className="em-lang">{t(active.customized ? "email.langCustom" : "email.langDefault")}</p>
                 </div>
                 <button type="button" className="btn-ghost btn-sm em-danger"
                         disabled={!active.customized || resetMut.isPending} onClick={onReset}>
@@ -382,21 +415,28 @@ export function EmailPage() {
                     <div className="set-row__desc">{t("email.bodyDesc")}</div>
                   </div>
                   <div className="set-row__control em-full">
-                    <textarea className="inp em-body" spellCheck={false} value={draft.body}
-                              onChange={(e) => setDraft({ ...draft, body: e.target.value })} />
+                    {active.legacy ? (
+                      <p className="em-warn">{t("email.legacy")}</p>
+                    ) : (
+                      <TemplateBodyEditor key={`${active.key}:${editorEpoch}`} initial={draft.body}
+                                          editorRef={bodyEditor}
+                                          onChange={(html) => setDraft({ ...draft, body: html })} />
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="set-extra em-ph">
-                <span className="set-row__label">{t("email.placeholders")}</span>
-                {active.placeholders.map(p => (
-                  <button key={p} type="button" className="em-chip" title={t("email.insert")}
-                          onClick={() => setDraft({ ...draft, body: `${draft.body}{{${p}}}` })}>
-                    {`{{${p}}}`}
-                  </button>
-                ))}
-              </div>
+              {!active.legacy && (
+                <div className="set-extra em-ph">
+                  <span className="set-row__label">{t("email.placeholders")}</span>
+                  {active.placeholders.map(p => (
+                    <button key={p} type="button" className="em-chip" title={t("email.insert")}
+                            onClick={() => bodyEditor.current?.insertText(`{{${p}}}`)}>
+                      {`{{${p}}}`}
+                    </button>
+                  ))}
+                </div>
+              )}
             </section>
           )}
         </div>

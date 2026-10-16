@@ -65,6 +65,13 @@ model User {
   // algorithm on login, then transparently rehashed to argon2 (§17b intent:
   // migrated users keep their password, no forced reset).
   passwordScheme String @default("argon2") @map("password_scheme")
+  // When the member accepted the published terms / privacy policy (sign-up form, or the
+  // one-time prompt). NULL = never: imported members, accounts an admin or a sign-in
+  // provider created. Asked once while terms or a privacy policy are published.
+  legalAcceptedAt DateTime? @map("legal_accepted_at")
+  // Last activity, written by the auth middleware at most every few minutes (and by the
+  // migration tools from the old site). Shown as "Last seen" unless the member hides it.
+  lastSeenAt   DateTime? @map("last_seen_at")
   displayName  String?  @map("display_name")
   bio          String?  @db.Text
   avatar       String?
@@ -117,11 +124,16 @@ model User {
   legalDocuments      LegalDocument[]      @relation("LegalDocumentUpdatedBy")
   articleRevisions    ArticleRevision[]    @relation("RevisionAuthor")
   articleLikes        ArticleLike[]        @relation("ArticleLikedBy")
+  articleBookmarks    ArticleBookmark[]
+  articleCommentDislikes ArticleCommentDislike[]
+  categoryFollows     ArticleCategoryFollow[]
+  tagFollows          TagFollow[]
   articleDislikes     ArticleDislike[]     @relation("ArticleDislikedBy")
   articleComments          ArticleComment[]     @relation("ArticleCommentAuthor")
   articleCommentsDeleted   ArticleComment[]     @relation("ArticleCommentDeletedBy")
   articleCommentLikes      ArticleCommentLike[] @relation("ArticleCommentLikedBy")
   profileCommentLikes          ProfileCommentLike[] @relation("ProfileCommentLikedBy")
+  profileCommentDislikes       ProfileCommentDislike[] @relation("ProfileCommentDislikedBy")
   profileCommentsDeleted       ProfileComment[]     @relation("ProfileCommentDeletedBy")
 
   // Moderation (back-relations for Phase 6 models)
@@ -132,6 +144,7 @@ model User {
   bansReceived     ModerationBan[]     @relation("BanReceived")
   bansIssued       ModerationBan[]     @relation("BanIssued")
   styleHistories   StyleHistory[]
+  themeRevisions   ThemeRevision[]
   invitesCreated   InviteCode[]    @relation("InviteCreated")
   invitesUsed      InviteCode[]    @relation("InviteUsed")
   badges           UserBadge[]
@@ -524,18 +537,25 @@ model ProfileComment {
   authorId       String    @map("author_id")
   body           String    @db.Text
   likeCount      Int       @default(0) @map("like_count")
+  dislikeCount   Int       @default(0) @map("dislike_count")
   deletedAt      DateTime? @map("deleted_at")
   deletedById    String?   @map("deleted_by_id")
   deletedReason  String?   @map("deleted_reason")
   editedAt       DateTime? @map("edited_at")
   createdAt      DateTime  @default(now()) @map("created_at")
+  /// A reply's comment. One level deep: a reply to a reply is stored under the same top-level comment.
+  parentId       String?   @map("parent_id")
 
   profileUser    User  @relation("ProfileCommentOwner",    fields: [profileUserId], references: [id], onDelete: Cascade)
   author         User  @relation("ProfileCommentAuthor",  fields: [authorId],      references: [id], onDelete: Cascade)
   deletedBy      User? @relation("ProfileCommentDeletedBy", fields: [deletedById], references: [id])
+  parent         ProfileComment?  @relation("ProfileCommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies        ProfileComment[] @relation("ProfileCommentReplies")
   likes          ProfileCommentLike[]
+  dislikes       ProfileCommentDislike[]
 
   @@index([profileUserId, deletedAt, createdAt(sort: Desc)])
+  @@index([parentId, createdAt])
   @@map("xcf_profile_comments")
 }
 
@@ -550,6 +570,20 @@ model ProfileCommentLike {
 
   @@unique([commentId, userId])
   @@map("xcf_profile_comment_likes")
+}
+
+/// A thumbs-down on a wall comment. Excludes a like by the same member (either one replaces the other).
+model ProfileCommentDislike {
+  id         String         @id @default(cuid())
+  commentId  String         @map("comment_id")
+  userId     String         @map("user_id")
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  comment    ProfileComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user       User           @relation("ProfileCommentDislikedBy", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@map("xcf_profile_comment_dislikes")
 }
 
 model UserProfileField {
@@ -643,6 +677,7 @@ model ArticleCategory {
   effectiveVisibility String   @default("public") @map("effective_visibility") // precomputed cache
 
   articles Article[]
+  followers ArticleCategoryFollow[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -681,6 +716,7 @@ model Article {
   tags      ArticleTag[]
   likes     ArticleLike[]
   dislikes  ArticleDislike[]
+  bookmarks ArticleBookmark[]
   comments  ArticleComment[]
 
   createdAt DateTime @default(now()) @map("created_at")
@@ -711,7 +747,8 @@ model Tag {
   name  String @unique
   slug  String @unique
 
-  articles ArticleTag[]
+  articles  ArticleTag[]
+  followers TagFollow[]
 
   @@map("xcf_tags")
 }
@@ -725,6 +762,69 @@ model ArticleTag {
   @@id([articleId, tagId])
   @@index([tagId])
   @@map("xcf_article_tags")
+}
+
+/// A custom emoji an admin uploaded (ACP → Content → Emojis). The editor's picker
+/// offers the active ones; a post stores the image, not the row.
+model Emoji {
+  id          String    @id @default(cuid())
+  /// What the picker searches and what a post shows as the image's alt: `:shortcode:`.
+  shortcode   String    @unique
+  name        String
+  /// Picker group, free text ("Faces", "Hands", …).
+  category    String    @default("")
+  /// Storage path, `emojis/<file>`.
+  image       String
+  position    Int       @default(0)
+  /// Removed from the picker. The file stays: posts that used it keep showing it.
+  retiredAt   DateTime? @map("retired_at")
+  createdById String?   @map("created_by_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@index([retiredAt, category, position])
+  @@map("xcf_emojis")
+}
+
+/// An article a member saved for later (home → Saved).
+model ArticleBookmark {
+  id        String   @id @default(cuid())
+  articleId String   @map("article_id")
+  userId    String   @map("user_id")
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([articleId, userId])
+  @@index([userId, createdAt])
+  @@map("xcf_article_bookmarks")
+}
+
+/// A category a member follows: its articles appear in their Following feed.
+model ArticleCategoryFollow {
+  id         String          @id @default(cuid())
+  categoryId String          @map("category_id")
+  userId     String          @map("user_id")
+  category   ArticleCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@unique([categoryId, userId])
+  @@index([userId])
+  @@map("xcf_article_category_follows")
+}
+
+/// A tag a member follows: articles carrying it appear in their Following feed.
+model TagFollow {
+  id        String   @id @default(cuid())
+  tagId     String   @map("tag_id")
+  userId    String   @map("user_id")
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([tagId, userId])
+  @@index([userId])
+  @@map("xcf_tag_follows")
 }
 
 model ArticleLike {
@@ -770,7 +870,8 @@ model ArticleComment {
   createdAt     DateTime        @default(now()) @map("created_at")
   updatedAt     DateTime        @updatedAt @map("updated_at")
 
-  likes ArticleCommentLike[]
+  likes    ArticleCommentLike[]
+  dislikes ArticleCommentDislike[]
 
   @@index([articleId, deletedAt, createdAt(sort: Desc)])
   @@index([parentId])
@@ -787,6 +888,19 @@ model ArticleCommentLike {
 
   @@unique([commentId, userId])
   @@map("xcf_article_comment_likes")
+}
+
+/// A thumbs-down on an article comment. A member holds a like or a dislike, never both.
+model ArticleCommentDislike {
+  id        String         @id @default(cuid())
+  commentId String         @map("comment_id")
+  userId    String         @map("user_id")
+  comment   ArticleComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  @@unique([commentId, userId])
+  @@map("xcf_article_comment_dislikes")
 }
 
 model EmailChangeToken {
@@ -1065,6 +1179,30 @@ model StyleHistory {
 
   @@index([themeKey, createdAt])
   @@map("xcf_style_history")
+}
+
+/// One Theme Studio publish: the theme's whole published state right after it — its
+/// tokens, custom CSS, font, layouts and site frame — so History can show what went
+/// live together and stage any of it back as a draft.
+model ThemeRevision {
+  id        String   @id @default(cuid())
+  /// '' = Core, else an installed theme's id.
+  themeKey  String   @default("") @map("theme_key")
+  label     String
+  /// What changed in this publish: { layouts: LayoutSelector[], tokens: n, css, font }.
+  changes   Json
+  tokens    Json
+  customCss String   @default("") @map("custom_css")
+  font      Json
+  /// The theme's PUBLISHED layout rows (site frame included): { templateKey, variant, document, schemaVersion }[].
+  layouts   Json
+  savedById String?  @map("saved_by_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  savedBy User? @relation(fields: [savedById], references: [id], onDelete: SetNull)
+
+  @@index([themeKey, createdAt])
+  @@map("xcf_theme_revisions")
 }
 
 model InviteCode {

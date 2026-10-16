@@ -1,0 +1,119 @@
+{
+  "newFollower": {
+    "title": "Nouvel abonné",
+    "body": "{{name}} a commencé à vous suivre."
+  },
+  "profileComment": {
+    "title": "Nouveau commentaire sur votre profil",
+    "body": "{{name}} a publié sur votre profil."
+  },
+  "profileReply": {
+    "title": "Nouvelle réponse à votre commentaire",
+    "body": "{{name}} a répondu à votre commentaire sur le profil de {{owner}}."
+  },
+  "mentionProfile": {
+    "title": "Vous avez été mentionné",
+    "body": "{{name}} vous a mentionné dans un commentaire sur le profil de {{owner}}."
+  },
+  "profileCommentLiked": {
+    "title": "Quelqu'un a aimé votre commentaire",
+    "body": "{{name}} a aimé votre commentaire sur le profil de {{owner}}."
+  },
+  "articleCommentLiked": {
+    "title": "Quelqu'un a aimé votre commentaire",
+    "body": "{{name}} a aimé votre commentaire."
+  },
+  "badgeGranted": {
+    "title": "Vous avez reçu le badge « {{badge}} » !",
+    "body": "Il figure désormais sur votre profil, visible par tous les visiteurs."
+  },
+  "badgeGrantedNote": {
+    "title": "Vous avez reçu le badge « {{badge}} » !"
+  },
+  "badgeEarned": {
+    "title": "Vous avez obtenu le badge « {{badge}} » !",
+    "body": "Il figure désormais sur votre profil, visible par tous les visiteurs."
+  },
+  "banPermanent": {
+    "title": "Votre compte a été suspendu définitivement"
+  },
+  "banTemporary": {
+    "title": "Votre compte a été suspendu temporairement"
+  },
+  "banSuspended": {
+    "title": "Votre compte a été suspendu"
+  },
+  "banCasePolicy": {
+    "title": "Votre compte a été suspendu définitivement",
+    "body": "Violation de la règle sur les comptes multiples : plusieurs comptes détectés sur le même appareil"
+  },
+  "banLifted": {
+    "title": "La suspension de votre compte a été levée",
+    "body": "Votre suspension a été retirée. Vous pouvez à nouveau vous connecter."
+  },
+  "banEnded": {
+    "title": "Votre suspension a pris fin",
+    "body": "Votre suspension temporaire a expiré. Vous pouvez à nouveau vous connecter."
+  },
+  "contentRemoved": {
+    "title": "Votre contenu a été supprimé"
+  },
+  "reportReviewed": {
+    "title": "Votre signalement a été examiné",
+    "body": "Un modérateur a examiné votre signalement et n'a constaté aucune infraction. Merci de l'avoir signalé."
+  },
+  "newCase": {
+    "title": "Nouveau cas à examiner",
+    "body": "Un comportement suspect a été détecté et doit être examiné par un modérateur."
+  },
+  "caseUserBanned": {
+    "title": "Compte signalé banni",
+    "body": "{{name}} ({{caseType}}) a été banni."
+  },
+  "caseUserBannedNoType": {
+    "title": "Compte signalé banni",
+    "body": "{{name}} (issu d'un cas à examiner) a été banni."
+  },
+  "newReport": {
+    "title": "Nouveau signalement",
+    "body": "Un signalement a été déposé pour {{target}}."
+  },
+  "ladderBanPermanent": {
+    "title": "Palier d'avertissements atteint",
+    "body": "{{name}} a atteint {{count}} avertissements et a été banni définitivement."
+  },
+  "ladderBanTemporary": {
+    "title": "Palier d'avertissements atteint",
+    "body": "{{name}} a atteint {{count}} avertissements et a été banni pour {{days}} jours."
+  },
+  "ladderNotify": {
+    "title": "Palier d'avertissements atteint",
+    "body": "{{name}} a atteint {{count}} avertissements et mérite un examen."
+  },
+  "warningIssued": {
+    "title": "Vous avez reçu un avertissement"
+  },
+  "warningPardoned": {
+    "title": "Un avertissement a été levé",
+    "body": "L'un de vos avertissements a été retiré."
+  },
+  "passwordChanged": {
+    "title": "Votre mot de passe a été modifié",
+    "body": "Le mot de passe de votre compte vient d'être réinitialisé. Si ce n'était pas vous, contactez immédiatement un administrateur."
+  },
+  "jobFailure": {
+    "title": "Échec d'une tâche en arrière-plan",
+    "body": "Une tâche « {{queue}} » a échoué après épuisement des tentatives. Consultez Système → Journal des erreurs."
+  },
+  "promoted": {
+    "title": "Vous avez été promu au rang {{rank}} !",
+    "body": "Vous avez atteint un nouveau niveau. Continuez à participer pour débloquer encore plus."
+  },
+  "targets": {
+    "article": "un article",
+    "article_comment": "un commentaire d'article",
+    "profile_comment": "un commentaire de profil",
+    "user": "un membre",
+    "plugin-content": "du contenu d'extension"
+  }
+}

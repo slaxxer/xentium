@@ -155,6 +155,7 @@ export const modCanvasService = {
       if (input.notify && authorId) {
         await notificationService.dispatch({
           userId: authorId, type: "moderation.content_removed", title: "Your content was removed",
+          i18n: { key: "common:notify.contentRemoved" },
           body: input.message, channels: ["in_app"],
         });
       }
@@ -165,6 +166,7 @@ export const modCanvasService = {
         const reporters = [...new Set(reports.map((r) => r.reporterId))];
         await Promise.all(reporters.map((userId) => notificationService.dispatch({
           userId, type: "moderation.report_reviewed", title: "Your report was reviewed",
+          i18n: { key: "common:notify.reportReviewed" },
           body: "A moderator looked at your report and found no rule broken. Thanks for flagging it.",
           channels: ["in_app"],
         })));

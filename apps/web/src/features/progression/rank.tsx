@@ -19,6 +19,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { previewSample, SAMPLE_RANK } from "../../layout/previewSample";
 import "./rank.scss";
+import { uiLocale } from "../../lib/i18n";
 
 export interface RankData {
   enabled: boolean;
@@ -149,8 +150,8 @@ export function RankProgress({ data, showUnlocks = true }: { data: RankData | un
                 <FontAwesomeIcon icon={faCheck} />
                 {t(`rank.unlock.${u.key}`, {
                   count: u.value,
-                  value: u.value.toLocaleString(),
-                  defaultValue: `${u.value.toLocaleString()} ${u.key}`,
+                  value: u.value.toLocaleString(uiLocale()),
+                  defaultValue: `${u.value.toLocaleString(uiLocale())} ${u.key}`,
                 })}
               </li>
             ))}

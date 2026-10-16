@@ -7,6 +7,7 @@ import { GroupGlyph, PowerMeter } from "../groups/groupParts";
 import type { PermissionsCtx } from "../PermissionsPage";
 import { changeOf, effectiveKeys, impliedBy, matchesQuery, type MatrixFilter } from "./permissionsModel";
 import { colorOf } from "./SplitView";
+import { permissionDomainLabel } from "../../../../lib/coreText";
 
 const FILTERS: MatrixFilter[] = ["all", "sensitive", "changed"];
 
@@ -85,7 +86,7 @@ export function MatrixView({ ctx, onOpen, searchRef }: {
             <div key={domain} className="pm-mx__group">
               <div className="pm-mx__row pm-mx__row--domain">
                 <div className="pm-mx__first">
-                  <span className="gp-domain__name">{domain}</span>
+                  <span className="gp-domain__name">{permissionDomainLabel(domain)}</span>
                   <span className="pm-mx__hint">{ps.length}</span>
                 </div>
                 {groups.map((g) => {
@@ -93,7 +94,7 @@ export function MatrixView({ ctx, onOpen, searchRef }: {
                   const full = ps.every((p) => held.get(g.id)!.has(p.key));
                   return (
                     <button key={g.id} type="button" className={`pm-mx__dom${on ? " is-some" : ""}`}
-                      title={t(full ? "permissions.revokeDomain" : "permissions.grantDomain", { domain, group: g.name })}
+                      title={t(full ? "permissions.revokeDomain" : "permissions.grantDomain", { domain: permissionDomainLabel(domain), group: g.name })}
                       onClick={() => request(g.id, ps.map((p) => p.key), !full)}>
                       <span>{on}/{ps.length}</span>
                       <span className="gp-fill pm-mx__fill" aria-hidden><span style={{ width: `${Math.round((on / ps.length) * 100)}%` }} /></span>

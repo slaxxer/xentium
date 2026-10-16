@@ -42,6 +42,7 @@ export async function processBanExpiry(): Promise<void> {
         userId:   b.userId,
         type:     "moderation.ban_lifted",
         title:    "Your suspension has ended",
+        i18n:     { key: "common:notify.banEnded" },
         body:     "Your temporary suspension has expired. You may now log in again.",
         channels: ["in_app"],
       }),

@@ -26,6 +26,7 @@ import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { AccountCard } from "../components/AccountCard";
 import { ConnectedAccountsCard, PasskeysCard, SetPasswordHint, useSignInMethods } from "./SignInMethodsCards";
+import { uiLocale } from "../../../lib/i18n";
 
 type PinMode = null | "enable" | "change" | "disable";
 
@@ -498,7 +499,7 @@ function SessionsCard() {
                 {deviceName(s.userAgent, t("security.unknownDevice"))}
               </span>
               <span className="acct-session__meta">
-                {s.ip ?? t("security.unknownIp")} · {t("security.lastActive", { date: new Date(s.lastUsedAt).toLocaleDateString() })}
+                {s.ip ?? t("security.unknownIp")} · {t("security.lastActive", { date: new Date(s.lastUsedAt).toLocaleDateString(uiLocale()) })}
               </span>
             </span>
             {/* ⚠ The current session offers no Revoke: it is the session reading this

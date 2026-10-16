@@ -13,7 +13,10 @@
     "prev": "← Anterior",
     "next": "Seguinte →",
     "pageOf": "Página {{page}} de {{total}}",
-    "minRead": "{{n}} min"
+    "minRead": "{{n}} min",
+    "views_one": "{{count}} visualização",
+    "views_other": "{{count}} visualizações",
+    "views_many": "{{count}} visualizações"
   },
   "reader": {
     "loading": "A carregar…",
@@ -64,7 +67,9 @@
     "noComments": "Ainda não há comentários.",
     "tombstoneBase": "O comentário de {{user}} foi eliminado",
     "tombstoneBy": " por {{mod}}",
-    "tombstoneReason": " · Motivo: {{reason}}"
+    "tombstoneReason": " · Motivo: {{reason}}",
+    "cantRateOwnComment": "Você não pode avaliar o seu próprio comentário",
+    "signInToRate": "Entre para avaliar"
   },
   "editor": {
     "saveError": "Não foi possível guardar. Tente novamente.",
@@ -135,7 +140,19 @@
       "codeBlock": "Bloco de código",
       "hr": "Linha horizontal",
       "undo": "Anular",
-      "redo": "Refazer"
+      "redo": "Refazer",
+      "underline": "Sublinhado",
+      "highlight": "Realçar",
+      "subscript": "Subscrito",
+      "superscript": "Sobrescrito",
+      "alignLeft": "Alinhar à esquerda",
+      "alignCenter": "Centralizar",
+      "alignRight": "Alinhar à direita",
+      "alignJustify": "Justificar",
+      "taskList": "Lista de tarefas",
+      "code": "Código em linha",
+      "link": "Link",
+      "image": "Inserir imagem"
     },
     "savedToast": "Salvo",
     "unpublishedToast": "Voltou para rascunhos",

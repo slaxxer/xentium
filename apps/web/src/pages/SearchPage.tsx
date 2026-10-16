@@ -8,6 +8,7 @@ import { Username } from "../components/Username";
 import { roleColor } from "../lib/groupBadge";
 import "./SearchPage.scss";
 import { RankBadge } from "../components/RankBadge";
+import { uiLocale } from "../lib/i18n";
 
 type SearchType = "all" | "articles" | "users" | string;
 
@@ -47,7 +48,7 @@ function timeAgo(d: string, t: TFn) {
   if (days < 1)  return t("search.today");
   if (days < 7)  return t("search.daysAgo", { d: days });
   if (days < 30) return t("search.weeksAgo", { w: Math.floor(days / 7) });
-  return new Date(d).toLocaleDateString(undefined, { month: "short", year: "numeric" });
+  return new Date(d).toLocaleDateString(uiLocale(), { month: "short", year: "numeric" });
 }
 
 export function SearchPage() {
@@ -97,7 +98,7 @@ export function SearchPage() {
           {hasQuery ? <>{t("search.resultsFor")} <em>"{q}"</em></> : t("search.title")}
         </h1>
         {hasQuery && !busy && data && (
-          <p className="search-page__meta">{t("search.resultsCount", { n: totalAll.toLocaleString() })}</p>
+          <p className="search-page__meta">{t("search.resultsCount", { n: totalAll.toLocaleString(uiLocale()) })}</p>
         )}
       </div>
 

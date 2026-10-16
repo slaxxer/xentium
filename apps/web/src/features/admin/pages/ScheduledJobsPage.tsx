@@ -7,6 +7,8 @@ import { api } from "../../../lib/api";
 import { swalToast } from "../../../lib/swal";
 import { CustomTasksSection } from "./CustomTasksSection";
 import "./ScheduledJobsPage.scss";
+import { uiLocale } from "../../../lib/i18n";
+import { hostText } from "../../../lib/coreText";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 interface JobConfig {
@@ -34,10 +36,10 @@ interface JobView {
 const TZS = ["UTC", "America/New_York", "America/Chicago", "America/Los_Angeles", "Europe/London", "Europe/Berlin", "Europe/Madrid", "Asia/Tokyo", "Australia/Sydney"];
 
 function fmt(iso: string) {
-  return new Date(iso).toLocaleString(undefined, { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleString(uiLocale(), { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 function fmtMs(ms: number) {
-  return new Date(ms).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  return new Date(ms).toLocaleString(uiLocale(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
 /** Which radio is selected, derived from a config. */
@@ -83,7 +85,7 @@ function JobCard({ job }: { job: JobView }) {
     setRunning(true);
     try {
       await api.post(`/admin/jobs/${job.key}/run`);
-      swalToast(t("scheduled.queuedToRun", { label: job.label }), "success");
+      swalToast(t("scheduled.queuedToRun", { label: hostText(`jobs.${job.key}.label`, job.label) }), "success");
     } catch {
       swalToast(t("scheduled.triggerFailed"), "error");
     } finally {
@@ -104,14 +106,14 @@ function JobCard({ job }: { job: JobView }) {
         <div>
           <div style={{ fontSize: "var(--fs-base)", fontWeight: 700, color: "var(--c-fg)", display: "flex", alignItems: "center", gap: 8 }}>
             <FontAwesomeIcon icon={faClock} style={{ color: "var(--c-accent)" }} />
-            {job.label}
+            {hostText(`jobs.${job.key}.label`, job.label)}
             {!cfg.enabled && (
               <span style={{ fontSize: "var(--fs-2xs)", fontWeight: 700, padding: "2px 8px", borderRadius: 100, background: "color-mix(in srgb, var(--c-fg-muted) 18%, transparent)", color: "var(--c-fg-muted)", display: "inline-flex", gap: 4, alignItems: "center" }}>
                 <FontAwesomeIcon icon={faPause} /> {t("scheduled.disabled")}
               </span>
             )}
           </div>
-          <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginTop: 4, maxWidth: 560 }}>{job.description}</div>
+          <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginTop: 4, maxWidth: 560 }}>{hostText(`jobs.${job.key}.description`, job.description)}</div>
         </div>
         <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg)", cursor: "pointer", whiteSpace: "nowrap" }}>
           <input type="checkbox" checked={cfg.enabled} onChange={(e) => setCfg({ ...cfg, enabled: e.target.checked })} />

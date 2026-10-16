@@ -13,7 +13,10 @@
     "prev": "← Anterior",
     "next": "Siguiente →",
     "pageOf": "Página {{page}} de {{total}}",
-    "minRead": "{{n}} min"
+    "minRead": "{{n}} min",
+    "views_one": "{{count}} vista",
+    "views_other": "{{count}} vistas",
+    "views_many": "{{count}} vistas"
   },
   "reader": {
     "loading": "Cargando…",
@@ -64,7 +67,9 @@
     "noComments": "Aún no hay comentarios.",
     "tombstoneBase": "El comentario de {{user}} fue eliminado",
     "tombstoneBy": " por {{mod}}",
-    "tombstoneReason": " · Motivo: {{reason}}"
+    "tombstoneReason": " · Motivo: {{reason}}",
+    "cantRateOwnComment": "No puedes valorar tu propio comentario",
+    "signInToRate": "Inicia sesión para valorar"
   },
   "editor": {
     "saveError": "No se pudo guardar. Inténtalo de nuevo.",
@@ -135,7 +140,19 @@
       "codeBlock": "Bloque de código",
       "hr": "Línea horizontal",
       "undo": "Deshacer",
-      "redo": "Rehacer"
+      "redo": "Rehacer",
+      "underline": "Subrayado",
+      "highlight": "Resaltar",
+      "subscript": "Subíndice",
+      "superscript": "Superíndice",
+      "alignLeft": "Alinear a la izquierda",
+      "alignCenter": "Centrar",
+      "alignRight": "Alinear a la derecha",
+      "alignJustify": "Justificar",
+      "taskList": "Lista de tareas",
+      "code": "Código en línea",
+      "link": "Enlace",
+      "image": "Insertar imagen"
     },
     "savedToast": "Guardado",
     "unpublishedToast": "Devuelto a borradores",

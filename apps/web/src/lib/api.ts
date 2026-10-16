@@ -1,5 +1,5 @@
 import { authStore, type AuthUser } from "./authStore";
-import { applyServerLocale } from "./i18n";
+import { applyServerLocale, uiLocale } from "./i18n";
 import { fatalErrorStore } from "./fatalError";
 
 // The /auth/me endpoint returns groups as the UserGroup join table:
@@ -81,6 +81,9 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
   if (body !== undefined && !isFormData) headers["Content-Type"] = "application/json";
   if (authStore.token) headers["Authorization"] = `Bearer ${authStore.token}`;
+  // The language this page is in. The API stays locale-agnostic; it only reads this
+  // to write an email to someone it has no account language for (a registration code).
+  headers["X-Xentium-Locale"] = uiLocale();
 
   const res = await fetch(`${BASE}${path}`, {
     method,

@@ -10,6 +10,7 @@ import { faBan, faXmark, faTriangleExclamation } from "@fortawesome/free-solid-s
 import { api } from "../../../../lib/api";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { timeAgo } from "../../../../lib/time";
+import { uiLocale } from "../../../../lib/i18n";
 
 export interface Group {
   id: string;
@@ -71,7 +72,7 @@ export function StatusPill({ status, long, bannedUntil }: { status: UserStatus; 
   if (long && status === "banned" && bannedUntil) {
     label = new Date(bannedUntil).getFullYear() >= 9999
       ? t("users.bannedPermanent")
-      : t("users.bannedUntil", { date: new Date(bannedUntil).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) });
+      : t("users.bannedUntil", { date: new Date(bannedUntil).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" }) });
   }
   return <span className={`usr-status usr-status--${status}`}>{label}</span>;
 }

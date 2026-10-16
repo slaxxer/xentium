@@ -10,8 +10,10 @@ import { prisma } from "../../infrastructure/db.js";
 import { getStanding } from "../moderation/standing.js";
 import {
   getProfileParamsSchema,
+  getProfileQuerySchema,
   followParamsSchema,
   createCommentSchema,
+  createProfileCommentSchema,
   updateCommentSchema,
   deleteCommentParamsSchema,
   paginationSchema,
@@ -23,13 +25,14 @@ import {
 export const usersController = {
   getPublicProfile: (async (req, res) => {
     const { username } = getProfileParamsSchema.parse(req.params);
+    const { preview } = getProfileQuerySchema.parse(req.query);
     const viewerId = req.userId;
     const profile = await userService.getPublicProfile(username, viewerId);
 
     // ⚠ NOT awaited, and it swallows its own errors: recording a visit is a side
     // effect of reading a profile, and must never delay the response or turn a GET
-    // into a 500 because Redis blinked.
-    void recordProfileView(profile.id, viewerId, req.ip);
+    // into a 500 because Redis blinked. A hover card's glance is not a visit.
+    if (!preview) void recordProfileView(profile.id, viewerId, req.ip);
 
     res.json(profile);
   }),
@@ -68,25 +71,29 @@ export const usersController = {
     const viewerId = req.userId;
     const result = await userService.getProfileComments(profileUserId, page, limit, viewerId);
 
-    // Also return which comment IDs the authenticated viewer has liked
+    // Also return which comment IDs the authenticated viewer has liked or disliked
     let viewerLikedIds: string[] = [];
+    let viewerDislikedIds: string[] = [];
     if (viewerId && result.comments.length > 0) {
-      const commentIds = result.comments.map((c: any) => c.id);
-      const likes = await prisma.profileCommentLike.findMany({
-        where: { commentId: { in: commentIds }, userId: viewerId },
-        select: { commentId: true },
-      });
+      // Replies can be liked too.
+      const commentIds = result.comments.flatMap((c: any) => [c.id, ...(c.replies ?? []).map((r: any) => r.id)]);
+      const where = { commentId: { in: commentIds }, userId: viewerId };
+      const [likes, dislikes] = await Promise.all([
+        prisma.profileCommentLike.findMany({ where, select: { commentId: true } }),
+        prisma.profileCommentDislike.findMany({ where, select: { commentId: true } }),
+      ]);
       viewerLikedIds = likes.map((l) => l.commentId);
+      viewerDislikedIds = dislikes.map((d) => d.commentId);
     }
 
-    res.json({ ...result, viewerLikedIds });
+    res.json({ ...result, viewerLikedIds, viewerDislikedIds });
   }),
 
   createProfileComment: (async (req, res) => {
     const { id: profileUserId } = followParamsSchema.parse(req.params);
-    const { body } = createCommentSchema.parse(req.body);
+    const { body, parentId } = createProfileCommentSchema.parse(req.body);
     const authorId = req.userId!;
-    const comment = await userService.createProfileComment(profileUserId, authorId, body);
+    const comment = await userService.createProfileComment(profileUserId, authorId, body, parentId);
     res.status(201).json(comment);
   }),
 
@@ -181,6 +188,18 @@ export const usersController = {
     const { commentId } = deleteCommentParamsSchema.parse(req.params);
     const userId = req.userId!;
     await userService.unlikeProfileComment(commentId, userId);
+    res.status(204).send();
+  }),
+
+  dislikeProfileComment: (async (req, res) => {
+    const { commentId } = deleteCommentParamsSchema.parse(req.params);
+    await userService.dislikeProfileComment(commentId, req.userId!);
+    res.status(204).send();
+  }),
+
+  undislikeProfileComment: (async (req, res) => {
+    const { commentId } = deleteCommentParamsSchema.parse(req.params);
+    await userService.undislikeProfileComment(commentId, req.userId!);
     res.status(204).send();
   }),
 

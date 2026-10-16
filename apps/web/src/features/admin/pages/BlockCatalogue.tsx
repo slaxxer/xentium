@@ -23,6 +23,7 @@ import type { TemplateKey } from "@xentium/contracts";
 import { listPlaceableBlocks } from "../../../layout/blockRegistry";
 import { BlockArt } from "../../../layout/blockArt";
 import "./BlockCatalogue.scss";
+import { blockLabel } from "../../../lib/coreText";
 
 /** "All", then the build order the rest of the editor uses. */
 const CATEGORIES = ["all", "structure", "content", "data", "plugin"] as const;
@@ -76,12 +77,12 @@ export function BlockCatalogue({
     return items
       .filter((b) => category === "all" || b.editorMeta!.category === category)
       .filter((b) => !q
-        || b.editorMeta!.label.toLowerCase().includes(q)
+        || blockLabel(b.type).toLowerCase().includes(q)
         || b.type.toLowerCase().includes(q)
         // The description is searched too: someone looking for "avatar" should find
         // the profile card whether or not the word is in its name.
         || t(`layoutEditor.blockDesc.${b.type}`, { defaultValue: "" }).toLowerCase().includes(q))
-      .sort((a, b) => a.editorMeta!.label.localeCompare(b.editorMeta!.label));
+      .sort((a, b) => blockLabel(a.type).localeCompare(blockLabel(b.type)));
   }, [items, category, query, t]);
 
   return (
@@ -160,7 +161,7 @@ export function BlockCatalogue({
                     <span className="xt-cat__art"><BlockArt type={block.type} /></span>
                     <span className="xt-cat__meta">
                       <span className="xt-cat__name">
-                        {block.editorMeta!.label}
+                        {blockLabel(block.type)}
                         {block.pluginId && (
                           <span className="xt-cat__badge">{t("layoutEditor.category.plugin")}</span>
                         )}

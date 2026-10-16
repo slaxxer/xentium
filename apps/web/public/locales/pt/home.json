@@ -1,11 +1,14 @@
 {
   "nav": {
     "following": "Seguindo",
-    "myThreads": "Meus tópicos",
-    "liked": "Curtidos"
+    "myThreads": "Meus artigos",
+    "liked": "Curtidos",
+    "saved": "Salvos"
   },
   "spaces": {
-    "title": "Seus espaços"
+    "title": "Seus espaços",
+    "follow": "Seguir {{name}}",
+    "unfollow": "Deixar de seguir {{name}}"
   },
   "composer": {
     "placeholder": "Compartilhe algo com a comunidade…",
@@ -21,14 +24,37 @@
     "untitled": "(sem título)",
     "share": "Compartilhar",
     "save": "Salvar",
-    "saved": "Salvo"
+    "saved": "Salvo",
+    "copyLink": "Copiar link",
+    "linkCopied": "Link copiado",
+    "copyFailed": "Não foi possível copiar o link",
+    "followCategory": "Seguir {{name}}",
+    "unfollowCategory": "Deixar de seguir {{name}}",
+    "followTag": "Seguir #{{name}}",
+    "unfollowTag": "Deixar de seguir #{{name}}",
+    "edit": "Editar artigo",
+    "report": "Denunciar",
+    "ownArticle": "Seu próprio artigo",
+    "like": "Curtir",
+    "unlike": "Remover curtida",
+    "signInFirst": "Entre para fazer isso."
   },
   "feed": {
     "latest": "Recentes",
     "following": "Seguindo",
     "top": "Top da semana",
     "loading": "Carregando…",
-    "empty": "Ainda não há artigos. Seja o primeiro a publicar!"
+    "empty": "Ainda não há artigos. Seja o primeiro a publicar!",
+    "title": {
+      "liked": "Artigos que você curtiu",
+      "saved": "Artigos salvos",
+      "mine": "Seus artigos"
+    },
+    "backToAll": "Voltar a todos os artigos",
+    "empty_following": "Siga uma categoria ou uma tag (a estrela em Seus espaços ou o menu “…” de um artigo) e os artigos dela aparecem aqui.",
+    "empty_liked": "Os artigos que você curte aparecem aqui.",
+    "empty_saved": "Os artigos que você salva aparecem aqui.",
+    "empty_mine": "Os artigos que você publica aparecem aqui."
   },
   "progression": {
     "topReached": "Nível máximo alcançado",
@@ -58,5 +84,10 @@
   },
   "tags": {
     "title": "Tags populares"
+  },
+  "meCard": {
+    "posts": "publicações",
+    "followers": "seguidores",
+    "following": "seguindo"
   }
 }

@@ -174,7 +174,14 @@ export function ThemeChooser() {
                     <span className="xt-themecard__shot">
                       {theme.screenshot
                         ? <img src={theme.screenshot} alt="" loading="lazy" />
-                        : <span className="xt-themecard__noshot"><FontAwesomeIcon icon={faPalette} /></span>}
+                        // No picture: the theme's own colours (its first colourway's
+                        // background and accent), so two themes without screenshots tell apart.
+                        : <span className="xt-themecard__noshot"
+                            style={colourways[0]?.swatch.length
+                              ? { background: colourways[0].swatch[0], color: colourways[0].swatch[1] }
+                              : undefined}>
+                            <FontAwesomeIcon icon={faPalette} />
+                          </span>}
                     </span>
                     <span className="xt-themecard__body">
                       <span className="xt-themecard__name">

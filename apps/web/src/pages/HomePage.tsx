@@ -1,13 +1,17 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../components/Icon";
 import {
   faHouse, faStar, faComments, faHeart, faPenToSquare, faImage, faSquarePollVertical,
-  faEllipsis, faShareNodes, faBookmark, faUsers, faFire, faTag,
+  faEllipsis, faShareNodes, faBookmark, faFire, faTag, faLink, faFlag,
 } from "@fortawesome/free-solid-svg-icons";
-import { articlesApi, articleCategoriesApi, type ArticleListItem } from "../lib/articlesApi";
+import { CorePermissions } from "@xentium/contracts";
+import { articlesApi, articleCategoriesApi, type ArticleListItem, type HomeFeed } from "../lib/articlesApi";
+import { userCan } from "../lib/authStore";
+import { toast } from "../lib/toast";
+import { apiErrorMessage } from "../lib/swal";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { useAuth } from "../hooks/useAuth";
@@ -21,26 +25,12 @@ import { RankBadge } from "../components/RankBadge";
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
-/** Deterministic placeholder media gradient for articles with no featured image. */
-const MEDIA_GRADIENTS = [
-  "linear-gradient(135deg,#7c84ff,#5865f2 55%,#2bd4ee)",
-  "linear-gradient(135deg,#2bd4ee,#5865f2 55%,#7c84ff)",
-  "linear-gradient(135deg,#5fe3c0,#23a55a 55%,#00b1cf)",
-  "linear-gradient(135deg,#6bd4ff,#5865f2 60%,#8b8fff)",
-];
-function mediaGradient(key: string): string {
-  let h = 0;
-  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) | 0;
-  return MEDIA_GRADIENTS[Math.abs(h) % MEDIA_GRADIENTS.length]!;
-}
-
-const SPACE_COLORS = ["#5865f2", "#00b1cf", "#23a55a", "#f4a259", "#5b8def", "#7c84ff"];
-
-type FeedFilter = "latest" | "following" | "top";
+const SPACE_COLORS = ["#0d7c72", "#3f5a8a", "#8a3f5c", "#6b5a2e", "#b4532a", "#4d6b3a"];
 
 /* ── left rail ────────────────────────────────────────────────────────── */
 
 export function MeCard() {
+  const { t } = useTranslation("home");
   const { user } = useAuth();
   if (!user) return null;
   const badges = topGroups(user.groups, (g) => g.displayOrder, 3);
@@ -65,37 +55,86 @@ export function MeCard() {
         </div>
       )}
       <div className="hf-mecard__stats">
-        <div><b>{user.postCount ?? 0}</b><span>posts</span></div>
-        <div><b>{user.followerCount ?? 0}</b><span>followers</span></div>
-        <div><b>{user.followingCount ?? 0}</b><span>following</span></div>
+        <div><b>{user.postCount ?? 0}</b><span>{t("meCard.posts")}</span></div>
+        <div><b>{user.followerCount ?? 0}</b><span>{t("meCard.followers")}</span></div>
+        <div><b>{user.followingCount ?? 0}</b><span>{t("meCard.following")}</span></div>
       </div>
     </section>
   );
 }
 
+/** The home lists the menu and the feed agree on, read from `?filter=`. */
+const HOME_FEEDS: HomeFeed[] = ["latest", "following", "top", "liked", "saved", "mine"];
+function useHomeFilter(): [HomeFeed, (next: HomeFeed) => void] {
+  const [params, setParams] = useSearchParams();
+  const raw = params.get("filter") as HomeFeed | null;
+  const filter: HomeFeed = raw && HOME_FEEDS.includes(raw) ? raw : "latest";
+  const set = (next: HomeFeed) => {
+    const p = new URLSearchParams(params);
+    if (next === "latest") p.delete("filter"); else p.set("filter", next);
+    setParams(p, { replace: true });
+  };
+  return [filter, set];
+}
+
+/** The categories and tags the member follows, shared by every follow toggle on the page. */
+function useFollowedTopics() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const { data } = useQuery({
+    queryKey: ["followed-topics"],
+    queryFn: () => articlesApi.followedTopics(),
+    enabled: !!user,
+    staleTime: 60_000,
+  });
+  const toggle = useMutation({
+    mutationFn: ({ kind, id, on }: { kind: "category" | "tag"; id: string; on: boolean }) =>
+      kind === "category"
+        ? (on ? articlesApi.followCategory(id) : articlesApi.unfollowCategory(id))
+        : (on ? articlesApi.followTag(id) : articlesApi.unfollowTag(id)),
+    onSuccess: (next) => {
+      qc.setQueryData(["followed-topics"], next);
+      qc.invalidateQueries({ queryKey: ["articles-home", "following"] });
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+  const follows = (kind: "category" | "tag", id: string) =>
+    !!(kind === "category" ? data?.categories : data?.tags)?.some((x) => x.id === id);
+  return { follows, toggle: (kind: "category" | "tag", id: string) => toggle.mutate({ kind, id, on: !follows(kind, id) }) };
+}
+
 export function SectionNav() {
   const { t } = useTranslation(["common", "home"]);
-  const items = [
-    { icon: faHouse,    label: t("common:nav.home"),      to: "/", active: true },
-    { icon: faStar,     label: t("home:nav.following"),   to: "/?filter=following" },
-    { icon: faComments, label: t("home:nav.myThreads"),   to: "/articles?filter=drafts" },
-    { icon: faHeart,    label: t("home:nav.liked"),       to: "/?filter=liked" },
-    { icon: faUsers,    label: t("common:nav.members"),   to: "/members" },
+  const [filter] = useHomeFilter();
+  // Home's lists, all of them views of the feed: what the member follows (categories
+  // and tags), wrote, liked and saved.
+  const items: { icon: typeof faHouse; label: string; feed: HomeFeed }[] = [
+    { icon: faHouse,    label: t("common:nav.home"),    feed: "latest" },
+    { icon: faStar,     label: t("home:nav.following"), feed: "following" },
+    { icon: faComments, label: t("home:nav.myThreads"), feed: "mine" },
+    { icon: faHeart,    label: t("home:nav.liked"),     feed: "liked" },
+    { icon: faBookmark, label: t("home:nav.saved"),     feed: "saved" },
   ];
   return (
     <nav className="hf-sidenav">
-      {items.map((it) => (
-        <Link key={it.label} to={it.to} className={`hf-sidenav__item${it.active ? " is-active" : ""}`}>
-          <FontAwesomeIcon icon={it.icon} fixedWidth />
-          {it.label}
-        </Link>
-      ))}
+      {items.map((it) => {
+        const on = filter === it.feed || (it.feed === "latest" && filter === "top");
+        return (
+          <Link key={it.feed} to={it.feed === "latest" ? "/" : `/?filter=${it.feed}`}
+            className={`hf-sidenav__item${on ? " is-active" : ""}`} aria-current={on ? "page" : undefined}>
+            <FontAwesomeIcon icon={it.icon} fixedWidth />
+            {it.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 }
 
 export function SpacesCard() {
   const { t } = useTranslation("home");
+  const { user } = useAuth();
+  const topics = useFollowedTopics();
   const { data: categories = [] } = useQuery({
     queryKey: ["article-categories"],
     queryFn: () => articleCategoriesApi.tree(),
@@ -104,12 +143,27 @@ export function SpacesCard() {
   return (
     <section className="hf-spaces">
       <h4 className="hf-railhead">{t("spaces.title")}</h4>
-      {categories.slice(0, 6).map((c, i) => (
-        <Link key={c.id} to={`/articles?filter=${c.id}`} className="hf-space">
-          <i style={{ background: SPACE_COLORS[i % SPACE_COLORS.length] }} />
-          {c.name}
-        </Link>
-      ))}
+      {categories.slice(0, 6).map((c, i) => {
+        const on = topics.follows("category", c.id);
+        return (
+          <div key={c.id} className="hf-space">
+            <Link to={`/articles?filter=${c.id}`} className="hf-space__link">
+              <i style={{ background: SPACE_COLORS[i % SPACE_COLORS.length] }} />
+              {c.name}
+            </Link>
+            {/* Following a category fills the Following list with its articles. */}
+            {user && (
+              <button type="button" className={`hf-space__follow${on ? " is-on" : ""}`}
+                aria-pressed={on}
+                title={t(on ? "spaces.unfollow" : "spaces.follow", { name: c.name })}
+                aria-label={t(on ? "spaces.unfollow" : "spaces.follow", { name: c.name })}
+                onClick={() => topics.toggle("category", c.id)}>
+                <FontAwesomeIcon icon={faStar} />
+              </button>
+            )}
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -135,22 +189,114 @@ function Composer() {
   );
 }
 
+/** The "…" menu on a card: link, follow its category and tags, edit, report. */
+function CardMenu({ a }: { a: ArticleListItem }) {
+  const { t } = useTranslation("home");
+  const { user } = useAuth();
+  const topics = useFollowedTopics();
+  const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
+
+  const canEdit = !!user && (user.id === a.author.id || userCan(user, CorePermissions.ARTICLE_EDIT_ANY));
+  const pick = (fn: () => void) => () => { setOpen(false); fn(); };
+
+  return (
+    <div className="hf-more-wrap" ref={ref}>
+      <button className="hf-more" type="button" aria-label={t("post.more")} aria-haspopup="menu" aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}>
+        <FontAwesomeIcon icon={faEllipsis} />
+      </button>
+      {open && (
+        <div className="xt-pop hf-menu" role="menu">
+          <button type="button" role="menuitem" onClick={pick(() => copyArticleLink(a, t))}>
+            <FontAwesomeIcon icon={faLink} fixedWidth /> {t("post.copyLink")}
+          </button>
+          {user && a.category && (
+            <button type="button" role="menuitem" onClick={pick(() => topics.toggle("category", a.category!.id))}>
+              <FontAwesomeIcon icon={faStar} fixedWidth />
+              {t(topics.follows("category", a.category.id) ? "post.unfollowCategory" : "post.followCategory", { name: a.category.name })}
+            </button>
+          )}
+          {user && a.tags.slice(0, 3).map((tag) => (
+            <button key={tag.id} type="button" role="menuitem" onClick={pick(() => topics.toggle("tag", tag.id))}>
+              <FontAwesomeIcon icon={faTag} fixedWidth />
+              {t(topics.follows("tag", tag.id) ? "post.unfollowTag" : "post.followTag", { name: tag.name })}
+            </button>
+          ))}
+          {canEdit && (
+            <button type="button" role="menuitem" onClick={pick(() => navigate(`/articles/${a.slug}/edit`))}>
+              <FontAwesomeIcon icon={faPenToSquare} fixedWidth /> {t("post.edit")}
+            </button>
+          )}
+          {user && user.id !== a.author.id && (
+            <button type="button" role="menuitem" onClick={pick(() => navigate(`/articles/${a.slug}?report=1`))}>
+              <FontAwesomeIcon icon={faFlag} fixedWidth /> {t("post.report")}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const articleUrl = (a: ArticleListItem) => `${window.location.origin}/articles/${a.slug}`;
+
+async function copyArticleLink(a: ArticleListItem, t: (k: string) => string) {
+  try {
+    await navigator.clipboard.writeText(articleUrl(a));
+    toast.success(t("post.linkCopied"));
+  } catch {
+    toast.error(t("post.copyFailed"));
+  }
+}
+
 function ActivityCard({ a }: { a: ArticleListItem }) {
   const { t } = useTranslation("home");
   const qc = useQueryClient();
-  const [liked, setLiked] = useState(false);
+  const { user } = useAuth();
+  // The viewer's own state comes with the list, so a heart starts filled when it is.
+  const [liked, setLiked] = useState(!!a.viewer?.liked);
   const [likes, setLikes] = useState(a.likeCount);
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState(!!a.viewer?.saved);
+  // One's own article cannot be liked (the API refuses it): the count shows, the
+  // button does not offer what would fail.
+  const own = !!user && user.id === a.author.id;
 
   const likeMut = useMutation({
-    mutationFn: () => (liked ? articlesApi.unlike(a.id) : articlesApi.like(a.id)),
-    onMutate: () => { setLiked((v) => !v); setLikes((n) => n + (liked ? -1 : 1)); },
-    onError: () => { setLiked((v) => !v); setLikes((n) => n + (liked ? 1 : -1)); },
-    onSuccess: (res: any) => { if (typeof res?.likeCount === "number") setLikes(res.likeCount); },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["articles-home"] }),
+    mutationFn: (next: boolean) => (next ? articlesApi.like(a.id) : articlesApi.unlike(a.id)),
+    onMutate: (next) => { setLiked(next); setLikes((n) => n + (next ? 1 : -1)); },
+    onError: (e, next) => { setLiked(!next); setLikes((n) => n + (next ? -1 : 1)); toast.error(apiErrorMessage(e)); },
+    onSuccess: (res) => { if (typeof res?.likeCount === "number") setLikes(res.likeCount); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["articles-home", "liked"] }),
   });
 
+  const saveMut = useMutation({
+    mutationFn: (next: boolean): Promise<unknown> => (next ? articlesApi.save(a.id) : articlesApi.unsave(a.id)),
+    onMutate: (next) => setSaved(next),
+    onError: (e, next) => { setSaved(!next); toast.error(apiErrorMessage(e)); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["articles-home", "saved"] }),
+  });
+
+  /** The device's own share sheet where there is one; otherwise the link goes to the clipboard. */
+  const share = async () => {
+    if (navigator.share) {
+      try { await navigator.share({ title: a.title, url: articleUrl(a) }); } catch { /* dismissed */ }
+      return;
+    }
+    await copyArticleLink(a, t);
+  };
+
   const badges = topGroups(a.author.groups ?? [], (g) => g.group.displayOrder, 3).map((x) => x.group);
+  const signIn = () => toast.info(t("post.signInFirst"));
 
   return (
     <article className="hf-post">
@@ -179,7 +325,7 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
               : t("post.posted")} · {timeAgo(a.publishedAt ?? a.updatedAt, { compact: true })}
           </span>
         </div>
-        <button className="hf-more" type="button" aria-label={t("post.more")}><FontAwesomeIcon icon={faEllipsis} /></button>
+        <CardMenu a={a} />
       </div>
 
       <Link to={`/articles/${a.slug}`} className="hf-artcard">
@@ -187,7 +333,7 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
           className="hf-artcard__media"
           style={a.featuredImage
             ? { backgroundImage: `url(/uploads/${a.featuredImage})` }
-            : { background: mediaGradient(a.id) }}
+            : { background: "var(--c-accent-soft)" }}
         >
           <span className="hf-readtag">{t("post.readTime", { n: a.readTime })}</span>
         </div>
@@ -201,20 +347,25 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
         <button
           type="button"
           className={`hf-act hf-act--like${liked ? " is-on" : ""}`}
-          onClick={() => likeMut.mutate()}
+          aria-pressed={liked}
+          disabled={own || likeMut.isPending}
+          title={own ? t("post.ownArticle") : t(liked ? "post.unlike" : "post.like")}
+          onClick={() => (user ? likeMut.mutate(!liked) : signIn())}
         >
           <FontAwesomeIcon icon={faHeart} /> {likes}
         </button>
-        <Link to={`/articles/${a.slug}`} className="hf-act">
+        <Link to={`/articles/${a.slug}#comments`} className="hf-act">
           <FontAwesomeIcon icon={faComments} /> {a.commentCount}
         </Link>
-        <button type="button" className="hf-act">
+        <button type="button" className="hf-act" onClick={share}>
           <FontAwesomeIcon icon={faShareNodes} /> {t("post.share")}
         </button>
         <button
           type="button"
           className={`hf-save${saved ? " is-on" : ""}`}
-          onClick={() => setSaved((v) => !v)}
+          aria-pressed={saved}
+          disabled={saveMut.isPending}
+          onClick={() => (user ? saveMut.mutate(!saved) : signIn())}
         >
           <FontAwesomeIcon icon={faBookmark} /> {saved ? t("post.saved") : t("post.save")}
         </button>
@@ -225,40 +376,54 @@ function ActivityCard({ a }: { a: ArticleListItem }) {
 
 export function Feed() {
   const { t } = useTranslation("home");
-  const [filter, setFilter] = useState<FeedFilter>("latest");
+  const [filter, setFilter] = useHomeFilter();
   const { data, isLoading } = useQuery({
     queryKey: ["articles-home", filter],
     queryFn: () => articlesApi.list({ page: 1, limit: 12, feed: filter }),
   });
   const articles = data?.data ?? [];
 
-  const chips: { id: FeedFilter; label: string }[] = [
+  const chips: { id: HomeFeed; label: string }[] = [
     { id: "latest", label: t("feed.latest") },
     { id: "following", label: t("feed.following") },
     { id: "top", label: t("feed.top") },
   ];
+  // Liked, saved and mine are the member's own lists, opened from the menu: a title
+  // and a way back, rather than a chip that is never otherwise reachable.
+  const ownList = filter === "liked" || filter === "saved" || filter === "mine";
 
   return (
     <main className="hf-feed">
       <Composer />
-      <div className="hf-feedfilter">
-        {chips.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={filter === c.id ? "is-on" : ""}
-            onClick={() => setFilter(c.id)}
-          >
-            {c.label}
-          </button>
-        ))}
-      </div>
+      {ownList ? (
+        <div className="hf-feedtitle">
+          <h2>{t(`feed.title.${filter}`)}</h2>
+          <button type="button" className="hf-feedtitle__back" onClick={() => setFilter("latest")}>{t("feed.backToAll")}</button>
+        </div>
+      ) : (
+        <div className="hf-feedfilter">
+          {chips.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={filter === c.id ? "is-on" : ""}
+              aria-pressed={filter === c.id}
+              onClick={() => setFilter(c.id)}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading && <div className="hf-feed__empty">{t("feed.loading")}</div>}
       {!isLoading && articles.length === 0 && (
-        <div className="hf-feed__empty">{t("feed.empty")}</div>
+        <div className="hf-feed__empty">
+          {t(filter === "latest" || filter === "top" ? "feed.empty" : `feed.empty_${filter}`)}
+        </div>
       )}
-      {articles.map((a) => <ActivityCard key={a.id} a={a} />)}
+      {/* Keyed by list, so a card's own liked/saved state starts from what this list says. */}
+      {articles.map((a) => <ActivityCard key={`${filter}:${a.id}`} a={a} />)}
     </main>
   );
 }

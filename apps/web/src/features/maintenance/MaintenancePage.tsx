@@ -14,6 +14,7 @@ import { useSiteConfig } from "../../hooks/useSiteConfig";
 import type { MaintenanceLinkIcon, MaintenanceStatus } from "./useMaintenance";
 import "./MaintenancePage.scss";
 import { SiteLogo } from "../../components/SiteLogo";
+import { uiLocale } from "../../lib/i18n";
 
 /**
  * The footer links carry an icon *key*, never a class name: the app imports
@@ -65,7 +66,7 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
   const left = etaMs !== null ? Math.max(0, etaMs - now) : 0;
   const showCountdown = countdownWanted && left > 0;
   const backOnline = etaMs !== null
-    ? new Date(etaMs).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    ? new Date(etaMs).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" })
     : null;
 
   const { mode, steps, currentStep, label, percent } = status.progress;
@@ -94,8 +95,8 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
             )}
           </div>
 
-          <h1 className="mt-card__title">{status.title}</h1>
-          <p className="mt-card__lead">{status.message}</p>
+          <h1 className="mt-card__title">{status.title || t("maintenance.defaultTitle")}</h1>
+          <p className="mt-card__lead">{status.message || t("maintenance.defaultMessage")}</p>
 
           {showCountdown && (
             <div className="mt-countdown">
@@ -158,7 +159,7 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
             <div className="mt-block mt-block--bar">
               <div className="mt-bar"><div className="mt-bar__fill" style={{ width: `${percent}%` }} /></div>
               <div className="mt-bar__meta">
-                <span className="mt-bar__label">{label}</span>
+                <span className="mt-bar__label">{label || t("maintenance.stepInProgress")}</span>
                 <span className="mt-bar__pct">{percent}%</span>
               </div>
             </div>

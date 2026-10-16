@@ -79,6 +79,9 @@ export interface NotifyOptions {
   body:     string;
   link?:    string;
   channels: ("in_app" | "email")[];
+  /** The text as a translation key in the plugin's namespace (`"forum:notify.approved"`): the bell
+   *  shows `<key>.title` / `<key>.body` in the reader's language; title/body stay the fallback. */
+  i18n?:    { key: string; params?: Record<string, string | number> };
 }
 
 // ── Host bridge ──────────────────────────────────────────────────────────────

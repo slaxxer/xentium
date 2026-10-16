@@ -1,4 +1,5 @@
 import type { TFunction } from "i18next";
+import { uiLocale } from "../../../lib/i18n";
 
 /**
  * One place that turns an API error into what the member reads. Codes the
@@ -42,7 +43,7 @@ export function errorText(t: TFunction, e: ApiErr, fallback = "door.err.generic"
     const reason = (e.details?.reason as string | undefined) ?? "";
     const until = e.details?.expiresAt as string | null | undefined;
     return until
-      ? t("door.err.bannedUntil", { date: new Date(until).toLocaleDateString(), reason })
+      ? t("door.err.bannedUntil", { date: new Date(until).toLocaleDateString(uiLocale()), reason })
       : t("door.err.bannedForever", { reason });
   }
   if (e.code && SERVER_WORDED.has(e.code) && e.message) return e.message;

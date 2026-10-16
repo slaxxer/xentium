@@ -1,11 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeIcon } from "../../components/Icon";
 import {
   faHeart,
   faHeartCrack,
+  faThumbsUp,
+  faThumbsDown,
   faShareNodes,
   faPenToSquare,
   faEye,
@@ -31,6 +33,7 @@ import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
 import { RankBadge } from "../../components/RankBadge";
 import { useDateTime } from "../../lib/datetime";
+import { uiLocale } from "../../lib/i18n";
 
 /** Small follow-button component that fetches initial follow state from the author's profile. */
 function AuthorFollowButton({ authorId, authorUsername }: { authorId: string; authorUsername: string }) {
@@ -102,6 +105,18 @@ export function ArticleReaderContent() {
     enabled: !!articleQuery.data,
   });
 
+  // `?comment=<id>` (a notification): scroll to that comment.
+  const [searchParams] = useSearchParams();
+  const focusCommentId = searchParams.get("comment");
+  const focusShown = !!focusCommentId && !!commentsQuery.data?.data.some((c) => c.id === focusCommentId);
+  useEffect(() => {
+    if (!focusShown) return;
+    const id = window.setTimeout(() => {
+      document.getElementById(`comment-${focusCommentId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [focusShown, focusCommentId]);
+
   // Live presence — usernames currently online, used for the author card dot.
   const onlineQuery = useQuery<{ users?: { username: string }[] }>({
     queryKey: ["online-presence"],
@@ -138,7 +153,12 @@ export function ArticleReaderContent() {
   });
 
   // Track per-comment like state
-  const [commentLikes, setCommentLikes] = useState<Set<string>>(new Set());
+  /**
+   * The viewer's thumbs on comments, as changed in this visit. What they gave before
+   * comes with each comment (`viewerReaction`); this only holds the changes on top,
+   * so a reload no longer forgets them.
+   */
+  const [reactions, setReactions] = useState<Record<string, "like" | "dislike" | null>>({});
 
   const likeMut = useMutation({
     mutationFn: () => (liked ? articlesApi.unlike(articleQuery.data!.id) : articlesApi.like(articleQuery.data!.id)),
@@ -166,7 +186,8 @@ export function ArticleReaderContent() {
     onError: (e) => swalToast(apiErrorMessage(e, t("reader.dislikeError"))),
   });
 
-  const [showReport, setShowReport]       = useState(false);
+  // `?report=1` (the home card's "Report"): open the form straight away.
+  const [showReport, setShowReport]       = useState(() => searchParams.get("report") === "1");
   const [reportReason, setReportReason]   = useState("");
   const reportMut = useMutation({
     mutationFn: () => api.post("/moderation/reports", {
@@ -182,36 +203,28 @@ export function ArticleReaderContent() {
     onError: (e) => swalToast(apiErrorMessage(e, t("reader.reportError"))),
   });
 
-  const commentLikeMut = useMutation({
-    mutationFn: ({ commentId, isLiked }: { commentId: string; isLiked: boolean }) =>
-      isLiked ? articlesApi.unlikeComment(commentId) : articlesApi.likeComment(commentId),
-    onMutate: ({ commentId, isLiked }) => {
-      setCommentLikes((prev) => {
-        const next = new Set(prev);
-        if (isLiked) next.delete(commentId);
-        else next.add(commentId);
-        return next;
-      });
-    },
-    onSuccess: ({ likeCount }, { commentId }) => {
+  /** Thumbs up / down on a comment: one or the other; the same again takes it back. */
+  const commentReactMut = useMutation({
+    mutationFn: ({ commentId, current, next }: { commentId: string; current: "like" | "dislike" | null; next: "like" | "dislike" | null }) =>
+      next === "like" ? articlesApi.likeComment(commentId)
+        : next === "dislike" ? articlesApi.dislikeComment(commentId)
+        : current === "like" ? articlesApi.unlikeComment(commentId)
+        : articlesApi.undislikeComment(commentId),
+    onMutate: ({ commentId, next }) => setReactions((r) => ({ ...r, [commentId]: next })),
+    onSuccess: ({ likeCount, dislikeCount }, { commentId }) => {
       qc.setQueryData(["article-comments", articleQuery.data?.id], (prev: any) => {
         if (!prev) return prev;
         const patchList = (list: any[]): any[] =>
           list.map((c) =>
             c.id === commentId
-              ? { ...c, likeCount }
+              ? { ...c, likeCount, dislikeCount }
               : { ...c, replies: patchList(c.replies ?? []) },
           );
         return { ...prev, data: patchList(prev.data) };
       });
     },
-    onError: (err, { commentId, isLiked }) => {
-      setCommentLikes((prev) => {
-        const next = new Set(prev);
-        if (isLiked) next.add(commentId);
-        else next.delete(commentId);
-        return next;
-      });
+    onError: (err, { commentId, current }) => {
+      setReactions((r) => ({ ...r, [commentId]: current }));
       swalToast(apiErrorMessage(err, t("reader.likeUpdateError")));
     },
   });
@@ -334,12 +347,12 @@ export function ArticleReaderContent() {
             {" · "}
             <FontAwesomeIcon icon={faClock} /> {t("reader.minRead", { n: a.readTime })}
             {" · "}
-            <FontAwesomeIcon icon={faEye} /> {t("reader.views", { n: a.viewCount.toLocaleString() })}
+            <FontAwesomeIcon icon={faEye} /> {t("reader.views", { n: a.viewCount.toLocaleString(uiLocale()) })}
           </div>
         </div>
         <div className="ard__meta-actions">
           <button
-            className={`ard__action ${liked ? "is-active" : ""}`}
+            className={`ard__action ard__action--like ${liked ? "is-active" : ""}`}
             onClick={() => likeMut.mutate()}
             disabled={!isAuthed || isAuthor || likeMut.isPending}
             title={isAuthor ? t("reader.cantLikeOwn") : liked ? t("reader.unlike") : t("reader.like")}
@@ -491,10 +504,10 @@ export function ArticleReaderContent() {
         )}
 
         {commentsQuery.data?.data.map((c) => {
-          const isLiked = commentLikes.has(c.id);
+          const reaction = c.id in reactions ? reactions[c.id]! : c.viewerReaction ?? null;
           const canLike = isAuthed && authUser?.id !== c.author.id && !c.deletedAt;
           return (
-            <div key={c.id} className="ard__comment" data-mod-target={`article_comment:${c.id}`}>
+            <div key={c.id} id={`comment-${c.id}`} data-mod-target={`article_comment:${c.id}`} className="ard__comment">
               <UserAvatar user={c.author} size={36} className="avatar" />
               <div className="ard__comment-body">
                 <div className="ard__comment-head">
@@ -522,20 +535,30 @@ export function ArticleReaderContent() {
                 )}
                 {!c.deletedAt && (
                   <div className="ard__comment-footer">
-                    {canLike ? (
-                      <button
-                        className={`ard__comment-like${isLiked ? " is-liked" : ""}`}
-                        onClick={() => commentLikeMut.mutate({ commentId: c.id, isLiked })}
-                        disabled={commentLikeMut.isPending}
-                        title={isLiked ? "Unlike" : "Like"}
-                      >
-                        <FontAwesomeIcon icon={faHeart} /> {c.likeCount}
-                      </button>
-                    ) : (
-                      <span className="ard__comment-like ard__comment-like--static">
-                        <FontAwesomeIcon icon={faHeart} /> {c.likeCount}
-                      </span>
-                    )}
+                    {/* Thumbs up / down. Not on one's own comment: the count only. */}
+                    {(["like", "dislike"] as const).map((kind) => {
+                      const on = reaction === kind;
+                      const count = kind === "like" ? c.likeCount : c.dislikeCount ?? 0;
+                      const icon = kind === "like" ? faThumbsUp : faThumbsDown;
+                      return canLike ? (
+                        <button
+                          key={kind}
+                          type="button"
+                          className={`ard__comment-like ard__comment-like--${kind}${on ? " is-liked" : ""}`}
+                          aria-pressed={on}
+                          onClick={() => commentReactMut.mutate({ commentId: c.id, current: reaction, next: on ? null : kind })}
+                          disabled={commentReactMut.isPending}
+                          title={t(kind === "like" ? (on ? "reader.unlike" : "reader.like") : (on ? "reader.undislike" : "reader.dislike"))}
+                        >
+                          <FontAwesomeIcon icon={icon} /> {count}
+                        </button>
+                      ) : (
+                        <span key={kind} className={`ard__comment-like ard__comment-like--${kind} ard__comment-like--static`}
+                          title={t(isAuthed ? "reader.cantRateOwnComment" : "reader.signInToRate")}>
+                          <FontAwesomeIcon icon={icon} /> {count}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </div>

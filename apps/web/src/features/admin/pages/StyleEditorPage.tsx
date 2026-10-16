@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
-  faRotateLeft, faRotateRight, faCloudArrowUp,
+  faRotateLeft, faRotateRight,
   faMagnifyingGlass, faSliders, faObjectGroup, faArrowTurnDown,
   faArrowUp, faArrowDown, faArrowLeft, faArrowRight, faUpload, faStar,
 } from "@fortawesome/free-solid-svg-icons";
@@ -16,8 +16,7 @@ import { toast } from "../../../lib/toast";
 import { useDebouncedSave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import { refreshTokenCss } from "../../../lib/liveStyle";
-import { StyleHistoryList } from "../components/StyleHistoryList";
-import { ThemeScopePicker } from "../components/ThemeScopePicker";
+import { StudioHistory } from "../components/StudioHistory";
 import { PREVIEW_THEME_PARAM, useEditingTheme, withTheme } from "../../../lib/editingTheme";
 import {
   HEARTH_DEFAULT_TOKENS,
@@ -46,14 +45,18 @@ import {
   parseShadow, formatShadow, shadowValueFor, SHADOW_SEED,
   type ShadowKind, type ShadowParts,
 } from "./shadowValue";
+import { PILL, pickOnPage } from "./stylePagePick";
+import { LAYOUT_PREVIEW_PARAM } from "../../../layout/previewMode";
+import { listTemplates } from "../../../layout/templateRegistry";
+import { useAuth } from "../../../hooks/useAuth";
 import "./StyleEditorPage.scss";
 import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
 import { XentiumMark } from "../../../components/XentiumMark";
+import { uiLocale } from "../../../lib/i18n";
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
 export type StyleTab = "tokens" | "branding" | "css" | "history";
-type Tab = StyleTab;
 
 interface StyleDraft {
   tokens: ScopedTokenSet;
@@ -124,13 +127,6 @@ const SHADOW_SIDES: { key: "top" | "bottom" | "left" | "right"; label: string; i
   { key: "bottom", label: "styleEditor.shBottom", icon: faArrowDown },
   { key: "left",   label: "styleEditor.shLeft",   icon: faArrowLeft },
   { key: "right",  label: "styleEditor.shRight",  icon: faArrowRight },
-];
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: "tokens",   label: "styleEditor.tabTokens" },
-  { id: "branding", label: "styleEditor.secBranding" },
-  { id: "css",      label: "styleEditor.secCustomCss" },
-  { id: "history",  label: "styleEditor.tabHistory" },
 ];
 
 function numVal(v: string | undefined, fallback: number): number {
@@ -213,40 +209,19 @@ function sectionVars(section: Section): string[] {
  * live one. Keyed by it, so switching themes starts the editor fresh rather than
  * carrying one theme's unsaved state onto another.
  */
-export function StyleEditorPage({ embedded, tab }: {
-  /** Inside Theme Studio: no page header, no tabs and no Publish of its own — the
-   *  Studio has one header and one Publish for layouts and styles together. */
-  embedded?: boolean;
-  /** Which part to show when embedded (the Studio's mode). */
-  tab?: StyleTab;
-} = {}) {
+export function StyleEditorPage({ tab }: {
+  /** Which part to show: the Studio's mode. The Studio owns the page header, the mode
+   *  tabs and the one Publish for layouts and styles together. */
+  tab: StyleTab;
+}) {
   const { key } = useEditingTheme();
-  return <StyleEditorInner key={key ?? ""} themeKey={key} embedded={embedded} forcedTab={tab} />;
+  return <StyleEditorInner key={key ?? ""} themeKey={key} tab={tab} />;
 }
 
-function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string | null; embedded?: boolean; forcedTab?: StyleTab }) {
+function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: StyleTab }) {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
-  // The tab lives in the URL so it can be linked and survives a refresh — and so
-  // the retired `/admin/style-history` route can redirect straight to History
-  // rather than dropping you on Tokens.
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const tabParam = searchParams.get("tab");
-  const [ownTab, setTab] = useState<Tab>(
-    () => (TABS.some((x) => x.id === tabParam) ? (tabParam as Tab) : "tokens"),
-  );
-  // Embedded, the Studio's mode decides; the editor's own tab state is not consulted.
-  const tab: Tab = forcedTab ?? ownTab;
-  const selectTab = (next: Tab) => {
-    if (forcedTab) return;
-    setTab(next);
-    // Tokens is the default, so it stays out of the URL; `replace` keeps tab
-    // switching out of the back button's history.
-    const params = new URLSearchParams(searchParams);
-    if (next === "tokens") params.delete("tab"); else params.set("tab", next);
-    setSearchParams(params, { replace: true });
-  };
   const [sectionId, setSectionId] = useState(SECTIONS[0]!.id);
   const [scope, setScope] = useState<ThemeScope>("global");
   const [previewState, setPreviewState] = useState<PreviewState>("base");
@@ -257,7 +232,8 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
   const [tokens, setTokens] = useState<ScopedTokenSet | null>(null);
   const initialised = useRef(false);
 
-  const [fontFamily, setFontFamily] = useState<string>(FONTS[0]);
+  // "" = no override: the core pairing (Figtree text, Bricolage Grotesque headings).
+  const [fontFamily, setFontFamily] = useState<string>("");
   const [fontWeight, setFontWeight] = useState<string>("400");
   const [fontSize,   setFontSize]   = useState<string>("16");
 
@@ -266,8 +242,9 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
   // second sheet could express was "when the visitor's OS asks for dark" — a question
   // this site no longer answers, because a dark site is a dark THEME.
   const [customCss, setCustomCss]           = useState("");
-  const [customCssSaved, setCustomCssSaved] = useState("");
-  const customDirty = customCss !== customCssSaved;
+  // `undefined` until loaded, so the autosave below stays idle until then.
+  const [customCssSaved, setCustomCssSaved] = useState<string | undefined>(undefined);
+  const customDirty = customCssSaved !== undefined && customCss !== customCssSaved;
 
   /**
    * The installed theme's own stylesheet, which sits UNDER this editor's content.
@@ -298,15 +275,25 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
     return () => clearTimeout(id);
   }, [customCss]);
 
+  /**
+   * The console autosaves to the theme's DRAFT, like the colours and the layouts: the
+   * stylesheet goes live with the Theme Studio's one Publish. It used to save straight
+   * to the site, so CSS written for a redesign went out before the redesign did.
+   *
+   * A sheet the server cannot parse is refused and stays unsaved; the meta line says
+   * so instead of a toast per keystroke pause.
+   */
   const saveCustomCssMut = useMutation({
-    mutationFn: () => api.put(withTheme("/appearance/custom-css", themeKey), { css: customCss }),
-    onSuccess: async () => {
-      setCustomCssSaved(customCss);
-      await refreshTokenCss();
-      document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
-      swalToast(t("styleEditor.toastCss"), "success");
+    mutationFn: (css: string) => api.put(withTheme("/appearance/custom-css", themeKey), { css }).then(() => css),
+    onSuccess: (css) => {
+      setCustomCssSaved(css);
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
+      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
     },
-    onError: (e) => swalToast(apiErrorMessage(e)),
+  });
+  useDebouncedSave({
+    value: customCss, savedValue: customCssSaved, delay: 1200,
+    onSave: (css) => saveCustomCssMut.mutate(css),
   });
 
   // ── Autosave baseline ───────────────────────────────────────────────────────
@@ -433,8 +420,9 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
       await Promise.all(writes);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["acp-style-history"] });
+      qc.invalidateQueries({ queryKey: ["studio-history"] });
       qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
+      qc.invalidateQueries({ queryKey: ["studio-status"] });
       // No global injection here: the draft is previewed only in the scoped preview
       // iframe (previewCss). Injecting into the ACP's own <head> would restyle the
       // ACP you're working in with unpublished changes. The ACP keeps showing the
@@ -444,35 +432,22 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
-  // Staged-publish: edits above are saved as a draft. Publishing (here or via the
-  // scheduled "Publish appearance changes" job) promotes the draft to the live site.
-  const { data: draftStatus } = useQuery<{ pending: boolean }>({
+  // Edits above are saved as a draft; the Theme Studio's Publish puts it live.
+  const { data: draftStatus } = useQuery<{ pending: boolean; tokens?: boolean; font?: boolean }>({
     queryKey: ["acp-draft-status", themeKey],
     queryFn:  () => api.get(withTheme("/appearance/draft-status", themeKey)),
     refetchInterval: 15_000,
   });
-  const publishMut = useMutation({
-    mutationFn: () => api.post(withTheme("/appearance/publish", themeKey), {}),
-    onSuccess: async () => {
-      await refreshTokenCss();
-      qc.invalidateQueries({ queryKey: ["acp-draft-status"] });
-      qc.invalidateQueries({ queryKey: ["acp-style-history"] });
-      setShowDiff(false);
-      swalToast(t("styleEditor.toastPublished"), "success");
-    },
-    onError: (e) => swalToast(apiErrorMessage(e)),
-  });
-
   const resetMut = useMutation({
     mutationFn: () => api.post(withTheme("/appearance/reset", themeKey), {}),
     onSuccess: async () => {
       const empty: ScopedTokenSet = {};
       setTokens(empty);
-      setFontFamily(FONTS[0]); setFontSize("16"); setFontWeight("400");
+      setFontFamily(""); setFontSize("16"); setFontWeight("400");
       setCustomCss(""); setCustomCssSaved("");
       document.getElementById(CUSTOM_CSS_PREVIEW_ID)?.remove();
       await refreshTokenCss();
-      setSavedSnap({ tokens: empty, fontFamily: FONTS[0], fontSize: "16", fontWeight: "400" });
+      setSavedSnap({ tokens: empty, fontFamily: "", fontSize: "16", fontWeight: "400" });
       swalToast(t("styleEditor.toastReset"), "success");
     },
     onError: (e) => swalToast(apiErrorMessage(e)),
@@ -507,7 +482,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
   function selectSection(id: string) {
     setSectionId(id);
     const next = SECTION_BY_ID[id];
-    if (next?.kind !== "component") setScope("global"); // reset picker off component sections
+    if (!isScopeable(next)) setScope("global"); // reset picker off sections it does not apply to
   }
 
   // From another tab (Branding's "Logo icon colours") straight to a token section.
@@ -515,8 +490,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
   // this component stays mounted across modes, so the picked section survives.
   function jumpTo(id: string) {
     selectSection(id);
-    if (forcedTab) navigate(studioHref(themeKey, "style"));
-    else selectTab("tokens");
+    navigate(studioHref(themeKey, "style"));
   }
 
   // 3b — a click in the preview iframe picks a surface. `group` is the clicked
@@ -526,7 +500,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
     const sec = SECTION_BY_ID[group];
     if (!sec) return;
     setSectionId(group);
-    if (sec.kind === "component" && SCOPE_OPTIONS.some((o) => o.id === pickScope)) setScope(pickScope as ThemeScope);
+    if (isScopeable(sec) && SCOPE_OPTIONS.some((o) => o.id === pickScope)) setScope(pickScope as ThemeScope);
     else setScope("global");
   }
 
@@ -632,24 +606,19 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
 
   return (
     <div className="se-page">
-      <div className={embedded ? "se-embedded-bar" : "acp-page-header"}>
-        {!embedded && (
-          <div className="acp-page-header__left">
-            <div className="acp-page-sub">{t("nav.appearance")}</div>
-            <h1 className="acp-page-title">{t("nav.styleEditor")}</h1>
-            <ThemeScopePicker />
-          </div>
-        )}
-
+      {/* Colours & type only: the other modes have their own state lines. */}
+      {tab === "tokens" && <div className="se-embedded-bar">
         <div className="se-actions">
           {/* State first, on its own line: what is unsaved and what is unpublished are
               readings, not controls. Sharing a row with the buttons that act on them
               made the header a wall of chips where nothing said which was which. */}
           <div className="se-actions__state">
-            {(draftStatus?.pending || totalCount > 0) && (
+            {/* Only when the colours or the font differ from live. It used to show
+                whenever the theme had ANY override and counted those, which read as
+                "2 unpublished changes" under a header saying everything was live. */}
+            {(draftStatus?.tokens || draftStatus?.font) && (
               <div className="se-draft">
                 <span className="se-draft__state"><span className="se-draft__dot" />{t("styleEditor.draft")}</span>
-                <span className="se-draft__count">{t("styleEditor.unpublishedN", { count: totalCount })}</span>
                 <button type="button" className="se-draft__btn" onClick={() => setShowDiff((v) => !v)} disabled={totalCount === 0}>
                   {showDiff ? t("styleEditor.diffHide") : t("styleEditor.diffReview")}
                 </button>
@@ -667,21 +636,11 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
               <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
             </button>
 
-            {!embedded && <button
-              type="button"
-              className="btn-primary se-act se-act--go"
-              disabled={publishMut.isPending || !draftStatus?.pending}
-              onClick={() => publishMut.mutate()}
-              title={t("styleEditor.publishHint")}
-            >
-              <FontAwesomeIcon icon={faCloudArrowUp} />
-              {publishMut.isPending ? t("styleEditor.publishing") : t("styleEditor.publishNow")}
-            </button>}
           </div>
         </div>
-      </div>
+      </div>}
 
-      {showDiff && totalCount > 0 && (
+      {tab === "tokens" && showDiff && totalCount > 0 && (
         <div className="se-diff">
           <div className="se-diff__head">
             <div className="se-diff__title">{t("styleEditor.diffTitle")}</div>
@@ -700,13 +659,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
         </div>
       )}
 
-      {!embedded && <div className="se-tabs">
-        {TABS.map((x) => (
-          <button key={x.id} type="button" className={`se-tab${tab === x.id ? " is-on" : ""}`} onClick={() => selectTab(x.id)}>
-            {t(x.label)}
-          </button>
-        ))}
-      </div>}
+
 
       {tab === "tokens" && (
         <>
@@ -724,7 +677,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                         key={tile.cssVar}
                         type="button"
                         className={`se-tile${on ? " is-on" : ""}`}
-                        onClick={() => { selectSection(tile.section); selectTab("tokens"); }}
+                        onClick={() => selectSection(tile.section)}
                       >
                         <span className="se-tile__sw" style={{ background: swatchOf(d.value) }}>
                           {d.origin === "own" && <span className="se-tile__dot" />}
@@ -742,10 +695,11 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
             <div className="se-type">
               <div className="se-cluster__h">{t("styleEditor.clType")}</div>
               <div className="se-type__body">
-                <div className="se-type__aa" style={{ fontFamily: `"${fontFamily}", system-ui, sans-serif`, fontWeight: Number(fontWeight) }}>Aa</div>
+                <div className="se-type__aa" style={{ fontFamily: `"${fontFamily || "Figtree"}", system-ui, sans-serif`, fontWeight: Number(fontWeight) }}>Aa</div>
                 <div className="se-type__col">
                   <div className="se-type__row">
                     <select className="se-type__select" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)} aria-label={t("styleEditor.fontFamily")}>
+                      <option value="">{t("styleEditor.fontSiteDefault")}</option>
                       {FONTS.map((f) => <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>)}
                     </select>
                     <div className="se-step">
@@ -834,7 +788,7 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                   </div>
                 )}
 
-                {section.kind === "component" && (
+                {isScopeable(section) && (
                   <div className="se-scope">
                     <div className="se-scope__row">
                       <span className="se-scope__lab">{t("styleEditor.applyTo")}</span>
@@ -876,7 +830,8 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                       control={def?.control === "radius" ? "radius"
                         : def?.control === "shadow" ? "shadow"
                         : def?.control === "size" ? "size"
-                        : def?.control === "text" ? "text" : "color"}
+                        : def?.control === "text" ? "text"
+                        : def?.control === "weight" ? "weight" : "color"}
                       min={def?.min}
                       max={def?.max}
                       onChange={(v) => setOverride(effScope, cssVar, v)}
@@ -1055,9 +1010,6 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
                   <p className="se-css__sub">{t("styleEditor.cssThemeLayer")}</p>
                 )}
               </div>
-              <button type="button" className="btn-primary btn-sm" onClick={() => saveCustomCssMut.mutate()} disabled={saveCustomCssMut.isPending || !customDirty}>
-                {saveCustomCssMut.isPending ? t("styleEditor.saving") : t("styleEditor.applySave")}
-              </button>
             </div>
             <textarea
               className="se-css__ta"
@@ -1075,8 +1027,12 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
               placeholder={":root {\n  --c-accent2: #0ea5b7;\n}\n\narticle, aside {\n  border-radius: 22px;\n}"}
             />
             <div className="se-css__meta">
-              <span>{customDirty ? t("styleEditor.unsaved") : t("styleEditor.saved")}</span>
-              <span>{t("styleEditor.charCount", { count: customCss.length.toLocaleString() })}</span>
+              <span className={saveCustomCssMut.isError ? "se-css__err" : undefined}>
+                {saveCustomCssMut.isError ? t("styleEditor.cssInvalid")
+                  : saveCustomCssMut.isPending || customDirty ? t("styleEditor.saving")
+                  : t("styleEditor.cssDraftSaved")}
+              </span>
+              <span>{t("styleEditor.charCount", { count: customCss.length.toLocaleString(uiLocale()) })}</span>
             </div>
           </div>
 
@@ -1105,16 +1061,28 @@ function StyleEditorInner({ themeKey, embedded, forcedTab }: { themeKey: string 
         </div>
       )}
 
-      {tab === "history" && <StyleHistoryList themeKey={themeKey} />}
+      {tab === "history" && <StudioHistory themeKey={themeKey} />}
     </div>
   );
 }
 
 // ── Token row ───────────────────────────────────────────────────────────────────
 
+const WEIGHTS = ["300", "400", "500", "600", "700", "800", "900"];
+
+/**
+ * Whether "Apply to" (per-region scope) means anything for a section: a component with
+ * at least one region-scopeable token. The User menu and sort buttons have none — a
+ * region bucket would be stored and reach nothing.
+ */
+function isScopeable(section: { kind: string; group?: string } | undefined): boolean {
+  return section?.kind === "component"
+    && TOKEN_REGISTRY.some((tok) => tok.group === section.group && tok.scopeable);
+}
+
 function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, max, onChange, onReset }: {
   label: string; cssVar: string; value: string; origin: Origin; inheritsFrom?: string;
-  control: "color" | "radius" | "shadow" | "size" | "text";
+  control: "color" | "radius" | "shadow" | "size" | "text" | "weight";
   /** `size` only — the slider's ends, from the token's registry entry. */
   min?: number; max?: number;
   onChange: (v: string) => void; onReset: () => void;
@@ -1171,6 +1139,15 @@ function TokenRow({ label, cssVar, value, origin, inheritsFrom, control, min, ma
         {control === "text" && (
           <input className="se-row__text se-row__text--wide" value={value} onChange={(e) => onChange(e.target.value)}
             aria-label={label} spellCheck={false} />
+        )}
+        {/* A font weight: the named steps a typeface actually ships, previewed in the
+            option itself. A free number field invited values no font draws. */}
+        {control === "weight" && (
+          <select className="acp-select se-row__weight" value={String(n || value || "")} aria-label={label}
+            onChange={(e) => onChange(e.target.value)}>
+            {!WEIGHTS.includes(String(n)) && <option value={value}>{value}</option>}
+            {WEIGHTS.map((w) => <option key={w} value={w} style={{ fontWeight: Number(w) }}>{t(`styleEditor.weight.${w}`)} ({w})</option>)}
+          </select>
         )}
         {control === "radius" && (
           <>
@@ -1336,6 +1313,14 @@ function ShadowSlider({ label, value, min, max, onChange }: {
 
 const REGION_IDS = ["navbar", "content", "footer", "aside"];
 
+
+/**
+ * Live surfaces that belong to a section without carrying `data-group` — the real
+ * header dropdowns and the pill — so outlining a section outlines them too.
+ */
+const GROUP_EXTRA: Record<string, string> = { menu: ".xt-pop", usermenu: PILL };
+const groupSelector = (g: string) => [`[data-group="${g}"]`, GROUP_EXTRA[g]].filter(Boolean).join(",");
+
 /**
  * The editor's own marks on the specimen: what is selectable, what is selected, and
  * a forced hover/focus so state-only tokens can be edited at all.
@@ -1357,8 +1342,8 @@ export function previewOverlayRules({ activeGroup, hotspots, previewState }: {
   const rules: string[] = [];
   // Every editable surface, dashed — "click any surface" is only useful once you
   // can see which ones those are.
-  if (hotspots) rules.push(`[data-group]{outline:1px dashed var(--c-fg-subtle);outline-offset:3px;}`);
-  if (activeGroup) rules.push(`[data-group="${activeGroup}"]{outline:2px solid var(--c-accent);outline-offset:3px;}`);
+  if (hotspots) rules.push(`[data-group],${Object.values(GROUP_EXTRA).join(",")}{outline:1px dashed var(--c-fg-subtle);outline-offset:3px;}`);
+  if (activeGroup) rules.push(`${groupSelector(activeGroup)}{outline:2px solid var(--c-accent);outline-offset:3px;}`);
   if (previewState === "hover") rules.push(`.tp-menu__item{background:var(--menu-item-hover-bg)!important;}`);
   if (previewState === "focus") rules.push(`.tp-field{border-color:var(--input-border-focus)!important;box-shadow:0 0 0 3px var(--c-accent-soft)!important;}`);
   return rules.join("\n");
@@ -1375,9 +1360,25 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
   const { t } = useTranslation("acp");
   const ref = useRef<HTMLIFrameElement>(null);
   const onPickRef = useRef(onPick); onPickRef.current = onPick;
-  const previewSrc = themeKey
-    ? `/__theme-preview?${PREVIEW_THEME_PARAM}=${encodeURIComponent(themeKey)}`
-    : "/__theme-preview";
+
+  /**
+   * What the canvas shows: the Components specimen, or a real PAGE of the site.
+   *
+   * The page loads with the theme's DRAFT layouts and stylesheet (`__layout=draft`),
+   * and the editor's unsaved token edits are injected over it exactly as on the
+   * specimen, so the colours change as the inspector moves. A click picks the section
+   * and scope of what was clicked (stylePagePick) and never reaches the page: links
+   * do not navigate, buttons do not act. The picker below is how to change page.
+   */
+  const pages = usePreviewPages();
+  const [surface, setSurface] = useState<"components" | "page">("components");
+  const [pageId, setPageId] = useState(pages[0]!.id);
+  const page = pages.find((p) => p.id === pageId) ?? pages[0]!;
+  const surfaceRef = useRef(surface); surfaceRef.current = surface;
+  const themeQs = themeKey ? `${PREVIEW_THEME_PARAM}=${encodeURIComponent(themeKey)}` : "";
+  const previewSrc = surface === "page"
+    ? `${page.route}${page.route.includes("?") ? "&" : "?"}${LAYOUT_PREVIEW_PARAM}=draft${themeQs ? `&${themeQs}` : ""}`
+    : `/__theme-preview${themeQs ? `?${themeQs}` : ""}`;
   const prevGroup = useRef<string | undefined>(undefined);
 
   // Inject token + overlay styles whenever inputs change; scroll to the active group
@@ -1398,7 +1399,7 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
       ov.textContent = previewOverlayRules({ activeGroup, hotspots, previewState });
 
       if (activeGroup && activeGroup !== prevGroup.current) {
-        doc.querySelector(`[data-group="${activeGroup}"]`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+        doc.querySelector(groupSelector(activeGroup))?.scrollIntoView({ block: "center", behavior: "smooth" });
       }
       prevGroup.current = activeGroup;
     };
@@ -1415,6 +1416,20 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
     const handler = (e: Event) => {
       const el = e.target as HTMLElement | null;
       if (!el?.closest) return;
+      if (surfaceRef.current === "page") {
+        // The real page: nothing it does on a click may happen here.
+        e.preventDefault();
+        e.stopPropagation();
+        const [group, scope] = pickOnPage(el);
+        onPickRef.current(group, scope);
+        return;
+      }
+      // The header's dropdowns and the pill they open from have no data-component of
+      // their own (they are the live components, not specimens): a dropdown is a Menu,
+      // the pill around it is the User menu. Both are global; no region scope reaches
+      // the masthead. A plugin dropdown that paints the card inline has no class yet.
+      if (el.closest(`.xt-pop, ${PILL} [style*="background: var(--c-card)"]`)) { onPickRef.current("menu", "global"); return; }
+      if (el.closest(PILL)) { onPickRef.current("usermenu", "global"); return; }
       const reg = el.closest("[data-region]");
       const regionId = reg?.getAttribute("data-region") ?? "global";
       const scope = REGION_IDS.includes(regionId) ? regionId : "global";
@@ -1449,7 +1464,24 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
           <span className="se-sep" style={{ height: 18 }} />
           <span className="se-canvas__hint">{t("styleEditor.clickToEdit")}</span>
         </div>
-        <div className="se-canvas__right">
+        <div className="se-canvas__surface">
+          <div className="se-seg" role="tablist" aria-label={t("styleEditor.previewSurface")}>
+            {(["components", "page"] as const).map((sf) => (
+              <button key={sf} type="button" role="tab" aria-selected={surface === sf}
+                className={`se-chip${surface === sf ? " is-on" : ""}`} onClick={() => setSurface(sf)}>
+                {t(`styleEditor.surface.${sf}`)}
+              </button>
+            ))}
+          </div>
+          {surface === "page" && (
+            <select className="se-scope__select" value={page.id} aria-label={t("styleEditor.previewPage")}
+              onChange={(e) => setPageId(e.target.value)}>
+              {pages.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+            </select>
+          )}
+        </div>
+        {/* Outlines and forced states are drawn on the specimen's own markup. */}
+        {surface === "components" && <div className="se-canvas__right">
           <button type="button" className={`se-chip se-chip--icon${hotspots ? " is-on" : ""}`} onClick={() => setHotspots(!hotspots)}>
             <FontAwesomeIcon icon={faObjectGroup} /> {t("styleEditor.outlineAreas")}
           </button>
@@ -1462,13 +1494,36 @@ function PreviewFrame({ css, extraCss, activeGroup, hotspots, setHotspots, previ
               </button>
             ))}
           </div>
-        </div>
+        </div>}
       </div>
       <div className="se-canvas__frame">
         <iframe ref={ref} src={previewSrc} title={t("styleEditor.previewTitle")} />
       </div>
     </div>
   );
+}
+
+interface PreviewPage { id: string; label: string; route: string }
+
+/**
+ * The pages the Page preview offers: the core pages, the admin's own profile (a
+ * profile needs a member to show), and every plugin page that declared where it lives.
+ */
+function usePreviewPages(): PreviewPage[] {
+  const { t } = useTranslation("acp");
+  const { user } = useAuth();
+  const pages: PreviewPage[] = [
+    { id: "home", label: t("layoutEditor.template.home"), route: "/" },
+    { id: "article.index", label: t("layoutEditor.template.article.index"), route: "/articles" },
+    { id: "members", label: t("layoutEditor.template.members"), route: "/members" },
+  ];
+  if (user?.username) {
+    pages.push({ id: "profile", label: t("layoutEditor.template.profile"), route: `/u/${encodeURIComponent(user.username)}` });
+  }
+  for (const def of listTemplates()) {
+    if (def.pluginId && def.previewRoute) pages.push({ id: def.key, label: def.label ?? def.key, route: def.previewRoute });
+  }
+  return pages;
 }
 
 // ── Branding ──────────────────────────────────────────────────────────────────

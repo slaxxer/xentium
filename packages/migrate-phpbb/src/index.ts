@@ -1,6 +1,7 @@
 import mysql from "mysql2/promise";
 import type { AdapterSource, ExtractResult, MigrateAdapter, MigrationInspection, MigrationReporter } from "@xentium/migrate-core";
 import { extractPhpbb, phpbbVersion } from "./extract.js";
+import { phpbbRedirects } from "./redirects.js";
 
 const DEFAULT_PREFIX = "phpbb_";
 
@@ -42,7 +43,7 @@ export const phpbbAdapter: MigrateAdapter = {
       const warnings = [
         "phpBB's per-forum permission overrides cannot be represented in Xentium's flat RBAC — founders map to Administrator, global moderators to Moderator, everyone else to Member (§34, lossy by design).",
         "Users keep their passwords: phpBB bcrypt/phpass hashes are verified on first login and upgraded to argon2.",
-        "Attachments, private messages and per-forum moderators are not migrated in this version.",
+        "Private messages become conversations when the xentium-messaging plugin is enabled on the target (otherwise they're counted and skipped). Attachments and per-forum moderators are not migrated in this version.",
         "phpBB has no post likes or follows. Zebra foes become blocks; the friend flag is a private buddy list and is deliberately not converted into public follows.",
       ];
       const missing: string[] = [];
@@ -64,7 +65,11 @@ export const phpbbAdapter: MigrateAdapter = {
 
   async extract(source: AdapterSource, reporter: MigrationReporter): Promise<ExtractResult> {
     if (!source.db) throw new Error("phpBB adapter needs --source-db mysql://…");
-    return extractPhpbb({ db: source.db, tablePrefix: source.tablePrefix ?? DEFAULT_PREFIX }, reporter);
+    return extractPhpbb({ db: source.db, tablePrefix: source.tablePrefix ?? DEFAULT_PREFIX, filesDir: source.filesDir }, reporter);
+  },
+
+  async redirects() {
+    return phpbbRedirects;
   },
 };
 

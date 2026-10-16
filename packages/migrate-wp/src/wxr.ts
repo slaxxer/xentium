@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { XMLParser } from "fast-xml-parser";
-import type { ExtractResult, ImportedComment, ImportError } from "@xentium/migrate-core";
+import type { ExactRedirect, ExtractResult, ImportedComment, ImportError } from "@xentium/migrate-core";
 
 /**
  * WXR (WordPress eXtended RSS) extractor. Consumes the export *file* — no
@@ -15,6 +15,7 @@ import type { ExtractResult, ImportedComment, ImportError } from "@xentium/migra
 
 interface WxrItem {
   title?: unknown;
+  link?: unknown;
   "dc:creator"?: unknown;
   "content:encoded"?: unknown;
   "excerpt:encoded"?: unknown;
@@ -64,6 +65,18 @@ export interface WxrParsed extends ExtractResult {
   otherTypes: Record<string, number>;
   guestComments: number;
   unapprovedComments: number;
+  /** Old addresses with no id in them (permalinks, author pages), for redirects. */
+  permalinks: ExactRedirect[];
+}
+
+/** The path (and query) of an old address, as nginx sees it in $request_uri. */
+function pathOf(url: string): string | undefined {
+  try {
+    const u = new URL(url);
+    return u.pathname + u.search;
+  } catch {
+    return undefined;
+  }
 }
 
 export function parseWxr(filePath: string): WxrParsed {
@@ -77,11 +90,14 @@ export function parseWxr(filePath: string): WxrParsed {
 
   // ── users (wp:author entries) ────────────────────────────────────────────
   const loginToId = new Map<string, string>();
+  const permalinks: ExactRedirect[] = [];
+  const siteRoot = (pathOf(txt(channel.link)) ?? "/").replace(/\?.*$/, "").replace(/\/*$/, "");
   const users = ((channel["wp:author"] ?? []) as Record<string, unknown>[])
     .map((a) => {
       const sourceId = txt(a["wp:author_id"]) || txt(a["wp:author_login"]);
       const login = txt(a["wp:author_login"]);
       loginToId.set(login, sourceId);
+      if (login) permalinks.push({ entity: "user", path: `${siteRoot}/author/${encodeURIComponent(login).toLowerCase()}/`, sourceId });
       return {
         sourceId,
         email: txt(a["wp:author_email"]),
@@ -141,6 +157,14 @@ export function parseWxr(filePath: string): WxrParsed {
       .map((c) => txt(c))
       .filter(Boolean);
 
+    // A pretty permalink (/2020/01/hello/) has no id in it. "?p=12" links are a pattern.
+    const link = pathOf(txt(item.link));
+    if (link && !/^[^?]*\/(?:index\.php)?\?/.test(link)) {
+      permalinks.push({ entity: "article", path: link, sourceId: postId });
+      const other = link.endsWith("/") ? link.slice(0, -1) : `${link}/`;
+      if (other && !link.includes("?")) permalinks.push({ entity: "article", path: other, sourceId: postId });
+    }
+
     articles.push({
       sourceId: postId,
       authorSourceId,
@@ -182,6 +206,6 @@ export function parseWxr(filePath: string): WxrParsed {
   return {
     sourceInfo: `WordPress (WXR ${wxrVersion})`,
     users, categories, articles, comments, skipped,
-    wxrVersion, otherTypes, guestComments, unapprovedComments,
+    wxrVersion, otherTypes, guestComments, unapprovedComments, permalinks,
   };
 }

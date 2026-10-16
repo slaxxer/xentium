@@ -16,11 +16,11 @@
   "dependencies": {
     "@xentium/migrate-core": "workspace:*",
     "htmlparser2": "^10.1.0",
-    "mysql2": "^3.16.0"
+    "mysql2": "^3.24.5"
   },
   "devDependencies": {
     "@xentium/config": "workspace:*",
-    "tsx": "^4.22.3",
+    "tsx": "^4.23.15",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

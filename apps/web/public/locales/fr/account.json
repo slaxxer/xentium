@@ -28,7 +28,14 @@
     "badgesOverCap": "Plus de 3 sont activés — seuls les 3 de plus haute préséance s'afficheront.",
     "reading": "Lecture et mouvement",
     "readingDesc": "Conservé dans ce navigateur.",
-    "appliedNote": "Tout ici s'applique dès que vous le choisissez"
+    "appliedNote": "Tout ici s'applique dès que vous le choisissez",
+    "fontDesc": {
+      "Poppins": "Géométrique et chaleureuse (police de base du site)",
+      "Nunito": "Chaleureuse et amicale",
+      "Montserrat": "Géométrique et polyvalente",
+      "OpenSans": "Nette, neutre et lisible",
+      "Ubuntu": "Humaniste et accessible"
+    }
   },
   "profile": {
     "bioSection": "Biographie",
@@ -125,6 +132,9 @@
     "showFollowingDesc": "Tout le monde peut voir qui vous suivez",
     "saved": "Paramètres de confidentialité enregistrés !",
     "saveError": "Impossible d'enregistrer. Réessayez.",
+    "displayNameLabel": "Nom affiché sur votre profil",
+    "displayNameUsername": "Nom d'utilisateur",
+    "displayNameFull": "Nom complet",
     "whoTitle": "Qui peut voir quoi",
     "whoDesc": "Tous les choix de visibilité de votre compte, dans une seule liste.",
     "wallTitle": "Mur et social",
@@ -142,7 +152,9 @@
     "rowCommentDesc": "Messages sur votre profil",
     "rowFollow": "Qui peut s'abonner à moi",
     "rowFollowDesc": "Nouveaux abonnés",
-    "displayNameDesc": "Votre @identifiant ne change jamais"
+    "displayNameDesc": "Votre @identifiant ne change jamais",
+    "showLastSeen": "Afficher ma dernière visite",
+    "showLastSeenDesc": "Votre profil indique quand vous étiez actif pour la dernière fois, par exemple « Vu il y a 3 h »."
   },
   "security": {
     "emailAddress": "Adresse e-mail",

@@ -54,14 +54,24 @@ export interface PhpbbForumRow {
   left_id: number;
 }
 
+/** phpBB stores titles and names HTML-escaped; Xentium wants plain text. */
+export function decodeEntities(text: string): string {
+  return text
+    .replace(/&#(\d+);/g, (_m, code: string) => String.fromCodePoint(Number(code)))
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
 export function mapForum(row: PhpbbForumRow, position: number): ImportedForumNode | null {
   if (row.forum_type === 2) return null; // external link "forums" have no content
   return {
     sourceId: String(row.forum_id),
     parentSourceId: row.parent_id ? String(row.parent_id) : undefined,
     type: row.forum_type === 0 ? "category" : "forum",
-    name: row.forum_name,
-    description: row.forum_desc || undefined,
+    name: decodeEntities(row.forum_name),
+    description: row.forum_desc ? decodeEntities(row.forum_desc) : undefined,
     position,
   };
 }
@@ -83,7 +93,7 @@ export function mapTopic(row: PhpbbTopicRow): ImportedThread {
     sourceId: String(row.topic_id),
     nodeSourceId: String(row.forum_id),
     authorSourceId: String(row.topic_poster),
-    title: row.topic_title,
+    title: decodeEntities(row.topic_title),
     status: row.topic_status === 1 ? "locked" : "open",
     isPinned: row.topic_type > 0,
     viewCount: row.topic_views,

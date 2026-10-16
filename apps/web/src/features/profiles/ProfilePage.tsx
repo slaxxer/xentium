@@ -5,10 +5,13 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../components/Icon";
 // The ban lock and the follow/block icons moved with their markup into
 // `layout/blocks/profileBlocks.tsx`; what stays here is the tab bodies' own icons.
-import { faHeart, faGlobe, faCodeBranch, faHashtag } from "@fortawesome/free-solid-svg-icons";
+import { faThumbsUp, faGlobe, faCodeBranch, faHashtag, faFlag, faTrashCan, faReply, faThumbsDown } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
+import { openDialog } from "../../lib/dialog";
+import { toast } from "../../lib/toast";
+import { useDateTime } from "../../lib/datetime";
 import { swalToast, swalConfirm, apiErrorMessage } from "../../lib/swal";
 import {
   articlesApi,
@@ -20,6 +23,8 @@ import { slotRegistry } from "../../plugins/slotRegistry";
 import "./ProfilePage.scss";
 import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
+import { uiLocale } from "../../lib/i18n";
+import { fieldLabel } from "../../lib/coreText";
 
 export interface PublicProfile {
   id: string;
@@ -32,6 +37,8 @@ export interface PublicProfile {
   coverImage: string | null;
   bio: string | null;
   joinedDate: string;
+  /** When they were last here; null while online, hidden by them, or never. */
+  lastSeenAt?: string | null;
   groups: Array<{ id: string; key?: string; name: string; icon: string | null; badgeColor: string | null; badgeLabel: string | null }>;
   postCount: number;
   articleCount: number;
@@ -44,6 +51,8 @@ export interface PublicProfile {
   dobDisplayFormat: string | null;
   isOwn: boolean;
   viewerIsFollowing: boolean;
+  /** Online now (the members list's presence). */
+  online?: boolean;
   viewerHasBlocked: boolean;
   isBanned: boolean;
   isPermanentBan: boolean;
@@ -63,12 +72,12 @@ interface ProfileComment {
   authorId: string;
   body: string;
   likeCount: number;
+  dislikeCount: number;
   createdAt: string;
   editedAt: string | null;
-  deletedAt: string | null;
-  deletedReason: string | null;
-  deletedByUsername: string | null;
   author: { id: string; username: string; avatar: string | null; badgeColor: string | null };
+  /** Top-level comments carry their replies, oldest first; a reply has none. */
+  replies?: ProfileComment[];
 }
 
 type Tab = "articles" | "wall" | "followers" | "following" | "information" | string;
@@ -133,10 +142,10 @@ export interface PublicProfileField {
 
 function Avatar({ user, size = 40 }: { user: { username: string; avatar: string | null }; size?: number }) {
   if (user.avatar) {
-    return <img src={user.avatar} alt={user.username} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover" }} />;
+    return <img src={user.avatar} alt={user.username} data-user-card={user.username} style={{ width: size, height: size, borderRadius: "50%", objectFit: "cover" }} />;
   }
   return (
-    <div className="profile-av-small" style={{ width: size, height: size, fontSize: size * 0.4 }}>
+    <div className="profile-av-small" data-user-card={user.username} style={{ width: size, height: size, fontSize: size * 0.4 }}>
       {user.username.charAt(0).toUpperCase()}
     </div>
   );
@@ -189,7 +198,7 @@ function ArticleRow({ a }: { a: ArticleListItem }) {
   // viewCount placeholder: real article view tracking arrives with analytics
   // (Phase 8 onward); zero for now.
   const dateLabel = a.publishedAt
-    ? new Date(a.publishedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
+    ? new Date(a.publishedAt).toLocaleDateString(uiLocale(), { year: "numeric", month: "short", day: "numeric" })
     : t("unpublished");
   const views = 0;
 
@@ -218,7 +227,7 @@ function ArticleRow({ a }: { a: ArticleListItem }) {
         {a.excerpt && <p className="profile-articles__excerpt">{a.excerpt}</p>}
 
         <div className="profile-articles__meta">
-          {dateLabel} · {t("views", { v: (a.viewCount ?? views).toLocaleString() })} · {t("likeCount", { n: a.likeCount })}
+          {dateLabel} · {t("views", { v: (a.viewCount ?? views).toLocaleString(uiLocale()) })} · {t("likeCount", { n: a.likeCount })}
         </div>
       </div>
     </Link>
@@ -295,7 +304,7 @@ function InformationField({ field }: { field: PublicProfileField }) {
     const href = field.value.match(/^https?:\/\//) ? field.value : `https://${field.value}`;
     return (
       <a href={href} target="_blank" rel="noopener noreferrer" className="profile-info-card__link">
-        <FontAwesomeIcon icon={icon} /> {field.label}
+        <FontAwesomeIcon icon={icon} /> {fieldLabel(field)}
       </a>
     );
   }
@@ -312,7 +321,7 @@ function InformationField({ field }: { field: PublicProfileField }) {
   if (field.key === "discord") {
     return (
       <div className="profile-info-card__field">
-        <span className="profile-info-card__field-label"><FontAwesomeIcon icon={icon} /> {field.label}:</span>
+        <span className="profile-info-card__field-label"><FontAwesomeIcon icon={icon} /> {fieldLabel(field)}:</span>
         <span className="profile-info-card__field-value">{field.value}</span>
       </div>
     );
@@ -320,7 +329,7 @@ function InformationField({ field }: { field: PublicProfileField }) {
 
   return (
     <div className="profile-info-card__field">
-      <span className="profile-info-card__field-label"><FontAwesomeIcon icon={icon} /> {field.label}:</span>
+      <span className="profile-info-card__field-label"><FontAwesomeIcon icon={icon} /> {fieldLabel(field)}:</span>
       <span className="profile-info-card__field-value">{field.value}</span>
     </div>
   );
@@ -394,7 +403,7 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
 
   const { data, isLoading } = useQuery({
     queryKey: ["profile-comments", profile.id],
-    queryFn: () => api.get<{ comments: ProfileComment[]; total: number; viewerLikedIds: string[] }>(`/users/${profile.id}/profile-comments?limit=20`),
+    queryFn: () => api.get<{ comments: ProfileComment[]; total: number; viewerLikedIds: string[]; viewerDislikedIds?: string[] }>(`/users/${profile.id}/profile-comments?limit=20`),
   });
 
   const postMutation = useMutation({
@@ -413,6 +422,74 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
     onError: (e) => swalToast(apiErrorMessage(e, t("deleteError"))),
   });
 
+  // The open reply box: under which thread, and to whom (a reply to a reply is filed
+  // under the same top-level comment; the server does that too).
+  const [replyTo, setReplyTo] = useState<{ topId: string; commentId: string; username: string } | null>(null);
+  const [replyBody, setReplyBody] = useState("");
+  const replyEditorRef = useRef<ComposerHandle>(null);
+  useEffect(() => { if (replyTo) replyEditorRef.current?.focus(); }, [replyTo]);
+
+  // `?comment=<id>` (a notification): scroll to that comment or reply.
+  const [wallParams] = useSearchParams();
+  const focusCommentId = wallParams.get("comment");
+
+  const replyMutation = useMutation({
+    mutationFn: ({ body, parentId }: { body: string; parentId: string }) =>
+      api.post(`/users/${profile.id}/profile-comments`, { body, parentId }),
+    onSuccess: () => {
+      replyEditorRef.current?.clear();
+      setReplyBody("");
+      setReplyTo(null);
+      queryClient.invalidateQueries({ queryKey: ["profile-comments", profile.id] });
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, t("postError"))),
+  });
+
+  /** Delete, after asking: the comment (and a top-level one's replies) leaves the wall without a trace. */
+  async function confirmDelete(commentId: string) {
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: t("deleteConfirmTitle"), body: t("deleteConfirmBody"),
+      confirmText: t("delete"), cancelText: t("cancel"),
+    });
+    if (ok) deleteMutation.mutate(commentId);
+  }
+
+  /** Report to the moderators: the same queue an article or its comments report into. */
+  async function report(commentId: string) {
+    let reason = "";
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning",
+      title: t("reportTitle"),
+      bodyNode: (
+        <div className="profile-wall__report">
+          <p>{t("reportSub")}</p>
+          <textarea rows={4} maxLength={2000} autoFocus
+            placeholder={t("reportPlaceholder")} onChange={(e) => { reason = e.target.value; }} />
+        </div>
+      ),
+      confirmText: t("reportSubmit"), cancelText: t("cancel"),
+    });
+    if (!ok) return;
+    if (reason.trim().length < 3) { toast.warning(t("reportTooShort")); return; }
+    try {
+      await api.post("/moderation/reports", { targetType: "profile_comment", targetId: commentId, reason: reason.trim() });
+      toast.success(t("reportSent"));
+    } catch (e) {
+      toast.error(apiErrorMessage(e, t("reportError")));
+    }
+  }
+
+  // A dislike and a like exclude each other; the server swaps them.
+  const dislikeMutation = useMutation({
+    mutationFn: ({ commentId, disliked }: { commentId: string; disliked: boolean }) =>
+      disliked
+        ? api.delete(`/users/profile-comments/${commentId}/dislike`)
+        : api.post(`/users/profile-comments/${commentId}/dislike`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["profile-comments", profile.id] }),
+    onError: (e) => toast.error(apiErrorMessage(e, t("likeError"))),
+  });
+
   const likeMutation = useMutation({
     mutationFn: ({ commentId, liked }: { commentId: string; liked: boolean }) =>
       liked
@@ -424,11 +501,101 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
 
   // Owners cannot post new wall comments, but can reply to existing ones (§40)
   const canComment = isAuthenticated && !profile.isOwn;
+  const canDeleteAny = userCan(authUser, "profile.comment.delete.any");
+  const dt = useDateTime();
   const viewerLikedIds = new Set(data?.viewerLikedIds ?? []);
+  const viewerDislikedIds = new Set(data?.viewerDislikedIds ?? []);
+  const focusShown = !!focusCommentId && !!data?.comments.some(
+    (c) => c.id === focusCommentId || c.replies?.some((r) => r.id === focusCommentId),
+  );
+  useEffect(() => {
+    if (!focusShown) return;
+    const id = window.setTimeout(() => {
+      document.getElementById(`wall-comment-${focusCommentId}`)?.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 120);
+    return () => window.clearTimeout(id);
+  }, [focusShown, focusCommentId]);
 
   function handleSubmit() {
     if (!commentBody.trim()) return;
     postMutation.mutate(commentBody);
+  }
+
+  /** One comment — a top-level one, or a reply (`topId` = the thread it sits in). */
+  function renderComment(c: ProfileComment, topId?: string) {
+    const hasLiked = viewerLikedIds.has(c.id);
+    const hasDisliked = viewerDislikedIds.has(c.id);
+    const canRate = isAuthenticated && authUser?.id !== c.authorId;
+    return (
+      <div key={c.id} id={`wall-comment-${c.id}`}
+        className={`profile-wall__comment${topId ? " profile-wall__comment--reply" : ""}`}
+        data-mod-target={`profile_comment:${c.id}`}>
+        <Avatar user={c.author} size={topId ? 30 : 36} />
+        <div className="profile-wall__comment-body">
+          <div className="profile-wall__comment-header">
+            <Username href={`/u/${c.author.username}`} className="profile-wall__comment-author" username={c.author.username} badgeColor={c.author.badgeColor} />
+            <time className="profile-wall__comment-time" dateTime={c.createdAt} title={dt.dateTime(c.createdAt)}>
+              {dt.date(c.createdAt)} · {dt.time(c.createdAt)}
+            </time>
+          </div>
+          <div
+            className="profile-wall__comment-text xt-rich"
+            dangerouslySetInnerHTML={{ __html: c.body }}
+          />
+          <div className="profile-wall__comment-footer">
+            {c.editedAt && <span className="profile-wall__comment-edited">{t("edited")}</span>}
+            {canRate ? (
+              <>
+                <button
+                  className={`profile-wall__like-btn${hasLiked ? " is-liked" : ""}`}
+                  onClick={() => likeMutation.mutate({ commentId: c.id, liked: hasLiked })}
+                  disabled={likeMutation.isPending || dislikeMutation.isPending}
+                  title={hasLiked ? t("unlike") : t("like")}
+                >
+                  <FontAwesomeIcon icon={faThumbsUp} /> {c.likeCount}
+                </button>
+                <button
+                  className={`profile-wall__like-btn profile-wall__like-btn--dislike${hasDisliked ? " is-disliked" : ""}`}
+                  onClick={() => dislikeMutation.mutate({ commentId: c.id, disliked: hasDisliked })}
+                  disabled={likeMutation.isPending || dislikeMutation.isPending}
+                  title={hasDisliked ? t("undislike") : t("dislike")}
+                >
+                  <FontAwesomeIcon icon={faThumbsDown} /> {c.dislikeCount ?? 0}
+                </button>
+              </>
+            ) : (
+              <>
+                <span className="profile-wall__like-count" title={t(isAuthenticated ? "cantRateOwnComment" : "signInToRate")}>
+                  <FontAwesomeIcon icon={faThumbsUp} /> {c.likeCount}
+                </span>
+                <span className="profile-wall__like-count profile-wall__like-count--dislike" title={t(isAuthenticated ? "cantRateOwnComment" : "signInToRate")}>
+                  <FontAwesomeIcon icon={faThumbsDown} /> {c.dislikeCount ?? 0}
+                </span>
+              </>
+            )}
+            <span className="profile-wall__comment-actions">
+              {isAuthenticated && (
+                <button type="button" className="profile-wall__action"
+                  onClick={() => setReplyTo({ topId: topId ?? c.id, commentId: c.id, username: c.author.username })}>
+                  <FontAwesomeIcon icon={faReply} /> {t("reply")}
+                </button>
+              )}
+              {isAuthenticated && authUser?.id !== c.authorId && (
+                <button type="button" className="profile-wall__action" onClick={() => report(c.id)}>
+                  <FontAwesomeIcon icon={faFlag} /> {t("report")}
+                </button>
+              )}
+              {(profile.isOwn || authUser?.id === c.authorId || canDeleteAny) && (
+                <button type="button" className="profile-wall__action profile-wall__action--danger"
+                  onClick={() => confirmDelete(c.id)} disabled={deleteMutation.isPending}>
+                  <FontAwesomeIcon icon={faTrashCan} /> {t("delete")}
+                </button>
+              )}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -457,67 +624,32 @@ export function ProfileWall({ profile }: { profile: PublicProfile }) {
         <p className="profile-empty profile-empty--wall">{t("noComments")}</p>
       ) : (
         <div className="profile-wall__comments">
-          {data.comments.map((c) => {
-            const hasLiked = viewerLikedIds.has(c.id);
-            return (
-              <div key={c.id} className={`profile-wall__comment${c.deletedAt ? " profile-wall__comment--deleted" : ""}`}
-                data-mod-target={`profile_comment:${c.id}`}>
-                {c.deletedAt ? (
-                  <div className="profile-wall__tombstone">
-                    <em>
-                      {t("tombstoneBase", { user: c.author.username })}
-                      {c.deletedByUsername ? t("tombstoneBy", { mod: c.deletedByUsername }) : ""}
-                      {" · "}
-                      {new Date(c.deletedAt).toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })}
-                      {c.deletedReason ? t("tombstoneReason", { reason: c.deletedReason }) : ""}
-                    </em>
-                  </div>
-                ) : (
-                  <>
-                    <Avatar user={c.author} size={36} />
-                    <div className="profile-wall__comment-body">
-                      <div className="profile-wall__comment-header">
-                        <Username href={`/u/${c.author.username}`} className="profile-wall__comment-author" username={c.author.username} badgeColor={c.author.badgeColor} />
-                        <time className="profile-wall__comment-time">
-                          {new Date(c.createdAt).toLocaleDateString()}
-                        </time>
-                        {(profile.isOwn || authUser?.id === c.authorId) && (
-                          <button
-                            className="profile-wall__comment-delete"
-                            onClick={() => deleteMutation.mutate(c.id)}
-                            title={t("deleteComment")}
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-                      <div
-                        className="profile-wall__comment-text xt-rich"
-                        dangerouslySetInnerHTML={{ __html: c.body }}
-                      />
-                      <div className="profile-wall__comment-footer">
-                        {c.editedAt && <span className="profile-wall__comment-edited">{t("edited")}</span>}
-                        {isAuthenticated && authUser?.id !== c.authorId ? (
-                          <button
-                            className={`profile-wall__like-btn${hasLiked ? " is-liked" : ""}`}
-                            onClick={() => likeMutation.mutate({ commentId: c.id, liked: hasLiked })}
-                            disabled={likeMutation.isPending}
-                            title={hasLiked ? t("unlike") : t("like")}
-                          >
-                            <FontAwesomeIcon icon={faHeart} /> {c.likeCount}
-                          </button>
-                        ) : (
-                          <span className="profile-wall__like-count">
-                            <FontAwesomeIcon icon={faHeart} /> {c.likeCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })}
+          {data.comments.map((c) => (
+            <div key={c.id} className="profile-wall__thread">
+              {renderComment(c)}
+              {(!!c.replies?.length || replyTo?.topId === c.id) && (
+                <div className="profile-wall__replies">
+                  {c.replies?.map((r) => renderComment(r, c.id))}
+                  {replyTo?.topId === c.id && (
+                    <Composer
+                      ref={replyEditorRef}
+                      variant="inline"
+                      onChange={setReplyBody}
+                      placeholder={t("replyPlaceholder", { username: replyTo.username })}
+                      replyTo={{ name: replyTo.username }}
+                      onDismissReply={() => setReplyTo(null)}
+                      onCancel={() => setReplyTo(null)}
+                      disabled={replyMutation.isPending}
+                      busy={replyMutation.isPending}
+                      submitLabel={t("reply")}
+                      onSubmit={() => replyBody.trim() && replyMutation.mutate({ body: replyBody, parentId: replyTo.commentId })}
+                      className="profile-wall__reply-composer"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -536,6 +668,12 @@ export function ProfilePage() {
   // profile has loaded (below), and anyone else lands on Articles.
   const validTabIds = new Set<string>([...STATIC_TAB_IDS, "warnings", ...pluginTabsInit.map((p) => p.id)]);
   const [tab, setTab] = useState<Tab>(requestedTab && validTabIds.has(requestedTab) ? requestedTab : "articles");
+  // A link to another tab while this page is already open (a warning notification
+  // clicked on one's own profile) changes only the query, which does not remount it.
+  const linkKey = searchParams.toString();
+  useEffect(() => {
+    if (requestedTab && validTabIds.has(requestedTab)) setTab(requestedTab);
+  }, [requestedTab, linkKey]);
   const { isAuthenticated, user: viewer } = useAuth();
   const queryClient = useQueryClient();
   const layout = useLayoutDocument("profile");

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 
 export interface GroupItem {
   id: string;
@@ -22,12 +23,8 @@ interface GroupAccessPickerProps {
 
 const STAFF_KEYS = ["administrator", "supermod", "moderator"];
 
-const MODES: Array<{ key: GroupAccessValue["visibility"]; label: string }> = [
-  { key: "public",  label: "Public — everyone including guests" },
-  { key: "members", label: "Members only — logged-in users" },
-  { key: "level",   label: "Level N+ — progression ladder minimum" },
-  { key: "groups",  label: "Specific groups" },
-];
+// Labels live in the host's `common:groupAccess.*`, keyed by the mode itself.
+const MODES: GroupAccessValue["visibility"][] = ["public", "members", "level", "groups"];
 
 const ROW: CSSProperties = {
   display: "flex",
@@ -44,6 +41,7 @@ export function GroupAccessPicker({
   groups,
   inheritedRestriction,
 }: GroupAccessPickerProps) {
+  const { t } = useTranslation("common");
   function set(patch: Partial<GroupAccessValue>) {
     onChange({ ...value, ...patch });
   }
@@ -86,7 +84,7 @@ export function GroupAccessPicker({
       <div style={{ marginBottom: 10 }}>
         {MODES.map((mode, i) => (
           <label
-            key={mode.key}
+            key={mode}
             style={{
               ...ROW,
               borderBottom: i < MODES.length - 1 ? "1px solid var(--c-border)" : "none",
@@ -95,18 +93,18 @@ export function GroupAccessPicker({
             <input
               type="radio"
               name="gap-vis"
-              checked={value.visibility === mode.key}
+              checked={value.visibility === mode}
               onChange={() =>
                 set({
-                  visibility: mode.key,
+                  visibility: mode,
                   visibilityGroups:
-                    mode.key !== "groups" ? [] : value.visibilityGroups,
+                    mode !== "groups" ? [] : value.visibilityGroups,
                 })
               }
               style={{ accentColor: "var(--c-accent)", flexShrink: 0 }}
             />
-            <span style={{ fontSize: 13, color: "var(--c-fg)" }}>{mode.label}</span>
-            {mode.key === "level" && value.visibility === "level" && (
+            <span style={{ fontSize: 13, color: "var(--c-fg)" }}>{t(`groupAccess.${mode}`)}</span>
+            {mode === "level" && value.visibility === "level" && (
               <input
                 type="number"
                 min={1}
@@ -148,7 +146,7 @@ export function GroupAccessPicker({
           >
             {groups.length === 0 ? (
               <div style={{ padding: "12px 14px", fontSize: 13, color: "var(--c-fg-muted)" }}>
-                No groups available
+                {t("groupAccess.noGroups")}
               </div>
             ) : (
               groups.map((g, i) => {
@@ -194,24 +192,24 @@ export function GroupAccessPicker({
           {/* Shortcuts */}
           <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: "var(--c-fg-muted)", letterSpacing: "0.06em" }}>
-              SHORTCUTS:
+              {t("groupAccess.shortcuts").toUpperCase()}
             </span>
             <button type="button" style={shortcutStyle} onClick={applyStaff}>
-              Staff (Mods+)
+              {t("groupAccess.staff")}
             </button>
             <button type="button" style={shortcutStyle} onClick={applyAllMembers}>
-              All Members
+              {t("groupAccess.allMembers")}
             </button>
           </div>
 
           {/* Hide if no access */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 4 }}>
             <span style={{ fontSize: 12, fontWeight: 600, color: "var(--c-fg-muted)" }}>
-              If no access:
+              {t("groupAccess.ifNoAccess")}
             </span>
             {[
-              { val: true,  label: "Hide entirely" },
-              { val: false, label: "Show locked notice" },
+              { val: true,  label: t("groupAccess.hide") },
+              { val: false, label: t("groupAccess.locked") },
             ].map(({ val, label }) => (
               <label
                 key={String(val)}
@@ -244,9 +242,8 @@ export function GroupAccessPicker({
             color: "var(--c-warn)",
           }}
         >
-          ⚠ Inherited restriction:{" "}
-          <strong>{inheritedRestriction}</strong>. This node cannot be less
-          restrictive than its parent.
+          ⚠ {t("groupAccess.inheritedLabel")}{" "}
+          <strong>{inheritedRestriction}</strong>. {t("groupAccess.inheritedBody")}
         </div>
       )}
     </div>

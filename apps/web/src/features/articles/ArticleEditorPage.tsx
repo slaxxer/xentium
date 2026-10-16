@@ -25,6 +25,7 @@ import { toast } from "../../lib/toast";
 import { openDialog } from "../../lib/dialog";
 import "./components/ArticleEditor.scss";
 import "./ArticleEditorPage.scss";
+import { uiLocale } from "../../lib/i18n";
 
 const EMPTY_BODY: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -246,7 +247,7 @@ export function ArticleEditorPage() {
         if (saved.savedAt <= serverMs) { clearDraft(); return; }
       }
 
-      const when = new Date(saved.savedAt).toLocaleString([], {
+      const when = new Date(saved.savedAt).toLocaleString(uiLocale(), {
         month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
       });
       void openDialog({
@@ -466,7 +467,7 @@ export function ArticleEditorPage() {
               <span className="aed-byline__name" style={user?.visibleGroups[0]?.badgeColor ? { color: user.visibleGroups[0].badgeColor } : undefined}>{userName}</span>
               <span className="aed-byline__status">{t(`editor.status.${status}`)}</span>
               <span>·</span>
-              <span>{serverSavedAt ? t("editor.savedAt", { when: new Date(serverSavedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) : t("editor.newDraft")}</span>
+              <span>{serverSavedAt ? t("editor.savedAt", { when: new Date(serverSavedAt).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" }) }) : t("editor.newDraft")}</span>
             </div>
 
             <div className="aed-field">

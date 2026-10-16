@@ -7,14 +7,36 @@
    site name or a bigger accessibility font pushes the band instead of being
    clipped by it. The background is composed by `sectionBackground()` (image over
    gradient), the same helper `section` uses, so both panels behave identically. */
+/* ── Header dropdowns (account menu, notifications, moderation shield, plugin
+   dropdowns such as messages) read the MENU tokens: Theme Studio → Style →
+   "Menus & dropdowns". The components paint with --c-card / --c-fg / --c-fg-muted /
+   --c-surface inline, so remapping those here restyles every one of them, a shipped
+   plugin's included, without touching the components. The --menu-* values are
+   declared on :root, so they resolve to the PAGE's colours, never the pill's. */
+@mixin xt-dropdown-tokens {
+  --c-card:      var(--menu-bg);
+  --card-bg:     var(--menu-bg);
+  --radius-md:   var(--menu-radius);
+  --c-fg:        var(--menu-fg);
+  --c-fg-muted:  var(--menu-fg-muted);
+  --c-border:    var(--menu-border-color);
+  --c-surface:   var(--menu-item-hover-bg);
+  --c-bg-hover:  var(--menu-item-hover-bg);
+  color: var(--c-fg);
+  font-weight: var(--menu-fw);
+}
+
+/* A dropdown opened anywhere else (a navbar without the masthead pill). */
+.xt-pop { @include xt-dropdown-tokens; }
+
 .xt-header {
   /* The masthead's own colours, overridable by a theme. White on the darkened band,
      as the composed-header design draws it. */
   --xt-header-fg:            #ffffff;
   --xt-header-fg-muted:      rgba(255, 255, 255, 0.82);
-  --xt-header-actions-bg:    rgba(20, 22, 42, 0.78);
-  --xt-header-actions-fg:    #e9ebff;
-  --xt-header-actions-line:  rgba(255, 255, 255, 0.13);
+  --xt-header-actions-bg:    var(--usermenu-bg);
+  --xt-header-actions-fg:    var(--usermenu-fg);
+  --xt-header-actions-line:  var(--usermenu-line);
   --xt-header-shade:         linear-gradient(180deg, rgba(20, 22, 42, 0.10) 0%, rgba(20, 22, 42, 0.55) 100%);
 
   position: relative;
@@ -105,7 +127,7 @@
     justify-self: end;
     display: flex;
     align-items: stretch;
-    border-radius: var(--radius-md);
+    border-radius: var(--usermenu-radius);
     overflow: visible;
     background: var(--xt-header-actions-bg);
     backdrop-filter: blur(10px);
@@ -122,9 +144,27 @@
       align-items: center;
       padding: 6px 10px;
       font-size: var(--fs-sm);
-      font-weight: 700;
+      font-weight: var(--usermenu-fw);
     }
     > .xt-block ~ .xt-block > * { border-left: 1px solid var(--xt-header-actions-line); }
+
+    /* The account menu holds the icons: in the pill it is one item whose pieces are
+       the pill's items, padded and divided exactly like the ones above. A piece that
+       draws nothing for this viewer (the shield for a member) leaves an empty wrapper,
+       which never earns the piece after it a hairline. */
+    > .xt-block > .xt-account { align-items: stretch; gap: 0; padding: 0; }
+    .xt-account > .xt-block > *,
+    .xt-account > .pub-nav__user-menu {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      font-size: var(--fs-sm);
+      font-weight: var(--usermenu-fw);
+    }
+    .xt-account > .xt-block:not(:empty) ~ .xt-block > *,
+    .xt-account > .xt-block:not(:empty) ~ .pub-nav__user-menu,
+    .xt-account > .xt-block:not(:empty) ~ .pub-nav__register-btn,
+    .xt-account > .xt-block:not(:empty) ~ .pub-nav__login-btn { border-left: 1px solid var(--xt-header-actions-line); }
 
     /* What the pieces paint with, redefined for the pill: the bell and plugin icons
        use the field tokens inline, and the account menu and search use the muted
@@ -134,6 +174,19 @@
     --input-fg:           var(--xt-header-actions-fg);
     --c-fg-muted:         var(--xt-header-actions-fg);
     --c-fg:               var(--xt-header-actions-fg);
+
+    /* A dropdown opened from the pill (the bell's list, the moderation shield) is a
+       page card, not part of the pill: it takes the page's own tokens back, saved on
+       :root below. Without this its text was the pill's near-white on a white card.
+       The attribute form catches a shipped plugin's dropdown that paints the card
+       inline and has no class yet, so it needs no rebuild. */
+    .xt-pop,
+    [style*="background: var(--c-card)"] {
+      --input-bg:           var(--xt-page-input-bg);
+      --input-border-color: var(--xt-page-input-border-color);
+      --input-fg:           var(--xt-page-input-fg);
+      @include xt-dropdown-tokens;
+    }
 
     /* Every item fills the pill's height and centres its glyph, whatever fixed
        size it has in the navbar. */
@@ -147,13 +200,23 @@
       color: inherit;
     }
 
+    /* ⚠ The gear and search ARE the padded item, where the shield, bell and plugin
+       icons are a 40px button INSIDE one. Same box for all: 40 + the item's 10px either
+       side, or the gear and search sat in visibly narrower boxes. */
+    .pub-nav__icon-btn,
+    .nav-search {
+      box-sizing: content-box; /* the padding and hairline go OUTSIDE the 40, as theirs do */
+      width: 40px;
+      justify-content: center;
+    }
+
     /* Search is an icon in the pill and opens into a field when focused. The input
        stays focusable while collapsed — it covers the icon, invisibly — so a click
        anywhere on it starts typing. */
     .nav-search {
       position: relative;
-      width: 34px;
       padding: 0 10px;
+      border-right: 0; /* the field's (transparent) border would widen it by a pixel */
       cursor: pointer;
     }
     .nav-search:not(:focus-within) .nav-search__input {
@@ -177,7 +240,7 @@
       background: transparent;
       color: inherit;
       font-size: var(--fs-sm);
-      font-weight: 700;
+      font-weight: var(--usermenu-fw);
     }
     .pub-nav__register-btn + .pub-nav__login-btn { border-left: 1px solid var(--xt-header-actions-line); }
 
@@ -210,11 +273,48 @@
 
 /* What the masthead held, carried into the strip while it is hidden. Pushed to the
    end unless something right-aligned already took the slack. */
+/* The account menu: its icons, then the avatar, as one row (the pill restyles it). */
+.xt-account {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+/* An edge pointing DOWN out of the navbar hangs into what follows it. Keep that much
+   room, so the alert bar and the page start below the edge, not under it. Set by
+   `EdgeArtLayer`; absent = no outward bottom edge. */
+.pub-nav {
+  margin-bottom: var(--xt-edge-out-bottom, 0px);
+  @media (max-width: 639.98px) { margin-bottom: var(--xt-edge-out-bottom-sm, 0px); }
+}
+
 .pub-nav__carried {
   display: flex;
   align-items: center;
   gap: var(--sp-3);
   margin-inline-start: auto;
+
+  /* The masthead's pieces, carried into the navbar while the masthead is off. They
+     paint with the FIELD and muted tokens (the bell inline, the shield in its own
+     sheet), which on the navbar drew white squares with dark glyphs on an ink row.
+     Here they are navbar chrome — same treatment as the masthead's pill gives them. */
+  --input-bg:           var(--nav-icon-btn-bg);
+  --input-border-color: transparent;
+  --input-fg:           var(--nav-fg);
+  --c-fg-muted:         var(--nav-fg-muted);
+  --c-fg:               var(--nav-fg);
+
+  /* A dropdown opened from them is a page card again (see the pill above). */
+  .xt-pop,
+  [style*="background: var(--c-card)"] {
+    --input-bg:           var(--xt-page-input-bg);
+    --input-border-color: var(--xt-page-input-border-color);
+    --input-fg:           var(--xt-page-input-fg);
+    @include xt-dropdown-tokens;
+  }
+
+  /* The search field keeps a visible well on the navbar. */
+  .nav-search { background: var(--nav-icon-btn-hover-bg); }
 }
 .pub-nav__inner:has(> [data-xt-align="right"]) > .pub-nav__carried { margin-inline-start: 0; }
 .pub-nav__carried-item { display: contents; }
@@ -268,7 +368,11 @@
   /* The band spans the window. `.xt-region--footer` is `display: contents` in
      `AppLayout.scss`, so nothing above this constrains it any more. */
   width: 100%;
-
+  /* An edge pointing UP out of the footer hangs over the page above it. Keep that much
+     room, so the last card on the page ends above the edge, not under it. Set by
+     `EdgeArtLayer`; absent = no outward top edge. */
+  margin-top: var(--xt-edge-out-top, 0px);
+  @media (max-width: 639.98px) { margin-top: var(--xt-edge-out-top-sm, 0px); }
 
   /* ⚠ The SAME numbers as `.xt-header__inner`, `.xt-region` and `.pub-nav__inner`.
      The footer's contents have to line up with the page above them, and the four
@@ -297,3 +401,14 @@
 /* Outside the masthead's action group, the account button is the avatar alone. */
 .pub-nav__avatar-name { display: none; }
 .xt-header__actions .pub-nav__avatar-name { display: inline; }
+
+/* The page's tokens as :root resolves them, for `.xt-pop` inside the pill. A custom
+   property holding var() computes on the element that declares it, so these keep the
+   site's values (theme and Style Editor included) however the pill redefines them. */
+:root {
+  --xt-page-fg:                 var(--c-fg);
+  --xt-page-fg-muted:           var(--c-fg-muted);
+  --xt-page-input-bg:           var(--input-bg);
+  --xt-page-input-border-color: var(--input-border-color);
+  --xt-page-input-fg:           var(--input-fg);
+}

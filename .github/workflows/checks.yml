@@ -1,0 +1,122 @@
+# The backbone check, in CI: on every pull request, on pushes to main and development,
+# and as the first stage of every release (release.yml calls this workflow, so nothing
+# reaches npm that has not passed here on that exact commit).
+#
+# Same ground as `pnpm backbone:check` locally — typecheck, lint, every test suite and
+# every build — split into three jobs that run side by side, so a lint slip shows up in
+# a minute instead of after the whole suite. The test job needs Postgres and Redis, so
+# both run as services, and the API suite creates its own throwaway `<db>_test`
+# database the way it does locally.
+#
+# Safe for pull requests from forks: the `pull_request` event gives the run a
+# read-only token and no secrets, the jobs ask for nothing more than `contents: read`,
+# and an outside contributor's first run waits for a maintainer's approval (a
+# repository setting). Never switch this to `pull_request_target`: that runs a
+# stranger's code with this repository's permissions.
+name: Checks
+
+on:
+  pull_request:
+    branches: [main, development]
+  push:
+    branches: [main, development]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch or PR makes the older run pointless. A release
+# calling this runs under its own tag ref, so it never cancels a branch run.
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static:
+    name: Typecheck + lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # The Prisma client is generated, not committed; half the API's types come from it.
+      # It needs no database: generate only reads the schema.
+      - run: pnpm db:generate
+      - run: pnpm typecheck
+      - run: pnpm lint
+
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: xentium
+          POSTGRES_PASSWORD: xentium
+          POSTGRES_DB: xentium
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U xentium"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+
+      # A throwaway .env for this run only: fresh secrets, the service containers'
+      # addresses. The tests read it from the repo root, like a developer's own.
+      - name: Write a test .env
+        run: |
+          set -euo pipefail
+          dummy=$(pnpm --silent --filter @xentium/api exec node --input-type=commonjs \
+            -e "require('argon2').hash('xentium-dummy').then(h=>console.log(h))")
+          {
+            echo 'DATABASE_URL="postgresql://xentium:xentium@localhost:5432/xentium"'
+            echo 'REDIS_URL="redis://localhost:6379"'
+            echo 'APP_URL="http://localhost:5173"'
+            echo "COOKIE_SECRET=\"$(openssl rand -hex 16)\""
+            echo "JWT_SECRET=\"$(openssl rand -hex 32)\""
+            echo "DUMMY_ARGON2_HASH=\"$dummy\""
+          } > .env
+
+      - run: pnpm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:generate
+      - run: pnpm build

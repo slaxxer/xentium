@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../components/Icon";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
+import { slotRegistry } from "../plugins/slotRegistry";
 import {
   faGear,
   faChevronDown,
@@ -29,6 +31,7 @@ import { ModShield } from "../features/modcp/ModShield";
 import { SignInMenu } from "../features/auth/doorway/SignInMenu";
 import { useBranding } from "../hooks/useBranding";
 import { SiteLogo } from "../components/SiteLogo";
+import { pluginNavLabel } from "../lib/coreText";
 
 interface NavItem {
   id: string;
@@ -40,9 +43,8 @@ interface NavItem {
   placement?: string; // "navbar" | "footer"
 }
 
-/** Core system routes get a localized label; everything else (custom links and
- *  plugin-registered nav items) uses its DB label. Core does not localize plugin
- *  routes — plugins ship their own label via registerNavItem / their translations. */
+/** Core system routes get a localized label; a plugin's link translates through its
+ *  `host.nav` text until an admin renames it; custom links use their DB label. */
 const SYSTEM_NAV_I18N: Record<string, string> = {
   "/":         "nav.home",
   "/articles": "nav.articles",
@@ -67,7 +69,8 @@ function hasAcpAccess(user: Parameters<typeof userCan>[0]) {
   return userCan(user, "admin.access");
 }
 
-function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
+/** Exported for its test; the header renders it. */
+export function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["user"]> }) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -100,14 +103,14 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <Avatar user={{ username: user.username, avatar: user.avatar }} size={36} online />
+        <Avatar user={{ username: user.username, avatar: user.avatar }} size={36} />
         {/* Shown in the masthead's action group only (CSS), as the composed header draws it. */}
         <Username className="pub-nav__avatar-name" username={user.username} badgeColor={primaryGroup?.badgeColor} />
         <FontAwesomeIcon icon={faChevronDown} className="pub-nav__avatar-caret" />
       </button>
 
       {open && (
-        <div className="pub-nav__dropdown">
+        <div className="pub-nav__dropdown xt-pop">
           <div className="pub-nav__dropdown-header">
             <Avatar user={{ username: user.username, avatar: user.avatar }} size={44} />
             <div>
@@ -151,6 +154,13 @@ function UserDropdown({ user }: { user: NonNullable<ReturnType<typeof useAuth>["
             <FontAwesomeIcon icon={faGear} />
             {t("nav.accountSettings")}
           </Link>
+          {/* Plugin entries (Membership, …): plain links styled like core's own. */}
+          {slotRegistry.getUserMenuItems().map((item) => (
+            <Link key={item.id} to={item.to} className="pub-nav__dropdown-item" onClick={() => setOpen(false)}>
+              {item.icon ? <FontAwesomeIcon icon={item.icon as IconDefinition} /> : null}
+              {item.label}
+            </Link>
+          ))}
 
           <div className="pub-nav__dropdown-divider" />
 
@@ -243,16 +253,16 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
  * before it became a block of its own (`modTool`). The block passes it only for a
  * document that does not place the shield itself.
  */
-export function NavNotifications({ withModTool = false }: { withModTool?: boolean }) {
+export function NavNotifications({ withModTool = false, icon }: { withModTool?: boolean; icon?: string }) {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return null;
-  return withModTool ? <><ModShield /><NotificationBell /></> : <NotificationBell />;
+  return withModTool ? <><ModShield /><NotificationBell icon={icon} /></> : <NotificationBell icon={icon} />;
 }
 
 /** The ModCanvas shield. Moderators only — it draws nothing for anyone else. */
-export function NavModTool() {
+export function NavModTool({ icon }: { icon?: string } = {}) {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <ModShield /> : null;
+  return isAuthenticated ? <ModShield icon={icon} /> : null;
 }
 
 /** Admins only; the badge flags pending plugin updates or an expiring licence. */
@@ -308,7 +318,7 @@ export function NavPrimaryLinks() {
             // System links get a localized label by route; custom links keep their DB label.
             const navLabel = SYSTEM_NAV_I18N[item.url]
               ? t(SYSTEM_NAV_I18N[item.url]!)
-              : item.label;
+              : pluginNavLabel(item.url, item.label);
             return (
               <li key={item.id}>
                 {isExternal || item.openInNewTab ? (

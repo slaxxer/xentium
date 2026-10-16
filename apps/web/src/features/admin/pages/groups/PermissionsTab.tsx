@@ -6,6 +6,7 @@ import { groupByDomain, type Permission } from "../../../../lib/permissions";
 import { isSensitive, powerOf } from "./groupModel";
 import { PowerMeter } from "./groupParts";
 import { impliedBy } from "../permissions/permissionsModel";
+import { permissionDomainLabel } from "../../../../lib/coreText";
 
 export function PermissionsTab({ allPermissions, keys, onChange }: {
   allPermissions: Permission[];
@@ -52,7 +53,7 @@ export function PermissionsTab({ allPermissions, keys, onChange }: {
               <button type="button" className="gp-domain__toggle" aria-expanded={isOpen}
                 onClick={() => setOpen((s) => { const n = new Set(s); if (n.has(domain)) n.delete(domain); else n.add(domain); return n; })}>
                 <FontAwesomeIcon icon={faChevronDown} className={`gp-chev${isOpen ? "" : " is-closed"}`} />
-                <span className="gp-domain__name">{domain}</span>
+                <span className="gp-domain__name">{permissionDomainLabel(domain)}</span>
                 {hot && <span className="gp-sensitive"><FontAwesomeIcon icon={faTriangleExclamation} /> {t("groups.perms.sensitive")}</span>}
               </button>
               <button type="button" className="gp-domain__all" onClick={() => setDomain(perms, on < perms.length)}>

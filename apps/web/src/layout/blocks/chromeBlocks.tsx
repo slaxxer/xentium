@@ -18,6 +18,7 @@
  */
 import { Children, isValidElement, type ReactNode } from "react";
 import { blockPropSchemas, blockTypesIn, type BlockNode, type LayoutDocument } from "@xentium/contracts";
+import i18n from "i18next";
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";
@@ -95,7 +96,7 @@ function SiteHeaderBlock({ props, children }: BlockProps<{
    * clicked to switch it back on.
    */
   if (props.showMasthead === false) {
-    return isEditorPreview() ? <div className="xt-header xt-header--hidden">Masthead hidden</div> : null;
+    return isEditorPreview() ? <div className="xt-header xt-header--hidden">{i18n.t("common:blockRender.mastheadHidden")}</div> : null;
   }
 
   // The logo is the brand; everything else placed in the header is the action group.
@@ -183,10 +184,17 @@ function NavbarBlock({ props, children }: BlockProps<{
   const needLogo = !mastheadShown && !own.has("logo");
   // …and whatever the masthead held comes down into the strip: everything when it is
   // hidden, the account buttons when only they are switched off.
-  const carried = header
-    ? [...new Set((header.children ?? []).map((n) => n.type))].filter((t) =>
-        CARRIED[t] && !own.has(t) && (!mastheadShown || (!buttonsShown && ACCOUNT_TYPES.has(t))))
-    : [];
+  //
+  // The account menu comes down WITH the icons it holds, in its order, avatar last:
+  // each piece is listed with the masthead child it belongs to (`of`), which is what
+  // the buttons switch and the navbar's own copy are checked against.
+  const pieces = (header?.children ?? []).flatMap((n) => n.type === "userMenu"
+    ? [...(n.children ?? []).map((c) => ({ t: c.type, of: n.type })), { t: n.type, of: n.type }]
+    : [{ t: n.type, of: n.type }]);
+  const carried = [...new Set(pieces
+    .filter(({ t, of }) => CARRIED[t] && !own.has(t) && !own.has(of)
+      && (!mastheadShown || (!buttonsShown && ACCOUNT_TYPES.has(of))))
+    .map(({ t }) => t))];
 
   const classes = [
     "pub-nav",
@@ -248,25 +256,25 @@ registerBlock({
  * shield here; once one is placed, this is the bell alone. Same rule as `headerWidgets`
  * and the plugin icons placed on their own: never both, never neither.
  */
-function BellBlock() {
+function BellBlock({ icon }: { icon?: string } = {}) {
   // The document from context: in the editor the unsaved one is on screen.
   const doc = useRenderedDocument();
   const placesModTool = !!doc && blockTypesIn(doc).has("modTool");
-  return <NavNotifications withModTool={!placesModTool} />;
+  return <NavNotifications withModTool={!placesModTool} icon={icon} />;
 }
 
 registerBlock({
   type:   "modTool",
   schema: blockPropSchemas.modTool,
   editorMeta: { label: "Moderation tool", category: "content", allowedTemplates: CHROME_HEADER },
-  component: () => <NavModTool />,
+  component: ({ props }: BlockProps<{ icon?: string }>) => <NavModTool icon={props.icon} />,
 });
 
 registerBlock({
   type:   "notifications",
   schema: blockPropSchemas.notifications,
   editorMeta: { label: "Notification bell", category: "content", allowedTemplates: CHROME_HEADER },
-  component: () => <BellBlock />,
+  component: ({ props }: BlockProps<{ icon?: string }>) => <BellBlock icon={props.icon} />,
 });
 
 registerBlock({
@@ -304,11 +312,24 @@ registerBlock({
   },
 });
 
+/**
+ * The account menu — and the member's icons, which are ITS children: the moderation
+ * tool, the bell, plugin icons, the admin link, search. They are drawn in one row
+ * with the avatar last, so the menu is one block to place, not six siblings that
+ * happened to share the masthead's pill. A guest sees whatever of them is for guests
+ * (search), then Log in.
+ */
 registerBlock({
-  type:   "userMenu",
-  schema: blockPropSchemas.userMenu,
+  type:      "userMenu",
+  schema:    blockPropSchemas.userMenu,
+  container: true,
   editorMeta: { label: "Account menu", category: "content", allowedTemplates: CHROME_HEADER },
-  component: () => <NavUserMenu />,
+  component: ({ children }) => (
+    <div className="xt-account">
+      {children}
+      <NavUserMenu />
+    </div>
+  ),
 });
 
 // ── Footer ──────────────────────────────────────────────────────────────────

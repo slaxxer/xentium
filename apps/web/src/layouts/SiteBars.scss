@@ -1,0 +1,40 @@
+// The strip under the navbar (SiteBars.tsx). The marketplace's `xt-maintBar`,
+// one tone per alert kind; the text sits on the tone in the page background colour.
+.xt-siteBar {
+  position: relative;
+  padding: 9px 44px;
+  text-align: center;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--c-bg);
+  background: var(--c-warn);
+
+  a { color: inherit; text-decoration: underline; }
+
+  &--info    { background: var(--c-accent); color: var(--c-on-accent, var(--c-bg)); }
+  &--success { background: var(--c-success); }
+  &--warning { background: var(--c-warn); }
+  &--danger  { background: var(--c-danger); }
+
+  &__close {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    padding: 0 6px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: var(--fs-lg);
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.75;
+
+    &:hover { opacity: 1; }
+  }
+}
+
+@media (max-width: 600px) {
+  .xt-siteBar { padding-left: 16px; padding-right: 40px; text-align: left; }
+}

@@ -1,0 +1,8 @@
+---
+// Starlight's page title, except on the start page: that page draws its own hero
+// headline (with the page-title id, so the skip link still lands on it), and a
+// second "Xentium documentation" banner above it was noise.
+import Default from "@astrojs/starlight/components/PageTitle.astro";
+const isHome = Astro.locals.starlightRoute.id === "";
+---
+{isHome ? <span data-xd-no-title hidden></span> : <Default />}

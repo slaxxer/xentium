@@ -1,0 +1,119 @@
+{
+  "newFollower": {
+    "title": "Neuer Follower",
+    "body": "{{name}} folgt dir jetzt."
+  },
+  "profileComment": {
+    "title": "Neuer Kommentar auf deinem Profil",
+    "body": "{{name}} hat auf deinem Profil geschrieben."
+  },
+  "profileReply": {
+    "title": "Neue Antwort auf deinen Kommentar",
+    "body": "{{name}} hat auf deinen Kommentar im Profil von {{owner}} geantwortet."
+  },
+  "mentionProfile": {
+    "title": "Du wurdest erwähnt",
+    "body": "{{name}} hat dich in einem Kommentar auf dem Profil von {{owner}} erwähnt."
+  },
+  "profileCommentLiked": {
+    "title": "Jemandem gefällt dein Kommentar",
+    "body": "{{name}} gefällt dein Kommentar auf dem Profil von {{owner}}."
+  },
+  "articleCommentLiked": {
+    "title": "Jemandem gefällt dein Kommentar",
+    "body": "{{name}} gefällt dein Kommentar."
+  },
+  "badgeGranted": {
+    "title": "Du hast das Abzeichen „{{badge}}“ erhalten!",
+    "body": "Es ist jetzt auf deinem Profil – für alle, die vorbeischauen."
+  },
+  "badgeGrantedNote": {
+    "title": "Du hast das Abzeichen „{{badge}}“ erhalten!"
+  },
+  "badgeEarned": {
+    "title": "Du hast das Abzeichen „{{badge}}“ verdient!",
+    "body": "Es ist jetzt auf deinem Profil – für alle, die vorbeischauen."
+  },
+  "banPermanent": {
+    "title": "Dein Konto wurde dauerhaft gesperrt"
+  },
+  "banTemporary": {
+    "title": "Dein Konto wurde vorübergehend gesperrt"
+  },
+  "banSuspended": {
+    "title": "Dein Konto wurde gesperrt"
+  },
+  "banCasePolicy": {
+    "title": "Dein Konto wurde dauerhaft gesperrt",
+    "body": "Verstoß gegen die Mehrfachkonto-Regel – mehrere Konten auf demselben Gerät erkannt"
+  },
+  "banLifted": {
+    "title": "Deine Kontosperre wurde aufgehoben",
+    "body": "Deine Sperre wurde aufgehoben. Du kannst dich wieder anmelden."
+  },
+  "banEnded": {
+    "title": "Deine Sperre ist abgelaufen",
+    "body": "Deine vorübergehende Sperre ist abgelaufen. Du kannst dich wieder anmelden."
+  },
+  "contentRemoved": {
+    "title": "Dein Beitrag wurde entfernt"
+  },
+  "reportReviewed": {
+    "title": "Deine Meldung wurde geprüft",
+    "body": "Ein Moderator hat sich deine Meldung angesehen und keinen Regelverstoß gefunden. Danke fürs Melden."
+  },
+  "newCase": {
+    "title": "Neuer Prüffall",
+    "body": "Ein verdächtiges Muster wurde erkannt und muss von einem Moderator geprüft werden."
+  },
+  "caseUserBanned": {
+    "title": "Markiertes Konto gesperrt",
+    "body": "{{name}} ({{caseType}}) wurde gesperrt."
+  },
+  "caseUserBannedNoType": {
+    "title": "Markiertes Konto gesperrt",
+    "body": "{{name}} (aus einem Prüffall) wurde gesperrt."
+  },
+  "newReport": {
+    "title": "Neue Meldung eingegangen",
+    "body": "Es wurde eine Meldung zu {{target}} eingereicht."
+  },
+  "ladderBanPermanent": {
+    "title": "Verwarnungsstufe erreicht",
+    "body": "{{name}} hat {{count}} Verwarnungen erreicht und wurde dauerhaft gesperrt."
+  },
+  "ladderBanTemporary": {
+    "title": "Verwarnungsstufe erreicht",
+    "body": "{{name}} hat {{count}} Verwarnungen erreicht und wurde für {{days}} Tage gesperrt."
+  },
+  "ladderNotify": {
+    "title": "Verwarnungsstufe erreicht",
+    "body": "{{name}} hat {{count}} Verwarnungen erreicht und sollte geprüft werden."
+  },
+  "warningIssued": {
+    "title": "Du hast eine Verwarnung erhalten"
+  },
+  "warningPardoned": {
+    "title": "Eine Verwarnung wurde erlassen",
+    "body": "Eine deiner Verwarnungen wurde entfernt."
+  },
+  "passwordChanged": {
+    "title": "Dein Passwort wurde geändert",
+    "body": "Das Passwort deines Kontos wurde gerade zurückgesetzt. Wenn du das nicht warst, wende dich sofort an einen Administrator."
+  },
+  "jobFailure": {
+    "title": "Hintergrundjob fehlgeschlagen",
+    "body": "Ein Job in „{{queue}}“ ist nach allen Wiederholungen fehlgeschlagen. Sieh unter System → Fehlerprotokoll nach."
+  },
+  "promoted": {
+    "title": "Du wurdest zu {{rank}} befördert!",
+    "body": "Du hast eine neue Stufe erreicht. Bleib aktiv, um noch mehr freizuschalten."
+  },
+  "targets": {
+    "article": "einen Artikel",
+    "article_comment": "einen Artikelkommentar",
+    "profile_comment": "einen Profilkommentar",
+    "user": "ein Mitglied",
+    "plugin-content": "Plugin-Inhalte"
+  }
+}

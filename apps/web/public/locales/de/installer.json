@@ -198,7 +198,8 @@
       "fair": "Mäßig",
       "good": "Gut",
       "strong": "Stark"
-    }
+    },
+    "username_placeholder": "Administrator"
   },
   "finalize": {
     "title": "Bereit, wenn du es bist",

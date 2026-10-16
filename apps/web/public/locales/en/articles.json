@@ -13,7 +13,9 @@
     "prev": "← Prev",
     "next": "Next →",
     "pageOf": "Page {{page}} of {{total}}",
-    "minRead": "{{n}} min"
+    "minRead": "{{n}} min",
+    "views_one": "{{count}} view",
+    "views_other": "{{count}} views"
   },
   "reader": {
     "loading": "Loading…",
@@ -64,7 +66,9 @@
     "noComments": "No comments yet.",
     "tombstoneBase": "Comment by {{user}} was deleted",
     "tombstoneBy": " by {{mod}}",
-    "tombstoneReason": " · Reason: {{reason}}"
+    "tombstoneReason": " · Reason: {{reason}}",
+    "cantRateOwnComment": "You can't rate your own comment",
+    "signInToRate": "Sign in to rate"
   },
   "editor": {
     "saveError": "Could not save. Try again.",

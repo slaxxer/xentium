@@ -10,6 +10,7 @@ import { api } from "../../../lib/api";
 import { Pager } from "../../../components/Pager";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { Username } from "../../../components/Username";
+import { uiLocale } from "../../../lib/i18n";
 
 interface Article {
   id: string;
@@ -38,7 +39,7 @@ const STATUS_COLORS: Record<string, [string, string]> = {
 
 function formatDate(d: string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  return new Date(d).toLocaleDateString(uiLocale(), { year: "numeric", month: "short", day: "numeric" });
 }
 
 function getAuthorInitials(username: string) {
@@ -166,7 +167,7 @@ export function ArticlesPage() {
                   {/* Views */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--c-fg-muted)" }}>
-                      {a.viewCount.toLocaleString()}
+                      {a.viewCount.toLocaleString(uiLocale())}
                     </span>
                   </div>
 

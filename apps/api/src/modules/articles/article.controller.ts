@@ -123,7 +123,11 @@ export const articlesController = {
     // upload middleware already validated size + magic-byte MIME
     const file = req.file!;
     const ext = file.detectedExt ?? "bin";
-    const filename = `featured.${ext}`;
+    // A NEW name per upload. It used to be `featured.<ext>` every time, so a replacement
+    // of the same type kept the same URL: the browser showed the cached old picture
+    // and the editor, holding an equal string, had nothing to re-render. The previous
+    // file is deleted once the article points at this one (articleService).
+    const filename = `featured-${Date.now().toString(36)}.${ext}`;
     const relPath = await storage.save(path.join("articles", id), filename, file.buffer);
 
     const article = await articleService.setFeaturedImage(id, relPath, viewerId, canEditAny);

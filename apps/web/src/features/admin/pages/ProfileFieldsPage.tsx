@@ -5,6 +5,7 @@ import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faPlus, faPencil, faTrash, faLock } from "@fortawesome/free-solid-svg-icons";
+import { fieldLabel } from "../../../lib/coreText";
 
 interface ProfileField {
   id: string;
@@ -68,7 +69,7 @@ function FieldModal({
     <div className="acp-modal-overlay" onClick={onClose}>
       <div className="acp-modal" onClick={(e) => e.stopPropagation()}>
         <h2 style={{ marginBottom: "1.5rem", fontSize: "1.1rem" }}>
-          {isNew ? t("profileFields.modalAddTitle") : t("profileFields.modalEditTitle", { label: field?.label })}
+          {isNew ? t("profileFields.modalAddTitle") : t("profileFields.modalEditTitle", { label: field?.key && field.label ? fieldLabel({ key: field.key, label: field.label }) : field?.label })}
         </h2>
 
         {isNew && (
@@ -214,7 +215,7 @@ export function ProfileFieldsPage() {
   async function handleDelete(field: ProfileField) {
     const result = await swalConfirm(
       t("profileFields.deleteConfirmTitle"),
-      t("profileFields.deleteConfirmBody", { label: field.label }),
+      t("profileFields.deleteConfirmBody", { label: fieldLabel(field) }),
       t("profileFields.deleteConfirmBtn"),
       t("common:actions.cancel"),
     );
@@ -264,7 +265,7 @@ export function ProfileFieldsPage() {
                     {f.isSystem && (
                       <FontAwesomeIcon icon={faLock} style={{ marginRight: "0.4rem", color: "var(--c-fg-muted)", fontSize: "0.75rem" }} />
                     )}
-                    {f.label}
+                    {fieldLabel(f)}
                   </td>
                   <td style={{ fontFamily: "monospace", fontSize: "0.8rem", color: "var(--c-fg-muted)" }}>
                     {f.key}

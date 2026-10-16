@@ -60,35 +60,38 @@ export const scopedTokensSchema = z.record(
 export const scopedTokenSetSchema = scopedTokensSchema;
 
 export const HEARTH_DEFAULT_TOKENS: TokenMap = {
-  "--c-bg":           "#f3f4fb",
-  "--c-bg-hover":     "#ebedf7",
+  // The core look (2026-10-13). Mirrors the `core-look` mixin in the web app's
+  // _tokenDefaults.scss, which is what actually renders.
+  "--c-bg":           "#f6f7f6",
+  "--c-bg-hover":     "#eef0ef",
   "--c-surface":      "#ffffff",
   "--c-card":         "#ffffff",
-  "--c-accent":       "#5865f2",
-  "--c-accent2":      "#00b1cf",
-  "--c-accent-soft":  "#e7e9fd",
-  "--c-accent2-soft": "#d6f3f8",
-  "--c-fg":           "#1a1c2e",
-  "--c-fg-muted":     "#5b5e74",
-  "--c-fg-subtle":    "#9499ae",
-  "--c-border":       "#e6e7f1",
-  "--c-success":      "#23a55a",
-  "--c-warn":         "#f4a259",
-  "--c-danger":       "#ef4444",
+  "--c-accent":       "#0d7c72",
+  "--c-accent2":      "#0a5f57",
+  "--c-accent-soft":  "#e3f2ef",
+  "--c-accent2-soft": "#d0e9e4",
+  "--c-fg":           "#1c2321",
+  "--c-fg-muted":     "#5b6560",
+  "--c-fg-subtle":    "#8a928e",
+  "--c-border":       "#e2e6e4",
+  "--c-success":      "#3f8a2f",
+  "--c-warn":         "#a16207",
+  "--c-danger":       "#c8322f",
   // Both are editable rows in the Style Editor's Feedback group, so both need a
   // default here or the row renders empty and "Inherited" names nothing.
-  "--c-info":         "#38bdf8",
-  "--c-update":       "#414144",
-  // The logo icon (Style Editor → Logo icon): the default mark's box gradient, and a
-  // border and shadow around whichever logo the site shows (transparent = off).
-  "--logo-icon-from":   "#f26b1d",
-  "--logo-icon-to":     "#e0336b",
+  "--c-info":         "#3f5a8a",
+  "--c-update":       "#3a423f",
+  // The logo icon (Style Editor → Logo icon): the default mark's box, and a border
+  // and shadow around whichever logo the site shows (transparent = off). The box is
+  // the accent, flat: the same colour twice is no gradient.
+  "--logo-icon-from":   "#0d7c72",
+  "--logo-icon-to":     "#0d7c72",
   "--logo-icon-border": "transparent",
   // Every site icon's size, apart from the text size (Colours & type → Icon size).
   "--icon-scale":       "1",
   "--logo-icon-shadow": "transparent",
-  "--btn-bg":         "#5865f2",
-  "--card-radius":    "18px",
+  "--btn-bg":         "#0d7c72",
+  "--card-radius":    "14px",
   "--btn-radius":     "10px",
 };
 
@@ -102,10 +105,15 @@ export const HEARTH_DEFAULT_TOKENS: TokenMap = {
 // one an admin was most likely to reach for. A preview that does not render what
 // ships is worse than no preview.
 
-export const FONT_FAMILIES = ["Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
+// Figtree + Bricolage Grotesque are the core look's own pairing (text + headings).
+// Choosing a family here sets text AND headings, so picking Figtree means Figtree
+// headings too; "no family" is the pairing.
+export const FONT_FAMILIES = ["Figtree", "Bricolage Grotesque", "Poppins", "Nunito", "Montserrat", "Open Sans", "Ubuntu"] as const;
 export type FontFamily = (typeof FONT_FAMILIES)[number];
 
 export const FONT_STACKS: Record<string, string> = {
+  "Figtree":    '"Figtree", system-ui, sans-serif',
+  "Bricolage Grotesque": '"Bricolage Grotesque", "Figtree", sans-serif',
   "Poppins":    "Poppins, sans-serif",
   "Nunito":     "Nunito, sans-serif",
   "Montserrat": "Montserrat, sans-serif",
@@ -133,6 +141,7 @@ export function fontRootDecls(font: SiteFont): string[] {
   if (font.family && FONT_STACKS[font.family]) {
     out.push(`  --ff-sans: ${FONT_STACKS[font.family]};`);
     out.push(`  --font-display: ${FONT_STACKS[font.family]};`);
+    out.push(`  --font-headline: ${FONT_STACKS[font.family]};`);
   }
   if (font.weight) out.push(`  --fw-body: ${font.weight};`);
   // The size is the SITE's text size: it sets the scale every `--fs-*` step multiplies

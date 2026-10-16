@@ -82,7 +82,80 @@ another namespace, prefix it: `t("common:actions.cancel")`.
 - `react-i18next` itself is shared too (`ReactI18next`), so your plugin uses the host's
   i18next instance and everything it has already loaded.
 
+## Text core shows for you
+
+Some of your text is drawn by core, not by your components: permission names, your ACP
+menu entries, your nav link, your layout template and your blocks with their settings.
+You register these in English (in `onEnable()` or `registerBlock`), and core looks for a
+translation under `host` in your namespace. The tree mirrors core's own, and a key
+with dots (a permission, a block type) nests by its dots:
+
+```json
+// web/locales/de/forum.json
+{
+  "host": {
+    "permissions": { "forum": { "thread": { "create": "Forenthemen erstellen" } } },
+    "domains":     { "Forum": "Forum" },
+    "acpSections": { "Forum": "Forum" },
+    "acpPages":    { "forum/categories": "Kategorien" },
+    "nav":         { "forum": "Forum" },
+    "templates":   { "forum": { "index": "Forenübersicht" } },
+    "blocks": {
+      "forum": {
+        "topUsers": {
+          "label": "Forum: aktivste Mitglieder",
+          "props": {
+            "defaultMetric": { "title": "Zuerst angezeigter Wert", "enum": { "threads": "Themen" } }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+- `domains` is the permission group, by the `domain` you registered. `acpSections` is
+  the `section` of `registerAcpPage`, and `acpPages` is its `path` without `/admin/`.
+- `nav` is your nav link's URL without the leading `/`. It translates only while the
+  link still has the label you registered; once an admin renames it, their name shows.
+- Anything you leave out shows your English, so you can add these a few at a time.
+
+## Labels you register in code
+
+Slot labels (`registerProfileTab`, `registerSearchTab`, `registerGroupConfigPanel`, …)
+are read when core renders them, so make them getters:
+
+```ts
+const ft = (key: string) => getI18n().t(`forum:${key}`);
+slotRegistry.registerProfileTab({ id: "forum", get label() { return ft("slots.profileTab"); }, component: ForumProfileTab });
+```
+
+## Notifications
+
+A notification you send keeps its English `title` and `body`, which are stored and used
+for emails. Add `i18n` and the bell shows it in the reader's language:
+
+```ts
+await ctx.notify({
+  userId, type: "forum.thread_approved", channels: ["in_app"],
+  title: "Your thread was approved",
+  body:  `"${thread.title}" has been approved.`,
+  i18n:  { key: "forum:notify.approved", params: { title: thread.title } },
+});
+```
+
+The bell reads `<key>.title` and `<key>.body`, filled in from `params`. When the body is
+someone's own words (a message, a moderator's reason), leave `.body` out of your locale
+files and the stored body shows as written.
+
+## Dates and numbers
+
+Format with the reader's language, not the browser's: pass `getI18n().language` to
+`toLocaleString`, `toLocaleDateString` and `toLocaleTimeString`. For short ages ("5m",
+"2d"), use core's texts: `t("common:time.m", { n })`, `common:time.h`, `common:time.d`,
+`common:time.agoM` and the rest.
+
 ## What's not covered yet
 
-Translating a plugin's **emails and notifications** on the server is a separate thing,
-and we haven't built it for plugins yet. This page is only about strings in the web UI.
+Notification **emails** are still sent in English. This page covers the web UI and the
+bell.

@@ -179,6 +179,9 @@ function ImageBlock({
   props,
 }: BlockProps<{ source: string; alt?: LocalizedText; ratio: string; href?: string }>) {
   const alt = useText(props.alt);
+  // A block just added from the catalogue has no image yet. Drawing nothing lets the
+  // editor show its "nothing to draw here" marker until one is uploaded.
+  if (!props.source) return null;
   const src = resolveImageSource(props.source);
   const img = <img src={src} alt={alt} loading="lazy" />;
   return (

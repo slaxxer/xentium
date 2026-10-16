@@ -97,4 +97,13 @@ export function applyServerLocale(locale?: string | null) {
   if (locale && (LOCALE_CODES as string[]).includes(locale)) setLocale(locale as LocaleCode);
 }
 
+/**
+ * The reader's language, for `toLocale*String` / `Intl` calls. Pass it instead of
+ * `undefined`: that means the BROWSER's language, so an English browser wrote
+ * "12:44 PM" and "2,286" inside a German page.
+ */
+export function uiLocale(): string {
+  return i18n.resolvedLanguage ?? i18n.language ?? "en";
+}
+
 export default i18n;

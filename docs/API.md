@@ -173,15 +173,16 @@ All **Auth**.
 | GET | `/me/level-up` | Auth | `{ levelUp }`: the newest rung you climbed and have not seen yet (`rank`, `from`, what it `unlocks`, the `next` goal), or `null`. Null too when progression or promotion notices are off. |
 | POST | `/me/level-up/seen` | Auth | Marks every unseen climb seen. The site shows the level-up dialog once. |
 | GET | `/me/blocks` | Auth | Who you've blocked. |
-| GET | `/:username` | Optional | Public profile (respects privacy). |
+| GET | `/:username` | Optional | Public profile (respects privacy). Records a profile visit, except with `?preview=1` (the hover card): a glance is not a visit. |
 | GET | `/:id/followers` | Optional | Followers, paginated (403 if the owner hid the list). |
 | GET | `/:id/following` | Optional | Following, paginated (403 if hidden). |
 | GET | `/:id/profile-fields` | Optional | A user's field values, filtered by privacy and by who's asking. |
-| GET | `/:id/profile-comments` | Optional | Profile wall (deleted comments included as tombstones). |
-| POST | `/:id/profile-comments` | Auth (rate-limited) | Post on a wall. |
+| GET | `/:id/profile-comments` | Optional | Profile wall: top-level comments, newest first, each with its `replies` oldest first. Deleted comments are left out entirely, and a deleted comment's replies with it. |
+| POST | `/:id/profile-comments` | Auth (rate-limited) | Post on a wall, or reply with `parentId`. Replies are one level deep: a reply to a reply is filed under the same comment. The wall's owner can reply but can't start a comment. |
 | PUT | `/profile-comments/:commentId` | Auth | Edit your comment (within the edit window). |
 | DELETE | `/profile-comments/:commentId` | Auth | Delete (your own, or on your wall). |
 | POST / DELETE | `/profile-comments/:commentId/like` | Auth | Like / unlike. |
+| POST / DELETE | `/profile-comments/:commentId/dislike` | Auth | Dislike / take it back. A like and a dislike replace each other; you can't dislike your own comment. The wall returns `dislikeCount` per comment and `viewerDislikedIds`. |
 | POST / DELETE | `/:id/follow` | Auth (rate-limited) | Follow / unfollow. |
 | POST / DELETE | `/:id/block` | Auth (rate-limited) | Block / unblock (removes follows in both directions). |
 
@@ -189,7 +190,7 @@ All **Auth**.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/` | Optional | Published articles (filter by category or tag; respects visibility). |
+| GET | `/` | Optional | Published articles (filter by category or tag; respects visibility). `?feed=` picks a home list: `latest`, `top`, `following` (the categories and tags you follow), `liked`, `saved`, `mine`; the last four need a session. Signed in, each item carries `viewer: { liked, saved }`. |
 | GET | `/me` | Auth | Your own articles, any status. |
 | GET | `/:slug` | Optional | One article (respects visibility). |
 | POST | `/` | Perm:`article.create` | Create. |
@@ -199,10 +200,13 @@ All **Auth**.
 | DELETE | `/:id` | Auth (owner/admin) | Soft-delete. |
 | GET | `/:id/revisions` | Auth | Revision history. |
 | POST | `/:id/view` | Public | Count a view (one per IP). |
-| POST | `/:id/featured-image` | Auth | Upload the featured image (`multipart`, field `file`). |
+| POST | `/:id/featured-image` | Auth | Upload the featured image (`multipart`, field `file`). Each upload gets a new file name, and the replaced picture is deleted. |
 | GET | `/:id/comments` | Public | Comments (tombstones included). |
 | POST | `/:id/comments` | Perm:`article.comment.create` | Add a comment. |
 | POST / DELETE | `/:id/like` · `/:id/dislike` | Auth | Like / dislike toggles. |
+| POST / DELETE | `/:id/bookmark` | Auth | Save an article for later / remove it from Saved. |
+| GET | `/topics/following` | Auth | The categories and tags you follow: `{ categories, tags }`. |
+| POST / DELETE | `/categories/:id/follow` · `/tags/:id/follow` | Auth | Follow / unfollow a category or a tag. Answers with your followed topics. |
 
 ### Article comments: `/api/article-comments`
 
@@ -210,7 +214,7 @@ All **Auth**.
 |---|---|---|---|
 | PATCH | `/:commentId` | Auth | Edit your comment. |
 | DELETE | `/:commentId` | Auth | Delete (your own, or as a moderator, which leaves a tombstone). |
-| POST / DELETE | `/:commentId/like` | Auth | Like / unlike. |
+| POST / DELETE | `/:commentId/like` · `/:commentId/dislike` | Auth | Thumbs up / down. One replaces the other; no thumbs-down on your own comment. Answers `{ likeCount, dislikeCount }`. Comment lists carry `dislikeCount` and, signed in, `viewerReaction`. |
 
 ### Article categories: `/api/article-categories`
 
@@ -237,6 +241,23 @@ once published. The ACP routes need `legal.manage`.
 | POST | `/api/admin/legal/:key/publish` | ACP | The draft goes live. A draft with no text is refused (`XEC-LEGAL-3502`). |
 | POST | `/api/admin/legal/:key/unpublish` | ACP | Takes it offline. The draft is kept. |
 | POST | `/api/admin/legal/:key/discard` | ACP | Resets the draft to the published text. |
+
+## Emojis: `/api/emojis` (public) and `/api/admin/emojis` (ACP)
+
+The emojis the editor's picker offers everywhere the Composer is used. A site starts
+with nine smileys in a `Smileys` category, added once on install (or on the first boot
+after an update); after that they are ordinary emojis an admin can rename or retire, and
+the rest an admin uploads. A post stores each one as
+`<img class="xt-emoji" src="/uploads/emojis/<file>" alt=":shortcode:">`, the only image
+the rich-text sanitizer lets through. The ACP routes need `emoji.manage`.
+
+| Method | Path | Auth | Description |
+|---|---|---|---|
+| GET | `/api/emojis` | Public | The active emojis, by category then position: `{ id, shortcode, name, category, url, position }`. |
+| GET | `/api/admin/emojis` | ACP | The same list, for the ACP page. |
+| POST | `/api/admin/emojis` | ACP | Add one: `multipart`, field `file` (PNG, GIF or WebP, up to 256 KB, checked by content), plus `shortcode`, `name`, `category`. A taken shortcode is refused with 409. |
+| PATCH | `/api/admin/emojis/:id` | ACP | Rename it or move it to another category: `{ shortcode?, name?, category? }`. |
+| DELETE | `/api/admin/emojis/:id` | ACP | Retire it: it leaves the picker, but posts that used it keep showing it. Its file and its shortcode stay. |
 
 ## Search: `/api/search`
 
@@ -392,7 +413,7 @@ How the layers, themes and this stylesheet fit together is in
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/api/online` | Public | Users online right now, grouped by group. |
+| GET | `/api/online` | Public (optional auth) | Members online right now, grouped by group, plus `guests` (guests in the last five minutes) and `record` (`{count, at}`: the most members and guests ever online at once). A guest calling it is counted as one, as a hash of IP and browser; crawlers are not. |
 
 ## Layouts: `/api/layouts`
 

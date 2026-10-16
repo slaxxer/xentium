@@ -1060,6 +1060,19 @@ export const themeService = {
       // the admin's library.
       select: { id: true, name: true, version: true, active: true, manifest: true },
     });
+    /**
+     * Core is not a library row, so it was never offered — with Core live and one theme
+     * installed the chooser listed that theme ALONE (and so hid itself, one entry being
+     * no choice). While Core is the site's own it is listed first, under the core look's
+     * name, with its colourways. Under another active theme it is not offered: a reader
+     * cannot wear Core over a site that has moved on from it.
+     */
+    if (!rows.some((r) => r.active)) {
+      rows.unshift({
+        id: CORE_THEME, name: "Xentium", version: XENTIUM_VERSION, active: true,
+        manifest: { description: "The core look: a clean, light page with one teal accent." },
+      });
+    }
     return Promise.all(rows.map(async ({ manifest, ...row }) => {
       const m = (manifest ?? {}) as Record<string, unknown>;
       const colourways = await appearanceService.getColourways(row.id);
@@ -1071,8 +1084,8 @@ export const themeService = {
        */
       let wornColourway: string | null = null;
       if (colourways.length) {
-        const global = (await appearanceService.getEffectiveTokens(row.id)).global ?? {};
-        wornColourway = colourways.find((c) => wears(c.tokens, global))?.id ?? null;
+        const { effective } = await appearanceService.colourwayBaseline(row.id);
+        wornColourway = colourways.find((c) => wears(c.tokens, effective))?.id ?? null;
       }
       return {
         ...row,
@@ -1116,7 +1129,7 @@ export const themeService = {
    * wears, and when it was last edited. For Core too (`''`).
    */
   async summarize(key: ThemeKey): Promise<ThemeSummary> {
-    const global = (await appearanceService.getEffectiveTokens(key)).global ?? {};
+    const { effective: global } = await appearanceService.colourwayBaseline(key);
     const colourways = await appearanceService.getColourways(key);
     const suffix = key ? `@${key}` : null;
     const [history, layout, setting] = await Promise.all([
@@ -1167,7 +1180,7 @@ export const themeService = {
     if (!cw) {
       throw new XentiumError({ code: XEC.API_NOT_FOUND, httpStatus: 404, message: `This theme has no colourway "${colourwayId}".` });
     }
-    const shipped = (await appearanceService.getThemeTokens(key)).global ?? {};
+    const { shipped } = await appearanceService.colourwayBaseline(key);
     const patch = Object.fromEntries(Object.entries(cw.tokens).map(([k, v]) => [k, shipped[k] === v ? null : v]));
     return appearanceService.patchLiveScope("global", patch, userId, `Colourway: ${cw.name}`, key);
   },

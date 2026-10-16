@@ -25,7 +25,7 @@
     animation: mt-drift 22s ease-in-out infinite;
   }
   &--bg-solid &__bg {
-    background: linear-gradient(180deg, var(--c-bg-hover), var(--c-bg) 60%);
+    background: var(--c-bg);
   }
 
   &__wrap {
@@ -173,7 +173,7 @@
 
   &__fill {
     height: 100%; border-radius: var(--radius-pill);
-    background: linear-gradient(90deg, var(--c-accent), var(--c-accent2));
+    background: var(--c-accent);
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   }
   &__meta { margin-top: 10px; display: flex; align-items: baseline; gap: 8px; }

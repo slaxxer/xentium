@@ -17,6 +17,7 @@
 
 import { viewerStyleParam, viewerThemeParam } from "./viewerTheme";
 import { previewThemeKey, withTheme } from "./editingTheme";
+import { TOKENS_APPLIED_EVENT } from "./siteFavicon";
 
 /** The draft stylesheet of the theme a preview is showing (`__theme=`, else the active one). */
 const draftCssUrl = () => withTheme("/api/appearance/css?source=draft", previewThemeKey());
@@ -44,6 +45,8 @@ export function applyTokenCss(css: string): void {
     document.head.appendChild(el);
   }
   el.textContent = css;
+  // The favicon is drawn from the Logo icon tokens (lib/siteFavicon).
+  window.dispatchEvent(new Event(TOKENS_APPLIED_EVENT));
 }
 
 /** Refetch the stylesheet this client is showing, bypassing the browser cache.

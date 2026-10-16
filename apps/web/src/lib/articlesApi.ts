@@ -51,6 +51,8 @@ export interface ArticleListItem {
   tags: ArticleTagRef[];
   createdAt: string;
   updatedAt: string;
+  /** The signed-in viewer's own state. Absent for guests. */
+  viewer?: { liked: boolean; saved: boolean };
 }
 
 export interface ArticleDetail extends ArticleListItem {
@@ -71,8 +73,13 @@ export interface ArticleComment {
   editedAt: string | null;
   createdAt: string;
   likeCount: number;
+  dislikeCount: number;
+  /** How the signed-in viewer reacted (thumbs up / down). Absent for guests. */
+  viewerReaction?: "like" | "dislike" | null;
   replies: ArticleComment[];
 }
+
+export interface CommentReactionCounts { likeCount: number; dislikeCount: number }
 
 export interface ArticleCategoryNode {
   id: string;
@@ -89,13 +96,22 @@ export interface ArticleCategoryNode {
   children: ArticleCategoryNode[];
 }
 
+export type HomeFeed = "latest" | "following" | "top" | "liked" | "saved" | "mine";
+
+/** The categories and tags a member follows (their Following feed). */
+export interface FollowedTopics {
+  categories: { id: string; name: string; slug: string }[];
+  tags: { id: string; name: string; slug: string }[];
+}
+
 export interface ListArticlesParams {
   page?: number;
   limit?: number;
   categoryId?: string;
   authorId?: string;
   status?: ArticleStatus;
-  feed?: "latest" | "following" | "top";
+  /** following = followed categories and tags; liked / saved / mine = the viewer's own. */
+  feed?: HomeFeed;
 }
 
 export interface CreateArticleInput {
@@ -146,14 +162,23 @@ export const articlesApi = {
     api.patch<ArticleComment>(`/article-comments/${commentId}`, { body }),
   deleteComment: (commentId: string, reason?: string) =>
     api.delete<void>(`/article-comments/${commentId}`, reason ? { reason } : undefined),
-  likeComment: (commentId: string) => api.post<{ likeCount: number }>(`/article-comments/${commentId}/like`),
-  unlikeComment: (commentId: string) => api.delete<{ likeCount: number }>(`/article-comments/${commentId}/like`),
+  likeComment: (commentId: string) => api.post<CommentReactionCounts>(`/article-comments/${commentId}/like`),
+  unlikeComment: (commentId: string) => api.delete<CommentReactionCounts>(`/article-comments/${commentId}/like`),
+  dislikeComment: (commentId: string) => api.post<CommentReactionCounts>(`/article-comments/${commentId}/dislike`),
+  undislikeComment: (commentId: string) => api.delete<CommentReactionCounts>(`/article-comments/${commentId}/dislike`),
   uploadFeaturedImage: (id: string, file: File) => {
     const fd = new FormData();
     fd.append("file", file);
     return api.post<{ article: ArticleDetail; url: string }>(`/articles/${id}/featured-image`, fd);
   },
   registerView: (id: string) => api.post<{ counted: boolean }>(`/articles/${id}/view`),
+  save:   (id: string) => api.post<{ saved: true }>(`/articles/${id}/bookmark`),
+  unsave: (id: string) => api.delete<{ saved: false }>(`/articles/${id}/bookmark`),
+  followedTopics:   () => api.get<FollowedTopics>("/articles/topics/following"),
+  followCategory:   (id: string) => api.post<FollowedTopics>(`/articles/categories/${id}/follow`),
+  unfollowCategory: (id: string) => api.delete<FollowedTopics>(`/articles/categories/${id}/follow`),
+  followTag:        (id: string) => api.post<FollowedTopics>(`/articles/tags/${id}/follow`),
+  unfollowTag:      (id: string) => api.delete<FollowedTopics>(`/articles/tags/${id}/follow`),
 };
 
 export const articleCategoriesApi = {

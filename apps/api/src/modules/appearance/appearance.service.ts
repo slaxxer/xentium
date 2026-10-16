@@ -155,6 +155,15 @@ const DRAFT_BY_KEY = "appearance.tokens.draft.by"; // user id who last edited th
 const ADMIN_CSS_KEY = "appearance.custom_css_light";
 // The served blob, compiled at save time so `/css` never runs postcss per request.
 const CUSTOM_CSS_COMPILED_KEY = "appearance.custom_css_compiled";
+/**
+ * The staged custom CSS and font of a theme. Like the tokens, the Theme Studio edits a
+ * DRAFT and the one Publish puts it live: a stylesheet or a typeface saved straight to
+ * the site went out ahead of the colours it was written for. Absent = no draft (the
+ * editors read the live value).
+ */
+const CSS_DRAFT_KEY = "appearance.custom_css.draft";
+const FONT_DRAFT_KEY = "appearance.font.draft";
+export type FontSettings = { family: string; weight: string; size: string };
 export const FONT_KEYS = {
   family: "appearance.font.family",
   weight: "appearance.font.weight",
@@ -300,6 +309,7 @@ export const appearanceService = {
    * colourway, not the theme's others.
    */
   async getColourways(key: ThemeKey): Promise<Colourway[]> {
+    // Core has one accent and ships none.
     if (!key) return [];
     const row = await prisma.theme.findUnique({ where: { id: key }, select: { manifest: true } });
     const raw = (row?.manifest as { colourways?: unknown } | null)?.colourways;
@@ -308,6 +318,15 @@ export const appearanceService = {
       const parsed = colourwaySchema.safeParse(c);
       return parsed.success ? [parsed.data] : [];
     });
+  },
+
+  /**
+   * What a colourway is compared against: what the theme ships, under the admin's edits.
+   */
+  async colourwayBaseline(key: ThemeKey): Promise<{ shipped: TokenMap; effective: TokenMap }> {
+    const shipped = key ? (await this.getThemeTokens(key)).global ?? {} : {};
+    const effective = { ...shipped, ...((await this.getEffectiveTokens(key)).global ?? {}) };
+    return { shipped, effective };
   },
 
   /**
@@ -356,6 +375,23 @@ export const appearanceService = {
     await this.bumpStyleVersion();
   },
 
+  /** The staged stylesheet the console edits; the live one while nothing is staged. */
+  async getDraftCustomCss(key: ThemeKey): Promise<string> {
+    const staged = await readSetting<string | null>(themed(CSS_DRAFT_KEY, key), null);
+    return staged ?? this.getCustomCss(key);
+  },
+
+  /**
+   * Stage the console's stylesheet. Validated now, so a broken sheet is refused while
+   * the admin is still typing it, not at Publish.
+   */
+  async saveDraftCustomCss(css: string, key: ThemeKey): Promise<void> {
+    assertParsableCss(css);
+    const k = themed(CSS_DRAFT_KEY, key);
+    await prisma.setting.upsert({ where: { key: k }, update: { value: css }, create: { key: k, value: css } });
+    bustSettingsCache(k);
+  },
+
   /** What the theme's own package ships as its stylesheet. Core ships none. */
   async getThemeCustomCss(key: ThemeKey): Promise<string> {
     return (await themeBaseline(key)).customCss;
@@ -397,7 +433,28 @@ export const appearanceService = {
     return { family: String(family ?? ""), weight: String(weight ?? ""), size: String(size ?? "") };
   },
 
-  /** Live on save, as the font settings always were. */
+  /** The staged font the editor shows; the live one while nothing is staged. */
+  async getDraftFont(key: ThemeKey): Promise<FontSettings> {
+    const staged = await readSetting<Partial<FontSettings> | null>(themed(FONT_DRAFT_KEY, key), null);
+    const live = await this.getFont(key);
+    if (!staged || typeof staged !== "object") return live;
+    const pick = (f: keyof FontSettings) => (typeof staged[f] === "string" ? staged[f]! : live[f]);
+    return { family: pick("family"), weight: pick("weight"), size: pick("size") };
+  },
+
+  /** Stage a font change; fields left out keep their staged (or live) value. */
+  async saveDraftFont(font: Partial<FontSettings>, key: ThemeKey): Promise<void> {
+    const current = await this.getDraftFont(key);
+    const next: FontSettings = { ...current };
+    for (const f of ["family", "weight", "size"] as const) if (font[f] !== undefined) next[f] = font[f]!;
+    const k = themed(FONT_DRAFT_KEY, key);
+    await prisma.setting.upsert({
+      where: { key: k }, update: { value: next as unknown as object }, create: { key: k, value: next as unknown as object },
+    });
+    bustSettingsCache(k);
+  },
+
+  /** Write a font LIVE (Publish, and theme switches that carry one). */
   async saveFont(font: Partial<{ family: string; weight: string; size: string }>, key: ThemeKey): Promise<void> {
     for (const [field, value] of Object.entries(font) as [keyof typeof FONT_KEYS, string | undefined][]) {
       if (value === undefined) continue;
@@ -477,21 +534,56 @@ export const appearanceService = {
     return next;
   },
 
-  /** Is there a draft for this theme that differs from what is live? */
-  async getDraftStatus(key: ThemeKey): Promise<{ pending: boolean }> {
-    const staged = await this.readOwn(DRAFT_KEY, LEGACY_DRAFT_KEY, key);
-    if (staged === null) return { pending: false };
-    const live = await this.getTokenOverrides(key);
-    return { pending: JSON.stringify(normalizeScoped(staged)) !== JSON.stringify(live) };
+  /**
+   * Is there a draft for this theme that differs from what is live — and in which of
+   * the three parts the Studio stages: tokens, custom CSS, font.
+   */
+  async getDraftStatus(key: ThemeKey): Promise<{ pending: boolean; tokens: boolean; css: boolean; font: boolean }> {
+    const [staged, stagedCss, stagedFont] = await Promise.all([
+      this.readOwn(DRAFT_KEY, LEGACY_DRAFT_KEY, key),
+      readSetting<string | null>(themed(CSS_DRAFT_KEY, key), null),
+      readSetting<unknown>(themed(FONT_DRAFT_KEY, key), null),
+    ]);
+    const tokens = staged !== null
+      && JSON.stringify(normalizeScoped(staged)) !== JSON.stringify(await this.getTokenOverrides(key));
+    const css = stagedCss !== null && stagedCss !== (await this.getCustomCss(key));
+    const font = stagedFont !== null
+      && JSON.stringify(await this.getDraftFont(key)) !== JSON.stringify(await this.getFont(key));
+    return { pending: tokens || css || font, tokens, css, font };
+  },
+
+  /** Drop the staged CSS and font of one theme (after a publish, or a reset). */
+  async clearStagedCssAndFont(key: ThemeKey): Promise<void> {
+    const keys = [themed(CSS_DRAFT_KEY, key), themed(FONT_DRAFT_KEY, key)];
+    await prisma.setting.deleteMany({ where: { key: { in: keys } } });
+    for (const k of keys) bustSettingsCache(k);
   },
 
   // Promote one theme's draft to live: writes the live tokens (+ history + version
   // bump → SSE push), then clears the draft so it mirrors live again. Returns false
   // when there was nothing pending. savedById defaults to the admin who last edited
-  // the draft — the scheduled (SYSTEM-triggered) appearance-publish job relies on it.
-  async publishDraft(savedById: string | undefined, label: string | undefined, key: ThemeKey): Promise<boolean> {
-    const { pending } = await this.getDraftStatus(key);
-    if (!pending) return false;
+  // the draft, for callers that have no acting user.
+  async publishDraft(
+    savedById: string | undefined, label: string | undefined, key: ThemeKey,
+    /** `false` from the Theme Studio, which records the whole publish as one revision. */
+    opts: { history?: boolean } = {},
+  ): Promise<boolean> {
+    const status = await this.getDraftStatus(key);
+    if (!status.pending) {
+      // A draft identical to live is still a draft: drop it so it stops shadowing.
+      await this.clearStagedCssAndFont(key);
+      return false;
+    }
+
+    // The stylesheet and the font first: they have no history of their own, and a
+    // token publish below bumps the version for all three.
+    if (status.css) await this.saveCustomCss(await this.getDraftCustomCss(key), key);
+    if (status.font) await this.saveFont(await this.getDraftFont(key), key);
+    await this.clearStagedCssAndFont(key);
+    if (!status.tokens) {
+      await prisma.setting.deleteMany({ where: { key: { in: [themed(DRAFT_KEY, key), themed(DRAFT_BY_KEY, key)] } } });
+      return true;
+    }
 
     let author = savedById ?? (await readSetting<string | null>(themed(DRAFT_BY_KEY, key), null)) ?? undefined;
     if (author) {
@@ -509,7 +601,7 @@ export const appearanceService = {
     if (!author) return false; // no valid author to attribute — refuse rather than FK-crash
 
     const draft = await this.getDraftTokens(key);
-    await this.saveTokens(draft, author, label ?? "Published appearance changes", key);
+    await this.saveTokens(draft, author, label ?? "Published appearance changes", key, opts);
     const drop = [themed(DRAFT_KEY, key), themed(DRAFT_BY_KEY, key)];
     // The pre-collapse draft goes with Core's, or it would be read as a draft forever.
     if (!key) drop.push(LEGACY_DRAFT_KEY);
@@ -595,7 +687,7 @@ export const appearanceService = {
   async resetAppearance(key: ThemeKey): Promise<void> {
     const keys = [
       TOKENS_KEY, DRAFT_KEY, DRAFT_BY_KEY, ADMIN_CSS_KEY, CUSTOM_CSS_COMPILED_KEY,
-      FONT_KEYS.family, FONT_KEYS.weight, FONT_KEYS.size,
+      FONT_KEYS.family, FONT_KEYS.weight, FONT_KEYS.size, CSS_DRAFT_KEY, FONT_DRAFT_KEY,
     ].map((k) => themed(k, key));
     if (!key) {
       keys.push(LEGACY_TOKENS_KEY, "appearance.tokens.dark", LEGACY_DRAFT_KEY,
@@ -615,7 +707,10 @@ export const appearanceService = {
     bustThemeCss(key);
   },
 
-  async saveTokens(tokens: ScopedTokenSet, savedById: string, label: string | undefined, key: ThemeKey): Promise<void> {
+  async saveTokens(
+    tokens: ScopedTokenSet, savedById: string, label: string | undefined, key: ThemeKey,
+    { history = true }: { history?: boolean } = {},
+  ): Promise<void> {
     await prisma.$transaction([
       prisma.setting.upsert({
         where:  { key: themed(TOKENS_KEY, key) },
@@ -626,14 +721,14 @@ export const appearanceService = {
       ...(key ? [] : [prisma.setting.deleteMany({
         where: { key: { in: [LEGACY_TOKENS_KEY, "appearance.tokens.dark"] } },
       })]),
-      prisma.styleHistory.create({
+      ...(history ? [prisma.styleHistory.create({
         data: {
           themeKey: key,
           label:   label ?? new Date().toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }),
           tokens:  tokens as unknown as object,
           savedBy: { connect: { id: savedById } },
         },
-      }),
+      })] : []),
     ]);
 
     // Twenty per theme — one busy theme must not push another's history out.
@@ -649,6 +744,14 @@ export const appearanceService = {
 
     // Signal every open client to pull the new CSS.
     await this.bumpStyleVersion();
+  },
+
+  /** A colour history entry's tokens, in today's shape. */
+  async historyTokens(historyId: string): Promise<{ themeKey: ThemeKey; tokens: ScopedTokenSet }> {
+    const entry = await prisma.styleHistory.findUniqueOrThrow({ where: { id: historyId } });
+    const raw = entry.tokens as Record<string, unknown>;
+    const legacyPair = raw && typeof raw === "object" && ("light" in raw || "dark" in raw);
+    return { themeKey: entry.themeKey, tokens: normalizeScoped(legacyPair ? raw.light : raw) };
   },
 
   /** Put a history entry back live — onto the theme it was published for. */
@@ -709,13 +812,18 @@ export const appearanceService = {
   /**
    * Build one theme's stylesheet from a token set.
    *
-   * `opts.key` names the theme whose fonts and custom CSS go with the tokens — the
-   * caller already chose live or draft tokens; fonts and custom CSS have no draft.
+   * `opts.key` names the theme whose fonts and custom CSS go with the tokens. The
+   * caller chose live or draft tokens; `opts.draft` takes the staged font and custom
+   * CSS too, so a preview shows all three halves of what Publish would put live.
    */
-  async buildCSS(tokens: ScopedTokenSet, opts: { key: ThemeKey }): Promise<string> {
+  async buildCSS(tokens: ScopedTokenSet, opts: { key: ThemeKey; draft?: boolean }): Promise<string> {
     const [{ family, weight, size }, customCss] = await Promise.all([
-      this.getFont(opts.key),
-      this.buildCustomCss(opts.key),
+      opts.draft ? this.getDraftFont(opts.key) : this.getFont(opts.key),
+      opts.draft
+        // Compiled per request: a preview only, and never cached.
+        ? Promise.all([this.getDraftCustomCss(opts.key), this.getThemeCustomCss(opts.key)])
+            .then(([admin, theme]) => compileCustomCss(admin, theme))
+        : this.buildCustomCss(opts.key),
     ]);
 
     const decls = (map: TokenMap) =>

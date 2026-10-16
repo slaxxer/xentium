@@ -138,7 +138,7 @@ describe("LayoutRenderer — failure rules survive nesting", () => {
     render(<LayoutRegion document={doc({
       main: [n("box", "t.box", [n("gone", "plugin.retired"), n("leafIn", "t.leaf")])],
     })} region="main" />);
-    expect(document.body.textContent).toContain("plugin.retired");  // preview diagnostic
+    expect(document.querySelector(".xt-block-missing")).not.toBeNull();  // preview diagnostic
     expect(document.querySelectorAll(".leaf")).toHaveLength(1);
   });
 
@@ -147,7 +147,7 @@ describe("LayoutRenderer — failure rules survive nesting", () => {
     render(<LayoutRegion document={doc({
       main: [n("box", "t.box", [n("bad", "t.boom"), n("leafIn", "t.leaf")])],
     })} region="main" />);
-    expect(document.body.textContent).toContain("failed to render");
+    expect(document.querySelector(".xt-block-error")).not.toBeNull();
     expect(document.querySelectorAll(".leaf")).toHaveLength(1);
     spy.mockRestore();
   });
@@ -239,6 +239,64 @@ describe("previewBridge — drop parent resolution", () => {
 
   it("returns null outside any region", () => {
     expect(resolveDropParent(document.body, "t.leaf", null)).toBeNull();
+  });
+
+  it("never aims into another document on the page", () => {
+    // The page also renders the site header and footer, which are other documents;
+    // a drop meant for the open one must not land in a region it does not have.
+    expect(resolveDropParent(from("leafIn"), "t.leaf", null, "chrome.header")).toBeNull();
+    expect(resolveDropParent(from("leafIn"), "t.leaf", null, "home")?.parentId).toBe("box");
+  });
+});
+
+/**
+ * A block dragged in from the editor's library. The drag starts outside this
+ * document, so its data is unreadable until the drop — the editor announces the
+ * type with `dragNew`, and the drop comes back as `insert` in the editor's terms.
+ */
+describe("previewBridge — a new block from the library", () => {
+  const messages: { type?: string; blockType?: string; region?: string; parentId?: string | null; index?: number }[] = [];
+  const onMessage = (e: MessageEvent) => { if (e.data?.source === "xt-preview") messages.push(e.data); };
+  let teardown: () => void = () => {};
+
+  beforeEach(async () => {
+    messages.length = 0;
+    window.addEventListener("message", onMessage);
+    render(<LayoutRegion document={tree()} region="main" />);
+    const { installPreviewBridge } = await import("./previewBridge");
+    teardown = installPreviewBridge();
+  });
+  afterEach(() => { teardown(); window.removeEventListener("message", onMessage); });
+
+  const editor = (data: object) =>
+    window.dispatchEvent(new MessageEvent("message", { data: { source: "xt-editor", ...data }, origin: window.location.origin }));
+  const settle = () => new Promise((r) => setTimeout(r, 0));
+  const drag = (type: string, el: Element) => el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
+
+  it("drops an announced block into the container under the pointer", async () => {
+    editor({ type: "document", templateKey: "home", document: tree() });
+    editor({ type: "dragNew", blockType: "t.leaf" });
+    drag("dragover", wrapper("leafIn").firstElementChild!);
+    drag("drop", wrapper("leafIn").firstElementChild!);
+    await settle();
+    const insert = messages.find((m) => m.type === "insert");
+    expect(insert).toMatchObject({ blockType: "t.leaf", region: "main", parentId: "box" });
+  });
+
+  it("does nothing for a drag nobody announced", async () => {
+    drag("dragover", wrapper("leafIn").firstElementChild!);
+    drag("drop", wrapper("leafIn").firstElementChild!);
+    await settle();
+    expect(messages.some((m) => m.type === "insert")).toBe(false);
+  });
+
+  it("forgets the block once the editor says the drag ended", async () => {
+    editor({ type: "dragNew", blockType: "t.leaf" });
+    editor({ type: "dragNewEnd" });
+    drag("dragover", wrapper("leafOut").firstElementChild!);
+    drag("drop", wrapper("leafOut").firstElementChild!);
+    await settle();
+    expect(messages.some((m) => m.type === "insert")).toBe(false);
   });
 });
 

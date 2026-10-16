@@ -221,6 +221,40 @@ slotRegistry.registerRoute({ path: "/messages", component: MessagesPage, layout:
 This only decides who can open the page. Your API routes still need `requireAuth`, since
 anyone can call them directly.
 
+**A header widget can take an icon and a label.** Core places your widget as its own
+block, and that block has an Icon field. Your component receives the admin's choice as
+`icon` (an icon token, or undefined for your default), so draw it with the host's
+`TokenIcon` when it's set (import `@web/components/TokenIcon` and keep it in your Vite
+externals, mapped to `webTokenIcon`). Give the registration a `label` (a plain string or a getter
+that translates) so the editor names the block in words rather than by id.
+
+**If it opens a dropdown, follow two conventions.** Put `aria-expanded` on the button
+that opens it, and the `xt-pop` class on the panel. The first lets Theme Studio's
+previews open your dropdown when an admin clicks it; the second makes it follow the
+"Menus & dropdowns" tokens. Paint the panel with the ordinary tokens (`--c-card`,
+`--c-fg`, `--c-fg-muted`, `--c-border`) and use `var(--menu-title-fw)` and
+`var(--menu-fw)` for weights rather than numbers. See
+[the style system](style-system.md#header-dropdowns-and-the-user-menu).
+
+### The user menu (`slotRegistry.registerUserMenuItem`)
+
+A plugin can add a link to the member's avatar menu. It sits between "Account settings"
+and "Sign out". You give a label, a path and an icon, and core draws it like its own
+entries, so it closes the menu on click and follows the menu's tokens:
+
+```ts
+slotRegistry.registerUserMenuItem({
+  id: "my-plugin",
+  get label() { return getI18n().t("my-plugin:menu"); },
+  to: "/membership",
+  icon: faCrown,
+  order: 10, // lower sits higher
+});
+```
+
+The menu only shows to signed-in members. The page it links to still decides who may
+open it (`requiresAuth` on the route), and your API still checks every request.
+
 ### Icons
 
 **Import `FontAwesomeIcon` from the externalized module.** Every plugin already does,
@@ -297,6 +331,12 @@ turned off by the member and might collide with one of ours.
 prefix*, the bell draws a `UserAvatar` from the notification's `title`, and you end up
 with initials cut out of a sentence. Declare your prefixes with
 `systemNotificationPrefixes` in your plugin meta.
+
+**Mark what a moderator did.** A notification about a moderation action (approved,
+rejected, locked, removed) draws a red shield instead of a sender, the same as core's
+own `moderation.*` types. Declare your prefixes with `moderationNotificationPrefixes` in
+your plugin meta, for example `["forum.thread_approved", "forum.thread_locked"]`. Use it
+only for actions a moderator took; a reply or a like keeps its sender.
 
 A notification should never block the thing it's about. Send it **after** your write and
 wrap it in a try/catch: a mail outage shouldn't cost a member an action that already

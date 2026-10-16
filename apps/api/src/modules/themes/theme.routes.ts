@@ -9,7 +9,7 @@ import { XEC } from "../../shared/errors/xec.js";
 import { themeService } from "./theme.service.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { layoutService } from "../layouts/layout.service.js";
-import { publishTheme, studioStatus } from "./themeStudio.js";
+import { publishTheme, stageHistoryEntry, studioStatus, themeHistory } from "./themeStudio.js";
 
 /**
  * `.xttheme` export / import (ADR-0005). Mounted under /api/admin so every
@@ -149,6 +149,22 @@ themeRouter.get("/studio/status", guard, async (req, res, next) => {
 themeRouter.post("/studio/publish", guard, async (req, res, next) => {
   try {
     res.json(await publishTheme(req.userId!, await resolveEditingKey(req.query.theme)));
+  } catch (err) { next(err); }
+});
+
+/** The theme's History: Studio publishes, plus older colour-only entries, newest first. */
+themeRouter.get("/studio/history", guard, async (req, res, next) => {
+  try {
+    res.json(await themeHistory(await resolveEditingKey(req.query.theme)));
+  } catch (err) { next(err); }
+});
+
+/** Stage a History entry as the theme's draft. Never goes live by itself: Publish does. */
+themeRouter.post("/studio/history/:kind/:id/stage", guard, async (req, res, next) => {
+  try {
+    const { kind, id } = z.object({ kind: z.enum(["revision", "colours"]), id: z.string().min(1).max(64) }).parse(req.params);
+    await stageHistoryEntry(kind, id, req.userId!, await resolveEditingKey(req.query.theme));
+    res.json(await studioStatus(await resolveEditingKey(req.query.theme)));
   } catch (err) { next(err); }
 });
 

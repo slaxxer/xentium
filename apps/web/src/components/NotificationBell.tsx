@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
+import { TokenIcon } from "./TokenIcon";
 import { FontAwesomeIcon } from "./Icon";
-import { faBell, faGear } from "@fortawesome/free-solid-svg-icons";
+import { faBell, faGear, faUserShield } from "@fortawesome/free-solid-svg-icons";
+import { useAuth } from "../hooks/useAuth";
 import { api } from "../lib/api";
 import { timeAgo } from "../lib/time";
 import { slotRegistry } from "../plugins/slotRegistry";
 import { UserAvatar } from "./UserAvatar";
+import i18n from "../lib/i18n";
 
 interface Notification {
   id:        string;
@@ -16,10 +20,56 @@ interface Notification {
   link:      string | null;
   readAt:    string | null;
   createdAt: string;
-  meta?:     { senderUsername?: string; senderAvatar?: string | null; senderBadgeColor?: string | null } | null;
+  meta?:     {
+    senderUsername?: string; senderAvatar?: string | null; senderBadgeColor?: string | null;
+    warningId?: string;
+    commentId?: string;
+    i18n?: { key: string; params?: Record<string, string | number> };
+  } | null;
 }
 
-export function NotificationBell() {
+/**
+ * Where a notification takes its reader: the thing it is about. Newer notifications
+ * store that exact link; older wall ones stored only the profile, so the comment is
+ * added here from what they did store.
+ */
+function sourceLink(n: Notification): string | null {
+  const commentId = n.meta?.commentId;
+  if (n.link && commentId && /^\/u\/[^/?#]+$/.test(n.link) && (n.type.startsWith("profile.comment") || n.type === "mention.profile_comment")) {
+    return `${n.link}?tab=wall&comment=${commentId}`;
+  }
+  // The old ACP reports page is gone; the moderation shield lists reports now.
+  if (n.link === "/admin/moderation/reports") return "/?modcanvas=reports";
+  return n.link;
+}
+
+/** Values that are themselves machine keys, named into words for the sentence. */
+const PARAM_TEXT: Record<string, (v: string) => string> = {
+  caseType: (v) => `common:modcanvas.data.caseTitle.${v}`,
+  target:   (v) => `common:notify.targets.${v}`,
+};
+
+/**
+ * The notification in the reader's language when it was sent as a translation
+ * (`meta.i18n`); the stored text otherwise — older rows, a plugin without the key,
+ * and a body that is someone's own words (a ban reason) has no `.body` key.
+ */
+function notificationText(n: Notification): { title: string; body: string } {
+  const text = n.meta?.i18n;
+  if (!text?.key) return { title: n.title, body: n.body };
+  const params: Record<string, string | number> = { ...text.params };
+  for (const [name, keyOf] of Object.entries(PARAM_TEXT)) {
+    const v = params[name];
+    if (typeof v === "string" && i18n.exists(keyOf(v))) params[name] = String(i18n.t(keyOf(v)));
+  }
+  const pick = (part: "title" | "body", stored: string) =>
+    i18n.exists(`${text.key}.${part}`) ? String(i18n.t(`${text.key}.${part}`, params)) : stored;
+  return { title: pick("title", n.title), body: pick("body", n.body) };
+}
+
+/** `icon`: a glyph chosen in the layout editor (the `notifications` block), else the bell. */
+export function NotificationBell({ icon }: { icon?: string } = {}) {
+  const { t } = useTranslation("common", { keyPrefix: "notifications" });
   const qc              = useQueryClient();
   const [open, setOpen] = useState(false);
   const ref             = useRef<HTMLDivElement>(null);
@@ -44,14 +94,6 @@ export function NotificationBell() {
     },
   });
 
-  const markAllMutation = useMutation({
-    mutationFn: () => api.post("/notifications/read-all", {}),
-    onSuccess:  () => {
-      qc.invalidateQueries({ queryKey: ["notif-unread-count"] });
-      qc.invalidateQueries({ queryKey: ["notif-list"] });
-    },
-  });
-
   // Close on outside click
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -62,6 +104,7 @@ export function NotificationBell() {
   }, []);
 
   const unread = countData?.count ?? 0;
+  const { user: me } = useAuth();
   const notifications = listData?.data ?? [];
 
   return (
@@ -69,6 +112,7 @@ export function NotificationBell() {
       {/* Bell button */}
       <button
         type="button"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         style={{
           position: "relative",
@@ -85,28 +129,18 @@ export function NotificationBell() {
         onMouseLeave={(e) => {
           if (!open) { e.currentTarget.style.background = "var(--input-bg)"; e.currentTarget.style.color = "var(--c-fg-muted)"; }
         }}
-        aria-label="Notifications"
+        aria-label={unread > 0 ? `${t("title")} (${unread})` : t("title")}
       >
         {/* fa-solid fa-bell — through the kit-aware icon, so an icon kit / style restyles it too. */}
-        <FontAwesomeIcon icon={faBell} style={{ fontSize: "var(--fs-md)" }} />
-        {unread > 0 && (
-          <span style={{
-            position: "absolute", top: -4, right: -4,
-            background: "var(--c-accent2)", color: "#fff",
-            fontSize: "var(--fs-2xs)", fontWeight: 800,
-            minWidth: 16, height: 16,
-            borderRadius: 99, display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "0 3px", lineHeight: 1,
-            border: "2px solid var(--c-card)",
-          }}>
-            {unread > 99 ? "99+" : unread}
-          </span>
-        )}
+        {icon ? <span style={{ fontSize: "var(--fs-md)", display: "inline-flex" }}><TokenIcon token={icon} /></span>
+          : <FontAwesomeIcon icon={faBell} style={{ fontSize: "var(--fs-md)" }} />}
+        {/* A red dot, no count: the header's shared "something new" mark (core's .pub-nav__dot). */}
+        {unread > 0 && <span className="pub-nav__dot" aria-hidden="true" />}
       </button>
 
       {/* Dropdown */}
       {open && (
-        <div style={{
+        <div className="xt-pop" style={{
           position: "absolute", top: "calc(100% + 8px)", right: 0,
           width: 340, maxHeight: 420,
           background: "var(--c-card)", border: "1px solid var(--c-border)",
@@ -120,39 +154,42 @@ export function NotificationBell() {
             display: "flex", alignItems: "center", justifyContent: "space-between",
             padding: "12px 16px", borderBottom: "1px solid var(--c-border)", flexShrink: 0,
           }}>
-            <span style={{ fontSize: "var(--fs-sm)", fontWeight: 700, color: "var(--c-fg)" }}>
-              Notifications {unread > 0 && <span style={{ color: "var(--c-accent)", fontSize: "var(--fs-xs)" }}>({unread})</span>}
+            <span style={{ fontSize: "var(--fs-sm)", fontWeight: "var(--menu-title-fw)" as never, color: "var(--c-fg)" }}>
+              {t("title")} {unread > 0 && <span style={{ color: "var(--c-accent)", fontSize: "var(--fs-xs)" }}>({unread})</span>}
             </span>
-            {unread > 0 && (
-              <button
-                type="button"
-                onClick={() => markAllMutation.mutate()}
-                disabled={markAllMutation.isPending}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "var(--fs-2xs)", color: "var(--c-accent)", fontWeight: 600, padding: 0 }}
-              >
-                Mark all read
-              </button>
-            )}
           </div>
 
           {/* List */}
           <div style={{ overflowY: "auto", flex: 1 }}>
             {listLoading ? (
               <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>
-                Loading…
+                {t("loading")}
               </div>
             ) : notifications.length === 0 ? (
               <div style={{ padding: "32px 16px", textAlign: "center", color: "var(--c-fg-muted)", fontSize: "var(--fs-sm)" }}>
-                No notifications
+                {t("empty")}
               </div>
             ) : (
               notifications.map((n) => {
                 const isUnread = !n.readAt;
+                // A warning (issued or pardoned): the moderation shield, and a link to the
+                // member's own Warnings tab with that warning picked out. Older ones were
+                // stored pointing at account security, so the link is built here, not read.
+                const isWarning = n.type.startsWith("moderation.warning_");
+                // Anything a moderator's action caused (core's moderation.* and what plugins
+                // declare) wears the moderation shield: a red user-shield in a 1px red ring.
+                const isModeration = slotRegistry.getModerationNotificationPrefixes()
+                  .some((prefix) => n.type.startsWith(prefix));
+                const link = isWarning && me
+                  ? `/u/${encodeURIComponent(me.username)}?tab=warnings${n.meta?.warningId ? `&warning=${n.meta.warningId}` : ""}`
+                  : sourceLink(n);
                 const isSystemNotif = slotRegistry.getSystemNotificationPrefixes().some((prefix) => n.type.startsWith(prefix) || n.type === prefix);
                 const senderUser = n.meta?.senderUsername
                   ? { username: n.meta.senderUsername, avatar: n.meta.senderAvatar ?? null }
                   : null;
-                const senderColor = n.meta?.senderBadgeColor ?? undefined;
+                // A moderation notice is from "the moderators", not from whichever staff member
+                // clicked: no group colour on its title (a red admin colour read as an error).
+                const senderColor = isModeration ? undefined : n.meta?.senderBadgeColor ?? undefined;
 
                 const inner = (
                   <div style={{
@@ -167,7 +204,11 @@ export function NotificationBell() {
                   >
                     {/* Avatar: gear for system, UserAvatar for everything else */}
                     <div style={{ flexShrink: 0, position: "relative", marginTop: 1 }}>
-                      {isSystemNotif ? (
+                      {isModeration ? (
+                        <div data-mod-notice="" style={{ width: 30, height: 30, boxSizing: "border-box", borderRadius: "50%", border: "1px solid var(--c-danger)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xs)", color: "var(--c-danger)" }}>
+                          <FontAwesomeIcon icon={faUserShield} />
+                        </div>
+                      ) : isSystemNotif ? (
                         <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--c-surface)", border: "1px solid var(--c-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>
                           <FontAwesomeIcon icon={faGear} />
                         </div>
@@ -177,25 +218,22 @@ export function NotificationBell() {
                           size={30}
                         />
                       )}
-                      {isUnread && (
-                        <div style={{ position: "absolute", top: -1, right: -1, width: 8, height: 8, borderRadius: "50%", background: "var(--c-accent)", border: "2px solid var(--c-card)" }} />
-                      )}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: isUnread ? 700 : 500, color: senderColor ?? "var(--c-fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {n.title}
+                      <div style={{ fontSize: "var(--fs-sm)", fontWeight: (isUnread ? "var(--menu-title-fw)" : "var(--menu-fw)") as never, color: senderColor ?? "var(--c-fg)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {notificationText(n).title}
                       </div>
                       <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)", marginTop: 2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {n.body}
+                        {notificationText(n).body}
                       </div>
                       <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-muted)", marginTop: 4 }}>{timeAgo(n.createdAt)}</div>
                     </div>
                   </div>
                 );
 
-                return n.link ? (
-                  <Link key={n.id} to={n.link} style={{ textDecoration: "none", display: "block" }}>
+                return link ? (
+                  <Link key={n.id} to={link} style={{ textDecoration: "none", display: "block" }}>
                     {inner}
                   </Link>
                 ) : (

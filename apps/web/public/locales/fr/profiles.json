@@ -34,7 +34,6 @@
   "pageOf": "Page {{page}} sur {{total}}",
   "noFollowers": "Aucun abonné pour le moment.",
   "noFollowing": "Aucun abonnement pour le moment.",
-  "newArticle": "+ Nouvel article",
   "loadingArticles": "Chargement des articles…",
   "emptyOwn": "Vous n'avez encore rien publié.",
   "emptyOther": "{{username}} n'a encore publié aucun article.",
@@ -55,14 +54,26 @@
   "noComments": "Aucun commentaire pour le moment.",
   "postError": "Impossible de publier le commentaire. Réessayez.",
   "deleteError": "Impossible de supprimer le commentaire. Réessayez.",
+  "delete": "Supprimer",
+  "cancel": "Annuler",
+  "deleteConfirmTitle": "Supprimer ce commentaire ?",
+  "deleteConfirmBody": "Le commentaire et ses réponses sont retirés du mur.",
+  "reply": "Répondre",
+  "replyPlaceholder": "Répondre à {{username}}…",
+  "report": "Signaler",
+  "reportTitle": "Signaler le commentaire",
+  "reportSub": "Indiquez aux modérateurs ce qui ne va pas avec ce commentaire.",
+  "reportPlaceholder": "Décrivez le problème…",
+  "reportSubmit": "Envoyer le signalement",
+  "reportSent": "Signalement envoyé. Merci.",
+  "reportError": "Impossible d’envoyer le signalement.",
+  "reportTooShort": "Décrivez le problème en quelques mots.",
   "likeError": "Impossible de mettre à jour le j'aime. Réessayez.",
-  "deleteComment": "Supprimer le commentaire",
   "edited": "modifié",
   "like": "J'aime",
   "unlike": "Je n'aime plus",
-  "tombstoneBase": "Le commentaire de {{user}} a été supprimé",
-  "tombstoneBy": " par {{mod}}",
-  "tombstoneReason": " · Motif : {{reason}}",
+  "dislike": "Je n’aime pas",
+  "undislike": "Retirer « Je n’aime pas »",
   "banned": "Banni",
   "permanentlyBanned": "Banni définitivement",
   "rank": {
@@ -96,10 +107,7 @@
   },
   "likeCount": "{{n}} j'aime",
   "visitors": {
-    "title": "Visiteurs récents",
-    "summary_one": "{{count}} visiteur cette semaine",
-    "summary_other": "{{count}} visiteurs cette semaine",
-    "last": "dernier : {{ago}}"
+    "title": "Visiteurs récents"
   },
   "cover": {
     "dropTitle": "Déposez une image d'en-tête, ou parcourez",
@@ -178,5 +186,10 @@
     "geoCredit": "Géolocalisation IP par DB-IP",
     "geoMissing": "Les pays apparaissent une fois la base de pays par IP téléchargée.",
     "geoMissingLink": "Tâches planifiées → Base de pays par IP"
-  }
+  },
+  "formerlyKnownAs": "Anciennement connu sous le nom de {{names}}",
+  "cantRateOwnComment": "Vous ne pouvez pas noter votre propre commentaire",
+  "signInToRate": "Connectez-vous pour noter",
+  "lastSeen": "Vu {{when}}",
+  "lastSeenOn": "Vu pour la dernière fois en {{date}}"
 }

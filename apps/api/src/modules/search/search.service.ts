@@ -89,7 +89,7 @@ export const searchService = {
         JOIN xcf_groups g ON g.id = ug."groupId"
         ORDER BY ug."userId", g.display_order ASC
       ) ug ON ug."userId" = u.id
-      LEFT JOIN group_progression gp ON gp.group_id = ug."groupId"
+      LEFT JOIN xcf_group_progression gp ON gp.group_id = ug."groupId"
       LEFT JOIN xcf_article_categories c ON c.id = a.category_id
       WHERE a.search_vector @@ plainto_tsquery('english', $1)
         AND a.status = 'published'
@@ -158,7 +158,7 @@ export const searchService = {
         JOIN xcf_groups g ON g.id = ug."groupId"
         ORDER BY ug."userId", g.display_order ASC
       ) ug ON ug."userId" = u.id
-      LEFT JOIN group_progression gp ON gp.group_id = ug."groupId"
+      LEFT JOIN xcf_group_progression gp ON gp.group_id = ug."groupId"
       WHERE u.search_vector @@ plainto_tsquery('english', $1)
         AND u."isActive" = true
       ORDER BY rank DESC

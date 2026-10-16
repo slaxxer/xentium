@@ -1,6 +1,7 @@
 import readline from "node:readline/promises";
 import pg from "pg";
 import { missingPlugins } from "./loader.js";
+import { writeRedirects } from "./redirects.js";
 import { runMigration } from "./runner.js";
 import type { AdapterSource, MigrateAdapter, MigrationReporter } from "./types.js";
 
@@ -19,12 +20,25 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
     file: str(args.file),
     db: str(args["source-db"]),
     tablePrefix: str(args.prefix),
+    filesDir: str(args.files),
   };
   const targetDb = str(args.db) ?? process.env.DATABASE_URL;
 
   if ((!source.file && !source.db) || !targetDb) {
-    console.log(`Usage: xentium-migrate-${adapter.name} [--file <export>] [--source-db <url>] [--prefix <table prefix>] --db <xentium postgres url> [--dry-run] [--yes]`);
+    console.log(`Usage: xentium-migrate-${adapter.name} [--file <export>] [--source-db <url>] [--prefix <table prefix>] [--files <old site folder>] [--uploads <Xentium upload folder>] --db <xentium postgres url> [--dry-run] [--yes] [--redirects <folder> [--redirects-only]]`);
     process.exitCode = 1;
+    return;
+  }
+  const redirectsDir = str(args.redirects);
+  if (args.redirects === true || (args["redirects-only"] && !redirectsDir)) {
+    console.log(`--redirects needs a folder to write the redirect files to.`);
+    process.exitCode = 1;
+    return;
+  }
+
+  // Redirects only: the import already ran, write (or rewrite) the files from it.
+  if (args["redirects-only"]) {
+    await redirectsStep(adapter, source, targetDb, redirectsDir!);
     return;
   }
 
@@ -76,7 +90,7 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
   }
 
   const summary = await runMigration(
-    adapter, source, { targetDb, dryRun: !!args["dry-run"], command: maskedCommand(adapter, args) }, reporter,
+    adapter, source, { targetDb, dryRun: !!args["dry-run"], command: maskedCommand(adapter, args), uploadsDir: str(args.uploads) }, reporter,
   );
 
   console.log(`\nDone in ${(summary.durationMs / 1000).toFixed(1)}s`);
@@ -89,6 +103,35 @@ export async function runAdapterCli(adapter: MigrateAdapter, argv: string[]): Pr
       console.log(`    ${e.entity} ${e.sourceId}: ${e.reason}`);
     }
     if (summary.errors.length > 20) console.log(`    … and ${summary.errors.length - 20} more`);
+  }
+  if (redirectsDir) {
+    if (args["dry-run"]) console.log(`\nRedirects: not written on a dry run (nothing was imported to point at).`);
+    else {
+      try {
+        await redirectsStep(adapter, source, targetDb, redirectsDir);
+      } catch (err) {
+        console.log(`\nRedirects failed: ${(err as Error).message}`);
+        console.log(`The import itself finished. Run the same command with --redirects-only to try again.`);
+        process.exitCode = 1;
+      }
+    }
+  }
+}
+
+async function redirectsStep(adapter: MigrateAdapter, source: AdapterSource, targetDb: string, dir: string): Promise<void> {
+  if (!adapter.redirects) {
+    console.log(`\nRedirects: the ${adapter.name} importer doesn't know its old addresses, so none were written.`);
+    return;
+  }
+  const spec = await adapter.redirects(source);
+  const pool = new pg.Pool({ connectionString: targetDb, max: 1 });
+  try {
+    const out = await writeRedirects(pool, adapter.name, spec, dir);
+    console.log(`\nRedirects: ${out.count.toLocaleString()} old addresses mapped.`);
+    console.log(`  nginx: ${out.nginx}  (how to include it is at the top of the file)`);
+    console.log(`  CSV:   ${out.csv}`);
+  } finally {
+    await pool.end();
   }
 }
 
@@ -103,6 +146,9 @@ export function maskedCommand(adapter: MigrateAdapter, args: Record<string, stri
   if (typeof args.file === "string") parts.push(`--file ${quote(args.file)}`);
   if (typeof args["source-db"] === "string") parts.push(`--source-db ${quote(maskUrl(args["source-db"]))}`);
   if (typeof args.prefix === "string") parts.push(`--prefix ${quote(args.prefix)}`);
+  if (typeof args.files === "string") parts.push(`--files ${quote(args.files)}`);
+  if (typeof args.uploads === "string") parts.push(`--uploads ${quote(args.uploads)}`);
+  if (typeof args.redirects === "string") parts.push(`--redirects ${quote(args.redirects)}`);
   parts.push(`--db "postgresql://…"`);
   return parts.join(" ");
 }

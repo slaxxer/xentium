@@ -1,11 +1,14 @@
 {
   "nav": {
     "following": "Folge ich",
-    "myThreads": "Meine Themen",
-    "liked": "Gefällt mir"
+    "myThreads": "Meine Artikel",
+    "liked": "Gefällt mir",
+    "saved": "Gespeichert"
   },
   "spaces": {
-    "title": "Deine Bereiche"
+    "title": "Deine Bereiche",
+    "follow": "{{name}} folgen",
+    "unfollow": "{{name}} nicht mehr folgen"
   },
   "composer": {
     "placeholder": "Teile etwas mit der Community…",
@@ -21,14 +24,37 @@
     "untitled": "(ohne Titel)",
     "share": "Teilen",
     "save": "Speichern",
-    "saved": "Gespeichert"
+    "saved": "Gespeichert",
+    "copyLink": "Link kopieren",
+    "linkCopied": "Link kopiert",
+    "copyFailed": "Link konnte nicht kopiert werden",
+    "followCategory": "{{name}} folgen",
+    "unfollowCategory": "{{name}} nicht mehr folgen",
+    "followTag": "#{{name}} folgen",
+    "unfollowTag": "#{{name}} nicht mehr folgen",
+    "edit": "Artikel bearbeiten",
+    "report": "Melden",
+    "ownArticle": "Dein eigener Artikel",
+    "like": "Gefällt mir",
+    "unlike": "Gefällt mir entfernen",
+    "signInFirst": "Melde dich dafür an."
   },
   "feed": {
     "latest": "Neueste",
     "following": "Folge ich",
     "top": "Top diese Woche",
     "loading": "Wird geladen…",
-    "empty": "Noch keine Artikel. Sei der Erste, der etwas veröffentlicht!"
+    "empty": "Noch keine Artikel. Sei der Erste, der etwas veröffentlicht!",
+    "title": {
+      "liked": "Artikel, die dir gefallen",
+      "saved": "Gespeicherte Artikel",
+      "mine": "Deine Artikel"
+    },
+    "backToAll": "Zurück zu allen Artikeln",
+    "empty_following": "Folge einer Kategorie oder einem Tag (der Stern bei „Deine Bereiche“ oder das „…“-Menü eines Artikels), dann erscheinen deren Artikel hier.",
+    "empty_liked": "Artikel, die dir gefallen, erscheinen hier.",
+    "empty_saved": "Artikel, die du speicherst, erscheinen hier.",
+    "empty_mine": "Artikel, die du veröffentlichst, erscheinen hier."
   },
   "progression": {
     "topReached": "Höchste Stufe erreicht",
@@ -58,5 +84,10 @@
   },
   "tags": {
     "title": "Beliebte Tags"
+  },
+  "meCard": {
+    "posts": "Beiträge",
+    "followers": "Follower",
+    "following": "folgt"
   }
 }

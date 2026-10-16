@@ -76,3 +76,28 @@
     }
   }
 }
+
+/* format: "image" — path field + Upload, with a thumbnail of what is set. */
+.sf-image {
+  display: grid;
+  gap: 8px;
+
+  &__thumb {
+    max-width: 100%;
+    max-height: 120px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-border);
+    object-fit: contain;
+    background: var(--c-surface);
+  }
+
+  &__row {
+    display: flex;
+    gap: 6px;
+
+    .acp-input { flex: 1; min-width: 0; }
+  }
+}
+
+/* format: "richtext" — the Composer inside a narrow panel. */
+.sf-richtext { min-width: 0; }

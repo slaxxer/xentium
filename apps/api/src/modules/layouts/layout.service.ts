@@ -420,6 +420,14 @@ async function toPublished(map: ScopeMap, frame: SiteFrame, themeKey: ThemeKey):
 }
 
 /** One `xcf_layouts` row, captured verbatim. */
+/** A published row as a Studio revision stores it. */
+export interface PublishedRowSnapshot {
+  templateKey: string;
+  variant: string;
+  document: unknown;
+  schemaVersion: number;
+}
+
 export interface LayoutRowSnapshot {
   templateKey: string;
   variant:     string;
@@ -764,6 +772,47 @@ export const layoutService = {
       })),
     ]);
     publishedMemo.delete(themeKey);
+  },
+
+  /** One theme's PUBLISHED rows (site frame included), raw — what a Studio revision keeps. */
+  async snapshotPublished(themeKey: ThemeKey): Promise<PublishedRowSnapshot[]> {
+    const rows = await prisma.layout.findMany({
+      where:  { themeKey, scope: "published" },
+      select: { templateKey: true, variant: true, document: true, schemaVersion: true },
+    });
+    return rows.map((r) => ({ ...r, document: r.document as unknown }));
+  },
+
+  /**
+   * Stage a revision's layouts as the theme's DRAFT, to be reviewed and published.
+   *
+   * Every selector the theme has a row for now, or had then, gets a draft: the
+   * revision's document where it had one, and otherwise the baseline (what the theme
+   * ships, else the code default; for the frame, the theme's frame else full width) —
+   * a template that was inherited then is inherited again once this publishes.
+   */
+  async stageSnapshot(rows: PublishedRowSnapshot[], userId: string, themeKey: ThemeKey): Promise<void> {
+    const key = (t: string, v: string) => `${t}\u0000${v}`;
+    const wanted = new Map(rows.map((r) => [key(r.templateKey, r.variant), r]));
+    const now = await prisma.layout.findMany({ where: { themeKey }, select: { templateKey: true, variant: true } });
+    for (const r of now) {
+      const k = key(r.templateKey, r.variant);
+      if (wanted.has(k)) continue;
+      const selector = { templateKey: r.templateKey as TemplateKey, variant: r.variant };
+      if (r.templateKey === SITE_FRAME_ROW_KEY) {
+        wanted.set(k, { ...selector, document: (await shippedFrame(themeKey)) ?? DEFAULT_SITE_FRAME, schemaVersion: LAYOUT_SCHEMA_VERSION });
+      } else if (isKnownTemplate(r.templateKey as TemplateKey)) {
+        const doc = await baselineFor(themeKey, selector.templateKey);
+        wanted.set(k, { ...selector, document: doc, schemaVersion: doc.schemaVersion });
+      }
+      // A disabled plugin's template: left exactly as it is.
+    }
+    for (const r of wanted.values()) {
+      await writeDraftRow(
+        { templateKey: r.templateKey as TemplateKey, variant: r.variant },
+        r.document as object, r.schemaVersion, userId, undefined, themeKey,
+      );
+    }
   },
 
   /** Everything stored for one theme, for uninstall. */

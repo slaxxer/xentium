@@ -22,6 +22,8 @@ rather write it yourself, see [README → Environment configuration](./README.md
 2. Keep the change focused. Before you push, **`pnpm backbone:check`** has to pass
    (typecheck + lint + test + build).
 3. Open a PR against `development` and fill in the checklist in the PR template.
+   The **Checks** workflow runs the same `backbone:check` on every PR. A first-time
+   contributor's run starts once a maintainer approves it.
 
 ## Ground rules
 

@@ -163,6 +163,7 @@
   --content-border-color:  var(--c-border);
 
   --footer-bg:            var(--c-surface);
+  --footer-fg-strong:     var(--c-fg);   /* names, numbers, the brand — the footer's own "text" colour */
   --footer-fg:            var(--c-fg-muted);
   --footer-fg-subtle:     var(--c-fg-subtle);
   --footer-border-color:  var(--c-border);
@@ -187,6 +188,15 @@
   --menu-border-color:  var(--c-border);
   --menu-item-hover-bg: var(--c-bg-hover);
   --menu-radius:        var(--radius-md);
+  --menu-fg-muted:      var(--c-fg-muted);
+  --menu-fw:            500;
+  --menu-title-fw:      700;
+  // The header's action pill (Theme Studio → "User menu").
+  --usermenu-bg:        rgba(20, 22, 42, 0.78);
+  --usermenu-fg:        #e9ebff;
+  --usermenu-line:      rgba(255, 255, 255, 0.13);
+  --usermenu-fw:        700;
+  --usermenu-radius:    var(--radius-md);
 
   /* Segment / sort buttons (e.g. /members sort control) */
   --seg-bg:        var(--c-bg);
@@ -250,4 +260,104 @@
   /* Theme style → "Glow on accent elements": accent FILLS (primary buttons, accent
      panels) wear it. Off by default. */
   --glow-accent: none;
+}
+
+// Tier 2+3 — the CORE LOOK ("Xentium", 2026-10-13): what every install starts with.
+// Applied by the SITE after the three mixins above (styles/tokens.scss); the ACP does
+// not include it and keeps its own.
+//
+// Deliberately basic: a neutral page, white surfaces with hairlines, a plain white
+// header and footer, ONE deep teal accent and no gradients. Everything a theme or an
+// admin changes starts from here. Every value an admin can edit is also in
+// HEARTH_DEFAULT_TOKENS (@xentium/contracts), so the editor and the stylesheet agree.
+@mixin core-look {
+  // Palette.
+  --c-bg:            #f6f7f6;
+  --c-bg-hover:      #eef0ef;
+  --c-surface:       #ffffff;
+  --c-card:          #ffffff;
+  --c-accent:        #0d7c72;
+  // The second accent is the same hue, deeper: one accent, never a second colour.
+  --c-accent2:       #0a5f57;
+  --c-accent-soft:   #e3f2ef;
+  --c-accent2-soft:  #d0e9e4;
+  --c-accent-glow:   rgba(13, 124, 114, 0.16);
+  --c-on-accent:     #ffffff;
+  --c-fg:            #1c2321;
+  --c-fg-muted:      #5b6560;
+  --c-fg-subtle:     #8a928e;
+  --c-border:        #e2e6e4;
+  --c-border-hi:     #d3d8d6;
+  --c-rowline:       #eceeed;
+  --input-bg:        #ffffff;
+  --nav-icon-btn-bg: transparent;
+  // Status colours keep clear of the teal: grass green, amber, red, slate blue.
+  --c-success:       #3f8a2f;
+  --c-success-soft:  rgba(63, 138, 47, 0.10);
+  --c-warn:          #a16207;
+  --c-danger:        #c8322f;
+  --c-danger-soft:   rgba(200, 50, 47, 0.10);
+  --c-info:          #3f5a8a;
+  --c-update:        #3a423f;
+
+  // Flat: a hairline separates, a shadow only lifts what floats (menus, dialogs). The
+  // card "shadow" IS a faint 1px ring, so every card-painted surface gets an edge
+  // without each one needing a border rule.
+  --shadow-card: 0 0 0 1px rgba(28, 35, 33, 0.07);
+  --shadow-pop:  0 0 0 1px rgba(28, 35, 33, 0.08), 0 12px 32px rgba(28, 35, 33, 0.10);
+  --shadow-glow: none;
+
+  // Radii: plain and moderate.
+  --radius-sm:  8px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --radius-xl:  16px;
+  --input-radius: var(--radius-md);
+  --btn-radius:   var(--radius-md);
+
+  // The header: one plain white row with a hairline under it.
+  --nav-bg:                #ffffff;
+  --nav-fg:                var(--c-fg);
+  --nav-fg-muted:          var(--c-fg-muted);
+  --nav-border-color:      var(--c-border);
+  --nav-active:            var(--c-accent);
+  --nav-active-bg:         var(--c-accent-soft);
+  --nav-icon-btn-hover-bg: var(--c-bg-hover);
+  --nav-height:            64px;
+
+  // The footer: a quiet band under a hairline.
+  --footer-bg:           #ffffff;
+  --footer-fg-strong:    var(--c-fg);
+  --footer-fg:           var(--c-fg-muted);
+  --footer-fg-subtle:    var(--c-fg-subtle);
+  --footer-border-color: var(--c-border);
+  --footer-accent:       var(--c-accent);
+  --aside-bg:            transparent;
+
+  // Components.
+  --menu-item-hover-bg: var(--c-bg-hover);
+  --menu-fw:            500;
+  --menu-title-fw:      700;
+  // The account pill sits on the white header: no capsule of its own.
+  --usermenu-bg:     transparent;
+  --usermenu-fg:     var(--c-fg);
+  --usermenu-line:   var(--c-border);
+  --usermenu-fw:     600;
+  --usermenu-radius: var(--radius-md);
+
+  --seg-bg:        transparent;
+  --seg-fg:        var(--c-fg-muted);
+  --seg-hover-bg:  var(--c-bg-hover);
+
+  // The default logo mark: the accent, flat. The favicon follows it (lib/siteFavicon).
+  // The ACP pins Xentium's own colours.
+  --logo-icon-from:   var(--c-accent);
+  --logo-icon-to:     var(--c-accent);
+
+  // Type: Figtree for everything; Bricolage Grotesque only for the big headlines (page
+  // titles, `.xt-headline`). The admin's font choice replaces all of it (served CSS);
+  // the ACP re-pins its own.
+  --font-body:     "Figtree", system-ui, sans-serif;
+  --font-display:  var(--font-body);
+  --font-headline: "Bricolage Grotesque", "Figtree", sans-serif;
 }

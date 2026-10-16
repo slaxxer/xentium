@@ -21,7 +21,7 @@
     line-height: 0.8;
     letter-spacing: -0.04em;
     font-size: clamp(220px, 38vw, 460px);
-    background: linear-gradient(150deg, var(--c-accent), var(--c-accent2));
+    background: var(--c-accent);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -47,7 +47,7 @@
     border-radius: 11px;
     flex: none;
     color: var(--c-on-accent);
-    background: linear-gradient(135deg, var(--c-accent), var(--c-accent2));
+    background: var(--c-accent);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -122,8 +122,8 @@
     &--primary {
       background: var(--c-accent);
       color: var(--c-on-accent, #fff);
-      box-shadow: 0 10px 26px -8px var(--c-accent);
-      &:hover { transform: translateY(-2px); box-shadow: 0 16px 34px -8px var(--c-accent); }
+      box-shadow: var(--shadow-glow);
+      &:hover { transform: translateY(-2px); box-shadow: var(--shadow-glow); }
     }
     &--ghost {
       background: transparent;

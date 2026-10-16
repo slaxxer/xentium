@@ -46,10 +46,12 @@ beforeEach(async () => {
   assertDisposableDatabase();
   await cleanup();
   ids = { author: await user("author"), r1: await user("r1"), r2: await user("r2"), mod: await user("mod"), owner: await user("owner") };
-  // A group holding the moderation permissions the action endpoint checks.
-  const perms = await prisma.permission.findMany({
-    where: { key: { in: ["moderation.warn.manage", "moderation.ban.manage", "moderation.report.manage"] } },
-  });
+  // A group holding the moderation permissions the action endpoint checks. Upserted:
+  // on a fresh database (CI) nothing has registered the permission rows yet.
+  const perms = await Promise.all(
+    ["moderation.warn.manage", "moderation.ban.manage", "moderation.report.manage"].map((key) =>
+      prisma.permission.upsert({ where: { key }, update: {}, create: { key, label: key } })),
+  );
   groupId = (await prisma.group.create({
     data: { key: `${P}_mods`, name: "Probe mods", permissions: { create: perms.map((p) => ({ permissionId: p.id })) } },
   })).id;

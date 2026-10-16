@@ -32,6 +32,8 @@ export const privacySettingsSchema = z.object({
   hideBlockedContent: z.boolean().optional(),
   profileVisibility: z.enum(["everyone", "members"]).optional(),
   postHistoryVisibility: z.enum(["everyone", "members", "nobody"]).optional(),
+  // "Last seen 3 days ago" on the profile.
+  showLastSeen: z.boolean().optional(),
   // Whether the profile shows the full name (displayName) or the username as the
   // prominent name. Only takes effect when a display name is set.
   displayNamePreference: z.enum(["username", "fullName"]).optional(),

@@ -20,7 +20,7 @@ export function NotFoundPage() {
     <main className="nf">
       <div className="nf__ghost" aria-hidden="true">404</div>
 
-      <a className="nf__brand" href="/" aria-label="Xentium home">
+      <a className="nf__brand" href="/" aria-label={t("nav.homeAria")}>
         <SiteLogo size={36} imgClassName="nf__logo-img" wordmark={<span className="nf__wordmark">Xentium</span>} />
       </a>
 

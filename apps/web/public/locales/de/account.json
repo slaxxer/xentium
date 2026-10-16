@@ -28,7 +28,14 @@
     "badgesOverCap": "Mehr als 3 sind an – gezeigt werden nur die 3 höchstrangigen.",
     "reading": "Lesen & Bewegung",
     "readingDesc": "Wird in diesem Browser gespeichert.",
-    "appliedNote": "Alles hier gilt sofort mit dem Klick"
+    "appliedNote": "Alles hier gilt sofort mit dem Klick",
+    "fontDesc": {
+      "Poppins": "Geometrisch und freundlich (Standardschrift der Seite)",
+      "Nunito": "Warm und freundlich",
+      "Montserrat": "Geometrisch und vielseitig",
+      "OpenSans": "Klar, neutral und gut lesbar",
+      "Ubuntu": "Humanistisch und zugänglich"
+    }
   },
   "profile": {
     "bioSection": "Biografie",
@@ -125,6 +132,9 @@
     "showFollowingDesc": "Jeder kann sehen, wem du folgst",
     "saved": "Datenschutzeinstellungen gespeichert!",
     "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",
+    "displayNameLabel": "Name auf deinem Profil",
+    "displayNameUsername": "Benutzername",
+    "displayNameFull": "Vollständiger Name",
     "whoTitle": "Wer was sehen darf",
     "whoDesc": "Jede Sichtbarkeitsentscheidung deines Kontos, in einer Liste.",
     "wallTitle": "Pinnwand & Soziales",
@@ -142,7 +152,9 @@
     "rowCommentDesc": "Beiträge auf deinem Profil",
     "rowFollow": "Wer mir folgen darf",
     "rowFollowDesc": "Neue Follower",
-    "displayNameDesc": "Dein @Name bleibt immer gleich"
+    "displayNameDesc": "Dein @Name bleibt immer gleich",
+    "showLastSeen": "Zeigen, wann ich zuletzt da war",
+    "showLastSeenDesc": "Dein Profil zeigt, wann du zuletzt aktiv warst, etwa „Zuletzt gesehen vor 3 Std.“."
   },
   "security": {
     "emailAddress": "E-Mail-Adresse",

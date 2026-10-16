@@ -5,12 +5,31 @@ import { getSetting } from "../../shared/utils/settings.js";
 import {
   EMAIL_TEMPLATE_DEFAULTS,
   EMAIL_TEMPLATE_KEYS,
+  defaultTemplate,
   getEffectiveTemplate,
+  isLegacyBody,
   renderEmailTemplate,
   renderLinkButton,
   type EmailTemplateKey,
 } from "../../infrastructure/email/email-templates.js";
 import { sendEmail, verifySmtp, isEmailConfigured } from "../../infrastructure/email/email.service.js";
+import { SERVER_LOCALES, type ServerLocale } from "../../shared/i18n/serverText.js";
+
+/** The shipped subject + body in every language, so the ACP shows the admin's own. */
+function shippedDefaults(key: EmailTemplateKey) {
+  return Object.fromEntries(SERVER_LOCALES.map((l) => {
+    const d = defaultTemplate(key, l);
+    return [l, { subject: d.subject, body: d.body }];
+  }));
+}
+
+/** Saving one of the shipped versions unchanged is not a customisation: it keeps following the reader's language. */
+function isShippedCopy(key: EmailTemplateKey, subject: string, body: string): boolean {
+  return SERVER_LOCALES.some((l) => {
+    const d = defaultTemplate(key, l);
+    return d.subject === subject && d.body === body;
+  });
+}
 
 /** Sample values so a test send and the ACP preview show something realistic. */
 async function sampleVars(): Promise<Record<string, string>> {
@@ -25,6 +44,7 @@ async function sampleVars(): Promise<Record<string, string>> {
     link_url: siteUrl || "/",
     link_button: renderLinkButton(siteUrl || "/"),
     reset_url: `${siteUrl}/reset-password?token=sample`,
+    login_url: `${siteUrl}/auth/magic?token=sample`,
     code: "123456",
     new_email: "new-address@example.com",
     expiry_minutes: "15",
@@ -44,11 +64,16 @@ export const emailAdminService = {
         body: row?.body ?? def.body,
         placeholders: def.placeholders,
         customized: !!row,
+        // Saved as a whole HTML document by an older version: sent as written,
+        // not editable as content (the ACP offers Reset instead).
+        legacy: isLegacyBody(row?.body ?? def.body),
         updatedAt: row?.updatedAt ?? null,
         // Shipped copy travels with the response so the editor can diff against
         // it and offer Reset without a second round-trip.
         defaultSubject: def.subject,
         defaultBody: def.body,
+        // Untouched templates go out in each recipient's language; the ACP edits from its own.
+        defaults: shippedDefaults(key),
       };
     });
   },
@@ -57,10 +82,11 @@ export const emailAdminService = {
     const def = EMAIL_TEMPLATE_DEFAULTS[key];
     if (!def) throw new XentiumError({ code: XEC.EMAIL_TEMPLATE_UNKNOWN, httpStatus: 404, message: "Unknown template" });
     const eff = await getEffectiveTemplate(key);
-    return { key, ...eff, placeholders: def.placeholders, defaultSubject: def.subject, defaultBody: def.body };
+    return { key, ...eff, legacy: isLegacyBody(eff.body), placeholders: def.placeholders, defaultSubject: def.subject, defaultBody: def.body };
   },
 
   async saveTemplate(key: EmailTemplateKey, subject: string, body: string) {
+    if (isShippedCopy(key, subject, body)) return this.resetTemplate(key);
     const row = await prisma.emailTemplate.upsert({
       where: { key },
       update: { subject, body },
@@ -81,11 +107,11 @@ export const emailAdminService = {
   },
 
   /** Render with sample data — used by the ACP preview. */
-  async preview(key: EmailTemplateKey) {
-    return renderEmailTemplate(key, await sampleVars());
+  async preview(key: EmailTemplateKey, locale: ServerLocale = "en") {
+    return renderEmailTemplate(key, await sampleVars(), locale);
   },
 
-  async sendTest(to: string, key: EmailTemplateKey) {
+  async sendTest(to: string, key: EmailTemplateKey, locale: ServerLocale = "en") {
     if (!(await isEmailConfigured())) {
       throw new XentiumError({
         code: XEC.EMAIL_NOT_CONFIGURED,
@@ -102,7 +128,7 @@ export const emailAdminService = {
         message: `SMTP connection failed: ${check.error ?? "unknown"}`,
       });
     }
-    const { subject, html } = await renderEmailTemplate(key, await sampleVars());
+    const { subject, html } = await renderEmailTemplate(key, await sampleVars(), locale);
     try {
       await sendEmail(to, subject, html);
     } catch (e) {

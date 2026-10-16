@@ -11,11 +11,18 @@
  * This file must not import anything that reads env at module load, or the value
  * would be captured before the assignment below.
  */
+import os from "node:os";
+import path from "node:path";
 import { loadRootEnv, resolveTestDatabaseUrl } from "./testDatabase.js";
 
 loadRootEnv();
 
 process.env.DATABASE_URL = resolveTestDatabaseUrl();
+
+// Files too: the tests write real uploads (emojis, badges, the installer's seeds), and
+// against the developer's `var/uploads` they left orphans there, or deleted files the
+// development database still points at.
+process.env.UPLOAD_DIR = path.join(os.tmpdir(), "xentium-test-uploads");
 
 // Some code paths relax behaviour for tests (rate limits, dev shortcuts); make the
 // mode explicit rather than inheriting whatever the shell had.

@@ -1308,7 +1308,7 @@ export function InstallerWizard() {
             <input
               value={admin.username}
               onChange={(e) => setAdmin({ ...admin, username: e.target.value })}
-              placeholder="Administrator"
+              placeholder={t("admin.username_placeholder")}
             />
             <span className="hint">{t("admin.username_hint")}</span>
           </div>

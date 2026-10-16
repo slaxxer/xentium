@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "./Icon";
 import { faTriangleExclamation, faCopy, faCheck, faRotateRight, faBookOpen } from "@fortawesome/free-solid-svg-icons";
 import { useFatalError } from "../lib/fatalError";
@@ -12,6 +13,7 @@ import "./FatalErrorOverlay.scss";
  */
 export function FatalErrorOverlay() {
   const fatal = useFatalError();
+  const { t } = useTranslation("common", { keyPrefix: "fatal" });
   const [copied, setCopied] = useState(false);
 
   if (!fatal) return null;
@@ -33,18 +35,16 @@ export function FatalErrorOverlay() {
           <FontAwesomeIcon icon={faTriangleExclamation} />
         </div>
 
-        <h1 id="fatal-title" className="fatal-overlay__title">Something went wrong</h1>
+        <h1 id="fatal-title" className="fatal-overlay__title">{t("title")}</h1>
         <p className="fatal-overlay__lead">
-          The server hit an unexpected error and the page can’t continue safely.
-          Copy the error code below and look it up in the Error Reference for the
-          cause and a suggested fix.
+          {t("lead")}
         </p>
 
         <div className="fatal-overlay__code-row">
           <code className="fatal-overlay__code">{fatal.code}</code>
-          <button type="button" className="fatal-overlay__copy" onClick={copyCode} aria-label="Copy error code">
+          <button type="button" className="fatal-overlay__copy" onClick={copyCode} aria-label={t("copyCode")}>
             <FontAwesomeIcon icon={copied ? faCheck : faCopy} />
-            <span>{copied ? "Copied" : "Copy"}</span>
+            <span>{copied ? t("copied") : t("copy")}</span>
           </button>
         </div>
 
@@ -53,20 +53,19 @@ export function FatalErrorOverlay() {
             className="fatal-overlay__btn fatal-overlay__btn--primary"
             href={`/admin/error-ref?code=${encodeURIComponent(fatal.code)}`}
           >
-            <FontAwesomeIcon icon={faBookOpen} /> Look up in Error Reference
+            <FontAwesomeIcon icon={faBookOpen} /> {t("lookUp")}
           </a>
           <button
             type="button"
             className="fatal-overlay__btn fatal-overlay__btn--ghost"
             onClick={() => window.location.reload()}
           >
-            <FontAwesomeIcon icon={faRotateRight} /> Reload page
+            <FontAwesomeIcon icon={faRotateRight} /> {t("reload")}
           </button>
         </div>
 
         <p className="fatal-overlay__hint">
-          Error Reference lives in <strong>ACP → System → Error Reference</strong>.
-          This incident has also been recorded in the Error Log.
+          {t("hintBefore")}<strong>{t("hintPath")}</strong>{t("hintAfter")}
         </p>
       </div>
     </div>

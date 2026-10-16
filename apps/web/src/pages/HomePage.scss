@@ -46,7 +46,7 @@
 
   &__band {
     height: 64px;
-    background: linear-gradient(120deg, var(--c-accent), var(--c-accent2));
+    background: var(--c-accent);
   }
   &__ava {
     display: block;
@@ -143,15 +143,33 @@
 .hf-space {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px;
+  gap: 4px;
   border-radius: var(--radius-sm);
-  color: var(--c-fg);
-  font-weight: 600;
-  font-size: var(--fs-md);
   transition: background 0.12s;
   &:hover { background: var(--c-accent-soft); }
-  i { width: 11px; height: 11px; border-radius: 4px; flex-shrink: 0; }
+
+  &__link {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    color: var(--c-fg);
+    font-weight: 600;
+    font-size: var(--fs-md);
+    i { width: 11px; height: 11px; border-radius: 4px; flex-shrink: 0; }
+  }
+
+  /* Follow the category: its articles fill the Following list. */
+  &__follow {
+    width: 32px; height: 32px;
+    flex: none;
+    border-radius: var(--radius-sm);
+    color: var(--c-fg-subtle);
+    &:hover { color: var(--c-accent); }
+    &.is-on { color: var(--c-accent); }
+  }
 }
 
 /* ── center: composer ─────────────────────────────────── */
@@ -243,7 +261,49 @@
   color: var(--c-fg-muted);
   width: 34px; height: 34px;
   border-radius: var(--radius-md);
-  &:hover { background: var(--c-bg-hover); }
+  &:hover, &[aria-expanded="true"] { background: var(--c-bg-hover); }
+}
+
+/* The card's "…" menu, a dropdown like the header's (`xt-pop` paints it). */
+.hf-more-wrap { position: relative; }
+.hf-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 30;
+  min-width: 230px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  background: var(--menu-bg);
+  color: var(--menu-fg);
+  border: 1px solid var(--menu-border-color);
+  border-radius: var(--menu-radius);
+  box-shadow: var(--shadow-pop);
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    font-size: var(--fs-sm);
+    font-weight: var(--menu-fw);
+    color: inherit;
+    &:hover { background: var(--menu-item-hover-bg); }
+    svg { color: var(--menu-fg-muted); }
+  }
+}
+
+/* An own list opened from the menu (Liked, Saved, My articles): a title and a way back. */
+.hf-feedtitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  h2 { margin: 0; font-size: var(--fs-xl); }
+  &__back { color: var(--c-accent); font-weight: 600; font-size: var(--fs-sm); &:hover { text-decoration: underline; } }
 }
 
 .hf-artcard {
@@ -269,7 +329,7 @@
   }
   &__body {
     min-width: 0;
-    h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-lg); line-height: 1.25; color: var(--c-fg); }
+    h3 { font-family: var(--font-headline, var(--font-display)); font-weight: 600; font-size: var(--fs-xl); line-height: 1.25; color: var(--c-fg); }
     p {
       margin-top: 6px;
       font-weight: 600;
@@ -302,8 +362,10 @@
   border-radius: var(--radius-sm);
   color: var(--c-fg-muted);
   transition: background 0.12s, color 0.12s;
-  &:hover { background: var(--c-bg-hover); }
-  &--like.is-on, &--like.is-on svg { color: var(--c-accent2); }
+  &:hover:not(:disabled) { background: var(--c-bg-hover); }
+  &--like.is-on, &--like.is-on svg { color: var(--c-accent); }
+  /* One's own article: the count, without a button that would be refused. */
+  &:disabled { cursor: default; opacity: 0.75; }
 }
 
 .hf-save {
