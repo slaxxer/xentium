@@ -15,13 +15,16 @@
 # tokens and is taking direct publishing away from them, so a token cannot do
 # this job any more anyway.
 #
+# It does NOT move `latest`. Trusted Publishing only signs `npm publish`; a
+# dist-tag change from here fails. After a release, a person runs
+# `node scripts/promote-latest.mjs` on their own npm login.
+#
 # What it needs once, on npmjs.com, for EACH of the ten packages
 # (package → Settings → Trusted Publisher → GitHub Actions):
 #   repository  slaxxer/xentium      workflow  release.yml      environment  (empty)
-#   ✓ Allow npm dist-tag             (needed for the `latest` move below)
 #
-# And npm ≥ 11.21 on the runner: 11.5.1 for trusted publishing, 11.21 for
-# dist-tag over OIDC. Node comes from .nvmrc (24 ≥ the 22.14 npm requires).
+# And npm ≥ 11.5.1 on the runner for trusted publishing. Node comes from .nvmrc
+# (24 ≥ the 22.14 npm requires).
 #
 # Provenance (a signed, public attestation linking the tarball to this workflow
 # run) needs the SOURCE REPOSITORY to be public, because the attestation goes to
@@ -48,10 +51,6 @@ on:
         description: "npm dist-tag override (default: the prerelease id, else latest)"
         type: string
         default: ""
-      latest:
-        description: "Also point `latest` at this version on all ten packages"
-        type: boolean
-        default: true
 
 # Two releases publishing at once would race for the same version numbers.
 concurrency:
@@ -85,7 +84,7 @@ jobs:
           registry-url: https://registry.npmjs.org
           cache: pnpm
 
-      # Trusted publishing needs npm 11.5.1+, and dist-tag over OIDC 11.21+.
+      # Trusted publishing needs npm 11.5.1+.
       - run: npm install -g npm@^11.21.0 && npm --version
 
       - run: pnpm install --frozen-lockfile
@@ -117,13 +116,14 @@ jobs:
       - name: Publish
         env:
           # No NODE_AUTH_TOKEN: npm signs in with the workflow's OIDC identity.
+          # Verbose, because npm only says WHY a trusted-publishing sign-in failed
+          # ("oidc Failed token exchange …") at this level; otherwise it is a bare 404.
+          NPM_CONFIG_LOGLEVEL: verbose
           PROVENANCE: ${{ steps.provenance.outputs.flag }}
           EVENT: ${{ github.event_name }}
           DRY_RUN: ${{ inputs.dry_run }}
           ONLY: ${{ inputs.only }}
           NPM_TAG: ${{ inputs.tag }}
-          # A tag push always moves `latest`; a manual run follows its checkbox.
-          LATEST: ${{ github.event_name == 'push' || inputs.latest }}
         run: |
           set -euo pipefail
           args=""
@@ -134,7 +134,6 @@ jobs:
           if [ "${DRY_RUN:-}" = "true" ]; then args="$args --dry-run"; fi
           if [ -n "${ONLY:-}" ] && [ "$ONLY" != "all" ]; then args="$args --only=$ONLY"; fi
           if [ -n "${NPM_TAG:-}" ]; then args="$args --tag=$NPM_TAG"; fi
-          if [ "${LATEST:-}" = "true" ]; then args="$args --latest"; fi
           node scripts/publish-release.mjs ${PROVENANCE:-} $args
 
       # The tarballs are how a server without the published names is installed
