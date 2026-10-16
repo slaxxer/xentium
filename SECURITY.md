@@ -1,5 +1,4 @@
 # Security policy
-alr
 Thanks for taking the time to look. If you think you've found a security problem in
 Xentium, please tell us privately first, so we can fix it before anyone can use it
 against a running site.
