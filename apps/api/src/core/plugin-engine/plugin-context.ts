@@ -1,5 +1,5 @@
 import type { Router } from "express";
-import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
+import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
 import { registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
@@ -11,6 +11,8 @@ import { securityScanRegistry } from "../security/security-scan-registry.js";
 import { authGuardRegistry, type AuthGuard } from "../auth-guard-registry/auth-guard-registry.js";
 import { searchRegistry } from "../search-registry/search-registry.js";
 import { reportTargetRegistry } from "../report-target-registry/report-target-registry.js";
+import { embedRegistry } from "../embed-registry/embed-registry.js";
+import { contentRegistry } from "../content-registry/content-registry.js";
 import { homeFeedRegistry } from "../home-feed-registry/home-feed-registry.js";
 import { statRegistry } from "../stat-registry/stat-registry.js";
 import { necRegistry } from "../xec-registry/xec-registry.js";
@@ -41,6 +43,12 @@ const host: PluginHost = {
     requirePermission: (key: string) => requirePermission(key as never),
   },
   progression: { getEffectiveGroupId: getEffectiveProgressionGroupId },
+  // Embeds inside content, and who may see that content (fails closed).
+  content: {
+    canView:      (kind, id, viewerId) => contentRegistry.canView(kind, id, viewerId),
+    syncEmbeds:   (embedHost, body) => embedRegistry.sync(embedHost, body),
+    removeEmbeds: (embedHost) => embedRegistry.remove(embedHost),
+  },
   // Ask instead of refuse: e.g. "may this member still reply to a closed thread?".
   permissions: { has: (userId: string, key: string) => hasPermission(userId, key as never) },
   utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns } },
@@ -140,6 +148,14 @@ export class PluginContextImpl implements PluginContext {
   registerSearchSource(source: SearchSource): void {
     searchRegistry.register(this.pluginId, source);
     logger.info({ pluginId: this.pluginId, source: source.id }, "Plugin search source registered");
+  }
+
+  registerEmbed(handler: EmbedHandler): void {
+    embedRegistry.register(this.pluginId, handler);
+  }
+
+  registerContentKind(handler: ContentKindHandler): void {
+    contentRegistry.register(this.pluginId, handler);
   }
 
   registerReportTarget(handler: ReportTargetHandler): void {

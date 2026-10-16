@@ -28,7 +28,7 @@ import { openDialog } from "../../../lib/dialog";
 import { offerThemeSwitch } from "../hooks/themeSwitchPrompt";
 import { AcpIcon } from "./acpIcons";
 import "./ThemesPage.scss";
-import { uiLocale } from "../../../lib/i18n";
+import { siteTime } from "../../../lib/datetime";
 
 interface Palette { bg: string; surface: string; accent: string; accent2: string; fg: string }
 interface Colourway { id: string; name: string; accent: string; accent2: string }
@@ -237,7 +237,7 @@ export function ThemesPage() {
     }
   }
 
-  const fmtDate = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" }) : "");
+  const fmtDate = (iso: string | null) => (iso ? siteTime.date(iso) : "");
   const edited = (c: Card) => (c.editedAt ? timeAgo(c.editedAt) : t("themes.never"));
   const busy = activateMut.isPending || colourwayMut.isPending || undoMut.isPending;
 

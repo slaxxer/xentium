@@ -209,6 +209,14 @@
       width: 40px;
       justify-content: center;
     }
+    /* The gear's dot is placed on the gear's own box, which is the whole padded,
+       stretched item, so the navbar's 7px corner landed far above and right of the
+       glyph. Put it where the shield's and bell's sit: 7px into the centred 40×40,
+       past the item's 10px padding. */
+    .pub-nav__icon-btn--acp > .pub-nav__dot {
+      top: calc(50% - 20px + 7px);
+      right: calc(10px + 7px);
+    }
 
     /* Search is an icon in the pill and opens into a field when focused. The input
        stays focusable while collapsed — it covers the icon, invisibly — so a click

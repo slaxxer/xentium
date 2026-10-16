@@ -14,7 +14,7 @@ import { useSiteConfig } from "../../hooks/useSiteConfig";
 import type { MaintenanceLinkIcon, MaintenanceStatus } from "./useMaintenance";
 import "./MaintenancePage.scss";
 import { SiteLogo } from "../../components/SiteLogo";
-import { uiLocale } from "../../lib/i18n";
+import { useDateTime } from "../../lib/datetime";
 
 /**
  * The footer links carry an icon *key*, never a class name: the app imports
@@ -45,6 +45,7 @@ interface Props {
 
 export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
   const { t } = useTranslation("common");
+  const dt = useDateTime();
   const { data: siteConfig } = useSiteConfig();
   const [signInOpen, setSignInOpen] = useState(false);
 
@@ -66,7 +67,7 @@ export function MaintenancePage({ status, blocked, onSignedIn }: Props) {
   const left = etaMs !== null ? Math.max(0, etaMs - now) : 0;
   const showCountdown = countdownWanted && left > 0;
   const backOnline = etaMs !== null
-    ? new Date(etaMs).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" })
+    ? dt.time(etaMs)
     : null;
 
   const { mode, steps, currentStep, label, percent } = status.progress;

@@ -9,7 +9,7 @@ import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { useUploadAllowed, UPLOAD_ALLOWED_KEY } from "../hooks/useUploadAllowed";
 import { TrustBadge } from "../components/TrustBadge";
-import { uiLocale } from "../../../lib/i18n";
+import { siteTime } from "../../../lib/datetime";
 
 interface InstalledPlugin {
   id:               string;
@@ -152,7 +152,7 @@ export function InstalledPage() {
                     <TrustBadge tier={p.signatureTier} recorded={p.contentDigest !== null} />
                   </div>
                   <div style={{ fontSize:"var(--fs-xs)", color:"var(--c-fg-muted)" }}>
-                    {t("installed.meta", { id: p.id, vendor: p.vendor, date: new Date(p.installedAt).toLocaleDateString(uiLocale()) })}
+                    {t("installed.meta", { id: p.id, vendor: p.vendor, date: siteTime.date(p.installedAt) })}
                   </div>
                 </div>
 

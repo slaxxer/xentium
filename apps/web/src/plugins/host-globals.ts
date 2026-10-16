@@ -41,6 +41,7 @@ import * as webForumEditor from "@web/components/ForumEditor";
 // (the forum's thread composer does). `webMiniEditor` / `webForumEditor` stay as the
 // adapters shipped bundles already import.
 import * as webComposer from "@web/components/composer/Composer";
+import * as webRichHtml from "@web/components/RichHtml";
 import * as webUseAutosave from "@web/hooks/useAutosave";
 // ACP drafts and the save bar. `webUseAutosave.useAutosave` is the same hook under its
 // old name, so shipped plugin panels joined the save bar without a rebuild.
@@ -108,6 +109,7 @@ const HOST = {
   webMiniEditor,
   webForumEditor,
   webComposer,
+  webRichHtml,
   webUseAutosave,
   webUseDraft,
   webAutosaveStatus,

@@ -21,8 +21,8 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { openDialog } from "../../../lib/dialog";
 import { toast } from "../../../lib/toast";
 import { withTheme } from "../../../lib/editingTheme";
-import { uiLocale } from "../../../lib/i18n";
 import "../pages/StyleEditorPage.scss";
+import { siteTime } from "../../../lib/datetime";
 
 interface HistoryEntry {
   id: string;
@@ -33,9 +33,7 @@ interface HistoryEntry {
   changes?: { layouts: LayoutSelector[]; tokens: number; css: boolean; font: boolean };
 }
 
-const when = (d: string) => new Date(d).toLocaleString(uiLocale(), {
-  month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-});
+const when = (d: string) => siteTime.stamp(d);
 
 export function StudioHistory({ themeKey }: { themeKey: string | null }) {
   const { t } = useTranslation("acp");

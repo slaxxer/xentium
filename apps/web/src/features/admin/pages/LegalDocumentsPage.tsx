@@ -21,6 +21,7 @@ import { Composer } from "../../../components/composer/Composer";
 import { AcpIcon } from "./acpIcons";
 import "./acpSystem.scss";
 import "./LegalDocumentsPage.scss";
+import { siteTime } from "../../../lib/datetime";
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 // The reader draws bodies with the article extensions, Image included. There is no
@@ -109,7 +110,7 @@ export function LegalDocumentsPage() {
 
 /** One document. Keyed by the document, so switching tabs starts a fresh editor and autosave baseline. */
 function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (body: unknown) => void }) {
-  const { t, i18n } = useTranslation("acp");
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const saved = doc.draftBody ?? EMPTY_DOC;
   const [draft, setDraft] = useState<unknown>(saved);
@@ -175,7 +176,7 @@ function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (
     if (ok) discardMut.mutate();
   }
 
-  const date = (iso: string) => new Date(iso).toLocaleDateString(i18n.language, { dateStyle: "long" });
+  const date = (iso: string) => siteTime.date(iso);
   const busy = publishMut.isPending || unpublishMut.isPending || discardMut.isPending;
 
   return (

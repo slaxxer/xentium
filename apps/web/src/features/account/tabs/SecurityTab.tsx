@@ -26,7 +26,7 @@ import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { AccountCard } from "../components/AccountCard";
 import { ConnectedAccountsCard, PasskeysCard, SetPasswordHint, useSignInMethods } from "./SignInMethodsCards";
-import { uiLocale } from "../../../lib/i18n";
+import { useDateTime } from "../../../lib/datetime";
 
 type PinMode = null | "enable" | "change" | "disable";
 
@@ -457,6 +457,7 @@ export function deviceName(ua: string | null, unknown: string): string {
 
 function SessionsCard() {
   const { t } = useTranslation("account");
+  const dt = useDateTime();
   const queryClient = useQueryClient();
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["account", "sessions"],
@@ -499,7 +500,7 @@ function SessionsCard() {
                 {deviceName(s.userAgent, t("security.unknownDevice"))}
               </span>
               <span className="acct-session__meta">
-                {s.ip ?? t("security.unknownIp")} · {t("security.lastActive", { date: new Date(s.lastUsedAt).toLocaleDateString(uiLocale()) })}
+                {s.ip ?? t("security.unknownIp")} · {t("security.lastActive", { date: dt.date(s.lastUsedAt) })}
               </span>
             </span>
             {/* ⚠ The current session offers no Revoke: it is the session reading this

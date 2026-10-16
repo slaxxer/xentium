@@ -17,7 +17,7 @@ import { openDialog } from "../../../lib/dialog";
 import { Avatar } from "../../../components/Avatar";
 import { useAuth } from "../../../hooks/useAuth";
 import "./ReviewCasesPage.scss";
-import { uiLocale } from "../../../lib/i18n";
+import { siteTime } from "../../../lib/datetime";
 
 // ACP → Moderation → Review Cases. Core surface for §15 review cases — the
 // baseline patterns (core) and any plugin scans (e.g. a moderation plugin's)
@@ -88,7 +88,7 @@ function describe(c: ModerationCase, t: T): string {
 }
 
 function fmtDate(iso: string | null) {
-  return iso ? new Date(iso).toLocaleDateString(uiLocale(), { day: "numeric", month: "short", year: "numeric" }) : "—";
+  return iso ? siteTime.date(iso) : "—";
 }
 
 function Check({ state, onClick, label }: { state: "on" | "off" | "partial"; onClick: (e: React.MouseEvent) => void; label: string }) {

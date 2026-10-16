@@ -19,6 +19,7 @@ import { UserAvatar } from "../../components/UserAvatar";
 import { Username } from "../../components/Username";
 import { api } from "../../lib/api";
 import "./WarningsTab.scss";
+import { useDateTime } from "../../lib/datetime";
 
 type Status = "active" | "expired" | "pardoned";
 interface Warning {
@@ -49,6 +50,7 @@ const flagOf = (code: string) => String.fromCodePoint(...[...code.toUpperCase()]
 
 export function WarningsTab({ profileId, username, isOwn }: { profileId: string; username: string; isOwn: boolean }) {
   const { t, i18n } = useTranslation("profiles");
+  const dt = useDateTime();
   const { data, isLoading, error } = useQuery<Standing>({
     queryKey: ["profile-standing", profileId],
     queryFn: () => api.get(`/users/${profileId}/standing`),
@@ -78,7 +80,7 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
   if (isLoading) return <p className="std-muted">{t("standing.loading")}</p>;
   if (error || !data) return <p className="std-muted">{t("standing.error")}</p>;
 
-  const date = (iso: string) => new Date(iso).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" });
+  const date = dt.date;
   const regionName = (() => {
     try { return new Intl.DisplayNames([i18n.language], { type: "region" }); } catch { return null; }
   })();

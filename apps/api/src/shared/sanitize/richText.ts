@@ -1,4 +1,5 @@
 import sanitizeHtml from "sanitize-html";
+import { EMBED_ID_RE, EMBED_TYPE_RE } from "@xentium/contracts";
 
 // Server-side HTML sanitizer for all user-authored rich text written through a
 // TipTap / MiniEditor / ForumEditor surface (article comments §33, profile-wall
@@ -47,6 +48,9 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     li: ["data-type", "data-checked"],
     input: ["type", "checked", "disabled"],
     img: ["src", "alt", "title", "class", "data-code"],
+    // A plugin embed's placeholder (a poll): `<div class="xt-embed" data-xt-embed=… data-id=…>`.
+    // It carries only a reference; the plugin's own endpoint decides who sees what.
+    div: ["class", "data-xt-embed", "data-id"],
     // Alignment is an inline style — the only style allowed, and only these values.
     ...Object.fromEntries(ALIGNABLE.map((tag) => [tag, ["style"]])),
   },
@@ -57,6 +61,7 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     code: [/^language-[\w-]+$/],
     pre: [/^language-[\w-]+$/],
     img: ["xt-emoji"],
+    div: ["xt-embed"],
   },
   // Only safe link protocols — blocks javascript:, data:, vbscript:, etc.
   allowedSchemes: ["http", "https", "mailto"],
@@ -66,6 +71,15 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     // Force external links to be safe (no reverse-tabnabbing, no referrer leak).
     a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer nofollow" }),
     // A stored task box is a picture of the state, never a form control.
+    // An embed placeholder keeps its attributes only when BOTH are well-formed (the
+    // shared contract's rules); anything else becomes a plain div.
+    div: (tagName, attribs): sanitizeHtml.Tag => {
+      const type = attribs["data-xt-embed"];
+      const id = attribs["data-id"];
+      return type !== undefined && EMBED_TYPE_RE.test(type) && id !== undefined && EMBED_ID_RE.test(id)
+        ? { tagName, attribs: { class: "xt-embed", "data-xt-embed": type, "data-id": id } }
+        : { tagName, attribs: {} as sanitizeHtml.Attributes };
+    },
     input: (tagName, attribs) => ({
       tagName,
       attribs: { type: "checkbox", disabled: "disabled", ...(attribs.checked !== undefined ? { checked: "checked" } : {}) },

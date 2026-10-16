@@ -531,6 +531,14 @@
 /* The popovers that hang off the dock rather than off one button. */
 .nvc-dock__pop { position: absolute; left: 12px; bottom: 100%; }
 
+/* A plugin tool's panel (a poll): core's card, sized for a small form. */
+.nvc-pop--tool {
+  width: min(440px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow: auto;
+  padding: 14px;
+}
+
 .nvc-blockpick { position: relative; flex: none; }
 
 /* Glyph column in the block picker — a letter, not an icon, so the sizes read. */

@@ -46,6 +46,10 @@ import { COMPOSER_TOOLS } from "./composerTools";
 import { buildMentionSuggestion } from "./mentions";
 import { BlockPicker, OverflowTray, LinkPopover, EmojiPicker } from "./popovers";
 import { EmojiNode } from "./emojiNode";
+import { EmbedNode } from "./embedNode";
+import { slotRegistry } from "../../plugins/slotRegistry";
+import { userCan } from "../../lib/authStore";
+import { RichHtml } from "../RichHtml";
 import { useComposerConfig } from "./useComposerConfig";
 import "./Composer.scss";
 import { Username } from "../Username";
@@ -157,6 +161,13 @@ export interface ComposerProps {
   toolbarPosition?: "top" | "bottom";
   /** Words and characters, under the body. `panel` + `top` shows them by default. */
   showStats?: boolean;
+  /**
+   * What is being written, as a content kind — `forum.post`, `article`. Plugin tools
+   * (`slotRegistry.registerComposerTool`) are offered only on the surfaces they list,
+   * so a surface that does not say what it is gets none: a poll must never be
+   * insertable where nothing would attach it.
+   */
+  surface?: string;
 }
 
 /** ⌘ on a Mac, Ctrl everywhere else — the hint has to match the actual key. */
@@ -171,7 +182,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   disabled, onSubmit, submitLabel, busy,
   onCancel, minHeight, className, replyTo, onDismissReply,
   canAttach, onAttach, onDropFiles, enterSends, submitInBar = true,
-  toolbarPosition = "bottom", showStats, renderPreview,
+  toolbarPosition = "bottom", showStats, renderPreview, surface,
 }, ref) {
   const { t } = useTranslation("common");
   const { user } = useAuth();
@@ -184,7 +195,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   /** `inline` starts closed; every other variant is open from the start. */
   const [open, setOpen] = useState(variant !== "inline");
   const [mode, setMode] = useState<"write" | "preview">("write");
-  const [popover, setPopover] = useState<null | "overflow" | "link" | "emoji">(null);
+  /** `plugin:<toolId>` is a plugin tool's panel. */
+  const [popover, setPopover] = useState<null | "overflow" | "link" | "emoji" | `plugin:${string}`>(null);
+  // Read once per render: plugin bundles register before the app mounts.
+  const pluginTools = slotRegistry.getComposerTools(surface)
+    .filter((tool) => !tool.permission || userCan(user, tool.permission));
+  const openTool = popover?.startsWith("plugin:") ? pluginTools.find((x) => `plugin:${x.id}` === popover) : undefined;
   /** `dock` hides formatting behind `Aa` — chat first, editor second. */
   const [showTools, setShowTools] = useState(variant !== "dock");
   const prevInitial = useRef<string | undefined>(undefined);
@@ -224,6 +240,9 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
       Placeholder.configure({ placeholder: placeholder ?? t("composer.placeholder") }),
       // The site's own emojis (ACP → Content → Emojis), inline images.
       EmojiNode,
+      // Plugin embeds (a poll). Present everywhere, so content that holds one is never
+      // stripped by an editor that does not offer the tool.
+      EmbedNode,
       /**
        * ⚠ Mentions on EVERY surface now, unless an admin switched them off. The
        * extension has to be present from the start: TipTap's extension list is fixed
@@ -386,6 +405,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
               </button>
             );
           })}
+
+          {pluginTools.map((tool) => (
+            <button
+              key={tool.id}
+              type="button"
+              title={tool.label}
+              aria-label={tool.label}
+              className={`nvc-bar__tool${popover === `plugin:${tool.id}` ? " is-on" : ""}`}
+              disabled={disabled}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => setPopover((p) => (p === `plugin:${tool.id}` ? null : `plugin:${tool.id}`))}
+            >
+              <FontAwesomeIcon className="nvc-ic" icon={tool.icon as never} />
+            </button>
+          ))}
 
           {hasOverflow && (
             <div className="nvc-bar__more">
@@ -620,6 +654,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 onPick={(emoji) => editor?.chain().focus().insertContent({ type: "xtEmoji", attrs: { src: emoji.url, code: emoji.shortcode } }).run()} />
             </div>
           )}
+          {openTool && editor && (
+            <div className="nvc-dock__pop">
+              {/* The card frame is core's, so every plugin panel sits on the same
+                  surface as the link and emoji popovers. */}
+              <div className="nvc-pop nvc-pop--tool" role="dialog" aria-label={openTool.label}>
+              {openTool.panel({
+                onClose:  () => setPopover(null),
+                onInsert: (embed) => {
+                  setPopover(null);
+                  editor.chain().focus().insertContent({ type: "xtEmbed", attrs: { type: embed.type, id: embed.id } }).run();
+                },
+              })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -657,13 +706,11 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
             renderPreview && !editor?.isEmpty
               ? <div className="nvc-preview nvc-preview--surface">{renderPreview(editor?.getHTML() ?? "")}</div>
               : (
-                <div
+                <RichHtml
                   className="nvc-preview xt-rich"
-                  dangerouslySetInnerHTML={{
-                    __html: editor?.isEmpty
-                      ? `<p class="nvc-preview__empty">${t("composer.previewEmpty")}</p>`
-                      : (editor?.getHTML() ?? ""),
-                  }}
+                  html={editor?.isEmpty
+                    ? `<p class="nvc-preview__empty">${t("composer.previewEmpty")}</p>`
+                    : (editor?.getHTML() ?? "")}
                 />
               )
           )}
@@ -683,6 +730,21 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
                 onClose={() => setPopover(null)}
                 onPick={(emoji) => editor?.chain().focus().insertContent({ type: "xtEmoji", attrs: { src: emoji.url, code: emoji.shortcode } }).run()}
               />
+            </div>
+          )}
+          {openTool && editor && (
+            <div className="nvc-dock__pop">
+              {/* The card frame is core's, so every plugin panel sits on the same
+                  surface as the link and emoji popovers. */}
+              <div className="nvc-pop nvc-pop--tool" role="dialog" aria-label={openTool.label}>
+              {openTool.panel({
+                onClose:  () => setPopover(null),
+                onInsert: (embed) => {
+                  setPopover(null);
+                  editor.chain().focus().insertContent({ type: "xtEmbed", attrs: { type: embed.type, id: embed.id } }).run();
+                },
+              })}
+              </div>
             </div>
           )}
         </div>

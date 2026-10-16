@@ -1,7 +1,7 @@
 import i18n from "i18next";
 import { LegalConsentGate } from "../features/auth/LegalConsentGate";
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { RouterProvider, createBrowserRouter, Outlet, Navigate, useLocation } from "react-router-dom";
 import { ToastHost } from "../components/ToastHost";
 import { DialogHost } from "../components/DialogHost";
@@ -15,8 +15,6 @@ import { RegisterPanel } from "../features/auth/doorway/RegisterPanel";
 import { ForgotPanel, MagicLinkLanding, ResetPanel, SignInComplete } from "../features/auth/doorway/RecoveryPanels";
 import { ArticlesListPage } from "../features/articles/ArticlesListPage";
 import { ArticleReaderPage } from "../features/articles/ArticleReaderPage";
-import { ArticleEditorPage } from "../features/articles/ArticleEditorPage";
-import { InstallPage } from "../pages/InstallPage";
 import { HomePage }   from "../pages/HomePage";
 import { SearchPage } from "../pages/SearchPage";
 import { LegalPage } from "../features/legal/LegalPage";
@@ -37,51 +35,59 @@ import { LAYOUTS_QUERY_KEY, isDraftLayout, isLayoutPreview } from "../layout/use
 import { installPreviewBridge } from "../layout/previewBridge";
 import { slotRegistry } from "../plugins/slotRegistry";
 // ACP shell
-import { AcpLayout } from "../features/admin/AcpLayout";
 // ACP pages — core
-import { DashboardPage }     from "../features/admin/pages/DashboardPage";
-import { UserListPage }      from "../features/admin/pages/UserListPage";
-import { UserDetailPage }    from "../features/admin/pages/UserDetailPage";
-import { ProfileFieldsPage } from "../features/admin/pages/ProfileFieldsPage";
-import { GroupsPage }        from "../features/admin/pages/GroupsPage";
-import { GroupDetailPage }   from "../features/admin/pages/groups/GroupDetailPage";
-import { BadgesPage }        from "../features/admin/pages/BadgesPage";
-import { PermissionsPage }   from "../features/admin/pages/PermissionsPage";
-import { ProgressionPage }   from "../features/admin/pages/ProgressionPage";
-import { ArticlesPage }      from "../features/admin/pages/ArticlesPage";
-import { CategoriesPage }    from "../features/admin/pages/CategoriesPage";
-import { LegalDocumentsPage } from "../features/admin/pages/LegalDocumentsPage";
-import { EmojisPage } from "../features/admin/pages/EmojisPage";
-import { SettingsPage }      from "../features/admin/pages/SettingsPage";
-import { EmailPage } from "../features/admin/pages/EmailPage";
-import { AboutPage }         from "../features/admin/pages/AboutPage";
 // ACP pages — moderation
-import { ModLogPage }      from "../features/admin/pages/ModLogPage";
-import { ModSettingsPage } from "../features/admin/pages/ModSettingsPage";
-import { ModTemplatesPage } from "../features/admin/pages/ModTemplatesPage";
-import { ReviewCasesPage } from "../features/admin/pages/ReviewCasesPage";
 // ACP pages — appearance
-import { ComposerSettings } from "../features/admin/pages/ComposerSettings";
-import { StudioRedirect, ThemeStudioPage } from "../features/admin/pages/ThemeStudioPage";
-import { ThemesPage }       from "../features/admin/pages/ThemesPage";
-import { NavigationPage }   from "../features/admin/pages/NavigationPage";
 // ACP pages — extensions
-import { MarketplacePage } from "../features/admin/pages/MarketplacePage";
-import { InstalledPage }   from "../features/admin/pages/InstalledPage";
-import { UpdatesPage }     from "../features/admin/pages/UpdatesPage";
-import { UploadPage }      from "../features/admin/pages/UploadPage";
-import { LicensePage }     from "../features/admin/pages/LicensePage";
 // ACP pages — system
 import { MembersOnly } from "../components/MembersOnly";
-import { ErrorReferencePage }    from "../features/admin/pages/ErrorReferencePage";
-import { ErrorLogPage }          from "../features/admin/pages/ErrorLogPage";
-import { MigrationHistoryPage }  from "../features/admin/pages/MigrationHistoryPage";
-import { ActivityLogPage }       from "../features/admin/pages/ActivityLogPage";
-import { ScheduledJobsPage }     from "../features/admin/pages/ScheduledJobsPage";
 import { FatalErrorOverlay }     from "../components/FatalErrorOverlay";
 import { CanonicalManager }      from "../components/CanonicalManager";
 import { RouteErrorPage }        from "../features/errors/RouteErrorPage";
 import { ErrorBoundary }         from "../features/errors/ErrorBoundary";
+
+// ── Loaded on demand ─────────────────────────────────────────────────────────
+// The ACP, the article editor and the installer are most of the app's code and
+// most visitors never open them, so they are separate chunks fetched on first use.
+// ⚠ A page here must not be needed for its side effects at startup.
+const ArticleEditorPage = lazy(() => import("../features/articles/ArticleEditorPage").then((m) => ({ default: m.ArticleEditorPage })));
+const InstallPage = lazy(() => import("../pages/InstallPage").then((m) => ({ default: m.InstallPage })));
+const AcpLayout = lazy(() => import("../features/admin/AcpLayout").then((m) => ({ default: m.AcpLayout })));
+const DashboardPage = lazy(() => import("../features/admin/pages/DashboardPage").then((m) => ({ default: m.DashboardPage })));
+const UserListPage = lazy(() => import("../features/admin/pages/UserListPage").then((m) => ({ default: m.UserListPage })));
+const UserDetailPage = lazy(() => import("../features/admin/pages/UserDetailPage").then((m) => ({ default: m.UserDetailPage })));
+const ProfileFieldsPage = lazy(() => import("../features/admin/pages/ProfileFieldsPage").then((m) => ({ default: m.ProfileFieldsPage })));
+const GroupsPage = lazy(() => import("../features/admin/pages/GroupsPage").then((m) => ({ default: m.GroupsPage })));
+const GroupDetailPage = lazy(() => import("../features/admin/pages/groups/GroupDetailPage").then((m) => ({ default: m.GroupDetailPage })));
+const BadgesPage = lazy(() => import("../features/admin/pages/BadgesPage").then((m) => ({ default: m.BadgesPage })));
+const PermissionsPage = lazy(() => import("../features/admin/pages/PermissionsPage").then((m) => ({ default: m.PermissionsPage })));
+const ProgressionPage = lazy(() => import("../features/admin/pages/ProgressionPage").then((m) => ({ default: m.ProgressionPage })));
+const ArticlesPage = lazy(() => import("../features/admin/pages/ArticlesPage").then((m) => ({ default: m.ArticlesPage })));
+const CategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
+const LegalDocumentsPage = lazy(() => import("../features/admin/pages/LegalDocumentsPage").then((m) => ({ default: m.LegalDocumentsPage })));
+const EmojisPage = lazy(() => import("../features/admin/pages/EmojisPage").then((m) => ({ default: m.EmojisPage })));
+const SettingsPage = lazy(() => import("../features/admin/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
+const EmailPage = lazy(() => import("../features/admin/pages/EmailPage").then((m) => ({ default: m.EmailPage })));
+const AboutPage = lazy(() => import("../features/admin/pages/AboutPage").then((m) => ({ default: m.AboutPage })));
+const ModLogPage = lazy(() => import("../features/admin/pages/ModLogPage").then((m) => ({ default: m.ModLogPage })));
+const ModSettingsPage = lazy(() => import("../features/admin/pages/ModSettingsPage").then((m) => ({ default: m.ModSettingsPage })));
+const ModTemplatesPage = lazy(() => import("../features/admin/pages/ModTemplatesPage").then((m) => ({ default: m.ModTemplatesPage })));
+const ReviewCasesPage = lazy(() => import("../features/admin/pages/ReviewCasesPage").then((m) => ({ default: m.ReviewCasesPage })));
+const ComposerSettings = lazy(() => import("../features/admin/pages/ComposerSettings").then((m) => ({ default: m.ComposerSettings })));
+const StudioRedirect = lazy(() => import("../features/admin/pages/ThemeStudioPage").then((m) => ({ default: m.StudioRedirect })));
+const ThemeStudioPage = lazy(() => import("../features/admin/pages/ThemeStudioPage").then((m) => ({ default: m.ThemeStudioPage })));
+const ThemesPage = lazy(() => import("../features/admin/pages/ThemesPage").then((m) => ({ default: m.ThemesPage })));
+const NavigationPage = lazy(() => import("../features/admin/pages/NavigationPage").then((m) => ({ default: m.NavigationPage })));
+const MarketplacePage = lazy(() => import("../features/admin/pages/MarketplacePage").then((m) => ({ default: m.MarketplacePage })));
+const InstalledPage = lazy(() => import("../features/admin/pages/InstalledPage").then((m) => ({ default: m.InstalledPage })));
+const UpdatesPage = lazy(() => import("../features/admin/pages/UpdatesPage").then((m) => ({ default: m.UpdatesPage })));
+const UploadPage = lazy(() => import("../features/admin/pages/UploadPage").then((m) => ({ default: m.UploadPage })));
+const LicensePage = lazy(() => import("../features/admin/pages/LicensePage").then((m) => ({ default: m.LicensePage })));
+const ErrorReferencePage = lazy(() => import("../features/admin/pages/ErrorReferencePage").then((m) => ({ default: m.ErrorReferencePage })));
+const ErrorLogPage = lazy(() => import("../features/admin/pages/ErrorLogPage").then((m) => ({ default: m.ErrorLogPage })));
+const MigrationHistoryPage = lazy(() => import("../features/admin/pages/MigrationHistoryPage").then((m) => ({ default: m.MigrationHistoryPage })));
+const ActivityLogPage = lazy(() => import("../features/admin/pages/ActivityLogPage").then((m) => ({ default: m.ActivityLogPage })));
+const ScheduledJobsPage = lazy(() => import("../features/admin/pages/ScheduledJobsPage").then((m) => ({ default: m.ScheduledJobsPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -112,11 +118,11 @@ function InstallRoute() {
   // (finalize step) — without the latch a background refetch would yank the
   // user off the completion screen onto "/". Leaving is the user's click.
   const lockedOpen = useRef(false);
-  if (lockedOpen.current) return <InstallPage />;
+  if (lockedOpen.current) return <Suspense fallback={null}><InstallPage /></Suspense>;
   if (isLoading) return <Loading />;
   if (data?.installed || (error as any)?.status === 410) return <Navigate to="/" replace />;
   lockedOpen.current = true;
-  return <InstallPage />;
+  return <Suspense fallback={null}><InstallPage /></Suspense>;
 }
 
 const INSTALL_PATHS = new Set(["/install", "/installer"]);
@@ -280,7 +286,7 @@ function buildRouter() {
       // ── ACP ──────────────────────────────────────────────────────────────
       {
         path: "/admin",
-        element: <AcpLayout />,
+        element: <Suspense fallback={null}><AcpLayout /></Suspense>,
         children: [
           // Core
           { index: true,              element: <DashboardPage /> },

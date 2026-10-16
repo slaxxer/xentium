@@ -195,10 +195,11 @@ export function UserList({ userId, type }: { userId: string; type: "followers" |
 
 function ArticleRow({ a }: { a: ArticleListItem }) {
   const { t } = useTranslation("profiles");
+  const dt = useDateTime();
   // viewCount placeholder: real article view tracking arrives with analytics
   // (Phase 8 onward); zero for now.
   const dateLabel = a.publishedAt
-    ? new Date(a.publishedAt).toLocaleDateString(uiLocale(), { year: "numeric", month: "short", day: "numeric" })
+    ? dt.date(a.publishedAt)
     : t("unpublished");
   const views = 0;
 

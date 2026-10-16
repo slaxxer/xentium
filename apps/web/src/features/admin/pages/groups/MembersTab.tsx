@@ -11,6 +11,7 @@ import { apiErrorMessage } from "../../../../lib/swal";
 import { toast } from "../../../../lib/toast";
 import type { Group } from "./groupModel";
 import { Username } from "../../../../components/Username";
+import { siteTime } from "../../../../lib/datetime";
 
 interface MemberRow {
   id: string;
@@ -27,7 +28,7 @@ const PAGE = 25;
 // whole set — so adding or removing one membership always sends the others too.
 
 export function MembersTab({ group, color }: { group: Group; color: string }) {
-  const { t, i18n } = useTranslation("acp");
+  const { t } = useTranslation("acp");
   const qc = useQueryClient();
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
@@ -73,7 +74,7 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
   };
 
   const total = data?.meta.total ?? group._count.users;
-  const joined = (d: string) => new Date(d).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" });
+  const joined = (d: string) => siteTime.date(d);
 
   return (
     <section className="gp-card">

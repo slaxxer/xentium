@@ -672,5 +672,8 @@
     "locked": "Sperrhinweis anzeigen",
     "inheritedLabel": "Geerbte Einschränkung:",
     "inheritedBody": "Dieser Knoten kann nicht weniger eingeschränkt sein als sein übergeordneter Knoten."
+  },
+  "embed": {
+    "unavailable": "Dieser Inhalt ist nicht verfügbar."
   }
 }

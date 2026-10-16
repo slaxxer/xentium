@@ -15,6 +15,21 @@
     object-fit: contain;
   }
 
+  /* A plugin embed (a poll): a block the plugin draws itself. In the editor it is
+     one selectable unit; the ring shows it is selected (Backspace removes it). */
+  .xt-embed {
+    display: block;
+    border-radius: var(--radius-md);
+    &.is-selected { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  }
+  .xt-embed__missing {
+    padding: 10px 14px;
+    border: 1px dashed var(--c-border);
+    border-radius: var(--radius-md);
+    color: var(--c-fg-subtle);
+    font-size: 0.9em;
+  }
+
   h1 { font-size: 1.5em; font-weight: 700; }
   h2 { font-size: 1.3em; font-weight: 700; }
   h3 { font-size: 1.1em; font-weight: 700; }

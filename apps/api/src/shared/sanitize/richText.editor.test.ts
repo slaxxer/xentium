@@ -84,3 +84,19 @@ describe("custom emojis", () => {
     }
   });
 });
+
+describe("plugin embeds", () => {
+  const ID = "3f2c1e0a-1b2c-4d5e-8f90-123456789abc";
+  const embed = `<div class="xt-embed" data-xt-embed="poll" data-id="${ID}"></div>`;
+
+  it("keeps an embed placeholder exactly as the editor writes it", () => {
+    expect(sanitizeRichText(`<p>a</p>${embed}<p>b</p>`)).toBe(`<p>a</p>${embed}<p>b</p>`);
+  });
+
+  it("strips a malformed placeholder down to a plain div", () => {
+    expect(sanitizeRichText('<div class="xt-embed" data-xt-embed="Poll!" data-id="x"></div>')).toBe("<div></div>");
+    expect(sanitizeRichText('<div data-xt-embed="poll" data-id="a b"></div>')).toBe("<div></div>");
+    expect(sanitizeRichText('<div data-xt-embed="poll"></div>')).toBe("<div></div>");
+    expect(sanitizeRichText('<div class="evil" data-id="x" onclick="a()"></div>')).toBe("<div></div>");
+  });
+});

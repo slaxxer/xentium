@@ -4,6 +4,7 @@ import { faCheck, faCopy, faTriangleExclamation } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { ReleaseNotes } from "../../../components/ReleaseNotes";
 import "./CoreUpdate.scss";
+import { siteTime } from "../../../lib/datetime";
 
 /**
  * The pieces the core-update dialog and the Updates card share, so the two can
@@ -106,7 +107,8 @@ export function UpdateCommand({ update }: { update: CoreUpdate }) {
 }
 
 function releaseDate(iso: string | null, lang: string) {
-  return iso ? new Date(iso).toLocaleDateString(lang, { day: "numeric", month: "short", year: "numeric" }) : null;
+  void lang; // the site's own date style and language (lib/datetime)
+  return iso ? siteTime.date(iso) : null;
 }
 
 /**

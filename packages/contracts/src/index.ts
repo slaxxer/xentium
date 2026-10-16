@@ -17,6 +17,7 @@ export * from './icons.js';
 export * from './layout.js';
 export * from './siteFrame.js';
 export * from './composer.js';
+export * from './embeds.js';
 
 export type ThemeMode = 'light' | 'dark';
 
