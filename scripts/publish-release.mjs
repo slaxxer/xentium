@@ -6,7 +6,9 @@
  *   node scripts/publish-release.mjs --dry-run         # show what would happen
  *   node scripts/publish-release.mjs --provenance      # what CI runs
  *   node scripts/publish-release.mjs --only=server
- *   node scripts/publish-release.mjs --provenance --latest   # also point `latest` at it
+ *
+ * It publishes under the prerelease id (`alpha`) and leaves `latest` alone: moving
+ * that is a separate, manual step (scripts/promote-latest.mjs) that CI cannot do.
  *
  * ONE script for all four, because a release is one act: every workspace package
  * carries the same version (scripts/set-version.mjs keeps them in lockstep), and
@@ -52,16 +54,6 @@ const provenance = flag("provenance");
 const only = value("only");
 const expectVersion = value("expect-version");
 const tagOverride = value("tag");
-/**
- * Also point `latest` at this version on every package, after a real publish.
- *
- * The prerelease id stays the PUBLISH tag (so a failed run never leaves `latest`
- * on a half-published version); `latest` moves only once all ten are up. During
- * the alpha this is what we want — npmjs.com and a bare `npm install xentium`
- * show the newest build — and moving it by hand now needs a 2FA confirmation per
- * package, while the release workflow can do it with its Trusted Publishing login.
- */
-const promoteLatest = flag("latest");
 
 const run = (cmd, args, opts = {}) => {
   const out = execFileSync(cmd, args, { cwd: ROOT, encoding: "utf8", ...opts });
@@ -108,7 +100,14 @@ if (!dryRun && run("git", ["status", "--porcelain"])) {
 }
 
 // ── 3. Credentials, before anything is built ─────────────────────────────────
-if (!dryRun) {
+// In the release workflow there is no login to check: npm Trusted Publishing signs
+// each `npm publish` in with the workflow's OIDC identity (`id-token: write`), so
+// `npm whoami` fails there by design. npm itself refuses the upload if this
+// workflow is not the package's trusted publisher.
+const trustedPublishing = !!process.env.GITHUB_ACTIONS && !!process.env.ACTIONS_ID_TOKEN_REQUEST_URL;
+if (!dryRun && trustedPublishing) {
+  console.log("npm: trusted publishing (GitHub Actions OIDC identity)");
+} else if (!dryRun) {
   try {
     const who = run("npm", ["whoami"], { stdio: ["ignore", "pipe", "ignore"] });
     console.log(`npm: authenticated as ${who}`);
@@ -202,29 +201,7 @@ for (const { part, name, dir } of INSTALLERS) {
   published.push(name);
 }
 
-// ── 7. Point `latest` at it (opt-in) ─────────────────────────────────────────
-// Only after every part is up, and only for a full release: moving `latest` on a
-// partial run would point it at a version some packages do not have.
-const ALL_PACKAGES = [
-  "@xentium/contracts", "@xentium/errors", "@xentium/server-kit", "@xentium/auth",
-  "@xentium/plugin-engine", "@xentium/plugin-kit", "@xentium/plugin-sdk",
-  "@xentium/server", "xentium", "create-xentium",
-];
-if (promoteLatest && tag !== "latest") {
-  heading("latest");
-  if (dryRun) {
-    console.log(`would point latest at ${version} on ${ALL_PACKAGES.length} packages`);
-  } else if (only && only !== "all") {
-    console.log("skipped: --latest only applies to a full release (no --only)");
-  } else {
-    for (const name of ALL_PACKAGES) {
-      if (!isPublished(name)) fail(`${name}@${version} is not on the registry`, "latest was not moved on any package after this one");
-      run("npm", ["dist-tag", "add", `${name}@${version}`, "latest"], { stdio: "inherit" });
-    }
-  }
-}
-
-// ── 8. What is left to do, which is the part that reaches admins ─────────────
+// ── 7. What is left to do, which is the part that reaches admins ─────────────
 heading("done");
 if (ranFramework) console.log("framework:  see above");
 if (published.length) console.log(`published: ${published.join(", ")}`);
@@ -235,7 +212,10 @@ if (dryRun) {
   console.log("\nDry run — nothing was published.");
 } else {
   console.log(`
-${version} is on npm. Nothing has been ANNOUNCED: an installed site learns about
+${version} is on npm under "${tag}".${tag === "latest" ? "" : ` \`latest\` has NOT moved: run
+\`node scripts/promote-latest.mjs\` on your own login once every part is up.`}
+
+Nothing has been ANNOUNCED: an installed site learns about
 a release from its update source, not from the registry, and that record carries
 the urgency deciding whether an admin is interrupted. Publishing and announcing
 are separate acts on purpose, and the second one is a person's call.`);
