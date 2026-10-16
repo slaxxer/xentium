@@ -1,0 +1,51 @@
+# Announce a published release to installed sites, from the Actions tab.
+#
+# The same record `./release.sh --announce-only` registers on the marketplace,
+# for when nobody is at a terminal. Run it only after the Release workflow has
+# published the version and `latest` points at it: sites install from npm.
+#
+# Needs two repository secrets (Settings → Secrets and variables → Actions):
+#   XENTIUM_OPS_EMAIL     a marketplace staff account
+#   XENTIUM_OPS_PASSWORD  its password
+name: Announce
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to announce (already on npm), e.g. 1.0.0-alpha.13"
+        required: true
+        type: string
+      severity:
+        description: "How urgent it is for sites on an older version"
+        required: true
+        default: normal
+        type: choice
+        options: [normal, security, critical]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: announce
+  cancel-in-progress: false
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    steps:
+      # The branch this runs on, not the tag: its CHANGELOG is the latest release's
+      # notes, and tags (for the read-back) come with fetch-depth 0.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Announce
+        env:
+          XENTIUM_OPS_EMAIL: ${{ secrets.XENTIUM_OPS_EMAIL }}
+          XENTIUM_OPS_PASSWORD: ${{ secrets.XENTIUM_OPS_PASSWORD }}
+          VERSION: ${{ inputs.version }}
+          SEVERITY: ${{ inputs.severity }}
+        run: node scripts/announce-release.mjs "$VERSION" "$SEVERITY"
