@@ -19,6 +19,7 @@ import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
 import { AccountCard } from "../components/AccountCard";
 import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported } from "../../auth/doorway/signInClient";
+import { useDateTime } from "../../../lib/datetime";
 
 type Provider = "google" | "github" | "discord";
 
@@ -38,9 +39,9 @@ const PROVIDER = {
   discord: { name: "Discord", icon: faDiscord },
 } as const;
 
+/** In the site's time settings (ACP → System Settings). */
 function useDate() {
-  const { i18n } = useTranslation();
-  return (iso: string) => new Date(iso).toLocaleDateString(i18n.language, { day: "numeric", month: "short", year: "numeric" });
+  return useDateTime().date;
 }
 
 export function PasskeysCard() {

@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { ArticleContent } from "../articles/components/ArticleContent";
 import "./LegalPage.scss";
+import { useDateTime } from "../../lib/datetime";
 
 /**
  * `/legal/:key` — terms, privacy, disclaimer, imprint.
@@ -16,7 +17,8 @@ import "./LegalPage.scss";
  * is the translated name of the document, never admin text.
  */
 export function LegalPage() {
-  const { t, i18n } = useTranslation("common");
+  const { t } = useTranslation("common");
+  const dt = useDateTime();
   const { key = "" } = useParams<{ key: string }>();
   const { user } = useAuth();
   const valid = isLegalDocumentKey(key);
@@ -35,7 +37,7 @@ export function LegalPage() {
   }
 
   const doc = query.data;
-  const updated = new Date(doc.publishedAt).toLocaleDateString(i18n.language, { dateStyle: "long" });
+  const updated = dt.date(doc.publishedAt);
   // An edit link only for those the editor would not 403.
   const canEdit = userCan(user, "legal.manage");
 

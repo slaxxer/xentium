@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import type { TimeConfig } from "../lib/datetime";
+import { setLiveTimeConfig } from "../lib/liveTimeConfig";
 
 export type FeatureKey = "articles" | "home" | "members";
 
@@ -39,7 +40,9 @@ export interface SiteConfig {
 export function useSiteConfig() {
   return useQuery<SiteConfig>({
     queryKey: ["site-config"],
-    queryFn: () => api.get("/site/config"),
+    // The time settings are also kept outside React, for formatters that are not
+    // components (`siteTime` in lib/datetime).
+    queryFn: () => api.get<SiteConfig>("/site/config").then((c) => { setLiveTimeConfig(c.time); return c; }),
     staleTime: 300_000,
   });
 }

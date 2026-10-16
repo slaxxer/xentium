@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from "react";
+import { Fragment, Suspense, useEffect, useRef } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -20,7 +20,7 @@ import { useAcpLayout } from "./nav/acpChrome";
 import { IconScope } from "../../lib/iconScope";
 import { AcpSaveBar } from "./AcpSaveBar";
 import { useDraftEpoch } from "../../hooks/useDraft";
-import { uiLocale } from "../../lib/i18n";
+import { siteTime } from "../../lib/datetime";
 
 // The ACP wears one of two navigation chromes, chosen per admin in the user
 // menu and remembered in localStorage (nav/acpChrome.ts):
@@ -240,7 +240,7 @@ function useAcpAlerts() {
       if (status!.licenseDomain) rows.push({ label: t("license.expiryDialogDomain"), value: status!.licenseDomain });
       rows.push({
         label:  t("license.expiryDialogExpires"),
-        value:  status!.licenseExpiresAt ? new Date(status!.licenseExpiresAt).toLocaleDateString(uiLocale(), { year: "numeric", month: "long", day: "numeric" }) : "—",
+        value:  status!.licenseExpiresAt ? siteTime.date(status!.licenseExpiresAt) : "—",
         marker: expired ? t("license.expiryDialogExpiredMarker") : t("license.expiryDialogInDays", { count: Math.max(status!.licenseDaysLeft ?? 0, 0) }),
       });
 
@@ -303,7 +303,9 @@ function AcpShell() {
       {/* A crashing ACP page must not take the nav with it — an admin needs
           a way to click somewhere else. Clears on navigation. */}
       <RouteErrorBoundary variant="inline">
-        <Fragment key={draftEpoch}><Outlet /></Fragment>
+        {/* ACP pages are loaded on demand (app/App.tsx): the shell stays put while
+            a page's chunk arrives. */}
+        <Fragment key={draftEpoch}><Suspense fallback={<div className="acp-page-loading" aria-busy="true" />}><Outlet /></Suspense></Fragment>
       </RouteErrorBoundary>
       {/* ONE save bar for every settings surface on every ACP page. */}
       <AcpSaveBar />

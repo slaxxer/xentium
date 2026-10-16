@@ -15,6 +15,10 @@ import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { filterHiddenBadges } from "../../shared/utils/badgeVisibility.js";
 import { enforceArticleLength, enforceDailyArticleLimit } from "../../shared/middleware/contentLimits.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
+import { CorePermissions } from "@xentium/contracts";
+import { contentRegistry } from "../../core/content-registry/content-registry.js";
+import { embedRegistry } from "../../core/embed-registry/embed-registry.js";
 
 const WORDS_PER_MINUTE = 200;
 
@@ -90,6 +94,24 @@ function canViewArticle(
   }
 }
 
+/**
+ * Articles are a content kind core owns: a plugin embed inside one (a poll) is
+ * exactly as visible as the article — the same rule `getBySlug` applies.
+ */
+contentRegistry.register("core", {
+  kind: "article",
+  async canView(id, viewerId) {
+    const article = await articleRepository.findById(id);
+    if (!article) return false;
+    const canEditAny = !!viewerId && (await hasPermission(viewerId, CorePermissions.ARTICLE_EDIT_ANY));
+    return canViewArticle(article, viewerId ?? undefined, canEditAny);
+  },
+});
+
+/** Tell embed owners what the saved body now holds. Never fails the save. */
+const syncArticleEmbeds = (article: { id: string; authorId: string; body: unknown }) =>
+  embedRegistry.sync({ kind: "article", id: article.id, authorId: article.authorId }, article.body);
+
 async function upsertTags(
   tx: Prisma.TransactionClient,
   tagNames: string[],
@@ -153,6 +175,7 @@ export const articleService = {
       });
     });
 
+    await syncArticleEmbeds(created);
     return shapeDetail(created);
   },
 
@@ -240,6 +263,10 @@ export const articleService = {
       const fresh = await tx.article.findUniqueOrThrow({ where: { id }, include: articleInclude });
       return { fresh, didCreateRevision };
     });
+
+    // The article's own author, not the editor: an embed attaches only what the
+    // writer of the content created.
+    if (willChangeBody) await syncArticleEmbeds(updated.fresh);
 
     if (updated.didCreateRevision) {
       await queues.articleRevisionCleanup.add("cleanup", { articleId: id });

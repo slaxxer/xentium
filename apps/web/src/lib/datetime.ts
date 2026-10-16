@@ -9,7 +9,9 @@
  * Exposed to plugins as the `webDateTime` host global.
  */
 import { useTranslation } from "react-i18next";
+import i18next from "i18next";
 import { useSiteConfig } from "../hooks/useSiteConfig";
+import { liveTimeConfig } from "./liveTimeConfig";
 
 export interface TimeConfig {
   /** IANA zone, or null = the visitor's own. */
@@ -95,3 +97,18 @@ export function useDateTime() {
     stamp: (v: string | number | Date) => formatStamp(v, cfg, lang),
   };
 }
+
+/**
+ * The same formatters for code that is not a component (a table's cell helper, a
+ * module-level `fmtDate`). Reads the settings the site config query last loaded,
+ * so it follows the admin's choice like `useDateTime` does; before that query has
+ * answered it uses the defaults.
+ */
+export const siteTime = {
+  date:     (v: string | number | Date) => formatDate(v, cfgNow(), langNow()),
+  time:     (v: string | number | Date) => formatTime(v, cfgNow(), langNow()),
+  dateTime: (v: string | number | Date) => formatDateTime(v, cfgNow(), langNow()),
+  stamp:    (v: string | number | Date) => formatStamp(v, cfgNow(), langNow()),
+};
+const cfgNow = () => liveTimeConfig() ?? DEFAULT_TIME_CONFIG;
+const langNow = () => i18next.resolvedLanguage ?? i18next.language ?? "en";

@@ -356,6 +356,14 @@ export async function disablePlugin(pluginId: string): Promise<void> {
   const { reportTargetRegistry } = await import("../report-target-registry/report-target-registry.js");
   reportTargetRegistry.deregister(pluginId);
 
+  // Embeds stop syncing and the plugin's content kinds stop answering, so its
+  // embeds inside other content — and other plugins' embeds inside its content —
+  // fail closed until it is back.
+  const { embedRegistry } = await import("../embed-registry/embed-registry.js");
+  embedRegistry.deregister(pluginId);
+  const { contentRegistry } = await import("../content-registry/content-registry.js");
+  contentRegistry.deregister(pluginId);
+
   const { statRegistry } = await import("../stat-registry/stat-registry.js");
   statRegistry.deregister(pluginId);
 

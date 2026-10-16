@@ -283,6 +283,40 @@ export interface GroupConfigPanelSlot {
 
 // ── Registry ──────────────────────────────────────────────────────────────────
 
+/**
+ * Something a plugin keeps in its own tables but shows INSIDE written content — a
+ * poll in a forum post or an article. The content stores only a placeholder,
+ * `<div data-xt-embed="<type>" data-id="<id>">`; wherever that content is drawn
+ * (the editor, an article, a post) core swaps the placeholder for `component`.
+ *
+ * The component fetches its own data through the plugin's permission-checked
+ * endpoints, so a placeholder is never a way to read something the viewer may not.
+ */
+export interface EmbedSlot {
+  /** Lowercase letters, digits and dashes — the same rule the sanitizer applies. */
+  type:      string;
+  component: (props: { id: string }) => ReactNode;
+}
+
+/**
+ * A button a plugin adds to the Composer's tool row (e.g. "Poll"). It opens
+ * `panel` beside the bar; the panel calls `onInsert` with the embed it created,
+ * and the Composer puts the placeholder into the document.
+ *
+ * Offered only on the `surfaces` listed (the Composer's `surface` prop, e.g.
+ * `forum.post`, `article`) and only to members holding `permission`.
+ */
+export interface ComposerToolSlot {
+  /** Namespaced: `<pluginId>.<tool>`. */
+  id:          string;
+  icon:        unknown;
+  /** Tooltip and accessible name; a getter is fine, so it follows the language. */
+  readonly label: string;
+  surfaces:    string[];
+  permission?: string;
+  panel:       (props: { onInsert: (embed: { type: string; id: string }) => void; onClose: () => void }) => ReactNode;
+}
+
 class SlotRegistry {
   private profileTabs:       ProfileTabSlot[]       = [];
   private accountSections:   AccountSectionSlot[]   = [];
@@ -303,6 +337,8 @@ class SlotRegistry {
   private userMenuItems:     UserMenuItemSlot[]       = [];
   private layoutWidgets:     LayoutWidgetSlot[]       = [];
   private groupConfigPanels: GroupConfigPanelSlot[]   = [];
+  private embeds:            EmbedSlot[]              = [];
+  private composerTools:     ComposerToolSlot[]       = [];
 
   // Core notification prefixes that always show the system (gear) icon
   /**
@@ -347,6 +383,15 @@ class SlotRegistry {
   registerUserMenuItem(slot: UserMenuItemSlot)              { this._own(slot.id);     this.userMenuItems.push(slot); }
   registerLayoutWidget(slot: LayoutWidgetSlot)              { this._own(slot.id);     this.layoutWidgets.push(slot); }
   registerGroupConfigPanel(slot: GroupConfigPanelSlot)      { this._own(slot.id);     this.groupConfigPanels.push(slot); }
+  /** One renderer per type; a second registration of the same type replaces the first. */
+  registerEmbed(slot: EmbedSlot) {
+    this._own(`embed:${slot.type}`);
+    this.embeds = [...this.embeds.filter((e) => e.type !== slot.type), slot];
+  }
+  registerComposerTool(slot: ComposerToolSlot) {
+    this._own(slot.id);
+    this.composerTools = [...this.composerTools.filter((t) => t.id !== slot.id), slot];
+  }
 
   getProfileTabs()       { return [...this.profileTabs]; }
   getAccountSections()   { return [...this.accountSections]; }
@@ -368,6 +413,11 @@ class SlotRegistry {
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getUserMenuItems()     { return [...this.userMenuItems].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getLayoutWidgets()     { return [...this.layoutWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getEmbed(type: string): EmbedSlot | undefined { return this.embeds.find((e) => e.type === type); }
+  /** The tools a Composer on `surface` may offer; the permission check is the caller's. */
+  getComposerTools(surface: string | undefined): ComposerToolSlot[] {
+    return surface ? this.composerTools.filter((t) => t.surfaces.includes(surface)) : [];
+  }
   getGroupConfigPanels() { return [...this.groupConfigPanels].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
 
   getRoutes(layout?: PluginRoute["layout"]): PluginRoute[] {
@@ -416,6 +466,8 @@ class SlotRegistry {
     this.userMenuItems     = this.userMenuItems.filter((s) => !this._ownedBy(s.id, pluginId));
     this.layoutWidgets     = this.layoutWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this.groupConfigPanels = this.groupConfigPanels.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.embeds            = this.embeds.filter((e) => !this._ownedBy(`embed:${e.type}`, pluginId));
+    this.composerTools     = this.composerTools.filter((t) => !this._ownedBy(t.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });
   }
 }

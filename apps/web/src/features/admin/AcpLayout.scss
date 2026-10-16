@@ -703,3 +703,7 @@ table.acp-table {
   }
 }
 
+
+/* While an ACP page's chunk loads (pages load on demand): holds the content area
+   open so the save bar and footer do not jump up for a moment. */
+.acp-page-loading { min-height: 60vh; }

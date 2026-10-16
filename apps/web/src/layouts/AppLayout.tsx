@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { Outlet } from "react-router-dom";
 import { PubNav } from "./PubNav";
 import { SiteBars } from "./SiteBars";
@@ -38,7 +39,8 @@ export function AppLayout() {
               {/* Page crashes stay contained: nav, footer and the widget outlets keep
                   working, and navigating away clears the error. */}
               <RouteErrorBoundary variant="inline">
-                <Outlet />
+                {/* Some pages (the article editor) load on demand. */}
+                <Suspense fallback={null}><Outlet /></Suspense>
               </RouteErrorBoundary>
             </main>
             <div className="app-frame__foot">

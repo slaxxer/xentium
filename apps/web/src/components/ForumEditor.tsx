@@ -55,6 +55,8 @@ export const ForumEditor = forwardRef<ForumEditorHandle, ForumEditorProps>(
         onChange={onChange}
         placeholder={placeholder}
         initialHtml={initialHtml}
+        // Every caller of this adapter writes a forum post (threads, replies, edits).
+        surface="forum.post"
         disabled={disabled}
         minHeight={minHeight}
         onSubmit={onSubmit}

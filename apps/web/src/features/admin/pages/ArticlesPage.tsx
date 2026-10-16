@@ -11,6 +11,7 @@ import { Pager } from "../../../components/Pager";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { Username } from "../../../components/Username";
 import { uiLocale } from "../../../lib/i18n";
+import { siteTime } from "../../../lib/datetime";
 
 interface Article {
   id: string;
@@ -39,7 +40,7 @@ const STATUS_COLORS: Record<string, [string, string]> = {
 
 function formatDate(d: string | null) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString(uiLocale(), { year: "numeric", month: "short", day: "numeric" });
+  return siteTime.date(d);
 }
 
 function getAuthorInitials(username: string) {

@@ -38,7 +38,7 @@ import { FontAwesomeIcon } from "../../../components/Icon";
 import { Toggle, NumberStepper } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import "./BadgesPage.scss";
-import { uiLocale } from "../../../lib/i18n";
+import { siteTime } from "../../../lib/datetime";
 
 // ── Sorting, filtering, grouping ────────────────────────────────────────────
 
@@ -186,7 +186,7 @@ function HoldersPanel({ badge, onClose }: { badge: BadgeRow; onClose: () => void
                       ? t("badges.heldGivenFor", { note: h.note })
                       : t("badges.heldGiven")}
                   {" · "}
-                  {new Date(h.awardedAt).toLocaleDateString(uiLocale())}
+                  {siteTime.date(h.awardedAt)}
                 </div>
               </div>
               <button type="button" className="bdg-holder__revoke"

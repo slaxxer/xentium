@@ -323,6 +323,49 @@ export interface AuthGuard {
   cookiesToClearOnLogout?: string[];
 }
 
+// ── Embeds + content visibility ──────────────────────────────────────────────
+
+/** A piece of written content that can hold embeds (a forum post, an article). */
+export interface EmbedHost {
+  /** The content's kind as registered with `registerContentKind` — `forum.post`, `article`. */
+  kind:     string;
+  id:       string;
+  /** Who wrote it. An embed should attach only items its own writer created. */
+  authorId: string;
+}
+
+/**
+ * Your items shown INSIDE someone else's content — a poll in a post. The content
+ * stores a placeholder (`<div data-xt-embed="poll" data-id="…">`, see
+ * `@xentium/contracts` `extractEmbeds`); the web side renders it through
+ * `slotRegistry.registerEmbed`.
+ *
+ * Core calls `sync` every time a host is saved, with the ids of YOUR type it now
+ * holds — possibly none, so you can release what the writer deleted — and
+ * `remove` when the host is gone for good. Both must be idempotent; a failure is
+ * logged and never fails the member's save.
+ */
+export interface EmbedHandler {
+  /** Lowercase letters, digits and dashes; one plugin per type. */
+  type:   string;
+  sync:   (host: EmbedHost, ids: string[]) => Promise<unknown>;
+  remove: (host: { kind: string; id: string }) => Promise<void>;
+}
+
+/**
+ * Answer "may this viewer see that item of yours?" for one kind of your content,
+ * so an embed inside it is exactly as visible as the content itself.
+ *
+ * ⚠ Answer FALSE whenever unsure: core treats an error as false too, and the
+ * asker shows a not-found. Every rule your own read path applies (deleted,
+ * unapproved, private board, blocked author) belongs here as well.
+ */
+export interface ContentKindHandler {
+  /** Namespaced with your plugin: `forum.post`. */
+  kind:    string;
+  canView: (id: string, viewerId: string | null) => Promise<boolean>;
+}
+
 // ── Host bridge ──────────────────────────────────────────────────────────────
 
 /**
@@ -343,6 +386,18 @@ export interface PluginHost extends BasePluginHost {
    */
   permissions?: {
     has: (userId: string, key: string) => Promise<boolean>;
+  };
+  /**
+   * Content visibility and embeds (see `EmbedHandler`, `ContentKindHandler`).
+   * OPTIONAL: older hosts do not provide it — and then an embed must stay hidden.
+   */
+  content?: {
+    /** Fails closed: unknown kind, disabled owner or an error is `false`. */
+    canView:      (kind: string, id: string, viewerId: string | null) => Promise<boolean>;
+    /** Call after saving content that may hold embeds (HTML or ProseMirror JSON). */
+    syncEmbeds:   (host: EmbedHost, content: unknown) => Promise<void>;
+    /** Call when content is deleted for good. */
+    removeEmbeds: (host: { kind: string; id: string }) => Promise<void>;
   };
   progression: {
     /** The group whose progression config governs `userId` — their highest rung
@@ -403,6 +458,15 @@ export interface PluginContext extends BasePluginContext<PluginHost> {
    *  Deregistered on disable. Optional on older cores — call it as
    *  `ctx.registerReportTarget?.(…)`. */
   registerReportTarget?(handler: ReportTargetHandler): void;
+
+  /** Show your items inside other content (a poll in a post). Deregistered on
+   *  disable. Optional on older cores: `ctx.registerEmbed?.(…)`. */
+  registerEmbed?(handler: EmbedHandler): void;
+
+  /** Own a kind of content for `host.content.canView` (and so for embeds inside
+   *  it). Deregistered on disable — embeds in it then stay hidden. Optional on
+   *  older cores: `ctx.registerContentKind?.(…)`. */
+  registerContentKind?(handler: ContentKindHandler): void;
 
   /** Register a site-stats source shown in the footer. Deregistered on disable. */
   registerStatSource(source: StatSource): void;

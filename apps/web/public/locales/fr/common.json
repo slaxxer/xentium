@@ -681,5 +681,8 @@
     "locked": "Afficher un avis de verrouillage",
     "inheritedLabel": "Restriction héritée :",
     "inheritedBody": "Ce nœud ne peut pas être moins restrictif que son parent."
+  },
+  "embed": {
+    "unavailable": "Ce contenu n'est pas disponible."
   }
 }

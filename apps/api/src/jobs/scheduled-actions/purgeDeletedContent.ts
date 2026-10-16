@@ -23,6 +23,7 @@
  * `articles/<id>/` directory, which system.purge-orphaned-uploads then reclaims —
  * two actions with one job each, rather than one that does both jobs partly.
  */
+import { embedRegistry } from "../../core/embed-registry/embed-registry.js";
 import { z } from "zod";
 import { prisma } from "../../infrastructure/db.js";
 import { registerScheduledAction, type ActionResult, type ActionRunCtx } from "./action-registry.js";
@@ -96,9 +97,15 @@ export async function runPurgeDeletedContent(
 
   if (scopes.includes("articles")) {
     const where = { deletedAt: { not: null, lt: cutoff } } as const;
-    const n = ctx.dryRun
-      ? await prisma.article.count({ where })
-      : (await prisma.article.deleteMany({ where })).count;
+    let n: number;
+    if (ctx.dryRun) {
+      n = await prisma.article.count({ where });
+    } else {
+      // Gone for good: whatever plugin embeds (polls) they held go too.
+      const gone = await prisma.article.findMany({ where, select: { id: true } });
+      n = (await prisma.article.deleteMany({ where: { id: { in: gone.map((a) => a.id) } } })).count;
+      for (const { id } of gone) await embedRegistry.remove({ kind: "article", id });
+    }
     if (n) { parts.push(`${n} article(s)`); changed += ctx.dryRun ? 0 : n; }
   }
 

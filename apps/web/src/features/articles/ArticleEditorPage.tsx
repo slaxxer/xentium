@@ -25,7 +25,7 @@ import { toast } from "../../lib/toast";
 import { openDialog } from "../../lib/dialog";
 import "./components/ArticleEditor.scss";
 import "./ArticleEditorPage.scss";
-import { uiLocale } from "../../lib/i18n";
+import { useDateTime } from "../../lib/datetime";
 
 const EMPTY_BODY: JSONContent = { type: "doc", content: [{ type: "paragraph" }] };
 
@@ -119,6 +119,7 @@ function Need({ children }: { children: React.ReactNode }) {
 
 export function ArticleEditorPage() {
   const { t } = useTranslation("articles");
+  const dt = useDateTime();
   const { slug } = useParams<{ slug?: string }>();
   const isEdit = !!slug;
   const navigate = useNavigate();
@@ -247,9 +248,7 @@ export function ArticleEditorPage() {
         if (saved.savedAt <= serverMs) { clearDraft(); return; }
       }
 
-      const when = new Date(saved.savedAt).toLocaleString(uiLocale(), {
-        month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-      });
+      const when = dt.stamp(saved.savedAt);
       void openDialog({
         kind: "confirm", icon: "question",
         title: t("editor.draftFoundTitle"), body: t("editor.draftFoundBody", { when }),
@@ -467,7 +466,7 @@ export function ArticleEditorPage() {
               <span className="aed-byline__name" style={user?.visibleGroups[0]?.badgeColor ? { color: user.visibleGroups[0].badgeColor } : undefined}>{userName}</span>
               <span className="aed-byline__status">{t(`editor.status.${status}`)}</span>
               <span>·</span>
-              <span>{serverSavedAt ? t("editor.savedAt", { when: new Date(serverSavedAt).toLocaleTimeString(uiLocale(), { hour: "2-digit", minute: "2-digit" }) }) : t("editor.newDraft")}</span>
+              <span>{serverSavedAt ? t("editor.savedAt", { when: dt.time(serverSavedAt) }) : t("editor.newDraft")}</span>
             </div>
 
             <div className="aed-field">
@@ -490,6 +489,7 @@ export function ArticleEditorPage() {
                 minHeight={420}
                 mentions={false}
                 extraExtensions={ARTICLE_EXTENSIONS}
+                surface="article"
                 initialJson={form.body}
                 onChangeJson={onBodyJson}
                 placeholder={t("editor.bodyPlaceholder")}

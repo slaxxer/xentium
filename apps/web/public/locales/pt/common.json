@@ -681,5 +681,8 @@
     "locked": "Mostrar aviso de bloqueio",
     "inheritedLabel": "Restrição herdada:",
     "inheritedBody": "Este nó não pode ser menos restritivo que o seu pai."
+  },
+  "embed": {
+    "unavailable": "Este conteúdo não está disponível."
   }
 }

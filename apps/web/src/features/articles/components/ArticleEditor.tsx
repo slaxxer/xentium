@@ -13,6 +13,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import "./ArticleEditor.scss";
 import { EmojiNode } from "../../../components/composer/emojiNode";
+import { EmbedNode } from "../../../components/composer/embedNode";
 
 /** The complete extension set shared by the editor and the read-only renderer
  *  (ArticleContent). Keep both in sync or stored marks won't render.
@@ -31,6 +32,8 @@ export const RICH_EXTENSIONS = [
   // Custom emojis written in the Composer. Without the node here the reader would
   // drop them from a published article.
   EmojiNode,
+  // Plugin embeds (a poll). Without the node the reader would drop the placeholder.
+  EmbedNode,
   // An article body is written in the Composer, where @mentions are on by default.
   // Without the node here the renderer DROPPED a mention from the published article.
   // Display only (no suggestion popup): the same link the Composer writes.
