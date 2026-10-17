@@ -411,8 +411,8 @@ no declared regions to check it against), and the import reports it under
 
 ### Variants are core-only for now
 
-Per-instance layouts (like one custom page's own arrangement) are limited to core's
-`VARIANT_TEMPLATES`, so a variant on a plugin template gets a 422. A variant needs a list
+Per-instance layouts (one instance of a page with its own arrangement) are limited to
+core's `VARIANT_TEMPLATES`, which is empty today, so a variant on a plugin template gets a 422. A variant needs a list
 of *instances* for the editor's picker, and there's no way yet for a plugin to supply one.
 
 ## A real example

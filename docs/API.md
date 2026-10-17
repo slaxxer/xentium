@@ -90,8 +90,9 @@ The full list of codes is in the ACP under System → Error Reference, and in
 Stored in Redis. The notable ones: `auth/login` 10 per 15 min, `auth/register` 5 per hour,
 `auth/password-reset` 3 per hour, `auth/refresh` 20 per minute, `users/:id/follow` 30 per
 minute (per user), `users/:id/profile-comments` 10 per 5 min (per user), `plugins/upload`
-20 per hour, plus a general per-IP limit on the whole API in production. All of them
-answer `429 XEC-API-4290`.
+20 per hour, plus a general limit on the whole API in production: 300 requests a minute
+per IP for guests and 600 a minute per signed-in session. All of them answer
+`429 XEC-API-4290`.
 
 ---
 
@@ -173,6 +174,8 @@ All **Auth**.
 | GET | `/me/level-up` | Auth | `{ levelUp }`: the newest rung you climbed and have not seen yet (`rank`, `from`, what it `unlocks`, the `next` goal), or `null`. Null too when progression or promotion notices are off. |
 | POST | `/me/level-up/seen` | Auth | Marks every unseen climb seen. The site shows the level-up dialog once. |
 | GET | `/me/blocks` | Auth | Who you've blocked. |
+| GET | `/me/ui-flags` | Auth | Your UI flags: small facts the interface remembers across browsers (a tour already seen, Theme Studio's Advanced mode). A list of `area:name` strings. |
+| PUT | `/me/ui-flags/:flag` | Auth | `{ on }` sets or clears one of your flags (`area:name`, lower-case; at most 64). |
 | GET | `/:username` | Optional | Public profile (respects privacy). Records a profile visit, except with `?preview=1` (the hover card): a glance is not a visit. |
 | GET | `/:id/followers` | Optional | Followers, paginated (403 if the owner hid the list). |
 | GET | `/:id/following` | Optional | Following, paginated (403 if hidden). |
@@ -190,9 +193,11 @@ All **Auth**.
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| GET | `/` | Optional | Published articles (filter by category or tag; respects visibility). `?feed=` picks a home list: `latest`, `top`, `following` (the categories and tags you follow), `liked`, `saved`, `mine`; the last four need a session. Signed in, each item carries `viewer: { liked, saved }`. |
+| GET | `/` | Optional | Published articles (filter by category or tag; respects visibility). `?feed=` picks a home list: `latest`, `top`, `following` (the categories and tags you follow), `liked`, `saved`, `mine`; the last four need a session. Signed in, each item carries `viewer: { liked, disliked, saved }`. Filters: `q` (search), `tag` (slug), `period` (`week`, `month`, `year`), `length` (`short`, `medium`, `long` reading time), `sort` (`latest`, `popular`, `discussed`), `exclude` (an article id). |
+| GET | `/featured` | Optional | `{ article }`: the newest pinned article the viewer may see, or `null`. |
+| GET | `/trending` | Optional | Articles of the last days ranked by likes and comments (a comment counts twice); only ones with any: `?days=` (default 30), `?max=`. |
 | GET | `/me` | Auth | Your own articles, any status. |
-| GET | `/:slug` | Optional | One article (respects visibility). |
+| GET | `/:slug` | Optional | One article (respects visibility). Signed in, it carries `viewer: { liked, disliked, saved }`. |
 | POST | `/` | Perm:`article.create` | Create. |
 | PATCH | `/:id` | Auth (owner/admin) | Update. |
 | POST | `/:id/publish` | Auth | Publish (in a transaction; sets `published_at` and bumps `article_count`). |
@@ -202,9 +207,10 @@ All **Auth**.
 | POST | `/:id/view` | Public | Count a view (one per IP). |
 | POST | `/:id/featured-image` | Auth | Upload the featured image (`multipart`, field `file`). Each upload gets a new file name, and the replaced picture is deleted. |
 | GET | `/:id/comments` | Public | Comments (tombstones included). |
-| POST | `/:id/comments` | Perm:`article.comment.create` | Add a comment. |
+| POST | `/:id/comments` | Perm:`article.comment.create` | Add a comment: `{ body, parentId? }`. With `parentId` it is a reply (one level deep). |
 | POST / DELETE | `/:id/like` · `/:id/dislike` | Auth | Like / dislike toggles. |
 | POST / DELETE | `/:id/bookmark` | Auth | Save an article for later / remove it from Saved. |
+| POST | `/:id/pin` | Perm:`article.edit.any` | `{ pinned }`. A pinned article is the featured one on the article index. |
 | GET | `/topics/following` | Auth | The categories and tags you follow: `{ categories, tags }`. |
 | POST / DELETE | `/categories/:id/follow` · `/tags/:id/follow` | Auth | Follow / unfollow a category or a tag. Answers with your followed topics. |
 
@@ -257,6 +263,8 @@ the rich-text sanitizer lets through. The ACP routes need `emoji.manage`.
 | GET | `/api/admin/emojis` | ACP | The same list, for the ACP page. |
 | POST | `/api/admin/emojis` | ACP | Add one: `multipart`, field `file` (PNG, GIF or WebP, up to 256 KB, checked by content), plus `shortcode`, `name`, `category`. A taken shortcode is refused with 409. |
 | PATCH | `/api/admin/emojis/:id` | ACP | Rename it or move it to another category: `{ shortcode?, name?, category? }`. |
+| PUT | `/api/admin/emojis/order` | ACP | `{ category, ids }`: one category's order after a drag. Emojis named from another category move into it. Ids that are not active emojis are refused (409). |
+| POST | `/api/admin/emojis/categories/rename` | ACP | `{ from, to }`: rename a category. Renaming onto an existing one merges them. |
 | DELETE | `/api/admin/emojis/:id` | ACP | Retire it: it leaves the picker, but posts that used it keep showing it. Its file and its shortcode stay. |
 
 ## Search: `/api/search`
@@ -324,16 +332,17 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | GET | `/summary` | Auth | Counts for the moderation shield's red dot. |
 | GET | `/reports` | Perm:`moderation.report.manage` | The report queue. |
 | PATCH | `/reports/:id` | Perm:`moderation.report.manage` | Update a report's status. |
-| GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. Without an `expiresAt`, a warning gets the expiry set in Mod Settings. Each warning runs the escalation ladder. |
+| GET | `/warnings` · POST `/warnings` | Perm:`moderation.warn` | List / issue warnings. A warning is always one of the site's warn templates, about one piece of the member's content: `{ userId, templateId, target: { type, id }, expiry? }`. There is no free text: the server fills the template in and takes its length. `expiry` (another length) needs `moderation.warn.expiry.override`. Content by someone else is refused (`XEC-MOD-4102`), a missing or wrong template too (`XEC-MOD-4101`). Each warning runs the escalation ladder. |
 | PATCH | `/warnings/:id/pardon` | Perm:`moderation.warn` | Pardon. |
-| GET | `/bans` · POST `/bans` | Perm:`moderation.ban` | List / issue bans. A temporary ban outside the Mod Settings range is refused (`XEC-API-4001`) unless moderators may override it; an override is noted in the mod log. The banned member is signed out. |
+| GET | `/bans` · POST `/bans` | Perm:`moderation.ban` | List / issue bans, also only from a ban template: `{ userId, templateId, target?, duration? }`. The template sets the text and the length; another `duration` needs `moderation.ban.length.override`. A template that names the content (`{type}`, `{where}`) needs `target` (`XEC-MOD-4103`). |
 | GET | `/ban-policy` | Perm:`moderation.ban` | `{ defaultDays, minDays, maxDays, allowOverride }`, so a ban dialog opens at the default length. |
 | PATCH | `/bans/:id/lift` | Perm:`moderation.ban` | Lift a ban. |
 | GET | `/inspector` | Perm:`moderation.report.manage` | ModCanvas: pending reports grouped by what they are about. Each group has its `reports` (reporter, reason, time), `where`/`href`, the `snapshot` kept at filing, the `author` (joined, active warnings, the ladder step the next warning would hit, other open reports) and `claimedBy`. |
-| POST | `/reports/act` | a moderator | `{ reportIds, mode: warn \| ban \| delete \| dismiss, message, notify, templateId?, duration? }`. Acts on one group and closes all of its reports; the permission checked depends on `mode`. `notify: false` sends the member nothing. `duration` is `1h`, `24h`, `7d`, `30d` or `perm`. Remove works on articles and article/profile comments. |
+| POST | `/reports/act` | a moderator | `{ reportIds, mode: warn \| ban \| delete \| dismiss, templateId?, message?, notify, duration?, expiry? }`. Warn and ban need a template of that mode and take their text from it (`message` is ignored); remove and dismiss need a `message`. Acts on one group and closes all of its reports; the permission checked depends on `mode`. `notify: false` sends the member nothing. `duration` is `1h`, `24h`, `7d`, `30d` or `perm`. Remove works on articles and article/profile comments. |
 | POST | `/reports/status` | Perm:`moderation.report.manage` | `{ reportIds, status: resolved \| dismissed \| pending }`. Bulk close, and `pending` is Undo. |
 | POST | `/reports/claim` | Perm:`moderation.report.manage` | `{ reportIds, on }` claims a group for yourself or releases it. Logged. |
 | GET | `/templates` | a moderator | The premade texts ModCanvas fills in (read-only here; admins manage them under `/api/admin/mod-templates`): `mode`, `name`, `text` (with `{user}`, `{type}`, `{where}`, `{duration}`), `ruleRef`, `defaultDuration` (bans), `matchCategories`, `useCount`. |
+| GET | `/templates/words` | a moderator | What `{type}` and `{duration}` read as in the site's language, for filling a template in a preview. |
 | GET | `/cases` | Perm:`moderation.cases.manage` | Review cases. |
 | PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / ban everyone in a case. |
 | GET | `/log` | Perm:`moderation.log.view` | Moderation log. |
@@ -448,10 +457,10 @@ All **Admin**.
 | * | `/api/p/:pluginId/*` | up to the plugin | Routes registered by an enabled plugin. While the plugin is disabled, a guard answers `404 XEC-PLUGIN-2020`. |
 
 A plugin's **admin** endpoints under this prefix back its ACP settings pages, and those
-pages **autosave**. So expect one debounced write per edit, not one submit from a Save
-button. Make them idempotent writes of the whole object, check `admin.access` yourself
-(the `/api/p/` prefix doesn't do that for you), and never autosave secrets: give a
-write-only field its own Set/Remove route. The web side is described in
+pages save through the ACP's **save bar**: one write when the admin presses Save (or
+Ctrl/⌘ + S), covering everything they changed. Make them idempotent writes of the whole
+object, check `admin.access` yourself (the `/api/p/` prefix doesn't do that for you), and
+never put secrets in a draft: give a write-only field its own Set/Remove route. The web side is described in
 [Plugin pages in the ACP](plugin-acp-autosave.md).
 
 ---
@@ -465,6 +474,7 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | Method | Path | Description |
 |---|---|---|
 | GET | `/dashboard` | ACP dashboard stats. |
+| GET | `/dashboard/setup` | The setup checklist for a new site: each step (`admin`, `siteName`, `email`, `categories`, `article`, `theme`) with `done`. |
 | GET | `/users` | User list. Query: `page`, `limit`, `search` (username, email, user ID or IP), `groupId`, `status` (`all`, `active`, `banned`, `inactive`, `flagged`), `sort` (`recent`, `joined`, `posts`, `name`). Each row has `status`, `lastSeenAt`, `online` and `flags`; the response adds `counts` for the whole site. |
 | GET | `/users/:id` | One member: groups, profile fields, known IPs and device cookies, active sessions, flags and the active ban. Never includes password or PIN hashes. |
 | PATCH | `/users/:id/groups` | Change group membership: `{ add: [groupId], remove: [groupId] }`. Only the named groups change. You can't remove yourself from Administrator. |

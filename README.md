@@ -45,13 +45,14 @@ them.
 
 What's in core:
 
-- 🔐 **Auth & RBAC:** email/password login, rotating refresh sessions, flat permission groups, permissions cached in Redis.
-- 📝 **Articles / CMS:** TipTap editor, nested categories with access control, revisions, comments, likes, tags, full-text search.
+- 🔐 **Auth & RBAC:** email/password, passkeys, sign-in links and external accounts, rotating refresh sessions, flat permission groups, permissions cached in Redis.
+- 📝 **Articles / CMS:** TipTap editor, nested categories with access control, revisions, comments with replies, likes, bookmarks, tags, full-text search, and an article index you can search and filter.
 - 👤 **Users & social:** profiles, custom profile fields, follow/block, profile walls, and a progression system where levels are groups.
-- 🛡️ **Moderation:** reports, warnings, bans, an immutable log, thresholds and the floating ModCanvas tool. Built-in abuse detection (rapid logins, multi-accounts, registration bursts, ban evasion) opens review cases for a human. It never acts on its own.
+- 🛡️ **Moderation:** reports, warnings and bans that always come from your templates (which also set how long they last), an immutable log, an escalation ladder and the floating ModCanvas tool. Built-in abuse detection (rapid logins, multi-accounts, registration bursts, ban evasion) opens review cases for a human. It never acts on its own.
 - 🎨 **Appearance:** a three-tier CSS token system, a live Theme Studio, `.xttheme` packages, fonts and a nav manager.
-- 🧱 **Layout editor:** arrange blocks in regions to decide what shows up on each page, in the navbar and in the footer. You drag in a tree or right in a live preview; edits autosave as a draft and go live when you publish. Layouts are data, so a theme can't run code.
+- 🧱 **Layouts (in Theme Studio):** arrange blocks in regions to decide what shows up on each page, in the navbar and in the footer. You drag in a tree or right in a live preview; edits autosave as a draft and go live when you publish. Layouts are data, so a theme can't run code.
 - 🔔 **Notifications:** one core service every module sends through (in-app and queued email).
+- 🍪 **Cookies & consent:** core only stores what the site needs to work, and gives plugins one contract for declaring what they store and asking before anything optional runs. A consent plugin adds the dialog.
 - 🧩 **Plugin engine:** install/enable/disable, sandboxed migrations, routes, permissions and ACP pages from plugins, plus registries you can hook into.
 - 🛒 **Marketplace & licensing:** per-domain licences for the official paid plugins. A lapsed licence never breaks core.
 - 🌍 **i18n:** English, German, Spanish, French and Portuguese bundled. The API itself doesn't care about language.
