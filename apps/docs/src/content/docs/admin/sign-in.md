@@ -25,7 +25,7 @@ Opening the link does not sign anyone in by itself. The member presses **Continu
 mail scanners open every link they see, and without that step they would use up the link
 before the member got to it.
 
-Sign-in links need email to work: set up SMTP under **ACP → Settings → Email**. Until you
+Sign-in links need email to work: set up SMTP under **ACP → System → Email**. Until you
 do, the option stays hidden on a production site.
 
 ## Passkeys
@@ -36,14 +36,14 @@ remove it there.
 
 Passkeys only work when your site is served over https, because browsers refuse them
 anywhere else. They are tied to your site's address (`APP_URL`), so a passkey made for
-`community.example.com` does not work on another address. **ACP → Settings → Login** says
+`community.example.com` does not work on another address. **ACP → System → Settings → Login** says
 whether passkeys are on for your site.
 
 ## Google, GitHub and Discord
 
 To offer these, create an app with the provider and give your site its credentials:
 
-1. Open **ACP → Settings → Login**. Each provider shows a **callback URL**.
+1. Open **ACP → System → Settings → Login**. Each provider shows a **callback URL**.
 2. At the provider, create an OAuth app (the panel links to the right console) and enter
    that callback URL exactly as shown.
 3. Copy the app's client ID and client secret into the panel, press **Set** for the

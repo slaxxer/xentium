@@ -67,7 +67,7 @@ serves are in **[docs/API.md → Theming tokens & scoped CSS](./docs/API.md#them
 The full guide is in **[README → Plugin development guide](./README.md#plugin-development-guide)**.
 Put a plugin you're working on in `plugins/community-examples/<name>/` (it's a pnpm
 workspace member), wire up hot reload in `apps/web/src/plugins/dev-plugins.ts`, and
-install it from **ACP → Extensions → Upload**. `pnpm plugin:package` builds the
+install it from **ACP → Extensions → Installed → Upload** (switch on "Allow uploads" there first). `pnpm plugin:package` builds the
 `.xtplugin` you distribute.
 
 ### Extension points
