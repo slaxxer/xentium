@@ -29,6 +29,8 @@ const FILES = {
   "docs/plugin-registries.md":    "plugins/extension-points",
   "docs/plugin-acp-autosave.md":  "plugins/acp-surfaces",
   "docs/plugin-i18n.md":          "plugins/i18n",
+  "docs/plugin-embeds.md":        "plugins/embeds",
+  "docs/consent.md":              "plugins/consent",
   "docs/icon-kits.md":            "plugins/icons",
   "docs/style-system.md":         "themes/style-system",
   "docs/theme-packages.md":       "themes/packages",
@@ -69,7 +71,7 @@ const README_PAGES = [
 /** Sidebar order inside a group for whole files (lower first). */
 const ORDER = {
   "plugins/blocks": 2, "plugins/extension-points": 3, "plugins/acp-surfaces": 4,
-  "plugins/i18n": 5, "plugins/icons": 6,
+  "plugins/i18n": 5, "plugins/icons": 6, "plugins/embeds": 7, "plugins/consent": 8,
   "themes/style-system": 1, "themes/packages": 2,
   "reference/api": 1, "reference/marketplace-protocol": 2,
 };
