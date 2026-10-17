@@ -19,14 +19,16 @@ const notFound = (what: string) =>
 
 export const articleEngagementService = {
   /** Which of `articleIds` the viewer liked and saved. */
-  async viewerState(articleIds: string[], userId: string): Promise<Map<string, { liked: boolean; saved: boolean }>> {
-    const out = new Map(articleIds.map((id) => [id, { liked: false, saved: false }]));
+  async viewerState(articleIds: string[], userId: string): Promise<Map<string, { liked: boolean; disliked: boolean; saved: boolean }>> {
+    const out = new Map(articleIds.map((id) => [id, { liked: false, disliked: false, saved: false }]));
     if (articleIds.length === 0) return out;
-    const [likes, saves] = await Promise.all([
+    const [likes, dislikes, saves] = await Promise.all([
       prisma.articleLike.findMany({ where: { userId, articleId: { in: articleIds } }, select: { articleId: true } }),
+      prisma.articleDislike.findMany({ where: { userId, articleId: { in: articleIds } }, select: { articleId: true } }),
       prisma.articleBookmark.findMany({ where: { userId, articleId: { in: articleIds } }, select: { articleId: true } }),
     ]);
     for (const l of likes) out.get(l.articleId)!.liked = true;
+    for (const d of dislikes) out.get(d.articleId)!.disliked = true;
     for (const s of saves) out.get(s.articleId)!.saved = true;
     return out;
   },

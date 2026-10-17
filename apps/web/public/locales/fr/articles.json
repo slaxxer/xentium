@@ -16,7 +16,47 @@
     "minRead": "{{n}} min",
     "views_one": "{{count}} vue",
     "views_other": "{{count}} vues",
-    "views_many": "{{count}} vues"
+    "views_many": "{{count}} vues",
+    "searchPlaceholder": "Rechercher articles, auteurs, tags",
+    "clearSearch": "Effacer la recherche",
+    "featured": "À la une",
+    "latestHeading": "Derniers articles",
+    "allHeading": "Tous les articles",
+    "resultsFor": "Résultats pour « {{q}} »",
+    "count_one": "{{count}} article",
+    "count_many": "{{count}} articles",
+    "count_other": "{{count}} articles",
+    "reset": "Réinitialiser les filtres",
+    "sortLabel": "Trier",
+    "period": {
+      "any": "Toutes dates",
+      "week": "Cette semaine",
+      "month": "30 derniers jours",
+      "year": "Cette année"
+    },
+    "length": {
+      "any": "Toute durée",
+      "short": "Moins de 5 min",
+      "medium": "5–10 min",
+      "long": "Plus de 10 min"
+    },
+    "sort": {
+      "latest": "Récents",
+      "popular": "Populaires",
+      "discussed": "Commentés"
+    },
+    "emptyTitle": "Aucun article trouvé",
+    "emptyHint": "Essayez une autre recherche ou assouplissez les filtres.",
+    "rail": {
+      "categories": "Catégories",
+      "all": "Tous les articles",
+      "trending": "Tendances",
+      "tags": "Tags populaires"
+    },
+    "pin": "Épingler sur la page des articles",
+    "unpin": "Désépingler de la page des articles",
+    "pinned": "Épinglé sur la page des articles",
+    "unpinned": "Désépinglé"
   },
   "reader": {
     "loading": "Chargement…",
@@ -40,9 +80,7 @@
     "modTools": "Outils de modération",
     "warnAuthor": "Avertir l'auteur",
     "warnTitle": "Avertir {{username}}",
-    "warnSub": "Cet avertissement sera adressé à l'auteur de l'article et enregistré dans le système de modération.",
-    "warnPlaceholder": "Motif de l'avertissement…",
-    "setExpiry": "Définir une date d'expiration",
+    "warnSub": "Choisissez la règle enfreinte. Le membre reçoit le texte du modèle, et l'avertissement est enregistré.",
     "issuing": "Émission…",
     "issueWarning": "Émettre l'avertissement",
     "warnIssued": "Avertissement adressé à {{username}}.",
@@ -69,7 +107,28 @@
     "tombstoneBy": " par {{mod}}",
     "tombstoneReason": " · Motif : {{reason}}",
     "cantRateOwnComment": "Vous ne pouvez pas noter votre propre commentaire",
-    "signInToRate": "Connectez-vous pour noter"
+    "signInToRate": "Connectez-vous pour noter",
+    "crumbs": "Fil d'Ariane",
+    "actions": "Actions sur l'article",
+    "save": "Enregistrer",
+    "unsave": "Retirer des enregistrés",
+    "savedToast": "Enregistré. Vous le retrouverez dans Enregistrés, sur la page d'accueil.",
+    "unsavedToast": "Retiré des enregistrés",
+    "linkCopied": "Lien copié",
+    "liked": "L'article vous a plu ?",
+    "comments": "Commentaires",
+    "sort": {
+      "popular": "Populaires",
+      "newest": "Plus récents"
+    },
+    "reply": "Répondre",
+    "replyPlaceholder": "Répondre à {{user}}…",
+    "authorBadge": "Auteur",
+    "onThisPage": "Sur cette page",
+    "moreIn": "Plus dans « {{category}} »",
+    "minShort": "{{n}} min",
+    "keepReading": "À lire aussi",
+    "allArticles": "Tous les articles"
   },
   "editor": {
     "saveError": "Impossible d'enregistrer. Réessayez.",

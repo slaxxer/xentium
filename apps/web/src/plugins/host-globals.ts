@@ -42,6 +42,9 @@ import * as webForumEditor from "@web/components/ForumEditor";
 // adapters shipped bundles already import.
 import * as webComposer from "@web/components/composer/Composer";
 import * as webRichHtml from "@web/components/RichHtml";
+import * as webWarnTemplateSelect from "@web/components/WarnTemplateSelect";
+import * as webConsent from "@web/lib/consent";
+import * as webConsentGate from "@web/components/ConsentGate";
 import * as webUseAutosave from "@web/hooks/useAutosave";
 // ACP drafts and the save bar. `webUseAutosave.useAutosave` is the same hook under its
 // old name, so shipped plugin panels joined the save bar without a rebuild.
@@ -110,6 +113,9 @@ const HOST = {
   webForumEditor,
   webComposer,
   webRichHtml,
+  webWarnTemplateSelect,
+  webConsent,
+  webConsentGate,
   webUseAutosave,
   webUseDraft,
   webAutosaveStatus,

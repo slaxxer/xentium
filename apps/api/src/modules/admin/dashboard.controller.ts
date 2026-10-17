@@ -11,4 +11,7 @@ export const dashboardController = {
     const { range } = overviewSchema.parse(req.query);
     res.json(await dashboardService.overview(range));
   }) as RequestHandler,
+  setup: (async (_req, res) => {
+    res.json(await dashboardService.setup());
+  }) as RequestHandler,
 };

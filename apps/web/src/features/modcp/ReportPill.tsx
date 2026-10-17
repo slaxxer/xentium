@@ -14,8 +14,8 @@ import { apiErrorMessage } from "../../lib/swal";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import {
-  DURATIONS, DURATION_TEXT, MODES, fill, suggest, typeLabel,
-  type Duration, type Mode, type Template,
+  DURATIONS, DURATION_TEXT, MODES, WARN_EXPIRIES, fill, suggest, typeLabel, warnExpiryLabel,
+  type Duration, type Mode, type Template, type TemplateWords, type WarnExpiry,
 } from "./modTemplates";
 import { targetTypeLabel, topReason, type ReportGroup } from "./modData";
 import { modStore } from "./modSession";
@@ -47,14 +47,25 @@ const isTyping = (t: EventTarget | null) =>
 export function ReportPill({ group, position, total }: { group: ReportGroup; position: number; total: number }) {
   const { t } = useTranslation("common", { keyPrefix: "modcanvas.report" });
   const { t: tc } = useTranslation("common", { keyPrefix: "modcanvas.common" });
+  const { t: tm } = useTranslation("common");
   const modeLabel = (m: Mode) => t(`modes.${m}`);
   const durLabel = (d: Duration) => t(`durations.${d}`);
   const qc = useQueryClient();
   const { user } = useAuth();
   const isAdmin = userCan(user, "admin.access");
+  // The template sets how long a warning counts and a ban lasts; team leads may change it.
+  const canBanLength = userCan(user, "moderation.ban.length.override");
+  const canWarnExpiry = userCan(user, "moderation.warn.expiry.override");
   const { data: templates = [] } = useQuery<Template[]>({
     queryKey: ["mod-templates"],
     queryFn: () => api.get("/moderation/templates"),
+  });
+  // The words `{type}` and `{duration}` read as in the site's language — the
+  // language the shipped templates are shown in (/moderation/templates/words).
+  const { data: words } = useQuery<TemplateWords>({
+    queryKey: ["mod-template-words"],
+    queryFn: () => api.get("/moderation/templates/words"),
+    staleTime: 5 * 60_000,
   });
 
   const author = group.author;
@@ -62,13 +73,15 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
   const count = group.reports.length;
   // `type` fills `{type}` in the member's message (template language); `shownType`
   // is what the moderator reads.
-  const type = typeLabel(group.targetType, group.targetId);
+  const rawType = typeLabel(group.targetType, group.targetId);
+  const type = words?.type[rawType] ?? rawType;
   const shownType = targetTypeLabel(group.targetType, group.targetId);
   const suggestion = useMemo(() => suggest(templates, group.reports.map((r) => r.reason), hasAuthor), [templates, group, hasAuthor]);
 
   const [mode, setMode] = useState<Mode | null>(null);
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [duration, setDuration] = useState<Duration | null>(null);
+  const [expiry, setExpiry] = useState<WarnExpiry | null>(null);
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -82,12 +95,13 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
     user: author?.username ?? "member",
     type,
     where: group.where ?? `this ${type}`,
-    duration: DURATION_TEXT[effDuration],
+    duration: words?.duration[effDuration] ?? DURATION_TEXT[effDuration],
   };
 
   const can = (m: Mode) => (m === "warn" || m === "ban") ? hasAuthor : m === "delete" ? group.canRemove : true;
-  const pick = (m: Mode) => { if (!can(m)) return; setMode(m); setTemplateId(null); setDuration(null); };
-  const pickTemplate = (t: Template) => { setMode(effMode); setTemplateId(t.id); setDuration(null); setMenu(false); };
+  const pick = (m: Mode) => { if (!can(m)) return; setMode(m); setTemplateId(null); setDuration(null); setExpiry(null); };
+  const pickTemplate = (t: Template) => { setMode(effMode); setTemplateId(t.id); setDuration(null); setExpiry(null); setMenu(false); };
+  const effExpiry: WarnExpiry | null = expiry ?? template?.warnExpiry ?? null;
 
   // 1–9 pick a template, Escape closes the menu, while nothing is being typed.
   useEffect(() => {
@@ -117,8 +131,12 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
   const act = useMutation({
     mutationFn: () => api.post("/moderation/reports/act", {
       reportIds, mode: effMode, templateId: template?.id ?? null,
-      message: template ? fill(template.text, vars).trim() : FALLBACK[effMode], notify: true,
-      ...(effMode === "ban" ? { duration: effDuration } : {}),
+      // A warning's text is filled in by the server from the template; the rest send theirs.
+      ...(effMode === "warn" ? {} : { message: template ? fill(template.text, vars).trim() : FALLBACK[effMode] }),
+      notify: true,
+      // The template's own length unless a team lead picked another.
+      ...(effMode === "ban" && duration ? { duration } : {}),
+      ...(effMode === "warn" && expiry ? { expiry } : {}),
     }),
     onSuccess: () => {
       const closed = t("toast.resolved", { count });
@@ -176,7 +194,7 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
         {menu && (
           <div className="mcp-menu" role="listbox" aria-label={t("premade")}>
             <div className="mcp-menu__head">{t("premadeHead", { mode: modeLabel(effMode) })}</div>
-            {effMode === "ban" && (
+            {effMode === "ban" && (canBanLength ? (
               <div className="mcp-menu__dur">
                 {DURATIONS.map((d) => (
                   <button key={d} type="button" className={effDuration === d ? "is-on" : ""} onClick={() => setDuration(d)}>
@@ -184,7 +202,20 @@ export function ReportPill({ group, position, total }: { group: ReportGroup; pos
                   </button>
                 ))}
               </div>
-            )}
+            ) : template && (
+              <div className="mcp-menu__fixed">{tm("modTiming.banLabel")}: {durLabel(effDuration)}</div>
+            ))}
+            {effMode === "warn" && template && (canWarnExpiry ? (
+              <div className="mcp-menu__dur">
+                {WARN_EXPIRIES.map((x) => (
+                  <button key={x} type="button" className={effExpiry === x ? "is-on" : ""} onClick={() => setExpiry(x)}>
+                    {x === "never" ? "∞" : x}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="mcp-menu__fixed">{tm("modTiming.label")}: {warnExpiryLabel(tm, effExpiry)}</div>
+            ))}
             <div className="mcp-menu__list">
               {inMode.map((tpl, i) => (
                 <button key={tpl.id} type="button" role="option" aria-selected={template?.id === tpl.id}

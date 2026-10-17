@@ -1,0 +1,81 @@
+{
+  "templates": {
+    "warn": {
+      "harassment": {
+        "name": "Harassment",
+        "text": "Hi {user}, your {type} on {where} was reported for harassment. Personal attacks break our community rules. This is a formal warning, and further reports may lead to a ban."
+      },
+      "spam": {
+        "name": "Spam / self-promotion",
+        "text": "Hi {user}, your {type} on {where} contains promotional links. Self-promotion isn't allowed here. Please remove similar posts."
+      },
+      "offTopic": {
+        "name": "Off-topic flooding",
+        "text": "Hi {user}, repeated low-effort replies like the one on {where} disrupt threads for everyone. Please keep replies on topic."
+      },
+      "uncredited": {
+        "name": "Uncredited work",
+        "text": "Hi {user}, your {type} on {where} uses someone else's work without credit. Please credit the original creator or remove it."
+      }
+    },
+    "ban": {
+      "repeatedHarassment": {
+        "name": "Repeated harassment",
+        "text": "You have been banned for {duration} for repeated harassment after prior warnings. Your {type} on {where} was the deciding report."
+      },
+      "spamAccount": {
+        "name": "Spam account",
+        "text": "This account has been banned for posting spam, including your {type} on {where}."
+      },
+      "banEvasion": {
+        "name": "Ban evasion",
+        "text": "This account is linked to a previously banned account and has been banned for ban evasion."
+      },
+      "phishing": {
+        "name": "Phishing / impersonation",
+        "text": "This account has been banned for impersonating staff and asking members for login details on {where}."
+      },
+      "hateSpeech": {
+        "name": "Hate speech",
+        "text": "You have been banned for {duration} for hateful language in your {type} on {where}."
+      }
+    },
+    "delete": {
+      "ruleViolation": {
+        "name": "Removed: rule violation",
+        "text": "Your {type} on {where} was removed because it breaks our community rules."
+      },
+      "copyright": {
+        "name": "Removed: copyright",
+        "text": "Your {type} on {where} was removed after a copyright report. You can post it again with credit or the creator's permission."
+      }
+    },
+    "dismiss": {
+      "noViolation": {
+        "name": "No violation found",
+        "text": "Reviewed {type} on {where}. No rule broken."
+      },
+      "duplicate": {
+        "name": "Duplicate report",
+        "text": "Duplicate of a report that was already handled."
+      }
+    }
+  },
+  "type": {
+    "article": "article",
+    "comment": "comment",
+    "profile comment": "profile comment",
+    "profile": "profile",
+    "post": "post",
+    "thread": "thread",
+    "message": "message",
+    "content": "post"
+  },
+  "duration": {
+    "1h": "1 hour",
+    "24h": "24 hours",
+    "7d": "7 days",
+    "30d": "30 days",
+    "perm": "an indefinite period"
+  }
+}

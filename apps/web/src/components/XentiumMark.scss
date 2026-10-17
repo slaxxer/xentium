@@ -1,15 +1,15 @@
 /* The Xentium icon. The box's gradient is the site's to set (Theme Studio → Colours &
    type → Logo icon: `--logo-icon-from` / `--logo-icon-to`; one colour twice = flat),
-   defaulting to the brand's own (public/brand/README). */
+   defaulting to the brand's own: the core look's teal, flat (public/brand). */
 .xt-mark {
-  --xt-mark-from:  var(--logo-icon-from, #f26b1d);
-  --xt-mark-to:    var(--logo-icon-to, #e0336b);
+  --xt-mark-from:  var(--logo-icon-from, #0d7c72);
+  --xt-mark-to:    var(--logo-icon-to, #0d7c72);
   --xt-mark-glyph: #ffffff;
 
   /* The ACP and the installer show XENTIUM's icon, not the site's: always the brand colours. */
   &--brand {
-    --xt-mark-from: #f26b1d;
-    --xt-mark-to:   #e0336b;
+    --xt-mark-from: #0d7c72;
+    --xt-mark-to:   #0d7c72;
   }
 
   display: block;

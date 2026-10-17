@@ -39,7 +39,8 @@
     "switchToDark": "Zum dunklen Design wechseln",
     "adminPanel": "Admin-Bereich",
     "adminAttention": "Im Adminbereich wartet etwas auf dich",
-    "homeAria": "Zur Startseite"
+    "homeAria": "Zur Startseite",
+    "menu": "Menü"
   },
   "search": {
     "short": "Suchen",
@@ -61,15 +62,15 @@
   },
   "guestHome": {
     "hero": {
-      "badge": "Entwickler online",
-      "title": "Wo sich Menschen treffen, die mit Xentium bauen.",
-      "subtitle": "Stelle Fragen, zeige, was du gebaut hast, gestalte die Roadmap mit und lerne von {members} Machern. Lesen ist für alle offen.",
+      "badge": "online",
+      "title": "Willkommen bei {site}.",
+      "subtitle": "Lies, was unsere Mitglieder schreiben, misch dich ins Gespräch ein und lerne die Leute hier kennen. Lesen ist für alle offen.",
       "ctaPrimary": "Mitmachen",
       "ctaSecondary": "Als Gast stöbern"
     },
     "gate": {
-      "vote": "Erstelle ein Konto, um Themen zu liken",
-      "post": "Registriere dich, um ein neues Thema zu starten",
+      "vote": "Erstelle ein Konto, um Artikel zu liken",
+      "post": "Registriere dich, um einen Artikel zu schreiben",
       "more": "Erstelle ein kostenloses Konto, um alles zu lesen",
       "default": "Erstelle ein kostenloses Konto, um das zu tun"
     },
@@ -99,13 +100,15 @@
     "feed": {
       "latest": "Neueste",
       "top": "Top",
-      "topics_one": "{{count}} Thema",
-      "topics_other": "{{count}} Themen",
-      "newTopic": "Neues Thema",
+      "articles_one": "{{count}} Artikel",
+      "articles_other": "{{count}} Artikel",
+      "posts_one": "{{count}} Beitrag",
+      "posts_other": "{{count}} Beiträge",
+      "newArticle": "Artikel schreiben",
       "newPost": "Neuer Beitrag",
       "allCategories": "Alle Kategorien",
       "loading": "Wird geladen…",
-      "empty": "Hier gibt es noch keine Themen.",
+      "empty": "Noch keine Artikel.",
       "moreAll": "<b>Erstelle ein kostenloses Konto</b>, um alle {{formatted}} Beiträge zu sehen",
       "moreRead": "<b>Erstelle ein kostenloses Konto</b>, um alles zu lesen"
     },
@@ -675,5 +678,54 @@
   },
   "embed": {
     "unavailable": "Dieser Inhalt ist nicht verfügbar."
+  },
+  "warnTemplates": {
+    "label": "Verwarnung",
+    "pick": "Wähle die verletzte Regel…",
+    "preview": "Das liest {{user}}",
+    "none": "Es gibt noch keine Verwarnungsvorlagen, daher kann keine Verwarnung verschickt werden.",
+    "addOne": "Vorlage anlegen"
+  },
+  "consent": {
+    "settingsLink": "Cookie-Einstellungen",
+    "thisSite": "Diese Seite",
+    "core": {
+      "xt_rt": "Hält dich angemeldet.",
+      "xt_did": "Erkennt dieses Gerät bei der Anmeldung, um dein Konto zu schützen.",
+      "xt_oauth": "Schließt eine Anmeldung mit einem externen Konto ab.",
+      "xt_locale": "Merkt sich die gewählte Sprache.",
+      "xt_theme": "Merkt sich das gewählte Theme.",
+      "storage": "Merkt sich Entwürfe und Anzeigeeinstellungen auf diesem Gerät.",
+      "iconKit": "Lädt die Icons der Seite von Font Awesome."
+    },
+    "life": {
+      "signIn": "30 Tage oder bis der Browser geschlossen wird",
+      "year1": "1 Jahr",
+      "minutes10": "10 Minuten",
+      "untilCleared": "Bis du sie löschst"
+    },
+    "gate": {
+      "title": "Inhalt von {{service}}",
+      "body": "Beim Anzeigen werden Inhalte von {{service}} geladen, das dabei deine IP-Adresse sieht.",
+      "privacy": "Datenschutz",
+      "loadOnce": "Laden",
+      "always": "Immer erlauben"
+    }
+  },
+  "modTiming": {
+    "label": "Zählt für",
+    "banLabel": "Sperrdauer",
+    "never": "Läuft nie ab",
+    "7d": "7 Tage",
+    "30d": "30 Tage",
+    "90d": "90 Tage",
+    "180d": "180 Tage",
+    "365d": "1 Jahr",
+    "countsUntil": "Zählt gegen {{user}} bis {{date}}",
+    "countsForever": "Zählt dauerhaft gegen {{user}}",
+    "bannedFor": "{{user}} wird für {{len}} gesperrt",
+    "bannedForever": "{{user}} wird dauerhaft gesperrt",
+    "fixed": "Von der Vorlage festgelegt. Teamleiter mit der Berechtigung zum Überschreiben können das ändern.",
+    "override": "Überschreiben (Teamleitung)"
   }
 }

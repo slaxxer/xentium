@@ -218,6 +218,8 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   const enterSendsRef = useRef(enterSends);
   enterSendsRef.current = enterSends;
 
+  /** The editor if it can take commands; null while missing or already destroyed. */
+  const live = (e: typeof editor) => (e && !e.isDestroyed ? e : null);
   const editor = useEditor({
     extensions: [
       /**
@@ -290,8 +292,12 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   });
 
   // Follow `initialHtml` when it changes — a quote inserted, an edit loaded.
+  // ⚠ `isDestroyed`: TipTap can hand back an editor it has already destroyed for one
+  // render while it builds the next one, and a destroyed editor's `commands` throws.
+  // That crashed the article editor on open (`reading 'commands'`); the effect runs
+  // again with the live editor right after.
   useEffect(() => {
-    if (!editor || initialHtml === prevInitial.current) return;
+    if (!editor || editor.isDestroyed || initialHtml === prevInitial.current) return;
     prevInitial.current = initialHtml;
     if (initialHtml) {
       editor.commands.setContent(initialHtml);
@@ -304,7 +310,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // `onChangeJson` back in as `initialJson`, and resetting to the same document on
   // every keystroke would throw the caret to the end.
   useEffect(() => {
-    if (!editor || initialJson == null) return;
+    if (!editor || editor.isDestroyed || initialJson == null) return;
     const next = JSON.stringify(initialJson);
     if (next === prevJson.current) return;
     prevJson.current = next;
@@ -318,17 +324,17 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
   // an edit. A surface comparing against what it saved (articles) then saw a change
   // that never happened and kept a local "unsaved draft" of it.
   useEffect(() => {
-    editor?.setEditable(!disabled, false);
+    if (editor && !editor.isDestroyed) editor.setEditable(!disabled, false);
   }, [editor, disabled]);
 
   useImperativeHandle(ref, () => ({
     getHTML:    () => (editor?.isEmpty ? "" : editor?.getHTML() ?? ""),
     getJSON:    () => editor?.getJSON() ?? null,
     isEmpty:    () => editor?.isEmpty ?? true,
-    setContent: (html) => { editor?.commands.setContent(html); onChange?.(html); },
+    setContent: (html) => { live(editor)?.commands.setContent(html); onChange?.(html); },
     insertText: (text) => { editor?.chain().focus().insertContent({ type: "text", text }).run(); },
     clear:      () => {
-      editor?.commands.clearContent(true);
+      live(editor)?.commands.clearContent(true);
       onChange?.("");
       /* ⚠ Back to one row. A caller clears after a successful post, and the inline
          variant's whole point is that it is not there until it is needed — leaving
@@ -336,7 +342,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
          collapse exists to avoid. */
       if (variant === "inline") setOpen(false);
     },
-    focus:      () => { setOpen(true); editor?.commands.focus(); },
+    focus:      () => { setOpen(true); live(editor)?.commands.focus(); },
   }));
 
   /** A tool the composer owns rather than the editor. */
@@ -574,7 +580,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
         /* ⚠ NOT also `nvc`: that class is the open shell and sets
            `flex-direction: column`, which stood the collapsed row on its end. */
         className={`nvc--collapsed${className ? ` ${className}` : ""}`}
-        onClick={() => { setOpen(true); setTimeout(() => editor?.commands.focus(), 0); }}
+        onClick={() => { setOpen(true); setTimeout(() => live(editor)?.commands.focus(), 0); }}
       >
         <span className="nvc-collapsed__av">
           {user?.avatar ? <img src={user.avatar} alt="" /> : initials}
@@ -684,7 +690,7 @@ export const Composer = forwardRef<ComposerHandle, ComposerProps>(function Compo
           const el = e.target as HTMLElement;
           if (el !== e.currentTarget && !el.classList.contains("nvc-editor")) return;
           e.preventDefault();
-          editor.commands.focus("end");
+          live(editor)?.commands.focus("end");
         }}
       >
         {/* The panel variant floats the toggle over the body — it has no header.

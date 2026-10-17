@@ -15,6 +15,7 @@ import { useBadgeShadows } from "../lib/badgeShadow";
 import { uiLocale } from "../lib/i18n";
 import { pluginNavLabel } from "../lib/coreText";
 import { useDateTime } from "../lib/datetime";
+import { openConsentSettings, useHasConsentProvider } from "../lib/consent";
 
 interface LegendGroup { name: string; key: string; badgeColor: string | null }
 interface OnlineUser { username: string; groupKey: string; badgeColor: string | null }
@@ -192,6 +193,9 @@ function useFooterNavItems(): FooterNavItem[] {
 
 function FooterLinkList({ links }: { links: FooterNavItem[] }) {
   const { t } = useTranslation("common");
+  // A consent plugin is active: the way back to its settings, on every page — GDPR
+  // asks that withdrawing consent be as easy as giving it.
+  const consent = useHasConsentProvider();
   return (
     <nav className="xt-footlinks__list" aria-label={t("footer.linksLabel")}>
       {links.map((item) =>
@@ -203,6 +207,11 @@ function FooterLinkList({ links }: { links: FooterNavItem[] }) {
             {item.label}
           </a>
         ),
+      )}
+      {consent && (
+        <button type="button" className="xt-footlinks__link xt-footlinks__link--button" onClick={openConsentSettings}>
+          {t("consent.settingsLink")}
+        </button>
       )}
     </nav>
   );
@@ -260,10 +269,11 @@ export function FooterBar({ showUptime = false, showThemeChooser = true }: {
   showUptime?: boolean; showThemeChooser?: boolean;
 }) {
   const links = useFooterNavLinks();
+  const consent = useHasConsentProvider();
   return (
     <div className="xt-footbar">
       {/* No links and no picker: no row, so it holds no space above the copyright. */}
-      {(links.length > 0 || showThemeChooser) && (
+      {(links.length > 0 || showThemeChooser || consent) && (
         <div className="xt-footbar__top">
           <FooterLinkList links={links} />
           {/* Draws nothing with fewer than two installed themes. */}

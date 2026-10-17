@@ -278,6 +278,16 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
             </section>
 
             {/* ── Box ───────────────────────────────────────────────── */}
+            {/* In every mode, full width included: the space around the content. */}
+            <section className="lay-frame__sec">
+              <div className="lay-frame__sec-title">{t("layoutEditor.frame.content")}</div>
+              <Range label={t("layoutEditor.frame.contentWidth")} value={frame.contentWidth} unit="px"
+                {...FRAME_LIMITS.contentWidth} onChange={(v) => set({ contentWidth: v })} />
+              <Range label={t("layoutEditor.frame.readingWidth")} value={frame.readingWidth} unit="px"
+                {...FRAME_LIMITS.readingWidth} onChange={(v) => set({ readingWidth: v })} />
+              <p className="lay-frame__hint">{t("layoutEditor.frame.contentHint")}</p>
+            </section>
+
             <section className={`lay-frame__sec${allFull ? " is-dim" : ""}`}>
               <div className="lay-frame__sec-title">{t("layoutEditor.frame.box")}</div>
               <Range label={t("layoutEditor.frame.maxWidth")} value={frame.maxWidth} unit="px"

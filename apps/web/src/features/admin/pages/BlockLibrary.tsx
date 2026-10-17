@@ -142,11 +142,20 @@ export function BlockLibrary({
               onDragStart={(e) => dragStart(e, b.type)}
               onDragEnd={onDragEndType}
               onClick={() => onPick(b.type)}
-              title={t(`layoutEditor.blockDesc.${b.type}`, { defaultValue: blockLabel(b.type) })}
             >
               <span className="lay-lib__glyph"><FontAwesomeIcon icon={iconFor(b.type)} /></span>
-              <span className="lay-lib__name">{blockLabel(b.type)}</span>
-              {b.pluginId && <span className="lay-lib__badge">{t("layoutEditor.category.plugin")}</span>}
+              {/* One row per block, name over one line of what it is: two narrow tiles
+                  broke long names mid-word ("Benachrichtig-ungsglocke"). */}
+              <span className="lay-lib__text">
+                <span className="lay-lib__name">
+                  {blockLabel(b.type)}
+                  {b.pluginId && <span className="lay-lib__badge">{t("layoutEditor.category.plugin")}</span>}
+                </span>
+                {(() => {
+                  const about = t(`layoutEditor.blockDesc.${b.type}`, { defaultValue: "" });
+                  return about ? <span className="lay-lib__about">{about}</span> : null;
+                })()}
+              </span>
             </button>
           ))}
         </div>

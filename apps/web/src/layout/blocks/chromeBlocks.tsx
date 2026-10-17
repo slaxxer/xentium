@@ -24,7 +24,7 @@ import { individuallyPlacedSlotIds } from "../slotBlocks";
 import { useRenderedDocument } from "../LayoutRenderer";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import {
-  NavLogo, NavPrimaryLinks, NavSearchBlock,
+  NavLogo, NavPrimaryLinks, NavSearchBlock, NavMobileMenu,
   NavNotifications, NavModTool, NavAdminLink, NavUserMenu,
 } from "../../layouts/PubNav";
 import {
@@ -75,6 +75,8 @@ const childNode = (child: ReactNode): BlockNode | undefined =>
 
 /** The masthead's account buttons — what "Buttons: Log in / account menu" switches. */
 const ACCOUNT_TYPES = new Set(["userMenu", "modTool", "notifications", "headerWidgets", "adminLink"]);
+/** Carried pieces that move into the hamburger menu on narrow screens. */
+const MENU_TYPES = new Set(["search", "modTool", "headerWidgets", "adminLink"]);
 
 function SiteHeaderBlock({ props, children }: BlockProps<{
   height?: number; showLogo?: boolean; showWordmark?: boolean;
@@ -169,7 +171,7 @@ const CARRIED: Record<string, () => ReactNode> = {
 };
 
 function NavbarBlock({ props, children }: BlockProps<{
-  sticky?: boolean; height?: number; tone?: "theme" | "dark" | "brand" | "light";
+  sticky?: boolean; height?: number; tone?: "theme" | "dark" | "brand" | "light"; accountAlign?: "right" | "left";
 }>) {
   // The document from context, like `headerWidgets`: in the editor the unsaved one is
   // on screen, and this has to agree with it.
@@ -196,22 +198,39 @@ function NavbarBlock({ props, children }: BlockProps<{
       && (!mastheadShown || (!buttonsShown && ACCOUNT_TYPES.has(of))))
     .map(({ t }) => t))];
 
+  const accountLeft = props.accountAlign === "left";
   const classes = [
     "pub-nav",
+    accountLeft && "pub-nav--account-left",
     props.sticky === false && "pub-nav--static",
     props.tone && props.tone !== "theme" && `pub-nav--tone-${props.tone}`,
   ].filter(Boolean).join(" ");
+
+  // On narrow screens these leave the bar for the hamburger menu (CSS hides them
+  // here by `data-xt-carried`; the menu draws its own copies). The bell and the
+  // account menu stay in the bar: they are what a member checks most.
+  const inMenu = carried.filter((t) => MENU_TYPES.has(t));
+  const carriedGroup = carried.length > 0 && (
+    <div className="pub-nav__carried">
+      {carried.map((t) => <span key={t} className="pub-nav__carried-item" data-xt-carried={t}>{CARRIED[t]!()}</span>)}
+    </div>
+  );
+  const menu = (
+    <NavMobileMenu tools={inMenu.filter((t) => t !== "search").length > 0
+      ? inMenu.filter((t) => t !== "search").map((t) => <span key={t} className="pub-nav__sheet-tool">{CARRIED[t]!()}</span>)
+      : undefined} />
+  );
+  const kids = Children.toArray(children);
+  const logoKids = kids.filter((c) => childNode(c)?.type === "logo");
+  const otherKids = kids.filter((c) => childNode(c)?.type !== "logo");
 
   return (
     <nav className={classes} style={props.height ? { ["--nav-height" as string]: `${props.height}px` } : undefined}>
       <div className="pub-nav__inner">
         {needLogo && <NavLogo showWordmark />}
-        {children}
-        {carried.length > 0 && (
-          <div className="pub-nav__carried">
-            {carried.map((t) => <span key={t} className="pub-nav__carried-item">{CARRIED[t]!()}</span>)}
-          </div>
-        )}
+        {/* Account menu on the left: straight after the logo, before the links. */}
+        {accountLeft ? <>{logoKids}{carriedGroup}{otherKids}</> : <>{children}{carriedGroup}</>}
+        {menu}
       </div>
     </nav>
   );

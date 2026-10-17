@@ -11,6 +11,8 @@ import {
   articleSlugParamSchema,
   createArticleSchema,
   listArticlesQuerySchema,
+  pinArticleSchema,
+  trendingQuerySchema,
   updateArticleSchema,
 } from "./article.validation.js";
 
@@ -42,6 +44,22 @@ export const articlesController = {
     const result = await articleService.listMine(viewerId, { page, limit, status });
     res.json(result);
   }),
+
+  featured: (async (req, res) => {
+    res.json({ article: await articleService.featured(req.userId) });
+  }) as RequestHandler,
+
+  trending: (async (req, res) => {
+    const { days, max } = trendingQuerySchema.parse(req.query);
+    res.json(await articleService.trending(req.userId, days, max));
+  }) as RequestHandler,
+
+  pin: (async (req, res) => {
+    const { id } = articleIdParamSchema.parse(req.params);
+    const { pinned } = pinArticleSchema.parse(req.body);
+    await articleService.setPinned(id, pinned);
+    res.json({ pinned });
+  }) as RequestHandler,
 
   popularTags: (async (_req, res) => {
     res.json(await articleService.popularTags(12));

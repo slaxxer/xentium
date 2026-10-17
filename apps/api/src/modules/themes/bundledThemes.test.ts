@@ -3,7 +3,7 @@
  * bundled version replaces OUR row's package but never a row the admin imported.
  * And Core is offered to readers while it is the site's own.
  */
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { XENTIUM_DARK_ID, XENTIUM_DARK_PACKAGE } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
@@ -50,6 +50,19 @@ describe("bundled themes", () => {
     const row = await prisma.theme.findUniqueOrThrow({ where: { id: XENTIUM_DARK_ID } });
     expect(row.version).toBe(XENTIUM_DARK_PACKAGE.manifest.version);
     expect(row.active).toBe(true);
+  });
+
+  it("replaces our row's package in place when the bundle changed at the same version", async () => {
+    await ensureBundledThemes();
+    await prisma.theme.update({ where: { id: XENTIUM_DARK_ID }, data: { payload: { old: true }, active: true } });
+    await ensureBundledThemes();
+    const row = await prisma.theme.findUniqueOrThrow({ where: { id: XENTIUM_DARK_ID } });
+    expect(row.payload).toEqual(XENTIUM_DARK_PACKAGE.payload);
+    expect(row.active).toBe(true);
+    const update = vi.spyOn(prisma.theme, "update");
+    await ensureBundledThemes(); // unchanged now: no write, despite jsonb's key order
+    expect(update).not.toHaveBeenCalled();
+    update.mockRestore();
   });
 
   it("never replaces a package the admin imported under the same id", async () => {

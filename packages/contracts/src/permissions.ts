@@ -49,6 +49,11 @@ export const CorePermissions = {
   // the members page's Staff filter. A permission, not a list of group names, so a
   // site that adds its own team group decides in ACP → Permissions.
   MODERATION_PROTECTED:      "moderation.protected",
+  // A warning counts for as long as its template says, and a ban lasts as long as its
+  // template says. These let a team lead (Supermod by default) set another length
+  // when they issue one. Moderators follow the template.
+  MODERATION_WARN_EXPIRY_OVERRIDE: "moderation.warn.expiry.override",
+  MODERATION_BAN_LENGTH_OVERRIDE:  "moderation.ban.length.override",
 
   // Profile comments (§40)
   PROFILE_COMMENT_CREATE:      "profile.comment.create",
@@ -87,6 +92,8 @@ export const PERMISSION_IMPLIES: Readonly<Record<string, readonly string[]>> = {
   "article.delete.any":         ["article.delete.own"],
   "article.comment.delete.any": ["article.comment.delete.own"],
   "article.revisions.restore":  ["article.revisions.view"],
+  "moderation.warn.expiry.override": ["moderation.warn.manage"],
+  "moderation.ban.length.override":  ["moderation.ban.manage"],
 };
 
 /** `keys` plus everything they imply, without duplicates. */

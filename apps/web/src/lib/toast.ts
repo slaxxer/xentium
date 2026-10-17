@@ -44,7 +44,7 @@ const DEFAULT_DURATIONS: Record<CoreToastCategory, number> = {
   error:   10000,
 };
 const MAX_VISIBLE = 4;
-const DEDUP_STATES = true;   // identical (category+message) while visible → ×N
+const DEDUP_STATES = true;   // identical message (+title) while shown or queued → ×N
 
 let nextId = 1;
 let visible: ToastItem[] = [];
@@ -89,8 +89,10 @@ function emit(category: ToastCategory, message: string, opts: ToastOptions = {})
     ?? DEFAULT_DURATIONS.info;
 
   if (DEDUP_STATES) {
-    const dup = visible.find((t) => t.category === category && t.message === message && t.title === opts.title)
-      ?? queue.find((t) => t.category === category && t.message === message && t.title === opts.title);
+    // The same TEXT counts up whatever category it came in as: one failure reported
+    // as a warning by one caller and an error by another is still one message.
+    const same = (t: ToastItem) => t.message === message && (t.title ?? "") === (opts.title ?? "");
+    const dup = visible.find(same) ?? queue.find(same);
     if (dup) {
       dup.count += 1;
       if (visible.includes(dup) && !dup.paused) startTimer(dup, dup.duration);   // restart the clock

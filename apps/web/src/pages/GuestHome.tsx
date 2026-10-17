@@ -204,8 +204,9 @@ export function ArticleFeed({ onGate, categories, totalArticles, showCategories 
         <div className="gtabs">
           {TABS.map((tb) => <button key={tb.id} className={`gtab${tab === tb.id ? " is-active" : ""}`} onClick={() => setTab(tb.id)}>{tb.label}</button>)}
         </div>
-        <span className="gfeed__count">{t("topics", { count: list.length })}</span>
-        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> {t("newTopic")}</button>
+        {/* The site's total, not the page length: "10 articles" on a site with 300 undersold it. */}
+        {(totalArticles ?? 0) > 0 && <span className="gfeed__count">{t("articles", { count: totalArticles })}</span>}
+        <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> {t("newArticle")}</button>
       </div>
 
       {showCategories && categories.length > 0 && (
@@ -264,7 +265,7 @@ export function MergedFeed({ sources, onGate }: { sources: string[]; onGate: (k:
   return (
     <div className="gfeed">
       <div className="gfeed__bar">
-        <span className="gfeed__count">{t("topics", { count: items.length })}</span>
+        {items.length > 0 && <span className="gfeed__count">{t("posts", { count: items.length })}</span>}
         <button className="btn btn--primary gfeed__new" onClick={() => onGate("post")}><Icon name="plus" size={17} /> {t("newPost")}</button>
       </div>
       <div className="gthreads">

@@ -46,6 +46,36 @@ describe("custom emojis", () => {
   });
 });
 
+describe("order and categories", () => {
+  const mk = (code: string, category: string) =>
+    emojiService.create({ shortcode: `${P}_${code}`, category }, { buffer: PNG, ext: "png" }, "u");
+
+  it("reorders a category, and a drop moves an emoji into another", async () => {
+    const a = await mk("o1", "Probe A"); const b = await mk("o2", "Probe A"); const c = await mk("o3", "Probe B");
+    await emojiService.reorder("Probe A", [b.id, c.id, a.id]);
+    const rows = await prisma.emoji.findMany({ where: { id: { in: [a.id, b.id, c.id] } }, orderBy: { position: "asc" } });
+    expect(rows.map((r) => [r.shortcode, r.category, r.position])).toEqual([
+      [`${P}_o2`, "Probe A", 0], [`${P}_o3`, "Probe A", 1], [`${P}_o1`, "Probe A", 2],
+    ]);
+  });
+
+  it("refuses an order naming a retired or unknown emoji", async () => {
+    const a = await mk("o4", "Probe A"); const b = await mk("o5", "Probe A");
+    await emojiService.retire(b.id);
+    await expect(emojiService.reorder("Probe A", [a.id, b.id])).rejects.toMatchObject({ httpStatus: 409 });
+    await expect(emojiService.reorder("Probe A", [a.id, "nope"])).rejects.toMatchObject({ httpStatus: 409 });
+  });
+
+  it("renames a category, merging into an existing one after its emojis", async () => {
+    const a = await mk("r1", "Probe Old"); const b = await mk("r2", "Probe New");
+    expect(await emojiService.renameCategory("Probe Old", "Probe New")).toEqual({ moved: 1 });
+    const moved = await prisma.emoji.findUniqueOrThrow({ where: { id: a.id } });
+    const kept = await prisma.emoji.findUniqueOrThrow({ where: { id: b.id } });
+    expect(moved.category).toBe("Probe New");
+    expect(moved.position).toBeGreaterThan(kept.position);
+  });
+});
+
 describe("default emojis", () => {
   const codes = DEFAULT_EMOJIS.map((e) => e.shortcode);
   async function reset() {

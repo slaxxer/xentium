@@ -30,6 +30,8 @@
     "by": "par",
     "today": "Aujourd'hui",
     "daysAgo": "il y a {{d}} j",
-    "weeksAgo": "il y a {{w}} sem"
+    "weeksAgo": "il y a {{w}} sem",
+    "placeholder": "Rechercher des articles, des membres et plus…",
+    "submit": "Rechercher"
   }
 }

@@ -41,7 +41,11 @@
     "themeStudio": "Theme Studio",
     "legal": "Mentions légales",
     "activityLog": "Journal d'activité",
-    "emojis": "Emojis"
+    "emojis": "Emojis",
+    "members": "Membres",
+    "editor": "Éditeur",
+    "groupSetup": "Configuration",
+    "groupLogs": "Journaux"
   },
   "sidebar": {
     "adminPanel": "Panneau d'administration",
@@ -860,7 +864,7 @@
         "msg": "Interdit",
         "desc": "L'utilisateur authentifié n'a pas la permission d'effectuer cette action.",
         "cause": "Clé de permission manquante pour la ressource demandée.",
-        "fix": "Vérifiez que le groupe de l'utilisateur dispose de la permission requise dans ACP → Contrôle d'accès → Permissions."
+        "fix": "Vérifiez que le groupe de l'utilisateur dispose de la permission requise dans ACP → Membres → Permissions."
       },
       "XEC-API-4004": {
         "msg": "Introuvable",
@@ -950,19 +954,19 @@
         "msg": "Permission refusée",
         "desc": "Il manque à l'utilisateur la clé de permission spécifique requise pour cette action.",
         "cause": "L'affectation de groupe ou la matrice de permissions n'inclut pas cette clé.",
-        "fix": "Accordez la permission requise au groupe de l'utilisateur dans ACP → Contrôle d'accès → Permissions."
+        "fix": "Accordez la permission requise au groupe de l'utilisateur dans ACP → Membres → Permissions."
       },
       "XEC-PERM-1040": {
         "msg": "Contenu trop long",
         "desc": "Le corps de la publication ou de l'article dépasse la longueur maximale pour le niveau de cet utilisateur.",
         "cause": "La configuration de progression du groupe restreint la longueur du contenu à ce niveau.",
-        "fix": "Raccourcissez le contenu, ou ajustez la longueur maximale de publication du groupe dans ACP → Contrôle d'accès → Groupes → Progression."
+        "fix": "Raccourcissez le contenu, ou ajustez la longueur maximale de publication du groupe dans ACP → Membres → Groupes → Progression."
       },
       "XEC-PERM-1041": {
         "msg": "Limite quotidienne de publications atteinte",
         "desc": "L'utilisateur a atteint sa limite quotidienne de publications.",
         "cause": "La configuration de progression du groupe fixe un plafond quotidien de publications.",
-        "fix": "Attendez minuit (UTC), ou augmentez la limite dans ACP → Contrôle d'accès → Groupes → Progression."
+        "fix": "Attendez minuit (UTC), ou augmentez la limite dans ACP → Membres → Groupes → Progression."
       },
       "XEC-PERM-1042": {
         "msg": "Limite de pièces jointes dépassée",
@@ -1355,7 +1359,7 @@
     "toastQueued": "Exécution mise en file."
   },
   "userList": {
-    "eyebrow": "Gestion",
+    "eyebrow": "Membres",
     "searchPlaceholder": "Rechercher des utilisateurs…",
     "allRoles": "Tous les rôles",
     "allStatus": "Tous les statuts",
@@ -1605,16 +1609,6 @@
       "bans": "Bannissements",
       "detection": "Détection"
     },
-    "lifetime": {
-      "title": "Durée de vie des avertissements",
-      "sub": "Si un avertissement cesse un jour de compter pour l'échelle",
-      "onTitle": "Les avertissements expirent",
-      "onDesc": "Les anciens avertissements deviennent inactifs : un membre qui se tient bien redescend l'échelle.",
-      "offTitle": "Les avertissements n'expirent jamais",
-      "offDesc": "Chaque avertissement reçu par un membre continue de compter pour l'échelle ci-dessous.",
-      "after": "Expirent après",
-      "afterDesc": "Compté à partir du jour de l'avertissement. Un modérateur peut toujours choisir sa propre date."
-    },
     "ladder": {
       "title": "Échelle des sanctions",
       "sub": "Ce qui se passe quand les avertissements s'accumulent. Chaque palier s'applique une fois, quand un membre atteint son nombre.",
@@ -1715,13 +1709,14 @@
         "desc": "Un nouveau compte apparaît depuis l'adresse de quelqu'un que vous venez de bannir.",
         "rule": "Ouvre un dossier pour une inscription dans les 10 minutes suivant un bannissement, depuis l'adresse du membre banni"
       }
-    }
+    },
+    "lifetimeMoved": "La durée de prise en compte d'un avertissement se règle sur chaque modèle d'avertissement.",
+    "lifetimeLink": "Ouvrir les modèles"
   },
   "modTemplates": {
     "eyebrow": "Modération",
     "title": "Modèles",
-    "sub": "Les textes prêts à l'emploi dont partent les modérateurs dans ModCanvas pour avertir, bannir, retirer ou classer. Écrivez les vôtres ou gardez ceux par défaut. Tout est enregistré au fil des modifications.",
-    "search": "Rechercher un modèle…",
+    "sub": "Les textes avec lesquels les modérateurs avertissent, bannissent, retirent ou classent dans ModCanvas. Les avertissements et les bannissements sont envoyés tels qu'écrits ici et durent le temps défini ici. Tout est enregistré dès que vous le modifiez.",
     "new": "Nouveau",
     "newName": "Nouveau modèle",
     "copyName": "{{name}} (copie)",
@@ -1746,7 +1741,7 @@
       "dismiss": "Une note interne pour le journal de modération. Jamais envoyée."
     },
     "permanent": "Définitif",
-    "defaultLen": "Par défaut {{len}}",
+    "defaultLen": "Bannit pour {{len}}",
     "internal": "Note interne",
     "noRule": "Aucune référence de règle",
     "default": "Par défaut",
@@ -1767,7 +1762,7 @@
     "rule": "Référence de règle",
     "rulePlaceholder": "ex. Soyez respectueux",
     "usedFor": "Utilisé pour",
-    "defaultDuration": "Durée de bannissement par défaut",
+    "defaultDuration": "Durée du bannissement",
     "message": "Message",
     "var": {
       "user": "Auteur du contenu signalé",
@@ -1793,7 +1788,10 @@
     "used_one": "Utilisé {{count}} fois",
     "used_other": "Utilisé {{count}} fois",
     "edited": "modifié par {{name}} {{when}}",
-    "newText": "Bonjour {user}, "
+    "newText": "Bonjour {user}, ",
+    "warnLen": "Compte pendant {{len}}",
+    "add": "Ajouter",
+    "close": "Fermer"
   },
   "modCases": {
     "sub": "Modération",
@@ -1937,7 +1935,8 @@
     "shared": "Partagé",
     "sharedBy_one": "Vu sur {{count}} de ces comptes",
     "sharedBy_other": "Vu sur {{count}} de ces comptes",
-    "provenance": "{{type}}"
+    "provenance": "{{type}}",
+    "pagination": "Page {{page}} sur {{totalPages}} · {{total}} cas"
   },
   "modLog": {
     "sub": "Modération",
@@ -3104,6 +3103,7 @@
       "homeHotThreads": "Les discussions qui reçoivent le plus de réponses en ce moment.",
       "homePopularTags": "Les tags les plus utilisés ces derniers temps.",
       "homeSuggestedPeople": "Des membres à suivre.",
+      "homeSetup": "Pour les administrateurs d'un nouveau site : les étapes restantes pour le configurer. Masquée pour tous les autres.",
       "articleDetail": "La page d’article entière : titre, texte, auteur et commentaires.",
       "profileCard": "Le panneau du profil. Placez-y les éléments du profil.",
       "profileAvatar": "L’avatar du membre.",
@@ -3132,7 +3132,10 @@
       "footerText": "Retiré : fait désormais partie de la barre du pied de page.",
       "groupLegend": "Les groupes d’utilisateurs et leurs couleurs.",
       "boardStats": "Les totaux du site : articles, membres et le dernier inscrit.",
-      "branding": "Retiré : c’est désormais la barre du pied de page."
+      "branding": "Retiré : c’est désormais la barre du pied de page.",
+      "articleCategories": "Les catégories avec leur nombre d'articles. Un clic filtre l'index.",
+      "articleTrending": "Les articles les plus aimés et commentés des derniers jours.",
+      "articleTags": "Les tags les plus utilisés. Un clic filtre l'index."
     },
     "catalogueTitle": "Ajouter un bloc à {{region}}",
     "catalogueNote": "Les blocs proviennent d'un catalogue fixe : une mise en page ne peut jamais exécuter de code. Rien n'est en ligne tant que vous ne publiez pas.",
@@ -3368,7 +3371,11 @@
       "resetDefault": "Revenir à la pleine largeur",
       "conflict": "Quelqu'un d'autre a modifié le cadre du site. Sa version a été chargée.",
       "phones": "Mobiles",
-      "stickyMoved": "La navigation fixe est un réglage du bloc Navbar : sélectionnez la barre pour le modifier."
+      "stickyMoved": "La navigation fixe est un réglage du bloc Navbar : sélectionnez la barre pour le modifier.",
+      "content": "Contenu",
+      "contentWidth": "Largeur du contenu",
+      "readingWidth": "Largeur de lecture",
+      "contentHint": "La largeur du contenu est la colonne principale de chaque page. La largeur de lecture est la colonne plus étroite des articles. Les deux s'appliquent dans chaque cadre, pleine largeur comprise."
     },
     "edge": {
       "title": "Art de bordure",
@@ -3470,6 +3477,79 @@
       "browseAll": "Parcourir avec descriptions",
       "addHere": "Ajouter un bloc ici",
       "notHere": "{{block}} ne peut pas aller là. Sélectionnez un bloc ou marquez un emplacement adapté."
+    },
+    "backToBlocks": "Blocs",
+    "moveTo": "Déplacer…",
+    "moveToTitle": "Déplacer ce bloc vers",
+    "moveToNone": "Ce bloc ne peut aller nulle part ailleurs.",
+    "moveToHere": "ici",
+    "mode": {
+      "label": "Mode de l'éditeur",
+      "simple": "Simple",
+      "advanced": "Avancé",
+      "simpleHint": "La page, les blocs et les réglages du bloc choisi.",
+      "advancedHint": "Aussi les calques, qui voit un bloc, les styles du thème, les icônes et plus."
+    },
+    "styles": {
+      "headerTitle": "Style d'en-tête",
+      "footerTitle": "Style de pied de page",
+      "hint": "Partez d'un style, puis ajustez les blocs. Vos couleurs restent ; Ctrl+Z annule.",
+      "preset": {
+        "below": "Bandeau dessous",
+        "row": "Une ligne",
+        "above": "Bandeau dessus",
+        "centred": "Centré",
+        "full": "Complet",
+        "community": "Communauté",
+        "minimal": "Minimal"
+      }
+    },
+    "tour": {
+      "label": "Visite de Theme Studio",
+      "count": "Étape {{n}} sur {{total}}",
+      "skip": "Passer la visite",
+      "back": "Retour",
+      "next": "Suivant",
+      "start": "Montrez-moi",
+      "finish": "Compris",
+      "replay": "Revoir la visite",
+      "welcome": {
+        "title": "Bienvenue dans Theme Studio",
+        "body": "C'est ici que votre site prend son apparence et sa mise en page. Une visite d'une minute vous montre où tout se trouve."
+      },
+      "modes": {
+        "title": "Quatre façons de styliser votre site",
+        "body": "Mise en page organise vos pages. Couleurs et police, Image de marque et CSS personnalisé changent l'apparence. L'historique permet de revenir à une version précédente."
+      },
+      "page": {
+        "title": "Choisissez une page",
+        "body": "Choisissez la page à organiser : l'accueil, les articles, les profils, ou l'en-tête et le pied de page communs. En-tête et pied de page ont des styles prêts à l'emploi."
+      },
+      "select": {
+        "title": "Cliquez sur un élément de la page",
+        "body": "L'aperçu est votre vraie page. Cliquez sur une partie pour la sélectionner : un titre, le fil, la navigation.",
+        "task": "Cliquez sur un élément de l'aperçu pour continuer."
+      },
+      "panel": {
+        "title": "Ses réglages apparaissent ici",
+        "body": "Modifiez les réglages, montez-le ou descendez-le, ou utilisez Déplacer… pour le mettre ailleurs, comme dans la barre latérale. Vous pouvez aussi le glisser sur la page. Ctrl+Z annule tout."
+      },
+      "add": {
+        "title": "Ajoutez des blocs",
+        "body": "Revenez à Blocs pour voir tout ce que vous pouvez ajouter. Glissez un bloc sur la page, ou cliquez pour l'ajouter après le bloc choisi."
+      },
+      "mode": {
+        "title": "Simple ou Avancé",
+        "body": "Simple montre l'essentiel pour commencer. Avancé ajoute les calques, qui voit un bloc, les styles du thème et les icônes."
+      },
+      "publish": {
+        "title": "Rien n'est en ligne avant de publier",
+        "body": "Vos modifications s'enregistrent seules en brouillon, visible par vous seul. Publier les met en ligne, toutes à la fois."
+      },
+      "done": {
+        "title": "C'est tout",
+        "body": "Amusez-vous à le faire vôtre. Vous pouvez revoir cette visite à tout moment avec le bouton ?."
+      }
     }
   },
   "groups": {
@@ -3839,7 +3919,7 @@
     "retry": "Réessayer"
   },
   "badges": {
-    "eyebrow": "Communauté",
+    "eyebrow": "Membres",
     "title": "Badges",
     "subtitle": "Ce que ce site peut attribuer. Qui porte quoi se trouve sur la page du membre.",
     "new": "Nouveau badge",
@@ -3986,13 +4066,10 @@
     "partialFiltered": "Une famille stylisée : seules les icônes qu’elle dessine sont listées."
   },
   "composer": {
-    "eyebrow": "Apparence",
+    "eyebrow": "Contenu",
     "title": "Éditeur",
     "subtitle": "Quels outils les membres ont pour écrire, et où chacun se trouve.",
-    "toolsTitle": "Outils",
-    "toolsSub": "{{count}} dans la barre. Tout le reste est à un clic dans le menu.",
-    "barPreview": "Barre d'action",
-    "barEmpty": "Rien dans la barre — les membres n'auront que le menu.",
+    "barEmpty": "Rien dans la barre. Les membres n'ont que le menu.",
     "place": {
       "bar": "Barre",
       "overflow": "Menu",
@@ -4002,7 +4079,20 @@
     "behaviourSub": "Le comportement de l'éditeur sur toutes les surfaces.",
     "mentions": "Mentions partout",
     "mentionsDesc": "Taper @ propose des membres dans les commentaires, sujets, réponses et messages privés.",
-    "notSupported": "Les pièces jointes dépendent de la surface : le forum fournit un envoi, les commentaires d'articles, le mur et les messages privés non — le trombone y est donc désactivé. Aucun service GIF n'est configuré, ce sélecteur n'est pas proposé."
+    "notSupported": "Les pièces jointes dépendent de la surface : le forum fournit un envoi, les commentaires d'articles, le mur et les messages privés non — le trombone y est donc désactivé. Aucun service GIF n'est configuré, ce sélecteur n'est pas proposé.",
+    "barTitle": "Barre",
+    "barSub": "Exactement ainsi, dans cet ordre. Six tiennent sur une ligne de téléphone.",
+    "moveLeft": "Déplacer {{tool}} à gauche",
+    "moveRight": "Déplacer {{tool}} à droite",
+    "filterAll": "Tous",
+    "cycleHint": "Cliquez sur une tuile pour passer : barre → menu → désactivé",
+    "groupCounts": "{{bar}} barre · {{menu}} menu · {{off}} désactivés",
+    "setAll": "Tous :",
+    "state": {
+      "bar": "Dans la barre · {{n}}",
+      "overflow": "Dans le menu",
+      "off": "Désactivé"
+    }
   },
   "signInProviders": {
     "passkeysTitle": "Clés d'accès",
@@ -4098,7 +4188,7 @@
       "grant": "Attribuer",
       "badgeDone_one": "Badge attribué à {{count}} membre",
       "badgeDone_other": "Badge attribué à {{count}} membres",
-      "noBadges": "Il n'y a encore aucun badge. Créez-en un dans Utilisateurs → Badges.",
+      "noBadges": "Il n'y a encore aucun badge. Créez-en un dans Membres → Badges.",
       "logoutTitle_one": "Déconnecter {{count}} membre ?",
       "logoutTitle_other": "Déconnecter {{count}} membres ?",
       "logoutBody": "Toutes leurs sessions prennent fin maintenant. Ils peuvent se reconnecter.",
@@ -4247,7 +4337,9 @@
     "links": "Liens",
     "smallLogo": "Petit logo à gauche",
     "smallLogoHint": "Utile une fois le bandeau défilé.",
-    "smallLogoForced": "Toujours actif tant que le bandeau est masqué."
+    "smallLogoForced": "Toujours actif tant que le bandeau est masqué.",
+    "right": "Droite",
+    "accountMenu": "Menu du compte"
   },
   "studio": {
     "title": "Theme Studio",
@@ -4595,6 +4687,12 @@
           },
           "showFilters": {
             "title": "Afficher les filtres"
+          },
+          "showFeatured": {
+            "title": "Afficher l'article épinglé"
+          },
+          "columns": {
+            "title": "Colonnes"
           }
         }
       },
@@ -4747,6 +4845,9 @@
       },
       "homeSuggestedPeople": {
         "label": "Personnes suggérées"
+      },
+      "homeSetup": {
+        "label": "Liste de configuration"
       },
       "articleDetail": {
         "label": "Article"
@@ -5090,6 +5191,28 @@
             }
           }
         }
+      },
+      "articleCategories": {
+        "label": "Catégories d'articles"
+      },
+      "articleTrending": {
+        "label": "Articles tendance",
+        "props": {
+          "max": {
+            "title": "Combien"
+          },
+          "days": {
+            "title": "Jours en arrière"
+          }
+        }
+      },
+      "articleTags": {
+        "label": "Tags populaires",
+        "props": {
+          "max": {
+            "title": "Combien de tags"
+          }
+        }
       }
     },
     "jobs": {
@@ -5256,6 +5379,8 @@
       "moderation.log.view": "Voir le journal de modération",
       "moderation.settings": "Modifier les paramètres de modération",
       "moderation.protected": "Compte comme membre de l'équipe (ne peut être ni averti ni banni)",
+      "moderation.warn.expiry.override": "Modifier la durée de prise en compte d'un avertissement",
+      "moderation.ban.length.override": "Modifier la durée d'un bannissement",
       "message.send": "Envoyer des messages privés",
       "admin.plugins": "Gérer les extensions dans le panneau d'administration",
       "plugin.install": "Installer des extensions",
@@ -5266,9 +5391,7 @@
   },
   "emojis": {
     "title": "Emojis",
-    "subtitle": "Les emojis que les membres peuvent utiliser dans l’éditeur : articles, commentaires, mur, messages du forum et messages privés. Envoyez des images et donnez à chacune un :shortcode: et une catégorie.",
-    "count_one": "emoji",
-    "count_other": "emojis",
+    "subtitle": "Ce que propose le sélecteur d'émojis de l'éditeur, partout où les membres écrivent. L'ordre ici est celui du sélecteur.",
     "upload": "Envoyer des emojis",
     "pendingTitle_one": "{{count}} emoji à ajouter",
     "pendingTitle_other": "{{count}} emojis à ajouter",
@@ -5294,6 +5417,16 @@
     "removeBody": "Il quitte le sélecteur d’emojis. Les publications qui l’utilisent déjà continuent de l’afficher et son shortcode reste réservé.",
     "removed": "Emoji retiré",
     "saved": "Emoji enregistré",
-    "save": "Enregistrer"
+    "save": "Enregistrer",
+    "active_one": "{{count}} actif",
+    "active_other": "{{count}} actifs",
+    "pendingSub": "Les shortcodes viennent des noms de fichiers. Vérifiez-les, puis ajoutez.",
+    "categoryAll": "Catégorie pour tous",
+    "errInvalid": "2 à 32 caractères : a–z, 0–9, _ - +",
+    "errTaken": "Le shortcode :{{code}}: est déjà pris.",
+    "errTwice": "Un autre fichier de ce lot utilise :{{code}}:.",
+    "rename": "Renommer",
+    "renamed": "Catégorie renommée",
+    "dragHint": "Glisser pour réordonner (ou Alt + ↑/↓)"
   }
 }

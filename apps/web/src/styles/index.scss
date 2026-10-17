@@ -1,6 +1,7 @@
 @use "tokens" as *;
 @use "buttons";
 @use "rich";
+@use "warnTemplate";
 
 /* Reset */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

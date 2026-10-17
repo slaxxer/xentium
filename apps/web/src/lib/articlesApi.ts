@@ -46,13 +46,15 @@ export interface ArticleListItem {
   viewCount: number;
   /** Estimated reading time in whole minutes (min 1). */
   readTime: number;
+  /** Pinned by staff to the top of the article index. */
+  pinned?: boolean;
   author: ArticleAuthor;
   category: ArticleCategoryRef | null;
   tags: ArticleTagRef[];
   createdAt: string;
   updatedAt: string;
   /** The signed-in viewer's own state. Absent for guests. */
-  viewer?: { liked: boolean; saved: boolean };
+  viewer?: { liked: boolean; disliked?: boolean; saved: boolean };
 }
 
 export interface ArticleDetail extends ArticleListItem {
@@ -94,7 +96,15 @@ export interface ArticleCategoryNode {
   hideIfNoAccess: boolean;
   effectiveVisibility: string;
   children: ArticleCategoryNode[];
+  /** Published articles in it the viewer may see. */
+  count?: number;
 }
+
+export type ArticlePeriod = "week" | "month" | "year";
+export type ArticleLength = "short" | "medium" | "long";
+export type ArticleSort = "latest" | "popular" | "discussed";
+
+export interface TrendingArticle { id: string; slug: string; title: string; likeCount: number; commentCount: number }
 
 export type HomeFeed = "latest" | "following" | "top" | "liked" | "saved" | "mine";
 
@@ -112,6 +122,13 @@ export interface ListArticlesParams {
   status?: ArticleStatus;
   /** following = followed categories and tags; liked / saved / mine = the viewer's own. */
   feed?: HomeFeed;
+  /** The article index's filters (see the API's listArticlesQuerySchema). */
+  q?: string;
+  tag?: string;
+  period?: ArticlePeriod;
+  length?: ArticleLength;
+  sort?: ArticleSort;
+  exclude?: string;
 }
 
 export interface CreateArticleInput {
@@ -143,6 +160,9 @@ export const articlesApi = {
     api.get<PaginatedResponse<ArticleListItem>>(`/articles/me${qs({ ...params })}`),
   popularTags: () =>
     api.get<{ name: string; slug: string; count: number }[]>("/articles/tags/popular"),
+  featured: () => api.get<{ article: ArticleListItem | null }>("/articles/featured"),
+  trending: (days = 30, max = 5) => api.get<TrendingArticle[]>(`/articles/trending?days=${days}&max=${max}`),
+  pin: (id: string, pinned: boolean) => api.post<{ pinned: boolean }>(`/articles/${id}/pin`, { pinned }),
   getBySlug: (slug: string) => api.get<ArticleDetail>(`/articles/${encodeURIComponent(slug)}`),
   create: (input: CreateArticleInput) => api.post<ArticleDetail>("/articles", input),
   update: (id: string, input: UpdateArticleInput) =>

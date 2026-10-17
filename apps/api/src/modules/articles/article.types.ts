@@ -16,6 +16,8 @@ export interface ArticleListItem {
   viewCount: number;
   /** Estimated reading time in whole minutes (min 1). Computed from body word count. */
   readTime: number;
+  /** Pinned by staff to the top of the article index. */
+  pinned: boolean;
   author: {
     id: string; username: string; avatar: string | null; badgeColor: string | null;
     groups: Array<{
@@ -30,7 +32,7 @@ export interface ArticleListItem {
   createdAt: Date;
   updatedAt: Date;
   /** The signed-in viewer's own state, on lists. Absent for guests. */
-  viewer?: { liked: boolean; saved: boolean };
+  viewer?: { liked: boolean; disliked?: boolean; saved: boolean };
 }
 
 export interface ArticleDetail extends ArticleListItem {

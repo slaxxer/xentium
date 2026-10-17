@@ -80,389 +80,380 @@
   &--full { width: 100%; }
 }
 
+/* =========================================================
+   Article reader (concept "Article Page Redesign"): a head (breadcrumb, title, lede,
+   byline), a wide featured image, then three columns: the action rail, the text and
+   a side column (author, on this page, more in the category); comments under the
+   text and "Keep reading" at the end. Every colour is a token.
+   ========================================================= */
 .ard {
-  max-width: 760px;
+  // The page: Theme Studio → Site frame → Content width. The TEXT keeps the reading
+  // width (Site frame → Reading width), see `.ard-grid`.
+  max-width: var(--content-max, 1140px);
   margin: 0 auto;
-  padding: 48px 32px;
+  padding: 40px 32px 64px;
   color: var(--c-fg);
 
-  &__loading {
-    text-align: center;
-    padding: 4rem;
-    color: var(--c-fg-muted);
-  }
-
-  &__tags {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 20px;
-  }
+  &__loading { text-align: center; padding: 4rem; color: var(--c-fg-muted); }
 
   &__title {
-    font-size: 2.375rem;
+    max-width: 18ch;
+    margin: 0 0 18px;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4.6vw, 3.6rem);
     font-weight: 800;
-    line-height: 1.12;
-    letter-spacing: -0.03em;
+    line-height: 1.05;
+    letter-spacing: -0.035em;
     color: var(--c-fg);
-    margin: 0 0 16px;
-  }
-
-  &__meta {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--c-border);
-  }
-  &__meta-info { display: flex; flex-direction: column; }
-  &__meta-name { font-size: var(--fs-base); font-weight: 700; color: var(--c-fg); }
-  &__meta-sub { font-size: var(--fs-sm); color: var(--c-fg-subtle); }
-  &__meta-actions {
-    margin-left: auto;
-    display: flex;
-    gap: 8px;
-  }
-  &__action {
-    background: transparent;
-    border: 1px solid var(--c-border);
-    color: var(--c-fg-muted);
-    padding: 7px 14px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: var(--fs-sm);
-    font-weight: 600;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.15s;
-
-    &:hover:not(:disabled) {
-      color: var(--c-accent);
-      border-color: var(--c-accent-glow);
-    }
-    /* Still a pointer when it can't be used (your own article): the title says why. */
-    &:disabled { opacity: 0.5; cursor: pointer; }
-
-    &.is-active {
-      background: var(--c-accent-soft);
-      border-color: var(--c-accent-glow);
-      color: var(--c-accent);
-    }
-    &--accent {
-      color: var(--c-accent);
-      border-color: var(--c-accent-glow);
-    }
-    &--like {
-      &.is-active {
-        background: var(--c-success-soft);
-        border-color: color-mix(in oklab, var(--c-success), transparent 50%);
-        color: var(--c-success);
-      }
-      &:hover:not(:disabled) {
-        color: var(--c-success);
-        border-color: color-mix(in oklab, var(--c-success), transparent 50%);
-      }
-    }
-    &--dislike {
-      &.is-active {
-        background: rgba(248, 113, 113, 0.1);
-        border-color: color-mix(in oklab, var(--c-danger), transparent 50%);
-        color: var(--c-danger);
-      }
-      &:hover:not(:disabled) {
-        color: var(--c-danger);
-        border-color: color-mix(in oklab, var(--c-danger), transparent 50%);
-      }
-    }
-    &--muted {
-      padding: 7px 10px;
-      &:hover:not(:disabled) { color: var(--c-warn); border-color: color-mix(in oklab, var(--c-warn), transparent 50%); }
-    }
-  }
-
-  // ── Mod bar ──────────────────────────────────────────────────────────────────
-  &__mod-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    margin-bottom: 24px;
-    background: color-mix(in srgb, var(--c-warn) 8%, transparent);
-    border: 1px solid color-mix(in srgb, var(--c-warn) 30%, transparent);
-    border-radius: var(--radius-sm);
-
-    &__label {
-      font-size: var(--fs-xs);
-      font-weight: 700;
-      color: var(--c-warn);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-right: 4px;
-    }
-
-    &__btn {
-      background: none;
-      border: 1px solid color-mix(in srgb, var(--c-warn) 40%, transparent);
-      color: var(--c-warn);
-      padding: 4px 12px;
-      border-radius: var(--radius-sm);
-      font-size: var(--fs-xs);
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      transition: background 0.15s;
-
-      &:hover {
-        background: color-mix(in srgb, var(--c-warn) 15%, transparent);
-      }
-    }
-  }
-
-  // ── Report modal ────────────────────────────────────────────────────────────
-  &__modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    padding: 24px;
-  }
-  &__modal {
-    background: var(--card-bg);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    padding: 28px;
-    width: 100%;
-    max-width: 440px;
-  }
-  &__modal-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--c-fg);
-    margin: 0 0 6px;
-  }
-  &__modal-sub {
-    font-size: var(--fs-sm);
-    color: var(--c-fg-muted);
-    margin: 0 0 16px;
-  }
-  &__modal-textarea {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border-color);
-    border-radius: var(--radius-sm); // tighter than --input-radius by design
-    color: var(--input-fg);
-    font-family: inherit;
-    font-size: var(--fs-md);
-    padding: 10px 12px;
-    resize: vertical;
-    box-sizing: border-box;
-    &:focus { outline: none; border-color: var(--input-border-focus); }
-  }
-  &__modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 16px;
-  }
-
-  &__featured {
-    width: 100%;
-    height: 360px;
-    object-fit: cover;
-    border-radius: var(--radius-md);
-    margin-bottom: 36px;
+    overflow-wrap: anywhere;
   }
 
   &__lede {
-    font-size: 1.125rem;
-    line-height: 1.7;
+    max-width: 62ch;
+    margin: 0 0 22px;
+    font-size: 1.2rem;
+    line-height: 1.6;
     color: var(--c-fg-muted);
-    border-left: 3px solid var(--c-accent);
-    padding-left: 1rem;
-    margin: 0 0 28px;
+  }
+
+  &__featured {
+    display: block;
+    width: 100%;
+    aspect-ratio: 21 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    margin: 0 0 40px;
   }
 
   &__body {
     font-size: var(--fs-read);
     line-height: 1.8;
     color: var(--c-fg-muted);
-    margin-bottom: 32px;
 
-    .article-editor__content {
-      padding: 0;
-      min-height: 0;
-      color: var(--c-fg-muted);
+    .article-editor__content { padding: 0; min-height: 0; color: var(--c-fg-muted); }
+    h2, h3 { color: var(--c-fg); scroll-margin-top: 90px; letter-spacing: -0.02em; }
+    h2 { font-size: 1.6rem; margin: 2.2em 0 0.6em; }
+    h3 { font-size: 1.25rem; margin: 1.8em 0 0.5em; }
+    img { border-radius: var(--radius-md); }
+    figcaption { font-size: var(--fs-xs); color: var(--c-fg-subtle); margin-top: 8px; }
+    /* A pull quote: larger and plain, only the accent line. Beats the editor's
+       tinted, italic default for quotes inside articles. */
+    blockquote, .xt-rich blockquote {
+      margin: 1.6em 0;
+      padding: 2px 0 2px 22px;
+      border-left: 3px solid var(--c-accent);
+      background: none;
+      border-radius: 0;
+      font-style: normal;
+      font-size: 1.35rem;
+      line-height: 1.45;
+      color: var(--c-fg);
     }
   }
 
-  &__tagrow {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 32px;
-    padding-top: 24px;
-    border-top: 1px solid var(--c-border);
-  }
+  &__tagrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; a { text-decoration: none; } }
 
-  &__author-card {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    background: var(--card-bg);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    clip-path: var(--clip-card);
+  // ── Dialogs (warn, report) ──────────────────────────────────────────────
+  &__modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
     padding: 24px;
-    margin-top: 32px;
+    background: color-mix(in srgb, var(--c-bg) 40%, rgb(0 0 0 / 0.55));
   }
-  &__author-name {
-    font-size: var(--fs-base);
-    font-weight: 700;
-    color: var(--c-fg);
-    margin-bottom: 4px;
+  &__modal {
+    width: 100%; max-width: 440px; padding: 28px;
+    background: var(--card-bg); border: 1px solid var(--c-border); border-radius: var(--radius-md);
   }
-  /**
-   * Awards (ADR-0009), on their own row.
-   *
-   * ⚠ `display: block`, because `UserBadges` renders a `<span>` and the author name
-   * above it is not a block-level flex parent — inline, the first badge sat flush
-   * against the last letter of the username.
-   */
-  &__author-awards {
-    display: block;
-    margin: 6px 0 8px;
+  &__modal-title { font-size: 1.05rem; font-weight: 700; color: var(--c-fg); margin: 0 0 6px; }
+  &__modal-sub { font-size: var(--fs-sm); color: var(--c-fg-muted); margin: 0 0 16px; }
+  &__modal-textarea {
+    width: 100%; box-sizing: border-box; padding: 10px 12px; resize: vertical;
+    background: var(--input-bg); border: 1px solid var(--input-border-color); border-radius: var(--radius-sm);
+    color: var(--input-fg); font-family: inherit; font-size: var(--fs-md);
+    &:focus { outline: none; border-color: var(--input-border-focus); }
   }
-  &__author-bio {
-    font-size: var(--fs-sm);
-    color: var(--c-fg-muted);
-    line-height: 1.6;
-    margin-bottom: 12px;
-  }
+  &__modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
 
-  &__comments { margin-top: 40px; }
+  // ── Comments ─────────────────────────────────────────────────────────────
+  &__comments { margin-top: 48px; scroll-margin-top: 90px; }
+  &__comments-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
   &__comments-title {
-    font-size: var(--fs-lg);
-    font-weight: 800;
-    color: var(--c-fg);
-    letter-spacing: -0.02em;
-    margin: 0 0 20px;
+    margin: 0;
+    font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; color: var(--c-fg);
+    span { color: var(--c-fg-subtle); }
   }
-
-  /* The comment composer brings its own avatar, spacing and Post button now
-     (`variant="inline"`), so the page adds only its width. */
+  /* The composer brings its own avatar, spacing and Post button (`variant="inline"`). */
   &__composer { margin-bottom: var(--sp-6); }
+  &__composer--reply { margin: 12px 0 4px; }
 
   &__signin {
-    text-align: center;
-    background: var(--card-bg);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius-md);
-    clip-path: var(--clip-card);
-    padding: 18px;
-    font-size: var(--fs-md);
-    color: var(--c-fg-subtle);
-    margin-bottom: 20px;
-    a {
-      color: var(--c-accent);
-      font-weight: 700;
-      text-decoration: none;
-    }
+    margin-bottom: 20px; padding: 18px; text-align: center;
+    background: var(--card-bg); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+    font-size: var(--fs-md); color: var(--c-fg-subtle);
+    a { color: var(--c-accent); font-weight: 700; text-decoration: none; }
   }
 
   &__comment {
-    display: flex;
-    gap: 12px;
-    padding: 18px 0;
+    display: flex; gap: 12px; padding: 18px 0;
     border-bottom: 1px solid var(--c-border);
     &:last-child { border-bottom: none; }
+    &--reply { padding: 14px 0 0; border-bottom: none; }
   }
-  &__comment-body { flex: 1; }
-  &__comment-head {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 6px;
+  &__comment-body { flex: 1; min-width: 0; }
+  &__comment-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 4px; }
+  &__comment-name { font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
+  &__comment-author {
+    padding: 1px 7px; border-radius: var(--radius-pill);
+    background: var(--c-accent-soft); color: var(--c-accent);
+    font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
   }
-  &__comment-name {
-    font-size: var(--fs-md);
-    font-weight: 700;
-    color: var(--c-fg);
-  }
-  &__comment-time, &__comment-edited {
-    font-size: var(--fs-xs);
-    color: var(--c-fg-subtle);
-  }
-  &__comment-text {
-    font-size: var(--fs-md);
-    color: var(--c-fg-muted);
-    line-height: 1.7;
-  }
-  &__comment-deleted { color: var(--c-fg-subtle); }
+  &__comment-time, &__comment-edited { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+  &__comment-text { font-size: var(--fs-md); color: var(--c-fg-muted); line-height: 1.7; overflow-wrap: anywhere; }
   &__comment-tombstone {
-    padding: 8px 12px;
-    border-left: 3px solid var(--c-danger);
+    padding: 8px 12px; border-left: 3px solid var(--c-danger);
     background: color-mix(in srgb, var(--c-danger) 8%, transparent);
     border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: var(--fs-sm);
-    color: var(--c-fg-muted);
+    font-size: var(--fs-sm); color: var(--c-fg-muted);
     em { font-style: italic; }
   }
-  &__comment-footer {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-top: 8px;
-  }
+  &__comment-footer { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   &__comment-like {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--fs-xs);
-    color: var(--c-fg-subtle);
-    background: none;
-    cursor: pointer;
-    font-family: inherit;
-    transition: color 0.15s, background 0.15s, border-color 0.15s;
-
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 9px; border: none; border-radius: var(--radius-pill); background: none;
+    font-family: inherit; font-size: var(--fs-xs); color: var(--c-fg-subtle);
+    cursor: pointer; transition: color 0.15s, background 0.15s;
     &:hover:not(:disabled) { color: var(--c-accent); }
-    /* Every thumb is a pointer, the counts you can't use too (your own comment, or
-       signed out): their title says why, and a pointer there invites the hover. */
+    /* Every thumb is a pointer, the counts you can't use too: their title says why. */
     &:disabled { opacity: 0.5; cursor: pointer; }
-    &.is-liked {
-      color: var(--c-accent);
-      font-weight: 600;
-    }
-    &--static {
-      cursor: pointer;
-    }
-
-    /* Thumbs up / down are small chips, without a border: the thumbs-down shows red
-       only when it is yours. */
-    border: none;
-    border-radius: var(--radius-pill);
-    padding: 2px 9px;
-    /* Up is green, down is red: on hover, and once it is yours. */
+    &--static { cursor: pointer; }
     &--like {
       &:hover:not(:disabled) { color: var(--c-success); }
-      &.is-liked { color: var(--c-success); background: var(--c-success-soft); }
+      &.is-liked { color: var(--c-success); background: var(--c-success-soft); font-weight: 600; }
     }
     &--dislike {
       &:hover:not(:disabled) { color: var(--c-danger); }
-      &.is-liked { color: var(--c-danger); background: var(--c-danger-soft); }
+      &.is-liked { color: var(--c-danger); background: var(--c-danger-soft); font-weight: 600; }
     }
   }
+  &__comment-reply {
+    padding: 2px 6px; border: none; background: none; cursor: pointer;
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 700; color: var(--c-fg-subtle);
+    &:hover { color: var(--c-accent); }
+  }
+  &__replies { margin-top: 4px; }
   &__empty { color: var(--c-fg-subtle); padding: 1rem 0; }
+
+  /* Awards under the author's name. `display: block`: UserBadges renders a <span>. */
+  &__author-awards { display: block; margin: 0; }
+}
+
+// ── Head ───────────────────────────────────────────────────────────────────
+/* Its own space below, so the text never starts flush under the byline when an
+   article has no featured image. */
+.ard-head { margin-bottom: 36px; }
+.ard-head + .ard__featured { margin-top: -6px; }
+
+.ard-head__top {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+.ard-crumbs {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle);
+  a { color: var(--c-fg-muted); text-decoration: none; &:hover { color: var(--c-accent); } }
+  a:last-of-type:not(:first-child) { color: var(--c-accent); }
+  svg { font-size: 0.7em; }
+}
+
+.ard-mod { position: relative; }
+.ard-mod__btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: var(--radius-pill);
+  border: 1px solid transparent; background: none;
+  font-family: inherit; font-size: var(--fs-sm); font-weight: 700; color: var(--c-warn);
+  cursor: pointer;
+  &:hover, &[aria-expanded="true"] { background: color-mix(in srgb, var(--c-warn) 12%, transparent); }
+  .ard-mod__chev { font-size: 0.7em; }
+}
+.ard-mod__menu {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 30;
+  min-width: 230px; padding: 6px;
+  display: flex; flex-direction: column;
+  background: var(--card-bg); border: 1px solid var(--c-border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg, 0 12px 32px rgb(0 0 0 / 0.18));
+  button, a {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border: none; border-radius: var(--radius-sm); background: none;
+    font-family: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg);
+    text-decoration: none; text-align: left; cursor: pointer;
+    svg { color: var(--c-warn); width: 14px; }
+    &:hover { background: var(--c-bg-hover); }
+    &[aria-pressed="true"] { color: var(--c-warn); }
+  }
+}
+
+.ard-byline {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-size: var(--fs-sm); color: var(--c-fg-subtle);
+  &__ava { display: inline-flex; }
+  &__name { font-size: var(--fs-md); font-weight: 700; }
+  &__dot { opacity: 0.6; }
+  &__edit {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    color: var(--c-accent); font-weight: 700; text-decoration: none;
+  }
+}
+
+// ── Three columns ──────────────────────────────────────────────────────────
+.ard-grid {
+  display: grid;
+  grid-template-columns: 56px minmax(0, var(--content-narrow, 680px)) 272px;
+  gap: 40px;
+  justify-content: center;
+  align-items: start;
+}
+.ard-main { min-width: 0; }
+
+.ard-rail {
+  position: sticky; top: 96px;
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+
+  &__btn {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    width: 44px; padding: 8px 0;
+    border: none; border-radius: var(--radius-md); background: none;
+    color: var(--c-fg-muted); font-family: inherit; text-decoration: none; cursor: pointer;
+    svg { font-size: 1.05rem; }
+    span { font-size: var(--fs-2xs); font-weight: 700; color: var(--c-fg-subtle); }
+    &:hover:not(:disabled) { color: var(--c-accent); background: var(--c-bg-hover); }
+    &:disabled { cursor: pointer; opacity: 0.6; }
+    &.is-active { color: var(--c-accent); }
+    &--like.is-active { color: var(--c-danger); }
+    &--dislike.is-active { color: var(--c-fg); }
+  }
+  &__rule { width: 28px; height: 1px; margin: 4px 0; background: var(--c-border); }
+}
+
+/* "Did you like it?": the end of the text, with the same three actions. */
+.ard-verdict {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  margin-top: 40px; padding: 18px 22px;
+  background: var(--card-bg); border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+  b { font-size: var(--fs-md); color: var(--c-fg); }
+  &__acts { display: flex; gap: 8px; flex-wrap: wrap; }
+}
+.ard-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border: none; border-radius: var(--radius-pill);
+  background: var(--c-bg-hover); color: var(--c-fg-muted);
+  font-family: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer;
+  &:hover:not(:disabled) { color: var(--c-accent); }
+  &:disabled { cursor: pointer; opacity: 0.6; }
+  &--like.is-active { color: var(--c-danger); background: var(--c-danger-soft); }
+  &--dislike.is-active { color: var(--c-fg); }
+}
+
+.ard-seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  border-radius: var(--radius-md); background: var(--c-bg-hover);
+  button {
+    padding: 5px 12px; border: none; border-radius: var(--radius-sm); background: none;
+    font-family: inherit; font-size: var(--fs-xs); font-weight: 700; color: var(--c-fg-muted); cursor: pointer;
+    &.is-on { background: var(--card-bg); color: var(--c-fg); box-shadow: 0 1px 2px rgb(0 0 0 / 0.08); }
+  }
+}
+
+// ── Side column ────────────────────────────────────────────────────────────
+.ard-side {
+  position: sticky; top: 96px;
+  display: flex; flex-direction: column; gap: 26px;
+  &__label {
+    margin: 0 0 10px;
+    font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+}
+
+.ard-authorcard {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 18px;
+  background: var(--card-bg); border: 1px solid var(--c-border); border-radius: var(--radius-lg);
+  &__who { display: flex; align-items: center; gap: 12px; > div { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; } }
+  &__name { font-size: var(--fs-md); font-weight: 700; }
+  &__group {
+    display: inline-flex; padding: 1px 8px; border-radius: var(--radius-pill); border: 1px solid;
+    font-size: var(--fs-2xs); font-weight: 700;
+  }
+  .btn { width: 100%; padding: 9px 14px; font-size: var(--fs-sm); }
+}
+
+.ard-toc {
+  display: flex; flex-direction: column;
+  &__item {
+    padding: 6px 0 6px 14px;
+    border-left: 2px solid var(--c-border);
+    font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); text-decoration: none;
+    &--3 { padding-left: 26px; font-weight: 500; }
+    &:hover { color: var(--c-fg); }
+    &.is-on { border-left-color: var(--c-accent); color: var(--c-accent); }
+  }
+}
+
+.ard-related {
+  display: flex; flex-direction: column;
+  &__item {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 12px 0; border-top: 1px solid var(--c-border);
+    text-decoration: none;
+    b { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); line-height: 1.35; }
+    span { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+    &:hover b { color: var(--c-accent); }
+  }
+}
+
+// ── Keep reading ───────────────────────────────────────────────────────────
+.ard-more {
+  margin-top: 64px; padding-top: 40px; border-top: 1px solid var(--c-border);
+  &__head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 22px;
+    h2 { margin: 0; font-size: 1.8rem; font-weight: 800; letter-spacing: -0.02em; color: var(--c-fg); }
+    a { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 700; color: var(--c-accent); text-decoration: none; }
+  }
+  &__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+}
+.ard-card {
+  display: flex; flex-direction: column; gap: 8px; text-decoration: none;
+  &__cover {
+    display: grid; place-items: center;
+    aspect-ratio: 16 / 10; overflow: hidden; margin-bottom: 6px;
+    border-radius: var(--radius-lg); background: var(--c-bg-hover); color: var(--c-fg-subtle); font-size: 1.6rem;
+    img { width: 100%; height: 100%; object-fit: cover; }
+  }
+  &__cat { font-size: var(--fs-2xs); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--c-accent); }
+  &__title { font-size: 1.15rem; font-weight: 700; line-height: 1.3; color: var(--c-fg); }
+  &__meta { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
+  &:hover .ard-card__title { color: var(--c-accent); }
+}
+
+// ── Narrower screens ───────────────────────────────────────────────────────
+@media (max-width: 1100px) {
+  /* The side column moves under the text; "On this page" is for wide screens. */
+  .ard-grid { grid-template-columns: 56px minmax(0, 1fr); }
+  .ard-side { grid-column: 2; position: static; }
+  .ard-toc { display: none; }
+}
+@media (max-width: 760px) {
+  .ard { padding: 24px 16px 48px; }
+  .ard__featured { aspect-ratio: 16 / 9; margin: 20px 0 24px; border-radius: var(--radius-md); }
+  /* The rail becomes a row above the text. */
+  .ard-grid { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .ard-side { grid-column: 1; }
+  .ard-rail { position: static; flex-direction: row; justify-content: flex-start; flex-wrap: wrap; gap: 4px; }
+  .ard-rail__btn { flex-direction: row; width: auto; padding: 6px 10px; gap: 6px; }
+  .ard-rail__rule { width: 1px; height: 22px; margin: 0 4px; }
+  .ard-more__grid { grid-template-columns: minmax(0, 1fr); }
+  .ard-byline__edit { margin-left: 0; }
 }

@@ -134,8 +134,6 @@
     "alertStaffTitle": "Noch eine Verwarnung sanktioniert {{name}}",
     "alertOwn": "Nach den Verwarnungsregeln der Community bedeutet deine nächste Verwarnung {{sanction}}.",
     "alertStaff": "Nach den Verwarnungsregeln bedeutet die nächste Verwarnung für {{name}} {{sanction}}.",
-    "alertExpiry_one": "Verwarnungen zählen nach {{count}} Tag nicht mehr.",
-    "alertExpiry_other": "Verwarnungen zählen nach {{count}} Tagen nicht mehr.",
     "counted_one": "Verwarnung zählt gerade",
     "counted_other": "Verwarnungen zählen gerade",
     "ladder": "Verwarnungsregeln",
@@ -144,9 +142,6 @@
     "banDays_one": "eine {{count}}-tägige Sperre",
     "banDays_other": "eine {{count}}-tägige Sperre",
     "banPermanent": "eine dauerhafte Sperre",
-    "expiryNote_one": "Eine Verwarnung zählt {{count}} Tag nach der Vergabe nicht mehr.",
-    "expiryNote_other": "Eine Verwarnung zählt {{count}} Tage nach der Vergabe nicht mehr.",
-    "noExpiry": "Verwarnungen laufen auf dieser Seite nicht ab.",
     "warnings": "Verwarnungen",
     "noneOwn": "Du hast keine Verwarnungen. Danke für den freundlichen Umgang.",
     "noneOther": "{{name}} hat keine Verwarnungen.",
@@ -185,7 +180,8 @@
     "otherAccounts_other": "{{count}} weitere Konten",
     "geoCredit": "IP-Geolokalisierung von DB-IP",
     "geoMissing": "Länder erscheinen, sobald die IP-Länderdatenbank geladen ist.",
-    "geoMissingLink": "Geplante Aufgaben → IP-Länderdatenbank"
+    "geoMissingLink": "Geplante Aufgaben → IP-Länderdatenbank",
+    "perWarningExpiry": "Jede Verwarnung zählt bis zu dem Datum, das bei ihr steht."
   },
   "formerlyKnownAs": "Früher bekannt als {{names}}",
   "cantRateOwnComment": "Deinen eigenen Kommentar kannst du nicht bewerten",

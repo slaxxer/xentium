@@ -134,7 +134,7 @@
   }
   .gtab:hover { color: var(--c-fg); }
   .gtab.is-active { background: var(--c-accent); color: var(--c-on-accent); }
-  .gfeed__count { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-subtle); }
+  .gfeed__count { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg-subtle); white-space: nowrap; }
   .gfeed__new { margin-left: auto; }
 
   .gchips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
@@ -265,6 +265,7 @@
   @media (max-width: 680px) {
     padding: 0 16px 60px;
     .ghero { padding: 30px 24px; }
+    .gfeed__bar { flex-wrap: wrap; }
     .gthread, .gthread--media { grid-template-columns: 1fr; }
     .gthread__media { width: 100%; aspect-ratio: 16 / 9; }
     .gvotes { flex-direction: row; width: auto; gap: 8px; align-self: flex-start; padding: 6px 12px; }

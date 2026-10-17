@@ -1,0 +1,54 @@
+/* Theme Studio tour. The spotlight's enormous shadow IS the dim around it, so the
+   highlighted control stays fully clickable through the hole (pointer-events: none). */
+.studio-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  pointer-events: none;
+
+  &__spot {
+    position: fixed;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 0 9999px rgb(0 0 0 / 0.55), 0 0 0 2px var(--c-accent);
+    transition: top 0.2s ease, left 0.2s ease, width 0.2s ease, height 0.2s ease;
+    pointer-events: none;
+  }
+
+  &__dim { position: fixed; inset: 0; background: rgb(0 0 0 / 0.55); pointer-events: auto; }
+
+  &__card {
+    position: fixed;
+    width: 340px;
+    max-width: calc(100vw - 32px);
+    padding: var(--sp-5);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--card-radius);
+    box-shadow: 0 18px 48px rgb(0 0 0 / 0.35);
+    color: var(--c-fg);
+    pointer-events: auto;
+
+    h3 { margin: 4px 0 6px; font-size: var(--fs-lg); font-weight: 700; }
+    p { margin: 0 0 var(--sp-3); font-size: var(--fs-sm); line-height: 1.55; color: var(--c-fg-muted); }
+  }
+
+  &--centre &__card { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+
+  &__count { font-size: var(--fs-2xs); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-accent); }
+
+  /* The task a gated step is waiting for. */
+  &__task {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    background: var(--c-accent-soft);
+    color: var(--c-accent) !important;
+    font-weight: 600;
+  }
+
+  &__acts { display: flex; align-items: center; gap: 6px; margin-top: var(--sp-2); }
+  &__gap { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .studio-tour__spot { transition: none; }
+}

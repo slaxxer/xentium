@@ -39,7 +39,8 @@
     "switchToDark": "Mudar para o modo escuro",
     "adminPanel": "Painel de administração",
     "adminAttention": "Há algo no painel de administração que precisa da sua atenção",
-    "homeAria": "Ir para a página inicial"
+    "homeAria": "Ir para a página inicial",
+    "menu": "Menu"
   },
   "search": {
     "short": "Pesquisar",
@@ -61,15 +62,15 @@
   },
   "guestHome": {
     "hero": {
-      "badge": "criadores online",
-      "title": "Onde se encontram as pessoas que constroem com o Xentium.",
-      "subtitle": "Faça perguntas, mostre o que criou, ajude a definir o roteiro e aprenda com {members} criadores. A leitura está aberta a todos.",
+      "badge": "online agora",
+      "title": "Bem-vindo a {site}.",
+      "subtitle": "Lê o que os nossos membros escrevem, junta-te à conversa e conhece as pessoas daqui. A leitura está aberta a todos.",
       "ctaPrimary": "Juntar-se à conversa",
       "ctaSecondary": "Explorar como visitante"
     },
     "gate": {
-      "vote": "Cria uma conta para gostar de tópicos",
-      "post": "Regista-te para abrir um novo tópico",
+      "vote": "Cria uma conta para gostar de artigos",
+      "post": "Regista-te para escrever um artigo",
       "more": "Cria uma conta gratuita para ler tudo",
       "default": "Cria uma conta gratuita para fazer isso"
     },
@@ -102,14 +103,17 @@
     "feed": {
       "latest": "Recentes",
       "top": "Destaques",
-      "topics_one": "{{count}} tópico",
-      "topics_many": "{{count}} tópicos",
-      "topics_other": "{{count}} tópicos",
-      "newTopic": "Novo tópico",
+      "articles_one": "{{count}} artigo",
+      "articles_many": "{{count}} artigos",
+      "articles_other": "{{count}} artigos",
+      "posts_one": "{{count}} publicação",
+      "posts_many": "{{count}} publicações",
+      "posts_other": "{{count}} publicações",
+      "newArticle": "Escrever um artigo",
       "newPost": "Nova publicação",
       "allCategories": "Todas as categorias",
       "loading": "A carregar…",
-      "empty": "Ainda não há tópicos aqui.",
+      "empty": "Ainda não há artigos.",
       "moreAll": "<b>Cria uma conta gratuita</b> para ver as {{formatted}} publicações",
       "moreRead": "<b>Cria uma conta gratuita</b> para ler tudo"
     },
@@ -684,5 +688,54 @@
   },
   "embed": {
     "unavailable": "Este conteúdo não está disponível."
+  },
+  "warnTemplates": {
+    "label": "Aviso",
+    "pick": "Escolha a regra que foi violada…",
+    "preview": "O que {{user}} vai ler",
+    "none": "Ainda não há modelos de aviso, por isso não é possível enviar nenhum aviso.",
+    "addOne": "Adicionar um"
+  },
+  "consent": {
+    "settingsLink": "Definições de cookies",
+    "thisSite": "Este site",
+    "core": {
+      "xt_rt": "Mantém a sua sessão iniciada.",
+      "xt_did": "Reconhece este dispositivo no início de sessão, para proteger a sua conta.",
+      "xt_oauth": "Conclui um início de sessão com uma conta externa.",
+      "xt_locale": "Lembra o idioma escolhido.",
+      "xt_theme": "Lembra o tema escolhido.",
+      "storage": "Lembra rascunhos e definições de visualização neste dispositivo.",
+      "iconKit": "Carrega os ícones do site a partir do Font Awesome."
+    },
+    "life": {
+      "signIn": "30 dias, ou até fechar o navegador",
+      "year1": "1 ano",
+      "minutes10": "10 minutos",
+      "untilCleared": "Até o apagar"
+    },
+    "gate": {
+      "title": "Conteúdo de {{service}}",
+      "body": "Mostrá-lo carrega conteúdo de {{service}}, que pode ver o seu endereço IP.",
+      "privacy": "Política de privacidade",
+      "loadOnce": "Carregar",
+      "always": "Permitir sempre"
+    }
+  },
+  "modTiming": {
+    "label": "Conta durante",
+    "banLabel": "Duração do banimento",
+    "never": "Nunca expira",
+    "7d": "7 dias",
+    "30d": "30 dias",
+    "90d": "90 dias",
+    "180d": "180 dias",
+    "365d": "1 ano",
+    "countsUntil": "Conta contra {{user}} até {{date}}",
+    "countsForever": "Conta contra {{user}} para sempre",
+    "bannedFor": "{{user}} fica banido durante {{len}}",
+    "bannedForever": "{{user}} fica banido para sempre",
+    "fixed": "Definido pelo modelo. Os chefes de equipa com a permissão para o alterar podem fazê-lo.",
+    "override": "Alterar (chefe de equipa)"
   }
 }

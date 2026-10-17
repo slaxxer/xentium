@@ -42,6 +42,9 @@ export const XENTIUM_DARK_TOKENS: TokenMap = {
   '--shadow-pop':     '0 0 0 1px #29302d, 0 16px 40px rgba(0, 0, 0, 0.5)',
   '--nav-bg':         '#171b1a',
   '--footer-bg':      '#171b1a',
+  // The header band: a darker teal than the light look's, so it sits on these surfaces.
+  '--masthead-from':  '#0b2b28',
+  '--masthead-to':    '#1a7f74',
 };
 
 /** The id Xentium Dark is installed under. */

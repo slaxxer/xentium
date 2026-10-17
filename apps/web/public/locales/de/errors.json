@@ -33,5 +33,8 @@
   "XEC-LICENSE-9001": "Keine gültige Lizenz für dieses Plugin.",
   "XEC-LICENSE-9002": "Diese Lizenz ist abgelaufen.",
   "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-  "XEC-AUTH-2011": "Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung, um fortzufahren."
+  "XEC-AUTH-2011": "Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung, um fortzufahren.",
+  "XEC-MOD-4101": "Wähle eine der Vorlagen. Verwarnungen und Sperren können nur aus einer Vorlage verschickt werden.",
+  "XEC-MOD-4102": "Dieser Inhalt stammt nicht von dem Mitglied, um das es geht.",
+  "XEC-MOD-4103": "Diese Vorlage nennt den betroffenen Inhalt. Nutze sie direkt bei diesem Inhalt oder wähle eine andere Vorlage."
 }

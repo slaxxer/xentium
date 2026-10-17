@@ -19,6 +19,11 @@ articlesRouter.get("/me", requireAuth, articlesController.listMine);
 
 // Popular tags — static segment, placed before /:slug.
 articlesRouter.get("/tags/popular", articlesController.popularTags);
+// The article index: its featured (pinned) article and the trending rail.
+articlesRouter.get("/featured", optionalAuth, articlesController.featured);
+articlesRouter.get("/trending", optionalAuth, articlesController.trending);
+// Staff pin an article to the top of the index (the featured card).
+articlesRouter.post("/:id/pin", requireAuth, requirePermission(CorePermissions.ARTICLE_EDIT_ANY), articlesController.pin);
 
 // The categories and tags the member follows (their Following feed), and following one.
 // Static segments, before /:slug.

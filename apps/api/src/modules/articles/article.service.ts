@@ -42,7 +42,8 @@ function shapeListItem(a: ArticleWithIncludes): ArticleListItem {
     dislikeCount: a.dislikeCount,
     commentCount: a.commentCount,
     viewCount: a.viewCount,
-    readTime: estimateReadTime(a.bodyPlain),
+    readTime: a.readTime,
+    pinned: a.pinnedAt != null,
     author: (() => {
       const visibleGroups = filterHiddenBadges(a.author.groups, a.author.hiddenBadges);
       return {
@@ -155,6 +156,7 @@ export const articleService = {
           excerpt: input.excerpt,
           body: input.body as Prisma.InputJsonValue,
           bodyPlain,
+          readTime: estimateReadTime(bodyPlain),
           visibility: input.visibility,
           seoTitle: input.seoTitle,
           seoDescription: input.seoDescription,
@@ -223,7 +225,10 @@ export const articleService = {
         ...(input.title !== undefined ? { title: input.title, slug: nextSlug } : {}),
         ...(input.excerpt !== undefined ? { excerpt: input.excerpt } : {}),
         ...(input.body !== undefined
-          ? { body: input.body as Prisma.InputJsonValue, bodyPlain: tiptapToPlain(input.body) }
+          ? (() => {
+              const plain = tiptapToPlain(input.body);
+              return { body: input.body as Prisma.InputJsonValue, bodyPlain: plain, readTime: estimateReadTime(plain) };
+            })()
           : {}),
         ...(input.categoryId !== undefined
           ? { category: input.categoryId ? { connect: { id: input.categoryId } } : { disconnect: true } }
@@ -391,14 +396,17 @@ export const articleService = {
         message: "Article not found",
       });
     }
-    return shapeDetail(article);
+    const detail = shapeDetail(article);
+    // The reader opens with the viewer's own heart, dislike and bookmark already set.
+    if (viewerId) detail.viewer = (await articleEngagementService.viewerState([detail.id], viewerId)).get(detail.id);
+    return detail;
   },
 
   async list(
     query: ListArticlesQuery,
     viewerId: string | undefined,
   ): Promise<PaginatedResponse<ArticleListItem>> {
-    const { page, limit, categoryId, authorId, feed } = query;
+    const { page, limit, categoryId, authorId, feed, q, tag, period, length, sort, exclude } = query;
     const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
     const { data, total } = await articleRepository.listPublished({
       page,
@@ -408,6 +416,7 @@ export const articleService = {
       viewerId,
       feed,
       hiddenAuthorIds,
+      q, tag, period, length, sort, exclude,
     });
     const items = data.map(shapeListItem);
     // The viewer's own state per card — liked, saved — so a heart starts filled when
@@ -420,6 +429,24 @@ export const articleService = {
       data: items,
       meta: buildPaginationMeta({ page, limit, total }),
     };
+  },
+
+  /** The article index's featured card: the newest pinned article the viewer may see. */
+  async featured(viewerId: string | undefined): Promise<ArticleListItem | null> {
+    const row = await articleRepository.featured(viewerId, await getHiddenAuthorIds(viewerId));
+    return row ? shapeListItem(row) : null;
+  },
+
+  async trending(viewerId: string | undefined, days: number, max: number) {
+    return articleRepository.trending(viewerId, await getHiddenAuthorIds(viewerId), days, max);
+  },
+
+  /** Pin to (or take off) the top of the article index. Staff who may edit any article. */
+  async setPinned(id: string, pinned: boolean): Promise<void> {
+    const res = await articleRepository.setPinned(id, pinned);
+    if (res.count === 0) {
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+    }
   },
 
   async popularTags(limit: number) {

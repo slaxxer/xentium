@@ -45,6 +45,20 @@ emojiAdminRouter.post("/", ...uploadSingle("EMOJI", "file"), (async (req, res) =
   res.status(201).json(row);
 }) as RequestHandler);
 
+// One category's order after a drag (also moves dropped emojis into it).
+const orderBody = z.object({ category: emojiCategorySchema, ids: z.array(z.string().min(1).max(64)).min(1).max(500) });
+emojiAdminRouter.put("/order", (async (req, res) => {
+  const { category, ids } = orderBody.parse(req.body ?? {});
+  res.json(await emojiService.reorder(category, ids));
+}) as RequestHandler);
+
+// Rename a category (merges into an existing one of that name).
+const renameBody = z.object({ from: emojiCategorySchema, to: emojiCategorySchema });
+emojiAdminRouter.post("/categories/rename", (async (req, res) => {
+  const { from, to } = renameBody.parse(req.body ?? {});
+  res.json(await emojiService.renameCategory(from, to));
+}) as RequestHandler);
+
 emojiAdminRouter.patch("/:id", (async (req, res) => {
   const { id } = idParam.parse(req.params);
   res.json(await emojiService.update(id, updateBody.parse(req.body ?? {})));

@@ -6,7 +6,6 @@ import { faPuzzlePiece } from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { slotRegistry } from "../../plugins/slotRegistry";
 import { AcpIcon, type AcpIconName } from "./pages/acpIcons";
-import { useUploadAllowed } from "./hooks/useUploadAllowed";
 import { pluginTextKey } from "../../lib/coreText";
 
 export interface NavChild {
@@ -17,6 +16,8 @@ export interface NavChild {
    * entry stays highlighted there, and the breadcrumb names them under it.
    */
   within?: { to: string; label: string }[];
+  /** A heading in the section panel this entry sits under (an `acp` key). */
+  group?: string;
 }
 
 /** Whether `path` is this nav child's page, or one reached only through it. */
@@ -39,21 +40,18 @@ export interface NavItem {
 export const ACP_NAV: NavItem[] = [
   { label: "nav.dashboard", icon: createElement(AcpIcon, { name: "dashboard", size: 18 }), iconName: "dashboard", to: "/admin" },
   {
-    label: "nav.users", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
+    // Members and Access control were two sections (2026-10-17 merged): groups,
+    // their permissions and the ranks that move members between them are one subject.
+    label: "nav.members", icon: createElement(AcpIcon, { name: "user", size: 18 }), iconName: "user", key: "users",
     children: [
       { label: "nav.userList", to: "/admin/users" },
       { label: "nav.groups", to: "/admin/groups" },
-      { label: "nav.profileFields", to: "/admin/profile-fields" },
-      // Under Users, not Access control: a badge is something a user HOLDS, and
-      // beside Progression it would sit next to the other, derived meaning of the word.
-      { label: "nav.badges", to: "/admin/badges" },
-    ],
-  },
-  {
-    label: "nav.accessControl", icon: createElement(AcpIcon, { name: "layers", size: 18 }), iconName: "layers", key: "access",
-    children: [
       { label: "nav.permissions", to: "/admin/permissions" },
       { label: "nav.progression", to: "/admin/progression" },
+      // A badge is something a member HOLDS; next to Progression, the other way a
+      // member is marked out.
+      { label: "nav.badges", to: "/admin/badges" },
+      { label: "nav.profileFields", to: "/admin/profile-fields" },
     ],
   },
   {
@@ -61,23 +59,26 @@ export const ACP_NAV: NavItem[] = [
     children: [
       { label: "nav.articles", to: "/admin/articles" },
       { label: "nav.categories", to: "/admin/categories" },
-      { label: "nav.legal", to: "/admin/legal" },
+      // The editor's tools: what members can write with, beside the emojis it offers.
+      // Was "Composer" under Appearance.
+      { label: "nav.editor", to: "/admin/composer" },
       { label: "nav.emojis", to: "/admin/emojis" },
+      { label: "nav.legal", to: "/admin/legal" },
     ],
   },
   {
     label: "nav.moderation", icon: createElement(AcpIcon, { name: "shield", size: 18 }), iconName: "shield", key: "moderation",
     children: [
       { label: "nav.reviewCases", to: "/admin/cases" },
+      // Used on every warning and ban, so before the log and the settings.
+      { label: "nav.modTemplates", to: "/admin/mod-templates" },
       { label: "nav.modLog", to: "/admin/modlog" },
       { label: "nav.modSettings", to: "/admin/modsettings" },
-      { label: "nav.modTemplates", to: "/admin/mod-templates" },
     ],
   },
   {
     label: "nav.appearance", icon: createElement(AcpIcon, { name: "palette", size: 18 }), iconName: "palette", key: "appearance",
     children: [
-      { label: "nav.composer", to: "/admin/composer" },
       // Theme Studio is reached from a theme on this page — it edits ONE theme — so
       // it has no nav entry of its own.
       { label: "nav.themes", to: "/admin/themes", within: [
@@ -92,23 +93,27 @@ export const ACP_NAV: NavItem[] = [
     label: "nav.extensions", icon: createElement(AcpIcon, { name: "puzzle", size: 18 }), iconName: "puzzle", key: "extensions",
     children: [
       { label: "nav.marketplace", to: "/admin/marketplace" },
-      { label: "nav.installed", to: "/admin/installed" },
+      // Uploading a package is a button on Installed (when uploads are allowed), not
+      // a page of its own in the list.
+      { label: "nav.installed", to: "/admin/installed", within: [
+        { to: "/admin/upload", label: "nav.upload" },
+      ] },
       { label: "nav.updates", to: "/admin/updates" },
-      { label: "nav.upload", to: "/admin/upload" },
       { label: "nav.license", to: "/admin/license" },
     ],
   },
   {
+    // Two small groups in the panel: what you set up, and what the site records.
     label: "nav.system", icon: createElement(AcpIcon, { name: "cog", size: 18 }), iconName: "cog", key: "system",
     children: [
-      { label: "nav.settings", to: "/admin/settings" },
-      { label: "nav.email", to: "/admin/email" },
-      { label: "nav.scheduledTasks", to: "/admin/scheduled-tasks" },
-      { label: "nav.errorReference", to: "/admin/error-ref" },
-      { label: "nav.errorLog", to: "/admin/error-log" },
-      { label: "nav.activityLog", to: "/admin/activity-log" },
-      { label: "nav.migrationHistory", to: "/admin/migration-history" },
-      { label: "nav.about", to: "/admin/about" },
+      { label: "nav.settings", to: "/admin/settings", group: "nav.groupSetup" },
+      { label: "nav.email", to: "/admin/email", group: "nav.groupSetup" },
+      { label: "nav.scheduledTasks", to: "/admin/scheduled-tasks", group: "nav.groupSetup" },
+      { label: "nav.about", to: "/admin/about", group: "nav.groupSetup" },
+      { label: "nav.activityLog", to: "/admin/activity-log", group: "nav.groupLogs" },
+      { label: "nav.errorLog", to: "/admin/error-log", group: "nav.groupLogs" },
+      { label: "nav.errorReference", to: "/admin/error-ref", group: "nav.groupLogs" },
+      { label: "nav.migrationHistory", to: "/admin/migration-history", group: "nav.groupLogs" },
     ],
   },
 ];
@@ -144,6 +149,15 @@ export const ACP_NAV_INDEX: AcpNavEntry[] = ACP_NAV.flatMap((item) => {
   return item.to ? [{ labelKey: item.label, subKey: "nav.overview", icon, to: item.to }] : [];
 });
 
+/**
+ * Section names plugins may register under that are not a core key (any more): the
+ * Access control section merged into Members, so a plugin page filed under it, or
+ * under the new name, still lands there instead of becoming a section of its own.
+ */
+const SECTION_ALIASES: Record<string, string> = {
+  access: "users", "access control": "users", members: "users",
+};
+
 /** Returns the core nav with plugin-registered sections merged in:
  *  "content-area" plugin sections (e.g. Forum) sit between Content and Moderation;
  *  everything else goes after Moderation — matching the original sidebar behavior. */
@@ -153,7 +167,6 @@ export function useAcpNav(): NavItem[] {
     queryFn: () => api.get("/admin/registered-pages"),
     staleTime: 60_000,
   });
-  const { data: uploadAllowed } = useUploadAllowed();
 
   const pluginSectionMap = pluginPages.reduce<Record<string, NavChild[]>>((acc, page) => {
     // Rendered through t(): a plugin's translation key when it ships one, else its literal label.
@@ -169,20 +182,22 @@ export function useAcpNav(): NavItem[] {
   const mergeIntoCore: Record<string, NavChild[]> = {};
   const standaloneMap: Record<string, NavChild[]> = {};
   for (const [section, children] of Object.entries(pluginSectionMap)) {
-    const key = section.toLowerCase();
+    const key = SECTION_ALIASES[section.toLowerCase()] ?? section.toLowerCase();
     if (coreKeys.has(key)) (mergeIntoCore[key] ??= []).push(...children);
     else standaloneMap[section] = children;
   }
 
   // Core nav with any merged plugin children appended to the matching section.
-  // The Upload item is hidden unless manual uploads are enabled (default off).
   const baseNav: NavItem[] = ACP_NAV.map((item) => {
     let children = item.children;
-    if (item.key === "extensions" && uploadAllowed !== true) {
-      children = children?.filter((c) => c.to !== "/admin/upload");
-    }
-    if (item.key && mergeIntoCore[item.key]) {
-      children = [...(children ?? []), ...mergeIntoCore[item.key]!];
+    const added = item.key ? mergeIntoCore[item.key] : undefined;
+    if (added && children) {
+      // In a grouped section a plugin page joins the FIRST group (System: Setup), so
+      // it is never filed under Logs.
+      const first = children[0]?.group;
+      const tagged = first ? added.map((c) => ({ ...c, group: first })) : added;
+      const lastOfFirst = first ? children.reduce((at, c, i) => (c.group === first ? i : at), -1) : children.length - 1;
+      children = [...children.slice(0, lastOfFirst + 1), ...tagged, ...children.slice(lastOfFirst + 1)];
     }
     return children === item.children ? item : { ...item, children };
   });

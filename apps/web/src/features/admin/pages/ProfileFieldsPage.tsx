@@ -235,7 +235,7 @@ export function ProfileFieldsPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.users")}</div>
+          <div className="acp-page-sub">{t("nav.members")}</div>
           <h1 className="acp-page-title">{t("nav.profileFields")}</h1>
         </div>
         <button type="button" className="btn-primary btn-sm" onClick={() => setEditField("new")}>

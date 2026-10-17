@@ -191,7 +191,7 @@ export function PermissionsPage() {
     <div className="pm-page">
       <div className="pg-head pm-head">
         <div>
-          <p className="pg-eyebrow">{t("nav.accessControl")}</p>
+          <p className="pg-eyebrow">{t("nav.members")}</p>
           <h1 className="pg-title">{t("nav.permissions")}</h1>
         </div>
         <div className="pm-head__actions">

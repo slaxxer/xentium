@@ -9,6 +9,27 @@
     margin-bottom: var(--sp-6);
   }
 
+  &__form {
+    display: flex;
+    gap: var(--sp-2);
+    margin-top: var(--sp-4);
+    max-width: 560px;
+  }
+
+  &__input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 14px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--input-border-color, var(--c-border));
+    background: var(--input-bg, var(--card-bg));
+    color: var(--input-fg, var(--c-fg));
+    font: inherit;
+    font-size: var(--fs-sm);
+
+    &:focus { outline: none; border-color: var(--input-border-focus, var(--c-accent)); }
+  }
+
   &__title {
     font-size: 1.8rem;
     font-weight: 800;
@@ -28,11 +49,16 @@
   &__tabs {
     display: flex;
     gap: 4px;
+    /* A phone cannot fit every result type side by side: the row scrolls. */
+    overflow-x: auto;
+    scrollbar-width: none;
     border-bottom: 1px solid var(--c-border);
     margin-bottom: var(--sp-6);
   }
 
   &__tab {
+    flex: none;
+    white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 6px;

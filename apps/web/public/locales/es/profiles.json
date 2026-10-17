@@ -134,8 +134,6 @@
     "alertStaffTitle": "Una advertencia más sanciona a {{name}}",
     "alertOwn": "Según las normas de advertencias de la comunidad, tu próxima advertencia supone {{sanction}}.",
     "alertStaff": "Según las normas, la próxima advertencia a {{name}} supone {{sanction}}.",
-    "alertExpiry_one": "Las advertencias dejan de contar tras {{count}} día.",
-    "alertExpiry_other": "Las advertencias dejan de contar tras {{count}} días.",
     "counted_one": "advertencia cuenta ahora",
     "counted_other": "advertencias cuentan ahora",
     "ladder": "Normas de advertencias",
@@ -144,9 +142,6 @@
     "banDays_one": "un baneo de {{count}} día",
     "banDays_other": "un baneo de {{count}} días",
     "banPermanent": "un baneo permanente",
-    "expiryNote_one": "Una advertencia deja de contar {{count}} día después de darse.",
-    "expiryNote_other": "Una advertencia deja de contar {{count}} días después de darse.",
-    "noExpiry": "En este sitio las advertencias no caducan.",
     "warnings": "Advertencias",
     "noneOwn": "No tienes advertencias. Gracias por mantener un buen ambiente.",
     "noneOther": "{{name}} no tiene advertencias.",
@@ -185,7 +180,8 @@
     "otherAccounts_other": "{{count}} cuentas más",
     "geoCredit": "Geolocalización IP de DB-IP",
     "geoMissing": "Los países aparecen cuando se descarga la base de datos de países por IP.",
-    "geoMissingLink": "Tareas programadas → Base de datos de países por IP"
+    "geoMissingLink": "Tareas programadas → Base de datos de países por IP",
+    "perWarningExpiry": "Cada advertencia cuenta hasta la fecha que aparece junto a ella."
   },
   "formerlyKnownAs": "Antes conocido como {{names}}",
   "cantRateOwnComment": "No puedes valorar tu propio comentario",

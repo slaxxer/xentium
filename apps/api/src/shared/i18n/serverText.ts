@@ -1,6 +1,8 @@
 /**
  * Server-side text (§60.9): the only prose the API writes itself is what leaves it
- * as email. Everything else stays locale-agnostic (machine keys + NEC codes).
+ * as email, plus the shipped moderation templates (a warning is a message to a
+ * member, so its premade text is in the site's language). Everything else stays
+ * locale-agnostic (machine keys + NEC codes).
  *
  * The files live in `apps/api/src/locales/<lng>/<ns>.json` and are bundled into the
  * build. `notifications.json` holds the same texts as the web's `common:notify`
@@ -19,17 +21,22 @@ import deNotifications from "../../locales/de/notifications.json" with { type: "
 import esNotifications from "../../locales/es/notifications.json" with { type: "json" };
 import frNotifications from "../../locales/fr/notifications.json" with { type: "json" };
 import ptNotifications from "../../locales/pt/notifications.json" with { type: "json" };
+import enModeration from "../../locales/en/moderation.json" with { type: "json" };
+import deModeration from "../../locales/de/moderation.json" with { type: "json" };
+import esModeration from "../../locales/es/moderation.json" with { type: "json" };
+import frModeration from "../../locales/fr/moderation.json" with { type: "json" };
+import ptModeration from "../../locales/pt/moderation.json" with { type: "json" };
 
 export const SERVER_LOCALES = ["en", "de", "es", "fr", "pt"] as const;
 export type ServerLocale = (typeof SERVER_LOCALES)[number];
 
 type Tree = { [key: string]: string | Tree };
-const RESOURCES: Record<ServerLocale, Record<"email" | "notifications", Tree>> = {
-  en: { email: enEmail, notifications: enNotifications },
-  de: { email: deEmail, notifications: deNotifications },
-  es: { email: esEmail, notifications: esNotifications },
-  fr: { email: frEmail, notifications: frNotifications },
-  pt: { email: ptEmail, notifications: ptNotifications },
+const RESOURCES: Record<ServerLocale, Record<"email" | "notifications" | "moderation", Tree>> = {
+  en: { email: enEmail, notifications: enNotifications, moderation: enModeration },
+  de: { email: deEmail, notifications: deNotifications, moderation: deModeration },
+  es: { email: esEmail, notifications: esNotifications, moderation: esModeration },
+  fr: { email: frEmail, notifications: frNotifications, moderation: frModeration },
+  pt: { email: ptEmail, notifications: ptNotifications, moderation: ptModeration },
 };
 export type ServerNamespace = keyof (typeof RESOURCES)["en"];
 

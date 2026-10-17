@@ -1,110 +1,182 @@
 /**
- * ACP → Appearance → Composer.
+ * ACP → Content → Editor.
  *
- * ⚠ ACP tokens only — the admin panel does not wear the site's design. The tool
+ * ⚠ ACP tokens only: the admin panel does not wear the site's design. The tool
  * icons are drawn here at ACP scale; the composer's own styling lives with the
  * composer, on the frontend, where it follows the site's palette instead.
  */
 @use "./acpSystem.scss";
 
-/* The row members will actually get, in the order the admin built. */
-.cmp-preview {
+.cmp-page {
   display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  padding: 12px 14px;
-  margin-bottom: var(--sp-4);
+  flex-direction: column;
+  gap: 18px;
+  max-width: 1100px;
+}
+
+.cmp-head-side { margin-left: auto; }
+
+/* ── The toolbar, as members get it ──────────────────────────────────── */
+.cmp-bar__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 var(--sp-5) var(--sp-5);
+  padding: 10px;
+  border-radius: var(--radius-md);
   background: var(--c-bg);
   border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  flex-wrap: wrap;
+  min-height: 56px;
+  box-sizing: border-box;
+}
+.cmp-bar__empty { align-self: center; padding: 0 6px; color: var(--c-fg-muted); font-size: var(--fs-sm); }
 
-  &__label {
-    font-size: var(--fs-2xs);
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--c-fg-subtle);
-  }
+.cmp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--card-bg);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--c-fg);
 
-  &__bar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-wrap: wrap;
-
-    em { font-style: normal; font-size: var(--fs-xs); color: var(--c-warn); }
-  }
-
-  &__tool {
+  &__ic { color: var(--c-accent); }
+  button {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
-    border-radius: var(--radius-sm);
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 6px;
+    background: none;
     color: var(--c-fg-muted);
+    font-size: var(--fs-2xs);
+    cursor: pointer;
+    &:hover:not(:disabled) { background: var(--c-bg-hover); color: var(--c-fg); }
+    &:disabled { opacity: 0.3; cursor: default; }
   }
 }
 
-.cmp-list { display: flex; flex-direction: column; gap: 4px; }
-
-.cmp-row {
+/* ── Filter row ──────────────────────────────────────────────────────── */
+.cmp-filters {
   display: flex;
   align-items: center;
-  gap: var(--sp-3);
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
+  gap: 14px;
+  flex-wrap: wrap;
 
-  /* The three states are told apart by weight and colour, not by position. */
-  &.is-bar {
-    background: var(--c-accent-soft);
-    border-color: color-mix(in srgb, var(--c-accent) 20%, transparent);
-    .cmp-row__ic   { color: var(--c-accent); }
-    .cmp-row__name { color: var(--c-fg); font-weight: 600; }
-  }
+  &__n { margin-left: 6px; font-size: var(--fs-2xs); font-weight: 700; opacity: 0.75; }
+  &__hint { margin-left: auto; font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
+}
 
-  &.is-off {
-    .cmp-row__ic, .cmp-row__name { color: var(--c-fg-subtle); }
-    .cmp-row__name em { opacity: 0.6; }
-  }
-
-  &__ic {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    flex: none;
-    color: var(--c-fg-muted);
-  }
-
-  &__name {
-    flex: 1;
-    min-width: 0;
+/* ── One group of tiles ──────────────────────────────────────────────── */
+.cmp-group {
+  &__head {
     display: flex;
-    align-items: baseline;
-    gap: var(--sp-2);
-    font-size: var(--fs-sm);
-    color: var(--c-fg-muted);
-
-    em {
-      font-style: normal;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    h2 {
+      margin: 0;
       font-size: var(--fs-2xs);
-      font-weight: 700;
-      letter-spacing: 0.06em;
+      font-weight: 800;
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      color: var(--c-fg-subtle);
+      color: var(--c-fg);
     }
   }
-
-  &__seg { flex: none; }
-
-  @media (max-width: 680px) {
-    flex-wrap: wrap;
-    &__seg { width: 100%; }
+  &__counts { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); white-space: nowrap; }
+  &__rule { flex: 1; height: 1px; background: var(--c-border); min-width: 12px; }
+  &__all {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    white-space: nowrap;
+    button {
+      padding: 3px 7px;
+      border: none;
+      border-radius: 6px;
+      background: none;
+      color: var(--c-fg);
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      &:hover { background: var(--c-bg-hover); }
+    }
   }
 }
 
-.cmp-ic { font-size: var(--fs-sm); }
+.cmp-tiles {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cmp-tile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border);
+  background: var(--card-bg);
+  color: var(--c-fg);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+
+  &:hover { border-color: var(--c-fg-subtle); }
+  &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+
+  &__ic {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    background: var(--c-bg);
+    color: var(--c-fg-muted);
+  }
+  &__text {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    b { font-size: var(--fs-sm); font-weight: 700; line-height: 1.25; }
+    span { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); }
+  }
+
+  /* In the toolbar: the accent, like the chip above. */
+  &.is-bar {
+    border-color: color-mix(in srgb, var(--c-accent) 45%, var(--c-border));
+    background: color-mix(in srgb, var(--c-accent) 8%, var(--card-bg));
+    .cmp-tile__ic { background: var(--c-accent-soft); color: var(--c-accent); }
+    .cmp-tile__text span { color: var(--c-accent); }
+  }
+  /* Off: still there to switch back on, but quiet. */
+  &.is-off {
+    opacity: 0.6;
+    .cmp-tile__text b { text-decoration: line-through; text-decoration-color: var(--c-fg-subtle); }
+  }
+}
+
+@media (max-width: 1100px) { .cmp-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .cmp-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .cmp-tile { gap: 8px; padding: 8px 10px; }
+  .cmp-tile__ic { width: 28px; height: 28px; }
+  /* "Strikethrough" is wider than half a phone: let a long name break. */
+  .cmp-tile__text b { overflow-wrap: anywhere; }
+  .cmp-group__head { flex-wrap: wrap; }
+  .cmp-group__rule { display: none; }
+  .cmp-filters__hint { margin-left: 0; }
+}

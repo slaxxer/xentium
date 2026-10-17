@@ -6,7 +6,7 @@ import type { NotificationText } from "../notifications/notification.types.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, USER_REF_SELECT, toUserRef } from "../../shared/utils/userRef.js";
 import { humanizeCaseType, describeCaseSignal, type ReportTargetType, type ThresholdRule } from "./moderation.types.js";
-import { getModPolicy, warningExpiry, checkBanLength } from "./moderationPolicy.js";
+import { getModPolicy, warningExpiry, checkBanLength, templateWarningExpiry, type WarnExpiry } from "./moderationPolicy.js";
 import { describeTarget } from "./reportTarget.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { staffGroupKeys } from "../../shared/utils/staff.js";
@@ -198,6 +198,8 @@ export const moderationService = {
     issuedById: string;
     reason:     string;
     expiresAt?: Date | null;
+    /** From the warning's template: its length. Wins over `expiresAt`. */
+    expiry?:    WarnExpiry | null;
     /** false = no notification to the member (ModCanvas "Send to … as a notification" off). */
     notify?:    boolean;
   }) {
@@ -214,14 +216,13 @@ export const moderationService = {
       throw XentiumError.forbidden(`You cannot warn a ${staffGroup.group.name} member`);
     }
 
-    const policy = await getModPolicy();
     const warning = await prisma.moderationWarning.create({
       data: {
         userId:     data.userId,
         issuedById: data.issuedById,
         reason:     data.reason,
         status:     "active",
-        expiresAt:  warningExpiry(policy, data.expiresAt),
+        expiresAt:  data.expiry !== undefined ? templateWarningExpiry(data.expiry) : warningExpiry(data.expiresAt),
       },
     });
 

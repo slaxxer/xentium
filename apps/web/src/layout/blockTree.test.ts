@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import type { BlockNode } from "@xentium/contracts";
 import {
+  ancestorsOf,
   canNestInto,
   cloneBlock,
   collectIds,
@@ -481,5 +482,25 @@ describe("icon overrides", () => {
   it("returns the tree untouched for an unknown block", () => {
     const before = tree();
     expect(updateBlockIconOverride(before, "nope", "gear#0", "rocket")).toBe(before);
+  });
+});
+
+describe("ancestorsOf", () => {
+  const leaf = (id: string): BlockNode => ({ id, type: "heading", props: {} });
+  const regions = {
+    main: [{ id: "sec", type: "section", props: {}, children: [
+      { id: "cols", type: "columns", props: {}, children: [
+        { id: "col", type: "column", props: {}, children: [leaf("deep")] },
+      ] },
+    ] }, leaf("top")],
+  };
+
+  it("lists the containers around a block, outermost first", () => {
+    expect(ancestorsOf(regions, "deep").map((n) => n.id)).toEqual(["sec", "cols", "col"]);
+  });
+
+  it("is empty for a block at the top of a region, and for an unknown id", () => {
+    expect(ancestorsOf(regions, "top")).toEqual([]);
+    expect(ancestorsOf(regions, "nope")).toEqual([]);
   });
 });

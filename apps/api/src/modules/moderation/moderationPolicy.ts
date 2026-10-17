@@ -20,7 +20,6 @@ export interface BanPolicy {
 }
 
 export interface ModPolicy {
-  expiry:        { enabled: boolean; days: number };
   ladder:        ThresholdRule[];
   bans:          BanPolicy;
   /** Only warnings issued after a member's most recent ban count toward the ladder. */
@@ -29,8 +28,6 @@ export interface ModPolicy {
 
 /** Settings key → default. The page, the API and the enforcement all use these. */
 export const MOD_POLICY_DEFAULTS: Record<string, unknown> = {
-  "moderation.warning_expiry_enabled": true,
-  "moderation.warning_expiry_days":    90,
   "moderation.policy":                 DEFAULT_MODERATION_POLICY,
   "moderation.default_ban_days":       7,
   "moderation.min_ban_days":           1,
@@ -49,10 +46,6 @@ function ladderOf(raw: unknown): ThresholdRule[] {
 export async function getModPolicy(): Promise<ModPolicy> {
   const s = await getSettings(MOD_POLICY_DEFAULTS);
   return {
-    expiry: {
-      enabled: s["moderation.warning_expiry_enabled"] !== false,
-      days:    Number(s["moderation.warning_expiry_days"]) || 90,
-    },
     ladder: ladderOf(s["moderation.policy"]),
     bans: {
       defaultDays:   Number(s["moderation.default_ban_days"]) || 7,
@@ -64,10 +57,14 @@ export async function getModPolicy(): Promise<ModPolicy> {
   };
 }
 
-/** When a new warning stops counting: the moderator's date if they chose one, else the policy's. */
-export function warningExpiry(policy: ModPolicy, chosen: Date | null | undefined, now = new Date()): Date | null {
+/**
+ * When a new warning stops counting. There is no site-wide rule (retired
+ * 2026-10-17): a warning counts for as long as its TEMPLATE says. An explicit date
+ * (the admin API) wins; a warning with neither gets the default length.
+ */
+export function warningExpiry(chosen: Date | null | undefined, now = new Date()): Date | null {
   if (chosen) return chosen;
-  return policy.expiry.enabled ? new Date(now.getTime() + policy.expiry.days * DAY_MS) : null;
+  return templateWarningExpiry(DEFAULT_WARN_EXPIRY, now);
 }
 
 /**
@@ -90,4 +87,17 @@ export function checkBanLength(
     message: `A ban must last between ${bans.minDays} and ${bans.maxDays} days`,
     details: { minDays: bans.minDays, maxDays: bans.maxDays, days },
   });
+}
+
+/** How long a warning counts. Every warn template carries one. */
+export const WARN_EXPIRIES = ["7d", "30d", "90d", "180d", "365d", "never"] as const;
+export type WarnExpiry = (typeof WARN_EXPIRIES)[number];
+/** What a new warn template starts with, and what a template-less warning gets. */
+export const DEFAULT_WARN_EXPIRY: WarnExpiry = "90d";
+const EXPIRY_DAYS: Record<WarnExpiry, number | null> = { "7d": 7, "30d": 30, "90d": 90, "180d": 180, "365d": 365, never: null };
+
+/** When a warning of this length, given now, stops counting (null = never). */
+export function templateWarningExpiry(expiry: WarnExpiry | null, now = new Date()): Date | null {
+  const days = EXPIRY_DAYS[expiry ?? DEFAULT_WARN_EXPIRY];
+  return days === null ? null : new Date(now.getTime() + days * DAY_MS);
 }

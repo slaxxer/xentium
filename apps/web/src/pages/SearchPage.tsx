@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
@@ -88,6 +89,15 @@ export function SearchPage() {
   const articles    = data?.articles.data ?? [];
   const users       = data?.users.data    ?? [];
 
+  // The page's own search box: on a phone the navigation's search sits in the menu,
+  // so without it there was no way to search again from here.
+  const [draft, setDraft] = useState(q);
+  useEffect(() => { setDraft(q); }, [q]);
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setParams((p) => { p.set("q", draft.trim()); return p; });
+  };
+
   const hasQuery = q.trim().length >= 2;
   const busy     = isLoading || isFetching;
 
@@ -100,6 +110,12 @@ export function SearchPage() {
         {hasQuery && !busy && data && (
           <p className="search-page__meta">{t("search.resultsCount", { n: totalAll.toLocaleString(uiLocale()) })}</p>
         )}
+        <form className="search-page__form" role="search" onSubmit={submit}>
+          <input type="search" className="search-page__input" value={draft} autoFocus={!hasQuery}
+            placeholder={t("search.placeholder")} aria-label={t("search.title")}
+            onChange={(e) => setDraft(e.target.value)} />
+          <button type="submit" className="btn-primary btn-sm">{t("search.submit")}</button>
+        </form>
       </div>
 
       {/* Tabs */}

@@ -50,7 +50,24 @@ export const listArticlesQuerySchema = paginatedRequestSchema.extend({
   // following = the categories and tags the viewer follows; liked / saved / mine are
   // the viewer's own lists (home menu). All but latest and top need a signed-in viewer.
   feed: z.enum(["latest", "following", "top", "liked", "saved", "mine"]).optional(),
+  // The article index's filters. `tag` is a tag slug. `period`: published within the
+  // last week / 30 days / this calendar year. `length`: reading time under 5 minutes,
+  // 5 to 10, or over 10. `sort`: newest, most liked, most commented.
+  tag: z.string().trim().min(1).max(80).optional(),
+  period: z.enum(["week", "month", "year"]).optional(),
+  length: z.enum(["short", "medium", "long"]).optional(),
+  sort: z.enum(["latest", "popular", "discussed"]).optional(),
+  /** Leave one article out: the index's featured card shows it above the grid. */
+  exclude: z.string().max(40).optional(),
 });
+
+/** Trending on the article index: top articles of the last `days`, by likes + comments × 2. */
+export const trendingQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+  max: z.coerce.number().int().min(1).max(20).default(5),
+});
+
+export const pinArticleSchema = z.object({ pinned: z.boolean() });
 
 export type CreateArticleInput = z.infer<typeof createArticleSchema>;
 export type UpdateArticleInput = z.infer<typeof updateArticleSchema>;

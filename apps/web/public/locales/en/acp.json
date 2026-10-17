@@ -41,7 +41,11 @@
     "composer": "Composer",
     "modTemplates": "Templates",
     "themeStudio": "Theme Studio",
-    "emojis": "Emojis"
+    "emojis": "Emojis",
+    "members": "Members",
+    "editor": "Editor",
+    "groupSetup": "Setup",
+    "groupLogs": "Logs"
   },
   "sidebar": {
     "adminPanel": "Admin Panel",
@@ -860,7 +864,7 @@
         "msg": "Forbidden",
         "desc": "The authenticated user does not have permission to perform this action.",
         "cause": "Missing permission key for the requested resource.",
-        "fix": "Ensure the user's group has the required permission assigned in ACP → Access Control → Permissions."
+        "fix": "Ensure the user's group has the required permission assigned in ACP → Members → Permissions."
       },
       "XEC-API-4004": {
         "msg": "Not Found",
@@ -950,19 +954,19 @@
         "msg": "Permission Denied",
         "desc": "The user lacks the specific permission key required for this action.",
         "cause": "Group assignment or permission matrix does not include this key.",
-        "fix": "Grant the required permission to the user's group in ACP → Access Control → Permissions."
+        "fix": "Grant the required permission to the user's group in ACP → Members → Permissions."
       },
       "XEC-PERM-1040": {
         "msg": "Content Too Long",
         "desc": "The post or article body exceeds the maximum length for this user's level.",
         "cause": "Group progression config restricts content length at this level.",
-        "fix": "Shorten the content, or adjust the group's max post length in ACP → Access Control → Groups → Progression."
+        "fix": "Shorten the content, or adjust the group's max post length in ACP → Members → Groups → Progression."
       },
       "XEC-PERM-1041": {
         "msg": "Daily Post Limit Reached",
         "desc": "The user has reached their daily post limit.",
         "cause": "Group progression config sets a daily post cap.",
-        "fix": "Wait until midnight (UTC), or raise the limit in ACP → Access Control → Groups → Progression."
+        "fix": "Wait until midnight (UTC), or raise the limit in ACP → Members → Groups → Progression."
       },
       "XEC-PERM-1042": {
         "msg": "Attachment Limit Exceeded",
@@ -1355,7 +1359,7 @@
     "toastQueued": "Run queued."
   },
   "userList": {
-    "eyebrow": "Management",
+    "eyebrow": "Members",
     "searchPlaceholder": "Search users…",
     "allRoles": "All roles",
     "allStatus": "All status",
@@ -1605,16 +1609,6 @@
       "bans": "Bans",
       "detection": "Detection"
     },
-    "lifetime": {
-      "title": "Warning lifetime",
-      "sub": "Whether a warning eventually stops counting toward the ladder",
-      "onTitle": "Warnings expire",
-      "onDesc": "Old warnings go inactive, so a member who behaves works their way back down the ladder.",
-      "offTitle": "Warnings never expire",
-      "offDesc": "Every warning a member has ever received keeps counting toward the ladder below.",
-      "after": "Expire after",
-      "afterDesc": "Counted from the day the warning was issued. A moderator can still pick their own date."
-    },
     "ladder": {
       "title": "Escalation ladder",
       "sub": "What happens as warnings add up. Each step fires once, when a member reaches its count.",
@@ -1715,13 +1709,14 @@
         "desc": "A fresh account appears from the address of someone you just banned.",
         "rule": "Opens a case for a sign-up within 10 minutes of a ban, from the banned member's address"
       }
-    }
+    },
+    "lifetimeMoved": "How long a warning counts is set on each warning template.",
+    "lifetimeLink": "Open the templates"
   },
   "modTemplates": {
     "eyebrow": "Moderation",
     "title": "Templates",
-    "sub": "The premade texts moderators start from in ModCanvas when they warn, ban, remove or dismiss. Write your own or keep the defaults. Everything saves as you change it.",
-    "search": "Search templates…",
+    "sub": "The texts moderators use in ModCanvas to warn, ban, remove or dismiss. Warnings and bans go out exactly as written here, and last as long as set here. Everything saves as you change it.",
     "new": "New",
     "newName": "New template",
     "copyName": "{{name}} (copy)",
@@ -1746,7 +1741,7 @@
       "dismiss": "An internal note for the mod log. Never sent to anyone."
     },
     "permanent": "Permanent",
-    "defaultLen": "Default {{len}}",
+    "defaultLen": "Bans for {{len}}",
     "internal": "Internal note",
     "noRule": "No rule reference",
     "default": "Default",
@@ -1767,7 +1762,7 @@
     "rule": "Rule reference",
     "rulePlaceholder": "e.g. Be respectful",
     "usedFor": "Used for",
-    "defaultDuration": "Default ban length",
+    "defaultDuration": "Ban length",
     "message": "Message",
     "var": {
       "user": "Author of the reported content",
@@ -1793,7 +1788,10 @@
     "used_one": "Used {{count}} time",
     "used_other": "Used {{count}} times",
     "edited": "last edited by {{name}} {{when}}",
-    "newText": "Hi {user}, "
+    "newText": "Hi {user}, ",
+    "warnLen": "Counts for {{len}}",
+    "add": "Add",
+    "close": "Close"
   },
   "modCases": {
     "sub": "Moderation",
@@ -1937,7 +1935,8 @@
     "shared": "Shared",
     "sharedBy_one": "Seen on {{count}} of these accounts",
     "sharedBy_other": "Seen on {{count}} of these accounts",
-    "provenance": "{{type}}"
+    "provenance": "{{type}}",
+    "pagination": "Page {{page}} of {{totalPages}} · {{total}} cases"
   },
   "modLog": {
     "sub": "Moderation",
@@ -3231,6 +3230,7 @@
       "homeHotThreads": "The discussions getting the most replies right now.",
       "homePopularTags": "The tags used most lately.",
       "homeSuggestedPeople": "Members worth following.",
+      "homeSetup": "For admins on a new site: the steps left to set it up. Hidden for everyone else.",
       "articleDetail": "The whole article page: title, body, author and comments.",
       "profileCard": "The profile's panel. Put the profile pieces inside it.",
       "profileAvatar": "The member's avatar.",
@@ -3259,7 +3259,10 @@
       "footerText": "Retired: now part of the footer bar.",
       "groupLegend": "The user groups and their colours.",
       "boardStats": "Site totals: articles, members and the newest member.",
-      "branding": "Retired: now the footer bar."
+      "branding": "Retired: now the footer bar.",
+      "articleCategories": "Categories with article counts. Clicking one filters the index.",
+      "articleTrending": "The most liked and discussed articles of the last days.",
+      "articleTags": "The tags used most. Clicking one filters the index."
     },
     "catalogueTitle": "Add a block to {{region}}",
     "catalogueNote": "Blocks come from a fixed catalogue, so a layout can never run code. Nothing goes live until you publish.",
@@ -3495,7 +3498,11 @@
       "resetDefault": "Reset to full width",
       "conflict": "Someone else changed the site layout. Their version is loaded.",
       "phones": "Phones",
-      "stickyMoved": "Sticky navbar is a setting of the Navbar block: select the navbar to change it."
+      "stickyMoved": "Sticky navbar is a setting of the Navbar block: select the navbar to change it.",
+      "content": "Content",
+      "contentWidth": "Content width",
+      "readingWidth": "Reading width",
+      "contentHint": "Content width is the main column on every page. Reading width is the narrower column articles use. Both apply in every frame, full width included."
     },
     "edge": {
       "title": "Edge art",
@@ -3597,6 +3604,79 @@
       "browseAll": "Browse with descriptions",
       "addHere": "Add a block here",
       "notHere": "{{block}} can't go there. Select a block or mark a spot where it fits."
+    },
+    "backToBlocks": "Blocks",
+    "moveTo": "Move to…",
+    "moveToTitle": "Move this block to",
+    "moveToNone": "There is nowhere else this block can go.",
+    "moveToHere": "here now",
+    "mode": {
+      "label": "Editor mode",
+      "simple": "Simple",
+      "advanced": "Advanced",
+      "simpleHint": "The page, the blocks and the selected block's settings.",
+      "advancedHint": "Also layers, who sees a block, theme styles, icons and more."
+    },
+    "styles": {
+      "headerTitle": "Header style",
+      "footerTitle": "Footer style",
+      "hint": "Start from a style, then fine-tune the blocks. Your colours stay; Ctrl+Z undoes.",
+      "preset": {
+        "below": "Band below",
+        "row": "One row",
+        "above": "Band above",
+        "centred": "Centred",
+        "full": "Full",
+        "community": "Community",
+        "minimal": "Minimal"
+      }
+    },
+    "tour": {
+      "label": "Theme Studio tour",
+      "count": "Step {{n}} of {{total}}",
+      "skip": "Skip tour",
+      "back": "Back",
+      "next": "Next",
+      "start": "Show me",
+      "finish": "Got it",
+      "replay": "Show the tour again",
+      "welcome": {
+        "title": "Welcome to Theme Studio",
+        "body": "This is where your site gets its look and its layout. A one-minute tour shows you where everything is."
+      },
+      "modes": {
+        "title": "Four ways to style your site",
+        "body": "Layout arranges your pages. Colours & type, Branding and Custom CSS change how everything looks. History lets you go back to an earlier version."
+      },
+      "page": {
+        "title": "Pick a page",
+        "body": "Choose which page you are arranging: the home page, articles, profiles, or the header and footer every page shares. Header and footer come with ready-made styles."
+      },
+      "select": {
+        "title": "Click anything on the page",
+        "body": "The preview is your real page. Click a part of it to select it: a heading, the feed, the navigation.",
+        "task": "Click something in the preview to continue."
+      },
+      "panel": {
+        "title": "Its settings appear here",
+        "body": "Change the settings, move it up or down, or use Move to… to put it somewhere else, like the sidebar. You can also drag it on the page. Ctrl+Z undoes anything."
+      },
+      "add": {
+        "title": "Add more blocks",
+        "body": "Go back to Blocks to see everything you can add. Drag a block onto the page, or click it to add it after the selected block."
+      },
+      "mode": {
+        "title": "Simple or Advanced",
+        "body": "Simple shows what you need to start. Advanced adds layers, who can see a block, theme styles and icons."
+      },
+      "publish": {
+        "title": "Nothing is live until you publish",
+        "body": "Your changes save on their own as a draft that only you see. Publish puts them on your site, all at once."
+      },
+      "done": {
+        "title": "That's it",
+        "body": "Have fun making it yours. You can see this tour again any time from the ? button."
+      }
     }
   },
   "groups": {
@@ -3966,7 +4046,7 @@
     "retry": "Try again"
   },
   "badges": {
-    "eyebrow": "Community",
+    "eyebrow": "Members",
     "title": "Badges",
     "subtitle": "What this site can award. Who holds what is on each member's page.",
     "new": "New badge",
@@ -4113,23 +4193,33 @@
     "partialFiltered": "A stylised family: only the icons it draws are listed."
   },
   "composer": {
-    "eyebrow": "Appearance",
-    "title": "Composer",
+    "eyebrow": "Content",
+    "title": "Editor",
     "subtitle": "Which tools members get when they write, and where each one sits.",
-    "toolsTitle": "Tools",
-    "toolsSub": "{{count}} in the action bar. Everything else is one click away in the overflow tray.",
-    "barPreview": "Action bar",
-    "barEmpty": "Nothing in the bar — members get the tray only.",
+    "barEmpty": "Nothing in the toolbar. Members get the menu only.",
     "place": {
-      "bar": "Bar",
-      "overflow": "Tray",
+      "bar": "Toolbar",
+      "overflow": "Menu",
       "off": "Off"
     },
     "behaviourTitle": "Behaviour",
     "behaviourSub": "How the composer acts on every surface.",
     "mentions": "Mentions everywhere",
     "mentionsDesc": "Typing @ suggests members in comments, threads, replies and private messages.",
-    "notSupported": "Attachments depend on the surface: the forum provides an upload path, article comments, the profile wall and private messages do not, so the paperclip is disabled there. There is no GIF service configured, so that picker is not offered at all."
+    "notSupported": "Attachments depend on the surface: the forum provides an upload path, article comments, the profile wall and private messages do not, so the paperclip is disabled there. There is no GIF service configured, so that picker is not offered at all.",
+    "barTitle": "Toolbar",
+    "barSub": "Exactly like this, in this order. Six fit in one row on a phone.",
+    "moveLeft": "Move {{tool}} left",
+    "moveRight": "Move {{tool}} right",
+    "filterAll": "All",
+    "cycleHint": "Click a tile to switch: toolbar → menu → off",
+    "groupCounts": "{{bar}} toolbar · {{menu}} menu · {{off}} off",
+    "setAll": "All:",
+    "state": {
+      "bar": "In the toolbar · {{n}}",
+      "overflow": "In the menu",
+      "off": "Off"
+    }
   },
   "signInProviders": {
     "passkeysTitle": "Passkeys",
@@ -4225,7 +4315,7 @@
       "grant": "Grant",
       "badgeDone_one": "Badge granted to {{count}} member",
       "badgeDone_other": "Badge granted to {{count}} members",
-      "noBadges": "There are no badges to grant yet. Create one under Users → Badges.",
+      "noBadges": "There are no badges to grant yet. Create one under Members → Badges.",
       "logoutTitle_one": "Log out {{count}} member?",
       "logoutTitle_other": "Log out {{count}} members?",
       "logoutBody": "Every session they have ends now. They can sign in again.",
@@ -4374,7 +4464,9 @@
     "links": "Links",
     "smallLogo": "Small logo on the left",
     "smallLogoHint": "Useful once the masthead has scrolled away.",
-    "smallLogoForced": "Always on while the masthead is hidden."
+    "smallLogoForced": "Always on while the masthead is hidden.",
+    "right": "Right",
+    "accountMenu": "Account menu"
   },
   "studio": {
     "title": "Theme Studio",
@@ -4595,6 +4687,12 @@
           },
           "showFilters": {
             "title": "Show filters"
+          },
+          "showFeatured": {
+            "title": "Show the pinned article"
+          },
+          "columns": {
+            "title": "Columns"
           }
         }
       },
@@ -4747,6 +4845,9 @@
       },
       "homeSuggestedPeople": {
         "label": "Suggested people"
+      },
+      "homeSetup": {
+        "label": "Setup checklist"
       },
       "articleDetail": {
         "label": "Article"
@@ -5090,6 +5191,28 @@
             }
           }
         }
+      },
+      "articleCategories": {
+        "label": "Article categories"
+      },
+      "articleTrending": {
+        "label": "Trending articles",
+        "props": {
+          "max": {
+            "title": "How many"
+          },
+          "days": {
+            "title": "Days back"
+          }
+        }
+      },
+      "articleTags": {
+        "label": "Popular tags",
+        "props": {
+          "max": {
+            "title": "How many tags"
+          }
+        }
       }
     },
     "jobs": {
@@ -5256,6 +5379,8 @@
       "moderation.log.view": "View the moderation log",
       "moderation.settings": "Change moderation settings",
       "moderation.protected": "Counts as staff (cannot be warned or banned)",
+      "moderation.warn.expiry.override": "Change how long a warning counts",
+      "moderation.ban.length.override": "Change how long a ban lasts",
       "message.send": "Send private messages",
       "admin.plugins": "Manage plugins in the admin panel",
       "plugin.install": "Install plugins",
@@ -5266,9 +5391,7 @@
   },
   "emojis": {
     "title": "Emojis",
-    "subtitle": "The emojis members can use in the editor: articles, comments, the wall, forum posts and messages. Upload images, give each a :shortcode: and a category.",
-    "count_one": "emoji",
-    "count_other": "emojis",
+    "subtitle": "What the editor's emoji picker offers, everywhere members write. The order here is the order in the picker.",
     "upload": "Upload emojis",
     "pendingTitle_one": "{{count}} emoji to add",
     "pendingTitle_other": "{{count}} emojis to add",
@@ -5294,6 +5417,16 @@
     "removeBody": "It leaves the emoji picker. Posts that already use it keep showing it, and its shortcode stays reserved.",
     "removed": "Emoji removed",
     "saved": "Emoji saved",
-    "save": "Save"
+    "save": "Save",
+    "active_one": "{{count}} active",
+    "active_other": "{{count}} active",
+    "pendingSub": "The shortcodes come from the file names. Check them, then add.",
+    "categoryAll": "Category for all",
+    "errInvalid": "2–32 characters: a–z, 0–9, _ - +",
+    "errTaken": "The shortcode :{{code}}: is already taken.",
+    "errTwice": "Another file in this batch uses :{{code}}:.",
+    "rename": "Rename",
+    "renamed": "Category renamed",
+    "dragHint": "Drag to reorder (or Alt + ↑/↓)"
   }
 }

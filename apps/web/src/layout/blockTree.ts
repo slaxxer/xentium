@@ -79,6 +79,30 @@ export function findNode(regions: Regions, id: string): NodeLocation | null {
 }
 
 /**
+ * The containers a block sits in, outermost first (empty for a block at a region's
+ * top level). The settings panel's path is drawn from this, so a parent that is
+ * otherwise hard to click (every point inside it belongs to a child) is one click.
+ */
+export function ancestorsOf(regions: Regions, id: string): BlockNode[] {
+  const path: BlockNode[] = [];
+  const walkPath = (list: BlockNode[]): boolean => {
+    for (const node of list) {
+      if (node.id === id) return true;
+      if (node.children?.length) {
+        path.push(node);
+        if (walkPath(node.children)) return true;
+        path.pop();
+      }
+    }
+    return false;
+  };
+  for (const nodes of Object.values(regions)) {
+    if (walkPath(nodes)) return path;
+  }
+  return [];
+}
+
+/**
  * How many blocks are UNDER `node`, at any depth — not counting `node` itself.
  *
  * Deleting a container takes its whole subtree with it, and the number is the only

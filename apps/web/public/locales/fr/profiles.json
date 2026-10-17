@@ -134,8 +134,6 @@
     "alertStaffTitle": "Encore un avertissement sanctionne {{name}}",
     "alertOwn": "Selon les règles d'avertissement de la communauté, votre prochain avertissement entraîne {{sanction}}.",
     "alertStaff": "Selon les règles, le prochain avertissement de {{name}} entraîne {{sanction}}.",
-    "alertExpiry_one": "Les avertissements cessent de compter après {{count}} jour.",
-    "alertExpiry_other": "Les avertissements cessent de compter après {{count}} jours.",
     "counted_one": "avertissement compte actuellement",
     "counted_other": "avertissements comptent actuellement",
     "ladder": "Règles d'avertissement",
@@ -144,9 +142,6 @@
     "banDays_one": "un bannissement de {{count}} jour",
     "banDays_other": "un bannissement de {{count}} jours",
     "banPermanent": "un bannissement définitif",
-    "expiryNote_one": "Un avertissement cesse de compter {{count}} jour après avoir été donné.",
-    "expiryNote_other": "Un avertissement cesse de compter {{count}} jours après avoir été donné.",
-    "noExpiry": "Les avertissements n'expirent pas sur ce site.",
     "warnings": "Avertissements",
     "noneOwn": "Vous n'avez aucun avertissement. Merci de garder une bonne ambiance.",
     "noneOther": "{{name}} n'a aucun avertissement.",
@@ -185,7 +180,8 @@
     "otherAccounts_other": "{{count}} autres comptes",
     "geoCredit": "Géolocalisation IP par DB-IP",
     "geoMissing": "Les pays apparaissent une fois la base de pays par IP téléchargée.",
-    "geoMissingLink": "Tâches planifiées → Base de pays par IP"
+    "geoMissingLink": "Tâches planifiées → Base de pays par IP",
+    "perWarningExpiry": "Chaque avertissement compte jusqu'à la date indiquée à côté."
   },
   "formerlyKnownAs": "Anciennement connu sous le nom de {{names}}",
   "cantRateOwnComment": "Vous ne pouvez pas noter votre propre commentaire",

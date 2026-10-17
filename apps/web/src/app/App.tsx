@@ -210,7 +210,7 @@ function RootRoute() {
 function FeatureGate({ feature, children }: { feature: FeatureKey; children: React.ReactNode }) {
   const { data, isLoading } = useSiteConfig();
   if (isLoading) return <Loading />;
-  if (data && !data.features[feature]) return <NotFoundPage />;
+  if (data && !data.features[feature]) return <NotFoundPage embedded />;
   return <>{children}</>;
 }
 

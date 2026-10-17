@@ -30,6 +30,7 @@ import { useNavigate } from "react-router-dom";
 import { blockPropSchemas, type LocalizedText } from "@xentium/contracts";
 import { useTranslation } from "react-i18next";
 import { api } from "../../lib/api";
+import { useSiteConfig } from "../../hooks/useSiteConfig";
 import { articleCategoriesApi, articlesApi } from "../../lib/articlesApi";
 import { Avatar } from "../../components/Avatar";
 import { registerBlock, type BlockProps } from "../blockRegistry";
@@ -156,18 +157,26 @@ function GuestHeroText({ props }: BlockProps<{
   const { t } = useTranslation("common", { keyPrefix: "guestHome.stats" });
   const stats = useStats();
   const online = useOnline();
+  const siteName = useSiteConfig().data?.siteName || "Xentium";
 
-  const badge = useText(props.badge);
-  const title = useText(props.title);
+  // `{site}` and `{members}` are substituted rather than concatenated so word order
+  // stays the translator's (or the admin's) choice.
+  const fill = (text: string) =>
+    text.replaceAll("{site}", siteName).replaceAll("{members}", String(stats?.members ?? 0));
+  const badge = fill(useText(props.badge));
+  const title = fill(useText(props.title));
+  const subtitle = fill(useText(props.subtitle));
   const ctaPrimary = useText(props.ctaPrimary);
   const ctaSecondary = useText(props.ctaSecondary);
-  // `{members}` is substituted rather than concatenated so word order stays the
-  // translator's choice.
-  const subtitle = useText(props.subtitle).replace("{members}", String(stats?.members ?? 0));
+
+  // A brand-new site has nobody online and nothing posted. "0 online now" and a row
+  // of zeros read as a dead site, so both wait until there is something to count.
+  const onlineNow = online?.total ?? 0;
+  const hasContent = (stats?.articles ?? 0) > 0;
 
   return (
     <div className="ghero__lead">
-      <span className="ghero__badge"><i />{online?.total ?? 0} {badge}</span>
+      {onlineNow > 0 && badge && <span className="ghero__badge"><i />{onlineNow} {badge}</span>}
       <h1 className="ghero__title">{title}</h1>
       <p className="ghero__sub">{subtitle}</p>
       <div className="ghero__cta">
@@ -179,7 +188,7 @@ function GuestHeroText({ props }: BlockProps<{
           {ctaSecondary}
         </button>
       </div>
-      {props.showStats && (
+      {props.showStats && hasContent && (
         <div className="ghero__stats">
           <div className="gstat"><div className="gstat__n">{stats?.members ?? 0}</div><div className="gstat__l">{t("members")}</div></div>
           <div className="gstat"><div className="gstat__n">{stats?.articles ?? 0}</div><div className="gstat__l">{t("posts")}</div></div>

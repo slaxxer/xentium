@@ -153,5 +153,8 @@
   }
 }
 
+/* Inside the site layout: as tall as its content, the navigation and footer around it. */
+.nf--embedded { min-height: 60svh; }
+
 /* An uploaded site logo in place of the Xentium mark. */
 .nf__logo-img { display: block; height: 36px; width: auto; max-width: 220px; object-fit: contain; }

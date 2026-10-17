@@ -1,0 +1,81 @@
+{
+  "templates": {
+    "warn": {
+      "harassment": {
+        "name": "Acoso",
+        "text": "Hola {user}, tu {type} en {where} fue denunciado por acoso. Los ataques personales incumplen las normas de la comunidad. Esta es una advertencia formal y nuevas denuncias pueden llevar a una suspensión."
+      },
+      "spam": {
+        "name": "Spam / autopromoción",
+        "text": "Hola {user}, tu {type} en {where} contiene enlaces promocionales. Aquí no se permite la autopromoción. Elimina las publicaciones similares, por favor."
+      },
+      "offTopic": {
+        "name": "Mensajes fuera de tema",
+        "text": "Hola {user}, las respuestas repetidas y de poco esfuerzo como la de {where} interrumpen las conversaciones de todos. Mantén tus respuestas en el tema, por favor."
+      },
+      "uncredited": {
+        "name": "Trabajo sin créditos",
+        "text": "Hola {user}, tu {type} en {where} usa el trabajo de otra persona sin darle crédito. Menciona a su autor original o elimínalo, por favor."
+      }
+    },
+    "ban": {
+      "repeatedHarassment": {
+        "name": "Acoso reiterado",
+        "text": "Has sido suspendido durante {duration} por acoso reiterado tras advertencias previas. Tu {type} en {where} fue la denuncia decisiva."
+      },
+      "spamAccount": {
+        "name": "Cuenta de spam",
+        "text": "Esta cuenta ha sido suspendida por publicar spam, incluido tu {type} en {where}."
+      },
+      "banEvasion": {
+        "name": "Evasión de suspensión",
+        "text": "Esta cuenta está vinculada a una cuenta suspendida anteriormente y ha sido suspendida por evadir la suspensión."
+      },
+      "phishing": {
+        "name": "Phishing / suplantación",
+        "text": "Esta cuenta ha sido suspendida por hacerse pasar por el equipo y pedir datos de acceso a los miembros en {where}."
+      },
+      "hateSpeech": {
+        "name": "Discurso de odio",
+        "text": "Has sido suspendido durante {duration} por lenguaje de odio en tu {type} en {where}."
+      }
+    },
+    "delete": {
+      "ruleViolation": {
+        "name": "Eliminado: infracción de normas",
+        "text": "Tu {type} en {where} se eliminó porque incumple las normas de la comunidad."
+      },
+      "copyright": {
+        "name": "Eliminado: derechos de autor",
+        "text": "Tu {type} en {where} se eliminó tras una denuncia por derechos de autor. Puedes volver a publicarlo con créditos o con permiso de su autor."
+      }
+    },
+    "dismiss": {
+      "noViolation": {
+        "name": "Ninguna infracción",
+        "text": "Revisado: {type} en {where}. No se incumple ninguna norma."
+      },
+      "duplicate": {
+        "name": "Denuncia duplicada",
+        "text": "Duplicado de una denuncia que ya se gestionó."
+      }
+    }
+  },
+  "type": {
+    "article": "artículo",
+    "comment": "comentario",
+    "profile comment": "comentario de perfil",
+    "profile": "perfil",
+    "post": "mensaje",
+    "thread": "tema",
+    "message": "mensaje",
+    "content": "mensaje"
+  },
+  "duration": {
+    "1h": "1 hora",
+    "24h": "24 horas",
+    "7d": "7 días",
+    "30d": "30 días",
+    "perm": "tiempo indefinido"
+  }
+}

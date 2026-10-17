@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../components/Icon";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
@@ -13,6 +13,8 @@ import {
   faArrowUpRightFromSquare,
   faMagnifyingGlass,
   faUserPlus,
+  faBars,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { NotificationBell } from "../components/NotificationBell";
 import { AcpStatusBadge } from "../components/AcpStatusBadge";
@@ -30,6 +32,7 @@ import { RankBadge } from "../components/RankBadge";
 import { ModShield } from "../features/modcp/ModShield";
 import { SignInMenu } from "../features/auth/doorway/SignInMenu";
 import { useBranding } from "../hooks/useBranding";
+import { useSiteConfig } from "../hooks/useSiteConfig";
 import { SiteLogo } from "../components/SiteLogo";
 import { pluginNavLabel } from "../lib/coreText";
 
@@ -228,9 +231,10 @@ function NavSearch({ alwaysOpen = false }: { alwaysOpen?: boolean }) {
   );
 }
 
-/** Logo — the uploaded image, otherwise the Xentium mark with the logo text or the default wordmark. */
+/** Logo — the uploaded image, otherwise the Xentium mark with the logo text or the site's name. */
 export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
   const { data: branding } = useBranding();
+  const siteName = useSiteConfig().data?.siteName;
   return (
     <NavLink to="/" className="pub-nav__logo">
       {/* The image is sized by CSS, not inline: the same block sits in the nav strip AND
@@ -239,7 +243,7 @@ export function NavLogo({ showWordmark = true }: { showWordmark?: boolean }) {
       <SiteLogo
         imgClassName="pub-nav__logo-img"
         markClassName="pub-nav__mark"
-        wordmark={showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || "xentium"}</span>}
+        wordmark={showWordmark && <span className="pub-nav__wordmark">{branding?.logoText || siteName || "Xentium"}</span>}
       />
     </NavLink>
   );
@@ -307,6 +311,10 @@ export function NavUserMenu() {
 }
 
 /** Primary nav links — driven by the nav_items table. */
+/**
+ * The site's navigation links as a row of pills. Below 860px the row is hidden and
+ * the links live in the hamburger menu instead (`NavMobileMenu`).
+ */
 export function NavPrimaryLinks() {
   const { t } = useTranslation("common");
   const { isAuthenticated } = useAuth();
@@ -340,6 +348,62 @@ export function NavPrimaryLinks() {
             );
           })}
         </ul>
+  );
+}
+
+/**
+ * The hamburger menu for narrow screens (≤860px): the navbar keeps the logo, the
+ * bell and the account avatar, and everything else opens in a panel under it —
+ * search, the navigation links as a list, and the tools the bar has no room for
+ * (moderation, messages and other plugin buttons, the admin panel), passed in by
+ * the navbar as `tools`. Closes on a link, on Escape, on a click outside and when
+ * the page changes. Hidden on wider screens, where the bar shows all of it.
+ */
+export function NavMobileMenu({ tools }: { tools?: React.ReactNode }) {
+  const { t } = useTranslation("common");
+  const { isAuthenticated } = useAuth();
+  const navItems = useNavItems(isAuthenticated);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { pathname, search } = useLocation();
+  useEffect(() => { setOpen(false); }, [pathname, search]);
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("mousedown", onDown); document.removeEventListener("keydown", onKey); };
+  }, [open]);
+  const labelOf = (item: { url: string; label: string }) => SYSTEM_NAV_I18N[item.url]
+    ? t(SYSTEM_NAV_I18N[item.url]!)
+    : pluginNavLabel(item.url, item.label);
+
+  return (
+    <div className="pub-nav__burger" ref={ref}>
+      <button type="button" className="pub-nav__burger-btn" aria-expanded={open}
+        aria-label={t("nav.menu")} title={t("nav.menu")} onClick={() => setOpen((o) => !o)}>
+        <FontAwesomeIcon icon={open ? faXmark : faBars} />
+      </button>
+      {open && (
+        <div className="pub-nav__sheet" role="dialog" aria-label={t("nav.menu")}>
+          <div className="pub-nav__sheet-search"><NavSearch alwaysOpen /></div>
+          <nav className="pub-nav__sheet-links" aria-label={t("nav.menu")}>
+            {navItems.map((item) => item.url.startsWith("http") || item.openInNewTab ? (
+              <a key={item.id} href={item.url}
+                target={item.openInNewTab ? "_blank" : undefined}
+                rel={item.openInNewTab ? "noopener noreferrer" : undefined}>
+                {labelOf(item)}
+                {item.openInNewTab && <FontAwesomeIcon icon={faArrowUpRightFromSquare} />}
+              </a>
+            ) : (
+              <NavLink key={item.id} to={item.url} end={item.url === "/"}>{labelOf(item)}</NavLink>
+            ))}
+          </nav>
+          {tools && <div className="pub-nav__sheet-tools">{tools}</div>}
+        </div>
+      )}
+    </div>
   );
 }
 

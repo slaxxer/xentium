@@ -36,6 +36,12 @@ describe("dashboard overview", () => {
     expect(o.setup.steps.map((s) => s.key)).toEqual(["admin", "siteName", "email", "categories", "article", "theme"]);
   });
 
+  it("gives the home page the same checklist the dashboard shows", async () => {
+    const [o, s] = await Promise.all([dashboardService.overview(7), dashboardService.setup()]);
+    expect(s.steps).toEqual(o.setup.steps);
+    expect(s.stage).toBe(o.stage);
+  });
+
   it("counts an active member once per period, and once per day", async () => {
     const before = (await dashboardService.overview(7)).metrics.active;
     for (const d of [0, 1, 2]) {

@@ -1,5 +1,5 @@
 /**
- * ACP → Users → Groups, as data: the shapes the pages read, and the rules they
+ * ACP → Members → Groups, as data: the shapes the pages read, and the rules they
  * derive from them — kept pure so they can be tested without rendering.
  */
 import type { Permission } from "../../../../lib/permissions";

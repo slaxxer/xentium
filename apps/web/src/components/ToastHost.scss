@@ -12,9 +12,11 @@
 
 .xt-toasts {
   position: fixed;
-  left: 50%;
+  /* Both edges, not left: 50% + translate: a box positioned that way can only grow
+     to half the window, which is what wrapped short messages onto two lines. */
+  left: 16px;
+  right: 16px;
   bottom: 28px;
-  transform: translateX(-50%);
   z-index: 10000;
   display: flex;
   /* Bottom-anchored, so a new toast appears nearest the edge and pushes older
@@ -22,7 +24,6 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  max-width: min(560px, calc(100vw - 32px));
   pointer-events: none;
 }
 
@@ -30,6 +31,9 @@
   --_toast-c: var(--toast-info, var(--c-info));
   position: relative;
   display: flex;
+  /* As wide as the message: one line until the text is wider than the window. */
+  width: max-content;
+  max-width: 100%;
   align-items: center;
   gap: 10px;
   padding: 13px 22px;

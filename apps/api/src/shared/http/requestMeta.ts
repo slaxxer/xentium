@@ -21,7 +21,9 @@ export function getRequestMeta(req: Request, res: Response) {
       httpOnly: true,
       secure: env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 730, // ~2y
+      // One year: long enough to recognise a returning device at sign-in, and a span
+      // that is easy to justify in a privacy policy (it was two).
+      maxAge: 1000 * 60 * 60 * 24 * 365,
     });
   }
   // `cookies` is carried so AUTH GUARDS can read their own (a beta plugin needs

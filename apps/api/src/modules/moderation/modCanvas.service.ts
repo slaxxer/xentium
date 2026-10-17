@@ -7,7 +7,7 @@
  * between two requests.
  */
 import { z } from "zod";
-import { CorePermissions } from "@xentium/contracts";
+import { CorePermissions, XEC } from "@xentium/contracts";
 import { prisma } from "../../infrastructure/db.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { assertPermission } from "../../shared/middleware/requirePermission.js";
@@ -15,7 +15,9 @@ import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { badgeColorSelect, toUserRef } from "../../shared/utils/userRef.js";
 import { notificationService } from "../notifications/notification.service.js";
 import { moderationService } from "./moderation.service.js";
-import { getModPolicy } from "./moderationPolicy.js";
+import { getModPolicy, DEFAULT_WARN_EXPIRY, WARN_EXPIRIES, type WarnExpiry } from "./moderationPolicy.js";
+import { getSetting } from "../../shared/utils/settings.js";
+import { serverText, toServerLocale, type ServerLocale } from "../../shared/i18n/serverText.js";
 import { canRemoveTarget, describeTarget, type TargetInfo } from "./reportTarget.js";
 import { reportTargetRegistry } from "../../core/report-target-registry/report-target-registry.js";
 
@@ -138,25 +140,35 @@ export const modCanvasService = {
       if (!authorId) throw new XentiumError({ code: "XEC-API-4001", httpStatus: 400, message: "This report names no author to act on" });
     }
 
+    if ((input.mode === "delete" || input.mode === "dismiss") && !input.message) {
+      throw new XentiumError({ code: "XEC-API-4001", httpStatus: 400, message: "This action needs a message" });
+    }
+
+    // Warnings and bans: the template decides the text and the timing, never the request.
     if (input.mode === "warn") {
       await assertPermission(actorId, CorePermissions.MODERATION_WARN_MANAGE);
-      await moderationService.issueWarning({ userId: authorId!, issuedById: actorId, reason: input.message, notify: input.notify });
+      const out = await fromTemplate({
+        actorId, mode: "warn", templateId: input.templateId, userId: authorId!,
+        target: { type: targetType, id: targetId }, length: input.expiry,
+      });
+      await moderationService.issueWarning({
+        userId: authorId!, issuedById: actorId, reason: out.text, notify: input.notify, expiry: out.expiry,
+      });
     } else if (input.mode === "ban") {
       await assertPermission(actorId, CorePermissions.MODERATION_BAN_MANAGE);
-      const hours = DURATION_HOURS[input.duration ?? "7d"];
-      await moderationService.issueBan({
-        userId: authorId!, issuedById: actorId, reason: input.message, notify: input.notify,
-        type: hours === null ? "permanent" : "temporary",
-        expiresAt: hours === null ? null : new Date(Date.now() + hours * 3_600_000),
+      const out = await fromTemplate({
+        actorId, mode: "ban", templateId: input.templateId, userId: authorId!,
+        target: { type: targetType, id: targetId }, length: input.duration,
       });
+      await moderationService.issueBan({ userId: authorId!, issuedById: actorId, reason: out.text, notify: input.notify, ...banTiming(out.length) });
     } else if (input.mode === "delete") {
       await assertPermission(actorId, CorePermissions.MODERATION_REPORT_MANAGE);
-      await removeContent(targetType, targetId, actorId, input.message);
+      await removeContent(targetType, targetId, actorId, input.message!);
       if (input.notify && authorId) {
         await notificationService.dispatch({
           userId: authorId, type: "moderation.content_removed", title: "Your content was removed",
           i18n: { key: "common:notify.contentRemoved" },
-          body: input.message, channels: ["in_app"],
+          body: input.message!, channels: ["in_app"],
         });
       }
     } else {
@@ -174,11 +186,14 @@ export const modCanvasService = {
     }
 
     const status = input.mode === "dismiss" ? "dismissed" : "resolved";
-    await this.setStatus(actorId, reports.map((r) => r.id), status, input.mode === "dismiss" ? input.message : null);
-    if (input.templateId) {
-      await prisma.moderationTemplate.updateMany({ where: { id: input.templateId }, data: { useCount: { increment: 1 } } });
-    }
+    await this.setStatus(actorId, reports.map((r) => r.id), status, input.mode === "dismiss" ? input.message! : null);
+    if (input.templateId) await this.countTemplateUse(input.templateId);
     return { status, count: reports.length };
+  },
+
+  /** One more use of a template (the Templates page sorts by it). */
+  async countTemplateUse(templateId: string) {
+    await prisma.moderationTemplate.updateMany({ where: { id: templateId }, data: { useCount: { increment: 1 } } });
   },
 
   /** Close (or, for Undo, reopen) reports — the bulk bar and the action above both land here. */
@@ -223,6 +238,7 @@ export const modCanvasService = {
   // ── Templates ──────────────────────────────────────────────────────────────
 
   async listTemplates() {
+    const locale = await siteLocale();
     const rows = await prisma.moderationTemplate.findMany({
       where: { deletedAt: null },
       // `name` last: seeded rows share one timestamp, and an unstable order moved the suggestion.
@@ -234,33 +250,46 @@ export const modCanvasService = {
     });
     const byId = new Map(editors.map((u) => [u.id, u.username]));
     return rows.map((r) => ({
-      ...templateView(r),
-      isDefault: DEFAULT_KEYS.has(defaultKey(r.mode, r.name)),
+      ...templateView(r, locale),
+      isDefault: !!r.defaultKey,
       updatedBy: r.updatedById ? (byId.get(r.updatedById) ?? null) : null,
     }));
   },
 
   async createTemplate(actorId: string, input: TemplateInput) {
     const row = await prisma.moderationTemplate.create({ data: { ...templateData(input), updatedById: actorId } });
-    return templateView(row);
+    return templateView(row, await siteLocale());
   },
 
   async updateTemplate(actorId: string, id: string, input: Partial<TemplateInput>) {
     const existing = await prisma.moderationTemplate.findFirst({ where: { id, deletedAt: null } });
     if (!existing) throw XentiumError.notFound("Template not found");
+    const locale = await siteLocale();
+    const merged = { ...templateView(existing, locale), ...input };
+    // Saving a shipped text as it was shown (in the site's language) keeps it the
+    // shipped one, stored in English, so it still follows a change of site language.
+    // Only a real edit makes it the admin's own text.
+    if (existing.defaultKey) {
+      const shown = shipped(existing.defaultKey, locale);
+      if (merged.name.trim() === shown.name && merged.text.trim() === shown.text) {
+        Object.assign(merged, shipped(existing.defaultKey, "en"));
+      }
+    }
     const row = await prisma.moderationTemplate.update({
-      where: { id }, data: { ...templateData({ ...templateView(existing), ...input }), updatedById: actorId },
+      where: { id }, data: { ...templateData(merged), updatedById: actorId },
     });
-    return templateView(row);
+    return templateView(row, locale);
   },
 
   /** Add back every default text that is missing. Edited ones are left as they are. */
   async restoreDefaults(actorId: string) {
-    const present = await prisma.moderationTemplate.findMany({ where: { deletedAt: null }, select: { mode: true, name: true } });
-    const have = new Set(present.map((t) => defaultKey(t.mode, t.name)));
-    const missing = DEFAULT_TEMPLATES.filter((t) => !have.has(defaultKey(t.mode, t.name)));
+    const present = await prisma.moderationTemplate.findMany({ where: { deletedAt: null }, select: { defaultKey: true } });
+    const have = new Set(present.map((t) => t.defaultKey).filter(Boolean));
+    const missing = DEFAULT_TEMPLATES.filter((t) => !have.has(t.key));
     if (missing.length) {
-      await prisma.moderationTemplate.createMany({ data: missing.map((t) => ({ ...templateData(t), updatedById: actorId })) });
+      await prisma.moderationTemplate.createMany({
+        data: missing.map((t) => ({ ...templateData(defaultInput(t)), defaultKey: t.key, updatedById: actorId })),
+      });
     }
     return { restored: missing.length };
   },
@@ -274,28 +303,158 @@ export const modCanvasService = {
 // ── The default set ──────────────────────────────────────────────────────────
 
 /**
- * The starting texts every site gets — the same rows the migration seeded. An admin
- * edits or deletes them freely; "Restore defaults" brings back any that are MISSING
- * (matched by mode + name) and never overwrites one that was edited.
+ * The starting texts every site gets — the same rows the migrations seeded, by key.
+ * Their words live in `locales/<lng>/moderation.json` (`templates.<mode>.<key>`), so
+ * an untouched one reads in the site's language. An admin edits or deletes them
+ * freely; "Restore defaults" brings back any that are MISSING (by key) and never
+ * overwrites one that was edited.
  */
-export const DEFAULT_TEMPLATES: TemplateInput[] = [
-  { mode: "warn", name: "Harassment", text: "Hi {user}, your {type} on {where} was reported for harassment. Personal attacks break our community rules. This is a formal warning, and further reports may lead to a ban.", matchCategories: ["harassment", "abuse", "insult", "attack", "rude"] },
-  { mode: "warn", name: "Spam / self-promotion", text: "Hi {user}, your {type} on {where} contains promotional links. Self-promotion isn't allowed here. Please remove similar posts.", matchCategories: ["spam", "advert", "promotion", "link"] },
-  { mode: "warn", name: "Off-topic flooding", text: "Hi {user}, repeated low-effort replies like the one on {where} disrupt threads for everyone. Please keep replies on topic.", matchCategories: ["off-topic", "offtopic", "flood", "low effort"] },
-  { mode: "warn", name: "Uncredited work", text: "Hi {user}, your {type} on {where} uses someone else's work without credit. Please credit the original creator or remove it.", matchCategories: ["credit", "stolen", "copied", "plagiarism"] },
-  { mode: "ban", name: "Repeated harassment", text: "You have been banned for {duration} for repeated harassment after prior warnings. Your {type} on {where} was the deciding report.", defaultDuration: "7d", matchCategories: ["harassment", "abuse"] },
-  { mode: "ban", name: "Spam account", text: "This account has been banned for posting spam, including your {type} on {where}.", defaultDuration: "perm", matchCategories: ["spam", "bot"] },
-  { mode: "ban", name: "Ban evasion", text: "This account is linked to a previously banned account and has been banned for ban evasion.", defaultDuration: "perm", matchCategories: ["evasion", "alt", "multi"] },
-  { mode: "ban", name: "Phishing / impersonation", text: "This account has been banned for impersonating staff and asking members for login details on {where}.", defaultDuration: "perm", matchCategories: ["phishing", "impersonation", "scam"] },
-  { mode: "ban", name: "Hate speech", text: "You have been banned for {duration} for hateful language in your {type} on {where}.", defaultDuration: "30d", matchCategories: ["hate", "racism", "slur"] },
-  { mode: "delete", name: "Removed: rule violation", text: "Your {type} on {where} was removed because it breaks our community rules.", matchCategories: [] },
-  { mode: "delete", name: "Removed: copyright", text: "Your {type} on {where} was removed after a copyright report. You can post it again with credit or the creator's permission.", matchCategories: ["copyright", "dmca"] },
-  { mode: "dismiss", name: "No violation found", text: "Reviewed {type} on {where}. No rule broken.", matchCategories: [] },
-  { mode: "dismiss", name: "Duplicate report", text: "Duplicate of a report that was already handled.", matchCategories: ["duplicate"] },
+export const DEFAULT_TEMPLATES: Array<{
+  key: string; mode: (typeof MODES)[number]; defaultDuration?: (typeof DURATIONS)[number]; warnExpiry?: WarnExpiry;
+  matchCategories: string[];
+}> = [
+  { key: "warn.harassment",        mode: "warn", warnExpiry: "180d", matchCategories: ["harassment", "abuse", "insult", "attack", "rude"] },
+  { key: "warn.spam",              mode: "warn", warnExpiry: "90d", matchCategories: ["spam", "advert", "promotion", "link"] },
+  { key: "warn.offTopic",          mode: "warn", warnExpiry: "30d", matchCategories: ["off-topic", "offtopic", "flood", "low effort"] },
+  { key: "warn.uncredited",        mode: "warn", warnExpiry: "90d", matchCategories: ["credit", "stolen", "copied", "plagiarism"] },
+  { key: "ban.repeatedHarassment", mode: "ban", defaultDuration: "7d", matchCategories: ["harassment", "abuse"] },
+  { key: "ban.spamAccount",        mode: "ban", defaultDuration: "perm", matchCategories: ["spam", "bot"] },
+  { key: "ban.banEvasion",         mode: "ban", defaultDuration: "perm", matchCategories: ["evasion", "alt", "multi"] },
+  { key: "ban.phishing",           mode: "ban", defaultDuration: "perm", matchCategories: ["phishing", "impersonation", "scam"] },
+  { key: "ban.hateSpeech",         mode: "ban", defaultDuration: "30d", matchCategories: ["hate", "racism", "slur"] },
+  { key: "delete.ruleViolation",   mode: "delete", matchCategories: [] },
+  { key: "delete.copyright",       mode: "delete", matchCategories: ["copyright", "dmca"] },
+  { key: "dismiss.noViolation",    mode: "dismiss", matchCategories: [] },
+  { key: "dismiss.duplicate",      mode: "dismiss", matchCategories: ["duplicate"] },
 ];
 
-const defaultKey = (mode: string, name: string) => `${mode}\u0000${name.trim().toLowerCase()}`;
-const DEFAULT_KEYS = new Set(DEFAULT_TEMPLATES.map((t) => defaultKey(t.mode, t.name)));
+/** A shipped template's name and text in one language. */
+function shipped(key: string, locale: ServerLocale): { name: string; text: string } {
+  return {
+    name: serverText(locale, "moderation", `templates.${key}.name`),
+    text: serverText(locale, "moderation", `templates.${key}.text`),
+  };
+}
+
+function defaultInput(t: (typeof DEFAULT_TEMPLATES)[number]): TemplateInput {
+  return {
+    mode: t.mode, ...shipped(t.key, "en"), defaultDuration: t.defaultDuration ?? null,
+    warnExpiry: t.warnExpiry ?? null, matchCategories: t.matchCategories,
+  };
+}
+
+/** The language premade texts are shown in: the site's, not the moderator's. */
+async function siteLocale(): Promise<ServerLocale> {
+  return toServerLocale(await getSetting<string>("site.locale", "en")) ?? "en";
+}
+
+/**
+ * The words `{type}` and `{duration}` read as, in the site's language, so a filled-in
+ * German template does not say "dein comment". The web fills templates in; this is
+ * what it fills them with.
+ */
+export async function templateWords() {
+  const locale = await siteLocale();
+  const pick = (group: "type" | "duration", keys: readonly string[]) =>
+    Object.fromEntries(keys.map((k) => [k, serverText(locale, "moderation", `${group}.${k}`)]));
+  return {
+    locale,
+    type: pick("type", ["article", "comment", "profile comment", "profile", "post", "thread", "message", "content"]),
+    duration: pick("duration", DURATIONS),
+  };
+}
+
+// ── Warnings: always a template ──────────────────────────────────────────────
+
+/** What `{type}` names, as a key into the `type` words: `post`, `comment`, `profile`… */
+export function targetKind(targetType: string, targetId: string): string {
+  if (targetType === "plugin-content") return targetId.split(":")[1]?.replace(/[_-]/g, " ") || "content";
+  if (targetType === "article_comment") return "comment";
+  if (targetType === "profile_comment") return "profile comment";
+  if (targetType === "user") return "profile";
+  return targetType.replace(/[_-]/g, " ");
+}
+
+/** Put the values into a template's `{placeholders}`. Unknown ones stay as written. */
+export function fillTemplate(text: string, vars: Record<string, string>): string {
+  return text.replace(/\{(\w+)\}/g, (all, key: string) => (key in vars ? vars[key]! : all));
+}
+
+/**
+ * A warning or a ban, from one of the site's templates. The moderator picks the
+ * template and never writes the message or picks the timing: the same offence reads
+ * the same and lasts the same whoever is on duty, and nothing typed into a request
+ * reaches the member. HERE the template is filled in (`{user}`, `{type}`, `{where}`,
+ * `{duration}`) from the content itself, which must be the member's own, or the text
+ * could name something they never wrote.
+ *
+ * `length` is another expiry (warn) or length (ban) than the template's. Only a team
+ * lead may give one: moderation.warn.expiry.override / moderation.ban.length.override
+ * (Supermod by default). Naming the template's own length needs no permission.
+ */
+export async function fromTemplate(opts: {
+  actorId: string;
+  mode: "warn" | "ban";
+  templateId: string | null | undefined;
+  userId: string;
+  /** What it is about. A warning always names it; a ban may not (ban evasion). */
+  target?: { type: string; id: string } | null;
+  length?: string | null;
+}): Promise<{ text: string; expiry: WarnExpiry | null; length: (typeof DURATIONS)[number] }> {
+  const row = opts.templateId
+    ? await prisma.moderationTemplate.findFirst({ where: { id: opts.templateId, deletedAt: null } })
+    : null;
+  if (!row || row.mode !== opts.mode) {
+    throw new XentiumError({ code: XEC.MOD_TEMPLATE_REQUIRED, httpStatus: 400, message: `Pick one of the ${opts.mode} templates` });
+  }
+
+  const own = opts.mode === "warn" ? (row.warnExpiry ?? DEFAULT_WARN_EXPIRY) : (row.defaultDuration ?? "7d");
+  if (opts.length != null && opts.length !== own) {
+    await assertPermission(opts.actorId, opts.mode === "warn"
+      ? CorePermissions.MODERATION_WARN_EXPIRY_OVERRIDE
+      : CorePermissions.MODERATION_BAN_LENGTH_OVERRIDE);
+  }
+  const length = (opts.length ?? own) as string | null;
+
+  const user = await prisma.user.findUnique({ where: { id: opts.userId }, select: { username: true } });
+  if (!user) throw XentiumError.notFound("User not found");
+  const locale = await siteLocale();
+  const { text } = templateView(row, locale);
+
+  let type = "", where = "";
+  if (opts.target) {
+    const info = await describeTarget(opts.target.type, opts.target.id);
+    if (!info.authorId || info.authorId !== opts.userId) {
+      throw new XentiumError({ code: XEC.MOD_TARGET_MISMATCH, httpStatus: 400, message: "This content is not by the member you are acting on" });
+    }
+    const kind = targetKind(opts.target.type, opts.target.id);
+    type = serverTextOr(locale, `type.${kind}`, kind);
+    where = info.where ?? type;
+  } else if (/\{(type|where)\}/.test(text)) {
+    throw new XentiumError({ code: XEC.MOD_TARGET_REQUIRED, httpStatus: 400, message: "This template names the content, so it needs the content it is about" });
+  }
+
+  const banLength = (opts.mode === "ban" ? length : "7d") as (typeof DURATIONS)[number];
+  const vars: Record<string, string> = { user: user.username, type, where };
+  if (opts.mode === "ban") vars.duration = serverTextOr(locale, `duration.${banLength}`, banLength);
+  return { text: fillTemplate(text, vars).trim(), expiry: opts.mode === "warn" ? (length as WarnExpiry | null) : null, length: banLength };
+}
+
+/** A ban length as what `issueBan` takes. */
+export function banTiming(length: (typeof DURATIONS)[number]) {
+  const hours = DURATION_HOURS[length];
+  return {
+    type: hours === null ? "permanent" as const : "temporary" as const,
+    expiresAt: hours === null ? null : new Date(Date.now() + hours * 3_600_000),
+  };
+}
+
+
+/** A word from the moderation texts, or the fallback when there is none. */
+function serverTextOr(locale: ServerLocale, key: string, fallback: string): string {
+  const out = serverText(locale, "moderation", key);
+  return out && out !== key ? out : fallback;
+}
 
 // ── Actions: shapes and helpers ──────────────────────────────────────────────
 
@@ -305,13 +464,18 @@ const DURATION_HOURS: Record<(typeof DURATIONS)[number], number | null> = {
 };
 export const MODES = ["warn", "ban", "delete", "dismiss"] as const;
 
+
 export const actSchema = z.object({
   reportIds:  z.array(z.string().min(1)).min(1).max(100),
   mode:       z.enum(MODES),
   templateId: z.string().min(1).nullable().optional(),
-  message:    z.string().trim().min(3).max(2000),
+  /** Remove and dismiss only. A warning's or a ban's text is its template's. */
+  message:    z.string().trim().min(3).max(2000).optional(),
   notify:     z.boolean().default(true),
+  /** Another length than the template's: needs moderation.ban.length.override. */
   duration:   z.enum(DURATIONS).optional(),
+  /** Another expiry than the template's: needs moderation.warn.expiry.override. */
+  expiry:     z.enum(WARN_EXPIRIES).optional(),
 });
 export type ActInput = z.infer<typeof actSchema>;
 
@@ -321,6 +485,8 @@ export const templateSchema = z.object({
   text:            z.string().trim().min(1).max(2000),
   ruleRef:         z.string().trim().max(80).nullable().optional(),
   defaultDuration: z.enum(DURATIONS).nullable().optional(),
+  // null is accepted and means the default length (90 days).
+  warnExpiry:      z.enum(WARN_EXPIRIES).nullable().optional(),
   matchCategories: z.array(z.string().trim().toLowerCase().min(1).max(40)).max(20).optional(),
 });
 export type TemplateInput = z.infer<typeof templateSchema>;
@@ -333,6 +499,8 @@ function templateData(t: TemplateInput) {
     ruleRef: t.ruleRef || null,
     // A length only means something on a ban; a dismissal is never sent.
     defaultDuration: t.mode === "ban" ? (t.defaultDuration ?? "7d") : null,
+    // Every warn template carries its length; there is no site-wide rule.
+    warnExpiry: t.mode === "warn" ? (t.warnExpiry ?? DEFAULT_WARN_EXPIRY) : null,
     internal: t.mode === "dismiss",
     matchCategories: t.matchCategories ?? [],
   };
@@ -340,11 +508,17 @@ function templateData(t: TemplateInput) {
 
 function templateView(r: {
   id: string; mode: string; name: string; text: string; ruleRef: string | null; defaultDuration: string | null;
-  internal: boolean; matchCategories: string[]; useCount: number; updatedAt: Date;
-}) {
+  warnExpiry: string | null; internal: boolean; matchCategories: string[]; useCount: number; updatedAt: Date; defaultKey: string | null;
+}, locale: ServerLocale) {
+  // A shipped template nobody edited (still its English words) reads in the site's
+  // language; an edited one is the admin's text, as they wrote it.
+  const english = r.defaultKey ? shipped(r.defaultKey, "en") : null;
+  const untouched = !!english && r.name === english.name && r.text === english.text;
+  const words = untouched ? shipped(r.defaultKey!, locale) : { name: r.name, text: r.text };
   return {
-    id: r.id, mode: r.mode as (typeof MODES)[number], name: r.name, text: r.text, ruleRef: r.ruleRef,
-    defaultDuration: r.defaultDuration as (typeof DURATIONS)[number] | null, internal: r.internal,
+    id: r.id, mode: r.mode as (typeof MODES)[number], name: words.name, text: words.text, ruleRef: r.ruleRef,
+    defaultDuration: r.defaultDuration as (typeof DURATIONS)[number] | null,
+    warnExpiry: r.warnExpiry as WarnExpiry | null, internal: r.internal,
     matchCategories: r.matchCategories, useCount: r.useCount, updatedAt: r.updatedAt,
   };
 }

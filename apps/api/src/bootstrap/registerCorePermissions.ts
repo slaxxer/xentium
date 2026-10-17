@@ -42,6 +42,8 @@ const MOD_PERMS = [
   CorePermissions.PROFILE_COMMENT_DELETE_ANY,
   CorePermissions.BADGE_ASSIGN,
   CorePermissions.MODERATION_PROTECTED,
+  CorePermissions.MODERATION_WARN_EXPIRY_OVERRIDE,
+  CorePermissions.MODERATION_BAN_LENGTH_OVERRIDE,
 ];
 
 const GRANTS: Record<string, string[]> = {

@@ -6,8 +6,10 @@ import "./NotFoundPage.scss";
 import { SiteLogo } from "../../components/SiteLogo";
 
 /** Editorial "Hearth" 404 — full-viewport, standalone (no nav/footer chrome).
- *  Theme follows the app's global theme; no per-page toggle. */
-export function NotFoundPage() {
+ *  Theme follows the app's global theme; no per-page toggle.
+ *  `embedded`: inside the site layout (a legal document that is not published), where
+ *  the navigation already shows the logo, so the brand and the page footer are left out. */
+export function NotFoundPage({ embedded = false }: { embedded?: boolean }) {
   const { t } = useTranslation("common");
   const navigate = useNavigate();
 
@@ -17,12 +19,14 @@ export function NotFoundPage() {
   };
 
   return (
-    <main className="nf">
+    <main className={`nf${embedded ? " nf--embedded" : ""}`}>
       <div className="nf__ghost" aria-hidden="true">404</div>
 
-      <a className="nf__brand" href="/" aria-label={t("nav.homeAria")}>
-        <SiteLogo size={36} imgClassName="nf__logo-img" wordmark={<span className="nf__wordmark">Xentium</span>} />
-      </a>
+      {!embedded && (
+        <a className="nf__brand" href="/" aria-label={t("nav.homeAria")}>
+          <SiteLogo size={36} imgClassName="nf__logo-img" wordmark={<span className="nf__wordmark">Xentium</span>} />
+        </a>
+      )}
 
       <div className="nf__content">
         <span className="nf__eyebrow">
@@ -41,9 +45,11 @@ export function NotFoundPage() {
         </div>
       </div>
 
-      <footer className="nf__foot">
-        <span>{t("notFound.footLabel")}</span>
-      </footer>
+      {!embedded && (
+        <footer className="nf__foot">
+          <span>{t("notFound.footLabel")}</span>
+        </footer>
+      )}
     </main>
   );
 }

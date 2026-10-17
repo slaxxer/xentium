@@ -386,7 +386,7 @@ export function ProgressionPage() {
     <div>
       <div className="acp-page-header">
         <div className="acp-page-header__left">
-          <div className="acp-page-sub">{t("nav.accessControl")}</div>
+          <div className="acp-page-sub">{t("nav.members")}</div>
           <h1 className="acp-page-title">{t("nav.progression")}</h1>
         </div>
         <SaveChip saving={false} />
@@ -413,8 +413,8 @@ export function ProgressionPage() {
             />
           </div>
         ))}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
-          <div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+          <div style={{ minWidth: 0, flex: "1 1 200px" }}>
             <div style={{ fontSize: "var(--fs-md)", fontWeight: 600, color: "var(--c-fg)" }}>{t("progression.thresholdLogic")}</div>
             <div style={{ fontSize: "var(--fs-xs)", color: "var(--c-fg-muted)" }}>{t("progression.thresholdLogicDesc")}</div>
           </div>
@@ -453,7 +453,7 @@ export function ProgressionPage() {
             {t("progression.ladderEmpty")}
           </div>
         ) : (
-          <>
+          <div style={{ overflowX: "auto" }}><div style={{ minWidth: 640 }}>{/* a phone scrolls the ladder sideways instead of crushing its columns */}
             {/* Column headers */}
             <div style={{ display: "grid", gridTemplateColumns: "36px 40px 1fr 1fr 1fr 90px 80px", padding: "8px 18px", borderBottom: "1px solid var(--c-border)" }}>
               {["", t("progression.colPos"), t("progression.colGroup"), t("progression.colThresholds"), t("progression.colLimits"), t("progression.colUsers"), ""].map((h, i) => (
@@ -543,7 +543,7 @@ export function ProgressionPage() {
                 </div>
               );
             })}
-          </>
+          </div></div>
         )}
       </div>
 

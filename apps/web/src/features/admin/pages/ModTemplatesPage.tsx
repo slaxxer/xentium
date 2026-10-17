@@ -1,11 +1,13 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import {
-  faMagnifyingGlass, faPlus, faCopy, faTrash, faShieldHalved, faRotateLeft,
+  faPlus, faCopy, faTrash, faShieldHalved, faRotateLeft, faXmark,
+  faTriangleExclamation, faBan, faEraser, faInbox,
 } from "@fortawesome/free-solid-svg-icons";
+import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import { api } from "../../../lib/api";
 import { timeAgo } from "../../../lib/time";
 import { toast } from "../../../lib/toast";
@@ -14,34 +16,40 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { sameValue, useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import {
-  DURATIONS, DURATION_LABEL, DURATION_TEXT, MODES, fillSegments,
-  type Duration, type Mode, type Template,
+  DEFAULT_WARN_EXPIRY, DURATIONS, DURATION_LABEL, DURATION_TEXT, MODES, WARN_EXPIRIES, fillSegments, warnExpiryLabel,
+  type Duration, type Mode, type Template, type WarnExpiry,
 } from "../../modcp/modTemplates";
 import "./ModTemplatesPage.scss";
 
 /**
  * ACP → Moderation → Templates.
  *
- * The premade texts moderators start from in ModCanvas (warn, ban, remove, dismiss).
- * Admins write their own here or keep the default set; ModCanvas only READS them.
- * Every site starts with the defaults, and "Restore defaults" brings back any that
- * were deleted without touching the ones an admin reworded.
+ * The texts moderators warn, ban, remove and dismiss with in ModCanvas; warnings and
+ * bans go out exactly as written here, for as long as set here. Admins write their
+ * own or keep the default set; ModCanvas only READS them. "Restore defaults" brings
+ * back any that were deleted without touching the ones an admin reworded.
+ *
+ * Layout (concept "3a"): a board, one column per action, one card per template;
+ * a card opens the editor as a drawer on the right (`?id=` in the URL, Escape or ×
+ * closes it). No search box: the board shows everything at once.
  */
 
 type AdminTemplate = Template & { isDefault: boolean };
 
 interface Draft {
   mode: Mode; name: string; text: string; ruleRef: string;
-  defaultDuration: Duration | null; matchCategories: string;
+  defaultDuration: Duration | null; warnExpiry: WarnExpiry | null; matchCategories: string;
 }
 const draftOf = (t: Template): Draft => ({
   mode: t.mode, name: t.name, text: t.text, ruleRef: t.ruleRef ?? "",
   defaultDuration: t.mode === "ban" ? (t.defaultDuration ?? "7d") : null,
+  warnExpiry: t.mode === "warn" ? (t.warnExpiry ?? DEFAULT_WARN_EXPIRY) : null,
   matchCategories: t.matchCategories.join(", "),
 });
 const payloadOf = (d: Draft) => ({
   mode: d.mode, name: d.name.trim() || "Untitled", text: d.text.trim() || "…", ruleRef: d.ruleRef.trim() || null,
   defaultDuration: d.mode === "ban" ? (d.defaultDuration ?? "7d") : null,
+  warnExpiry: d.mode === "warn" ? (d.warnExpiry ?? DEFAULT_WARN_EXPIRY) : null,
   matchCategories: d.matchCategories.split(",").map((c) => c.trim().toLowerCase()).filter(Boolean),
 });
 
@@ -55,21 +63,23 @@ export function ModTemplatesPage() {
     queryKey: KEY,
     queryFn: () => api.get("/admin/mod-templates"),
   });
-  const [search, setSearch] = useState("");
   /**
-   * Edited templates, by id — every one, not just the open one: picking another
+   * Edited templates, by id — every one, not just the open one: opening another
    * template is not leaving the page, so an unsaved edit must survive it. The save
    * bar saves them all.
    */
   const [edits, setEdits] = useState<Record<string, Draft>>({});
   const selected = params.get("id");
   const select = (id: string | null) => setParams((p) => { if (id) p.set("id", id); else p.delete("id"); return p; }, { replace: true });
+  const current = templates.find((x) => x.id === selected) ?? null;
 
-  const visible = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return q ? templates.filter((x) => `${x.name} ${x.text} ${x.ruleRef ?? ""}`.toLowerCase().includes(q)) : templates;
-  }, [templates, search]);
-  const current = templates.find((x) => x.id === selected) ?? templates[0] ?? null;
+  // Escape closes the drawer.
+  useEffect(() => {
+    if (!current) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") select(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   // ModCanvas reads the same texts; keep its copy in step with every change here.
   const touched = () => qc.invalidateQueries({ queryKey: ["mod-templates"] });
@@ -153,6 +163,13 @@ export function ModTemplatesPage() {
     if (ok) restore.mutate();
   }
 
+  /** A card shows the template as edited, so the board never disagrees with the drawer. */
+  const view = (x: AdminTemplate): AdminTemplate => {
+    const d = edits[x.id];
+    if (!d) return x;
+    return { ...x, ...payloadOf(d), ruleRef: d.ruleRef.trim() || null } as AdminTemplate;
+  };
+
   return (
     <div className="mtp">
       <div className="pg-head">
@@ -161,80 +178,88 @@ export function ModTemplatesPage() {
           <h1 className="pg-title">{t("modTemplates.title")}</h1>
           <p className="pg-sub">{t("modTemplates.sub")}</p>
         </div>
-        <SaveChip saving={false} />
+        <div className="mtp-head-side">
+          <button type="button" className="btn-ghost btn-sm" disabled={restore.isPending} onClick={confirmRestore}>
+            <FontAwesomeIcon icon={faRotateLeft} /> {t("modTemplates.restore")}
+          </button>
+          <SaveChip saving={saveAll.isPending} />
+        </div>
       </div>
 
-      <div className="mtp-layout">
-        <aside className="set-card mtp-list">
-          <div className="mtp-list__top">
-            <label className="mtp-search">
-              <FontAwesomeIcon icon={faMagnifyingGlass} />
-              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t("modTemplates.search")} />
-            </label>
-            <button type="button" className="btn-primary btn-sm" disabled={create.isPending}
-              onClick={() => create.mutate({ mode: "warn", name: t("modTemplates.newName"), text: t("modTemplates.newText") })}>
-              <FontAwesomeIcon icon={faPlus} /> {t("modTemplates.new")}
-            </button>
-          </div>
-          <div className="mtp-list__rows">
-            {isLoading && <p className="mtp-muted mtp-pad">{t("sidebar.loading")}</p>}
-            {MODES.map((mode) => {
-              const items = visible.filter((x) => x.mode === mode);
-              if (!items.length) return null;
-              return (
-                <div key={mode}>
-                  <div className="mtp-group"><span>{t(`modTemplates.group.${mode}`)}</span><span>{items.length}</span></div>
-                  {items.map((x) => (
-                    <button key={x.id} type="button" className={`mtp-item${current?.id === x.id ? " is-on" : ""}`} onClick={() => select(x.id)}>
-                      <span className="mtp-item__txt">
-                        <b>{x.name}</b>
-                        <span>
-                          {x.mode === "ban"
-                            ? (x.defaultDuration === "perm" ? t("modTemplates.permanent") : t("modTemplates.defaultLen", { len: DURATION_LABEL[x.defaultDuration ?? "7d"] }))
-                            : x.internal ? t("modTemplates.internal") : (x.ruleRef ?? t("modTemplates.noRule"))}
-                        </span>
-                      </span>
-                      <span className="mtp-item__n">{x.useCount}×</span>
-                    </button>
-                  ))}
-                </div>
-              );
-            })}
-            {!isLoading && templates.length === 0 && <p className="mtp-muted mtp-pad">{t("modTemplates.empty")}</p>}
-          </div>
-          <div className="mtp-list__foot">
-            <button type="button" className="btn-ghost btn-sm" disabled={restore.isPending} onClick={confirmRestore}>
-              <FontAwesomeIcon icon={faRotateLeft} /> {t("modTemplates.restore")}
-            </button>
-          </div>
-        </aside>
+      {isLoading && <p className="mtp-muted">{t("sidebar.loading")}</p>}
 
-        <section className="set-card mtp-editor">
-          {current ? (
+      <div className={`mtp-board${current ? " has-drawer" : ""}`}>
+        {MODES.map((mode) => {
+          const items = templates.filter((x) => (edits[x.id]?.mode ?? x.mode) === mode).map(view);
+          return (
+            <section key={mode} className={`mtp-col mtp-col--${mode}`}>
+              <header className="mtp-col__head">
+                <span className="mtp-col__ic"><FontAwesomeIcon icon={MODE_ICON[mode]} /></span>
+                <h2>{t(`modTemplates.group.${mode}`)}</h2>
+                <span className="mtp-col__n">{items.length}</span>
+              </header>
+              {items.map((x) => (
+                <button key={x.id} type="button" className={`mtp-card${current?.id === x.id ? " is-on" : ""}`}
+                  aria-pressed={current?.id === x.id} onClick={() => select(current?.id === x.id ? null : x.id)}>
+                  <b className="mtp-card__name">{x.name || t("modTemplates.untitled")}</b>
+                  <span className="mtp-card__text">{x.text}</span>
+                  <span className="mtp-card__foot">
+                    <span>{cardMeta(x, t)}</span>
+                    <span>{x.useCount}×</span>
+                  </span>
+                </button>
+              ))}
+              <button type="button" className="mtp-add" disabled={create.isPending}
+                onClick={() => create.mutate({ mode, name: t("modTemplates.newName"), text: t("modTemplates.newText") })}>
+                <FontAwesomeIcon icon={faPlus} /> {t("modTemplates.add")}
+              </button>
+            </section>
+          );
+        })}
+      </div>
+
+      {current && (
+        <>
+          <div className="mtp-scrim" onClick={() => select(null)} aria-hidden />
+          <aside className="mtp-drawer" role="dialog" aria-label={current.name}>
             <Editor
               key={current.id}
               template={current}
               draft={edits[current.id] ?? draftOf(current)}
               onDraft={(d) => setEdits((p) => ({ ...p, [current.id]: d }))}
               onChanged={touched}
-              onDuplicate={() => create.mutate({ ...payloadOf(draftOf(current)), name: t("modTemplates.copyName", { name: current.name }) })}
+              onClose={() => select(null)}
+              onDuplicate={() => create.mutate({ ...payloadOf(edits[current.id] ?? draftOf(current)), name: t("modTemplates.copyName", { name: current.name }) })}
               onDeleted={() => { dropEdit(current.id); select(null); touched(); }}
             />
-          ) : !isLoading && (
-            <p className="mtp-muted mtp-pad">{t("modTemplates.empty")}</p>
-          )}
-        </section>
-      </div>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
 
-/** One template's form. Its edits are the PAGE's (`draft` / `onDraft`), so they survive picking another template. */
-function Editor({ template, draft, onDraft, onDuplicate, onDeleted }: {
+const MODE_ICON: Record<Mode, IconDefinition> = {
+  warn: faTriangleExclamation, ban: faBan, delete: faEraser, dismiss: faInbox,
+};
+
+type T = (key: string, opts?: Record<string, unknown>) => string;
+
+/** A card's one-line summary: how long it lasts, or what kind of note it is. */
+function cardMeta(x: Template, t: T): string {
+  if (x.mode === "warn") return t("modTemplates.warnLen", { len: warnExpiryLabel(t, x.warnExpiry) });
+  if (x.mode === "ban") return x.defaultDuration === "perm" ? t("modTemplates.permanent") : t("modTemplates.defaultLen", { len: DURATION_LABEL[x.defaultDuration ?? "7d"] });
+  if (x.internal || x.mode === "dismiss") return t("modTemplates.internal");
+  return x.ruleRef ?? t("modTemplates.noRule");
+}
+
+/** One template's form, in the drawer. Its edits are the PAGE's (`draft` / `onDraft`), so they survive opening another template. */
+function Editor({ template, draft, onDraft, onClose, onDuplicate, onDeleted }: {
   template: AdminTemplate;
   draft: Draft;
   onDraft: (next: Draft) => void;
   onChanged: () => void;
+  onClose: () => void;
   onDuplicate: () => void;
   onDeleted: () => void;
 }) {
@@ -288,73 +313,75 @@ function Editor({ template, draft, onDraft, onDuplicate, onDeleted }: {
 
   return (
     <div className="mtp-form">
-      <div className="mtp-form__title">
-        <h2>{draft.name || t("modTemplates.untitled")}</h2>
+      <header className={`mtp-form__head mtp-col--${draft.mode}`}>
+        <span className="mtp-col__ic"><FontAwesomeIcon icon={MODE_ICON[draft.mode]} /></span>
+        <input className="mtp-form__name" value={draft.name} maxLength={80} aria-label={t("modTemplates.name")}
+          placeholder={t("modTemplates.untitled")} onChange={(e) => set("name", e.target.value)} />
         {template.isDefault && <span className="mtp-badge">{t("modTemplates.default")}</span>}
-        <span className="mtp-gap" />
-        <button type="button" className="btn-ghost btn-sm" onClick={onDuplicate}><FontAwesomeIcon icon={faCopy} /> {t("modTemplates.duplicate")}</button>
-        <button type="button" className="btn-ghost btn-sm" disabled={remove.isPending} onClick={confirmDelete}><FontAwesomeIcon icon={faTrash} /> {t("modTemplates.delete")}</button>
-      </div>
+        <button type="button" className="mtp-form__close" aria-label={t("modTemplates.close")} onClick={onClose}>
+          <FontAwesomeIcon icon={faXmark} />
+        </button>
+      </header>
 
-      <div className="mtp-fields">
-        <label>
-          <span className="mtp-label">{t("modTemplates.name")}</span>
-          <input className="inp" value={draft.name} maxLength={80} onChange={(e) => set("name", e.target.value)} />
-        </label>
-        <label>
-          <span className="mtp-label">{t("modTemplates.rule")}</span>
-          <input className="inp" value={draft.ruleRef} maxLength={80} placeholder={t("modTemplates.rulePlaceholder")} onChange={(e) => set("ruleRef", e.target.value)} />
-        </label>
-      </div>
-
-      <div>
-        <span className="mtp-label">{t("modTemplates.usedFor")}</span>
-        <div className="acp-seg">
-          {MODES.map((m) => (
-            <button key={m} type="button" className={draft.mode === m ? "is-on" : ""}
-              onClick={() => onDraft({ ...draft, mode: m, defaultDuration: m === "ban" ? (draft.defaultDuration ?? "7d") : null })}>
-              {t(`modTemplates.mode.${m}`)}
-            </button>
-          ))}
-        </div>
-        <p className="mtp-hint">{t(`modTemplates.modeHint.${draft.mode}`)}</p>
-      </div>
-
-      {draft.mode === "ban" && (
+      <div className="mtp-form__body">
         <div>
-          <span className="mtp-label">{t("modTemplates.defaultDuration")}</span>
+          <span className="mtp-label">{t("modTemplates.usedFor")}</span>
           <div className="acp-seg">
-            {DURATIONS.map((d) => (
-              <button key={d} type="button" className={dur === d ? "is-on" : ""} onClick={() => set("defaultDuration", d)}>
-                {d === "perm" ? t("modTemplates.permanent") : DURATION_LABEL[d]}
+            {MODES.map((m) => (
+              <button key={m} type="button" className={draft.mode === m ? "is-on" : ""}
+                onClick={() => onDraft({
+                  ...draft, mode: m,
+                  defaultDuration: m === "ban" ? (draft.defaultDuration ?? "7d") : null,
+                  warnExpiry: m === "warn" ? (draft.warnExpiry ?? DEFAULT_WARN_EXPIRY) : null,
+                })}>
+                {t(`modTemplates.mode.${m}`)}
+              </button>
+            ))}
+          </div>
+          <p className="mtp-hint">{t(`modTemplates.modeHint.${draft.mode}`)}</p>
+        </div>
+
+        {draft.mode === "warn" && (
+          <div>
+            <span className="mtp-label">{t("modTiming.label", { ns: "common" })}</span>
+            <div className="mtp-chips">
+              {WARN_EXPIRIES.map((e) => (
+                <button key={e} type="button" className={(draft.warnExpiry ?? DEFAULT_WARN_EXPIRY) === e ? "is-on" : ""} onClick={() => set("warnExpiry", e)}>
+                  {warnExpiryLabel(t, e)}
+                </button>
+              ))}
+            </div>
+            <p className="mtp-hint">{t("modTiming.fixed", { ns: "common" })}</p>
+          </div>
+        )}
+
+        {draft.mode === "ban" && (
+          <div>
+            <span className="mtp-label">{t("modTemplates.defaultDuration")}</span>
+            <div className="mtp-chips">
+              {DURATIONS.map((d) => (
+                <button key={d} type="button" className={dur === d ? "is-on" : ""} onClick={() => set("defaultDuration", d)}>
+                  {d === "perm" ? t("modTemplates.permanent") : DURATION_LABEL[d]}
+                </button>
+              ))}
+            </div>
+            <p className="mtp-hint">{t("modTiming.fixed", { ns: "common" })}</p>
+          </div>
+        )}
+
+        <div>
+          <span className="mtp-label">{t("modTemplates.message")}</span>
+          <textarea ref={textRef} className="inp mtp-textarea" value={draft.text} maxLength={2000} rows={5}
+            onChange={(e) => set("text", e.target.value)} />
+          <div className="mtp-vars">
+            {varKeys.map((v) => (
+              <button key={v} type="button" className="mtp-var" title={t(`modTemplates.var.${v}`)} onClick={() => insert(`{${v}}`)}>
+                <code>{`{${v}}`}</code>
               </button>
             ))}
           </div>
         </div>
-      )}
 
-      <div>
-        <span className="mtp-label">{t("modTemplates.message")}</span>
-        <textarea ref={textRef} className="inp mtp-textarea" value={draft.text} maxLength={2000} rows={5}
-          onChange={(e) => set("text", e.target.value)} />
-        <div className="mtp-vars">
-          {varKeys.map((v) => (
-            <button key={v} type="button" className="mtp-var" onClick={() => insert(`{${v}}`)}>
-              <code>{`{${v}}`}</code><span>{t(`modTemplates.var.${v}`)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <label>
-        <span className="mtp-label">{t("modTemplates.match")}</span>
-        <input className="inp" value={draft.matchCategories} placeholder={t("modTemplates.matchPlaceholder")}
-          onChange={(e) => set("matchCategories", e.target.value)} />
-        <p className="mtp-hint">{t("modTemplates.matchHint")}</p>
-      </label>
-
-      <div>
-        <span className="mtp-label">{t("modTemplates.preview")}</span>
         <div className="mtp-preview">
           <div className="mtp-preview__ic"><FontAwesomeIcon icon={faShieldHalved} /></div>
           <div>
@@ -362,12 +389,28 @@ function Editor({ template, draft, onDraft, onDuplicate, onDeleted }: {
             <p>{fillSegments(draft.text, vars).map((s, i) => s.filled ? <mark key={i}>{s.text}</mark> : <span key={i}>{s.text}</span>)}</p>
           </div>
         </div>
+
+        <label>
+          <span className="mtp-label">{t("modTemplates.rule")}</span>
+          <input className="inp" value={draft.ruleRef} maxLength={80} placeholder={t("modTemplates.rulePlaceholder")} onChange={(e) => set("ruleRef", e.target.value)} />
+        </label>
+
+        <label>
+          <span className="mtp-label">{t("modTemplates.match")}</span>
+          <input className="inp" value={draft.matchCategories} placeholder={t("modTemplates.matchPlaceholder")}
+            onChange={(e) => set("matchCategories", e.target.value)} />
+          <p className="mtp-hint">{t("modTemplates.matchHint")}</p>
+        </label>
       </div>
 
-      <p className="mtp-muted">
-        {t("modTemplates.used", { count: template.useCount })}
-        {template.updatedBy ? ` · ${t("modTemplates.edited", { name: template.updatedBy, when: timeAgo(template.updatedAt) })}` : ""}
-      </p>
+      <footer className="mtp-form__foot">
+        <span className="mtp-muted">
+          {t("modTemplates.used", { count: template.useCount })}
+          {template.updatedBy ? ` · ${t("modTemplates.edited", { name: template.updatedBy, when: timeAgo(template.updatedAt) })}` : ""}
+        </span>
+        <button type="button" className="btn-ghost btn-sm" onClick={onDuplicate}><FontAwesomeIcon icon={faCopy} /> {t("modTemplates.duplicate")}</button>
+        <button type="button" className="btn-ghost btn-sm mtp-danger" disabled={remove.isPending} onClick={confirmDelete}><FontAwesomeIcon icon={faTrash} /> {t("modTemplates.delete")}</button>
+      </footer>
     </div>
   );
 }

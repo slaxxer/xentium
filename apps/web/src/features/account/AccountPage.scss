@@ -14,7 +14,7 @@
 .account-page {
   max-width: 1240px;
   margin: 0 auto;
-  padding: var(--sp-9) var(--sp-6) var(--sp-16);
+  padding: var(--sp-8) var(--sp-6) var(--sp-16);
 
   @media (max-width: 720px) {
     padding: var(--sp-6) var(--sp-4) var(--sp-10);
@@ -65,7 +65,9 @@
   align-items: start;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    /* minmax(0, …), not 1fr: a 1fr track is never narrower than its content, so the
+       section strip below (meant to scroll sideways) widened the whole page instead. */
+    grid-template-columns: minmax(0, 1fr);
     gap: var(--sp-5);
   }
 }
@@ -78,7 +80,7 @@
   flex-direction: column;
   gap: var(--sp-3);
 
-  @media (max-width: 900px) { position: static; }
+  @media (max-width: 900px) { position: static; min-width: 0; }
 }
 
 .acct-search {

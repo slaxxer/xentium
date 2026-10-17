@@ -29,7 +29,6 @@ const stepSchema = z.object({
 const days = z.number().int().min(1).max(3650);
 
 export const modSettingsPatchSchema = z.object({
-  expiry:        z.object({ enabled: z.boolean(), days }).optional(),
   ladder:        z.array(stepSchema).max(MAX_STEPS)
     // Two steps on one count would both claim the same warning; only one could run.
     .refine((l) => new Set(l.map((s) => s.warningCount)).size === l.length, { message: "Two steps share a warning count" })
@@ -67,7 +66,6 @@ export const modSettingsService = {
     const nameOf = new Map(plugins.map((p) => [p.id, p.name]));
 
     return {
-      expiry: policy.expiry,
       // Absent notifyModerators on an older row reads as on — what the engine does.
       ladder: policy.ladder.map((s) => ({ ...s, notifyModerators: s.notifyModerators !== false })),
       bans: policy.bans,
@@ -88,9 +86,6 @@ export const modSettingsService = {
   /** Writes only what the patch carries — two tabs editing different sections must not undo each other. */
   async update(patch: ModSettingsPatch) {
     const entries: [string, unknown][] = [];
-    if (patch.expiry) {
-      entries.push(["moderation.warning_expiry_enabled", patch.expiry.enabled], ["moderation.warning_expiry_days", patch.expiry.days]);
-    }
     if (patch.ladder) {
       const thresholds = [...patch.ladder]
         .sort((a, b) => a.warningCount - b.warningCount)

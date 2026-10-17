@@ -1,0 +1,65 @@
+/* Ready-made header/footer styles: small drawings, two per row. */
+.chrome-styles {
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-4);
+  border-bottom: 1px solid var(--c-border);
+
+  &__head {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: var(--sp-3);
+    b { font-size: var(--fs-sm); color: var(--c-fg); }
+    span { font-size: var(--fs-2xs); color: var(--c-fg-subtle); line-height: 1.4; }
+  }
+
+  &__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+
+  &__card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-md);
+    background: var(--c-surface);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover { border-color: color-mix(in srgb, var(--c-accent) 45%, var(--c-border)); }
+    &.is-on { border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); }
+    &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 1px; }
+  }
+
+  &__name { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg); }
+}
+
+/* The drawing. Everything is a token tint, so it follows the ACP's light and dark. */
+.cs-sketch {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  height: 52px;
+  padding: 4px;
+  border-radius: 6px;
+  background: var(--c-bg);
+  overflow: hidden;
+
+  i { display: flex; align-items: center; gap: 4px; padding: 0 5px; border-radius: 3px; }
+  b { display: block; border-radius: 2px; }
+}
+.cs-n { height: 12px; background: var(--c-card); box-shadow: inset 0 0 0 1px var(--c-border); }
+.cs-n--centre { justify-content: center; }
+.cs-b { flex: 1; background: linear-gradient(120deg, color-mix(in srgb, var(--c-accent) 60%, var(--c-fg)), var(--c-accent)); }
+.cs-b--centre { justify-content: center; }
+.cs-c { flex: 1; background: color-mix(in srgb, var(--c-fg) 6%, transparent); }
+.cs-f { height: 22px; flex-wrap: wrap; align-content: center; background: var(--c-card); box-shadow: inset 0 0 0 1px var(--c-border); }
+.cs-l { width: 10px; height: 6px; background: var(--c-accent); }
+.cs-l--big { width: 18px; height: 8px; background: var(--c-card); opacity: 0.9; }
+.cs-k { width: 24px; height: 3px; background: color-mix(in srgb, var(--c-fg) 35%, transparent); }
+.cs-a { width: 10px; height: 5px; margin-left: auto; background: color-mix(in srgb, var(--c-fg) 35%, transparent); }
+.cs-a--band { background: var(--c-card); opacity: 0.7; }
+.cs-t { width: 30%; height: 3px; background: color-mix(in srgb, var(--c-fg) 30%, transparent); }
+.cs-t--short { width: 18%; }
+.cs-bar { width: 100%; height: 3px; background: color-mix(in srgb, var(--c-fg) 50%, transparent); }

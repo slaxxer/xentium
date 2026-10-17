@@ -16,7 +16,47 @@
     "minRead": "{{n}} min",
     "views_one": "{{count}} visualização",
     "views_other": "{{count}} visualizações",
-    "views_many": "{{count}} visualizações"
+    "views_many": "{{count}} visualizações",
+    "searchPlaceholder": "Pesquisar artigos, autores, etiquetas",
+    "clearSearch": "Limpar pesquisa",
+    "featured": "Em destaque",
+    "latestHeading": "Artigos recentes",
+    "allHeading": "Todos os artigos",
+    "resultsFor": "Resultados para «{{q}}»",
+    "count_one": "{{count}} artigo",
+    "count_many": "{{count}} artigos",
+    "count_other": "{{count}} artigos",
+    "reset": "Repor filtros",
+    "sortLabel": "Ordenar",
+    "period": {
+      "any": "Qualquer data",
+      "week": "Esta semana",
+      "month": "Últimos 30 dias",
+      "year": "Este ano"
+    },
+    "length": {
+      "any": "Qualquer duração",
+      "short": "Menos de 5 min",
+      "medium": "5–10 min",
+      "long": "Mais de 10 min"
+    },
+    "sort": {
+      "latest": "Recentes",
+      "popular": "Populares",
+      "discussed": "Comentados"
+    },
+    "emptyTitle": "Nenhum artigo encontrado",
+    "emptyHint": "Experimente outra pesquisa ou alivie os filtros.",
+    "rail": {
+      "categories": "Categorias",
+      "all": "Todos os artigos",
+      "trending": "Em alta",
+      "tags": "Etiquetas populares"
+    },
+    "pin": "Fixar na página de artigos",
+    "unpin": "Desafixar da página de artigos",
+    "pinned": "Fixado na página de artigos",
+    "unpinned": "Desafixado"
   },
   "reader": {
     "loading": "A carregar…",
@@ -40,9 +80,7 @@
     "modTools": "Ferramentas de moderação",
     "warnAuthor": "Avisar o autor",
     "warnTitle": "Avisar {{username}}",
-    "warnSub": "Este aviso será emitido ao autor do artigo e registado no sistema de moderação.",
-    "warnPlaceholder": "Motivo do aviso…",
-    "setExpiry": "Definir data de expiração",
+    "warnSub": "Escolha a regra que foi violada. O membro recebe o texto do modelo e o aviso fica registado.",
     "issuing": "A emitir…",
     "issueWarning": "Emitir aviso",
     "warnIssued": "Aviso emitido a {{username}}.",
@@ -69,7 +107,28 @@
     "tombstoneBy": " por {{mod}}",
     "tombstoneReason": " · Motivo: {{reason}}",
     "cantRateOwnComment": "Você não pode avaliar o seu próprio comentário",
-    "signInToRate": "Entre para avaliar"
+    "signInToRate": "Entre para avaliar",
+    "crumbs": "Navegação estrutural",
+    "actions": "Ações do artigo",
+    "save": "Guardar",
+    "unsave": "Remover dos guardados",
+    "savedToast": "Guardado. Encontra-o em Guardados, na página inicial.",
+    "unsavedToast": "Removido dos guardados",
+    "linkCopied": "Ligação copiada",
+    "liked": "Gostou do artigo?",
+    "comments": "Comentários",
+    "sort": {
+      "popular": "Populares",
+      "newest": "Mais recentes"
+    },
+    "reply": "Responder",
+    "replyPlaceholder": "Responder a {{user}}…",
+    "authorBadge": "Autor",
+    "onThisPage": "Nesta página",
+    "moreIn": "Mais em «{{category}}»",
+    "minShort": "{{n}} min",
+    "keepReading": "Continue a ler",
+    "allArticles": "Todos os artigos"
   },
   "editor": {
     "saveError": "Não foi possível guardar. Tente novamente.",

@@ -10,6 +10,18 @@ export const MODES: Mode[] = ["warn", "ban", "delete", "dismiss"];
 const MILDNESS: Record<Mode, number> = { dismiss: 0, warn: 1, delete: 2, ban: 3 };
 export const DURATIONS: Duration[] = ["1h", "24h", "7d", "30d", "perm"];
 
+/** How long a warning counts. Each warn template carries one; there is no site-wide rule. */
+export type WarnExpiry = "7d" | "30d" | "90d" | "180d" | "365d" | "never";
+export const WARN_EXPIRIES: WarnExpiry[] = ["7d", "30d", "90d", "180d", "365d", "never"];
+/** What a new warn template starts with (mirrors the server's DEFAULT_WARN_EXPIRY). */
+export const DEFAULT_WARN_EXPIRY: WarnExpiry = "90d";
+
+/** The words templates are filled with. */
+export interface TemplateWords {
+  type: Record<string, string>;
+  duration: Record<string, string>;
+}
+
 export const MODE_LABEL: Record<Mode, string> = { warn: "Warn", ban: "Ban", delete: "Remove", dismiss: "Dismiss" };
 export const DURATION_LABEL: Record<Duration, string> = { "1h": "1h", "24h": "24h", "7d": "7d", "30d": "30d", perm: "Perm." };
 /** What `{duration}` reads as inside a message. */
@@ -24,6 +36,8 @@ export interface Template {
   text: string;
   ruleRef: string | null;
   defaultDuration: Duration | null;
+  /** Warns: how long it counts (null only on a row older than 2026-10-17 = 90 days). */
+  warnExpiry: WarnExpiry | null;
   internal: boolean;
   matchCategories: string[];
   useCount: number;
@@ -82,4 +96,17 @@ export function suggest(templates: Template[], reasons: string[], hasAuthor: boo
   if (best) return best;
   const mode: Mode = hasAuthor ? "warn" : "dismiss";
   return [...templates].filter((t) => t.mode === mode).sort((a, b) => b.useCount - a.useCount)[0] ?? null;
+}
+
+type T = (key: string, opts?: Record<string, unknown>) => string;
+
+/** A warning length as words (common:modTiming). */
+export function warnExpiryLabel(t: T, expiry: WarnExpiry | null): string {
+  return t(`modTiming.${expiry ?? DEFAULT_WARN_EXPIRY}`, { ns: "common" });
+}
+
+/** The day a warning issued now stops counting, or null when it never does. */
+export function warnExpiryDate(expiry: WarnExpiry | null, now = new Date()): Date | null {
+  const days = ({ "7d": 7, "30d": 30, "90d": 90, "180d": 180, "365d": 365, never: null } as const)[expiry ?? DEFAULT_WARN_EXPIRY];
+  return days === null ? null : new Date(now.getTime() + days * 86_400_000);
 }

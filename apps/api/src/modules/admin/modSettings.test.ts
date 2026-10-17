@@ -77,19 +77,22 @@ describe("the escalation ladder", () => {
 });
 
 describe("warning lifetime", () => {
-  it("stamps the policy's expiry and stops counting expired warnings", async () => {
-    await modSettingsService.update({ expiry: { enabled: true, days: 10 } });
+  // No site-wide rule any more: a warning counts as long as its template says; one
+  // without a template (the admin API) gets the default 90 days.
+  it("stamps the default length and stops counting expired warnings", async () => {
     const w = await warn();
     const days = (w.expiresAt!.getTime() - Date.now()) / 86_400_000;
-    expect(Math.round(days)).toBe(10);
+    expect(Math.round(days)).toBe(90);
 
     await prisma.moderationWarning.update({ where: { id: w.id }, data: { expiresAt: new Date(Date.now() - 1000) } });
     expect(await moderationService.countedWarnings(member, false)).toBe(0);
   });
 
-  it("leaves warnings open-ended when expiry is off", async () => {
-    await modSettingsService.update({ expiry: { enabled: false, days: 10 } });
-    expect((await warn()).expiresAt).toBeNull();
+  it("takes the template's length when there is one", async () => {
+    const w = await moderationService.issueWarning({ userId: member, issuedById: actor, reason: "x", expiry: "never" });
+    expect(w.expiresAt).toBeNull();
+    const v = await moderationService.issueWarning({ userId: member, issuedById: actor, reason: "x", expiry: "7d" });
+    expect(Math.round((v.expiresAt!.getTime() - Date.now()) / 86_400_000)).toBe(7);
   });
 });
 

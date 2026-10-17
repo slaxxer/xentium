@@ -92,18 +92,17 @@
   }
 
   &__grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
   &__tile {
     position: relative;
     display: flex;
-    flex-direction: column;
     align-items: flex-start;
-    gap: 8px;
-    min-height: 62px;
+    gap: 10px;
+    width: 100%;
     padding: 9px 10px;
     border: 1px solid var(--c-border);
     border-radius: var(--radius-md);
@@ -126,28 +125,40 @@
   }
 
   &__glyph {
+    flex: none;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
+    width: 26px;
+    height: 26px;
     border-radius: 6px;
     background: var(--c-accent-soft);
     color: var(--c-accent);
     font-size: 11px;
   }
 
+  &__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
   &__name {
-    font-size: var(--fs-xs);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: var(--fs-sm);
     font-weight: 600;
     color: var(--c-fg);
     line-height: 1.3;
-    overflow-wrap: anywhere;
+  }
+
+  /* One line of what the block is; the full text is in the catalogue. */
+  &__about {
+    font-size: var(--fs-2xs);
+    line-height: 1.4;
+    color: var(--c-fg-subtle);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   &__badge {
-    position: absolute;
-    top: 8px;
-    right: 8px;
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.04em;

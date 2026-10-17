@@ -7,7 +7,7 @@
 // favicon from the same tokens, as an SVG data URL; with one, the upload wins.
 
 /** The brand colours the static files are drawn in (contracts' defaults). */
-const BRAND = { from: "#f26b1d", to: "#e0336b" };
+const BRAND = { from: "#0d7c72", to: "#0d7c72" };
 
 /** Fired by `applyTokenCss` whenever the token stylesheet changes. */
 export const TOKENS_APPLIED_EVENT = "xt:tokens-applied";
