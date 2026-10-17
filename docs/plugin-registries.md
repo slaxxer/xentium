@@ -184,7 +184,7 @@ the users' metrics; core never sees your schema.
 group (an empty list if there are none), and core combines them with its own results
 according to `progression.threshold_logic`.
 
-Its ACP page is a `groupConfigPanel` tab, and it **autosaves**. See
+Its ACP page is a `groupConfigPanel` tab, and it saves through the **save bar**. See
 [Plugin pages in the ACP](plugin-acp-autosave.md).
 
 ---
