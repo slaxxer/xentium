@@ -154,7 +154,7 @@ with what was sent. Outside the ACP, where there's no bar, the hook still autosa
 ## Per-group panels (`groupConfigPanel`)
 
 Settings that belong to a group (permissions, progression) go on **core's group page**
-(ACP → Users → Groups → a group), not on a page of their own. Register a panel and it
+(ACP → Members → Groups → a group), not on a page of their own. Register a panel and it
 shows up as a tab of that page, after our "Progression" tab:
 
 ```tsx

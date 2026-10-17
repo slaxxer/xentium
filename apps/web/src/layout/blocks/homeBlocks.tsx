@@ -36,6 +36,7 @@ import {
   MeCard,
   PopularTags,
   SectionNav,
+  SetupChecklist,
   SpacesCard,
   SuggestedPeople,
 } from "../../pages/HomePage";
@@ -89,3 +90,4 @@ registerBlock({
 simple("homeHotThreads",      "Hot threads",      HotThreads);
 simple("homePopularTags",     "Popular tags",     PopularTags);
 simple("homeSuggestedPeople", "Suggested people", SuggestedPeople);
+simple("homeSetup",           "Setup checklist",  SetupChecklist);

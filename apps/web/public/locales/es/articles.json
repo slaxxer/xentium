@@ -16,7 +16,47 @@
     "minRead": "{{n}} min",
     "views_one": "{{count}} vista",
     "views_other": "{{count}} vistas",
-    "views_many": "{{count}} vistas"
+    "views_many": "{{count}} vistas",
+    "searchPlaceholder": "Buscar artículos, autores, etiquetas",
+    "clearSearch": "Borrar búsqueda",
+    "featured": "Destacado",
+    "latestHeading": "Artículos recientes",
+    "allHeading": "Todos los artículos",
+    "resultsFor": "Resultados para «{{q}}»",
+    "count_one": "{{count}} artículo",
+    "count_many": "{{count}} artículos",
+    "count_other": "{{count}} artículos",
+    "reset": "Restablecer filtros",
+    "sortLabel": "Ordenar",
+    "period": {
+      "any": "Cualquier fecha",
+      "week": "Esta semana",
+      "month": "Últimos 30 días",
+      "year": "Este año"
+    },
+    "length": {
+      "any": "Cualquier duración",
+      "short": "Menos de 5 min",
+      "medium": "5–10 min",
+      "long": "Más de 10 min"
+    },
+    "sort": {
+      "latest": "Recientes",
+      "popular": "Populares",
+      "discussed": "Comentados"
+    },
+    "emptyTitle": "No se encontraron artículos",
+    "emptyHint": "Prueba otra búsqueda o afloja los filtros.",
+    "rail": {
+      "categories": "Categorías",
+      "all": "Todos los artículos",
+      "trending": "Tendencias",
+      "tags": "Etiquetas populares"
+    },
+    "pin": "Fijar en la página de artículos",
+    "unpin": "Quitar de la página de artículos",
+    "pinned": "Fijado en la página de artículos",
+    "unpinned": "Quitado"
   },
   "reader": {
     "loading": "Cargando…",
@@ -40,9 +80,7 @@
     "modTools": "Herramientas de moderación",
     "warnAuthor": "Advertir al autor",
     "warnTitle": "Advertir a {{username}}",
-    "warnSub": "Esta advertencia se emitirá al autor del artículo y se registrará en el sistema de moderación.",
-    "warnPlaceholder": "Motivo de la advertencia…",
-    "setExpiry": "Establecer fecha de caducidad",
+    "warnSub": "Elige la norma que se incumplió. El miembro recibe el texto de la plantilla y la advertencia queda registrada.",
     "issuing": "Emitiendo…",
     "issueWarning": "Emitir advertencia",
     "warnIssued": "Advertencia emitida a {{username}}.",
@@ -69,7 +107,28 @@
     "tombstoneBy": " por {{mod}}",
     "tombstoneReason": " · Motivo: {{reason}}",
     "cantRateOwnComment": "No puedes valorar tu propio comentario",
-    "signInToRate": "Inicia sesión para valorar"
+    "signInToRate": "Inicia sesión para valorar",
+    "crumbs": "Ruta de navegación",
+    "actions": "Acciones del artículo",
+    "save": "Guardar",
+    "unsave": "Quitar de guardados",
+    "savedToast": "Guardado. Lo encontrarás en Guardados, en la página de inicio.",
+    "unsavedToast": "Quitado de guardados",
+    "linkCopied": "Enlace copiado",
+    "liked": "¿Te ha gustado el artículo?",
+    "comments": "Comentarios",
+    "sort": {
+      "popular": "Populares",
+      "newest": "Más recientes"
+    },
+    "reply": "Responder",
+    "replyPlaceholder": "Responder a {{user}}…",
+    "authorBadge": "Autor",
+    "onThisPage": "En esta página",
+    "moreIn": "Más en «{{category}}»",
+    "minShort": "{{n}} min",
+    "keepReading": "Sigue leyendo",
+    "allArticles": "Todos los artículos"
   },
   "editor": {
     "saveError": "No se pudo guardar. Inténtalo de nuevo.",

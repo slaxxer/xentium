@@ -135,8 +135,6 @@
     "alertStaffTitle": "One more warning sanctions {{name}}",
     "alertOwn": "Under the community's warning rules, your next warning means {{sanction}}.",
     "alertStaff": "Under the warning rules, the next warning to {{name}} means {{sanction}}.",
-    "alertExpiry_one": "Warnings stop counting after {{count}} day.",
-    "alertExpiry_other": "Warnings stop counting after {{count}} days.",
     "counted_one": "warning counts right now",
     "counted_other": "warnings count right now",
     "ladder": "Warning rules",
@@ -145,9 +143,6 @@
     "banDays_one": "a {{count}}-day ban",
     "banDays_other": "a {{count}}-day ban",
     "banPermanent": "a permanent ban",
-    "expiryNote_one": "A warning stops counting {{count}} day after it was given.",
-    "expiryNote_other": "A warning stops counting {{count}} days after it was given.",
-    "noExpiry": "Warnings don't expire on this site.",
     "warnings": "Warnings",
     "noneOwn": "You have no warnings. Thanks for keeping it friendly.",
     "noneOther": "{{name}} has no warnings.",
@@ -186,7 +181,8 @@
     "otherAccounts_other": "{{count}} other accounts",
     "geoCredit": "IP geolocation by DB-IP",
     "geoMissing": "Countries appear once the IP country database is downloaded.",
-    "geoMissingLink": "Scheduled Tasks → IP country database"
+    "geoMissingLink": "Scheduled Tasks → IP country database",
+    "perWarningExpiry": "Each warning counts until the date shown with it."
   },
   "cantRateOwnComment": "You can't rate your own comment",
   "signInToRate": "Sign in to rate",

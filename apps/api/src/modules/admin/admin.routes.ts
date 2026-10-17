@@ -40,6 +40,7 @@ const marketplaceArtifactLimiter = makeRateLimiter("marketplace-artifact", 60 * 
 adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
 adminRouter.get("/dashboard/analytics", adminGuard, adminController.dashboardAnalytics);
 adminRouter.get("/dashboard/overview",  adminGuard, dashboardController.overview);
+adminRouter.get("/dashboard/setup",     adminGuard, dashboardController.setup);
 adminRouter.get("/health",              adminGuard, adminController.health);
 
 // Users

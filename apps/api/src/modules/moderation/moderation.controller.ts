@@ -1,8 +1,8 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
-import { getModPolicy } from "./moderationPolicy.js";
+import { getModPolicy, WARN_EXPIRIES } from "./moderationPolicy.js";
 import { moderationService } from "./moderation.service.js";
-import { modCanvasService, actSchema } from "./modCanvas.service.js";
+import { modCanvasService, actSchema, templateWords, fromTemplate, banTiming, DURATIONS } from "./modCanvas.service.js";
 
 const idParam   = z.object({ id: z.string() });
 const pageQuery = z.object({
@@ -27,17 +27,26 @@ const updateReportSchema = z.object({
   assignedTo: z.string().nullable().optional(),
 });
 
+// A warning or a ban is one of the site's templates, about the member's content. There
+// is no free text and no free timing: the server fills the template in and takes its
+// length (`fromTemplate`). A team lead may name another length (override permission).
+const targetSchema = z.object({
+  type: z.enum(["article", "article_comment", "profile_comment", "user", "plugin-content"]),
+  id:   z.string().min(1).max(200),
+});
+
 const issueWarningSchema = z.object({
-  userId:    z.string().min(1),
-  reason:    z.string().min(3).max(2000),
-  expiresAt: z.string().datetime().nullable().optional(),
+  userId:     z.string().min(1),
+  templateId: z.string().min(1),
+  target:     targetSchema,
+  expiry:     z.enum(WARN_EXPIRIES).optional(),
 });
 
 const issueBanSchema = z.object({
-  userId:    z.string().min(1),
-  type:      z.enum(["temporary", "permanent"]),
-  reason:    z.string().min(3).max(2000),
-  expiresAt: z.string().datetime().nullable().optional(),
+  userId:     z.string().min(1),
+  templateId: z.string().min(1),
+  target:     targetSchema.optional(),
+  duration:   z.enum(DURATIONS).optional(),
 });
 
 const reportIdsSchema = z.object({ reportIds: z.array(z.string().min(1)).min(1).max(100) });
@@ -69,6 +78,10 @@ export const moderationController = {
 
   listTemplates: (async (_req, res) => {
     res.json(await modCanvasService.listTemplates());
+  }) as RequestHandler,
+
+  templateWords: (async (_req, res) => {
+    res.json(await templateWords());
   }) as RequestHandler,
 
 
@@ -143,11 +156,15 @@ export const moderationController = {
 
   issueWarning: (async (req, res) => {
     const body = issueWarningSchema.parse(req.body);
-    res.status(201).json(await moderationService.issueWarning({
-      ...body,
-      issuedById: req.userId!,
-      expiresAt:  body.expiresAt ? new Date(body.expiresAt) : null,
-    }));
+    const out = await fromTemplate({
+      actorId: req.userId!, mode: "warn", templateId: body.templateId, userId: body.userId,
+      target: body.target, length: body.expiry,
+    });
+    const warning = await moderationService.issueWarning({
+      userId: body.userId, issuedById: req.userId!, reason: out.text, expiry: out.expiry,
+    });
+    await modCanvasService.countTemplateUse(body.templateId);
+    res.status(201).json(warning);
   }) as RequestHandler,
 
   pardonWarning: (async (req, res) => {
@@ -162,11 +179,12 @@ export const moderationController = {
 
   issueBan: (async (req, res) => {
     const body = issueBanSchema.parse(req.body);
-    await moderationService.issueBan({
-      ...body,
-      issuedById: req.userId!,
-      expiresAt:  body.expiresAt ? new Date(body.expiresAt) : null,
+    const out = await fromTemplate({
+      actorId: req.userId!, mode: "ban", templateId: body.templateId, userId: body.userId,
+      target: body.target, length: body.duration,
     });
+    await moderationService.issueBan({ userId: body.userId, issuedById: req.userId!, reason: out.text, ...banTiming(out.length) });
+    await modCanvasService.countTemplateUse(body.templateId);
     res.status(204).end();
   }) as RequestHandler,
 

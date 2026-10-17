@@ -1,0 +1,81 @@
+{
+  "templates": {
+    "warn": {
+      "harassment": {
+        "name": "Assédio",
+        "text": "Olá {user}, o teu {type} em {where} foi denunciado por assédio. Ataques pessoais violam as regras da comunidade. Este é um aviso formal, e novas denúncias podem levar a uma suspensão."
+      },
+      "spam": {
+        "name": "Spam / autopromoção",
+        "text": "Olá {user}, o teu {type} em {where} contém links promocionais. A autopromoção não é permitida aqui. Remove publicações semelhantes, por favor."
+      },
+      "offTopic": {
+        "name": "Mensagens fora do tema",
+        "text": "Olá {user}, respostas repetidas e de pouco esforço como a de {where} perturbam as conversas de todos. Mantém as respostas no tema, por favor."
+      },
+      "uncredited": {
+        "name": "Trabalho sem créditos",
+        "text": "Olá {user}, o teu {type} em {where} usa o trabalho de outra pessoa sem lhe dar crédito. Indica o autor original ou remove-o, por favor."
+      }
+    },
+    "ban": {
+      "repeatedHarassment": {
+        "name": "Assédio repetido",
+        "text": "Foste suspenso por {duration} por assédio repetido após avisos anteriores. O teu {type} em {where} foi a denúncia decisiva."
+      },
+      "spamAccount": {
+        "name": "Conta de spam",
+        "text": "Esta conta foi suspensa por publicar spam, incluindo o teu {type} em {where}."
+      },
+      "banEvasion": {
+        "name": "Evasão de suspensão",
+        "text": "Esta conta está ligada a uma conta suspensa anteriormente e foi suspensa por evasão de suspensão."
+      },
+      "phishing": {
+        "name": "Phishing / falsificação de identidade",
+        "text": "Esta conta foi suspensa por se fazer passar pela equipa e pedir dados de acesso a membros em {where}."
+      },
+      "hateSpeech": {
+        "name": "Discurso de ódio",
+        "text": "Foste suspenso por {duration} por linguagem de ódio no teu {type} em {where}."
+      }
+    },
+    "delete": {
+      "ruleViolation": {
+        "name": "Removido: violação das regras",
+        "text": "O teu {type} em {where} foi removido porque viola as regras da comunidade."
+      },
+      "copyright": {
+        "name": "Removido: direitos de autor",
+        "text": "O teu {type} em {where} foi removido após uma denúncia de direitos de autor. Podes publicá-lo de novo com créditos ou com autorização do autor."
+      }
+    },
+    "dismiss": {
+      "noViolation": {
+        "name": "Nenhuma violação",
+        "text": "Revisto: {type} em {where}. Nenhuma regra violada."
+      },
+      "duplicate": {
+        "name": "Denúncia duplicada",
+        "text": "Duplicado de uma denúncia que já foi tratada."
+      }
+    }
+  },
+  "type": {
+    "article": "artigo",
+    "comment": "comentário",
+    "profile comment": "comentário de perfil",
+    "profile": "perfil",
+    "post": "post",
+    "thread": "tópico",
+    "message": "mensagem",
+    "content": "post"
+  },
+  "duration": {
+    "1h": "1 hora",
+    "24h": "24 horas",
+    "7d": "7 dias",
+    "30d": "30 dias",
+    "perm": "tempo indeterminado"
+  }
+}

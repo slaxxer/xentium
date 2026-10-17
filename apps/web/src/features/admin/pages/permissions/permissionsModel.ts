@@ -1,5 +1,5 @@
 /**
- * ACP → Access control → Permissions, as data. The page edits a DRAFT and saves
+ * ACP → Members → Permissions, as data. The page edits a DRAFT and saves
  * on request; this file is the arithmetic behind it, kept pure so it can be
  * tested without rendering.
  *

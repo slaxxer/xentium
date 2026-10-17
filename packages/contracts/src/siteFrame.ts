@@ -46,6 +46,8 @@ export const SITE_FRAME_ROW_KEY = '@site-frame';
 /** The ranges the editor's sliders offer. The schema's, so an import cannot exceed them. */
 export const FRAME_LIMITS = {
   maxWidth: { min: 960, max: 1600, step: 20 },
+  contentWidth: { min: 720, max: 1920, step: 20 },
+  readingWidth: { min: 560, max: 1200, step: 20 },
   radius:   { min: 0, max: 32, step: 1 },
   overlap:  { min: 80, max: 320, step: 10 },
   angle:    { min: 0, max: 355, step: 5 },
@@ -79,6 +81,15 @@ export const siteFrameSchema = z.object({
   /** How far the page box rises into the masthead band, `overlap` mode only. */
   overlap:   z.number().int().min(FRAME_LIMITS.overlap.min).max(FRAME_LIMITS.overlap.max).default(200),
   background: siteFrameBackgroundSchema.default(() => siteFrameBackgroundSchema.parse({})),
+  /**
+   * How wide the page CONTENT is, in every mode (full width too): the main column
+   * (`--content-max`) and the narrow reading column articles use (`--content-narrow`).
+   * The box's `maxWidth` above is the frame around the page; these are the space
+   * inside it. Defaults are the core look's token values, so an untouched frame
+   * changes nothing.
+   */
+  contentWidth: z.number().int().min(FRAME_LIMITS.contentWidth.min).max(FRAME_LIMITS.contentWidth.max).default(1240),
+  readingWidth: z.number().int().min(FRAME_LIMITS.readingWidth.min).max(FRAME_LIMITS.readingWidth.max).default(760),
   /** Below 640px: drop the frame (`edge`) or keep it with a smaller gap (`keep`). */
   phone:     z.enum(FRAME_PHONE).default('edge'),
   /**

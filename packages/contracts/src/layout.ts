@@ -1238,6 +1238,18 @@ export const blockPropSchemas = {
   articleIndex: z.object({
     defaultView: z.enum(['grid', 'list']).default('grid'),
     showFilters: z.boolean().default(true),
+    /** The pinned article as a large card above the grid (page 1, no filter active). */
+    showFeatured: z.boolean().default(true),
+    columns: z.union([z.literal(2), z.literal(3)]).default(2),
+  }),
+  // The article index's rail. Each reads the index's shared filter state; none queries.
+  articleCategories: z.object({}),
+  articleTrending: z.object({
+    max: z.number().int().min(1).max(10).default(5),
+    days: z.number().int().min(1).max(365).default(30),
+  }),
+  articleTags: z.object({
+    max: z.number().int().min(1).max(30).default(10),
   }),
 
   /**
@@ -1369,6 +1381,7 @@ export const blockPropSchemas = {
   homeHotThreads:      z.object({}),
   homePopularTags:     z.object({}),
   homeSuggestedPeople: z.object({}),
+  homeSetup:           z.object({}),
 
   articleDetail: z.object({}),
 
@@ -1577,6 +1590,12 @@ export const blockPropSchemas = {
     }),
     /** `theme` = the Style Editor's navbar colours; the rest are fixed looks. */
     tone: z.enum(['theme', 'dark', 'brand', 'light']).default('theme').meta({ title: 'Colour' }),
+    /**
+     * Which end the account menu (and the icons it holds: moderation, bell,
+     * messages, admin, search) sits at while the navbar carries it. `left` puts it
+     * straight after the logo. The links have their own end (their `align`).
+     */
+    accountAlign: z.enum(['right', 'left']).default('right').meta({ title: 'Account menu' }),
   }),
 
   logo: z.object({
@@ -1780,6 +1799,9 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
               node('h-feed', 'homeFeed'),
             ] },
             { ...node('h-rightcol', 'column', { width: 'rail', sticky: true }), children: [
+              // Only admins on a young site with setup steps left see it; for
+              // everyone else it draws nothing and the rail starts with the rest.
+              node('h-setup',   'homeSetup'),
               // Keeps existing `registerLayoutWidget` plugins exactly where they were
               // (shoutbox's home rail). Each widget is ALSO its own block now, so an
               // admin can position one individually instead — see layout/slotBlocks.
@@ -1798,8 +1820,13 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
   'article.index': {
     templateKey: 'article.index', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
-      main:   [node('default-index', 'articleIndex', { defaultView: 'grid', showFilters: true })],
-      aside:  [],
+      main:   [node('default-index', 'articleIndex', { defaultView: 'grid', showFilters: true, showFeatured: true, columns: 2 })],
+      // The index's rail: categories with counts, what is trending, popular tags.
+      aside:  [
+        node('ai-cats',     'articleCategories'),
+        node('ai-trending', 'articleTrending', { max: 5, days: 30 }),
+        node('ai-tags',     'articleTags', { max: 10 }),
+      ],
     },
   },
   'article.detail': {
@@ -1912,13 +1939,21 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
     templateKey: 'chrome.header', schemaVersion: LAYOUT_SCHEMA_VERSION,
     regions: {
       header: [
-        // The core look is ONE plain row: the masthead is switched off, so the navbar
-        // draws the logo, the links and everything the masthead holds — the account
-        // menu with the moderation tool, the bell, messages, the admin link and search.
-        // Switching the masthead on (Theme Studio) brings back a band above the navbar
-        // with exactly these pieces in it.
+        // The core look: the navbar on top (logo, links, and the account menu with the
+        // moderation tool, the bell, messages, the admin link and search), and the
+        // header band UNDER it, painted with the theme's masthead gradient. The band's
+        // account buttons are off, which is what brings them down into the navbar.
+        { ...node('h-navbar', 'navbar'), children: [
+          node('h-nav-logo', 'logo', { showWordmark: true }),
+          node('h-nav', 'navLinks'),
+        ] },
         { ...node('h-band', 'header', {
-          height: 200, showLogo: false, showWordmark: true, showTagline: true, showMasthead: false,
+          height: 200, showLogo: false, showWordmark: true, showTagline: true, showMasthead: true,
+          showButtons: false,
+          // Tokens, not colours: the core look and Xentium Dark share this layout and
+          // each sets its own teal.
+          backgroundGradient: ['var(--masthead-from)', 'var(--masthead-to)'],
+          backgroundAngle: 120,
         }), children: [
           node('h-band-logo', 'logo', { showWordmark: true }),
           // The account menu holds the icons; the avatar is drawn after them.
@@ -1929,9 +1964,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
             node('h-admin', 'adminLink'),
             node('h-search', 'search', { expanded: false }),
           ] },
-        ] },
-        { ...node('h-navbar', 'navbar'), children: [
-          node('h-nav', 'navLinks'),
         ] },
       ],
     },

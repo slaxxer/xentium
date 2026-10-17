@@ -440,6 +440,15 @@
     }
   }
 
+  /* The length the template sets, for a moderator who cannot change it. */
+  &__fixed {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--c-rowline);
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    color: var(--c-fg-muted);
+  }
+
   &__list { max-height: 300px; overflow-y: auto; }
 
   &__row {

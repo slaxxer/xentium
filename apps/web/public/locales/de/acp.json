@@ -41,7 +41,11 @@
     "themeStudio": "Theme Studio",
     "legal": "Rechtliches",
     "activityLog": "Aktivitätsprotokoll",
-    "emojis": "Emojis"
+    "emojis": "Emojis",
+    "members": "Mitglieder",
+    "editor": "Editor",
+    "groupSetup": "Einrichtung",
+    "groupLogs": "Protokolle"
   },
   "sidebar": {
     "adminPanel": "Admin-Bereich",
@@ -860,7 +864,7 @@
         "msg": "Zugriff verweigert",
         "desc": "Der angemeldete Benutzer hat keine Berechtigung für diese Aktion.",
         "cause": "Der Berechtigungsschlüssel für die angeforderte Ressource fehlt.",
-        "fix": "Stelle sicher, dass die Gruppe des Benutzers die nötige Berechtigung unter ACP → Zugriffskontrolle → Berechtigungen zugewiesen hat."
+        "fix": "Stelle sicher, dass die Gruppe des Benutzers die nötige Berechtigung unter ACP → Mitglieder → Berechtigungen zugewiesen hat."
       },
       "XEC-API-4004": {
         "msg": "Nicht gefunden",
@@ -950,19 +954,19 @@
         "msg": "Berechtigung verweigert",
         "desc": "Dem Benutzer fehlt der konkrete Berechtigungsschlüssel für diese Aktion.",
         "cause": "Die Gruppenzuweisung oder Berechtigungsmatrix enthält diesen Schlüssel nicht.",
-        "fix": "Weise der Gruppe des Benutzers die nötige Berechtigung unter ACP → Zugriffskontrolle → Berechtigungen zu."
+        "fix": "Weise der Gruppe des Benutzers die nötige Berechtigung unter ACP → Mitglieder → Berechtigungen zu."
       },
       "XEC-PERM-1040": {
         "msg": "Inhalt zu lang",
         "desc": "Der Beitrags- oder Artikeltext überschreitet die maximale Länge für die Stufe dieses Benutzers.",
         "cause": "Die Aufstiegs-Konfiguration der Gruppe begrenzt die Inhaltslänge auf dieser Stufe.",
-        "fix": "Kürze den Inhalt, oder erhöhe die maximale Beitragslänge unter ACP → Zugriffskontrolle → Gruppen → Aufstieg."
+        "fix": "Kürze den Inhalt, oder erhöhe die maximale Beitragslänge unter ACP → Mitglieder → Gruppen → Aufstieg."
       },
       "XEC-PERM-1041": {
         "msg": "Tägliches Beitragslimit erreicht",
         "desc": "Der Benutzer hat sein tägliches Beitragslimit erreicht.",
         "cause": "Die Aufstiegs-Konfiguration der Gruppe setzt eine tägliche Beitragsobergrenze.",
-        "fix": "Warte bis Mitternacht (UTC), oder erhöhe das Limit unter ACP → Zugriffskontrolle → Gruppen → Aufstieg."
+        "fix": "Warte bis Mitternacht (UTC), oder erhöhe das Limit unter ACP → Mitglieder → Gruppen → Aufstieg."
       },
       "XEC-PERM-1042": {
         "msg": "Anhangslimit überschritten",
@@ -1355,7 +1359,7 @@
     "toastQueued": "Ausführung eingereiht."
   },
   "userList": {
-    "eyebrow": "Verwaltung",
+    "eyebrow": "Mitglieder",
     "searchPlaceholder": "Benutzer suchen…",
     "allRoles": "Alle Rollen",
     "allStatus": "Alle Status",
@@ -1605,16 +1609,6 @@
       "bans": "Sperren",
       "detection": "Erkennung"
     },
-    "lifetime": {
-      "title": "Gültigkeit von Verwarnungen",
-      "sub": "Ob eine Verwarnung irgendwann nicht mehr zur Stufenleiter zählt",
-      "onTitle": "Verwarnungen laufen ab",
-      "onDesc": "Alte Verwarnungen werden inaktiv, sodass sich ein Mitglied, das sich benimmt, die Leiter wieder hinunterarbeitet.",
-      "offTitle": "Verwarnungen laufen nie ab",
-      "offDesc": "Jede Verwarnung, die ein Mitglied je erhalten hat, zählt weiter zur Leiter unten.",
-      "after": "Ablauf nach",
-      "afterDesc": "Gezählt ab dem Tag der Verwarnung. Moderatoren können weiterhin ein eigenes Datum wählen."
-    },
     "ladder": {
       "title": "Eskalationsleiter",
       "sub": "Was passiert, wenn sich Verwarnungen häufen. Jede Stufe greift einmal, wenn ein Mitglied ihre Anzahl erreicht.",
@@ -1715,13 +1709,14 @@
         "desc": "Ein neues Konto taucht von der Adresse eines gerade gesperrten Mitglieds auf.",
         "rule": "Öffnet einen Fall bei einer Registrierung innerhalb von 10 Minuten nach einer Sperre, von der Adresse des gesperrten Mitglieds"
       }
-    }
+    },
+    "lifetimeMoved": "Wie lange eine Verwarnung zählt, legt jede Verwarnungsvorlage selbst fest.",
+    "lifetimeLink": "Zu den Vorlagen"
   },
   "modTemplates": {
     "eyebrow": "Moderation",
     "title": "Vorlagen",
-    "sub": "Die vorgefertigten Texte, mit denen Moderatoren in ModCanvas verwarnen, sperren, entfernen oder verwerfen. Schreibe eigene oder behalte die Standardtexte. Alles wird beim Ändern gespeichert.",
-    "search": "Vorlagen durchsuchen…",
+    "sub": "Die Texte, mit denen Moderatoren in ModCanvas verwarnen, sperren, entfernen oder verwerfen. Verwarnungen und Sperren werden genau so verschickt, wie sie hier stehen, und gelten so lange, wie hier eingestellt. Alles wird beim Ändern gespeichert.",
     "new": "Neu",
     "newName": "Neue Vorlage",
     "copyName": "{{name}} (Kopie)",
@@ -1746,7 +1741,7 @@
       "dismiss": "Eine interne Notiz für das Mod-Protokoll. Wird nie verschickt."
     },
     "permanent": "Dauerhaft",
-    "defaultLen": "Standard {{len}}",
+    "defaultLen": "Sperrt für {{len}}",
     "internal": "Interne Notiz",
     "noRule": "Kein Regelverweis",
     "default": "Standard",
@@ -1767,7 +1762,7 @@
     "rule": "Regelverweis",
     "rulePlaceholder": "z. B. Sei respektvoll",
     "usedFor": "Verwendet für",
-    "defaultDuration": "Standard-Sperrdauer",
+    "defaultDuration": "Sperrdauer",
     "message": "Nachricht",
     "var": {
       "user": "Autor des gemeldeten Inhalts",
@@ -1793,7 +1788,10 @@
     "used_one": "{{count}}-mal verwendet",
     "used_other": "{{count}}-mal verwendet",
     "edited": "zuletzt bearbeitet von {{name}} {{when}}",
-    "newText": "Hallo {user}, "
+    "newText": "Hallo {user}, ",
+    "warnLen": "Zählt {{len}}",
+    "add": "Hinzufügen",
+    "close": "Schließen"
   },
   "modCases": {
     "sub": "Moderation",
@@ -1937,7 +1935,8 @@
     "shared": "Geteilt",
     "sharedBy_one": "Bei {{count}} dieser Konten gesehen",
     "sharedBy_other": "Bei {{count}} dieser Konten gesehen",
-    "provenance": "{{type}}"
+    "provenance": "{{type}}",
+    "pagination": "Seite {{page}} von {{totalPages}} · {{total}} Fälle"
   },
   "modLog": {
     "sub": "Moderation",
@@ -3104,6 +3103,7 @@
       "homeHotThreads": "Die Diskussionen mit den meisten Antworten gerade.",
       "homePopularTags": "Die zuletzt meistgenutzten Tags.",
       "homeSuggestedPeople": "Mitglieder, denen es sich zu folgen lohnt.",
+      "homeSetup": "Für Admins auf einer neuen Seite: die noch offenen Einrichtungsschritte. Für alle anderen unsichtbar.",
       "articleDetail": "Die ganze Artikelseite: Titel, Text, Autor und Kommentare.",
       "profileCard": "Das Panel des Profils. Lege die Profilteile hinein.",
       "profileAvatar": "Der Avatar des Mitglieds.",
@@ -3132,7 +3132,10 @@
       "footerText": "Ausgemustert: jetzt Teil der Footer-Leiste.",
       "groupLegend": "Die Benutzergruppen und ihre Farben.",
       "boardStats": "Gesamtzahlen der Seite: Artikel, Mitglieder und das neueste Mitglied.",
-      "branding": "Ausgemustert: jetzt die Footer-Leiste."
+      "branding": "Ausgemustert: jetzt die Footer-Leiste.",
+      "articleCategories": "Kategorien mit Artikelanzahl. Ein Klick filtert die Übersicht.",
+      "articleTrending": "Die meistgelikten und meistdiskutierten Artikel der letzten Tage.",
+      "articleTags": "Die meistgenutzten Tags. Ein Klick filtert die Übersicht."
     },
     "catalogueTitle": "Block zu {{region}} hinzufügen",
     "catalogueNote": "Blöcke stammen aus einem festen Katalog, daher kann ein Layout niemals Code ausführen. Nichts wird live, bevor du veröffentlichst.",
@@ -3368,7 +3371,11 @@
       "resetDefault": "Auf volle Breite zurücksetzen",
       "conflict": "Jemand anderes hat den Seitenrahmen geändert. Diese Version wurde geladen.",
       "phones": "Smartphones",
-      "stickyMoved": "Die fixierte Navigation ist eine Einstellung des Navbar-Blocks: die Navigation auswählen, um sie zu ändern."
+      "stickyMoved": "Die fixierte Navigation ist eine Einstellung des Navbar-Blocks: die Navigation auswählen, um sie zu ändern.",
+      "content": "Inhalt",
+      "contentWidth": "Inhaltsbreite",
+      "readingWidth": "Lesebreite",
+      "contentHint": "Die Inhaltsbreite ist die Hauptspalte jeder Seite. Die Lesebreite ist die schmalere Spalte für Artikel. Beide gelten in jedem Rahmen, auch bei voller Breite."
     },
     "edge": {
       "title": "Kantenkunst",
@@ -3470,6 +3477,79 @@
       "browseAll": "Mit Beschreibungen durchsuchen",
       "addHere": "Hier einen Block einfügen",
       "notHere": "{{block}} passt dort nicht hin. Wähle einen Block oder markiere eine passende Stelle."
+    },
+    "backToBlocks": "Blöcke",
+    "moveTo": "Verschieben…",
+    "moveToTitle": "Block verschieben nach",
+    "moveToNone": "Dieser Block kann nirgendwo anders hin.",
+    "moveToHere": "aktuell hier",
+    "mode": {
+      "label": "Editor-Modus",
+      "simple": "Einfach",
+      "advanced": "Erweitert",
+      "simpleHint": "Die Seite, die Blöcke und die Einstellungen des gewählten Blocks.",
+      "advancedHint": "Zusätzlich Ebenen, Sichtbarkeit, Theme-Stil, Icons und mehr."
+    },
+    "styles": {
+      "headerTitle": "Kopfbereich-Stil",
+      "footerTitle": "Fußbereich-Stil",
+      "hint": "Starte mit einem Stil und passe dann die Blöcke an. Deine Farben bleiben; Strg+Z macht es rückgängig.",
+      "preset": {
+        "below": "Band unten",
+        "row": "Eine Zeile",
+        "above": "Band oben",
+        "centred": "Zentriert",
+        "full": "Vollständig",
+        "community": "Community",
+        "minimal": "Minimal"
+      }
+    },
+    "tour": {
+      "label": "Theme-Studio-Tour",
+      "count": "Schritt {{n}} von {{total}}",
+      "skip": "Tour überspringen",
+      "back": "Zurück",
+      "next": "Weiter",
+      "start": "Zeig es mir",
+      "finish": "Verstanden",
+      "replay": "Tour erneut zeigen",
+      "welcome": {
+        "title": "Willkommen im Theme Studio",
+        "body": "Hier bekommt deine Seite ihr Aussehen und ihr Layout. Eine einminütige Tour zeigt dir, wo alles ist."
+      },
+      "modes": {
+        "title": "Vier Wege, deine Seite zu gestalten",
+        "body": "Layout ordnet deine Seiten an. Farben & Schrift, Branding und Eigenes CSS ändern, wie alles aussieht. Im Verlauf kannst du zu einer früheren Version zurück."
+      },
+      "page": {
+        "title": "Wähle eine Seite",
+        "body": "Wähle, welche Seite du anordnest: Startseite, Artikel, Profile oder den Kopf- und Fußbereich, den alle Seiten teilen. Kopf- und Fußbereich haben fertige Stile."
+      },
+      "select": {
+        "title": "Klick auf etwas auf der Seite",
+        "body": "Die Vorschau ist deine echte Seite. Klick auf einen Teil, um ihn auszuwählen: eine Überschrift, den Feed, die Navigation.",
+        "task": "Klick etwas in der Vorschau an, um weiterzumachen."
+      },
+      "panel": {
+        "title": "Hier erscheinen seine Einstellungen",
+        "body": "Ändere die Einstellungen, verschiebe ihn nach oben oder unten oder nutze Verschieben…, um ihn woanders hinzusetzen, etwa in die Seitenleiste. Du kannst ihn auch auf der Seite ziehen. Strg+Z macht alles rückgängig."
+      },
+      "add": {
+        "title": "Weitere Blöcke hinzufügen",
+        "body": "Geh zurück zu Blöcke, um alles zu sehen, was du hinzufügen kannst. Zieh einen Block auf die Seite oder klick ihn an, um ihn nach dem gewählten Block einzufügen."
+      },
+      "mode": {
+        "title": "Einfach oder Erweitert",
+        "body": "Einfach zeigt, was du zum Start brauchst. Erweitert ergänzt Ebenen, Sichtbarkeit, Theme-Stile und Icons."
+      },
+      "publish": {
+        "title": "Nichts ist live, bis du veröffentlichst",
+        "body": "Deine Änderungen speichern sich von selbst als Entwurf, den nur du siehst. Veröffentlichen bringt alles auf einmal auf deine Seite."
+      },
+      "done": {
+        "title": "Das war's",
+        "body": "Viel Spaß dabei, sie zu deiner zu machen. Die Tour findest du jederzeit wieder über den ?-Knopf."
+      }
     }
   },
   "groups": {
@@ -3839,7 +3919,7 @@
     "retry": "Erneut versuchen"
   },
   "badges": {
-    "eyebrow": "Community",
+    "eyebrow": "Mitglieder",
     "title": "Abzeichen",
     "subtitle": "Was diese Seite vergeben kann. Wer was trägt, steht auf der Seite des Mitglieds.",
     "new": "Neues Abzeichen",
@@ -3986,13 +4066,10 @@
     "partialFiltered": "Eine stilisierte Familie: Es werden nur die Icons gezeigt, die sie zeichnet."
   },
   "composer": {
-    "eyebrow": "Aussehen",
+    "eyebrow": "Inhalte",
     "title": "Editor",
     "subtitle": "Welche Werkzeuge Mitglieder beim Schreiben bekommen – und wo sie liegen.",
-    "toolsTitle": "Werkzeuge",
-    "toolsSub": "{{count}} in der Leiste. Alles andere liegt einen Klick entfernt im Ausklappmenü.",
-    "barPreview": "Leiste",
-    "barEmpty": "Nichts in der Leiste – Mitglieder haben nur das Ausklappmenü.",
+    "barEmpty": "Nichts in der Leiste. Mitglieder bekommen nur das Menü.",
     "place": {
       "bar": "Leiste",
       "overflow": "Menü",
@@ -4002,7 +4079,20 @@
     "behaviourSub": "Wie sich der Editor überall verhält.",
     "mentions": "Erwähnungen überall",
     "mentionsDesc": "Ein @ schlägt Mitglieder vor – in Kommentaren, Themen, Antworten und Nachrichten.",
-    "notSupported": "Anhänge hängen von der Oberfläche ab: das Forum bietet einen Upload, Artikelkommentare, die Pinnwand und Nachrichten nicht – dort ist die Klammer deaktiviert. Ein GIF-Dienst ist nicht eingerichtet, deshalb wird dieser Reiter gar nicht angeboten."
+    "notSupported": "Anhänge hängen von der Oberfläche ab: das Forum bietet einen Upload, Artikelkommentare, die Pinnwand und Nachrichten nicht – dort ist die Klammer deaktiviert. Ein GIF-Dienst ist nicht eingerichtet, deshalb wird dieser Reiter gar nicht angeboten.",
+    "barTitle": "Leiste",
+    "barSub": "Genau so, in dieser Reihenfolge. Sechs passen in eine Handyzeile.",
+    "moveLeft": "{{tool}} nach links",
+    "moveRight": "{{tool}} nach rechts",
+    "filterAll": "Alle",
+    "cycleHint": "Kachel antippen wechselt Leiste → Menü → Aus",
+    "groupCounts": "{{bar}} Leiste · {{menu}} Menü · {{off}} Aus",
+    "setAll": "Alle:",
+    "state": {
+      "bar": "In der Leiste · {{n}}",
+      "overflow": "Im Menü",
+      "off": "Aus"
+    }
   },
   "signInProviders": {
     "passkeysTitle": "Passkeys",
@@ -4098,7 +4188,7 @@
       "grant": "Vergeben",
       "badgeDone_one": "Abzeichen an {{count}} Mitglied vergeben",
       "badgeDone_other": "Abzeichen an {{count}} Mitglieder vergeben",
-      "noBadges": "Es gibt noch keine Abzeichen. Lege eines unter Benutzer → Abzeichen an.",
+      "noBadges": "Es gibt noch keine Abzeichen. Lege eines unter Mitglieder → Abzeichen an.",
       "logoutTitle_one": "{{count}} Mitglied abmelden?",
       "logoutTitle_other": "{{count}} Mitglieder abmelden?",
       "logoutBody": "Alle ihre Sitzungen enden sofort. Sie können sich wieder anmelden.",
@@ -4247,7 +4337,9 @@
     "links": "Links",
     "smallLogo": "Kleines Logo links",
     "smallLogoHint": "Praktisch, sobald der Kopfbereich weggescrollt ist.",
-    "smallLogoForced": "Immer an, solange der Kopfbereich ausgeblendet ist."
+    "smallLogoForced": "Immer an, solange der Kopfbereich ausgeblendet ist.",
+    "right": "Rechts",
+    "accountMenu": "Benutzermenü"
   },
   "studio": {
     "title": "Theme Studio",
@@ -4595,6 +4687,12 @@
           },
           "showFilters": {
             "title": "Filter anzeigen"
+          },
+          "showFeatured": {
+            "title": "Angehefteten Artikel zeigen"
+          },
+          "columns": {
+            "title": "Spalten"
           }
         }
       },
@@ -4747,6 +4845,9 @@
       },
       "homeSuggestedPeople": {
         "label": "Vorgeschlagene Personen"
+      },
+      "homeSetup": {
+        "label": "Einrichtungs-Checkliste"
       },
       "articleDetail": {
         "label": "Artikel"
@@ -5090,6 +5191,28 @@
             }
           }
         }
+      },
+      "articleCategories": {
+        "label": "Artikelkategorien"
+      },
+      "articleTrending": {
+        "label": "Artikel im Trend",
+        "props": {
+          "max": {
+            "title": "Wie viele"
+          },
+          "days": {
+            "title": "Tage zurück"
+          }
+        }
+      },
+      "articleTags": {
+        "label": "Beliebte Tags",
+        "props": {
+          "max": {
+            "title": "Wie viele Tags"
+          }
+        }
       }
     },
     "jobs": {
@@ -5256,6 +5379,8 @@
       "moderation.log.view": "Moderationsprotokoll ansehen",
       "moderation.settings": "Moderationseinstellungen ändern",
       "moderation.protected": "Zählt als Team (kann nicht verwarnt oder gesperrt werden)",
+      "moderation.warn.expiry.override": "Ändern, wie lange eine Verwarnung zählt",
+      "moderation.ban.length.override": "Ändern, wie lange eine Sperre dauert",
       "message.send": "Private Nachrichten senden",
       "admin.plugins": "Plugins im Admin-Bereich verwalten",
       "plugin.install": "Plugins installieren",
@@ -5266,9 +5391,7 @@
   },
   "emojis": {
     "title": "Emojis",
-    "subtitle": "Die Emojis, die Mitglieder im Editor verwenden können: Artikel, Kommentare, Pinnwand, Forenbeiträge und Nachrichten. Lade Bilder hoch und gib jedem einen :shortcode: und eine Kategorie.",
-    "count_one": "Emoji",
-    "count_other": "Emojis",
+    "subtitle": "Was die Emoji-Auswahl des Editors überall dort anbietet, wo Mitglieder schreiben. Die Reihenfolge hier ist die Reihenfolge in der Auswahl.",
     "upload": "Emojis hochladen",
     "pendingTitle_one": "{{count}} Emoji hinzufügen",
     "pendingTitle_other": "{{count}} Emojis hinzufügen",
@@ -5294,6 +5417,16 @@
     "removeBody": "Es verschwindet aus der Emoji-Auswahl. Beiträge, die es schon verwenden, zeigen es weiter, und sein Shortcode bleibt reserviert.",
     "removed": "Emoji entfernt",
     "saved": "Emoji gespeichert",
-    "save": "Speichern"
+    "save": "Speichern",
+    "active_one": "{{count}} aktiv",
+    "active_other": "{{count}} aktiv",
+    "pendingSub": "Die Shortcodes kommen aus den Dateinamen. Prüfen und hinzufügen.",
+    "categoryAll": "Kategorie für alle",
+    "errInvalid": "2–32 Zeichen: a–z, 0–9, _ - +",
+    "errTaken": "Der Shortcode :{{code}}: ist schon vergeben.",
+    "errTwice": "Eine andere Datei in diesem Stapel nutzt :{{code}}:.",
+    "rename": "Umbenennen",
+    "renamed": "Kategorie umbenannt",
+    "dragHint": "Zum Sortieren ziehen (oder Alt + ↑/↓)"
   }
 }

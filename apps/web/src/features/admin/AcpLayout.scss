@@ -454,6 +454,8 @@ table.acp-table {
 }
 
 .acp-input, .acp-select {
+  // Never wider than what holds it: a fixed-width select overflowed a phone-wide card.
+  max-width: 100%;
   width: 100%;
   padding: var(--sp-2) var(--sp-3);
   background: var(--input-bg);   // ACP-scoped: .acp-layout rebinds --input-bg to --c-surface (white)
@@ -503,6 +505,8 @@ table.acp-table {
 .acp-tree-row {
   display: flex;
   align-items: center;
+  /* A deep row's buttons drop to their own line on a phone rather than overflow. */
+  flex-wrap: wrap;
   gap: var(--sp-3);
   padding: var(--sp-3) var(--sp-3);
   background: var(--c-surface);

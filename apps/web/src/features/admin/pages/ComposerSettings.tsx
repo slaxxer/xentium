@@ -1,38 +1,47 @@
 /**
- * ACP → Appearance → Composer.
+ * ACP → Content → Editor.
  *
- * Which tools sit in the action bar, which fall back to the overflow tray, and which
- * are switched off entirely — a setting, not a code change.
+ * Which tools members get when they write, and where each one sits: in the TOOLBAR
+ * (ordered, what members see first), in the MENU (one click away), or OFF.
  *
- * ⚠ Three placements, one control per tool, and the BAR IS ORDERED. Promoting a tool
- * appends it, so the order an admin builds is the order members see; the mockup drew
- * drag handles, and this is the same decision without a drag-and-drop dependency (it
- * is also the version that works from a keyboard).
+ * Layout (concept "2b, tiles by group"): the toolbar on top as it will appear, with
+ * ‹ › to move a tool; below, one tile per tool, grouped (marks, blocks, align,
+ * insert). Clicking a tile cycles toolbar → menu → off, and each group can set all
+ * of its tools at once. Moving with buttons rather than drag keeps it usable from a
+ * keyboard and needs no drag-and-drop dependency. A tool sent to the toolbar is
+ * appended, so the order the admin builds is the order members get.
  *
- * ⚠ Autosaves, like every other ACP config page (`docs/plugin-acp-autosave.md`).
+ * ⚠ A settings page: changes are a draft the ACP save bar saves (`useAutosave` is
+ * the save-bar hook under its old name, `docs/plugin-acp-autosave.md`).
  */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   COMPOSER_DEFAULT_CONFIG, COMPOSER_TOOL_IDS, resolveComposerConfig,
-  type ComposerConfig, type ComposerPlacement, type ComposerToolId,
+  type ComposerConfig, type ComposerPlacement, type ComposerToolGroup, type ComposerToolId,
 } from "@xentium/contracts";
 import { api } from "../../../lib/api";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
 import { Toggle } from "../../../components/AcpControls";
 import { FontAwesomeIcon } from "../../../components/Icon";
+import { faChevronLeft, faChevronRight } from "@fortawesome/free-solid-svg-icons";
 import { COMPOSER_TOOLS } from "../../../components/composer/composerTools";
 import { COMPOSER_CONFIG_KEY } from "../../../components/composer/useComposerConfig";
 import { AcpIcon } from "./acpIcons";
 import "./ComposerSettings.scss";
 
 const PLACEMENTS: ComposerPlacement[] = ["bar", "overflow", "off"];
+const GROUPS: ComposerToolGroup[] = ["marks", "blocks", "align", "insert"];
+/** What a click on a tile does next. */
+const NEXT: Record<ComposerPlacement, ComposerPlacement> = { bar: "overflow", overflow: "off", off: "bar" };
+type Filter = "all" | ComposerPlacement;
 
 export function ComposerSettings() {
   const { t } = useTranslation("acp");
   const qc = useQueryClient();
+  const [filter, setFilter] = useState<Filter>("all");
 
   const { data } = useQuery<ComposerConfig>({
     queryKey: [...COMPOSER_CONFIG_KEY],
@@ -63,120 +72,148 @@ export function ComposerSettings() {
   const { tools } = resolveComposerConfig(form);
   const placementOf = (id: ComposerToolId): ComposerPlacement =>
     tools.find((x) => x.id === id)?.where ?? "overflow";
+  const edit = (fn: (f: ComposerConfig) => ComposerConfig) => { setTouched(true); setForm(fn); };
 
-  /** Moving a tool is a change to the two lists, never to a third. */
-  function place(id: ComposerToolId, where: ComposerPlacement) {
-    setTouched(true);
-    setForm((f) => {
-      const bar = f.bar.filter((x) => x !== id);
-      const off = f.off.filter((x) => x !== id);
-      if (where === "bar") bar.push(id);      // appended: the admin builds the order
-      if (where === "off") off.push(id);
-      return { ...f, bar, off };
-    });
-  }
+  /** Moving tools is a change to the two lists (bar, off), never to a third. */
+  const place = (ids: ComposerToolId[], where: ComposerPlacement) => edit((f) => {
+    const moving = new Set(ids);
+    // Already in the bar keeps its spot; newcomers are appended in tile order.
+    const bar = where === "bar"
+      ? [...f.bar, ...ids.filter((x) => !f.bar.includes(x))]
+      : f.bar.filter((x) => !moving.has(x));
+    const off = where === "off"
+      ? [...f.off.filter((x) => !moving.has(x)), ...ids]
+      : f.off.filter((x) => !moving.has(x));
+    return { ...f, bar, off };
+  });
 
-  const inBar = form.bar.length;
+  /** ‹ › on a toolbar chip: one place left or right. */
+  const shift = (id: ComposerToolId, dir: -1 | 1) => edit((f) => {
+    const bar = [...f.bar];
+    const i = bar.indexOf(id); const j = i + dir;
+    if (i < 0 || j < 0 || j >= bar.length) return f;
+    [bar[i], bar[j]] = [bar[j]!, bar[i]!];
+    return { ...f, bar };
+  });
+
+  const count = (where: ComposerPlacement, ids: readonly ComposerToolId[] = COMPOSER_TOOL_IDS) =>
+    ids.filter((id) => placementOf(id) === where).length;
+  const toolName = (id: ComposerToolId) => t(`composer.tool.${id}`, { ns: "common" });
 
   return (
-    <div className="bdg-page" style={{ maxWidth: 1100 }}>
+    <div className="cmp-page">
       <div className="pg-head">
         <div>
           <p className="pg-eyebrow">{t("composer.eyebrow")}</p>
           <h1 className="pg-title">{t("composer.title")}</h1>
           <p className="pg-sub">{t("composer.subtitle")}</p>
         </div>
-        <SaveChip saving={save.isPending} />
+        <span className="cmp-head-side"><SaveChip saving={save.isPending} /></span>
       </div>
 
-      <div className="set-content">
-        <section className="set-card">
-          <div className="set-card__head">
-            <div className="set-card__icon"><AcpIcon name="sliders" size={18} /></div>
-            <div className="set-card__titles">
-              <h3>{t("composer.toolsTitle")}</h3>
-              <p>{t("composer.toolsSub", { count: inBar })}</p>
-            </div>
+      {/* The toolbar as members get it, in the admin's order. */}
+      <section className="set-card cmp-bar">
+        <div className="set-card__head">
+          <div className="set-card__icon"><AcpIcon name="sliders" size={18} /></div>
+          <div className="set-card__titles">
+            <h3>{t("composer.barTitle")}</h3>
+            <p>{t("composer.barSub")}</p>
           </div>
+        </div>
+        <div className="cmp-bar__row">
+          {form.bar.length === 0
+            ? <em className="cmp-bar__empty">{t("composer.barEmpty")}</em>
+            : form.bar.map((id, i) => (
+                <span key={id} className="cmp-chip">
+                  <FontAwesomeIcon className="cmp-chip__ic" icon={COMPOSER_TOOLS[id].icon} />
+                  <span>{toolName(id)}</span>
+                  <button type="button" disabled={i === 0} aria-label={t("composer.moveLeft", { tool: toolName(id) })}
+                    onClick={() => shift(id, -1)}><FontAwesomeIcon icon={faChevronLeft} /></button>
+                  <button type="button" disabled={i === form.bar.length - 1} aria-label={t("composer.moveRight", { tool: toolName(id) })}
+                    onClick={() => shift(id, 1)}><FontAwesomeIcon icon={faChevronRight} /></button>
+                </span>
+              ))}
+        </div>
+      </section>
 
-          <div className="set-extra">
-            {/* A preview of the row members will actually get, in the admin's order. */}
-            <div className="cmp-preview">
-              <span className="cmp-preview__label">{t("composer.barPreview")}</span>
-              <span className="cmp-preview__bar">
-                {form.bar.length === 0
-                  ? <em>{t("composer.barEmpty")}</em>
-                  : form.bar.map((id) => (
-                      <span key={id} className="cmp-preview__tool" title={t(`composer.tool.${id}`, { ns: "common" })}>
-                        <FontAwesomeIcon className="cmp-ic" icon={COMPOSER_TOOLS[id].icon} />
-                      </span>
-                    ))}
+      <div className="cmp-filters">
+        <div className="acp-seg acp-seg--auto" role="tablist">
+          {(["all", ...PLACEMENTS] as Filter[]).map((f) => (
+            <button key={f} type="button" role="tab" aria-selected={filter === f} className={filter === f ? "is-on" : ""} onClick={() => setFilter(f)}>
+              {f === "all" ? t("composer.filterAll") : t(`composer.place.${f}`)}
+              <span className="cmp-filters__n">{f === "all" ? COMPOSER_TOOL_IDS.length : count(f)}</span>
+            </button>
+          ))}
+        </div>
+        <span className="cmp-filters__hint">{t("composer.cycleHint")}</span>
+      </div>
+
+      {GROUPS.map((group) => {
+        const ids = COMPOSER_TOOL_IDS.filter((id) => tools.find((x) => x.id === id)?.group === group);
+        const shown = ids.filter((id) => filter === "all" || placementOf(id) === filter);
+        if (shown.length === 0) return null;
+        return (
+          <section key={group} className="cmp-group">
+            <header className="cmp-group__head">
+              <h2>{t(`composer.group.${group}`, { ns: "common" })}</h2>
+              <span className="cmp-group__counts">
+                {t("composer.groupCounts", { bar: count("bar", ids), menu: count("overflow", ids), off: count("off", ids) })}
               </span>
-            </div>
-
-            <div className="cmp-list">
-              {COMPOSER_TOOL_IDS.map((id) => {
+              <span className="cmp-group__rule" />
+              <span className="cmp-group__all">
+                {t("composer.setAll")}
+                {PLACEMENTS.map((p) => (
+                  <button key={p} type="button" onClick={() => place(ids, p)}>{t(`composer.place.${p}`)}</button>
+                ))}
+              </span>
+            </header>
+            <div className="cmp-tiles">
+              {shown.map((id) => {
                 const where = placementOf(id);
+                const pos = form.bar.indexOf(id) + 1;
                 return (
-                  <div key={id} className={`cmp-row is-${where}`}>
-                    <span className="cmp-row__ic">
-                      <FontAwesomeIcon className="cmp-ic" icon={COMPOSER_TOOLS[id].icon} />
+                  <button key={id} type="button" className={`cmp-tile is-${where}`}
+                    aria-label={`${toolName(id)}: ${t(`composer.state.${where}`, { n: pos })}`}
+                    onClick={() => place([id], NEXT[where])}>
+                    <span className="cmp-tile__ic"><FontAwesomeIcon icon={COMPOSER_TOOLS[id].icon} /></span>
+                    <span className="cmp-tile__text">
+                      <b>{toolName(id)}</b>
+                      <span>{t(`composer.state.${where}`, { n: pos })}</span>
                     </span>
-                    <span className="cmp-row__name">
-                      {t(`composer.tool.${id}`, { ns: "common" })}
-                      <em>{t(`composer.group.${tools.find((x) => x.id === id)?.group}`, { ns: "common" })}</em>
-                    </span>
-                    <div className="acp-seg acp-seg--auto cmp-row__seg">
-                      {PLACEMENTS.map((p) => (
-                        <button
-                          key={p}
-                          type="button"
-                          className={where === p ? "is-on" : ""}
-                          onClick={() => place(id, p)}
-                        >
-                          {t(`composer.place.${p}`)}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
-          </div>
-        </section>
+          </section>
+        );
+      })}
 
-        <section className="set-card">
-          <div className="set-card__head">
-            <div className="set-card__icon"><AcpIcon name="at" size={18} /></div>
-            <div className="set-card__titles">
-              <h3>{t("composer.behaviourTitle")}</h3>
-              <p>{t("composer.behaviourSub")}</p>
+      <section className="set-card">
+        <div className="set-card__head">
+          <div className="set-card__icon"><AcpIcon name="at" size={18} /></div>
+          <div className="set-card__titles">
+            <h3>{t("composer.behaviourTitle")}</h3>
+            <p>{t("composer.behaviourSub")}</p>
+          </div>
+        </div>
+        <div className="set-rows">
+          <div className="set-row">
+            <div>
+              <div className="set-row__label">{t("composer.mentions")}</div>
+              <div className="set-row__desc">{t("composer.mentionsDesc")}</div>
+            </div>
+            <div className="set-row__control">
+              <Toggle on={form.mentions} onToggle={() => edit((f) => ({ ...f, mentions: !f.mentions }))} />
             </div>
           </div>
-
-          <div className="set-rows">
-            <div className="set-row">
-              <div>
-                <div className="set-row__label">{t("composer.mentions")}</div>
-                <div className="set-row__desc">{t("composer.mentionsDesc")}</div>
-              </div>
-              <div className="set-row__control">
-                <Toggle
-                  on={form.mentions}
-                  onToggle={() => { setTouched(true); setForm((f) => ({ ...f, mentions: !f.mentions })); }}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* ⚠ Said plainly rather than drawn as a switch that cannot work.
-              Attachments exist only where a plugin provides an endpoint, and there
-              is no GIF service configured at all. */}
-          <div className="set-extra">
-            <p className="acp-hint">{t("composer.notSupported")}</p>
-          </div>
-        </section>
-      </div>
+        </div>
+        {/* ⚠ Said plainly rather than drawn as a switch that cannot work.
+            Attachments exist only where a plugin provides an endpoint, and there
+            is no GIF service configured at all. */}
+        <div className="set-extra">
+          <p className="acp-hint">{t("composer.notSupported")}</p>
+        </div>
+      </section>
     </div>
   );
 }

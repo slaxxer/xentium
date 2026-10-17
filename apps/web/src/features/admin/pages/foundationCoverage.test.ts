@@ -24,6 +24,8 @@ const NOT_A_ROW: Record<string, string> = {
   "--fs-scale":     "the Typography Size control sets it",
   "--ff-sans":      "the font family picker sets it (alias of --font-body)",
   "--font-poppins": "a font stack constant the family picker chooses between",
+  "--masthead-from": "the header band's own gradient stops point at it; edited in the Header panel",
+  "--masthead-to":   "the header band's own gradient stops point at it; edited in the Header panel",
 };
 
 const editorVars = new Set<string>([

@@ -59,6 +59,12 @@ export const articleRepository = {
     viewerId?: string;
     feed?: "latest" | "following" | "top" | "liked" | "saved" | "mine";
     hiddenAuthorIds?: string[];
+    q?: string;
+    tag?: string;
+    period?: "week" | "month" | "year";
+    length?: "short" | "medium" | "long";
+    sort?: "latest" | "popular" | "discussed";
+    exclude?: string;
   }) {
     // Visibility filter:
     //  - guests see only public
@@ -112,6 +118,31 @@ export const articleRepository = {
     if (opts.authorId) authorConds.push({ authorId: opts.authorId });
     if (opts.hiddenAuthorIds?.length) authorConds.push({ authorId: { notIn: opts.hiddenAuthorIds } });
 
+    // The article index's filters, each its own AND term for the same reason.
+    const indexConds: Prisma.ArticleWhereInput[] = [];
+    if (opts.q) {
+      const contains = { contains: opts.q, mode: "insensitive" as const };
+      indexConds.push({ OR: [
+        { title: contains },
+        { excerpt: contains },
+        { author: { username: contains } },
+        { tags: { some: { tag: { name: contains } } } },
+      ] });
+    }
+    if (opts.tag) indexConds.push({ tags: { some: { tag: { slug: opts.tag } } } });
+    if (opts.period) {
+      const since = opts.period === "year"
+        ? new Date(new Date().getFullYear(), 0, 1)
+        : new Date(Date.now() - (opts.period === "week" ? 7 : 30) * 86_400_000);
+      indexConds.push({ publishedAt: { gte: since } });
+    }
+    if (opts.length === "short") indexConds.push({ readTime: { lt: 5 } });
+    if (opts.length === "medium") indexConds.push({ readTime: { gte: 5, lte: 10 } });
+    if (opts.length === "long") indexConds.push({ readTime: { gt: 10 } });
+    if (opts.exclude) indexConds.push({ id: { not: opts.exclude } });
+    if (opts.sort === "popular") orderBy = { likeCount: "desc" };
+    if (opts.sort === "discussed") orderBy = { commentCount: "desc" };
+
     const where: Prisma.ArticleWhereInput = {
       status: "published",
       deletedAt: null,
@@ -119,19 +150,68 @@ export const articleRepository = {
       // ANDed, never spread: the feed and the visibility rule can BOTH be an `OR`
       // (followed categories or tags; public-or-own), and spreading one over the other
       // silently dropped the feed's.
-      AND: [...authorConds, feedWhere, visibilityFilter],
+      AND: [...authorConds, feedWhere, visibilityFilter, ...indexConds],
     };
     const [data, total] = await Promise.all([
       prisma.article.findMany({
         where,
         include: articleInclude,
-        orderBy,
+        // Newest first among equals, so "most liked" is stable across pages.
+        orderBy: [orderBy, { publishedAt: "desc" }],
         skip: (opts.page - 1) * opts.limit,
         take: opts.limit,
       }),
       prisma.article.count({ where }),
     ]);
     return { data, total };
+  },
+
+  /** The visibility rule a list applies, for the index's featured and trending reads. */
+  visibleTo(viewerId: string | undefined, hiddenAuthorIds: string[] = []): Prisma.ArticleWhereInput {
+    return {
+      status: "published",
+      deletedAt: null,
+      AND: [
+        viewerId
+          ? { OR: [{ visibility: { in: ["public", "members"] } }, { authorId: viewerId }] }
+          : { visibility: "public" },
+        ...(hiddenAuthorIds.length ? [{ authorId: { notIn: hiddenAuthorIds } }] : []),
+      ],
+    };
+  },
+
+  /** The most recently pinned article this viewer may see, or null. */
+  async featured(viewerId: string | undefined, hiddenAuthorIds: string[]) {
+    return prisma.article.findFirst({
+      where: { ...this.visibleTo(viewerId, hiddenAuthorIds), pinnedAt: { not: null } },
+      include: articleInclude,
+      orderBy: { pinnedAt: "desc" },
+    });
+  },
+
+  /**
+   * Trending: published in the last `days`, scored likes + comments × 2. Ranked in
+   * memory over a bounded candidate set (the newest 200 of the window), since the
+   * score is not a column; ample for one index rail.
+   */
+  async trending(viewerId: string | undefined, hiddenAuthorIds: string[], days: number, max: number) {
+    const since = new Date(Date.now() - days * 86_400_000);
+    const rows = await prisma.article.findMany({
+      where: { ...this.visibleTo(viewerId, hiddenAuthorIds), publishedAt: { gte: since } },
+      select: { id: true, slug: true, title: true, likeCount: true, commentCount: true, publishedAt: true },
+      orderBy: { publishedAt: "desc" },
+      take: 200,
+    });
+    return rows
+      .map((r) => ({ ...r, score: r.likeCount + r.commentCount * 2 }))
+      .filter((r) => r.score > 0)
+      .sort((a, b) => b.score - a.score || +(b.publishedAt ?? 0) - +(a.publishedAt ?? 0))
+      .slice(0, max)
+      .map(({ id, slug, title, likeCount, commentCount }) => ({ id, slug, title, likeCount, commentCount }));
+  },
+
+  async setPinned(id: string, pinned: boolean) {
+    return prisma.article.updateMany({ where: { id, deletedAt: null }, data: { pinnedAt: pinned ? new Date() : null } });
   },
 
   async listForAuthor(opts: {

@@ -33,5 +33,8 @@
   "XEC-LICENSE-9001": "No valid license for this plugin.",
   "XEC-LICENSE-9002": "This license has expired.",
   "generic": "Something went wrong. Please try again.",
-  "XEC-AUTH-2011": "Please accept the terms and the privacy policy to continue."
+  "XEC-AUTH-2011": "Please accept the terms and the privacy policy to continue.",
+  "XEC-MOD-4101": "Pick one of the templates. Warnings and bans can only be sent from a template.",
+  "XEC-MOD-4102": "This content is not by the member you are acting on.",
+  "XEC-MOD-4103": "This template mentions the content it is about. Use it from that content, or pick another template."
 }

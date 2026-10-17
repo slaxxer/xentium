@@ -112,7 +112,21 @@ describe("isNavItemActive", () => {
   it("matches a group through any of its children", () => {
     expect(isNavItemActive(section("users"), "/admin/groups")).toBe(true);
     expect(isNavItemActive(section("users"), "/admin/badges")).toBe(true);
-    expect(isNavItemActive(section("users"), "/admin/permissions")).toBe(false);
+    // Access control merged into Members (2026-10-17).
+    expect(isNavItemActive(section("users"), "/admin/permissions")).toBe(true);
+    expect(isNavItemActive(section("users"), "/admin/articles")).toBe(false);
+  });
+
+  it("keeps Upload inside Installed, and the editor under Content", () => {
+    expect(isNavItemActive(section("extensions"), "/admin/upload")).toBe(true);
+    expect(isNavItemActive(section("content"), "/admin/composer")).toBe(true);
+    expect(ACP_NAV.some((n) => n.key === "access")).toBe(false);
+  });
+
+  it("gives every System page a group, setup before logs", () => {
+    const groups = section("system").children!.map((c) => c.group);
+    expect(groups.every(Boolean)).toBe(true);
+    expect(groups.lastIndexOf("nav.groupSetup")).toBeLessThan(groups.indexOf("nav.groupLogs"));
   });
 
   it("matches a child's own sub-routes", () => {

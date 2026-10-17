@@ -101,6 +101,14 @@
     grid-template-columns: 28px 40px minmax(0, 1fr) auto;
     > :nth-child(4), > :nth-child(5) { display: none; }
   }
+  /* Phones: the rank number goes (the order says it), and the name block keeps its
+     badge inside its own column instead of running under "Manage". */
+  @media (max-width: 480px) {
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    padding-inline: 10px;
+    > :nth-child(2) { display: none; }
+    > :nth-child(3) { overflow: hidden; }
+  }
 }
 .gp-right { text-align: right; justify-self: end; }
 

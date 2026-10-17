@@ -7,6 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { ArticleContent } from "../articles/components/ArticleContent";
 import "./LegalPage.scss";
+import { NotFoundPage } from "../pages/NotFoundPage";
 import { useDateTime } from "../../lib/datetime";
 
 /**
@@ -30,8 +31,8 @@ export function LegalPage() {
     retry: false,
   });
 
-  // Unknown key, or a document not published yet.
-  if (!valid || query.isError) return <div className="legal-view__state">{t("pageNotFound")}</div>;
+  // Unknown key, or a document not published yet: the site's real 404, not a bare line.
+  if (!valid || query.isError) return <NotFoundPage embedded />;
   if (query.isLoading || !query.data) {
     return <div className="legal-view__state">{t("actions.loading")}</div>;
   }

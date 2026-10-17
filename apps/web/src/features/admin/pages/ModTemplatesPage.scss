@@ -1,66 +1,108 @@
 /* =========================================================
-   ACP · Moderation · Templates — the premade texts ModCanvas reads.
-   List | editor. ACP tokens and core controls only (inp, acp-seg, set-card).
+   ACP · Moderation · Templates — the texts ModCanvas reads.
+   A board (one column per action) and an editor drawer on the right.
+   ACP tokens and core controls only (inp, acp-seg).
    ========================================================= */
 
 .mtp { max-width: 1200px; margin-inline: auto; }
-.mtp-gap { flex: 1; }
-.mtp-pad { padding: 16px; }
 .mtp-muted { margin: 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 .mtp-hint { margin: 6px 0 0; font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
 .mtp-label { display: block; margin-bottom: 8px; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted); }
+.mtp-head-side { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
-.mtp-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 22px; align-items: start; }
+/* Each action's colour, used by the column icon and the drawer's header. */
+.mtp-col--warn    { --mtp-tone: var(--c-warn); }
+.mtp-col--ban     { --mtp-tone: var(--c-danger); }
+.mtp-col--delete  { --mtp-tone: var(--c-accent); }
+.mtp-col--dismiss { --mtp-tone: var(--c-fg-muted); }
 
-/* ── List ─────────────────────────────────────────────────────────────────── */
-
-.mtp-list {
-  position: sticky; top: 8px;
-  display: flex; flex-direction: column;
-  max-height: calc(100vh - 140px);
-  overflow: hidden;
-
-  &__top { display: flex; align-items: center; gap: 8px; padding: 14px; border-bottom: 1px solid var(--c-rowline); }
-  &__rows { flex: 1; min-height: 0; overflow-y: auto; padding-bottom: 6px; }
-  &__foot { padding: 12px 14px; border-top: 1px solid var(--c-rowline); }
+.mtp-col__ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--mtp-tone) 16%, transparent);
+  color: var(--mtp-tone);
+  font-size: var(--fs-xs);
 }
 
-.mtp-search {
-  flex: 1; min-width: 0;
-  display: flex; align-items: center; gap: 8px;
-  height: 36px; padding: 0 11px; border-radius: var(--radius-md);
-  background: var(--input-bg); border: 1px solid var(--c-border);
-  color: var(--c-fg-subtle); font-size: var(--fs-xs);
-
-  input {
-    flex: 1; min-width: 0; border: none; background: none; outline: none;
-    font-family: var(--font-body); font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg);
-  }
+/* ── The board ────────────────────────────────────────────────────────── */
+.mtp-board {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
 }
 
-.mtp-group {
-  display: flex; justify-content: space-between;
-  padding: 14px 14px 6px;
-  font-family: var(--font-display); font-size: var(--fs-2xs); font-weight: 600;
-  letter-spacing: 0.1em; text-transform: uppercase; color: var(--c-fg-subtle);
-}
+.mtp-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
 
-.mtp-item {
-  width: 100%;
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 14px; border: none; background: none; text-align: left; cursor: pointer;
-  font-family: var(--font-body);
-  transition: background 0.12s;
-
-  &:hover { background: var(--c-accent-soft); }
-  &.is-on { background: var(--c-accent-soft); box-shadow: inset 3px 0 0 var(--c-accent); }
-
-  &__txt {
-    flex: 1; min-width: 0; display: flex; flex-direction: column;
-    b { font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    span { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); }
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 2px 2px;
+    h2 { flex: 1; min-width: 0; margin: 0; font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); }
   }
   &__n { font-family: var(--ff-mono); font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
+}
+
+.mtp-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--c-border);
+  background: var(--card-bg);
+  text-align: left;
+  font: inherit;
+  color: var(--c-fg);
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+
+  &:hover { border-color: var(--c-fg-subtle); }
+  &:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; }
+  &.is-on { border-color: var(--c-accent); box-shadow: 0 0 0 1px var(--c-accent); }
+
+  &__name { font-size: var(--fs-sm); font-weight: 700; overflow-wrap: anywhere; }
+  &__text {
+    font-size: var(--fs-xs);
+    font-weight: 500;
+    line-height: 1.55;
+    color: var(--c-fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  &__foot {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    color: var(--c-fg-subtle);
+    > :last-child { font-family: var(--ff-mono); }
+  }
+}
+
+.mtp-add {
+  padding: 9px;
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--c-border);
+  background: none;
+  color: var(--c-fg-subtle);
+  font: inherit;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  cursor: pointer;
+  &:hover:not(:disabled) { color: var(--c-accent); border-color: var(--c-accent); }
 }
 
 .mtp-badge {
@@ -70,34 +112,132 @@
   font-size: var(--fs-2xs); font-weight: 800;
 }
 
-/* ── Editor ───────────────────────────────────────────────────────────────── */
+/* ── The drawer ───────────────────────────────────────────────────────── */
+/* Under the ACP save bar (z 60), so the bar stays clickable while a template is open;
+   the drawer itself sits above both. */
+.mtp-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: color-mix(in srgb, var(--c-bg) 55%, transparent);
+}
+
+.mtp-drawer {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 150;
+  width: min(460px, calc(100vw - 24px));
+  display: flex;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--c-border);
+  background: var(--card-bg);
+  box-shadow: var(--shadow-lg, 0 20px 60px rgb(0 0 0 / 0.35));
+  overflow: hidden;
+  animation: mtp-in 0.16s ease-out;
+}
+@keyframes mtp-in { from { transform: translateX(16px); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .mtp-drawer { animation: none; } }
 
 .mtp-form {
-  display: flex; flex-direction: column; gap: 18px; padding: 20px 22px 22px;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
 
-  &__title {
-    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-    h2 {
-      margin: 0; min-width: 0; overflow-wrap: anywhere;
-      font-family: var(--font-display); font-size: 1.375rem; font-weight: 600; color: var(--c-fg);
-    }
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--c-border);
+  }
+  &__name {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    margin-left: -6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    outline: none;
+    font-family: var(--font-display);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+    color: var(--c-fg);
+    &:hover { border-color: var(--c-border); }
+    &:focus { border-color: var(--c-accent); background: var(--input-bg); }
+  }
+  &__close {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-border);
+    background: none;
+    color: var(--c-fg-muted);
+    cursor: pointer;
+    &:hover { color: var(--c-fg); }
+  }
+  &__body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 16px;
+  }
+  &__foot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--c-border);
+    .mtp-muted { flex: 1; min-width: 0; font-size: var(--fs-xs); }
   }
 }
 
-.mtp-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+/* The four actions wrap in a narrow drawer instead of cutting "Dismiss" off. */
+.mtp-form .acp-seg { flex-wrap: wrap; }
+
+.mtp-danger { color: var(--c-danger); border-color: color-mix(in srgb, var(--c-danger) 40%, var(--c-border)); }
+
+/* Lengths as chips that wrap: seven do not fit one row of a drawer. */
+.mtp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  button {
+    padding: 6px 11px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--c-border);
+    background: var(--c-bg);
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 700;
+    cursor: pointer;
+    &:hover { color: var(--c-fg); }
+    &.is-on { border-color: var(--c-accent); background: var(--c-accent-soft); color: var(--c-accent); }
+  }
+}
 
 .inp.mtp-textarea { height: auto; min-height: 120px; padding: 12px 14px; line-height: 1.6; resize: vertical; font-weight: 600; }
 
-.mtp-vars { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+.mtp-vars { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .mtp-var {
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 10px; border: 1px solid var(--c-border); border-radius: var(--radius-sm);
-  background: var(--c-bg); text-align: left; cursor: pointer;
+  padding: 4px 9px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-bg);
+  cursor: pointer;
   transition: border-color 0.12s;
-
   &:hover { border-color: var(--c-accent); }
   code { font-family: var(--ff-mono); font-size: var(--fs-xs); color: var(--c-accent); }
-  span { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); }
 }
 
 .mtp-preview {
@@ -115,8 +255,8 @@
   mark { padding: 1px 5px; border-radius: 5px; background: var(--c-accent-soft); color: var(--c-fg); }
 }
 
-@media (max-width: 900px) {
-  .mtp-layout { grid-template-columns: 1fr; }
-  .mtp-list { position: static; max-height: 360px; }
-  .mtp-fields, .mtp-vars { grid-template-columns: 1fr; }
+@media (max-width: 1100px) { .mtp-board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 640px) {
+  .mtp-board { grid-template-columns: minmax(0, 1fr); }
+  .mtp-drawer { top: 0; right: 0; bottom: 0; width: 100vw; border-radius: 0; }
 }

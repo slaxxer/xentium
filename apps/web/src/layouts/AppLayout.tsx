@@ -10,6 +10,8 @@ import { RouteErrorBoundary } from "../features/errors/ErrorBoundary";
 import { presentFrame, usePageTemplate, useSiteFrame } from "../layout/siteFrame";
 import "./AppLayout.scss";
 import { UserHoverCardHost } from "../components/UserHoverCard";
+import { slotRegistry } from "../plugins/slotRegistry";
+import { isEditorPreview } from "../layout/previewMode";
 
 export function AppLayout() {
   const frame = presentFrame(useSiteFrame(), usePageTemplate());
@@ -54,6 +56,9 @@ export function AppLayout() {
       {/* Hover a username or avatar anywhere on the site: the profile miniature.
           Inside the router (its links need it), outside the ACP. */}
       <UserHoverCardHost />
+      {/* Plugins' site-wide overlays (a consent dialog). Not in the layout editor's
+          preview: the page is being arranged there, not visited. */}
+      {!isEditorPreview() && slotRegistry.getSiteOverlays().map((o) => <o.component key={o.id} />)}
     </div>
   );
 }

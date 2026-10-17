@@ -92,6 +92,10 @@ model User {
   dobDisplay         String    @default("age") @map("dob_display")  // 'hidden' | 'age' | 'date'
   preferredLocale    String?   @map("preferred_locale")  // null = follow resolution chain (§60.4)
   hiddenBadges       String[]  @default([]) @map("hidden_badges")  // Group IDs the user hides from their badge stack, systemwide
+  /// Small per-person UI facts the editor remembers across browsers: a guided tour
+  /// seen (`tour:theme-studio`), the layout editor's Advanced mode (`layout:advanced`).
+  /// Flags, not settings: present = on. Only the person themselves reads or writes them.
+  uiFlags            String[]  @default([]) @map("ui_flags")
   /// The member's own cover image, relative ("covers/<id>.jpg"). Distinct from the
   /// `profileCover` BLOCK's background, which an admin sets for every profile — this
   /// one is personal and wins over it.
@@ -705,6 +709,12 @@ model Article {
   publishedAt    DateTime?        @map("published_at")
   deletedAt      DateTime?        @map("deleted_at")
   deletedById    String?          @map("deleted_by_id")
+  /// Minutes to read, from the body's word count (200 a minute, at least 1). Stored so
+  /// the article index can filter by length in the query.
+  readTime       Int              @default(1) @map("read_time")
+  /// Set when staff pin the article to the top of the article index (the featured
+  /// card). The most recently pinned visible article is the one shown.
+  pinnedAt       DateTime?        @map("pinned_at")
   likeCount      Int              @default(0) @map("like_count")
   dislikeCount   Int              @default(0) @map("dislike_count")
   commentCount   Int              @default(0) @map("comment_count")
@@ -723,6 +733,7 @@ model Article {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@index([status, publishedAt(sort: Desc)])
+  @@index([pinnedAt])
   @@index([categoryId, status])
   @@index([authorId, status])
   @@map("xcf_articles")
@@ -1028,12 +1039,20 @@ model ModerationTemplate {
   name            String
   text            String    @db.Text
   ruleRef         String?   @map("rule_ref")
-  /// Bans only: 1h | 24h | 7d | 30d | perm
+  /// Bans only: 1h | 24h | 7d | 30d | perm. How long the ban lasts; only a holder of
+  /// moderation.ban.length.override may pick another length.
   defaultDuration String?   @map("default_duration")
+  /// Warns only: 7d | 30d | 90d | 180d | 365d | never, null = the site's default.
+  /// Only a holder of moderation.warn.expiry.override may pick another.
+  warnExpiry      String?   @map("warn_expiry")
   /// A dismissal note is for the mod log, never sent to anyone.
   internal        Boolean   @default(false)
   /// Report reasons this template is suggested for (lower-case words).
   matchCategories String[]  @default([]) @map("match_categories")
+  /// The shipped template this row is (`warn.harassment`), null for an admin's own.
+  /// While its name and text are still the shipped English ones it is shown in the
+  /// site's language; once edited it is the admin's text, kept as written.
+  defaultKey      String?   @map("default_key")
   useCount        Int       @default(0) @map("use_count")
   updatedById     String?   @map("updated_by_id")
   createdAt       DateTime  @default(now()) @map("created_at")

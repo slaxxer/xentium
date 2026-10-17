@@ -35,6 +35,13 @@ describe("toast store", () => {
     expect(getToasts()).toHaveLength(0);
   });
 
+  it("counts the same text as one toast even when it arrives in another category", () => {
+    toast.warning("Network error");
+    toast.error("Network error");
+    expect(getToasts()).toHaveLength(1);
+    expect(getToasts()[0]!.count).toBe(2);
+  });
+
   it("caps visible toasts at 4 and promotes from the queue", () => {
     for (let i = 0; i < 6; i++) toast.info(`msg ${i}`);
     expect(getToasts()).toHaveLength(4);

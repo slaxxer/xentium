@@ -53,6 +53,25 @@ const ANGLES = [180, 0, 90, 270, 135, 315, 45, 225] as const;
  *  is valid, editable as text, and simply not representable in the swatch. */
 const isHex = (v: string) => /^#[0-9a-fA-F]{3,8}$/.test(v.trim());
 
+/**
+ * What a stop LOOKS like, for the swatch. A token stop (`var(--masthead-from)`) is
+ * resolved on the preview page, which carries the theme's real values; this page is
+ * the ACP and has none of them. A swatch drawn black for a teal band said the stop
+ * was black. Anything that cannot be resolved to a hex still falls back to black —
+ * the text field beside it is the truth either way.
+ */
+function swatchFor(stop: string): string {
+  const v = stop.trim();
+  if (isHex(v)) return v.length === 4 ? `#${[...v.slice(1)].map((c) => c + c).join("")}` : v.slice(0, 7);
+  const token = /^var\((--[\w-]+)\)$/.exec(v)?.[1];
+  const root = document.querySelector<HTMLIFrameElement>(".lay__frame iframe")?.contentDocument?.documentElement;
+  if (!token || !root) return "#000000";
+  const raw = getComputedStyle(root).getPropertyValue(token).trim();
+  if (isHex(raw)) return swatchFor(raw);
+  const rgb = /^rgba?\(\s*(\d+)[\s,]+(\d+)[\s,]+(\d+)/.exec(raw);
+  return rgb ? `#${rgb.slice(1, 4).map((n) => Number(n).toString(16).padStart(2, "0")).join("")}` : "#000000";
+}
+
 interface Props {
   image:     string | undefined;
   gradient:  string[] | undefined;
@@ -164,9 +183,9 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
           <div className="lay-bg__stop" key={i}>
             <input
               type="color"
-              // A non-hex stop (a token, an rgb()) has no swatch to show. Black is
-              // the browser's own fallback; the text field beside it is the truth.
-              value={isHex(stop) ? stop : "#000000"}
+              // A token stop shows the colour the theme gives it (swatchFor); picking
+              // a colour here replaces the token with that colour.
+              value={swatchFor(stop)}
               onChange={(e) => setStop(i, e.target.value)}
               aria-label={t("layoutEditor.bgStop", { n: i + 1 })}
             />

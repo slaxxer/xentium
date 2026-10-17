@@ -15,7 +15,46 @@
     "pageOf": "Seite {{page}} von {{total}}",
     "minRead": "{{n}} Min.",
     "views_one": "{{count}} Aufruf",
-    "views_other": "{{count}} Aufrufe"
+    "views_other": "{{count}} Aufrufe",
+    "searchPlaceholder": "Artikel, Autoren, Tags durchsuchen",
+    "clearSearch": "Suche leeren",
+    "featured": "Hervorgehoben",
+    "latestHeading": "Neueste Artikel",
+    "allHeading": "Alle Artikel",
+    "resultsFor": "Ergebnisse für „{{q}}“",
+    "count_one": "{{count}} Artikel",
+    "count_other": "{{count}} Artikel",
+    "reset": "Filter zurücksetzen",
+    "sortLabel": "Sortierung",
+    "period": {
+      "any": "Jederzeit",
+      "week": "Diese Woche",
+      "month": "Letzte 30 Tage",
+      "year": "Dieses Jahr"
+    },
+    "length": {
+      "any": "Jede Länge",
+      "short": "Unter 5 Min.",
+      "medium": "5–10 Min.",
+      "long": "Über 10 Min."
+    },
+    "sort": {
+      "latest": "Neueste",
+      "popular": "Beliebt",
+      "discussed": "Diskutiert"
+    },
+    "emptyTitle": "Keine Artikel gefunden",
+    "emptyHint": "Probier einen anderen Suchbegriff oder lockere die Filter.",
+    "rail": {
+      "categories": "Kategorien",
+      "all": "Alle Artikel",
+      "trending": "Im Trend",
+      "tags": "Beliebte Tags"
+    },
+    "pin": "Auf der Artikelseite anheften",
+    "unpin": "Von der Artikelseite lösen",
+    "pinned": "Auf der Artikelseite angeheftet",
+    "unpinned": "Gelöst"
   },
   "reader": {
     "loading": "Wird geladen…",
@@ -39,9 +78,7 @@
     "modTools": "Mod-Werkzeuge",
     "warnAuthor": "Autor verwarnen",
     "warnTitle": "{{username}} verwarnen",
-    "warnSub": "Diese Verwarnung wird dem Artikelautor erteilt und im Moderationssystem protokolliert.",
-    "warnPlaceholder": "Grund für die Verwarnung…",
-    "setExpiry": "Ablaufdatum festlegen",
+    "warnSub": "Wähle die Regel, gegen die verstoßen wurde. Das Mitglied erhält den Text der Vorlage, und die Verwarnung wird protokolliert.",
     "issuing": "Wird erteilt…",
     "issueWarning": "Verwarnung erteilen",
     "warnIssued": "Verwarnung an {{username}} erteilt.",
@@ -68,7 +105,28 @@
     "tombstoneBy": " von {{mod}}",
     "tombstoneReason": " · Grund: {{reason}}",
     "cantRateOwnComment": "Deinen eigenen Kommentar kannst du nicht bewerten",
-    "signInToRate": "Zum Bewerten anmelden"
+    "signInToRate": "Zum Bewerten anmelden",
+    "crumbs": "Brotkrümel",
+    "actions": "Artikelaktionen",
+    "save": "Merken",
+    "unsave": "Nicht mehr merken",
+    "savedToast": "Gemerkt. Du findest ihn auf der Startseite unter Gemerkt.",
+    "unsavedToast": "Nicht mehr gemerkt",
+    "linkCopied": "Link kopiert",
+    "liked": "Hat dir der Artikel gefallen?",
+    "comments": "Kommentare",
+    "sort": {
+      "popular": "Beliebt",
+      "newest": "Neueste"
+    },
+    "reply": "Antworten",
+    "replyPlaceholder": "Antwort an {{user}} …",
+    "authorBadge": "Autor",
+    "onThisPage": "Auf dieser Seite",
+    "moreIn": "Mehr in „{{category}}“",
+    "minShort": "{{n}} Min.",
+    "keepReading": "Weiterlesen",
+    "allArticles": "Alle Artikel"
   },
   "editor": {
     "saveError": "Speichern fehlgeschlagen. Bitte erneut versuchen.",

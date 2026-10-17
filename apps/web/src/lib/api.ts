@@ -98,8 +98,12 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
   }
 
   if (!res.ok) {
+    // Read the body ONCE. `json()` then `text()` threw "body stream already read" on
+    // any non-JSON error (a proxy's HTML 502 while the API restarts), and that browser
+    // message reached the toast instead of the real failure.
+    const raw = await res.text().catch(() => "");
     let detail: unknown;
-    try { detail = await res.json(); } catch { detail = await res.text(); }
+    try { detail = raw ? JSON.parse(raw) : null; } catch { detail = raw; }
     // Canonical shape: { error: { code, message, details, severity } }. The only
     // flat-string `error` left is the pre-install installer/setup surface.
     const errObj = (detail as any)?.error;

@@ -39,7 +39,8 @@
     "switchToDark": "Passer au thème sombre",
     "adminPanel": "Panneau dʼadministration",
     "adminAttention": "Quelque chose attend votre attention dans le panneau d'administration",
-    "homeAria": "Aller à l’accueil"
+    "homeAria": "Aller à l’accueil",
+    "menu": "Menu"
   },
   "search": {
     "short": "Rechercher",
@@ -61,15 +62,15 @@
   },
   "guestHome": {
     "hero": {
-      "badge": "créateurs en ligne",
-      "title": "Là où se retrouvent ceux qui construisent avec Xentium.",
-      "subtitle": "Posez des questions, montrez vos réalisations, façonnez la feuille de route et apprenez de {members} créateurs. La lecture est ouverte à tous.",
+      "badge": "en ligne",
+      "title": "Bienvenue sur {site}.",
+      "subtitle": "Lisez ce que nos membres écrivent, rejoignez la conversation et faites connaissance avec les gens d'ici. La lecture est ouverte à tous.",
       "ctaPrimary": "Rejoindre la conversation",
       "ctaSecondary": "Parcourir en invité"
     },
     "gate": {
-      "vote": "Créez un compte pour aimer des sujets",
-      "post": "Inscrivez-vous pour lancer un nouveau sujet",
+      "vote": "Créez un compte pour aimer des articles",
+      "post": "Inscrivez-vous pour écrire un article",
       "more": "Créez un compte gratuit pour tout lire",
       "default": "Créez un compte gratuit pour faire cela"
     },
@@ -102,14 +103,17 @@
     "feed": {
       "latest": "Récents",
       "top": "Populaires",
-      "topics_one": "{{count}} sujet",
-      "topics_many": "{{count}} sujets",
-      "topics_other": "{{count}} sujets",
-      "newTopic": "Nouveau sujet",
+      "articles_one": "{{count}} article",
+      "articles_many": "{{count}} articles",
+      "articles_other": "{{count}} articles",
+      "posts_one": "{{count}} publication",
+      "posts_many": "{{count}} publications",
+      "posts_other": "{{count}} publications",
+      "newArticle": "Écrire un article",
       "newPost": "Nouvelle publication",
       "allCategories": "Toutes les catégories",
       "loading": "Chargement…",
-      "empty": "Aucun sujet pour l'instant.",
+      "empty": "Aucun article pour l'instant.",
       "moreAll": "<b>Créez un compte gratuit</b> pour voir les {{formatted}} publications",
       "moreRead": "<b>Créez un compte gratuit</b> pour tout lire"
     },
@@ -684,5 +688,54 @@
   },
   "embed": {
     "unavailable": "Ce contenu n'est pas disponible."
+  },
+  "warnTemplates": {
+    "label": "Avertissement",
+    "pick": "Choisissez la règle enfreinte…",
+    "preview": "Ce que {{user}} lira",
+    "none": "Il n'y a pas encore de modèles d'avertissement, aucun avertissement ne peut donc être envoyé.",
+    "addOne": "En ajouter un"
+  },
+  "consent": {
+    "settingsLink": "Paramètres des cookies",
+    "thisSite": "Ce site",
+    "core": {
+      "xt_rt": "Vous garde connecté.",
+      "xt_did": "Reconnaît cet appareil à la connexion, pour protéger votre compte.",
+      "xt_oauth": "Termine une connexion avec un compte externe.",
+      "xt_locale": "Retient la langue choisie.",
+      "xt_theme": "Retient le thème choisi.",
+      "storage": "Retient les brouillons et réglages d'affichage sur cet appareil.",
+      "iconKit": "Charge les icônes du site depuis Font Awesome."
+    },
+    "life": {
+      "signIn": "30 jours, ou jusqu'à la fermeture du navigateur",
+      "year1": "1 an",
+      "minutes10": "10 minutes",
+      "untilCleared": "Jusqu'à suppression"
+    },
+    "gate": {
+      "title": "Contenu de {{service}}",
+      "body": "L'afficher charge du contenu de {{service}}, qui peut voir votre adresse IP.",
+      "privacy": "Politique de confidentialité",
+      "loadOnce": "Charger",
+      "always": "Toujours autoriser"
+    }
+  },
+  "modTiming": {
+    "label": "Compte pendant",
+    "banLabel": "Durée du bannissement",
+    "never": "N'expire jamais",
+    "7d": "7 jours",
+    "30d": "30 jours",
+    "90d": "90 jours",
+    "180d": "180 jours",
+    "365d": "1 an",
+    "countsUntil": "Compte contre {{user}} jusqu'au {{date}}",
+    "countsForever": "Compte contre {{user}} de façon permanente",
+    "bannedFor": "{{user}} est banni pour {{len}}",
+    "bannedForever": "{{user}} est banni définitivement",
+    "fixed": "Défini par le modèle. Les responsables d'équipe disposant de l'autorisation peuvent le modifier.",
+    "override": "Modifier (responsable d'équipe)"
   }
 }

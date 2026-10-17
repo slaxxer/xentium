@@ -126,7 +126,7 @@
 }
 
 .pm-search {
-  flex: 1 1 220px; display: flex; align-items: center; gap: 8px;
+  flex: 1 1 220px; min-width: 0; display: flex; align-items: center; gap: 8px;
   height: 38px; padding: 0 8px 0 12px; border-radius: 12px;
   background: var(--input-bg); border: 1px solid var(--c-border); color: var(--c-fg-subtle);
   &:focus-within { border-color: var(--c-accent); .pm-kbd { visibility: hidden; } }
@@ -312,7 +312,9 @@
 // ── Narrow: the group list becomes a row of chips above the permissions ──────
 
 @media (max-width: 940px) {
-  .pm-split { flex-direction: column; align-items: stretch; }
+  /* nowrap: in a WRAPPING column each item stretches only to its own line, which
+     here is the whole chip row, so the card grew to 1000px instead of scrolling. */
+  .pm-split { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
   .pm-groups {
     position: static; flex: none; min-width: 0; padding: 8px;
     &__head, &__foot { display: none; }

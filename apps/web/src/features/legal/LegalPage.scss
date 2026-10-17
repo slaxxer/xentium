@@ -1,8 +1,11 @@
 /* A reading measure narrower than the content column, like an article. */
 .legal-view {
-  max-width: 760px;
+  max-width: var(--content-narrow, 760px);
   margin: 0 auto;
-  padding-block: 2.5rem 4rem;
+  // A gutter like the article reader's, so text never runs into the screen edge.
+  padding: 2.5rem 32px 4rem;
+
+  @media (max-width: 640px) { padding-inline: 16px; }
 
   &__head {
     margin-bottom: 1.75rem;
@@ -33,7 +36,7 @@
   }
 
   &__state {
-    max-width: 760px;
+    max-width: var(--content-narrow, 760px);
     margin: 0 auto;
     padding: 4rem 1.25rem;
     text-align: center;

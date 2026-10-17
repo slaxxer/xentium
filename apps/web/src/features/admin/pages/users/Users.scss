@@ -287,6 +287,12 @@ select.usr-pick { margin-top: 12px; width: 100%; }
   .usr-col--role, .usr-open { display: none; }
   .usr-counts { margin-left: 0; }
 }
+/* Phones: the name needs the room. Status and the ban button take only what they
+   need, and the "8 shown" count leaves the header (the page head already says it). */
+@media (max-width: 480px) {
+  .usr-row { grid-template-columns: 28px minmax(0, 1fr) auto 40px; padding: 0 8px; }
+  .usr-row--head .usr-col--end { visibility: hidden; }
+}
 
 /* ── Create user ───────────────────────────────────────────────────────────── */
 

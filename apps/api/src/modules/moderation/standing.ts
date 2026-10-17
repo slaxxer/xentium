@@ -87,7 +87,6 @@ export async function getStanding(userId: string, viewerId: string) {
     isOwn,
     isStaff,
     counted,
-    expiryDays: policy.expiry.enabled ? policy.expiry.days : null,
     resetAfterBan: policy.resetAfterBan,
     ...ladderPosition(policy.ladder, counted),
     warnings,

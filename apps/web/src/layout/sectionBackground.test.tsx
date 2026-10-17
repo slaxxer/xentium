@@ -183,19 +183,19 @@ describe("the site chrome", () => {
   });
 
   /**
-   * ⚠ THE HEADER IS TWO BLOCKS: the band and the navbar, in that order by default.
+   * ⚠ THE HEADER IS TWO BLOCKS: the navbar and the band, in that order by default.
    * Which one is on top is their ORDER in the region — one drag — and a site that
    * wants no band deletes the first. That is the whole model; there is no third
    * concept for "masthead above or below".
    */
-  it("ships the band and the navbar as the header, band first", () => {
+  it("ships the navbar and the band as the header, navbar on top", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
-    expect(doc.regions.header!.map((b) => b.type)).toEqual(["header", "navbar"]);
+    expect(doc.regions.header!.map((b) => b.type)).toEqual(["navbar", "header"]);
   });
 
-  it("ships the composed masthead switched OFF (one row), holding the logo and the account menu", () => {
+  it("ships the band SHOWN under the navbar, painted from the theme's masthead tokens", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
-    const band = doc.regions.header![0]!;
+    const band = doc.regions.header!.find((b) => b.type === "header")!;
     expect(band.props.height).toBe(200);
     expect(band.props.showLogo).toBe(false);
     expect(band.props.showTagline).toBe(true);
@@ -204,15 +204,17 @@ describe("the site chrome", () => {
     expect(band.children![1]!.children!.map((c) => c.type)).toEqual([
       "modTool", "notifications", "headerWidgets", "adminLink", "search",
     ]);
-    // The core look is one row: the navbar draws all of it, and nothing is painted.
-    expect(band.props.showMasthead).toBe(false);
-    expect(band.props.backgroundGradient).toBeUndefined();
+    // The band shows; its account buttons are off, so the navbar draws them. Its
+    // gradient names tokens, so the core look and Xentium Dark each paint their own teal.
+    expect(band.props.showMasthead).toBe(true);
+    expect(band.props.showButtons).toBe(false);
+    expect(band.props.backgroundGradient).toEqual(["var(--masthead-from)", "var(--masthead-to)"]);
   });
 
-  it("ships the navbar with the links alone, and no light/dark toggle", () => {
+  it("ships the navbar with its own logo and the links, and no light/dark toggle", () => {
     const doc = parseLayoutDocument("chrome.header", DEFAULT_LAYOUTS["chrome.header"]).document;
     const navbar = doc.regions.header!.find((b) => b.type === "navbar")!;
-    expect(navbar.children!.map((c) => c.type)).toEqual(["navLinks"]);
+    expect(navbar.children!.map((c) => c.type)).toEqual(["logo", "navLinks"]);
   });
 
   /**
@@ -241,20 +243,20 @@ describe("the site chrome", () => {
     expect(parsedNav.children!.map((c) => c.type)).toContain("themeToggle");
   });
 
-  it("takes the navbar ABOVE the band, which is the other arrangement", () => {
+  it("takes the band ABOVE the navbar, which is the other arrangement", () => {
     const base = DEFAULT_LAYOUTS["chrome.header"];
-    const [band, navbar] = base.regions.header!;
+    const [navbar, band] = base.regions.header!;
     const parsed = parseLayoutDocument("chrome.header", {
-      ...base, regions: { header: [navbar!, band!] },
+      ...base, regions: { header: [band!, navbar!] },
     });
     expect(parsed.usedDefault).toBe(false);
-    expect(parsed.document.regions.header!.map((b) => b.type)).toEqual(["navbar", "header"]);
+    expect(parsed.document.regions.header!.map((b) => b.type)).toEqual(["header", "navbar"]);
   });
 
   it("takes a header with the band deleted — the navbar alone", () => {
     const base = DEFAULT_LAYOUTS["chrome.header"];
     const parsed = parseLayoutDocument("chrome.header", {
-      ...base, regions: { header: [base.regions.header![1]!] },
+      ...base, regions: { header: [base.regions.header![0]!] },
     });
     expect(parsed.usedDefault).toBe(false);
     expect(parsed.document.regions.header!.map((b) => b.type)).toEqual(["navbar"]);

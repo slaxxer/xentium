@@ -111,7 +111,15 @@ export function presentFrame(frame: SiteFrame, templateKey: TemplateKey | null):
     mode !== "full" && bg.fixed && "app-layout--bg-fixed",
   ].filter(Boolean);
 
-  const style = mode === "full" ? {} : {
+  // Content widths apply in every mode, and only when changed: an inline property
+  // would override a theme that sets `--content-max` in its own tokens.
+  const widths = {
+    ...(frame.contentWidth !== DEFAULT_SITE_FRAME.contentWidth ? { "--content-max": `${frame.contentWidth}px` } : {}),
+    ...(frame.readingWidth !== DEFAULT_SITE_FRAME.readingWidth ? { "--content-narrow": `${frame.readingWidth}px` } : {}),
+  } as CSSProperties;
+
+  const style = mode === "full" ? widths : {
+    ...widths,
     "--frame-max":     `${frame.maxWidth}px`,
     // `-r`/`-ov` are the admin's values; the stylesheet derives the used ones, so a
     // phone can cap them — an inline property would beat any media query.

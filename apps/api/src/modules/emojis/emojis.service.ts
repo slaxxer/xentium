@@ -75,6 +75,40 @@ export const emojiService = {
     return toRow(row);
   },
 
+  /**
+   * One category's order, as dragged in the ACP: `ids` in their new order, all moved
+   * into `category` (a drop into another group moves the emoji there). Ids that are
+   * not active emojis are refused rather than skipped, so a stale page cannot reorder
+   * half a list.
+   */
+  async reorder(category: string, ids: string[]): Promise<EmojiRow[]> {
+    const unique = [...new Set(ids)];
+    const found = await prisma.emoji.count({ where: { id: { in: unique }, retiredAt: null } });
+    if (found !== unique.length) {
+      throw new XentiumError({ code: XEC.API_CONFLICT, httpStatus: 409, message: "The emoji list changed. Reload and try again." });
+    }
+    const name = category.trim();
+    await prisma.$transaction(unique.map((id, position) =>
+      prisma.emoji.update({ where: { id }, data: { category: name, position } })));
+    return this.listActive();
+  },
+
+  /**
+   * Rename a category: every emoji in it, retired ones too, so a later restore lands
+   * where it was. Renaming onto an existing category merges the two, the renamed ones
+   * after the ones already there.
+   */
+  async renameCategory(from: string, to: string): Promise<{ moved: number }> {
+    const target = to.trim();
+    if (target === from) return { moved: 0 };
+    const last = await prisma.emoji.aggregate({ where: { category: target, retiredAt: null }, _max: { position: true } });
+    const offset = last._max.position === null ? 0 : last._max.position + 1;
+    const rows = await prisma.emoji.findMany({ where: { category: from }, orderBy: { position: "asc" }, select: { id: true, position: true } });
+    await prisma.$transaction(rows.map((r) =>
+      prisma.emoji.update({ where: { id: r.id }, data: { category: target, position: r.position + offset } })));
+    return { moved: rows.length };
+  },
+
   /** Out of the picker. The file and the row stay, so posts that used it still show it. */
   async retire(id: string): Promise<void> {
     await prisma.emoji.updateMany({ where: { id, retiredAt: null }, data: { retiredAt: new Date() } });

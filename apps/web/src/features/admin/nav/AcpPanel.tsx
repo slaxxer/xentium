@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { AcpIcon } from "../pages/acpIcons";
@@ -81,11 +82,15 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
             {/* A leaf section (Dashboard) has one destination and
                 it is the section itself — listing it again would be the same
                 word twice, so the rail cell is the whole control. */}
-            {(section.children ?? []).map((child) => {
+            {(section.children ?? []).map((child, i, all) => {
               const active = childMatches(child, pathname);
+              // A section may group its pages (System: Setup / Logs): a small heading
+              // where the group changes.
+              const heading = child.group && child.group !== all[i - 1]?.group ? child.group : null;
               return (
+                <Fragment key={child.to}>
+                {heading && <span className="acp-panel__group">{t(heading)}</span>}
                 <Link
-                  key={child.to}
                   to={child.to}
                   className={`acp-panel__item${active ? " is-active" : ""}`}
                   aria-current={active ? "page" : undefined}
@@ -93,6 +98,7 @@ export function AcpPanel({ section, variant = "docked", canDock = true, showSear
                 >
                   {t(child.label)}
                 </Link>
+                </Fragment>
               );
             })}
           </nav>

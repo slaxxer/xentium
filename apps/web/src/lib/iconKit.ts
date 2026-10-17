@@ -20,6 +20,7 @@
  */
 import { useSyncExternalStore } from "react";
 import { DEFAULT_ICON_STYLE, isIconStyle, iconStyleClasses } from "@xentium/contracts";
+import { declareConsent, hasConsent, onConsentChange } from "./consent";
 
 /** Mirrors the server's allowlist. See `modules/appearance/iconKit.ts`. */
 const KIT_URL = /^https:\/\/kit\.fontawesome\.com\/[a-z0-9]{6,32}\.js$/;
@@ -89,11 +90,28 @@ export function useIconKitReady(): boolean {
 // ── Loading ─────────────────────────────────────────────────────────────────
 
 let requested: string | null = null;
+let waiting: string | null = null;
 
+/**
+ * ⚠ CONSENT FIRST. The kit is a script from Fonticons' servers: loading it sends the
+ * visitor's IP address to a third party, which needs consent ("external media").
+ * Without it the bundled free icons stand, and the kit loads the moment consent is
+ * given (`onConsentChange`). The kit is declared, so a consent dialog lists it.
+ */
 function inject(url: string): void {
   // ⚠ Re-checked here, not trusted from storage. A cached value is only as good as
   // the browser it came from, and this string becomes a script source.
   if (requested || !KIT_URL.test(url)) return;
+  declareConsent({
+    id: "core.fontawesome-kit", name: "Font Awesome Kit", kind: "service", category: "media",
+    provider: "Fonticons, Inc.", purpose: { key: "consent.core.iconKit", ns: "common" },
+    privacyUrl: "https://fontawesome.com/privacy",
+  });
+  if (!hasConsent("media")) {
+    if (!waiting) onConsentChange(() => { if (waiting && hasConsent("media")) { const u = waiting; waiting = null; inject(u); } });
+    waiting = url;
+    return;
+  }
   requested = url;
   const el = document.createElement("script");
   el.src = url;

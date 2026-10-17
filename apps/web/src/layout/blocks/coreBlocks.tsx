@@ -14,7 +14,7 @@ import { ArticleContent } from "../../features/articles/components/ArticleConten
 import { registerBlock, type BlockProps } from "../blockRegistry";
 import { useRenderedDocument } from "../LayoutRenderer";
 import { individuallyPlacedSlotIds } from "../slotBlocks";
-import { ArticleIndexBlock } from "./ArticleIndexBlock";
+import { ArticleIndexBlock, ArticleCategoriesBlock, ArticleTrendingBlock, ArticleTagsBlock } from "./ArticleIndexBlock";
 import "./coreBlocks.scss";
 import { TokenIcon } from "../../components/TokenIcon";
 import { resolveImageSource, sectionBackground } from "./sectionBackground";
@@ -233,4 +233,25 @@ registerBlock({
   schema: blockPropSchemas.articleIndex,
   editorMeta: { label: "Article index", category: "data", allowedTemplates: ["article.index"], wide: true },
   component: ArticleIndexBlock,
+});
+
+// The article index's rail. They read the index's context (filters, counts, trending,
+// tags) and drive the same filters, so they only belong on that page.
+registerBlock({
+  type:   "articleCategories",
+  schema: blockPropSchemas.articleCategories,
+  editorMeta: { label: "Article categories", category: "data", allowedTemplates: ["article.index"] },
+  component: ArticleCategoriesBlock,
+});
+registerBlock({
+  type:   "articleTrending",
+  schema: blockPropSchemas.articleTrending,
+  editorMeta: { label: "Trending articles", category: "data", allowedTemplates: ["article.index"] },
+  component: ArticleTrendingBlock,
+});
+registerBlock({
+  type:   "articleTags",
+  schema: blockPropSchemas.articleTags,
+  editorMeta: { label: "Popular tags", category: "data", allowedTemplates: ["article.index"] },
+  component: ArticleTagsBlock,
 });

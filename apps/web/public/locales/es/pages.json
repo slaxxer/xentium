@@ -30,6 +30,8 @@
     "by": "por",
     "today": "Hoy",
     "daysAgo": "hace {{d}} d",
-    "weeksAgo": "hace {{w}} sem"
+    "weeksAgo": "hace {{w}} sem",
+    "placeholder": "Busca artículos, personas y más…",
+    "submit": "Buscar"
   }
 }

@@ -34,7 +34,7 @@ interface Ban {
 }
 interface Ip { ip: string; country: string | null; firstSeen: string; lastSeen: string; uses: number; otherAccounts: number }
 interface Standing {
-  isOwn: boolean; isStaff: boolean; counted: number; expiryDays: number | null;
+  isOwn: boolean; isStaff: boolean; counted: number;
   ladder: Step[];
   next: (Step & { remaining: number }) | null;
   warnings: Warning[];
@@ -104,7 +104,6 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
               {isOwn
                 ? t("standing.alertOwn", { sanction: sanction(data.next) })
                 : t("standing.alertStaff", { name: username, sanction: sanction(data.next) })}
-              {data.expiryDays && ` ${t("standing.alertExpiry", { count: data.expiryDays })}`}
             </p>
           </div>
         </div>
@@ -127,7 +126,7 @@ export function WarningsTab({ profileId, username, isOwn }: { profileId: string;
           </ol>
         )}
         <p className="std-muted std-summary__note">
-          {data.expiryDays ? t("standing.expiryNote", { count: data.expiryDays }) : t("standing.noExpiry")}
+          {t("standing.perWarningExpiry")}
         </p>
       </section>
 

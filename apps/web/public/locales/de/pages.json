@@ -30,6 +30,8 @@
     "by": "von",
     "today": "Heute",
     "daysAgo": "vor {{d}} T",
-    "weeksAgo": "vor {{w}} W"
+    "weeksAgo": "vor {{w}} W",
+    "placeholder": "Artikel, Mitglieder und mehr durchsuchen…",
+    "submit": "Suchen"
   }
 }

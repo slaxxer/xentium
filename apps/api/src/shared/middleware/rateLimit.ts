@@ -31,8 +31,8 @@ export const makeRateLimiter = (
 ) => factory(name, { windowMs, limit: max, ...(keyGenerator ? { keyGenerator } : {}) });
 
 /**
- * Coarse limiter for all /api traffic (§26, adjusted 2026-07-18: 200/min per
- * authenticated SESSION, 120/min per unauthenticated IP — the SPA's polling
+ * Coarse limiter for all /api traffic (§26, raised 2026-10-17: 600/min per
+ * authenticated SESSION, 300/min per unauthenticated IP — the SPA's polling
  * widgets make 60 too tight). Mounted globally. Skipped outside production and
  * for the installer / health / meta paths (the installer must not depend on
  * Redis, and health/meta are polled). Per-route limiters still apply on top.
@@ -44,7 +44,10 @@ export const makeRateLimiter = (
  */
 export const globalApiLimiter = factory("api-global", {
   windowMs: 60_000,
-  limit: (req) => (req.headers.authorization ? 200 : 120),
+  // One page asks the API ~25-35 times (layout, stats, feeds, presence…), so 120 a
+  // minute let a guest who opened five pages, or a few people behind one router,
+  // run into 429s. Raised 2026-10-17; per-route limiters still guard the costly ones.
+  limit: (req) => (req.headers.authorization ? 600 : 300),
   keyGenerator: (req) =>
     req.headers.authorization
       ? "tok:" + createHash("sha256").update(req.headers.authorization).digest("hex").slice(0, 32)

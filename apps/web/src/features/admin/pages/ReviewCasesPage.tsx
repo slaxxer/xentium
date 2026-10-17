@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Pager } from "../../../components/Pager";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { FontAwesomeIcon } from "../../../components/Icon";
@@ -27,6 +28,7 @@ type T = (key: string, opts?: Record<string, unknown>) => string;
 type Status = "open" | "reviewed" | "all";
 type Severity = "high" | "medium" | "low";
 type Sort = "new" | "old";
+const PAGE_SIZE = 7;
 
 interface CaseAccount {
   id: string; username: string; avatar: string | null; badgeColor: string | null;
@@ -181,6 +183,8 @@ export function ReviewCasesPage() {
   const [type, setType] = useState(() => urlParams.get("type") ?? "");
   const [severity, setSeverity] = useState<Severity | "">("");
   const [sort, setSort] = useState<Sort>("new");
+  // Seven cases a page, in the chosen order: a case wants reading, not scrolling past.
+  const [page, setPage] = useState(1);
   const [selectedId, setSelectedId] = useState("");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [banPreview, setBanPreview] = useState(false);
@@ -188,12 +192,12 @@ export function ReviewCasesPage() {
   const [reason, setReason] = useState("");
   const [assignOpen, setAssignOpen] = useState(false);
 
-  const params = new URLSearchParams({ limit: "50", status, sort });
+  const params = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page), status, sort });
   if (type) params.set("type", type);
   if (severity) params.set("severity", severity);
 
   const { data, isLoading } = useQuery<CasesResponse>({
-    queryKey: ["acp-cases", status, type, severity, sort],
+    queryKey: ["acp-cases", status, type, severity, sort, page],
     queryFn: () => api.get(`/admin/cases?${params}`),
     placeholderData: (prev) => prev,
   });
@@ -205,8 +209,11 @@ export function ReviewCasesPage() {
 
   // Any filter change clears the selection and closes a preview.
   const refilter = <V,>(set: (v: V) => void) => (v: V) => {
-    set(v); setChecked(new Set()); setBanPreview(false); setBulkPreview(false);
+    set(v); setPage(1); setChecked(new Set()); setBanPreview(false); setBulkPreview(false);
   };
+  // A page past the end (the last case on it was handled) steps back to the last one.
+  const totalPages = data?.meta.totalPages ?? 1;
+  useEffect(() => { if (page > 1 && page > totalPages) setPage(Math.max(1, totalPages)); }, [page, totalPages]);
   const clearFilters = () => { setType(""); setSeverity(""); refilter(setStatus)("open"); };
   useEffect(() => { setBanPreview(false); setAssignOpen(false); setReason(""); }, [selected?.id]);
   useEffect(() => { if (checked.size === 0) setBulkPreview(false); }, [checked.size]);
@@ -301,7 +308,7 @@ export function ReviewCasesPage() {
           <span className="rc-gap" />
           <span className="rc-flabel">{t("modCases.sort")}</span>
           {(["new", "old"] as Sort[]).map((s) => (
-            <button key={s} type="button" className={`rc-chip rc-chip--sm${sort === s ? " is-on" : ""}`} onClick={() => setSort(s)}>
+            <button key={s} type="button" className={`rc-chip rc-chip--sm${sort === s ? " is-on" : ""}`} onClick={() => { setSort(s); setPage(1); }}>
               {t(`modCases.sortBy.${s}`)}
             </button>
           ))}
@@ -387,6 +394,10 @@ export function ReviewCasesPage() {
                 </div>
               );
             })}
+            {totalPages > 1 && (
+              <Pager page={page} totalPages={totalPages} onPage={(n) => { setPage(n); setChecked(new Set()); }}
+                label={t("modCases.pagination", { page, totalPages, total: data?.meta.total ?? 0 })} />
+            )}
 
             {checked.size > 0 && (
               <div className="rc-bulk">

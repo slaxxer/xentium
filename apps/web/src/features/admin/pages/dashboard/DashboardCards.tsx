@@ -8,6 +8,7 @@ import {
 import { FontAwesomeIcon } from "../../../../components/Icon";
 import { timeAgo } from "../../../../lib/time";
 import { compact, pctChange, type AttentionItem, type Health, type Overview } from "./dashboardModel";
+import { SETUP_STEP_LINK } from "../../../../lib/setupSteps";
 
 // ── Needs attention ──────────────────────────────────────────────────────────
 
@@ -86,10 +87,6 @@ export function AttentionCard({ items }: { items: AttentionItem[] }) {
 
 // ── Setup (a young site) ─────────────────────────────────────────────────────
 
-const STEP_LINK: Record<string, string> = {
-  siteName: "/admin/settings", email: "/admin/email", categories: "/admin/categories",
-  article: "/articles/new", theme: "/admin/themes",
-};
 
 export function SetupCard({ steps }: { steps: Overview["setup"]["steps"] }) {
   const { t } = useTranslation("acp");
@@ -109,7 +106,7 @@ export function SetupCard({ steps }: { steps: Overview["setup"]["steps"] }) {
       <div className="dsh-setup__list">
         {steps.map((s, i) => {
           const isNext = i === next;
-          const to = STEP_LINK[s.key];
+          const to = SETUP_STEP_LINK[s.key];
           const body = (
             <>
               <span className={`dsh-step__dot${s.done ? " is-done" : isNext ? " is-next" : ""}`}>

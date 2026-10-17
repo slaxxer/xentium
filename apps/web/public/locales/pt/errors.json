@@ -33,5 +33,8 @@
   "XEC-LICENSE-9001": "Sem licença válida para este plugin.",
   "XEC-LICENSE-9002": "Esta licença expirou.",
   "generic": "Algo correu mal. Tente novamente.",
-  "XEC-AUTH-2011": "Aceite os termos e a política de privacidade para continuar."
+  "XEC-AUTH-2011": "Aceite os termos e a política de privacidade para continuar.",
+  "XEC-MOD-4101": "Escolha um dos modelos. Avisos e banimentos só podem ser enviados a partir de um modelo.",
+  "XEC-MOD-4102": "Este conteúdo não é do membro em causa.",
+  "XEC-MOD-4103": "Este modelo menciona o conteúdo em causa. Use-o a partir desse conteúdo ou escolha outro modelo."
 }

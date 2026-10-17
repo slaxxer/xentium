@@ -71,6 +71,19 @@ describe("the composed header", () => {
     expect(container.querySelector(".pub-nav__carried")).toBeNull();
   });
 
+  it("puts the account menu straight after the logo when it is set to the left", () => {
+    const masthead = header({ showMasthead: false }, [leaf("l", "logo"), leaf("u", "userMenu")]);
+    const order = (props: Record<string, unknown>) => {
+      const { container } = draw(doc([masthead, navbar([{ ...leaf("nl", "navLinks"), align: "right" }], props)]));
+      const inner = container.querySelector(".pub-nav__inner")!;
+      const kids = [...inner.querySelectorAll(":scope > .pub-nav__logo, :scope > .pub-nav__carried, :scope > [data-xt-align]")];
+      cleanup();
+      return kids.map((k) => k.classList.contains("pub-nav__carried") ? "account" : k.classList.contains("pub-nav__logo") ? "logo" : "links");
+    };
+    expect(order({})).toEqual(["logo", "links", "account"]);
+    expect(order({ accountAlign: "left" })).toEqual(["logo", "account", "links"]);
+  });
+
   it("the navbar's own settings: static, a height, a tone", () => {
     const { container } = draw(doc([navbar([], { sticky: false, height: 60, tone: "brand" })]));
     const nav = container.querySelector<HTMLElement>(".pub-nav")!;

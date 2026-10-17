@@ -112,6 +112,11 @@ export const XEC = {
   MARKETPLACE_DOWNLOAD_FAILED: "XEC-MARKETPLACE-9102",  // download unreachable / non-200
   MARKETPLACE_ARTIFACT_INVALID: "XEC-MARKETPLACE-9103", // size cap / sha256 / manifest-id mismatch
 
+  // Moderation: a warning or a ban is always one of the site's templates
+  MOD_TEMPLATE_REQUIRED: "XEC-MOD-4101",  // no template named, or not one of the action's mode
+  MOD_TARGET_MISMATCH:   "XEC-MOD-4102",  // the content named is not by the member being warned or banned
+  MOD_TARGET_REQUIRED:   "XEC-MOD-4103",  // the template names the content ({type}/{where}) and none was given
+
   // Core
   CORE_THEME_NOT_FOUND: "XEC-CORE-8001",
   // An uploaded `.xttheme` failed validation. Deliberately NOT given a localized

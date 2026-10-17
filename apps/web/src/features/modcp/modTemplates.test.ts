@@ -6,7 +6,7 @@ import { fill, fillSegments, suggest, typeLabel, type Template } from "./modTemp
 
 const t = (over: Partial<Template>): Template => ({
   id: over.name ?? "x", mode: "warn", name: "x", text: "", ruleRef: null, defaultDuration: null,
-  internal: false, matchCategories: [], useCount: 0, updatedAt: "", ...over,
+  warnExpiry: null, internal: false, matchCategories: [], useCount: 0, updatedAt: "", ...over,
 });
 
 const vars = { user: "mara", type: "comment", where: "Launch notes", duration: "7 days" };

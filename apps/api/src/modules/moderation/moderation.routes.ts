@@ -44,6 +44,7 @@ moderationRouter.post("/reports/status",        repGuard,        moderationContr
 moderationRouter.post("/reports/claim",         repGuard,        moderationController.claimReports);
 // Read-only here: moderators USE the texts. Admins manage them in the ACP (/admin/mod-templates).
 moderationRouter.get("/templates",              userSearchGuard, moderationController.listTemplates);
+moderationRouter.get("/templates/words",        userSearchGuard, moderationController.templateWords);
 
 // ── Write actions ────────────────────────────────────────────────────────────
 moderationRouter.patch("/reports/:id",         repGuard,   moderationController.updateReport);

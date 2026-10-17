@@ -41,6 +41,8 @@ const PERM_META: Record<string, { label: string; domain: string }> = {
   "moderation.log.view":        { label: "View the moderation log",            domain: "Moderation" },
   "moderation.settings":        { label: "Change moderation settings",         domain: "Moderation" },
   "moderation.protected":       { label: "Counts as staff (cannot be warned or banned)", domain: "Moderation" },
+  "moderation.warn.expiry.override": { label: "Change how long a warning counts", domain: "Moderation" },
+  "moderation.ban.length.override":  { label: "Change how long a ban lasts",     domain: "Moderation" },
   "message.send":               { label: "Send private messages",              domain: "Messaging" },
   "admin.plugins":              { label: "Manage plugins in the admin panel",  domain: "Extensions" },
   "plugin.install":             { label: "Install plugins",                    domain: "Extensions" },

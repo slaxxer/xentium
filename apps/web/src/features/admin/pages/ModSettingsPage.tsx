@@ -13,7 +13,7 @@ import { openDialog } from "../../../lib/dialog";
 import { useAutosave, sameValue } from "../../../hooks/useAutosave";
 import { DraftFailure } from "../../../hooks/useDraft";
 import { SaveChip } from "../../../components/SaveChip";
-import { Toggle, NumberStepper } from "../../../components/AcpControls";
+import { Toggle } from "../../../components/AcpControls";
 import "./ModSettingsPage.scss";
 
 /**
@@ -38,7 +38,6 @@ interface PatternView {
   casesLast7d: number;
 }
 interface ModSettings {
-  expiry: { enabled: boolean; days: number };
   ladder: Step[];
   bans: Bans;
   resetAfterBan: boolean;
@@ -47,14 +46,13 @@ interface ModSettings {
 }
 
 interface Draft {
-  expiry: ModSettings["expiry"];
   ladder: Step[];
   bans: Bans;
   resetAfterBan: boolean;
   patterns: Record<string, boolean>;
 }
 type Section = keyof Draft;
-const SECTIONS: Section[] = ["expiry", "ladder", "bans", "resetAfterBan", "patterns"];
+const SECTIONS: Section[] = ["ladder", "bans", "resetAfterBan", "patterns"];
 
 type Tab = "warnings" | "bans" | "detection";
 const TABS: { key: Tab; icon: IconDefinition }[] = [
@@ -74,7 +72,6 @@ const MAX_STEPS = 10;
 
 function draftOf(s: ModSettings): Draft {
   return {
-    expiry: s.expiry,
     ladder: s.ladder,
     bans: s.bans,
     resetAfterBan: s.resetAfterBan,
@@ -202,7 +199,12 @@ export function ModSettingsPage() {
         <div className="set-content">
           {tab === "warnings" && (
             <>
-              <Lifetime value={draft.expiry} onChange={(v) => set("expiry", v)} />
+              {/* How long a warning counts is the template's business since 2026-10-17;
+                  said here so nobody looks for the old site-wide switch. */}
+              <p className="ms-lifetime-note">
+                {t("modSettings.lifetimeMoved")}{" "}
+                <Link to="/admin/mod-templates">{t("modSettings.lifetimeLink")}</Link>
+              </p>
               <Ladder steps={draft.ladder} issue={ladderIssue} onChange={(v) => set("ladder", v)} />
             </>
           )}
@@ -245,38 +247,6 @@ function CardHead({ icon, title, sub, children }: { icon: IconDefinition; title:
 }
 
 // ── Warnings ─────────────────────────────────────────────────────────────────
-
-function Lifetime({ value, onChange }: { value: Draft["expiry"]; onChange: (v: Draft["expiry"]) => void }) {
-  const { t } = useTranslation("acp");
-  const on = value.enabled;
-  return (
-    <section className="set-card">
-      <CardHead icon={faClock} title={t("modSettings.lifetime.title")} sub={t("modSettings.lifetime.sub")} />
-      <div className="set-extra">
-        <div className={`ms-banner${on ? " is-on" : ""}`}>
-          <div className="ms-banner__ic"><FontAwesomeIcon icon={faWaveSquare} /></div>
-          <div className="ms-banner__text">
-            <div className="ms-banner__title">{t(on ? "modSettings.lifetime.onTitle" : "modSettings.lifetime.offTitle")}</div>
-            <div className="ms-banner__desc">{t(on ? "modSettings.lifetime.onDesc" : "modSettings.lifetime.offDesc")}</div>
-          </div>
-          <Toggle on={on} onToggle={() => onChange({ ...value, enabled: !on })} />
-        </div>
-        {on && (
-          <div className="ms-after">
-            <div>
-              <div className="set-row__label">{t("modSettings.lifetime.after")}</div>
-              <div className="set-row__desc">{t("modSettings.lifetime.afterDesc")}</div>
-            </div>
-            <div className="ms-after__ctl">
-              <NumberStepper value={value.days} min={1} max={3650} step={5} onChange={(days) => onChange({ ...value, days })} />
-              <span className="ms-unit">{t("modSettings.days")}</span>
-            </div>
-          </div>
-        )}
-      </div>
-    </section>
-  );
-}
 
 function Ladder({ steps, issue, onChange }: { steps: Step[]; issue: ReturnType<typeof ladderProblem>; onChange: (v: Step[]) => void }) {
   const { t } = useTranslation("acp");

@@ -65,7 +65,7 @@ describe("splitting the moderation tool out of the bell", () => {
     // The composed header as it shipped: the icons BESIDE the account menu, not in it.
     const flat = (withModTool: boolean) => {
       const doc = structuredClone(DEFAULT_LAYOUTS["chrome.header"]);
-      const band = doc.regions.header![0]!;
+      const band = doc.regions.header!.find((b) => b.type === "header")!;
       const menu = band.children!.find((c) => c.type === "userMenu")!;
       const icons = menu.children!.filter((c) => withModTool || c.type !== "modTool");
       const search = icons.find((c) => c.type === "search")!;

@@ -44,5 +44,14 @@ export function useSiteConfig() {
     // components (`siteTime` in lib/datetime).
     queryFn: () => api.get<SiteConfig>("/site/config").then((c) => { setLiveTimeConfig(c.time); return c; }),
     staleTime: 300_000,
+    /**
+     * ⚠ No retry when a component mounts. Most of the app waits on this query; while
+     * it has no data they show "Loading…" and remount what is under them, and every
+     * remount re-asked. When the request failed (a burst of 429s) that loop sent
+     * hundreds of requests a second from one tab and kept the limiter shut. A failure
+     * is retried calmly on a timer instead, so the page recovers on its own.
+     */
+    retryOnMount: false,
+    refetchInterval: (query) => (query.state.status === "error" ? 15_000 : false),
   });
 }

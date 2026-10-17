@@ -18,11 +18,9 @@ export function PermissionsTab({ allPermissions, keys, onChange }: {
   const { t } = useTranslation("acp");
   const domains = groupByDomain(allPermissions);
   const held = new Set(keys);
-  // Open where the power is: the domains holding a sensitive key, else the first.
-  const [open, setOpen] = useState<Set<string>>(() => {
-    const hot = domains.filter(([, ps]) => ps.some((p) => held.has(p.key) && isSensitive(p.key))).map(([d]) => d);
-    return new Set(hot.length ? hot.slice(0, 2) : domains.slice(0, 1).map(([d]) => d));
-  });
+  // Every domain starts closed, as on the Permissions page: one line each with its
+  // count and sensitive marker, and the admin opens the one they came for.
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
   const heldDomains = domains.filter(([, ps]) => ps.some((p) => held.has(p.key))).length;
 
   const toggleKey = (key: string) => onChange(held.has(key) ? { grant: [], revoke: [key] } : { grant: [key], revoke: [] });

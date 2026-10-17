@@ -15,7 +15,46 @@
     "pageOf": "Page {{page}} of {{total}}",
     "minRead": "{{n}} min",
     "views_one": "{{count}} view",
-    "views_other": "{{count}} views"
+    "views_other": "{{count}} views",
+    "searchPlaceholder": "Search articles, authors, tags",
+    "clearSearch": "Clear search",
+    "featured": "Featured",
+    "latestHeading": "Latest articles",
+    "allHeading": "All articles",
+    "resultsFor": "Results for “{{q}}”",
+    "count_one": "{{count}} article",
+    "count_other": "{{count}} articles",
+    "reset": "Reset filters",
+    "sortLabel": "Sort",
+    "period": {
+      "any": "Any time",
+      "week": "This week",
+      "month": "Last 30 days",
+      "year": "This year"
+    },
+    "length": {
+      "any": "Any length",
+      "short": "Under 5 min",
+      "medium": "5–10 min",
+      "long": "Over 10 min"
+    },
+    "sort": {
+      "latest": "Newest",
+      "popular": "Popular",
+      "discussed": "Discussed"
+    },
+    "emptyTitle": "No articles found",
+    "emptyHint": "Try another search or loosen the filters.",
+    "rail": {
+      "categories": "Categories",
+      "all": "All articles",
+      "trending": "Trending",
+      "tags": "Popular tags"
+    },
+    "pin": "Pin to the articles page",
+    "unpin": "Unpin from the articles page",
+    "pinned": "Pinned to the articles page",
+    "unpinned": "Unpinned"
   },
   "reader": {
     "loading": "Loading…",
@@ -39,9 +78,7 @@
     "modTools": "Mod tools",
     "warnAuthor": "Warn author",
     "warnTitle": "Warn {{username}}",
-    "warnSub": "This warning will be issued to the article author and logged in the moderation system.",
-    "warnPlaceholder": "Reason for the warning…",
-    "setExpiry": "Set expiry date",
+    "warnSub": "Pick the rule that was broken. The member gets the template's text, and the warning is logged.",
     "issuing": "Issuing…",
     "issueWarning": "Issue Warning",
     "warnIssued": "Warning issued to {{username}}.",
@@ -68,7 +105,28 @@
     "tombstoneBy": " by {{mod}}",
     "tombstoneReason": " · Reason: {{reason}}",
     "cantRateOwnComment": "You can't rate your own comment",
-    "signInToRate": "Sign in to rate"
+    "signInToRate": "Sign in to rate",
+    "crumbs": "Breadcrumb",
+    "actions": "Article actions",
+    "save": "Save",
+    "unsave": "Remove from saved",
+    "savedToast": "Saved. You'll find it under Saved on the home page.",
+    "unsavedToast": "Removed from saved",
+    "linkCopied": "Link copied",
+    "liked": "Did you like the article?",
+    "comments": "Comments",
+    "sort": {
+      "popular": "Popular",
+      "newest": "Newest"
+    },
+    "reply": "Reply",
+    "replyPlaceholder": "Reply to {{user}}…",
+    "authorBadge": "Author",
+    "onThisPage": "On this page",
+    "moreIn": "More in “{{category}}”",
+    "minShort": "{{n}} min",
+    "keepReading": "Keep reading",
+    "allArticles": "All articles"
   },
   "editor": {
     "saveError": "Could not save. Try again.",

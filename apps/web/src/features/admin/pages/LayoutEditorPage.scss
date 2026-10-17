@@ -162,13 +162,12 @@
   /* Two columns: structure and block settings stack in a single
      narrow rail so the preview — the thing an admin is actually judging — gets
      the whole remaining width. */
-  /* TWO columns: the structure, then the canvas. The selected block's
-     settings are the third pane but not a third COLUMN — they float over the canvas,
-     so the canvas is the same width whether or not anything is selected. See
-     `.lay__props` for why that matters more than the pixels it saves. */
+  /* TWO columns: the rail, then the canvas. The rail shows the blocks (or the tree)
+     when nothing is selected and the selected block's settings when something is, so
+     the canvas is the same width either way and nothing ever covers the page. */
   &__grid {
     display: grid;
-    grid-template-columns: 288px minmax(0, 1fr);
+    grid-template-columns: 320px minmax(0, 1fr);
     gap: var(--sp-4);
     align-items: start;
   }
@@ -1078,48 +1077,118 @@
     letter-spacing: 0;
   }
 
-  /* ── props: the floating inspector ─────────────────────────────────────── */
-  /* Absolute, inside `.lay__preview` — NOT a grid column and NOT `fixed`. As a
-     column it took 320px the canvas needed to draw a 1280 desktop preview at 100%,
-     and appearing with the selection resized the stage, which re-scaled the whole
-     page under Fit on every click. Absolute keeps it inside the pane it belongs to,
-     so it scrolls with the editor and cannot end up over the ACP's own chrome.
-     ⚠ 320px here is `INSPECTOR_WIDTH` in the page — the side decision measures how
-     much of the selected block this covers, so the two must not drift. */
+  /* ── props: the selected block's settings ─────────────────────────────── */
+  /* The selected block's settings, in the rail where the block list was. A card
+     like the tree, so switching between the two does not move anything else. */
   &__props {
-    position: absolute;
-    z-index: 3;
-    top: calc(var(--sp-4) + 34px);
-    bottom: var(--sp-4);
-    width: 320px;
     display: flex;
     flex-direction: column;
     background: var(--card-bg);
     border: 1px solid var(--card-border-color);
     border-radius: var(--card-radius);
-    /* It floats over content, so it needs to read as ABOVE rather than merely on
-       top of — without a shadow the page shows through the join and the panel looks
-       like part of the previewed site. */
-    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
     padding: var(--sp-3) var(--sp-4) var(--sp-4);
   }
 
-  &__props--right { right: var(--sp-4); }
-  &__props--left  { left:  var(--sp-4); }
+  &__props-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 10px;
+    margin-left: -10px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg-muted);
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    cursor: pointer;
+    &:hover { background: var(--c-bg-hover); color: var(--c-fg); }
+  }
+
+  /* Where the block sits: the area, then each container, as links up the tree. */
+  &__props-path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 5px;
+    font-size: var(--fs-xs);
+    color: var(--c-fg-subtle);
+
+    button {
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--c-accent);
+      font: inherit;
+      cursor: pointer;
+      &:hover { text-decoration: underline; }
+    }
+  }
+  &__props-path-step { display: inline-flex; align-items: center; gap: 5px; }
+
+  /* "Move to…": every area and container the block may go into. */
+  /* The list opens under the WHOLE action row, as wide as the panel: the rail
+     scrolls, so anything wider than it would be cut off at its edge. */
+  &__moveto { position: static; }
+  &__moveto-list {
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 340px;
+    overflow-y: auto;
+    padding: 6px;
+    background: var(--card-bg);
+    border: 1px solid var(--card-border-color);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 32px rgb(0 0 0 / 0.28);
+  }
+  &__moveto-head {
+    padding: 6px 12px 8px;
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+  }
+  &__moveto-none { padding: 8px 12px; font-size: var(--fs-sm); color: var(--c-fg-muted); }
+  &__moveto-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 8px 12px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--c-fg);
+    font: inherit;
+    font-size: var(--fs-sm);
+    text-align: left;
+    cursor: pointer;
+
+    svg { flex: none; color: var(--c-fg-subtle); font-size: var(--fs-xs); }
+    span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    em { font-style: normal; font-size: var(--fs-2xs); color: var(--c-fg-subtle); }
+
+    &:hover:not(:disabled) { background: var(--c-accent-soft); color: var(--c-accent); svg { color: var(--c-accent); } }
+    &:disabled { cursor: default; color: var(--c-fg-subtle); }
+  }
 
   &__props-bar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-2);
-    padding-bottom: var(--sp-3);
-    border-bottom: 1px solid var(--c-border);
+    margin-bottom: var(--sp-3);
   }
 
   &__props-ident {
     display: flex;
-    align-items: center;
-    gap: 9px;
+    align-items: flex-start;
+    gap: 10px;
     min-width: 0;
   }
 
@@ -1155,11 +1224,20 @@
     }
   }
 
+  /* Everything that ARRANGES the block, in one row under its name. */
   &__props-acts {
+    position: relative;
     display: flex;
-    gap: 1px;
-    flex: none;
+    align-items: center;
+    gap: 2px;
+    margin-top: var(--sp-3);
+    padding: 6px 0;
+    border-block: 1px solid var(--c-border);
+
+    > .btn-sm, .lay__moveto > .btn-sm { padding-inline: 9px; }
+    .is-on { background: var(--c-accent-soft); color: var(--c-accent); }
   }
+  &__props-acts-gap { flex: 1; }
 
   /* Divides the panel's three unrelated stacks: the block's own options, who sees
      it, and how it is painted. */
@@ -1231,37 +1309,9 @@
   /* The fields scroll, the bar does not: closing must stay reachable from a block
      with more settings than the panel is tall. */
   &__props-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
     margin-top: var(--sp-3);
   }
 
-  /* The way back in after closing, since closing keeps the selection. */
-  &__props-chip {
-    position: absolute;
-    z-index: 3;
-    bottom: var(--sp-4);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: inherit;
-    font-size: var(--fs-xs);
-    font-weight: 600;
-    color: var(--c-fg);
-    background: var(--card-bg);
-    border: 1px solid var(--card-border-color);
-    border-radius: 999px;
-    box-shadow: 0 8px 20px rgb(0 0 0 / 0.24);
-    padding: 7px 13px;
-    cursor: pointer;
-
-    &:hover { border-color: var(--c-accent); }
-  }
-
-  &__props-chip--right { right: var(--sp-4); }
-  &__props-chip--left  { left:  var(--sp-4); }
 
   &__props-head {
     font-family: var(--font-display);
@@ -1388,4 +1438,10 @@
   padding-bottom: var(--sp-3);
   margin-bottom: var(--sp-3);
   border-bottom: 1px solid var(--c-border);
+}
+
+/* Narrow: the toolbar's two halves wrap instead of pushing the page sideways. */
+@media (max-width: 900px) {
+  .lay__bar, .lay__bar-actions { flex-wrap: wrap; }
+  .lay__bar-actions { margin-left: 0; }
 }

@@ -156,7 +156,9 @@ export function HeaderSettings({ node, regions, onProps, onTree }: Props) {
 
 export function NavbarSettings({ node, regions, onProps, onTree }: Props) {
   const { t } = useTranslation("acp");
-  const p = node.props as { sticky?: boolean; height?: number; tone?: "theme" | "dark" | "brand" | "light" };
+  const p = node.props as {
+    sticky?: boolean; height?: number; tone?: "theme" | "dark" | "brand" | "light"; accountAlign?: "right" | "left";
+  };
   const set = (patch: Record<string, unknown>) => onProps({ ...node.props, ...patch });
   const header = firstOfType(regions, "header");
   const mastheadShown = !!header && (header.props as { showMasthead?: boolean }).showMasthead !== false;
@@ -172,10 +174,11 @@ export function NavbarSettings({ node, regions, onProps, onTree }: Props) {
     onTree(next);
   };
 
-  const setLinksAlign = (align: "left" | "center") => editChild((nav) => {
+  const setLinksAlign = (align: "left" | "center" | "right") => editChild((nav) => {
     const l = nav.children?.find((n) => n.type === "navLinks");
     if (!l) return;
-    if (align === "center") l.align = "center"; else delete l.align;
+    // Absent = left: the default is never stored.
+    if (align === "left") delete l.align; else l.align = align;
   });
 
   const toggleLogo = () => editChild((nav) => {
@@ -199,13 +202,20 @@ export function NavbarSettings({ node, regions, onProps, onTree }: Props) {
         ]}
         onPick={(v) => set({ tone: v })} />
       {links && (
-        <Seg label={t("chrome.links")} value={links.align === "center" ? "center" : "left"}
+        <Seg label={t("chrome.links")} value={links.align ?? "left"}
           options={[
             { value: "left", label: t("chrome.left") },
             { value: "center", label: t("chrome.centre") },
+            { value: "right", label: t("chrome.right") },
           ]}
           onPick={setLinksAlign} />
       )}
+      <Seg label={t("chrome.accountMenu")} value={p.accountAlign ?? "right"}
+        options={[
+          { value: "left", label: t("chrome.left") },
+          { value: "right", label: t("chrome.right") },
+        ]}
+        onPick={(v) => set({ accountAlign: v === "right" ? undefined : v })} />
       <Check on={ownLogo || !mastheadShown} disabled={!mastheadShown}
         label={t("chrome.smallLogo")}
         hint={t(mastheadShown ? "chrome.smallLogoHint" : "chrome.smallLogoForced")}

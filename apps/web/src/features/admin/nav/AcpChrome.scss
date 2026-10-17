@@ -213,6 +213,19 @@ $panel-w: 248px;
 
   &__sectionic { display: flex; color: var(--c-accent); }
 
+  /* A group inside a section (System: Setup / Logs). Quiet, like the page eyebrows. */
+  &__group {
+    display: block;
+    padding: 14px 12px 6px;
+    font-family: var(--font-display);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--c-fg-subtle);
+    &:first-child { padding-top: 4px; }
+  }
+
   &__nav {
     flex: 1;
     min-height: 0;

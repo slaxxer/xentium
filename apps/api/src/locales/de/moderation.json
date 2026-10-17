@@ -1,0 +1,81 @@
+{
+  "templates": {
+    "warn": {
+      "harassment": {
+        "name": "Belästigung",
+        "text": "Hallo {user}, dein {type} in „{where}“ wurde wegen Belästigung gemeldet. Persönliche Angriffe verstoßen gegen unsere Community-Regeln. Dies ist eine offizielle Verwarnung, weitere Meldungen können zu einer Sperre führen."
+      },
+      "spam": {
+        "name": "Spam / Eigenwerbung",
+        "text": "Hallo {user}, dein {type} in „{where}“ enthält Werbelinks. Eigenwerbung ist hier nicht erlaubt. Bitte entferne ähnliche Beiträge."
+      },
+      "offTopic": {
+        "name": "Off-Topic-Flut",
+        "text": "Hallo {user}, wiederholte inhaltsarme Antworten wie die in „{where}“ stören die Diskussion für alle. Bitte bleib beim Thema."
+      },
+      "uncredited": {
+        "name": "Fremdes Werk ohne Quelle",
+        "text": "Hallo {user}, dein {type} in „{where}“ verwendet das Werk einer anderen Person ohne Quellenangabe. Bitte nenne die Urheberin oder den Urheber oder entferne es."
+      }
+    },
+    "ban": {
+      "repeatedHarassment": {
+        "name": "Wiederholte Belästigung",
+        "text": "Du wurdest für {duration} gesperrt, weil du trotz früherer Verwarnungen wiederholt andere belästigt hast. Ausschlaggebend war dein {type} in „{where}“."
+      },
+      "spamAccount": {
+        "name": "Spam-Konto",
+        "text": "Dieses Konto wurde wegen Spam gesperrt, darunter dein {type} in „{where}“."
+      },
+      "banEvasion": {
+        "name": "Umgehung einer Sperre",
+        "text": "Dieses Konto gehört zu einem bereits gesperrten Konto und wurde wegen Umgehung der Sperre gesperrt."
+      },
+      "phishing": {
+        "name": "Phishing / Identitätsbetrug",
+        "text": "Dieses Konto wurde gesperrt, weil es sich in „{where}“ als Teammitglied ausgegeben und Mitglieder nach Zugangsdaten gefragt hat."
+      },
+      "hateSpeech": {
+        "name": "Hassrede",
+        "text": "Du wurdest für {duration} wegen hasserfüllter Sprache in deinem {type} in „{where}“ gesperrt."
+      }
+    },
+    "delete": {
+      "ruleViolation": {
+        "name": "Entfernt: Regelverstoß",
+        "text": "Dein {type} in „{where}“ wurde wegen eines Verstoßes gegen unsere Community-Regeln entfernt."
+      },
+      "copyright": {
+        "name": "Entfernt: Urheberrecht",
+        "text": "Dein {type} in „{where}“ wurde nach einer Urheberrechtsmeldung entfernt. Du kannst den Inhalt mit Quellenangabe oder mit Erlaubnis der Urheberin oder des Urhebers erneut veröffentlichen."
+      }
+    },
+    "dismiss": {
+      "noViolation": {
+        "name": "Kein Verstoß gefunden",
+        "text": "{type} in „{where}“ geprüft. Kein Regelverstoß."
+      },
+      "duplicate": {
+        "name": "Doppelte Meldung",
+        "text": "Doppelte Meldung zu einem bereits bearbeiteten Fall."
+      }
+    }
+  },
+  "type": {
+    "article": "Artikel",
+    "comment": "Kommentar",
+    "profile comment": "Profilkommentar",
+    "profile": "Profil",
+    "post": "Beitrag",
+    "thread": "Thema",
+    "message": "Nachricht",
+    "content": "Beitrag"
+  },
+  "duration": {
+    "1h": "1 Stunde",
+    "24h": "24 Stunden",
+    "7d": "7 Tage",
+    "30d": "30 Tage",
+    "perm": "unbestimmte Zeit"
+  }
+}

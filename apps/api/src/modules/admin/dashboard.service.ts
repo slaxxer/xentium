@@ -29,7 +29,48 @@ export type AttentionItem =
 
 const sum = (a: number[]) => a.reduce((x, y) => x + y, 0);
 
+export interface SetupStep { key: string; done: boolean; detail?: string | null }
+
+/**
+ * The setup checklist, from the facts it is decided by. One definition for the ACP
+ * dashboard and the "Set up your site" card on the home page, so the two never
+ * disagree about what is left.
+ */
+function setupState(f: {
+  siteName: string; emailOk: boolean; categoryCount: number; published: number;
+  activeTheme: number; styleEdits: number; liveSince: Date;
+}): { stage: "new" | "active"; steps: SetupStep[] } {
+  const steps: SetupStep[] = [
+    { key: "admin", done: true },
+    { key: "siteName", done: !!f.siteName, detail: f.siteName || null },
+    { key: "email", done: f.emailOk },
+    { key: "categories", done: f.categoryCount > 0 },
+    { key: "article", done: f.published > 0 },
+    { key: "theme", done: f.activeTheme > 0 || f.styleEdits > 0 },
+  ];
+  const ageDays = Math.floor((Date.now() - f.liveSince.getTime()) / 86_400_000);
+  const stage = ageDays < NEW_SITE_DAYS && steps.some((s) => !s.done) ? "new" : "active";
+  return { stage, steps };
+}
+
 export const dashboardService = {
+  /** Only the setup checklist: cheap enough for the home page to ask on every visit. */
+  async setup() {
+    const [siteName, emailOk, categoryCount, published, activeTheme, styleEdits, firstUser] = await Promise.all([
+      getSetting<string>("site.name", ""),
+      isEmailConfigured(),
+      prisma.articleCategory.count(),
+      prisma.article.count({ where: { status: "published", deletedAt: null } }),
+      prisma.theme.count({ where: { active: true } }),
+      prisma.styleHistory.count(),
+      prisma.user.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+    ]);
+    return setupState({
+      siteName, emailOk, categoryCount, published, activeTheme, styleEdits,
+      liveSince: firstUser?.createdAt ?? new Date(),
+    });
+  },
+
   async overview(range: DashboardRange) {
     const span = range * 2;
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -117,16 +158,9 @@ export const dashboardService = {
 
     // ── Setup (a young site) ─────────────────────────────────────────────────
     const liveSince = firstUser?.createdAt ?? new Date();
-    const steps = [
-      { key: "admin", done: true },
-      { key: "siteName", done: !!siteName, detail: siteName || null },
-      { key: "email", done: emailOk },
-      { key: "categories", done: categoryCount > 0 },
-      { key: "article", done: published > 0 },
-      { key: "theme", done: activeTheme > 0 || styleEdits > 0 },
-    ];
-    const ageDays = Math.floor((Date.now() - liveSince.getTime()) / 86_400_000);
-    const stage = ageDays < NEW_SITE_DAYS && steps.some((s) => !s.done) ? "new" : "active";
+    const { stage, steps } = setupState({
+      siteName, emailOk, categoryCount, published, activeTheme, styleEdits, liveSince,
+    });
     const lastWeek = active.slice(-7);
 
     // ── Needs attention ──────────────────────────────────────────────────────

@@ -1,0 +1,81 @@
+{
+  "templates": {
+    "warn": {
+      "harassment": {
+        "name": "Harcèlement",
+        "text": "Bonjour {user}, votre {type} sur {where} a été signalé pour harcèlement. Les attaques personnelles enfreignent les règles de la communauté. Ceci est un avertissement officiel, et de nouveaux signalements peuvent entraîner un bannissement."
+      },
+      "spam": {
+        "name": "Spam / autopromotion",
+        "text": "Bonjour {user}, votre {type} sur {where} contient des liens promotionnels. L'autopromotion n'est pas autorisée ici. Merci de retirer les publications similaires."
+      },
+      "offTopic": {
+        "name": "Messages hors sujet",
+        "text": "Bonjour {user}, les réponses répétées et peu travaillées comme celle sur {where} perturbent les discussions pour tout le monde. Merci de rester dans le sujet."
+      },
+      "uncredited": {
+        "name": "Travail non crédité",
+        "text": "Bonjour {user}, votre {type} sur {where} utilise le travail de quelqu'un d'autre sans le créditer. Merci de citer l'auteur d'origine ou de le retirer."
+      }
+    },
+    "ban": {
+      "repeatedHarassment": {
+        "name": "Harcèlement répété",
+        "text": "Vous avez été banni pour {duration} pour harcèlement répété après plusieurs avertissements. Votre {type} sur {where} a été le signalement décisif."
+      },
+      "spamAccount": {
+        "name": "Compte de spam",
+        "text": "Ce compte a été banni pour publication de spam, dont votre {type} sur {where}."
+      },
+      "banEvasion": {
+        "name": "Contournement de bannissement",
+        "text": "Ce compte est lié à un compte déjà banni et a été banni pour contournement de bannissement."
+      },
+      "phishing": {
+        "name": "Hameçonnage / usurpation",
+        "text": "Ce compte a été banni pour s'être fait passer pour l'équipe et avoir demandé leurs identifiants à des membres sur {where}."
+      },
+      "hateSpeech": {
+        "name": "Discours haineux",
+        "text": "Vous avez été banni pour {duration} pour des propos haineux dans votre {type} sur {where}."
+      }
+    },
+    "delete": {
+      "ruleViolation": {
+        "name": "Retiré : infraction aux règles",
+        "text": "Votre {type} sur {where} a été retiré car il enfreint les règles de la communauté."
+      },
+      "copyright": {
+        "name": "Retiré : droit d'auteur",
+        "text": "Votre {type} sur {where} a été retiré après un signalement pour droit d'auteur. Vous pouvez le republier en créditant l'auteur ou avec son autorisation."
+      }
+    },
+    "dismiss": {
+      "noViolation": {
+        "name": "Aucune infraction",
+        "text": "{type} sur {where} examiné. Aucune règle enfreinte."
+      },
+      "duplicate": {
+        "name": "Signalement en double",
+        "text": "Doublon d'un signalement déjà traité."
+      }
+    }
+  },
+  "type": {
+    "article": "article",
+    "comment": "commentaire",
+    "profile comment": "commentaire de profil",
+    "profile": "profil",
+    "post": "message",
+    "thread": "sujet",
+    "message": "message",
+    "content": "message"
+  },
+  "duration": {
+    "1h": "1 heure",
+    "24h": "24 heures",
+    "7d": "7 jours",
+    "30d": "30 jours",
+    "perm": "une durée indéterminée"
+  }
+}

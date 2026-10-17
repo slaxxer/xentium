@@ -9,11 +9,13 @@
  *   - Undo reopens what a dismissal closed.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { Prisma } from "../../generated/prisma/client.js";
 import { prisma } from "../../infrastructure/db.js";
 import { assertDisposableDatabase } from "../../test/testDatabase.js";
 import { permissionCache } from "../permissions/permission.cache.js";
 import { moderationService } from "./moderation.service.js";
-import { modCanvasService } from "./modCanvas.service.js";
+import { modCanvasService, templateWords, fromTemplate } from "./modCanvas.service.js";
+import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { plainText } from "./reportTarget.js";
 
 const P = "mcprobe";
@@ -90,16 +92,29 @@ describe("the inspector", () => {
 describe("acting on a group", () => {
   it("warns the author, closes every report, counts the template, and can stay silent", async () => {
     const a = await file(ids.r1); const b = await file(ids.r2);
-    const tpl = await modCanvasService.createTemplate(ids.mod, { mode: "warn", name: `${P} warn`, text: "Hi {user}" });
+    const tpl = await modCanvasService.createTemplate(ids.mod, { mode: "warn", name: `${P} warn`, text: "Hi {user}, your {type} on {where}." });
 
     const res = await modCanvasService.act(ids.mod, {
-      reportIds: [a.id, b.id], mode: "warn", templateId: tpl.id, message: "Hi there, please stop.", notify: false,
+      reportIds: [a.id, b.id], mode: "warn", templateId: tpl.id, message: "You are an idiot.", notify: false,
     });
     expect(res).toEqual({ status: "resolved", count: 2 });
-    expect(await prisma.moderationWarning.count({ where: { userId: ids.author } })).toBe(1);
+    // The server fills the template in; whatever text the request carried is ignored.
+    const warnings = await prisma.moderationWarning.findMany({ where: { userId: ids.author } });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]!.reason).toBe(`Hi ${P}_author, your profile comment on ${P}_owner's profile.`);
     expect(await prisma.notification.count({ where: { userId: ids.author, type: "moderation.warning_issued" } })).toBe(0);
     expect(await prisma.moderationReport.count({ where: { id: { in: [a.id, b.id] }, status: "resolved" } })).toBe(2);
     expect((await prisma.moderationTemplate.findUnique({ where: { id: tpl.id } }))?.useCount).toBe(1);
+  });
+
+  it("will not warn without a warn template", async () => {
+    const a = await file(ids.r1);
+    await expect(modCanvasService.act(ids.mod, { reportIds: [a.id], mode: "warn", message: "Written by hand.", notify: false }))
+      .rejects.toMatchObject({ code: "XEC-MOD-4101" });
+    const ban = await modCanvasService.createTemplate(ids.mod, { mode: "ban", name: `${P} ban`, text: "Banned." });
+    await expect(modCanvasService.act(ids.mod, { reportIds: [a.id], mode: "warn", templateId: ban.id, notify: false }))
+      .rejects.toMatchObject({ code: "XEC-MOD-4101" });
+    expect(await prisma.moderationWarning.count({ where: { userId: ids.author } })).toBe(0);
   });
 
   it("removes the content", async () => {
@@ -178,8 +193,115 @@ describe("restoring the default texts", () => {
   });
 });
 
+describe("default texts in the site's language", () => {
+  async function withSiteLocale(locale: string, fn: () => Promise<void>) {
+    const before = await prisma.moderationTemplate.findMany();
+    const prev = await prisma.setting.findUnique({ where: { key: "site.locale" } });
+    await prisma.moderationTemplate.deleteMany({});
+    await prisma.setting.upsert({ where: { key: "site.locale" }, update: { value: locale }, create: { key: "site.locale", value: locale } });
+    bustSettingsCache("site.locale");
+    try {
+      await modCanvasService.restoreDefaults(ids.mod);
+      await fn();
+    } finally {
+      await prisma.moderationTemplate.deleteMany({});
+      if (before.length) await prisma.moderationTemplate.createMany({ data: before });
+      if (prev) await prisma.setting.update({ where: { key: "site.locale" }, data: { value: prev.value as Prisma.InputJsonValue } });
+      else await prisma.setting.deleteMany({ where: { key: "site.locale" } });
+      bustSettingsCache("site.locale");
+    }
+  }
+
+  it("shows an untouched default in German on a German site, and stores it in English", async () => {
+    await withSiteLocale("de", async () => {
+      const list = await modCanvasService.listTemplates();
+      const harass = list.find((t) => t.mode === "warn" && t.name === "Belästigung")!;
+      expect(harass.text).toContain("{user}");
+      expect(harass.isDefault).toBe(true);
+      const row = await prisma.moderationTemplate.findUniqueOrThrow({ where: { id: harass.id } });
+      expect(row.name).toBe("Harassment");
+      expect(row.defaultKey).toBe("warn.harassment");
+    });
+  });
+
+  it("keeps a default a default when saved unchanged, and an edit as written", async () => {
+    await withSiteLocale("de", async () => {
+      const list = await modCanvasService.listTemplates();
+      const harass = list.find((t) => t.name === "Belästigung")!;
+      await modCanvasService.updateTemplate(ids.mod, harass.id, { name: harass.name, text: harass.text });
+      expect((await prisma.moderationTemplate.findUniqueOrThrow({ where: { id: harass.id } })).name).toBe("Harassment");
+
+      await modCanvasService.updateTemplate(ids.mod, harass.id, { text: "Unser eigener Text" });
+      const row = await prisma.moderationTemplate.findUniqueOrThrow({ where: { id: harass.id } });
+      expect(row.text).toBe("Unser eigener Text");
+      expect((await modCanvasService.listTemplates()).find((t) => t.id === harass.id)?.isDefault).toBe(true);
+    });
+  });
+
+  it("fills {type} and {duration} in the site's language", async () => {
+    await withSiteLocale("fr", async () => {
+      const words = await templateWords();
+      expect(words.locale).toBe("fr");
+      expect(words.type.comment).toBe("commentaire");
+      expect(words.duration["7d"]).toBe("7 jours");
+    });
+  });
+});
+
 describe("plainText", () => {
   it("drops tags and decodes the common entities", () => {
     expect(plainText("<p>a&nbsp;<i>b</i></p><p>c &lt;3</p>")).toBe("a b c <3");
+  });
+});
+
+describe("from a template", () => {
+  const warnOf = (templateId: string | null, userId = ids.author, length?: string) => fromTemplate({
+    actorId: ids.mod, mode: "warn", templateId, userId, target: { type: "profile_comment", id: comment }, length,
+  });
+
+  it("fills a warn template from the content, and refuses content by someone else", async () => {
+    const tpl = await modCanvasService.createTemplate(ids.mod, { mode: "warn", name: `${P} warn`, text: "{user}: {type} on {where}" });
+    expect((await warnOf(tpl.id)).text).toBe(`${P}_author: profile comment on ${P}_owner's profile`);
+    await expect(warnOf(tpl.id, ids.r1)).rejects.toMatchObject({ code: "XEC-MOD-4102" });
+    await expect(warnOf(null)).rejects.toMatchObject({ code: "XEC-MOD-4101" });
+  });
+
+  it("takes the timing from the template; another one needs the override permission", async () => {
+    const tpl = await modCanvasService.createTemplate(ids.mod, { mode: "warn", name: `${P} warn`, text: "Hi {user}", warnExpiry: "30d" });
+    expect((await warnOf(tpl.id)).expiry).toBe("30d");
+    expect((await warnOf(tpl.id, ids.author, "30d")).expiry).toBe("30d");            // its own length: fine
+    await expect(warnOf(tpl.id, ids.author, "never")).rejects.toMatchObject({ httpStatus: 403 });
+
+    const ban = await modCanvasService.createTemplate(ids.mod, { mode: "ban", name: `${P} ban`, text: "Banned for {duration}.", defaultDuration: "24h" });
+    const banOf = (length?: string) => fromTemplate({ actorId: ids.mod, mode: "ban", templateId: ban.id, userId: ids.author, length });
+    expect((await banOf()).length).toBe("24h");
+    await expect(banOf("perm")).rejects.toMatchObject({ httpStatus: 403 });
+
+    // A team lead holds both overrides.
+    const keys = ["moderation.warn.expiry.override", "moderation.ban.length.override"];
+    const perms = await Promise.all(keys.map((key) => prisma.permission.upsert({ where: { key }, update: {}, create: { key, label: key } })));
+    await prisma.groupPermission.createMany({ data: perms.map((p) => ({ groupId, permissionId: p.id })) });
+    await permissionCache.invalidate(ids.mod);
+    expect((await warnOf(tpl.id, ids.author, "never")).expiry).toBe("never");
+    expect((await banOf("perm")).length).toBe("perm");
+  });
+
+  it("a ban template that names the content needs it; one that does not, does not", async () => {
+    const named = await modCanvasService.createTemplate(ids.mod, { mode: "ban", name: `${P} ban a`, text: "Your {type} on {where}." });
+    await expect(fromTemplate({ actorId: ids.mod, mode: "ban", templateId: named.id, userId: ids.author }))
+      .rejects.toMatchObject({ code: "XEC-MOD-4103" });
+    const plain = await modCanvasService.createTemplate(ids.mod, { mode: "ban", name: `${P} ban b`, text: "Ban evasion, {user}." });
+    expect((await fromTemplate({ actorId: ids.mod, mode: "ban", templateId: plain.id, userId: ids.author })).text)
+      .toBe(`Ban evasion, ${P}_author.`);
+  });
+
+  it("a warning from a template counts for the template's length", async () => {
+    const a = await file(ids.r1);
+    const tpl = await modCanvasService.createTemplate(ids.mod, { mode: "warn", name: `${P} warn`, text: "Hi {user}", warnExpiry: "7d" });
+    await modCanvasService.act(ids.mod, { reportIds: [a.id], mode: "warn", templateId: tpl.id, notify: false });
+    const w = await prisma.moderationWarning.findFirstOrThrow({ where: { userId: ids.author } });
+    const days = (w.expiresAt!.getTime() - Date.now()) / 86_400_000;
+    expect(days).toBeGreaterThan(6.9);
+    expect(days).toBeLessThan(7.1);
   });
 });

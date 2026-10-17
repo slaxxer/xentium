@@ -265,3 +265,8 @@
   .acp-savebar__sub, .acp-savebar__review-btn { display: none; }
   .acp-savebar__save kbd { display: none; }
 }
+
+/* While the bar is up it floats over the page's last ~90px. Room below the content
+   lets everything scroll clear of it, so a button at the very bottom (a board's
+   "+ Add", a form's last row) is never stuck underneath. */
+body:has(.acp-savebar.is-visible) .acp-content { padding-bottom: 128px; }

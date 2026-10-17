@@ -222,6 +222,9 @@
   gap: 8px;
   padding: 18px 0 0;
 }
+/* "Cookie settings" is a button (it opens a dialog) drawn exactly like the links. */
+.xt-footlinks__link--button { border: 0; font-family: inherit; cursor: pointer; }
+
 .xt-footlinks__link {
   padding: 6px 10px;
   border-radius: var(--radius-sm);

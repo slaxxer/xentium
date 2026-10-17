@@ -23,6 +23,14 @@ describe("presentFrame", () => {
     });
   });
 
+  it("sets the content and reading widths in every mode, but only when changed", () => {
+    const wide = siteFrameSchema.parse({ contentWidth: 1440, readingWidth: 900 });
+    expect(presentFrame(wide, "article.detail").style).toEqual({ "--content-max": "1440px", "--content-narrow": "900px" });
+    const boxed = siteFrameSchema.parse({ mode: "boxed", readingWidth: 900 });
+    expect(presentFrame(boxed, "home").style).toMatchObject({ "--content-narrow": "900px" });
+    expect(presentFrame(boxed, "home").style).not.toHaveProperty("--content-max");
+  });
+
   it("follows the page's own frame", () => {
     const f = siteFrameSchema.parse({ mode: "boxed", overrides: { home: "full" } });
     expect(presentFrame(f, "home").mode).toBe("full");

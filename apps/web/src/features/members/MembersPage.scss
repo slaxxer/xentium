@@ -169,7 +169,9 @@
   color: var(--c-fg-muted);
   border-bottom: 1px solid var(--c-border);
 }
-.mp-list { display: flex; flex-direction: column; }
+/* A container: the row layout follows the LIST's width, not the screen's. Beside the
+   filter rail on a tablet the list is phone-narrow while the screen is not. */
+.mp-list { display: flex; flex-direction: column; container: mp-list / inline-size; }
 .mp-row {
   display: grid;
   grid-template-columns: 46px 1.4fr 2fr auto auto;
@@ -288,6 +290,39 @@
   .mp-howto__list { grid-template-columns: 1fr; }
 }
 @media (max-width: 720px) {
+  /* The filter rail stops being a column a screen tall: filters and sorts become two
+     rows of chips that scroll sideways, so the first member shows without scrolling. */
+  .mp-rail__h { display: none; }
+  .mp-filters, .mp-sortbox {
+    flex-direction: row; flex-wrap: nowrap; gap: 6px;
+    overflow-x: auto; scrollbar-width: none;
+    margin: 0 -4px 8px; padding: 0 4px;
+  }
+  .mp-filters::-webkit-scrollbar, .mp-sortbox::-webkit-scrollbar { display: none; }
+  .mp-filters button {
+    flex: none; white-space: nowrap; gap: 6px;
+    padding: 7px 12px; border-radius: 999px;
+    border: 1px solid var(--c-border); font-size: var(--fs-sm);
+  }
+  .mp-filters button em { margin-left: 2px; }
+  .mp-filters button.is-on { border-color: transparent; }
+  .mp-sortbox { margin-bottom: 0; }
+  .mp-sortbox button { flex: none; white-space: nowrap; border-radius: 999px; }
+
+  .mp-row {
+    grid-template-columns: 42px 1fr;
+    grid-template-areas: "av id" "bio bio" "stats follow";
+    row-gap: 12px;
+  }
+  .mp-row > .hearth-ava-wrap { grid-area: av; }
+  .mp-row__id { grid-area: id; }
+  .mp-row__bio { grid-area: bio; max-width: none; white-space: normal; }
+  .mp-row__stats { grid-area: stats; justify-content: flex-start; }
+  .mp-row .mp-follow { grid-area: follow; justify-self: end; }
+}
+
+/* The stacked row, wherever the list is narrow (a phone, or beside the rail on a tablet). */
+@container mp-list (max-width: 560px) {
   .mp-row {
     grid-template-columns: 42px 1fr;
     grid-template-areas: "av id" "bio bio" "stats follow";

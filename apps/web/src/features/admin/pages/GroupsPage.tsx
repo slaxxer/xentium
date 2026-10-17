@@ -13,7 +13,7 @@ import { GroupGlyph, PowerMeter } from "./groups/groupParts";
 import "./acpSystem.scss";
 import "./groups/Groups.scss";
 
-// ACP → Users → Groups: every group as one precedence list. The group at the top
+// ACP → Members → Groups: every group as one precedence list. The group at the top
 // is the badge a member of several groups wears, so the order is the point of
 // the page — drag a row (or focus its handle and use Alt+↑/↓) to change it.
 // Everything else about a group lives on its own page (groups/GroupDetailPage).
@@ -80,7 +80,7 @@ export function GroupsPage() {
     <div className="gp-page">
       <div className="pg-head">
         <div>
-          <p className="pg-eyebrow">{t("nav.accessControl")}</p>
+          <p className="pg-eyebrow">{t("nav.members")}</p>
           <h1 className="pg-title">{t("nav.groups")}</h1>
           <p className="pg-sub">{t("groups.list.sub")}</p>
         </div>

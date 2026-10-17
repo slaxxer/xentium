@@ -6,6 +6,7 @@ import { requireAuth } from "../../shared/middleware/requireAuth.js";
 import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { makeRateLimiter, byUserId } from "../../shared/middleware/rateLimit.js";
 import { progressionController } from "../progression/progression.controller.js";
+import { uiFlagsController } from "./uiFlags.js";
 
 export const usersRouter: Router = Router();
 
@@ -18,6 +19,9 @@ const pCommentLimiter = makeRateLimiter("profile-comment", 5 * 60_000, isDev ? 1
 usersRouter.get("/ping", (_req, res) => res.json({ pong: true }));
 
 // Must be before /:id/* routes to prevent shadowing
+// Small per-person UI flags (a tour seen, the layout editor's Advanced mode).
+usersRouter.get("/me/ui-flags", requireAuth, uiFlagsController.list);
+usersRouter.put("/me/ui-flags/:flag", requireAuth, uiFlagsController.set);
 usersRouter.get("/me/limits", requireAuth, progressionController.getMyLimits);
 usersRouter.get("/me/progression", requireAuth, progressionController.getMyProgression);
 usersRouter.get("/me/level-up", requireAuth, progressionController.getMyLevelUp);

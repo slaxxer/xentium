@@ -65,6 +65,9 @@
   --c-danger-soft:   rgba(239, 68, 68, 0.10);
   --c-info:          var(--primitive-sky-400);
   --c-update:        #414144;   // neutral "plugin update available" toast accent
+  // The header band's gradient (the core header layout points its stops at these).
+  --masthead-from:   #14162a;
+  --masthead-to:     #5865f2;
 
   --shadow-card:  0 6px 24px rgba(30, 40, 90, 0.08);
   --shadow-pop:   0 12px 40px rgba(30, 40, 90, 0.13);
@@ -299,6 +302,9 @@
   --c-danger-soft:   rgba(200, 50, 47, 0.10);
   --c-info:          #3f5a8a;
   --c-update:        #3a423f;
+  // The header band under the navbar: deep teal into the accent.
+  --masthead-from:   #0a4a44;
+  --masthead-to:     #12a090;
 
   // Flat: a hairline separates, a shadow only lifts what floats (menus, dialogs). The
   // card "shadow" IS a faint 1px ring, so every card-painted surface gets an edge

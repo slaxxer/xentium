@@ -26,7 +26,9 @@ export function SplitView({ ctx, selected, onSelect, searchRef }: {
   const { domains, total, saved, draft, edits, request, copyFrom } = ctx;
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<SplitFilter>("all");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // Domains start CLOSED: the page opens on one line per domain with its count, and
+  // the admin opens the one they came for. Searching or filtering opens every match.
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const gid = selected.id;
   const held = draft(gid);
@@ -89,12 +91,12 @@ export function SplitView({ ctx, selected, onSelect, searchRef }: {
           const on = ps.filter((p) => eff.has(p.key)).length;
           const allHeld = ps.every((p) => held.has(p.key));
           const sens = ps.filter((p) => isSensitive(p.key)).length;
-          const open = narrowing || !collapsed[domain];
+          const open = narrowing || !!expanded[domain];
           return (
             <div key={domain} className="pm-domain">
               <div className="pm-domain__head">
                 <button type="button" className="pm-domain__toggle" aria-expanded={open} disabled={narrowing}
-                  onClick={() => setCollapsed((c) => ({ ...c, [domain]: !c[domain] }))}>
+                  onClick={() => setExpanded((c) => ({ ...c, [domain]: !c[domain] }))}>
                   <FontAwesomeIcon icon={faChevronDown} className={`gp-chev${open ? "" : " is-closed"}`} />
                   <span className="gp-domain__name">{permissionDomainLabel(domain)}</span>
                   {sens > 0 && <span className="gp-sensitive">{t("permissions.sensitiveCount", { count: sens })}</span>}

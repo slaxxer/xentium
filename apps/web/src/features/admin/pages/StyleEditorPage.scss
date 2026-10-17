@@ -323,7 +323,7 @@
 
 /* Typography sits in the board because a font is a palette decision, not a
    token buried three sections down. */
-.se-type { flex: 1; min-width: 300px; display: flex; flex-direction: column; gap: 10px; }
+.se-type { flex: 1; min-width: min(300px, 100%); display: flex; flex-direction: column; gap: 10px; }
 .se-type__body { display: flex; gap: 10px; align-items: stretch; }
 .se-type__aa {
   width: 78px;

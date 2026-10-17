@@ -29,6 +29,8 @@ type CategoryRow = {
 
 export interface CategoryTreeNode extends CategoryRow {
   children: CategoryTreeNode[];
+  /** Published articles in this category the viewer may see (the article index rail). */
+  count?: number;
 }
 
 function toVisibilityNode(row: Pick<CategoryRow, "visibility" | "visibilityGroups" | "visibilityMinLevel">): VisibilityNode {
@@ -113,7 +115,25 @@ export const articleCategoryService = {
       // hide_if_no_access — when false, ineligible viewers still see the node (locked notice on FE)
       return !row.hideIfNoAccess;
     });
-    return buildTree(visible);
+    // How many published articles each category holds, by the same visibility rule
+    // the article list applies (guests: public; members: public + members + their own).
+    const counts = await prisma.article.groupBy({
+      by: ["categoryId"],
+      where: {
+        status: "published", deletedAt: null, categoryId: { not: null },
+        ...(viewer?.userId
+          ? { OR: [{ visibility: { in: ["public", "members"] } }, { authorId: viewer.userId }] }
+          : { visibility: "public" }),
+      },
+      _count: { _all: true },
+    });
+    const byId = new Map(counts.map((c) => [c.categoryId, c._count._all]));
+    const tree = buildTree(visible);
+    const stamp = (nodes: CategoryTreeNode[]) => {
+      for (const n of nodes) { n.count = byId.get(n.id) ?? 0; stamp(n.children); }
+    };
+    stamp(tree);
+    return tree;
   },
 
   async getById(id: string): Promise<CategoryRow> {

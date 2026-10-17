@@ -1,4 +1,5 @@
 import type { ComponentType, ReactNode } from "react";
+import { forgetConsentFor } from "../lib/consent";
 
 // ── Profile tab (registered by plugins, rendered in /u/:username) ─────────────
 export interface ProfileTabSlot {
@@ -88,6 +89,17 @@ export interface PluginRoute {
 // Rendered for authenticated users only, immediately left of the notification bell
 // in both the public nav and the ACP topbar. The component owns its own button +
 // dropdown (mirror NotificationBell). Lower `order` renders further left.
+/**
+ * Something a plugin draws once on EVERY public page, outside the layout: a consent
+ * dialog, a chat bubble. Fixed-position by nature; it must draw nothing it does not
+ * need to (no box, no space taken) and never cover the page by default.
+ */
+export interface SiteOverlaySlot {
+  id: string;
+  component: ComponentType;
+  order?: number;
+}
+
 export interface HeaderWidgetSlot {
   id: string;
   /** Receives the glyph an admin picked for its block in the layout editor (a TokenIcon
@@ -334,6 +346,7 @@ class SlotRegistry {
   private profileStats:      ProfileStatSlot[]        = [];
   private profileActions:    ProfileActionSlot[]      = [];
   private headerWidgets:     HeaderWidgetSlot[]       = [];
+  private siteOverlays:      SiteOverlaySlot[]        = [];
   private userMenuItems:     UserMenuItemSlot[]       = [];
   private layoutWidgets:     LayoutWidgetSlot[]       = [];
   private groupConfigPanels: GroupConfigPanelSlot[]   = [];
@@ -380,6 +393,7 @@ class SlotRegistry {
   registerProfileStat(stat: ProfileStatSlot)                { this._own(stat.id);     this.profileStats.push(stat); }
   registerProfileAction(slot: ProfileActionSlot)            { this._own(slot.id);     this.profileActions.push(slot); }
   registerHeaderWidget(slot: HeaderWidgetSlot)              { this._own(slot.id);     this.headerWidgets.push(slot); }
+  registerSiteOverlay(slot: SiteOverlaySlot)                { this._own(slot.id);     this.siteOverlays.push(slot); }
   registerUserMenuItem(slot: UserMenuItemSlot)              { this._own(slot.id);     this.userMenuItems.push(slot); }
   registerLayoutWidget(slot: LayoutWidgetSlot)              { this._own(slot.id);     this.layoutWidgets.push(slot); }
   registerGroupConfigPanel(slot: GroupConfigPanelSlot)      { this._own(slot.id);     this.groupConfigPanels.push(slot); }
@@ -411,6 +425,7 @@ class SlotRegistry {
   getProfileStats()      { return [...this.profileStats]; }
   getProfileActions()    { return [...this.profileActions].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getHeaderWidgets()     { return [...this.headerWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
+  getSiteOverlays()      { return [...this.siteOverlays].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getUserMenuItems()     { return [...this.userMenuItems].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getLayoutWidgets()     { return [...this.layoutWidgets].sort((a, b) => (a.order ?? 100) - (b.order ?? 100)); }
   getEmbed(type: string): EmbedSlot | undefined { return this.embeds.find((e) => e.type === type); }
@@ -463,12 +478,15 @@ class SlotRegistry {
     this.profileStats      = this.profileStats.filter((s) => !this._ownedBy(s.id, pluginId));
     this.profileActions    = this.profileActions.filter((s) => !this._ownedBy(s.id, pluginId));
     this.headerWidgets     = this.headerWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
+    this.siteOverlays      = this.siteOverlays.filter((s) => !this._ownedBy(s.id, pluginId));
     this.userMenuItems     = this.userMenuItems.filter((s) => !this._ownedBy(s.id, pluginId));
     this.layoutWidgets     = this.layoutWidgets.filter((s) => !this._ownedBy(s.id, pluginId));
     this.groupConfigPanels = this.groupConfigPanels.filter((s) => !this._ownedBy(s.id, pluginId));
     this.embeds            = this.embeds.filter((e) => !this._ownedBy(`embed:${e.type}`, pluginId));
     this.composerTools     = this.composerTools.filter((t) => !this._ownedBy(t.id, pluginId));
     this._owners.forEach((owner, key) => { if (owner === pluginId) this._owners.delete(key); });
+    // A disabled plugin's cookies and services leave the consent lists with it.
+    forgetConsentFor(pluginId);
   }
 }
 

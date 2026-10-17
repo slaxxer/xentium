@@ -1,0 +1,17 @@
+/* The placeholder for third-party content before consent: a quiet card the size of
+   a short embed. */
+.xt-consent-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px;
+  border: 1px dashed var(--c-border-hi, var(--c-border));
+  border-radius: var(--radius-md);
+  background: var(--c-bg-hover);
+  color: var(--c-fg-muted);
+  font-size: var(--fs-sm);
+  b { color: var(--c-fg); }
+  p { margin: 0; line-height: 1.5; }
+  a { color: var(--c-accent); }
+  &__acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+}

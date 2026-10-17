@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../components/Icon";
 import {
   faHouse, faStar, faComments, faHeart, faPenToSquare, faImage, faSquarePollVertical,
-  faEllipsis, faShareNodes, faBookmark, faFire, faTag, faLink, faFlag,
+  faEllipsis, faShareNodes, faBookmark, faFire, faTag, faLink, faFlag, faCheck, faArrowRight,
 } from "@fortawesome/free-solid-svg-icons";
 import { CorePermissions } from "@xentium/contracts";
 import { articlesApi, articleCategoriesApi, type ArticleListItem, type HomeFeed } from "../lib/articlesApi";
@@ -22,6 +22,7 @@ import "./HomePage.scss";
 import { LayoutRenderer } from "../layout/LayoutRenderer";
 import { useLayoutDocument } from "../layout/useLayout";
 import { RankBadge } from "../components/RankBadge";
+import { SETUP_STEP_LINK, type SetupStep } from "../lib/setupSteps";
 
 /* ── helpers ──────────────────────────────────────────────────────────── */
 
@@ -542,6 +543,57 @@ export function PopularTags() {
           </Link>
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * "Set up your community": the ACP dashboard's checklist, on the page an admin lands
+ * on after installing. Only for someone who may open the ACP, and only while the
+ * site is young with steps left (`stage: "new"`); everyone else gets nothing, so the
+ * rail is unchanged for members. Without it a fresh install greeted its admin with
+ * an empty feed and no hint of what to do next.
+ */
+export function SetupChecklist() {
+  const { t } = useTranslation("acp", { keyPrefix: "dashboard" });
+  const { user } = useAuth();
+  const isAdmin = userCan(user, CorePermissions.ADMIN_ACCESS);
+  const { data } = useQuery<{ stage: "new" | "active"; steps: SetupStep[] }>({
+    queryKey: ["home-setup"],
+    queryFn: () => api.get("/admin/dashboard/setup"),
+    enabled: isAdmin,
+    staleTime: 60_000,
+  });
+  if (!isAdmin || !data || data.stage !== "new") return null;
+
+  const next = data.steps.findIndex((s) => !s.done);
+  const done = data.steps.filter((s) => s.done).length;
+  return (
+    <section className="hf-card hf-setup">
+      <h4 className="hf-railhead hf-railhead--row">
+        {t("setupTitle")}
+        <span className="hf-setup__n">{t("setupCount", { done, total: data.steps.length })}</span>
+      </h4>
+      <div className="hf-setup__bar" aria-hidden>
+        {data.steps.map((s) => <i key={s.key} className={s.done ? "is-done" : ""} />)}
+      </div>
+      <ul className="hf-setup__list">
+        {data.steps.map((s, i) => {
+          const to = SETUP_STEP_LINK[s.key];
+          const cls = `hf-setup__step${s.done ? " is-done" : ""}${i === next ? " is-next" : ""}`;
+          const body = (
+            <>
+              <span className="hf-setup__dot">{s.done && <FontAwesomeIcon icon={faCheck} />}</span>
+              <span className="hf-setup__label">
+                {t(`step.${s.key}`)}
+                {i === next && <small>{t(`step.${s.key}Hint`)}</small>}
+              </span>
+              {!s.done && to && <FontAwesomeIcon icon={faArrowRight} className="hf-setup__go" />}
+            </>
+          );
+          return <li key={s.key}>{!s.done && to ? <Link to={to} className={cls}>{body}</Link> : <div className={cls}>{body}</div>}</li>;
+        })}
+      </ul>
     </section>
   );
 }

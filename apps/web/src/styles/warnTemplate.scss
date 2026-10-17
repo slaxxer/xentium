@@ -1,0 +1,68 @@
+/* The warning picker, a warn dialog's only input
+   (components/WarnTemplateSelect). Global, not a module: the forum's warn dialog
+   draws it too, and a plugin ships no stylesheet. Matches the dialog fields. */
+.xt-warn-tpl__label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--c-fg-muted);
+}
+
+.xt-warn-tpl__select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border-color, var(--c-border));
+  border-radius: var(--radius-sm);
+  color: var(--input-fg, var(--c-fg));
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+
+  &:focus { outline: none; border-color: var(--input-border-focus, var(--c-accent)); }
+}
+
+.xt-warn-tpl__field { display: block; }
+
+/* What the member will read: the picked template, filled in. Read-only on purpose. */
+.xt-warn-tpl__preview {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-bg-hover);
+
+  p {
+    margin: 0;
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: var(--c-fg);
+    white-space: pre-wrap;
+  }
+}
+
+.xt-warn-tpl__none {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--c-border);
+  font-size: var(--fs-sm);
+  color: var(--c-fg-muted);
+
+  a { color: var(--c-accent); }
+}
+
+/* When the warning stops counting: part of the consequence, so it sits in the preview. */
+.xt-warn-tpl__when {
+  display: block;
+  margin-top: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--c-fg-muted);
+}
+
+.xt-warn-tpl__override { margin-top: 12px; }

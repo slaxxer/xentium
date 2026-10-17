@@ -1338,3 +1338,44 @@
 }
 
 /* The rail's card header — a title with something on the far right. */
+
+/* ── Phones ─────────────────────────────────────────────
+   The counters become a tight three-column grid (a last tile keeps its own width, never
+   one stretched across the card), and the tabs one row that scrolls sideways instead of
+   three rows of pills pushing the content down. */
+@media (max-width: 640px) {
+  .profile-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--sp-2);
+  }
+  .profile-stat {
+    padding: var(--sp-2) var(--sp-3);
+    &__value { font-size: var(--fs-lg); }
+    &__label { font-size: var(--fs-2xs); }
+  }
+
+  .profile-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Room for the pills' shadow, which the scroll box would otherwise clip. */
+    margin-inline: calc(var(--sp-2) * -1);
+    padding: var(--sp-2);
+    &::-webkit-scrollbar { display: none; }
+  }
+  .profile-tab { flex: none; white-space: nowrap; }
+
+  /* The cover dropzone: the avatar overlaps the lower part of the band on a phone, so
+     the invitation keeps to the top: title and button only, no icon or size line. */
+  .profile-cover__drop {
+    inset: 12px 12px auto;
+    justify-content: flex-start;
+    gap: 6px;
+    padding: 10px 12px;
+  }
+  .profile-cover__drop-spec { display: none; }
+  .profile-cover__drop-icon { font-size: var(--fs-lg); }
+  .profile-cover__drop-title { font-size: var(--fs-sm); }
+  .profile-cover__drop-actions { margin-top: 0; }
+}

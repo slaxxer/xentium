@@ -129,7 +129,8 @@
     "switchToDark": "Switch to dark mode",
     "adminPanel": "Admin panel",
     "adminAttention": "Something in the admin panel needs your attention",
-    "homeAria": "Go to the home page"
+    "homeAria": "Go to the home page",
+    "menu": "Menu"
   },
   "search": {
     "short": "Search",
@@ -151,15 +152,15 @@
   },
   "guestHome": {
     "hero": {
-      "badge": "builders online now",
-      "title": "Where people who build with xentium hang out.",
-      "subtitle": "Ask questions, show what you made, shape the roadmap, and learn from {members} makers. Reading is open to everyone.",
+      "badge": "online now",
+      "title": "Welcome to {site}.",
+      "subtitle": "Read what our members write, join the conversation and get to know the people here. Reading is open to everyone.",
       "ctaPrimary": "Join the conversation",
       "ctaSecondary": "Browse as guest"
     },
     "gate": {
-      "vote": "Create an account to like topics",
-      "post": "Sign up to start a new topic",
+      "vote": "Create an account to like articles",
+      "post": "Sign up to write an article",
       "more": "Create a free account to read everything",
       "default": "Create a free account to do that"
     },
@@ -189,13 +190,15 @@
     "feed": {
       "latest": "Latest",
       "top": "Top",
-      "topics_one": "{{count}} topic",
-      "topics_other": "{{count}} topics",
-      "newTopic": "New topic",
+      "articles_one": "{{count}} article",
+      "articles_other": "{{count}} articles",
+      "posts_one": "{{count}} post",
+      "posts_other": "{{count}} posts",
+      "newArticle": "Write an article",
       "newPost": "New post",
       "allCategories": "All categories",
       "loading": "Loading…",
-      "empty": "No topics here yet.",
+      "empty": "No articles yet.",
       "moreAll": "<b>Create a free account</b> to see all {{formatted}} posts",
       "moreRead": "<b>Create a free account</b> to read everything"
     },
@@ -675,5 +678,54 @@
   },
   "embed": {
     "unavailable": "This content isn't available."
+  },
+  "warnTemplates": {
+    "label": "Warning",
+    "pick": "Pick the rule that was broken…",
+    "preview": "What {{user}} will read",
+    "none": "There are no warning templates yet, so no warning can be sent.",
+    "addOne": "Add one"
+  },
+  "consent": {
+    "settingsLink": "Cookie settings",
+    "thisSite": "This site",
+    "core": {
+      "xt_rt": "Keeps you signed in.",
+      "xt_did": "Recognises this device at sign-in, to protect your account.",
+      "xt_oauth": "Completes a sign-in with an external account.",
+      "xt_locale": "Remembers the language you picked.",
+      "xt_theme": "Remembers the theme you picked.",
+      "storage": "Remembers drafts and display settings on this device.",
+      "iconKit": "Loads the site's icon set from Font Awesome."
+    },
+    "life": {
+      "signIn": "30 days, or until the browser closes",
+      "year1": "1 year",
+      "minutes10": "10 minutes",
+      "untilCleared": "Until you clear it"
+    },
+    "gate": {
+      "title": "Content from {{service}}",
+      "body": "Showing it loads content from {{service}}, which can see your IP address.",
+      "privacy": "Privacy policy",
+      "loadOnce": "Load",
+      "always": "Always allow"
+    }
+  },
+  "modTiming": {
+    "label": "Counts for",
+    "banLabel": "Ban length",
+    "never": "Never expires",
+    "7d": "7 days",
+    "30d": "30 days",
+    "90d": "90 days",
+    "180d": "180 days",
+    "365d": "1 year",
+    "countsUntil": "Counts against {{user}} until {{date}}",
+    "countsForever": "Counts against {{user}} permanently",
+    "bannedFor": "{{user}} is banned for {{len}}",
+    "bannedForever": "{{user}} is banned permanently",
+    "fixed": "Set by the template. Team leads with the override permission can change it.",
+    "override": "Override (team lead)"
   }
 }
