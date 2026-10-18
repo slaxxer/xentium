@@ -1,16 +1,9 @@
-<div align="center">
-
 # Xentium
 
-**An open-source, extensible CMS and community platform.**
+An open-source community platform and CMS, written in TypeScript from the database
+to the browser. MIT licensed, currently in alpha.
 
-Modular-monolith core · TypeScript end to end · plugins first
-
-`Node.js 24` · `Express 5` · `React 19` · `PostgreSQL 17` · `Prisma 7` · `Redis 7` · `pnpm + Turborepo`
-
-📖 **Developer docs: [doc.xentium.org](https://doc.xentium.org)**
-
-</div>
+Developer docs: [doc.xentium.org](https://doc.xentium.org)
 
 ---
 
@@ -38,24 +31,86 @@ Modular-monolith core · TypeScript end to end · plugins first
 
 ## What is Xentium
 
-Xentium is an open-source community platform. Out of the box you get an article/CMS
-site, and you extend it with plugins. The core works fine on its own. Our paid official
-add-ons (forum, messaging and so on) are plugins, and we don't move core features into
-them.
+### Why this exists
 
-What's in core:
+Most community software people actually run today is old. A lot of it is solid, but it
+grew up as PHP in the 2000s and you notice it everywhere: templates you edit as strings,
+plugins that patch core and break on every update, permission systems nobody fully
+understands, and a frontend that was added later.
 
-- 🔐 **Auth & RBAC:** email/password, passkeys, sign-in links and external accounts, rotating refresh sessions, flat permission groups, permissions cached in Redis.
-- 📝 **Articles / CMS:** TipTap editor, nested categories with access control, revisions, comments with replies, likes, bookmarks, tags, full-text search, and an article index you can search and filter.
-- 👤 **Users & social:** profiles, custom profile fields, follow/block, profile walls, and a progression system where levels are groups.
-- 🛡️ **Moderation:** reports, warnings and bans that always come from your templates (which also set how long they last), an immutable log, an escalation ladder and the floating ModCanvas tool. Built-in abuse detection (rapid logins, multi-accounts, registration bursts, ban evasion) opens review cases for a human. It never acts on its own.
-- 🎨 **Appearance:** a three-tier CSS token system, a live Theme Studio, `.xttheme` packages, fonts and a nav manager.
-- 🧱 **Layouts (in Theme Studio):** arrange blocks in regions to decide what shows up on each page, in the navbar and in the footer. You drag in a tree or right in a live preview; edits autosave as a draft and go live when you publish. Layouts are data, so a theme can't run code.
-- 🔔 **Notifications:** one core service every module sends through (in-app and queued email).
-- 🍪 **Cookies & consent:** core only stores what the site needs to work, and gives plugins one contract for declaring what they store and asking before anything optional runs. A consent plugin adds the dialog.
-- 🧩 **Plugin engine:** install/enable/disable, sandboxed migrations, routes, permissions and ACP pages from plugins, plus registries you can hook into.
-- 🛒 **Marketplace & licensing:** per-domain licences for the official paid plugins. A lapsed licence never breaks core.
-- 🌍 **i18n:** English, German, Spanish, French and Portuguese bundled. The API itself doesn't care about language.
+I kept wondering what a forum and CMS would look like if you started from zero today,
+with the tools we have now and none of that history. Xentium is my answer to that.
+TypeScript on both ends, Postgres, a React frontend, a typed plugin API, and themes that
+are data instead of code.
+
+It's a modular monolith on purpose. One codebase, one deploy, two processes (the API and
+a background worker). You don't need Kubernetes to run a community of 200 people, and
+you shouldn't have to learn it to contribute.
+
+### What's in it
+
+Out of the box you get a CMS: articles with a TipTap editor, revisions, nested
+categories with access control, comments, tags and full-text search on Postgres. Around
+that sits what a community needs: profiles, follows, profile walls, notifications (in-app
+and email), and a progression system where levels are just groups.
+
+A few parts I'm particularly happy with:
+
+- Sign-in. Passwords, passkeys, sign-in links and OAuth all finish in the same function,
+  so there's exactly one place where sessions get created. Access tokens live in memory,
+  refresh tokens are httpOnly cookies that rotate on every use.
+- Moderation. Warnings and bans always come from templates you define, everything lands
+  in an append-only log, and the abuse detection (login bursts, multi-accounts, ban
+  evasion) only opens a case. A human decides.
+- Theme Studio. Pages are block documents stored in the database. You drag blocks around
+  in a live preview, it autosaves a draft, and you publish when you're ready. A theme
+  package is layouts plus design tokens, so installing a theme can't run code on your
+  server.
+- Plugins. They get their own routes, migrations, permissions, admin pages and blocks
+  through a typed SDK, without touching core. Disable one and your layouts keep its
+  blocks, so turning it back on puts everything where it was.
+
+It ships in English, German, Spanish, French and Portuguese. The API itself only speaks
+machine keys and error codes, so translations stay in the frontend.
+
+### Trying it
+
+Installing should take a minute, not an afternoon. On a server it's one command:
+
+```bash
+npm create xentium@latest my-community
+```
+
+It checks the machine first (and tells you the exact fix for anything missing), sets up
+Postgres and Redis, installs the app and hands you a URL. The rest happens in a browser
+wizard: it tests your database, generates the secrets, writes `.env`, applies the schema
+and creates your admin account. You never edit a config file and you never restart
+anything. For working on the code itself, `./xentium.sh` does the same thing locally
+(see [Quick start](#quick-start)).
+
+The framework underneath is on npm too, under [`@xentium`](https://www.npmjs.com/search?q=%40xentium):
+errors, auth, settings, rate limiting, uploads, the plugin engine. Core runs on exactly
+these packages, so you can use them in your own Express app without taking the CMS along.
+
+### Where it's at
+
+Alpha. It runs fine, and nothing merges without the full typecheck, lint, test and build
+passing. Still, APIs can change between alphas and you'll hit rough edges. Please don't
+move your 20,000-member forum onto it yet. If you want to try it with real data, there are
+importers for WordPress, phpBB, XenForo, vBulletin and WoltLab, and users keep their
+passwords where the source allows it.
+
+About money, so it doesn't come as a surprise later: core is MIT and complete on its own.
+We also sell a few official plugins (forum, messaging and others) through our
+marketplace. They're ordinary plugins built on the same API anyone can use, and we don't
+move core features into them.
+
+### Want to help?
+
+Good places to start: translations, importers for other platforms, accessibility, tests
+and docs. Or skip core entirely and build a plugin or a theme, that's what the SDK is
+for. The [Contributing](#contributing) section has the workflow, and issues and
+questions on GitHub are always welcome.
 
 ---
 
