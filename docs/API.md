@@ -211,6 +211,8 @@ All **Auth**.
 | POST / DELETE | `/:id/like` · `/:id/dislike` | Auth | Like / dislike toggles. |
 | POST / DELETE | `/:id/bookmark` | Auth | Save an article for later / remove it from Saved. |
 | POST | `/:id/pin` | Perm:`article.edit.any` | `{ pinned }`. A pinned article is the featured one on the article index. |
+| POST | `/:id/comments-closed` | Perm:`article.comments.close` | `{ closed }`. Closed comments refuse new comments and replies with `XEC-ARTICLE-3004`, except for members with `article.comment.closed`. Logged to the moderation log. |
+| POST | `/:id/hidden` | Perm:`article.hide` | `{ hidden }`. A hidden article leaves every list, search, feed and count, and is a 404 for everyone except its author and members with `article.hide`. Nothing is deleted. Logged to the moderation log. |
 | GET | `/topics/following` | Auth | The categories and tags you follow: `{ categories, tags }`. |
 | POST / DELETE | `/categories/:id/follow` · `/tags/:id/follow` | Auth | Follow / unfollow a category or a tag. Answers with your followed topics. |
 
@@ -219,7 +221,7 @@ All **Auth**.
 | Method | Path | Auth | Description |
 |---|---|---|---|
 | PATCH | `/:commentId` | Auth | Edit your comment. |
-| DELETE | `/:commentId` | Auth | Delete (your own, or as a moderator, which leaves a tombstone). |
+| DELETE | `/:commentId` | Auth | Delete. Your own needs `article.comment.delete.own`; anyone else's needs `article.comment.delete.any` and a `reason` (written to the moderation log). The comment leaves the list without a placeholder, and a top-level one takes its replies with it. |
 | POST / DELETE | `/:commentId/like` · `/:commentId/dislike` | Auth | Thumbs up / down. One replaces the other; no thumbs-down on your own comment. Answers `{ likeCount, dislikeCount }`. Comment lists carry `dislikeCount` and, signed in, `viewerReaction`. |
 
 ### Article categories: `/api/article-categories`
@@ -476,7 +478,8 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | GET | `/dashboard` | ACP dashboard stats. |
 | GET | `/dashboard/setup` | The setup checklist for a new site: each step (`admin`, `siteName`, `email`, `categories`, `article`, `theme`) with `done`. |
 | GET | `/users` | User list. Query: `page`, `limit`, `search` (username, email, user ID or IP), `groupId`, `status` (`all`, `active`, `banned`, `inactive`, `flagged`), `sort` (`recent`, `joined`, `posts`, `name`). Each row has `status`, `lastSeenAt`, `online` and `flags`; the response adds `counts` for the whole site. |
-| GET | `/users/:id` | One member: groups, profile fields, known IPs and device cookies, active sessions, flags and the active ban. Never includes password or PIN hashes. |
+| GET | `/users/:id` | One member: groups, profile fields, known IPs and device cookies (`ipSeen` with when each address was last seen, `devices` with each cookie's last user agent), active sessions, flags and the active ban. Never includes password or PIN hashes. |
+| PATCH | `/users/:id/account` | Change `{ username?, email? }`. Same username rules as the member's own change, without the cooldown; recorded in the username history. A new email starts unverified. Not for your own account or an administrator's. Logged to the moderation log. |
 | PATCH | `/users/:id/groups` | Change group membership: `{ add: [groupId], remove: [groupId] }`. Only the named groups change. You can't remove yourself from Administrator. |
 | PUT | `/users/:id/groups` | Replace group membership with `{ groupIds }`. Prefer `PATCH`: a replacement undoes any change made since you read the list. |
 | PATCH | `/users/:id/active` | Activate / deactivate. |

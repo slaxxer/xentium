@@ -68,6 +68,8 @@ export const trendingQuerySchema = z.object({
 });
 
 export const pinArticleSchema = z.object({ pinned: z.boolean() });
+export const closeCommentsSchema = z.object({ closed: z.boolean() });
+export const hideArticleSchema = z.object({ hidden: z.boolean() });
 
 export type CreateArticleInput = z.infer<typeof createArticleSchema>;
 export type UpdateArticleInput = z.infer<typeof updateArticleSchema>;

@@ -94,6 +94,7 @@ export const searchService = {
       WHERE a.search_vector @@ plainto_tsquery('english', $1)
         AND a.status = 'published'
         AND a.deleted_at IS NULL
+        AND a.hidden_at IS NULL
         AND ${articleVisibility}
         AND ${categoryVisibility}
       ORDER BY rank DESC
@@ -107,6 +108,7 @@ export const searchService = {
       WHERE a.search_vector @@ plainto_tsquery('english', $1)
         AND a.status = 'published'
         AND a.deleted_at IS NULL
+        AND a.hidden_at IS NULL
         AND ${articleVisibility}
         AND ${categoryVisibility}
     `, query);

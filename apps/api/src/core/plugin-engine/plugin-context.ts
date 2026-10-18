@@ -1,7 +1,7 @@
 import type { Router } from "express";
 import type { PluginContext, PluginHost, PermissionDeclaration, NavItemDeclaration, AcpPageDeclaration, SearchSource, HomeFeedSource, ReportTargetHandler, EmbedHandler, ContentKindHandler, StatSource, ProgressionCriteria, NotifyOptions, PluginRouter, XecCodeDeclaration, LayoutTemplateDeclaration, BadgeCriteria
 } from "@xentium/plugin-sdk";
-import { registerTemplate } from "@xentium/contracts";
+import { CorePermissions, registerTemplate } from "@xentium/contracts";
 import { progressionCriteriaRegistry } from "../progression-registry/progression-criteria-registry.js";
 import { badgeCriteriaRegistry } from "../badge-registry/badge-criteria-registry.js";
 import { prisma } from "../../infrastructure/db.js";
@@ -26,8 +26,34 @@ import { optionalAuth } from "../../shared/middleware/optionalAuth.js";
 import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentLimits.js";
 import { requirePermission, hasPermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
+import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
+import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
+
+/**
+ * A plugin putting a member into a group (a paid membership, an earned role). The
+ * permission cache is cleared at once, or the new rights would arrive minutes late.
+ * ⚠ Never a group with `admin.access`: plugins already have the database, but the
+ * host's own helper must not be the easy way to make someone an administrator.
+ */
+export async function addToGroup(userId: string, groupId: string): Promise<void> {
+  const admin = await prisma.groupPermission.findFirst({
+    where: { groupId, permission: { key: CorePermissions.ADMIN_ACCESS } }, select: { groupId: true },
+  });
+  if (admin) {
+    throw new XentiumError({ code: XEC.API_FORBIDDEN, httpStatus: 403, message: "A plugin cannot add members to a group with admin access" });
+  }
+  await prisma.userGroup.upsert({
+    where: { userId_groupId: { userId, groupId } }, update: {}, create: { userId, groupId },
+  });
+  await permissionCache.invalidate(userId);
+}
+
+export async function removeFromGroup(userId: string, groupId: string): Promise<void> {
+  await prisma.userGroup.deleteMany({ where: { userId, groupId } });
+  await permissionCache.invalidate(userId);
+}
 
 /** Host services injected into every plugin's onEnable/onDisable context. */
 const host: PluginHost = {
@@ -51,7 +77,8 @@ const host: PluginHost = {
   },
   // Ask instead of refuse: e.g. "may this member still reply to a closed thread?".
   permissions: { has: (userId: string, key: string) => hasPermission(userId, key as never) },
-  utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns } },
+  utils:      { resolveAvatar, sanitizeRichText, cron: { resolveCron: resolveCronPattern, previewRuns }, encryptSecret, decryptSecret },
+  groups:     { add: addToGroup, remove: removeFromGroup },
   notificationService: {
     // Lazy import avoids a top-level circular dependency with the engine.
     dispatch: async (opts: any) => {

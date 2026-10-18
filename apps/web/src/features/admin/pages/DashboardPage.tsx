@@ -87,68 +87,69 @@ export function DashboardPage() {
       ) : (
         <>
           <div className="dsh-row dsh-row--top">
-            <section className="dsh-card dsh-main">
-              <div className="dsh-tabs" role="tablist">
-                {METRICS.map((id) => {
-                  const x = o.metrics[id];
-                  return (
-                    <button key={id} type="button" role="tab" aria-selected={metric === id}
-                      className={`dsh-tab${metric === id ? " is-on" : ""}`} style={{ "--mc": METRIC_COLOR[id] } as React.CSSProperties}
-                      onClick={() => setMetric(id)}>
-                      <span className="dsh-tab__label"><i />{t(`dashboard.metric.${id}`)}</span>
-                      <span className="dsh-tab__value">{fmt(x.total)}</span>
-                      <Delta cur={x.total} prev={x.prevTotal} />
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="dsh-main__head">
-                <h3 className="dsh-card__title">{t(`dashboard.perDay.${metric}`)}</h3>
-                {isNew ? (
-                  <span className="dsh-main__note">{t("dashboard.compareLater", { n: range })}</span>
-                ) : (
-                  <div className="dsh-legend">
-                    <span><i className="dsh-legend__bar" style={{ background: METRIC_COLOR[metric] }} />{t("dashboard.thisPeriod")}</span>
-                    <span><i className="dsh-legend__dash" />{t("dashboard.prevPeriod")}</span>
-                  </div>
-                )}
-              </div>
-              <div className="dsh-main__chart">
-                <PulseChart days={o.days} values={m.values} compare={m.compare} color={METRIC_COLOR[metric]}
-                  unit={(n) => t(`dashboard.unit.${metric}`, { count: n, n: fmt(n) })}
-                  showCompare={!isNew} height={isNew ? 150 : 220} />
-              </div>
-              {isNew && <Milestones m={o.setup.milestones} />}
-              <div className="dsh-newest">
-                {newest.length > 0 && (
-                  <div className="dsh-newest__faces">
-                    {newest.map((u) => <Avatar key={u.id} user={u} size={30} className="dsh-newest__face" />)}
-                  </div>
-                )}
-                <p className="dsh-newest__text">
-                  {newest.length === 0 ? t("dashboard.nobodyJoined", { n: range })
-                    : newest.length === 1 ? <Trans t={t} i18nKey="dashboard.joinedOne" values={{ a: newest[0]!.username }} components={{ b: <b /> }} />
-                    : o.newest.count > 2
-                      ? <Trans t={t} i18nKey="dashboard.joinedMany" count={o.newest.count - 2}
-                          values={{ a: newest[0]!.username, b: newest[1]!.username }} components={{ b: <b /> }} />
-                      : <Trans t={t} i18nKey="dashboard.joinedTwo" values={{ a: newest[0]!.username, b: newest[1]!.username }} components={{ b: <b /> }} />}
-                </p>
-                <Link to="/admin/users" className="dsh-link">{t("dashboard.allMembers")}<FontAwesomeIcon icon={faArrowRight} className="dsh-ic" /></Link>
-              </div>
-            </section>
+            <div className="dsh-side">
+              <section className="dsh-card dsh-main">
+                <div className="dsh-tabs" role="tablist">
+                  {METRICS.map((id) => {
+                    const x = o.metrics[id];
+                    return (
+                      <button key={id} type="button" role="tab" aria-selected={metric === id}
+                        className={`dsh-tab${metric === id ? " is-on" : ""}`} style={{ "--mc": METRIC_COLOR[id] } as React.CSSProperties}
+                        onClick={() => setMetric(id)}>
+                        <span className="dsh-tab__label"><i />{t(`dashboard.metric.${id}`)}</span>
+                        <span className="dsh-tab__value">{fmt(x.total)}</span>
+                        <Delta cur={x.total} prev={x.prevTotal} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="dsh-main__head">
+                  <h3 className="dsh-card__title">{t(`dashboard.perDay.${metric}`)}</h3>
+                  {isNew ? (
+                    <span className="dsh-main__note">{t("dashboard.compareLater", { n: range })}</span>
+                  ) : (
+                    <div className="dsh-legend">
+                      <span><i className="dsh-legend__bar" style={{ background: METRIC_COLOR[metric] }} />{t("dashboard.thisPeriod")}</span>
+                      <span><i className="dsh-legend__dash" />{t("dashboard.prevPeriod")}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="dsh-main__chart">
+                  <PulseChart days={o.days} values={m.values} compare={m.compare} color={METRIC_COLOR[metric]}
+                    unit={(n) => t(`dashboard.unit.${metric}`, { count: n, n: fmt(n) })}
+                    showCompare={!isNew} height={isNew ? 150 : 220} />
+                </div>
+                {isNew && <Milestones m={o.setup.milestones} />}
+                <div className="dsh-newest">
+                  {newest.length > 0 && (
+                    <div className="dsh-newest__faces">
+                      {newest.map((u) => <Avatar key={u.id} user={u} size={30} className="dsh-newest__face" />)}
+                    </div>
+                  )}
+                  <p className="dsh-newest__text">
+                    {newest.length === 0 ? t("dashboard.nobodyJoined", { n: range })
+                      : newest.length === 1 ? <Trans t={t} i18nKey="dashboard.joinedOne" values={{ a: newest[0]!.username }} components={{ b: <b /> }} />
+                      : o.newest.count > 2
+                        ? <Trans t={t} i18nKey="dashboard.joinedMany" count={o.newest.count - 2}
+                            values={{ a: newest[0]!.username, b: newest[1]!.username }} components={{ b: <b /> }} />
+                        : <Trans t={t} i18nKey="dashboard.joinedTwo" values={{ a: newest[0]!.username, b: newest[1]!.username }} components={{ b: <b /> }} />}
+                  </p>
+                  <Link to="/admin/users" className="dsh-link">{t("dashboard.allMembers")}<FontAwesomeIcon icon={faArrowRight} className="dsh-ic" /></Link>
+                </div>
+              </section>
+              <TopArticles items={o.topArticles} />
+            </div>
 
-            {isNew ? (
-              // A young site gets the checklist, but never loses a real problem to it.
-              <div className="dsh-side">
-                <SetupCard steps={o.setup.steps} />
-                {o.attention.length > 0 && <AttentionCard items={o.attention} />}
-              </div>
-            ) : <AttentionCard items={o.attention} />}
-          </div>
-
-          <div className="dsh-row dsh-row--bottom">
-            <TopArticles items={o.topArticles} />
-            <PlatformCard p={o.platform} health={health} healthError={healthError} />
+            <div className="dsh-side">
+              {isNew ? (
+                // A young site gets the checklist, but never loses a real problem to it.
+                <>
+                  <SetupCard steps={o.setup.steps} />
+                  {o.attention.length > 0 && <AttentionCard items={o.attention} />}
+                </>
+              ) : <AttentionCard items={o.attention} />}
+              <PlatformCard p={o.platform} health={health} healthError={healthError} />
+            </div>
           </div>
         </>
       )}

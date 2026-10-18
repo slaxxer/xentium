@@ -866,6 +866,12 @@
         "cause": "Missing permission key for the requested resource.",
         "fix": "Ensure the user's group has the required permission assigned in ACP → Members → Permissions."
       },
+      "XEC-API-4031": {
+        "msg": "Disabled in the Demo",
+        "desc": "This install runs in demo mode, which refuses actions that would run code on the server, send mail, or lock other visitors out.",
+        "cause": "DEMO_MODE=true in the server's environment.",
+        "fix": "Nothing to fix on a demo. On your own install, leave DEMO_MODE unset."
+      },
       "XEC-API-4004": {
         "msg": "Not Found",
         "desc": "The requested resource does not exist.",
@@ -991,6 +997,12 @@
         "desc": "The chosen URL slug is already used by another article.",
         "cause": "Duplicate title or manually set slug.",
         "fix": "Change the title or set a unique slug in the article editor."
+      },
+      "XEC-ARTICLE-3004": {
+        "msg": "Comments Closed",
+        "desc": "Staff closed the comments on this article.",
+        "cause": "A moderator used Mod tools → Close comments.",
+        "fix": "Reopen the comments from the article's Mod tools, or give the group “Comment where comments are closed”."
       },
       "XEC-STORE-7001": {
         "msg": "File Too Large",
@@ -1978,6 +1990,7 @@
       "user_banned": "User Banned",
       "user_group_changed": "Group Changed",
       "user_deleted": "Account Deactivated",
+      "user_account_edited": "Account Edited",
       "moderation_policy_changed": "Policy Changed",
       "plugin_installed": "Plugin Installed",
       "plugin_enabled": "Plugin Enabled",
@@ -1986,6 +1999,10 @@
       "settings_changed": "Settings Changed",
       "article_published": "Article Published",
       "article_deleted": "Article Deleted",
+      "article_comments_closed": "Comments Closed",
+      "article_comments_reopened": "Comments Reopened",
+      "article_hidden": "Article Hidden",
+      "article_unhidden": "Article Unhidden",
       "plugin_content_deleted": "Content Removed"
     },
     "domains": {
@@ -2858,7 +2875,48 @@
     "badgeGrantPick": "Grant a badge…",
     "badgeGrantNone": "No badges left to grant",
     "badgeEarned": "earned",
-    "badgeEarnedHint": "Granted automatically for meeting this badge's requirements. Revoking it only lasts until the next sweep if they still qualify."
+    "badgeEarnedHint": "Granted automatically for meeting this badge's requirements. Revoking it only lasts until the next sweep if they still qualify.",
+    "username": "Username",
+    "emailAddress": "Email address",
+    "signals": "Signals",
+    "sigFailed": "Failed sign-ins (24h)",
+    "sigNone": "None",
+    "verified": "Verified",
+    "offlineSeen": "Offline · seen {{when}}",
+    "accountActions": "Account actions",
+    "protectedNoteSelf": "You can't reset, sign out, ban or edit your own account from here. Use Account settings.",
+    "protectedNoteAdmin": "Administrator accounts can't be reset, signed out, banned or edited from here.",
+    "actResetSub": "Email a reset link to {{email}}",
+    "logoutEverywhere": "Sign out everywhere",
+    "actLogoutSub_one": "Revoke {{count}} active session",
+    "actLogoutSub_other": "Revoke {{count}} active sessions",
+    "banEllipsis": "Ban…",
+    "actBanSub": "Temporary or permanent, with a reason",
+    "deactivateAccount": "Deactivate account",
+    "activateAccount": "Activate account",
+    "actDeactivateSub": "Blocks sign-in; content stays",
+    "actActivateSub": "Lets them sign in again",
+    "sections": "Sections",
+    "sec": {
+      "account": "Account",
+      "access": "Access",
+      "content": "Content",
+      "security": "Security"
+    },
+    "edited": "Edited",
+    "accountLockedSelf": "Change your own name and email in Account settings.",
+    "accountLockedAdmin": "An administrator's name and email can't be changed from here.",
+    "emailUnverifiedHint": "A changed email address starts unverified. Changes go live when you save.",
+    "groupsOf": "{{n}} of {{total}}",
+    "forumPosts": "Forum posts",
+    "viewProfile": "View profile",
+    "knownIps_one": "Known IPs · {{n}}",
+    "knownIps_other": "Known IPs · {{n}}",
+    "deviceCookies_one": "Device cookies · {{n}}",
+    "deviceCookies_other": "Device cookies · {{n}}",
+    "copyFullId": "Copy full ID",
+    "showLess": "Show less",
+    "onlineNow": "Online"
   },
   "styleEditor": {
     "fontSiteDefault": "Site default (Bricolage Grotesque + Figtree)",
@@ -5371,6 +5429,9 @@
       "article.comment.delete.any": "Delete anyone's article comments",
       "article.revisions.view": "View article revision history",
       "article.revisions.restore": "Restore previous article versions",
+      "article.comments.close": "Close and reopen article comments",
+      "article.comment.closed": "Comment where comments are closed",
+      "article.hide": "Hide articles and see hidden ones",
       "moderation.report.file": "Report content",
       "moderation.report.manage": "Handle reports",
       "moderation.warn.manage": "Warn members",

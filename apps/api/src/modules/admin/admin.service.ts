@@ -475,6 +475,66 @@ export const adminService = {
     return { revokedSessions: count };
   },
 
+  /**
+   * Change a member's username and/or email from the ACP. Same protection as the other
+   * account actions: never your own account (that is Account settings, behind your
+   * password) and never an administrator's.
+   *
+   * A username follows the member-facing rules (format, taken, someone's former name)
+   * minus the cooldown, and is recorded in the username history with the admin as the
+   * one who changed it. An email the admin types is not one the member proved they
+   * own, so it starts UNVERIFIED and any pending email change is dropped.
+   */
+  async updateUserAccount(userId: string, actorId: string, input: { username?: string; email?: string }) {
+    await assertActionableUser(userId, actorId);
+    const current = await prisma.user.findUniqueOrThrow({ where: { id: userId }, select: { username: true, email: true } });
+    const username = input.username !== undefined && input.username !== current.username ? input.username : undefined;
+    const email = input.email !== undefined && input.email.toLowerCase() !== current.email.toLowerCase()
+      ? input.email.toLowerCase() : undefined;
+    if (username === undefined && email === undefined) return { username: current.username, email: current.email };
+
+    if (username !== undefined) {
+      const taken = await prisma.user.findFirst({
+        where: { username: { equals: username, mode: "insensitive" }, id: { not: userId } }, select: { id: true },
+      });
+      if (taken) throw new XentiumError({ code: "XEC-USER-4011", httpStatus: 409, message: "Username is already taken" });
+      const former = await prisma.usernameHistory.findFirst({
+        where: { oldUsername: { equals: username, mode: "insensitive" }, userId: { not: userId } }, select: { id: true },
+      });
+      if (former) throw new XentiumError({ code: "XEC-USER-4012", httpStatus: 409, message: "Username is already taken" });
+    }
+    if (email !== undefined) {
+      const taken = await prisma.user.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, id: { not: userId } }, select: { id: true },
+      });
+      if (taken) throw new XentiumError({ code: "XEC-AUTH-2001", httpStatus: 409, message: "Email is already registered" });
+    }
+
+    await prisma.$transaction([
+      ...(username !== undefined
+        ? [prisma.usernameHistory.create({ data: { userId, oldUsername: current.username, newUsername: username, changedById: actorId } })]
+        : []),
+      ...(email !== undefined ? [prisma.emailChangeToken.deleteMany({ where: { userId } })] : []),
+      prisma.user.update({
+        where: { id: userId },
+        data: {
+          ...(username !== undefined ? { username } : {}),
+          ...(email !== undefined ? { email, emailVerifiedAt: null } : {}),
+        },
+      }),
+      prisma.moderationLog.create({
+        data: {
+          actorId, actorType: "user", action: "user.account_edited", targetType: "user", targetId: userId,
+          reason: [
+            username !== undefined ? `Username ${current.username} → ${username}` : null,
+            email !== undefined ? "Email changed" : null,
+          ].filter(Boolean).join(" · "),
+        },
+      }),
+    ]);
+    return { username: username ?? current.username, email: email ?? current.email };
+  },
+
   /** Send a password-reset email to a user's registered address on the admin's
    *  behalf. Reuses the same single-use DB-backed token flow as the public
    *  endpoint (§17b). No-op silently if the account has no email / is inactive. */

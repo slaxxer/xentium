@@ -81,8 +81,8 @@ describe("home lists", () => {
     expect(list.find((a) => a.id === ids.inB)?.viewer).toEqual({ liked: false, disliked: false, saved: false });
     // The article page opens with the same state (heart, dislike, bookmark already set).
     const slug = (await prisma.article.findUniqueOrThrow({ where: { id: ids.inA! }, select: { slug: true } })).slug;
-    expect((await articleService.getBySlug(slug, reader, false)).viewer).toEqual({ liked: true, disliked: false, saved: true });
-    expect((await articleService.getBySlug(slug, undefined, false)).viewer).toBeUndefined();
+    expect((await articleService.getBySlug(slug, reader, { editAny: false, seeHidden: false })).viewer).toEqual({ liked: true, disliked: false, saved: true });
+    expect((await articleService.getBySlug(slug, undefined, { editAny: false, seeHidden: false })).viewer).toBeUndefined();
     const guest = (await articleService.list({ page: 1, limit: 50 } as never, undefined)).data;
     expect(guest.every((a) => a.viewer === undefined)).toBe(true);
   });

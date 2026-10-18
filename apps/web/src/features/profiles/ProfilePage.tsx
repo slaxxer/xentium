@@ -210,7 +210,7 @@ function ArticleRow({ a }: { a: ArticleListItem }) {
           otherwise a list of unillustrated posts loses the row's shape entirely. */}
       <div
         className={`profile-articles__thumb${a.featuredImage ? " profile-articles__thumb--img" : ""}`}
-        style={a.featuredImage ? { backgroundImage: `url(${a.featuredImage})` } : undefined}
+        style={a.featuredImage ? { backgroundImage: `url("/uploads/${a.featuredImage}")` } : undefined}
       >
         <span className="profile-articles__read">{t("minRead", { n: a.readTime })}</span>
       </div>

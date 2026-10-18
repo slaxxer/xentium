@@ -249,6 +249,16 @@ export const adminController = {
     res.json(await adminService.forceLogoutUser(id, req.userId!));
   }) as RequestHandler,
 
+  updateUserAccount: (async (req, res) => {
+    const { id } = idParamSchema.parse(req.params);
+    const body = z.object({
+      // The same rules a member's own username change uses (account.validation.ts).
+      username: z.string().trim().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/, "Username may only contain letters, numbers, - and _").optional(),
+      email:    z.string().trim().email().max(254).optional(),
+    }).refine((b) => b.username !== undefined || b.email !== undefined, "Nothing to change").parse(req.body);
+    res.json(await adminService.updateUserAccount(id, req.userId!, body));
+  }) as RequestHandler,
+
   sendPasswordReset: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
     res.json(await adminService.sendPasswordResetForUser(id, req.userId!));

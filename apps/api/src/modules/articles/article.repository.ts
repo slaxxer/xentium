@@ -146,6 +146,8 @@ export const articleRepository = {
     const where: Prisma.ArticleWhereInput = {
       status: "published",
       deletedAt: null,
+      // Hidden by staff: out of every public list (the author finds it under their own).
+      hiddenAt: null,
       ...(opts.categoryId ? { categoryId: opts.categoryId } : {}),
       // ANDed, never spread: the feed and the visibility rule can BOTH be an `OR`
       // (followed categories or tags; public-or-own), and spreading one over the other
@@ -171,6 +173,7 @@ export const articleRepository = {
     return {
       status: "published",
       deletedAt: null,
+      hiddenAt: null,
       AND: [
         viewerId
           ? { OR: [{ visibility: { in: ["public", "members"] } }, { authorId: viewerId }] }

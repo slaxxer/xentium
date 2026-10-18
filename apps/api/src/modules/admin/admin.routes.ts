@@ -55,6 +55,7 @@ adminRouter.post("/users/:id/ban",     adminGuard, adminController.banUser);
 adminRouter.delete("/users/:id/ban",   adminGuard, adminController.liftBan);
 adminRouter.post("/users/:id/force-logout",    adminGuard, adminController.forceLogoutUser);
 adminRouter.post("/users/:id/password-reset",  adminGuard, adminController.sendPasswordReset);
+adminRouter.patch("/users/:id/account",        adminGuard, adminController.updateUserAccount);
 
 // Profile fields
 adminRouter.get("/profile-fields", adminGuard, adminController.listProfileFields);

@@ -67,20 +67,33 @@ function shapeDetail(a: ArticleWithIncludes): ArticleDetail {
     body: a.body,
     seoTitle: a.seoTitle,
     seoDescription: a.seoDescription,
+    commentsClosed: a.commentsClosedAt != null,
+    hidden: a.hiddenAt != null,
   };
+}
+
+/** What the viewer may see beyond the normal rules. */
+export interface ArticleViewerCan {
+  /** `article.edit.any`: drafts, private and deleted articles. */
+  editAny: boolean;
+  /** `article.hide`: articles staff hid. */
+  seeHidden: boolean;
 }
 
 /** Article-specific visibility check. Article uses 3-mode model (public/members/private). */
 function canViewArticle(
-  article: { authorId: string; visibility: string; status: string; deletedAt: Date | null },
+  article: { authorId: string; visibility: string; status: string; deletedAt: Date | null; hiddenAt: Date | null },
   viewerId: string | undefined,
-  viewerCanEditAny: boolean,
+  can: ArticleViewerCan,
 ): boolean {
-  if (article.deletedAt) return viewerCanEditAny;
+  if (article.deletedAt) return can.editAny;
 
-  // Author and admins see all states
+  // The author sees their own in every state, hidden included.
   const isAuthor = !!viewerId && viewerId === article.authorId;
-  if (isAuthor || viewerCanEditAny) return true;
+  if (isAuthor) return true;
+  // A hidden article is gone for everyone without `article.hide`, editors included.
+  if (article.hiddenAt && !can.seeHidden) return false;
+  if (can.editAny) return true;
 
   if (article.status !== "published") return false;
   switch (article.visibility) {
@@ -104,8 +117,13 @@ contentRegistry.register("core", {
   async canView(id, viewerId) {
     const article = await articleRepository.findById(id);
     if (!article) return false;
-    const canEditAny = !!viewerId && (await hasPermission(viewerId, CorePermissions.ARTICLE_EDIT_ANY));
-    return canViewArticle(article, viewerId ?? undefined, canEditAny);
+    const [editAny, seeHidden] = viewerId
+      ? await Promise.all([
+          hasPermission(viewerId, CorePermissions.ARTICLE_EDIT_ANY),
+          hasPermission(viewerId, CorePermissions.ARTICLE_HIDE),
+        ])
+      : [false, false];
+    return canViewArticle(article, viewerId ?? undefined, { editAny, seeHidden });
   },
 });
 
@@ -384,12 +402,12 @@ export const articleService = {
   async getBySlug(
     slug: string,
     viewerId: string | undefined,
-    viewerCanEditAny: boolean,
+    can: ArticleViewerCan,
   ): Promise<ArticleDetail> {
     // An id is accepted too: notifications sent before they linked by slug pointed
     // at `/articles/<id>`. The same visibility check applies either way.
     const article = (await articleRepository.findBySlug(slug)) ?? (await articleRepository.findById(slug));
-    if (!article || !canViewArticle(article, viewerId, viewerCanEditAny)) {
+    if (!article || !canViewArticle(article, viewerId, can)) {
       throw new XentiumError({
         code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
@@ -447,6 +465,34 @@ export const articleService = {
     if (res.count === 0) {
       throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
     }
+  },
+
+  /** Close (or reopen) the comments. Staff with `article.comments.close`; logged. */
+  async setCommentsClosed(id: string, closed: boolean, actorId: string): Promise<void> {
+    const res = await prisma.article.updateMany({
+      where: { id, deletedAt: null },
+      data: closed ? { commentsClosedAt: new Date(), commentsClosedById: actorId } : { commentsClosedAt: null, commentsClosedById: null },
+    });
+    if (res.count === 0) {
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+    }
+    await prisma.moderationLog.create({
+      data: { actorId, actorType: "user", action: closed ? "article.comments_closed" : "article.comments_reopened", targetType: "article", targetId: id },
+    });
+  },
+
+  /** Hide (or show again). Staff with `article.hide`; logged. Nothing is deleted. */
+  async setHidden(id: string, hidden: boolean, actorId: string): Promise<void> {
+    const res = await prisma.article.updateMany({
+      where: { id, deletedAt: null },
+      data: hidden ? { hiddenAt: new Date(), hiddenById: actorId } : { hiddenAt: null, hiddenById: null },
+    });
+    if (res.count === 0) {
+      throw new XentiumError({ code: XEC.ARTICLE_NOT_FOUND, httpStatus: 404, message: "Article not found" });
+    }
+    await prisma.moderationLog.create({
+      data: { actorId, actorType: "user", action: hidden ? "article.hidden" : "article.unhidden", targetType: "article", targetId: id },
+    });
   },
 
   async popularTags(limit: number) {

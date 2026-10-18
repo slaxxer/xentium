@@ -866,6 +866,12 @@
         "cause": "Clé de permission manquante pour la ressource demandée.",
         "fix": "Vérifiez que le groupe de l'utilisateur dispose de la permission requise dans ACP → Membres → Permissions."
       },
+      "XEC-API-4031": {
+        "msg": "Désactivé dans la démo",
+        "desc": "Cette installation fonctionne en mode démo, qui refuse les actions qui exécuteraient du code sur le serveur, enverraient des e-mails ou bloqueraient les autres visiteurs.",
+        "cause": "DEMO_MODE=true dans l'environnement du serveur.",
+        "fix": "Rien à corriger sur une démo. Sur votre propre installation, laissez DEMO_MODE non défini."
+      },
       "XEC-API-4004": {
         "msg": "Introuvable",
         "desc": "La ressource demandée n'existe pas.",
@@ -991,6 +997,12 @@
         "desc": "Le slug d'URL choisi est déjà utilisé par un autre article.",
         "cause": "Titre en double ou slug défini manuellement.",
         "fix": "Changez le titre ou définissez un slug unique dans l'éditeur d'articles."
+      },
+      "XEC-ARTICLE-3004": {
+        "msg": "Commentaires fermés",
+        "desc": "L'équipe a fermé les commentaires de cet article.",
+        "cause": "Un modérateur a utilisé Outils de modération → Fermer les commentaires.",
+        "fix": "Rouvrez les commentaires depuis les outils de modération de l'article, ou donnez au groupe « Commenter là où les commentaires sont fermés »."
       },
       "XEC-STORE-7001": {
         "msg": "Fichier trop volumineux",
@@ -1978,6 +1990,7 @@
       "user_banned": "Utilisateur banni",
       "user_group_changed": "Groupe modifié",
       "user_deleted": "Compte désactivé",
+      "user_account_edited": "Compte modifié",
       "moderation_policy_changed": "Politique modifiée",
       "plugin_installed": "Plugin installé",
       "plugin_enabled": "Plugin activé",
@@ -1986,6 +1999,10 @@
       "settings_changed": "Paramètres modifiés",
       "article_published": "Article publié",
       "article_deleted": "Article supprimé",
+      "article_comments_closed": "Commentaires fermés",
+      "article_comments_reopened": "Commentaires rouverts",
+      "article_hidden": "Article masqué",
+      "article_unhidden": "Article réaffiché",
       "plugin_content_deleted": "Contenu supprimé"
     },
     "domains": {
@@ -2731,7 +2748,48 @@
     "badgeGrantPick": "Attribuer un badge…",
     "badgeGrantNone": "Plus aucun badge à attribuer",
     "badgeEarned": "obtenu",
-    "badgeEarnedHint": "Attribué automatiquement pour avoir rempli les conditions. Le reprendre ne dure que jusqu'au prochain passage si elles sont toujours remplies."
+    "badgeEarnedHint": "Attribué automatiquement pour avoir rempli les conditions. Le reprendre ne dure que jusqu'au prochain passage si elles sont toujours remplies.",
+    "username": "Nom d'utilisateur",
+    "emailAddress": "Adresse e-mail",
+    "signals": "Signaux",
+    "sigFailed": "Connexions échouées (24 h)",
+    "sigNone": "Aucune",
+    "verified": "Vérifiée",
+    "offlineSeen": "Hors ligne · vu {{when}}",
+    "accountActions": "Actions sur le compte",
+    "protectedNoteSelf": "Vous ne pouvez pas réinitialiser, déconnecter, bannir ni modifier votre propre compte ici. Utilisez les paramètres du compte.",
+    "protectedNoteAdmin": "Les comptes administrateur ne peuvent pas être réinitialisés, déconnectés, bannis ni modifiés ici.",
+    "actResetSub": "Envoyer un lien de réinitialisation à {{email}}",
+    "logoutEverywhere": "Déconnecter partout",
+    "actLogoutSub_one": "Révoquer {{count}} session active",
+    "actLogoutSub_other": "Révoquer {{count}} sessions actives",
+    "banEllipsis": "Bannir…",
+    "actBanSub": "Temporaire ou permanent, avec un motif",
+    "deactivateAccount": "Désactiver le compte",
+    "activateAccount": "Activer le compte",
+    "actDeactivateSub": "Bloque la connexion ; le contenu reste",
+    "actActivateSub": "Permet de se connecter à nouveau",
+    "sections": "Sections",
+    "sec": {
+      "account": "Compte",
+      "access": "Accès",
+      "content": "Contenu",
+      "security": "Sécurité"
+    },
+    "edited": "Modifié",
+    "accountLockedSelf": "Modifiez votre propre nom et votre e-mail dans les paramètres du compte.",
+    "accountLockedAdmin": "Le nom et l'e-mail d'un administrateur ne peuvent pas être modifiés ici.",
+    "emailUnverifiedHint": "Une adresse e-mail modifiée commence non vérifiée. Les modifications s'appliquent à l'enregistrement.",
+    "groupsOf": "{{n}} sur {{total}}",
+    "forumPosts": "Messages du forum",
+    "viewProfile": "Voir le profil",
+    "knownIps_one": "IP connues · {{n}}",
+    "knownIps_other": "IP connues · {{n}}",
+    "deviceCookies_one": "Cookies d'appareil · {{n}}",
+    "deviceCookies_other": "Cookies d'appareil · {{n}}",
+    "copyFullId": "Copier l'ID complet",
+    "showLess": "Afficher moins",
+    "onlineNow": "En ligne"
   },
   "styleEditor": {
     "fontSiteDefault": "Par défaut (Bricolage Grotesque + Figtree)",
@@ -5371,6 +5429,9 @@
       "article.comment.delete.any": "Supprimer les commentaires d'articles de tous",
       "article.revisions.view": "Voir l'historique des révisions d'articles",
       "article.revisions.restore": "Restaurer des versions précédentes d'articles",
+      "article.comments.close": "Fermer et rouvrir les commentaires d'articles",
+      "article.comment.closed": "Commenter là où les commentaires sont fermés",
+      "article.hide": "Masquer des articles et voir ceux masqués",
       "moderation.report.file": "Signaler du contenu",
       "moderation.report.manage": "Traiter les signalements",
       "moderation.warn.manage": "Avertir des membres",

@@ -866,6 +866,12 @@
         "cause": "Falta a chave de permissão para o recurso solicitado.",
         "fix": "Garante que o grupo do utilizador tem a permissão necessária atribuída em ACP → Membros → Permissões."
       },
+      "XEC-API-4031": {
+        "msg": "Desativado na demo",
+        "desc": "Esta instalação funciona em modo demo, que recusa ações que executariam código no servidor, enviariam e-mail ou bloqueariam outros visitantes.",
+        "cause": "DEMO_MODE=true no ambiente do servidor.",
+        "fix": "Não há nada a corrigir numa demo. Na sua própria instalação, não defina DEMO_MODE."
+      },
       "XEC-API-4004": {
         "msg": "Não encontrado",
         "desc": "O recurso solicitado não existe.",
@@ -991,6 +997,12 @@
         "desc": "O slug de URL escolhido já é usado por outro artigo.",
         "cause": "Título duplicado ou slug definido manualmente.",
         "fix": "Altera o título ou define um slug único no editor de artigos."
+      },
+      "XEC-ARTICLE-3004": {
+        "msg": "Comentários fechados",
+        "desc": "A equipa fechou os comentários deste artigo.",
+        "cause": "Um moderador usou Ferramentas de moderação → Fechar comentários.",
+        "fix": "Reabra os comentários nas ferramentas de moderação do artigo ou dê ao grupo «Comentar onde os comentários estão fechados»."
       },
       "XEC-STORE-7001": {
         "msg": "Ficheiro demasiado grande",
@@ -1978,6 +1990,7 @@
       "user_banned": "Usuário banido",
       "user_group_changed": "Grupo alterado",
       "user_deleted": "Conta desativada",
+      "user_account_edited": "Conta editada",
       "moderation_policy_changed": "Política alterada",
       "plugin_installed": "Plugin instalado",
       "plugin_enabled": "Plugin ativado",
@@ -1986,6 +1999,10 @@
       "settings_changed": "Configurações alteradas",
       "article_published": "Artigo publicado",
       "article_deleted": "Artigo excluído",
+      "article_comments_closed": "Comentários fechados",
+      "article_comments_reopened": "Comentários reabertos",
+      "article_hidden": "Artigo ocultado",
+      "article_unhidden": "Artigo visível de novo",
       "plugin_content_deleted": "Conteúdo removido"
     },
     "domains": {
@@ -2731,7 +2748,48 @@
     "badgeGrantPick": "Conceder um emblema…",
     "badgeGrantNone": "Não há emblemas por conceder",
     "badgeEarned": "conquistado",
-    "badgeEarnedHint": "Concedido automaticamente por cumprir os requisitos. Retirá-lo só dura até à próxima passagem se continuar a cumpri-los."
+    "badgeEarnedHint": "Concedido automaticamente por cumprir os requisitos. Retirá-lo só dura até à próxima passagem se continuar a cumpri-los.",
+    "username": "Nome de utilizador",
+    "emailAddress": "Endereço de e-mail",
+    "signals": "Sinais",
+    "sigFailed": "Inícios de sessão falhados (24 h)",
+    "sigNone": "Nenhum",
+    "verified": "Verificado",
+    "offlineSeen": "Offline · visto {{when}}",
+    "accountActions": "Ações da conta",
+    "protectedNoteSelf": "Não pode repor, terminar sessão, banir nem editar a sua própria conta aqui. Use as definições da conta.",
+    "protectedNoteAdmin": "As contas de administrador não podem ser repostas, terminadas, banidas nem editadas aqui.",
+    "actResetSub": "Enviar uma ligação de reposição para {{email}}",
+    "logoutEverywhere": "Terminar sessão em todo o lado",
+    "actLogoutSub_one": "Revogar {{count}} sessão ativa",
+    "actLogoutSub_other": "Revogar {{count}} sessões ativas",
+    "banEllipsis": "Banir…",
+    "actBanSub": "Temporário ou permanente, com um motivo",
+    "deactivateAccount": "Desativar conta",
+    "activateAccount": "Ativar conta",
+    "actDeactivateSub": "Bloqueia o início de sessão; o conteúdo fica",
+    "actActivateSub": "Permite voltar a iniciar sessão",
+    "sections": "Secções",
+    "sec": {
+      "account": "Conta",
+      "access": "Acesso",
+      "content": "Conteúdo",
+      "security": "Segurança"
+    },
+    "edited": "Editado",
+    "accountLockedSelf": "Altere o seu próprio nome e e-mail nas definições da conta.",
+    "accountLockedAdmin": "O nome e o e-mail de um administrador não podem ser alterados aqui.",
+    "emailUnverifiedHint": "Um e-mail alterado começa por verificar. As alterações aplicam-se ao guardar.",
+    "groupsOf": "{{n}} de {{total}}",
+    "forumPosts": "Publicações no fórum",
+    "viewProfile": "Ver perfil",
+    "knownIps_one": "IPs conhecidos · {{n}}",
+    "knownIps_other": "IPs conhecidos · {{n}}",
+    "deviceCookies_one": "Cookies de dispositivo · {{n}}",
+    "deviceCookies_other": "Cookies de dispositivo · {{n}}",
+    "copyFullId": "Copiar ID completo",
+    "showLess": "Mostrar menos",
+    "onlineNow": "Online"
   },
   "styleEditor": {
     "fontSiteDefault": "Padrão (Bricolage Grotesque + Figtree)",
@@ -5371,6 +5429,9 @@
       "article.comment.delete.any": "Eliminar comentários em artigos de qualquer pessoa",
       "article.revisions.view": "Ver o histórico de revisões de artigos",
       "article.revisions.restore": "Restaurar versões anteriores de artigos",
+      "article.comments.close": "Fechar e reabrir comentários em artigos",
+      "article.comment.closed": "Comentar onde os comentários estão fechados",
+      "article.hide": "Ocultar artigos e ver os ocultos",
       "moderation.report.file": "Denunciar conteúdo",
       "moderation.report.manage": "Tratar denúncias",
       "moderation.warn.manage": "Avisar membros",
