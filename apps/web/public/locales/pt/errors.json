@@ -1,6 +1,7 @@
 {
   "XEC-API-4001": "Verifique os dados e tente novamente.",
   "XEC-API-4003": "Não tem permissão para fazer isso.",
+  "XEC-API-4031": "Isto está desativado na demo.",
   "XEC-API-4004": "Não encontrado.",
   "XEC-API-4290": "Demasiados pedidos. Aguarde e tente novamente.",
   "XEC-API-5000": "Algo correu mal. Tente novamente.",
@@ -25,6 +26,7 @@
   "XEC-ARTICLE-3001": "Artigo não encontrado.",
   "XEC-ARTICLE-3002": "Este artigo não está publicado.",
   "XEC-ARTICLE-3003": "Esse slug de URL já está em uso.",
+  "XEC-ARTICLE-3004": "Os comentários deste artigo estão fechados.",
   "XEC-STORE-7001": "O ficheiro é demasiado grande.",
   "XEC-STORE-7002": "Esse tipo de ficheiro não é permitido.",
   "XEC-STORE-7003": "O tipo de ficheiro não corresponde.",

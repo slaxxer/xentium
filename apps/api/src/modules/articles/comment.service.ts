@@ -9,6 +9,10 @@ import { primaryGroupOrder } from "../../shared/utils/userRef.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { getHiddenAuthorIds } from "../../shared/utils/blocks.js";
+import { moderationService } from "../moderation/moderation.service.js";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
+import { removeArticleComment } from "./comment.remove.js";
+import { CorePermissions } from "@xentium/contracts";
 import { enforceCommentLength, enforceDailyCommentLimit } from "../../shared/middleware/contentLimits.js";
 
 const commentInclude = {
@@ -93,8 +97,8 @@ export const commentService = {
     viewerId?: string,
   ): Promise<PaginatedResponse<CommentNode>> {
     // Show published comments publicly — pending ones await moderation. Deleted
-    // comments ARE returned: shapeRow() hides their body and the reader renders
-    // a tombstone in their place (§33), mirroring profile-wall behaviour.
+    // comments are left out entirely: no tombstone. (Deleting a top-level comment
+    // takes its replies with it, see `removeArticleComment`.)
     // Blocked users' comments are hidden entirely from the viewer (block always hides).
     const hiddenAuthorIds = await getHiddenAuthorIds(viewerId);
     const authorFilter = hiddenAuthorIds.length ? { authorId: { notIn: hiddenAuthorIds } } : {};
@@ -102,6 +106,7 @@ export const commentService = {
       articleId,
       parentId: null,
       status: "published",
+      deletedAt: null,
       ...authorFilter,
     };
 
@@ -121,7 +126,7 @@ export const commentService = {
       parentIds.length === 0
         ? []
         : await prisma.articleComment.findMany({
-            where: { parentId: { in: parentIds }, status: "published", ...authorFilter },
+            where: { parentId: { in: parentIds }, status: "published", deletedAt: null, ...authorFilter },
             include: commentInclude,
             orderBy: { createdAt: "asc" },
           });
@@ -183,9 +188,12 @@ export const commentService = {
 
     const article = await prisma.article.findUnique({
       where: { id: articleId },
-      select: { id: true, deletedAt: true, status: true },
+      select: { id: true, deletedAt: true, status: true, authorId: true, hiddenAt: true, commentsClosedAt: true },
     });
-    if (!article || article.deletedAt) {
+    // A hidden article is not there for anyone but its author and `article.hide`.
+    const hiddenFromAuthor = !!article?.hiddenAt && article.authorId !== authorId
+      && !(await hasPermission(authorId, CorePermissions.ARTICLE_HIDE));
+    if (!article || article.deletedAt || hiddenFromAuthor) {
       throw new XentiumError({
         code: XEC.ARTICLE_NOT_FOUND,
         httpStatus: 404,
@@ -197,6 +205,14 @@ export const commentService = {
         code: XEC.ARTICLE_NOT_PUBLISHED,
         httpStatus: 400,
         message: "Article is not published",
+      });
+    }
+    // Closed by staff: only `article.comment.closed` may still post (replies too).
+    if (article.commentsClosedAt && !(await hasPermission(authorId, CorePermissions.ARTICLE_COMMENT_CLOSED))) {
+      throw new XentiumError({
+        code: XEC.ARTICLE_COMMENTS_CLOSED,
+        httpStatus: 403,
+        message: "Comments on this article are closed",
       });
     }
 
@@ -292,10 +308,15 @@ export const commentService = {
     return shapeRow(updated);
   },
 
+  /**
+   * Delete a comment. Your own needs `article.comment.delete.own` (or `.any`); anyone
+   * else's needs `article.comment.delete.any` and a reason, and goes through the same
+   * moderator path ModCanvas uses, so it lands in the moderation log either way.
+   */
   async softDelete(
     commentId: string,
     viewerId: string,
-    canModerate: boolean,
+    can: { own: boolean; any: boolean },
     reason: string | undefined,
   ): Promise<void> {
     const existing = await prisma.articleComment.findUnique({
@@ -311,7 +332,7 @@ export const commentService = {
     }
 
     const isOwn = existing.authorId === viewerId;
-    if (!isOwn && !canModerate) {
+    if (isOwn ? !(can.own || can.any) : !can.any) {
       throw new XentiumError({
         code: XEC.PERM_DENIED,
         httpStatus: 403,
@@ -325,28 +346,9 @@ export const commentService = {
         message: "Reason required for moderator deletion",
       });
     }
+    if (!isOwn) return moderationService.moderatorDeleteArticleComment(commentId, viewerId, reason!);
 
-    await prisma.$transaction(async (tx) => {
-      await tx.articleComment.update({
-        where: { id: commentId },
-        data: {
-          deletedAt: new Date(),
-          deletedById: viewerId,
-          deletedReason: isOwn ? null : reason,
-        },
-      });
-      // Mirror create: only a published comment was ever counted.
-      if (existing.status === "published") {
-        await tx.article.update({
-          where: { id: existing.articleId },
-          data: { commentCount: { decrement: 1 } },
-        });
-        await tx.user.update({
-          where: { id: existing.authorId },
-          data: { commentCount: { decrement: 1 } },
-        });
-      }
-    });
+    await prisma.$transaction((tx) => removeArticleComment(tx, commentId, viewerId, null));
   },
 };
 

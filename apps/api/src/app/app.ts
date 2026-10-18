@@ -23,6 +23,7 @@ import { badgesAdminRouter, badgesPublicRouter } from "../modules/badges/badges.
 import { siteService, type FeatureKey } from "../modules/site/site.service.js";
 import { requireFeature } from "../shared/middleware/requireFeature.js";
 import { maintenanceRouter } from "../modules/maintenance/maintenance.routes.js";
+import { demoGuard } from "../shared/middleware/demoGuard.js";
 import { maintenanceGuard } from "../shared/middleware/maintenanceGuard.js";
 import { activityRouter, activityAdminRouter } from "../modules/activity/activity.routes.js";
 import { acpActivityLogger } from "../shared/middleware/acpActivityLogger.js";
@@ -184,6 +185,7 @@ export function createApp(): Express {
 
   app.use(installGuard);
   app.use(maintenanceGuard);
+  app.use(demoGuard);
 
   app.use("/api/install", installerRouter);
 

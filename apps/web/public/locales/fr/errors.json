@@ -1,6 +1,7 @@
 {
   "XEC-API-4001": "Veuillez vérifier votre saisie et réessayer.",
   "XEC-API-4003": "Vous n'avez pas la permission de faire cela.",
+  "XEC-API-4031": "Ceci est désactivé dans la démo.",
   "XEC-API-4004": "Introuvable.",
   "XEC-API-4290": "Trop de requêtes. Veuillez patienter et réessayer.",
   "XEC-API-5000": "Une erreur s'est produite. Réessayez.",
@@ -25,6 +26,7 @@
   "XEC-ARTICLE-3001": "Article introuvable.",
   "XEC-ARTICLE-3002": "Cet article n'est pas publié.",
   "XEC-ARTICLE-3003": "Ce slug d'URL est déjà pris.",
+  "XEC-ARTICLE-3004": "Les commentaires de cet article sont fermés.",
   "XEC-STORE-7001": "Le fichier est trop volumineux.",
   "XEC-STORE-7002": "Ce type de fichier n'est pas autorisé.",
   "XEC-STORE-7003": "Le type de fichier ne correspond pas.",

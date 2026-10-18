@@ -10,6 +10,7 @@ import { getModPolicy, warningExpiry, checkBanLength, templateWarningExpiry, typ
 import { describeTarget } from "./reportTarget.js";
 import { revokeUserAccessTokens } from "../auth/session-revocation.js";
 import { staffGroupKeys } from "../../shared/utils/staff.js";
+import { removeArticleComment } from "../articles/comment.remove.js";
 
 
 // Find the most recent unresolved case linking a user (used to decide whether a
@@ -586,23 +587,8 @@ export const moderationService = {
     const comment = await prisma.articleComment.findUnique({ where: { id: commentId } });
     if (!comment || comment.deletedAt) throw XentiumError.notFound("Comment not found");
 
-    await prisma.$transaction(async (tx) => {
-      await tx.articleComment.update({
-        where: { id: commentId },
-        data:  { deletedAt: new Date(), deletedById: actorId, deletedReason: reason },
-      });
-      // Keep the same counters the author-facing delete maintains (§38).
-      if (comment.status === "published") {
-        await tx.article.update({
-          where: { id: comment.articleId },
-          data:  { commentCount: { decrement: 1 } },
-        });
-        await tx.user.update({
-          where: { id: comment.authorId },
-          data:  { commentCount: { decrement: 1 } },
-        });
-      }
-    });
+    // Same removal as the author's own delete: the comment and its replies go, counters follow.
+    await prisma.$transaction((tx) => removeArticleComment(tx, commentId, actorId, reason));
 
     await writeModLog({
       actorId,

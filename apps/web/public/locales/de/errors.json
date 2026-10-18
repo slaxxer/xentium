@@ -1,6 +1,7 @@
 {
   "XEC-API-4001": "Bitte überprüfe deine Eingabe und versuche es erneut.",
   "XEC-API-4003": "Du hast keine Berechtigung dafür.",
+  "XEC-API-4031": "Das ist in der Demo deaktiviert.",
   "XEC-API-4004": "Nicht gefunden.",
   "XEC-API-4290": "Zu viele Anfragen. Bitte warte und versuche es erneut.",
   "XEC-API-5000": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
@@ -25,6 +26,7 @@
   "XEC-ARTICLE-3001": "Artikel nicht gefunden.",
   "XEC-ARTICLE-3002": "Dieser Artikel ist nicht veröffentlicht.",
   "XEC-ARTICLE-3003": "Dieser URL-Slug ist bereits vergeben.",
+  "XEC-ARTICLE-3004": "Die Kommentare zu diesem Artikel sind geschlossen.",
   "XEC-STORE-7001": "Die Datei ist zu groß.",
   "XEC-STORE-7002": "Dieser Dateityp ist nicht erlaubt.",
   "XEC-STORE-7003": "Dateityp stimmt nicht überein.",

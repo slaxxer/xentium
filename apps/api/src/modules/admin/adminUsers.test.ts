@@ -107,6 +107,51 @@ describe("one member's page", () => {
     expect(detail).not.toHaveProperty("loginPinHash");
     expect(JSON.stringify(detail)).not.toContain("argon2-not-a-real-hash");
   });
+
+  it("says when each address and device was last seen, and what the device is", async () => {
+    await prisma.loginEvent.create({
+      data: {
+        userId: ids.active, emailAttempted: "x", success: true, eventType: "login", ip: "10.0.0.7",
+        deviceCookieId: "dev-probe-1", userAgent: "Mozilla/5.0 (Windows NT 10.0) Chrome/130.0",
+      },
+    });
+    const detail = await adminUsersService.getUserDetail(ids.active);
+    expect(detail.ipSeen).toEqual([{ ip: "10.0.0.7", lastSeenAt: expect.any(Date) }]);
+    expect(detail.devices).toEqual([{ id: "dev-probe-1", lastSeenAt: expect.any(Date), userAgent: expect.stringContaining("Chrome") }]);
+  });
+});
+
+describe("editing a member's account from the ACP", () => {
+  it("renames into the history and re-addresses as unverified", async () => {
+    await prisma.user.update({ where: { id: ids.active }, data: { emailVerifiedAt: new Date() } });
+    const out = await adminService.updateUserAccount(ids.active, ids.signup, {
+      username: `${PREFIX}_renamed`, email: `${PREFIX}_NEW@Example.test`,
+    });
+    expect(out).toEqual({ username: `${PREFIX}_renamed`, email: `${PREFIX}_new@example.test` });
+    const u = await prisma.user.findUniqueOrThrow({ where: { id: ids.active } });
+    expect(u.emailVerifiedAt).toBeNull();
+    const h = await prisma.usernameHistory.findFirstOrThrow({ where: { userId: ids.active } });
+    expect(h).toMatchObject({ oldUsername: `${PREFIX}_active`, newUsername: `${PREFIX}_renamed`, changedById: ids.signup });
+    expect(await prisma.moderationLog.count({ where: { targetId: ids.active, action: "user.account_edited" } })).toBe(1);
+    await prisma.moderationLog.deleteMany({ where: { targetId: ids.active } });
+  });
+
+  it("refuses a taken username or email, whatever the case", async () => {
+    await expect(adminService.updateUserAccount(ids.active, ids.signup, { username: `${PREFIX}_BANNED` }))
+      .rejects.toMatchObject({ httpStatus: 409 });
+    await expect(adminService.updateUserAccount(ids.active, ids.signup, { email: `${PREFIX}_banned@EXAMPLE.test` }))
+      .rejects.toMatchObject({ httpStatus: 409 });
+  });
+
+  it("refuses your own account and an administrator's", async () => {
+    await expect(adminService.updateUserAccount(ids.active, ids.active, { username: `${PREFIX}_self` }))
+      .rejects.toMatchObject({ httpStatus: 403 });
+    let adminGroup = await prisma.group.findUnique({ where: { key: "admin" } });
+    if (!adminGroup) adminGroup = await prisma.group.create({ data: { name: "Administrator", key: "admin", isSystem: true } });
+    await prisma.userGroup.create({ data: { userId: ids.inactive, groupId: adminGroup.id } });
+    await expect(adminService.updateUserAccount(ids.inactive, ids.active, { username: `${PREFIX}_x` }))
+      .rejects.toMatchObject({ httpStatus: 403 });
+  });
 });
 
 describe("group membership", () => {

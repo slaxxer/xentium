@@ -76,8 +76,8 @@ export const homeService = {
     const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
     const [members, articles, today, newest] = await Promise.all([
       prisma.user.count({ where: { isActive: true } }),
-      prisma.article.count({ where: { status: "published", deletedAt: null } }),
-      prisma.article.count({ where: { status: "published", deletedAt: null, publishedAt: { gte: dayAgo } } }),
+      prisma.article.count({ where: { status: "published", deletedAt: null, hiddenAt: null } }),
+      prisma.article.count({ where: { status: "published", deletedAt: null, hiddenAt: null, publishedAt: { gte: dayAgo } } }),
       prisma.user.findFirst({
         where: { isActive: true },
         orderBy: { createdAt: "desc" },

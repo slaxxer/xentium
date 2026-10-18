@@ -120,7 +120,7 @@ export const articleCategoryService = {
     const counts = await prisma.article.groupBy({
       by: ["categoryId"],
       where: {
-        status: "published", deletedAt: null, categoryId: { not: null },
+        status: "published", deletedAt: null, hiddenAt: null, categoryId: { not: null },
         ...(viewer?.userId
           ? { OR: [{ visibility: { in: ["public", "members"] } }, { authorId: viewer.userId }] }
           : { visibility: "public" }),

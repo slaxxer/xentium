@@ -50,6 +50,9 @@ const schema = z.object({
   // at startup. Default false so a fresh core starts with no forum until an admin
   // installs it on demand (ACP → Extensions). Set to "true" for the old dev flow.
   BOOTSTRAP_OFFICIAL_PLUGINS: z.string().default("false").transform((v) => v === "true" || v === "1"),
+  // A public demo with a shared admin account (see shared/middleware/demoGuard.ts):
+  // refuses plugin installs, mail, credential changes and lock-outs.
+  DEMO_MODE: z.string().default("false").transform((v) => v === "true" || v === "1"),
 });
 
 const parsed = schema.safeParse(process.env);

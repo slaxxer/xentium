@@ -553,9 +553,10 @@ registerBlock({
           {shown.map((b) => {
             const has  = held.has(b.id);
             const note = (earned ?? []).find((e) => e.id === b.id)?.note;
+            // Icon only; the name lives in the tooltip and the accessible name.
+            const label = [b.name, has ? (note ?? b.description) : t("badges.locked")].filter(Boolean).join(" — ");
             return (
-              <div key={b.id} className="profile-awards__cell"
-                title={[b.name, has ? (note ?? b.description) : t("badges.locked")].filter(Boolean).join(" — ")}>
+              <div key={b.id} className="profile-awards__cell" role="img" title={label} aria-label={label}>
                 {has
                   ? <BadgeMark
                       badge={{ ...b, awardedAt: "", note: note ?? null, source: "manual" }}
@@ -565,15 +566,13 @@ registerBlock({
                       <FontAwesomeIcon icon={faLock} />
                     </span>
                   )}
-                <span className={`profile-awards__label${has ? "" : " is-locked"}`}>{b.name}</span>
               </div>
             );
           })}
 
           {hidden > 0 && (
-            <div className="profile-awards__cell">
+            <div className="profile-awards__cell" role="img" title={t("badges.seeAll")} aria-label={t("badges.seeAll")}>
               <span className={`xt-badge xt-badge--${props.size} xt-badge--locked`}>+{hidden}</span>
-              <span className="profile-awards__label is-locked">{t("badges.seeAll")}</span>
             </div>
           )}
         </div>

@@ -39,4 +39,8 @@ export interface ArticleDetail extends ArticleListItem {
   body: unknown; // TipTap JSON
   seoTitle: string | null;
   seoDescription: string | null;
+  /** Staff closed the comments; only `article.comment.closed` may still post. */
+  commentsClosed: boolean;
+  /** Staff hid the article; only its author and `article.hide` see it at all. */
+  hidden: boolean;
 }

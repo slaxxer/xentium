@@ -46,8 +46,11 @@ export const commentsController = {
     const { commentId } = commentIdParamSchema.parse(req.params);
     const { reason } = deleteCommentSchema.parse(req.body ?? {});
     const userId = req.userId!;
-    const canModerate = await permissionsService.userHasPermission(userId, CorePermissions.ARTICLE_COMMENT_DELETE_ANY);
-    await commentService.softDelete(commentId, userId, canModerate, reason);
+    const [own, any] = await Promise.all([
+      permissionsService.userHasPermission(userId, CorePermissions.ARTICLE_COMMENT_DELETE_OWN),
+      permissionsService.userHasPermission(userId, CorePermissions.ARTICLE_COMMENT_DELETE_ANY),
+    ]);
+    await commentService.softDelete(commentId, userId, { own, any }, reason);
     res.status(204).send();
   }),
 

@@ -715,6 +715,14 @@ model Article {
   /// Set when staff pin the article to the top of the article index (the featured
   /// card). The most recently pinned visible article is the one shown.
   pinnedAt       DateTime?        @map("pinned_at")
+  /// Staff closed the comments (`article.comments.close`). Only members with
+  /// `article.comment.closed` may still post while it is set.
+  commentsClosedAt   DateTime?    @map("comments_closed_at")
+  commentsClosedById String?      @map("comments_closed_by_id")
+  /// Staff hid the article (`article.hide`): out of every public list, search and
+  /// count, and a 404 for everyone except its author and members with `article.hide`.
+  hiddenAt       DateTime?        @map("hidden_at")
+  hiddenById     String?          @map("hidden_by_id")
   likeCount      Int              @default(0) @map("like_count")
   dislikeCount   Int              @default(0) @map("dislike_count")
   commentCount   Int              @default(0) @map("comment_count")

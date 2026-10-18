@@ -32,6 +32,10 @@ export const CorePermissions = {
   ARTICLE_COMMENT_DELETE_ANY: "article.comment.delete.any",
   ARTICLE_REVISIONS_VIEW: "article.revisions.view",
   ARTICLE_REVISIONS_RESTORE: "article.revisions.restore",
+  // Staff moderation on an article: close its comments (and still comment there), hide it.
+  ARTICLE_COMMENTS_CLOSE: "article.comments.close",
+  ARTICLE_COMMENT_CLOSED: "article.comment.closed",
+  ARTICLE_HIDE: "article.hide",
 
   // Messaging (placeholder — owned by official messaging plugin post-v1)
   MESSAGE_SEND: "message.send",

@@ -199,6 +199,7 @@ variables are there, it boots normally. We validate the config with Zod at start
 | `REFRESH_TOKEN_HMAC_SECRET` | falls back to `JWT_SECRET` if unset (the wizard generates its own) |
 | `UPLOAD_DIR` | `./var/uploads`, relative to where the API process runs |
 | `BOOTSTRAP_OFFICIAL_PLUGINS` | `false`. Set it to `true` to install the first-party plugins from `plugins/official/` on startup; otherwise you install them from the ACP. |
+| `DEMO_MODE` | `false`. Set it to `true` for a public demo with a shared admin account. It refuses installing or switching plugins, the marketplace and licence, sending mail, changes to the signed-in account's password, email and sign-in methods, and settings that could lock visitors out. Everything else stays editable, so pair it with a nightly restore. |
 | `LICENSE_SERVER_URL`, `LICENSE_*_KEY` | only needed for marketplace and licensing |
 
 ### Manual setup

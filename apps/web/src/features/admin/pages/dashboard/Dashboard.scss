@@ -80,8 +80,7 @@
 
 .dsh-row { display: grid; gap: 16px; margin-bottom: 16px; align-items: start; }
 .dsh-row--top { grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); }
-.dsh-row--bottom { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
-@media (max-width: 1000px) { .dsh-row--top, .dsh-row--bottom { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 1000px) { .dsh-row--top { grid-template-columns: minmax(0, 1fr); } }
 .dsh-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 
 // ── Main card: tabs, chart, newest ───────────────────────────────────────────
@@ -243,7 +242,7 @@
 }
 .dsh-pf__main { flex: 1; min-width: 0; }
 .dsh-pf__label { margin: 0; font-size: var(--fs-sm); font-weight: 700; color: var(--c-fg); }
-.dsh-pf__detail { margin: 1px 0 0; font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsh-pf__detail { margin: 1px 0 0; font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); overflow-wrap: anywhere; }
 .dsh-runs {
   display: flex; gap: 2px; margin-top: 5px;
   i { width: 5px; height: 8px; border-radius: 2px; background: var(--c-success); }

@@ -12,6 +12,8 @@ import {
   createArticleSchema,
   listArticlesQuerySchema,
   pinArticleSchema,
+  closeCommentsSchema,
+  hideArticleSchema,
   trendingQuerySchema,
   updateArticleSchema,
 } from "./article.validation.js";
@@ -65,12 +67,28 @@ export const articlesController = {
     res.json(await articleService.popularTags(12));
   }),
 
+  closeComments: (async (req, res) => {
+    const { id } = articleIdParamSchema.parse(req.params);
+    const { closed } = closeCommentsSchema.parse(req.body);
+    await articleService.setCommentsClosed(id, closed, req.userId!);
+    res.json({ closed });
+  }),
+
+  hide: (async (req, res) => {
+    const { id } = articleIdParamSchema.parse(req.params);
+    const { hidden } = hideArticleSchema.parse(req.body);
+    await articleService.setHidden(id, hidden, req.userId!);
+    res.json({ hidden });
+  }),
+
   getBySlug: (async (req, res) => {
     const { slug } = articleSlugParamSchema.parse(req.params);
     const viewerId = req.userId;
     const perms = await viewerPerms(viewerId);
-    const canEditAny = perms.has(CorePermissions.ARTICLE_EDIT_ANY);
-    const article = await articleService.getBySlug(slug, viewerId, canEditAny);
+    const article = await articleService.getBySlug(slug, viewerId, {
+      editAny:   perms.has(CorePermissions.ARTICLE_EDIT_ANY),
+      seeHidden: perms.has(CorePermissions.ARTICLE_HIDE),
+    });
     res.json(article);
   }),
 

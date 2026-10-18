@@ -212,13 +212,6 @@
   }
   &__comment-time, &__comment-edited { font-size: var(--fs-xs); color: var(--c-fg-subtle); }
   &__comment-text { font-size: var(--fs-md); color: var(--c-fg-muted); line-height: 1.7; overflow-wrap: anywhere; }
-  &__comment-tombstone {
-    padding: 8px 12px; border-left: 3px solid var(--c-danger);
-    background: color-mix(in srgb, var(--c-danger) 8%, transparent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    font-size: var(--fs-sm); color: var(--c-fg-muted);
-    em { font-style: italic; }
-  }
   &__comment-footer { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
   &__comment-like {
     display: inline-flex; align-items: center; gap: 4px;
@@ -242,6 +235,20 @@
     padding: 2px 6px; border: none; background: none; cursor: pointer;
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700; color: var(--c-fg-subtle);
     &:hover { color: var(--c-accent); }
+    &--danger:hover { color: var(--c-danger); }
+    &:disabled { opacity: 0.5; cursor: default; }
+    svg { margin-right: 3px; }
+  }
+  /* The textarea inside the report / delete-reason dialog (rendered in the dialog host). */
+  &__dialog-field {
+    display: flex; flex-direction: column; gap: var(--sp-3); text-align: left;
+    p { margin: 0; }
+    textarea {
+      width: 100%; resize: vertical; padding: var(--sp-3);
+      border: 1px solid var(--input-border-color); border-radius: var(--radius-md);
+      background: var(--input-bg); color: var(--input-fg, var(--c-fg));
+      font: inherit; font-size: var(--fs-sm);
+    }
   }
   &__replies { margin-top: 4px; }
   &__empty { color: var(--c-fg-subtle); padding: 1rem 0; }
@@ -266,6 +273,21 @@
   a { color: var(--c-fg-muted); text-decoration: none; &:hover { color: var(--c-accent); } }
   a:last-of-type:not(:first-child) { color: var(--c-accent); }
   svg { font-size: 0.7em; }
+}
+
+/* A one-line state the page is in: comments closed, or the article hidden by staff. */
+.ard-notice {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 var(--sp-5);
+  padding: 10px 14px; border-radius: var(--radius-md);
+  border: 1px solid var(--c-border); background: var(--card-bg);
+  font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-muted);
+  svg { color: var(--c-fg-subtle); }
+  &--hidden {
+    border-color: color-mix(in srgb, var(--c-warn) 40%, transparent);
+    background: color-mix(in srgb, var(--c-warn) 10%, transparent);
+    color: var(--c-fg);
+    svg { color: var(--c-warn); }
+  }
 }
 
 .ard-mod { position: relative; }

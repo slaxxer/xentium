@@ -61,6 +61,10 @@ export interface ArticleDetail extends ArticleListItem {
   body: unknown;
   seoTitle: string | null;
   seoDescription: string | null;
+  /** Staff closed the comments; `article.comment.closed` may still post. */
+  commentsClosed: boolean;
+  /** Staff hid the article; only its author and `article.hide` see it. */
+  hidden: boolean;
 }
 
 export interface ArticleComment {
@@ -163,6 +167,8 @@ export const articlesApi = {
   featured: () => api.get<{ article: ArticleListItem | null }>("/articles/featured"),
   trending: (days = 30, max = 5) => api.get<TrendingArticle[]>(`/articles/trending?days=${days}&max=${max}`),
   pin: (id: string, pinned: boolean) => api.post<{ pinned: boolean }>(`/articles/${id}/pin`, { pinned }),
+  closeComments: (id: string, closed: boolean) => api.post<{ closed: boolean }>(`/articles/${id}/comments-closed`, { closed }),
+  hide: (id: string, hidden: boolean) => api.post<{ hidden: boolean }>(`/articles/${id}/hidden`, { hidden }),
   getBySlug: (slug: string) => api.get<ArticleDetail>(`/articles/${encodeURIComponent(slug)}`),
   create: (input: CreateArticleInput) => api.post<ArticleDetail>("/articles", input),
   update: (id: string, input: UpdateArticleInput) =>

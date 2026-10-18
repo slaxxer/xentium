@@ -251,17 +251,21 @@ export const adminUsersService = {
         SELECT ${DERIVED} FROM xcf_users u WHERE u.id = ${id}`,
       // Every address and device ever seen, not only the last page of events: this is
       // what a reviewer compares against another account.
-      prisma.$queryRaw<{ ip: string }[]>`
-        SELECT ip FROM (
+      // With when each was last seen, and a device's latest user agent, so the page can
+      // say "1d ago" and "Windows · Chrome" rather than a bare address or UUID.
+      prisma.$queryRaw<{ ip: string; last_seen: Date }[]>`
+        SELECT ip, max(at) AS last_seen FROM (
           SELECT ip, "createdAt" AS at FROM xcf_login_events WHERE "userId" = ${id} AND ip IS NOT NULL
           UNION ALL
           SELECT ip, "lastUsedAt" AS at FROM xcf_sessions WHERE "userId" = ${id} AND ip IS NOT NULL
         ) x GROUP BY ip ORDER BY max(at) DESC LIMIT 20`,
-      prisma.$queryRaw<{ cookie: string }[]>`
-        SELECT "deviceCookieId" AS cookie FROM (
-          SELECT "deviceCookieId", "createdAt" AS at FROM xcf_login_events WHERE "userId" = ${id} AND "deviceCookieId" IS NOT NULL
+      prisma.$queryRaw<{ cookie: string; last_seen: Date; ua: string | null }[]>`
+        SELECT "deviceCookieId" AS cookie, max(at) AS last_seen,
+               (array_agg(ua ORDER BY at DESC) FILTER (WHERE ua IS NOT NULL))[1] AS ua
+        FROM (
+          SELECT "deviceCookieId", "createdAt" AS at, "userAgent" AS ua FROM xcf_login_events WHERE "userId" = ${id} AND "deviceCookieId" IS NOT NULL
           UNION ALL
-          SELECT "deviceCookieId", "lastUsedAt" AS at FROM xcf_sessions WHERE "userId" = ${id} AND "deviceCookieId" IS NOT NULL
+          SELECT "deviceCookieId", "lastUsedAt" AS at, "userAgent" AS ua FROM xcf_sessions WHERE "userId" = ${id} AND "deviceCookieId" IS NOT NULL
         ) x GROUP BY "deviceCookieId" ORDER BY max(at) DESC LIMIT 20`,
       prisma.loginEvent.count({ where: securityWhere }),
       prisma.session.count({ where: { userId: id, revokedAt: null, expiresAt: { gt: new Date() } } }),
@@ -298,6 +302,8 @@ export const adminUsersService = {
       activeSessions,
       knownIps:        ipRows.map((r) => r.ip),
       deviceCookies:   cookieRows.map((r) => r.cookie),
+      ipSeen:          ipRows.map((r) => ({ ip: r.ip, lastSeenAt: r.last_seen })),
+      devices:         cookieRows.map((r) => ({ id: r.cookie, lastSeenAt: r.last_seen, userAgent: r.ua })),
       securityEventTotal: eventTotal,
       groups:          user.groups.map(toGroup),
       profileFields:   fields.map((f) => ({ field: f, value: valueMap[f.id] ?? "" })),

@@ -24,6 +24,9 @@ articlesRouter.get("/featured", optionalAuth, articlesController.featured);
 articlesRouter.get("/trending", optionalAuth, articlesController.trending);
 // Staff pin an article to the top of the index (the featured card).
 articlesRouter.post("/:id/pin", requireAuth, requirePermission(CorePermissions.ARTICLE_EDIT_ANY), articlesController.pin);
+// Staff moderation: close the comments, hide the article.
+articlesRouter.post("/:id/comments-closed", requireAuth, requirePermission(CorePermissions.ARTICLE_COMMENTS_CLOSE), articlesController.closeComments);
+articlesRouter.post("/:id/hidden", requireAuth, requirePermission(CorePermissions.ARTICLE_HIDE), articlesController.hide);
 
 // The categories and tags the member follows (their Following feed), and following one.
 // Static segments, before /:slug.

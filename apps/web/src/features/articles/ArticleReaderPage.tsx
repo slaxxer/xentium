@@ -21,6 +21,11 @@ import {
   faBookmark as faBookmarkSolid,
   faArrowRight,
   faNewspaper,
+  faTrashCan,
+  faLock,
+  faLockOpen,
+  faEye,
+  faEyeSlash,
 } from "@fortawesome/free-solid-svg-icons";
 import { faBookmark } from "@fortawesome/free-regular-svg-icons";
 import { articlesApi, type ArticleComment } from "../../lib/articlesApi";
@@ -29,6 +34,7 @@ import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
 import { swalToast, apiErrorMessage } from "../../lib/swal";
+import { openDialog } from "../../lib/dialog";
 import { ArticleContent } from "./components/ArticleContent";
 import { Composer, type ComposerHandle } from "../../components/composer/Composer";
 import { UserAvatar } from "../../components/UserAvatar";
@@ -154,6 +160,40 @@ export function ArticleReaderContent() {
     onError: (e) => swalToast(apiErrorMessage(e)),
   });
 
+  // Staff moderation on the article itself: close its comments, hide it. Each is its own permission.
+  const canCloseComments = userCan(authUser, "article.comments.close");
+  const canHide          = userCan(authUser, "article.hide");
+  const closeMut = useMutation({
+    mutationFn: (closed: boolean) => articlesApi.closeComments(articleQuery.data!.id, closed),
+    onSuccess: (res) => {
+      qc.setQueryData(["article", slug], (prev: typeof articleQuery.data) => prev ? { ...prev, commentsClosed: res.closed } : prev);
+      toast.success(t(res.closed ? "reader.commentsClosedDone" : "reader.commentsReopenedDone"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+  const hideMut = useMutation({
+    mutationFn: (hidden: boolean) => articlesApi.hide(articleQuery.data!.id, hidden),
+    onSuccess: (res) => {
+      qc.setQueryData(["article", slug], (prev: typeof articleQuery.data) => prev ? { ...prev, hidden: res.hidden } : prev);
+      qc.invalidateQueries({ queryKey: ["articles"] });
+      qc.invalidateQueries({ queryKey: ["articles-featured"] });
+      toast.success(t(res.hidden ? "reader.hiddenDone" : "reader.unhiddenDone"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+  /** Hiding takes the article out of every list at once, so it asks first; showing it again does not. */
+  async function toggleHidden(hidden: boolean) {
+    if (hidden) {
+      const ok = await openDialog({
+        kind: "confirm", icon: "warning",
+        title: t("reader.hideTitle"), body: t("reader.hideBody"),
+        confirmText: t("reader.hideArticle"), cancelText: t("actions.cancel", { ns: "common" }),
+      });
+      if (!ok) return;
+    }
+    hideMut.mutate(hidden);
+  }
+
   const [showWarn, setShowWarn]       = useState(false);
   const [warnTemplate, setWarnTemplate] = useState("");
   // "" = the template's own length; only a team lead's picker sets another.
@@ -224,6 +264,64 @@ export function ArticleReaderContent() {
     },
     onError: (e) => swalToast(apiErrorMessage(e, t("reader.reportError"))),
   });
+
+  const deleteCommentMut = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => articlesApi.deleteComment(id, reason),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["article-comments", articleQuery.data?.id] });
+      qc.invalidateQueries({ queryKey: ["article", slug] });
+      toast.success(t("reader.commentDeleted"));
+    },
+    onError: (e) => toast.error(apiErrorMessage(e, t("reader.commentDeleteError"))),
+  });
+
+  /** Your own comment: just confirm. Someone else's (moderators): a reason is required, for the moderation log. */
+  async function deleteComment(c: ArticleComment) {
+    const own = c.author.id === authUser?.id;
+    let reason = "";
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning", danger: true,
+      title: t("reader.deleteCommentTitle"),
+      ...(own ? { body: t("reader.deleteCommentBody") } : {
+        bodyNode: (
+          <div className="ard__dialog-field">
+            <p>{t("reader.deleteCommentModBody", { user: c.author.username })}</p>
+            <textarea rows={3} maxLength={280} autoFocus placeholder={t("reader.deleteCommentReason")}
+              onChange={(e) => { reason = e.target.value; }} />
+          </div>
+        ),
+      }),
+      confirmText: t("reader.deleteComment"), cancelText: t("actions.cancel", { ns: "common" }),
+    });
+    if (!ok) return;
+    if (!own && !reason.trim()) { toast.warning(t("reader.deleteCommentNeedReason")); return; }
+    deleteCommentMut.mutate({ id: c.id, reason: own ? undefined : reason.trim() });
+  }
+
+  /** Report a comment to the moderators: the same queue the article's own report goes to. */
+  async function reportComment(c: ArticleComment) {
+    let reason = "";
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning",
+      title: t("reader.reportCommentTitle"),
+      bodyNode: (
+        <div className="ard__dialog-field">
+          <p>{t("reader.reportCommentSub")}</p>
+          <textarea rows={4} maxLength={2000} autoFocus placeholder={t("reader.reportPlaceholder")}
+            onChange={(e) => { reason = e.target.value; }} />
+        </div>
+      ),
+      confirmText: t("reader.submitReport"), cancelText: t("actions.cancel", { ns: "common" }),
+    });
+    if (!ok) return;
+    if (reason.trim().length < 3) { toast.warning(t("reader.reportTooShort")); return; }
+    try {
+      await api.post("/moderation/reports", { targetType: "article_comment", targetId: c.id, reason: reason.trim() });
+      toast.success(t("reader.reportSubmitted"));
+    } catch (e) {
+      toast.error(apiErrorMessage(e, t("reader.reportError")));
+    }
+  }
 
   /** Thumbs up / down on a comment: one or the other; the same again takes it back. */
   const commentReactMut = useMutation({
@@ -327,7 +425,10 @@ export function ArticleReaderContent() {
   const isAuthed = isAuthenticated;
   const isAuthor = authUser?.id === a.author.id;
   const canEditAny = userCan(authUser, "article.edit.any");
-  const showModMenu = (isMod && !isAuthor) || canPin || (canEditAny && !isAuthor);
+  const showModMenu = (isMod && !isAuthor) || canPin || (canEditAny && !isAuthor) || canCloseComments || canHide;
+  // Closed comments: the composer and Reply stay for `article.comment.closed` (staff).
+  const canCommentClosed = userCan(authUser, "article.comment.closed");
+  const commentsOpen = !a.commentsClosed || canCommentClosed;
   const comments = sortComments(commentsQuery.data?.data ?? [], commentSort);
 
   const likeButton = (cls: string) => (
@@ -392,6 +493,12 @@ export function ArticleReaderContent() {
         </div>
       )}
 
+      {a.hidden && (
+        <p className="ard-notice ard-notice--hidden" role="status">
+          <FontAwesomeIcon icon={faEyeSlash} /> {t("reader.hiddenNotice")}
+        </p>
+      )}
+
       {/* ── Head: where it is, what it is, who wrote it ── */}
       <header className="ard-head">
         <div className="ard-head__top">
@@ -414,6 +521,16 @@ export function ArticleReaderContent() {
               {canPin && (
                 <button type="button" aria-pressed={!!a.pinned} disabled={pinMut.isPending} onClick={() => pinMut.mutate(!a.pinned)}>
                   <FontAwesomeIcon icon={faThumbtack} /> {t(a.pinned ? "list.unpin" : "list.pin")}
+                </button>
+              )}
+              {canCloseComments && (
+                <button type="button" aria-pressed={a.commentsClosed} disabled={closeMut.isPending} onClick={() => closeMut.mutate(!a.commentsClosed)}>
+                  <FontAwesomeIcon icon={a.commentsClosed ? faLockOpen : faLock} /> {t(a.commentsClosed ? "reader.reopenComments" : "reader.closeComments")}
+                </button>
+              )}
+              {canHide && (
+                <button type="button" aria-pressed={a.hidden} disabled={hideMut.isPending} onClick={() => void toggleHidden(!a.hidden)}>
+                  <FontAwesomeIcon icon={a.hidden ? faEye : faEyeSlash} /> {t(a.hidden ? "reader.unhideArticle" : "reader.hideArticle")}
                 </button>
               )}
               {canEditAny && !isAuthor && (
@@ -512,7 +629,13 @@ export function ArticleReaderContent() {
               </div>
             </div>
 
-            {authLoading ? null : isAuthed ? (
+            {a.commentsClosed && (
+              <p className="ard-notice" role="status">
+                <FontAwesomeIcon icon={faLock} /> {t(canCommentClosed ? "reader.commentsClosedStaff" : "reader.commentsClosed")}
+              </p>
+            )}
+
+            {authLoading || !commentsOpen ? null : isAuthed ? (
               /**
                * ⚠ The INLINE composer: collapsed to one row until someone means to use
                * it. A comment box is a thing people scroll PAST to read the comments.
@@ -539,7 +662,9 @@ export function ArticleReaderContent() {
                 <CommentItem key={c.id} c={c} articleAuthorId={a.author.id} depth={0}
                   reactions={reactions} onReact={(v) => commentReactMut.mutate(v)} reactPending={commentReactMut.isPending}
                   replyTo={replyTo} setReplyTo={setReplyTo}
-                  onReply={(parentId, body) => replyMut.mutateAsync({ parentId, body })} replyPending={replyMut.isPending} />
+                  onReply={(parentId, body) => replyMut.mutateAsync({ parentId, body })} replyPending={replyMut.isPending}
+                  onDelete={deleteComment} onReport={reportComment} deletePending={deleteCommentMut.isPending}
+                  canReply={commentsOpen} />
               ))}
             </div>
 
@@ -667,11 +792,14 @@ function ModMenu({ label, children }: { label: string; children: React.ReactNode
 type ReactArgs = { commentId: string; current: "like" | "dislike" | null; next: "like" | "dislike" | null };
 
 /** One comment, its thumbs, a Reply that opens a composer under it, and its replies (one level). */
-function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPending, replyTo, setReplyTo, onReply, replyPending }: {
+function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPending, replyTo, setReplyTo, onReply, replyPending, onDelete, onReport, deletePending, canReply }: {
   c: ArticleComment; articleAuthorId: string; depth: number;
   reactions: Record<string, "like" | "dislike" | null>; onReact: (v: ReactArgs) => void; reactPending: boolean;
   replyTo: string | null; setReplyTo: (id: string | null) => void;
   onReply: (parentId: string, body: string) => Promise<unknown>; replyPending: boolean;
+  onDelete: (c: ArticleComment) => void; onReport: (c: ArticleComment) => void; deletePending: boolean;
+  /** False while comments are closed and the viewer may not post there. */
+  canReply: boolean;
 }) {
   const { t } = useTranslation(["articles", "common"]);
   const dt = useDateTime();
@@ -696,6 +824,11 @@ function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPendi
   }, [replying]);
   const reaction = c.id in reactions ? reactions[c.id]! : c.viewerReaction ?? null;
   const canLike = isAuthenticated && authUser?.id !== c.author.id && !c.deletedAt;
+  const isOwn = authUser?.id === c.author.id;
+  const canReport = isAuthenticated && !isOwn;
+  const canDelete = isOwn
+    ? userCan(authUser, "article.comment.delete.own") || userCan(authUser, "article.comment.delete.any")
+    : userCan(authUser, "article.comment.delete.any");
   // Replies go one level deep: a reply to a reply joins the same thread.
   const threadId = depth === 0 ? c.id : (c.parentId ?? c.id);
   return (
@@ -708,18 +841,8 @@ function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPendi
           <span className="ard__comment-time"><time dateTime={c.createdAt}>{dt.stamp(c.createdAt)}</time></span>
           {c.editedAt && <span className="ard__comment-edited">· {t("reader.edited")}</span>}
         </div>
-        {c.deletedAt ? (
-          <div className="ard__comment-tombstone">
-            <em>
-              {t("reader.tombstoneBase", { user: c.author.username })}
-              {c.deletedByUsername ? t("reader.tombstoneBy", { mod: c.deletedByUsername }) : ""}
-              {" · "}{dt.date(c.deletedAt)}
-              {c.deletedReason ? t("reader.tombstoneReason", { reason: c.deletedReason }) : ""}
-            </em>
-          </div>
-        ) : (
-          <div className="ard__comment-text xt-rich" dangerouslySetInnerHTML={{ __html: c.body ?? "" }} />
-        )}
+        {/* A deleted comment never reaches the list: no tombstone. */}
+        <div className="ard__comment-text xt-rich" dangerouslySetInnerHTML={{ __html: c.body ?? "" }} />
         {!c.deletedAt && (
           <div className="ard__comment-footer">
             {(["like", "dislike"] as const).map((kind) => {
@@ -740,9 +863,20 @@ function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPendi
                 </span>
               );
             })}
-            {isAuthenticated && (
+            {isAuthenticated && canReply && (
               <button type="button" className="ard__comment-reply" onClick={() => setReplyTo(replyTo === c.id ? null : c.id)}>
                 {t("reader.reply")}
+              </button>
+            )}
+            {canReport && (
+              <button type="button" className="ard__comment-reply" onClick={() => onReport(c)}>
+                <FontAwesomeIcon icon={faFlag} /> {t("reader.report")}
+              </button>
+            )}
+            {canDelete && (
+              <button type="button" className="ard__comment-reply ard__comment-reply--danger"
+                disabled={deletePending} onClick={() => onDelete(c)}>
+                <FontAwesomeIcon icon={faTrashCan} /> {t("reader.deleteComment")}
               </button>
             )}
           </div>
@@ -760,7 +894,8 @@ function CommentItem({ c, articleAuthorId, depth, reactions, onReact, reactPendi
             {c.replies.map((r) => (
               <CommentItem key={r.id} c={r} articleAuthorId={articleAuthorId} depth={1}
                 reactions={reactions} onReact={onReact} reactPending={reactPending}
-                replyTo={replyTo} setReplyTo={setReplyTo} onReply={onReply} replyPending={replyPending} />
+                replyTo={replyTo} setReplyTo={setReplyTo} onReply={onReply} replyPending={replyPending}
+                onDelete={onDelete} onReport={onReport} deletePending={deletePending} canReply={canReply} />
             ))}
           </div>
         )}
