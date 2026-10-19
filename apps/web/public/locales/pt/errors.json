@@ -38,5 +38,6 @@
   "XEC-AUTH-2011": "Aceite os termos e a política de privacidade para continuar.",
   "XEC-MOD-4101": "Escolha um dos modelos. Avisos e banimentos só podem ser enviados a partir de um modelo.",
   "XEC-MOD-4102": "Este conteúdo não é do membro em causa.",
-  "XEC-MOD-4103": "Este modelo menciona o conteúdo em causa. Use-o a partir desse conteúdo ou escolha outro modelo."
+  "XEC-MOD-4103": "Este modelo menciona o conteúdo em causa. Use-o a partir desse conteúdo ou escolha outro modelo.",
+  "XEC-USER-4017": "Introduza uma data de nascimento real: depois de 1900 e antes de hoje."
 }

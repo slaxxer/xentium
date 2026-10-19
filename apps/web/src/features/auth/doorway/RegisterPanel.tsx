@@ -17,6 +17,7 @@ import { DigitsInput, FormError, OrDivider, PasswordInput, ProviderButtons } fro
 import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported, startProvider } from "./signInClient";
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
+import { DOB_MIN, dobMax } from "../../../lib/dob";
 
 interface ProfileFieldDef {
   id: string; key: string; label: string; type: string; placeholder: string | null;
@@ -286,6 +287,7 @@ export function RegisterPanel() {
               <label key={f.id} className="dw-field">
                 <span className="dw-label">{fieldLabel(f)} {!f.requiredOnRegistration && <em>{t("door.optional")}</em>}</span>
                 <input className="dw-input" type={f.type === "date" ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
+                  {...(f.key === "date_of_birth" ? { min: DOB_MIN, max: dobMax() } : {})}
                   value={values[f.id] ?? ""} placeholder={f.placeholder ?? ""} required={f.requiredOnRegistration}
                   onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))} />
               </label>

@@ -38,5 +38,6 @@
   "XEC-AUTH-2011": "Acceptez les conditions d'utilisation et la politique de confidentialité pour continuer.",
   "XEC-MOD-4101": "Choisissez l'un des modèles. Les avertissements et les bannissements ne peuvent être envoyés qu'à partir d'un modèle.",
   "XEC-MOD-4102": "Ce contenu n'est pas de la personne concernée.",
-  "XEC-MOD-4103": "Ce modèle mentionne le contenu concerné. Utilisez-le depuis ce contenu, ou choisissez un autre modèle."
+  "XEC-MOD-4103": "Ce modèle mentionne le contenu concerné. Utilisez-le depuis ce contenu, ou choisissez un autre modèle.",
+  "XEC-USER-4017": "Saisissez une vraie date de naissance : après 1900 et avant aujourd'hui."
 }

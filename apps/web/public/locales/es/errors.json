@@ -38,5 +38,6 @@
   "XEC-AUTH-2011": "Acepta los términos y la política de privacidad para continuar.",
   "XEC-MOD-4101": "Elige una de las plantillas. Las advertencias y suspensiones solo se pueden enviar desde una plantilla.",
   "XEC-MOD-4102": "Este contenido no es del miembro sobre el que estás actuando.",
-  "XEC-MOD-4103": "Esta plantilla menciona el contenido al que se refiere. Úsala desde ese contenido o elige otra plantilla."
+  "XEC-MOD-4103": "Esta plantilla menciona el contenido al que se refiere. Úsala desde ese contenido o elige otra plantilla.",
+  "XEC-USER-4017": "Introduce una fecha de nacimiento real: posterior a 1900 y anterior a hoy."
 }
