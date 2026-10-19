@@ -445,7 +445,7 @@ All **Admin**.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/` | Installed plugins and their status. |
+| GET | `/` | Installed plugins: status, stored manifest (permissions, table prefix, migrations), `loadError` when an enabled plugin failed to start, and `storeUrl`, its marketplace listing (`null` for a package the marketplace did not sign). |
 | POST | `/validate` | Check an uploaded `.xtplugin` without installing it (`multipart`, field `file`). |
 | POST | `/upload` | Install (rate-limited; `multipart`). |
 | POST | `/:id/enable` | Enable (licensed plugins need an entitlement). |

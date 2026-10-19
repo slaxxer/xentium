@@ -8,6 +8,7 @@ import {
   validatePackage,
 } from "../../core/plugin-engine/plugin-engine.js";
 import { pluginRegistry } from "../../core/plugin-engine/plugin-registry.js";
+import { marketplaceWebUrl } from "../../core/license-engine/protocol-client.js";
 
 // Plugin lifecycle mutations (install/update/enable/disable/uninstall) touch the
 // filesystem, shared registries and the plugin router — two admins racing e.g. an
@@ -64,6 +65,14 @@ export const pluginService = {
     const rows = await prisma.installedPlugin.findMany({ orderBy: { installedAt: "desc" } });
     // Attach the in-memory load error (if the plugin's onEnable/import failed) so the
     // ACP can show "enabled in DB but failed to load" instead of a silent failure.
-    return rows.map((r) => ({ ...r, loadError: pluginRegistry.getLoadError(r.id) ?? null }));
+    //
+    // `storeUrl`: its listing on the marketplace storefront, for the ACP's "Marketplace
+    // page" link. Only a package the marketplace signed came from there; a developer's
+    // own build (no signature) has no listing to link to.
+    return rows.map((r) => ({
+      ...r,
+      loadError: pluginRegistry.getLoadError(r.id) ?? null,
+      storeUrl:  r.signatureTier ? marketplaceWebUrl(`/plugins/${encodeURIComponent(r.id)}`) : null,
+    }));
   },
 };
