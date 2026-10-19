@@ -14,27 +14,33 @@
   .pg-head > * { min-width: 0; max-width: 100%; }
   .pg-head > :not(:first-child) { flex-wrap: wrap; margin-left: 0; }
 }
-.pg-head .pg-eyebrow {
-  font-family: var(--font-display);
+/* The eyebrow is a soft teal pill (the docs look), not an uppercase caption. Unscoped
+   too: some pages put their eyebrow and title outside a .pg-head. */
+.pg-head .pg-eyebrow, .pg-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--ff-sans);
   font-weight: 600;
-  font-size: var(--fs-2xs);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--c-fg-subtle);
-  margin: 0 0 7px;
+  font-size: var(--fs-xs);
+  letter-spacing: 0;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  margin: 0 0 12px;
 }
-.pg-head .pg-title {
+.pg-head .pg-title, .pg-title {
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--fs-3xl);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.025em;
   margin: 0;
   line-height: 1.05;
   color: var(--c-fg);
 }
 .pg-head .pg-sub {
   font-size: var(--fs-md);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--c-fg-muted);
   margin: 8px 0 0;
   max-width: 54ch;
@@ -67,8 +73,8 @@
 .savechip__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c-success); flex: none; }
 .savechip.is-saved .savechip__dot { animation: savechip-dotpulse 1.6s ease-out; }
 @keyframes savechip-dotpulse {
-  0%   { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
-  100% { box-shadow: 0 0 0 7px rgba(52, 211, 153, 0); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-success) 50%, transparent); }
+  100% { box-shadow: 0 0 0 7px transparent; }
 }
 .savechip__spin {
   width: 14px;
@@ -86,7 +92,7 @@
 
 .set-secnav { position: sticky; top: 8px; display: flex; flex-direction: column; gap: 2px; }
 .set-secnav__label {
-  font-family: var(--font-display);
+  font-family: var(--ff-sans);
   font-weight: 600;
   font-size: var(--fs-2xs);
   letter-spacing: 0.1em;
@@ -106,7 +112,7 @@
   padding: 9px 12px;
   border-radius: var(--radius-md);
   color: var(--c-fg-muted);
-  font-family: var(--font-display);
+  font-family: var(--ff-sans);
   font-weight: 500;
   font-size: var(--fs-md);
   cursor: pointer;
@@ -152,7 +158,7 @@
   align-items: center;
   justify-content: center;
 }
-.set-card__titles h3 { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-base); margin: 0; letter-spacing: -0.01em; color: var(--c-fg); }
+.set-card__titles h3 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-base); margin: 0; letter-spacing: -0.01em; color: var(--c-fg); }
 .set-card__titles p { margin: 3px 0 0; font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg-subtle); }
 .set-card__beta {
   margin-left: auto;
@@ -179,7 +185,7 @@
   border-top: 1px solid var(--c-rowline);
 }
 .set-row:first-child { border-top: none; }
-.set-row__label { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }
+.set-row__label { font-family: var(--ff-sans); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }
 .set-row__desc {
   font-family: var(--font-body);
   font-weight: 600;
@@ -305,7 +311,7 @@
   border: none;
   background: none;
   text-align: center;
-  font-family: var(--font-display);
+  font-family: var(--ff-sans);
   font-weight: 600;
   font-size: var(--fs-base);
   color: var(--c-fg);
@@ -342,7 +348,7 @@
 }
 
 .mnt-group {
-  font-family: var(--font-display);
+  font-family: var(--ff-sans);
   font-weight: 700;
   font-size: var(--fs-2xs);
   letter-spacing: 0.14em;
@@ -396,7 +402,7 @@
   gap: 8px;
   padding: 6px 12px;
   border-radius: var(--radius-pill);
-  font-family: var(--font-display);
+  font-family: var(--ff-sans);
   font-weight: 800;
   font-size: var(--fs-2xs);
   letter-spacing: 0.03em;
