@@ -11,7 +11,7 @@ import {
   getSiteDomain, getSiteId, resolveEnvironment,
   refreshLicense, activateFromAccount, assertThemeDownloadAllowed,
 } from "../../core/license-engine/license-engine.js";
-import { processUpdateCheck } from "../../jobs/updateCheck.js";
+import { processUpdateCheck, type ReleaseNote } from "../../jobs/updateCheck.js";
 import { readCoreUpdateCache, type CoreUpdateCache } from "../../jobs/coreUpdateCheck.js";
 import { readAnnouncementCache, pendingAnnouncement } from "../../jobs/announcementCheck.js";
 import { XENTIUM_VERSION } from "../../config/version.js";
@@ -136,7 +136,7 @@ interface CachedUpdate {
   critical?:         boolean;
   renewalRequired?:  boolean;
   /** "What's new": one entry per release between installed and latest, newest first. */
-  notes?:            { version: string; changelog: string; publishedAt: string | null }[];
+  notes?:            ReleaseNote[];
   [k: string]:       unknown;
 }
 

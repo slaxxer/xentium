@@ -10,6 +10,7 @@ import {
 import { api } from "../../../lib/api";
 import { apiErrorMessage } from "../../../lib/swal";
 import { toast } from "../../../lib/toast";
+import { openDialog } from "../../../lib/dialog";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { siteTime } from "../../../lib/datetime";
 import "./UpdatesPage.scss";
@@ -24,8 +25,13 @@ interface PluginUpdate {
   /** Older caches carried one text; the marketplace now sends notes per release. */
   changelog?:        string;
   /** "What's new": every release between installed and latest that has notes, newest first. */
-  notes?:            { version: string; changelog: string; publishedAt: string | null }[];
+  notes?:            { version: string; changes: Change[]; publishedAt: string | null }[];
 }
+
+type ChangeType = "new" | "improved" | "fixed" | "security" | "breaking" | "other";
+interface Change { type: ChangeType; text: string }
+/** What an admin must know first, first. */
+const CHANGE_ORDER: ChangeType[] = ["breaking", "security", "new", "improved", "fixed", "other"];
 
 /** A published security advisory against a version this site runs. */
 interface Advisory {
@@ -61,18 +67,26 @@ function bumpKind(from: string | null | undefined, to: string): "major" | "minor
   return "patch";
 }
 
-/** One release's "what's new", as the list the row shows. */
-interface NoteGroup { version: string | null; date: string | null; lines: string[] }
+/** One release's "what's new", as the row shows it. */
+interface NoteGroup { version: string | null; date: string | null; changes: Change[] }
 
-/** The update's notes grouped per release; the version heading only matters when there are several. */
+/**
+ * The update's notes per release; the version heading only matters when there are
+ * several. An older cache carried one text instead, shown as untyped lines.
+ */
 function noteGroups(u: PluginUpdate): NoteGroup[] {
   if (u.notes?.length) {
     return u.notes
-      .map((n) => ({ version: n.version, date: n.publishedAt, lines: noteLines(n.changelog) }))
-      .filter((g) => g.lines.length > 0);
+      .map((n) => ({ version: n.version, date: n.publishedAt, changes: n.changes ?? [] }))
+      .filter((g) => g.changes.length > 0);
   }
   const lines = noteLines(u.changelog);
-  return lines.length ? [{ version: null, date: null, lines }] : [];
+  return lines.length ? [{ version: null, date: null, changes: lines.map((text) => ({ type: "other" as const, text })) }] : [];
+}
+
+/** Every breaking change an update would bring, across the releases it skips. */
+function breakingChanges(u: PluginUpdate): string[] {
+  return (u.notes ?? []).flatMap((n) => (n.changes ?? []).filter((c) => c.type === "breaking").map((c) => c.text));
 }
 
 /** A changelog arrives as text; one line per change reads as a list. */
@@ -183,12 +197,39 @@ export function UpdatesPage() {
     });
   }, [queue, runOne, qc]);
 
-  const start = (ids: string[]) => {
+  const start = async (ids: string[]) => {
     const ok = ids.filter((id) => {
       const u = updatesRef.current.find((x) => x.pluginId === id);
       return u && !u.renewalRequired && !done[id] && !running[id] && !queue.includes(id);
     });
     if (!ok.length) return;
+    // A release that says it breaks something is not updated on one click: the
+    // admin reads what breaks first, for every plugin in this batch.
+    const breaking = ok
+      .map((id) => updatesRef.current.find((x) => x.pluginId === id)!)
+      .map((u) => ({ name: u.name ?? u.pluginId, items: breakingChanges(u) }))
+      .filter((b) => b.items.length > 0);
+    if (breaking.length) {
+      const go = await openDialog({
+        kind: "confirm",
+        icon: "warning",
+        title: t("updates.breakingTitle", { count: breaking.length }),
+        bodyNode: (
+          <div className="upd-breaking">
+            <p>{t("updates.breakingText")}</p>
+            {breaking.map((b) => (
+              <div key={b.name}>
+                <strong>{b.name}</strong>
+                <ul>{b.items.map((it, i) => <li key={i}>{it}</li>)}</ul>
+              </div>
+            ))}
+          </div>
+        ),
+        confirmText: t("updates.breakingConfirm"),
+        cancelText: t("updates.cancel"),
+      });
+      if (!go) return;
+    }
     setFailed((f) => { const n = { ...f }; ok.forEach((id) => delete n[id]); return n; });
     setQueue((q) => [...q, ...ok]);
   };
@@ -240,7 +281,7 @@ export function UpdatesPage() {
           updateFor={(id) => updates.find((u) => u.pluginId === id)}
           isBusy={isBusy}
           isDone={(id) => !!done[id]}
-          onFix={(id) => start([id])}
+          onFix={(id) => void start([id])}
         />
       )}
 
@@ -278,7 +319,7 @@ export function UpdatesPage() {
               type="button"
               className="btn-primary btn-sm"
               disabled={selectedIds.length === 0}
-              onClick={() => start(selectedIds)}
+              onClick={() => void start(selectedIds)}
             >
               <FontAwesomeIcon icon={faCloudArrowDown} />
               {selectedIds.length ? t("updates.updateSelectedN", { count: selectedIds.length }) : t("updates.updateSelected")}
@@ -295,6 +336,7 @@ export function UpdatesPage() {
             const notes = noteGroups(u);
             const open = openNotes.has(id) && !run;
             const released = u.notes?.find((n) => n.version === u.latestVersion)?.publishedAt ?? null;
+            const breaks = !isDone && breakingChanges(u).length > 0;
             const kind = bumpKind(u.installedVersion, u.latestVersion);
             const name = u.name ?? id;
             const vendor = vendorOf.get(id);
@@ -318,6 +360,7 @@ export function UpdatesPage() {
                   <div className="upd-row__line">
                     <span className="upd-row__name">{name}</span>
                     {u.critical && !isDone && <span className="upd-row__crit">{t("updates.criticalBadge")}</span>}
+                    {breaks && <span className="upd-row__breaks">{t("updates.breakingBadge")}</span>}
                   </div>
                   {vendor && <div className="upd-row__vendor">{vendor}</div>}
 
@@ -340,7 +383,16 @@ export function UpdatesPage() {
                               v{g.version}{g.date && <span> · {siteTime.date(g.date)}</span>}
                             </div>
                           )}
-                          <ul>{g.lines.map((n, i) => <li key={i}>{n}</li>)}</ul>
+                          {CHANGE_ORDER.filter((ty) => g.changes.some((c) => c.type === ty)).map((ty) => {
+                            // Text from before typed changes is all "other": no label to show.
+                            const untyped = g.changes.every((c) => c.type === "other");
+                            return (
+                              <div key={ty} className={`upd-change${untyped ? " is-untyped" : ""}`}>
+                                {!untyped && <span className={`upd-tag is-${ty}`}>{t(`updates.change.${ty}`)}</span>}
+                                <ul>{g.changes.filter((c) => c.type === ty).map((c, i) => <li key={i}>{c.text}</li>)}</ul>
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                     </div>
@@ -390,7 +442,7 @@ export function UpdatesPage() {
                     <button
                       type="button"
                       className={`btn-sm ${u.critical ? "btn-danger" : "btn-primary"}`}
-                      onClick={() => start([id])}
+                      onClick={() => void start([id])}
                     >
                       {failed[id] ? t("updates.retry") : u.critical ? t("updates.updateNow") : t("updates.update")}
                     </button>
