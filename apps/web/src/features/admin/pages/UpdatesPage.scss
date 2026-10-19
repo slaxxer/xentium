@@ -261,13 +261,14 @@
 }
 
 // ── Typed changes ("What's new") ─────────────────────────────────────────────
+// The type label on its own line, its changes listed underneath.
 .upd-change {
-  display: grid;
-  grid-template-columns: 84px minmax(0, 1fr);
-  gap: 10px;
-  align-items: start;
-  & + & { margin-top: 6px; }
-  &.is-untyped { grid-template-columns: minmax(0, 1fr); }
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  & + & { margin-top: 10px; }
+  ul { width: 100%; }
 }
 
 .upd-tag {
@@ -294,6 +295,3 @@
   ul { margin: 4px 0 0; padding-left: 18px; }
 }
 
-@media (max-width: 520px) {
-  .upd-change { grid-template-columns: minmax(0, 1fr); gap: 4px; }
-}
