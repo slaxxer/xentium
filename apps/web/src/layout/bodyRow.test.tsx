@@ -24,13 +24,13 @@ const heading = (id: string, text: string): BlockNode =>
   ({ id, type: "heading", props: { text, level: 2 } });
 
 const doc = (regions: Record<string, BlockNode[]>): LayoutDocument =>
-  ({ templateKey: "home", schemaVersion: 1, regions } as LayoutDocument);
+  ({ templateKey: "article.index", schemaVersion: 1, regions } as LayoutDocument);
 
 describe("the body row", () => {
   it("puts the body and the rail in one row", () => {
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         document={doc({ header: [], main: [heading("m", "Body")], aside: [heading("a", "Rail")], footer: [] })}
       />,
     );
@@ -45,7 +45,7 @@ describe("the body row", () => {
     // first would read before the page's content to a screen reader as well.
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         regions={["aside", "main"]}
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
@@ -58,7 +58,7 @@ describe("the body row", () => {
   it("still emits the aside LANDMARK, not a div in a row", () => {
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
     );
@@ -70,7 +70,7 @@ describe("the body row", () => {
     // the editor, so the row has one child and the body takes the full width.
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         document={doc({ main: [heading("m", "Body")], aside: [] })}
       />,
     );
@@ -97,7 +97,7 @@ describe("the body row", () => {
     // renders neither (the migration folds them into the body on boot).
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         document={doc({
           header: [heading("h", "Band")],
           main:   [heading("m", "Body")],
@@ -128,7 +128,7 @@ describe("whose header it is", () => {
   it("gives a page no header or footer landmark, because it has neither region", () => {
     const { container } = render(
       <LayoutRenderer
-        templateKey="home"
+        templateKey="article.index"
         document={doc({ main: [heading("m", "Body")], aside: [heading("a", "Rail")] })}
       />,
     );

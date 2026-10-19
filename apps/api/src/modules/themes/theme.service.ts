@@ -38,6 +38,7 @@ import {
   scopedTokenSetSchema,
   type ThemeManifest,
   layoutDocumentSchema,
+  foldHomeAside,
   missingRequiredBlocks,
   requiredBlocksFor,
   regionsFor,
@@ -724,10 +725,13 @@ export const themeService = {
         throw themeError(`layouts/${key}.json is not valid JSON`);
       }
 
-      const parsed = layoutDocumentSchema.safeParse(json);
-      if (!parsed.success) {
-        throw themeError(`layouts/${key}.json is not a valid layout: ${issueList(parsed.error)}`);
+      const raw = layoutDocumentSchema.safeParse(json);
+      if (!raw.success) {
+        throw themeError(`layouts/${key}.json is not a valid layout: ${issueList(raw.error)}`);
       }
+      // A package made while home still had an `aside` region: its blocks join the
+      // right rail instead of the whole theme being refused (see `foldHomeAside`).
+      const parsed = { ...raw, data: foldHomeAside(raw.data) };
       if (parsed.data.templateKey !== key) {
         throw themeError(`layouts/${key}.json declares template "${parsed.data.templateKey}"`);
       }

@@ -177,9 +177,15 @@ describe("the site chrome", () => {
    * `section` at the top of the body except a misleading name.
    */
   it("gives every page a body and a rail, in that order", () => {
-    for (const key of ["home", "article.index", "article.detail", "profile", "members"] as const) {
+    for (const key of ["article.index", "article.detail", "profile", "members"] as const) {
       expect(regionsFor(key)).toEqual(["main", "aside"]);
     }
+  });
+
+  // Home's rail is the last `column` of its three-column block; a region beside that
+  // rendered as a fourth rail (contracts: foldHomeAside).
+  it("gives home a body only: its right rail is a column", () => {
+    expect(regionsFor("home")).toEqual(["main"]);
   });
 
   /**
