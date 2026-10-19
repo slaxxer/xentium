@@ -38,5 +38,6 @@
   "XEC-AUTH-2011": "Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung, um fortzufahren.",
   "XEC-MOD-4101": "Wähle eine der Vorlagen. Verwarnungen und Sperren können nur aus einer Vorlage verschickt werden.",
   "XEC-MOD-4102": "Dieser Inhalt stammt nicht von dem Mitglied, um das es geht.",
-  "XEC-MOD-4103": "Diese Vorlage nennt den betroffenen Inhalt. Nutze sie direkt bei diesem Inhalt oder wähle eine andere Vorlage."
+  "XEC-MOD-4103": "Diese Vorlage nennt den betroffenen Inhalt. Nutze sie direkt bei diesem Inhalt oder wähle eine andere Vorlage.",
+  "XEC-USER-4017": "Bitte gib ein echtes Geburtsdatum ein: nach 1900 und vor heute."
 }

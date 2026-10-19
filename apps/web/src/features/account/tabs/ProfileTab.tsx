@@ -38,6 +38,7 @@ import { primaryBadgeColor } from "../../../lib/groupBadge";
 import { RankBadge } from "../../../components/RankBadge";
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
+import { DOB_MIN, dobMax } from "../../../lib/dob";
 
 interface FieldDef {
   id: string;
@@ -322,6 +323,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                     id={`pf-${f.id}`}
                     className="account-input"
                     type={isDob ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
+                    {...(isDob ? { min: DOB_MIN, max: dobMax() } : {})}
                     value={cur.value}
                     placeholder={f.placeholder ?? ""}
                     onChange={(ev) => setEntry(f.id, { value: ev.target.value })}

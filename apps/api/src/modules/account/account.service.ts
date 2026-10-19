@@ -8,6 +8,7 @@ import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { env } from "../../config/env.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
+import { assertProfileFieldValues } from "../users/profileFieldValues.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
 
@@ -321,6 +322,7 @@ export const accountService = {
     userId: string,
     values: Array<{ fieldId: string; value: string; privacy: string }>,
   ) {
+    await assertProfileFieldValues(values);
     await Promise.all(
       values.map((v) =>
         prisma.userProfileFieldValue.upsert({
