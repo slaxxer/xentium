@@ -35,6 +35,7 @@ const isDev = process.env.NODE_ENV !== "production";
  * second fence, not the only one.
  */
 const marketplaceArtifactLimiter = makeRateLimiter("marketplace-artifact", 60 * 60_000, isDev ? 1000 : 30);
+const updateCheckLimiter = makeRateLimiter("marketplace-update-check", 60_000, isDev ? 1000 : 3);
 
 // Dashboard + health
 adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
@@ -188,6 +189,9 @@ adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listM
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
 adminRouter.get("/marketplace/owned",          adminGuard, adminController.getMarketplaceOwned);
 adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
+// "Check now" on the Updates page: the daily heartbeat, on demand. Single-flight already
+// (a lock in processUpdateCheck); the limiter keeps a held-down button off the marketplace.
+adminRouter.post("/marketplace/updates/check", adminGuard, updateCheckLimiter, adminController.checkMarketplaceUpdates);
 // "Got it" on the core-update dialog: it carries the whole changelog, so reading it counts.
 adminRouter.post("/marketplace/updates/core/acknowledge", adminGuard, adminController.acknowledgeCoreUpdate);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.

@@ -534,6 +534,12 @@ export const adminController = {
     res.json(await marketplaceService.getUpdates(req.userId));
   }) as RequestHandler,
 
+  checkMarketplaceUpdates: (async (req, res) => {
+    const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
+    const check = await processUpdateCheck();
+    res.json({ ...(await marketplaceService.getUpdates(req.userId)), check });
+  }) as RequestHandler,
+
   acknowledgeCoreUpdate: (async (req, res) => {
     await marketplaceService.acknowledgeCoreUpdate(req.userId!);
     res.status(204).end();
