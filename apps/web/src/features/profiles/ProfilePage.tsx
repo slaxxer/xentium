@@ -366,10 +366,10 @@ export function InformationTab({
   return (
     <div className="profile-info-card">
       {hasDob && (
-        <div className="profile-info-card__dob-row">
-          <span className="profile-info-card__label">{dobSectionLabel}</span>
-          <span className="profile-info-card__dob-value">{dobValue}</span>
-        </div>
+        <>
+          <div className="profile-info-card__label">{dobSectionLabel}</div>
+          <p className="profile-info-card__value">{dobValue}</p>
+        </>
       )}
 
       {hasDob && (hasBio || hasLinks) && <div className="profile-info-card__divider" />}
