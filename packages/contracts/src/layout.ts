@@ -74,7 +74,9 @@ export const TEMPLATE_REGIONS = {
    * Naming the key `body` would fight the element it emits — `<body>` is the whole
    * document, and the landmark for page content is `<main>`.
    */
-  'home':           ['main', 'aside'],
+  // No `aside`: home's right rail is the last `column` of its columns block. An aside
+  // beside that rendered as a FOURTH rail (see `foldHomeAside`).
+  'home':           ['main'],
   'article.index':  ['main', 'aside'],
   'article.detail': ['main', 'aside'],
   'profile':        ['main', 'aside'],
@@ -1814,7 +1816,6 @@ export const DEFAULT_LAYOUTS: Record<CoreTemplateKey, LayoutDocument> = {
           ],
         },
       ],
-      aside: [],
     },
   },
   'article.index': {
@@ -2000,7 +2001,43 @@ export function parseLayoutDocument(
   if (!parsed.success || parsed.data.templateKey !== templateKey) {
     return { document: defaultLayoutFor(templateKey), usedDefault: true };
   }
-  return { document: parsed.data, usedDefault: false };
+  return { document: foldHomeAside(parsed.data), usedDefault: false };
+}
+
+/**
+ * Home is LEFT · FEED · RIGHT, three columns, and the right one is a `column` — so
+ * home has no `aside` region any more (2026-10-19).
+ *
+ * It used to declare one, and the renderer puts `aside` in a row BESIDE `main`. On
+ * home `main` already holds the three-column block, so anything an admin dropped in
+ * `aside` (a shoutbox, say) became a FOURTH rail next to the three. This carries such
+ * blocks into the right rail — the members' `columns` block's last `column`, appended
+ * after what is there — and drops the region.
+ *
+ * Applied on every way into the table and out of it: `parseLayoutDocument` (stored
+ * rows, a theme's shipped documents), `saveDraft` and the `.xttheme` import. Nothing
+ * is deleted: ids, props, visibility and children move as they were. A document with
+ * no `aside` comes back unchanged (same object). Where the rail cannot take the blocks
+ * (no columns block, or nesting them would break a tree rule) they go to the end of
+ * `main` instead, which still renders them.
+ */
+export function foldHomeAside(doc: LayoutDocument): LayoutDocument {
+  if (doc.templateKey !== 'home' || !('aside' in doc.regions)) return doc;
+  const { aside = [], ...rest } = doc.regions;
+  const main = rest.main ?? [];
+  const without = (nextMain: BlockNode[]): LayoutDocument => ({ ...doc, regions: { ...rest, main: nextMain } });
+  if (!aside.length) return without(main);
+
+  const cols = main.find((n) => n.type === 'columns' && n.visibility?.audience === 'members')
+    ?? main.find((n) => n.type === 'columns');
+  const rail = cols?.children?.filter((c) => c.type === 'column').at(-1);
+  if (cols && rail) {
+    const nextRail: BlockNode = { ...rail, children: [...(rail.children ?? []), ...aside] };
+    const nextCols: BlockNode = { ...cols, children: (cols.children ?? []).map((c) => (c === rail ? nextRail : c)) };
+    const folded = without(main.map((n) => (n === cols ? nextCols : n)));
+    if (validateBlockTree(folded.regions).length === 0) return folded;
+  }
+  return without([...main, ...aside]);
 }
 
 // ── Tree rules ──────────────────────────────────────────────────────────────
