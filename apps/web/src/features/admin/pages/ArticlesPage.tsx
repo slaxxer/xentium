@@ -34,8 +34,8 @@ interface PaginatedArticles {
 
 const STATUS_COLORS: Record<string, [string, string]> = {
   draft:     ["var(--c-fg-muted)", "var(--c-surface)"],
-  review:    ["var(--c-warn)",     "rgba(251,191,36,.12)"],
-  published: ["var(--c-success)",  "rgba(52,211,153,.12)"],
+  review:    ["var(--c-warn)",     "color-mix(in srgb, var(--c-warn) 14%, transparent)"],
+  published: ["var(--c-success)",  "var(--c-success-soft)"],
 };
 
 function formatDate(d: string | null) {
@@ -198,12 +198,12 @@ export function ArticlesPage() {
                       onClick={() => handleDelete(a)}
                       style={{
                         fontSize: "var(--fs-xs)", fontWeight: 600, color: "var(--c-danger)",
-                        border: "1px solid rgba(248,113,113,.3)", borderRadius: "var(--radius-sm)",
+                        border: "1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", borderRadius: "var(--radius-sm)",
                         padding: "4px 8px", background: "transparent", cursor: "pointer",
                         transition: "background .15s, border-color .15s",
                       }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(248,113,113,.1)"; e.currentTarget.style.borderColor = "var(--c-danger)"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(248,113,113,.3)"; }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--c-danger-soft)"; e.currentTarget.style.borderColor = "var(--c-danger)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "color-mix(in srgb, var(--c-danger) 30%, transparent)"; }}
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>

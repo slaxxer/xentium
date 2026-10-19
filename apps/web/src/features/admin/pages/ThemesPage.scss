@@ -227,7 +227,7 @@
   align-items: baseline;
   gap: 6px;
 
-  b { font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
+  b { font-family: var(--ff-sans); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg); }
   span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
 }
 
@@ -396,7 +396,7 @@
   align-items: center;
   justify-content: space-between;
 
-  b { font-family: var(--font-display); font-size: var(--fs-md); color: var(--c-fg); }
+  b { font-family: var(--ff-sans); font-size: var(--fs-md); color: var(--c-fg); }
 }
 
 .thm__report-close {

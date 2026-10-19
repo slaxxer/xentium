@@ -114,7 +114,7 @@ export function ModLogPage() {
           {data?.data.map((e, i) => {
             const isSystem  = e.actorType === "system";
             const aColor    = isSystem ? "var(--c-warn)" : "var(--c-accent)";
-            const iconBg    = isSystem ? "rgba(251,191,36,.15)" : "var(--c-accent-soft)";
+            const iconBg    = isSystem ? "color-mix(in srgb, var(--c-warn) 15%, transparent)" : "var(--c-accent-soft)";
             const typeColor = actionColor(e.action);
             const actorLabel  = isSystem ? t("modLog.system") : (e.actorUsername ?? t("modLog.unknown"));
             const targetLabel = e.targetUsername ?? e.targetId ?? null;
