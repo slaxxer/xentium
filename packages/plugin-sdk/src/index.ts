@@ -422,6 +422,17 @@ export interface PluginHost extends BasePluginHost {
     autoBanMultiaccounts: (userIds: string[], reason: string, textKey?: string) => Promise<string[]>;
   };
 
+  /**
+   * Core's LOCAL IP → country lookup (DB-IP Country Lite, refreshed monthly by the
+   * `geoip-refresh` job). Nothing leaves the server. `countryOf` answers an ISO
+   * 3166-1 alpha-2 code, or null for a private IP or before the first download.
+   * Optional: cores before 1.0.0-alpha.16 have none.
+   */
+  geo?: {
+    countryOf: (ip: string) => string | null;
+    available: () => boolean;
+  };
+
   utils: BasePluginHost["utils"] & {
     resolveAvatar: (...args: any[]) => any;
     /** Sanitize user-authored rich-text HTML (allowlist) before storage.
