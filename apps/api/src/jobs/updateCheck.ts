@@ -61,6 +61,24 @@ export async function processUpdateCheck(): Promise<UpdateCheckOutcome> {
   }
 }
 
+/**
+ * The marketplace's "what's new" for one update, kept to the shape the ACP renders.
+ * Remote text is stored as text (never HTML) and bounded: at most 10 releases of
+ * at most 4000 characters, the same limits the marketplace itself enforces.
+ */
+function releaseNotes(raw: unknown): { version: string; changelog: string; publishedAt: string | null }[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((n): n is { version: string; changelog: string; publishedAt?: unknown } =>
+      !!n && typeof n.version === "string" && typeof n.changelog === "string" && n.changelog.trim() !== "")
+    .slice(0, 10)
+    .map((n) => ({
+      version:     n.version.slice(0, 40),
+      changelog:   n.changelog.slice(0, 4000),
+      publishedAt: typeof n.publishedAt === "string" ? n.publishedAt : null,
+    }));
+}
+
 /** The heartbeat itself. Only ever entered holding the lock above. False = no answer, cache kept. */
 async function runUpdateCheck(): Promise<boolean> {
   // Keep both paid-id sets fresh. The plugin set drives the license-by-id enable
@@ -76,7 +94,11 @@ async function runUpdateCheck(): Promise<boolean> {
   });
 
   interface CheckResponse {
-    updates:    { id: string; latestVersion: string; critical?: boolean }[];
+    updates:    {
+      id: string; latestVersion: string; critical?: boolean;
+      /** "What's new" per release between installed and latest (marketplace ≥ 2026-10-19). */
+      notes?: { version?: unknown; changelog?: unknown; publishedAt?: unknown }[];
+    }[];
     advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null; summary?: string }[];
     token?:     string;
   }
@@ -121,6 +143,7 @@ async function runUpdateCheck(): Promise<boolean> {
     critical:         u.critical === true || advised.has(u.id),
     name:             byId.get(u.id)?.name ?? u.id,
     installedVersion: byId.get(u.id)?.installedVersion ?? null,
+    notes:            releaseNotes(u.notes),
   }));
 
   // Stable anchor for "when this exact set of pending updates first appeared".
