@@ -90,6 +90,8 @@ adminRouter.post("/cases/:id/revoke-exception",adminGuard, adminController.revok
 adminRouter.get("/mod-templates",               adminGuard, adminController.listModTemplates);
 adminRouter.post("/mod-templates",              adminGuard, adminController.createModTemplate);
 adminRouter.post("/mod-templates/restore-defaults", adminGuard, adminController.restoreModTemplates);
+// Before "/:id": a template id can never be "order", but the route table reads top-down.
+adminRouter.put("/mod-templates/order",       adminGuard, adminController.reorderModTemplates);
 adminRouter.patch("/mod-templates/:id",         adminGuard, adminController.updateModTemplate);
 adminRouter.delete("/mod-templates/:id",        adminGuard, adminController.deleteModTemplate);
 adminRouter.get("/mod-settings",                adminGuard, adminController.getModSettings);

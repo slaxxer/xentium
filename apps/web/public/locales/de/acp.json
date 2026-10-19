@@ -1728,18 +1728,10 @@
   "modTemplates": {
     "eyebrow": "Moderation",
     "title": "Vorlagen",
-    "sub": "Die Texte, mit denen Moderatoren in ModCanvas verwarnen, sperren, entfernen oder verwerfen. Verwarnungen und Sperren werden genau so verschickt, wie sie hier stehen, und gelten so lange, wie hier eingestellt. Alles wird beim Ändern gespeichert.",
-    "new": "Neu",
-    "newName": "Neue Vorlage",
+    "sub": "Was Moderatoren senden, wenn sie in ModCanvas verwarnen, sperren, entfernen oder verwerfen. Verwarnungen und Sperren gehen genau so raus, wie sie hier stehen, und gelten so lange wie hier eingestellt.",
     "copyName": "{{name}} (Kopie)",
     "untitled": "Ohne Titel",
     "empty": "Noch keine Vorlagen. Lege eine an oder stelle die Standardtexte wieder her.",
-    "group": {
-      "warn": "Verwarnungen",
-      "ban": "Sperren",
-      "delete": "Inhalte entfernen",
-      "dismiss": "Verwerfen · intern"
-    },
     "mode": {
       "warn": "Verwarnen",
       "ban": "Sperren",
@@ -1753,9 +1745,7 @@
       "dismiss": "Eine interne Notiz für das Mod-Protokoll. Wird nie verschickt."
     },
     "permanent": "Dauerhaft",
-    "defaultLen": "Sperrt für {{len}}",
     "internal": "Interne Notiz",
-    "noRule": "Kein Regelverweis",
     "default": "Standard",
     "restore": "Standardtexte wiederherstellen",
     "restoreTitle": "Standardvorlagen wiederherstellen?",
@@ -1773,7 +1763,6 @@
     "name": "Name",
     "rule": "Regelverweis",
     "rulePlaceholder": "z. B. Sei respektvoll",
-    "usedFor": "Verwendet für",
     "defaultDuration": "Sperrdauer",
     "message": "Nachricht",
     "var": {
@@ -1782,10 +1771,6 @@
       "where": "Artikel oder Profil, auf dem er steht",
       "duration": "Sperrdauer"
     },
-    "match": "Vorschlagen bei Meldungen mit",
-    "matchPlaceholder": "spam, werbung, promotion",
-    "matchHint": "Kommagetrennte Wörter. Enthält der Grund einer Meldung eines davon, schlägt ModCanvas diese Vorlage zuerst vor.",
-    "preview": "Vorschau",
     "previewTitle": {
       "warn": "Du hast eine Verwarnung erhalten",
       "ban": "Dein Konto wurde gesperrt",
@@ -1800,10 +1785,65 @@
     "used_one": "{{count}}-mal verwendet",
     "used_other": "{{count}}-mal verwendet",
     "edited": "zuletzt bearbeitet von {{name}} {{when}}",
-    "newText": "Hallo {user}, ",
     "warnLen": "Zählt {{len}}",
-    "add": "Hinzufügen",
-    "close": "Schließen"
+    "tab": {
+      "warn": "Verwarnungen",
+      "ban": "Sperren",
+      "delete": "Entfernungen",
+      "dismiss": "Verworfen"
+    },
+    "search": "In dieser Aktion suchen",
+    "sortLabel": "Reihenfolge",
+    "sort": {
+      "manual": "Manuell",
+      "usage": "Meistgenutzt"
+    },
+    "newOf": {
+      "warn": "Neue Verwarnung",
+      "ban": "Neue Sperre",
+      "delete": "Neue Entfernung",
+      "dismiss": "Neues Verwerfen"
+    },
+    "startText": {
+      "warn": "Hallo {user}, ",
+      "ban": "Du wurdest für {duration} gesperrt ",
+      "delete": "Dein {type} auf {where} wurde entfernt ",
+      "dismiss": "{type} auf {where} geprüft. "
+    },
+    "pick": "Wähle links eine Vorlage.",
+    "nothing": "Keine Treffer.",
+    "dragHint": "Zum Sortieren ziehen. Moderatoren sehen diese Reihenfolge in ModCanvas.",
+    "usedShort_one": "{{count}}× genutzt",
+    "usedShort_other": "{{count}}× genutzt",
+    "permanentBan": "Dauerhafte Sperre",
+    "banLen": "Sperre für {{len}}",
+    "pathTitle": "Eskalationspfad",
+    "pathOutside": "Entfernungen und Verwerfen liegen außerhalb des Pfads",
+    "pathLinked": "Über gemeinsame Auslösewörter verknüpft",
+    "pathAlone": "Mit keiner anderen Vorlage verknüpft",
+    "stepWarn": "Verwarnen · {{len}}",
+    "stepBan": "Sperren · {{len}}",
+    "stepBanPerm": "Sperren · dauerhaft",
+    "addBanStep": "Sperre als Stufe hinzufügen",
+    "repeatName": "{{name}}: Wiederholung",
+    "repeatBanText": "Du wurdest nach vorherigen Verwarnungen für {duration} gesperrt. Dein {type} auf {where} war die ausschlaggebende Meldung.",
+    "write": "Schreiben",
+    "asSeen": "So sieht es {{user}}",
+    "action": "Aktion",
+    "actionHint": "Verschiebt sie in einen anderen Tab",
+    "lenHint": "Teamleiter können das ändern",
+    "triggers": "Auslöser",
+    "triggersHint": "Zuerst vorgeschlagen, wenn eine Meldung eines davon nennt",
+    "triggerAdd": "Wort hinzufügen, Enter",
+    "removeWord": "„{{word}}“ entfernen",
+    "ruleHint": "Wird mit der Nachricht angezeigt",
+    "share": {
+      "warn": "{{pct}} % der gesendeten Verwarnungen",
+      "ban": "{{pct}} % der gesendeten Sperren",
+      "delete": "{{pct}} % der gesendeten Entfernungen",
+      "dismiss": "{{pct}} % der Verwerfungen"
+    },
+    "back": "Zurück zur Liste"
   },
   "modCases": {
     "sub": "Moderation",

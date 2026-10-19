@@ -1062,6 +1062,9 @@ model ModerationTemplate {
   /// site's language; once edited it is the admin's text, kept as written.
   defaultKey      String?   @map("default_key")
   useCount        Int       @default(0) @map("use_count")
+  /// The admin's order within its action (ACP → Templates, "Manual"), which is also
+  /// the order ModCanvas lists them in. 0 = never placed: those fall back to most used.
+  position        Int       @default(0)
   updatedById     String?   @map("updated_by_id")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")

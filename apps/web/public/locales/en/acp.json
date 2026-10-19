@@ -1728,18 +1728,10 @@
   "modTemplates": {
     "eyebrow": "Moderation",
     "title": "Templates",
-    "sub": "The texts moderators use in ModCanvas to warn, ban, remove or dismiss. Warnings and bans go out exactly as written here, and last as long as set here. Everything saves as you change it.",
-    "new": "New",
-    "newName": "New template",
+    "sub": "What moderators send when they warn, ban, remove or dismiss in ModCanvas. Warnings and bans go out exactly as written here, for as long as set here.",
     "copyName": "{{name}} (copy)",
     "untitled": "Untitled",
     "empty": "No templates yet. Create one, or restore the defaults.",
-    "group": {
-      "warn": "Warnings",
-      "ban": "Bans",
-      "delete": "Content removal",
-      "dismiss": "Dismissal · internal"
-    },
     "mode": {
       "warn": "Warn",
       "ban": "Ban",
@@ -1753,9 +1745,7 @@
       "dismiss": "An internal note for the mod log. Never sent to anyone."
     },
     "permanent": "Permanent",
-    "defaultLen": "Bans for {{len}}",
     "internal": "Internal note",
-    "noRule": "No rule reference",
     "default": "Default",
     "restore": "Restore defaults",
     "restoreTitle": "Restore the default templates?",
@@ -1773,7 +1763,6 @@
     "name": "Name",
     "rule": "Rule reference",
     "rulePlaceholder": "e.g. Be respectful",
-    "usedFor": "Used for",
     "defaultDuration": "Ban length",
     "message": "Message",
     "var": {
@@ -1782,10 +1771,6 @@
       "where": "Article or profile it is on",
       "duration": "Ban length"
     },
-    "match": "Suggest for reports mentioning",
-    "matchPlaceholder": "spam, advert, promotion",
-    "matchHint": "Comma-separated words. When a report's reason contains one, ModCanvas suggests this template first.",
-    "preview": "Preview",
     "previewTitle": {
       "warn": "You received a warning",
       "ban": "Your account has been banned",
@@ -1800,10 +1785,65 @@
     "used_one": "Used {{count}} time",
     "used_other": "Used {{count}} times",
     "edited": "last edited by {{name}} {{when}}",
-    "newText": "Hi {user}, ",
     "warnLen": "Counts for {{len}}",
-    "add": "Add",
-    "close": "Close"
+    "tab": {
+      "warn": "Warnings",
+      "ban": "Bans",
+      "delete": "Removals",
+      "dismiss": "Dismissals"
+    },
+    "search": "Search this action",
+    "sortLabel": "Order",
+    "sort": {
+      "manual": "Manual",
+      "usage": "Most used"
+    },
+    "newOf": {
+      "warn": "New warning",
+      "ban": "New ban",
+      "delete": "New removal",
+      "dismiss": "New dismissal"
+    },
+    "startText": {
+      "warn": "Hi {user}, ",
+      "ban": "You have been banned for {duration} ",
+      "delete": "Your {type} on {where} was removed ",
+      "dismiss": "Reviewed {type} on {where}. "
+    },
+    "pick": "Pick a template on the left.",
+    "nothing": "Nothing matches.",
+    "dragHint": "Drag to reorder. Moderators see this order in ModCanvas.",
+    "usedShort_one": "{{count}}× used",
+    "usedShort_other": "{{count}}× used",
+    "permanentBan": "Permanent ban",
+    "banLen": "Ban for {{len}}",
+    "pathTitle": "Escalation path",
+    "pathOutside": "Removals and dismissals sit outside the path",
+    "pathLinked": "Linked by shared trigger words",
+    "pathAlone": "Not linked to other templates",
+    "stepWarn": "Warn · {{len}}",
+    "stepBan": "Ban · {{len}}",
+    "stepBanPerm": "Ban · permanent",
+    "addBanStep": "Add ban step",
+    "repeatName": "{{name}}: repeat",
+    "repeatBanText": "You have been banned for {duration} after prior warnings. Your {type} on {where} was the deciding report.",
+    "write": "Write",
+    "asSeen": "As {{user}} sees it",
+    "action": "Action",
+    "actionHint": "Moves it to another tab",
+    "lenHint": "Team leads can override",
+    "triggers": "Triggers",
+    "triggersHint": "Suggested first when a report mentions one",
+    "triggerAdd": "Add word, Enter",
+    "removeWord": "Remove “{{word}}”",
+    "ruleHint": "Shown with the message",
+    "share": {
+      "warn": "{{pct}}% of warnings sent",
+      "ban": "{{pct}}% of bans sent",
+      "delete": "{{pct}}% of removals sent",
+      "dismiss": "{{pct}}% of dismissals"
+    },
+    "back": "Back to the list"
   },
   "modCases": {
     "sub": "Moderation",

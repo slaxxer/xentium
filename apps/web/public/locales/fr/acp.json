@@ -1728,18 +1728,10 @@
   "modTemplates": {
     "eyebrow": "Modération",
     "title": "Modèles",
-    "sub": "Les textes avec lesquels les modérateurs avertissent, bannissent, retirent ou classent dans ModCanvas. Les avertissements et les bannissements sont envoyés tels qu'écrits ici et durent le temps défini ici. Tout est enregistré dès que vous le modifiez.",
-    "new": "Nouveau",
-    "newName": "Nouveau modèle",
+    "sub": "Ce que les modérateurs envoient quand ils avertissent, bannissent, suppriment ou classent dans ModCanvas. Les avertissements et les bannissements partent exactement tels qu'écrits ici, pour la durée réglée ici.",
     "copyName": "{{name}} (copie)",
     "untitled": "Sans titre",
     "empty": "Aucun modèle pour l'instant. Créez-en un ou restaurez ceux par défaut.",
-    "group": {
-      "warn": "Avertissements",
-      "ban": "Bannissements",
-      "delete": "Retrait de contenu",
-      "dismiss": "Classement · interne"
-    },
     "mode": {
       "warn": "Avertir",
       "ban": "Bannir",
@@ -1753,9 +1745,7 @@
       "dismiss": "Une note interne pour le journal de modération. Jamais envoyée."
     },
     "permanent": "Définitif",
-    "defaultLen": "Bannit pour {{len}}",
     "internal": "Note interne",
-    "noRule": "Aucune référence de règle",
     "default": "Par défaut",
     "restore": "Restaurer les modèles par défaut",
     "restoreTitle": "Restaurer les modèles par défaut ?",
@@ -1773,7 +1763,6 @@
     "name": "Nom",
     "rule": "Référence de règle",
     "rulePlaceholder": "ex. Soyez respectueux",
-    "usedFor": "Utilisé pour",
     "defaultDuration": "Durée du bannissement",
     "message": "Message",
     "var": {
@@ -1782,10 +1771,6 @@
       "where": "Article ou profil concerné",
       "duration": "Durée du bannissement"
     },
-    "match": "Suggérer pour les signalements mentionnant",
-    "matchPlaceholder": "spam, pub, promotion",
-    "matchHint": "Mots séparés par des virgules. Si le motif d'un signalement en contient un, ModCanvas propose ce modèle en premier.",
-    "preview": "Aperçu",
     "previewTitle": {
       "warn": "Vous avez reçu un avertissement",
       "ban": "Votre compte a été banni",
@@ -1800,10 +1785,65 @@
     "used_one": "Utilisé {{count}} fois",
     "used_other": "Utilisé {{count}} fois",
     "edited": "modifié par {{name}} {{when}}",
-    "newText": "Bonjour {user}, ",
     "warnLen": "Compte pendant {{len}}",
-    "add": "Ajouter",
-    "close": "Fermer"
+    "tab": {
+      "warn": "Avertissements",
+      "ban": "Bannissements",
+      "delete": "Suppressions",
+      "dismiss": "Classements"
+    },
+    "search": "Rechercher dans cette action",
+    "sortLabel": "Ordre",
+    "sort": {
+      "manual": "Manuel",
+      "usage": "Les plus utilisés"
+    },
+    "newOf": {
+      "warn": "Nouvel avertissement",
+      "ban": "Nouveau bannissement",
+      "delete": "Nouvelle suppression",
+      "dismiss": "Nouveau classement"
+    },
+    "startText": {
+      "warn": "Bonjour {user}, ",
+      "ban": "Vous avez été banni pour {duration} ",
+      "delete": "Votre {type} sur {where} a été supprimé ",
+      "dismiss": "{type} sur {where} examiné. "
+    },
+    "pick": "Choisissez un modèle à gauche.",
+    "nothing": "Aucun résultat.",
+    "dragHint": "Faites glisser pour réordonner. Les modérateurs voient cet ordre dans ModCanvas.",
+    "usedShort_one": "{{count}}× utilisé",
+    "usedShort_other": "{{count}}× utilisé",
+    "permanentBan": "Bannissement définitif",
+    "banLen": "Bannissement de {{len}}",
+    "pathTitle": "Escalade",
+    "pathOutside": "Les suppressions et classements sont hors de l'escalade",
+    "pathLinked": "Liés par des mots déclencheurs communs",
+    "pathAlone": "Lié à aucun autre modèle",
+    "stepWarn": "Avertir · {{len}}",
+    "stepBan": "Bannir · {{len}}",
+    "stepBanPerm": "Bannir · définitif",
+    "addBanStep": "Ajouter une étape de bannissement",
+    "repeatName": "{{name}} : récidive",
+    "repeatBanText": "Vous avez été banni pour {duration} après des avertissements. Votre {type} sur {where} a été le signalement décisif.",
+    "write": "Écrire",
+    "asSeen": "Tel que {{user}} le voit",
+    "action": "Action",
+    "actionHint": "Le déplace dans un autre onglet",
+    "lenHint": "Les chefs d'équipe peuvent le modifier",
+    "triggers": "Déclencheurs",
+    "triggersHint": "Suggéré en premier quand un signalement en mentionne un",
+    "triggerAdd": "Ajouter un mot, Entrée",
+    "removeWord": "Retirer « {{word}} »",
+    "ruleHint": "Affichée avec le message",
+    "share": {
+      "warn": "{{pct}} % des avertissements envoyés",
+      "ban": "{{pct}} % des bannissements envoyés",
+      "delete": "{{pct}} % des suppressions envoyées",
+      "dismiss": "{{pct}} % des classements"
+    },
+    "back": "Retour à la liste"
   },
   "modCases": {
     "sub": "Modération",

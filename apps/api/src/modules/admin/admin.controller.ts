@@ -400,6 +400,12 @@ export const adminController = {
     res.status(204).end();
   }) as RequestHandler,
 
+  reorderModTemplates: (async (req, res) => {
+    const { ids } = z.object({ ids: z.array(z.string().min(1).max(64)).min(1).max(200) }).parse(req.body);
+    await modCanvasService.reorderTemplates(ids);
+    res.status(204).end();
+  }) as RequestHandler,
+
   restoreModTemplates: (async (req, res) => {
     res.json(await modCanvasService.restoreDefaults(req.userId!));
   }) as RequestHandler,
