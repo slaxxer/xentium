@@ -61,22 +61,39 @@ export async function processUpdateCheck(): Promise<UpdateCheckOutcome> {
   }
 }
 
+const CHANGE_TYPES = new Set(["new", "improved", "fixed", "security", "breaking", "other"]);
+
 /**
- * The marketplace's "what's new" for one update, kept to the shape the ACP renders.
- * Remote text is stored as text (never HTML) and bounded: at most 10 releases of
- * at most 4000 characters, the same limits the marketplace itself enforces.
+ * The marketplace's "what's new" for one update, kept to the shape the ACP renders:
+ * per release, a list of typed changes. Remote text is stored as text (never HTML)
+ * and bounded the way the marketplace bounds it (10 releases, 50 changes of 300
+ * characters); an unknown type is shown as "other" rather than dropped.
  */
-function releaseNotes(raw: unknown): { version: string; changelog: string; publishedAt: string | null }[] {
+export function releaseNotes(raw: unknown): ReleaseNote[] {
   if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((n): n is { version: string; changelog: string; publishedAt?: unknown } =>
-      !!n && typeof n.version === "string" && typeof n.changelog === "string" && n.changelog.trim() !== "")
-    .slice(0, 10)
-    .map((n) => ({
-      version:     n.version.slice(0, 40),
-      changelog:   n.changelog.slice(0, 4000),
-      publishedAt: typeof n.publishedAt === "string" ? n.publishedAt : null,
-    }));
+  const out: ReleaseNote[] = [];
+  for (const n of raw.slice(0, 10)) {
+    if (!n || typeof n.version !== "string" || !Array.isArray(n.changes)) continue;
+    const changes = (n.changes as unknown[])
+      .filter((c): c is { type: unknown; text: string } =>
+        !!c && typeof (c as { text?: unknown }).text === "string" && (c as { text: string }).text.trim() !== "")
+      .slice(0, 50)
+      .map((c) => ({
+        type: typeof c.type === "string" && CHANGE_TYPES.has(c.type) ? c.type as ReleaseChangeType : "other" as const,
+        text: c.text.trim().slice(0, 300),
+      }));
+    if (changes.length) {
+      out.push({ version: n.version.slice(0, 40), changes, publishedAt: typeof n.publishedAt === "string" ? n.publishedAt : null });
+    }
+  }
+  return out;
+}
+
+export type ReleaseChangeType = "new" | "improved" | "fixed" | "security" | "breaking" | "other";
+export interface ReleaseNote {
+  version: string;
+  changes: { type: ReleaseChangeType; text: string }[];
+  publishedAt: string | null;
 }
 
 /** The heartbeat itself. Only ever entered holding the lock above. False = no answer, cache kept. */
@@ -97,7 +114,7 @@ async function runUpdateCheck(): Promise<boolean> {
     updates:    {
       id: string; latestVersion: string; critical?: boolean;
       /** "What's new" per release between installed and latest (marketplace ≥ 2026-10-19). */
-      notes?: { version?: unknown; changelog?: unknown; publishedAt?: unknown }[];
+      notes?: { version?: unknown; changes?: unknown; publishedAt?: unknown }[];
     }[];
     advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null; summary?: string }[];
     token?:     string;

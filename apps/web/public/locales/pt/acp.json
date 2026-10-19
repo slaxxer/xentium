@@ -2375,7 +2375,21 @@
       "major": "Principal",
       "minor": "Secundária",
       "patch": "Correção"
-    }
+    },
+    "change": {
+      "new": "Novo",
+      "improved": "Melhorado",
+      "fixed": "Corrigido",
+      "security": "Segurança",
+      "breaking": "Incompatível",
+      "other": "Outros"
+    },
+    "breakingBadge": "Alterações incompatíveis",
+    "breakingTitle_one": "Esta atualização tem alterações incompatíveis",
+    "breakingTitle_other": "{{count}} atualizações têm alterações incompatíveis",
+    "breakingText": "Leia o que muda antes de atualizar. Poderá ter de ajustar o seu site depois.",
+    "breakingConfirm": "Atualizar mesmo assim",
+    "cancel": "Cancelar"
   },
   "coreUpdate": {
     "severity": {

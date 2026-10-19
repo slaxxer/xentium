@@ -2375,7 +2375,21 @@
       "major": "Majeure",
       "minor": "Mineure",
       "patch": "Correctif"
-    }
+    },
+    "change": {
+      "new": "Nouveau",
+      "improved": "Amélioré",
+      "fixed": "Corrigé",
+      "security": "Sécurité",
+      "breaking": "Incompatible",
+      "other": "Autre"
+    },
+    "breakingBadge": "Changements incompatibles",
+    "breakingTitle_one": "Cette mise à jour contient des changements incompatibles",
+    "breakingTitle_other": "{{count}} mises à jour contiennent des changements incompatibles",
+    "breakingText": "Lisez ce qui change avant de mettre à jour. Vous devrez peut-être adapter votre site ensuite.",
+    "breakingConfirm": "Mettre à jour quand même",
+    "cancel": "Annuler"
   },
   "coreUpdate": {
     "severity": {

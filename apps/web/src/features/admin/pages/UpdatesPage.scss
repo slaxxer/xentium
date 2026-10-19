@@ -189,6 +189,15 @@
     color: var(--c-fg-muted);
   }
 
+  &__breaks {
+    padding: 2px 9px;
+    border-radius: var(--radius-pill);
+    font-size: var(--fs-2xs);
+    font-weight: 700;
+    background: color-mix(in srgb, var(--c-warn) 14%, transparent);
+    color: var(--c-warn);
+  }
+
   &__notever {
     margin-bottom: 4px;
     font-family: var(--ff-mono, monospace);
@@ -249,4 +258,42 @@
   .upd-row__ic { display: none; }
   .upd-row .upd-row__versions, .upd-row .upd-row__action { grid-column: 2; }
   .upd-list__head { grid-template-columns: 20px minmax(0, 1fr); button { grid-column: 1 / -1; justify-content: center; } }
+}
+
+// ── Typed changes ("What's new") ─────────────────────────────────────────────
+.upd-change {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  & + & { margin-top: 6px; }
+  &.is-untyped { grid-template-columns: minmax(0, 1fr); }
+}
+
+.upd-tag {
+  --_t: var(--c-fg-subtle);
+  justify-self: start;
+  margin-top: 1px;
+  padding: 1px 8px;
+  border-radius: var(--radius-pill);
+  font-size: var(--fs-2xs);
+  font-weight: 700;
+  color: var(--_t);
+  background: color-mix(in srgb, var(--_t) 13%, transparent);
+  &.is-new      { --_t: var(--c-accent); }
+  &.is-improved { --_t: var(--c-info); }
+  &.is-fixed    { --_t: var(--c-success); }
+  &.is-security { --_t: var(--c-danger); }
+  &.is-breaking { --_t: var(--c-warn); }
+}
+
+.upd-breaking {
+  text-align: left;
+  p { margin: 0 0 10px; }
+  strong { display: block; margin-top: 8px; color: var(--c-fg); }
+  ul { margin: 4px 0 0; padding-left: 18px; }
+}
+
+@media (max-width: 520px) {
+  .upd-change { grid-template-columns: minmax(0, 1fr); gap: 4px; }
 }

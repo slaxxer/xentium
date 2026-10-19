@@ -2375,7 +2375,21 @@
       "major": "Major",
       "minor": "Minor",
       "patch": "Patch"
-    }
+    },
+    "change": {
+      "new": "New",
+      "improved": "Improved",
+      "fixed": "Fixed",
+      "security": "Security",
+      "breaking": "Breaking",
+      "other": "Other"
+    },
+    "breakingBadge": "Breaking changes",
+    "breakingTitle_one": "This update has breaking changes",
+    "breakingTitle_other": "{{count}} updates have breaking changes",
+    "breakingText": "Read what changes before you update. You may need to adjust your site afterwards.",
+    "breakingConfirm": "Update anyway",
+    "cancel": "Cancel"
   },
   "coreUpdate": {
     "severity": {
