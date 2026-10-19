@@ -135,6 +135,8 @@ interface CachedUpdate {
   latestVersion:     string;
   critical?:         boolean;
   renewalRequired?:  boolean;
+  /** "What's new": one entry per release between installed and latest, newest first. */
+  notes?:            { version: string; changelog: string; publishedAt: string | null }[];
   [k: string]:       unknown;
 }
 
@@ -171,7 +173,14 @@ async function readReconciledUpdates(): Promise<{ checkedAt: string | null; setS
       const current = byId.get(u.pluginId);
       return current !== undefined && compareSemver(u.latestVersion, current) > 0;
     })
-    .map((u) => ({ ...u, installedVersion: byId.get(u.pluginId) ?? u.installedVersion }));
+    .map((u) => {
+      const current = byId.get(u.pluginId) ?? u.installedVersion;
+      // Notes for versions the site has since reached are not news any more.
+      const notes = Array.isArray(u.notes) && current
+        ? u.notes.filter((n) => compareSemver(n.version, current) > 0)
+        : u.notes;
+      return { ...u, installedVersion: current, ...(notes ? { notes } : {}) };
+    });
 
   // Same reconciliation for advisories: one the admin has just fixed by updating
   // (installed ≥ fixedIn) or removed with its plugin is gone now, not tomorrow.

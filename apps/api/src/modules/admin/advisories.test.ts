@@ -60,3 +60,28 @@ describe("advisories on the Updates page", () => {
     expect((await marketplaceService.getUpdates()).advisories.map((a) => a.id)).toEqual(["XEN-SA-2026-001"]);
   });
 });
+
+describe("release notes on the Updates page", () => {
+  async function cacheUpdate(notes: unknown[]) {
+    const value = JSON.stringify({
+      checkedAt: new Date().toISOString(), advisories: [],
+      updates: [{ pluginId: PID, name: "Probe", latestVersion: "1.5.0", critical: false, notes }],
+    });
+    await prisma.setting.upsert({ where: { key: "marketplace.updates" }, create: { key: "marketplace.updates", value }, update: { value } });
+    bustSettingsCache();
+  }
+  const NOTE = (version: string) => ({ version, changelog: `- in ${version}`, publishedAt: null });
+
+  it("passes on what's new for every release newer than the installed one", async () => {
+    await install("1.2.0");
+    await cacheUpdate([NOTE("1.5.0"), NOTE("1.3.0")]);
+    const { updates } = await marketplaceService.getUpdates();
+    expect(updates[0]?.notes).toEqual([NOTE("1.5.0"), NOTE("1.3.0")]);
+  });
+
+  it("drops the notes of versions the site has reached since the check", async () => {
+    await install("1.3.0");
+    await cacheUpdate([NOTE("1.5.0"), NOTE("1.3.0")]);
+    expect((await marketplaceService.getUpdates()).updates[0]?.notes).toEqual([NOTE("1.5.0")]);
+  });
+});

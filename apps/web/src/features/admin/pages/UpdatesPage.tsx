@@ -21,7 +21,10 @@ interface PluginUpdate {
   latestVersion:     string;
   critical:          boolean;
   renewalRequired?:  boolean;
+  /** Older caches carried one text; the marketplace now sends notes per release. */
   changelog?:        string;
+  /** "What's new": every release between installed and latest that has notes, newest first. */
+  notes?:            { version: string; changelog: string; publishedAt: string | null }[];
 }
 
 /** A published security advisory against a version this site runs. */
@@ -56,6 +59,20 @@ function bumpKind(from: string | null | undefined, to: string): "major" | "minor
   if (b[0] !== a[0]) return "major";
   if (b[1] !== a[1]) return "minor";
   return "patch";
+}
+
+/** One release's "what's new", as the list the row shows. */
+interface NoteGroup { version: string | null; date: string | null; lines: string[] }
+
+/** The update's notes grouped per release; the version heading only matters when there are several. */
+function noteGroups(u: PluginUpdate): NoteGroup[] {
+  if (u.notes?.length) {
+    return u.notes
+      .map((n) => ({ version: n.version, date: n.publishedAt, lines: noteLines(n.changelog) }))
+      .filter((g) => g.lines.length > 0);
+  }
+  const lines = noteLines(u.changelog);
+  return lines.length ? [{ version: null, date: null, lines }] : [];
 }
 
 /** A changelog arrives as text; one line per change reads as a list. */
@@ -275,8 +292,9 @@ export function UpdatesPage() {
             const isDone = !!done[id];
             const renewal = !!u.renewalRequired && !isDone;
             const selectable = !renewal && !isDone && !run && !queued;
-            const notes = noteLines(u.changelog);
+            const notes = noteGroups(u);
             const open = openNotes.has(id) && !run;
+            const released = u.notes?.find((n) => n.version === u.latestVersion)?.publishedAt ?? null;
             const kind = bumpKind(u.installedVersion, u.latestVersion);
             const name = u.name ?? id;
             const vendor = vendorOf.get(id);
@@ -314,7 +332,18 @@ export function UpdatesPage() {
                     </button>
                   )}
                   {open && (
-                    <ul className="upd-row__notes">{notes.map((n, i) => <li key={i}>{n}</li>)}</ul>
+                    <div className="upd-row__notes">
+                      {notes.map((g, gi) => (
+                        <div key={g.version ?? gi} className="upd-row__notegroup">
+                          {notes.length > 1 && g.version && (
+                            <div className="upd-row__notever">
+                              v{g.version}{g.date && <span> · {siteTime.date(g.date)}</span>}
+                            </div>
+                          )}
+                          <ul>{g.lines.map((n, i) => <li key={i}>{n}</li>)}</ul>
+                        </div>
+                      ))}
+                    </div>
                   )}
                   {renewal && (
                     <div className="upd-row__warn">
@@ -341,7 +370,11 @@ export function UpdatesPage() {
                     <FontAwesomeIcon icon={faArrowRight} className="upd-row__arrow" />
                     <span className="upd-row__to">{u.latestVersion}</span>
                   </div>
-                  {kind && <div className="upd-row__kind">{t(`updates.kind.${kind}`)}</div>}
+                  {(kind || released) && (
+                    <div className="upd-row__kind">
+                      {[kind && t(`updates.kind.${kind}`), released && siteTime.date(released)].filter(Boolean).join(" · ")}
+                    </div>
+                  )}
                 </div>
 
                 <div className="upd-row__action">
