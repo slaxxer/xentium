@@ -1728,18 +1728,10 @@
   "modTemplates": {
     "eyebrow": "Moderação",
     "title": "Modelos",
-    "sub": "Os textos com que os moderadores avisam, banem, removem ou descartam no ModCanvas. Avisos e banimentos são enviados exatamente como escritos aqui e duram o tempo definido aqui. Tudo é guardado à medida que altera.",
-    "new": "Novo",
-    "newName": "Novo modelo",
+    "sub": "O que os moderadores enviam quando avisam, banem, removem ou dispensam no ModCanvas. Avisos e banimentos são enviados exatamente como escritos aqui, pelo tempo definido aqui.",
     "copyName": "{{name}} (cópia)",
     "untitled": "Sem título",
     "empty": "Ainda não há modelos. Crie um ou restaure os padrão.",
-    "group": {
-      "warn": "Advertências",
-      "ban": "Banimentos",
-      "delete": "Remoção de conteúdo",
-      "dismiss": "Dispensa · interno"
-    },
     "mode": {
       "warn": "Advertir",
       "ban": "Banir",
@@ -1753,9 +1745,7 @@
       "dismiss": "Uma nota interna para o registro de moderação. Nunca é enviada."
     },
     "permanent": "Permanente",
-    "defaultLen": "Bane durante {{len}}",
     "internal": "Nota interna",
-    "noRule": "Sem referência de regra",
     "default": "Padrão",
     "restore": "Restaurar padrões",
     "restoreTitle": "Restaurar os modelos padrão?",
@@ -1773,7 +1763,6 @@
     "name": "Nome",
     "rule": "Referência de regra",
     "rulePlaceholder": "ex.: Seja respeitoso",
-    "usedFor": "Usado para",
     "defaultDuration": "Duração do banimento",
     "message": "Mensagem",
     "var": {
@@ -1782,10 +1771,6 @@
       "where": "Artigo ou perfil onde está",
       "duration": "Duração do banimento"
     },
-    "match": "Sugerir para denúncias que mencionem",
-    "matchPlaceholder": "spam, anúncio, promoção",
-    "matchHint": "Palavras separadas por vírgula. Quando o motivo de uma denúncia contém uma delas, o ModCanvas sugere este modelo primeiro.",
-    "preview": "Pré-visualização",
     "previewTitle": {
       "warn": "Você recebeu uma advertência",
       "ban": "Sua conta foi banida",
@@ -1800,10 +1785,65 @@
     "used_one": "Usado {{count}} vez",
     "used_other": "Usado {{count}} vezes",
     "edited": "editado por último por {{name}} {{when}}",
-    "newText": "Olá {user}, ",
     "warnLen": "Conta durante {{len}}",
-    "add": "Adicionar",
-    "close": "Fechar"
+    "tab": {
+      "warn": "Avisos",
+      "ban": "Banimentos",
+      "delete": "Remoções",
+      "dismiss": "Dispensas"
+    },
+    "search": "Pesquisar nesta ação",
+    "sortLabel": "Ordem",
+    "sort": {
+      "manual": "Manual",
+      "usage": "Mais usados"
+    },
+    "newOf": {
+      "warn": "Novo aviso",
+      "ban": "Novo banimento",
+      "delete": "Nova remoção",
+      "dismiss": "Nova dispensa"
+    },
+    "startText": {
+      "warn": "Olá {user}, ",
+      "ban": "Foi banido por {duration} ",
+      "delete": "O seu {type} em {where} foi removido ",
+      "dismiss": "{type} em {where} revisto. "
+    },
+    "pick": "Escolha um modelo à esquerda.",
+    "nothing": "Nada corresponde.",
+    "dragHint": "Arraste para reordenar. Os moderadores veem esta ordem no ModCanvas.",
+    "usedShort_one": "{{count}}× usado",
+    "usedShort_other": "{{count}}× usado",
+    "permanentBan": "Banimento permanente",
+    "banLen": "Banimento de {{len}}",
+    "pathTitle": "Escalada",
+    "pathOutside": "Remoções e dispensas ficam fora da escalada",
+    "pathLinked": "Ligados por palavras-chave comuns",
+    "pathAlone": "Sem ligação a outros modelos",
+    "stepWarn": "Avisar · {{len}}",
+    "stepBan": "Banir · {{len}}",
+    "stepBanPerm": "Banir · permanente",
+    "addBanStep": "Adicionar passo de banimento",
+    "repeatName": "{{name}}: reincidência",
+    "repeatBanText": "Foi banido por {duration} após avisos anteriores. O seu {type} em {where} foi a denúncia decisiva.",
+    "write": "Escrever",
+    "asSeen": "Como {{user}} vê",
+    "action": "Ação",
+    "actionHint": "Move-o para outro separador",
+    "lenHint": "Os líderes de equipa podem alterar",
+    "triggers": "Palavras-chave",
+    "triggersHint": "Sugerido primeiro quando uma denúncia menciona uma",
+    "triggerAdd": "Adicionar palavra, Enter",
+    "removeWord": "Remover “{{word}}”",
+    "ruleHint": "Mostrada com a mensagem",
+    "share": {
+      "warn": "{{pct}}% dos avisos enviados",
+      "ban": "{{pct}}% dos banimentos enviados",
+      "delete": "{{pct}}% das remoções enviadas",
+      "dismiss": "{{pct}}% das dispensas"
+    },
+    "back": "Voltar à lista"
   },
   "modCases": {
     "sub": "Moderação",

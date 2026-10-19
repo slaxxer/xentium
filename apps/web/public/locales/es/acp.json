@@ -1728,18 +1728,10 @@
   "modTemplates": {
     "eyebrow": "Moderación",
     "title": "Plantillas",
-    "sub": "Los textos con los que los moderadores advierten, suspenden, eliminan o descartan en ModCanvas. Las advertencias y suspensiones se envían tal como están escritas aquí y duran lo que se indique aquí. Todo se guarda al cambiarlo.",
-    "new": "Nueva",
-    "newName": "Nueva plantilla",
+    "sub": "Lo que envían los moderadores cuando advierten, bloquean, eliminan o descartan en ModCanvas. Las advertencias y los bloqueos se envían tal como están escritos aquí, durante el tiempo indicado aquí.",
     "copyName": "{{name}} (copia)",
     "untitled": "Sin título",
     "empty": "Aún no hay plantillas. Crea una o restaura las predeterminadas.",
-    "group": {
-      "warn": "Advertencias",
-      "ban": "Baneos",
-      "delete": "Retirada de contenido",
-      "dismiss": "Descartes · interno"
-    },
     "mode": {
       "warn": "Advertir",
       "ban": "Banear",
@@ -1753,9 +1745,7 @@
       "dismiss": "Una nota interna para el registro de moderación. Nunca se envía."
     },
     "permanent": "Permanente",
-    "defaultLen": "Suspende durante {{len}}",
     "internal": "Nota interna",
-    "noRule": "Sin referencia a norma",
     "default": "Predeterminada",
     "restore": "Restaurar predeterminadas",
     "restoreTitle": "¿Restaurar las plantillas predeterminadas?",
@@ -1773,7 +1763,6 @@
     "name": "Nombre",
     "rule": "Referencia a norma",
     "rulePlaceholder": "p. ej. Sé respetuoso",
-    "usedFor": "Se usa para",
     "defaultDuration": "Duración de la suspensión",
     "message": "Mensaje",
     "var": {
@@ -1782,10 +1771,6 @@
       "where": "Artículo o perfil donde está",
       "duration": "Duración del baneo"
     },
-    "match": "Sugerir en reportes que mencionen",
-    "matchPlaceholder": "spam, anuncio, promoción",
-    "matchHint": "Palabras separadas por comas. Si el motivo de un reporte contiene una, ModCanvas sugiere esta plantilla primero.",
-    "preview": "Vista previa",
     "previewTitle": {
       "warn": "Has recibido una advertencia",
       "ban": "Tu cuenta ha sido baneada",
@@ -1800,10 +1785,65 @@
     "used_one": "Usada {{count}} vez",
     "used_other": "Usada {{count}} veces",
     "edited": "editada por última vez por {{name}} {{when}}",
-    "newText": "Hola {user}, ",
     "warnLen": "Cuenta durante {{len}}",
-    "add": "Añadir",
-    "close": "Cerrar"
+    "tab": {
+      "warn": "Advertencias",
+      "ban": "Bloqueos",
+      "delete": "Eliminaciones",
+      "dismiss": "Descartes"
+    },
+    "search": "Buscar en esta acción",
+    "sortLabel": "Orden",
+    "sort": {
+      "manual": "Manual",
+      "usage": "Más usadas"
+    },
+    "newOf": {
+      "warn": "Nueva advertencia",
+      "ban": "Nuevo bloqueo",
+      "delete": "Nueva eliminación",
+      "dismiss": "Nuevo descarte"
+    },
+    "startText": {
+      "warn": "Hola {user}, ",
+      "ban": "Has sido bloqueado durante {duration} ",
+      "delete": "Tu {type} en {where} fue eliminado ",
+      "dismiss": "{type} en {where} revisado. "
+    },
+    "pick": "Elige una plantilla a la izquierda.",
+    "nothing": "Nada coincide.",
+    "dragHint": "Arrastra para ordenar. Los moderadores ven este orden en ModCanvas.",
+    "usedShort_one": "{{count}}× usada",
+    "usedShort_other": "{{count}}× usada",
+    "permanentBan": "Bloqueo permanente",
+    "banLen": "Bloqueo de {{len}}",
+    "pathTitle": "Escalada",
+    "pathOutside": "Las eliminaciones y los descartes quedan fuera de la escalada",
+    "pathLinked": "Enlazadas por palabras clave comunes",
+    "pathAlone": "Sin enlace con otras plantillas",
+    "stepWarn": "Advertir · {{len}}",
+    "stepBan": "Bloquear · {{len}}",
+    "stepBanPerm": "Bloquear · permanente",
+    "addBanStep": "Añadir paso de bloqueo",
+    "repeatName": "{{name}}: reincidencia",
+    "repeatBanText": "Has sido bloqueado durante {duration} tras advertencias previas. Tu {type} en {where} fue el reporte decisivo.",
+    "write": "Escribir",
+    "asSeen": "Como lo ve {{user}}",
+    "action": "Acción",
+    "actionHint": "La mueve a otra pestaña",
+    "lenHint": "Los jefes de equipo pueden cambiarlo",
+    "triggers": "Palabras clave",
+    "triggersHint": "Se sugiere primero cuando un reporte menciona una",
+    "triggerAdd": "Añadir palabra, Enter",
+    "removeWord": "Quitar «{{word}}»",
+    "ruleHint": "Se muestra con el mensaje",
+    "share": {
+      "warn": "{{pct}} % de las advertencias enviadas",
+      "ban": "{{pct}} % de los bloqueos enviados",
+      "delete": "{{pct}} % de las eliminaciones enviadas",
+      "dismiss": "{{pct}} % de los descartes"
+    },
+    "back": "Volver a la lista"
   },
   "modCases": {
     "sub": "Moderación",
