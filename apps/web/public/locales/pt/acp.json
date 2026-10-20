@@ -1513,7 +1513,8 @@
     "create": "Criar campo",
     "created": "Campo criado",
     "changeFrom": "Guardado",
-    "changeTo": "Editado"
+    "changeTo": "Editado",
+    "dobMemberChoice": "Cada membro decide como o seu aniversário aparece (oculto, idade ou aniversário) nas definições de privacidade da sua conta."
   },
   "dashboard": {
     "loading": "Carregando…",

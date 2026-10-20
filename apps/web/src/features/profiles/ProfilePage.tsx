@@ -5,7 +5,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { FontAwesomeIcon } from "../../components/Icon";
 // The ban lock and the follow/block icons moved with their markup into
 // `layout/blocks/profileBlocks.tsx`; what stays here is the tab bodies' own icons.
-import { faThumbsUp, faGlobe, faCodeBranch, faHashtag, faFlag, faTrashCan, faReply, faThumbsDown } from "@fortawesome/free-solid-svg-icons";
+import { faThumbsUp, faGlobe, faCodeBranch, faHashtag, faFlag, faTrashCan, faReply, faThumbsDown, faCircleInfo,
+} from "@fortawesome/free-solid-svg-icons";
 import { api } from "../../lib/api";
 import { useAuth } from "../../hooks/useAuth";
 import { userCan } from "../../lib/authStore";
@@ -302,7 +303,7 @@ const FIELD_FA_ICONS = {
 } as const;
 
 function InformationField({ field }: { field: PublicProfileField }) {
-  const icon = FIELD_FA_ICONS[field.key as keyof typeof FIELD_FA_ICONS] ?? faGlobe;
+  const icon = FIELD_FA_ICONS[field.key as keyof typeof FIELD_FA_ICONS] ?? (field.type === "url" ? faGlobe : faCircleInfo);
 
   if (field.type === "url") {
     const href = field.value.match(/^https?:\/\//) ? field.value : `https://${field.value}`;
@@ -355,6 +356,9 @@ export function InformationTab({
   const hasDob = !!profile.dob;
   const linkFields = fields.filter((f) => LINK_KEYS.has(f.key));
   const hasLinks = linkFields.length > 0;
+  // Every other field the admin shows on profiles (ACP → Profile Fields), in their order.
+  const otherFields = fields.filter((f) => !LINK_KEYS.has(f.key) && f.key !== "date_of_birth");
+  const hasOther = otherFields.length > 0;
   const dobSectionLabel = profile.dob?.kind === "age" ? t("age") : t("birthdate");
   // Formatted here, in the reader's language — the API sends numbers, not English.
   const dobValue = !profile.dob ? null
@@ -362,7 +366,7 @@ export function InformationTab({
     : new Date(Date.UTC(2000, profile.dob.month - 1, profile.dob.day))
         .toLocaleDateString(i18n.language, { month: "long", day: "numeric", timeZone: "UTC" });
 
-  if (!hasDob && !hasBio && !hasLinks) {
+  if (!hasDob && !hasBio && !hasLinks && !hasOther) {
     return (
       <p className="profile-empty">{t("noInfo")}</p>
     );
@@ -377,7 +381,7 @@ export function InformationTab({
         </>
       )}
 
-      {hasDob && (hasBio || hasLinks) && <div className="profile-info-card__divider" />}
+      {hasDob && (hasBio || hasOther || hasLinks) && <div className="profile-info-card__divider" />}
 
       {hasBio && (
         <>
@@ -386,7 +390,18 @@ export function InformationTab({
         </>
       )}
 
-      {hasBio && hasLinks && <div className="profile-info-card__divider" />}
+      {hasBio && (hasOther || hasLinks) && <div className="profile-info-card__divider" />}
+
+      {hasOther && (
+        <>
+          <div className="profile-info-card__label">{t("details")}</div>
+          {otherFields.map((f) => (
+            <InformationField key={f.key} field={f} />
+          ))}
+        </>
+      )}
+
+      {hasOther && hasLinks && <div className="profile-info-card__divider" />}
 
       {hasLinks && (
         <>

@@ -1513,7 +1513,8 @@
     "create": "Feld anlegen",
     "created": "Feld angelegt",
     "changeFrom": "Gespeichert",
-    "changeTo": "Bearbeitet"
+    "changeTo": "Bearbeitet",
+    "dobMemberChoice": "Jedes Mitglied entscheidet selbst in den Privatsphäre-Einstellungen seines Kontos, wie sein Geburtstag erscheint (ausgeblendet, Alter oder Geburtstag)."
   },
   "dashboard": {
     "loading": "Wird geladen…",

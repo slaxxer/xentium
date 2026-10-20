@@ -12,7 +12,9 @@ const SYSTEM_FIELDS = [
     placeholder: "",
     position: 1,
     showOnRegistration: true,
-    requiredOnRegistration: false,
+    // Asked and required at sign-up out of the box (a minimum age needs it); an
+    // admin can make it optional in ACP → Profile Fields.
+    requiredOnRegistration: true,
     showOnProfile: true,
     dobDisplayFormat: "age",
   },

@@ -41,5 +41,6 @@
   "XEC-MOD-4103": "This template mentions the content it is about. Use it from that content, or pick another template.",
   "XEC-USER-4017": "Please enter a real date of birth: after 1900 and before today.",
   "XEC-USER-4018": "One of your profile answers isn't accepted: check its length, or pick one of the options.",
-  "XEC-USER-4019": "You're not old enough to sign up here yet."
+  "XEC-USER-4019": "You're not old enough to sign up here yet.",
+  "XEC-USER-4020": "Please fill in every required field to sign up."
 }
