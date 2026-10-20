@@ -44,5 +44,6 @@
   "XEC-USER-4019": "Vous n'avez pas encore l'âge requis pour vous inscrire ici.",
   "XEC-USER-4020": "Veuillez remplir tous les champs obligatoires pour vous inscrire.",
   "XEC-GROUP-4010": "Les nouveaux membres ne peuvent rejoindre qu'un groupe existant qui n'ouvre pas l'ACP.",
-  "XEC-LEGAL-3503": "Seul un document publié que les membres doivent accepter peut être redemandé."
+  "XEC-LEGAL-3503": "Seul un document publié que les membres doivent accepter peut être redemandé.",
+  "XEC-AUTH-2012": "Veuillez d'abord accepter les documents juridiques du site."
 }

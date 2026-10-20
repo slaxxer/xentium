@@ -44,5 +44,6 @@
   "XEC-USER-4019": "Du bist noch nicht alt genug, um dich hier zu registrieren.",
   "XEC-USER-4020": "Bitte fülle alle Pflichtfelder aus, um dich zu registrieren.",
   "XEC-GROUP-4010": "Neue Mitglieder können nur einer bestehenden Gruppe ohne ACP-Zugang beitreten.",
-  "XEC-LEGAL-3503": "Erneut abfragen geht nur bei einem veröffentlichten Dokument, dem Mitglieder zustimmen müssen."
+  "XEC-LEGAL-3503": "Erneut abfragen geht nur bei einem veröffentlichten Dokument, dem Mitglieder zustimmen müssen.",
+  "XEC-AUTH-2012": "Bitte stimme zuerst den rechtlichen Dokumenten der Seite zu."
 }

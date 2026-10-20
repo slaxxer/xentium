@@ -116,6 +116,11 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
     // they keep surfacing as inline toasts via the normal throw path.
     // Maintenance mode also returns 503 but is an intentional state — let the
     // MaintenanceGate render its own screen instead of the fatal overlay.
+    // Signed in with a legal document still to accept (asked again while the page was
+    // open): note what is pending, so LegalConsentGate sends the member to it now.
+    if (errObj?.code === "XEC-AUTH-2012" && authStore.token && authStore.user && Array.isArray(errObj.details?.pending)) {
+      authStore.set(authStore.token, { ...authStore.user, pendingLegal: errObj.details.pending, needsLegalConsent: true });
+    }
     const isMaintenance = errObj?.code === "XEC-CORE-8010" || (detail as any)?.maintenance === true;
     if (res.status >= 500 && !isMaintenance) {
       fatalErrorStore.trigger({

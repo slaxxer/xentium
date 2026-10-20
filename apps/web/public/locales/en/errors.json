@@ -44,5 +44,6 @@
   "XEC-USER-4019": "You're not old enough to sign up here yet.",
   "XEC-USER-4020": "Please fill in every required field to sign up.",
   "XEC-GROUP-4010": "New members can only join a group that exists and doesn't open the ACP.",
-  "XEC-LEGAL-3503": "Only a published document members must accept can be asked for again."
+  "XEC-LEGAL-3503": "Only a published document members must accept can be asked for again.",
+  "XEC-AUTH-2012": "Please accept the site's legal documents first."
 }

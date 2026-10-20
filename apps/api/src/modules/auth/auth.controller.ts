@@ -13,6 +13,7 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { effectivePermissions } from "../../shared/middleware/requirePermission.js";
 import { legalService } from "../legal/legal.service.js";
+import { bustLegalGate } from "../legal/legalGate.js";
 import { z } from "zod";
 import { LEGAL_DOCUMENTS } from "@xentium/contracts";
 
@@ -273,5 +274,7 @@ const legalConsentSchema = z.object({ keys: z.array(z.enum(LEGAL_DOCUMENTS)).max
 /** Accepted on the document's page (`keys`), or everything at once. Answers what is left. */
 export async function legalConsentHandler(req: Request, res: Response) {
   const { keys } = legalConsentSchema.parse(req.body ?? {});
-  res.json({ pending: await legalService.accept(req.userId!, keys) });
+  const pending = await legalService.accept(req.userId!, keys);
+  bustLegalGate(req.userId!);
+  res.json({ pending });
 }
