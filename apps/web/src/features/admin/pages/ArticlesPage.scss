@@ -138,7 +138,11 @@
 .arp-vis--level, .arp-vis--groups { --arp-c: var(--c-warn); }
 
 .arp-author { min-width: 0; display: flex; align-items: center; gap: 8px; font-size: var(--fs-sm); font-weight: 700; }
-.arp-author > :last-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.arp-author > :last-child {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  /* Room for the group colour's glow, which the ellipsis' overflow would cut off. */
+  padding: var(--name-glow-room); margin: calc(-1 * var(--name-glow-room));
+}
 .arp-av {
   --arp-av: var(--c-fg-muted);
   flex: none;

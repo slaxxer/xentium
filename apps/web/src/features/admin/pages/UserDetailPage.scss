@@ -112,7 +112,7 @@ $up-sticky-top: 68px;
     letter-spacing: -0.02em; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     /* The group colour's glow is a text-shadow; the ellipsis needs overflow: hidden,
        which cut it into a box. Padding gives the blur room, the margin takes it back. */
-    padding: 8px 12px; margin: -8px -12px;
+    padding: var(--name-glow-room); margin: calc(-1 * var(--name-glow-room));
   }
   &__seen { margin-top: 3px; font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
   &__pills { display: flex; gap: 6px; flex-wrap: wrap; }
