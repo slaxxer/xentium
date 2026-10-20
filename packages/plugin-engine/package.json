@@ -18,6 +18,7 @@
   "dependencies": {
     "@xentium/contracts": "workspace:*",
     "@xentium/errors": "workspace:*",
+    "libpg-query": "17.7.4",
     "zod": "catalog:"
   },
   "peerDependencies": {

@@ -653,21 +653,33 @@ core's Prisma migrations, in the `xcf_plugin_migrations` table. The host checks 
 below on install, enable and update, and breaking one aborts the operation with the
 `XEC-PLUGIN-*` code shown. Design for them from the start.
 
-- **DDL only.** A migration may only `CREATE` / `ALTER` / `DROP` a `TABLE`, `INDEX`,
-  `SEQUENCE`, `TYPE`, `FUNCTION` or `TRIGGER` (and `CREATE EXTENSION`). Any DML
-  (`INSERT`/`UPDATE`/`DELETE`/`SELECT`/`TRUNCATE`/`COPY`/…) is rejected with
-  `XEC-PLUGIN-2010`. Seed data goes in `onEnable`, not in a migration.
+These rules keep a migration from damaging the site while it runs and keep your schema
+in its own namespace. They aren't a sandbox: your functions and your server code run with
+the site's database rights, so installing a plugin means trusting its code.
+
+- **DDL only.** We read every migration with PostgreSQL's own parser. A migration may
+  create, alter, rename, comment on and drop your own tables, indexes, sequences, types,
+  functions and triggers, and nothing else. Anything that reads or writes rows
+  (`INSERT`, `UPDATE`, `DELETE`, `SELECT`, `CREATE TABLE … AS`, views, `DO` blocks, …)
+  is rejected with `XEC-PLUGIN-2010`. So is a `DEFAULT` or `CHECK` that calls one of your
+  own functions or a function that runs SQL, `SECURITY DEFINER`, languages other than
+  `plpgsql` and `sql`, and changing an owner or a schema. Seed data goes in `onEnable`,
+  not in a migration.
+- **Extensions.** `CREATE EXTENSION IF NOT EXISTS` works for `pg_trgm`, `citext`,
+  `uuid-ossp`, `pgcrypto`, `unaccent`, `btree_gin`, `btree_gist` and `fuzzystrmatch`.
+  Dropping one never does: core's search indexes depend on `pg_trgm`.
 - **Up and down come in pairs.** Every `NNN_name.up.sql` needs a matching
   `NNN_name.down.sql` (`XEC-PLUGIN-2011`). Use `IF EXISTS` / `IF NOT EXISTS` so a down
   migration can safely run twice.
 - **Table names.** Core tables start with `xcf_`, and your schema stays in its own
-  namespace. Declare a **`tablePrefix`** (short, snake_case, ending in `_`, e.g. `forum_` or
-  `sb_`), and we check that **every** table, index, sequence, type, function and trigger
-  your migrations create, alter, drop or index starts with it. Whether you declare one or
-  not, a plugin migration can never touch a reserved core object (names starting with
-  `xcf_`, `xentium_`, `_prisma`, `pg_` or `information_schema`). Both mistakes raise
-  `XEC-PLUGIN-2013`. `CREATE EXTENSION` and `COMMENT` are exempt. The prefix is optional,
-  but we strongly recommend it; all our official plugins use one.
+  namespace. A plugin with migrations must declare a **`tablePrefix`** (short, snake_case,
+  ending in `_`, e.g. `forum_` or `sb_`), and every table, index, sequence, type, function
+  and trigger your migrations create, alter, rename, comment on or drop must start with
+  it, in the `public` schema. Reserved core names (`xcf_`, `xentium_`, `_prisma`, `pg_`,
+  `information_schema`) are never allowed. A missing prefix or a name outside it raises
+  `XEC-PLUGIN-2013`.
+- **Each migration file runs in one transaction.** If a statement fails, nothing from
+  that file stays behind. Migrations that ran before it in the same install stay applied.
 - **A migration that has run is frozen.** We record its checksum, and editing the file
   afterwards is rejected (`XEC-PLUGIN-2012`). Put schema changes in a **new** migration in
   your next version.
@@ -675,7 +687,8 @@ below on install, enable and update, and breaking one aborts the operation with 
   whose *name* we haven't seen before, in any version. So keep the full list in the
   manifest and only append to it. Never renumber or rename one you've shipped.
 - **No foreign keys across the boundary.** Prisma doesn't know about plugin tables, so
-  your table can't `REFERENCES` a core table (and core can't reference yours). Store the
+  your table can't `REFERENCES` a core table (and core can't reference yours); we reject
+  it with `XEC-PLUGIN-2013`. Store the
   id (e.g. `user_id TEXT`), enforce integrity in your service, and clean up when an
   account is deactivated with the SDK's `onUserDeactivated` hook.
 
