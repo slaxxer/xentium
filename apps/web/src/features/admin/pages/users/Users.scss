@@ -131,6 +131,8 @@ select.usr-select { width: auto; flex: none; --sel-bg: var(--c-bg); }
   &__name {
     font-family: var(--ff-sans); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* Room for the group colour's glow (a text-shadow the ellipsis' overflow cut off). */
+    padding: var(--name-glow-room); margin: calc(-1 * var(--name-glow-room));
   }
   &__email { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
