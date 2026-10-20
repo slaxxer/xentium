@@ -87,6 +87,9 @@ export async function createSession(userId: string, meta: Meta, opts: { persiste
  */
 export const ROTATION_GRACE_MS = 30_000;
 
+/** How far a straggling refresh may follow a chain of rotations inside the window. */
+const MAX_ROTATION_HOPS = 10;
+
 /** Thrown inside the rotation transaction when another request rotated first. */
 class LostRotationRace extends Error {}
 
@@ -185,9 +188,19 @@ async function afterRotation(session: SessionRow): Promise<Rotated | null> {
   if (!session.replacedById || !session.revokedAt) return null;
 
   if (Date.now() - session.revokedAt.getTime() <= ROTATION_GRACE_MS) {
-    const successor = await prisma.session.findUnique({ where: { id: session.replacedById } });
-    if (!successor || successor.revokedAt || successor.expiresAt < new Date()) return null;
-    return { refreshToken: null, persistent: session.persistent, accessToken: await tokens.issueAccess(successor.userId, successor.id) };
+    // Several tabs loading at once can rotate the token more than once inside the
+    // window, so follow the replacements to the session that is live now.
+    let nextId: string | null = session.replacedById;
+    for (let hop = 0; nextId && hop < MAX_ROTATION_HOPS; hop++) {
+      const next: SessionRow & { expiresAt: Date } | null = await prisma.session.findUnique({ where: { id: nextId } });
+      if (!next) return null;
+      if (!next.revokedAt) {
+        if (next.expiresAt < new Date()) return null;
+        return { refreshToken: null, persistent: session.persistent, accessToken: await tokens.issueAccess(next.userId, next.id) };
+      }
+      nextId = next.replacedById; // null: logged out or revoked, not rotated
+    }
+    return null;
   }
 
   await revokeFamily(session.familyId ?? session.id);
