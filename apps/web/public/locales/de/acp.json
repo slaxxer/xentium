@@ -2104,7 +2104,6 @@
     "showEverything": "Alles anzeigen",
     "entries_one": "{{count}} Eintrag",
     "entries_other": "{{count}} Einträge",
-    "older": "Ältere Einträge anzeigen",
     "today": "Heute",
     "yesterday": "Gestern",
     "automatic": "Automatische Prüfung",
@@ -2208,7 +2207,8 @@
       "case_unassigned": "Fall abgegeben",
       "report_resolved": "Meldung erledigt",
       "report_dismissed": "Meldung verworfen"
-    }
+    },
+    "pageOf": "Seite {{page}} von {{totalPages}} · {{total}} Einträge"
   },
   "studioHistory": {
     "scheduled": "Veröffentlicht (geplant)",

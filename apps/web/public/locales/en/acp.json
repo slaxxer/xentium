@@ -2104,7 +2104,6 @@
     "showEverything": "Show everything",
     "entries_one": "{{count}} entry",
     "entries_other": "{{count}} entries",
-    "older": "Show older entries",
     "today": "Today",
     "yesterday": "Yesterday",
     "automatic": "Automatic check",
@@ -2208,7 +2207,8 @@
       "case_unassigned": "Case Released",
       "report_resolved": "Report Resolved",
       "report_dismissed": "Report Dismissed"
-    }
+    },
+    "pageOf": "Page {{page}} of {{totalPages}} · {{total}} entries"
   },
   "studioHistory": {
     "scheduled": "Published (scheduled)",
