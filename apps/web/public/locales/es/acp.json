@@ -3038,7 +3038,19 @@
     "footEdit": "Los cambios se aplican al guardar.",
     "close": "Cerrar",
     "nameDesc": "Se muestra en el índice de artículos y en la lista de categorías del editor.",
-    "descDesc": "Una línea corta bajo el nombre. Opcional."
+    "descDesc": "Una línea corta bajo el nombre. Opcional.",
+    "accessMode": {
+      "public": "Público",
+      "publicDesc": "Todos, incluidos los invitados",
+      "members": "Solo miembros",
+      "membersDesc": "Solo usuarios registrados",
+      "groups": "Grupos específicos",
+      "groupsDesc": "Solo los grupos seleccionados abajo",
+      "level": "Nivel mínimo (ajuste anterior)",
+      "levelDesc": "Se conserva de antes; elige otra opción para sustituirlo."
+    },
+    "groupsWithAccess": "Grupos con acceso",
+    "noGroups": "No se encontraron grupos."
   },
   "progression": {
     "loading": "Cargando…",

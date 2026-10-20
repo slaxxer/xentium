@@ -3038,7 +3038,19 @@
     "footEdit": "Änderungen gelten nach dem Speichern.",
     "close": "Schließen",
     "nameDesc": "Erscheint in der Artikelübersicht und in der Kategorieliste des Editors.",
-    "descDesc": "Eine kurze Zeile unter dem Namen. Optional."
+    "descDesc": "Eine kurze Zeile unter dem Namen. Optional.",
+    "accessMode": {
+      "public": "Öffentlich",
+      "publicDesc": "Jeder, auch Gäste",
+      "members": "Nur Mitglieder",
+      "membersDesc": "Nur angemeldete Benutzer",
+      "groups": "Bestimmte Gruppen",
+      "groupsDesc": "Nur die unten ausgewählten Gruppen",
+      "level": "Mindeststufe (alte Einstellung)",
+      "levelDesc": "Von früher übernommen; wähle eine andere Option, um sie zu ersetzen."
+    },
+    "groupsWithAccess": "Gruppen mit Zugriff",
+    "noGroups": "Keine Gruppen gefunden."
   },
   "progression": {
     "loading": "Wird geladen…",
