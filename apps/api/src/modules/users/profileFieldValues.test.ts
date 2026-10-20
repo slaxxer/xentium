@@ -19,9 +19,12 @@ const FIELDS = [
   { id: "web", key: "website", label: "Website", type: "url" },
   { id: "pick", key: "role", label: "Role", type: "choice", options: ["Player", "Coach"] },
 ];
+let REQUIRED: { id: string; label: string }[] = [];
 beforeEach(() => {
+  REQUIRED = [];
   findMany.mockReset();
-  findMany.mockImplementation(async ({ where }: { where: { id: { in: string[] } } }) => FIELDS.filter((f) => where.id.in.includes(f.id)));
+  findMany.mockImplementation(async ({ where }: { where: { id?: { in: string[] }; requiredOnRegistration?: boolean } }) =>
+    where.requiredOnRegistration ? REQUIRED : FIELDS.filter((f) => where.id!.in.includes(f.id)));
 });
 
 describe("assertProfileFieldValues", () => {
@@ -103,5 +106,18 @@ describe("field settings", () => {
     await expect(one("mail", "not an email")).rejects.toMatchObject({ code: "XEC-USER-4018" });
     await expect(one("web", "example.org/me")).resolves.toBeUndefined();
     await expect(one("web", "javascript:alert(1)")).rejects.toMatchObject({ code: "XEC-USER-4018" });
+  });
+});
+
+describe("required at sign-up", () => {
+  it("refuses a sign-up without a required field, empty or left out (XEC-USER-4020)", async () => {
+    REQUIRED = [{ id: "dob", label: "Date of birth" }];
+    await expect(assertProfileFieldValues([], { registration: true })).rejects.toMatchObject({ code: "XEC-USER-4020", httpStatus: 422 });
+    await expect(assertProfileFieldValues([{ fieldId: "dob", value: "  " }], { registration: true })).rejects.toMatchObject({ code: "XEC-USER-4020" });
+    await expect(assertProfileFieldValues([{ fieldId: "dob", value: "1990-05-01" }], { registration: true })).resolves.toBeUndefined();
+  });
+  it("does not require anything outside sign-up (a member may clear it later)", async () => {
+    REQUIRED = [{ id: "dob", label: "Date of birth" }];
+    await expect(assertProfileFieldValues([])).resolves.toBeUndefined();
   });
 });

@@ -41,5 +41,6 @@
   "XEC-MOD-4103": "Este modelo menciona o conteúdo em causa. Use-o a partir desse conteúdo ou escolha outro modelo.",
   "XEC-USER-4017": "Introduza uma data de nascimento real: depois de 1900 e antes de hoje.",
   "XEC-USER-4018": "Uma das suas respostas do perfil não é aceite: verifique o tamanho ou escolha uma das opções.",
-  "XEC-USER-4019": "Ainda não tem idade suficiente para se registar aqui."
+  "XEC-USER-4019": "Ainda não tem idade suficiente para se registar aqui.",
+  "XEC-USER-4020": "Preencha todos os campos obrigatórios para se registar."
 }

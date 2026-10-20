@@ -187,5 +187,6 @@
   "cantRateOwnComment": "No puedes valorar tu propio comentario",
   "signInToRate": "Inicia sesión para valorar",
   "lastSeen": "Visto {{when}}",
-  "lastSeenOn": "Visto por última vez en {{date}}"
+  "lastSeenOn": "Visto por última vez en {{date}}",
+  "details": "Datos"
 }

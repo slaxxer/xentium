@@ -73,12 +73,26 @@ function invalid(label: string, why: string): never {
  *     and at sign-up at least the field's minimum age (XEC-USER-4019)
  *   - any other date field: a real YYYY-MM-DD date (XEC-API-4001)
  *   - every other type: its length cap, and email / link / choice shape (XEC-USER-4018)
+ *   - at sign-up, every field required there must be filled in (XEC-USER-4020)
  */
 export async function assertProfileFieldValues(
   values: { fieldId: string; value: string }[],
   opts: { registration?: boolean; now?: Date } = {},
 ): Promise<void> {
   const filled = values.filter((v) => v.value.trim() !== "");
+  if (opts.registration) {
+    // The form marks required fields, but anything can be posted: a field the admin
+    // made required at sign-up must arrive filled in (XEC-USER-4020).
+    const required = await prisma.userProfileField.findMany({
+      where: { showOnRegistration: true, requiredOnRegistration: true },
+      select: { id: true, label: true },
+    });
+    const given = new Set(filled.map((v) => v.fieldId));
+    const missing = required.find((f) => !given.has(f.id));
+    if (missing) {
+      throw new XentiumError({ code: "XEC-USER-4020", httpStatus: 422, message: `${missing.label} is required to sign up` });
+    }
+  }
   if (filled.length === 0) return;
   const fields = await prisma.userProfileField.findMany({
     where: { id: { in: filled.map((v) => v.fieldId) } },

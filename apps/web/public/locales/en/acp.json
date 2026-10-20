@@ -1513,7 +1513,8 @@
     "create": "Create field",
     "created": "Field created",
     "changeFrom": "Saved",
-    "changeTo": "Edited"
+    "changeTo": "Edited",
+    "dobMemberChoice": "Each member decides how their birthday shows (hidden, age or birthday) in their account's Privacy settings."
   },
   "dashboard": {
     "loading": "Loading…",

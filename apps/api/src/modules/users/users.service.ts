@@ -542,13 +542,18 @@ export const userService = {
 
     return fields
       .map((f) => {
+        // The date of birth is the member's to show: the profile's own `dob` follows
+        // their Account → Privacy choice (hidden, age or birthday). Listing it here
+        // too, in the admin's format, showed it to people the member had hidden it from.
+        if (f.key === "date_of_birth") return null;
         const entry = valueMap.get(f.id);
         if (!entry || !entry.value.trim()) return null;
         if (entry.privacy === "nobody") return null;
         if (entry.privacy === "members" && !isAuthenticated) return null;
 
+        // Any other date shows as the admin set it; a whole date unless they chose otherwise.
         const displayValue =
-          f.type === "date" ? formatDobValue(entry.value, f.dobDisplayFormat) : entry.value;
+          f.type === "date" ? formatDobValue(entry.value, f.dobDisplayFormat ?? "full") : entry.value;
 
         return { key: f.key, label: f.label, type: f.type, value: displayValue, linkPrefix: f.linkPrefix };
       })

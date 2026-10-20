@@ -1513,7 +1513,8 @@
     "create": "Créer le champ",
     "created": "Champ créé",
     "changeFrom": "Enregistré",
-    "changeTo": "Modifié"
+    "changeTo": "Modifié",
+    "dobMemberChoice": "Chaque membre choisit comment son anniversaire s'affiche (masqué, âge ou anniversaire) dans les paramètres de confidentialité de son compte."
   },
   "dashboard": {
     "loading": "Chargement…",

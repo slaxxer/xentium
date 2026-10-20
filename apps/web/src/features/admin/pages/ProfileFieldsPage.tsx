@@ -83,7 +83,7 @@ function draftOf(f: ProfileField): Draft {
     signup: f.requiredOnRegistration ? "required" : f.showOnRegistration ? "optional" : "off",
     showOnProfile: f.showOnProfile,
     defaultPrivacy: f.defaultPrivacy,
-    dobDisplayFormat: f.dobDisplayFormat ?? "age",
+    dobDisplayFormat: f.dobDisplayFormat ?? (f.key === "date_of_birth" ? "age" : "full"),
     minAge: f.minAge,
     maxLength: f.maxLength ? String(f.maxLength) : "",
     linkPrefix: f.linkPrefix ?? "",
@@ -104,7 +104,7 @@ function payloadOf(d: Draft, f: ProfileField) {
     requiredOnRegistration: d.signup === "required",
     showOnProfile: d.showOnProfile,
     defaultPrivacy: d.defaultPrivacy,
-    ...(d.type === "date" ? { dobDisplayFormat: d.dobDisplayFormat } : {}),
+    ...(d.type === "date" && !isDob ? { dobDisplayFormat: d.dobDisplayFormat } : {}),
     ...(isDob ? { minAge: d.minAge } : {}),
     ...(d.type === "text" || d.type === "longtext"
       ? { maxLength: Number.isInteger(len) && len > 0 ? Math.min(len, 5000) : null } : {}),
@@ -416,7 +416,13 @@ export function ProfileFieldsPage() {
                   text={(v) => t(`profileFields.privacy.${v}`)} onChange={(v) => setDraft({ defaultPrivacy: v })} />
               </div>
 
-              {d.type === "date" && (
+              {d.type === "date" && current.key === "date_of_birth" && (
+                <div className="pfp-block pfp-line">
+                  <Row title={t("profileFields.dobTitle")} desc={t("profileFields.dobMemberChoice")} />
+                </div>
+              )}
+
+              {d.type === "date" && current.key !== "date_of_birth" && (
                 <div className="pfp-block pfp-line">
                   <Row title={t("profileFields.dobTitle")} desc={t(`profileFields.dobExample.${d.dobDisplayFormat}`)} />
                   <Seg label={t("profileFields.dobTitle")} value={d.dobDisplayFormat} options={["age", "birthday", "full"] as const}
