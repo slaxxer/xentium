@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import {
   faUserPen, faBan, faTriangleExclamation, faFileLines, faFolderOpen, faGear,
@@ -10,6 +10,7 @@ import {
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { Username } from "../../../components/Username";
 import { Button } from "../../../components/AcpControls";
+import { Pager } from "../../../components/Pager";
 import { api, apiDownload } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
@@ -50,7 +51,8 @@ const KIND_ICON: Record<EntryKind, IconDefinition> = {
   account: faUserPen, ban: faBan, warning: faTriangleExclamation, content: faFileLines, case: faFolderOpen, other: faGear,
 };
 
-const PAGE_SIZE = 30;
+/** Seven entries a page: a log wants reading, not scrolling past. */
+const PAGE_SIZE = 7;
 
 /** The start of the period, in the viewer's own day. */
 function sinceOf(p: Period): string | null {
@@ -71,6 +73,7 @@ export function ModLogPage() {
   const [query, setQuery] = useState("");
   const [q, setQ] = useState("");
   const [open, setOpen] = useState<Set<string>>(new Set());
+  const [page, setPage] = useState(1);
 
   // Search after typing stops, not on every key.
   useEffect(() => {
@@ -88,21 +91,25 @@ export function ModLogPage() {
     return p;
   }, [kind, actor, period, q]);
 
+  // A new filter starts at the first page.
+  useEffect(() => { setPage(1); }, [filter]);
+
   const { data: summary } = useQuery<Summary>({ queryKey: ["acp-modlog", "summary"], queryFn: () => api.get("/admin/modlog/summary") });
-  const log = useInfiniteQuery<Page>({
-    queryKey: ["acp-modlog", filter.toString()],
-    initialPageParam: 1,
-    queryFn: ({ pageParam }) => {
+  const log = useQuery<Page>({
+    queryKey: ["acp-modlog", filter.toString(), page],
+    queryFn: () => {
       const p = new URLSearchParams(filter);
-      p.set("page", String(pageParam));
+      p.set("page", String(page));
       p.set("limit", String(PAGE_SIZE));
       return api.get(`/admin/modlog?${p.toString()}`);
     },
-    getNextPageParam: (last) => (last.meta.page < last.meta.totalPages ? last.meta.page + 1 : undefined),
+    // The old page stays up while the next one loads, so the list doesn't jump.
+    placeholderData: keepPreviousData,
   });
 
-  const entries = log.data?.pages.flatMap((p) => p.data) ?? [];
-  const counts = log.data?.pages[0]?.counts;
+  const entries = log.data?.data ?? [];
+  const counts = log.data?.counts;
+  const totalPages = log.data?.meta.totalPages ?? 1;
 
   // Grouped by the viewer's day, newest first (the API already sorts).
   const days = useMemo(() => {
@@ -215,13 +222,13 @@ export function ModLogPage() {
               </div>
             </section>
           ))}
-          {log.hasNextPage && (
-            <div className="mlp-more">
-              <Button variant="ghost" disabled={log.isFetchingNextPage} onClick={() => log.fetchNextPage()}>
-                {log.isFetchingNextPage ? t("modLog.loading") : t("modLog.older")}
-              </Button>
-            </div>
-          )}
+          <Pager
+            page={page}
+            totalPages={totalPages}
+            onPage={(n) => { setPage(n); setOpen(new Set()); }}
+            label={t("modLog.pageOf", { page, totalPages, total: log.data?.meta.total ?? 0 })}
+            style={{ borderTop: 0, padding: 0, justifyContent: "center" }}
+          />
         </div>
       )}
     </div>
