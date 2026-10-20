@@ -1,19 +1,23 @@
 import { defineConfig, devices } from "@playwright/test";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { E2E_WEB_PORT, e2eEnv } from "./e2eEnv.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, "..");
 
-const WEB_URL = process.env.E2E_WEB_URL ?? "http://localhost:5173";
+// Its own database, ports, uploads and Redis prefix (e2eEnv.mjs); throws if the
+// database isn't a disposable *_e2e / *_test one.
+const E2E_ENV = e2eEnv();
+const WEB_URL = process.env.E2E_WEB_URL ?? `http://localhost:${E2E_WEB_PORT}`;
 
 /**
  * Xentium e2e suite.
  *
  * The whole stack must be driven against a FRESH, uninstalled database so the
- * install-wizard spec can run. The DB reset happens in the root `pnpm e2e`
- * script (`prisma migrate reset`) BEFORE Playwright starts, so the apps boot
- * against a clean, unseeded (uninstalled) schema. Specs run serially in a
+ * install-wizard spec can run. The root `pnpm e2e` (scripts/e2e.mjs) resets the
+ * e2e database BEFORE Playwright starts, so the apps boot against a clean,
+ * unseeded (uninstalled) schema. The dev site on 5173/4000 is never touched. Specs run serially in a
  * single worker and
  * in filename order — `01-install` installs the site, later specs depend on it.
  */
@@ -42,18 +46,18 @@ export default defineConfig({
     { name: "chromium", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
   ],
 
-  // Start api + worker + web. The DB is reset by the npm script first, so these
-  // boot against a clean, uninstalled database. `reuseExistingServer` lets a
-  // developer keep `./xentium.sh` running locally (the reset still applies).
+  // Start api + worker + web on the e2e ports, against the e2e database. A dev
+  // stack running at the same time is unaffected. E2E_REUSE=1 reuses an e2e
+  // stack you started yourself (with the same env).
   webServer: {
     command: "pnpm dev:apps",
     cwd: repoRoot,
     url: WEB_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: process.env.E2E_REUSE === "1",
     timeout: 120_000,
     stdout: "pipe",
     stderr: "pipe",
     // Quiet the per-request pino logs so the test output stays readable.
-    env: { LOG_LEVEL: "warn" },
+    env: { ...E2E_ENV, LOG_LEVEL: "warn" },
   },
 });
