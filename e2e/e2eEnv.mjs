@@ -6,7 +6,9 @@
  * happily reused a dev stack already running on 5173/4000. Now the suite gets its
  * own everything, so a run can't touch the dev site at all:
  *
- *   database   <devdb>_e2e (or E2E_DATABASE_URL, which must also end in _e2e/_test)
+ *   database   <devdb>_e2e when that database is on this machine; anywhere else only
+ *              an explicit E2E_DATABASE_URL (which must also end in _e2e/_test).
+ *              Never with NODE_ENV=production.
  *   ports      web 5175, API 4300
  *   uploads    apps/api/var/e2e-uploads
  *   redis      keys under "xentium-e2e:", so the e2e worker never takes dev jobs
@@ -25,6 +27,7 @@ export const E2E_API_PORT = 4300;
 /** Relative to apps/api, like the dev UPLOAD_DIR. */
 export const E2E_UPLOAD_DIR = "./var/e2e-uploads";
 const SUFFIXES = ["_e2e", "_test"];
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
 function rootEnv() {
   try {
@@ -44,6 +47,9 @@ export function databaseNameOf(url) {
 
 /** Throw unless the database is one the suite may destroy. */
 export function assertE2eDatabase(url) {
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Refusing to run e2e with NODE_ENV=production. The suite wipes its database.");
+  }
   const name = url ? databaseNameOf(url) : null;
   if (name && SUFFIXES.some((s) => name.endsWith(s))) return;
   throw new Error(
@@ -54,12 +60,23 @@ export function assertE2eDatabase(url) {
   );
 }
 
-/** The e2e database URL: E2E_DATABASE_URL, else the dev URL with "_e2e" appended. */
+/**
+ * The e2e database URL: E2E_DATABASE_URL, else the dev URL with "_e2e" appended,
+ * but only when that server is this machine. A .env pointing at a remote server
+ * (a staging or production box) never gets a database derived from it.
+ */
 export function e2eDatabaseUrl() {
   const explicit = process.env.E2E_DATABASE_URL;
   if (explicit) return explicit;
   const base = rootEnv().DATABASE_URL;
   if (!base) throw new Error("No DATABASE_URL in the root .env and no E2E_DATABASE_URL set.");
+  const host = new URL(base).hostname;
+  if (!LOCAL_HOSTS.has(host)) {
+    throw new Error(
+      `DATABASE_URL points at "${host}", not this machine, so pnpm e2e won't derive a\n` +
+      `database from it. Set E2E_DATABASE_URL to a disposable *_e2e database.`,
+    );
+  }
   const name = databaseNameOf(base);
   if (!name) throw new Error("DATABASE_URL in the root .env has no database name.");
   if (SUFFIXES.some((s) => name.endsWith(s))) return base;
