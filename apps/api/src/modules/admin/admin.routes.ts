@@ -98,6 +98,8 @@ adminRouter.delete("/mod-templates/:id",        adminGuard, adminController.dele
 adminRouter.get("/mod-settings",                adminGuard, adminController.getModSettings);
 adminRouter.patch("/mod-settings",              adminGuard, adminController.updateModSettings);
 adminRouter.get("/modlog",             adminGuard, adminController.listModLog);
+adminRouter.get("/modlog/summary",     adminGuard, adminController.modLogSummary);
+adminRouter.get("/modlog/export.csv",  adminGuard, adminController.modLogExport);
 adminRouter.delete("/comments/article/:id", adminGuard, adminController.deleteArticleComment);
 adminRouter.delete("/comments/profile/:id", adminGuard, adminController.deleteProfileComment);
 

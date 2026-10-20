@@ -175,9 +175,11 @@ export function ReviewCasesPage() {
   const { user: me } = useAuth();
 
   // Mod Settings links here per pattern ("See them"): ?type=…&status=all opens the list pre-filtered.
+  // The Moderation Log links one case: ?case=<id> opens it, among every status.
   const [urlParams] = useSearchParams();
   const [status, setStatus] = useState<Status>(() => {
     const s = urlParams.get("status");
+    if (urlParams.get("case")) return "all";
     return s === "open" || s === "reviewed" || s === "all" ? s : "open";
   });
   const [type, setType] = useState(() => urlParams.get("type") ?? "");
@@ -185,7 +187,7 @@ export function ReviewCasesPage() {
   const [sort, setSort] = useState<Sort>("new");
   // Seven cases a page, in the chosen order: a case wants reading, not scrolling past.
   const [page, setPage] = useState(1);
-  const [selectedId, setSelectedId] = useState("");
+  const [selectedId, setSelectedId] = useState(() => urlParams.get("case") ?? "");
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [banPreview, setBanPreview] = useState(false);
   const [bulkPreview, setBulkPreview] = useState(false);

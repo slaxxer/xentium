@@ -17,7 +17,6 @@ import { getModPolicy, checkBanLength } from "../moderation/moderationPolicy.js"
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
-import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { hashPassword } from "../auth/auth.password.js";
 import { getSetting } from "../../shared/utils/settings.js";
@@ -913,87 +912,6 @@ export const adminService = {
     });
 
     return updated;
-  },
-
-  async listModLog(opts: { page: number; limit: number; action?: string; actionPrefix?: string; actorType?: string }) {
-    const { page, limit, action, actionPrefix, actorType } = opts;
-    const where: any = {};
-    if (action)       where.action    = action;
-    if (actionPrefix) where.action    = { startsWith: actionPrefix + "." };
-    if (actorType)    where.actorType = actorType;
-    const [rows, total] = await Promise.all([
-      prisma.moderationLog.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.moderationLog.count({ where }),
-    ]);
-
-    // Batch-resolve actor + user-target usernames
-    const userIds = new Set<string>();
-    for (const r of rows) {
-      if (r.actorId)                             userIds.add(r.actorId);
-      if (r.targetId && r.targetType === "user") userIds.add(r.targetId);
-    }
-
-    // Also resolve case-target → linked user IDs so we can show real names
-    const caseTargetIds = rows
-      .filter((r) => r.targetType === "moderation_case" && r.targetId)
-      .map((r) => r.targetId as string);
-    const cases = caseTargetIds.length > 0
-      ? await prisma.moderationCase.findMany({
-          where:  { id: { in: caseTargetIds } },
-          select: { id: true, type: true, linkedUserIds: true },
-        })
-      : [];
-    const caseMap     = new Map(cases.map((c) => [c.id, c]));
-    cases.forEach((c) => c.linkedUserIds.forEach((uid) => userIds.add(uid)));
-
-    const users = userIds.size > 0
-      ? await prisma.user.findMany({
-          where:  { id: { in: [...userIds] } },
-          select: { id: true, username: true, ...badgeColorSelect },
-        })
-      : [];
-    const userMap  = new Map(users.map((u) => [u.id, u.username]));
-    const colorMap = new Map(users.map((u) => [u.id, extractBadgeColor(u.groups)]));
-
-    const data = rows.map((r) => {
-      let targetUsername: string | null = null;
-      let targetBadgeColor: string | null = null;
-      let targetDetail: string | null = null;
-
-      if (r.targetId && r.targetType === "user") {
-        targetUsername    = userMap.get(r.targetId) ?? r.targetId;
-        targetBadgeColor  = colorMap.get(r.targetId) ?? null;
-      } else if (r.targetId && r.targetType === "moderation_case") {
-        // Subject = the case TYPE (e.g. "Multiaccounting"); detail = who shares what.
-        const c           = caseMap.get(r.targetId);
-        const linkedIds   = c?.linkedUserIds ?? [];
-        const names       = linkedIds.map((uid) => userMap.get(uid) ?? uid).filter(Boolean);
-        targetUsername    = c ? humanizeCaseType(c.type) : "Case";
-        targetDetail      = c ? describeCaseSignal(c.type, names) : null;
-      } else if (r.targetType === "device_cookie") {
-        // Show a short, readable form — the full UUID is noise to a mod
-        targetUsername    = r.targetId ? `Cookie ${r.targetId.slice(0, 8)}…` : "Device Cookie";
-      } else if (r.targetType === "ip") {
-        // The IP itself IS useful — show it directly
-        targetUsername    = r.targetId ?? "IP";
-      }
-
-      return {
-        ...r,
-        actorUsername:    r.actorId ? (userMap.get(r.actorId)  ?? r.actorId)  : null,
-        actorBadgeColor:  r.actorId ? (colorMap.get(r.actorId) ?? null)       : null,
-        targetUsername,
-        targetBadgeColor,
-        targetDetail,
-      };
-    });
-
-    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   // ── Moderation write ops (delegates to moderationService) ────────────────
