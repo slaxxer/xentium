@@ -316,7 +316,14 @@
       "disclaimer": "Disclaimer"
     },
     "lastUpdated": "Last updated {{date}}",
-    "edit": "Edit"
+    "edit": "Edit",
+    "accept": {
+      "notice": "Please read this document and accept it at the bottom of the page to keep using your account.",
+      "label": "Accept this document",
+      "checkbox": "I have read and accept the {{title}}.",
+      "submit": "Accept and continue",
+      "signOut": "Sign out instead"
+    }
   },
   "modcanvas": {
     "shield": {

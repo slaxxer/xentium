@@ -126,6 +126,7 @@ model User {
 
   articles            Article[]            @relation("ArticleAuthor")
   legalDocuments      LegalDocument[]      @relation("LegalDocumentUpdatedBy")
+  legalAcceptances    LegalAcceptance[]
   articleRevisions    ArticleRevision[]    @relation("RevisionAuthor")
   articleLikes        ArticleLike[]        @relation("ArticleLikedBy")
   articleBookmarks    ArticleBookmark[]
@@ -1316,8 +1317,28 @@ model LegalDocument {
   updatedById String?   @map("updated_by_id")
   updatedBy   User?     @relation("LegalDocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  /// Members must accept it: at sign-up, and once from anyone who never has.
+  requireAcceptance Boolean   @default(false) @map("require_acceptance")
+  /// Raised by "Ask members to accept again"; an acceptance names the revision it was for.
+  revision          Int       @default(1)
+  /// Who the latest re-acceptance round asks (group ids); empty = every member.
+  reacceptGroupIds  String[]  @default([]) @map("reaccept_group_ids")
+  reacceptedAt      DateTime? @map("reaccepted_at")
 
   @@map("xcf_legal_documents")
+}
+
+/// A member accepted a legal document, at the revision it was then.
+model LegalAcceptance {
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentKey String   @map("document_key")
+  revision    Int
+  acceptedAt  DateTime @default(now()) @map("accepted_at")
+
+  @@id([userId, documentKey])
+  @@index([documentKey, revision])
+  @@map("xcf_legal_acceptances")
 }
 
 // Unified activity log: public page movements (category 'page_visit') AND ACP

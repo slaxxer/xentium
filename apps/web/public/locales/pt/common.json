@@ -321,7 +321,14 @@
       "disclaimer": "Isenção"
     },
     "lastUpdated": "Última atualização: {{date}}",
-    "edit": "Editar"
+    "edit": "Editar",
+    "accept": {
+      "notice": "Leia este documento e aceite-o no fim da página para continuar a usar a sua conta.",
+      "label": "Aceitar este documento",
+      "checkbox": "Li e aceito «{{title}}».",
+      "submit": "Aceitar e continuar",
+      "signOut": "Terminar sessão"
+    }
   },
   "modcanvas": {
     "shield": {

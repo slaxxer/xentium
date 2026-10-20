@@ -2931,6 +2931,31 @@
     "toast": {
       "published": "Publicado",
       "unpublished": "Retirado"
+    },
+    "acceptance": {
+      "title": "Aceitação",
+      "sub": "Se os membros têm de aceitar «{{name}}», e voltar a pedir após uma alteração.",
+      "required": "Tem de ser aceite",
+      "requiredDesc": "Pedido no registo e uma vez a cada membro que ainda não o aceitou. É levado ao documento e só continua depois de aceitar.",
+      "again": "Pedir aos membros que aceitem de novo",
+      "againDesc": "Após uma alteração importante: os membros escolhidos são levados ao documento na próxima página até aceitarem a nova versão.",
+      "notLive": "Publique primeiro o documento.",
+      "lastRound": "Revisão {{revision}}, pedida de novo em {{date}} a {{groups}}.",
+      "pending_one": "{{count}} membro ainda tem de o aceitar.",
+      "pending_other": "{{count}} membros ainda têm de o aceitar.",
+      "askButton": "Pedir de novo…",
+      "who": "Quem tem de o aceitar de novo",
+      "everyone": "Todos os membros",
+      "everyoneDesc": "Todos os que têm conta",
+      "groups": "Grupos específicos",
+      "groupsDesc": "Apenas membros dos grupos abaixo",
+      "cancel": "Cancelar",
+      "askNow": "Pedir",
+      "confirmTitle": "Pedir «{{name}}» de novo?",
+      "confirmEveryone": "Cada membro é levado a «{{name}}» na próxima página e tem de o aceitar antes de continuar.",
+      "confirmGroups": "Os membros de {{groups}} são levados a «{{name}}» na próxima página e têm de o aceitar antes de continuar.",
+      "confirm": "Pedir",
+      "asked": "Os membros serão questionados na próxima página."
     }
   },
   "navigation": {

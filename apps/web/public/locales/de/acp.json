@@ -2931,6 +2931,31 @@
     "toast": {
       "published": "Veröffentlicht",
       "unpublished": "Offline genommen"
+    },
+    "acceptance": {
+      "title": "Zustimmung",
+      "sub": "Ob Mitglieder „{{name}}“ zustimmen müssen, und erneut fragen nach einer Änderung.",
+      "required": "Muss akzeptiert werden",
+      "requiredDesc": "Wird bei der Registrierung abgefragt und einmal bei jedem Mitglied, das noch nicht zugestimmt hat. Es wird dorthin geleitet und kann erst weiter, wenn es zustimmt.",
+      "again": "Mitglieder erneut zustimmen lassen",
+      "againDesc": "Nach einer wichtigen Änderung: Die gewählten Mitglieder werden beim nächsten Seitenaufruf dorthin geleitet, bis sie der neuen Fassung zustimmen.",
+      "notLive": "Veröffentliche das Dokument zuerst.",
+      "lastRound": "Fassung {{revision}}, erneut abgefragt am {{date}} für {{groups}}.",
+      "pending_one": "{{count}} Mitglied muss noch zustimmen.",
+      "pending_other": "{{count}} Mitglieder müssen noch zustimmen.",
+      "askButton": "Erneut fragen…",
+      "who": "Wer erneut zustimmen muss",
+      "everyone": "Alle Mitglieder",
+      "everyoneDesc": "Jeder mit einem Konto",
+      "groups": "Bestimmte Gruppen",
+      "groupsDesc": "Nur Mitglieder der Gruppen unten",
+      "cancel": "Abbrechen",
+      "askNow": "Fragen",
+      "confirmTitle": "„{{name}}“ erneut abfragen?",
+      "confirmEveryone": "Jedes Mitglied wird beim nächsten Seitenaufruf zu „{{name}}“ geleitet und muss zustimmen, bevor es weitergeht.",
+      "confirmGroups": "Mitglieder von {{groups}} werden beim nächsten Seitenaufruf zu „{{name}}“ geleitet und müssen zustimmen, bevor es weitergeht.",
+      "confirm": "Fragen",
+      "asked": "Die Mitglieder werden beim nächsten Seitenaufruf gefragt."
     }
   },
   "navigation": {

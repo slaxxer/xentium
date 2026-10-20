@@ -81,9 +81,12 @@ export function RegisterPanel() {
   const [wantPasskey, setWantPasskey] = useState(false);
   // Published terms / privacy policy. With either, joining asks the member to accept them.
   const legal = useLegalLinks();
-  const hasTerms = legal.some((d) => d.key === "terms");
-  const hasPrivacy = legal.some((d) => d.key === "privacy");
-  const needsConsent = hasTerms || hasPrivacy;
+  // The documents an admin marked "must be accepted" (ACP → Legal), published ones only.
+  const required = legal.filter((d) => d.mustAccept);
+  const hasTerms = required.some((d) => d.key === "terms");
+  const hasPrivacy = required.some((d) => d.key === "privacy");
+  const others = required.filter((d) => d.key !== "terms" && d.key !== "privacy");
+  const needsConsent = required.length > 0;
   const [agreed, setAgreed] = useState(false);
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -343,14 +346,27 @@ export function RegisterPanel() {
             <label className="dw-check">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
               <span>
-                <Trans
-                  t={t}
-                  i18nKey={hasTerms && hasPrivacy ? "door.reg.agreeBoth" : hasTerms ? "door.reg.agreeTerms" : "door.reg.agreePrivacy"}
-                  components={{
-                    terms:   <Link to={legalPath("terms")} target="_blank" rel="noreferrer" className="dw-link" />,
-                    privacy: <Link to={legalPath("privacy")} target="_blank" rel="noreferrer" className="dw-link" />,
-                  }}
-                />
+                {others.length === 0 ? (
+                  <Trans
+                    t={t}
+                    i18nKey={hasTerms && hasPrivacy ? "door.reg.agreeBoth" : hasTerms ? "door.reg.agreeTerms" : "door.reg.agreePrivacy"}
+                    components={{
+                      terms:   <Link to={legalPath("terms")} target="_blank" rel="noreferrer" className="dw-link" />,
+                      privacy: <Link to={legalPath("privacy")} target="_blank" rel="noreferrer" className="dw-link" />,
+                    }}
+                  />
+                ) : (
+                  // An imprint or a disclaimer is required too: name every document.
+                  <>
+                    {t("door.reg.agreeList")}{" "}
+                    {required.map((d, i) => (
+                      <span key={d.key}>
+                        {i > 0 && (i === required.length - 1 ? ` ${t("door.reg.agreeAnd")} ` : ", ")}
+                        <Link to={legalPath(d.key)} target="_blank" rel="noreferrer" className="dw-link">{t(`common:legal.title.${d.key}`)}</Link>
+                      </span>
+                    ))}.
+                  </>
+                )}
               </span>
             </label>
           )}

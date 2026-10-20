@@ -1,6 +1,6 @@
 import type { RequestHandler } from "express";
 import { legalService } from "./legal.service.js";
-import { legalKeyParamSchema, saveDraftSchema } from "./legal.validation.js";
+import { acceptanceSchema, askAgainSchema, legalKeyParamSchema, saveDraftSchema } from "./legal.validation.js";
 
 export const legalController = {
   // Public
@@ -40,6 +40,19 @@ export const legalController = {
   discardDraft: (async (req, res) => {
     const { key } = legalKeyParamSchema.parse(req.params);
     await legalService.discardDraft(key, req.userId!);
+    res.status(204).send();
+  }),
+  setAcceptance: (async (req, res) => {
+    const { key } = legalKeyParamSchema.parse(req.params);
+    const { requireAcceptance } = acceptanceSchema.parse(req.body);
+    await legalService.setRequireAcceptance(key, requireAcceptance, req.userId!);
+    res.status(204).send();
+  }),
+
+  askAgain: (async (req, res) => {
+    const { key } = legalKeyParamSchema.parse(req.params);
+    const { groupIds } = askAgainSchema.parse(req.body);
+    await legalService.askAgain(key, groupIds, req.userId!);
     res.status(204).send();
   }),
 } satisfies Record<string, RequestHandler>;
