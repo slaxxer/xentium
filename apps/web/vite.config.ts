@@ -50,6 +50,8 @@ function seoMetaDev(): Plugin {
   };
 }
 
+const API_URL = process.env.XT_API_URL ?? "http://localhost:4000";
+
 export default defineConfig({
   plugins: [react(), seoMetaDev()],
   resolve: {
@@ -63,11 +65,13 @@ export default defineConfig({
   },
   server: {
     host: '0.0.0.0',
-    port: 5173,
+    // The e2e suite runs its own stack beside the dev one (e2e/e2eEnv.mjs).
+    port: Number(process.env.XT_WEB_PORT ?? 5173),
+    strictPort: !!process.env.XT_WEB_PORT,
     // The dev instance can be reached through dev.xentium.org (nginx on the VPS →
     // an SSH tunnel to this machine). Vite refuses unknown Host headers otherwise.
     allowedHosts: ['dev.xentium.org'],
-    proxy: { "/api": "http://localhost:4000", "/uploads": "http://localhost:4000" },
+    proxy: { "/api": API_URL, "/uploads": API_URL },
   },
   optimizeDeps: { exclude: ["@xentium/ui", "@xentium/contracts", "@xentium/sdk"] },
 });

@@ -280,7 +280,7 @@ pnpm test
 pnpm build
 
 # End-to-end (Playwright)
-pnpm e2e                 # reset the DB, run the suite
+pnpm e2e                 # its own database (<yours>_e2e) and ports (5175/4300); dev is untouched
 pnpm e2e:ui              # interactive runner
 
 # Plugins

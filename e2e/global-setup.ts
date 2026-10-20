@@ -1,10 +1,12 @@
 import type { FullConfig } from "@playwright/test";
 
-const API_HEALTH = process.env.E2E_API_HEALTH ?? "http://localhost:4000/api/health";
+import { E2E_API_PORT } from "./e2eEnv.mjs";
+
+const API_HEALTH = process.env.E2E_API_HEALTH ?? `http://localhost:${E2E_API_PORT}/api/health`;
 
 /**
- * Playwright waits for the web dev server (5173) before running globalSetup,
- * but the API (4000) boots concurrently and may lag slightly behind. The web
+ * Playwright waits for the web dev server before running globalSetup,
+ * but the API boots concurrently and may lag slightly behind. The web
  * app proxies /api to the API, so we poll the API health endpoint until it
  * responds before any spec touches an install/auth route.
  */
