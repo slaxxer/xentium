@@ -77,6 +77,18 @@ describe("refresh-token rotation", () => {
     expect(await live()).toHaveLength(1);
   });
 
+  it("follows several quick rotations to the live session (three tabs loading at once)", async () => {
+    const first = await createSession(userId, meta);
+    const second = await rotateSession(first.refreshToken, meta);
+    const third = await rotateSession(second!.refreshToken!, meta);
+    const straggler = await rotateSession(first.refreshToken, meta);
+
+    expect(straggler).not.toBeNull();
+    expect(straggler!.refreshToken).toBeNull();
+    expect(await sessionOf(straggler!.accessToken)).toBe(await sessionOf(third!.accessToken));
+    expect(await live()).toHaveLength(1);
+  });
+
   it("signs out the whole sign-in when a rotated token is replayed later", async () => {
     const first = await createSession(userId, meta);
     const firstId = await sessionOf(first.accessToken);
