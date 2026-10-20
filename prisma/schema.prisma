@@ -489,6 +489,8 @@ model EmailTemplate {
 
 model Install {
   id          String    @id @default(uuid())
+  /// Always true and unique: there is one install row, enforced by the database.
+  singleton   Boolean   @default(true) @unique
   currentStep String    @default("WELCOME")
   completedAt DateTime?
   siteId      String?

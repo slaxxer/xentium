@@ -1,10 +1,29 @@
 import { randomUUID } from "node:crypto";
 import { prisma } from "../../infrastructure/db.js";
-import { InstallStep } from "@xentium/contracts";
+import { InstallStep, INSTALL_STEP_ORDER } from "@xentium/contracts";
 
-/** Singleton row. Created the moment migrations succeed in the DATABASE step. */
+/**
+ * The install's one row and the rules for moving it along.
+ *
+ * - There is exactly one row: `singleton` is unique and always true, so a second
+ *   insert fails in the database instead of minting a second siteId.
+ * - The step only moves forward. Walking back through the wizard and submitting an
+ *   earlier step again is allowed, and leaves the stored step where it was.
+ * - An action may run once the install has reached its step (`requireStep`), so
+ *   steps can't be skipped: no admin before the site, no finalize before an admin.
+ * - Every action that changes something runs under `withInstallLock`, one at a time.
+ */
+
+const SINGLETON = { singleton: true } as const;
+const rank = (step: string) => INSTALL_STEP_ORDER.indexOf(step as InstallStep);
+
+/** The error shape the installer controller turns into `{ error }` with this status. */
+function installError(message: string, status: number): Error {
+  return Object.assign(new Error(message), { status });
+}
+
 export async function getInstall() {
-  return prisma.install.findFirst();
+  return prisma.install.findUnique({ where: SINGLETON });
 }
 
 /**
@@ -19,29 +38,65 @@ export async function getInstall() {
  * this change (a resumed install) still gets one.
  */
 export async function ensureInstallRow(step: InstallStep) {
-  const existing = await prisma.install.findFirst();
-  if (existing) return existing;
-  return prisma.install.create({ data: { currentStep: step, siteId: randomUUID() } });
+  try {
+    return await prisma.install.upsert({
+      where:  SINGLETON,
+      update: {},
+      create: { currentStep: step, siteId: randomUUID() },
+    });
+  } catch (err) {
+    // Lost an insert race to another process: the row exists now, use it.
+    const row = await getInstall();
+    if (row) return row;
+    throw err;
+  }
 }
 
-export async function advanceTo(step: InstallStep) {
-  const row = await prisma.install.findFirst();
-  if (!row) throw new Error("install_row_missing");
-  return prisma.install.update({ where: { id: row.id }, data: { currentStep: step } });
+/** Move to `step`, never backwards. */
+export async function advanceTo(step: InstallStep): Promise<void> {
+  const earlier = INSTALL_STEP_ORDER.slice(0, rank(step));
+  const { count } = await prisma.install.updateMany({
+    where: { ...SINGLETON, currentStep: { in: earlier } },
+    data:  { currentStep: step },
+  });
+  if (count === 0 && !(await getInstall())) throw installError("install_row_missing", 409);
+}
+
+/** Refuse an action whose step the install hasn't reached yet. */
+export async function requireStep(step: InstallStep): Promise<void> {
+  const row = await getInstall().catch(() => null);
+  if (!row || rank(row.currentStep) < rank(step)) throw installError("install_step_out_of_order", 409);
 }
 
 export async function assertNotComplete() {
   let row;
   try {
-    row = await prisma.install.findFirst();
+    row = await getInstall();
   } catch {
     // Fresh database: the installs table doesn't exist until the DATABASE
     // step runs `migrate deploy`. No table = definitely not complete.
     return;
   }
-  if (row?.completedAt) {
-    const err = new Error("already_installed");
-    (err as any).status = 410;
-    throw err;
-  }
+  if (row?.completedAt) throw installError("already_installed", 410);
+}
+
+// Any constant: it only has to differ from the keys other code locks on
+// (Prisma's migrate lock is 72707369).
+const INSTALL_LOCK_KEY = 7_302_116;
+let queue: Promise<unknown> = Promise.resolve();
+
+/**
+ * Run one installer action at a time. In this process a queue keeps waiters off
+ * the connection pool; across processes a transaction-scoped advisory lock does
+ * the same, and Postgres releases it however the action ends.
+ */
+export function withInstallLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = queue.then(() =>
+    prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(${INSTALL_LOCK_KEY})`;
+      return fn();
+    }, { maxWait: 10_000, timeout: 180_000 }),
+  );
+  queue = run.catch(() => undefined);
+  return run;
 }

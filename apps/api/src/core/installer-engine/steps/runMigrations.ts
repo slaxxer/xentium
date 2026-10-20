@@ -8,20 +8,13 @@ const exec = promisify(execFile);
 /**
  * Idempotent: prisma migrate deploy applies only pending migrations.
  *
- * We disconnect the Prisma client before spawning the child process so the
- * API's connection pool does not interfere with the advisory lock that
- * `migrate deploy` needs to acquire. The pool reconnects automatically on
- * the next query.
+ * The child takes Prisma's own advisory lock on its own connection, and a crashed
+ * child's lock goes with its connection, so there is nothing to release first. It
+ * used to disconnect the app's shared client here, which failed every other query
+ * in flight, and run pg_advisory_unlock_all() on whichever pooled connection came
+ * up, which can only ever release that connection's own locks.
  */
 export async function runMigrations(): Promise<void> {
-  // Release any stale advisory lock from a previous failed run, then free
-  // the API's pooled connections so the child process can acquire the lock.
-  try {
-    await prisma.$queryRaw`SELECT pg_advisory_unlock_all()`;
-  } catch { /* table may not exist yet on first-ever run */ }
-
-  await prisma.$disconnect();
-
   const started = Date.now();
   let stdout = "";
   let stderr = "";
@@ -33,8 +26,6 @@ export async function runMigrations(): Promise<void> {
       { cwd: env.REPO_ROOT, env: process.env, timeout: 120_000 },
     ));
   } catch (err: unknown) {
-    // Re-connect before re-throwing so the rest of the API keeps working.
-    await prisma.$connect().catch(() => null);
     const e = err as Error & { stdout?: string; stderr?: string };
     // A failed deploy is the one an admin most needs to read afterwards, so it
     // is recorded too. It may not land: the table itself can be what failed.
@@ -43,7 +34,6 @@ export async function runMigrations(): Promise<void> {
     throw new Error(String(msg).slice(0, 500));
   }
 
-  // Pool reconnects automatically on first use — no explicit $connect needed.
   await record(started, "completed", `${stdout}\n${stderr}`);
 }
 

@@ -17,7 +17,7 @@ async function isInstalled(): Promise<boolean> {
   // In development, skip the in-memory cache so a DB reset takes effect immediately.
   if (!isDev && installedCache !== null) return installedCache;
   try {
-    const row = await prisma.install.findFirst({ select: { completedAt: true } });
+    const row = await prisma.install.findUnique({ where: { singleton: true }, select: { completedAt: true } });
     installedCache = !!row?.completedAt;
   } catch {
     // DB unavailable (schema not migrated yet, or busy during migrate deploy).
