@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-vbulletin",
-  "version": "1.0.0-alpha.15",
+  "version": "1.0.0-alpha.16",
   "private": true,
   "description": "vBulletin 3, 4, 5 and 6 → Xentium migration adapter. Connects directly to the vBulletin MySQL database and detects the layout. Requires the xentium-forum plugin on the target.",
   "type": "module",
