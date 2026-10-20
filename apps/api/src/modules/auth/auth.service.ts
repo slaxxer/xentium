@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { legalService } from "../legal/legal.service.js";
 import { prisma } from "../../infrastructure/db.js";
 import { redis, rkey } from "../../infrastructure/redis.js";
 import { verifyPassword, hashPassword } from "./auth.password.js";
@@ -336,6 +337,10 @@ export async function register(
     }
     return u;
   });
+
+  // The form's consent box covered every document members must accept (the
+  // controller refused the sign-up without it): record each at its revision.
+  await legalService.accept(user.id);
 
   // Invalidate the email verification code
   await redis.del(rkey("regcode", email));

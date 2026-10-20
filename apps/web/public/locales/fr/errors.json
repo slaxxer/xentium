@@ -35,7 +35,7 @@
   "XEC-LICENSE-9001": "Aucune licence valide pour ce plugin.",
   "XEC-LICENSE-9002": "Cette licence a expiré.",
   "generic": "Une erreur s'est produite. Réessayez.",
-  "XEC-AUTH-2011": "Acceptez les conditions d'utilisation et la politique de confidentialité pour continuer.",
+  "XEC-AUTH-2011": "Veuillez accepter les documents requis pour continuer.",
   "XEC-MOD-4101": "Choisissez l'un des modèles. Les avertissements et les bannissements ne peuvent être envoyés qu'à partir d'un modèle.",
   "XEC-MOD-4102": "Ce contenu n'est pas de la personne concernée.",
   "XEC-MOD-4103": "Ce modèle mentionne le contenu concerné. Utilisez-le depuis ce contenu, ou choisissez un autre modèle.",
@@ -43,5 +43,6 @@
   "XEC-USER-4018": "L'une de vos réponses de profil n'est pas acceptée : vérifiez sa longueur ou choisissez l'une des options.",
   "XEC-USER-4019": "Vous n'avez pas encore l'âge requis pour vous inscrire ici.",
   "XEC-USER-4020": "Veuillez remplir tous les champs obligatoires pour vous inscrire.",
-  "XEC-GROUP-4010": "Les nouveaux membres ne peuvent rejoindre qu'un groupe existant qui n'ouvre pas l'ACP."
+  "XEC-GROUP-4010": "Les nouveaux membres ne peuvent rejoindre qu'un groupe existant qui n'ouvre pas l'ACP.",
+  "XEC-LEGAL-3503": "Seul un document publié que les membres doivent accepter peut être redemandé."
 }

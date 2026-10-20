@@ -321,7 +321,14 @@
       "disclaimer": "Descargo"
     },
     "lastUpdated": "Última actualización: {{date}}",
-    "edit": "Editar"
+    "edit": "Editar",
+    "accept": {
+      "notice": "Lee este documento y acéptalo al final de la página para seguir usando tu cuenta.",
+      "label": "Aceptar este documento",
+      "checkbox": "He leído y acepto «{{title}}».",
+      "submit": "Aceptar y continuar",
+      "signOut": "Cerrar sesión"
+    }
   },
   "modcanvas": {
     "shield": {

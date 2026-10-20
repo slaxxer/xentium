@@ -2931,6 +2931,31 @@
     "toast": {
       "published": "Publié",
       "unpublished": "Mis hors ligne"
+    },
+    "acceptance": {
+      "title": "Acceptation",
+      "sub": "Si les membres doivent accepter « {{name}} », et le redemander après une modification.",
+      "required": "Doit être accepté",
+      "requiredDesc": "Demandé à l'inscription, et une fois à chaque membre qui ne l'a pas encore accepté. Il y est redirigé et ne peut continuer qu'après l'avoir accepté.",
+      "again": "Redemander l'acceptation aux membres",
+      "againDesc": "Après une modification importante : les membres choisis y sont redirigés à leur prochaine page jusqu'à ce qu'ils acceptent la nouvelle version.",
+      "notLive": "Publiez d'abord le document.",
+      "lastRound": "Révision {{revision}}, redemandée le {{date}} pour {{groups}}.",
+      "pending_one": "{{count}} membre doit encore l'accepter.",
+      "pending_other": "{{count}} membres doivent encore l'accepter.",
+      "askButton": "Redemander…",
+      "who": "Qui doit l'accepter à nouveau",
+      "everyone": "Tous les membres",
+      "everyoneDesc": "Toute personne ayant un compte",
+      "groups": "Groupes spécifiques",
+      "groupsDesc": "Uniquement les membres des groupes ci-dessous",
+      "cancel": "Annuler",
+      "askNow": "Leur demander",
+      "confirmTitle": "Redemander « {{name}} » ?",
+      "confirmEveryone": "Chaque membre est redirigé vers « {{name}} » à sa prochaine page et doit l'accepter avant de continuer.",
+      "confirmGroups": "Les membres de {{groups}} sont redirigés vers « {{name}} » à leur prochaine page et doivent l'accepter avant de continuer.",
+      "confirm": "Leur demander",
+      "asked": "La demande s'affichera à leur prochaine page."
     }
   },
   "navigation": {

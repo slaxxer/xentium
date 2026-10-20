@@ -2931,6 +2931,31 @@
     "toast": {
       "published": "Published",
       "unpublished": "Taken offline"
+    },
+    "acceptance": {
+      "title": "Acceptance",
+      "sub": "Whether members must accept the {{name}}, and asking them again after an update.",
+      "required": "Must be accepted",
+      "requiredDesc": "Asked at sign-up, and once from every member who hasn't accepted it yet. They are sent to it and can't go on until they accept.",
+      "again": "Ask members to accept again",
+      "againDesc": "After an important change: the members you choose are sent to it on their next page until they accept the new version.",
+      "notLive": "Publish the document first.",
+      "lastRound": "Revision {{revision}}, asked again on {{date}} for {{groups}}.",
+      "pending_one": "{{count}} member still has to accept it.",
+      "pending_other": "{{count}} members still have to accept it.",
+      "askButton": "Ask again…",
+      "who": "Who has to accept it again",
+      "everyone": "Every member",
+      "everyoneDesc": "Everyone with an account",
+      "groups": "Specific groups",
+      "groupsDesc": "Only members of the groups below",
+      "cancel": "Cancel",
+      "askNow": "Ask them",
+      "confirmTitle": "Ask for the {{name}} again?",
+      "confirmEveryone": "Every member is sent to the {{name}} on their next page and has to accept it before going on.",
+      "confirmGroups": "Members of {{groups}} are sent to the {{name}} on their next page and have to accept it before going on.",
+      "confirm": "Ask them",
+      "asked": "Members will be asked on their next page."
     }
   },
   "activity": {

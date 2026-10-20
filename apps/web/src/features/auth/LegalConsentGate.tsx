@@ -1,70 +1,46 @@
-import { useEffect, useRef } from "react";
-import { Trans, useTranslation } from "react-i18next";
-import { legalPath } from "@xentium/contracts";
-import { api } from "../../lib/api";
-import { authStore } from "../../lib/authStore";
-import { openDialog } from "../../lib/dialog";
-import { useAuth, applyLogout } from "../../hooks/useAuth";
-import { useLegalLinks } from "../../lib/legalApi";
+import { useEffect } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { legalPath, type LegalDocumentKey } from "@xentium/contracts";
+import { useAuth } from "../../hooks/useAuth";
 
 /**
- * Asked once: a member who never accepted the site's terms / privacy policy accepts
- * them before going on. That is everyone a migration tool brought over, and accounts an
- * admin or a sign-in provider created (none of them saw the sign-up form's box). The
- * server says who (`needsLegalConsent` on /auth/me, only while terms or a privacy
- * policy are published) and records the answer.
- *
- * Declining signs the member out: the site can't keep using an account on terms its
- * owner hasn't accepted. The links open in a new tab so the question stays put.
+ * A member who still has to accept a legal document goes to that document, and
+ * stays there until they have: every other page sends them back. The server says
+ * which (`pendingLegal` on /auth/me): a document members must accept that they
+ * never have (imported, or made by an admin or a sign-in provider), or one the
+ * admin asked their group to accept again. The document's page carries the
+ * checkbox (LegalPage → LegalAcceptBox); accepting the last one lets them go on,
+ * back to where they were headed.
  */
-const LINK = { color: "var(--c-accent)", textDecoration: "underline", fontWeight: 600 } as const;
+const RETURN_KEY = "xt.legal.return";
+
+/** Where to go once everything is accepted. */
+export function takeLegalReturnPath(): string {
+  try {
+    const p = sessionStorage.getItem(RETURN_KEY);
+    sessionStorage.removeItem(RETURN_KEY);
+    return p && p.startsWith("/") && !p.startsWith("/legal/") ? p : "/";
+  } catch { return "/"; }
+}
 
 export function LegalConsentGate() {
-  const { t } = useTranslation("auth");
   const { user } = useAuth();
-  const legal = useLegalLinks();
-  const asking = useRef(false);
-  const hasTerms = legal.some((d) => d.key === "terms");
-  const hasPrivacy = legal.some((d) => d.key === "privacy");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const next: LegalDocumentKey | undefined = user?.pendingLegal?.[0];
 
   useEffect(() => {
-    if (!user?.needsLegalConsent || asking.current || (!hasTerms && !hasPrivacy)) return;
-    asking.current = true;
-    void (async () => {
-      const ok = await openDialog({
-        kind: "confirm",
-        icon: "info",
-        title: t("door.consent.title"),
-        bodyNode: (
-          <>
-            <p>{t(hasTerms && hasPrivacy ? "door.consent.bodyBoth" : hasTerms ? "door.consent.bodyTerms" : "door.consent.bodyPrivacy")}</p>
-            <p>
-              <Trans
-                t={t}
-                i18nKey={hasTerms && hasPrivacy ? "door.consent.both" : hasTerms ? "door.consent.terms" : "door.consent.privacy"}
-                components={{
-                  // Plain links: dialogs render outside the router.
-                  terms:   <a href={legalPath("terms")} target="_blank" rel="noreferrer" style={LINK} />,
-                  privacy: <a href={legalPath("privacy")} target="_blank" rel="noreferrer" style={LINK} />,
-                }}
-              />
-            </p>
-          </>
-        ),
-        confirmText: t("door.consent.accept"),
-        cancelText: t("door.consent.signOut"),
-      });
-      if (ok) {
-        await api.post("/auth/legal-consent", {});
-        const token = authStore.token;
-        if (token && authStore.user) authStore.set(token, { ...authStore.user, needsLegalConsent: false });
-      } else {
-        try { await api.post("/auth/logout"); } catch { /* signed out locally either way */ }
-        applyLogout();
+    if (!next) return;
+    const target = legalPath(next);
+    if (location.pathname === target) return;
+    // Remember the first page they were headed to, not each bounce.
+    try {
+      if (!location.pathname.startsWith("/legal/") && !sessionStorage.getItem(RETURN_KEY)) {
+        sessionStorage.setItem(RETURN_KEY, location.pathname + location.search);
       }
-      asking.current = false;
-    })();
-  }, [user?.needsLegalConsent, hasTerms, hasPrivacy, t]);
+    } catch { /* no storage: they land on the home page afterwards */ }
+    navigate(target, { replace: true });
+  }, [next, location.pathname, location.search, navigate]);
 
   return null;
 }

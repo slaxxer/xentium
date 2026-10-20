@@ -35,7 +35,7 @@
   "XEC-LICENSE-9001": "No hay licencia válida para este plugin.",
   "XEC-LICENSE-9002": "Esta licencia ha caducado.",
   "generic": "Algo salió mal. Inténtalo de nuevo.",
-  "XEC-AUTH-2011": "Acepta los términos y la política de privacidad para continuar.",
+  "XEC-AUTH-2011": "Acepta los documentos obligatorios para continuar.",
   "XEC-MOD-4101": "Elige una de las plantillas. Las advertencias y suspensiones solo se pueden enviar desde una plantilla.",
   "XEC-MOD-4102": "Este contenido no es del miembro sobre el que estás actuando.",
   "XEC-MOD-4103": "Esta plantilla menciona el contenido al que se refiere. Úsala desde ese contenido o elige otra plantilla.",
@@ -43,5 +43,6 @@
   "XEC-USER-4018": "Una de tus respuestas del perfil no es válida: revisa su longitud o elige una de las opciones.",
   "XEC-USER-4019": "Todavía no tienes la edad mínima para registrarte aquí.",
   "XEC-USER-4020": "Rellena todos los campos obligatorios para registrarte.",
-  "XEC-GROUP-4010": "Los nuevos miembros solo pueden unirse a un grupo que exista y que no dé acceso al ACP."
+  "XEC-GROUP-4010": "Los nuevos miembros solo pueden unirse a un grupo que exista y que no dé acceso al ACP.",
+  "XEC-LEGAL-3503": "Solo se puede volver a pedir un documento publicado que los miembros deben aceptar."
 }

@@ -35,7 +35,7 @@
   "XEC-LICENSE-9001": "No valid license for this plugin.",
   "XEC-LICENSE-9002": "This license has expired.",
   "generic": "Something went wrong. Please try again.",
-  "XEC-AUTH-2011": "Please accept the terms and the privacy policy to continue.",
+  "XEC-AUTH-2011": "Please accept the required documents to continue.",
   "XEC-MOD-4101": "Pick one of the templates. Warnings and bans can only be sent from a template.",
   "XEC-MOD-4102": "This content is not by the member you are acting on.",
   "XEC-MOD-4103": "This template mentions the content it is about. Use it from that content, or pick another template.",
@@ -43,5 +43,6 @@
   "XEC-USER-4018": "One of your profile answers isn't accepted: check its length, or pick one of the options.",
   "XEC-USER-4019": "You're not old enough to sign up here yet.",
   "XEC-USER-4020": "Please fill in every required field to sign up.",
-  "XEC-GROUP-4010": "New members can only join a group that exists and doesn't open the ACP."
+  "XEC-GROUP-4010": "New members can only join a group that exists and doesn't open the ACP.",
+  "XEC-LEGAL-3503": "Only a published document members must accept can be asked for again."
 }
