@@ -1,65 +1,43 @@
 # Changelog
 
-## Moderating articles
+## Security fixes
 
-### Added
-
-- **Delete and report comments.** Every comment has Report, and Delete for your own. Members
-  with "Delete anyone's article comments" can remove any comment; they give a reason, which
-  goes to the moderation log. A deleted comment leaves the thread without a placeholder, and
-  a top-level comment takes its replies with it.
-- **Close comments.** Mod tools → Close comments stops new comments and replies on an
-  article. Members with the new "Comment where comments are closed" permission can still
-  post, so your team can answer.
-- **Hide an article.** Mod tools → Hide article takes it out of every list, search, feed
-  and count without deleting it. Its author and members with "Hide articles and see hidden
-  ones" can still open it, and see that it is hidden. Show it again whenever you like.
-- **Three new permissions** under Moderation: close and reopen article comments, comment
-  where comments are closed, and hide articles. Moderators, supermods and admins get them
-  on new sites.
+This release fixes security problems we found while reviewing the codebase. Please update
+soon. Older alphas don't get these fixes.
 
 ### Fixed
 
-- **Deleting your own comment checks your permission.** Taking "Delete own article
-  comments" away from a group now actually stops it.
-- **Profile article covers.** The Articles tab on a profile shows each article's cover
-  image again.
+- **Sign-in sessions.** Two refreshes sent with the same refresh token at the same moment
+  could both succeed and leave two live sessions behind. Now a token can be used to refresh
+  only once. If a token that has already been replaced turns up again more than 30 seconds
+  later, someone holds a copy of it, so every session of that sign-in is signed out. Several
+  tabs refreshing at once still keep you signed in.
+- **Plugin migrations.** The check that limits plugin migrations to schema changes on the
+  plugin's own tables could be bypassed. A migration could delete or copy core data, rename
+  core indexes, change core types or drop the `pg_trgm` extension. We now read every
+  migration with PostgreSQL's own parser and run exactly the statements that passed.
+- **Installer.** Steps can no longer run out of order, so an install can't be finished
+  without an administrator. Two requests at the same time can't create a second install
+  record with a second site id, and preparing the database no longer drops the connection
+  the rest of the app is using.
 
-## Admin panel
+### Breaking for plugin authors
 
-### Changed
+- A plugin with migrations must declare a `tablePrefix` in its manifest.
+- Migrations can no longer use foreign keys to core tables, `CREATE TABLE … AS`, views,
+  `DROP EXTENSION`, `SECURITY DEFINER` functions, languages other than `plpgsql` and `sql`,
+  or `DEFAULT` and `CHECK` expressions that call the plugin's own functions.
+  `CREATE EXTENSION IF NOT EXISTS` works for a short list of extensions. The plugin guide
+  has the full rules.
+- Every official plugin passes the new rules unchanged.
 
-- **A new member page.** Who the member is, their signals (failed sign-ins, email, known
-  addresses, sessions) and the account actions stay beside you in a sidebar, and the rest is
-  one page you scroll through: Account, Access, Content and Security, with a section bar
-  that follows you.
-- **Edit a member's username and email** from that page. Changes go through the save bar.
-  A new email address starts unverified, the old username goes into the member's name
-  history, and the change is written to the moderation log. Your own account and other
-  administrators' accounts can't be changed from here.
-- **Known addresses and devices say when they were last seen**, and devices name the
-  browser and system they belong to.
-- **The dashboard's Platform card** moved into the right column, under "Needs attention".
+### For developers
 
-### Added
+- `pnpm e2e` now runs on its own database (yours with `_e2e` appended) and its own ports
+  (5175 and 4300), and refuses any database whose name doesn't end in `_e2e` or `_test`.
+  It used to reset the database named in your `.env`.
 
-- **Demo mode.** Set `DEMO_MODE=true` to run a public demo with a shared admin account. It
-  refuses what a reset can't undo: installing or switching plugins, the marketplace and the
-  licence, sending mail, changing the shared account's password, email or sign-in methods,
-  and settings that would lock other visitors out.
+### Upgrading
 
-## Profiles
-
-### Changed
-
-- **Badges show as icons.** The badge card on a profile lists each badge as its icon, with
-  the name on hover, and packs them from the left.
-
-## For plugin developers
-
-### Added
-
-- **`host.groups.add` / `host.groups.remove`** put a member in a group or take them out,
-  and clear their cached permissions. Groups that grant admin access are refused.
-- **`host.utils.encryptSecret` / `host.utils.decryptSecret`** store a secret (an API key, a
-  client secret) encrypted at rest with the site's key.
+- Two database migrations run with the update. `xentium update` takes a backup first, as
+  always.
