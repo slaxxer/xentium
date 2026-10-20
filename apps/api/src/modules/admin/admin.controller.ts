@@ -13,6 +13,7 @@ import { announcementService } from "./announcement.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
 import { PROFILE_FIELD_TYPES } from "../users/profileFieldValues.js";
+import { MOD_LOG_KINDS, modLogService } from "./modLog.service.js";
 import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
@@ -147,12 +148,16 @@ const paginatedSchema = z.object({
   status: z.string().optional(),
   type:   z.string().optional(),
 });
-const modLogSchema = z.object({
-  page:         z.coerce.number().int().positive().default(1),
-  limit:        z.coerce.number().int().min(1).max(100).default(20),
-  action:       z.string().optional(),
-  actionPrefix: z.string().optional(),
-  actorType:    z.string().optional(),
+const modLogFilterSchema = z.object({
+  kind:  z.enum(MOD_LOG_KINDS).optional(),
+  // "staff", "system" or a member's id.
+  actor: z.string().max(64).optional(),
+  since: z.coerce.date().optional(),
+  q:     z.string().trim().max(120).optional(),
+});
+const modLogSchema = modLogFilterSchema.extend({
+  page:  z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
 });
 const errorLogSchema = z.object({
   page:     z.coerce.number().int().positive().default(1),
@@ -462,7 +467,21 @@ export const adminController = {
 
   listModLog: (async (req, res) => {
     const q = modLogSchema.parse(req.query);
-    res.json(await adminService.listModLog(q));
+    const [list, counts] = await Promise.all([modLogService.list(q), modLogService.kindCounts(q)]);
+    res.json({ ...list, counts });
+  }) as RequestHandler,
+
+  modLogSummary: (async (_req, res) => {
+    const [summary, actors] = await Promise.all([modLogService.summary(), modLogService.actors()]);
+    res.json({ ...summary, actors });
+  }) as RequestHandler,
+
+  modLogExport: (async (req, res) => {
+    const f = modLogFilterSchema.parse(req.query);
+    const csv = await modLogService.csv(f);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="moderation-log-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send("\uFEFF" + csv);
   }) as RequestHandler,
 
   deleteArticleComment: (async (req, res) => {
