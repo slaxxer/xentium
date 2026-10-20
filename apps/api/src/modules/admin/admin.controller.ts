@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { articleBulkSchema, articleListSchema } from "./adminArticles.js";
 import { resolveEditingKey } from "../themes/themeKey.js";
 import { adminCasesService } from "./adminCases.service.js";
 import { modSettingsService, modSettingsPatchSchema } from "./modSettings.service.js";
@@ -137,11 +138,6 @@ const reorderSchema = z.object({
   items: z.array(z.object({ id: z.string(), position: z.number().int() })),
 });
 const settingSchema = z.object({ value: z.unknown() });
-const listArticlesSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  status: z.string().optional(),
-});
 const paginatedSchema = z.object({
   page:   z.coerce.number().int().positive().default(1),
   limit:  z.coerce.number().int().min(1).max(100).default(20),
@@ -328,13 +324,22 @@ export const adminController = {
 
   // Articles
   listArticles: (async (req, res) => {
-    const q = listArticlesSchema.parse(req.query);
+    const q = articleListSchema.parse(req.query);
     res.json(await adminService.listArticles(q));
+  }) as RequestHandler,
+
+  articleSummary: (async (_req, res) => {
+    res.json(await adminService.articleSummary());
+  }) as RequestHandler,
+
+  bulkArticles: (async (req, res) => {
+    const body = articleBulkSchema.parse(req.body);
+    res.json(await adminService.bulkArticles(req.userId!, body));
   }) as RequestHandler,
 
   deleteArticle: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    await adminService.softDeleteArticle(id);
+    await adminService.softDeleteArticle(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 

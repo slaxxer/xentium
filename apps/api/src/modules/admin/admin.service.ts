@@ -22,6 +22,11 @@ import { hashPassword } from "../auth/auth.password.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
 import { adminUsersService } from "./adminUsers.service.js";
+import { CorePermissions, type PermissionKey } from "@xentium/contracts";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
+import { articleService } from "../articles/article.service.js";
+import { articleCategoryService } from "../article-categories/article-category.service.js";
+import { ARTICLE_SORT, adminArticleWhere, type ArticleBulkInput, type ArticleListQuery } from "./adminArticles.js";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -774,26 +779,32 @@ export const adminService = {
 
   // ── Articles (admin) ──────────────────────────────────────────────────────
 
-  async listArticles(opts: { page: number; limit: number; status?: string }) {
-    const { page, limit, status } = opts;
-    const where: any = { deletedAt: null };
-    if (status) where.status = status;
+  async listArticles(opts: ArticleListQuery) {
+    const { page, limit } = opts;
+    const where = adminArticleWhere(opts);
     const [data, total] = await Promise.all([
       prisma.article.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: ARTICLE_SORT[opts.sort ?? "new"],
         select: {
           id: true,
           title: true,
           slug: true,
           status: true,
+          visibility: true,
+          featuredImage: true,
+          readTime: true,
           viewCount: true,
           likeCount: true,
           commentCount: true,
           createdAt: true,
+          updatedAt: true,
           publishedAt: true,
+          pinnedAt: true,
+          commentsClosedAt: true,
+          hiddenAt: true,
           author: { select: { id: true, username: true, ...badgeColorSelect } },
           category: { select: { id: true, name: true } },
         },
@@ -801,12 +812,78 @@ export const adminService = {
       prisma.article.count({ where }),
     ]);
     return {
-      data: data.map((a) => ({
+      data: data.map(({ pinnedAt, commentsClosedAt, hiddenAt, ...a }) => ({
         ...a,
+        pinned: pinnedAt !== null,
+        commentsClosed: commentsClosedAt !== null,
+        hidden: hiddenAt !== null,
         author: toUserRef(a.author),
       })),
       meta: buildPaginationMeta({ page, limit, total }),
     };
+  },
+
+  /** The Articles page's tiles, status counts and how many articles each category holds. */
+  async articleSummary() {
+    const live = { deletedAt: null };
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const [byStatus, hidden, publishedThisMonth, reads, oldestReview, draftAuthors, byCategory] = await Promise.all([
+      prisma.article.groupBy({ by: ["status"], where: live, _count: { _all: true } }),
+      prisma.article.count({ where: { ...live, hiddenAt: { not: null } } }),
+      prisma.article.count({ where: { ...live, status: "published", publishedAt: { gte: monthStart } } }),
+      prisma.article.aggregate({ where: live, _sum: { viewCount: true } }),
+      prisma.article.findFirst({ where: { ...live, status: "review" }, orderBy: { updatedAt: "asc" }, select: { updatedAt: true } }),
+      prisma.article.findMany({ where: { ...live, status: "draft" }, distinct: ["authorId"], select: { authorId: true } }),
+      prisma.article.groupBy({ by: ["categoryId"], where: live, _count: { _all: true } }),
+    ]);
+    const status = Object.fromEntries(byStatus.map((r) => [r.status, r._count._all]));
+    return {
+      total: byStatus.reduce((n, r) => n + r._count._all, 0),
+      published: status["published"] ?? 0,
+      review: status["review"] ?? 0,
+      draft: status["draft"] ?? 0,
+      hidden,
+      publishedThisMonth,
+      reads: reads._sum.viewCount ?? 0,
+      oldestReviewAt: oldestReview?.updatedAt ?? null,
+      draftAuthors: draftAuthors.length,
+      // Uncategorised articles count under "none".
+      byCategory: Object.fromEntries(byCategory.map((r) => [r.categoryId ?? "none", r._count._all])),
+    };
+  },
+
+  /**
+   * One action on several articles. Each action asks for the permission its
+   * single-article route asks for; hide and delete go through the same service
+   * calls, so they are logged and counted the same way.
+   */
+  async bulkArticles(actorId: string, input: ArticleBulkInput) {
+    const need: Record<ArticleBulkInput["action"], PermissionKey> = {
+      move: CorePermissions.ARTICLE_EDIT_ANY,
+      hide: CorePermissions.ARTICLE_HIDE,
+      show: CorePermissions.ARTICLE_HIDE,
+      delete: CorePermissions.ARTICLE_DELETE_ANY,
+    };
+    if (!(await hasPermission(actorId, need[input.action]))) {
+      throw new XentiumError({ code: XEC.PERM_DENIED, httpStatus: 403, message: "You don't have permission to do that" });
+    }
+    const ids = [...new Set(input.ids)];
+    if (input.action === "move") {
+      if (input.categoryId) await articleCategoryService.getById(input.categoryId);
+      const r = await prisma.article.updateMany({
+        where: { id: { in: ids }, deletedAt: null },
+        data: { categoryId: input.categoryId ?? null },
+      });
+      return { done: r.count };
+    }
+    const live = await prisma.article.findMany({ where: { id: { in: ids }, deletedAt: null }, select: { id: true } });
+    for (const { id } of live) {
+      if (input.action === "delete") await articleService.softDelete(id, actorId, true);
+      else await articleService.setHidden(id, input.action === "hide", actorId);
+    }
+    return { done: live.length };
   },
 
   // ── Health ────────────────────────────────────────────────────────────────
@@ -865,10 +942,10 @@ export const adminService = {
     };
   },
 
-  async softDeleteArticle(id: string) {
+  async softDeleteArticle(id: string, actorId: string) {
     const article = await prisma.article.findUnique({ where: { id } });
-    if (!article) throw XentiumError.notFound("Article not found");
-    await prisma.article.update({ where: { id }, data: { deletedAt: new Date() } });
+    if (!article || article.deletedAt) throw XentiumError.notFound("Article not found");
+    await prisma.article.update({ where: { id }, data: { deletedAt: new Date(), deletedById: actorId } });
   },
 
   // ── Moderation ────────────────────────────────────────────────────────────
