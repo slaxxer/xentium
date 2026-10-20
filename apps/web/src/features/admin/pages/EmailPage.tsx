@@ -8,7 +8,7 @@ import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
 import { sameValue, useAutosave } from "../../../hooks/useAutosave";
 import { SaveChip } from "../../../components/SaveChip";
-import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
+import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import { Composer, type ComposerHandle } from "../../../components/composer/Composer";
 import "./acpSystem.scss";
@@ -96,10 +96,10 @@ function SecretField({ settingKey, isSet }: { settingKey: string; isSet: boolean
     return (
       <div className="em-secret">
         <span className="em-secret__pill">{t("settings.secret.configured")}</span>
-        <button type="button" className="btn-ghost btn-sm em-danger"
+        <Button variant="ghost" className="em-danger"
                 disabled={mut.isPending} onClick={() => mut.mutate("")}>
           {t("settings.secret.remove")}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -108,10 +108,10 @@ function SecretField({ settingKey, isSet }: { settingKey: string; isSet: boolean
       <input type="password" className="inp" autoComplete="new-password" value={entry}
              placeholder={t("settings.secret.placeholder")}
              onChange={(e) => setEntry(e.target.value)} />
-      <button type="button" className="btn-primary btn-sm"
+      <Button
               disabled={!entry || mut.isPending} onClick={() => mut.mutate(entry)}>
         {t("settings.secret.set")}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -372,11 +372,11 @@ export function EmailPage() {
                   <input type="email" className="inp" value={testTo}
                          placeholder={t("email.testPlaceholder")}
                          onChange={(e) => setTestTo(e.target.value)} />
-                  <button type="button" className="btn-primary btn-sm"
+                  <Button
                           disabled={!testTo.includes("@") || testMut.isPending || !smtp?.configured}
                           onClick={() => testMut.mutate({ to: testTo, key: "smtp_test" })}>
                     {t("email.sendTest")}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </section>
@@ -391,10 +391,10 @@ export function EmailPage() {
                   <p>{t("email.templateDesc")}</p>
                   <p className="em-lang">{t(active.customized ? "email.langCustom" : "email.langDefault")}</p>
                 </div>
-                <button type="button" className="btn-ghost btn-sm em-danger"
+                <Button variant="ghost" className="em-danger"
                         disabled={!active.customized || resetMut.isPending} onClick={onReset}>
                   {t("email.reset")}
-                </button>
+                </Button>
               </div>
 
               <div className="set-rows">

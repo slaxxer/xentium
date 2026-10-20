@@ -187,5 +187,6 @@
   "cantRateOwnComment": "Vous ne pouvez pas noter votre propre commentaire",
   "signInToRate": "Connectez-vous pour noter",
   "lastSeen": "Vu {{when}}",
-  "lastSeenOn": "Vu pour la dernière fois en {{date}}"
+  "lastSeenOn": "Vu pour la dernière fois en {{date}}",
+  "details": "Informations"
 }

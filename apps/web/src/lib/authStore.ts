@@ -1,3 +1,4 @@
+import type { LegalDocumentKey } from "@xentium/contracts";
 export interface AuthUser {
   id: string;
   username: string;
@@ -25,7 +26,9 @@ export interface AuthUser {
   // keys: who holds what is configured in ACP → Permissions. Optional so a stale
   // cached payload without it reads as "no permissions", not a crash.
   permissions?: string[];
-  /** Never accepted the published terms / privacy policy: asked once (LegalConsentGate). */
+  /** Legal documents still to accept, in footer order (LegalConsentGate sends them there). */
+  pendingLegal?: LegalDocumentKey[];
+  /** `pendingLegal` is not empty. */
   needsLegalConsent?: boolean;
 }
 

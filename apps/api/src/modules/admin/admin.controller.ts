@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { articleBulkSchema, articleListSchema } from "./adminArticles.js";
 import { resolveEditingKey } from "../themes/themeKey.js";
 import { adminCasesService } from "./adminCases.service.js";
 import { modSettingsService, modSettingsPatchSchema } from "./modSettings.service.js";
@@ -12,6 +13,8 @@ import { marketplaceService } from "./marketplace.service.js";
 import { announcementService } from "./announcement.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
+import { PROFILE_FIELD_TYPES } from "../users/profileFieldValues.js";
+import { MOD_LOG_KINDS, modLogService } from "./modLog.service.js";
 import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
@@ -108,44 +111,49 @@ const patchGroupsSchema = z.object({
 const setGroupsSchema = z.object({ groupIds: z.array(z.string()) });
 const setActiveSchema = z.object({ isActive: z.boolean() });
 
+// Everything the ACP can set on a profile field besides its key and type.
+const fieldSettings = {
+  label: z.string().trim().min(1).max(80),
+  placeholder: z.string().max(120).nullable(),
+  helpText: z.string().max(200).nullable(),
+  showOnRegistration: z.boolean(),
+  requiredOnRegistration: z.boolean(),
+  showOnProfile: z.boolean(),
+  dobDisplayFormat: z.enum(["age", "birthday", "full"]),
+  defaultPrivacy: z.enum(["public", "members", "nobody"]),
+  minAge: z.number().int().min(0).max(120),
+  maxLength: z.number().int().min(1).max(5000).nullable(),
+  // The profile appends the answer to it, so only a web address.
+  linkPrefix: z.union([z.literal(""), z.string().trim().max(200).regex(/^https?:\/\/[^\s"'<>]+$/)]).nullable(),
+  options: z.array(z.string().trim().min(1).max(80)).min(1).max(50)
+    .refine((o) => new Set(o).size === o.length, "Options must be different").nullable(),
+};
 const createFieldSchema = z.object({
   key: z.string().regex(/^[a-z0-9_]+$/).min(2).max(40),
-  label: z.string().min(1).max(80),
-  type: z.enum(["text", "date", "email", "url"]),
-  placeholder: z.string().optional(),
-  showOnRegistration: z.boolean().default(false),
-  requiredOnRegistration: z.boolean().default(false),
-  showOnProfile: z.boolean().default(true),
-});
-const updateFieldSchema = z.object({
-  label: z.string().min(1).max(80).optional(),
-  placeholder: z.string().optional(),
-  showOnRegistration: z.boolean().optional(),
-  requiredOnRegistration: z.boolean().optional(),
-  showOnProfile: z.boolean().optional(),
-  dobDisplayFormat: z.enum(["age", "birthday", "full"]).optional(),
-});
+  type: z.enum(PROFILE_FIELD_TYPES),
+  ...fieldSettings,
+}).partial().required({ key: true, label: true, type: true });
+const updateFieldSchema = z.object({ type: z.enum(PROFILE_FIELD_TYPES), ...fieldSettings }).partial();
 const reorderSchema = z.object({
   items: z.array(z.object({ id: z.string(), position: z.number().int() })),
 });
 const settingSchema = z.object({ value: z.unknown() });
-const listArticlesSchema = z.object({
-  page: z.coerce.number().int().positive().default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
-  status: z.string().optional(),
-});
 const paginatedSchema = z.object({
   page:   z.coerce.number().int().positive().default(1),
   limit:  z.coerce.number().int().min(1).max(100).default(20),
   status: z.string().optional(),
   type:   z.string().optional(),
 });
-const modLogSchema = z.object({
-  page:         z.coerce.number().int().positive().default(1),
-  limit:        z.coerce.number().int().min(1).max(100).default(20),
-  action:       z.string().optional(),
-  actionPrefix: z.string().optional(),
-  actorType:    z.string().optional(),
+const modLogFilterSchema = z.object({
+  kind:  z.enum(MOD_LOG_KINDS).optional(),
+  // "staff", "system" or a member's id.
+  actor: z.string().max(64).optional(),
+  since: z.coerce.date().optional(),
+  q:     z.string().trim().max(120).optional(),
+});
+const modLogSchema = modLogFilterSchema.extend({
+  page:  z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(30),
 });
 const errorLogSchema = z.object({
   page:     z.coerce.number().int().positive().default(1),
@@ -269,6 +277,10 @@ export const adminController = {
     res.json(await adminService.listProfileFields());
   }) as RequestHandler,
 
+  profileFieldStats: (async (_req, res) => {
+    res.json(await adminService.profileFieldStats());
+  }) as RequestHandler,
+
   createProfileField: (async (req, res) => {
     const body = createFieldSchema.parse(req.body);
     res.status(201).json(await adminService.createProfileField(body));
@@ -312,13 +324,22 @@ export const adminController = {
 
   // Articles
   listArticles: (async (req, res) => {
-    const q = listArticlesSchema.parse(req.query);
+    const q = articleListSchema.parse(req.query);
     res.json(await adminService.listArticles(q));
+  }) as RequestHandler,
+
+  articleSummary: (async (_req, res) => {
+    res.json(await adminService.articleSummary());
+  }) as RequestHandler,
+
+  bulkArticles: (async (req, res) => {
+    const body = articleBulkSchema.parse(req.body);
+    res.json(await adminService.bulkArticles(req.userId!, body));
   }) as RequestHandler,
 
   deleteArticle: (async (req, res) => {
     const { id } = idParamSchema.parse(req.params);
-    await adminService.softDeleteArticle(id);
+    await adminService.softDeleteArticle(id, req.userId!);
     res.status(204).end();
   }) as RequestHandler,
 
@@ -400,6 +421,12 @@ export const adminController = {
     res.status(204).end();
   }) as RequestHandler,
 
+  reorderModTemplates: (async (req, res) => {
+    const { ids } = z.object({ ids: z.array(z.string().min(1).max(64)).min(1).max(200) }).parse(req.body);
+    await modCanvasService.reorderTemplates(ids);
+    res.status(204).end();
+  }) as RequestHandler,
+
   restoreModTemplates: (async (req, res) => {
     res.json(await modCanvasService.restoreDefaults(req.userId!));
   }) as RequestHandler,
@@ -445,7 +472,21 @@ export const adminController = {
 
   listModLog: (async (req, res) => {
     const q = modLogSchema.parse(req.query);
-    res.json(await adminService.listModLog(q));
+    const [list, counts] = await Promise.all([modLogService.list(q), modLogService.kindCounts(q)]);
+    res.json({ ...list, counts });
+  }) as RequestHandler,
+
+  modLogSummary: (async (_req, res) => {
+    const [summary, actors] = await Promise.all([modLogService.summary(), modLogService.actors()]);
+    res.json({ ...summary, actors });
+  }) as RequestHandler,
+
+  modLogExport: (async (req, res) => {
+    const f = modLogFilterSchema.parse(req.query);
+    const csv = await modLogService.csv(f);
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="moderation-log-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.send("\uFEFF" + csv);
   }) as RequestHandler,
 
   deleteArticleComment: (async (req, res) => {
@@ -532,6 +573,12 @@ export const adminController = {
 
   getMarketplaceUpdates: (async (req, res) => {
     res.json(await marketplaceService.getUpdates(req.userId));
+  }) as RequestHandler,
+
+  checkMarketplaceUpdates: (async (req, res) => {
+    const { processUpdateCheck } = await import("../../jobs/updateCheck.js");
+    const check = await processUpdateCheck();
+    res.json({ ...(await marketplaceService.getUpdates(req.userId)), check });
   }) as RequestHandler,
 
   acknowledgeCoreUpdate: (async (req, res) => {

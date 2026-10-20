@@ -12,8 +12,9 @@ import { migratePageBands } from "./pageBandMigration.js";
 
 const block = (id: string): BlockNode => ({ id, type: "heading", props: { text: id, level: 2 } });
 
+// A page with a body AND a rail (home has no rail region since 2026-10-19).
 const doc = (regions: Record<string, BlockNode[]>): LayoutDocument =>
-  ({ templateKey: "home", schemaVersion: 1, regions } as LayoutDocument);
+  ({ templateKey: "article.index", schemaVersion: 1, regions } as LayoutDocument);
 
 const types = (d: LayoutDocument | null, region: string) =>
   (d?.regions as Record<string, BlockNode[] | undefined>)[region]?.map((b) => b.id);

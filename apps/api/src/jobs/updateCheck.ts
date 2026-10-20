@@ -33,8 +33,16 @@ const UPDATES_SETTING = "marketplace.updates";
 /** Comfortably longer than the call, far shorter than the daily cadence. */
 const LOCK_TTL_SECONDS = 120;
 
-export async function processUpdateCheck(): Promise<void> {
-  if (!(await getAccountToken())) return; // no connected account — nothing to check against
+/**
+ * How a run ended, for the ACP's "Check now" (the scheduled callers ignore it):
+ * `checked` wrote a fresh cache, `failed` kept the last one because the marketplace
+ * did not answer, `busy` found another run holding the lock, `no-account` had no
+ * connected account to check with.
+ */
+export type UpdateCheckOutcome = "checked" | "failed" | "busy" | "no-account";
+
+export async function processUpdateCheck(): Promise<UpdateCheckOutcome> {
+  if (!(await getAccountToken())) return "no-account"; // nothing to check against
 
   // Single-flight. NX+EX rather than a check-then-set: two racers must not both
   // see an unlocked key. A stale lock expires on its own, so a crashed run
@@ -43,18 +51,53 @@ export async function processUpdateCheck(): Promise<void> {
   const won = await redis.set(lock, String(Date.now()), "EX", LOCK_TTL_SECONDS, "NX");
   if (!won) {
     logger.debug("Marketplace heartbeat already running — skipping this trigger");
-    return;
+    return "busy";
   }
 
   try {
-    await runUpdateCheck();
+    return (await runUpdateCheck()) ? "checked" : "failed";
   } finally {
     await redis.del(lock).catch(() => {});
   }
 }
 
-/** The heartbeat itself. Only ever entered holding the lock above. */
-async function runUpdateCheck(): Promise<void> {
+const CHANGE_TYPES = new Set(["new", "improved", "fixed", "security", "breaking", "other"]);
+
+/**
+ * The marketplace's "what's new" for one update, kept to the shape the ACP renders:
+ * per release, a list of typed changes. Remote text is stored as text (never HTML)
+ * and bounded the way the marketplace bounds it (10 releases, 50 changes of 300
+ * characters); an unknown type is shown as "other" rather than dropped.
+ */
+export function releaseNotes(raw: unknown): ReleaseNote[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ReleaseNote[] = [];
+  for (const n of raw.slice(0, 10)) {
+    if (!n || typeof n.version !== "string" || !Array.isArray(n.changes)) continue;
+    const changes = (n.changes as unknown[])
+      .filter((c): c is { type: unknown; text: string } =>
+        !!c && typeof (c as { text?: unknown }).text === "string" && (c as { text: string }).text.trim() !== "")
+      .slice(0, 50)
+      .map((c) => ({
+        type: typeof c.type === "string" && CHANGE_TYPES.has(c.type) ? c.type as ReleaseChangeType : "other" as const,
+        text: c.text.trim().slice(0, 300),
+      }));
+    if (changes.length) {
+      out.push({ version: n.version.slice(0, 40), changes, publishedAt: typeof n.publishedAt === "string" ? n.publishedAt : null });
+    }
+  }
+  return out;
+}
+
+export type ReleaseChangeType = "new" | "improved" | "fixed" | "security" | "breaking" | "other";
+export interface ReleaseNote {
+  version: string;
+  changes: { type: ReleaseChangeType; text: string }[];
+  publishedAt: string | null;
+}
+
+/** The heartbeat itself. Only ever entered holding the lock above. False = no answer, cache kept. */
+async function runUpdateCheck(): Promise<boolean> {
   // Keep both paid-id sets fresh. The plugin set drives the license-by-id enable
   // gate; the theme set only drives what the ACP offers and how a refused download
   // explains itself, but a stale one still shows an admin "Install" on something
@@ -68,7 +111,11 @@ async function runUpdateCheck(): Promise<void> {
   });
 
   interface CheckResponse {
-    updates:    { id: string; latestVersion: string; critical?: boolean }[];
+    updates:    {
+      id: string; latestVersion: string; critical?: boolean;
+      /** "What's new" per release between installed and latest (marketplace ≥ 2026-10-19). */
+      notes?: { version?: unknown; changes?: unknown; publishedAt?: unknown }[];
+    }[];
     advisories: { id: string; target: string; affects: string; severity: string; fixedIn: string | null; summary?: string }[];
     token?:     string;
   }
@@ -87,7 +134,7 @@ async function runUpdateCheck(): Promise<void> {
     });
   } catch (err) {
     logger.warn({ err }, "Marketplace update check failed — keeping last cache");
-    return;
+    return false;
   }
 
   // Store the replacement BEFORE anything else can fail: the marketplace has
@@ -113,6 +160,7 @@ async function runUpdateCheck(): Promise<void> {
     critical:         u.critical === true || advised.has(u.id),
     name:             byId.get(u.id)?.name ?? u.id,
     installedVersion: byId.get(u.id)?.installedVersion ?? null,
+    notes:            releaseNotes(u.notes),
   }));
 
   // Stable anchor for "when this exact set of pending updates first appeared".
@@ -156,6 +204,7 @@ async function runUpdateCheck(): Promise<void> {
     { installed: plugins.length, updates: updates.length, advisories: (body.advisories ?? []).length },
     "Marketplace update check completed",
   );
+  return true;
 }
 
 /**

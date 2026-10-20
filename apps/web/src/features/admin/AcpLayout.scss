@@ -1,8 +1,9 @@
 // ── ACP Layout ───────────────────────────────────────────────────────────────
 @use "../../styles/tokenDefaults" as defaults;
 
-// The ACP keeps its own identity: its own COLOURS and Poppins everywhere,
-// regardless of the site's theme, the Style Editor, or a user's personal font.
+// The ACP keeps its own identity: its own COLOURS and its own fonts (Figtree +
+// Bricolage Grotesque), regardless of the site's theme, the Style Editor, or a
+// user's personal font.
 // On <body> so the app-root overlay hosts (DialogHost/ToastHost) inherit it while
 // the ACP is mounted — and it outranks the user-font inline vars on <html>.
 //
@@ -22,17 +23,96 @@
 // admin panel. The variables are re-pinned here rather than the rule being narrowed
 // server-side, because the ACP is the only surface that opts out and it is the one
 // that knows it.
+//
+// THE LOOK (2026-10-19): the docs site's and the core look's teal, in light and
+// dark. ONE accent: `--c-accent2` is a deeper/lighter teal, never a second hue.
+// Figtree for text, Bricolage Grotesque for headings (`--font-display`, which the
+// global h1–h6 rule reads); labels and buttons read `--ff-sans`. Cards are
+// hairline-bordered, not lifted: `--shadow-card` is a 1px ring, so every card that
+// draws its edge with the card shadow gets the border without a layout change.
+//
+// ⚠ Group colours are NOT part of this palette. Names and role chips use each
+// group's own badge colour exactly, in both modes; nothing here may recolour them.
+@mixin acp-palette-light {
+  color-scheme: light;
+  --c-bg:            #f6f7f6;
+  --c-bg-hover:      #eef0ef;
+  --c-surface:       #ffffff;
+  --c-card:          #ffffff;
+  --c-accent:        #0d7c72;
+  --c-accent2:       #0a5f57;
+  --c-accent-soft:   #e3f2ef;
+  --c-accent2-soft:  #d2e9e5;
+  --c-accent-glow:   rgba(13, 124, 114, 0.2);
+  --c-on-accent:     #ffffff;
+  --c-fg:            #121816;
+  --c-fg-muted:      #5b6560;
+  --c-fg-subtle:     #6f7974;
+  --c-border:        #e2e6e4;
+  --c-border-hi:     #d3d8d6;
+  --c-rowline:       #edf0ee;
+  --nav-icon-btn-bg: var(--c-bg);
+  --c-success:       #1a7f37;
+  --c-success-soft:  rgba(26, 127, 55, 0.1);
+  --c-warn:          #b7791f;
+  --c-danger:        #d92d20;
+  --c-danger-soft:   rgba(217, 45, 32, 0.09);
+  --c-info:          #2f6fb0;
+  --c-update:        #414144;
+
+  --shadow-card:  0 0 0 1px var(--c-border);
+  --shadow-pop:   0 0 0 1px var(--c-border), 0 14px 36px rgba(18, 24, 22, 0.12);
+}
+
+@mixin acp-palette-dark {
+  color-scheme: dark;
+  --c-bg:            #121514;
+  --c-bg-hover:      #1f2422;
+  --c-surface:       #171b1a;
+  --c-card:          #1a1e1d;
+  --c-accent:        #3fb8ab;
+  --c-accent2:       #7fd3c9;
+  --c-accent-soft:   rgba(63, 184, 171, 0.14);
+  --c-accent2-soft:  rgba(63, 184, 171, 0.22);
+  --c-accent-glow:   rgba(63, 184, 171, 0.28);
+  --c-on-accent:     #08110f;
+  --c-fg:            #f3f6f5;
+  --c-fg-muted:      #a1aaa6;
+  --c-fg-subtle:     #848d89;
+  --c-border:        #29302d;
+  --c-border-hi:     #343c39;
+  --c-rowline:       #222826;
+  --nav-icon-btn-bg: rgba(255, 255, 255, 0.045);
+  --c-success:       #6fd99a;
+  --c-success-soft:  rgba(95, 211, 138, 0.13);
+  --c-warn:          #e9bd5b;
+  --c-danger:        #ff8a80;
+  --c-danger-soft:   rgba(255, 110, 95, 0.13);
+  --c-info:          #7cb6ee;
+  --c-update:        #8f8f94;
+
+  --shadow-card:  0 0 0 1px var(--c-border);
+  --shadow-pop:   0 0 0 1px var(--c-border-hi), 0 16px 44px rgba(0, 0, 0, 0.5);
+}
+
 body.xt-acp {
   @include defaults.primitives;
-  @include defaults.palette-light;
+  @include acp-palette-light;
   @include defaults.components;
 
-  --ff-sans: var(--font-poppins);
-  --font-display: var(--font-poppins);
-  --font-headline: var(--font-poppins);
+  --ff-sans: "Figtree", system-ui, sans-serif;
+  --font-body: var(--ff-sans);
+  --font-display: "Bricolage Grotesque", "Figtree", system-ui, sans-serif;
+  --font-headline: var(--font-display);
   --fs-scale: 1;    // the site's text size never re-types the admin panel
   --fs-base: 1rem;
   --fw-body: 500;   // matches the base `body` weight in styles/index.scss
+
+  // Tighter, quieter shapes than the site's defaults (the docs look).
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 }
 
 // Dark is the document's own choice (the ACP has the same toggle the site does),
@@ -40,7 +120,7 @@ body.xt-acp {
 // the reader's preference. Higher specificity than the block above, so it wins in
 // dark regardless of source order.
 [data-theme="dark"] body.xt-acp {
-  @include defaults.palette-dark;
+  @include acp-palette-dark;
 }
 
 $topbar-h: 52px;
@@ -156,22 +236,30 @@ $topbar-h: 52px;
 .acp-page-header__left {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
+// Same as the `.pg-eyebrow` / `.pg-title` pair (acpSystem.scss): every ACP page
+// header looks alike, whichever of the two markups it was written with.
 .acp-page-sub {
-  font-size: var(--fs-2xs);
-  font-weight: 700;
-  color: var(--c-fg-muted);
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  margin-bottom: 4px;
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--c-accent-soft);
+  color: var(--c-accent);
+  margin-bottom: 12px;
 }
 
 .acp-page-title {
-  font-size: 1.625rem;
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
   font-weight: 800;
   color: var(--c-fg);
-  letter-spacing: -0.03em;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
   margin: 0;
 }
 
@@ -239,9 +327,9 @@ table.acp-table {
   letter-spacing: 0.03em;
   margin-top: 10px;
 
-  &--success  { background: rgba(52,211,153,0.12); color: var(--c-success); }
-  &--warn     { background: rgba(251,191,36,0.12);  color: var(--c-warn); }
-  &--danger   { background: rgba(248,113,113,0.12); color: var(--c-danger); }
+  &--success  { background: var(--c-success-soft); color: var(--c-success); }
+  &--warn     { background: color-mix(in srgb, var(--c-warn) 14%, transparent); color: var(--c-warn); }
+  &--danger   { background: var(--c-danger-soft); color: var(--c-danger); }
   &--neutral  { background: var(--c-accent-soft);   color: var(--c-accent); }
   &--muted    { background: var(--c-surface);        color: var(--c-fg-muted); margin-right: 20px; margin-top: 0;}
 }
@@ -468,6 +556,43 @@ table.acp-table {
   &:focus { outline: none; border-color: var(--input-border-focus); }
 }
 
+/* ── Every select in the ACP, one look ────────────────────────────────────
+   Core pages, plugin pages and dialogs alike: the 38px box of a button or input,
+   our own chevron with room beside it (the native arrow sat on the edge and
+   differed per browser), and the theme's colours in the open list. Specific
+   enough to win over `.acp-select`, `.inp` and a page's own select class; a
+   denser panel changes only `--sel-h` / `--sel-bg`. */
+.acp-layout select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  height: var(--sel-h, var(--btn-h, 38px));
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--input-border-color, var(--c-border));
+  border-radius: var(--input-radius, var(--radius-md));
+  background-color: var(--sel-bg, var(--input-bg));
+  /* A stroked chevron: two 6px boxes, each holding one diagonal of the "v". */
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - 0.9px), var(--c-fg-muted) calc(50% - 0.9px), var(--c-fg-muted) calc(50% + 0.9px), transparent calc(50% + 0.9px)),
+    linear-gradient(135deg, transparent calc(50% - 0.9px), var(--c-fg-muted) calc(50% - 0.9px), var(--c-fg-muted) calc(50% + 0.9px), transparent calc(50% + 0.9px));
+  background-position: calc(100% - 19px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  color: var(--input-fg, var(--c-fg));
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover:not(:disabled) { border-color: var(--c-border-hi, var(--c-accent)); }
+  &:focus { outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+  &:disabled { opacity: 0.6; cursor: default; }
+  option, optgroup { background-color: var(--card-bg); color: var(--c-fg); font-weight: 500; }
+}
+
 .acp-checkbox-row {
   display: flex;
   align-items: center;
@@ -643,14 +768,14 @@ table.acp-table {
   border-radius: var(--btn-radius);
   cursor: pointer;
   color: var(--c-danger);
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  border: 1px solid color-mix(in srgb, var(--c-danger) 30%, transparent);
   background: transparent;
   transition: background 0.15s, border-color 0.15s;
 
   svg { display: block; flex-shrink: 0; }
 
   &:hover:not(:disabled) {
-    background: rgba(248, 113, 113, 0.1);
+    background: var(--c-danger-soft);
     border-color: var(--c-danger);
   }
 }

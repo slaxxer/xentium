@@ -22,7 +22,7 @@ import {
 import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
-import { Toggle } from "../../../components/AcpControls";
+import { Toggle, Button } from "../../../components/AcpControls";
 import { edgeMask } from "../../../layout/edgeArt";
 import { edgeExtensions, edgeShape, edgeShapes, type EdgeInspectorProps } from "../../../layout/edgeRegistry";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
@@ -211,12 +211,12 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
                 {edge.image && (
                   <span className="lay-edge__thumb" style={{ backgroundImage: `url("${resolveImageSource(edge.image)}")` }} />
                 )}
-                <button type="button" className="btn-ghost btn-sm" disabled={uploading}
+                <Button variant="ghost" disabled={uploading}
                   onClick={() => fileRef.current?.click()}>
                   <FontAwesomeIcon icon={faUpload} />{" "}
                   {uploading ? t("layoutEditor.bgUploading")
                     : t(edge.image ? "layoutEditor.edge.replaceImage" : "layoutEditor.edge.uploadImage")}
-                </button>
+                </Button>
                 <input ref={fileRef} type="file" hidden accept="image/png,image/svg+xml,image/webp"
                   onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
               </div>
@@ -350,9 +350,9 @@ export function BlockEdgeArtFields({ value, onChange, bare }: Props & { bare?: b
           )}
 
           {edge.shape === "blank" && (
-            <button type="button" className="btn-ghost btn-sm lay-edge__reset" onClick={() => write(undefined)}>
+            <Button variant="ghost" className="lay-edge__reset" onClick={() => write(undefined)}>
               {t("layoutEditor.edge.removeAll")}
-            </button>
+            </Button>
           )}
         </>
       )}

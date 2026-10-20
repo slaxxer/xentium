@@ -79,7 +79,7 @@
   }
 }
 /* ⚠ Element + class: `.inp` is width 100% at equal specificity (acp-page-conventions). */
-select.usr-select { width: auto; flex: none; background-color: var(--c-bg); }
+select.usr-select { width: auto; flex: none; --sel-bg: var(--c-bg); }
 .usr-shown {
   margin-left: auto; padding-right: 4px; white-space: nowrap;
   font-size: var(--fs-xs); font-weight: 700; color: var(--c-fg-subtle);
@@ -129,8 +129,10 @@ select.usr-select { width: auto; flex: none; background-color: var(--c-bg); }
   &__id { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
   &__line { display: flex; align-items: center; gap: 7px; min-width: 0; }
   &__name {
-    font-family: var(--font-display); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg);
+    font-family: var(--ff-sans); font-size: var(--fs-md); font-weight: 700; color: var(--c-fg);
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    /* Room for the group colour's glow (a text-shadow the ellipsis' overflow cut off). */
+    padding: var(--name-glow-room); margin: calc(-1 * var(--name-glow-room));
   }
   &__email { font-size: var(--fs-2xs); font-weight: 600; color: var(--c-fg-subtle); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }

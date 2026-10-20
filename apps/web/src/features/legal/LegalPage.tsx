@@ -9,6 +9,7 @@ import { ArticleContent } from "../articles/components/ArticleContent";
 import "./LegalPage.scss";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { useDateTime } from "../../lib/datetime";
+import { LegalAcceptBox } from "./LegalAcceptBox";
 
 /**
  * `/legal/:key` — terms, privacy, disclaimer, imprint.
@@ -41,9 +42,11 @@ export function LegalPage() {
   const updated = dt.date(doc.publishedAt);
   // An edit link only for those the editor would not 403.
   const canEdit = userCan(user, "legal.manage");
+  const mustAccept = !!user?.pendingLegal?.includes(doc.key);
 
   return (
     <article className="legal-view">
+      {mustAccept && <p className="legal-view__ask" role="status">{t("legal.accept.notice")}</p>}
       <header className="legal-view__head">
         <h1 className="legal-view__title">{t(`legal.title.${doc.key}`)}</h1>
         <p className="legal-view__meta">
@@ -56,6 +59,7 @@ export function LegalPage() {
       <div className="legal-view__body">
         <ArticleContent body={doc.body} />
       </div>
+      {mustAccept && <LegalAcceptBox docKey={doc.key} />}
     </article>
   );
 }

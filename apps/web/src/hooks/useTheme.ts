@@ -22,9 +22,11 @@ export type ResolvedTheme = "light" | "dark";
 
 const KEY = "xentium.theme";
 
+// Light until the admin flips the toggle (2026-10-19): the tools open in their light
+// look, never in whatever the device happens to prefer.
 function getStored(): ThemePreference {
-  try { return (localStorage.getItem(KEY) as ThemePreference) || "system"; }
-  catch { return "system"; }
+  try { return (localStorage.getItem(KEY) as ThemePreference) || "light"; }
+  catch { return "light"; }
 }
 
 function getSystemTheme(): ResolvedTheme {

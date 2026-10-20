@@ -258,6 +258,13 @@
 
   &__text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
+  /* A profile field's help text, under its input and visibility. */
+  &__help {
+    grid-column: 2 / -1;
+    margin-top: calc(var(--sp-2) * -1);
+    @media (max-width: 620px) { grid-column: 1 / -1; margin-top: 0; }
+  }
+
   &__label {
     font-size: var(--fs-sm);
     font-weight: 600;

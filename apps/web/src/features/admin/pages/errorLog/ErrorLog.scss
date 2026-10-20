@@ -124,7 +124,7 @@
   input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--c-fg); font: inherit; font-size: var(--fs-sm); font-weight: 600; &::placeholder { color: var(--c-fg-subtle); } }
   &__clear { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; color: var(--c-fg-subtle); &:hover { color: var(--c-fg); background: var(--c-bg-hover); } }
 }
-select.el-select { width: auto; height: 40px; border-radius: 14px; }
+select.el-select { width: auto; }
 
 /* "Only this member" — set by a link from the error reference; click to drop it. */
 .el-member {

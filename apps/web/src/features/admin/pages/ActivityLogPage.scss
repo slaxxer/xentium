@@ -324,7 +324,7 @@
   color: var(--c-fg-muted);
 
   > span { display: flex; gap: 10px; align-items: baseline; }
-  b { font-family: var(--font-display); font-size: var(--fs-md); color: var(--c-fg); }
+  b { font-family: var(--ff-sans); font-size: var(--fs-md); color: var(--c-fg); }
   small { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
 }
 

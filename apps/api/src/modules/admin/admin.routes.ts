@@ -35,6 +35,7 @@ const isDev = process.env.NODE_ENV !== "production";
  * second fence, not the only one.
  */
 const marketplaceArtifactLimiter = makeRateLimiter("marketplace-artifact", 60 * 60_000, isDev ? 1000 : 30);
+const updateCheckLimiter = makeRateLimiter("marketplace-update-check", 60_000, isDev ? 1000 : 3);
 
 // Dashboard + health
 adminRouter.get("/dashboard",           adminGuard, adminController.dashboard);
@@ -59,6 +60,7 @@ adminRouter.patch("/users/:id/account",        adminGuard, adminController.updat
 
 // Profile fields
 adminRouter.get("/profile-fields", adminGuard, adminController.listProfileFields);
+adminRouter.get("/profile-fields/stats", adminGuard, adminController.profileFieldStats);
 adminRouter.post("/profile-fields", adminGuard, adminController.createProfileField);
 adminRouter.patch("/profile-fields/:id", adminGuard, adminController.updateProfileField);
 adminRouter.delete("/profile-fields/:id", adminGuard, adminController.deleteProfileField);
@@ -71,6 +73,8 @@ adminRouter.put("/settings/:key", adminGuard, adminController.setSetting);
 
 // Articles
 adminRouter.get("/articles", adminGuard, adminController.listArticles);
+adminRouter.get("/articles/summary", adminGuard, adminController.articleSummary);
+adminRouter.post("/articles/bulk", adminGuard, adminController.bulkArticles);
 adminRouter.delete("/articles/:id", adminGuard, adminController.deleteArticle);
 
 // Moderation — read + write (Phase 10)
@@ -89,11 +93,15 @@ adminRouter.post("/cases/:id/revoke-exception",adminGuard, adminController.revok
 adminRouter.get("/mod-templates",               adminGuard, adminController.listModTemplates);
 adminRouter.post("/mod-templates",              adminGuard, adminController.createModTemplate);
 adminRouter.post("/mod-templates/restore-defaults", adminGuard, adminController.restoreModTemplates);
+// Before "/:id": a template id can never be "order", but the route table reads top-down.
+adminRouter.put("/mod-templates/order",       adminGuard, adminController.reorderModTemplates);
 adminRouter.patch("/mod-templates/:id",         adminGuard, adminController.updateModTemplate);
 adminRouter.delete("/mod-templates/:id",        adminGuard, adminController.deleteModTemplate);
 adminRouter.get("/mod-settings",                adminGuard, adminController.getModSettings);
 adminRouter.patch("/mod-settings",              adminGuard, adminController.updateModSettings);
 adminRouter.get("/modlog",             adminGuard, adminController.listModLog);
+adminRouter.get("/modlog/summary",     adminGuard, adminController.modLogSummary);
+adminRouter.get("/modlog/export.csv",  adminGuard, adminController.modLogExport);
 adminRouter.delete("/comments/article/:id", adminGuard, adminController.deleteArticleComment);
 adminRouter.delete("/comments/profile/:id", adminGuard, adminController.deleteProfileComment);
 
@@ -188,6 +196,9 @@ adminRouter.get("/marketplace/plugins",        adminGuard, adminController.listM
 adminRouter.get("/marketplace/connection",     adminGuard, adminController.getMarketplaceConnection);
 adminRouter.get("/marketplace/owned",          adminGuard, adminController.getMarketplaceOwned);
 adminRouter.get("/marketplace/updates",        adminGuard, adminController.getMarketplaceUpdates);
+// "Check now" on the Updates page: the daily heartbeat, on demand. Single-flight already
+// (a lock in processUpdateCheck); the limiter keeps a held-down button off the marketplace.
+adminRouter.post("/marketplace/updates/check", adminGuard, updateCheckLimiter, adminController.checkMarketplaceUpdates);
 // "Got it" on the core-update dialog: it carries the whole changelog, so reading it counts.
 adminRouter.post("/marketplace/updates/core/acknowledge", adminGuard, adminController.acknowledgeCoreUpdate);
 // Aggregated admin-attention signals for the frontend navbar ACP badge.

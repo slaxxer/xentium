@@ -11,6 +11,7 @@ import { openDialog } from "../../../../lib/dialog";
 import { timeAgo } from "../../../../lib/time";
 import { fullTime, type GroupsResponse, type Occurrence, type OccurrencesResponse } from "./errorLogModel";
 import { MethodChip, ResolvedPill, SeverityPill } from "./GroupTable";
+import { Button } from "../../../../components/AcpControls";
 
 interface XecEntry { code: string; cause?: string; fix?: string }
 
@@ -114,20 +115,20 @@ export function ErrorDrawer({ groupKey, onClose }: { groupKey: string; onClose: 
             <h2 className="el-drawer__title">{g.message}</h2>
             <div className="el-drawer__actions">
               {g.resolved ? (
-                <button type="button" className="btn-ghost btn-sm" onClick={() => resolveMut.mutate(false)} disabled={resolveMut.isPending}>
+                <Button variant="ghost" onClick={() => resolveMut.mutate(false)} disabled={resolveMut.isPending}>
                   <FontAwesomeIcon icon={faRotateLeft} className="el-ic" /> {t("errorLog.reopen")}
-                </button>
+                </Button>
               ) : (
-                <button type="button" className="btn-primary btn-sm" onClick={() => resolveMut.mutate(true)} disabled={resolveMut.isPending}>
+                <Button onClick={() => resolveMut.mutate(true)} disabled={resolveMut.isPending}>
                   <FontAwesomeIcon icon={faCheck} className="el-ic" /> {t("errorLog.markResolved")}
-                </button>
+                </Button>
               )}
               <Link to={`/admin/error-ref?code=${encodeURIComponent(g.code)}`} className="btn-ghost btn-sm">
                 <FontAwesomeIcon icon={faBookOpen} className="el-ic" /> {t("errorLog.reference")}
               </Link>
-              <button type="button" className="btn-ghost btn-sm el-btn-danger el-drawer__delete" onClick={() => void deleteGroup()}>
+              <Button variant="ghost" className="el-btn-danger el-drawer__delete" onClick={() => void deleteGroup()}>
                 <FontAwesomeIcon icon={faTrash} className="el-ic" /> {t("errorLog.deleteGroup")}
-              </button>
+              </Button>
             </div>
           </>
         ) : (

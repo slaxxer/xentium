@@ -8,6 +8,7 @@ import { sendEmail } from "../../infrastructure/email/email.service.js";
 import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-templates.js";
 import { env } from "../../config/env.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
+import { assertProfileFieldValues, choiceOptions, privacyFor } from "../users/profileFieldValues.js";
 
 const USERNAME_COOLDOWN_DAYS_DEFAULT = 60;
 
@@ -224,9 +225,13 @@ export const accountService = {
         type: f.type,
         placeholder: f.placeholder,
         dobDisplayFormat: f.dobDisplayFormat,
+        helpText: f.helpText,
+        maxLength: f.maxLength,
+        options: choiceOptions(f.options),
+        defaultPrivacy: f.defaultPrivacy,
       },
       value: valueMap.get(f.id)?.value ?? "",
-      privacy: valueMap.get(f.id)?.privacy ?? "public",
+      privacy: valueMap.get(f.id)?.privacy ?? f.defaultPrivacy,
     }));
   },
 
@@ -319,14 +324,16 @@ export const accountService = {
 
   async updateProfileFieldValues(
     userId: string,
-    values: Array<{ fieldId: string; value: string; privacy: string }>,
+    values: Array<{ fieldId: string; value: string; privacy?: string }>,
   ) {
+    await assertProfileFieldValues(values);
+    const privacy = await privacyFor(values);
     await Promise.all(
       values.map((v) =>
         prisma.userProfileFieldValue.upsert({
           where: { userId_fieldId: { userId, fieldId: v.fieldId } },
-          update: { value: v.value, privacy: v.privacy },
-          create: { userId, fieldId: v.fieldId, value: v.value, privacy: v.privacy },
+          update: { value: v.value, ...(v.privacy ? { privacy: v.privacy } : {}) },
+          create: { userId, fieldId: v.fieldId, value: v.value, privacy: privacy.get(v.fieldId)! },
         }),
       ),
     );
@@ -336,9 +343,12 @@ export const accountService = {
     ]);
     const valueMap = new Map(updated.map((v) => [v.fieldId, v]));
     return fields.map((f) => ({
-      field: { id: f.id, key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, dobDisplayFormat: f.dobDisplayFormat },
+      field: {
+        id: f.id, key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, dobDisplayFormat: f.dobDisplayFormat,
+        helpText: f.helpText, maxLength: f.maxLength, options: choiceOptions(f.options), defaultPrivacy: f.defaultPrivacy,
+      },
       value: valueMap.get(f.id)?.value ?? "",
-      privacy: valueMap.get(f.id)?.privacy ?? "public",
+      privacy: valueMap.get(f.id)?.privacy ?? f.defaultPrivacy,
     }));
   },
 

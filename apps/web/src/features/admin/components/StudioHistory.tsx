@@ -23,6 +23,7 @@ import { toast } from "../../../lib/toast";
 import { withTheme } from "../../../lib/editingTheme";
 import "../pages/StyleEditorPage.scss";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
 
 interface HistoryEntry {
   id: string;
@@ -120,13 +121,13 @@ export function StudioHistory({ themeKey }: { themeKey: string | null }) {
             <span className={`se-hist__tag${current ? " is-live" : ""}`}>
               {current ? t("studioHistory.tagLive") : t(h.kind === "revision" ? "studioHistory.tagPublish" : "studioHistory.tagColours")}
             </span>
-            <button type="button" className="btn-ghost btn-sm"
+            <Button variant="ghost"
               disabled={stage.isPending || current}
               title={current ? t("studioHistory.liveHint") : t("studioHistory.restoreHint")}
               onClick={() => restore(h)}>
               <FontAwesomeIcon icon={faRotateLeft} style={{ marginRight: 4 }} />
               {t("studioHistory.restore")}
-            </button>
+            </Button>
           </div>
         );
       })}

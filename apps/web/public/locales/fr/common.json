@@ -321,7 +321,14 @@
       "disclaimer": "Avertissement"
     },
     "lastUpdated": "Dernière mise à jour : {{date}}",
-    "edit": "Modifier"
+    "edit": "Modifier",
+    "accept": {
+      "notice": "Veuillez lire ce document et l'accepter en bas de la page pour continuer à utiliser votre compte.",
+      "label": "Accepter ce document",
+      "checkbox": "J'ai lu et j'accepte « {{title}} ».",
+      "submit": "Accepter et continuer",
+      "signOut": "Me déconnecter"
+    }
   },
   "modcanvas": {
     "shield": {

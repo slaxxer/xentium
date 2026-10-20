@@ -4,6 +4,7 @@ import path from "node:path";
 import { prisma } from "../../infrastructure/db.js";
 import { Prisma } from "../../generated/prisma/client.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
+import { XEC } from "../../shared/errors/xec.js";
 import { bustSettingsCache } from "../../shared/utils/settings.js";
 import { paginate } from "../../shared/utils/paginate.js";
 import { badgeColorSelect, extractBadgeColor, toUserRef } from "../../shared/utils/userRef.js";
@@ -16,12 +17,16 @@ import { getModPolicy, checkBanLength } from "../moderation/moderationPolicy.js"
 import { isEmailConfigured } from "../../infrastructure/email/email.service.js";
 import { encryptSecret } from "../../shared/utils/secretBox.js";
 import { seedDefaultNavItems } from "../../bootstrap/seedDefaultNavItems.js";
-import { humanizeCaseType, describeCaseSignal } from "../moderation/moderation.types.js";
 import { appearanceService } from "../appearance/appearance.service.js";
 import { hashPassword } from "../auth/auth.password.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { buildPaginationMeta } from "@xentium/contracts";
 import { adminUsersService } from "./adminUsers.service.js";
+import { CorePermissions, type PermissionKey } from "@xentium/contracts";
+import { hasPermission } from "../../shared/middleware/requirePermission.js";
+import { articleService } from "../articles/article.service.js";
+import { articleCategoryService } from "../article-categories/article-category.service.js";
+import { ARTICLE_SORT, adminArticleWhere, type ArticleBulkInput, type ArticleListQuery } from "./adminArticles.js";
 
 /**
  * Settings whose value is write-only: stored encrypted, returned to the client
@@ -48,6 +53,63 @@ async function assertActionableUser(userId: string, actorId: string) {
     throw XentiumError.forbidden("Administrator accounts cannot be managed via the admin panel");
   }
   return user;
+}
+
+/** What the ACP may set on a profile field, beyond its key and type. */
+/**
+ * The group every new sign-up joins must be a real group, and never one that
+ * opens the ACP: a typo or a wrong pick there would make every newcomer staff.
+ */
+async function assertSignupGroup(value: unknown): Promise<void> {
+  const group = typeof value === "string"
+    ? await prisma.group.findUnique({
+        where: { key: value },
+        select: { permissions: { where: { permission: { key: CorePermissions.ADMIN_ACCESS } }, select: { groupId: true } } },
+      })
+    : null;
+  if (!group || group.permissions.length > 0) {
+    throw new XentiumError({
+      code: "XEC-GROUP-4010", httpStatus: 422,
+      message: group ? "New members can't join a group with ACP access" : "That group does not exist",
+    });
+  }
+}
+
+export interface ProfileFieldWrite {
+  label?: string;
+  placeholder?: string | null;
+  helpText?: string | null;
+  showOnRegistration?: boolean;
+  requiredOnRegistration?: boolean;
+  showOnProfile?: boolean;
+  dobDisplayFormat?: string;
+  defaultPrivacy?: string;
+  minAge?: number;
+  maxLength?: number | null;
+  linkPrefix?: string | null;
+  options?: string[] | null;
+}
+
+/** The columns a write touches. Required at sign-up implies asked at sign-up, and an
+ *  empty text setting is stored as null. */
+function profileFieldData(d: ProfileFieldWrite) {
+  const blank = (v: string | null | undefined) => (v === undefined ? undefined : v?.trim() ? v.trim() : null);
+  return {
+    ...(d.label !== undefined ? { label: d.label.trim() } : {}),
+    ...(d.placeholder !== undefined ? { placeholder: blank(d.placeholder) } : {}),
+    ...(d.helpText !== undefined ? { helpText: blank(d.helpText) } : {}),
+    ...(d.showOnRegistration !== undefined ? { showOnRegistration: d.showOnRegistration } : {}),
+    ...(d.requiredOnRegistration !== undefined
+      ? { requiredOnRegistration: d.requiredOnRegistration, ...(d.requiredOnRegistration ? { showOnRegistration: true } : {}) }
+      : {}),
+    ...(d.showOnProfile !== undefined ? { showOnProfile: d.showOnProfile } : {}),
+    ...(d.dobDisplayFormat !== undefined ? { dobDisplayFormat: d.dobDisplayFormat } : {}),
+    ...(d.defaultPrivacy !== undefined ? { defaultPrivacy: d.defaultPrivacy } : {}),
+    ...(d.minAge !== undefined ? { minAge: d.minAge } : {}),
+    ...(d.maxLength !== undefined ? { maxLength: d.maxLength } : {}),
+    ...(d.linkPrefix !== undefined ? { linkPrefix: blank(d.linkPrefix) } : {}),
+    ...(d.options !== undefined ? { options: d.options === null ? Prisma.DbNull : d.options } : {}),
+  };
 }
 
 export const adminService = {
@@ -564,34 +626,47 @@ export const adminService = {
     return prisma.userProfileField.findMany({ orderBy: { position: "asc" } });
   },
 
-  async createProfileField(data: {
-    key: string;
-    label: string;
-    type: string;
-    placeholder?: string;
-    showOnRegistration: boolean;
-    requiredOnRegistration: boolean;
-    showOnProfile: boolean;
-  }) {
+  /** How many active members there are, and how many filled in each field. */
+  async profileFieldStats() {
+    // Answers have no relation to their member in the schema, so the join is SQL.
+    const [members, filled] = await Promise.all([
+      prisma.user.count({ where: { isActive: true } }),
+      prisma.$queryRaw<{ field_id: string; n: number }[]>`
+        SELECT v.field_id, count(*)::int AS n
+        FROM xcf_user_profile_field_values v
+        JOIN xcf_users u ON u.id = v.user_id
+        WHERE v.value <> '' AND u."isActive" = true
+        GROUP BY v.field_id`,
+    ]);
+    return { members, filled: Object.fromEntries(filled.map((r) => [r.field_id, r.n])) };
+  },
+
+  async createProfileField(data: ProfileFieldWrite & { key: string; label: string; type: string }) {
     const exists = await prisma.userProfileField.findUnique({ where: { key: data.key } });
     if (exists) throw XentiumError.conflict("A field with that key already exists");
+    if (data.type === "choice" && !data.options?.length) throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 422, message: "A choice field needs at least one option" });
     const max = await prisma.userProfileField.aggregate({ _max: { position: true } });
     return prisma.userProfileField.create({
-      data: { ...data, position: (max._max.position ?? 0) + 1 },
+      data: { ...profileFieldData(data), key: data.key, label: data.label, type: data.type, position: (max._max.position ?? 0) + 1 },
     });
   },
 
-  async updateProfileField(id: string, data: {
-    label?: string;
-    placeholder?: string;
-    showOnRegistration?: boolean;
-    requiredOnRegistration?: boolean;
-    showOnProfile?: boolean;
-    dobDisplayFormat?: string;
-  }) {
+  async updateProfileField(id: string, data: ProfileFieldWrite & { type?: string }) {
     const field = await prisma.userProfileField.findUnique({ where: { id } });
     if (!field) throw XentiumError.notFound("Profile field not found");
-    return prisma.userProfileField.update({ where: { id }, data });
+    if (data.type && data.type !== field.type) {
+      if (field.isSystem) throw XentiumError.forbidden("A built-in field's type is fixed");
+      // Answers were written for the old type; a date field full of text would be worse
+      // than a field that keeps its type.
+      const answered = await prisma.userProfileFieldValue.count({ where: { fieldId: id, value: { not: "" } } });
+      if (answered > 0) throw XentiumError.conflict("Members have answered this field, so its type is fixed");
+    }
+    const type = data.type ?? field.type;
+    const options = data.options !== undefined ? data.options : field.options;
+    if (type === "choice" && !(Array.isArray(options) && options.length)) {
+      throw new XentiumError({ code: XEC.API_VALIDATION, httpStatus: 422, message: "A choice field needs at least one option" });
+    }
+    return prisma.userProfileField.update({ where: { id }, data: { ...profileFieldData(data), ...(data.type ? { type: data.type } : {}) } });
   },
 
   async deleteProfileField(id: string) {
@@ -699,6 +774,7 @@ export const adminService = {
     // settings rows, but the plugin that owns the gate validates them on its own
     // endpoint and normalises again on read — core has no opinion about what a
     // beta route is, so it cannot be the thing that checks one.
+    if (key === "auth.default_group") await assertSignupGroup(value);
     if (SECRET_SETTING_KEYS.has(key)) {
       // The client renders the mask, so it can echo it back on an unrelated
       // save. Treat that as "leave the stored secret alone" rather than
@@ -723,26 +799,32 @@ export const adminService = {
 
   // ── Articles (admin) ──────────────────────────────────────────────────────
 
-  async listArticles(opts: { page: number; limit: number; status?: string }) {
-    const { page, limit, status } = opts;
-    const where: any = { deletedAt: null };
-    if (status) where.status = status;
+  async listArticles(opts: ArticleListQuery) {
+    const { page, limit } = opts;
+    const where = adminArticleWhere(opts);
     const [data, total] = await Promise.all([
       prisma.article.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: "desc" },
+        orderBy: ARTICLE_SORT[opts.sort ?? "new"],
         select: {
           id: true,
           title: true,
           slug: true,
           status: true,
+          visibility: true,
+          featuredImage: true,
+          readTime: true,
           viewCount: true,
           likeCount: true,
           commentCount: true,
           createdAt: true,
+          updatedAt: true,
           publishedAt: true,
+          pinnedAt: true,
+          commentsClosedAt: true,
+          hiddenAt: true,
           author: { select: { id: true, username: true, ...badgeColorSelect } },
           category: { select: { id: true, name: true } },
         },
@@ -750,12 +832,78 @@ export const adminService = {
       prisma.article.count({ where }),
     ]);
     return {
-      data: data.map((a) => ({
+      data: data.map(({ pinnedAt, commentsClosedAt, hiddenAt, ...a }) => ({
         ...a,
+        pinned: pinnedAt !== null,
+        commentsClosed: commentsClosedAt !== null,
+        hidden: hiddenAt !== null,
         author: toUserRef(a.author),
       })),
       meta: buildPaginationMeta({ page, limit, total }),
     };
+  },
+
+  /** The Articles page's tiles, status counts and how many articles each category holds. */
+  async articleSummary() {
+    const live = { deletedAt: null };
+    const monthStart = new Date();
+    monthStart.setUTCDate(1);
+    monthStart.setUTCHours(0, 0, 0, 0);
+    const [byStatus, hidden, publishedThisMonth, reads, oldestReview, draftAuthors, byCategory] = await Promise.all([
+      prisma.article.groupBy({ by: ["status"], where: live, _count: { _all: true } }),
+      prisma.article.count({ where: { ...live, hiddenAt: { not: null } } }),
+      prisma.article.count({ where: { ...live, status: "published", publishedAt: { gte: monthStart } } }),
+      prisma.article.aggregate({ where: live, _sum: { viewCount: true } }),
+      prisma.article.findFirst({ where: { ...live, status: "review" }, orderBy: { updatedAt: "asc" }, select: { updatedAt: true } }),
+      prisma.article.findMany({ where: { ...live, status: "draft" }, distinct: ["authorId"], select: { authorId: true } }),
+      prisma.article.groupBy({ by: ["categoryId"], where: live, _count: { _all: true } }),
+    ]);
+    const status = Object.fromEntries(byStatus.map((r) => [r.status, r._count._all]));
+    return {
+      total: byStatus.reduce((n, r) => n + r._count._all, 0),
+      published: status["published"] ?? 0,
+      review: status["review"] ?? 0,
+      draft: status["draft"] ?? 0,
+      hidden,
+      publishedThisMonth,
+      reads: reads._sum.viewCount ?? 0,
+      oldestReviewAt: oldestReview?.updatedAt ?? null,
+      draftAuthors: draftAuthors.length,
+      // Uncategorised articles count under "none".
+      byCategory: Object.fromEntries(byCategory.map((r) => [r.categoryId ?? "none", r._count._all])),
+    };
+  },
+
+  /**
+   * One action on several articles. Each action asks for the permission its
+   * single-article route asks for; hide and delete go through the same service
+   * calls, so they are logged and counted the same way.
+   */
+  async bulkArticles(actorId: string, input: ArticleBulkInput) {
+    const need: Record<ArticleBulkInput["action"], PermissionKey> = {
+      move: CorePermissions.ARTICLE_EDIT_ANY,
+      hide: CorePermissions.ARTICLE_HIDE,
+      show: CorePermissions.ARTICLE_HIDE,
+      delete: CorePermissions.ARTICLE_DELETE_ANY,
+    };
+    if (!(await hasPermission(actorId, need[input.action]))) {
+      throw new XentiumError({ code: XEC.PERM_DENIED, httpStatus: 403, message: "You don't have permission to do that" });
+    }
+    const ids = [...new Set(input.ids)];
+    if (input.action === "move") {
+      if (input.categoryId) await articleCategoryService.getById(input.categoryId);
+      const r = await prisma.article.updateMany({
+        where: { id: { in: ids }, deletedAt: null },
+        data: { categoryId: input.categoryId ?? null },
+      });
+      return { done: r.count };
+    }
+    const live = await prisma.article.findMany({ where: { id: { in: ids }, deletedAt: null }, select: { id: true } });
+    for (const { id } of live) {
+      if (input.action === "delete") await articleService.softDelete(id, actorId, true);
+      else await articleService.setHidden(id, input.action === "hide", actorId);
+    }
+    return { done: live.length };
   },
 
   // ── Health ────────────────────────────────────────────────────────────────
@@ -814,10 +962,10 @@ export const adminService = {
     };
   },
 
-  async softDeleteArticle(id: string) {
+  async softDeleteArticle(id: string, actorId: string) {
     const article = await prisma.article.findUnique({ where: { id } });
-    if (!article) throw XentiumError.notFound("Article not found");
-    await prisma.article.update({ where: { id }, data: { deletedAt: new Date() } });
+    if (!article || article.deletedAt) throw XentiumError.notFound("Article not found");
+    await prisma.article.update({ where: { id }, data: { deletedAt: new Date(), deletedById: actorId } });
   },
 
   // ── Moderation ────────────────────────────────────────────────────────────
@@ -861,87 +1009,6 @@ export const adminService = {
     });
 
     return updated;
-  },
-
-  async listModLog(opts: { page: number; limit: number; action?: string; actionPrefix?: string; actorType?: string }) {
-    const { page, limit, action, actionPrefix, actorType } = opts;
-    const where: any = {};
-    if (action)       where.action    = action;
-    if (actionPrefix) where.action    = { startsWith: actionPrefix + "." };
-    if (actorType)    where.actorType = actorType;
-    const [rows, total] = await Promise.all([
-      prisma.moderationLog.findMany({
-        where,
-        skip: (page - 1) * limit,
-        take: limit,
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.moderationLog.count({ where }),
-    ]);
-
-    // Batch-resolve actor + user-target usernames
-    const userIds = new Set<string>();
-    for (const r of rows) {
-      if (r.actorId)                             userIds.add(r.actorId);
-      if (r.targetId && r.targetType === "user") userIds.add(r.targetId);
-    }
-
-    // Also resolve case-target → linked user IDs so we can show real names
-    const caseTargetIds = rows
-      .filter((r) => r.targetType === "moderation_case" && r.targetId)
-      .map((r) => r.targetId as string);
-    const cases = caseTargetIds.length > 0
-      ? await prisma.moderationCase.findMany({
-          where:  { id: { in: caseTargetIds } },
-          select: { id: true, type: true, linkedUserIds: true },
-        })
-      : [];
-    const caseMap     = new Map(cases.map((c) => [c.id, c]));
-    cases.forEach((c) => c.linkedUserIds.forEach((uid) => userIds.add(uid)));
-
-    const users = userIds.size > 0
-      ? await prisma.user.findMany({
-          where:  { id: { in: [...userIds] } },
-          select: { id: true, username: true, ...badgeColorSelect },
-        })
-      : [];
-    const userMap  = new Map(users.map((u) => [u.id, u.username]));
-    const colorMap = new Map(users.map((u) => [u.id, extractBadgeColor(u.groups)]));
-
-    const data = rows.map((r) => {
-      let targetUsername: string | null = null;
-      let targetBadgeColor: string | null = null;
-      let targetDetail: string | null = null;
-
-      if (r.targetId && r.targetType === "user") {
-        targetUsername    = userMap.get(r.targetId) ?? r.targetId;
-        targetBadgeColor  = colorMap.get(r.targetId) ?? null;
-      } else if (r.targetId && r.targetType === "moderation_case") {
-        // Subject = the case TYPE (e.g. "Multiaccounting"); detail = who shares what.
-        const c           = caseMap.get(r.targetId);
-        const linkedIds   = c?.linkedUserIds ?? [];
-        const names       = linkedIds.map((uid) => userMap.get(uid) ?? uid).filter(Boolean);
-        targetUsername    = c ? humanizeCaseType(c.type) : "Case";
-        targetDetail      = c ? describeCaseSignal(c.type, names) : null;
-      } else if (r.targetType === "device_cookie") {
-        // Show a short, readable form — the full UUID is noise to a mod
-        targetUsername    = r.targetId ? `Cookie ${r.targetId.slice(0, 8)}…` : "Device Cookie";
-      } else if (r.targetType === "ip") {
-        // The IP itself IS useful — show it directly
-        targetUsername    = r.targetId ?? "IP";
-      }
-
-      return {
-        ...r,
-        actorUsername:    r.actorId ? (userMap.get(r.actorId)  ?? r.actorId)  : null,
-        actorBadgeColor:  r.actorId ? (colorMap.get(r.actorId) ?? null)       : null,
-        targetUsername,
-        targetBadgeColor,
-        targetDetail,
-      };
-    });
-
-    return { data, meta: buildPaginationMeta({ page, limit, total }) };
   },
 
   // ── Moderation write ops (delegates to moderationService) ────────────────

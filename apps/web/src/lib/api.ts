@@ -116,6 +116,11 @@ async function request<T>(method: string, path: string, body?: unknown, retry = 
     // they keep surfacing as inline toasts via the normal throw path.
     // Maintenance mode also returns 503 but is an intentional state — let the
     // MaintenanceGate render its own screen instead of the fatal overlay.
+    // Signed in with a legal document still to accept (asked again while the page was
+    // open): note what is pending, so LegalConsentGate sends the member to it now.
+    if (errObj?.code === "XEC-AUTH-2012" && authStore.token && authStore.user && Array.isArray(errObj.details?.pending)) {
+      authStore.set(authStore.token, { ...authStore.user, pendingLegal: errObj.details.pending, needsLegalConsent: true });
+    }
     const isMaintenance = errObj?.code === "XEC-CORE-8010" || (detail as any)?.maintenance === true;
     if (res.status >= 500 && !isMaintenance) {
       fatalErrorStore.trigger({
@@ -157,6 +162,31 @@ export async function apiStream(path: string, body: unknown): Promise<Response> 
     if (newToken) res = await fetch(`${BASE}${path}`, build(newToken));
   }
   return res;
+}
+
+/**
+ * GET a file the API sends as an attachment (a CSV export, say) and hand it to the
+ * browser as a download. Same auth and 401 retry as every other call; the server's
+ * Content-Disposition names the file unless `fallbackName` has to.
+ */
+export async function apiDownload(path: string, fallbackName: string): Promise<void> {
+  const build = (token: string | null): RequestInit => ({
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    credentials: "include",
+  });
+  let res = await fetch(`${BASE}${path}`, build(authStore.token));
+  if (res.status === 401 && authStore.token) {
+    const newToken = await tryRefresh();
+    if (newToken) res = await fetch(`${BASE}${path}`, build(newToken));
+  }
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") ?? "")?.[1] ?? fallbackName;
+  const url = URL.createObjectURL(await res.blob());
+  const a = Object.assign(document.createElement("a"), { href: url, download: name });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 export const api = {

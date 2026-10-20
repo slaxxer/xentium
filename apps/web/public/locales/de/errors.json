@@ -35,8 +35,15 @@
   "XEC-LICENSE-9001": "Keine gültige Lizenz für dieses Plugin.",
   "XEC-LICENSE-9002": "Diese Lizenz ist abgelaufen.",
   "generic": "Etwas ist schiefgelaufen. Bitte erneut versuchen.",
-  "XEC-AUTH-2011": "Bitte akzeptiere die Nutzungsbedingungen und die Datenschutzerklärung, um fortzufahren.",
+  "XEC-AUTH-2011": "Bitte stimme den erforderlichen Dokumenten zu, um fortzufahren.",
   "XEC-MOD-4101": "Wähle eine der Vorlagen. Verwarnungen und Sperren können nur aus einer Vorlage verschickt werden.",
   "XEC-MOD-4102": "Dieser Inhalt stammt nicht von dem Mitglied, um das es geht.",
-  "XEC-MOD-4103": "Diese Vorlage nennt den betroffenen Inhalt. Nutze sie direkt bei diesem Inhalt oder wähle eine andere Vorlage."
+  "XEC-MOD-4103": "Diese Vorlage nennt den betroffenen Inhalt. Nutze sie direkt bei diesem Inhalt oder wähle eine andere Vorlage.",
+  "XEC-USER-4017": "Bitte gib ein echtes Geburtsdatum ein: nach 1900 und vor heute.",
+  "XEC-USER-4018": "Eine deiner Profilangaben wird nicht akzeptiert: Prüfe die Länge oder wähle eine der Optionen.",
+  "XEC-USER-4019": "Du bist noch nicht alt genug, um dich hier zu registrieren.",
+  "XEC-USER-4020": "Bitte fülle alle Pflichtfelder aus, um dich zu registrieren.",
+  "XEC-GROUP-4010": "Neue Mitglieder können nur einer bestehenden Gruppe ohne ACP-Zugang beitreten.",
+  "XEC-LEGAL-3503": "Erneut abfragen geht nur bei einem veröffentlichten Dokument, dem Mitglieder zustimmen müssen.",
+  "XEC-AUTH-2012": "Bitte stimme zuerst den rechtlichen Dokumenten der Seite zu."
 }

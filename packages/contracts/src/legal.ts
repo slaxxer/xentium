@@ -19,6 +19,8 @@ export const legalPath = (key: LegalDocumentKey): string => `/legal/${key}`;
 export interface LegalDocumentLink {
   key: LegalDocumentKey;
   publishedAt: string;
+  /** Members must accept it (at sign-up, and when asked again). */
+  mustAccept: boolean;
 }
 
 /** A published document as its page renders it. */
@@ -37,4 +39,13 @@ export interface AdminLegalDocument {
   publishedAt: string | null;
   updatedAt: string | null;
   updatedBy: string | null;
+  /** Members must accept it: at sign-up, and once from anyone who never has. */
+  requireAcceptance: boolean;
+  /** Raised each time members are asked to accept again. */
+  revision: number;
+  /** Who the latest round asks (group ids); empty = everyone. */
+  reacceptGroupIds: string[];
+  reacceptedAt: string | null;
+  /** Members who still have to accept it (0 while it isn't published or required). */
+  pendingCount: number;
 }

@@ -42,6 +42,7 @@ import {
   layoutDocumentSchema,
   missingRequiredBlocks,
   parseLayoutDocument,
+  foldHomeAside,
   regionsFor,
   requiredBlocksFor,
   templateAcceptsVariants,
@@ -530,10 +531,13 @@ export const layoutService = {
         message: `Document is for "${parsed.data.templateKey}", not "${selector.templateKey}".`,
       });
     }
-    assertRegionsValid(parsed.data);
+    // An editor still open from before home lost its `aside` may send one: carry it
+    // into the right rail rather than refusing the save.
+    const doc = foldHomeAside(parsed.data);
+    assertRegionsValid(doc);
 
-    await writeDraftRow(selector, parsed.data, parsed.data.schemaVersion, userId, baseVersion, themeKey);
-    return { document: parsed.data, version: await draftVersion(selector, themeKey) };
+    await writeDraftRow(selector, doc, doc.schemaVersion, userId, baseVersion, themeKey);
+    return { document: doc, version: await draftVersion(selector, themeKey) };
   },
 
   // ── Site frame ────────────────────────────────────────────────────────────

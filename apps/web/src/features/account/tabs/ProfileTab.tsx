@@ -38,6 +38,7 @@ import { primaryBadgeColor } from "../../../lib/groupBadge";
 import { RankBadge } from "../../../components/RankBadge";
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
+import { ProfileFieldInput } from "../../profiles/ProfileFieldInput";
 
 interface FieldDef {
   id: string;
@@ -46,6 +47,10 @@ interface FieldDef {
   type: string;
   placeholder: string | null;
   dobDisplayFormat: string | null;
+  helpText: string | null;
+  maxLength: number | null;
+  options: string[];
+  defaultPrivacy: "public" | "members" | "nobody";
 }
 
 interface ProfileFieldEntry {
@@ -288,6 +293,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                 variant="link"
                 htmlFor={`lf-${e.field.id}`}
                 label={fieldLabel(e.field)}
+                desc={e.field.helpText ?? undefined}
                 control={
                   <span className="acct-inputwrap">
                     <FontAwesomeIcon className="acct-ic" icon={LINK_ICONS[e.field.key] ?? faLink} />
@@ -295,6 +301,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                       id={`lf-${e.field.id}`}
                       className="account-input"
                       type={e.field.type === "url" ? "url" : "text"}
+                      maxLength={e.field.maxLength ?? (e.field.type === "url" ? 500 : 255)}
                       value={entry(e.field.id).value}
                       placeholder={e.field.placeholder ?? ""}
                       onChange={(ev) => setEntry(e.field.id, { value: ev.target.value })}
@@ -313,18 +320,18 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
               const cur = entry(f.id);
               /* ⚠ The birthday is one of these fields, not a special case: it is
                  stored as `date_of_birth` with its own privacy, so it belongs in
-                 the list with the rest. Only its INPUT differs. */
-              const isDob = f.key === "date_of_birth";
+                 the list with the rest. Only its INPUT differs (ProfileFieldInput). */
               return (
                 <div key={f.id} className="acct-row acct-row--field">
                   <label className="acct-row__label" htmlFor={`pf-${f.id}`}>{fieldLabel(f)}</label>
-                  <input
+                  <ProfileFieldInput
                     id={`pf-${f.id}`}
+                    field={f}
                     className="account-input"
-                    type={isDob ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
+                    textareaClassName="account-input account-input--textarea"
                     value={cur.value}
-                    placeholder={f.placeholder ?? ""}
-                    onChange={(ev) => setEntry(f.id, { value: ev.target.value })}
+                    chooseLabel={t("profile.choose")}
+                    onChange={(value) => setEntry(f.id, { value })}
                   />
                   <select
                     className="account-select"
@@ -336,6 +343,7 @@ export function ProfileTab({ onGoTo }: { onGoTo?: (tab: "privacy") => void }) {
                       <option key={o} value={o}>{t(`profile.privacyOpt.${o}`)}</option>
                     ))}
                   </select>
+                  {f.helpText && <span className="account-hint acct-row__help">{f.helpText}</span>}
                 </div>
               );
             })}

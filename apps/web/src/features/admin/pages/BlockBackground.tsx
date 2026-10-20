@@ -37,6 +37,7 @@ import { api } from "../../../lib/api";
 import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { resolveImageSource, sectionBackground } from "../../../layout/blocks/coreBlocks";
+import { Button } from "../../../components/AcpControls";
 
 /** The props this panel owns. `SchemaFields` is given the same list to skip. */
 export const BACKGROUND_PROPS = ["backgroundImage", "backgroundGradient", "backgroundAngle"] as const;
@@ -154,17 +155,17 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
         {image ? (
           <div className="lay-bg__file">
             <img src={resolveImageSource(image)} alt="" />
-            <button type="button" className="btn-ghost btn-sm"
+            <Button variant="ghost"
               onClick={() => onChange({ backgroundImage: "" })}>
               <FontAwesomeIcon icon={faTrash} /> {t("layoutEditor.bgRemove")}
-            </button>
+            </Button>
           </div>
         ) : (
-          <button type="button" className="btn-ghost btn-sm" disabled={uploading}
+          <Button variant="ghost" disabled={uploading}
             onClick={() => fileRef.current?.click()}>
             <FontAwesomeIcon icon={faUpload} />{" "}
             {uploading ? t("layoutEditor.bgUploading") : t("layoutEditor.bgUpload")}
-          </button>
+          </Button>
         )}
         <input
           ref={fileRef}
@@ -218,11 +219,11 @@ export function BlockBackgroundFields({ image, gradient, angle, onChange, inheri
         ))}
 
         {stops.length < MAX_STOPS && (
-          <button type="button" className="btn-ghost btn-sm"
+          <Button variant="ghost"
             onClick={() => onChange({ backgroundGradient: [...stops, "#1b1e36"] })}>
             <FontAwesomeIcon icon={faPlus} />{" "}
             {t(stops.length === 0 ? "layoutEditor.bgAddFirst" : "layoutEditor.bgAddStop")}
-          </button>
+          </Button>
         )}
 
         {/* One colour is a flat fill, which is a legitimate thing to want and not

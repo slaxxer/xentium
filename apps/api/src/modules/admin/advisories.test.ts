@@ -60,3 +60,44 @@ describe("advisories on the Updates page", () => {
     expect((await marketplaceService.getUpdates()).advisories.map((a) => a.id)).toEqual(["XEN-SA-2026-001"]);
   });
 });
+
+describe("release notes on the Updates page", () => {
+  async function cacheUpdate(notes: unknown[]) {
+    const value = JSON.stringify({
+      checkedAt: new Date().toISOString(), advisories: [],
+      updates: [{ pluginId: PID, name: "Probe", latestVersion: "1.5.0", critical: false, notes }],
+    });
+    await prisma.setting.upsert({ where: { key: "marketplace.updates" }, create: { key: "marketplace.updates", value }, update: { value } });
+    bustSettingsCache();
+  }
+  const NOTE = (version: string) => ({ version, changes: [{ type: "fixed", text: `in ${version}` }], publishedAt: null });
+
+  it("passes on what's new for every release newer than the installed one", async () => {
+    await install("1.2.0");
+    await cacheUpdate([NOTE("1.5.0"), NOTE("1.3.0")]);
+    const { updates } = await marketplaceService.getUpdates();
+    expect(updates[0]?.notes).toEqual([NOTE("1.5.0"), NOTE("1.3.0")]);
+  });
+
+  it("drops the notes of versions the site has reached since the check", async () => {
+    await install("1.3.0");
+    await cacheUpdate([NOTE("1.5.0"), NOTE("1.3.0")]);
+    expect((await marketplaceService.getUpdates()).updates[0]?.notes).toEqual([NOTE("1.5.0")]);
+  });
+});
+
+describe("release notes from the marketplace", () => {
+  it("keeps typed changes, shows an unknown type as other, and drops what is not a change", async () => {
+    const { releaseNotes } = await import("../../jobs/updateCheck.js");
+    expect(releaseNotes([
+      { version: "1.1.0", publishedAt: "2026-10-01T00:00:00Z", changes: [
+        { type: "breaking", text: " Needs alpha.16 " }, { type: "exploit", text: "x" }, { type: "new", text: "" }, "<b>",
+      ] },
+      { version: "1.0.5", changes: [] },
+      "not a release",
+    ])).toEqual([{
+      version: "1.1.0", publishedAt: "2026-10-01T00:00:00Z",
+      changes: [{ type: "breaking", text: "Needs alpha.16" }, { type: "other", text: "x" }],
+    }]);
+  });
+});

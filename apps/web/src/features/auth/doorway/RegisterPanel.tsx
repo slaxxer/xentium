@@ -17,9 +17,11 @@ import { DigitsInput, FormError, OrDivider, PasswordInput, ProviderButtons } fro
 import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported, startProvider } from "./signInClient";
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
+import { ProfileFieldInput } from "../../profiles/ProfileFieldInput";
 
 interface ProfileFieldDef {
   id: string; key: string; label: string; type: string; placeholder: string | null;
+  helpText: string | null; maxLength: number | null; options: string[] | null;
   showOnRegistration: boolean; requiredOnRegistration: boolean;
 }
 type Avail = "idle" | "checking" | "free" | "taken";
@@ -79,9 +81,12 @@ export function RegisterPanel() {
   const [wantPasskey, setWantPasskey] = useState(false);
   // Published terms / privacy policy. With either, joining asks the member to accept them.
   const legal = useLegalLinks();
-  const hasTerms = legal.some((d) => d.key === "terms");
-  const hasPrivacy = legal.some((d) => d.key === "privacy");
-  const needsConsent = hasTerms || hasPrivacy;
+  // The documents an admin marked "must be accepted" (ACP → Legal), published ones only.
+  const required = legal.filter((d) => d.mustAccept);
+  const hasTerms = required.some((d) => d.key === "terms");
+  const hasPrivacy = required.some((d) => d.key === "privacy");
+  const others = required.filter((d) => d.key !== "terms" && d.key !== "privacy");
+  const needsConsent = required.length > 0;
   const [agreed, setAgreed] = useState(false);
   const [code, setCode] = useState("");
   const [cooldown, setCooldown] = useState(0);
@@ -170,7 +175,8 @@ export function RegisterPanel() {
         inviteCode: invite || undefined,
         acceptLegal: needsConsent ? agreed : undefined,
         fields: fields.filter((f) => (values[f.id] ?? "").trim())
-          .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim(), privacy: "public" as const })),
+          // No privacy: each answer starts with its field's default (ACP → Profile Fields).
+          .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim() })),
       });
       setStep("done");
       await applyLogin(res.accessToken);
@@ -285,9 +291,10 @@ export function RegisterPanel() {
             {[...requiredFields, ...optionalFields].map((f) => (
               <label key={f.id} className="dw-field">
                 <span className="dw-label">{fieldLabel(f)} {!f.requiredOnRegistration && <em>{t("door.optional")}</em>}</span>
-                <input className="dw-input" type={f.type === "date" ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
-                  value={values[f.id] ?? ""} placeholder={f.placeholder ?? ""} required={f.requiredOnRegistration}
-                  onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))} />
+                <ProfileFieldInput field={f} className="dw-input" textareaClassName="dw-input dw-input--area"
+                  value={values[f.id] ?? ""} required={f.requiredOnRegistration} chooseLabel={t("door.reg.choose")}
+                  onChange={(value) => setValues((v) => ({ ...v, [f.id]: value }))} />
+                {f.helpText && <span className="dw-hint">{f.helpText}</span>}
               </label>
             ))}
             <FormError>{error}</FormError>
@@ -339,14 +346,27 @@ export function RegisterPanel() {
             <label className="dw-check">
               <input type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} />
               <span>
-                <Trans
-                  t={t}
-                  i18nKey={hasTerms && hasPrivacy ? "door.reg.agreeBoth" : hasTerms ? "door.reg.agreeTerms" : "door.reg.agreePrivacy"}
-                  components={{
-                    terms:   <Link to={legalPath("terms")} target="_blank" rel="noreferrer" className="dw-link" />,
-                    privacy: <Link to={legalPath("privacy")} target="_blank" rel="noreferrer" className="dw-link" />,
-                  }}
-                />
+                {others.length === 0 ? (
+                  <Trans
+                    t={t}
+                    i18nKey={hasTerms && hasPrivacy ? "door.reg.agreeBoth" : hasTerms ? "door.reg.agreeTerms" : "door.reg.agreePrivacy"}
+                    components={{
+                      terms:   <Link to={legalPath("terms")} target="_blank" rel="noreferrer" className="dw-link" />,
+                      privacy: <Link to={legalPath("privacy")} target="_blank" rel="noreferrer" className="dw-link" />,
+                    }}
+                  />
+                ) : (
+                  // An imprint or a disclaimer is required too: name every document.
+                  <>
+                    {t("door.reg.agreeList")}{" "}
+                    {required.map((d, i) => (
+                      <span key={d.key}>
+                        {i > 0 && (i === required.length - 1 ? ` ${t("door.reg.agreeAnd")} ` : ", ")}
+                        <Link to={legalPath(d.key)} target="_blank" rel="noreferrer" className="dw-link">{t(`common:legal.title.${d.key}`)}</Link>
+                      </span>
+                    ))}.
+                  </>
+                )}
               </span>
             </label>
           )}

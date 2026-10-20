@@ -83,7 +83,8 @@ export const profileFieldValuesSchema = z.object({
     z.object({
       fieldId: z.string(),
       value: z.string(),
-      privacy: z.enum(["public", "members", "nobody"]).default("public"),
+      // Absent: unchanged on an existing answer, the field's default on a new one.
+      privacy: z.enum(["public", "members", "nobody"]).optional(),
     }),
   ),
 });

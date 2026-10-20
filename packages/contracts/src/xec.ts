@@ -42,6 +42,7 @@ export const XEC = {
   AUTH_NAME_REQUIRED: "XEC-AUTH-2004",
   AUTH_REGISTRATION_CLOSED: "XEC-AUTH-2010",
   AUTH_LEGAL_CONSENT_REQUIRED: "XEC-AUTH-2011", // terms / privacy published and not accepted
+  AUTH_LEGAL_PENDING: "XEC-AUTH-2012", // signed in, but a legal document still has to be accepted
 
   // Permissions / RBAC
   PERM_DENIED: "XEC-PERM-1001",
@@ -58,6 +59,7 @@ export const XEC = {
   // Legal documents
   LEGAL_NOT_FOUND: "XEC-LEGAL-3501",
   LEGAL_EMPTY: "XEC-LEGAL-3502",
+  LEGAL_NOT_ASKABLE: "XEC-LEGAL-3503", // ask again: only a published document members must accept
 
   // Storage / Uploads
   STORE_FILE_TOO_LARGE: "XEC-STORE-7001",

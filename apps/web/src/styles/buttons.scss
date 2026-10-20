@@ -96,18 +96,26 @@
   --btn-fs:    var(--fs-base);
 }
 
-/* ── ACP: one height for every button ──────────────────────────────────────
+/* ── ACP: ONE size for every button ────────────────────────────────────────
    Padding alone gave .btn-primary 35.5px while the save bar, review cases and
-   others hard-set 38–40px, so two buttons side by side rarely matched. In the
-   ACP the HEIGHT is the token: --btn-h (default) and --btn-h-sm, which bespoke
-   ACP buttons read too instead of their own numbers. */
+   others hard-set 38–40px, so two buttons side by side rarely matched. Then
+   .btn-sm (28px, smaller text) and .btn-lg crept back in page by page. In the ACP
+   there is one button size, full stop (user rule 2026-10-20): the size modifiers
+   take the default box back (`inherit` = the value on the body), and --btn-h-sm /
+   --btn-h-lg, which bespoke ACP buttons read, are the same 38px. Use the shared
+   `Button` (components/AcpControls) for new ACP buttons. */
 body.xt-acp {
   --btn-h:    38px;
-  --btn-h-sm: 28px;
-  --btn-h-lg: 46px;
+  --btn-h-sm: 38px;
+  --btn-h-lg: 38px;
 
-  .btn-sm { --btn-h: var(--btn-h-sm); }
-  .btn-lg { --btn-h: var(--btn-h-lg); }
+  .btn-sm, .btn-lg {
+    --btn-h: inherit;
+    --btn-pad-y: inherit;
+    --btn-pad-x: inherit;
+    --btn-fs: inherit;
+    --btn-gap: inherit;
+  }
 
   /* A fixed height cannot hold a second line — one line, always. */
   .btn-primary, .btn-danger, .btn-ghost, .btn-ghost-danger { white-space: nowrap; }

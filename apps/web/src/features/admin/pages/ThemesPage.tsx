@@ -29,6 +29,7 @@ import { offerThemeSwitch } from "../hooks/themeSwitchPrompt";
 import { AcpIcon } from "./acpIcons";
 import "./ThemesPage.scss";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
 
 interface Palette { bg: string; surface: string; accent: string; accent2: string; fg: string }
 interface Colourway { id: string; name: string; accent: string; accent2: string }
@@ -258,12 +259,12 @@ export function ThemesPage() {
           <p className="pg-sub">{t("themes.subtitle")}</p>
         </div>
         <div className="thm__head-actions">
-          <button type="button" className="btn-ghost" disabled={importMut.isPending} onClick={() => fileRef.current?.click()}>
+          <Button variant="ghost" disabled={importMut.isPending} onClick={() => fileRef.current?.click()}>
             <FontAwesomeIcon icon={faUpload} /> {importMut.isPending ? t("themes.importing") : t("themes.installBtn")}
-          </button>
-          <button type="button" className="btn-ghost" disabled={exporting} onClick={() => void runExport()}>
+          </Button>
+          <Button variant="ghost" disabled={exporting} onClick={() => void runExport()}>
             <FontAwesomeIcon icon={faDownload} /> {exporting ? t("themes.exporting") : t("themes.exportBtn")}
-          </button>
+          </Button>
           {/* `.xtstyle` is accepted too — a theme with no layouts. */}
           <input ref={fileRef} type="file" accept=".xttheme,.xtstyle,.zip" hidden
             onChange={(e) => { const f = e.target.files?.[0]; if (f) importMut.mutate(f); e.target.value = ""; }} />
@@ -311,14 +312,14 @@ export function ThemesPage() {
                   <div className="thm-live__preview">
                     <span>{t("themes.previewing", { name: pickedCw.name, live: wornCw?.name ?? live.name })}</span>
                     <div>
-                      <button type="button" className="btn-primary btn-sm" disabled={busy}
+                      <Button disabled={busy}
                         onClick={() => colourwayMut.mutate(pickedCw.id)}>
                         {t("themes.makeNamedLive", { name: pickedCw.name })}
-                      </button>
-                      <button type="button" className="btn-ghost btn-sm"
+                      </Button>
+                      <Button variant="ghost"
                         onClick={() => setPicked((p) => { const { [live.id]: _gone, ...rest } = p; return rest; })}>
                         {t("themes.cancel")}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -334,9 +335,9 @@ export function ThemesPage() {
                 <AcpIcon name="palette" size={16} /> {t("themes.editStudio")}
               </Link>
               {data?.rollback.available && (
-                <button type="button" className="btn-ghost" disabled={busy} onClick={() => void undo()}>
+                <Button variant="ghost" disabled={busy} onClick={() => void undo()}>
                   <FontAwesomeIcon icon={faRotateLeft} /> {undoMut.isPending ? t("themes.discarding") : t("themes.undoSwitch")}
-                </button>
+                </Button>
               )}
             </div>
             {data?.rollback.available && data.rollback.replaced && (
@@ -394,10 +395,10 @@ export function ThemesPage() {
                   </p>
 
                   <div className="thm-card__actions">
-                    <button type="button" className="btn-primary btn-sm" disabled={busy}
+                    <Button disabled={busy}
                       onClick={() => activateMut.mutate({ card: c, colourway: cw && cw.id !== c.wornColourway ? cw.id : undefined })}>
                       {t("themes.makeLive")}
-                    </button>
+                    </Button>
                     <Link className="btn-ghost btn-sm" to={studioHref(c.id)} title={t("themes.editStudio")}>{t("themes.edit")}</Link>
                     {!c.isCore && (
                       <button type="button" className="thm-card__remove" title={t("themes.remove")}
@@ -413,9 +414,9 @@ export function ThemesPage() {
                     <p><b>{t("themes.removeAsk", { name: c.name })}</b></p>
                     <p>{t("themes.removeAskBody")}</p>
                     <div>
-                      <button type="button" className="btn-danger btn-sm" disabled={removeMut.isPending}
-                        onClick={() => removeMut.mutate(c.id)}>{t("themes.remove")}</button>
-                      <button type="button" className="btn-ghost btn-sm" onClick={() => setConfirming(null)}>{t("themes.cancel")}</button>
+                      <Button variant="danger" disabled={removeMut.isPending}
+                        onClick={() => removeMut.mutate(c.id)}>{t("themes.remove")}</Button>
+                      <Button variant="ghost" onClick={() => setConfirming(null)}>{t("themes.cancel")}</Button>
                     </div>
                   </div>
                 )}

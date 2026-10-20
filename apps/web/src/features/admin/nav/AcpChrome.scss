@@ -44,11 +44,11 @@ $panel-w: 248px;
     width: 40px;
     height: 40px;
     flex: none;
-    border-radius: var(--radius-md);
-    background: var(--c-accent-soft);
-    color: var(--c-accent);
+    border-radius: 12px;
+    background: var(--c-accent);
+    color: var(--c-on-accent);
     font-size: 1.0625rem;
-    margin-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   &__expand {
@@ -78,7 +78,7 @@ $panel-w: 248px;
     flex: none;
     width: 44px;
     height: 42px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -118,7 +118,7 @@ $panel-w: 248px;
   &__util {
     width: 40px;
     height: 40px;
-    border-radius: 14px;
+    border-radius: var(--radius-md);
     color: var(--c-fg-muted);
     display: flex;
     align-items: center;
@@ -174,16 +174,21 @@ $panel-w: 248px;
   &__brand { min-width: 0; flex: 1; }
 
   &__name {
+    font-family: var(--font-display);
     font-weight: 800;
-    font-size: var(--fs-base);
+    font-size: 1.1875rem;
+    letter-spacing: -0.02em;
     color: var(--c-fg);
     line-height: 1.1;
   }
 
   &__tag {
-    font-size: var(--fs-xs);
+    font-size: var(--fs-2xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
     color: var(--c-fg-muted);
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
   &__collapse {
@@ -201,23 +206,26 @@ $panel-w: 248px;
 
   &__search { padding: 0 12px 16px; }
 
+  // The section's name, as a quiet label over its pages (the docs look).
   &__section {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 0 20px 8px;
-    color: var(--c-fg);
+    padding: 0 22px 8px;
+    color: var(--c-fg-muted);
     font-weight: 700;
-    font-size: var(--fs-md);
+    font-size: var(--fs-2xs);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
-  &__sectionic { display: flex; color: var(--c-accent); }
+  &__sectionic { display: flex; color: var(--c-accent); font-size: var(--fs-xs); }
 
   /* A group inside a section (System: Setup / Logs). Quiet, like the page eyebrows. */
   &__group {
     display: block;
     padding: 14px 12px 6px;
-    font-family: var(--font-display);
+    font-family: var(--ff-sans);
     font-size: var(--fs-2xs);
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -243,7 +251,7 @@ $panel-w: 248px;
     gap: 10px;
     width: 100%;
     padding: 9px 12px;
-    border-radius: 14px;
+    border-radius: 9px;
     font-size: var(--fs-md);
     line-height: 1.4;
     font-weight: 500;
@@ -269,10 +277,10 @@ $panel-w: 248px;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    height: 38px;
-    border-radius: 14px;
-    border: 1px solid var(--c-border);
-    color: var(--c-fg-muted);
+    height: 40px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border-hi);
+    color: var(--c-fg);
     font-weight: 600;
     font-size: var(--fs-sm);
 

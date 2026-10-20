@@ -343,7 +343,7 @@ setting. Plugins can add their own scans or replace a built-in pattern through t
 | POST | `/reports/act` | a moderator | `{ reportIds, mode: warn \| ban \| delete \| dismiss, templateId?, message?, notify, duration?, expiry? }`. Warn and ban need a template of that mode and take their text from it (`message` is ignored); remove and dismiss need a `message`. Acts on one group and closes all of its reports; the permission checked depends on `mode`. `notify: false` sends the member nothing. `duration` is `1h`, `24h`, `7d`, `30d` or `perm`. Remove works on articles and article/profile comments. |
 | POST | `/reports/status` | Perm:`moderation.report.manage` | `{ reportIds, status: resolved \| dismissed \| pending }`. Bulk close, and `pending` is Undo. |
 | POST | `/reports/claim` | Perm:`moderation.report.manage` | `{ reportIds, on }` claims a group for yourself or releases it. Logged. |
-| GET | `/templates` | a moderator | The premade texts ModCanvas fills in (read-only here; admins manage them under `/api/admin/mod-templates`): `mode`, `name`, `text` (with `{user}`, `{type}`, `{where}`, `{duration}`), `ruleRef`, `defaultDuration` (bans), `matchCategories`, `useCount`. |
+| GET | `/templates` | a moderator | The premade texts ModCanvas fills in (read-only here; admins manage them under `/api/admin/mod-templates`), in the admin's order: `mode`, `name`, `text` (with `{user}`, `{type}`, `{where}`, `{duration}`), `ruleRef`, `defaultDuration` (bans), `matchCategories`, `useCount`. |
 | GET | `/templates/words` | a moderator | What `{type}` and `{duration}` read as in the site's language, for filling a template in a preview. |
 | GET | `/cases` | Perm:`moderation.cases.manage` | Review cases. |
 | PATCH | `/cases/:id` · POST `/cases/:id/ban-all` | Perm:`moderation.cases.manage` | Update / ban everyone in a case. |
@@ -445,7 +445,7 @@ All **Admin**.
 
 | Method | Path | Description |
 |---|---|---|
-| GET | `/` | Installed plugins and their status. |
+| GET | `/` | Installed plugins: status, stored manifest (permissions, table prefix, migrations), `loadError` when an enabled plugin failed to start, and `storeUrl`, its marketplace listing (`null` for a package the marketplace did not sign). |
 | POST | `/validate` | Check an uploaded `.xtplugin` without installing it (`multipart`, field `file`). |
 | POST | `/upload` | Install (rate-limited; `multipart`). |
 | POST | `/:id/enable` | Enable (licensed plugins need an entitlement). |
@@ -518,6 +518,7 @@ Everything below needs **Admin** (`admin.access`) unless a stricter permission i
 | GET · POST | `/mod-templates` | Moderation → Templates: list (each with `isDefault`), create. |
 | PATCH · DELETE | `/mod-templates/:id` | Edit (partial) or delete (soft) a template. |
 | POST | `/mod-templates/restore-defaults` | Adds back every default template that is missing (matched by mode and name). Edited ones are left alone. Returns `{ restored }`. |
+| PUT | `/mod-templates/order` | The admin's order for one action's templates: `{ ids }` top to bottom (up to 200). ModCanvas lists them in this order; templates never placed fall back to most used. 204. |
 | GET·PATCH | `/mod-settings` | Mod Settings: `expiry { enabled, days }`, `ladder` (steps of `{ warningCount, action: notify \| ban_temporary \| ban_permanent, banDays?, notifyModerators }`), `bans { defaultDays, minDays, maxDays, allowOverride }`, `resetAfterBan`, and `patterns` (per pattern: `enabled`, `claimedBy`, `casesLast7d`). PATCH takes any of those sections (`patterns` as `{ type: boolean }`) and writes only what it carries. An impossible range, a default outside it, or two steps on one count is refused. |
 | GET | `/modlog` | Moderation log. |
 | DELETE | `/comments/article/:id` · `/comments/profile/:id` | Moderator soft-delete. |
@@ -541,6 +542,7 @@ key entry from both the ACP and the API on 2026-07-18, so there's no
 | GET | `/marketplace/link/:linkId` | Poll it → `{status: pending\|approved\|denied\|expired}`, plus `licenseActivated` once approved. `pending` is a **200**, not an error; it's the normal answer while someone is still deciding. |
 | GET | `/marketplace/owned` | **What this account owns**, matched against what's installed here: `{licenses: [{keyRef, status, seats, seatsUsed, activeHere, updatesUntil, purchasedAt, product, installedVersion, installedStatus, updateAvailable}]}`. Not cached, because an admin opening this has usually just bought something. Different from the entitlement JWT, which lists *grants*, not licences. |
 | GET | `/marketplace/updates` | The cached update check, matched against what's installed right now, plus `acknowledged` per admin. `core` carries `path` (every release in between, newest first, with notes) and `siteDir` (the CLI install's directory, or null). |
+| POST | `/marketplace/updates/check` | "Check now": runs the update check against the marketplace immediately and answers like `GET /marketplace/updates`, plus `check`: `checked`, `failed` (the marketplace did not answer, the last results are kept), `busy` (a check is already running) or `no-account` (no connected account). Rate-limited to 3 a minute. |
 | POST | `/marketplace/updates/core/acknowledge` | Closing the core-update dialog (it is one-time): acknowledges the current core offer for this admin. The only acknowledgement core has; it is not on the Updates page. `/status-summary` still counts it (`coreUpdate`) until the site runs the new version. 204. |
 | POST | `/marketplace/authorize` | The download check → `AuthorizedDownload` (rate-limited). |
 | POST | `/marketplace/install` · `/marketplace/update` | Install / update a plugin or theme. These **stream ndjson progress** instead of returning one JSON response. For a theme, the final event carries `activated` and `current` (see *Themes* below). |

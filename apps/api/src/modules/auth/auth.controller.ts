@@ -13,6 +13,9 @@ import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
 import { effectivePermissions } from "../../shared/middleware/requirePermission.js";
 import { legalService } from "../legal/legal.service.js";
+import { bustLegalGate } from "../legal/legalGate.js";
+import { z } from "zod";
+import { LEGAL_DOCUMENTS } from "@xentium/contracts";
 
 
 
@@ -74,7 +77,7 @@ export async function registerHandler(req: Request, res: Response) {
   // The form asks for consent while terms or a privacy policy are published; the server
   // holds it to that, since the account records that it was given.
   if (!parsed.acceptLegal && await legalService.consentRequired()) {
-    throw new XentiumError({ code: XEC.AUTH_LEGAL_CONSENT_REQUIRED, httpStatus: 422, message: "Accept the terms and the privacy policy to register" });
+    throw new XentiumError({ code: XEC.AUTH_LEGAL_CONSENT_REQUIRED, httpStatus: 422, message: "Accept the documents members must accept to register" });
   }
   const meta           = getRequestMeta(req, res);
   const result = await register(email, username, password, emailCode, loginPinEnabled, loginPin, fields, meta, inviteCode, name);
@@ -258,15 +261,20 @@ export async function meHandler(req: Request, res: Response) {
   // and re-grant in ACP → Permissions, and a UI that checks them drifts from what the
   // server enforces. It is a hint for what to SHOW; every endpoint still checks.
   const permissions = await effectivePermissions(user.id);
-  // Never accepted (imported, or created by an admin or a sign-in provider) while terms
-  // or a privacy policy are published: the site asks once before anything else.
-  const { legalAcceptedAt, ...rest } = user;
-  const needsLegalConsent = !legalAcceptedAt && await legalService.consentRequired();
-  res.json({ user: { ...rest, avatar: resolveAvatar(user.avatar), permissions, needsLegalConsent } });
+  // Documents this member must accept before going on: never accepted (imported, or
+  // made by an admin or a sign-in provider), or asked again for their group. The site
+  // sends them to each one in turn (LegalConsentGate).
+  const { legalAcceptedAt: _accepted, ...rest } = user;
+  const pendingLegal = await legalService.pendingFor(user.id);
+  res.json({ user: { ...rest, avatar: resolveAvatar(user.avatar), permissions, pendingLegal, needsLegalConsent: pendingLegal.length > 0 } });
 }
 
-/** The one-time "accept to continue" prompt, answered. */
+const legalConsentSchema = z.object({ keys: z.array(z.enum(LEGAL_DOCUMENTS)).max(LEGAL_DOCUMENTS.length).optional() });
+
+/** Accepted on the document's page (`keys`), or everything at once. Answers what is left. */
 export async function legalConsentHandler(req: Request, res: Response) {
-  await prisma.user.update({ where: { id: req.userId! }, data: { legalAcceptedAt: new Date() } });
-  res.status(204).end();
+  const { keys } = legalConsentSchema.parse(req.body ?? {});
+  const pending = await legalService.accept(req.userId!, keys);
+  bustLegalGate(req.userId!);
+  res.json({ pending });
 }

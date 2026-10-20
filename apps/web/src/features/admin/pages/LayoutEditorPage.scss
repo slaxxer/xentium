@@ -110,7 +110,7 @@
 
   &__theme-title {
     cursor: pointer;
-    font-family: var(--font-display);
+    font-family: var(--ff-sans);
     font-weight: 700;
     font-size: var(--fs-xs);
     letter-spacing: 0.1em;
@@ -593,7 +593,7 @@
   }
 
   &__pane-title {
-    font-family: var(--font-display);
+    font-family: var(--ff-sans);
     font-weight: 700;
     font-size: var(--fs-xs);
     letter-spacing: 0.1em;
@@ -1297,7 +1297,7 @@
   }
 
   &__props-section {
-    font-family: var(--font-display);
+    font-family: var(--ff-sans);
     font-weight: 700;
     font-size: var(--fs-2xs);
     letter-spacing: 0.1em;
@@ -1314,7 +1314,7 @@
 
 
   &__props-head {
-    font-family: var(--font-display);
+    font-family: var(--ff-sans);
     font-weight: 600;
     font-size: var(--fs-md);
     color: var(--c-fg);

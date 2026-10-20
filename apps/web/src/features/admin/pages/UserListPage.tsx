@@ -22,6 +22,7 @@ import {
 import "./users/Users.scss";
 import { CreateUserDialog } from "./users/CreateUserDialog";
 import { Username } from "../../../components/Username";
+import { Button } from "../../../components/AcpControls";
 
 interface PaginatedUsers {
   data: ListUser[];
@@ -203,9 +204,9 @@ export function UserListPage() {
             )}
           </div>
         )}
-        <button type="button" className="btn-primary usr-create-btn" onClick={() => setCreating(true)}>
+        <Button className="usr-create-btn" onClick={() => setCreating(true)}>
           <FontAwesomeIcon icon={faUserPlus} /> {t("users.create.button")}
-        </button>
+        </Button>
       </div>
 
       {creating && (

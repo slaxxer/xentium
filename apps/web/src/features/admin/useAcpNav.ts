@@ -58,7 +58,6 @@ export const ACP_NAV: NavItem[] = [
     label: "nav.content", icon: createElement(AcpIcon, { name: "file", size: 18 }), iconName: "file", key: "content",
     children: [
       { label: "nav.articles", to: "/admin/articles" },
-      { label: "nav.categories", to: "/admin/categories" },
       // The editor's tools: what members can write with, beside the emojis it offers.
       // Was "Composer" under Appearance.
       { label: "nav.editor", to: "/admin/composer" },
