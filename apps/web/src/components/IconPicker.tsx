@@ -23,12 +23,16 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import {
   ICON_STYLE_DEFS, iconStyleDef, iconStyleClasses, parseIconToken, formatIconToken,
   type IconStyleGroup,
 } from "@xentium/contracts";
 import { FontAwesomeIcon as RawIcon } from "@fortawesome/react-fontawesome";
-import { BUNDLED_ICON_NAMES, bundledIcon } from "../lib/iconCatalogue";
+import { bundledIconNames, bundledIcon } from "../lib/iconCatalogue";
+
+/** Plugins add the icons they ship to the bundled tier through this (webIconPicker). */
+export { registerBundledIcons } from "../lib/iconCatalogue";
 import { useIconKitReady, useIconStyle } from "../lib/iconKit";
 import { kitBrandIcons, kitIconCatalogue, presentIn } from "../lib/kitIconCatalogue";
 import { IconScope } from "../lib/iconScope";
@@ -54,8 +58,8 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
 
   const [query, setQuery] = useState("");
   const shown = query
-    ? BUNDLED_ICON_NAMES.filter((n) => n.includes(query.toLowerCase()))
-    : BUNDLED_ICON_NAMES;
+    ? bundledIconNames().filter((n) => n.includes(query.toLowerCase()))
+    : bundledIconNames();
 
   // A style chosen before any icon: held here, applied with the first pick.
   const [pendingStyle, setPendingStyle] = useState("");
@@ -159,7 +163,13 @@ export function IconPicker({ value, onChange }: IconPickerProps) {
         ))}
       </select>
 
-      {!kitReady && <p className="acp-hint">{t("iconPicker.needsKit")}</p>}
+      {/* Core ships Font Awesome Free; more icons come from the site's own kit
+          (docs/icon-kits.md), set in Theme Studio → Branding. */}
+      {!kitReady && (
+        <p className="acp-hint">
+          {t("iconPicker.needsKit")} <Link to="/admin/theme-studio?mode=branding">{t("iconPicker.addIcons")}</Link>
+        </p>
+      )}
       {!name && !kitMode && <p className="acp-hint">{t("iconPicker.needsName")}</p>}
       {pinnedDef?.full === false && (
         <p className="acp-hint">{t(kitMode ? "iconPicker.partialFiltered" : "iconPicker.partialFamily")}</p>

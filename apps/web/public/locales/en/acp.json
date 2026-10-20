@@ -4484,7 +4484,7 @@
     "namePlaceholder": "star",
     "searchPlaceholder": "Search bundled icons…",
     "followSite": "Follow the site style",
-    "needsKit": "Styles need a FontAwesome kit. Set one in Branding.",
+    "needsKit": "More icons and styles come from your own Font Awesome kit.",
     "partialFamily": "⚠ A stylised family — it does not cover every icon. Check the preview draws.",
     "notBundled": "Not one of the icons core ships. It needs the site's kit, and will not draw without one.",
     "bundled": "Bundled icons",
@@ -4495,7 +4495,8 @@
     "checking": "Checking which icons this style draws…",
     "noKitMatches": "No icon in this style matches.",
     "showMore": "Show more ({{count}} left)",
-    "partialFiltered": "A stylised family: only the icons it draws are listed."
+    "partialFiltered": "A stylised family: only the icons it draws are listed.",
+    "addIcons": "Add icons"
   },
   "composer": {
     "eyebrow": "Content",
