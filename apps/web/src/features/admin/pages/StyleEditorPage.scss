@@ -345,6 +345,8 @@
 .se-type__select {
   flex: 1;
   min-width: 0;
+  --sel-h: 34px;
+  --sel-bg: var(--card-bg);
   height: 34px;
   padding: 0 10px;
   border-radius: var(--radius-sm);
@@ -531,6 +533,8 @@
 .se-scope__select {
   flex: 1;
   min-width: 150px;
+  --sel-h: 32px;
+  --sel-bg: var(--card-bg);
   height: 32px;
   padding: 0 10px;
   border-radius: 9px;

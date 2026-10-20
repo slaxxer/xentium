@@ -79,7 +79,7 @@
   }
 }
 /* ⚠ Element + class: `.inp` is width 100% at equal specificity (acp-page-conventions). */
-select.usr-select { width: auto; flex: none; background-color: var(--c-bg); }
+select.usr-select { width: auto; flex: none; --sel-bg: var(--c-bg); }
 .usr-shown {
   margin-left: auto; padding-right: 4px; white-space: nowrap;
   font-size: var(--fs-xs); font-weight: 700; color: var(--c-fg-subtle);
