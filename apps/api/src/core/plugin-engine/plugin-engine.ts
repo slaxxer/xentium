@@ -127,7 +127,7 @@ export async function validatePackage(
   }
 
   // Validate migration pairs before touching anything
-  validateMigrationPairs(zip, manifest);
+  await validateMigrationPairs(zip, manifest);
 
   // Provenance LAST, and before anything is written: a package carrying a
   // signature that does not verify is refused here, so neither install nor
