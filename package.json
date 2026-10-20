@@ -27,9 +27,9 @@
     "release:dry": "node scripts/publish-release.mjs --dry-run",
     "release:framework": "node scripts/release-framework.mjs",
     "release:framework:dry": "node scripts/release-framework.mjs --dry-run",
-    "e2e:reset": "prisma migrate reset --force",
-    "e2e": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e",
-    "e2e:ui": "pnpm e2e:reset && pnpm --filter @xentium/e2e run e2e:ui",
+    "e2e:reset": "node scripts/e2e.mjs --reset-only",
+    "e2e": "node scripts/e2e.mjs",
+    "e2e:ui": "node scripts/e2e.mjs --ui",
     "pack:server": "node scripts/pack-server.mjs"
   },
   "devDependencies": {
