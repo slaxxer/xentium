@@ -1,5 +1,5 @@
 import { describe, it, beforeAll, beforeEach, expect, vi } from "vitest";
-import express, { type Express } from "express";
+import type { Express } from "express";
 import request from "supertest";
 
 // Mock the migration shell-out; the schema is applied by CI before tests run.
@@ -8,41 +8,8 @@ vi.mock("../../core/installer-engine/steps/runMigrations.js", () => ({
 }));
 
 import { prisma } from "../../infrastructure/db.js";
-import { installGuard, __resetInstalledCache } from "../../shared/middleware/installGuard.js";
-import { assertDisposableDatabase } from "../../test/testDatabase.js";
-import { installerRouter } from "./installer.routes.js";
-
-function buildApp(): Express {
-  const app = express();
-  app.use(express.json());
-  app.get("/api/health", (_req, res) => res.json({ ok: true }));
-  app.use(installGuard);
-  app.use("/api/install", installerRouter);
-  app.get("/api/protected", (_req, res) => res.json({ ok: true }));
-  return app;
-}
-
-async function resetDb() {
-  // Guarded, not optional: this truncates EVERY table, and it used to do so to
-  // whatever DATABASE_URL pointed at — which was the developer's own database until
-  // `vitest.config.ts` repointed the suite. The check throws unless the database is
-  // disposable, so a stray override fails loudly instead of deleting data.
-  assertDisposableDatabase();
-
-  // Truncate every app table (CASCADE handles FK order) so the reset is
-  // order-independent and survives leftover data from other suites/e2e runs.
-  // _prisma_migrations is preserved so the schema stays intact.
-  const tables = await prisma.$queryRaw<{ tablename: string }[]>`
-    SELECT tablename FROM pg_tables
-    WHERE schemaname = 'public' AND tablename NOT LIKE '\\_prisma%'
-  `;
-  if (tables.length === 0) return;
-  const list = tables.map((t) => `"${t.tablename}"`).join(", ");
-  await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
-}
-
-const ADMIN = { email: "admin@xentium.test", username: "root", password: "correct horse battery" };
-const SITE = { siteName: "Xentium Test", siteUrl: "https://test.local", locale: "en" };
+import { __resetInstalledCache } from "../../shared/middleware/installGuard.js";
+import { buildApp, resetDb, ADMIN, SITE } from "./installer.testkit.js";
 
 let app: Express;
 

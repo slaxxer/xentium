@@ -234,7 +234,7 @@ export async function applyJobSchedule(def: ScheduledJobDef, cfg: JobScheduleCon
  */
 async function jitteredDailyTime(def: ScheduledJobDef): Promise<string | null> {
   if (!def.jitterDefault) return null;
-  const row = await prisma.install.findFirst({ select: { siteId: true } }).catch(() => null);
+  const row = await prisma.install.findUnique({ where: { singleton: true }, select: { siteId: true } }).catch(() => null);
   if (!row?.siteId) return null;
 
   const digest = createHash("sha256").update(`${row.siteId}:${def.key}`).digest();
