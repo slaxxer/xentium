@@ -8,7 +8,9 @@
  * its security analysis, and the device-cookie plumbing is its own. A framework
  * package may not know what a user is (ADR-0006), and all of this does.
  */
+import { randomUUID } from "node:crypto";
 import { createTokenService } from "@xentium/auth";
+import { logger } from "../../infrastructure/logging/logger.js";
 import { prisma } from "../../infrastructure/db.js";
 import { queues } from "../../infrastructure/queue.js";
 import { revokeSessionAccessToken } from "./session-revocation.js";
@@ -57,8 +59,12 @@ const expiryFor = (persistent: boolean) =>
 export async function createSession(userId: string, meta: Meta, opts: { persistent?: boolean } = {}) {
   const persistent = opts.persistent ?? true;
   const raw = tokens.generateRefreshToken();
+  // A sign-in starts a family: every rotation of this token joins it.
+  const id = randomUUID();
   const session = await prisma.session.create({
     data: {
+      id,
+      familyId: id,
       userId,
       persistent,
       refreshTokenHash: tokens.hashRefreshToken(raw),
@@ -74,14 +80,40 @@ export async function createSession(userId: string, meta: Meta, opts: { persiste
   return { refreshToken: raw, persistent, accessToken: await tokens.issueAccess(userId, session.id) };
 }
 
-// called on POST /auth/refresh — rotates the refresh token
-export async function rotateSession(rawRefresh: string, meta: Meta) {
+/**
+ * How long a rotated-away refresh token still counts as "another tab got there
+ * first" rather than a replay. Two tabs that refresh at the same moment send the
+ * same cookie; the loser must not log the user out, and must not be read as theft.
+ */
+export const ROTATION_GRACE_MS = 30_000;
+
+/** Thrown inside the rotation transaction when another request rotated first. */
+class LostRotationRace extends Error {}
+
+type Rotated =
+  /** A new refresh token: set it as the cookie. */
+  | { refreshToken: string; persistent: boolean; accessToken: string }
+  /** Another request just rotated this token: an access token for its successor, cookie untouched. */
+  | { refreshToken: null; persistent: boolean; accessToken: string };
+
+/**
+ * POST /auth/refresh: rotate the refresh token.
+ *
+ * - Exactly one request can rotate a token. The revoke is conditional on the row
+ *   still being live, so two simultaneous refreshes can't both mint a session.
+ * - The loser of that race (within ROTATION_GRACE_MS) gets an access token for
+ *   the session that replaced it, and no cookie: the browser already has the
+ *   winner's.
+ * - A rotated token presented after the grace window is a replay. Someone holds a
+ *   copy, so every session of that sign-in is revoked, the real user's included.
+ */
+export async function rotateSession(rawRefresh: string, meta: Meta): Promise<Rotated | null> {
   const current = await prisma.session.findUnique({
     where: { refreshTokenHash: tokens.hashRefreshToken(rawRefresh) },
   });
-  if (!current || current.revokedAt || current.expiresAt < new Date()) {
-    return null; // invalid / reused / expired → caller forces re-login
-  }
+  if (!current) return null;
+  if (current.revokedAt) return afterRotation(current);
+  if (current.expiresAt < new Date()) return null;
   // Defense-in-depth: even if a ban/deactivation somehow didn't revoke this
   // session, refuse to mint a new token for a banned or deactivated user and
   // revoke the session now. This bounds a mid-session ban to the access-token
@@ -96,24 +128,36 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
     return null; // caller clears the cookie and forces re-login
   }
   const raw = tokens.generateRefreshToken();
-  const [, next] = await prisma.$transaction([
-    prisma.session.update({
-      where: { id: current.id },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.session.create({
-      data: {
-        userId: current.userId,
-        // The choice made at sign-in holds for the life of the session.
-        persistent: current.persistent,
-        refreshTokenHash: tokens.hashRefreshToken(raw),
-        expiresAt: expiryFor(current.persistent),
-        ip: meta.ip,
-        userAgent: meta.userAgent,
-        deviceCookieId: meta.deviceCookieId,
-      },
-    }),
-  ]);
+  let next;
+  try {
+    next = await prisma.$transaction(async (tx) => {
+      const created = await tx.session.create({
+        data: {
+          userId: current.userId,
+          familyId: current.familyId ?? current.id,
+          // The choice made at sign-in holds for the life of the session.
+          persistent: current.persistent,
+          refreshTokenHash: tokens.hashRefreshToken(raw),
+          expiresAt: expiryFor(current.persistent),
+          ip: meta.ip,
+          userAgent: meta.userAgent,
+          deviceCookieId: meta.deviceCookieId,
+        },
+      });
+      // Only a live row is rotated. A concurrent rotation holds the row lock until
+      // it commits; this one then matches nothing and rolls its new session back.
+      const { count } = await tx.session.updateMany({
+        where: { id: current.id, revokedAt: null },
+        data:  { revokedAt: new Date(), replacedById: created.id },
+      });
+      if (count !== 1) throw new LostRotationRace();
+      return created;
+    });
+  } catch (err) {
+    if (!(err instanceof LostRotationRace)) throw err;
+    const now = await prisma.session.findUnique({ where: { id: current.id } });
+    return now ? afterRotation(now) : null;
+  }
 
   // Log every token rotation as a security event so the analysis job
   // has real IP / device cookie / user agent data to work with.
@@ -131,6 +175,38 @@ export async function rotateSession(rawRefresh: string, meta: Meta) {
   }).then(() => triggerSecurityCheck()).catch(() => null);
 
   return { refreshToken: raw, persistent: current.persistent, accessToken: await tokens.issueAccess(next.userId, next.id) };
+}
+
+type SessionRow = { id: string; userId: string; familyId: string | null; replacedById: string | null; revokedAt: Date | null; persistent: boolean };
+
+/** A refresh with a token that is no longer live: a lost race, a replay, or just old. */
+async function afterRotation(session: SessionRow): Promise<Rotated | null> {
+  // Logged out, banned or revoked by hand: nothing to tell apart.
+  if (!session.replacedById || !session.revokedAt) return null;
+
+  if (Date.now() - session.revokedAt.getTime() <= ROTATION_GRACE_MS) {
+    const successor = await prisma.session.findUnique({ where: { id: session.replacedById } });
+    if (!successor || successor.revokedAt || successor.expiresAt < new Date()) return null;
+    return { refreshToken: null, persistent: session.persistent, accessToken: await tokens.issueAccess(successor.userId, successor.id) };
+  }
+
+  await revokeFamily(session.familyId ?? session.id);
+  logger.warn({ userId: session.userId, sessionId: session.id }, "Rotated refresh token replayed; signed out every session of that sign-in");
+  return null;
+}
+
+/** Revoke every live session of one sign-in, access tokens included. */
+async function revokeFamily(familyId: string): Promise<void> {
+  const live = await prisma.session.findMany({
+    where:  { OR: [{ familyId }, { id: familyId }], revokedAt: null },
+    select: { id: true },
+  });
+  if (live.length === 0) return;
+  await prisma.session.updateMany({
+    where: { id: { in: live.map((s) => s.id) }, revokedAt: null },
+    data:  { revokedAt: new Date() },
+  });
+  await Promise.all(live.map((s) => revokeSessionAccessToken(s.id)));
 }
 
 export async function revokeSession(rawRefresh: string) {
