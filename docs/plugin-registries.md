@@ -225,7 +225,9 @@ anyone can call them directly.
 block, and that block has an Icon field. Your component receives the admin's choice as
 `icon` (an icon token, or undefined for your default), so draw it with the host's
 `TokenIcon` when it's set (import `@web/components/TokenIcon` and keep it in your Vite
-externals, mapped to `webTokenIcon`). Give the registration a `label` (a plain string or a getter
+externals, mapped to `webTokenIcon`). To let an admin choose an icon in your ACP pages, use
+the same picker core uses: `IconPicker` from `@web/components/IconPicker` (mapped to
+`webIconPicker`) gives you an icon token to store and draw with `TokenIcon`. Give the registration a `label` (a plain string or a getter
 that translates) so the editor names the block in words rather than by id.
 
 **If it opens a dropdown, follow two conventions.** Put `aria-expanded` on the button

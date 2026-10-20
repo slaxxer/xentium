@@ -4357,7 +4357,7 @@
     "namePlaceholder": "star",
     "searchPlaceholder": "Rechercher les icônes fournies…",
     "followSite": "Suivre le style du site",
-    "needsKit": "Les styles nécessitent un kit FontAwesome. Configurez-en un dans Branding.",
+    "needsKit": "D'autres icônes et styles viennent de votre propre kit Font Awesome.",
     "partialFamily": "⚠ Famille stylisée : elle ne couvre pas toutes les icônes. Vérifiez l'aperçu.",
     "notBundled": "Icône non fournie. Elle nécessite le kit du site, sinon elle ne s'affichera pas.",
     "bundled": "Icônes fournies",
@@ -4368,7 +4368,8 @@
     "checking": "Vérification des icônes que ce style dessine…",
     "noKitMatches": "Aucune icône de ce style ne correspond.",
     "showMore": "Afficher plus ({{count}} restantes)",
-    "partialFiltered": "Une famille stylisée : seules les icônes qu’elle dessine sont listées."
+    "partialFiltered": "Une famille stylisée : seules les icônes qu’elle dessine sont listées.",
+    "addIcons": "Ajouter des icônes"
   },
   "composer": {
     "eyebrow": "Contenu",

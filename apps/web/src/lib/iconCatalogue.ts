@@ -29,5 +29,23 @@ export function bundledIcon(name: string): IconDefinition | undefined {
   return index.get(name);
 }
 
+let names: readonly string[] = [...index.keys()].sort();
+
 /** Every bundled name, sorted — what the picker's grid shows. */
-export const BUNDLED_ICON_NAMES: readonly string[] = [...index.keys()].sort();
+export function bundledIconNames(): readonly string[] {
+  return names;
+}
+
+/**
+ * Add icons a plugin's bundle already carries to the bundled tier, so the picker
+ * offers them and `TokenIcon` draws them on every install, kit or not. Call it once
+ * at load with the definitions the plugin imports anyway; nothing is fetched.
+ * Exposed to plugins through the `webIconPicker` host global.
+ */
+export function registerBundledIcons(defs: readonly IconDefinition[]): void {
+  let added = false;
+  for (const def of defs) {
+    if (def?.iconName && !index.has(def.iconName)) { index.set(def.iconName, def); added = true; }
+  }
+  if (added) names = [...index.keys()].sort();
+}

@@ -4357,7 +4357,7 @@
     "namePlaceholder": "star",
     "searchPlaceholder": "Procurar ícones incluídos…",
     "followSite": "Seguir o estilo do site",
-    "needsKit": "Os estilos requerem um kit FontAwesome. Defina um em Branding.",
+    "needsKit": "Mais ícones e estilos vêm do seu próprio kit Font Awesome.",
     "partialFamily": "⚠ Família estilizada: não cobre todos os ícones. Confirme na pré-visualização.",
     "notBundled": "Não é um ícone incluído. Precisa do kit do site, senão não será desenhado.",
     "bundled": "Ícones incluídos",
@@ -4368,7 +4368,8 @@
     "checking": "A verificar que ícones este estilo desenha…",
     "noKitMatches": "Nenhum ícone neste estilo corresponde.",
     "showMore": "Mostrar mais (faltam {{count}})",
-    "partialFiltered": "Uma família estilizada: só são listados os ícones que desenha."
+    "partialFiltered": "Uma família estilizada: só são listados os ícones que desenha.",
+    "addIcons": "Adicionar ícones"
   },
   "composer": {
     "eyebrow": "Conteúdo",

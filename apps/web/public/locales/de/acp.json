@@ -4357,7 +4357,7 @@
     "namePlaceholder": "star",
     "searchPlaceholder": "Mitgelieferte Icons suchen…",
     "followSite": "Website-Stil folgen",
-    "needsKit": "Stile benötigen ein FontAwesome-Kit. Lege eines unter Branding fest.",
+    "needsKit": "Weitere Icons und Stile kommen aus deinem eigenen Font-Awesome-Kit.",
     "partialFamily": "⚠ Eine stilisierte Familie — sie deckt nicht jedes Icon ab. Prüfe die Vorschau.",
     "notBundled": "Kein mitgeliefertes Icon. Es benötigt das Kit der Website und wird sonst nicht gezeichnet.",
     "bundled": "Mitgelieferte Icons",
@@ -4368,7 +4368,8 @@
     "checking": "Prüfe, welche Icons dieser Stil zeichnet…",
     "noKitMatches": "Kein Icon in diesem Stil passt.",
     "showMore": "Mehr anzeigen (noch {{count}})",
-    "partialFiltered": "Eine stilisierte Familie: Es werden nur die Icons gezeigt, die sie zeichnet."
+    "partialFiltered": "Eine stilisierte Familie: Es werden nur die Icons gezeigt, die sie zeichnet.",
+    "addIcons": "Icons hinzufügen"
   },
   "composer": {
     "eyebrow": "Inhalte",
