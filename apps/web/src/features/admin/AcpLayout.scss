@@ -556,6 +556,43 @@ table.acp-table {
   &:focus { outline: none; border-color: var(--input-border-focus); }
 }
 
+/* ── Every select in the ACP, one look ────────────────────────────────────
+   Core pages, plugin pages and dialogs alike: the 38px box of a button or input,
+   our own chevron with room beside it (the native arrow sat on the edge and
+   differed per browser), and the theme's colours in the open list. Specific
+   enough to win over `.acp-select`, `.inp` and a page's own select class; a
+   denser panel changes only `--sel-h` / `--sel-bg`. */
+.acp-layout select:not([multiple]):not([size]) {
+  appearance: none;
+  -webkit-appearance: none;
+  height: var(--sel-h, var(--btn-h, 38px));
+  padding: 0 34px 0 12px;
+  border: 1px solid var(--input-border-color, var(--c-border));
+  border-radius: var(--input-radius, var(--radius-md));
+  background-color: var(--sel-bg, var(--input-bg));
+  /* A stroked chevron: two 6px boxes, each holding one diagonal of the "v". */
+  background-image:
+    linear-gradient(45deg, transparent calc(50% - 0.9px), var(--c-fg-muted) calc(50% - 0.9px), var(--c-fg-muted) calc(50% + 0.9px), transparent calc(50% + 0.9px)),
+    linear-gradient(135deg, transparent calc(50% - 0.9px), var(--c-fg-muted) calc(50% - 0.9px), var(--c-fg-muted) calc(50% + 0.9px), transparent calc(50% + 0.9px));
+  background-position: calc(100% - 19px) 50%, calc(100% - 14px) 50%;
+  background-size: 6px 6px;
+  background-repeat: no-repeat;
+  color: var(--input-fg, var(--c-fg));
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:hover:not(:disabled) { border-color: var(--c-border-hi, var(--c-accent)); }
+  &:focus { outline: none; border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft); }
+  &:disabled { opacity: 0.6; cursor: default; }
+  option, optgroup { background-color: var(--card-bg); color: var(--c-fg); font-weight: 500; }
+}
+
 .acp-checkbox-row {
   display: flex;
   align-items: center;
