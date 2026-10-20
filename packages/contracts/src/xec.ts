@@ -42,6 +42,7 @@ export const XEC = {
   AUTH_NAME_REQUIRED: "XEC-AUTH-2004",
   AUTH_REGISTRATION_CLOSED: "XEC-AUTH-2010",
   AUTH_LEGAL_CONSENT_REQUIRED: "XEC-AUTH-2011", // terms / privacy published and not accepted
+  AUTH_LEGAL_PENDING: "XEC-AUTH-2012", // signed in, but a legal document still has to be accepted
 
   // Permissions / RBAC
   PERM_DENIED: "XEC-PERM-1001",
