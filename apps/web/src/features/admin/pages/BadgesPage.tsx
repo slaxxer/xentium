@@ -37,6 +37,7 @@ import { faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { Toggle, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
+import { ColorSwatches, EditorDialog } from "../../../components/EditorDialog";
 import "./BadgesPage.scss";
 import { siteTime } from "../../../lib/datetime";
 
@@ -318,57 +319,31 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
   ];
 
   return (
-    <div className="acp-modal-overlay" onClick={onClose}>
-      <div className="acp-modal bdg-modal" onClick={(e) => e.stopPropagation()}>
-        {/* ── The rail: what you are making, and which part of it ──────────── */}
-        <aside className="bdg-modal__rail">
-          {/* ⚠ A live preview, not an illustration. Colour and glyph are chosen two
-              tabs apart, and their result is the one thing an admin actually judges. */}
-          <div className="bdg-preview">
-            <Mark badge={{ faIcon: draft.faIcon, color: draft.color }} size={76} />
-            <div className="bdg-preview__id">
-              <div className={`bdg-preview__name${draft.name ? "" : " is-empty"}`}>
-                {draft.name || t("badges.namePreview")}
-              </div>
-              <code>{draft.key || t("badges.keyPreview")}</code>
-            </div>
-          </div>
-
-          <nav className="bdg-tabs">
-            {tabs.map((x) => (
-              <button key={x.id} type="button"
-                className={`bdg-tab${tab === x.id ? " is-on" : ""}`}
-                onClick={() => setTab(x.id)}>
-                <AcpIcon name={x.icon} size={16} />
-                <span>{t(`badges.tab.${x.id}`)}</span>
-                {x.mark && <em className="bdg-tab__mark">{x.mark}</em>}
-              </button>
-            ))}
-          </nav>
-
-          <p className="bdg-modal__note">
-            {isEdit
-              ? t("badges.railHolders", { count: badge!.holders ?? 0 })
-              : t("badges.railNew")}
-          </p>
-        </aside>
-
-        {/* ── The pane ─────────────────────────────────────────────────────── */}
-        <div className="bdg-modal__pane">
-          <div className="bdg-modal__head">
-            <div>
-              <h2>{t(`badges.pane.${tab}`)}</h2>
-              <p>{t(`badges.paneNote.${tab}`)}</p>
-            </div>
-            <button type="button" className="bdg-iconbtn" onClick={onClose}
-              title={t("badges.close")} aria-label={t("badges.close")}>
-              <AcpIcon name="x" size={14} />
-            </button>
-          </div>
-
-          <div className="bdg-modal__body">
+    <EditorDialog
+      mark={<Mark badge={{ faIcon: draft.faIcon, color: draft.color }} size={76} />}
+      name={draft.name || t("badges.namePreview")}
+      nameEmpty={!draft.name}
+      sub={draft.key || t("badges.keyPreview")}
+      tabs={tabs.map((x) => ({ id: x.id, label: t(`badges.tab.${x.id}`), icon: <AcpIcon name={x.icon} size={16} />, mark: x.mark }))}
+      tab={tab}
+      onTab={(id) => setTab(id as Tab)}
+      railNote={isEdit ? t("badges.railHolders", { count: badge!.holders ?? 0 }) : t("badges.railNew")}
+      title={t(`badges.pane.${tab}`)}
+      description={t(`badges.paneNote.${tab}`)}
+      onClose={onClose}
+      closeLabel={t("badges.close")}
+      footNote={t(isEdit ? "badges.footEdit" : "badges.footNew")}
+      actions={<>
+        <Button variant="ghost" onClick={onClose}>{t("badges.cancel")}</Button>
+        <Button
+          disabled={!draft.name || (!isEdit && !draft.key) || save.isPending}
+          onClick={() => save.mutate()}>
+          {t(isEdit ? "badges.save" : "badges.create")}
+        </Button>
+      </>}
+    >
             {tab === "details" && (
-              <div className="set-rows bdg-rows">
+              <div className="set-rows xed-rows">
                 <div className="set-row">
                   <div>
                     <div className="set-row__label">{t("badges.fieldName")}</div>
@@ -390,7 +365,7 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
                     <div className="set-row__desc">{t("badges.fieldKeyDesc")}</div>
                   </div>
                   <div className="set-row__control">
-                    <input className="inp bdg-mono" value={draft.key} disabled={isEdit} maxLength={40}
+                    <input className="inp xed-mono" value={draft.key} disabled={isEdit} maxLength={40}
                       placeholder="early-supporter"
                       onChange={(e) => set({ key: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, "-") })} />
                   </div>
@@ -422,29 +397,14 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
             )}
 
             {tab === "appearance" && (
-              <div className="bdg-appearance">
-                <div className="bdg-block">
+              <div className="xed-appearance">
+                <div className="xed-block">
                   <div className="set-row__label">{t("badges.fieldColor")}</div>
                   <div className="set-row__desc">{t("badges.fieldColorDesc")}</div>
-                  <div className="bdg-swatches">
-                    {SWATCHES.map((c) => (
-                      <button key={c} type="button" title={c}
-                        className={`bdg-swatch${draft.color.toLowerCase() === c ? " is-on" : ""}`}
-                        style={{ background: c }}
-                        aria-label={c} aria-pressed={draft.color.toLowerCase() === c}
-                        onClick={() => set({ color: c })} />
-                    ))}
-                    <span className="bdg-swatches__sep" />
-                    {/* The swatches are a starting point, not the whole range. */}
-                    <label className="bdg-custom">
-                      <input type="color" value={draft.color}
-                        onChange={(e) => set({ color: e.target.value })} />
-                      <span>{draft.color}</span>
-                    </label>
-                  </div>
+                  <ColorSwatches value={draft.color} swatches={SWATCHES} onChange={(c) => set({ color: c })} />
                 </div>
 
-                <div className="bdg-block">
+                <div className="xed-block">
                   <div className="set-row__label">{t("badges.glyphTitle")}</div>
                   <div className="set-row__desc">{t("badges.glyphHint")}</div>
                   {/* ⚠ The shared picker, not a glyph grid of this page's own: it is
@@ -518,20 +478,7 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
                 )}
               </div>
             )}
-          </div>
-
-          <div className="bdg-modal__foot">
-            <span>{t(isEdit ? "badges.footEdit" : "badges.footNew")}</span>
-            <Button variant="ghost" onClick={onClose}>{t("badges.cancel")}</Button>
-            <Button
-              disabled={!draft.name || (!isEdit && !draft.key) || save.isPending}
-              onClick={() => save.mutate()}>
-              {t(isEdit ? "badges.save" : "badges.create")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </div>
+    </EditorDialog>
   );
 }
 
