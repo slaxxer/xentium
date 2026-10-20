@@ -38,7 +38,7 @@ vi.mock("../infrastructure/queue.js", () => {
 
 vi.mock("../infrastructure/db.js", () => ({
   prisma: {
-    install: { findFirst: async () => (install.siteId === null ? null : { siteId: install.siteId }) },
+    install: { findUnique: async () => (install.siteId === null ? null : { siteId: install.siteId }) },
     setting: {
       findUnique: async () => (storedConfig === null ? null : { value: storedConfig }),
       upsert:     async () => ({}),

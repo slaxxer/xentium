@@ -70,7 +70,7 @@ export async function resolveEnvironment(): Promise<DeployEnvironment> {
  * when everything else is broken) catch it deliberately.
  */
 export async function getSiteId(): Promise<string> {
-  const row = await prisma.install.findFirst({ select: { siteId: true } });
+  const row = await prisma.install.findUnique({ where: { singleton: true }, select: { siteId: true } });
   if (!row?.siteId) {
     throw new XentiumError({
       code:       XEC.LICENSE_SITE_ID_MISSING,

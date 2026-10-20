@@ -85,7 +85,7 @@ export const installerApi = {
   setup: (body: SetupConfigInput) => call<{ ok: boolean }>("POST", "/install/setup", body),
 
   testDatabase: () => call<{ ok: boolean }>("GET", "/install/database/test"),
-  database: (databaseUrl?: string) => call("POST", "/install/database", { databaseUrl }),
+  database: () => call("POST", "/install/database", {}),
   site: (body: SiteConfigInput) => call("POST", "/install/site", body),
 
   addons: () => call<InstallAddonsDto>("GET", "/install/addons"),

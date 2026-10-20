@@ -1,4 +1,5 @@
 import type { RequestHandler } from "express";
+import { ZodError } from "zod";
 import { installerService } from "./installer.service.js";
 import { databaseConfigSchema, siteConfigSchema, adminAccountSchema } from "./installer.validation.js";
 import { installAddonSelectionSchema, installAddonInstallSchema } from "@xentium/contracts";
@@ -17,7 +18,7 @@ const wrap =
   (fn: RequestHandler): RequestHandler =>
   (req, res, next) =>
     Promise.resolve(fn(req, res, next)).catch((e) => {
-      const status = (e as any).status ?? (e as any).httpStatus ?? 500;
+      const status = e instanceof ZodError ? 400 : (e as any).status ?? (e as any).httpStatus ?? 500;
       res.status(status).json({ error: (e as Error).message ?? "install_error" });
     });
 
@@ -26,8 +27,8 @@ export const installerController = {
   environment: wrap(async (_req, res) => res.json(await installerService.environment())),
   testDatabase: wrap(async (_req, res) => res.json(await installerService.testDatabase())),
   database: wrap(async (req, res) => {
-    const { databaseUrl } = databaseConfigSchema.parse(req.body);
-    res.json(await installerService.configureDatabase(databaseUrl));
+    databaseConfigSchema.parse(req.body ?? {});
+    res.json(await installerService.configureDatabase());
   }),
   site: wrap(async (req, res) =>
     res.json(await installerService.configureSite(siteConfigSchema.parse(req.body))),
