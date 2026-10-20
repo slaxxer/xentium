@@ -24,7 +24,7 @@ import { env } from './config/env.js';
  */
 async function isInstalled(): Promise<boolean> {
   try {
-    const row = await prisma.install.findFirst({ select: { completedAt: true } });
+    const row = await prisma.install.findUnique({ where: { singleton: true }, select: { completedAt: true } });
     return !!row?.completedAt;
   } catch {
     return false;

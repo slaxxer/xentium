@@ -8,7 +8,7 @@ import { databaseCheck } from "../../core/installer-engine/steps/databaseCheck.j
 import { runMigrations } from "../../core/installer-engine/steps/runMigrations.js";
 import { seedCore } from "../../core/installer-engine/steps/seedCore.js";
 import { finalize } from "../../core/installer-engine/steps/finalize.js";
-import { ensureInstallRow, advanceTo, assertNotComplete, getInstall }
+import { ensureInstallRow, advanceTo, assertNotComplete, getInstall, requireStep, withInstallLock }
   from "../../core/installer-engine/installState.js";
 import type {
   SiteConfigInput, AdminAccountInput, InstallAddonSelectionInput,
@@ -42,14 +42,17 @@ export const installerService = {
 
   environment: () => environmentCheck(),
 
-  async configureDatabase(databaseUrl?: string) {
+  /** Safe to run again (walking back, a retry after a failure): every part is idempotent. */
+  configureDatabase: () => withInstallLock(async () => {
     await assertNotComplete();
-    await databaseCheck(databaseUrl); // verify first
+    await databaseCheck(); // verify first
     await runMigrations(); // schema now exists
     await seedCore(); // perms + groups
+    // Last: no install row until the schema and seeds are in, so a failure above
+    // leaves an install that simply hasn't done this step yet.
     await ensureInstallRow(InstallStep.SITE_CONFIG);
     return { currentStep: InstallStep.SITE_CONFIG };
-  },
+  }),
 
   async testDatabase() {
     await assertNotComplete();
@@ -57,8 +60,9 @@ export const installerService = {
     return { ok: true };
   },
 
-  async configureSite(input: SiteConfigInput) {
+  configureSite: (input: SiteConfigInput) => withInstallLock(async () => {
     await assertNotComplete();
+    await requireStep(InstallStep.SITE_CONFIG);
     await prisma.$transaction([
       prisma.setting.upsert({
         where: { key: "site.name" },
@@ -84,7 +88,7 @@ export const installerService = {
     ]);
     await advanceTo(InstallStep.ADDONS);
     return { currentStep: InstallStep.ADDONS };
-  },
+  }),
 
   // ── ADD-ONS ────────────────────────────────────────────────────────────────
 
@@ -98,6 +102,7 @@ export const installerService = {
    */
   async addons(): Promise<InstallAddonsDto> {
     await assertNotComplete();
+    await requireStep(InstallStep.ADDONS);
     const { marketplaceService } = await import("../admin/marketplace.service.js");
 
     // Fresh, not cached: the step is re-entered by walking back through the
@@ -145,8 +150,9 @@ export const installerService = {
   /** Record the choice and move on. Nothing is downloaded yet — the artifacts
    *  are fetched during the install run, once there is an admin to attribute
    *  them to. */
-  async selectAddons(input: InstallAddonSelectionInput) {
+  selectAddons: (input: InstallAddonSelectionInput) => withInstallLock(async () => {
     await assertNotComplete();
+    await requireStep(InstallStep.ADDONS);
     await prisma.setting.upsert({
       where:  { key: ADDON_SELECTION_KEY },
       update: { value: input.pluginIds },
@@ -155,7 +161,7 @@ export const installerService = {
     bustSettingsCache(ADDON_SELECTION_KEY);
     await advanceTo(InstallStep.ADMIN);
     return { currentStep: InstallStep.ADMIN, selected: input.pluginIds };
-  },
+  }),
 
   /**
    * Install ONE chosen add-on, then enable it.
@@ -172,6 +178,7 @@ export const installerService = {
    */
   async installAddon(pluginId: string, version: string, userId: string): Promise<InstallAddonInstallResult> {
     await assertNotComplete();
+    await requireStep(InstallStep.FINALIZE);
     const { marketplaceService } = await import("../admin/marketplace.service.js");
     const { pluginService } = await import("../plugins/plugin.service.js");
 
@@ -201,25 +208,30 @@ export const installerService = {
 
   async startMarketplaceLink() {
     await assertNotComplete();
+    await requireStep(InstallStep.ADDONS);
     const { marketplaceService } = await import("../admin/marketplace.service.js");
     return marketplaceService.startLink();
   },
 
   async pollMarketplaceLink(linkId: string) {
     await assertNotComplete();
+    await requireStep(InstallStep.ADDONS);
     const { marketplaceService } = await import("../admin/marketplace.service.js");
     return marketplaceService.pollLink(linkId);
   },
 
   async unlinkMarketplace() {
     await assertNotComplete();
+    await requireStep(InstallStep.ADDONS);
     const { marketplaceService } = await import("../admin/marketplace.service.js");
     await marketplaceService.disconnect();
     return { ok: true };
   },
 
-  async createAdmin(input: AdminAccountInput, meta: Meta) {
+  /** Also the retry of a failed install run, so it is allowed again at FINALIZE. */
+  createAdmin: (input: AdminAccountInput, meta: Meta) => withInstallLock(async () => {
     await assertNotComplete();
+    await requireStep(InstallStep.ADMIN);
     const passwordHash = await hashPassword(input.password);
     const user = await prisma.$transaction(async (tx) => {
       const admin = await tx.group.findUniqueOrThrow({ where: { key: "admin" } });
@@ -240,11 +252,12 @@ export const installerService = {
     // the admin is logged in as soon as installation completes.
     const tokens = await createSession(user.id, meta);
     return { currentStep: InstallStep.FINALIZE, ...tokens };
-  },
+  }),
 
-  async finalize() {
+  finalize: () => withInstallLock(async () => {
     await assertNotComplete();
+    await requireStep(InstallStep.FINALIZE);
     const { siteId } = await finalize();
     return { currentStep: InstallStep.COMPLETE, siteId };
-  },
+  }),
 };

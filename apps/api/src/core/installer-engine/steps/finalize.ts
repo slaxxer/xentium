@@ -11,7 +11,9 @@ async function ensureKeyPair() {
     privateKeyEncoding: { type: "pkcs8", format: "pem" },
     publicKeyEncoding: { type: "spki", format: "pem" },
   });
+  // skipDuplicates: a finalize that failed after this point and is run again.
   await prisma.setting.createMany({
+    skipDuplicates: true,
     data: [
       { key: "auth.jwtPrivateKey", value: privateKey },
       { key: "auth.jwtPublicKey", value: publicKey },
@@ -20,9 +22,14 @@ async function ensureKeyPair() {
 }
 
 export async function finalize(): Promise<{ siteId: string }> {
+  // A finished install can't be reopened (the installer switches itself off), so
+  // finishing one nobody can sign in to administer would strand the site.
+  const admins = await prisma.userGroup.count({ where: { group: { key: "admin" } } });
+  if (admins === 0) throw Object.assign(new Error("install_admin_missing"), { status: 409 });
+
   await ensureKeyPair();
 
-  const row = await prisma.install.findFirstOrThrow();
+  const row = await prisma.install.findUniqueOrThrow({ where: { singleton: true } });
   const siteId = row.siteId ?? randomUUID();
 
   await prisma.install.update({

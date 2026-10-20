@@ -21,7 +21,7 @@ const install: { siteId: string | null } = { siteId: null };
 
 vi.mock("../../infrastructure/db.js", () => ({
   prisma: {
-    install: { findFirst: async () => (install.siteId === null ? null : { siteId: install.siteId }) },
+    install: { findUnique: async () => (install.siteId === null ? null : { siteId: install.siteId }) },
   },
 }));
 
