@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import AdmZip from "adm-zip";
 import { prisma } from "../../infrastructure/db.js";
-import { validateMigrationSql, splitSqlStatements } from "./sql-validator.js";
+import { validateMigrationSql, planMigrationSql } from "./sql-validator.js";
 import type { PluginManifest } from "./manifest-validator.js";
 import { XentiumError } from "../../shared/errors/XentiumError.js";
 import { XEC } from "../../shared/errors/xec.js";
@@ -40,13 +40,10 @@ export async function runUpMigrations(
       continue;
     }
 
-    // Validate DDL-only + naming before executing
-    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
-
-    // Run inside a transaction
+    // Validate against the policy first; run exactly the statements it approved,
+    // all in one transaction, so a statement that fails leaves nothing behind.
+    const stmts = await planMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
     await prisma.$transaction(async (tx) => {
-      // Split on top-level semicolons (dollar-quoted bodies kept intact)
-      const stmts = splitSqlStatements(sql);
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
@@ -88,10 +85,9 @@ export async function runNewUpMigrations(
     if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Migration file not found in package: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
-    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
+    const stmts = await planMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
 
     await prisma.$transaction(async (tx) => {
-      const stmts = splitSqlStatements(sql);
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
@@ -123,10 +119,9 @@ export async function runDownMigrations(
     if (!entry) throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Down migration not found: ${entryPath}` });
 
     const sql = entry.getData().toString("utf8");
-    validateMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
+    const stmts = await planMigrationSql(sql, entryPath, { tablePrefix: manifest.tablePrefix });
 
     await prisma.$transaction(async (tx) => {
-      const stmts = splitSqlStatements(sql);
       for (const stmt of stmts) {
         await tx.$executeRawUnsafe(stmt);
       }
@@ -159,14 +154,15 @@ export async function forceCleanupSchema(
     if (!entry) continue;
 
     const sql = entry.getData().toString("utf8");
+    let stmts: string[];
     try {
-      validateMigrationSql(sql, `migrations/${name}.down.sql`, { tablePrefix: manifest.tablePrefix });
+      stmts = await planMigrationSql(sql, `migrations/${name}.down.sql`, { tablePrefix: manifest.tablePrefix });
     } catch {
       continue; // skip anything that isn't valid DDL — never run untrusted SQL
     }
 
     // Run each statement on its own so one failure doesn't abort the rest.
-    for (const stmt of splitSqlStatements(sql)) {
+    for (const stmt of stmts) {
       try {
         await prisma.$executeRawUnsafe(stmt);
       } catch {
@@ -177,7 +173,7 @@ export async function forceCleanupSchema(
 }
 
 /** Validate that every .up.sql listed in migrations has a matching .down.sql. */
-export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): void {
+export async function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): Promise<void> {
   for (const name of manifest.migrations) {
     if (!zip.getEntry(`migrations/${name}.up.sql`)) {
       throw new XentiumError({ code: XEC.PLUGIN_MIGRATION_MISSING, httpStatus: 422, message: `Missing migration file: migrations/${name}.up.sql` });
@@ -187,7 +183,7 @@ export function validateMigrationPairs(zip: AdmZip, manifest: PluginManifest): v
     }
     // Pre-validate SQL (DDL-only + naming)
     const policy = { tablePrefix: manifest.tablePrefix };
-    validateMigrationSql(zip.getEntry(`migrations/${name}.up.sql`)!.getData().toString(), `${name}.up.sql`, policy);
-    validateMigrationSql(zip.getEntry(`migrations/${name}.down.sql`)!.getData().toString(), `${name}.down.sql`, policy);
+    await validateMigrationSql(zip.getEntry(`migrations/${name}.up.sql`)!.getData().toString(), `${name}.up.sql`, policy);
+    await validateMigrationSql(zip.getEntry(`migrations/${name}.down.sql`)!.getData().toString(), `${name}.down.sql`, policy);
   }
 }

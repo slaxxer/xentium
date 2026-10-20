@@ -40,6 +40,7 @@
     "image-size": "^2.0.4",
     "ioredis": "catalog:",
     "jose": "catalog:",
+    "libpg-query": "17.7.4",
     "maxmind": "^4.3.29",
     "multer": "catalog:",
     "nodemailer": "^10.0.16",

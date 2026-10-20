@@ -30,5 +30,5 @@ export { pluginRouter, PluginRouter } from "./router.js";
 export { SIGNATURE_ENTRY, computeContentDigest } from "./signature.js";
 export type { PluginSignatureClaims, PackageEntry } from "./signature.js";
 
-export { validateMigrationSql, splitSqlStatements } from "./sqlValidator.js";
+export { validateMigrationSql, planMigrationSql } from "./sqlValidator.js";
 export type { MigrationSqlPolicy } from "./sqlValidator.js";

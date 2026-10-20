@@ -61,7 +61,7 @@ export async function bootstrapOfficialPlugins(): Promise<void> {
       }
 
       // Validate migration pairs
-      validateMigrationPairs(migrationZip, manifest);
+      await validateMigrationPairs(migrationZip, manifest);
 
       // Run up migrations
       await runUpMigrations(migrationZip, manifest);
