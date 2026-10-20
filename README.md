@@ -54,7 +54,7 @@ categories with access control, comments, tags and full-text search on Postgres.
 that sits what a community needs: profiles, follows, profile walls, notifications (in-app
 and email), and a progression system where levels are just groups.
 
-A few parts I'm particularly happy with:
+A few parts we're particularly happy with:
 
 - Sign-in. Passwords, passkeys, sign-in links and OAuth all finish in the same function,
   so there's exactly one place where sessions get created. Access tokens live in memory,
@@ -101,7 +101,7 @@ importers for WordPress, phpBB, XenForo, vBulletin and WoltLab, and users keep t
 passwords where the source allows it.
 
 About money, so it doesn't come as a surprise later: core is MIT and complete on its own.
-We also sell a few official plugins (forum, messaging and others) through our
+We also offer paid official plugins that extend it, through our
 marketplace. They're ordinary plugins built on the same API anyone can use, and we don't
 move core features into them.
 
@@ -426,10 +426,10 @@ The full walkthrough is in the [Plugin development guide](#plugin-development-gu
 
 ## Architecture in a nutshell
 
-- **A modular monolith, not microservices.** In production there are two processes: `server.ts` (HTTP) and `worker.ts` (BullMQ).
-- **REST first.** Every endpoint validates its input with Zod. Errors carry typed **XEC codes** (`XEC-AUTH-1001`, …) and go through one central handler.
+- **One modular monolith.** In production there are two processes: `server.ts` (HTTP) and `worker.ts` (BullMQ).
+- **REST first.** Every endpoint validates its input with Zod. Errors carry typed XEC codes (`XEC-AUTH-1001`, …) and go through one central handler.
 - **Auth:** a short-lived HS256 access token (15 minutes, sent as `Authorization: Bearer`, kept in memory in the browser) plus a rotating refresh token in an httpOnly `SameSite=Strict` cookie.
-- **Core doesn't know plugins exist.** Plugins add things through **registries**. Core loops over whatever is registered and never hardcodes a plugin's tables, ids or routes. Search and the home feed both work this way.
+- **Core doesn't know plugins exist.** Plugins add things through registries. Core loops over whatever is registered and never hardcodes a plugin's tables, ids or routes. Search and the home feed both work this way.
 
 ```
 Plugin (onEnable)  ──registers──▶  core registry  ──core iterates──▶  merged result
@@ -440,10 +440,10 @@ Plugin (onEnable)  ──registers──▶  core registry  ──core iterates�
 
 ## Layout system
 
-You'll find it at **ACP → Appearance → Themes**, under **Layouts** on the theme you want to
+You'll find it at ACP → Appearance → Themes, under Layouts on the theme you want to
 edit (each theme, and the built-in Core theme, has its own). A page's structure is a stored
-**document**, not compiled markup: for each **template**, an ordered list of **blocks** in
-each **region**. Theme Studio edits both halves of a theme: how things look (Colours &
+document, not compiled markup: for each template, an ordered list of blocks in
+each region. Theme Studio edits both halves of a theme: how things look (Colours &
 type) and what goes where (Layout).
 
 ### Templates
@@ -456,7 +456,6 @@ routes. Plugins can register templates for their own pages (the forum does).
 | `home` | `/` | main · aside |
 | `article.index` | `/articles` | main · aside |
 | `article.detail` | `/articles/:slug` | main · aside |
-| `page.detail` | `/p/:slug` | main · aside |
 | `profile` | `/u/:username` | main · aside |
 | `members` | `/members` | main · aside |
 | `chrome.header` | the site header, on every page | header |
@@ -468,20 +467,20 @@ rearrange the screen you'd need to fix a broken arrangement.
 
 ### Editing
 
-- **You see edits right away.** The preview is the real page in an iframe, and the editor pushes the document into it before anything is saved.
-- **The draft autosaves** about 700 ms after you stop. There's no save button.
-- **Publishing is explicit** and covers the whole site. It promotes every pending draft. Open tabs pick up the change within seconds over the style-version SSE stream, without reloading.
-- **Reset** puts the template back to its built-in default. You can't undo it.
-- **Drag wherever you like:** in the structure tree or straight in the preview, and between regions. The `↑`/`↓` buttons are there for the keyboard. Hover a block to see its outline and type; click it to select it and open its settings.
-- **Block settings are generated** from each block's Zod schema, so nobody hand-writes forms.
-- **Required blocks** (`logo` and `userMenu` in the navbar) can be moved but not deleted. Both the editor and the API enforce that.
+- You see edits right away. The preview is the real page in an iframe, and the editor pushes the document into it before anything is saved.
+- The draft autosaves about 700 ms after you stop. There's no save button.
+- Publishing is explicit and covers the whole site. It promotes every pending draft. Open tabs pick up the change within seconds over the style-version SSE stream, without reloading.
+- Reset puts the template back to its built-in default. You can't undo it.
+- Drag wherever you like: in the structure tree or straight in the preview, and between regions. The `↑`/`↓` buttons are there for the keyboard. Hover a block to see its outline and type; click it to select it and open its settings.
+- Block settings are generated from each block's Zod schema, so nobody hand-writes forms.
+- Required blocks (`logo` and `userMenu` in the navbar) can be moved but not deleted. Both the editor and the API enforce that.
 
 ### When something goes wrong
 
 None of these can take a site down:
 
 - A stored document that fails validation: the built-in default renders, and the ACP shows a warning.
-- An **unknown block type** (a plugin got disabled, a block was retired): we skip that block and render the rest. The block stays in the document, so re-enabling the plugin brings it back exactly where it was.
+- An unknown block type (a plugin got disabled, a block was retired): we skip that block and render the rest. The block stays in the document, so re-enabling the plugin brings it back exactly where it was.
 - A block that throws: it renders nothing, and the blocks around it are fine.
 
 ### Themes are data
@@ -497,13 +496,13 @@ layouts/<template>.json  one document per template
 assets/                  images and fonts
 ```
 
-A theme is one look, light **or** dark; the manifest says which. Export packages what's
+A theme is one look, light or dark; the manifest says which. Export packages what's
 currently published. Import checks everything before it writes anything, so a package
 with one broken layout doesn't apply at all. Installing a theme adds it to the site's
 theme library, and we ask you whether to switch to it. Since there's no executable code,
 reviewing a theme means reading JSON and CSS.
 
-Need a block the catalogue doesn't have? That's a **plugin**, not a theme. See
+Need a block the catalogue doesn't have? Blocks come from plugins, so you'd write one. See
 [`docs/plugin-blocks.md`](docs/plugin-blocks.md), and [`docs/style-system.md`](docs/style-system.md)
 for how themes and tokens fit together.
 
@@ -517,23 +516,23 @@ Once an admin clicks OK it is gone from the site, for every admin: your instance
 copy and no record of who read it.
 
 The check is anonymous. It sends no site id, no account, no version and no plugin list, and
-it works whether or not you've connected a marketplace account — a site that never linked one
+it works whether or not you've connected a marketplace account. A site that never linked one
 is exactly the site that most needs to hear about a security problem. There are no read
-receipts, deliberately: a channel that knows who read it is a tracking channel.
+receipts either, because a channel that knows who read it is a tracking channel.
 
-Every announcement is **signed** (RS256, the same key that signs entitlements) and your
+Every announcement is signed (RS256, the same key that signs entitlements) and your
 instance throws away anything that doesn't verify, has been altered in transit, or has
 expired. Without that, anyone who could answer for your `LICENSE_SERVER_URL` would get to put
 arbitrary text in a modal in front of every administrator. There's no HTML in the channel at
-all — plain text, plus at most one `https://` link that's shown in full and never opened for
+all: plain text, plus at most one `https://` link that's shown in full and never opened for
 you.
 
 We write them in English and translate where we can; each admin sees their own language if
-we have it, then the site's, then English. They can't be muted: a channel you can turn off
-isn't one we can rely on when it matters.
+we have it, then the site's, then English. They can't be muted, because when
+there's a security problem we need them to reach every site.
 
 There is one marketplace, `plugins.xentium.org`, and an announcement is checked against the
-key bundled in the build — not against `LICENSE_PUBLIC_KEY`. That env var can change which
+key bundled in the build, never against `LICENSE_PUBLIC_KEY`. That env var can change which
 *licences* an instance accepts, for development against a local marketplace; it cannot change
 who an instance believes is Xentium.
 
@@ -554,15 +553,15 @@ when several services share it or it's genuinely complex. It's not a required la
 
 ### Controllers are plain async functions
 
-Express 5 passes rejected promises to the error middleware, so there's **no `wrap()`
-helper**, and you don't cast `req`. `req.userId`, `req.sessionId` and
+Express 5 passes rejected promises to the error middleware, so there's no `wrap()`
+helper, and you don't cast `req`. `req.userId`, `req.sessionId` and
 `req.file.detectedExt` are typed in `apps/api/src/types/express.d.ts`. If you catch
 yourself writing `(req as any)` or a local `AuthedRequest`, the typing is already there.
 
 ```ts
 // A complete controller. Anything it throws (XentiumError included) reaches errorMiddleware.
 export async function getThing(req: Request, res: Response) {
-  const { id } = paramsSchema.parse(req.params);       // Zod on EVERY input
+  const { id } = paramsSchema.parse(req.params);       // Zod on every input
   res.json(await thingService.get(id, req.userId));
 }
 ```
@@ -584,7 +583,7 @@ is gone); new code imports `toast` and `openDialog` directly.
 
 ### Errors, validation, data
 
-- Every endpoint validates **body, params and query** with Zod before doing anything. A `ZodError` becomes `XEC-API-4001` centrally. Errors are `XentiumError`s with an `XEC-<DOMAIN>-<CODE>` code, and a stack trace never reaches a client.
+- Every endpoint validates body, params and query with Zod before doing anything. A `ZodError` becomes `XEC-API-4001` centrally. Errors are `XentiumError`s with an `XEC-<DOMAIN>-<CODE>` code, and a stack trace never reaches a client.
 - Core tables are named `xcf_<snake_case>`. We soft-delete with `deletedAt`, and queries leave deleted rows out by default. TipTap content is stored as ProseMirror JSON, never raw HTML.
 - The API doesn't do languages (it returns machine keys and XEC codes). Only emails and notifications are translated on the server.
 
@@ -599,15 +598,15 @@ with `registerSecurityScan` or take over a baseline with `claimSecurityPatterns`
 
 The HTTP server (`server.ts`) and the worker (`worker.ts`) are separate processes, and
 both load plugins and read the same registries. If you change job code or anything a
-plugin registers into, restart the **worker** too. In dev, `./xentium.sh` runs both.
+plugin registers into, restart the worker too. In dev, `./xentium.sh` runs both.
 
 ---
 
 ## Plugin development guide
 
 Plugins are how you extend Xentium without touching core. A plugin can register routes,
-permissions, ACP pages, nav items, notification types, XEC error codes and **content
-sources** for search and the home feed. It runs inside the host process, but only through
+permissions, ACP pages, nav items, notification types, XEC error codes and content
+sources for search and the home feed. It runs inside the host process, but only through
 the SDK. You don't get free access to core internals.
 
 Check [Framework packages](#framework-packages-npm) first for what's on npm, and where
@@ -720,7 +719,7 @@ const plugin: PluginDefinition = {
         domain: "My Plugin", desc: "…", cause: "…", fix: "…" },
     ]);
 
-    // A SEARCH source: core merges your results and never queries your tables.
+    // A search source: core merges your results and never queries your tables.
     ctx.registerSearchSource({
       id: "things",
       label: "Things",
@@ -728,18 +727,18 @@ const plugin: PluginDefinition = {
       search: (query, opts) => searchThings(query, opts),  // → { data: SearchResultItem[], total }
     });
 
-    // A HOME FEED source: the same idea, for the home and guest feeds.
+    // A home feed source: the same idea, for the home and guest feeds.
     ctx.registerHomeFeedSource({
       id: "things",
       label: "Things",
       recent: (limit) => /* … */,        // → HomeFeedItem[]
     });
 
-    // A SECURITY SCAN: runs with core's security analysis (every 30 min);
+    // A security scan: runs with core's security analysis (every 30 min);
     // open review cases with ctx.host.security.createCase(...).
     ctx.registerSecurityScan(async () => { /* … */ });
 
-    // Optionally CLAIM core baseline detection patterns that your scan replaces.
+    // Optionally claim core baseline detection patterns that your scan replaces.
     // Core skips its own version while you're enabled and resumes it when you're not.
     ctx.claimSecurityPatterns(["multi_account_suspicion"]);
   },
@@ -765,7 +764,7 @@ We inject everything your plugin needs, so you never import core internals:
 ### Core never knows your schema
 
 The host knows nothing about your tables, ids or routes. Want your content in search or
-the home feed? Register a **source** that returns normalized items (`SearchResultItem` /
+the home feed? Register a source that returns normalized items (`SearchResultItem` /
 `HomeFeedItem`). Core asks your source to run the query and merges what comes back. That
 way your plugin can be installed, disabled or removed, and core just works with whatever
 is registered at the moment.
@@ -790,25 +789,25 @@ useDraft({ value: form, savedValue: data, label: "My plugin",
 // …and render <SaveChip saving={false} /> in a standalone page's header.
 ```
 
-That goes for settings pages **and** per-group panels registered through the
+That goes for settings pages and per-group panels registered through the
 `groupConfigPanel` slot. Per-group config (permissions, progression) belongs there,
 because it then shows up as a tab on core's own group page instead of a page of its
-own. Keep an explicit button for **create/edit dialogs**, **secrets** (never part of a
-draft; use Set/Remove) and **destructive actions**. Plugins built for the old autosave
+own. Keep an explicit button for create/edit dialogs, secrets (never part of a
+draft; use Set/Remove) and destructive actions. Plugins built for the old autosave
 (`useAutosave`) join the bar without a rebuild.
 
-📖 **The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
-path: [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).**
+The full recipe, the ways it goes wrong, and the `groupConfigPanel` + progression
+path are in [`docs/plugin-acp-autosave.md`](docs/plugin-acp-autosave.md).
 
 ### Local development
 
 1. Put your plugin in `plugins/community-examples/<name>/` (or `plugins/official/<name>/`). Both are pnpm workspace members.
 2. For hot reload of the web side during `vite dev`, add your web entry to `apps/web/src/plugins/dev-plugins.ts` (keep that edit local).
-3. Start the stack with `./xentium.sh`, then **install and enable** your plugin under **ACP → Extensions → Installed → Upload** (switch on "Allow uploads" there first; or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to load the first-party plugins on startup).
+3. Start the stack with `./xentium.sh`, then install and enable your plugin under **ACP → Extensions → Installed → Upload** (switch on "Allow uploads" there first; or set `BOOTSTRAP_OFFICIAL_PLUGINS=true` to load the first-party plugins on startup).
 
 ### Packaging
 
-Plugins ship as a **`.xtplugin`** archive: a zip of the manifest, the compiled
+Plugins ship as a `.xtplugin` archive: a zip of the manifest, the compiled
 `server`/`web` bundles and the migrations.
 
 ```bash
@@ -829,14 +828,15 @@ upload → validate manifest → compatibility/trust check → install (stored, 
        → disable (behaviour stops, data kept) → uninstall (migrations reversed, package removed)
 ```
 
-> **Registrations live in memory.** Everything `onEnable` registers (routes, ACP pages,
-> content sources, security scans and claims, XEC codes) sits in the host process's
-> registries, and we rebuild it on startup from the `xcf_installed_plugins` table. The
-> lifecycle endpoints keep memory and the database in sync. But if you change plugin
-> state **behind a running process** (deleting a row by hand, resetting the DB in dev),
-> the process keeps serving what it had, e.g. an ACP menu entry for a plugin that's gone,
-> until you restart it. Restarting the API and the worker always fixes it. The worker
-> loads plugins too, so restart it after replacing a plugin package.
+#### If the ACP shows a plugin that's gone
+
+Everything `onEnable` registers (routes, ACP pages, content sources, security scans and
+claims, XEC codes) lives in memory in the host process, and we rebuild it on startup from
+the `xcf_installed_plugins` table. The lifecycle endpoints keep memory and the database in
+sync. If you change plugin state behind a running process (deleting a row by hand,
+resetting the DB in dev), the process keeps serving what it had, such as an ACP menu entry
+for a plugin that no longer exists. Restarting the API and the worker fixes it. The worker
+loads plugins too, so restart it after replacing a plugin package as well.
 
 ---
 
@@ -853,18 +853,18 @@ them.
 
 ### Available adapters
 
-| Adapter | Source | Status |
-|---|---|---|
-| `@xentium/migrate-wp` | WordPress, from a **WXR export file** (wp-admin → Tools → Export). You don't need a WordPress install or database access. | ✅ Available |
-| `@xentium/migrate-phpbb` | phpBB 3.1+, over a direct **MySQL connection**. The `xentium-forum` plugin must be installed and enabled on the target (we check before anything runs). Users keep their passwords. | ✅ Available |
-| `@xentium/migrate-xenforo` | XenForo 2.x, over a direct **MySQL connection**. Needs the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. | ✅ Available |
-| `@xentium/migrate-vbulletin` | vBulletin 3, 4, 5 and 6, over a direct **MySQL connection** (we detect the version). Needs the `xentium-forum` plugin on the target. Users keep their passwords. | ✅ Available |
-| `@xentium/migrate-woltlab` | WoltLab Suite 5 and 6 with or without Burning Board, and Burning Board 4, over a direct **MySQL connection**. Brings members, articles and the forum. Needs the `xentium-forum` plugin on the target. Users keep their passwords. | ✅ Available |
+| Adapter | Source |
+|---|---|
+| `@xentium/migrate-wp` | WordPress, from a WXR export file (wp-admin → Tools → Export). You don't need a WordPress install or database access. |
+| `@xentium/migrate-phpbb` | phpBB 3.1+, over a direct MySQL connection. The `xentium-forum` plugin must be installed and enabled on the target (we check before anything runs). Users keep their passwords. |
+| `@xentium/migrate-xenforo` | XenForo 2.x, over a direct MySQL connection. Needs the `xentium-forum` plugin on the target. Users with native bcrypt hashes keep their passwords. |
+| `@xentium/migrate-vbulletin` | vBulletin 3, 4, 5 and 6, over a direct MySQL connection (we detect the version). Needs the `xentium-forum` plugin on the target. Users keep their passwords. |
+| `@xentium/migrate-woltlab` | WoltLab Suite 5 and 6 with or without Burning Board, and Burning Board 4, over a direct MySQL connection. Brings members, articles and the forum. Needs the `xentium-forum` plugin on the target. Users keep their passwords. |
 
 ### Running a migration
 
 ```bash
-# 1. Always start with a dry run: it inspects, extracts and reports, and writes NOTHING
+# 1. Always start with a dry run: it inspects, extracts and reports, and writes nothing
 pnpm --filter @xentium/migrate-wp migrate -- \
   --file my-export.xml \
   --db "postgresql://user:pass@localhost:5432/xentium" \
@@ -939,12 +939,12 @@ More in [CONTRIBUTING.md](./CONTRIBUTING.md) and in the developer docs at
 
 ## License
 
-**The core is MIT**, see [LICENSE](./LICENSE). That covers everything in this repository
+The core is MIT, see [LICENSE](./LICENSE). That covers everything in this repository
 and the npm packages built from it (`@xentium/server`, `create-xentium`, the `xentium`
 CLI and the framework packages). You can use, change and redistribute it, commercially
 too, as long as the licence notice stays with it.
 
-**The official plugins and themes are not.** The paid plugins and themes we sell on
+The official plugins and themes are not. The paid plugins and themes we sell on
 [plugins.xentium.org](https://plugins.xentium.org) are proprietary. Their source is not in
 this repository, and they are licensed per domain under the marketplace's terms. Buying one
 lets you run it on your licensed site; it doesn't let you share, resell or republish it.
@@ -953,10 +953,10 @@ A few things to know:
 
 - **Core never needs a paid plugin.** Every core feature works without one, and a
   lapsed licence never breaks your site.
-- **Your own plugins and themes are yours.** The plugin SDK and the framework packages
+- Your own plugins and themes are yours. The plugin SDK and the framework packages
   are MIT, so you can build on them and license what you make however you like, paid or
   open source.
-- **Third-party plugins and themes** are licensed by their authors, not by us.
-- **Dependencies** keep their own licences (fonts under the SIL Open Font License,
+- Third-party plugins and themes are licensed by their authors, not by us.
+- Dependencies keep their own licences (fonts under the SIL Open Font License,
   Font Awesome Free under its own terms, and so on). We never bundle Font Awesome Pro; you
   add your own kit, see [`docs/icon-kits.md`](./docs/icon-kits.md).
