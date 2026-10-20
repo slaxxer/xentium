@@ -179,7 +179,9 @@ export async function refreshHandler(req: Request, res: Response) {
     clearRefreshCookie(res);
     throw new XentiumError({ code: XEC.AUTH_SESSION_EXPIRED, httpStatus: 401, message: "Session expired", persist: false });
   }
-  setRefreshCookie(res, result.refreshToken, result.persistent);
+  // null: another request (another tab) rotated this token a moment ago and the
+  // browser already holds its cookie. Overwriting it would undo that rotation.
+  if (result.refreshToken) setRefreshCookie(res, result.refreshToken, result.persistent);
   res.json({ accessToken: result.accessToken });
 }
 
