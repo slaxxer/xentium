@@ -24,6 +24,7 @@ import "./ProfilePage.scss";
 import { LayoutRenderer } from "../../layout/LayoutRenderer";
 import { useLayoutDocument } from "../../layout/useLayout";
 import { uiLocale } from "../../lib/i18n";
+import { prefixedLink } from "./profileLink";
 import { fieldLabel } from "../../lib/coreText";
 
 export interface PublicProfile {
@@ -138,6 +139,8 @@ export interface PublicProfileField {
   label: string;
   type: string;
   value: string;
+  /** A field whose answer is a name on another site: the profile links to prefix + name. */
+  linkPrefix?: string | null;
 }
 
 function Avatar({ user, size = 40 }: { user: { username: string; avatar: string | null }; size?: number }) {
@@ -310,11 +313,13 @@ function InformationField({ field }: { field: PublicProfileField }) {
     );
   }
 
-  if (field.key === "github") {
-    const href = `https://github.com/${field.value}`;
+  // A field with a link prefix (ACP → Profile Fields): the answer is a name on that
+  // site, so the profile links to prefix + name. GitHub ships with one.
+  const link = field.linkPrefix ? prefixedLink(field.linkPrefix, field.value) : null;
+  if (link) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" className="profile-info-card__link">
-        <FontAwesomeIcon icon={icon} /> {field.value}
+      <a href={link.href} target="_blank" rel="noopener noreferrer nofollow" className="profile-info-card__link">
+        <FontAwesomeIcon icon={icon} /> {link.text}
       </a>
     );
   }
@@ -331,7 +336,7 @@ function InformationField({ field }: { field: PublicProfileField }) {
   return (
     <div className="profile-info-card__field">
       <span className="profile-info-card__field-label"><FontAwesomeIcon icon={icon} /> {fieldLabel(field)}:</span>
-      <span className="profile-info-card__field-value">{field.value}</span>
+      <span className={`profile-info-card__field-value${field.type === "longtext" ? " is-multiline" : ""}`}>{field.value}</span>
     </div>
   );
 }

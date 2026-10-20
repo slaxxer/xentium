@@ -12,6 +12,7 @@ import { marketplaceService } from "./marketplace.service.js";
 import { announcementService } from "./announcement.service.js";
 import { refreshLicense, deactivateLicense } from "../../core/license-engine/license-engine.js";
 import { moderationService } from "../moderation/moderation.service.js";
+import { PROFILE_FIELD_TYPES } from "../users/profileFieldValues.js";
 import {
   SCHEDULED_JOBS, getJobDef, getJobConfig, saveJobConfig,
   applyJobSchedule, resolveCron, previewRuns,
@@ -108,23 +109,29 @@ const patchGroupsSchema = z.object({
 const setGroupsSchema = z.object({ groupIds: z.array(z.string()) });
 const setActiveSchema = z.object({ isActive: z.boolean() });
 
+// Everything the ACP can set on a profile field besides its key and type.
+const fieldSettings = {
+  label: z.string().trim().min(1).max(80),
+  placeholder: z.string().max(120).nullable(),
+  helpText: z.string().max(200).nullable(),
+  showOnRegistration: z.boolean(),
+  requiredOnRegistration: z.boolean(),
+  showOnProfile: z.boolean(),
+  dobDisplayFormat: z.enum(["age", "birthday", "full"]),
+  defaultPrivacy: z.enum(["public", "members", "nobody"]),
+  minAge: z.number().int().min(0).max(120),
+  maxLength: z.number().int().min(1).max(5000).nullable(),
+  // The profile appends the answer to it, so only a web address.
+  linkPrefix: z.union([z.literal(""), z.string().trim().max(200).regex(/^https?:\/\/[^\s"'<>]+$/)]).nullable(),
+  options: z.array(z.string().trim().min(1).max(80)).min(1).max(50)
+    .refine((o) => new Set(o).size === o.length, "Options must be different").nullable(),
+};
 const createFieldSchema = z.object({
   key: z.string().regex(/^[a-z0-9_]+$/).min(2).max(40),
-  label: z.string().min(1).max(80),
-  type: z.enum(["text", "date", "email", "url"]),
-  placeholder: z.string().optional(),
-  showOnRegistration: z.boolean().default(false),
-  requiredOnRegistration: z.boolean().default(false),
-  showOnProfile: z.boolean().default(true),
-});
-const updateFieldSchema = z.object({
-  label: z.string().min(1).max(80).optional(),
-  placeholder: z.string().optional(),
-  showOnRegistration: z.boolean().optional(),
-  requiredOnRegistration: z.boolean().optional(),
-  showOnProfile: z.boolean().optional(),
-  dobDisplayFormat: z.enum(["age", "birthday", "full"]).optional(),
-});
+  type: z.enum(PROFILE_FIELD_TYPES),
+  ...fieldSettings,
+}).partial().required({ key: true, label: true, type: true });
+const updateFieldSchema = z.object({ type: z.enum(PROFILE_FIELD_TYPES), ...fieldSettings }).partial();
 const reorderSchema = z.object({
   items: z.array(z.object({ id: z.string(), position: z.number().int() })),
 });
@@ -267,6 +274,10 @@ export const adminController = {
   // Profile fields
   listProfileFields: (async (_req, res) => {
     res.json(await adminService.listProfileFields());
+  }) as RequestHandler,
+
+  profileFieldStats: (async (_req, res) => {
+    res.json(await adminService.profileFieldStats());
   }) as RequestHandler,
 
   createProfileField: (async (req, res) => {

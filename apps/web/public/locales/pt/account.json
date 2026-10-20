@@ -76,7 +76,8 @@
     "joined": "entrou em {{date}}",
     "statFollowers": "Seguidores",
     "statFollowing": "A seguir",
-    "statPosts": "Publicações"
+    "statPosts": "Publicações",
+    "choose": "Escolher…"
   },
   "notifications": {
     "title": "Notificações",

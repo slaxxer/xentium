@@ -605,8 +605,20 @@ model UserProfileField {
   id                      String   @id @default(cuid())
   key                     String   @unique
   label                   String
-  type                    String   // text, date, email, url
+  type                    String   // text, longtext, date, email, url, choice
   placeholder             String?
+  /// A line under the input on the sign-up form and in Account → Profile.
+  helpText                String?  @map("help_text")
+  /// Who sees a member's answer until they choose: public, members, nobody.
+  defaultPrivacy          String   @default("public") @map("default_privacy")
+  /// date_of_birth only: the youngest age that may sign up (0 = no minimum).
+  minAge                  Int      @default(0) @map("min_age")
+  /// text / longtext: the longest answer accepted (null = the type's own cap).
+  maxLength               Int?     @map("max_length")
+  /// text: an http(s) address the answer is appended to on the profile.
+  linkPrefix              String?  @map("link_prefix")
+  /// choice: the options a member picks from, in order.
+  options                 Json?
   position                Int      @default(0)
   showOnRegistration      Boolean  @default(false) @map("show_on_registration")
   requiredOnRegistration  Boolean  @default(false) @map("required_on_registration")

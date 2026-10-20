@@ -39,5 +39,7 @@
   "XEC-MOD-4101": "Elige una de las plantillas. Las advertencias y suspensiones solo se pueden enviar desde una plantilla.",
   "XEC-MOD-4102": "Este contenido no es del miembro sobre el que estás actuando.",
   "XEC-MOD-4103": "Esta plantilla menciona el contenido al que se refiere. Úsala desde ese contenido o elige otra plantilla.",
-  "XEC-USER-4017": "Introduce una fecha de nacimiento real: posterior a 1900 y anterior a hoy."
+  "XEC-USER-4017": "Introduce una fecha de nacimiento real: posterior a 1900 y anterior a hoy.",
+  "XEC-USER-4018": "Una de tus respuestas del perfil no es válida: revisa su longitud o elige una de las opciones.",
+  "XEC-USER-4019": "Todavía no tienes la edad mínima para registrarte aquí."
 }

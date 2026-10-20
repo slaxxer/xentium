@@ -76,7 +76,8 @@
     "joined": "inscrit en {{date}}",
     "statFollowers": "Abonnés",
     "statFollowing": "Abonnements",
-    "statPosts": "Messages"
+    "statPosts": "Messages",
+    "choose": "Choisir…"
   },
   "notifications": {
     "title": "Notifications",

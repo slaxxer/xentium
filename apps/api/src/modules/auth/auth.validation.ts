@@ -59,7 +59,8 @@ export const registerSchema = z.object({
       z.object({
         fieldId: z.string(),
         value: z.string(),
-        privacy: z.enum(["public", "members", "nobody"]).default("public"),
+        // Absent: the field's own default (ACP → Profile Fields).
+        privacy: z.enum(["public", "members", "nobody"]).optional(),
       }),
     )
     .optional()

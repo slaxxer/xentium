@@ -1017,6 +1017,8 @@
   }
   &__field-value {
     color: var(--c-fg-muted);
+    /* Long text keeps the member's line breaks. */
+    &.is-multiline { white-space: pre-line; overflow-wrap: anywhere; }
   }
 }
 
