@@ -396,9 +396,18 @@ model Session {
   /// and the row expires 12h after its last use; true = the usual 30 days.
   /// Carried across every rotation, so the choice made at sign-in holds.
   persistent       Boolean   @default(true)
+  /// Every session a sign-in's refresh token rotates into shares one family (the
+  /// first session's id). A rotated-away token presented again after the grace
+  /// window means a copy was stolen, and the whole family is revoked.
+  familyId         String?
+  /// Set when this session was rotated (not logged out or revoked): the session
+  /// that replaced it. Lets a refresh that lost a race to another tab be told
+  /// apart from a replay.
+  replacedById     String?
   user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([familyId])
   // The log-retention prune scans by last activity. This is the fastest-growing
   // table in the schema (a row per refresh-token rotation), so the daily prune
   // must not seq-scan it.
