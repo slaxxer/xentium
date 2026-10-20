@@ -22,6 +22,7 @@ import { api } from "../../../lib/api";
 import { UserAvatar } from "../../../components/UserAvatar";
 import { useAcpNav } from "../useAcpNav";
 import "./ErrorReferencePage.scss";
+import { Button } from "../../../components/AcpControls";
 
 interface XecEntry {
   msg:    string;
@@ -382,7 +383,7 @@ export function ErrorReferencePage() {
               autoComplete="off" spellCheck={false} onChange={(e) => setMember(e.target.value)} />
           </label>
         </div>
-        <button className="btn-primary xr-submit" disabled={!code.trim()}>{t("errorRef.lookupBtn")}</button>
+        <Button className="xr-submit" disabled={!code.trim()}>{t("errorRef.lookupBtn")}</Button>
       </form>
 
       {!query.code && (

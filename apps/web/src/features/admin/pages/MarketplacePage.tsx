@@ -20,6 +20,7 @@ import { ThemePreview } from "../components/ThemePreview";
 import { openPanelDialog } from "../../../lib/dialog";
 import { TrustBadge } from "../components/TrustBadge";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
+import { Button } from "../../../components/AcpControls";
 
 type ProductKind = "plugin" | "theme";
 
@@ -258,9 +259,9 @@ export function MarketplacePage() {
             </>
           )}
         </div>
-        <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>
+        <Button variant="ghost" onClick={() => navigate("/admin/license")}>
           {license ? t("marketplace.manage") : t("marketplace.activate")}
-        </button>
+        </Button>
       </div>
 
       {/* Two halves of one catalogue. The core's tab bar, not a bespoke control —
@@ -410,9 +411,8 @@ export function MarketplacePage() {
                     only way to see one was to do it — on a change that has no undo
                     (a theme has no runtime; nothing can un-give the package). */}
                 {isTheme && p.previewUrlBase && p.previewTemplates?.length ? (
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm"
+                  <Button
+                    variant="ghost"
                     onClick={() => void openPanelDialog({
                       // An ALERT, not a confirm: there is nothing here to agree to,
                       // and a Cancel beside a Close asks the admin which of two
@@ -432,7 +432,7 @@ export function MarketplacePage() {
                   >
                     <FontAwesomeIcon icon={faEye} style={{ marginRight: 6 }} />
                     {t("marketplace.preview")}
-                  </button>
+                  </Button>
                 ) : null}
                 {instStatus === "enabled" ? (
                   <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"3px 10px", borderRadius:100, fontSize:"var(--fs-2xs)", fontWeight:700, background:"color-mix(in srgb, var(--c-success) 15%, transparent)", color:"var(--c-success)" }}>
@@ -443,13 +443,12 @@ export function MarketplacePage() {
                     <FontAwesomeIcon icon={faCheck} /> {t(isTheme ? "marketplace.themeInstalled" : "marketplace.enabled")}
                   </span>
                 ) : instStatus ? (
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/installed")}>
+                  <Button variant="ghost" onClick={() => navigate("/admin/installed")}>
                     {t("marketplace.goManage")}
-                  </button>
+                  </Button>
                 ) : installable ? (
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm"
+                  <Button
+                    variant="ghost"
                     style={{ color:"var(--c-accent)", borderColor:"var(--c-accent-glow)", background:"var(--c-accent-soft)" }}
                     disabled={installMutation.isPending}
                     onClick={() => installMutation.mutate(p)}
@@ -457,15 +456,15 @@ export function MarketplacePage() {
                     {installMutation.isPending && installMutation.variables?.id === p.id
                       ? t("marketplace.installing")
                       : t("marketplace.install")}
-                  </button>
+                  </Button>
                 ) : locked ? (
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>
+                  <Button variant="ghost" onClick={() => navigate("/admin/license")}>
                     {t("marketplace.activateToInstall")}
-                  </button>
+                  </Button>
                 ) : (
-                  <button type="button" className="btn-ghost btn-sm">
+                  <Button variant="ghost">
                     {t("marketplace.buy")}
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>

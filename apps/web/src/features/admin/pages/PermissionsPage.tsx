@@ -17,6 +17,7 @@ import { SplitView } from "./permissions/SplitView";
 import { MatrixView } from "./permissions/MatrixView";
 import "./groups/Groups.scss";
 import "./permissions/Permissions.scss";
+import { Button } from "../../../components/AcpControls";
 
 /** Everything the two views read and the one way they change the draft. */
 export interface PermissionsCtx {
@@ -233,9 +234,9 @@ export function PermissionsPage() {
           </div>
           <kbd className="pm-kbd pm-kbd--dark">Ctrl S</kbd>
           <button type="button" className="pm-savebar__discard" onClick={discard} disabled={saving}>{t("permissions.discard")}</button>
-          <button type="button" className="btn-primary btn-sm" onClick={() => void save()} disabled={saving}>
+          <Button onClick={() => void save()} disabled={saving}>
             {saving ? t("permissions.saving") : t("permissions.save")}
-          </button>
+          </Button>
         </div>
       )}
     </div>

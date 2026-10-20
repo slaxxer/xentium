@@ -33,6 +33,7 @@ import { StyleEditorPage, type StyleTab } from "./StyleEditorPage";
 import { STUDIO_MODES, type StudioMode } from "./studioLinks";
 import "./acpSystem.scss";
 import "./ThemeStudioPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 
 /** Which Style Editor part each style mode shows. */
@@ -135,13 +136,13 @@ export function ThemeStudioPage() {
                 })
               : t("studio.upToDate")}
           </span>
-          <button type="button" className="btn-primary studio__go"
+          <Button className="studio__go"
             disabled={publish.isPending || !status?.pending}
             title={t("studio.publishHint")}
             onClick={() => publish.mutate()}>
             <FontAwesomeIcon icon={faArrowUpFromBracket} />
             {publish.isPending ? t("studio.publishing") : t("studio.publish")}
-          </button>
+          </Button>
         </div>
       </div>
 

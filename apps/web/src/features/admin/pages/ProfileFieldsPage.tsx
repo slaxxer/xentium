@@ -10,7 +10,7 @@ import { openDialog } from "../../../lib/dialog";
 import { apiErrorMessage } from "../../../lib/swal";
 import { sameValue } from "../../../hooks/useAutosave";
 import { useDraft } from "../../../hooks/useDraft";
-import { Toggle, NumberStepper } from "../../../components/AcpControls";
+import { Toggle, NumberStepper, Button } from "../../../components/AcpControls";
 import { fieldLabel } from "../../../lib/coreText";
 import "./ProfileFieldsPage.scss";
 
@@ -252,9 +252,9 @@ export function ProfileFieldsPage() {
           <h1 className="pg-title">{t("profileFields.title")}</h1>
           <p className="pg-sub">{t("profileFields.sub")}</p>
         </div>
-        <button type="button" className="btn-primary pfp-add" onClick={() => setAdding(true)} disabled={adding}>
+        <Button className="pfp-add" onClick={() => setAdding(true)} disabled={adding}>
           <FontAwesomeIcon icon={faPlus} /> {t("profileFields.addField")}
-        </button>
+        </Button>
       </div>
 
       <section className="pfp-stats" aria-label={t("profileFields.overview")}>
@@ -453,9 +453,9 @@ export function ProfileFieldsPage() {
               {!current.isSystem && (
                 <div className="pfp-block pfp-line pfp-danger">
                   <Row title={t("profileFields.deleteTitle")} desc={t("profileFields.deleteDesc", { count: answered(current.id) })} />
-                  <button type="button" className="btn-danger" disabled={remove.isPending} onClick={() => confirmDelete(current)}>
+                  <Button variant="danger" disabled={remove.isPending} onClick={() => confirmDelete(current)}>
                     <FontAwesomeIcon icon={faTrash} /> {t("profileFields.deleteBtn")}
-                  </button>
+                  </Button>
                 </div>
               )}
             </>
@@ -538,8 +538,8 @@ function NewField({ busy, taken, onCancel, onCreate }: {
         </select>
       </div>
       <div className="pfp-new__actions">
-        <button type="button" className="btn-ghost" onClick={onCancel}>{t("common:actions.cancel")}</button>
-        <button type="submit" className="btn-primary" disabled={!ok || busy}>{t("profileFields.create")}</button>
+        <Button variant="ghost" onClick={onCancel}>{t("common:actions.cancel")}</Button>
+        <Button type="submit" disabled={!ok || busy}>{t("profileFields.create")}</Button>
       </div>
     </form>
   );

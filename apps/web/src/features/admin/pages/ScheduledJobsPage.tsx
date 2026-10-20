@@ -9,6 +9,7 @@ import { CustomTasksSection } from "./CustomTasksSection";
 import "./ScheduledJobsPage.scss";
 import { uiLocale } from "../../../lib/i18n";
 import { hostText } from "../../../lib/coreText";
+import { Button } from "../../../components/AcpControls";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 interface JobConfig {
@@ -172,13 +173,13 @@ function JobCard({ job }: { job: JobView }) {
           </span>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn-ghost" type="button" onClick={runNow} disabled={running}
+          <Button variant="ghost" onClick={runNow} disabled={running}
             style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <FontAwesomeIcon icon={faPlay} /> {running ? t("scheduled.queuing") : t("scheduled.runNow")}
-          </button>
-          <button className="btn-primary" type="button" onClick={save} disabled={saving}>
+          </Button>
+          <Button onClick={save} disabled={saving}>
             {saving ? t("scheduled.saving") : t("scheduled.save")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

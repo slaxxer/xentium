@@ -14,6 +14,7 @@ import { openDialog } from "../../../lib/dialog";
 import { runStreamedJob } from "../../../lib/streamProgress";
 import { siteTime } from "../../../lib/datetime";
 import "./UpdatesPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 interface PluginUpdate {
   pluginId:          string;
@@ -254,10 +255,10 @@ export function UpdatesPage() {
   const checkedLabel = data?.checkedAt ? siteTime.stamp(data.checkedAt) : t("updates.neverChecked");
 
   const checkButton = (
-    <button type="button" className="btn-ghost btn-sm upd-check" onClick={() => check.mutate()} disabled={check.isPending}>
+    <Button variant="ghost" className="upd-check" onClick={() => check.mutate()} disabled={check.isPending}>
       <FontAwesomeIcon icon={faRotate} spin={check.isPending} />
       {check.isPending ? t("updates.checking") : t("updates.checkNow")}
-    </button>
+    </Button>
   );
 
   return (
@@ -315,15 +316,14 @@ export function UpdatesPage() {
               <strong>{pending.length ? t("updates.available", { count: pending.length }) : t("updates.allInstalled")}</strong>
               {critical > 0 && <span className="upd-list__crit">{t("updates.criticalCount", { count: critical })}</span>}
             </div>
-            <button
-              type="button"
-              className="btn-primary btn-sm"
+            <Button
+             
               disabled={selectedIds.length === 0}
               onClick={() => void start(selectedIds)}
             >
               <FontAwesomeIcon icon={faCloudArrowDown} />
               {selectedIds.length ? t("updates.updateSelectedN", { count: selectedIds.length }) : t("updates.updateSelected")}
-            </button>
+            </Button>
           </div>
 
           {rows.map((u) => {
@@ -437,7 +437,7 @@ export function UpdatesPage() {
                       <FontAwesomeIcon icon={faCircleNotch} spin /> {run ? t("updates.updating") : t("updates.queued")}
                     </span>
                   ) : renewal ? (
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => navigate("/admin/license")}>{t("updates.renew")}</button>
+                    <Button variant="ghost" onClick={() => navigate("/admin/license")}>{t("updates.renew")}</Button>
                   ) : (
                     <button
                       type="button"
@@ -504,9 +504,9 @@ function Advisories({ items, updateFor, isBusy, isDone, onFix }: {
               ) : busy ? (
                 <span className="upd-row__busy"><FontAwesomeIcon icon={faCircleNotch} spin /> {t("updates.updating")}</span>
               ) : fix && !fix.renewalRequired ? (
-                <button type="button" className="btn-danger btn-sm" onClick={() => onFix(a.pluginId)}>
+                <Button variant="danger" onClick={() => onFix(a.pluginId)}>
                   {t("updates.advisories.updateTo", { version: fix.latestVersion })}
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>

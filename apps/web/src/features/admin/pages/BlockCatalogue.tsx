@@ -24,6 +24,7 @@ import { listPlaceableBlocks } from "../../../layout/blockRegistry";
 import { BlockArt } from "../../../layout/blockArt";
 import "./BlockCatalogue.scss";
 import { blockLabel } from "../../../lib/coreText";
+import { Button } from "../../../components/AcpControls";
 
 /** "All", then the build order the rest of the editor uses. */
 const CATEGORIES = ["all", "structure", "content", "data", "plugin"] as const;
@@ -99,11 +100,11 @@ export function BlockCatalogue({
             <h2>{t("layoutEditor.catalogueTitle", { region: regionName })}</h2>
             <p>{t("layoutEditor.catalogueNote")}</p>
           </div>
-          <button type="button" className="btn-ghost btn-sm"
+          <Button variant="ghost"
             onClick={onClose}
             title={t("layoutEditor.closeCatalogue")} aria-label={t("layoutEditor.closeCatalogue")}>
             <FontAwesomeIcon icon={faXmark} />
-          </button>
+          </Button>
         </div>
 
         <div className="xt-cat__controls">

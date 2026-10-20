@@ -19,6 +19,7 @@ import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { TrustBadge } from "../components/TrustBadge";
 import { useUploadAllowed, UPLOAD_ALLOWED_KEY } from "../hooks/useUploadAllowed";
 import "./InstalledPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 interface InstalledPlugin {
   id:               string;
@@ -236,9 +237,9 @@ export function InstalledPage() {
           <span>{t("installed.allowUpload")}</span>
         </label>
         {uploadAllowed === true && (
-          <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>
+          <Button onClick={() => navigate("/admin/upload")}>
             <FontAwesomeIcon icon={faUpload} /> {t("installed.uploadBtn")}
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -258,9 +259,9 @@ export function InstalledPage() {
           <div className="ipl-none__title">{t("installed.emptyTitle")}</div>
           <div className="ipl-none__hint">{t("installed.emptyHint")}</div>
           {uploadAllowed === true ? (
-            <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/upload")}>{t("installed.uploadBtn")}</button>
+            <Button onClick={() => navigate("/admin/upload")}>{t("installed.uploadBtn")}</Button>
           ) : (
-            <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/marketplace")}>{t("installed.emptyBrowseMarketplace")}</button>
+            <Button onClick={() => navigate("/admin/marketplace")}>{t("installed.emptyBrowseMarketplace")}</Button>
           )}
         </div>
       </div>
@@ -523,9 +524,9 @@ function PluginPanel({
       {(settings || p.storeUrl) && (
         <div className="ipl-panel__links">
           {settings && (
-            <button type="button" className="btn-primary btn-sm" onClick={() => onOpenSettings(settings.path)}>
+            <Button onClick={() => onOpenSettings(settings.path)}>
               {t("installed.openSettings")} <FontAwesomeIcon icon={faArrowRight} />
-            </button>
+            </Button>
           )}
           {p.storeUrl && (
             <a className="btn-ghost btn-sm" href={p.storeUrl} target="_blank" rel="noopener noreferrer">

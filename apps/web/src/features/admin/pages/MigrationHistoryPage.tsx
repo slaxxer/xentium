@@ -18,6 +18,7 @@ import {
 import "./acpSystem.scss";
 import "./MigrationHistory.scss";
 import { uiLocale } from "../../../lib/i18n";
+import { Button } from "../../../components/AcpControls";
 
 // ACP → System → Migration History: every schema deploy and platform import,
 // as a list you can filter and a detail pane with the run's log. A running
@@ -167,9 +168,9 @@ export function MigrationHistoryPage() {
                   {filtered.length === 0 ? (
                     <div className="mh-nomatch">
                       <div>{t("migrations.noMatch")}</div>
-                      <button className="btn-ghost btn-sm" onClick={() => setFilters({ q: "", type: "all", status: "all" })}>
+                      <Button variant="ghost" onClick={() => setFilters({ q: "", type: "all", status: "all" })}>
                         {t("migrations.clearFilters")}
-                      </button>
+                      </Button>
                     </div>
                   ) : groupByDay(filtered, (v) => startedOf(v.run)).map((group) => (
                     <div key={group.day.toISOString()} className="mh-group">

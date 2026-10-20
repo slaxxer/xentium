@@ -35,7 +35,7 @@ import { TokenIcon } from "../../../components/TokenIcon";
 import { IconPicker } from "../../../components/IconPicker";
 import { faPencil, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { Toggle, NumberStepper } from "../../../components/AcpControls";
+import { Toggle, NumberStepper, Button } from "../../../components/AcpControls";
 import { AcpIcon } from "./acpIcons";
 import "./BadgesPage.scss";
 import { siteTime } from "../../../lib/datetime";
@@ -522,12 +522,12 @@ function BadgeModal({ badge, onClose }: { badge: BadgeRow | null; onClose: () =>
 
           <div className="bdg-modal__foot">
             <span>{t(isEdit ? "badges.footEdit" : "badges.footNew")}</span>
-            <button type="button" className="btn-ghost" onClick={onClose}>{t("badges.cancel")}</button>
-            <button type="button" className="btn-primary"
+            <Button variant="ghost" onClick={onClose}>{t("badges.cancel")}</Button>
+            <Button
               disabled={!draft.name || (!isEdit && !draft.key) || save.isPending}
               onClick={() => save.mutate()}>
               {t(isEdit ? "badges.save" : "badges.create")}
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -622,9 +622,9 @@ export function BadgesPage() {
             <i />
             <span><b>{awarded}</b> {t("badges.statAwarded")}</span>
           </div>
-          <button type="button" className="btn-primary" onClick={() => setCreating(true)}>
+          <Button onClick={() => setCreating(true)}>
             <AcpIcon name="plus" size={15} /><span>{t("badges.new")}</span>
-          </button>
+          </Button>
         </div>
       </div>
 

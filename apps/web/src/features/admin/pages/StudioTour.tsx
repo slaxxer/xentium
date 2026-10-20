@@ -16,6 +16,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import "./StudioTour.scss";
+import { Button } from "../../../components/AcpControls";
 
 interface Step {
   id: string;
@@ -102,15 +103,15 @@ export function StudioTour({ open, hasSelection, onClose }: {
         <p>{t(`${step.id}.body`)}</p>
         {blocked && <p className="studio-tour__task">{t(`${step.id}.task`)}</p>}
         <div className="studio-tour__acts">
-          {!last && <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("skip")}</button>}
+          {!last && <Button variant="ghost" onClick={onClose}>{t("skip")}</Button>}
           <span className="studio-tour__gap" />
           {i > 0 && !last && (
-            <button type="button" className="btn-ghost btn-sm" onClick={() => setI((n) => n - 1)}>{t("back")}</button>
+            <Button variant="ghost" onClick={() => setI((n) => n - 1)}>{t("back")}</Button>
           )}
-          <button type="button" className="btn-primary btn-sm" disabled={blocked}
+          <Button disabled={blocked}
             onClick={() => (last ? onClose() : setI((n) => n + 1))}>
             {last ? t("finish") : i === 0 ? t("start") : t("next")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

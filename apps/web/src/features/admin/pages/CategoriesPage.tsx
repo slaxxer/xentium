@@ -9,6 +9,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { GroupAccessPicker } from "@xentium/ui";
 import type { GroupAccessValue, GroupItem } from "@xentium/ui";
+import { Button } from "../../../components/AcpControls";
 
 interface CategoryInput {
   name: string;
@@ -126,10 +127,9 @@ function CategoryModal({
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end", marginTop: "1.5rem" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("categories.cancel")}</button>
-          <button
-            type="button"
-            className="btn-primary btn-sm"
+          <Button variant="ghost" onClick={onClose}>{t("categories.cancel")}</Button>
+          <Button
+           
             disabled={!name.trim()}
             onClick={() =>
               onSave({
@@ -144,7 +144,7 @@ function CategoryModal({
             }
           >
             {isNew ? t("categories.create") : t("categories.save")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -243,16 +243,16 @@ function TreeNode({
 
         <div style={{ marginLeft: "auto", display: "flex", gap: "0.4rem" }}>
           {depth === 0 && (
-            <button type="button" className="btn-ghost btn-sm" title={t("categories.addSubTitle")} onClick={() => onAddChild(node.id)}>
+            <Button variant="ghost" title={t("categories.addSubTitle")} onClick={() => onAddChild(node.id)}>
               <FontAwesomeIcon icon={faPlus} />
-            </button>
+            </Button>
           )}
-          <button type="button" className="btn-ghost btn-sm" onClick={() => onEdit(node)}>
+          <Button variant="ghost" onClick={() => onEdit(node)}>
             <FontAwesomeIcon icon={faPencil} />
-          </button>
-          <button type="button" className="btn-danger btn-sm" onClick={() => onDelete(node)}>
+          </Button>
+          <Button variant="danger" onClick={() => onDelete(node)}>
             <FontAwesomeIcon icon={faTrash} />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -425,13 +425,12 @@ export function CategoriesPage() {
           <div className="acp-page-sub">{t("nav.content")}</div>
           <h1 className="acp-page-title">{t("categories.title")}</h1>
         </div>
-        <button
-          type="button"
-          className="btn-primary btn-sm"
+        <Button
+         
           onClick={() => setModal({ mode: "create", parentId: null })}
         >
           <FontAwesomeIcon icon={faPlus} /> {t("categories.add")}
-        </button>
+        </Button>
       </div>
 
       <div className="acp-card">

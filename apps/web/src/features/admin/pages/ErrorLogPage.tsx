@@ -15,6 +15,7 @@ import { Overview } from "./errorLog/Overview";
 import { GroupTable } from "./errorLog/GroupTable";
 import { ErrorDrawer } from "./errorLog/ErrorDrawer";
 import "./errorLog/ErrorLog.scss";
+import { Button } from "../../../components/AcpControls";
 
 const STATUSES: GroupStatus[] = ["open", "resolved", "all"];
 
@@ -133,21 +134,21 @@ export function ErrorLogPage() {
           </div>
           <div className="el-head__actions">
             <span className="el-updated">{updatedAgo < 1 ? t("errorLog.updatedNow") : t("errorLog.updatedAgo", { count: updatedAgo })}</span>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => void refresh()}>
+            <Button variant="ghost" onClick={() => void refresh()}>
               <FontAwesomeIcon icon={faRotateRight} className="el-ic" /> {t("errorLog.refresh")}
-            </button>
-            <button type="button" className="btn-ghost btn-sm el-btn-danger" onClick={() => void handleClear()} disabled={clearMut.isPending}>
+            </Button>
+            <Button variant="ghost" className="el-btn-danger" onClick={() => void handleClear()} disabled={clearMut.isPending}>
               <FontAwesomeIcon icon={faTrash} className="el-ic" /> {severity ? t("errorLog.clearSeverity", { severity: sevLabel(severity) }) : t("errorLog.clearLog")}
-            </button>
+            </Button>
           </div>
         </div>
 
         {import.meta.env.DEV && (
           <div className="el-dev">
             <span>{t("errorLog.dev.label")}</span>
-            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.crash")} onClick={() => void simulate("critical")}>500</button>
-            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.xec")} onClick={() => void simulate("xentium500")}>XEC 500</button>
-            <button type="button" className="btn-ghost btn-sm" title={t("errorLog.dev.notFound")} onClick={() => void simulate("notfound")}>404</button>
+            <Button variant="ghost" title={t("errorLog.dev.crash")} onClick={() => void simulate("critical")}>500</Button>
+            <Button variant="ghost" title={t("errorLog.dev.xec")} onClick={() => void simulate("xentium500")}>XEC 500</Button>
+            <Button variant="ghost" title={t("errorLog.dev.notFound")} onClick={() => void simulate("notfound")}>404</Button>
           </div>
         )}
 
@@ -204,9 +205,9 @@ export function ErrorLogPage() {
               count: meta.total,
             })}</span>
             <div className="el-pager__nav">
-              <button type="button" className="btn-ghost btn-sm" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)}>{t("errorLog.prev")}</button>
+              <Button variant="ghost" disabled={meta.page <= 1} onClick={() => setPage(meta.page - 1)}>{t("errorLog.prev")}</Button>
               <span>{meta.page} / {meta.totalPages}</span>
-              <button type="button" className="btn-ghost btn-sm" disabled={meta.page >= meta.totalPages} onClick={() => setPage(meta.page + 1)}>{t("errorLog.next")}</button>
+              <Button variant="ghost" disabled={meta.page >= meta.totalPages} onClick={() => setPage(meta.page + 1)}>{t("errorLog.next")}</Button>
             </div>
           </div>
         )}

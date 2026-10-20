@@ -12,6 +12,7 @@ import { toast } from "../../../../lib/toast";
 import type { Group } from "./groupModel";
 import { Username } from "../../../../components/Username";
 import { siteTime } from "../../../../lib/datetime";
+import { Button } from "../../../../components/AcpControls";
 
 interface MemberRow {
   id: string;
@@ -83,9 +84,9 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
           <h2 className="gp-section">{t("groups.members.title")}</h2>
           <p className="gp-hint">{t("groups.members.summary", { count: total })}</p>
         </div>
-        <button type="button" className="btn-ghost btn-sm" onClick={() => { setAdding(!adding); setQ(""); }}>
+        <Button variant="ghost" onClick={() => { setAdding(!adding); setQ(""); }}>
           <FontAwesomeIcon icon={adding ? faXmark : faUserPlus} /> {adding ? t("groups.cancel") : t("groups.members.add")}
-        </button>
+        </Button>
       </div>
 
       {adding && (
@@ -103,9 +104,9 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
                   <div key={u.id} className="gp-member gp-member--compact">
                     <UserAvatar user={u} size={28} />
                     <span className="gp-member__name">{u.username}</span>
-                    <button type="button" className="btn-ghost btn-sm" disabled={member || setGroups.isPending} onClick={() => add(u)}>
+                    <Button variant="ghost" disabled={member || setGroups.isPending} onClick={() => add(u)}>
                       {member ? t("groups.members.already") : t("groups.members.addOne")}
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -128,10 +129,10 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
                 <span className="gp-hint">{t("groups.members.joined", { date: joined(u.createdAt) })}</span>
               </div>
               <Link to={`/admin/users/${u.id}`} className="btn-ghost btn-sm">{t("groups.members.open")}</Link>
-              <button type="button" className="btn-ghost btn-sm gp-danger-text" disabled={setGroups.isPending}
+              <Button variant="ghost" className="gp-danger-text" disabled={setGroups.isPending}
                 onClick={() => void remove(u)} aria-label={t("groups.members.removeTitle", { user: u.username })}>
                 <FontAwesomeIcon icon={faUserMinus} />
-              </button>
+              </Button>
             </div>
           ))}
         </div>
@@ -139,9 +140,9 @@ export function MembersTab({ group, color }: { group: Group; color: string }) {
 
       {(data?.meta.totalPages ?? 1) > 1 && (
         <div className="gp-pager">
-          <button type="button" className="btn-ghost btn-sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t("groups.members.prev")}</button>
+          <Button variant="ghost" disabled={page <= 1} onClick={() => setPage(page - 1)}>{t("groups.members.prev")}</Button>
           <span className="gp-hint">{t("groups.members.pageOf", { page, pages: data!.meta.totalPages })}</span>
-          <button type="button" className="btn-ghost btn-sm" disabled={page >= data!.meta.totalPages} onClick={() => setPage(page + 1)}>{t("groups.members.next")}</button>
+          <Button variant="ghost" disabled={page >= data!.meta.totalPages} onClick={() => setPage(page + 1)}>{t("groups.members.next")}</Button>
         </div>
       )}
     </section>

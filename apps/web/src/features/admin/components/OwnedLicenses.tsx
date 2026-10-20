@@ -12,6 +12,7 @@ import { toast } from "../../../lib/toast";
 import { themeInstallMessage } from "../hooks/themeInstallResult";
 import { offerThemeSwitch, outcomeFromStream } from "../hooks/themeSwitchPrompt";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
 
 /**
  * What this site's marketplace account owns, and where each licence stands here.
@@ -295,10 +296,10 @@ export function OwnedLicenses({
           <FontAwesomeIcon icon={notice.icon} className="lic-notice__icon" style={{ color: notice.color }} />
           <div className="lic-notice__title">{notice.title}</div>
           <div className="lic-notice__body">{notice.body}</div>
-          <button type="button" className="btn-ghost btn-sm" onClick={notice.run}>
+          <Button variant="ghost" onClick={notice.run}>
             <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginRight: 6 }} />
             {notice.label}
-          </button>
+          </Button>
         </div>
       )}
     </section>
