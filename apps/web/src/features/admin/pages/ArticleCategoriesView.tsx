@@ -4,7 +4,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   faPlus, faPen, faTrashCan, faChevronDown, faChevronRight, faGripVertical, faFolder, faList,
 } from "@fortawesome/free-solid-svg-icons";
-import { GroupAccessPicker } from "@xentium/ui";
 import type { GroupAccessValue, GroupItem } from "@xentium/ui";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { Button } from "../../../components/AcpControls";
@@ -256,7 +255,6 @@ function CategoryDialog({ category, parent, count, onClose, onSaved }: {
   });
 
   const restricted = access.visibility !== "public";
-  const inheritedFrom = parent && parent.effectiveVisibility !== "public" ? parent.effectiveVisibility : null;
 
   return (
     <EditorDialog
@@ -305,10 +303,64 @@ function CategoryDialog({ category, parent, count, onClose, onSaved }: {
           </div>
         </div>
       ) : (
-        <div className="xed-block">
-          <GroupAccessPicker value={access} onChange={setAccess} groups={groups.data ?? []} inheritedRestriction={inheritedFrom} />
-        </div>
+        <AccessSection value={access} onChange={setAccess} groups={groups.data ?? []} />
       )}
     </EditorDialog>
+  );
+}
+
+/**
+ * Who can see a category: the forum categories' access picker, the same three
+ * choices and the same group list. `level` (a progression minimum) is no longer
+ * offered; a category that still has it shows it, so it never looks unset.
+ */
+function AccessSection({ value, onChange, groups }: {
+  value: GroupAccessValue;
+  onChange: (v: GroupAccessValue) => void;
+  groups: GroupItem[];
+}) {
+  const { t } = useTranslation("acp");
+  const modes = ["public", "members", "groups", ...(value.visibility === "level" ? ["level"] : [])] as GroupAccessValue["visibility"][];
+  const pick = (visibility: GroupAccessValue["visibility"]) =>
+    onChange({ ...value, visibility, visibilityGroups: visibility === "groups" ? value.visibilityGroups : [], visibilityMinLevel: visibility === "level" ? value.visibilityMinLevel : null });
+  const toggle = (id: string) => onChange({
+    ...value,
+    visibilityGroups: value.visibilityGroups.includes(id) ? value.visibilityGroups.filter((g) => g !== id) : [...value.visibilityGroups, id],
+  });
+
+  return (
+    <div className="arp-access">
+      <div className="arp-access__modes" role="radiogroup" aria-label={t("categories.pane.access")}>
+        {modes.map((m) => (
+          <label key={m} className={`arp-access__mode${value.visibility === m ? " is-on" : ""}`}>
+            <input type="radio" name="category-access" checked={value.visibility === m} onChange={() => pick(m)} />
+            <span>
+              <b>{t(`categories.accessMode.${m}`)}</b>
+              <small>{t(`categories.accessMode.${m}Desc`)}</small>
+            </span>
+          </label>
+        ))}
+      </div>
+      {value.visibility === "groups" && (
+        <div className="arp-access__groups">
+          <div className="mlp-caps">{t("categories.groupsWithAccess")}</div>
+          {groups.length === 0 ? (
+            <p className="mlp-muted">{t("categories.noGroups")}</p>
+          ) : (
+            <div className="arp-access__list">
+              {groups.map((g) => {
+                const on = value.visibilityGroups.includes(g.id);
+                return (
+                  <label key={g.id} className={on ? "is-on" : ""}>
+                    <input type="checkbox" checked={on} onChange={() => toggle(g.id)} />
+                    <span>{g.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

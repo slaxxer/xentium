@@ -3165,7 +3165,19 @@
     "footEdit": "Changes apply when you save.",
     "close": "Close",
     "nameDesc": "Shown on the article index and in the editor's category list.",
-    "descDesc": "One short line under the name. Optional."
+    "descDesc": "One short line under the name. Optional.",
+    "accessMode": {
+      "public": "Public",
+      "publicDesc": "Everyone including guests",
+      "members": "Members only",
+      "membersDesc": "Logged-in users only",
+      "groups": "Specific groups",
+      "groupsDesc": "Only selected groups below",
+      "level": "Level minimum (old setting)",
+      "levelDesc": "Kept from before; pick another option to replace it."
+    },
+    "groupsWithAccess": "Groups with access",
+    "noGroups": "No groups found."
   },
   "progression": {
     "loading": "Loading…",

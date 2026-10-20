@@ -3038,7 +3038,19 @@
     "footEdit": "Les modifications s'appliquent à l'enregistrement.",
     "close": "Fermer",
     "nameDesc": "Affiché dans l'index des articles et dans la liste des catégories de l'éditeur.",
-    "descDesc": "Une courte ligne sous le nom. Facultatif."
+    "descDesc": "Une courte ligne sous le nom. Facultatif.",
+    "accessMode": {
+      "public": "Public",
+      "publicDesc": "Tout le monde, y compris les invités",
+      "members": "Membres uniquement",
+      "membersDesc": "Utilisateurs connectés uniquement",
+      "groups": "Groupes spécifiques",
+      "groupsDesc": "Uniquement les groupes sélectionnés ci-dessous",
+      "level": "Niveau minimum (ancien réglage)",
+      "levelDesc": "Conservé d'avant ; choisissez une autre option pour le remplacer."
+    },
+    "groupsWithAccess": "Groupes ayant accès",
+    "noGroups": "Aucun groupe trouvé."
   },
   "progression": {
     "loading": "Chargement…",
