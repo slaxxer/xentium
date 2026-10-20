@@ -15,7 +15,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../../lib/api";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { toast } from "../../../../lib/toast";
-import { Toggle } from "../../../../components/AcpControls";
+import { Toggle, Button } from "../../../../components/AcpControls";
 
 interface GroupOption { id: string; key: string; name: string }
 
@@ -97,13 +97,13 @@ export function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; 
               <input className="acp-input" type={showPassword ? "text" : "password"} value={password}
                 autoComplete="new-password" maxLength={128}
                 onChange={(e) => setPassword(e.target.value)} aria-invalid={!!problems.password} />
-              <button type="button" className="btn-ghost btn-sm" onClick={() => setShowPassword((v) => !v)}>
+              <Button variant="ghost" onClick={() => setShowPassword((v) => !v)}>
                 {showPassword ? t("users.create.hide") : t("users.create.show")}
-              </button>
-              <button type="button" className="btn-ghost btn-sm"
+              </Button>
+              <Button variant="ghost"
                 onClick={() => { setPassword(generatePassword()); setShowPassword(true); }}>
                 {t("users.create.generate")}
-              </button>
+              </Button>
             </div>
             <small className={problems.password ? "usr-create__err" : "usr-create__hint"}>
               {problems.password ?? t("users.create.passwordHint")}
@@ -134,10 +134,10 @@ export function CreateUserDialog({ onClose, onCreated }: { onClose: () => void; 
           {error && <p className="usr-create__err usr-create__err--box" role="alert">{error}</p>}
 
           <div className="usr-create__foot">
-            <button type="button" className="btn-ghost" onClick={onClose}>{t("users.create.cancel")}</button>
-            <button type="submit" className="btn-primary" disabled={!ready || create.isPending}>
+            <Button variant="ghost" onClick={onClose}>{t("users.create.cancel")}</Button>
+            <Button type="submit" disabled={!ready || create.isPending}>
               {create.isPending ? t("users.create.creating") : t("users.create.submit")}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

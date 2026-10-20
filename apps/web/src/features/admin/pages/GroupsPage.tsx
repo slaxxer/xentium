@@ -12,6 +12,7 @@ import { DEFAULT_BADGE_COLOR, keysOf, powerOf, reorder, type Group } from "./gro
 import { GroupGlyph, PowerMeter } from "./groups/groupParts";
 import "./acpSystem.scss";
 import "./groups/Groups.scss";
+import { Button } from "../../../components/AcpControls";
 
 // ACP → Members → Groups: every group as one precedence list. The group at the top
 // is the badge a member of several groups wears, so the order is the point of
@@ -89,9 +90,9 @@ export function GroupsPage() {
             <FontAwesomeIcon icon={faMagnifyingGlass} />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={t("groups.list.filter")} aria-label={t("groups.list.filter")} />
           </label>
-          <button type="button" className="btn-primary btn-sm" onClick={() => setCreating(true)}>
+          <Button onClick={() => setCreating(true)}>
             <FontAwesomeIcon icon={faPlus} /> {t("groups.create.button")}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -231,10 +232,10 @@ function CreateGroupCard({ onCancel, onCreated }: { onCancel: () => void; onCrea
         </label>
       </div>
       <div className="gp-create__actions">
-        <button type="button" className="btn-ghost btn-sm" onClick={onCancel}>{t("groups.cancel")}</button>
-        <button type="submit" className="btn-primary btn-sm" disabled={!valid || create.isPending}>
+        <Button variant="ghost" onClick={onCancel}>{t("groups.cancel")}</Button>
+        <Button type="submit" disabled={!valid || create.isPending}>
           {create.isPending ? t("groups.create.creating") : t("groups.create.button")}
-        </button>
+        </Button>
       </div>
     </form>
   );

@@ -107,6 +107,7 @@ import { InspectorFold } from "./InspectorFold";
 import "./LayoutEditorPage.scss";
 import { IconPicker } from "../../../components/IconPicker";
 import { blockLabel, pluginText } from "../../../lib/coreText";
+import { Button } from "../../../components/AcpControls";
 
 /**
  * The three canvas widths, and what they are for.
@@ -1922,16 +1923,16 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             how these are actually used, but a control an admin can see is how they
             find out the keyboard works at all. */}
         <div className="lay__history">
-          <button type="button" className="btn-ghost btn-sm" disabled={!history.canUndo}
+          <Button variant="ghost" disabled={!history.canUndo}
             onClick={undoEdit} title={`${t("layoutEditor.undo")} (Ctrl+Z)`}
             aria-label={t("layoutEditor.undo")}>
             <FontAwesomeIcon icon={faRotateLeft} />
-          </button>
-          <button type="button" className="btn-ghost btn-sm" disabled={!history.canRedo}
+          </Button>
+          <Button variant="ghost" disabled={!history.canRedo}
             onClick={redoEdit} title={`${t("layoutEditor.redo")} (Ctrl+Shift+Z)`}
             aria-label={t("layoutEditor.redo")}>
             <FontAwesomeIcon icon={faRotateRight} />
-          </button>
+          </Button>
         </div>
 
         {/* TWO pills, because they answer two different questions and an admin who
@@ -1965,10 +1966,10 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
         </span>
 
         <div className="lay__bar-actions">
-          <button type="button" className="btn-ghost btn-sm lay__help" onClick={() => setTourOpen(true)}
+          <Button variant="ghost" className="lay__help" onClick={() => setTourOpen(true)}
             title={t("layoutEditor.tour.replay")} aria-label={t("layoutEditor.tour.replay")}>
             <FontAwesomeIcon icon={faCircleQuestion} />
-          </button>
+          </Button>
           <div className="lay__seg lay__mode" role="group" aria-label={t("layoutEditor.mode.label")}>
             <button type="button" className={!advanced ? "is-on" : ""} aria-pressed={!advanced}
               title={t("layoutEditor.mode.simpleHint")} onClick={() => advancedFlag.set(false)}>
@@ -1989,12 +1990,12 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               on purpose and often. None of them is reached by accident now, and each
               still confirms. */}
           <div className="lay__menu" ref={menuRef}>
-            <button type="button" className="btn-ghost btn-sm"
+            <Button variant="ghost"
               aria-haspopup="menu" aria-expanded={menuOpen}
               title={t("layoutEditor.draftActions")} aria-label={t("layoutEditor.draftActions")}
               onClick={() => setMenuOpen((o) => !o)}>
               <FontAwesomeIcon icon={faEllipsis} />
-            </button>
+            </Button>
             {menuOpen && (
               <div className="lay__menu-list" role="menu">
                 {/* Only when the installed theme actually ships this template — an
@@ -2035,12 +2036,12 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             <p>{t("layoutEditor.conflictBody")}</p>
           </div>
           <div className="lay__conflict-actions">
-            <button type="button" className="btn-ghost btn-sm" onClick={takeTheirs}>
+            <Button variant="ghost" onClick={takeTheirs}>
               {t("layoutEditor.conflictReload")}
-            </button>
-            <button type="button" className="btn-primary btn-sm" onClick={takeMine}>
+            </Button>
+            <Button onClick={takeMine}>
               {t("layoutEditor.conflictOverwrite")}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -2064,12 +2065,12 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               <button type="button" className="lay__props-back" onClick={() => setSelectedId(null)}>
                 <FontAwesomeIcon icon={faArrowLeft} /> {t("layoutEditor.backToBlocks")}
               </button>
-              <button type="button" className="btn-ghost btn-sm"
+              <Button variant="ghost"
                 onClick={() => setSelectedId(null)}
                 title={t("layoutEditor.closeSettings")}
                 aria-label={t("layoutEditor.closeSettings")}>
                 <FontAwesomeIcon icon={faXmark} />
-              </button>
+              </Button>
             </div>
 
             <div className="lay__props-ident">
@@ -2095,18 +2096,18 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
             {/* One row of everything that ARRANGES the block. The canvas has the same
                 actions on the block itself; these are here so the panel is enough. */}
             <div className="lay__props-acts">
-              <button type="button" className="btn-ghost btn-sm"
+              <Button variant="ghost"
                 disabled={selected.index === 0}
                 onClick={() => nudge(selected.node.id, -1)}
                 title={`${t("layoutEditor.moveUp")} (Alt+↑)`} aria-label={t("layoutEditor.moveUp")}>
                 <FontAwesomeIcon icon={faArrowUp} />
-              </button>
-              <button type="button" className="btn-ghost btn-sm"
+              </Button>
+              <Button variant="ghost"
                 disabled={selected.index >= selected.list.length - 1}
                 onClick={() => nudge(selected.node.id, 1)}
                 title={`${t("layoutEditor.moveDown")} (Alt+↓)`} aria-label={t("layoutEditor.moveDown")}>
                 <FontAwesomeIcon icon={faArrowDown} />
-              </button>
+              </Button>
               <div className="lay__moveto">
                 <button type="button" className={`btn-ghost btn-sm${moveOpen ? " is-on" : ""}`}
                   aria-expanded={moveOpen} onClick={() => setMoveOpen((o) => !o)}>
@@ -2130,17 +2131,17 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
                 )}
               </div>
               <span className="lay__props-acts-gap" />
-              <button type="button" className="btn-ghost btn-sm"
+              <Button variant="ghost"
                 onClick={() => duplicateNode(selected.node.id)}
                 title={`${t("layoutEditor.duplicateBlock")} (Ctrl+D)`} aria-label={t("layoutEditor.duplicateBlock")}>
                 <FontAwesomeIcon icon={faClone} />
-              </button>
+              </Button>
               {!required.has(selected.node.type) && (
-                <button type="button" className="btn-ghost btn-sm lay__danger"
+                <Button variant="ghost" className="lay__danger"
                   onClick={() => removeNode(selected.node.id)}
                   title={`${t("layoutEditor.removeBlock")} (Del)`} aria-label={t("layoutEditor.removeBlock")}>
                   <FontAwesomeIcon icon={faTrash} />
-                </button>
+                </Button>
               )}
             </div>
 
@@ -2273,12 +2274,12 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
                         updateBlockIconOverride(r, iconPick.id, iconPick.slot, tok))}
                     />
                     {/* Clearing must be reachable: the picker has no empty state. */}
-                    <button type="button" className="btn-ghost btn-sm"
+                    <Button variant="ghost"
                       disabled={!selected.node.iconOverrides?.[iconPick.slot]}
                       onClick={() => applyTree((r) =>
                         updateBlockIconOverride(r, iconPick.id, iconPick.slot, undefined))}>
                       {t("layoutEditor.iconOverrideClear")}
-                    </button>
+                    </Button>
                   </div>
                 )}
 
@@ -2354,11 +2355,11 @@ function LayoutEditorInner({ themeKey }: { themeKey: string | null }) {
               {regionTabs()}
               <div className="lay__region-head">
                 <span>{regionLabel(openRegion, templateKey, t)}</span>
-                <button type="button" className="btn-ghost btn-sm"
+                <Button variant="ghost"
                   onClick={() => setBrowseTarget({ region: openRegion, parentId: null })}
                   title={t("layoutEditor.addBlock")}>
                   <FontAwesomeIcon icon={faPlus} />
-                </button>
+                </Button>
               </div>
               {regionPanel(openRegion)}
             </>

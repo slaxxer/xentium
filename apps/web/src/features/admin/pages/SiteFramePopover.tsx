@@ -32,7 +32,7 @@ import { toast } from "../../../lib/toast";
 import { apiErrorMessage } from "../../../lib/swal";
 import { useDebouncedSave } from "../../../hooks/useAutosave";
 import { withTheme } from "../../../lib/editingTheme";
-import { Toggle } from "../../../components/AcpControls";
+import { Toggle, Button } from "../../../components/AcpControls";
 import { resolveImageSource } from "../../../layout/blocks/coreBlocks";
 import "./SiteFramePopover.scss";
 
@@ -270,9 +270,9 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
               {page && pageOverride && (
                 <div className="lay-frame__notice">
                   <span>{t("layoutEditor.frame.pageOverride", { page: pageLabel(page), mode: modeLabel(pageOverride) })}</span>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => setOverride(page, "")}>
+                  <Button variant="ghost" onClick={() => setOverride(page, "")}>
                     {t("layoutEditor.frame.useDefault")}
-                  </button>
+                  </Button>
                 </div>
               )}
             </section>
@@ -337,10 +337,10 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
                       removeLabel={t("layoutEditor.frame.removeStop")} />
                   ))}
                   {bg.stops.length < 3 && (
-                    <button type="button" className="btn-ghost btn-sm lay-frame__add"
+                    <Button variant="ghost" className="lay-frame__add"
                       onClick={() => setBg({ stops: [...bg.stops, THIRD_STOP] })}>
                       <FontAwesomeIcon icon={faPlus} /> {t("layoutEditor.frame.addStop")}
-                    </button>
+                    </Button>
                   )}
                   <div className="lay-frame__dir">
                     <div className="lay-frame__compass">
@@ -459,11 +459,11 @@ export function SiteFramePopover({ pageKey, onLiveChange, themeKey = null }: Pro
               <br />
               <span className="lay-frame__muted">{t("layoutEditor.frame.draftNote")}</span>
             </span>
-            <button type="button" className="btn-ghost btn-sm" disabled={revert.isPending}
+            <Button variant="ghost" disabled={revert.isPending}
               onClick={() => revert.mutate()}>
               <FontAwesomeIcon icon={faRotateLeft} />{" "}
               {t(themeFrame ? "layoutEditor.frame.revertTheme" : "layoutEditor.frame.resetDefault")}
-            </button>
+            </Button>
           </div>
         </div>
       )}

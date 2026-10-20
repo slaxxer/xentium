@@ -27,6 +27,7 @@ import { AcpIcon } from "./acpIcons";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faGripVertical, faTrashCan } from "@fortawesome/free-solid-svg-icons";
 import "./EmojisPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 const QUERY_KEY = ["acp-emojis"] as const;
 const ACCEPT = "image/png,image/gif,image/webp";
@@ -184,9 +185,9 @@ export function EmojisPage() {
           <p className="pg-sub">{t("emojis.subtitle")}</p>
         </div>
         <div className="emj-headside">
-          <button type="button" className="btn-primary" onClick={() => fileRef.current?.click()}>
+          <Button onClick={() => fileRef.current?.click()}>
             <AcpIcon name="plus" size={15} /><span>{t("emojis.upload")}</span>
-          </button>
+          </Button>
           <input ref={fileRef} type="file" accept={ACCEPT} multiple hidden
             onChange={(e) => { choose(e.target.files); e.target.value = ""; }} />
         </div>
@@ -231,11 +232,11 @@ export function EmojisPage() {
           </div>
           <div className="emj-batch__foot">
             <p className="acp-hint">{t("emojis.rules")}</p>
-            <button type="button" className="btn-ghost" disabled={upload.isPending}
-              onClick={() => { pending.forEach((p) => URL.revokeObjectURL(p.preview)); setPending([]); }}>{t("emojis.cancel")}</button>
-            <button type="button" className="btn-primary" disabled={!pendingValid || upload.isPending} onClick={() => upload.mutate()}>
+            <Button variant="ghost" disabled={upload.isPending}
+              onClick={() => { pending.forEach((p) => URL.revokeObjectURL(p.preview)); setPending([]); }}>{t("emojis.cancel")}</Button>
+            <Button disabled={!pendingValid || upload.isPending} onClick={() => upload.mutate()}>
               {upload.isPending ? t("emojis.adding") : t("emojis.add", { count: pending.length })}
-            </button>
+            </Button>
           </div>
         </section>
       )}
@@ -244,7 +245,7 @@ export function EmojisPage() {
       {!isLoading && emojis.length === 0 && pending.length === 0 && (
         <div className="emj-empty">
           <p>{t("emojis.empty")}</p>
-          <button type="button" className="btn-primary" onClick={() => fileRef.current?.click()}>{t("emojis.upload")}</button>
+          <Button onClick={() => fileRef.current?.click()}>{t("emojis.upload")}</Button>
         </div>
       )}
 
@@ -261,7 +262,7 @@ export function EmojisPage() {
               : (
                 <>
                   <h2>{category || t("emojis.uncategorised")} <span>{list.length}</span></h2>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => setRenaming(category)}>{t("emojis.rename")}</button>
+                  <Button variant="ghost" onClick={() => setRenaming(category)}>{t("emojis.rename")}</Button>
                 </>
               )}
           </header>
@@ -293,7 +294,7 @@ export function EmojisPage() {
                   <img src={e.url} alt="" loading="lazy" />
                   <code>:{e.shortcode}:</code>
                   <span className="emj-row__name">{e.name}</span>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => setEditing(e.id)}>{t("emojis.edit")}</button>
+                  <Button variant="ghost" onClick={() => setEditing(e.id)}>{t("emojis.edit")}</Button>
                   <button type="button" className="emj-row__remove" aria-label={t("emojis.removeTitle", { code: e.shortcode })}
                     title={t("emojis.remove")} onClick={() => confirmRemove(e)} disabled={remove.isPending}>
                     <FontAwesomeIcon icon={faTrashCan} />
@@ -319,8 +320,8 @@ function RenameCategory({ from, onDone }: { from: string; onDone: () => void }) 
     <form className="emj-rename" onSubmit={(e) => { e.preventDefault(); if (to.trim() === from) onDone(); else save.mutate(); }}>
       <input className="inp inp--sm" value={to} maxLength={40} autoFocus list="emj-categories"
         aria-label={t("emojis.category")} placeholder={t("emojis.uncategorised")} onChange={(e) => setTo(e.target.value)} />
-      <button type="button" className="btn-ghost btn-sm" onClick={onDone}>{t("emojis.cancel")}</button>
-      <button type="submit" className="btn-primary btn-sm" disabled={save.isPending}>{t("emojis.save")}</button>
+      <Button variant="ghost" onClick={onDone}>{t("emojis.cancel")}</Button>
+      <Button type="submit" disabled={save.isPending}>{t("emojis.save")}</Button>
     </form>
   );
 }
@@ -349,8 +350,8 @@ function EmojiEditor({ emoji, onDone }: { emoji: EmojiRow; onDone: () => void })
           onChange={(e) => setName(e.target.value)} />
         <input className="inp inp--sm" list="emj-categories" value={category} maxLength={40}
           aria-label={t("emojis.category")} placeholder={t("emojis.category")} onChange={(e) => setCategory(e.target.value)} />
-        <button type="button" className="btn-ghost btn-sm" onClick={onDone}>{t("emojis.cancel")}</button>
-        <button type="submit" className="btn-primary btn-sm" disabled={!validCode(shortcode) || save.isPending}>{t("emojis.save")}</button>
+        <Button variant="ghost" onClick={onDone}>{t("emojis.cancel")}</Button>
+        <Button type="submit" disabled={!validCode(shortcode) || save.isPending}>{t("emojis.save")}</Button>
       </form>
     </li>
   );

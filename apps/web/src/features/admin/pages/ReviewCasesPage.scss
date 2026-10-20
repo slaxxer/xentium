@@ -125,7 +125,8 @@
   border: 1px solid var(--c-border); background: transparent; color: var(--c-fg-muted); transition: all 0.15s;
   svg { font-size: var(--fs-2xs); }
   &:disabled { opacity: 0.5; cursor: default; }
-  &--xs { height: var(--btn-h-sm); padding: 0 11px; font-size: var(--fs-xs); }
+  /* Was a smaller size; the ACP has one button size now. */
+  &--xs { height: var(--btn-h); }
   &--ghost:hover:not(:disabled) { border-color: var(--c-accent-glow); color: var(--c-accent); }
   &--soft { background: var(--c-accent-soft); color: var(--c-accent); border-color: transparent; }
   &--ok {

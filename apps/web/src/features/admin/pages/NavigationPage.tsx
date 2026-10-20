@@ -9,6 +9,7 @@ import {
 import { api } from "../../../lib/api";
 import { swalToast, apiErrorMessage, swalConfirm } from "../../../lib/swal";
 import { Toggle } from "../../../components/Toggle";
+import { Button } from "../../../components/AcpControls";
 
 interface NavItem {
   id: string;
@@ -68,16 +69,15 @@ function EditModal({
         </label>
 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("navigation.cancel")}</button>
-          <button
-            type="button"
-            className="btn-primary btn-sm"
+          <Button variant="ghost" onClick={onClose}>{t("navigation.cancel")}</Button>
+          <Button
+           
             disabled={!label.trim() || !url.trim()}
             onClick={() => onSave({ label, url, openInNewTab: openNew, visibility })}
           >
             <FontAwesomeIcon icon={faSave} style={{ marginRight: 5 }} />
             {item ? t("navigation.save") : t("navigation.addLink")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -232,9 +232,9 @@ export function NavigationPage() {
           <div className="acp-page-sub">{t("nav.appearance")}</div>
           <h1 className="acp-page-title">{t("nav.navigation")}</h1>
         </div>
-        <button type="button" className="btn-primary btn-sm" onClick={() => setEditItem(null)}>
+        <Button onClick={() => setEditItem(null)}>
           <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} /> {t("navigation.addLink")}
-        </button>
+        </Button>
       </div>
 
       <div style={{
@@ -332,17 +332,17 @@ export function NavigationPage() {
 
                 {/* Actions */}
                 <div style={{ display: "flex", gap: "0.4rem" }}>
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => setEditItem(item)}>
+                  <Button variant="ghost" onClick={() => setEditItem(item)}>
                     <FontAwesomeIcon icon={faPencil} />
-                  </button>
+                  </Button>
                   {item.isSystem ? (
-                    <button type="button" className="btn-ghost btn-sm" disabled title={t("navigation.coreNoDelete")}>
+                    <Button variant="ghost" disabled title={t("navigation.coreNoDelete")}>
                       <FontAwesomeIcon icon={faTrash} />
-                    </button>
+                    </Button>
                   ) : (
-                    <button type="button" className="btn-danger btn-sm" onClick={() => handleDelete(item)}>
+                    <Button variant="danger" onClick={() => handleDelete(item)}>
                       <FontAwesomeIcon icon={faTrash} />
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>

@@ -12,6 +12,7 @@ import { swalToast, apiErrorMessage } from "../../../lib/swal";
 import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { useUploadAllowed } from "../hooks/useUploadAllowed";
 import "./UploadPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 const STEP_KEYS = ["upload", "validate", "install"] as const;
 
@@ -119,9 +120,9 @@ export function UploadPage() {
           <div style={{ fontSize: "var(--fs-sm)", color: "var(--c-fg-muted)", marginBottom: 20, maxWidth: 460, marginInline: "auto", lineHeight: 1.6 }}>
             {t("upload.disabledHint")}
           </div>
-          <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/marketplace")}>
+          <Button onClick={() => navigate("/admin/marketplace")}>
             {t("upload.disabledGoMarketplace")}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -180,9 +181,9 @@ export function UploadPage() {
                 {file ? file.name : t("upload.drop")}
               </div>
               <div style={{ fontSize:"var(--fs-sm)", color:"var(--c-fg-muted)", marginBottom:16 }}>{t("upload.orClick")}</div>
-              <button type="button" className="btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
+              <Button variant="ghost" onClick={(e) => { e.stopPropagation(); fileRef.current?.click(); }}>
                 <FontAwesomeIcon icon={faFolderOpen} style={{ marginRight:5 }} /> {t("upload.browse")}
-              </button>
+              </Button>
             </div>
 
             <input ref={fileRef} type="file" accept=".xtplugin,.zip" style={{ display:"none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
@@ -196,11 +197,11 @@ export function UploadPage() {
 
             {file && (
               <div style={{ marginTop:14 }}>
-                <button type="button" className="btn-primary btn-sm" onClick={() => validateMut.mutate(file)} disabled={validateMut.isPending}>
+                <Button onClick={() => validateMut.mutate(file)} disabled={validateMut.isPending}>
                   {validateMut.isPending
                     ? <><span className="plugin-spinner plugin-spinner--sm" />{t("upload.validating")}</>
                     : t("upload.validateBtn")}
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -225,12 +226,12 @@ export function UploadPage() {
             )}
 
             <div style={{ marginTop:20, display:"flex", gap:8 }}>
-              <button type="button" className="btn-primary btn-sm" onClick={() => installMut.mutate()} disabled={installMut.isPending || result.alreadyInstalled}>
+              <Button onClick={() => installMut.mutate()} disabled={installMut.isPending || result.alreadyInstalled}>
                 {installMut.isPending
                   ? <><span className="plugin-spinner plugin-spinner--sm" />{t("upload.installing")}</>
                   : t("upload.installBtn")}
-              </button>
-              <button type="button" className="btn-ghost btn-sm" onClick={() => { setStep(0); setError(null); }}>{t("upload.back")}</button>
+              </Button>
+              <Button variant="ghost" onClick={() => { setStep(0); setError(null); }}>{t("upload.back")}</Button>
             </div>
           </div>
         )}
@@ -243,9 +244,9 @@ export function UploadPage() {
             <p style={{ fontSize:"var(--fs-md)", color:"var(--c-fg-muted)", marginBottom:24 }}>
               {t("upload.doneText")}
             </p>
-            <button type="button" className="btn-primary btn-sm" onClick={() => navigate("/admin/installed")}>
+            <Button onClick={() => navigate("/admin/installed")}>
               {t("upload.goInstalled")}
-            </button>
+            </Button>
           </div>
         )}
       </div>

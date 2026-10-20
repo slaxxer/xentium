@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { faDiscord, faGithub, faGoogle } from "@fortawesome/free-brands-svg-icons";
 import { faCheck, faCopy, faFingerprint } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../components/Icon";
-import { Toggle } from "../../../components/AcpControls";
+import { Toggle, Button } from "../../../components/AcpControls";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { api } from "../../../lib/api";
 
@@ -101,17 +101,17 @@ function ProviderCard({ row }: { row: ProviderRow }) {
           {row.secretSet ? (
             <div className="sp-inline">
               <span className="sp-secret"><FontAwesomeIcon icon={faCheck} /> {t("signInProviders.secretSet")}</span>
-              <button type="button" className="btn-ghost btn-sm" disabled={patch.isPending} onClick={() => patch.mutate({ clientSecret: null })}>
+              <Button variant="ghost" disabled={patch.isPending} onClick={() => patch.mutate({ clientSecret: null })}>
                 {t("signInProviders.remove")}
-              </button>
+              </Button>
             </div>
           ) : (
             <div className="sp-inline">
               <input className="inp" type="password" autoComplete="off" value={secret} onChange={(e) => setSecret(e.target.value)} />
-              <button type="button" className="btn-primary btn-sm" disabled={!secret.trim() || patch.isPending}
+              <Button disabled={!secret.trim() || patch.isPending}
                 onClick={() => patch.mutate({ clientSecret: secret.trim() }, { onSuccess: () => setSecret("") })}>
                 {t("signInProviders.set")}
-              </button>
+              </Button>
             </div>
           )}
         </div>
@@ -119,9 +119,9 @@ function ProviderCard({ row }: { row: ProviderRow }) {
           <span className="set-row__label">{t("signInProviders.callback")}</span>
           <div className="sp-inline">
             <code className="sp-code">{row.callbackUrl}</code>
-            <button type="button" className="btn-ghost btn-sm" onClick={copy}>
+            <Button variant="ghost" onClick={copy}>
               <FontAwesomeIcon icon={copied ? faCheck : faCopy} /> {copied ? t("signInProviders.copied") : t("signInProviders.copy")}
-            </button>
+            </Button>
           </div>
           <span className="set-row__desc">
             {t("signInProviders.callbackHint")}{" "}

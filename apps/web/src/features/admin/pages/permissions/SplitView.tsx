@@ -11,6 +11,7 @@ import type { PermissionsCtx } from "../PermissionsPage";
 import { changeOf, effectiveKeys, impliedBy, matchesQuery, type SplitFilter } from "./permissionsModel";
 import { ToggleGlyph } from "../../../../components/Toggle";
 import { permissionDomainLabel } from "../../../../lib/coreText";
+import { Button } from "../../../../components/AcpControls";
 
 const FILTERS: SplitFilter[] = ["all", "granted", "off", "sensitive", "changed"];
 
@@ -83,7 +84,7 @@ export function SplitView({ ctx, selected, onSelect, searchRef }: {
         {visible.length === 0 && (
           <div className="pm-empty">
             <p>{t("permissions.noMatch")}</p>
-            <button type="button" className="btn-ghost btn-sm" onClick={() => { setQuery(""); setFilter("all"); }}>{t("permissions.clearFilters")}</button>
+            <Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>{t("permissions.clearFilters")}</Button>
           </div>
         )}
 
@@ -220,9 +221,9 @@ function GroupHeader({ ctx, group, count, total, onCopy }: {
       <div className="pm-ghead__side">
         <PowerMeter power={powerOf([...eff])} />
         <div className="pm-copy" ref={ref}>
-          <button type="button" className="btn-ghost btn-sm" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <Button variant="ghost" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             <FontAwesomeIcon icon={faCopy} className="pm-ic" /> {t("permissions.copyFrom")}
-          </button>
+          </Button>
           {open && (
             <div className="pm-copy__menu" role="menu">
               <p className="gp-section">{t("permissions.copyTitle")}</p>

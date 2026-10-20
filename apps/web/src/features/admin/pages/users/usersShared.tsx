@@ -11,6 +11,7 @@ import { api } from "../../../../lib/api";
 import { apiErrorMessage } from "../../../../lib/swal";
 import { timeAgo } from "../../../../lib/time";
 import { siteTime } from "../../../../lib/datetime";
+import { Button } from "../../../../components/AcpControls";
 
 export interface Group {
   id: string;
@@ -204,10 +205,10 @@ export function BanDialog({ targets, onClose, onDone }: {
 
         <div className="usr-ban__foot">
           <span>{t("users.ban.note")}</span>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("common:actions.cancel")}</button>
-          <button type="button" className="btn-danger btn-sm" disabled={blocked} onClick={submit}>
+          <Button variant="ghost" onClick={onClose}>{t("common:actions.cancel")}</Button>
+          <Button variant="danger" disabled={blocked} onClick={submit}>
             <FontAwesomeIcon icon={faBan} /> {busy ? t("users.ban.issuing") : t("users.ban.issue")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

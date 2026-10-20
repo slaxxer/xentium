@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { faCircleInfo, faEyeDropper, faImage, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "../../../../components/Icon";
-import { Toggle } from "../../../../components/AcpControls";
+import { Toggle, Button } from "../../../../components/AcpControls";
 import { UserAvatar } from "../../../../components/UserAvatar";
 import { useAuth } from "../../../../hooks/useAuth";
 import { api } from "../../../../lib/api";
@@ -103,7 +103,7 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
               {prog.badgeShadowColor
                 ? <ColorRow value={prog.badgeShadowColor} fallback={color} onChange={(v) => patch({ badgeShadowColor: v || null })} compact
                     reset={() => patch({ badgeShadowColor: null })} resetLabel={t("groups.identity.glowSameAsBadge")} />
-                : <button type="button" className="btn-ghost btn-sm" onClick={() => patch({ badgeShadowColor: color })}>{t("groups.identity.glowCustom")}</button>}
+                : <Button variant="ghost" onClick={() => patch({ badgeShadowColor: color })}>{t("groups.identity.glowCustom")}</Button>}
             </div>
           </div>
         )}
@@ -146,9 +146,9 @@ export function IdentityTab({ group, rank, form, setForm, prog, setProg, nameInv
           <section className="gp-card gp-pad gp-danger">
             <h2 className="gp-section">{t("groups.delete.section")}</h2>
             <p className="gp-hint">{t("groups.delete.hint")}</p>
-            <button type="button" className="btn-danger btn-sm" disabled={deleting} onClick={confirmDelete}>
+            <Button variant="danger" disabled={deleting} onClick={confirmDelete}>
               <FontAwesomeIcon icon={faTrash} /> {t("groups.delete.confirm")}
-            </button>
+            </Button>
           </section>
         )}
       </div>
@@ -175,7 +175,7 @@ function ColorRow({ value, fallback, onChange, compact, reset, resetLabel }: {
       </label>
       <input className={`inp is-mono gp-hex${value && !isHexColor(value) ? " is-invalid" : ""}`} value={value} maxLength={7}
         placeholder={fallback} onChange={(e) => onChange(e.target.value.trim())} />
-      {reset && <button type="button" className="btn-ghost btn-sm" onClick={reset}>{resetLabel}</button>}
+      {reset && <Button variant="ghost" onClick={reset}>{resetLabel}</Button>}
     </div>
   );
 }
@@ -216,13 +216,13 @@ function RankImageCard({ group, label }: { group: Group; label: string }) {
           ? <img className="xt-rankimg" src={`/uploads/${group.rankImage}`} alt={label} title={label} />
           : <span className="gp-rankimg__empty"><FontAwesomeIcon icon={faImage} /></span>}
         <div className="gp-icon-actions">
-          <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={() => input.current?.click()}>
+          <Button variant="ghost" disabled={busy} onClick={() => input.current?.click()}>
             {group.rankImage ? t("groups.icon.replace") : t("groups.icon.upload")}
-          </button>
+          </Button>
           {group.rankImage && (
-            <button type="button" className="btn-ghost btn-sm gp-danger-text" disabled={busy} onClick={() => remove.mutate()}>
+            <Button variant="ghost" className="gp-danger-text" disabled={busy} onClick={() => remove.mutate()}>
               {t("groups.icon.remove")}
-            </button>
+            </Button>
           )}
         </div>
       </div>

@@ -10,7 +10,7 @@ import { DraftFailure, useDraft, useDraftStore, type DraftChange } from "../../.
 import { useSiteConfig } from "../../../hooks/useSiteConfig";
 import { AcpIcon, type AcpIconName } from "./acpIcons";
 import { SaveChip } from "../../../components/SaveChip";
-import { Toggle, TextField, NumberStepper } from "../../../components/AcpControls";
+import { Toggle, TextField, NumberStepper, Button } from "../../../components/AcpControls";
 import { MaintenanceSettings, MaintenanceStatusPill } from "./MaintenanceSettings";
 import { SignInProvidersPanel } from "./SignInProvidersPanel";
 import { ErrorBoundary } from "../../errors/ErrorBoundary";
@@ -821,15 +821,14 @@ function InviteCodesPanel() {
           placeholder={t("invite.notePlaceholder")}
           style={{ flex: 1 }}
         />
-        <button
-          type="button"
-          className="btn-primary btn-sm"
+        <Button
+         
           disabled={createMut.isPending}
           onClick={() => createMut.mutate()}
         >
           <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} />
           {t("invite.generate")}
-        </button>
+        </Button>
       </div>
 
       {/* List */}
@@ -865,21 +864,20 @@ function InviteCodesPanel() {
                   {used ? t("invite.used") : t("invite.available")}
                 </span>
                 {!used && (
-                  <button type="button" className="btn-ghost btn-sm" onClick={() => copyCode(c.code)} title={t("invite.copy")}>
+                  <Button variant="ghost" onClick={() => copyCode(c.code)} title={t("invite.copy")}>
                     <FontAwesomeIcon icon={faCopy} />
-                  </button>
+                  </Button>
                 )}
                 {!used && (
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm"
+                  <Button
+                    variant="ghost"
                     style={{ color: "var(--c-danger)" }}
                     disabled={revokeMut.isPending}
                     onClick={() => revokeMut.mutate(c.id)}
                     title={t("invite.revoke")}
                   >
                     <FontAwesomeIcon icon={faTrash} />
-                  </button>
+                  </Button>
                 )}
               </div>
             );

@@ -53,6 +53,7 @@ import "./StyleEditorPage.scss";
 import { ICON_STYLE_DEFS, iconStyleDef, type IconStyleGroup } from "@xentium/contracts";
 import { XentiumMark } from "../../../components/XentiumMark";
 import { uiLocale } from "../../../lib/i18n";
+import { Button } from "../../../components/AcpControls";
 
 const CUSTOM_CSS_PREVIEW_ID = "xentium-custom-css-preview";
 
@@ -632,9 +633,9 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                 editor edits that one palette, and a site that wants to be dark installs
                 a dark theme. */}
 
-            <button type="button" className="btn-ghost se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
+            <Button variant="ghost" className="se-act" disabled={resetMut.isPending || saveMut.isPending} onClick={handleReset}>
               <FontAwesomeIcon icon={faRotateLeft} /> {t("styleEditor.resetAll")}
-            </button>
+            </Button>
 
           </div>
         </div>
@@ -850,14 +851,14 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                 {/* Feedback colours drive the toast system — fire live samples to preview. */}
                 {section.kind === "feedback" && (
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid var(--c-border)" }}>
-                    <button type="button" className="btn-ghost btn-sm" onClick={() => {
+                    <Button variant="ghost" onClick={() => {
                       toast.success(t("styleEditor.sampleSuccess"));
                       toast.info(t("styleEditor.sampleInfo"));
                       toast.warning(t("styleEditor.sampleWarning"));
                       toast.error(t("styleEditor.sampleError"));
                     }}>
                       {t("styleEditor.previewToasts")}
-                    </button>
+                    </Button>
                     <div style={{ fontSize: "var(--fs-2xs)", color: "var(--c-fg-subtle)", marginTop: 6 }}>
                       {t("styleEditor.toastsUse")}
                     </div>
@@ -901,11 +902,11 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                 <div className="br-inline">
                   <input id="br-logo-text" className="se-brand__input" value={logoText} onChange={(e) => setLogoText(e.target.value)}
                     placeholder={t("styleEditor.logoPlaceholder")} />
-                  <button type="button" className="btn-primary btn-sm"
+                  <Button
                     onClick={() => saveLogoTextMut.mutate()}
                     disabled={saveLogoTextMut.isPending || logoText === (branding?.logoText ?? "")}>
                     {t("styleEditor.save")}
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -948,11 +949,11 @@ function StyleEditorInner({ themeKey, tab }: { themeKey: string | null; tab: Sty
                 <div className="br-inline">
                   <input id="br-kit" className="se-brand__input" value={iconKit} onChange={(e) => setIconKit(e.target.value)}
                     placeholder={t("styleEditor.iconKitPlaceholder")} spellCheck={false} />
-                  <button type="button" className="btn-primary btn-sm"
+                  <Button
                     onClick={() => saveIconKitMut.mutate()}
                     disabled={saveIconKitMut.isPending || iconKit === (branding?.iconKitUrl ?? "")}>
                     {t("styleEditor.save")}
-                  </button>
+                  </Button>
                 </div>
                 <p className="br-note">{t("styleEditor.iconKitLicence")}</p>
               </div>
@@ -1611,14 +1612,14 @@ function BrandAsset({ label, hint, currentUrl, accept, onUpload, onDelete, busy,
         <span className="br-asset__hint">{hint} · {t("styleEditor.brandDrop")}</span>
       </span>
       <span className="br-asset__actions">
-        <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={() => inputRef.current?.click()}>
+        <Button variant="ghost" disabled={busy} onClick={() => inputRef.current?.click()}>
           <FontAwesomeIcon icon={faUpload} /> {currentUrl ? t("styleEditor.brandReplace") : t("styleEditor.brandUpload")}
-        </button>
+        </Button>
         {currentUrl && (
-          <button type="button" className="btn-ghost btn-sm br-asset__remove" disabled={busy} onClick={onDelete}
+          <Button variant="ghost" className="br-asset__remove" disabled={busy} onClick={onDelete}
             title={t("styleEditor.brandRemoveHint")}>
             {t("styleEditor.remove")}
-          </button>
+          </Button>
         )}
       </span>
       <input ref={inputRef} type="file" accept={accept} hidden

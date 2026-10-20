@@ -10,6 +10,7 @@ import { apiErrorMessage } from "../../../lib/swal";
 import { SchemaFields, defaultsFor, type FieldSchema, type FieldValues } from "../../../components/SchemaFields";
 import { uiLocale } from "../../../lib/i18n";
 import { hostText } from "../../../lib/coreText";
+import { Button } from "../../../components/AcpControls";
 
 type ScheduleMode = "interval" | "daily" | "cron";
 
@@ -180,11 +181,11 @@ function TaskDialog({ task, actions, onClose }: {
         </label>
 
         <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-          <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("tasks.cancel")}</button>
-          <button type="button" className="btn-primary btn-sm" disabled={!name.trim() || !actionKey || save.isPending}
+          <Button variant="ghost" onClick={onClose}>{t("tasks.cancel")}</Button>
+          <Button disabled={!name.trim() || !actionKey || save.isPending}
             onClick={() => save.mutate()}>
             {save.isPending ? t("tasks.saving") : t("tasks.save")}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -290,26 +291,26 @@ function TaskCard({ task, onEdit }: { task: TaskView; onEdit: () => void }) {
       </div>
 
       <div className="ctask__actions">
-        <button type="button" className="btn-ghost btn-sm" title={t("tasks.dryRunNow")} disabled={run.isPending} onClick={() => run.mutate(true)}>
+        <Button variant="ghost" title={t("tasks.dryRunNow")} disabled={run.isPending} onClick={() => run.mutate(true)}>
           <FontAwesomeIcon icon={faFlask} />
-        </button>
-        <button type="button" className="btn-ghost btn-sm" title={t("tasks.runNow")} disabled={run.isPending} onClick={() => run.mutate(false)}>
+        </Button>
+        <Button variant="ghost" title={t("tasks.runNow")} disabled={run.isPending} onClick={() => run.mutate(false)}>
           <FontAwesomeIcon icon={faPlay} />
-        </button>
-        <button type="button" className="btn-ghost btn-sm" title={t("tasks.edit")} onClick={onEdit}>
+        </Button>
+        <Button variant="ghost" title={t("tasks.edit")} onClick={onEdit}>
           <FontAwesomeIcon icon={faPen} />
-        </button>
-        <button type="button" className="btn-ghost btn-sm ctask__danger" title={t("tasks.delete")} onClick={() => void confirmDelete()}>
+        </Button>
+        <Button variant="ghost" className="ctask__danger" title={t("tasks.delete")} onClick={() => void confirmDelete()}>
           <FontAwesomeIcon icon={faTrash} />
-        </button>
-        <button type="button" className="btn-ghost btn-sm ctask__toggle" disabled={toggle.isPending} onClick={() => toggle.mutate()}>
+        </Button>
+        <Button variant="ghost" className="ctask__toggle" disabled={toggle.isPending} onClick={() => toggle.mutate()}>
           {task.enabled ? t("tasks.disable") : t("tasks.enable")}
-        </button>
+        </Button>
       </div>
 
-      <button type="button" className="btn-ghost btn-sm ctask__history-toggle" onClick={() => setOpen((v) => !v)}>
+      <Button variant="ghost" className="ctask__history-toggle" onClick={() => setOpen((v) => !v)}>
         {open ? t("tasks.hideHistory") : t("tasks.showHistory")}
-      </button>
+      </Button>
       {open && <RunHistory taskId={task.id} />}
     </div>
   );
@@ -345,11 +346,11 @@ export function CustomTasksSection() {
       </div>
       <p className="ctask-panel__sub">{t("tasks.subtitle")}</p>
 
-      <button type="button" className="btn-primary btn-sm ctask-panel__new"
+      <Button className="ctask-panel__new"
         disabled={actions.length === 0} onClick={() => setDialog({ task: null })}>
         <FontAwesomeIcon icon={faPlus} />
         {t("tasks.new")}
-      </button>
+      </Button>
 
       {isLoading ? (
         <div className="ctask-empty">{t("tasks.loading")}</div>

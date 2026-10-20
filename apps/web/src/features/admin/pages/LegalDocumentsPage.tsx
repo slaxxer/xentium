@@ -22,6 +22,7 @@ import { AcpIcon } from "./acpIcons";
 import "./acpSystem.scss";
 import "./LegalDocumentsPage.scss";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 // The reader draws bodies with the article extensions, Image included. There is no
@@ -205,19 +206,19 @@ function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (
         </span>
         <span className="lg-status__actions">
           {pending && (
-            <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={onDiscard}>
+            <Button variant="ghost" disabled={busy} onClick={onDiscard}>
               {t("legal.discard")}
-            </button>
+            </Button>
           )}
           {live && (
-            <button type="button" className="btn-ghost btn-sm lg-danger" disabled={busy} onClick={onUnpublish}>
+            <Button variant="ghost" className="lg-danger" disabled={busy} onClick={onUnpublish}>
               {t("legal.unpublish")}
-            </button>
+            </Button>
           )}
-          <button type="button" className="btn-primary btn-sm" disabled={!canPublish || busy}
+          <Button disabled={!canPublish || busy}
                   onClick={() => publishMut.mutate()}>
             {t(live ? "legal.publishChanges" : "legal.publish")}
-          </button>
+          </Button>
         </span>
       </div>
 

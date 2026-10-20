@@ -20,6 +20,7 @@ import {
   type Duration, type Mode, type Template, type WarnExpiry,
 } from "../../modcp/modTemplates";
 import "./ModTemplatesPage.scss";
+import { Button } from "../../../components/AcpControls";
 
 /**
  * ACP → Moderation → Templates.
@@ -250,9 +251,9 @@ export function ModTemplatesPage() {
           <p className="pg-sub">{t("modTemplates.sub")}</p>
         </div>
         <div className="mtp-head-side">
-          <button type="button" className="btn-ghost btn-sm" disabled={restore.isPending} onClick={confirmRestore}>
+          <Button variant="ghost" disabled={restore.isPending} onClick={confirmRestore}>
             <FontAwesomeIcon icon={faRotateLeft} /> {t("modTemplates.restore")}
-          </button>
+          </Button>
           <SaveChip saving={saveAll.isPending} />
         </div>
       </div>
@@ -478,7 +479,7 @@ function Editor({ template, all, draft, onDraft, onOpen, onBack, onDuplicate, on
         <input className="mtp-form__name" value={draft.name} maxLength={80} aria-label={t("modTemplates.name")}
           placeholder={t("modTemplates.untitled")} onChange={(e) => set("name", e.target.value)} />
         {template.isDefault && <span className="mtp-badge">{t("modTemplates.default")}</span>}
-        <button type="button" className="btn-ghost btn-sm" onClick={onDuplicate}><FontAwesomeIcon icon={faCopy} /> {t("modTemplates.duplicate")}</button>
+        <Button variant="ghost" onClick={onDuplicate}><FontAwesomeIcon icon={faCopy} /> {t("modTemplates.duplicate")}</Button>
         <button type="button" className="mtp-iconbtn mtp-iconbtn--danger" disabled={remove.isPending} onClick={confirmDelete}
           title={t("modTemplates.delete")} aria-label={t("modTemplates.delete")}>
           <FontAwesomeIcon icon={faTrash} />
