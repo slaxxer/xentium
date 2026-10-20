@@ -12,7 +12,7 @@ import { renderEmailTemplate, siteVars } from "../../infrastructure/email/email-
 import { notificationService } from "../notifications/notification.service.js";
 import { getSetting } from "../../shared/utils/settings.js";
 import { recipientLocale } from "../../shared/i18n/serverText.js";
-import { assertProfileFieldValues } from "../users/profileFieldValues.js";
+import { assertProfileFieldValues, privacyFor } from "../users/profileFieldValues.js";
 
 /** `cookies` carries the SIGNED cookies through to auth guards, which read their
  *  own (a beta plugin needs `xt_beta`). Core never inspects them itself. */
@@ -229,7 +229,7 @@ export async function register(
   emailCode: string,
   loginPinEnabled: boolean,
   loginPin: string | undefined,
-  fields: Array<{ fieldId: string; value: string; privacy: string }>,
+  fields: Array<{ fieldId: string; value: string; privacy?: string }>,
   meta: Meta,
   inviteCode?: string,
   name?: string,
@@ -296,7 +296,8 @@ export async function register(
     throw new XentiumError({ code: "XEC-AUTH-2004", httpStatus: 400, message: "Your name is required to register" });
   }
 
-  await assertProfileFieldValues(fields);
+  await assertProfileFieldValues(fields, { registration: true });
+  const fieldPrivacy = await privacyFor(fields);
 
   // Use the admin-configured default group (falls back to "member" if not set)
   const defaultGroupKey = await getSetting("auth.default_group", "member");
@@ -329,7 +330,7 @@ export async function register(
       await tx.userProfileFieldValue.createMany({
         data: fields
           .filter((f) => f.value.trim() !== "")
-          .map((f) => ({ userId: u.id, fieldId: f.fieldId, value: f.value, privacy: f.privacy })),
+          .map((f) => ({ userId: u.id, fieldId: f.fieldId, value: f.value, privacy: fieldPrivacy.get(f.fieldId)! })),
         skipDuplicates: true,
       });
     }

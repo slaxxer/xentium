@@ -17,10 +17,11 @@ import { DigitsInput, FormError, OrDivider, PasswordInput, ProviderButtons } fro
 import { addPasskey, deviceName, isPasskeyCancel, passkeysSupported, startProvider } from "./signInClient";
 import { uiLocale } from "../../../lib/i18n";
 import { fieldLabel } from "../../../lib/coreText";
-import { DOB_MIN, dobMax } from "../../../lib/dob";
+import { ProfileFieldInput } from "../../profiles/ProfileFieldInput";
 
 interface ProfileFieldDef {
   id: string; key: string; label: string; type: string; placeholder: string | null;
+  helpText: string | null; maxLength: number | null; options: string[] | null;
   showOnRegistration: boolean; requiredOnRegistration: boolean;
 }
 type Avail = "idle" | "checking" | "free" | "taken";
@@ -171,7 +172,8 @@ export function RegisterPanel() {
         inviteCode: invite || undefined,
         acceptLegal: needsConsent ? agreed : undefined,
         fields: fields.filter((f) => (values[f.id] ?? "").trim())
-          .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim(), privacy: "public" as const })),
+          // No privacy: each answer starts with its field's default (ACP → Profile Fields).
+          .map((f) => ({ fieldId: f.id, value: values[f.id]!.trim() })),
       });
       setStep("done");
       await applyLogin(res.accessToken);
@@ -286,10 +288,10 @@ export function RegisterPanel() {
             {[...requiredFields, ...optionalFields].map((f) => (
               <label key={f.id} className="dw-field">
                 <span className="dw-label">{fieldLabel(f)} {!f.requiredOnRegistration && <em>{t("door.optional")}</em>}</span>
-                <input className="dw-input" type={f.type === "date" ? "date" : f.type === "email" ? "email" : f.type === "url" ? "url" : "text"}
-                  {...(f.key === "date_of_birth" ? { min: DOB_MIN, max: dobMax() } : {})}
-                  value={values[f.id] ?? ""} placeholder={f.placeholder ?? ""} required={f.requiredOnRegistration}
-                  onChange={(e) => setValues((v) => ({ ...v, [f.id]: e.target.value }))} />
+                <ProfileFieldInput field={f} className="dw-input" textareaClassName="dw-input dw-input--area"
+                  value={values[f.id] ?? ""} required={f.requiredOnRegistration} chooseLabel={t("door.reg.choose")}
+                  onChange={(value) => setValues((v) => ({ ...v, [f.id]: value }))} />
+                {f.helpText && <span className="dw-hint">{f.helpText}</span>}
               </label>
             ))}
             <FormError>{error}</FormError>

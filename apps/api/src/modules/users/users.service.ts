@@ -550,7 +550,7 @@ export const userService = {
         const displayValue =
           f.type === "date" ? formatDobValue(entry.value, f.dobDisplayFormat) : entry.value;
 
-        return { key: f.key, label: f.label, type: f.type, value: displayValue };
+        return { key: f.key, label: f.label, type: f.type, value: displayValue, linkPrefix: f.linkPrefix };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null);
   },

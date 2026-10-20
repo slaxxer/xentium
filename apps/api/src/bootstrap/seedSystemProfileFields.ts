@@ -33,6 +33,7 @@ const SYSTEM_FIELDS = [
     type: "text",
     placeholder: "your-username",
     position: 3,
+    linkPrefix: "https://github.com/",
     showOnRegistration: false,
     requiredOnRegistration: false,
     showOnProfile: true,
@@ -70,6 +71,7 @@ export async function seedSystemProfileFields() {
         requiredOnRegistration: f.requiredOnRegistration,
         showOnProfile: f.showOnProfile,
         dobDisplayFormat: f.dobDisplayFormat,
+        linkPrefix: "linkPrefix" in f ? f.linkPrefix : null,
         isSystem: true,
       },
     });

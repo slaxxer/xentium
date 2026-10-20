@@ -39,5 +39,7 @@
   "XEC-MOD-4101": "Choisissez l'un des modèles. Les avertissements et les bannissements ne peuvent être envoyés qu'à partir d'un modèle.",
   "XEC-MOD-4102": "Ce contenu n'est pas de la personne concernée.",
   "XEC-MOD-4103": "Ce modèle mentionne le contenu concerné. Utilisez-le depuis ce contenu, ou choisissez un autre modèle.",
-  "XEC-USER-4017": "Saisissez une vraie date de naissance : après 1900 et avant aujourd'hui."
+  "XEC-USER-4017": "Saisissez une vraie date de naissance : après 1900 et avant aujourd'hui.",
+  "XEC-USER-4018": "L'une de vos réponses de profil n'est pas acceptée : vérifiez sa longueur ou choisissez l'une des options.",
+  "XEC-USER-4019": "Vous n'avez pas encore l'âge requis pour vous inscrire ici."
 }

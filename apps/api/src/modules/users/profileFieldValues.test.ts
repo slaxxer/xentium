@@ -7,12 +7,17 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 const findMany = vi.fn();
 vi.mock("../../infrastructure/db.js", () => ({ prisma: { userProfileField: { findMany: (...a: unknown[]) => findMany(...a) } } }));
 
-const { assertProfileFieldValues, isValidDob, parseIsoDate } = await import("./profileFieldValues.js");
+const { assertProfileFieldValues, isValidDob, parseIsoDate, ageOn } = await import("./profileFieldValues.js");
 
 const FIELDS = [
-  { id: "dob", key: "date_of_birth", type: "date" },
-  { id: "met", key: "first_meetup", type: "date" },
-  { id: "loc", key: "location", type: "text" },
+  { id: "dob", key: "date_of_birth", label: "Date of birth", type: "date", minAge: 16 },
+  { id: "met", key: "first_meetup", label: "First meetup", type: "date" },
+  { id: "loc", key: "location", label: "Location", type: "text" },
+  { id: "gh", key: "github", label: "GitHub", type: "text", maxLength: 39 },
+  { id: "bio", key: "story", label: "Story", type: "longtext" },
+  { id: "mail", key: "contact", label: "Contact", type: "email" },
+  { id: "web", key: "website", label: "Website", type: "url" },
+  { id: "pick", key: "role", label: "Role", type: "choice", options: ["Player", "Coach"] },
 ];
 beforeEach(() => {
   findMany.mockReset();
@@ -63,5 +68,40 @@ describe("isValidDob", () => {
     expect(isValidDob("2026-10-20", now)).toBe(false);
     expect(isValidDob("1900-01-01", now)).toBe(false);
     expect(isValidDob("1850-06-01", now)).toBe(false);
+  });
+});
+
+describe("field settings", () => {
+  const NOW = new Date("2026-10-20T12:00:00Z");
+  const one = (fieldId: string, value: string, registration = false) =>
+    assertProfileFieldValues([{ fieldId, value }], { registration, now: NOW });
+
+  it("counts age in whole years, a day before the birthday included", () => {
+    expect(ageOn("2010-10-20", NOW)).toBe(16);
+    expect(ageOn("2010-10-21", NOW)).toBe(15);
+  });
+  it("refuses someone under the minimum age at sign-up (XEC-USER-4019)", async () => {
+    await expect(one("dob", "2010-10-21", true)).rejects.toMatchObject({ code: "XEC-USER-4019", httpStatus: 422 });
+    await expect(one("dob", "2010-10-20", true)).resolves.toBeUndefined();
+  });
+  it("applies the minimum age only at sign-up, not to members editing their profile", async () => {
+    await expect(one("dob", "2015-01-01")).resolves.toBeUndefined();
+  });
+  it("caps text at the field's longest answer, else the type's", async () => {
+    await expect(one("gh", "x".repeat(40))).rejects.toMatchObject({ code: "XEC-USER-4018" });
+    await expect(one("gh", "x".repeat(39))).resolves.toBeUndefined();
+    await expect(one("loc", "x".repeat(256))).rejects.toMatchObject({ code: "XEC-USER-4018" });
+    await expect(one("bio", "x".repeat(2000))).resolves.toBeUndefined();
+    await expect(one("bio", "x".repeat(2001))).rejects.toMatchObject({ code: "XEC-USER-4018" });
+  });
+  it("accepts only the listed options for a choice", async () => {
+    await expect(one("pick", "Coach")).resolves.toBeUndefined();
+    await expect(one("pick", "Referee")).rejects.toMatchObject({ code: "XEC-USER-4018" });
+  });
+  it("checks email and web address shapes", async () => {
+    await expect(one("mail", "me@example.org")).resolves.toBeUndefined();
+    await expect(one("mail", "not an email")).rejects.toMatchObject({ code: "XEC-USER-4018" });
+    await expect(one("web", "example.org/me")).resolves.toBeUndefined();
+    await expect(one("web", "javascript:alert(1)")).rejects.toMatchObject({ code: "XEC-USER-4018" });
   });
 });

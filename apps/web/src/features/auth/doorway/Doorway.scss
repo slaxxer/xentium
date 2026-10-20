@@ -239,6 +239,8 @@
   &.is-invalid { border-color: var(--c-danger); }
   &--code { font-family: var(--ff-mono, monospace); letter-spacing: 0.08em; text-transform: uppercase; }
 }
+/* Long text on the sign-up form: the same field, grown to a few lines. */
+.dw-input--area { height: auto; min-height: 96px; padding: 10px 14px; resize: vertical; line-height: 1.5; }
 .dw-input-wrap { position: relative; .dw-input { padding-right: 62px; } }
 .dw-input-toggle {
   position: absolute;

@@ -60,6 +60,7 @@ adminRouter.patch("/users/:id/account",        adminGuard, adminController.updat
 
 // Profile fields
 adminRouter.get("/profile-fields", adminGuard, adminController.listProfileFields);
+adminRouter.get("/profile-fields/stats", adminGuard, adminController.profileFieldStats);
 adminRouter.post("/profile-fields", adminGuard, adminController.createProfileField);
 adminRouter.patch("/profile-fields/:id", adminGuard, adminController.updateProfileField);
 adminRouter.delete("/profile-fields/:id", adminGuard, adminController.deleteProfileField);

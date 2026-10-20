@@ -76,7 +76,8 @@
     "joined": "dabei seit {{date}}",
     "statFollowers": "Follower",
     "statFollowing": "Folgt",
-    "statPosts": "Beiträge"
+    "statPosts": "Beiträge",
+    "choose": "Bitte wählen…"
   },
   "notifications": {
     "title": "Benachrichtigungen",
