@@ -187,5 +187,6 @@
   "cantRateOwnComment": "You can't rate your own comment",
   "signInToRate": "Sign in to rate",
   "lastSeen": "Last seen {{when}}",
-  "lastSeenOn": "Last seen {{date}}"
+  "lastSeenOn": "Last seen {{date}}",
+  "details": "Details"
 }

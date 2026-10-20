@@ -23,6 +23,12 @@
 /* Tier 3 — component tokens */
 :root { @include defaults.components; }
 
+/* Room around a username that sits in an ellipsis box (overflow: hidden): its group
+   glow is a text-shadow, 20px of blur by default (ACP → Groups), which the box would
+   cut into a rectangle. Padding gives the blur room and an equal negative margin
+   takes it back, so nothing around the name moves. */
+:root { --name-glow-room: 20px; }
+
 /* The core look, over the three tiers above. The ACP does not include it. */
 :root { @include defaults.core-look; }
 

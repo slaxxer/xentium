@@ -15,3 +15,12 @@ export const legalKeyParamSchema = z.object({
 export const saveDraftSchema = z.object({
   draftBody: legalBodySchema,
 });
+
+export const acceptanceSchema = z.object({
+  requireAcceptance: z.boolean(),
+});
+
+export const askAgainSchema = z.object({
+  // Empty = every member.
+  groupIds: z.array(z.string().min(1).max(64)).max(200),
+});

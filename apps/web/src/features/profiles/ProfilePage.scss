@@ -966,16 +966,11 @@
   clip-path: var(--clip-card);
   padding: 24px;
 
-  &__dob-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 16px;
-  }
-
-  &__dob-value {
+  /* A one-line value under its label (age / birthday), laid out like the bio. */
+  &__value {
     font-size: var(--fs-md);
     color: var(--c-fg-muted);
+    margin: 0;
   }
 
   &__label {
@@ -1022,6 +1017,8 @@
   }
   &__field-value {
     color: var(--c-fg-muted);
+    /* Long text keeps the member's line breaks. */
+    &.is-multiline { white-space: pre-line; overflow-wrap: anywhere; }
   }
 }
 

@@ -5,7 +5,7 @@
  * chunk so the home page does not pull the admin panel in to read five links.
  */
 export const SETUP_STEP_LINK: Record<string, string> = {
-  siteName: "/admin/settings", email: "/admin/email", categories: "/admin/categories",
+  siteName: "/admin/settings", email: "/admin/email", categories: "/admin/articles?view=categories",
   article: "/articles/new", theme: "/admin/themes",
 };
 

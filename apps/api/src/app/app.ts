@@ -1,4 +1,5 @@
 import express, {type Express} from 'express';
+import { legalGate } from "../modules/legal/legalGate.js";
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -186,6 +187,9 @@ export function createApp(): Express {
   app.use(installGuard);
   app.use(maintenanceGuard);
   app.use(demoGuard);
+  // Signed in with a legal document still to accept: only auth, the legal pages and
+  // the public chrome answer until it is accepted.
+  app.use("/api", legalGate);
 
   app.use("/api/install", installerRouter);
 

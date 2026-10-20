@@ -17,3 +17,5 @@ legalAdminRouter.put("/:key/draft", legalController.saveDraft);
 legalAdminRouter.post("/:key/publish", legalController.publish);
 legalAdminRouter.post("/:key/unpublish", legalController.unpublish);
 legalAdminRouter.post("/:key/discard", legalController.discardDraft);
+legalAdminRouter.put("/:key/acceptance", legalController.setAcceptance);
+legalAdminRouter.post("/:key/ask-again", legalController.askAgain);

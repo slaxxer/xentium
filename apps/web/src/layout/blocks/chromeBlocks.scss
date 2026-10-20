@@ -44,6 +44,12 @@
      over it. Above the page content, so its own edge art and shade stay on top. */
   z-index: 90;
 
+  /* A band ABOVE the navbar whose edge art hangs down onto it: above the navbar, or the
+     navbar would cover the edge (`EdgeArtLayer` sets the class). Scrolling, the band
+     leaves the top before the navbar sticks, so it never covers the stuck navbar
+     except for the edge sliding away. Open menus still win (110, below). */
+  &.xt-edge-host--over-nav { z-index: 101; }
+
   /* …except while one of its own menus is open. The action pill's backdrop blur makes
      it a stacking context of its own, which traps the account, notification and
      messages dropdowns inside it, so the BAND has to win then, or a menu opened from

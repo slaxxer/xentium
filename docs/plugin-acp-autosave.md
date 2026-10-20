@@ -21,8 +21,12 @@ them without importing any core CSS:
 | A card or panel title with a subtitle | `.set-card__titles` > `h3` + `p` (works on its own) |
 | Secondary or description text | `.set-row__desc` |
 | A text input / a select | `.acp-input` / `.acp-select` |
-| Buttons | `.btn-primary` / `.btn-ghost` / `.btn-ghost-danger`, plus `.btn-sm` |
+| Buttons | `Button` from `@web/components/AcpControls` (`variant`: primary, ghost, danger, ghost-danger) |
 | A toggle, text field or number stepper | `@web/components/AcpControls` |
+| An icon choice | `IconPicker` from `@web/components/IconPicker` (host global `webIconPicker`) |
+
+The ACP has one button size. `.btn-sm` and `.btn-lg` still work in older plugins, but in
+the ACP they render at the same size as every other button, so leave them out.
 
 Externalize the controls like any other host global:
 

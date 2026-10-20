@@ -22,6 +22,9 @@ import { AcpIcon } from "./acpIcons";
 import "./acpSystem.scss";
 import "./LegalDocumentsPage.scss";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
+import { Toggle } from "../../../components/Toggle";
+import { api } from "../../../lib/api";
 
 const EMPTY_DOC = { type: "doc", content: [{ type: "paragraph" }] };
 // The reader draws bodies with the article extensions, Image included. There is no
@@ -102,6 +105,7 @@ export function LegalDocumentsPage() {
               onSave={(body) => saveMut.mutate({ key: doc.key, body })}
             />
           )}
+          {doc && <AcceptanceCard key={`${doc.key}-acceptance`} doc={doc} />}
         </div>
       </div>
     </div>
@@ -205,19 +209,19 @@ function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (
         </span>
         <span className="lg-status__actions">
           {pending && (
-            <button type="button" className="btn-ghost btn-sm" disabled={busy} onClick={onDiscard}>
+            <Button variant="ghost" disabled={busy} onClick={onDiscard}>
               {t("legal.discard")}
-            </button>
+            </Button>
           )}
           {live && (
-            <button type="button" className="btn-ghost btn-sm lg-danger" disabled={busy} onClick={onUnpublish}>
+            <Button variant="ghost" className="lg-danger" disabled={busy} onClick={onUnpublish}>
               {t("legal.unpublish")}
-            </button>
+            </Button>
           )}
-          <button type="button" className="btn-primary btn-sm" disabled={!canPublish || busy}
+          <Button disabled={!canPublish || busy}
                   onClick={() => publishMut.mutate()}>
             {t(live ? "legal.publishChanges" : "legal.publish")}
-          </button>
+          </Button>
         </span>
       </div>
 
@@ -237,6 +241,130 @@ function LegalDocumentCard({ doc, onSave }: { doc: AdminLegalDocument; onSave: (
           disabled={busy}
         />
       </div>
+    </section>
+  );
+}
+
+/**
+ * Who has to accept this document. "Must be accepted" asks it at sign-up and once
+ * from every member who never has; "Ask members to accept again" raises its revision
+ * for everyone or chosen groups, and those members are sent to it on their next page
+ * until they accept. Both act at once: they are not part of the text's draft.
+ */
+function AcceptanceCard({ doc }: { doc: AdminLegalDocument }) {
+  const { t } = useTranslation("acp");
+  const qc = useQueryClient();
+  const [asking, setAsking] = useState(false);
+  const [everyone, setEveryone] = useState(true);
+  const [picked, setPicked] = useState<string[]>([]);
+  const groups = useQuery<{ id: string; name: string }[]>({
+    queryKey: ["acp-groups-list"],
+    queryFn: () => api.get("/admin/groups"),
+    enabled: asking || doc.reacceptGroupIds.length > 0,
+  });
+  const refresh = () => {
+    void qc.invalidateQueries({ queryKey: QUERY_KEY });
+    void qc.invalidateQueries({ queryKey: LEGAL_LINKS_KEY });
+  };
+  const setRequired = useMutation({
+    mutationFn: (on: boolean) => api.put(`/admin/legal/${doc.key}/acceptance`, { requireAcceptance: on }),
+    onSuccess: refresh,
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+  const askAgain = useMutation({
+    mutationFn: (groupIds: string[]) => api.post(`/admin/legal/${doc.key}/ask-again`, { groupIds }),
+    onSuccess: () => { refresh(); setAsking(false); toast.success(t("legal.acceptance.asked")); },
+    onError: (e) => toast.error(apiErrorMessage(e)),
+  });
+
+  const live = doc.publishedAt !== null;
+  const name = t(`legal.docs.${doc.key}.name`);
+  const groupName = (id: string) => groups.data?.find((g) => g.id === id)?.name ?? "…";
+  const roundFor = doc.reacceptGroupIds.length ? doc.reacceptGroupIds.map(groupName).join(", ") : t("legal.acceptance.everyone");
+
+  async function confirmAsk() {
+    const ids = everyone ? [] : picked;
+    const ok = await openDialog({
+      kind: "confirm", icon: "warning",
+      title: t("legal.acceptance.confirmTitle", { name }),
+      body: everyone
+        ? t("legal.acceptance.confirmEveryone", { name })
+        : t("legal.acceptance.confirmGroups", { name, groups: ids.map(groupName).join(", ") }),
+      confirmText: t("legal.acceptance.confirm"),
+    });
+    if (ok) askAgain.mutate(ids);
+  }
+
+  return (
+    <section className="set-card">
+      <div className="set-card__head">
+        <div className="set-card__icon"><AcpIcon name="check" size={19} /></div>
+        <div className="set-card__titles">
+          <h3>{t("legal.acceptance.title")}</h3>
+          <p>{t("legal.acceptance.sub", { name })}</p>
+        </div>
+      </div>
+      <div className="set-rows">
+        <div className="set-row">
+          <div>
+            <div className="set-row__label">{t("legal.acceptance.required")}</div>
+            <div className="set-row__desc">{t("legal.acceptance.requiredDesc")}</div>
+          </div>
+          <div className="set-row__control">
+            <Toggle on={doc.requireAcceptance} onToggle={() => setRequired.mutate(!doc.requireAcceptance)} />
+          </div>
+        </div>
+        {doc.requireAcceptance && (
+          <div className="set-row">
+            <div>
+              <div className="set-row__label">{t("legal.acceptance.again")}</div>
+              <div className="set-row__desc">
+                {!live ? t("legal.acceptance.notLive")
+                  : doc.revision > 1 && doc.reacceptedAt
+                    ? t("legal.acceptance.lastRound", { revision: doc.revision, date: siteTime.date(doc.reacceptedAt), groups: roundFor })
+                    : t("legal.acceptance.againDesc")}
+                {live && <> {t("legal.acceptance.pending", { count: doc.pendingCount })}</>}
+              </div>
+            </div>
+            <div className="set-row__control">
+              <Button variant="ghost" disabled={!live || asking} onClick={() => { setAsking(true); setEveryone(true); setPicked([]); }}>
+                {t("legal.acceptance.askButton")}
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+      {asking && (
+        <div className="set-extra lg-ask">
+          <div className="lg-ask__modes" role="radiogroup" aria-label={t("legal.acceptance.who")}>
+            <label className={everyone ? "is-on" : ""}>
+              <input type="radio" name={`ask-${doc.key}`} checked={everyone} onChange={() => setEveryone(true)} />
+              <span><b>{t("legal.acceptance.everyone")}</b><small>{t("legal.acceptance.everyoneDesc")}</small></span>
+            </label>
+            <label className={!everyone ? "is-on" : ""}>
+              <input type="radio" name={`ask-${doc.key}`} checked={!everyone} onChange={() => setEveryone(false)} />
+              <span><b>{t("legal.acceptance.groups")}</b><small>{t("legal.acceptance.groupsDesc")}</small></span>
+            </label>
+          </div>
+          {!everyone && (
+            <div className="lg-ask__list">
+              {(groups.data ?? []).map((g) => {
+                const on = picked.includes(g.id);
+                return (
+                  <label key={g.id} className={on ? "is-on" : ""}>
+                    <input type="checkbox" checked={on} onChange={() => setPicked((p) => on ? p.filter((x) => x !== g.id) : [...p, g.id])} />
+                    <span>{g.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+          <div className="lg-ask__actions">
+            <Button variant="ghost" onClick={() => setAsking(false)}>{t("legal.acceptance.cancel")}</Button>
+            <Button disabled={askAgain.isPending || (!everyone && picked.length === 0)} onClick={confirmAsk}>{t("legal.acceptance.askNow")}</Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

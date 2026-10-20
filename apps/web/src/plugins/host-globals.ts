@@ -35,6 +35,8 @@ import * as webUserBadges from "@web/components/UserBadges";
 // for free but has nothing to DRAW the token with: resolving pinned style →
 // site style → bundled fallback is this component's job, not the plugin's.
 import * as webTokenIcon from "@web/components/TokenIcon";
+import * as webIconPicker from "@web/components/IconPicker";
+import * as webEditorDialog from "@web/components/EditorDialog";
 import * as webMiniEditor from "@web/components/MiniEditor";
 import * as webForumEditor from "@web/components/ForumEditor";
 // The composer itself, for a plugin page that wants a variant or the tools on top
@@ -109,6 +111,8 @@ const HOST = {
   webRankBadge,
   webUserBadges,
   webTokenIcon,
+  webIconPicker,
+  webEditorDialog,
   webMiniEditor,
   webForumEditor,
   webComposer,

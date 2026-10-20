@@ -316,7 +316,14 @@
       "disclaimer": "Haftungsausschluss"
     },
     "lastUpdated": "Zuletzt aktualisiert am {{date}}",
-    "edit": "Bearbeiten"
+    "edit": "Bearbeiten",
+    "accept": {
+      "notice": "Bitte lies dieses Dokument und stimme ihm unten auf der Seite zu, um dein Konto weiter zu nutzen.",
+      "label": "Diesem Dokument zustimmen",
+      "checkbox": "Ich habe „{{title}}“ gelesen und stimme zu.",
+      "submit": "Zustimmen und weiter",
+      "signOut": "Stattdessen abmelden"
+    }
   },
   "modcanvas": {
     "shield": {

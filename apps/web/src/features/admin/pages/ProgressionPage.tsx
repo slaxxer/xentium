@@ -12,6 +12,7 @@ import { SaveChip } from "../../../components/SaveChip";
 import { useAutosave } from "../../../hooks/useAutosave";
 import { Toggle } from "../../../components/Toggle";
 import { uiLocale } from "../../../lib/i18n";
+import { Button } from "../../../components/AcpControls";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -198,10 +199,10 @@ function GroupProgressionModal({
             </div>
 
             <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
-              <button type="button" className="btn-ghost btn-sm" onClick={onClose}>{t("progression.cancel")}</button>
-              <button type="button" className="btn-primary btn-sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
+              <Button variant="ghost" onClick={onClose}>{t("progression.cancel")}</Button>
+              <Button onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
                 {saveMutation.isPending ? t("progression.saving") : t("progression.save")}
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -532,13 +533,12 @@ export function ProgressionPage() {
 
                   {/* Edit */}
                   <div>
-                    <button
-                      type="button"
-                      className="btn-ghost btn-sm"
+                    <Button
+                      variant="ghost"
                       onClick={() => setEditGroupId(entry.groupId)}
                     >
                       <FontAwesomeIcon icon={faPencil} />
-                    </button>
+                    </Button>
                   </div>
                 </div>
               );
@@ -555,16 +555,15 @@ export function ProgressionPage() {
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
             {offLadder.map(g => (
-              <button
+              <Button
                 key={g.id}
-                type="button"
-                className="btn-ghost btn-sm"
+                variant="ghost"
                 onClick={() => addToLadderMutation.mutate(g.id)}
                 disabled={addToLadderMutation.isPending}
               >
                 <FontAwesomeIcon icon={faPlus} style={{ marginRight: 5 }} />
                 {g.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>

@@ -8,6 +8,7 @@ import type { PermissionsCtx } from "../PermissionsPage";
 import { changeOf, effectiveKeys, impliedBy, matchesQuery, type MatrixFilter } from "./permissionsModel";
 import { colorOf } from "./SplitView";
 import { permissionDomainLabel } from "../../../../lib/coreText";
+import { Button } from "../../../../components/AcpControls";
 
 const FILTERS: MatrixFilter[] = ["all", "sensitive", "changed"];
 
@@ -60,7 +61,7 @@ export function MatrixView({ ctx, onOpen, searchRef }: {
       {visible.length === 0 ? (
         <div className="pm-empty">
           <p>{t("permissions.noMatch")}</p>
-          <button type="button" className="btn-ghost btn-sm" onClick={() => { setQuery(""); setFilter("all"); }}>{t("permissions.clearFilters")}</button>
+          <Button variant="ghost" onClick={() => { setQuery(""); setFilter("all"); }}>{t("permissions.clearFilters")}</Button>
         </div>
       ) : (
         <div className="pm-mx" style={grid}>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
 import { faSun, faMoon } from "@fortawesome/free-solid-svg-icons";
+import { Button } from "../../../components/AcpControls";
 
 /**
  * A theme from the marketplace, rendered BY the marketplace, shown before install.
@@ -53,16 +54,15 @@ export function ThemePreview({ name, base, templates }: {
         </div>
         <div style={{ display: "flex", gap: 6 }}>
           {(["light", "dark"] as const).map((s) => (
-            <button
+            <Button
               key={s}
-              type="button"
-              className="btn-ghost btn-sm"
+              variant="ghost"
               aria-pressed={s === scheme}
               style={s === scheme ? { color: "var(--c-accent)", borderColor: "var(--c-accent)" } : undefined}
               onClick={() => setScheme(s)}
             >
               <FontAwesomeIcon icon={s === "light" ? faSun : faMoon} />
-            </button>
+            </Button>
           ))}
         </div>
       </div>

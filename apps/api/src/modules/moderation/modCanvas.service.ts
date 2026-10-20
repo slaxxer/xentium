@@ -241,8 +241,10 @@ export const modCanvasService = {
     const locale = await siteLocale();
     const rows = await prisma.moderationTemplate.findMany({
       where: { deletedAt: null },
-      // `name` last: seeded rows share one timestamp, and an unstable order moved the suggestion.
-      orderBy: [{ useCount: "desc" }, { createdAt: "asc" }, { name: "asc" }],
+      // The admin's order first (0 = never placed, which keeps the old most-used order
+      // until someone drags). `name` last: seeded rows share one timestamp, and an
+      // unstable order moved the suggestion.
+      orderBy: [{ position: "asc" }, { useCount: "desc" }, { createdAt: "asc" }, { name: "asc" }],
     });
     const editors = await prisma.user.findMany({
       where: { id: { in: [...new Set(rows.map((r) => r.updatedById).filter((x): x is string => !!x))] } },
@@ -257,7 +259,13 @@ export const modCanvasService = {
   },
 
   async createTemplate(actorId: string, input: TemplateInput) {
-    const row = await prisma.moderationTemplate.create({ data: { ...templateData(input), updatedById: actorId } });
+    // A new template goes to the END of its action's list once the admin has
+    // ordered it; while nothing is placed (all 0) it stays 0 like the rest.
+    const last = await prisma.moderationTemplate.aggregate({
+      where: { mode: input.mode, deletedAt: null }, _max: { position: true },
+    });
+    const position = (last._max.position ?? 0) > 0 ? last._max.position! + 1 : 0;
+    const row = await prisma.moderationTemplate.create({ data: { ...templateData(input), position, updatedById: actorId } });
     return templateView(row, await siteLocale());
   },
 
@@ -282,6 +290,17 @@ export const modCanvasService = {
   },
 
   /** Add back every default text that is missing. Edited ones are left as they are. */
+  /**
+   * The admin's order for one action's templates (ACP drag, "Manual"). `ids` are
+   * that action's templates top to bottom; each gets its place from 1. Ids that are
+   * deleted or unknown are skipped; a template left out keeps its old position.
+   */
+  async reorderTemplates(ids: string[]) {
+    await prisma.$transaction(ids.map((id, i) => prisma.moderationTemplate.updateMany({
+      where: { id, deletedAt: null }, data: { position: i + 1 },
+    })));
+  },
+
   async restoreDefaults(actorId: string) {
     const present = await prisma.moderationTemplate.findMany({ where: { deletedAt: null }, select: { defaultKey: true } });
     const have = new Set(present.map((t) => t.defaultKey).filter(Boolean));

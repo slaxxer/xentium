@@ -126,6 +126,7 @@ model User {
 
   articles            Article[]            @relation("ArticleAuthor")
   legalDocuments      LegalDocument[]      @relation("LegalDocumentUpdatedBy")
+  legalAcceptances    LegalAcceptance[]
   articleRevisions    ArticleRevision[]    @relation("RevisionAuthor")
   articleLikes        ArticleLike[]        @relation("ArticleLikedBy")
   articleBookmarks    ArticleBookmark[]
@@ -605,8 +606,20 @@ model UserProfileField {
   id                      String   @id @default(cuid())
   key                     String   @unique
   label                   String
-  type                    String   // text, date, email, url
+  type                    String   // text, longtext, date, email, url, choice
   placeholder             String?
+  /// A line under the input on the sign-up form and in Account → Profile.
+  helpText                String?  @map("help_text")
+  /// Who sees a member's answer until they choose: public, members, nobody.
+  defaultPrivacy          String   @default("public") @map("default_privacy")
+  /// date_of_birth only: the youngest age that may sign up (0 = no minimum).
+  minAge                  Int      @default(0) @map("min_age")
+  /// text / longtext: the longest answer accepted (null = the type's own cap).
+  maxLength               Int?     @map("max_length")
+  /// text: an http(s) address the answer is appended to on the profile.
+  linkPrefix              String?  @map("link_prefix")
+  /// choice: the options a member picks from, in order.
+  options                 Json?
   position                Int      @default(0)
   showOnRegistration      Boolean  @default(false) @map("show_on_registration")
   requiredOnRegistration  Boolean  @default(false) @map("required_on_registration")
@@ -1073,6 +1086,9 @@ model ModerationTemplate {
   /// site's language; once edited it is the admin's text, kept as written.
   defaultKey      String?   @map("default_key")
   useCount        Int       @default(0) @map("use_count")
+  /// The admin's order within its action (ACP → Templates, "Manual"), which is also
+  /// the order ModCanvas lists them in. 0 = never placed: those fall back to most used.
+  position        Int       @default(0)
   updatedById     String?   @map("updated_by_id")
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
@@ -1301,8 +1317,28 @@ model LegalDocument {
   updatedById String?   @map("updated_by_id")
   updatedBy   User?     @relation("LegalDocumentUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   updatedAt   DateTime  @updatedAt @map("updated_at")
+  /// Members must accept it: at sign-up, and once from anyone who never has.
+  requireAcceptance Boolean   @default(false) @map("require_acceptance")
+  /// Raised by "Ask members to accept again"; an acceptance names the revision it was for.
+  revision          Int       @default(1)
+  /// Who the latest re-acceptance round asks (group ids); empty = every member.
+  reacceptGroupIds  String[]  @default([]) @map("reaccept_group_ids")
+  reacceptedAt      DateTime? @map("reaccepted_at")
 
   @@map("xcf_legal_documents")
+}
+
+/// A member accepted a legal document, at the revision it was then.
+model LegalAcceptance {
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentKey String   @map("document_key")
+  revision    Int
+  acceptedAt  DateTime @default(now()) @map("accepted_at")
+
+  @@id([userId, documentKey])
+  @@index([documentKey, revision])
+  @@map("xcf_legal_acceptances")
 }
 
 // Unified activity log: public page movements (category 'page_visit') AND ACP

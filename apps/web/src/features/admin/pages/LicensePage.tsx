@@ -13,6 +13,7 @@ import { ExtensionsUpdateBanner } from "../components/ExtensionsUpdateBanner";
 import { OwnedLicenses, rowIsLive, type OwnedLicense } from "../components/OwnedLicenses";
 import "./LicensePage.scss";
 import { siteTime } from "../../../lib/datetime";
+import { Button } from "../../../components/AcpControls";
 
 /** The install's stored entitlement DOCUMENT (`xcf_entitlements`), not a licence.
  *  The marketplace issues one on every activation, including for an account that
@@ -314,10 +315,10 @@ export function LicensePage() {
           <div className="acp-page-sub">{t("nav.extensions")}</div>
           <h1 className="acp-page-title">{t("nav.license")}</h1>
         </div>
-        <button type="button" className="btn-ghost btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+        <Button variant="ghost" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
           <FontAwesomeIcon icon={faRotate} spin={refreshMut.isPending} style={{ marginRight: 6 }} />
           {refreshMut.isPending ? t("license.refreshing") : t("license.refresh")}
-        </button>
+        </Button>
       </div>
 
       <ExtensionsUpdateBanner />
@@ -360,9 +361,8 @@ export function LicensePage() {
                     <span className="lic-meta__label">{t("license.fieldEnvironment")}</span>
                     <span className="lic-meta__value">{license.environment ?? "—"}</span>
                   </div>
-                  <button
-                    type="button"
-                    className="btn-ghost btn-sm lic-meta__toggle"
+                  <Button
+                    variant="ghost" className="lic-meta__toggle"
                     aria-expanded={detailsOpen}
                     onClick={() => setDetailsOpen((o) => !o)}
                   >
@@ -371,7 +371,7 @@ export function LicensePage() {
                       icon={faChevronDown}
                       style={{ marginLeft: 7, fontSize: "var(--fs-2xs)", transition: "transform .2s", transform: `rotate(${detailsOpen ? 180 : 0}deg)` }}
                     />
-                  </button>
+                  </Button>
                 </div>
 
                 {detailsOpen && (
@@ -401,10 +401,10 @@ export function LicensePage() {
               </>
             ) : connected && (
               <div className="lic-meta">
-                <button type="button" className="btn-primary btn-sm" onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
+                <Button onClick={() => refreshMut.mutate()} disabled={refreshMut.isPending}>
                   <FontAwesomeIcon icon={faRotate} spin={refreshMut.isPending} style={{ marginRight: 6 }} />
                   {refreshMut.isPending ? t("license.refreshing") : t("license.activateFromAccount")}
-                </button>
+                </Button>
               </div>
             )}
           </section>
@@ -449,10 +449,10 @@ export function LicensePage() {
                     {conn?.connectedAt ? fmtDate(conn.connectedAt) : "—"}
                   </div>
                 </div>
-                <button type="button" className="btn-ghost-danger" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
+                <Button variant="ghost-danger" onClick={handleDisconnect} disabled={disconnectMut.isPending}>
                   <FontAwesomeIcon icon={faLinkSlash} style={{ marginRight: 6 }} />
                   {t("license.disconnect")}
-                </button>
+                </Button>
               </div>
             ) : link ? (
               /* Waiting on the human. The code is the point of this state: it is
@@ -472,16 +472,16 @@ export function LicensePage() {
                   {t("license.linkReopen")}
                   <FontAwesomeIcon icon={faArrowUpRightFromSquare} style={{ marginLeft: 5, fontSize: "0.85em" }} />
                 </a>
-                <button type="button" className="btn-ghost" onClick={() => setLink(null)}>
+                <Button variant="ghost" onClick={() => setLink(null)}>
                   {t("license.linkCancel")}
-                </button>
+                </Button>
               </div>
             ) : (
               <div className="lic-rail__stack">
-                <button type="button" className="btn-primary" disabled={linkMut.isPending} onClick={() => linkMut.mutate()}>
+                <Button disabled={linkMut.isPending} onClick={() => linkMut.mutate()}>
                   <FontAwesomeIcon icon={faPlug} style={{ marginRight: 6 }} />
                   {linkMut.isPending ? t("license.connecting") : t("license.linkConnect")}
-                </button>
+                </Button>
 
                 {/* The typed code still works, and has to: an install whose
                     admin cannot open a browser tab from this machine — a
@@ -504,9 +504,9 @@ export function LicensePage() {
                     placeholder={t("license.authPlaceholder")}
                     onKeyDown={(e) => { if (e.key === "Enter" && authCode.trim()) connectMut.mutate(); }}
                   />
-                  <button type="button" className="btn-ghost" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
+                  <Button variant="ghost" disabled={!authCode.trim() || connectMut.isPending} onClick={() => connectMut.mutate()}>
                     {connectMut.isPending ? t("license.connecting") : t("license.connect")}
-                  </button>
+                  </Button>
                 </details>
                 {connectError ? (
                   <div className="lic-hint" style={{ marginTop: 0, background: "var(--c-danger-soft)", border: "1px solid color-mix(in srgb, var(--c-danger) 30%, transparent)", color: "var(--c-danger)" }}>

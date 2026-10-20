@@ -345,6 +345,8 @@
 .se-type__select {
   flex: 1;
   min-width: 0;
+  --sel-h: 34px;
+  --sel-bg: var(--card-bg);
   height: 34px;
   padding: 0 10px;
   border-radius: var(--radius-sm);
@@ -531,6 +533,8 @@
 .se-scope__select {
   flex: 1;
   min-width: 150px;
+  --sel-h: 32px;
+  --sel-bg: var(--card-bg);
   height: 32px;
   padding: 0 10px;
   border-radius: 9px;
@@ -822,11 +826,11 @@
   padding: 0 22px;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: linear-gradient(150deg, color-mix(in srgb, var(--c-accent) 20%, #14162a), color-mix(in srgb, var(--c-accent) 70%, #14162a));
+  background: linear-gradient(150deg, color-mix(in srgb, var(--c-accent) 20%, #121816), color-mix(in srgb, var(--c-accent) 70%, #121816));
   background-size: cover;
   background-position: center;
   color: #fff;
-  &::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(20, 22, 42, 0.1), rgba(20, 22, 42, 0.5)); }
+  &::before { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(18, 24, 22, 0.1), rgba(18, 24, 22, 0.5)); }
 }
 .br-mast__brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .br-mast__word {
@@ -844,7 +848,7 @@
   gap: 1px;
   border-radius: 10px;
   overflow: hidden;
-  i { width: 30px; height: 30px; background: rgba(20, 22, 42, 0.7); }
+  i { width: 30px; height: 30px; background: rgba(18, 24, 22, 0.7); }
   @media (max-width: 480px) { display: none; }
 }
 

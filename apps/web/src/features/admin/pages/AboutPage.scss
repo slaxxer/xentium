@@ -77,8 +77,8 @@
   animation: ab-dotpulse 1.8s ease-out infinite;
 }
 @keyframes ab-dotpulse {
-  0%   { box-shadow: 0 0 0 0 rgba(31, 171, 116, 0.5); }
-  70%, 100% { box-shadow: 0 0 0 8px rgba(31, 171, 116, 0); }
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-success) 50%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 8px transparent; }
 }
 
 .ab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
@@ -112,7 +112,7 @@
 }
 .ab-dl__row:first-of-type { border-top: none; padding-top: 10px; }
 .ab-dl__k { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-md); color: var(--c-fg-muted); }
-.ab-dl__v { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); text-align: right; }
+.ab-dl__v { font-family: var(--ff-sans); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); text-align: right; }
 .ab-dl__v.is-ok  { color: var(--c-success); }
 .ab-dl__v.is-dev { color: var(--c-warn); }
 
@@ -134,7 +134,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--c-rowline);
 }
-.ab-meterline b { font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }
+.ab-meterline b { font-family: var(--ff-sans); font-weight: 600; font-size: var(--fs-md); color: var(--c-fg); }
 .ab-meterline span { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-sm); color: var(--c-fg-subtle); }
 
 /* resources */
@@ -167,7 +167,7 @@
 }
 .ab-reslink:hover .ab-reslink__ic { background: var(--c-accent); color: var(--c-on-accent); }
 .ab-reslink__t { min-width: 0; }
-.ab-reslink__t b { display: block; font-family: var(--font-display); font-weight: 600; font-size: var(--fs-md); }
+.ab-reslink__t b { display: block; font-family: var(--ff-sans); font-weight: 600; font-size: var(--fs-md); }
 .ab-reslink__t span { font-size: var(--fs-xs); font-weight: 600; color: var(--c-fg-subtle); }
 .ab-reslink__ext { margin-left: auto; color: var(--c-fg-subtle); flex: none; }
 .ab-reslink:hover .ab-reslink__ext { color: var(--c-accent); }

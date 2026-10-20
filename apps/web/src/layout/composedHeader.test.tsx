@@ -9,7 +9,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { CORE_EDGE_SHAPES, EDGE_ART_LIMITS, edgeArtSchema, type BlockNode, type LayoutDocument } from "@xentium/contracts";
 import { LayoutRegion } from "./LayoutRenderer";
-import { dateFromMonthDay, edgeFill, edgePath, edgeShows, edgeStyle, resolveEdgeShape } from "./edgeArt";
+import { dateFromMonthDay, EdgeArtLayer, edgeFill, edgePath, edgeShows, edgeStyle, resolveEdgeShape } from "./edgeArt";
 import { deregisterEdgeFor, registerEdgeExtension, registerEdgeShape } from "./edgeRegistry";
 import { placeBetween, updateBlockEdges, findNode, type Regions } from "./blockTree";
 import { hasSurface } from "./blockRegistry";
@@ -234,6 +234,33 @@ describe("edge art from plugins", () => {
     expect(drawn.querySelector(".test-extra > .xt-edge > .xt-edge__fill")).not.toBeNull();
   });
 
+});
+
+describe("an outward edge over the navbar", () => {
+  /** A masthead host in its block wrapper, and the navbar before or after it. */
+  function page(navAfter: boolean, direction: "out" | "in") {
+    const wrapper = document.createElement("div");
+    const host = document.createElement("header");
+    host.className = "xt-header";
+    wrapper.appendChild(host);
+    const nav = document.createElement("nav");
+    nav.className = "pub-nav";
+    document.body.append(...(navAfter ? [wrapper, nav] : [nav, wrapper]));
+    const bottom = edgeArtSchema.parse({ shape: "drips", direction, height: 44 });
+    render(<EdgeArtLayer edges={{ bottom }} wrapper={wrapper} />);
+    return host;
+  }
+  afterEach(() => { document.body.innerHTML = ""; });
+
+  it("lifts a masthead ABOVE the navbar when its edge hangs down onto it", () => {
+    expect(page(true, "out").classList.contains("xt-edge-host--over-nav")).toBe(true);
+  });
+  it("leaves a masthead BELOW the navbar under it, so it still scrolls under the stuck navbar", () => {
+    expect(page(false, "out").classList.contains("xt-edge-host--over-nav")).toBe(false);
+  });
+  it("leaves an inward edge alone: it never reaches the navbar", () => {
+    expect(page(true, "in").classList.contains("xt-edge-host--over-nav")).toBe(false);
+  });
 });
 
 describe("placing search and the account menu", () => {

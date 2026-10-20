@@ -168,6 +168,20 @@ describe("claims and templates", () => {
   });
 });
 
+describe("the admin's order", () => {
+  it("lists one action's templates in the order given, and adds a new one at the end", async () => {
+    const mk = (name: string) => modCanvasService.createTemplate(ids.mod, { mode: "dismiss", name: `${P} ${name}`, text: "Noted." });
+    const a = await mk("a"), b = await mk("b"), c = await mk("c");
+    const mine = async () => (await modCanvasService.listTemplates()).filter((x) => x.name.startsWith(P) && x.mode === "dismiss").map((x) => x.name);
+
+    await modCanvasService.reorderTemplates([c.id, a.id, b.id]);
+    expect(await mine()).toEqual([`${P} c`, `${P} a`, `${P} b`]);
+
+    await mk("d");   // ordered list → goes last, not first
+    expect(await mine()).toEqual([`${P} c`, `${P} a`, `${P} b`, `${P} d`]);
+  });
+});
+
 describe("restoring the default texts", () => {
   it("fills an empty set, adds back a deleted default, and leaves an edited one alone", async () => {
     // Self-contained: the test database may have been truncated, so the seed rows cannot be assumed.

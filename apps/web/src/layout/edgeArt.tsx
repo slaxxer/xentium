@@ -331,6 +331,19 @@ export function EdgeArtLayer({ edges, wrapper }: { edges: BlockEdges; wrapper: H
   // The same for an OUTWARD bottom edge: the navbar keeps that much room below it, so
   // its edge does not cover the alert bar or the page under it.
   const outBottom = bottom && bottom.direction === "out" && bottom.shape !== "blank" ? bottom : undefined;
+
+  // A block ABOVE the sticky navbar (the masthead) whose edge hangs down onto it has to
+  // sit above the navbar, or the navbar paints over the edge. Only then: a block below
+  // the navbar must keep scrolling under it. Re-checked every render, because the
+  // editor can move the masthead to the other side of the navbar.
+  useLayoutEffect(() => {
+    if (!host) return;
+    const nav = host.ownerDocument.querySelector(".pub-nav");
+    const navFollows = !!nav && nav !== host && !host.contains(nav)
+      && !!(host.compareDocumentPosition(nav) & Node.DOCUMENT_POSITION_FOLLOWING);
+    host.classList.toggle("xt-edge-host--over-nav", !!outBottom && navFollows);
+  });
+
   useLayoutEffect(() => {
     if (!host) return;
     if (!outBottom) {

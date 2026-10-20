@@ -27,6 +27,7 @@ import { getEffectiveProgressionGroupId } from "../../shared/middleware/contentL
 import { requirePermission, hasPermission } from "../../shared/middleware/requirePermission.js";
 import { resolveAvatar } from "../../shared/utils/resolveAvatar.js";
 import { encryptSecret, decryptSecret } from "../../shared/utils/secretBox.js";
+import { countryOf, geoipAvailable } from "../../infrastructure/geoip.js";
 import { permissionCache } from "../../modules/permissions/permission.cache.js";
 import { sanitizeRichText } from "../../shared/sanitize/richText.js";
 import { resolveCronPattern, previewRuns } from "../../jobs/scheduledJobs.js";
@@ -86,6 +87,7 @@ const host: PluginHost = {
       await notificationService.dispatch(opts);
     },
   },
+  geo: { countryOf: (ip: string) => countryOf(ip), available: geoipAvailable },
   security: {
     createCase: async (opts: any) => {
       const { createModerationCase } = await import("../../modules/moderation/moderationCase.service.js");

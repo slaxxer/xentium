@@ -43,3 +43,36 @@
     color: var(--c-fg-muted);
   }
 }
+
+/* A member who still has to accept this document: a note on top, the box below. */
+.legal-view__ask {
+  margin: 0 0 1.5rem;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--c-accent-soft);
+  color: var(--c-fg);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.legal-accept {
+  margin-top: 2.5rem;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  border: 1px solid var(--c-accent);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  &__check {
+    display: flex; align-items: flex-start; gap: 10px;
+    font-size: var(--fs-sm); font-weight: 600; color: var(--c-fg);
+    cursor: pointer;
+    input { margin-top: 3px; width: 16px; height: 16px; accent-color: var(--c-accent); }
+  }
+  &__actions { display: flex; align-items: center; justify-content: flex-end; gap: 14px; flex-wrap: wrap; }
+  &__out {
+    padding: 0; border: 0; background: none; font: inherit;
+    font-size: var(--fs-sm); color: var(--c-fg-muted); cursor: pointer;
+    &:hover { color: var(--c-fg); text-decoration: underline; }
+  }
+}

@@ -21,6 +21,7 @@ import { IconScope } from "../../lib/iconScope";
 import { AcpSaveBar } from "./AcpSaveBar";
 import { useDraftEpoch } from "../../hooks/useDraft";
 import { siteTime } from "../../lib/datetime";
+import { Button } from "../../components/AcpControls";
 
 // The ACP wears one of two navigation chromes, chosen per admin in the user
 // menu and remembered in localStorage (nav/acpChrome.ts):
@@ -52,9 +53,9 @@ function AcpAuthGate({ children }: { children: React.ReactNode }) {
       <div className="acp-forbidden">
         <h2>{t("sidebar.accessDeniedTitle")}</h2>
         <p>{t("sidebar.accessDeniedBody")}</p>
-        <button type="button" className="btn-primary" onClick={() => navigate("/")}>
+        <Button onClick={() => navigate("/")}>
           {t("sidebar.goToSite")}
-        </button>
+        </Button>
       </div>
     );
   }
