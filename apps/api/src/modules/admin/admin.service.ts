@@ -56,6 +56,25 @@ async function assertActionableUser(userId: string, actorId: string) {
 }
 
 /** What the ACP may set on a profile field, beyond its key and type. */
+/**
+ * The group every new sign-up joins must be a real group, and never one that
+ * opens the ACP: a typo or a wrong pick there would make every newcomer staff.
+ */
+async function assertSignupGroup(value: unknown): Promise<void> {
+  const group = typeof value === "string"
+    ? await prisma.group.findUnique({
+        where: { key: value },
+        select: { permissions: { where: { permission: { key: CorePermissions.ADMIN_ACCESS } }, select: { groupId: true } } },
+      })
+    : null;
+  if (!group || group.permissions.length > 0) {
+    throw new XentiumError({
+      code: "XEC-GROUP-4010", httpStatus: 422,
+      message: group ? "New members can't join a group with ACP access" : "That group does not exist",
+    });
+  }
+}
+
 export interface ProfileFieldWrite {
   label?: string;
   placeholder?: string | null;
@@ -755,6 +774,7 @@ export const adminService = {
     // settings rows, but the plugin that owns the gate validates them on its own
     // endpoint and normalises again on read — core has no opinion about what a
     // beta route is, so it cannot be the thing that checks one.
+    if (key === "auth.default_group") await assertSignupGroup(value);
     if (SECRET_SETTING_KEYS.has(key)) {
       // The client renders the mask, so it can echo it back on an unrelated
       // save. Treat that as "leave the stored secret alone" rather than
