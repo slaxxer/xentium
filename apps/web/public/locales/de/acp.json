@@ -332,10 +332,6 @@
         "invite": "Nur mit Einladung — Einladungscode erforderlich",
         "closed": "Geschlossen — keine neuen Registrierungen"
       },
-      "defaultGroup": {
-        "member": "Mitglied",
-        "moderator": "Moderator"
-      },
       "hotRank": {
         "replies": "Meiste Antworten",
         "recent": "Neueste Aktivität"

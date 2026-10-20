@@ -42,5 +42,6 @@
   "XEC-USER-4017": "Introduza uma data de nascimento real: depois de 1900 e antes de hoje.",
   "XEC-USER-4018": "Uma das suas respostas do perfil não é aceite: verifique o tamanho ou escolha uma das opções.",
   "XEC-USER-4019": "Ainda não tem idade suficiente para se registar aqui.",
-  "XEC-USER-4020": "Preencha todos os campos obrigatórios para se registar."
+  "XEC-USER-4020": "Preencha todos os campos obrigatórios para se registar.",
+  "XEC-GROUP-4010": "Os novos membros só podem entrar num grupo que exista e que não abra o ACP."
 }

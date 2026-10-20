@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { FontAwesomeIcon } from "../../../components/Icon";
@@ -125,7 +125,7 @@ function Select({
 interface SectionField {
   i18nKey: string;
   key: string;
-  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "datetime";
+  type: "text" | "number" | "toggle" | "select" | "language" | "timezone" | "landing" | "group" | "groups" | "signupGroup" | "datetime";
   placeholderKey?: string;
   optionsKey?: string;
   values?: string[];
@@ -216,7 +216,7 @@ const SECTIONS: Section[] = [
     fields: [
       { i18nKey: "registrationMode", key: "auth.registration_mode", type: "select", optionsKey: "regMode", values: ["open", "invite", "closed"] },
       { i18nKey: "emailVerification", key: "auth.require_email_verification", type: "toggle" },
-      { i18nKey: "defaultGroup", key: "auth.default_group", type: "select", optionsKey: "defaultGroup", values: ["member", "moderator"] },
+      { i18nKey: "defaultGroup", key: "auth.default_group", type: "signupGroup" },
       { i18nKey: "collectName",  key: "registration.collect_name",  type: "toggle" },
       { i18nKey: "nameRequired", key: "registration.name_required", type: "toggle" },
       { i18nKey: "showPreviousUsernames", key: "profile.show_previous_usernames", type: "toggle" },
@@ -363,6 +363,19 @@ export function SettingsPage() {
     staleTime: 300_000,
   });
 
+  // The groups a new member may join: every group except those that open the ACP
+  // (the server refuses those too, XEC-GROUP-4010). Read from the ACP's own list,
+  // which carries each group's permissions.
+  const { data: adminGroups = [] } = useQuery<{ name: string; key: string; permissions: { permission: { key: string } }[] }[]>({
+    queryKey: ["acp-groups-list-full"],
+    queryFn: () => api.get("/admin/groups"),
+    staleTime: 60_000,
+  });
+  const signupGroups = useMemo(
+    () => adminGroups.filter((g) => !g.permissions.some((p) => p.permission.key === "admin.access")),
+    [adminGroups],
+  );
+
   // Local draft state seeded from API
   const [draft, setDraft] = useState<Record<string, unknown>>(DEFAULTS);
 
@@ -457,11 +470,12 @@ export function SettingsPage() {
     if (f?.type === "select" && f.optionsKey) return t(`settings.options.${f.optionsKey}.${String(v)}`);
     if (f?.type === "language") return LOCALES.find((l) => l.value === v)?.label ?? String(v);
     if (f?.type === "group") return allGroups.find((g) => g.key === v)?.name ?? String(v);
+    if (f?.type === "signupGroup") return adminGroups.find((g) => g.key === v)?.name ?? String(v);
     if (f?.type === "datetime") { const d = new Date(String(v)); return Number.isNaN(d.getTime()) ? String(v) : d.toLocaleString(uiLocale()); }
     if (Array.isArray(v)) return v.map((x) => (typeof x === "object" ? (x as { label?: string; name?: string }).label ?? (x as { name?: string }).name ?? "…" : String(x))).join(", ") || t("savebar.empty");
     if (typeof v === "object") return "…";
     return typeof v === "string" ? `“${v}”` : String(v);
-  }, [t, allGroups]);
+  }, [t, allGroups, adminGroups]);
 
   const labelOf = useCallback((key: string): string => {
     const f = KEY_FIELD.get(key);
@@ -549,6 +563,14 @@ export function SettingsPage() {
             options={allGroups.map((g) => ({ value: g.key, label: g.name }))}
           />
         );
+      case "signupGroup": {
+        const current = String(val ?? "member");
+        const options = signupGroups.map((g) => ({ value: g.key, label: g.name }));
+        // A stored key that is no longer offered (deleted group) still shows, so the
+        // row never looks empty while sign-ups quietly use something else.
+        if (current && !options.some((o) => o.value === current)) options.unshift({ value: current, label: current });
+        return <Select value={current} onChange={(v) => set(f.key, v)} options={options} />;
+      }
       case "groups": {
         const selected: string[] = Array.isArray(val) ? (val as string[]) : val ? [String(val)] : ["admin"];
         const toggle = (key: string) => {

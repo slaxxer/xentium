@@ -42,5 +42,6 @@
   "XEC-USER-4017": "Saisissez une vraie date de naissance : après 1900 et avant aujourd'hui.",
   "XEC-USER-4018": "L'une de vos réponses de profil n'est pas acceptée : vérifiez sa longueur ou choisissez l'une des options.",
   "XEC-USER-4019": "Vous n'avez pas encore l'âge requis pour vous inscrire ici.",
-  "XEC-USER-4020": "Veuillez remplir tous les champs obligatoires pour vous inscrire."
+  "XEC-USER-4020": "Veuillez remplir tous les champs obligatoires pour vous inscrire.",
+  "XEC-GROUP-4010": "Les nouveaux membres ne peuvent rejoindre qu'un groupe existant qui n'ouvre pas l'ACP."
 }
