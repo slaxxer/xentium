@@ -73,6 +73,8 @@ adminRouter.put("/settings/:key", adminGuard, adminController.setSetting);
 
 // Articles
 adminRouter.get("/articles", adminGuard, adminController.listArticles);
+adminRouter.get("/articles/summary", adminGuard, adminController.articleSummary);
+adminRouter.post("/articles/bulk", adminGuard, adminController.bulkArticles);
 adminRouter.delete("/articles/:id", adminGuard, adminController.deleteArticle);
 
 // Moderation — read + write (Phase 10)

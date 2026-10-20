@@ -63,7 +63,6 @@ const BadgesPage = lazy(() => import("../features/admin/pages/BadgesPage").then(
 const PermissionsPage = lazy(() => import("../features/admin/pages/PermissionsPage").then((m) => ({ default: m.PermissionsPage })));
 const ProgressionPage = lazy(() => import("../features/admin/pages/ProgressionPage").then((m) => ({ default: m.ProgressionPage })));
 const ArticlesPage = lazy(() => import("../features/admin/pages/ArticlesPage").then((m) => ({ default: m.ArticlesPage })));
-const CategoriesPage = lazy(() => import("../features/admin/pages/CategoriesPage").then((m) => ({ default: m.CategoriesPage })));
 const LegalDocumentsPage = lazy(() => import("../features/admin/pages/LegalDocumentsPage").then((m) => ({ default: m.LegalDocumentsPage })));
 const EmojisPage = lazy(() => import("../features/admin/pages/EmojisPage").then((m) => ({ default: m.EmojisPage })));
 const SettingsPage = lazy(() => import("../features/admin/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })));
@@ -299,7 +298,8 @@ function buildRouter() {
           { path: "permissions",      element: <PermissionsPage /> },
           { path: "progression",      element: <ProgressionPage /> },
           { path: "articles",         element: <ArticlesPage /> },
-          { path: "categories",       element: <CategoriesPage /> },
+          // Categories live on the Articles page since 2026-10-20 (its second view).
+          { path: "categories",       element: <Navigate to="/admin/articles?view=categories" replace /> },
           { path: "legal",            element: <LegalDocumentsPage /> },
           { path: "emojis",           element: <EmojisPage /> },
           // Custom pages removed 2026-10-02; legal documents are what they were used for.
