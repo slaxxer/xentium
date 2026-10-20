@@ -1,6 +1,6 @@
 {
   "name": "@xentium/migrate-phpbb",
-  "version": "1.0.0-alpha.16",
+  "version": "1.0.0-alpha.17",
   "private": true,
   "description": "phpBB 3.1+ → Xentium migration adapter (§34, Wave 1). Connects directly to the phpBB MySQL database. Requires the xentium-forum plugin on the target.",
   "type": "module",

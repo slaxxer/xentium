@@ -1,6 +1,6 @@
 {
   "name": "@xentium/docs",
-  "version": "1.0.0-alpha.16",
+  "version": "1.0.0-alpha.17",
   "private": true,
   "type": "module",
   "description": "The developer wiki — doc.xentium.org. Static; built from docs/ + README + hand-written guides.",
