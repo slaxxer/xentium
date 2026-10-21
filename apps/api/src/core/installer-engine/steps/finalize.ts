@@ -1,25 +1,7 @@
-import { generateKeyPairSync, randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import { prisma } from "../../../infrastructure/db.js";
 import { markInstalled } from "../../../shared/middleware/installGuard.js";
 import { bustSettingsCache } from "../../../shared/utils/settings.js";
-
-async function ensureKeyPair() {
-  const existing = await prisma.setting.findUnique({ where: { key: "auth.jwtPrivateKey" } });
-  if (existing) return;
-  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-    privateKeyEncoding: { type: "pkcs8", format: "pem" },
-    publicKeyEncoding: { type: "spki", format: "pem" },
-  });
-  // skipDuplicates: a finalize that failed after this point and is run again.
-  await prisma.setting.createMany({
-    skipDuplicates: true,
-    data: [
-      { key: "auth.jwtPrivateKey", value: privateKey },
-      { key: "auth.jwtPublicKey", value: publicKey },
-    ],
-  });
-}
 
 export async function finalize(): Promise<{ siteId: string }> {
   // A finished install can't be reopened (the installer switches itself off), so
@@ -27,7 +9,9 @@ export async function finalize(): Promise<{ siteId: string }> {
   const admins = await prisma.userGroup.count({ where: { group: { key: "admin" } } });
   if (admins === 0) throw Object.assign(new Error("install_admin_missing"), { status: 409 });
 
-  await ensureKeyPair();
+  // (An RSA key pair used to be stored here as auth.jwtPrivateKey/PublicKey. Nothing
+  // ever signed with it — tokens are HS256 with JWT_SECRET — so it is no longer made;
+  // sites that have one keep the unused rows.)
 
   const row = await prisma.install.findUniqueOrThrow({ where: { singleton: true } });
   const siteId = row.siteId ?? randomUUID();
