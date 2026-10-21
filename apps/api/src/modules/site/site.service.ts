@@ -1,4 +1,5 @@
 import { prisma } from "../../infrastructure/db.js";
+import { XENTIUM_VERSION } from "../../config/version.js";
 import { getSetting, getSettings } from "../../shared/utils/settings.js";
 import { memoTtl } from "../../shared/utils/memoTtl.js";
 import { statRegistry } from "../../core/stat-registry/stat-registry.js";
@@ -144,6 +145,8 @@ export const siteService = {
     return {
       siteName,
       uptimeSeconds: Math.floor(process.uptime()),
+      // The installed Xentium, shown after the footer's credit line.
+      version: XENTIUM_VERSION,
       stats,
     };
   },

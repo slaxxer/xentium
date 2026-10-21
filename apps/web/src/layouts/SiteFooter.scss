@@ -254,6 +254,10 @@
 
   b { color: var(--footer-fg); font-weight: 700; }
 }
+/* The installed version after the credit line. */
+.xt-foottext__ver { font-variant-numeric: tabular-nums; }
+.xt-foottext__line .xt-sep { margin: 0 6px; }
+
 .xt-foottext__meta {
   display: flex;
   align-items: center;
